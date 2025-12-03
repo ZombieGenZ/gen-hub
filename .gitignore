@@ -1,0 +1,69 @@
+# Dependencies / Modules
+node_modules/
+.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# Compiled Output / Build Artifacts
+dist/
+build/
+.next/
+out/
+*.tsbuildinfo
+
+# Configuration / Metadata
+.DS_Store
+*.pem
+.temp
+.tmp
+.vercel
+
+# Environment / Secrets (IMPORTANT: Keep these ignored unless you have a specific reason to commit them)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs and Debugging Files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+logs
+*.log
+lerna-debug.log*
+
+# Testing and Coverage
+coverage
+.nyc_output
+
+# TypeScript
+next-env.d.ts
+
+# IDEs and Editors
+.idea
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# VSCode Configuration (Excluding specific user-defined files)
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# Runtime and Diagnostic Data
+pids
+*.pid
+*.seed
+*.pid.lock
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
