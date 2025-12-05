@@ -1,0 +1,1159 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ProvinceType {
+  CITY
+  PROVINCE
+}
+
+model Province {
+  id      String        @id @default(uuid())
+  code    String        @unique
+  name    String
+  type    ProvinceType?
+
+  districts District[]
+
+  is_active  Boolean?  @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  is_deleted Boolean?  @default(false)
+  deleted_at DateTime?
+
+  @@map("vn_provinces")
+}
+
+enum DistrictType {
+  URBAN_DISTRICT
+  DISTRICT
+  TOWN
+  CITY
+}
+
+model District {
+  id          String        @id @default(uuid())
+  code        String        @unique
+  name        String
+  type        DistrictType?
+  province_id String
+
+  province Province @relation(fields: [province_id], references: [id], onDelete: Cascade)
+  wards    Ward[]
+
+  is_active  Boolean?  @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  is_deleted Boolean?  @default(false)
+  deleted_at DateTime?
+
+  @@index([province_id])
+  @@map("vn_districts")
+}
+
+enum WardType {
+  WARD
+  COMMUNE
+  TOWNSHIP
+}
+
+model Ward {
+  id          String    @id @default(uuid())
+  code        String    @unique
+  name        String
+  type        WardType?
+  district_id String
+
+  district District @relation(fields: [district_id], references: [id], onDelete: Cascade)
+
+  partners   Partner[]
+  warehouses Warehouse[]
+
+  is_active  Boolean?  @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  is_deleted Boolean?  @default(false)
+  deleted_at DateTime?
+
+  @@index([district_id])
+  @@map("vn_wards")
+}
+
+enum PlatformProvider {
+  DEFAULT
+  GOOGLE
+  FACEBOOK
+}
+
+model User {
+  id                    String           @id @default(uuid())
+  name                  String
+  email                 String?
+  email_confirmed       Boolean          @default(false)
+  email_verify_token    String?
+  phone                 String?
+  phone_confirmed       Boolean          @default(false)
+  phone_verify_token    String?
+  
+  is_verified           Boolean?         @default(false)
+  is_banned             Boolean?         @default(false)
+  banned_end            DateTime?
+  two_factor_enabled    Boolean          @default(false)
+  two_factor_token      String?
+  password              String?
+  provider              PlatformProvider @default(DEFAULT)
+  forgot_password_token String?
+  google_id             String?
+  facebook_id           String?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  refresh_tokens RefreshToken[]
+
+  system_roles       UserRole[]
+  system_permissions UserPermission[]
+
+  created_api_keys ApiKey[]
+
+  owned_organizations      Organization[]       @relation("OwnerRelation")
+  organization_memberships OrganizationMember[]
+
+  system_logs             SystemLog[]
+  organization_audit_logs OrganizationAuditLog[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id         String    @id @default(uuid())
+  user_id    String
+  ip         String?
+  location   String?
+  device     String?
+  os         String?
+  token      String    @db.Text
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  is_deleted Boolean   @default(false)
+  deleted_at DateTime?
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
+}
+
+model Role {
+  id          String    @id @default(uuid())
+  name        String
+  description String?
+  is_active   Boolean?  @default(true)
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
+  is_deleted  Boolean   @default(false)
+  deleted_at  DateTime?
+
+  permissions RolePermission[]
+  users       UserRole[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String    @id @default(uuid())
+  name        String
+  description String?
+  key         String
+  is_active   Boolean?  @default(true)
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
+  is_deleted  Boolean   @default(false)
+  deleted_at  DateTime?
+
+  roles RolePermission[]
+  users UserPermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  id            String    @id @default(uuid())
+  role_id       String
+  permission_id String
+  is_active     Boolean?  @default(true)
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+  is_deleted    Boolean   @default(false)
+  deleted_at    DateTime?
+
+  role       Role       @relation(fields: [role_id], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permission_id], references: [id], onDelete: Cascade)
+
+  @@index([role_id])
+  @@index([permission_id])
+  @@map("roles_permissions")
+}
+
+model UserRole {
+  id         String    @id @default(uuid())
+  user_id    String
+  role_id    String
+  is_active  Boolean?  @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  is_deleted Boolean   @default(false)
+  deleted_at DateTime?
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [role_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([role_id])
+  @@map("users_roles")
+}
+
+model UserPermission {
+  id            String    @id @default(uuid())
+  user_id       String
+  permission_id String
+  is_active     Boolean?  @default(true)
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+  is_deleted    Boolean   @default(false)
+  deleted_at    DateTime?
+
+  user       User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permission_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([permission_id])
+  @@map("users_permissions")
+}
+
+enum DimensionUnit {
+  CENTIMETER
+  METER
+  KILOMETER
+}
+
+model PlanTemplate {
+  id          String  @id @default(uuid())
+  code        String  @unique
+  name        String
+  description String?
+
+  is_active Boolean @default(true)
+
+  price    Decimal?
+  currency String?
+
+  default_duration_days Int?
+
+  // Tổ chức & người dùng
+  max_organization_members Int?  // tối đa thành viên trong 1 org
+  max_roles                Int?  // tối đa role custom trong org
+  max_api_keys             Int?  // tối đa API keys / org
+
+  // Kho & cấu trúc kho
+  max_warehouses          Int?  // tối đa số kho
+  max_racks_per_warehouse Int?  // tối đa rack / 1 kho
+  max_shelves_per_rack    Int?  // tối đa kệ / 1 rack
+  max_blocks_per_shelf    Int?  // tối đa block / 1 kệ
+
+  // Danh mục
+  max_products            Int?  // tối đa sản phẩm
+  max_batches_per_product Int?  // tối đa lô / 1 sản phẩm (nếu dùng batch)
+  max_units               Int?  // tối đa đơn vị tính
+  max_partners            Int?  // tối đa đối tác (supplier/customer)
+
+  // Phiếu nhập (Receipt)
+  max_receipts_per_month        Int? // số phiếu nhập / tháng
+  max_receipt_lines_per_receipt Int? // tối đa dòng chi tiết / 1 phiếu nhập
+
+  // Phiếu xuất (Export)
+  max_exports_per_month       Int? // số phiếu xuất / tháng
+  max_export_lines_per_export Int? // tối đa dòng chi tiết / 1 phiếu xuất
+
+  // Kiểm kê (StockTake)
+  max_stock_takes_per_month           Int? // số phiếu kiểm kê / tháng
+  max_stock_take_lines_per_stock_take Int? // tối đa dòng chi tiết / 1 phiếu kiểm kê
+
+  // Giao dịch tồn kho (InventoryTransaction)
+  max_inventory_transactions_per_day   Int? // giao dịch / ngày
+  max_inventory_transactions_per_month Int? // giao dịch / tháng
+
+  enable_api_access Boolean @default(false) // cho phép dùng API key
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  is_deleted Boolean   @default(false)
+  deleted_at DateTime?
+
+  subscription_plans SubscriptionPlan[]
+
+  @@map("plan_templates")
+}
+
+model SubscriptionPlan {
+  id               String @id @default(uuid())
+  organization_id  String
+  plan_template_id String
+
+  started_at DateTime
+  expired_at DateTime?
+  // is_lifetime Boolean    @default(false)
+
+  is_active Boolean @default(true)
+  notes     String?
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  is_deleted Boolean   @default(false)
+  deleted_at DateTime?
+
+  organization Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  template     PlanTemplate @relation(fields: [plan_template_id], references: [id])
+
+  @@index([organization_id])
+  @@index([plan_template_id])
+  @@map("subscription_plans")
+}
+
+model Organization {
+  id         String   @id @default(uuid())
+  name       String
+  company    String
+  is_active  Boolean? @default(true)
+  is_deleted Boolean? @default(false)
+  owner_id   String
+  
+  block_unit   DimensionUnit
+  block_length Decimal
+  block_width  Decimal
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+
+  created_by String
+  updated_by String?
+  deleted_by String?
+
+  api_keys ApiKey[]
+
+  owner User @relation("OwnerRelation", fields: [owner_id], references: [id], onDelete: Cascade)
+
+  members    OrganizationMember[]
+  roles      OrganizationRole[]
+  partners   Partner[]
+  products   Product[]
+  units      Unit[]
+  warehouses Warehouse[]
+  
+  subscription_plans      SubscriptionPlan[]
+  organization_permissions OrganizationPermission[]
+  inventory_transactions  InventoryTransaction[]
+  audit_logs              OrganizationAuditLog[]
+  api_key_logs            ApiKeyLog[]
+
+  @@map("organizations")
+}
+
+model OrganizationMember {
+  id              String   @id @default(uuid())
+  user_id         String
+  organization_id String
+  is_accepted     Boolean? @default(false)
+  is_active       Boolean? @default(true)
+  is_deleted      Boolean? @default(false)
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+
+  created_by String
+  updated_by String?
+  deleted_by String?
+
+  user         User         @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+
+  roles       OrganizationMemberRole[]
+  permissions OrganizationMemberPermission[]
+
+  @@index([user_id])
+  @@index([organization_id])
+  @@map("organizations_members")
+}
+
+model OrganizationRole {
+  id              String   @id @default(uuid())
+  name            String
+  description     String?
+  is_active       Boolean? @default(true)
+  organization_id String
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  is_deleted Boolean   @default(false)
+  deleted_at DateTime?
+
+  organization Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+
+  api_key_assignments ApiKeyRole[]
+
+  permissions OrganizationRolePermission[]
+  members     OrganizationMemberRole[]
+
+  @@map("organizations_roles")
+}
+
+model OrganizationPermission {
+  id              String   @id @default(uuid())
+  name            String
+  description     String?
+  key             String
+  organization_id String
+  is_active       Boolean? @default(true)
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  is_deleted Boolean   @default(false)
+  deleted_at DateTime?
+
+  organization Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  roles        OrganizationRolePermission[]
+
+  api_key_assignments ApiKeyPermission[]
+  members             OrganizationMemberPermission[]
+
+  @@map("organizations_permissions")
+}
+
+model OrganizationRolePermission {
+  id                         String   @id @default(uuid())
+  organization_role_id       String
+  organization_permission_id String
+  is_active                  Boolean? @default(true)
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  is_deleted Boolean   @default(false)
+  deleted_at DateTime?
+
+  role       OrganizationRole       @relation(fields: [organization_role_id], references: [id], onDelete: Cascade)
+  permission OrganizationPermission @relation(fields: [organization_permission_id], references: [id], onDelete: Cascade)
+
+  @@index([organization_role_id])
+  @@index([organization_permission_id])
+  @@map("organizations_roles_permissions")
+}
+
+model OrganizationMemberRole {
+  id                     String   @id @default(uuid())
+  organization_member_id String
+  organization_role_id   String
+  warehouse_id           String?
+  is_active              Boolean? @default(true)
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  is_deleted Boolean   @default(false)
+  deleted_at DateTime?
+
+  member    OrganizationMember @relation(fields: [organization_member_id], references: [id], onDelete: Cascade)
+  role      OrganizationRole   @relation(fields: [organization_role_id], references: [id], onDelete: Cascade)
+  warehouse Warehouse?         @relation(fields: [warehouse_id], references: [id], onDelete: Cascade)
+
+  @@index([organization_member_id])
+  @@index([organization_role_id])
+  @@index([warehouse_id])
+  @@map("organizations_members_roles")
+}
+
+model OrganizationMemberPermission {
+  id                         String   @id @default(uuid())
+  organization_member_id     String
+  organization_permission_id String
+  warehouse_id               String?
+  is_active                  Boolean? @default(true)
+  created_at                 DateTime @default(now())
+  updated_at                 DateTime @updatedAt
+  is_deleted                 Boolean  @default(false)
+  deleted_at                 DateTime?
+
+  member     OrganizationMember     @relation(fields: [organization_member_id], references: [id], onDelete: Cascade)
+  permission OrganizationPermission @relation(fields: [organization_permission_id], references: [id], onDelete: Cascade)
+  warehouse  Warehouse?             @relation(fields: [warehouse_id], references: [id], onDelete: Cascade)
+
+  @@index([organization_member_id])
+  @@index([organization_permission_id])
+  @@index([warehouse_id])
+  @@map("organizations_members_permissions")
+}
+
+model ApiKey {
+  id           String    @id @default(uuid())
+  name         String
+  description  String?
+  key_prefix   String
+  key_hash     String    @unique
+  is_active    Boolean   @default(true)
+  expires_at   DateTime?
+  last_used_at DateTime?
+  last_used_ip String?
+
+  organization_id String
+  organization    Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+
+  created_by_user_id String
+  created_by         User    @relation(fields: [created_by_user_id], references: [id])
+  updated_by         String?
+  is_deleted         Boolean @default(false)
+  deleted_by         String?
+
+  roles       ApiKeyRole[]
+  permissions ApiKeyPermission[]
+
+  audit_logs   OrganizationAuditLog[]
+  api_key_logs ApiKeyLog[]
+
+  @@map("api_keys")
+  @@index([organization_id])
+  @@index([key_hash])
+}
+
+model ApiKeyRole {
+  id                   String   @id @default(uuid())
+  api_key_id           String
+  organization_role_id String
+  warehouse_id         String?
+  is_active            Boolean? @default(true)
+  created_at           DateTime @default(now())
+  updated_at           DateTime @updatedAt
+  is_deleted           Boolean  @default(false)
+  deleted_at           DateTime?
+
+  api_key   ApiKey           @relation(fields: [api_key_id], references: [id], onDelete: Cascade)
+  role      OrganizationRole @relation(fields: [organization_role_id], references: [id], onDelete: Cascade)
+  warehouse Warehouse?       @relation(fields: [warehouse_id], references: [id], onDelete: Cascade)
+
+  @@index([api_key_id])
+  @@map("api_keys_roles")
+}
+
+model ApiKeyPermission {
+  id                         String   @id @default(uuid())
+  api_key_id                 String
+  organization_permission_id String
+  warehouse_id               String?
+  is_active                  Boolean? @default(true)
+  created_at                 DateTime @default(now())
+  updated_at                 DateTime @updatedAt
+  is_deleted                 Boolean  @default(false)
+  deleted_at                 DateTime?
+
+  api_key    ApiKey                 @relation(fields: [api_key_id], references: [id], onDelete: Cascade)
+  permission OrganizationPermission @relation(fields: [organization_permission_id], references: [id], onDelete: Cascade)
+  warehouse  Warehouse?             @relation(fields: [warehouse_id], references: [id], onDelete: Cascade)
+
+  @@index([api_key_id])
+  @@map("api_keys_permissions")
+}
+
+enum PartnerType {
+  SUPPLIER
+  CUSTOMER
+  BOTH
+}
+
+model Partner {
+  id              String      @id @default(uuid())
+  organization_id String
+  name            String
+  code            String
+  type            PartnerType
+  phone           String?
+  email           String?
+  tax_code        String?
+  is_active       Boolean     @default(true)
+  created_at      DateTime    @default(now())
+  updated_at      DateTime    @updatedAt
+  is_deleted      Boolean     @default(false)
+  deleted_at      DateTime?
+  address_detail  String?
+
+  ward_id      String?
+  ward         Ward?        @relation(fields: [ward_id], references: [id])
+
+
+  organization Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  receipts     Receipt[]
+  exports      Export[]
+
+  @@map("partners")
+}
+
+model Warehouse {
+  id              String   @id @default(uuid())
+  name            String
+  description     String?
+  is_active       Boolean? @default(true)
+  is_deleted      Boolean? @default(false)
+  organization_id String
+  address_detail  String?
+
+  ward_id    String?
+  ward       Ward?   @relation(fields: [ward_id], references: [id])
+
+  unit   DimensionUnit
+  length Int
+  width  Int
+
+  organization Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+
+  created_by String
+  updated_by String?
+  deleted_by String?
+
+  assigned_roles       OrganizationMemberRole[]
+  assigned_permissions OrganizationMemberPermission[]
+
+  assigned_api_key_roles       ApiKeyRole[]
+  assigned_api_key_permissions ApiKeyPermission[]
+
+  racks        Rack[]
+  receipts     Receipt[]
+  exports      Export[]
+  stock_takes  StockTake[]
+  
+  inventory_transactions InventoryTransaction[]
+
+  @@map("warehouses")
+}
+
+model Unit {
+  id                         String   @id @default(uuid())
+  organization_id            String
+  is_used_multiple_languages Boolean  @default(false)
+  // language_key               String?
+  name                       String?
+  description                String?
+  is_active                  Boolean  @default(true)
+  created_at                 DateTime @default(now())
+  updated_at                 DateTime @updatedAt
+  is_deleted                 Boolean? @default(false)
+  deleted_at                 DateTime?
+
+  created_by String
+  updated_by String?
+  deleted_by String?
+
+  organization Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+
+  products_as_base      Product[]     @relation("ProductBaseUnit")
+  product_units_as_conv ProductUnit[] @relation("UnitConversion")
+  receipt_details       ReceiptDetail[]
+  export_details        ExportDetail[]
+
+  @@map("units")
+}
+
+model Product {
+  id              String   @id @default(uuid())
+  organization_id String
+  name            String
+  sku             String
+  description     String?
+  image_url       String?
+  barcode         String?
+  
+  weight          Decimal?
+  length          Decimal?
+  width           Decimal?
+  height          Decimal?
+
+  base_unit_id String
+  base_unit    Unit   @relation("ProductBaseUnit", fields: [base_unit_id], references: [id])
+
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  is_deleted Boolean? @default(false)
+  deleted_at DateTime?
+
+  created_by String
+  updated_by String?
+  deleted_by String?
+
+  organization Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+
+  units          ProductUnit[]
+  batches        Batch[]
+  inventories    Inventory[]
+  receipt_details ReceiptDetail[]
+  export_details ExportDetail[]
+  stock_take_details StockTakeDetail[]
+  
+  assigned_shelves Shelf[]
+
+  @@map("products")
+}
+
+model ProductUnit {
+  id              String  @id @default(uuid())
+  product_id      String
+  unit_id         String
+  unit            Unit    @relation("UnitConversion", fields: [unit_id], references: [id])
+  conversion_rate Decimal
+  barcode         String?
+
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  is_deleted Boolean? @default(false)
+  deleted_at DateTime?
+
+  created_by String
+  updated_by String?
+  deleted_by String?
+
+  product Product @relation(fields: [product_id], references: [id], onDelete: Cascade)
+
+  @@map("product_units")
+}
+
+model Rack {
+  id              String   @id @default(uuid())
+  warehouse_id    String
+  name            String
+  code            String
+  description     String?
+  is_active       Boolean  @default(true)
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+  is_deleted      Boolean? @default(false)
+  deleted_at      DateTime?
+
+  created_by String
+  updated_by String?
+  deleted_by String?
+
+  position_x Decimal?
+  position_y Decimal?
+  position_rotation Decimal?
+
+  dimensions_width Decimal?
+  dimensions_depth Decimal?
+  dimensions_height Decimal?
+
+  warehouse Warehouse @relation(fields: [warehouse_id], references: [id], onDelete: Cascade)
+  shelves   Shelf[]
+
+  @@map("racks")
+}
+
+model Shelf {
+  id                  String   @id @default(uuid())
+  rack_id             String
+  name                String
+  code                String
+  description         String?
+  assigned_product_id String?
+  product             Product? @relation(fields: [assigned_product_id], references: [id])
+  is_active           Boolean  @default(true)
+  created_at          DateTime @default(now())
+  updated_at          DateTime @updatedAt
+  is_deleted          Boolean? @default(false)
+  deleted_at          DateTime?
+
+  created_by String
+  updated_by String?
+  deleted_by String?
+
+  rack    Rack    @relation(fields: [rack_id], references: [id], onDelete: Cascade)
+  blocks Block[]
+
+  @@map("shelves")
+}
+
+model Block {
+  id          String   @id @default(uuid())
+  shelf_id    String
+  name        String
+  code        String
+  description String?
+  is_active   Boolean  @default(true)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+  is_deleted  Boolean? @default(false)
+  deleted_at  DateTime?
+
+  created_by String
+  updated_by String?
+  deleted_by String?
+
+  position_x Decimal?
+  position_y Decimal?
+
+  dimensions_width Decimal?
+  dimensions_height Decimal?
+
+  shelf              Shelf              @relation(fields: [shelf_id], references: [id], onDelete: Cascade)
+  inventories        Inventory[]
+  stock_take_details StockTakeDetail[]
+
+  @@map("blocks")
+}
+
+model Batch {
+  id                 String    @id @default(uuid())
+  product_id         String
+  code               String
+  manufacturing_date DateTime?
+  expiry_date        DateTime?
+  is_active          Boolean   @default(true)
+  created_at         DateTime  @default(now())
+  updated_at         DateTime  @updatedAt
+  is_deleted         Boolean?  @default(false)
+  deleted_at         DateTime?
+
+  created_by String
+  updated_by String?
+  deleted_by String?
+
+  product            Product            @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  inventories        Inventory[]
+  input_details      ReceiptDetail[]
+  output_details     ExportDetail[]
+  stock_take_details StockTakeDetail[]
+
+  @@map("batches")
+}
+
+model Inventory {
+  id         String   @id @default(uuid())
+  block_id   String
+  product_id String
+  batch_id   String?
+  quantity   Decimal  @default(0)
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  is_deleted Boolean? @default(false)
+  deleted_at DateTime?
+
+  created_by String
+  updated_by String?
+  deleted_by String?
+
+  block   Block   @relation(fields: [block_id], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  batch   Batch?  @relation(fields: [batch_id], references: [id])
+
+  @@map("inventories")
+}
+
+enum TransactionType {
+  INBOUND
+  OUTBOUND
+  TRANSFER
+  ADJUSTMENT
+  RETURN
+}
+
+model InventoryTransaction {
+  id              String          @id @default(uuid())
+  organization_id String
+  warehouse_id    String
+  product_id      String
+  batch_id        String?
+  from_block_id   String?
+  to_block_id     String?
+  type            TransactionType
+  quantity        Decimal
+  unit_id         String
+  conversion_rate Decimal         @default(1)
+  unit_price      Decimal?        @default(0)
+  total_value     Decimal?        @default(0)
+  reference_code  String?
+  is_active       Boolean         @default(true)
+  created_at      DateTime        @default(now())
+  updated_at      DateTime        @updatedAt
+  is_deleted      Boolean?        @default(false)
+  deleted_at      DateTime?
+
+  created_by String
+  updated_by String?
+  deleted_by String?
+
+  organization Organization @relation(fields: [organization_id], references: [id])
+  warehouse    Warehouse    @relation(fields: [warehouse_id], references: [id])
+
+  @@map("inventory_transactions")
+}
+
+enum ReceiptStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  CANCELLED
+}
+
+model Receipt {
+  id                  String        @id @default(uuid())
+  organization_id     String
+  warehouse_id        String
+  partner_id          String?
+  code                String
+  purchase_order_code String?
+  status              ReceiptStatus @default(PENDING)
+  notes               String?
+  is_active           Boolean       @default(true)
+  created_at          DateTime      @default(now())
+  updated_at          DateTime      @updatedAt
+  is_deleted          Boolean?      @default(false)
+  deleted_at          DateTime?
+
+  created_by String
+  updated_by String?
+  deleted_by String?
+
+  warehouse Warehouse     @relation(fields: [warehouse_id], references: [id])
+  partner   Partner?      @relation(fields: [partner_id], references: [id])
+  details   ReceiptDetail[]
+
+  @@map("receipts")
+}
+
+model ReceiptDetail {
+  id              String  @id @default(uuid())
+  receipt_id      String
+  product_id      String
+  batch_id        String?
+  expected_qty    Decimal
+  actual_qty      Decimal @default(0)
+  unit_id         String
+  conversion_rate Decimal @default(1)
+
+  receipt Receipt @relation(fields: [receipt_id], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [product_id], references: [id])
+  batch   Batch?  @relation(fields: [batch_id], references: [id])
+  unit    Unit    @relation(fields: [unit_id], references: [id])
+
+  @@map("receipt_details")
+}
+
+enum ExportStatus {
+  PENDING
+  PICKING
+  PACKED
+  SHIPPED
+  CANCELLED
+}
+
+model Export {
+  id               String       @id @default(uuid())
+  organization_id  String
+  warehouse_id     String
+  partner_id       String?
+  code             String
+  sales_order_code String?
+  status           ExportStatus @default(PENDING)
+  is_active        Boolean      @default(true)
+  created_at       DateTime     @default(now())
+  updated_at       DateTime     @updatedAt
+  is_deleted       Boolean?     @default(false)
+  deleted_at       DateTime?
+
+  created_by String
+  updated_by String?
+  deleted_by String?
+
+  warehouse Warehouse     @relation(fields: [warehouse_id], references: [id])
+  partner   Partner?      @relation(fields: [partner_id], references: [id])
+  details   ExportDetail[]
+
+  @@map("exports")
+}
+
+model ExportDetail {
+  id                String  @id @default(uuid())
+  export_id         String
+  product_id        String
+  required_batch_id String?
+  quantity          Decimal
+  unit_id           String
+  conversion_rate   Decimal @default(1)
+
+  export  Export  @relation(fields: [export_id], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [product_id], references: [id])
+  batch   Batch?  @relation(fields: [required_batch_id], references: [id])
+  unit    Unit    @relation(fields: [unit_id], references: [id])
+
+  @@map("export_details")
+}
+
+enum StockTakeStatus {
+  DRAFT
+  IN_PROGRESS
+  COMPLETED
+  ADJUSTED
+  CANCELLED
+}
+
+model StockTake {
+  id              String          @id @default(uuid())
+  organization_id String
+  warehouse_id    String
+  code            String
+  status          StockTakeStatus @default(DRAFT)
+  notes           String?
+  
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  is_deleted Boolean? @default(false)
+  deleted_at DateTime?
+
+  created_by String
+  updated_by String?
+  deleted_by String?
+
+  warehouse Warehouse     @relation(fields: [warehouse_id], references: [id])
+  details   StockTakeDetail[]
+
+  @@map("stock_takes")
+}
+
+model StockTakeDetail {
+  id            String  @id @default(uuid())
+  stock_take_id String
+  product_id    String
+  block_id      String
+  batch_id      String?
+  
+  system_qty Decimal @default(0)
+  actual_qty Decimal @default(0)
+  difference Decimal @default(0)
+  reason     String?
+
+  stock_take StockTake @relation(fields: [stock_take_id], references: [id], onDelete: Cascade)
+  product    Product   @relation(fields: [product_id], references: [id])
+  block      Block     @relation(fields: [block_id], references: [id])
+  batch      Batch?    @relation(fields: [batch_id], references: [id])
+
+  @@map("stock_take_details")
+}
+
+enum LogLevel {
+  INFO
+  WARN
+  ERROR
+  DEBUG
+}
+
+model SystemLog {
+  id        String   @id @default(uuid())
+  level     LogLevel @default(INFO)
+  
+  module    String
+  action    String
+  
+  message   String   @db.Text
+  meta_data Json?
+
+  user_id   String?  
+  user      User?    @relation(fields: [user_id], references: [id], onDelete: SetNull)
+
+  ip_address String?
+  user_agent String?
+
+  created_at DateTime @default(now())
+
+  @@index([level])
+  @@index([module])
+  @@index([created_at])
+  @@map("system_logs")
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  IMPORT
+  EXPORT
+  LOGIN
+  OTHER
+}
+
+model OrganizationAuditLog {
+  id              String      @id @default(uuid())
+  organization_id String
+  
+  user_id         String?
+  api_key_id      String?
+  
+  action          AuditAction
+  resource_type   String
+  resource_id     String?
+  resource_code   String?
+
+  old_data        Json?
+  new_data        Json?
+  
+  description     String?
+
+  ip_address      String?
+  user_agent      String?
+  
+  created_at      DateTime    @default(now())
+
+  organization    Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  user            User?        @relation(fields: [user_id], references: [id], onDelete: SetNull)
+  api_key         ApiKey?      @relation(fields: [api_key_id], references: [id], onDelete: SetNull)
+
+  @@index([organization_id, created_at])
+  @@index([resource_type, resource_id])
+  @@index([user_id])
+  @@map("organization_audit_logs")
+}
+
+model ApiKeyLog {
+  id              String   @id @default(uuid())
+  organization_id String
+  api_key_id      String
+  
+  endpoint        String
+  method          String
+  status_code     Int
+  duration_ms     Int
+  
+  request_body    Json?    @db.Json
+  response_body   Json?    @db.Json
+  
+  ip_address      String?
+  user_agent      String?
+  
+  created_at      DateTime @default(now())
+
+  organization    Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  api_key         ApiKey       @relation(fields: [api_key_id], references: [id], onDelete: Cascade)
+
+  @@index([api_key_id, created_at])
+  @@index([organization_id, created_at])
+  @@map("api_key_logs")
+}
