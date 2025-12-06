@@ -1,0 +1,71 @@
+{
+    "welcome": {
+        "subject": "🎉 Bienvenue sur",
+        "greeting": "Bonjour",
+        "message": "Merci d'avoir créé un compte sur",
+        "accountReady": "Votre compte est prêt à être utilisé !",
+        "getStarted": "Commencer"
+    },
+    "loginNotification": {
+        "subject": "🔔 Nouvelle connexion à votre compte",
+        "greeting": "Bonjour",
+        "message": "Votre compte vient d'être connecté depuis un nouvel appareil",
+        "deviceLabel": "Appareil :",
+        "ipLabel": "Adresse IP :",
+        "timeLabel": "Heure :",
+        "warningText": "Si ce n'était pas vous, veuillez changer votre mot de passe immédiatement."
+    },
+    "passwordChanged": {
+        "subject": "🔐 Mot de passe modifié",
+        "greeting": "Bonjour",
+        "message": "Le mot de passe de votre compte a été modifié avec succès.",
+        "timeLabel": "Heure :",
+        "warningText": "Si vous n'êtes pas à l'origine de ce changement, veuillez contacter le support immédiatement."
+    },
+    "platformLinked": {
+        "subject": "🔗 Compte lié avec succès",
+        "greeting": "Bonjour",
+        "message": "Votre compte a été lié avec",
+        "timeLabel": "Heure :"
+    },
+    "platformUnlinked": {
+        "subject": "🔓 Compte délié",
+        "greeting": "Bonjour",
+        "message": "Votre compte a été délié de",
+        "timeLabel": "Heure :",
+        "warningText": "Si vous n'êtes pas à l'origine de ce changement, veuillez contacter le support immédiatement."
+    },
+    "verification": {
+        "greeting": "Bonjour",
+        "welcome": "Merci d'avoir créé un compte sur",
+        "emailLabel": "Email d'inscription :",
+        "expirationLabel": "La vérification expire dans :",
+        "expirationValue": "24 heures",
+        "buttonText": "✓ Vérifier le compte",
+        "copyLinkText": "Ou copiez ce lien dans votre navigateur :",
+        "warningText": "Si vous n'avez pas créé ce compte, veuillez ignorer cet email.",
+        "subjectPrefix": "✓ Vérifier le compte"
+    },
+    "forgotPassword": {
+        "title": "Réinitialiser le mot de passe 🔐",
+        "greeting": "Bonjour",
+        "message": "Nous avons reçu une demande de réinitialisation du mot de passe pour votre compte sur",
+        "timeLabel": "Expire dans : 15 minutes",
+        "timeValue": "15 minutes",
+        "timeWarning": "Ce lien expirera dans 15 minutes pour des raisons de sécurité",
+        "buttonText": "🔑 Réinitialiser le mot de passe",
+        "copyLinkText": "Ou copiez ce lien dans votre navigateur :",
+        "securityTitle": "Avis de sécurité",
+        "securityMessage": "Si vous n'avez pas demandé de réinitialisation de mot de passe, veuillez ignorer cet email. Votre compte reste sécurisé.",
+        "requestTime": "Demande envoyée à",
+        "subjectPrefix": "🔐 Réinitialiser le mot de passe"
+    },
+    "footer": {
+        "supportText": "Besoin d'aide ? Contactez-nous par email ou hotline",
+        "copyright": "Tous droits réservés.",
+        "autoEmailText": "Ceci est un email automatisé, merci de ne pas répondre directement."
+    },
+    "template": {
+        "systemName": "Système de Gestion d'Entrepôt Intelligent"
+    }
+}

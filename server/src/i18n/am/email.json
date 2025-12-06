@@ -1,0 +1,71 @@
+{
+    "welcome": {
+        "subject": "🎉 እንኳን በደህና መጡ ወደ",
+        "greeting": "ሰላም",
+        "message": "መለያ ስለተመዘገቡ እናመሰግናለን በ",
+        "accountReady": "የእርስዎ መለያ ለመጠቀም ዝግጁ ነው!",
+        "getStarted": "ጀምር"
+    },
+    "loginNotification": {
+        "subject": "🔔 ወደ መለያዎ አዲስ መግባት",
+        "greeting": "ሰላም",
+        "message": "የእርስዎ መለያ አሁን ከአዲስ መሣሪያ ገብቷል",
+        "deviceLabel": "መሣሪያ:",
+        "ipLabel": "IP አድራሻ:",
+        "timeLabel": "ጊዜ:",
+        "warningText": "ይህ እርስዎ ካልሆኑ፣ እባክዎን የይለፍ ቃልዎን ወዲያውኑ ይቀይሩ።"
+    },
+    "passwordChanged": {
+        "subject": "🔐 የይለፍ ቃል ተቀይሯል",
+        "greeting": "ሰላም",
+        "message": "የመለያዎ የይለፍ ቃል በተሳካ ሁኔታ ተቀይሯል።",
+        "timeLabel": "ጊዜ:",
+        "warningText": "ይህንን ለውጥ ካላደረጉ፣ እባክዎን ወዲያውኑ ድጋፍን ያነጋግሩ።"
+    },
+    "platformLinked": {
+        "subject": "🔗 መለያ በተሳካ ሁኔታ ተገናኝቷል",
+        "greeting": "ሰላም",
+        "message": "የእርስዎ መለያ ከ ጋር ተገናኝቷል",
+        "timeLabel": "ጊዜ:"
+    },
+    "platformUnlinked": {
+        "subject": "🔓 መለያ ተለያይቷል",
+        "greeting": "ሰላም",
+        "message": "የእርስዎ መለያ ከ ተለያይቷል",
+        "timeLabel": "ጊዜ:",
+        "warningText": "ይህንን ለውጥ ካላደረጉ፣ እባክዎን ወዲያውኑ ድጋፍን ያነጋግሩ።"
+    },
+    "verification": {
+        "greeting": "ሰላም",
+        "welcome": "መለያ ስለተመዘገቡ እናመሰግናለን በ",
+        "emailLabel": "የምዝገባ ኢሜይል:",
+        "expirationLabel": "ማረጋገጫ በ ውስጥ ያበቃል:",
+        "expirationValue": "24 ሰዓታት",
+        "buttonText": "✓ መለያ ያረጋግጡ",
+        "copyLinkText": "ወይም ይህን አገናኝ ወደ አሳሽዎ ይቅዱ:",
+        "warningText": "ይህንን መለያ ካልፈጠሩ፣ እባክዎን ይህንን ኢሜይል ችላ ይበሉ።",
+        "subjectPrefix": "✓ መለያ ያረጋግጡ"
+    },
+    "forgotPassword": {
+        "title": "የይለፍ ቃል ዳግም ያስጀምሩ 🔐",
+        "greeting": "ሰላም",
+        "message": "ለእርስዎ መለያ የይለፍ ቃል ዳግም ማስጀመር ጥያቄ ደርሶናል በ",
+        "timeLabel": "ጊዜው የሚያበቃው በ: 15 ደቂቃዎች",
+        "timeValue": "15 ደቂቃዎች",
+        "timeWarning": "ይህ አገናኝ ለደህንነት ሲባል በ15 ደቂቃዎች ውስጥ ያበቃል",
+        "buttonText": "🔑 የይለፍ ቃል ዳግም ያስጀምሩ",
+        "copyLinkText": "ወይም ይህን አገናኝ ወደ አሳሽዎ ይቅዱ:",
+        "securityTitle": "የደህንነት ማስታወቂያ",
+        "securityMessage": "የይለፍ ቃል ዳግም ማስጀመር ካልጠየቁ፣ ይህንን ኢሜይል ችላ ይበሉ። መለያዎ ደህንነቱ የተጠበቀ ነው።",
+        "requestTime": "ጥያቄው በ የተላከ",
+        "subjectPrefix": "🔐 የይለፍ ቃል ዳግም ያስጀምሩ"
+    },
+    "footer": {
+        "supportText": "እርዳታ ይፈልጋሉ? በኢሜይል ወይም በስልክ ያነጋግሩን",
+        "copyright": "መብቱ በህግ የተጠበቀ ነው።",
+        "autoEmailText": "ይህ አውቶማቲክ ኢሜይል ነው፣ እባክዎን በቀጥታ አይመልሱ።"
+    },
+    "template": {
+        "systemName": "ዘመናዊ የጋዘን አስተዳደር ስርዓት"
+    }
+}

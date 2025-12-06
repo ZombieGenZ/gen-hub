@@ -1,0 +1,71 @@
+{
+    "welcome": {
+        "subject": "🎉 اهلا بيك فى",
+        "greeting": "اهلا",
+        "message": "شكرا لتسجيل حساب فى",
+        "accountReady": "حسابك جاهز للاستخدام!",
+        "getStarted": "ابدأ"
+    },
+    "loginNotification": {
+        "subject": "🔔 تسجيل دخول جديد لحسابك",
+        "greeting": "اهلا",
+        "message": "تم تسجيل الدخول لحسابك من جهاز جديد",
+        "deviceLabel": "الجهاز:",
+        "ipLabel": "عنوان IP:",
+        "timeLabel": "الوقت:",
+        "warningText": "لو مش انت، ياريت تغير الباسورد فورا."
+    },
+    "passwordChanged": {
+        "subject": "🔐 الباسورد اتغير",
+        "greeting": "اهلا",
+        "message": "الباسورد بتاع حسابك اتغير بنجاح.",
+        "timeLabel": "الوقت:",
+        "warningText": "لو ماعملتش التغيير ده، ياريت تكلم الدعم فورا."
+    },
+    "platformLinked": {
+        "subject": "🔗 تم ربط الحساب بنجاح",
+        "greeting": "اهلا",
+        "message": "حسابك اتربط بـ",
+        "timeLabel": "الوقت:"
+    },
+    "platformUnlinked": {
+        "subject": "🔓 تم فك ربط الحساب",
+        "greeting": "اهلا",
+        "message": "حسابك اتفك ربطه من",
+        "timeLabel": "الوقت:",
+        "warningText": "لو ماعملتش التغيير ده، ياريت تكلم الدعم فورا."
+    },
+    "verification": {
+        "greeting": "اهلا",
+        "welcome": "شكرا لتسجيل حساب فى",
+        "emailLabel": "ايميل التسجيل:",
+        "expirationLabel": "التحقق هينتهي فى:",
+        "expirationValue": "24 ساعة",
+        "buttonText": "✓ تحقق من الحساب",
+        "copyLinkText": "او انسخ اللينك ده فى المتصفح:",
+        "warningText": "لو ماعملتش الحساب ده، تجاهل الايميل ده.",
+        "subjectPrefix": "✓ تحقق من الحساب"
+    },
+    "forgotPassword": {
+        "title": "إعادة تعيين الباسورد 🔐",
+        "greeting": "اهلا",
+        "message": "وصلنا طلب لإعادة تعيين الباسورد لحسابك فى",
+        "timeLabel": "هينتهي فى: 15 دقيقة",
+        "timeValue": "15 دقيقة",
+        "timeWarning": "اللينك ده هينتهي خلال 15 دقيقة للامان",
+        "buttonText": "🔑 إعادة تعيين الباسورد",
+        "copyLinkText": "او انسخ اللينك ده فى المتصفح:",
+        "securityTitle": "تنبيه أمان",
+        "securityMessage": "لو ماطلبتش تغيير الباسورد، تجاهل الايميل ده. حسابك فى امان.",
+        "requestTime": "الطلب اتبعت الساعة",
+        "subjectPrefix": "🔐 إعادة تعيين الباسورد"
+    },
+    "footer": {
+        "supportText": "محتاج مساعدة؟ كلمنا على الايميل او الخط الساخن",
+        "copyright": "كل الحقوق محفوظة.",
+        "autoEmailText": "ده ايميل الى، ما تردش عليه."
+    },
+    "template": {
+        "systemName": "نظام إدارة المخازن الذكي"
+    }
+}

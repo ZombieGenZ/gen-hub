@@ -1,0 +1,71 @@
+{
+    "welcome": {
+        "subject": "🎉 Selamat datang di",
+        "greeting": "Halo",
+        "message": "Terima kasih telah mendaftar akun di",
+        "accountReady": "Akun Anda siap digunakan!",
+        "getStarted": "Mulai"
+    },
+    "loginNotification": {
+        "subject": "🔔 Login baru ke akun Anda",
+        "greeting": "Halo",
+        "message": "Akun Anda baru saja login dari perangkat baru",
+        "deviceLabel": "Perangkat:",
+        "ipLabel": "Alamat IP:",
+        "timeLabel": "Waktu:",
+        "warningText": "Jika ini bukan Anda, segera ganti kata sandi Anda."
+    },
+    "passwordChanged": {
+        "subject": "🔐 Kata Sandi Diubah",
+        "greeting": "Halo",
+        "message": "Kata sandi akun Anda telah berhasil diubah.",
+        "timeLabel": "Waktu:",
+        "warningText": "Jika Anda tidak melakukan perubahan ini, segera hubungi dukungan."
+    },
+    "platformLinked": {
+        "subject": "🔗 Akun Berhasil Ditautkan",
+        "greeting": "Halo",
+        "message": "Akun Anda telah ditautkan dengan",
+        "timeLabel": "Waktu:"
+    },
+    "platformUnlinked": {
+        "subject": "🔓 Akun Tidak Ditautkan",
+        "greeting": "Halo",
+        "message": "Tautan akun Anda telah dihapus dari",
+        "timeLabel": "Waktu:",
+        "warningText": "Jika Anda tidak melakukan perubahan ini, segera hubungi dukungan."
+    },
+    "verification": {
+        "greeting": "Halo",
+        "welcome": "Terima kasih telah mendaftar akun di",
+        "emailLabel": "Email pendaftaran:",
+        "expirationLabel": "Verifikasi berakhir dalam:",
+        "expirationValue": "24 jam",
+        "buttonText": "✓ Verifikasi Akun",
+        "copyLinkText": "Atau salin tautan ini ke browser Anda:",
+        "warningText": "Jika Anda tidak membuat akun ini, abaikan email ini.",
+        "subjectPrefix": "✓ Verifikasi Akun"
+    },
+    "forgotPassword": {
+        "title": "Atur Ulang Kata Sandi 🔐",
+        "greeting": "Halo",
+        "message": "Kami menerima permintaan untuk mengatur ulang kata sandi akun Anda di",
+        "timeLabel": "Berakhir dalam: 15 menit",
+        "timeValue": "15 menit",
+        "timeWarning": "Tautan ini akan berakhir dalam 15 menit demi keamanan",
+        "buttonText": "🔑 Atur Ulang Kata Sandi",
+        "copyLinkText": "Atau salin tautan ini ke browser Anda:",
+        "securityTitle": "Pemberitahuan Keamanan",
+        "securityMessage": "Jika Anda tidak meminta pengaturan ulang kata sandi, abaikan email ini. Akun Anda tetap aman.",
+        "requestTime": "Permintaan dikirim pada",
+        "subjectPrefix": "🔐 Atur Ulang Kata Sandi"
+    },
+    "footer": {
+        "supportText": "Butuh bantuan? Hubungi kami melalui email atau hotline",
+        "copyright": "Hak cipta dilindungi undang-undang.",
+        "autoEmailText": "Ini adalah email otomatis, mohon jangan balas secara langsung."
+    },
+    "template": {
+        "systemName": "Sistem Manajemen Gudang Cerdas"
+    }
+}

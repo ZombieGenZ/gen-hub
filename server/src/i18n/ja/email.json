@@ -1,0 +1,71 @@
+{
+    "welcome": {
+        "subject": "🎉 ようこそ",
+        "greeting": "こんにちは",
+        "message": "にご登録いただきありがとうございます",
+        "accountReady": "アカウントの準備ができました！",
+        "getStarted": "始める"
+    },
+    "loginNotification": {
+        "subject": "🔔 アカウントへの新しいログイン",
+        "greeting": "こんにちは",
+        "message": "新しいデバイスからアカウントにログインがありました",
+        "deviceLabel": "デバイス:",
+        "ipLabel": "IPアドレス:",
+        "timeLabel": "時間:",
+        "warningText": "もしお心当たりがない場合は、直ちにパスワードを変更してください。"
+    },
+    "passwordChanged": {
+        "subject": "🔐 パスワード変更のお知らせ",
+        "greeting": "こんにちは",
+        "message": "アカウントのパスワードが正常に変更されました。",
+        "timeLabel": "時間:",
+        "warningText": "もしこの変更を行っていない場合は、直ちにサポートにご連絡ください。"
+    },
+    "platformLinked": {
+        "subject": "🔗 アカウント連携完了",
+        "greeting": "こんにちは",
+        "message": "アカウントが連携されました:",
+        "timeLabel": "時間:"
+    },
+    "platformUnlinked": {
+        "subject": "🔓 アカウント連携解除",
+        "greeting": "こんにちは",
+        "message": "アカウントの連携が解除されました:",
+        "timeLabel": "時間:",
+        "warningText": "もしこの変更を行っていない場合は、直ちにサポートにご連絡ください。"
+    },
+    "verification": {
+        "greeting": "こんにちは",
+        "welcome": "にご登録いただきありがとうございます",
+        "emailLabel": "登録メールアドレス:",
+        "expirationLabel": "有効期限:",
+        "expirationValue": "24時間",
+        "buttonText": "✓ アカウントを認証",
+        "copyLinkText": "または、以下のリンクをブラウザにコピーしてください:",
+        "warningText": "このアカウントを作成していない場合は、このメールを無視してください。",
+        "subjectPrefix": "✓ アカウントを認証"
+    },
+    "forgotPassword": {
+        "title": "パスワードのリセット 🔐",
+        "greeting": "こんにちは",
+        "message": "アカウントのパスワードリセットリクエストを受け取りました:",
+        "timeLabel": "有効期限: 15分",
+        "timeValue": "15分",
+        "timeWarning": "セキュリティ上の理由により、このリンクは15分で無効になります",
+        "buttonText": "🔑 パスワードをリセット",
+        "copyLinkText": "または、以下のリンクをブラウザにコピーしてください:",
+        "securityTitle": "セキュリティ通知",
+        "securityMessage": "パスワードリセットをリクエストしていない場合、このメールは無視してください。アカウントは安全です。",
+        "requestTime": "リクエスト日時:",
+        "subjectPrefix": "🔐 パスワードのリセット"
+    },
+    "footer": {
+        "supportText": "ヘルプが必要ですか？メールまたはホットラインでお問い合わせください",
+        "copyright": "All rights reserved.",
+        "autoEmailText": "これは自動送信メールです。直接返信しないでください。"
+    },
+    "template": {
+        "systemName": "スマート倉庫管理システム"
+    }
+}

@@ -1,0 +1,71 @@
+{
+    "welcome": {
+        "subject": "🎉 Chào mừng bạn đến với",
+        "greeting": "Xin chào",
+        "message": "Cảm ơn bạn đã đăng ký tài khoản tại",
+        "accountReady": "Tài khoản của bạn đã sẵn sàng để sử dụng!",
+        "getStarted": "Bắt đầu ngay"
+    },
+    "loginNotification": {
+        "subject": "🔔 Đăng nhập mới vào tài khoản",
+        "greeting": "Xin chào",
+        "message": "Tài khoản của bạn vừa được đăng nhập từ thiết bị mới",
+        "deviceLabel": "Thiết bị:",
+        "ipLabel": "Địa chỉ IP:",
+        "timeLabel": "Thời gian:",
+        "warningText": "Nếu đây không phải là bạn, hãy đổi mật khẩu ngay lập tức."
+    },
+    "passwordChanged": {
+        "subject": "🔐 Mật khẩu đã được thay đổi",
+        "greeting": "Xin chào",
+        "message": "Mật khẩu tài khoản của bạn đã được thay đổi thành công.",
+        "timeLabel": "Thời gian:",
+        "warningText": "Nếu bạn không thực hiện thay đổi này, hãy liên hệ hỗ trợ ngay."
+    },
+    "platformLinked": {
+        "subject": "🔗 Liên kết tài khoản thành công",
+        "greeting": "Xin chào",
+        "message": "Tài khoản của bạn đã được liên kết với",
+        "timeLabel": "Thời gian:"
+    },
+    "platformUnlinked": {
+        "subject": "🔓 Đã gỡ liên kết tài khoản",
+        "greeting": "Xin chào",
+        "message": "Tài khoản của bạn đã được gỡ liên kết khỏi",
+        "timeLabel": "Thời gian:",
+        "warningText": "Nếu bạn không thực hiện thay đổi này, hãy liên hệ hỗ trợ ngay."
+    },
+    "verification": {
+        "greeting": "Xin chào",
+        "welcome": "Cảm ơn bạn đã đăng ký tài khoản tại",
+        "emailLabel": "Email đăng ký:",
+        "expirationLabel": "Thời hạn xác thực:",
+        "expirationValue": "24 giờ",
+        "buttonText": "✓ Xác thực tài khoản",
+        "copyLinkText": "Hoặc copy đường link sau vào trình duyệt:",
+        "warningText": "Nếu bạn không tạo tài khoản này, vui lòng bỏ qua email này.",
+        "subjectPrefix": "✓ Xác thực tài khoản"
+    },
+    "forgotPassword": {
+        "title": "Đặt lại mật khẩu 🔐",
+        "greeting": "Xin chào",
+        "message": "Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn tại",
+        "timeLabel": "Thời hạn: 15 phút",
+        "timeValue": "15 phút",
+        "timeWarning": "Link sẽ hết hạn sau 15 phút vì lý do bảo mật",
+        "buttonText": "🔑 Đặt lại mật khẩu",
+        "copyLinkText": "Hoặc copy đường link sau vào trình duyệt:",
+        "securityTitle": "Lưu ý bảo mật",
+        "securityMessage": "Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này. Tài khoản của bạn vẫn an toàn và không có thay đổi nào được thực hiện.",
+        "requestTime": "Yêu cầu được gửi vào lúc",
+        "subjectPrefix": "🔐 Đặt lại mật khẩu"
+    },
+    "footer": {
+        "supportText": "Cần hỗ trợ? Liên hệ với chúng tôi qua email hoặc hotline",
+        "copyright": "Tất cả quyền được bảo lưu.",
+        "autoEmailText": "Email này được gửi tự động, vui lòng không trả lời trực tiếp."
+    },
+    "template": {
+        "systemName": "Hệ thống Quản lý Kho thông minh"
+    }
+}

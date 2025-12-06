@@ -1,0 +1,71 @@
+{
+    "welcome": {
+        "subject": "🎉 Benvenuto su",
+        "greeting": "Ciao",
+        "message": "Grazie per esserti registrato su",
+        "accountReady": "Il tuo account è pronto per l'uso!",
+        "getStarted": "Inizia"
+    },
+    "loginNotification": {
+        "subject": "🔔 Nuovo accesso al tuo account",
+        "greeting": "Ciao",
+        "message": "È stato effettuato un accesso al tuo account da un nuovo dispositivo",
+        "deviceLabel": "Dispositivo:",
+        "ipLabel": "Indirizzo IP:",
+        "timeLabel": "Ora:",
+        "warningText": "Se non sei stato tu, cambia immediatamente la tua password."
+    },
+    "passwordChanged": {
+        "subject": "🔐 Password Modificata",
+        "greeting": "Ciao",
+        "message": "La password del tuo account è stata modificata con successo.",
+        "timeLabel": "Ora:",
+        "warningText": "Se non hai effettuato questa modifica, contatta immediatamente il supporto."
+    },
+    "platformLinked": {
+        "subject": "🔗 Account Collegato con Successo",
+        "greeting": "Ciao",
+        "message": "Il tuo account è stato collegato con",
+        "timeLabel": "Ora:"
+    },
+    "platformUnlinked": {
+        "subject": "🔓 Account Scollegato",
+        "greeting": "Ciao",
+        "message": "Il tuo account è stato scollegato da",
+        "timeLabel": "Ora:",
+        "warningText": "Se non hai effettuato questa modifica, contatta immediatamente il supporto."
+    },
+    "verification": {
+        "greeting": "Ciao",
+        "welcome": "Grazie per esserti registrato su",
+        "emailLabel": "Email di registrazione:",
+        "expirationLabel": "La verifica scade tra:",
+        "expirationValue": "24 ore",
+        "buttonText": "✓ Verifica Account",
+        "copyLinkText": "O copia questo link nel tuo browser:",
+        "warningText": "Se non hai creato questo account, ignora questa email.",
+        "subjectPrefix": "✓ Verifica Account"
+    },
+    "forgotPassword": {
+        "title": "Reimposta Password 🔐",
+        "greeting": "Ciao",
+        "message": "Abbiamo ricevuto una richiesta per reimpostare la password del tuo account su",
+        "timeLabel": "Scade tra: 15 minuti",
+        "timeValue": "15 minuti",
+        "timeWarning": "Questo link scadrà tra 15 minuti per motivi di sicurezza",
+        "buttonText": "🔑 Reimposta Password",
+        "copyLinkText": "O copia questo link nel tuo browser:",
+        "securityTitle": "Avviso di Sicurezza",
+        "securityMessage": "Se non hai richiesto la reimpostazione della password, ignora questa email. Il tuo account rimane sicuro.",
+        "requestTime": "Richiesta inviata alle",
+        "subjectPrefix": "🔐 Reimposta Password"
+    },
+    "footer": {
+        "supportText": "Hai bisogno di aiuto? Contattaci via email o hotline",
+        "copyright": "Tutti i diritti riservati.",
+        "autoEmailText": "Questa è un'email automatica, per favore non rispondere direttamente."
+    },
+    "template": {
+        "systemName": "Sistema Intelligente di Gestione Magazzino"
+    }
+}

@@ -1,0 +1,71 @@
+{
+    "welcome": {
+        "subject": "🎉 Willkommen bei",
+        "greeting": "Hallo",
+        "message": "Danke, dass Sie ein Konto bei registriert haben",
+        "accountReady": "Ihr Konto ist einsatzbereit!",
+        "getStarted": "Loslegen"
+    },
+    "loginNotification": {
+        "subject": "🔔 Neue Anmeldung bei Ihrem Konto",
+        "greeting": "Hallo",
+        "message": "Es wurde sich gerade von einem neuen Gerät bei Ihrem Konto angemeldet",
+        "deviceLabel": "Gerät:",
+        "ipLabel": "IP-Adresse:",
+        "timeLabel": "Zeit:",
+        "warningText": "Falls Sie das nicht waren, ändern Sie bitte sofort Ihr Passwort."
+    },
+    "passwordChanged": {
+        "subject": "🔐 Passwort geändert",
+        "greeting": "Hallo",
+        "message": "Ihr Kontopasswort wurde erfolgreich geändert.",
+        "timeLabel": "Zeit:",
+        "warningText": "Wenn Sie diese Änderung nicht vorgenommen haben, kontaktieren Sie bitte sofort den Support."
+    },
+    "platformLinked": {
+        "subject": "🔗 Konto erfolgreich verknüpft",
+        "greeting": "Hallo",
+        "message": "Ihr Konto wurde verknüpft mit",
+        "timeLabel": "Zeit:"
+    },
+    "platformUnlinked": {
+        "subject": "🔓 Konto-Verknüpfung aufgehoben",
+        "greeting": "Hallo",
+        "message": "Die Verknüpfung Ihres Kontos mit wurde aufgehoben",
+        "timeLabel": "Zeit:",
+        "warningText": "Wenn Sie diese Änderung nicht vorgenommen haben, kontaktieren Sie bitte sofort den Support."
+    },
+    "verification": {
+        "greeting": "Hallo",
+        "welcome": "Danke, dass Sie ein Konto bei registriert haben",
+        "emailLabel": "Registrierungs-E-Mail:",
+        "expirationLabel": "Verifizierung läuft ab in:",
+        "expirationValue": "24 Stunden",
+        "buttonText": "✓ Konto verifizieren",
+        "copyLinkText": "Oder kopieren Sie diesen Link in Ihren Browser:",
+        "warningText": "Wenn Sie dieses Konto nicht erstellt haben, ignorieren Sie bitte diese E-Mail.",
+        "subjectPrefix": "✓ Konto verifizieren"
+    },
+    "forgotPassword": {
+        "title": "Passwort zurücksetzen 🔐",
+        "greeting": "Hallo",
+        "message": "Wir haben eine Anfrage zum Zurücksetzen des Passworts für Ihr Konto bei erhalten",
+        "timeLabel": "Läuft ab in: 15 Minuten",
+        "timeValue": "15 Minuten",
+        "timeWarning": "Dieser Link läuft aus Sicherheitsgründen in 15 Minuten ab",
+        "buttonText": "🔑 Passwort zurücksetzen",
+        "copyLinkText": "Oder kopieren Sie diesen Link in Ihren Browser:",
+        "securityTitle": "Sicherheitshinweis",
+        "securityMessage": "Wenn Sie kein Zurücksetzen des Passworts angefordert haben, ignorieren Sie diese E-Mail. Ihr Konto bleibt sicher.",
+        "requestTime": "Anfrage gesendet um",
+        "subjectPrefix": "🔐 Passwort zurücksetzen"
+    },
+    "footer": {
+        "supportText": "Brauchen Sie Hilfe? Kontaktieren Sie uns per E-Mail oder Hotline",
+        "copyright": "Alle Rechte vorbehalten.",
+        "autoEmailText": "Dies ist eine automatische E-Mail, bitte antworten Sie nicht direkt darauf."
+    },
+    "template": {
+        "systemName": "Intelligentes Lagerverwaltungssystem"
+    }
+}

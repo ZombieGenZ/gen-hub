@@ -1,0 +1,71 @@
+{
+    "welcome": {
+        "subject": "🎉 欢迎来到",
+        "greeting": "你好",
+        "message": "感谢您注册账号：",
+        "accountReady": "您的账号已准备好使用！",
+        "getStarted": "开始使用"
+    },
+    "loginNotification": {
+        "subject": "🔔 您的账号有新的登录",
+        "greeting": "你好",
+        "message": "您的账号刚刚从新设备登录",
+        "deviceLabel": "设备：",
+        "ipLabel": "IP地址：",
+        "timeLabel": "时间：",
+        "warningText": "如果这不是您本人的操作，请立即更改密码。"
+    },
+    "passwordChanged": {
+        "subject": "🔐 密码已更改",
+        "greeting": "你好",
+        "message": "您的账号密码已成功更改。",
+        "timeLabel": "时间：",
+        "warningText": "如果您没有进行此更改，请立即联系支持人员。"
+    },
+    "platformLinked": {
+        "subject": "🔗 账号关联成功",
+        "greeting": "你好",
+        "message": "您的账号已关联",
+        "timeLabel": "时间："
+    },
+    "platformUnlinked": {
+        "subject": "🔓 账号解除关联",
+        "greeting": "你好",
+        "message": "您的账号已解除关联",
+        "timeLabel": "时间：",
+        "warningText": "如果您没有进行此更改，请立即联系支持人员。"
+    },
+    "verification": {
+        "greeting": "你好",
+        "welcome": "感谢您注册账号：",
+        "emailLabel": "注册邮箱：",
+        "expirationLabel": "验证有效期：",
+        "expirationValue": "24小时",
+        "buttonText": "✓ 验证账号",
+        "copyLinkText": "或将此链接复制到您的浏览器：",
+        "warningText": "如果您没有创建此账号，请忽略此邮件。",
+        "subjectPrefix": "✓ 验证账号"
+    },
+    "forgotPassword": {
+        "title": "重置密码 🔐",
+        "greeting": "你好",
+        "message": "我们收到了重置您账号密码的请求：",
+        "timeLabel": "有效期：15分钟",
+        "timeValue": "15分钟",
+        "timeWarning": "出于安全原因，此链接将在15分钟后失效",
+        "buttonText": "🔑 重置密码",
+        "copyLinkText": "或将此链接复制到您的浏览器：",
+        "securityTitle": "安全提示",
+        "securityMessage": "如果您没有请求重置密码，请忽略此邮件。您的账号仍然安全。",
+        "requestTime": "请求发送于",
+        "subjectPrefix": "🔐 重置密码"
+    },
+    "footer": {
+        "supportText": "需要帮助？请通过邮件或热线联系我们",
+        "copyright": "版权所有。",
+        "autoEmailText": "这是一封自动邮件，请勿直接回复。"
+    },
+    "template": {
+        "systemName": "智能仓库管理系统"
+    }
+}

@@ -1,0 +1,71 @@
+{
+    "welcome": {
+        "subject": "🎉 Sugeng rawuh ing",
+        "greeting": "Halo",
+        "message": "Matur nuwun wis ndhaptar akun ing",
+        "accountReady": "Akun sampeyan wis siyap digunakake!",
+        "getStarted": "Miwiti"
+    },
+    "loginNotification": {
+        "subject": "🔔 Mlebu anyar menyang akun sampeyan",
+        "greeting": "Halo",
+        "message": "Akun sampeyan lagi wae mlebu saka piranti anyar",
+        "deviceLabel": "Piranti:",
+        "ipLabel": "Alamat IP:",
+        "timeLabel": "Wektu:",
+        "warningText": "Yen iki dudu sampeyan, mangga ganti sandhi sampeyan langsung."
+    },
+    "passwordChanged": {
+        "subject": "🔐 Sandhi Diganti",
+        "greeting": "Halo",
+        "message": "Sandhi akun sampeyan wis sukses diganti.",
+        "timeLabel": "Wektu:",
+        "warningText": "Yen sampeyan ora nggawe owah-owahan iki, mangga hubungi dhukungan langsung."
+    },
+    "platformLinked": {
+        "subject": "🔗 Akun Sukses Disambungake",
+        "greeting": "Halo",
+        "message": "Akun sampeyan wis disambungake karo",
+        "timeLabel": "Wektu:"
+    },
+    "platformUnlinked": {
+        "subject": "🔓 Akun Pedhot",
+        "greeting": "Halo",
+        "message": "Akun sampeyan wis dipedhot saka",
+        "timeLabel": "Wektu:",
+        "warningText": "Yen sampeyan ora nggawe owah-owahan iki, mangga hubungi dhukungan langsung."
+    },
+    "verification": {
+        "greeting": "Halo",
+        "welcome": "Matur nuwun wis ndhaptar akun ing",
+        "emailLabel": "Email pendaftaran:",
+        "expirationLabel": "Verifikasi kadaluwarsa ing:",
+        "expirationValue": "24 jam",
+        "buttonText": "✓ Verifikasi Akun",
+        "copyLinkText": "Utawa salin link iki menyang browser sampeyan:",
+        "warningText": "Yen sampeyan ora nggawe akun iki, mangga lirwakake email iki.",
+        "subjectPrefix": "✓ Verifikasi Akun"
+    },
+    "forgotPassword": {
+        "title": "Reset Sandhi 🔐",
+        "greeting": "Halo",
+        "message": "Kita nampa panjaluk kanggo ngreset sandhi kanggo akun sampeyan ing",
+        "timeLabel": "Kadaluwarsa ing: 15 menit",
+        "timeValue": "15 menit",
+        "timeWarning": "Link iki bakal kadaluwarsa ing 15 menit kanggo alasan keamanan",
+        "buttonText": "🔑 Reset Sandhi",
+        "copyLinkText": "Utawa salin link iki menyang browser sampeyan:",
+        "securityTitle": "Wara-wara Keamanan",
+        "securityMessage": "Yen sampeyan ora njaluk reset sandhi, lirwakake email iki. Akun sampeyan tetep aman.",
+        "requestTime": "Panjaluk dikirim ing",
+        "subjectPrefix": "🔐 Reset Sandhi"
+    },
+    "footer": {
+        "supportText": "Butuh pitulung? Hubungi kita liwat email utawa hotline",
+        "copyright": "Kabeh hak dilindhungi undhang-undhang.",
+        "autoEmailText": "Iki email otomatis, aja mbales langsung."
+    },
+    "template": {
+        "systemName": "Sistem Manajemen Gudang Cerdas"
+    }
+}
