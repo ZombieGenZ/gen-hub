@@ -96,9 +96,11 @@ model User {
   email                 String?
   email_confirmed       Boolean          @default(false)
   email_verify_token    String?
+  email_verify_expired  DateTime?
   phone                 String?
   phone_confirmed       Boolean          @default(false)
   phone_verify_token    String?
+  phone_verify_expired  DateTime?
   
   is_verified           Boolean?         @default(false)
   is_banned             Boolean?         @default(false)
@@ -108,6 +110,7 @@ model User {
   password              String?
   provider              PlatformProvider @default(DEFAULT)
   forgot_password_token String?
+  forgot_password_expired DateTime?
   google_id             String?
   facebook_id           String?
 
@@ -146,6 +149,21 @@ model RefreshToken {
   user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@map("refresh_tokens")
+}
+
+model BackupCode {
+  id          String    @id @default(uuid())
+  user_id     String
+  code        String
+  is_used     Boolean   @default(false)
+  used_at     DateTime?
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
+
+  user        User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@map("backup_codes")
 }
 
 model Role {
