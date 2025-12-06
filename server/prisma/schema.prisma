@@ -158,6 +158,8 @@ model Role {
   is_deleted  Boolean   @default(false)
   deleted_at  DateTime?
 
+  is_default Boolean @default(false)
+
   permissions RolePermission[]
   users       UserRole[]
 
@@ -402,6 +404,8 @@ model OrganizationRole {
   updated_at DateTime  @updatedAt
   is_deleted Boolean   @default(false)
   deleted_at DateTime?
+
+  is_default Boolean @default(false)
 
   organization Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
 
