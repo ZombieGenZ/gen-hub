@@ -66,11 +66,11 @@ function getDeviceInfo(req: Request) {
  * Xử lý tất cả các API liên quan đến authentication
  */
 @ApiTags('Auth')
-@ApiHeader({
-    name: 'accept-language',
-    description: 'Ngôn ngữ (vi, en, ...)',
-    required: false,
-})
+// @ApiHeader({
+//     name: 'accept-language',
+//     description: 'Ngôn ngữ (vi, en, ...)',
+//     required: false,
+// })
 @Controller('auth')
 export class AuthController {
     constructor(private readonly authService: AuthService) { }

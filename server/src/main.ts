@@ -1,16 +1,25 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import {
+  I18nValidationPipe,
+  I18nValidationExceptionFilter,
+} from 'nestjs-i18n';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.useGlobalPipes(
-    new ValidationPipe({
+    new I18nValidationPipe({
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,
+    }),
+  );
+
+  app.useGlobalFilters(
+    new I18nValidationExceptionFilter({
+      detailedErrors: false,
     }),
   );
 

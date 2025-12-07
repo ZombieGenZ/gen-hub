@@ -107,10 +107,14 @@ export class AuthService {
             email_verify_expired: emailVerifyExpired,
         });
 
-        await this.emailService.sendVerificationEmail(dto.email, emailVerifyToken, dto.name, lang);
-
-        // Gửi email chào mừng
-        await this.emailService.sendWelcomeEmail(dto.email, dto.name, lang);
+        Promise.all([
+            this.emailService.sendVerificationEmail(dto.email, emailVerifyToken, dto.name, lang),
+            this.emailService.sendWelcomeEmail(dto.email, dto.name, lang),
+        ]).catch((error) => {
+            this.systemLogService.error('auth', 'send_email_failed', `Failed to send registration emails: ${dto.email}`, {
+                metaData: { email: dto.email, error: error.message },
+            });
+        });
 
         const tokens = await this.generateTokens(user.id, deviceInfo, true);
 
