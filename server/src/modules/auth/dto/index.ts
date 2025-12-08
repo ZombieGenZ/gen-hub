@@ -9,12 +9,7 @@ export * from './forgot-password-request.dto';
 export * from './verify-forgot-password-token.dto';
 export * from './reset-password.dto';
 
-// Platform Auth DTOs
-export * from './google-auth.dto';
-export * from './facebook-auth.dto';
-export * from './link-google.dto';
-export * from './link-facebook.dto';
-export * from './unlink-platform.dto';
+// Profile DTOs
 export * from './change-password.dto';
 export * from './update-profile.dto';
 

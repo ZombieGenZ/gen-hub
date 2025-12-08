@@ -114,8 +114,6 @@ model User {
   provider                PlatformProvider @default(DEFAULT)
   forgot_password_token   String?
   forgot_password_expired DateTime?
-  google_id               String?
-  facebook_id             String?
 
   created_at DateTime @default(now())
   updated_at DateTime? @updatedAt

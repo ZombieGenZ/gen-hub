@@ -2,7 +2,6 @@ import {
     Controller,
     Post,
     Get,
-    Patch,
     Body,
     UseGuards,
     Req,
@@ -16,7 +15,6 @@ import {
     ApiOperation,
     ApiResponse,
     ApiBearerAuth,
-    ApiHeader,
 } from '@nestjs/swagger';
 import type { Request } from 'express';
 
@@ -29,18 +27,12 @@ import {
     ForgotPasswordDto,
     ResetPasswordDto,
     VerifyForgotPasswordTokenDto,
-    VerifyTwoFactorSetupDto,
-    VerifyTwoFactorLoginDto,
     LogoutDto,
-    GoogleAuthDto,
-    LinkGoogleDto,
-    UnlinkPlatformDto,
-    ChangePasswordDto,
-    UpdateProfileDto,
+    RefreshTokenDto,
 } from './dto';
-import { JwtAuthGuard, AccessVerificationGuard, PrimaryAuthGuard } from '../../common/guards';
+import { JwtAuthGuard } from '../../common/guards';
 import { Public, CurrentUser } from '../../common/decorators';
-import { CreatedResponse, OkResponse, GetResponse, UpdatedResponse } from '../../common/responses';
+import { CreatedResponse, OkResponse } from '../../common/responses';
 
 /**
  * Interface cho JWT Payload
@@ -63,19 +55,12 @@ function getDeviceInfo(req: Request) {
 
 /**
  * Auth Controller
- * Xử lý tất cả các API liên quan đến authentication
+ * Xử lý các API liên quan đến authentication
  */
 @ApiTags('Auth')
-// @ApiHeader({
-//     name: 'accept-language',
-//     description: 'Ngôn ngữ (vi, en, ...)',
-//     required: false,
-// })
 @Controller('auth')
 export class AuthController {
     constructor(private readonly authService: AuthService) { }
-
-
 
     @ApiOperation({ summary: 'Đăng ký tài khoản mới' })
     @ApiResponse({ status: 201, description: 'Đăng ký thành công' })
@@ -131,7 +116,53 @@ export class AuthController {
         });
     }
 
+    @ApiOperation({ summary: 'Làm mới access token từ refresh token' })
+    @ApiResponse({ status: 200, description: 'Làm mới token thành công' })
+    @ApiResponse({ status: 401, description: 'Refresh token không hợp lệ hoặc hết hạn' })
+    @Public()
+    @Post('refresh')
+    @HttpCode(HttpStatus.OK)
+    @Throttle({ default: { limit: 20, ttl: 60000 } })
+    async refreshToken(
+        @Body() dto: RefreshTokenDto,
+        @Req() req: Request,
+        @Headers('accept-language') lang?: string,
+    ) {
+        const deviceInfo = getDeviceInfo(req);
+        const result = await this.authService.refreshToken(dto.refresh_token, deviceInfo, lang || 'vi');
+        return new OkResponse(null, result.message, {
+            access_token: result.access_token,
+            refresh_token: result.refresh_token,
+        });
+    }
 
+    @ApiOperation({ summary: 'Đăng xuất' })
+    @ApiResponse({ status: 200, description: 'Đăng xuất thành công' })
+    @ApiBearerAuth('JWT-auth')
+    @UseGuards(JwtAuthGuard)
+    @Post('logout')
+    @HttpCode(HttpStatus.OK)
+    async logout(
+        @Body() dto: LogoutDto,
+        @Headers('accept-language') lang?: string,
+    ) {
+        const result = await this.authService.logout(dto, lang || 'vi');
+        return new OkResponse(null, result.message);
+    }
+
+    @ApiOperation({ summary: 'Đăng xuất tất cả thiết bị' })
+    @ApiResponse({ status: 200, description: 'Đã đăng xuất tất cả thiết bị' })
+    @ApiBearerAuth('JWT-auth')
+    @UseGuards(JwtAuthGuard)
+    @Post('logout-all')
+    @HttpCode(HttpStatus.OK)
+    async logoutAll(
+        @CurrentUser() user: IJwtPayload,
+        @Headers('accept-language') lang?: string,
+    ) {
+        const result = await this.authService.logoutAll(user.userId, lang || 'vi');
+        return new OkResponse(null, result.message);
+    }
 
     @ApiOperation({ summary: 'Xác thực email' })
     @ApiResponse({ status: 200, description: 'Xác thực thành công' })
@@ -162,8 +193,6 @@ export class AuthController {
         return new OkResponse(null, result.message);
     }
 
-
-
     @ApiOperation({ summary: 'Xác thực quyền để thực hiện thao tác nhạy cảm' })
     @ApiResponse({ status: 200, description: 'Xác thực thành công, trả về access verification token' })
     @ApiBearerAuth('JWT-auth')
@@ -182,8 +211,6 @@ export class AuthController {
             result.message,
         );
     }
-
-
 
     @ApiOperation({ summary: 'Yêu cầu đặt lại mật khẩu' })
     @ApiResponse({ status: 200, description: 'Email hướng dẫn đã được gửi' })
@@ -226,239 +253,5 @@ export class AuthController {
         const result = await this.authService.resetPassword(dto, lang || 'vi');
         return new OkResponse(null, result.message);
     }
-
-
-
-    @ApiOperation({ summary: 'Thiết lập xác thực 2 yếu tố (2FA)' })
-    @ApiResponse({ status: 200, description: 'Trả về secret, QR code và backup codes' })
-    @ApiBearerAuth('JWT-auth')
-    @UseGuards(JwtAuthGuard, AccessVerificationGuard)
-    @Post('2fa/setup')
-    @HttpCode(HttpStatus.OK)
-    async setupTwoFactor(
-        @CurrentUser() user: IJwtPayload,
-        @Headers('accept-language') lang?: string,
-    ) {
-        const result = await this.authService.setupTwoFactor(user.userId, lang || 'vi');
-        return new OkResponse(
-            {
-                secret: result.secret,
-                qr_code_url: result.qr_code_url,
-                backup_codes: result.backup_codes,
-            },
-            result.message,
-        );
-    }
-
-    @ApiOperation({ summary: 'Xác minh và bật 2FA' })
-    @ApiResponse({ status: 200, description: 'Bật 2FA thành công' })
-    @ApiBearerAuth('JWT-auth')
-    @UseGuards(JwtAuthGuard)
-    @Post('2fa/verify-setup')
-    @HttpCode(HttpStatus.OK)
-    async verifyTwoFactorSetup(
-        @CurrentUser() user: IJwtPayload,
-        @Body() dto: VerifyTwoFactorSetupDto,
-        @Headers('accept-language') lang?: string,
-    ) {
-        const result = await this.authService.verifyTwoFactorSetup(user.userId, dto, lang || 'vi');
-        return new OkResponse(null, result.message);
-    }
-
-    @ApiOperation({ summary: 'Tắt xác thực 2 yếu tố (2FA)' })
-    @ApiResponse({ status: 200, description: 'Tắt 2FA thành công' })
-    @ApiBearerAuth('JWT-auth')
-    @UseGuards(JwtAuthGuard, AccessVerificationGuard)
-    @Post('2fa/disable')
-    @HttpCode(HttpStatus.OK)
-    async disableTwoFactor(
-        @CurrentUser() user: IJwtPayload,
-        @Headers('accept-language') lang?: string,
-    ) {
-        const result = await this.authService.disableTwoFactor(user.userId, lang || 'vi');
-        return new OkResponse(null, result.message);
-    }
-
-    @ApiOperation({ summary: 'Xác minh 2FA khi đăng nhập' })
-    @ApiResponse({ status: 200, description: 'Đăng nhập thành công' })
-    @Public()
-    @Post('2fa/verify-login')
-    @HttpCode(HttpStatus.OK)
-    @Throttle({ default: { limit: 5, ttl: 60000 } })
-    async verifyTwoFactorLogin(
-        @Body() dto: VerifyTwoFactorLoginDto,
-        @Req() req: Request,
-        @Headers('accept-language') lang?: string,
-    ) {
-        const deviceInfo = getDeviceInfo(req);
-        const result = await this.authService.verifyTwoFactorLogin(dto, deviceInfo, lang || 'vi');
-        return new OkResponse(result.user, result.message, {
-            access_token: result.access_token,
-            refresh_token: result.refresh_token,
-        });
-    }
-
-    @ApiOperation({ summary: 'Tạo mới backup codes' })
-    @ApiResponse({ status: 200, description: 'Trả về danh sách backup codes mới' })
-    @ApiBearerAuth('JWT-auth')
-    @UseGuards(JwtAuthGuard, AccessVerificationGuard)
-    @Post('2fa/regenerate-backup-codes')
-    @HttpCode(HttpStatus.OK)
-    async regenerateBackupCodes(
-        @CurrentUser() user: IJwtPayload,
-        @Headers('accept-language') lang?: string,
-    ) {
-        const result = await this.authService.regenerateBackupCodes(user.userId, lang || 'vi');
-        return new OkResponse({ backup_codes: result.backup_codes }, result.message);
-    }
-
-    @ApiOperation({ summary: 'Lấy danh sách backup codes' })
-    @ApiResponse({ status: 200, description: 'Trả về danh sách backup codes (đã ẩn)' })
-    @ApiBearerAuth('JWT-auth')
-    @UseGuards(JwtAuthGuard, AccessVerificationGuard)
-    @Get('2fa/backup-codes')
-    async getBackupCodes(
-        @CurrentUser() user: IJwtPayload,
-        @Headers('accept-language') lang?: string,
-    ) {
-        const result = await this.authService.getBackupCodes(user.userId, lang || 'vi');
-        return new GetResponse(result, result.message);
-    }
-
-
-
-    @ApiOperation({ summary: 'Lấy thông tin tài khoản' })
-    @ApiResponse({ status: 200, description: 'Trả về thông tin user, roles và permissions' })
-    @ApiBearerAuth('JWT-auth')
-    @UseGuards(JwtAuthGuard)
-    @Get('profile')
-    async getProfile(
-        @CurrentUser() user: IJwtPayload,
-        @Headers('accept-language') lang?: string,
-    ) {
-        const result = await this.authService.getProfile(user.userId, lang || 'vi');
-        return new GetResponse(
-            {
-                user: result.user,
-                roles: result.roles,
-                permissions: result.permissions,
-            },
-            result.message,
-        );
-    }
-
-    @ApiOperation({ summary: 'Đăng xuất' })
-    @ApiResponse({ status: 200, description: 'Đăng xuất thành công' })
-    @ApiBearerAuth('JWT-auth')
-    @UseGuards(JwtAuthGuard)
-    @Post('logout')
-    @HttpCode(HttpStatus.OK)
-    async logout(
-        @Body() dto: LogoutDto,
-        @Headers('accept-language') lang?: string,
-    ) {
-        const result = await this.authService.logout(dto, lang || 'vi');
-        return new OkResponse(null, result.message);
-    }
-
-    @ApiOperation({ summary: 'Đăng xuất tất cả thiết bị' })
-    @ApiResponse({ status: 200, description: 'Đã đăng xuất tất cả thiết bị' })
-    @ApiBearerAuth('JWT-auth')
-    @UseGuards(JwtAuthGuard)
-    @Post('logout-all')
-    @HttpCode(HttpStatus.OK)
-    async logoutAll(
-        @CurrentUser() user: IJwtPayload,
-        @Headers('accept-language') lang?: string,
-    ) {
-        const result = await this.authService.logoutAll(user.userId, lang || 'vi');
-        return new OkResponse(null, result.message);
-    }
-
-    // ===================== GOOGLE AUTH =====================
-
-    @ApiOperation({ summary: 'Đăng nhập/đăng ký bằng Google' })
-    @ApiResponse({ status: 200, description: 'Đăng nhập thành công' })
-    @ApiResponse({ status: 201, description: 'Đăng ký và đăng nhập thành công' })
-    @Public()
-    @Post('google')
-    @HttpCode(HttpStatus.OK)
-    @Throttle({ default: { limit: 10, ttl: 60000 } })
-    async googleAuth(
-        @Body() dto: GoogleAuthDto,
-        @Req() req: Request,
-        @Headers('accept-language') lang?: string,
-    ) {
-        const deviceInfo = getDeviceInfo(req);
-        const result = await this.authService.googleAuth(dto, deviceInfo, lang || 'vi');
-        return new OkResponse(result.user, result.message, {
-            access_token: result.access_token,
-            refresh_token: result.refresh_token,
-        });
-    }
-
-    @ApiOperation({ summary: 'Liên kết tài khoản Google (yêu cầu xác thực quyền)' })
-    @ApiResponse({ status: 200, description: 'Liên kết thành công' })
-    @ApiBearerAuth('JWT-auth')
-    @UseGuards(JwtAuthGuard, AccessVerificationGuard)
-    @Post('link/google')
-    @HttpCode(HttpStatus.OK)
-    async linkGoogle(
-        @CurrentUser() user: IJwtPayload,
-        @Body() dto: LinkGoogleDto,
-        @Headers('accept-language') lang?: string,
-    ) {
-        const result = await this.authService.linkGoogle(user.userId, dto, lang || 'vi');
-        return new OkResponse(null, result.message);
-    }
-
-    @ApiOperation({ summary: 'Gỡ liên kết nền tảng (chỉ từ liên kết chính)' })
-    @ApiResponse({ status: 200, description: 'Gỡ liên kết thành công' })
-    @ApiBearerAuth('JWT-auth')
-    @UseGuards(JwtAuthGuard, AccessVerificationGuard, PrimaryAuthGuard)
-    @Post('unlink')
-    @HttpCode(HttpStatus.OK)
-    async unlinkPlatform(
-        @CurrentUser() user: IJwtPayload,
-        @Body() dto: UnlinkPlatformDto,
-        @Headers('accept-language') lang?: string,
-    ) {
-        const result = await this.authService.unlinkPlatform(user.userId, dto, lang || 'vi');
-        return new OkResponse(null, result.message);
-    }
-
-    // ===================== PASSWORD =====================
-
-    @ApiOperation({ summary: 'Thay đổi mật khẩu (yêu cầu xác thực quyền)' })
-    @ApiResponse({ status: 200, description: 'Thay đổi mật khẩu thành công' })
-    @ApiBearerAuth('JWT-auth')
-    @UseGuards(JwtAuthGuard, AccessVerificationGuard)
-    @Post('change-password')
-    @HttpCode(HttpStatus.OK)
-    async changePassword(
-        @CurrentUser() user: IJwtPayload,
-        @Body() dto: ChangePasswordDto,
-        @Req() req: Request,
-        @Headers('accept-language') lang?: string,
-    ) {
-        const deviceInfo = getDeviceInfo(req);
-        const result = await this.authService.changePassword(user.userId, dto, deviceInfo, lang || 'vi');
-        return new OkResponse(null, result.message);
-    }
-
-    // ===================== PROFILE =====================
-
-    @ApiOperation({ summary: 'Cập nhật thông tin tài khoản (name, language)' })
-    @ApiResponse({ status: 200, description: 'Cập nhật thành công' })
-    @ApiBearerAuth('JWT-auth')
-    @UseGuards(JwtAuthGuard)
-    @Patch('profile')
-    async updateProfile(
-        @CurrentUser() user: IJwtPayload,
-        @Body() dto: UpdateProfileDto,
-        @Headers('accept-language') lang?: string,
-    ) {
-        const result = await this.authService.updateProfile(user.userId, dto, lang || 'vi');
-        return new UpdatedResponse(null, result.message);
-    }
 }
+

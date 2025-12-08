@@ -9,7 +9,6 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import * as speakeasy from 'speakeasy';
-import * as QRCode from 'qrcode';
 import { I18nService } from 'nestjs-i18n';
 
 import { UserRepository } from '../user/user.repository';
@@ -26,19 +25,8 @@ import {
     ForgotPasswordDto,
     ResetPasswordDto,
     VerifyForgotPasswordTokenDto,
-    VerifyTwoFactorSetupDto,
-    VerifyTwoFactorLoginDto,
     LogoutDto,
-    GoogleAuthDto,
-    FacebookAuthDto,
-    LinkGoogleDto,
-    LinkFacebookDto,
-    UnlinkPlatformDto,
-    ChangePasswordDto,
-    UpdateProfileDto,
 } from './dto';
-import { PlatformProvider } from '@prisma/client';
-import { google } from 'googleapis';
 
 /**
  * Interface cho device info từ request
@@ -52,8 +40,7 @@ interface IDeviceInfo {
 
 /**
  * Auth Service
- * Xử lý toàn bộ logic nghiệp vụ liên quan đến authentication
- * Chỉ hỗ trợ email, không hỗ trợ phone
+ * Xử lý logic nghiệp vụ liên quan đến authentication
  */
 @Injectable()
 export class AuthService {
@@ -149,7 +136,21 @@ export class AuthService {
             );
         }
 
-        const isPasswordValid = await bcrypt.compare(dto.password, user.password);
+        let isPasswordValid = false;
+        try {
+            isPasswordValid = await bcrypt.compare(dto.password, user.password);
+        } catch {
+            // Password hash is invalid format
+            this.systemLogService.warn('auth', 'login_failed', `Login failed: invalid password hash format - ${dto.email}`, {
+                userId: user.id,
+                ipAddress: deviceInfo?.ip,
+                userAgent: deviceInfo?.device,
+                metaData: { email: dto.email, reason: 'invalid_password_hash' },
+            });
+            throw new UnauthorizedException(
+                await this.i18n.t('auth.login.invalid_credentials', { lang }),
+            );
+        }
         if (!isPasswordValid) {
             this.systemLogService.warn('auth', 'login_failed', `Login failed: invalid password - ${dto.email}`, {
                 userId: user.id,
@@ -180,6 +181,20 @@ export class AuthService {
         }
 
         const tokens = await this.generateTokens(user.id, deviceInfo);
+
+        if (user.email) {
+            this.emailService.sendLoginNotificationEmail(
+                user.email,
+                user.name,
+                { device: deviceInfo?.device, ip: deviceInfo?.ip },
+                user.language,
+            ).catch((error) => {
+                this.systemLogService.error('auth', 'send_email_failed', `Failed to send login notification email: ${user.email}`, {
+                    userId: user.id,
+                    metaData: { error: error.message },
+                });
+            });
+        }
 
         this.systemLogService.info('auth', 'login', `User logged in: ${user.email}`, {
             userId: user.id,
@@ -261,7 +276,20 @@ export class AuthService {
                 throw new BadRequestException('Password là bắt buộc');
             }
 
-            const isPasswordValid = await bcrypt.compare(dto.password, user.password || '');
+            if (!user.password) {
+                throw new UnauthorizedException(
+                    await this.i18n.t('auth.access_verification.invalid_password', { lang }),
+                );
+            }
+
+            let isPasswordValid = false;
+            try {
+                isPasswordValid = await bcrypt.compare(dto.password, user.password);
+            } catch {
+                throw new UnauthorizedException(
+                    await this.i18n.t('auth.access_verification.invalid_password', { lang }),
+                );
+            }
             if (!isPasswordValid) {
                 throw new UnauthorizedException(
                     await this.i18n.t('auth.access_verification.invalid_password', { lang }),
@@ -384,244 +412,6 @@ export class AuthService {
     }
 
     /**
-     * Thiết lập 2FA (bước 1)
-     */
-    async setupTwoFactor(userId: string, lang = 'vi') {
-        const user = await this.userRepository.findById(userId);
-        if (!user) {
-            throw new BadRequestException('User không tồn tại');
-        }
-
-        if (user.two_factor_enabled) {
-            throw new BadRequestException(
-                await this.i18n.t('auth.two_factor.already_enabled', { lang }),
-            );
-        }
-
-        const appName = this.appConfigService.get('appName');
-        const secret = speakeasy.generateSecret({
-            name: `${appName}:${user.email}`,
-            issuer: appName,
-        });
-
-        await this.userRepository.updateTwoFactorSecret(userId, secret.base32);
-
-        const qrCodeUrl = await QRCode.toDataURL(secret.otpauth_url || '');
-
-        const backupCodes = await this.backupCodeService.generateAndSaveBackupCodes(userId);
-
-        this.systemLogService.info('auth', 'setup_2fa', `2FA setup initiated: ${user.email}`, {
-            userId: user.id,
-            metaData: { email: user.email },
-        });
-
-        return {
-            message: await this.i18n.t('auth.two_factor.setup_in_progress', { lang }),
-            secret: secret.base32,
-            qr_code_url: qrCodeUrl,
-            backup_codes: backupCodes,
-        };
-    }
-
-    /**
-     * Xác minh thiết lập 2FA (bước 2)
-     */
-    async verifyTwoFactorSetup(userId: string, dto: VerifyTwoFactorSetupDto, lang = 'vi') {
-        const user = await this.userRepository.findById(userId);
-        if (!user || !user.two_factor_token) {
-            throw new BadRequestException('Chưa thiết lập 2FA');
-        }
-
-        const isValid = speakeasy.totp.verify({
-            secret: user.two_factor_token,
-            encoding: 'base32',
-            token: dto.two_factor_code,
-        });
-
-        if (!isValid) {
-            throw new BadRequestException(
-                await this.i18n.t('auth.two_factor.verify_failed', { lang }),
-            );
-        }
-
-        await this.userRepository.enableTwoFactor(userId);
-
-        this.systemLogService.info('auth', 'enable_2fa', `2FA enabled: ${user.email}`, {
-            userId: user.id,
-            metaData: { email: user.email },
-        });
-
-        return {
-            message: await this.i18n.t('auth.two_factor.setup_success', { lang }),
-        };
-    }
-
-    /**
-     * Vô hiệu hóa 2FA
-     */
-    async disableTwoFactor(userId: string, lang = 'vi') {
-        const user = await this.userRepository.findById(userId);
-        if (!user) {
-            throw new BadRequestException('User không tồn tại');
-        }
-
-        if (!user.two_factor_enabled) {
-            throw new BadRequestException(
-                await this.i18n.t('auth.two_factor.not_enabled', { lang }),
-            );
-        }
-
-        await this.userRepository.disableTwoFactor(userId);
-
-        await this.backupCodeService.deleteAllBackupCodes(userId);
-
-        this.systemLogService.info('auth', 'disable_2fa', `2FA disabled: ${user.email}`, {
-            userId: user.id,
-            metaData: { email: user.email },
-        });
-
-        return {
-            message: await this.i18n.t('auth.two_factor.disabled_success', { lang }),
-        };
-    }
-
-    /**
-     * Xác minh 2FA khi đăng nhập
-     */
-    async verifyTwoFactorLogin(dto: VerifyTwoFactorLoginDto, deviceInfo?: IDeviceInfo, lang = 'vi') {
-        let payload: { userId: string };
-        try {
-            payload = await this.jwtService.verifyAsync(dto.temp_token, {
-                secret: this.configService.get<string>('TEMP_2FA_TOKEN_SECRET'),
-            });
-        } catch {
-            throw new UnauthorizedException('Token không hợp lệ hoặc đã hết hạn');
-        }
-
-        const user = await this.userRepository.findById(payload.userId);
-        if (!user || !user.two_factor_token) {
-            throw new UnauthorizedException('User không tồn tại');
-        }
-
-        let isValid = false;
-
-        if (dto.two_factor_code) {
-            isValid = speakeasy.totp.verify({
-                secret: user.two_factor_token,
-                encoding: 'base32',
-                token: dto.two_factor_code,
-            });
-        } else if (dto.backup_code) {
-            isValid = await this.backupCodeService.verifyBackupCode(user.id, dto.backup_code);
-        }
-
-        if (!isValid) {
-            throw new UnauthorizedException(
-                await this.i18n.t('auth.two_factor.verify_failed', { lang }),
-            );
-        }
-
-        const tokens = await this.generateTokens(user.id, deviceInfo);
-
-        this.systemLogService.info('auth', 'verify_2fa_login', `2FA login verified: ${user.email}`, {
-            userId: user.id,
-            ipAddress: deviceInfo?.ip,
-            userAgent: deviceInfo?.device,
-            metaData: { email: user.email },
-        });
-
-        return {
-            message: await this.i18n.t('auth.two_factor.verify_success', { lang }),
-            user: this.sanitizeUser(user),
-            ...tokens,
-        };
-    }
-
-    /**
-     * Tạo mới backup codes
-     */
-    async regenerateBackupCodes(userId: string, lang = 'vi') {
-        const user = await this.userRepository.findById(userId);
-        if (!user || !user.two_factor_enabled) {
-            throw new BadRequestException(
-                await this.i18n.t('auth.two_factor.not_enabled', { lang }),
-            );
-        }
-
-        const backupCodes = await this.backupCodeService.generateAndSaveBackupCodes(userId);
-
-        return {
-            message: await this.i18n.t('auth.two_factor.backup_codes_generated', { lang }),
-            backup_codes: backupCodes,
-        };
-    }
-
-    /**
-     * Lấy danh sách backup codes
-     */
-    async getBackupCodes(userId: string, lang = 'vi') {
-        const codesList = await this.backupCodeService.getBackupCodesList(userId);
-
-        return {
-            message: await this.i18n.t('auth.backup_codes.list_success', { lang }),
-            ...codesList,
-        };
-    }
-
-    /**
-     * Lấy thông tin profile
-     */
-    async getProfile(userId: string, lang = 'vi') {
-        const user = await this.userRepository.getUserWithRolesAndPermissions(userId);
-        if (!user) {
-            throw new BadRequestException('User không tồn tại');
-        }
-
-        const roles = user.system_roles.map((ur) => ({
-            id: ur.role.id,
-            name: ur.role.name,
-            description: ur.role.description,
-        }));
-
-        const rolePermissions = user.system_roles.flatMap((ur) =>
-            ur.role.permissions.map((rp) => ({
-                id: rp.permission.id,
-                name: rp.permission.name,
-                key: rp.permission.key,
-                description: rp.permission.description,
-            })),
-        );
-
-        const directPermissions = user.system_permissions.map((up) => ({
-            id: up.permission.id,
-            name: up.permission.name,
-            key: up.permission.key,
-            description: up.permission.description,
-        }));
-
-        const allPermissions = [...rolePermissions, ...directPermissions];
-        const uniquePermissions = allPermissions.filter(
-            (p, index, self) => index === self.findIndex((t) => t.id === p.id),
-        );
-
-        return {
-            message: await this.i18n.t('auth.profile.get_success', { lang }),
-            user: {
-                id: user.id,
-                name: user.name,
-                email: user.email,
-                email_confirmed: user.email_confirmed,
-                is_verified: user.is_verified,
-                two_factor_enabled: user.two_factor_enabled,
-                provider: user.provider,
-                created_at: user.created_at,
-            },
-            roles,
-            permissions: uniquePermissions,
-        };
-    }
-
-    /**
      * Đăng xuất
      */
     async logout(dto: LogoutDto, lang = 'vi') {
@@ -655,6 +445,68 @@ export class AuthService {
         };
     }
 
+    /**
+     * Refresh token - Cấp lại access token mới từ refresh token
+     */
+    async refreshToken(refreshTokenValue: string, deviceInfo?: IDeviceInfo, lang = 'vi') {
+        const storedToken = await this.refreshTokenRepository.findByToken(refreshTokenValue);
+
+        if (!storedToken) {
+            throw new UnauthorizedException(
+                await this.i18n.t('auth.refresh_token.invalid', { lang }),
+            );
+        }
+
+        try {
+            const payload = await this.jwtService.verifyAsync(refreshTokenValue, {
+                secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
+            });
+
+            const user = await this.userRepository.findById(payload.userId);
+            if (!user) {
+                await this.refreshTokenRepository.softDelete(storedToken.id);
+                throw new UnauthorizedException(
+                    await this.i18n.t('auth.refresh_token.invalid', { lang }),
+                );
+            }
+
+            if (user.is_banned) {
+                if (!user.banned_end || new Date(user.banned_end) > new Date()) {
+                    await this.refreshTokenRepository.softDelete(storedToken.id);
+                    throw new UnauthorizedException(
+                        await this.i18n.t('auth.login.account_banned', { lang }),
+                    );
+                }
+            }
+
+            await this.refreshTokenRepository.softDelete(storedToken.id);
+
+            const tokens = await this.generateTokens(user.id, deviceInfo, payload.is_primary_auth ?? true);
+
+            this.systemLogService.info('auth', 'refresh_token', `Token refreshed for user: ${user.email}`, {
+                userId: user.id,
+                ipAddress: deviceInfo?.ip,
+                userAgent: deviceInfo?.device,
+            });
+
+            return {
+                message: await this.i18n.t('auth.refresh_token.success', { lang }),
+                ...tokens,
+            };
+        } catch (error) {
+            await this.refreshTokenRepository.softDelete(storedToken.id);
+
+            if (error instanceof UnauthorizedException) {
+                throw error;
+            }
+
+            throw new UnauthorizedException(
+                await this.i18n.t('auth.refresh_token.expired', { lang }),
+            );
+        }
+    }
+
+
 
 
     /**
@@ -665,7 +517,7 @@ export class AuthService {
         const config = this.appConfigService.getAll();
         const payload = {
             userId,
-            is_primary_auth: isPrimaryAuth, // Xác định đăng nhập bằng liên kết chính hay phụ
+            is_primary_auth: isPrimaryAuth,
             project: config.appName,
             team: config.teamName,
             version: config.appVersion,
@@ -732,239 +584,6 @@ export class AuthService {
             two_factor_enabled: user.two_factor_enabled,
             provider: user.provider,
             created_at: user.created_at,
-        };
-    }
-
-    /**
-     * Xác thực Google ID Token và lấy thông tin user
-     */
-    private async verifyGoogleToken(idToken: string) {
-        const clientId = this.configService.get<string>('GOOGLE_CLIENT_ID');
-        const oAuth2Client = new google.auth.OAuth2(clientId);
-
-        const ticket = await oAuth2Client.verifyIdToken({
-            idToken,
-            audience: clientId,
-        });
-
-        const payload = ticket.getPayload();
-        if (!payload) throw new BadRequestException('Invalid Google token');
-
-        return {
-            googleId: payload.sub,
-            email: payload.email!,
-            name: payload.name || payload.email!.split('@')[0],
-        };
-    }
-
-    /**
-     * Đăng nhập/đăng ký bằng Google
-     */
-    async googleAuth(dto: GoogleAuthDto, deviceInfo?: IDeviceInfo, lang = 'vi') {
-        const googlePayload = await this.verifyGoogleToken(dto.id_token);
-
-        // Tìm user theo Google ID
-        let user = await this.userRepository.findByGoogleId(googlePayload.googleId);
-        let isNewUser = false;
-
-        if (!user) {
-            // Kiểm tra email đã tồn tại chưa
-            const existingUser = await this.userRepository.findByEmail(googlePayload.email);
-            if (existingUser) {
-                throw new ConflictException(
-                    await this.i18n.t('auth.register.email_exists', { lang }),
-                );
-            }
-
-            // Tạo user mới
-            user = await this.userRepository.createWithProvider({
-                name: googlePayload.name,
-                email: googlePayload.email,
-                provider: PlatformProvider.GOOGLE,
-                google_id: googlePayload.googleId,
-                language: lang,
-            });
-            isNewUser = true;
-
-            await this.emailService.sendWelcomeEmail(googlePayload.email, googlePayload.name, lang);
-        }
-
-        const tokens = await this.generateTokens(user.id, deviceInfo, user.provider === PlatformProvider.GOOGLE);
-
-        // Gửi email thông báo đăng nhập
-        if (user.email) {
-            await this.emailService.sendLoginNotificationEmail(
-                user.email,
-                user.name,
-                { device: deviceInfo?.device, ip: deviceInfo?.ip },
-                user.language,
-            );
-        }
-
-        this.systemLogService.info('auth', 'google_auth', `Google auth: ${user.email}`, {
-            userId: user.id,
-            ipAddress: deviceInfo?.ip,
-            userAgent: deviceInfo?.device,
-            metaData: { isNewUser },
-        });
-
-        return {
-            message: await this.i18n.t('auth.login.success', { lang }),
-            user: this.sanitizeUser(user),
-            ...tokens,
-        };
-    }
-
-    /**
-     * Liên kết thêm tài khoản Google (liên kết phụ)
-     */
-    async linkGoogle(userId: string, dto: LinkGoogleDto, lang = 'vi') {
-        const user = await this.userRepository.findById(userId);
-        if (!user) throw new BadRequestException('User không tồn tại');
-
-        if (user.google_id) {
-            throw new ConflictException(
-                await this.i18n.t('auth.platform_auth.already_linked_google', { lang }),
-            );
-        }
-
-        const googlePayload = await this.verifyGoogleToken(dto.id_token);
-
-        // Kiểm tra Google ID đã được liên kết với user khác chưa
-        const existingUser = await this.userRepository.findByGoogleId(googlePayload.googleId);
-        if (existingUser) {
-            throw new ConflictException('Google account đã được liên kết với tài khoản khác');
-        }
-
-        await this.userRepository.linkGoogle(userId, googlePayload.googleId);
-
-        if (user.email) {
-            await this.emailService.sendPlatformLinkedEmail(user.email, user.name, 'Google', user.language);
-        }
-
-        this.systemLogService.info('auth', 'link_google', `Linked Google: ${user.email}`, {
-            userId: user.id,
-            metaData: { googleId: googlePayload.googleId },
-        });
-
-        return {
-            message: await this.i18n.t('auth.platform_auth.link_google_success', { lang }),
-        };
-    }
-
-    /**
-     * Gỡ liên kết nền tảng phụ (chỉ cho phép từ liên kết chính)
-     */
-    async unlinkPlatform(userId: string, dto: UnlinkPlatformDto, lang = 'vi') {
-        const user = await this.userRepository.findById(userId);
-        if (!user) throw new BadRequestException('User không tồn tại');
-
-        // Kiểm tra không được gỡ liên kết chính
-        if (dto.platform === 'GOOGLE' && user.provider === PlatformProvider.GOOGLE) {
-            throw new BadRequestException(
-                await this.i18n.t('auth.platform_auth.cannot_unlink_primary', { lang }),
-            );
-        }
-        if (dto.platform === 'FACEBOOK' && user.provider === PlatformProvider.FACEBOOK) {
-            throw new BadRequestException(
-                await this.i18n.t('auth.platform_auth.cannot_unlink_primary', { lang }),
-            );
-        }
-
-        if (dto.platform === 'GOOGLE') {
-            if (!user.google_id) throw new BadRequestException('Chưa liên kết Google');
-            await this.userRepository.unlinkGoogle(userId);
-        } else {
-            if (!user.facebook_id) throw new BadRequestException('Chưa liên kết Facebook');
-            await this.userRepository.unlinkFacebook(userId);
-        }
-
-        if (user.email) {
-            await this.emailService.sendPlatformUnlinkedEmail(user.email, user.name, dto.platform, user.language);
-        }
-
-        this.systemLogService.info('auth', 'unlink_platform', `Unlinked ${dto.platform}: ${user.email}`, {
-            userId: user.id,
-            metaData: { platform: dto.platform },
-        });
-
-        return {
-            message: await this.i18n.t('auth.platform_auth.unlink_success', { lang }),
-        };
-    }
-
-    /**
-     * Thay đổi mật khẩu (chỉ cho tài khoản đăng ký bằng email)
-     */
-    async changePassword(userId: string, dto: ChangePasswordDto, deviceInfo?: IDeviceInfo, lang = 'vi') {
-        const user = await this.userRepository.findById(userId);
-        if (!user) throw new BadRequestException('User không tồn tại');
-
-        // Không cho phép đổi mật khẩu cho tài khoản Google/Facebook
-        if (user.provider !== PlatformProvider.DEFAULT) {
-            throw new BadRequestException(
-                await this.i18n.t('auth.change_password.cannot_change_social_account', { lang }),
-            );
-        }
-
-        if (!user.password) {
-            throw new BadRequestException('Tài khoản không có mật khẩu');
-        }
-
-        const isPasswordValid = await bcrypt.compare(dto.current_password, user.password);
-        if (!isPasswordValid) {
-            throw new UnauthorizedException(
-                await this.i18n.t('auth.change_password.incorrect_current_password', { lang }),
-            );
-        }
-
-        if (dto.new_password !== dto.confirm_password) {
-            throw new BadRequestException(
-                await this.i18n.t('auth.change_password.password_mismatch', { lang }),
-            );
-        }
-
-        const hashedPassword = await bcrypt.hash(dto.new_password, this.SALT_ROUNDS);
-        await this.userRepository.updatePassword(userId, hashedPassword);
-
-        if (dto.logout_all_devices) {
-            await this.refreshTokenRepository.deleteAllByUserId(userId);
-        }
-
-        if (user.email) {
-            await this.emailService.sendPasswordChangedEmail(user.email, user.name, user.language);
-        }
-
-        this.systemLogService.info('auth', 'change_password', `Password changed: ${user.email}`, {
-            userId: user.id,
-            ipAddress: deviceInfo?.ip,
-            userAgent: deviceInfo?.device,
-        });
-
-        return {
-            message: await this.i18n.t('auth.change_password.success', { lang }),
-        };
-    }
-
-    /**
-     * Cập nhật thông tin tài khoản (name, language)
-     */
-    async updateProfile(userId: string, dto: UpdateProfileDto, lang = 'vi') {
-        const user = await this.userRepository.findById(userId);
-        if (!user) throw new BadRequestException('User không tồn tại');
-
-        await this.userRepository.updateProfile(userId, {
-            name: dto.name,
-            language: dto.language,
-        });
-
-        this.systemLogService.info('auth', 'update_profile', `Profile updated: ${user.email}`, {
-            userId: user.id,
-            metaData: { name: dto.name, language: dto.language },
-        });
-
-        return {
-            message: await this.i18n.t('auth.update_profile.success', { lang }),
         };
     }
 }

@@ -1,0 +1,27 @@
+{
+    "two_factor": {
+        "setup_success": "Thiết lập 2FA thành công",
+        "setup_in_progress": "Vui lòng xác minh mã 2FA để hoàn tất thiết lập",
+        "already_enabled": "2FA đã được bật",
+        "not_enabled": "2FA chưa được bật",
+        "verify_success": "Xác minh 2FA thành công",
+        "verify_failed": "Mã 2FA không chính xác",
+        "disabled_success": "Đã tắt 2FA thành công",
+        "backup_codes_generated": "Đã tạo mã backup mới",
+        "rate_limit_exceeded": "Quá nhiều lần thử. Vui lòng thử lại sau"
+    },
+    "backup_codes": {
+        "list_success": "Lấy danh sách mã backup thành công",
+        "regenerate_success": "Đã tạo lại mã backup thành công",
+        "used": "Mã backup đã được sử dụng",
+        "invalid": "Mã backup không hợp lệ"
+    },
+    "access_verification": {
+        "success": "Xác thực quyền truy cập thành công",
+        "invalid_password": "Mật khẩu không chính xác",
+        "invalid_2fa_code": "Mã 2FA không chính xác",
+        "invalid_backup_code": "Mã backup không hợp lệ hoặc đã được sử dụng",
+        "token_required": "Yêu cầu token xác thực quyền truy cập",
+        "token_invalid": "Token xác thực không hợp lệ hoặc đã hết hạn"
+    }
+}

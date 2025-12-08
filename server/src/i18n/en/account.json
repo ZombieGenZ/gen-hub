@@ -1,0 +1,26 @@
+{
+    "profile": {
+        "get_success": "Profile retrieved successfully"
+    },
+    "change_password": {
+        "success": "Password changed successfully",
+        "incorrect_current_password": "Current password is incorrect",
+        "cannot_change_social_account": "Cannot change password for Google/Facebook accounts",
+        "password_mismatch": "Password confirmation does not match"
+    },
+    "update_profile": {
+        "success": "Profile updated successfully"
+    },
+    "platform_auth": {
+        "google_success": "Google login successful",
+        "facebook_success": "Facebook login successful",
+        "link_google_success": "Google account linked successfully",
+        "link_facebook_success": "Facebook account linked successfully",
+        "unlink_success": "Account unlinked successfully",
+        "already_linked_google": "Account already linked with Google",
+        "already_linked_facebook": "Account already linked with Facebook",
+        "cannot_unlink_primary": "Cannot unlink primary account",
+        "primary_required_for_2fa": "Only primary login can setup 2FA",
+        "primary_required_for_unlink": "Only primary login can unlink accounts"
+    }
+}

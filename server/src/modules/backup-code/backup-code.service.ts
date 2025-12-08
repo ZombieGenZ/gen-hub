@@ -118,7 +118,7 @@ export class BackupCodeService {
     private readonly CODE_LENGTH = 8;
     /** Số vòng hash bcrypt (mặc định 10) */
     private get SALT_ROUNDS(): number {
-        return this.configService.get<number>('SALT_ROUNDS') || 10;
+        return Number(this.configService.get<number>('SALT_ROUNDS')) || 10;
     }
 
     constructor(
@@ -182,10 +182,15 @@ export class BackupCodeService {
         for (const storedCode of codes) {
             if (storedCode.is_used) continue;
 
-            const isMatch = await bcrypt.compare(code, storedCode.code);
-            if (isMatch) {
-                await this.backupCodeRepository.markAsUsed(storedCode.id);
-                return true;
+            try {
+                const isMatch = await bcrypt.compare(code, storedCode.code);
+                if (isMatch) {
+                    await this.backupCodeRepository.markAsUsed(storedCode.id);
+                    return true;
+                }
+            } catch {
+                // Skip codes with invalid hash format (e.g., old unhashed codes)
+                continue;
             }
         }
 

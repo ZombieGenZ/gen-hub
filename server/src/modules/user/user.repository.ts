@@ -268,103 +268,6 @@ export class UserRepository {
     }
 
     /**
-     * Tìm user theo Google ID
-     */
-    async findByGoogleId(googleId: string): Promise<User | null> {
-        return this.prisma.user.findFirst({
-            where: { google_id: googleId },
-        });
-    }
-
-    /**
-     * Tìm user theo Facebook ID
-     */
-    async findByFacebookId(facebookId: string): Promise<User | null> {
-        return this.prisma.user.findFirst({
-            where: { facebook_id: facebookId },
-        });
-    }
-
-    /**
-     * Tạo user mới từ OAuth provider (Google/Facebook)
-     */
-    async createWithProvider(data: {
-        name: string;
-        email: string;
-        provider: PlatformProvider;
-        google_id?: string;
-        facebook_id?: string;
-        language?: string;
-    }): Promise<User> {
-        const defaultRoles = await this.prisma.role.findMany({
-            where: {
-                is_default: true,
-                is_active: true,
-                is_deleted: false,
-            },
-            select: { id: true },
-        });
-
-        return this.prisma.user.create({
-            data: {
-                name: data.name,
-                email: data.email,
-                provider: data.provider,
-                google_id: data.google_id,
-                facebook_id: data.facebook_id,
-                language: data.language || 'vi',
-                email_confirmed: true,
-                is_verified: true,
-                system_roles: {
-                    create: defaultRoles.map((role) => ({
-                        role_id: role.id,
-                    })),
-                },
-            },
-        });
-    }
-
-    /**
-     * Liên kết tài khoản Google
-     */
-    async linkGoogle(userId: string, googleId: string): Promise<User> {
-        return this.prisma.user.update({
-            where: { id: userId },
-            data: { google_id: googleId },
-        });
-    }
-
-    /**
-     * Liên kết tài khoản Facebook
-     */
-    async linkFacebook(userId: string, facebookId: string): Promise<User> {
-        return this.prisma.user.update({
-            where: { id: userId },
-            data: { facebook_id: facebookId },
-        });
-    }
-
-    /**
-     * Gỡ liên kết tài khoản Google
-     */
-    async unlinkGoogle(userId: string): Promise<User> {
-        return this.prisma.user.update({
-            where: { id: userId },
-            data: { google_id: null },
-        });
-    }
-
-    /**
-     * Gỡ liên kết tài khoản Facebook
-     */
-    async unlinkFacebook(userId: string): Promise<User> {
-        return this.prisma.user.update({
-            where: { id: userId },
-            data: { facebook_id: null },
-        });
-    }
-
-    /**
      * Cập nhật mật khẩu
      */
     async updatePassword(userId: string, hashedPassword: string): Promise<User> {
@@ -387,3 +290,4 @@ export class UserRepository {
         });
     }
 }
+

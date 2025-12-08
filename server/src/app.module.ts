@@ -13,20 +13,19 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { SharedModule } from './common/shared.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { TwoFactorModule } from './modules/two-factor/two-factor.module';
+import { AccountModule } from './modules/account/account.module';
 import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
 
 @Module({
   imports: [
-    // Cấu hình biến môi trường (cần forRoot ở AppModule)
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
     }),
 
-    // Shared Module - chứa các module dùng chung
     SharedModule,
 
-    // Cấu hình i18n - hỗ trợ 30 ngôn ngữ
     I18nModule.forRoot({
       fallbackLanguage: 'vi',
       loaderOptions: {
@@ -40,18 +39,19 @@ import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
       ],
     }),
 
-    // Auth Module
     AuthModule,
+
+    TwoFactorModule,
+
+    AccountModule,
   ],
   controllers: [AppController],
   providers: [
     AppService,
-    // Global JwtAuthGuard - áp dụng cho tất cả routes
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
     },
-    // Global Throttler Guard
     {
       provide: APP_GUARD,
       useClass: CustomThrottlerGuard,
@@ -59,3 +59,4 @@ import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
   ],
 })
 export class AppModule { }
+

@@ -280,11 +280,83 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
             } else {
                 this.logger.log(`📋 Found ${existingRoles} existing roles, skipping seed`);
             }
+
+            await this.seedConfigPermissions();
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : String(error);
             this.logger.error(`❌ Failed to seed default roles: ${errorMessage}`);
         }
     }
+
+    /**
+     * Seed các permissions cho config và gán vào Super Admin role
+     */
+    private async seedConfigPermissions() {
+        try {
+            const configPermissions = [
+                { key: 'config.update', name: 'Cập nhật cấu hình', description: 'Quyền cập nhật cấu hình ứng dụng' },
+                { key: 'config.reset', name: 'Reset cấu hình', description: 'Quyền reset cấu hình về mặc định' },
+                { key: 'config.reload', name: 'Reload cấu hình', description: 'Quyền reload cấu hình từ file' },
+            ];
+
+            for (const perm of configPermissions) {
+                const existing = await this.permission.findFirst({
+                    where: { key: perm.key },
+                });
+
+                if (!existing) {
+                    await this.permission.create({
+                        data: {
+                            key: perm.key,
+                            name: perm.name,
+                            description: perm.description,
+                            is_active: true,
+                            is_deleted: false,
+                        },
+                    });
+                    this.logger.log(`✅ Created permission: ${perm.key}`);
+                }
+            }
+
+            const superAdminRole = await this.role.findFirst({
+                where: { name: 'Super Admin', is_deleted: false },
+            });
+
+            if (superAdminRole) {
+                const permissions = await this.permission.findMany({
+                    where: {
+                        key: { in: configPermissions.map(p => p.key) },
+                        is_deleted: false,
+                    },
+                });
+
+                for (const permission of permissions) {
+                    const existingAssignment = await this.rolePermission.findFirst({
+                        where: {
+                            role_id: superAdminRole.id,
+                            permission_id: permission.id,
+                        },
+                    });
+
+                    if (!existingAssignment) {
+                        await this.rolePermission.create({
+                            data: {
+                                role_id: superAdminRole.id,
+                                permission_id: permission.id,
+                                is_active: true,
+                                is_deleted: false,
+                            },
+                        });
+                        this.logger.log(`✅ Assigned ${permission.key} to Super Admin`);
+                    }
+                }
+            }
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            this.logger.error(`❌ Failed to seed config permissions: ${errorMessage}`);
+        }
+    }
+
 
     async enableShutdownHooks(app: INestApplication) {
         process.on('beforeExit', async () => {

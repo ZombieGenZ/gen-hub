@@ -21,9 +21,9 @@ export class ResetPasswordDto {
     @IsNotEmpty({ message: i18nValidationMessage('auth.validation.new_password_required') })
     @IsString({ message: i18nValidationMessage('auth.validation.new_password_string') })
     @Matches(
-        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&_])[A-Za-z\d@$!%*?&_]{8,}$/,
         {
-            message: i18nValidationMessage('auth.validation.new_password_pattern'),
+            message: i18nValidationMessage('common.validation.new_password_pattern'),
         },
     )
     new_password: string;

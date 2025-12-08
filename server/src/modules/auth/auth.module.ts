@@ -14,14 +14,16 @@ import { NotificationModule } from '../notification/notification.module';
  */
 @Module({
     imports: [
-        // Feature modules cần thiết cho Auth
         UserModule,
         BackupCodeModule,
         NotificationModule,
     ],
     controllers: [AuthController],
-    providers: [AuthService, JwtStrategy, RefreshTokenRepository],
-    exports: [AuthService, JwtStrategy],
+    providers: [
+        AuthService,
+        JwtStrategy,
+        RefreshTokenRepository,
+    ],
+    exports: [AuthService, JwtStrategy, RefreshTokenRepository],
 })
 export class AuthModule { }
-

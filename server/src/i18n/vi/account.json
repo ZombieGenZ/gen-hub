@@ -1,0 +1,26 @@
+{
+    "profile": {
+        "get_success": "Lấy thông tin tài khoản thành công"
+    },
+    "change_password": {
+        "success": "Thay đổi mật khẩu thành công",
+        "incorrect_current_password": "Mật khẩu hiện tại không đúng",
+        "cannot_change_social_account": "Tài khoản đăng ký bằng Google/Facebook không thể đổi mật khẩu",
+        "password_mismatch": "Xác nhận mật khẩu không khớp"
+    },
+    "update_profile": {
+        "success": "Cập nhật thông tin thành công"
+    },
+    "platform_auth": {
+        "google_success": "Đăng nhập bằng Google thành công",
+        "facebook_success": "Đăng nhập bằng Facebook thành công",
+        "link_google_success": "Đã liên kết tài khoản Google thành công",
+        "link_facebook_success": "Đã liên kết tài khoản Facebook thành công",
+        "unlink_success": "Đã gỡ liên kết thành công",
+        "already_linked_google": "Tài khoản đã liên kết với Google",
+        "already_linked_facebook": "Tài khoản đã liên kết với Facebook",
+        "cannot_unlink_primary": "Không thể gỡ liên kết chính",
+        "primary_required_for_2fa": "Chỉ liên kết chính mới có thể thiết lập 2FA",
+        "primary_required_for_unlink": "Chỉ đăng nhập bằng liên kết chính mới có thể gỡ liên kết"
+    }
+}

@@ -8,7 +8,6 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { SystemLogModule } from '../modules/system-log/system-log.module';
 import { AppConfigModule } from './config/app-config.module';
 
-// Guards
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { AccessVerificationGuard } from './guards/access-verification.guard';
 import { CustomThrottlerGuard } from './guards/throttler.guard';
@@ -21,22 +20,16 @@ import { CustomThrottlerGuard } from './guards/throttler.guard';
 @Global()
 @Module({
     imports: [
-        // Config Module
         ConfigModule,
 
-        // App Config Module - Dynamic config với JSON file
         AppConfigModule,
 
-        // Prisma Module
         PrismaModule,
 
-        // System Log Module
         SystemLogModule,
 
-        // Passport Module với JWT là strategy mặc định
         PassportModule.register({ defaultStrategy: 'jwt' }),
 
-        // JWT Module với cấu hình async từ ConfigService
         JwtModule.registerAsync({
             imports: [ConfigModule],
             inject: [ConfigService],
@@ -48,12 +41,11 @@ import { CustomThrottlerGuard } from './guards/throttler.guard';
             }),
         }),
 
-        // Throttler Module cho rate limiting
         ThrottlerModule.forRoot([
             {
                 name: 'default',
-                ttl: 60000, // 1 phút
-                limit: 100, // 100 requests/phút
+                ttl: 60000,
+                limit: 100,
             },
         ]),
     ],
@@ -63,7 +55,6 @@ import { CustomThrottlerGuard } from './guards/throttler.guard';
         CustomThrottlerGuard,
     ],
     exports: [
-        // Re-export các module để các module khác có thể sử dụng
         ConfigModule,
         AppConfigModule,
         PrismaModule,
@@ -72,7 +63,6 @@ import { CustomThrottlerGuard } from './guards/throttler.guard';
         ThrottlerModule,
         SystemLogModule,
 
-        // Export Guards
         JwtAuthGuard,
         AccessVerificationGuard,
         CustomThrottlerGuard,
