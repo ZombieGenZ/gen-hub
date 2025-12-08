@@ -17,6 +17,7 @@ import { BackupCodeService } from '../backup-code/backup-code.service';
 import { EmailService } from '../notification/email.service';
 import { SystemLogService } from '../system-log/system-log.service';
 import { AppConfigService } from '../../common/config/app-config.service';
+import { WebsocketGateway } from '../websocket/websocket.gateway';
 import {
     RegisterDto,
     LoginDto,
@@ -67,6 +68,7 @@ export class AuthService {
         private readonly emailService: EmailService,
         private readonly systemLogService: SystemLogService,
         private readonly appConfigService: AppConfigService,
+        private readonly websocketGateway: WebsocketGateway,
     ) { }
 
     /**
@@ -416,18 +418,24 @@ export class AuthService {
      */
     async logout(dto: LogoutDto, lang = 'vi') {
         const refreshToken = await this.refreshTokenRepository.findByToken(dto.refresh_token);
+        const message = await this.i18n.t('auth.logout.success', { lang });
 
         if (refreshToken) {
             await this.refreshTokenRepository.softDelete(refreshToken.id);
+
+            // Emit realtime logout event
+            this.websocketGateway.emitUserLogout(
+                refreshToken.user_id,
+                refreshToken.id,
+                message,
+            );
 
             this.systemLogService.info('auth', 'logout', `User logged out`, {
                 userId: refreshToken.user_id,
             });
         }
 
-        return {
-            message: await this.i18n.t('auth.logout.success', { lang }),
-        };
+        return { message };
     }
 
     /**
@@ -435,14 +443,16 @@ export class AuthService {
      */
     async logoutAll(userId: string, lang = 'vi') {
         await this.refreshTokenRepository.deleteAllByUserId(userId);
+        const message = await this.i18n.t('auth.logout.all_devices', { lang });
+
+        // Emit realtime logout all event
+        this.websocketGateway.emitUserLogoutAll(userId, message);
 
         this.systemLogService.info('auth', 'logout_all', `User logged out from all devices`, {
             userId: userId,
         });
 
-        return {
-            message: await this.i18n.t('auth.logout.all_devices', { lang }),
-        };
+        return { message };
     }
 
     /**

@@ -15,6 +15,8 @@ import { SharedModule } from './common/shared.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { TwoFactorModule } from './modules/two-factor/two-factor.module';
 import { AccountModule } from './modules/account/account.module';
+import { RedisModule } from './modules/redis/redis.module';
+import { WebsocketModule } from './modules/websocket/websocket.module';
 import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
 
 @Module({
@@ -25,6 +27,10 @@ import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
     }),
 
     SharedModule,
+
+    RedisModule,
+
+    WebsocketModule,
 
     I18nModule.forRoot({
       fallbackLanguage: 'vi',

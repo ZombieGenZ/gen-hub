@@ -11,6 +11,8 @@ import { UserRepository } from '../user/user.repository';
 import { EmailService } from '../notification/email.service';
 import { SystemLogService } from '../system-log/system-log.service';
 import { RefreshTokenRepository } from '../auth/repositories/refresh-token.repository';
+import { RedisService } from '../redis/redis.service';
+import { WebsocketGateway } from '../websocket/websocket.gateway';
 import {
     UpdateProfileDto,
     ChangePasswordDto,
@@ -45,12 +47,28 @@ export class AccountService {
         private readonly emailService: EmailService,
         private readonly systemLogService: SystemLogService,
         private readonly refreshTokenRepository: RefreshTokenRepository,
+        private readonly redisService: RedisService,
+        private readonly websocketGateway: WebsocketGateway,
     ) { }
 
     /**
      * Lấy thông tin profile
      */
     async getProfile(userId: string, lang = 'vi') {
+        // Try to get from Redis cache first
+        const cachedProfile = await this.redisService.getUserCache<{
+            user: Record<string, unknown>;
+            roles: Array<Record<string, unknown>>;
+            permissions: Array<Record<string, unknown>>;
+        }>(userId);
+
+        if (cachedProfile) {
+            return {
+                message: await this.i18n.t('account.profile.get_success', { lang }),
+                ...cachedProfile,
+            };
+        }
+
         const user = await this.userRepository.getUserWithRolesAndPermissions(userId);
         if (!user) {
             throw new BadRequestException('User không tồn tại');
@@ -83,8 +101,7 @@ export class AccountService {
             (p, index, self) => index === self.findIndex((t) => t.id === p.id),
         );
 
-        return {
-            message: await this.i18n.t('account.profile.get_success', { lang }),
+        const profileData = {
             user: {
                 id: user.id,
                 name: user.name,
@@ -98,6 +115,14 @@ export class AccountService {
             roles,
             permissions: uniquePermissions,
         };
+
+        // Cache the profile data (5 minutes TTL)
+        await this.redisService.setUserCache(userId, profileData);
+
+        return {
+            message: await this.i18n.t('account.profile.get_success', { lang }),
+            ...profileData,
+        };
     }
 
     /**
@@ -110,6 +135,22 @@ export class AccountService {
         await this.userRepository.updateProfile(userId, {
             name: dto.name,
             language: dto.language,
+        });
+
+        // Invalidate user cache
+        await this.redisService.invalidateUserCache(userId);
+
+        // Get updated fields list
+        const updatedFields: string[] = [];
+        if (dto.name) updatedFields.push('name');
+        if (dto.language) updatedFields.push('language');
+
+        // Emit realtime profile updated event
+        this.websocketGateway.emitProfileUpdated(userId, updatedFields, {
+            id: user.id,
+            name: dto.name || user.name,
+            email: user.email,
+            language: dto.language || user.language || undefined,
         });
 
         this.systemLogService.info('account', 'update_profile', `Profile updated: ${user.email}`, {
@@ -164,6 +205,10 @@ export class AccountService {
 
         if (dto.logout_all_devices) {
             await this.refreshTokenRepository.deleteAllByUserId(userId);
+
+            // Emit realtime token revoked event
+            const message = await this.i18n.t('auth.change_password.session_revoked', { lang });
+            this.websocketGateway.emitTokenRevoked(userId, 'password_changed', message);
         }
 
         if (user.email) {

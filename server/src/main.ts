@@ -5,9 +5,18 @@ import {
   I18nValidationExceptionFilter,
 } from 'nestjs-i18n';
 import { AppModule } from './app.module';
+import { GlobalExceptionFilter } from './common/filters';
+import { HttpLoggingInterceptor } from './common/interceptors';
+import { SystemLogService } from './modules/system-log/system-log.service';
+
+// Thời gian server bắt đầu
+const serverStartTime = new Date();
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // Lấy SystemLogService từ container
+  const systemLogService = app.get(SystemLogService);
 
   app.useGlobalPipes(
     new I18nValidationPipe({
@@ -17,11 +26,16 @@ async function bootstrap() {
     }),
   );
 
+  // Đăng ký GlobalExceptionFilter (xử lý trước I18nValidationExceptionFilter)
   app.useGlobalFilters(
+    new GlobalExceptionFilter(systemLogService),
     new I18nValidationExceptionFilter({
       detailedErrors: false,
     }),
   );
+
+  // Đăng ký HTTP Logging Interceptor
+  app.useGlobalInterceptors(new HttpLoggingInterceptor(systemLogService));
 
   app.enableCors({
     origin: process.env.FRONTEND_URL || '*',
@@ -57,7 +71,59 @@ async function bootstrap() {
   const port = process.env.PORT ?? 4000;
   await app.listen(port);
 
+  // Log server startup
+  systemLogService.logServerStart(port, serverStartTime);
+
   console.log(`🚀 Server đang chạy tại http://localhost:${port}`);
   console.log(`📚 Swagger docs: http://localhost:${port}/api-docs`);
+
+  // ============================================================
+  // Graceful Shutdown & Crash Handlers
+  // ============================================================
+
+  // Xử lý graceful shutdown (SIGTERM, SIGINT)
+  const gracefulShutdown = async (signal: string) => {
+    console.log(`\n📴 Nhận signal ${signal}, đang tắt server...`);
+
+    try {
+      await systemLogService.logServerShutdown(serverStartTime, signal);
+      await app.close();
+      console.log('✅ Server đã tắt hoàn tất');
+      process.exit(0);
+    } catch (error) {
+      console.error('❌ Lỗi khi tắt server:', error);
+      process.exit(1);
+    }
+  };
+
+  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+  // Xử lý uncaught exceptions (crash)
+  process.on('uncaughtException', async (error: Error) => {
+    console.error('💥 Uncaught Exception:', error);
+
+    try {
+      await systemLogService.logCritical(error, 'uncaughtException');
+    } catch {
+      console.error('Failed to log critical error');
+    }
+
+    process.exit(1);
+  });
+
+  // Xử lý unhandled promise rejections (crash)
+  process.on('unhandledRejection', async (reason: unknown) => {
+    const error = reason instanceof Error ? reason : new Error(String(reason));
+    console.error('💥 Unhandled Rejection:', error);
+
+    try {
+      await systemLogService.logCritical(error, 'unhandledRejection');
+    } catch {
+      console.error('Failed to log critical error');
+    }
+
+    process.exit(1);
+  });
 }
 bootstrap();
