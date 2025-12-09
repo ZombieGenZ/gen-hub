@@ -9,17 +9,18 @@ import { WebsocketGateway } from './websocket.gateway';
  */
 @Global()
 @Module({
-    imports: [
-        ConfigModule,
-        JwtModule.registerAsync({
-            imports: [ConfigModule],
-            inject: [ConfigService],
-            useFactory: (configService: ConfigService) => ({
-                secret: configService.get<string>('JWT_ACCESS_SECRET') || 'default-secret',
-            }),
-        }),
-    ],
-    providers: [WebsocketGateway],
-    exports: [WebsocketGateway],
+  imports: [
+    ConfigModule,
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        secret:
+          configService.get<string>('JWT_ACCESS_SECRET') || 'default-secret',
+      }),
+    }),
+  ],
+  providers: [WebsocketGateway],
+  exports: [WebsocketGateway],
 })
-export class WebsocketModule { }
+export class WebsocketModule {}

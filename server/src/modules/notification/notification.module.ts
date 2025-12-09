@@ -8,8 +8,8 @@ import { EmailService } from './email.service';
  * (SMS đã được loại bỏ)
  */
 @Module({
-    imports: [ConfigModule],
-    providers: [EmailService],
-    exports: [EmailService],
+  imports: [ConfigModule],
+  providers: [EmailService],
+  exports: [EmailService],
 })
-export class NotificationModule { }
+export class NotificationModule {}

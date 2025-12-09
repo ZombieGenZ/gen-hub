@@ -4,12 +4,12 @@ import { createParamDecorator, ExecutionContext } from '@nestjs/common';
  * Interface cho user payload từ JWT
  */
 export interface ICurrentUser {
-    /** ID của user */
-    userId: string;
-    /** Email của user */
-    email?: string;
-    /** Số điện thoại của user */
-    phone?: string;
+  /** ID của user */
+  userId: string;
+  /** Email của user */
+  email?: string;
+  /** Số điện thoại của user */
+  phone?: string;
 }
 
 /**
@@ -17,15 +17,18 @@ export interface ICurrentUser {
  * Sử dụng: @CurrentUser() user: ICurrentUser
  */
 export const CurrentUser = createParamDecorator(
-    (data: keyof ICurrentUser | undefined, ctx: ExecutionContext): ICurrentUser | unknown => {
-        const request = ctx.switchToHttp().getRequest();
-        const user = request.user as ICurrentUser;
+  (
+    data: keyof ICurrentUser | undefined,
+    ctx: ExecutionContext,
+  ): ICurrentUser | unknown => {
+    const request = ctx.switchToHttp().getRequest();
+    const user = request.user as ICurrentUser;
 
-        // Nếu có chỉ định field cụ thể, trả về field đó
-        if (data) {
-            return user?.[data];
-        }
+    // Nếu có chỉ định field cụ thể, trả về field đó
+    if (data) {
+      return user?.[data];
+    }
 
-        return user;
-    },
+    return user;
+  },
 );

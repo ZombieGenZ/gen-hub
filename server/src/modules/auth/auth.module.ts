@@ -13,17 +13,9 @@ import { NotificationModule } from '../notification/notification.module';
  * Quản lý authentication và authorization
  */
 @Module({
-    imports: [
-        UserModule,
-        BackupCodeModule,
-        NotificationModule,
-    ],
-    controllers: [AuthController],
-    providers: [
-        AuthService,
-        JwtStrategy,
-        RefreshTokenRepository,
-    ],
-    exports: [AuthService, JwtStrategy, RefreshTokenRepository],
+  imports: [UserModule, BackupCodeModule, NotificationModule],
+  controllers: [AuthController],
+  providers: [AuthService, JwtStrategy, RefreshTokenRepository],
+  exports: [AuthService, JwtStrategy, RefreshTokenRepository],
 })
-export class AuthModule { }
+export class AuthModule {}

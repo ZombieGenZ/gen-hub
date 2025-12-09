@@ -7,8 +7,8 @@ import { PrismaModule } from '../../prisma/prisma.module';
  * Quản lý users và user repository
  */
 @Module({
-    imports: [PrismaModule],
-    providers: [UserRepository],
-    exports: [UserRepository],
+  imports: [PrismaModule],
+  providers: [UserRepository],
+  exports: [UserRepository],
 })
-export class UserModule { }
+export class UserModule {}

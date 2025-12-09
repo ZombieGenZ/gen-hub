@@ -11,13 +11,9 @@ import { AccountService } from './account.service';
  * Quản lý thông tin tài khoản, mật khẩu và liên kết nền tảng
  */
 @Module({
-    imports: [
-        UserModule,
-        NotificationModule,
-        AuthModule,
-    ],
-    controllers: [AccountController],
-    providers: [AccountService],
-    exports: [AccountService],
+  imports: [UserModule, NotificationModule, AuthModule],
+  controllers: [AccountController],
+  providers: [AccountService],
+  exports: [AccountService],
 })
-export class AccountModule { }
+export class AccountModule {}

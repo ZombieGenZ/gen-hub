@@ -7,8 +7,8 @@ import { PrismaModule } from '../../prisma/prisma.module';
  * Quản lý backup codes cho 2FA
  */
 @Module({
-    imports: [PrismaModule],
-    providers: [BackupCodeService, BackupCodeRepository],
-    exports: [BackupCodeService],
+  imports: [PrismaModule],
+  providers: [BackupCodeService, BackupCodeRepository],
+  exports: [BackupCodeService],
 })
-export class BackupCodeModule { }
+export class BackupCodeModule {}

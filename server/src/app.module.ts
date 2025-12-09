@@ -64,5 +64,4 @@ import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
     },
   ],
 })
-export class AppModule { }
-
+export class AppModule {}

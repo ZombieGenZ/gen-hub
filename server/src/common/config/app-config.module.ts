@@ -8,8 +8,8 @@ import { AppConfigController } from './app-config.controller';
  */
 @Global()
 @Module({
-    controllers: [AppConfigController],
-    providers: [AppConfigService],
-    exports: [AppConfigService],
+  controllers: [AppConfigController],
+  providers: [AppConfigService],
+  exports: [AppConfigService],
 })
-export class AppConfigModule { }
+export class AppConfigModule {}

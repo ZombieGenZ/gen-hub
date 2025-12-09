@@ -12,14 +12,9 @@ import { TwoFactorService } from './two-factor.service';
  * Quản lý xác thực 2 yếu tố (2FA)
  */
 @Module({
-    imports: [
-        UserModule,
-        BackupCodeModule,
-        AuthModule,
-        NotificationModule,
-    ],
-    controllers: [TwoFactorController],
-    providers: [TwoFactorService],
-    exports: [TwoFactorService],
+  imports: [UserModule, BackupCodeModule, AuthModule, NotificationModule],
+  controllers: [TwoFactorController],
+  providers: [TwoFactorService],
+  exports: [TwoFactorService],
 })
-export class TwoFactorModule { }
+export class TwoFactorModule {}
