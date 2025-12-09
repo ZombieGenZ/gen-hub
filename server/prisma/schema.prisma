@@ -43,7 +43,7 @@ model District {
   code        String        @unique
   name        String
   type        DistrictType?
-  province_id String @db.Uuid
+  province_id String        @db.Uuid
 
   province Province @relation(fields: [province_id], references: [id], onDelete: Cascade)
   wards    Ward[]
@@ -69,7 +69,7 @@ model Ward {
   code        String    @unique
   name        String
   type        WardType?
-  district_id String @db.Uuid
+  district_id String    @db.Uuid
 
   district District @relation(fields: [district_id], references: [id], onDelete: Cascade)
 
@@ -113,7 +113,7 @@ model User {
   forgot_password_token   String?
   forgot_password_expired DateTime?
 
-  created_at DateTime @default(now())
+  created_at DateTime  @default(now())
   updated_at DateTime? @updatedAt
 
   refresh_tokens RefreshToken[]
@@ -129,6 +129,7 @@ model User {
   system_logs             SystemLog[]
   organization_audit_logs OrganizationAuditLog[]
   backupCodes             BackupCode[]
+  notifications           UserNotification[]
 
   @@map("users")
 }
@@ -203,8 +204,8 @@ model Permission {
 
 model RolePermission {
   id            String    @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
-  role_id       String @db.Uuid
-  permission_id String @db.Uuid
+  role_id       String    @db.Uuid
+  permission_id String    @db.Uuid
   is_active     Boolean?  @default(true)
   created_at    DateTime  @default(now())
   updated_at    DateTime  @updatedAt
@@ -221,8 +222,8 @@ model RolePermission {
 
 model UserRole {
   id         String    @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
-  user_id    String @db.Uuid
-  role_id    String @db.Uuid
+  user_id    String    @db.Uuid
+  role_id    String    @db.Uuid
   is_active  Boolean?  @default(true)
   created_at DateTime  @default(now())
   updated_at DateTime? @updatedAt
@@ -239,8 +240,8 @@ model UserRole {
 
 model UserPermission {
   id            String    @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
-  user_id       String @db.Uuid
-  permission_id String @db.Uuid
+  user_id       String    @db.Uuid
+  permission_id String    @db.Uuid
   is_active     Boolean?  @default(true)
   created_at    DateTime  @default(now())
   updated_at    DateTime  @updatedAt
@@ -261,87 +262,278 @@ enum DimensionUnit {
   KILOMETER
 }
 
-model PlanTemplate {
+enum WarehouseStatus {
+  ACTIVE
+  OVERDUE_LEVEL_1
+  OVERDUE_LEVEL_2
+  CANCELLED
+}
+
+model WarehouseTemplate {
   id          String  @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
-  code        String  @unique
   name        String
   description String?
 
-  is_active Boolean @default(true)
+  unit   DimensionUnit
+  length Int
+  width  Int
 
-  price    Decimal? @db.Decimal(19, 4)
-  currency String?
+  is_rented             Boolean @default(false)
+  price_per_day         Decimal @db.Decimal(19, 4)
+  discount_1_week       Decimal @default(0) @db.Decimal(5, 2) // 0%
+  discount_1_month      Decimal @default(0) @db.Decimal(5, 2) // 0%
+  discount_3_months     Decimal @default(5) @db.Decimal(5, 2) // 5%
+  discount_6_months     Decimal @default(10) @db.Decimal(5, 2) // 10%
+  discount_1_year       Decimal @default(15) @db.Decimal(5, 2) // 15%
+  discount_2_years      Decimal @default(20) @db.Decimal(5, 2) // 20%
+  discount_3_years_plus Decimal @default(25) @db.Decimal(5, 2) // 25%
 
-  default_duration_days Int?
+  address   String?
+  latitude  Decimal? @db.Decimal(10, 8)
+  longitude Decimal? @db.Decimal(11, 8)
 
-  // Tổ chức & người dùng
-  max_organization_members Int? // tối đa thành viên trong 1 org
-  max_roles                Int? // tối đa role custom trong org
-  max_api_keys             Int? // tối đa API keys / org
-
-  // Kho & cấu trúc kho
-  max_warehouses          Int? // tối đa số kho
-  max_racks_per_warehouse Int? // tối đa rack / 1 kho
-  max_shelves_per_rack    Int? // tối đa kệ / 1 rack
-  max_blocks_per_shelf    Int? // tối đa block / 1 kệ
-
-  // Danh mục
-  max_products            Int? // tối đa sản phẩm
-  max_batches_per_product Int? // tối đa lô / 1 sản phẩm (nếu dùng batch)
-  max_units               Int? // tối đa đơn vị tính
-  max_partners            Int? // tối đa đối tác (supplier/customer)
-
-  // Phiếu nhập (Receipt)
-  max_receipts_per_month        Int? // số phiếu nhập / tháng
-  max_receipt_lines_per_receipt Int? // tối đa dòng chi tiết / 1 phiếu nhập
-
-  // Phiếu xuất (Export)
-  max_exports_per_month       Int? // số phiếu xuất / tháng
-  max_export_lines_per_export Int? // tối đa dòng chi tiết / 1 phiếu xuất
-
-  // Kiểm kê (StockTake)
-  max_stock_takes_per_month           Int? // số phiếu kiểm kê / tháng
-  max_stock_take_lines_per_stock_take Int? // tối đa dòng chi tiết / 1 phiếu kiểm kê
-
-  // Giao dịch tồn kho (InventoryTransaction)
-  max_inventory_transactions_per_day   Int? // giao dịch / ngày
-  max_inventory_transactions_per_month Int? // giao dịch / tháng
-
-  enable_api_access Boolean @default(false) // cho phép dùng API key
-
+  is_active  Boolean   @default(true)
   created_at DateTime  @default(now())
   updated_at DateTime? @updatedAt
-  is_deleted Boolean   @default(false)
+  is_deleted Boolean?  @default(false)
   deleted_at DateTime?
 
-  subscription_plans SubscriptionPlan[]
+  created_by String
+  updated_by String?
+  deleted_by String?
 
-  @@map("plan_templates")
+  rows RowTemplate[]
+
+  @@map("warehouse_templates")
 }
 
-model SubscriptionPlan {
-  id               String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
-  organization_id  String @db.Uuid
-  plan_template_id String @db.Uuid
+model RowTemplate {
+  id                    String  @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  warehouse_template_id String  @db.Uuid
+  name                  String
+  code                  String
+  description           String?
+
+  is_rented             Boolean @default(false)
+  price_per_day         Decimal @db.Decimal(19, 4)
+  discount_1_week       Decimal @default(0) @db.Decimal(5, 2)
+  discount_1_month      Decimal @default(0) @db.Decimal(5, 2)
+  discount_3_months     Decimal @default(5) @db.Decimal(5, 2)
+  discount_6_months     Decimal @default(10) @db.Decimal(5, 2)
+  discount_1_year       Decimal @default(15) @db.Decimal(5, 2)
+  discount_2_years      Decimal @default(20) @db.Decimal(5, 2)
+  discount_3_years_plus Decimal @default(25) @db.Decimal(5, 2)
+
+  address   String?
+  latitude  Decimal? @db.Decimal(10, 8)
+  longitude Decimal? @db.Decimal(11, 8)
+
+  position_x        Decimal? @db.Decimal(10, 4)
+  position_y        Decimal? @db.Decimal(10, 4)
+  position_rotation Decimal? @db.Decimal(10, 4)
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean?  @default(false)
+  deleted_at DateTime?
+
+  created_by String
+  updated_by String?
+  deleted_by String?
+
+  warehouse_template WarehouseTemplate @relation(fields: [warehouse_template_id], references: [id], onDelete: Cascade)
+  racks              RackTemplate[]
+
+  @@index([warehouse_template_id])
+  @@map("row_templates")
+}
+
+model RackTemplate {
+  id              String  @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  row_template_id String  @db.Uuid
+  name            String
+  code            String
+  description     String?
+
+  position_x        Decimal? @db.Decimal(10, 4)
+  position_y        Decimal? @db.Decimal(10, 4)
+  position_rotation Decimal? @db.Decimal(10, 4)
+
+  dimensions_width  Decimal? @db.Decimal(10, 4)
+  dimensions_depth  Decimal? @db.Decimal(10, 4)
+  dimensions_height Decimal? @db.Decimal(10, 4)
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean?  @default(false)
+  deleted_at DateTime?
+
+  created_by String
+  updated_by String?
+  deleted_by String?
+
+  row_template RowTemplate     @relation(fields: [row_template_id], references: [id], onDelete: Cascade)
+  shelves      ShelfTemplate[]
+
+  @@index([row_template_id])
+  @@map("rack_templates")
+}
+
+model ShelfTemplate {
+  id               String  @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  rack_template_id String  @db.Uuid
+  name             String
+  code             String
+  description      String?
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean?  @default(false)
+  deleted_at DateTime?
+
+  created_by String
+  updated_by String?
+  deleted_by String?
+
+  rack_template RackTemplate    @relation(fields: [rack_template_id], references: [id], onDelete: Cascade)
+  blocks        BlockTemplate[]
+
+  @@index([rack_template_id])
+  @@map("shelf_templates")
+}
+
+model BlockTemplate {
+  id                String  @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  shelf_template_id String  @db.Uuid
+  name              String
+  code              String
+  description       String?
+
+  // Position
+  position_x Decimal? @db.Decimal(10, 4)
+  position_y Decimal? @db.Decimal(10, 4)
+
+  // Dimensions
+  dimensions_width  Decimal? @db.Decimal(10, 4)
+  dimensions_height Decimal? @db.Decimal(10, 4)
+
+  // Audit fields
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean?  @default(false)
+  deleted_at DateTime?
+
+  created_by String
+  updated_by String?
+  deleted_by String?
+
+  shelf_template ShelfTemplate @relation(fields: [shelf_template_id], references: [id], onDelete: Cascade)
+
+  @@index([shelf_template_id])
+  @@map("block_templates")
+}
+
+// ========================================
+// RENTAL CONTRACT MODELS (Hợp đồng thuê)
+// ========================================
+
+model RentalContract {
+  id              String  @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  organization_id String  @db.Uuid
+  code            String
+  name            String?
 
   started_at DateTime
   expired_at DateTime?
-  // is_lifetime Boolean    @default(false)
 
-  is_active Boolean @default(true)
-  notes     String?
+  total_price   Decimal @db.Decimal(19, 4)
+  discount_rate Decimal @default(0) @db.Decimal(5, 2)
+  final_price   Decimal @db.Decimal(19, 4)
 
+  notes String?
+
+  is_active  Boolean   @default(true)
   created_at DateTime  @default(now())
   updated_at DateTime? @updatedAt
-  is_deleted Boolean   @default(false)
+  is_deleted Boolean?  @default(false)
   deleted_at DateTime?
 
-  organization Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-  template     PlanTemplate @relation(fields: [plan_template_id], references: [id])
+  created_by String
+  updated_by String?
+  deleted_by String?
+
+  organization Organization           @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  details      RentalContractDetail[]
 
   @@index([organization_id])
-  @@index([plan_template_id])
-  @@map("subscription_plans")
+  @@map("rental_contracts")
+}
+
+model RentalContractDetail {
+  id                 String  @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  rental_contract_id String  @db.Uuid
+  warehouse_id       String? @db.Uuid
+  row_id             String? @db.Uuid
+
+  price_per_day Decimal @db.Decimal(19, 4)
+  discount_rate Decimal @default(0) @db.Decimal(5, 2)
+  rental_days   Int
+  subtotal      Decimal @db.Decimal(19, 4)
+
+  notes String?
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean?  @default(false)
+  deleted_at DateTime?
+
+  created_by String?
+  updated_by String?
+  deleted_by String?
+
+  rental_contract RentalContract @relation(fields: [rental_contract_id], references: [id], onDelete: Cascade)
+  warehouse       Warehouse?     @relation(fields: [warehouse_id], references: [id])
+  row             Row?           @relation(fields: [row_id], references: [id])
+
+  @@index([rental_contract_id])
+  @@index([warehouse_id])
+  @@index([row_id])
+  @@map("rental_contract_details")
+}
+
+model Row {
+  id           String  @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  warehouse_id String  @db.Uuid
+  name         String
+  code         String
+  description  String?
+  is_rented    Boolean @default(false)
+
+  position_x        Decimal? @db.Decimal(10, 4)
+  position_y        Decimal? @db.Decimal(10, 4)
+  position_rotation Decimal? @db.Decimal(10, 4)
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean?  @default(false)
+  deleted_at DateTime?
+
+  created_by String
+  updated_by String?
+  deleted_by String?
+
+  warehouse               Warehouse              @relation(fields: [warehouse_id], references: [id], onDelete: Cascade)
+  racks                   Rack[]
+  rental_contract_details RentalContractDetail[]
+
+  @@index([warehouse_id])
+  @@map("rows")
 }
 
 model Organization {
@@ -353,8 +545,8 @@ model Organization {
   owner_id   String   @db.Uuid
 
   block_unit   DimensionUnit
-  block_length Decimal @db.Decimal(10, 4)
-  block_width  Decimal @db.Decimal(10, 4)
+  block_length Decimal       @db.Decimal(10, 4)
+  block_width  Decimal       @db.Decimal(10, 4)
 
   created_at DateTime  @default(now())
   updated_at DateTime? @updatedAt
@@ -375,20 +567,21 @@ model Organization {
   units      Unit[]
   warehouses Warehouse[]
 
-  subscription_plans       SubscriptionPlan[]
+  rental_contracts         RentalContract[]
   organization_permissions OrganizationPermission[]
   inventory_transactions   InventoryTransaction[]
   inventories              Inventory[]
   audit_logs               OrganizationAuditLog[]
   api_key_logs             ApiKeyLog[]
+  notifications            OrganizationNotification[]
 
   @@map("organizations")
 }
 
 model OrganizationMember {
   id              String   @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
-  user_id         String @db.Uuid
-  organization_id String @db.Uuid
+  user_id         String   @db.Uuid
+  organization_id String   @db.Uuid
   is_accepted     Boolean? @default(false)
   is_active       Boolean? @default(true)
   is_deleted      Boolean? @default(false)
@@ -417,7 +610,7 @@ model OrganizationRole {
   name            String
   description     String?
   is_active       Boolean? @default(true)
-  organization_id String @db.Uuid
+  organization_id String   @db.Uuid
 
   created_at DateTime  @default(now())
   updated_at DateTime? @updatedAt
@@ -441,7 +634,7 @@ model OrganizationPermission {
   name            String
   description     String?
   key             String
-  organization_id String @db.Uuid
+  organization_id String   @db.Uuid
   is_active       Boolean? @default(true)
 
   created_at DateTime  @default(now())
@@ -460,8 +653,8 @@ model OrganizationPermission {
 
 model OrganizationRolePermission {
   id                         String   @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
-  organization_role_id       String @db.Uuid
-  organization_permission_id String @db.Uuid
+  organization_role_id       String   @db.Uuid
+  organization_permission_id String   @db.Uuid
   is_active                  Boolean? @default(true)
 
   created_at DateTime  @default(now())
@@ -479,9 +672,9 @@ model OrganizationRolePermission {
 
 model OrganizationMemberRole {
   id                     String   @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
-  organization_member_id String  @db.Uuid
-  organization_role_id   String  @db.Uuid
-  warehouse_id           String? @db.Uuid
+  organization_member_id String   @db.Uuid
+  organization_role_id   String   @db.Uuid
+  warehouse_id           String?  @db.Uuid
   is_active              Boolean? @default(true)
 
   created_at DateTime  @default(now())
@@ -501,9 +694,9 @@ model OrganizationMemberRole {
 
 model OrganizationMemberPermission {
   id                         String    @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
-  organization_member_id     String  @db.Uuid
-  organization_permission_id String  @db.Uuid
-  warehouse_id               String? @db.Uuid
+  organization_member_id     String    @db.Uuid
+  organization_permission_id String    @db.Uuid
+  warehouse_id               String?   @db.Uuid
   is_active                  Boolean?  @default(true)
   created_at                 DateTime  @default(now())
   updated_at                 DateTime  @updatedAt
@@ -531,14 +724,14 @@ model ApiKey {
   last_used_at DateTime?
   last_used_ip String?
 
-  organization_id String @db.Uuid
+  organization_id String       @db.Uuid
   organization    Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
 
   created_at DateTime  @default(now())
   updated_at DateTime? @updatedAt
   deleted_at DateTime?
 
-  created_by_user_id String @db.Uuid
+  created_by_user_id String  @db.Uuid
   created_by         User    @relation(fields: [created_by_user_id], references: [id])
   updated_by         String?
   is_deleted         Boolean @default(false)
@@ -557,9 +750,9 @@ model ApiKey {
 
 model ApiKeyRole {
   id                   String    @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
-  api_key_id           String  @db.Uuid
-  organization_role_id String  @db.Uuid
-  warehouse_id         String? @db.Uuid
+  api_key_id           String    @db.Uuid
+  organization_role_id String    @db.Uuid
+  warehouse_id         String?   @db.Uuid
   is_active            Boolean?  @default(true)
   created_at           DateTime  @default(now())
   updated_at           DateTime  @updatedAt
@@ -576,9 +769,9 @@ model ApiKeyRole {
 
 model ApiKeyPermission {
   id                         String    @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
-  api_key_id                 String  @db.Uuid
-  organization_permission_id String  @db.Uuid
-  warehouse_id               String? @db.Uuid
+  api_key_id                 String    @db.Uuid
+  organization_permission_id String    @db.Uuid
+  warehouse_id               String?   @db.Uuid
   is_active                  Boolean?  @default(true)
   created_at                 DateTime  @default(now())
   updated_at                 DateTime  @updatedAt
@@ -626,13 +819,15 @@ model Partner {
 }
 
 model Warehouse {
-  id              String   @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  id              String          @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
   name            String
   description     String?
-  is_active       Boolean? @default(true)
-  is_deleted      Boolean? @default(false)
-  organization_id String   @db.Uuid
+  is_active       Boolean?        @default(true)
+  is_deleted      Boolean?        @default(false)
+  organization_id String          @db.Uuid
   address_detail  String?
+  status          WarehouseStatus @default(ACTIVE)
+  is_rented       Boolean         @default(false)
 
   ward_id String? @db.Uuid
   ward    Ward?   @relation(fields: [ward_id], references: [id])
@@ -657,13 +852,15 @@ model Warehouse {
   assigned_api_key_roles       ApiKeyRole[]
   assigned_api_key_permissions ApiKeyPermission[]
 
-  racks       Rack[]
+  rows        Row[]
   receipts    Receipt[]
   exports     Export[]
   stock_takes StockTake[]
 
-  inventory_transactions InventoryTransaction[]
-  inventories            Inventory[]
+  inventory_transactions  InventoryTransaction[]
+  inventories             Inventory[]
+  rental_contract_details RentalContractDetail[]
+  notifications           OrganizationNotification[]
 
   @@map("warehouses")
 }
@@ -740,8 +937,8 @@ model Product {
 
 model ProductUnit {
   id              String  @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
-  product_id      String @db.Uuid
-  unit_id         String @db.Uuid
+  product_id      String  @db.Uuid
+  unit_id         String  @db.Uuid
   unit            Unit    @relation("UnitConversion", fields: [unit_id], references: [id])
   conversion_rate Decimal @db.Decimal(10, 4)
   barcode         String?
@@ -762,16 +959,17 @@ model ProductUnit {
 }
 
 model Rack {
-  id           String    @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
-  warehouse_id String @db.Uuid
-  name         String
-  code         String
-  description  String?
-  is_active    Boolean   @default(true)
-  created_at   DateTime  @default(now())
-  updated_at   DateTime  @updatedAt
-  is_deleted   Boolean?  @default(false)
-  deleted_at   DateTime?
+  id          String   @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  row_id      String   @db.Uuid
+  name        String
+  code        String
+  description String?
+  is_rented   Boolean  @default(false)
+  is_active   Boolean  @default(true)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+  is_deleted  Boolean? @default(false)
+  deleted_at  DateTime?
 
   created_by String
   updated_by String?
@@ -785,9 +983,10 @@ model Rack {
   dimensions_depth  Decimal? @db.Decimal(10, 4)
   dimensions_height Decimal? @db.Decimal(10, 4)
 
-  warehouse Warehouse @relation(fields: [warehouse_id], references: [id], onDelete: Cascade)
-  shelves   Shelf[]
+  row     Row     @relation(fields: [row_id], references: [id], onDelete: Cascade)
+  shelves Shelf[]
 
+  @@index([row_id])
   @@map("racks")
 }
 
@@ -817,7 +1016,7 @@ model Shelf {
 
 model Block {
   id          String    @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
-  shelf_id    String @db.Uuid
+  shelf_id    String    @db.Uuid
   name        String
   code        String
   description String?
@@ -846,18 +1045,18 @@ model Block {
 
 model Batch {
   id                 String    @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
-  product_id         String @db.Uuid
+  product_id         String    @db.Uuid
   code               String
   manufacturing_date DateTime?
   expiry_date        DateTime?
 
   import_price Decimal? @default(0) @db.Decimal(19, 4)
 
-  is_active          Boolean   @default(true)
-  created_at         DateTime  @default(now())
-  updated_at         DateTime  @updatedAt
-  is_deleted         Boolean?  @default(false)
-  deleted_at         DateTime?
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  is_deleted Boolean?  @default(false)
+  deleted_at DateTime?
 
   created_by String
   updated_by String?
@@ -873,17 +1072,17 @@ model Batch {
 }
 
 model Inventory {
-  id              String    @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
-  organization_id String    @db.Uuid
-  warehouse_id    String    @db.Uuid
-  block_id        String    @db.Uuid
-  product_id      String    @db.Uuid
-  batch_id        String?   @db.Uuid
+  id              String  @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  organization_id String  @db.Uuid
+  warehouse_id    String  @db.Uuid
+  block_id        String  @db.Uuid
+  product_id      String  @db.Uuid
+  batch_id        String? @db.Uuid
 
-  quantity            Decimal @default(0) @db.Decimal(19, 4)
-  quantity_on_hand    Decimal @default(0) @db.Decimal(19, 4)
-  quantity_allocated  Decimal @default(0) @db.Decimal(19, 4)
-  quantity_available  Decimal @default(0) @db.Decimal(19, 4)
+  quantity           Decimal @default(0) @db.Decimal(19, 4)
+  quantity_on_hand   Decimal @default(0) @db.Decimal(19, 4)
+  quantity_allocated Decimal @default(0) @db.Decimal(19, 4)
+  quantity_available Decimal @default(0) @db.Decimal(19, 4)
 
   is_active  Boolean   @default(true)
   created_at DateTime  @default(now())
@@ -896,10 +1095,10 @@ model Inventory {
   deleted_by String?
 
   organization Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-  warehouse   Warehouse    @relation(fields: [warehouse_id], references: [id], onDelete: Cascade)
-  block       Block        @relation(fields: [block_id], references: [id], onDelete: Cascade)
-  product     Product      @relation(fields: [product_id], references: [id], onDelete: Cascade)
-  batch       Batch?       @relation(fields: [batch_id], references: [id])
+  warehouse    Warehouse    @relation(fields: [warehouse_id], references: [id], onDelete: Cascade)
+  block        Block        @relation(fields: [block_id], references: [id], onDelete: Cascade)
+  product      Product      @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  batch        Batch?       @relation(fields: [batch_id], references: [id])
 
   @@index([organization_id])
   @@index([warehouse_id])
@@ -925,7 +1124,7 @@ model InventoryTransaction {
   from_block_id   String?         @db.Uuid
   to_block_id     String?         @db.Uuid
   type            TransactionType
-  quantity        Decimal                    @db.Decimal(19, 4)
+  quantity        Decimal         @db.Decimal(19, 4)
   conversion_rate Decimal         @default(1) @db.Decimal(10, 4)
   unit_price      Decimal?        @default(0) @db.Decimal(19, 4)
   total_value     Decimal?        @default(0) @db.Decimal(19, 4)
@@ -985,7 +1184,7 @@ model ReceiptDetail {
   receipt_id      String  @db.Uuid
   product_id      String  @db.Uuid
   batch_id        String? @db.Uuid
-  expected_qty    Decimal            @db.Decimal(19, 4)
+  expected_qty    Decimal @db.Decimal(19, 4)
   actual_qty      Decimal @default(0) @db.Decimal(19, 4)
   unit_id         String  @db.Uuid
   conversion_rate Decimal @default(1) @db.Decimal(10, 4)
@@ -1049,7 +1248,7 @@ model ExportDetail {
   export_id         String  @db.Uuid
   product_id        String  @db.Uuid
   required_batch_id String? @db.Uuid
-  quantity          Decimal            @db.Decimal(19, 4)
+  quantity          Decimal @db.Decimal(19, 4)
   unit_id           String  @db.Uuid
   conversion_rate   Decimal @default(1) @db.Decimal(10, 4)
 
@@ -1117,7 +1316,7 @@ model ExportPickListDetail {
   batch_id         String? @db.Uuid
   block_id         String  @db.Uuid
 
-  required_qty Decimal            @db.Decimal(19, 4)
+  required_qty Decimal @db.Decimal(19, 4)
   picked_qty   Decimal @default(0) @db.Decimal(19, 4)
 
   is_active  Boolean   @default(true)
@@ -1160,7 +1359,7 @@ model Package {
 
   tracking_number  String?
   carrier          String?
-  shipping_cost    Decimal? @default(0) @db.Decimal(19, 4)
+  shipping_cost    Decimal?  @default(0) @db.Decimal(19, 4)
   estimated_arrive DateTime?
   shipped_at       DateTime?
   delivered_at     DateTime?
@@ -1211,7 +1410,6 @@ model PackageDetail {
 }
 
 enum StockTakeStatus {
-
   DRAFT
   IN_PROGRESS
   COMPLETED
@@ -1221,8 +1419,8 @@ enum StockTakeStatus {
 
 model StockTake {
   id              String          @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
-  organization_id String @db.Uuid
-  warehouse_id    String @db.Uuid
+  organization_id String          @db.Uuid
+  warehouse_id    String          @db.Uuid
   code            String
   status          StockTakeStatus @default(DRAFT)
   notes           String?
@@ -1360,4 +1558,81 @@ model ApiKeyLog {
   @@index([api_key_id, created_at])
   @@index([organization_id, created_at])
   @@map("api_key_logs")
+}
+
+enum NotificationType {
+  INFO
+  WARNING
+  ERROR
+  SUCCESS
+}
+
+model GlobalNotification {
+  id      String           @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  title   String
+  content String           @db.Text
+  type    NotificationType @default(INFO)
+
+  starts_at DateTime?
+  ends_at   DateTime?
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean?  @default(false)
+  deleted_at DateTime?
+
+  created_by String
+  updated_by String?
+  deleted_by String?
+
+  @@map("global_notifications")
+}
+
+model UserNotification {
+  id      String           @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  user_id String           @db.Uuid
+  title   String
+  content String           @db.Text
+  type    NotificationType @default(INFO)
+  is_read Boolean          @default(false)
+  read_at DateTime?
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean?  @default(false)
+  deleted_at DateTime?
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([user_id, is_read])
+  @@map("user_notifications")
+}
+
+model OrganizationNotification {
+  id              String           @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  organization_id String           @db.Uuid
+  warehouse_id    String?          @db.Uuid
+  title           String
+  content         String           @db.Text
+  type            NotificationType @default(INFO)
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean?  @default(false)
+  deleted_at DateTime?
+
+  created_by String?
+  updated_by String?
+  deleted_by String?
+
+  organization Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  warehouse    Warehouse?   @relation(fields: [warehouse_id], references: [id], onDelete: Cascade)
+
+  @@index([organization_id])
+  @@index([warehouse_id])
+  @@map("organization_notifications")
 }
