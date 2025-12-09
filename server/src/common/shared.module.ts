@@ -19,53 +19,50 @@ import { CustomThrottlerGuard } from './guards/throttler.guard';
  */
 @Global()
 @Module({
-    imports: [
-        ConfigModule,
+  imports: [
+    ConfigModule,
 
-        AppConfigModule,
+    AppConfigModule,
 
-        PrismaModule,
+    PrismaModule,
 
-        SystemLogModule,
+    SystemLogModule,
 
-        PassportModule.register({ defaultStrategy: 'jwt' }),
+    PassportModule.register({ defaultStrategy: 'jwt' }),
 
-        JwtModule.registerAsync({
-            imports: [ConfigModule],
-            inject: [ConfigService],
-            useFactory: (configService: ConfigService) => ({
-                secret: configService.get<string>('JWT_ACCESS_SECRET') || 'default-secret',
-                signOptions: {
-                    expiresIn: '15m',
-                },
-            }),
-        }),
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        secret:
+          configService.get<string>('JWT_ACCESS_SECRET') || 'default-secret',
+        signOptions: {
+          expiresIn: '15m',
+        },
+      }),
+    }),
 
-        ThrottlerModule.forRoot([
-            {
-                name: 'default',
-                ttl: 60000,
-                limit: 100,
-            },
-        ]),
-    ],
-    providers: [
-        JwtAuthGuard,
-        AccessVerificationGuard,
-        CustomThrottlerGuard,
-    ],
-    exports: [
-        ConfigModule,
-        AppConfigModule,
-        PrismaModule,
-        PassportModule,
-        JwtModule,
-        ThrottlerModule,
-        SystemLogModule,
+    ThrottlerModule.forRoot([
+      {
+        name: 'default',
+        ttl: 60000,
+        limit: 100,
+      },
+    ]),
+  ],
+  providers: [JwtAuthGuard, AccessVerificationGuard, CustomThrottlerGuard],
+  exports: [
+    ConfigModule,
+    AppConfigModule,
+    PrismaModule,
+    PassportModule,
+    JwtModule,
+    ThrottlerModule,
+    SystemLogModule,
 
-        JwtAuthGuard,
-        AccessVerificationGuard,
-        CustomThrottlerGuard,
-    ],
+    JwtAuthGuard,
+    AccessVerificationGuard,
+    CustomThrottlerGuard,
+  ],
 })
-export class SharedModule { }
+export class SharedModule {}

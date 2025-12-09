@@ -1,9 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
-import {
-  I18nValidationPipe,
-  I18nValidationExceptionFilter,
-} from 'nestjs-i18n';
+import { I18nValidationPipe, I18nValidationExceptionFilter } from 'nestjs-i18n';
 import { AppModule } from './app.module';
 import { GlobalExceptionFilter } from './common/filters';
 import { HttpLoggingInterceptor } from './common/interceptors';
@@ -96,32 +93,35 @@ async function bootstrap() {
     }
   };
 
-  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+  process.on('SIGTERM', () => {
+    gracefulShutdown('SIGTERM');
+  });
+  process.on('SIGINT', () => {
+    gracefulShutdown('SIGINT');
+  });
 
   // Xử lý uncaught exceptions (crash)
-  process.on('uncaughtException', async (error: Error) => {
+  process.on('uncaughtException', (error: Error) => {
     console.error('💥 Uncaught Exception:', error);
 
-    try {
-      await systemLogService.logCritical(error, 'uncaughtException');
-    } catch {
-      console.error('Failed to log critical error');
-    }
-
-    process.exit(1);
+    systemLogService
+      .logCritical(error, 'uncaughtException')
+      .catch(() => {
+        console.error('Failed to log critical error');
+      })
+      .finally(() => {
+        process.exit(1);
+      });
   });
 
   // Xử lý unhandled promise rejections (crash)
-  process.on('unhandledRejection', async (reason: unknown) => {
+  process.on('unhandledRejection', (reason: unknown) => {
     const error = reason instanceof Error ? reason : new Error(String(reason));
     console.error('💥 Unhandled Rejection:', error);
 
-    try {
-      await systemLogService.logCritical(error, 'unhandledRejection');
-    } catch {
+    systemLogService.logCritical(error, 'unhandledRejection').catch(() => {
       console.error('Failed to log critical error');
-    }
+    });
 
     process.exit(1);
   });
