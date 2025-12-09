@@ -269,7 +269,7 @@ model PlanTemplate {
 
   is_active Boolean @default(true)
 
-  price    Decimal?
+  price    Decimal? @db.Decimal(19, 4)
   currency String?
 
   default_duration_days Int?
@@ -353,8 +353,8 @@ model Organization {
   owner_id   String   @db.Uuid
 
   block_unit   DimensionUnit
-  block_length Decimal
-  block_width  Decimal
+  block_length Decimal @db.Decimal(10, 4)
+  block_width  Decimal @db.Decimal(10, 4)
 
   created_at DateTime  @default(now())
   updated_at DateTime? @updatedAt
@@ -378,6 +378,7 @@ model Organization {
   subscription_plans       SubscriptionPlan[]
   organization_permissions OrganizationPermission[]
   inventory_transactions   InventoryTransaction[]
+  inventories              Inventory[]
   audit_logs               OrganizationAuditLog[]
   api_key_logs             ApiKeyLog[]
 
@@ -662,6 +663,7 @@ model Warehouse {
   stock_takes StockTake[]
 
   inventory_transactions InventoryTransaction[]
+  inventories            Inventory[]
 
   @@map("warehouses")
 }
@@ -702,10 +704,12 @@ model Product {
   image_url       String?
   barcode         String?
 
-  weight Decimal?
-  length Decimal?
-  width  Decimal?
-  height Decimal?
+  weight Decimal? @db.Decimal(10, 4)
+  length Decimal? @db.Decimal(10, 4)
+  width  Decimal? @db.Decimal(10, 4)
+  height Decimal? @db.Decimal(10, 4)
+
+  cost_price Decimal? @default(0) @db.Decimal(19, 4)
 
   base_unit_id String @db.Uuid
   base_unit    Unit   @relation("ProductBaseUnit", fields: [base_unit_id], references: [id])
@@ -739,7 +743,7 @@ model ProductUnit {
   product_id      String @db.Uuid
   unit_id         String @db.Uuid
   unit            Unit    @relation("UnitConversion", fields: [unit_id], references: [id])
-  conversion_rate Decimal
+  conversion_rate Decimal @db.Decimal(10, 4)
   barcode         String?
 
   is_active  Boolean   @default(true)
@@ -773,13 +777,13 @@ model Rack {
   updated_by String?
   deleted_by String?
 
-  position_x        Decimal?
-  position_y        Decimal?
-  position_rotation Decimal?
+  position_x        Decimal? @db.Decimal(10, 4)
+  position_y        Decimal? @db.Decimal(10, 4)
+  position_rotation Decimal? @db.Decimal(10, 4)
 
-  dimensions_width  Decimal?
-  dimensions_depth  Decimal?
-  dimensions_height Decimal?
+  dimensions_width  Decimal? @db.Decimal(10, 4)
+  dimensions_depth  Decimal? @db.Decimal(10, 4)
+  dimensions_height Decimal? @db.Decimal(10, 4)
 
   warehouse Warehouse @relation(fields: [warehouse_id], references: [id], onDelete: Cascade)
   shelves   Shelf[]
@@ -827,11 +831,11 @@ model Block {
   updated_by String?
   deleted_by String?
 
-  position_x Decimal?
-  position_y Decimal?
+  position_x Decimal? @db.Decimal(10, 4)
+  position_y Decimal? @db.Decimal(10, 4)
 
-  dimensions_width  Decimal?
-  dimensions_height Decimal?
+  dimensions_width  Decimal? @db.Decimal(10, 4)
+  dimensions_height Decimal? @db.Decimal(10, 4)
 
   shelf              Shelf             @relation(fields: [shelf_id], references: [id], onDelete: Cascade)
   inventories        Inventory[]
@@ -846,6 +850,9 @@ model Batch {
   code               String
   manufacturing_date DateTime?
   expiry_date        DateTime?
+
+  import_price Decimal? @default(0) @db.Decimal(19, 4)
+
   is_active          Boolean   @default(true)
   created_at         DateTime  @default(now())
   updated_at         DateTime  @updatedAt
@@ -866,11 +873,18 @@ model Batch {
 }
 
 model Inventory {
-  id         String    @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
-  block_id   String  @db.Uuid
-  product_id String  @db.Uuid
-  batch_id   String? @db.Uuid
-  quantity   Decimal   @default(0)
+  id              String    @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  organization_id String    @db.Uuid
+  warehouse_id    String    @db.Uuid
+  block_id        String    @db.Uuid
+  product_id      String    @db.Uuid
+  batch_id        String?   @db.Uuid
+
+  quantity            Decimal @default(0) @db.Decimal(19, 4)
+  quantity_on_hand    Decimal @default(0) @db.Decimal(19, 4)
+  quantity_allocated  Decimal @default(0) @db.Decimal(19, 4)
+  quantity_available  Decimal @default(0) @db.Decimal(19, 4)
+
   is_active  Boolean   @default(true)
   created_at DateTime  @default(now())
   updated_at DateTime? @updatedAt
@@ -881,10 +895,16 @@ model Inventory {
   updated_by String?
   deleted_by String?
 
-  block   Block   @relation(fields: [block_id], references: [id], onDelete: Cascade)
-  product Product @relation(fields: [product_id], references: [id], onDelete: Cascade)
-  batch   Batch?  @relation(fields: [batch_id], references: [id])
+  organization Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  warehouse   Warehouse    @relation(fields: [warehouse_id], references: [id], onDelete: Cascade)
+  block       Block        @relation(fields: [block_id], references: [id], onDelete: Cascade)
+  product     Product      @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  batch       Batch?       @relation(fields: [batch_id], references: [id])
 
+  @@index([organization_id])
+  @@index([warehouse_id])
+  @@index([organization_id, warehouse_id])
+  @@index([product_id])
   @@map("inventories")
 }
 
@@ -905,17 +925,17 @@ model InventoryTransaction {
   from_block_id   String?         @db.Uuid
   to_block_id     String?         @db.Uuid
   type            TransactionType
-  quantity        Decimal
-  unit_id         String          @db.Uuid
-  conversion_rate Decimal         @default(1)
-  unit_price      Decimal?        @default(0)
-  total_value     Decimal?        @default(0)
+  quantity        Decimal                    @db.Decimal(19, 4)
+  conversion_rate Decimal         @default(1) @db.Decimal(10, 4)
+  unit_price      Decimal?        @default(0) @db.Decimal(19, 4)
+  total_value     Decimal?        @default(0) @db.Decimal(19, 4)
   reference_code  String?
-  is_active       Boolean         @default(true)
-  created_at      DateTime        @default(now())
-  updated_at      DateTime        @updatedAt
-  is_deleted      Boolean?        @default(false)
-  deleted_at      DateTime?
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  is_deleted Boolean?  @default(false)
+  deleted_at DateTime?
 
   created_by String
   updated_by String?
@@ -965,10 +985,20 @@ model ReceiptDetail {
   receipt_id      String  @db.Uuid
   product_id      String  @db.Uuid
   batch_id        String? @db.Uuid
-  expected_qty    Decimal
-  actual_qty      Decimal @default(0)
+  expected_qty    Decimal            @db.Decimal(19, 4)
+  actual_qty      Decimal @default(0) @db.Decimal(19, 4)
   unit_id         String  @db.Uuid
-  conversion_rate Decimal @default(1)
+  conversion_rate Decimal @default(1) @db.Decimal(10, 4)
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean?  @default(false)
+  deleted_at DateTime?
+
+  created_by String?
+  updated_by String?
+  deleted_by String?
 
   receipt Receipt @relation(fields: [receipt_id], references: [id], onDelete: Cascade)
   product Product @relation(fields: [product_id], references: [id])
@@ -1008,6 +1038,9 @@ model Export {
   partner   Partner?       @relation(fields: [partner_id], references: [id])
   details   ExportDetail[]
 
+  pick_lists ExportPickList[]
+  packages   Package[]
+
   @@map("exports")
 }
 
@@ -1016,9 +1049,19 @@ model ExportDetail {
   export_id         String  @db.Uuid
   product_id        String  @db.Uuid
   required_batch_id String? @db.Uuid
-  quantity          Decimal
+  quantity          Decimal            @db.Decimal(19, 4)
   unit_id           String  @db.Uuid
-  conversion_rate   Decimal @default(1)
+  conversion_rate   Decimal @default(1) @db.Decimal(10, 4)
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean?  @default(false)
+  deleted_at DateTime?
+
+  created_by String?
+  updated_by String?
+  deleted_by String?
 
   export  Export  @relation(fields: [export_id], references: [id], onDelete: Cascade)
   product Product @relation(fields: [product_id], references: [id])
@@ -1028,7 +1071,147 @@ model ExportDetail {
   @@map("export_details")
 }
 
+enum PickListStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+model ExportPickList {
+  id              String         @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  export_id       String         @db.Uuid
+  organization_id String         @db.Uuid
+  warehouse_id    String         @db.Uuid
+  code            String
+  status          PickListStatus @default(PENDING)
+  picker_id       String?
+  started_at      DateTime?
+  completed_at    DateTime?
+  notes           String?
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean?  @default(false)
+  deleted_at DateTime?
+
+  created_by String
+  updated_by String?
+  deleted_by String?
+
+  export  Export                 @relation(fields: [export_id], references: [id], onDelete: Cascade)
+  details ExportPickListDetail[]
+
+  @@index([export_id])
+  @@index([organization_id])
+  @@index([warehouse_id])
+  @@map("export_pick_lists")
+}
+
+model ExportPickListDetail {
+  id               String  @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  pick_list_id     String  @db.Uuid
+  export_detail_id String  @db.Uuid
+  product_id       String  @db.Uuid
+  batch_id         String? @db.Uuid
+  block_id         String  @db.Uuid
+
+  required_qty Decimal            @db.Decimal(19, 4)
+  picked_qty   Decimal @default(0) @db.Decimal(19, 4)
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean?  @default(false)
+  deleted_at DateTime?
+
+  created_by String?
+  updated_by String?
+  deleted_by String?
+
+  pick_list ExportPickList @relation(fields: [pick_list_id], references: [id], onDelete: Cascade)
+
+  @@index([pick_list_id])
+  @@index([export_detail_id])
+  @@map("export_pick_list_details")
+}
+
+enum PackageStatus {
+  CREATING
+  PACKED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+model Package {
+  id              String        @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  export_id       String        @db.Uuid
+  organization_id String        @db.Uuid
+  code            String
+  status          PackageStatus @default(CREATING)
+
+  weight        Decimal? @db.Decimal(10, 4)
+  length        Decimal? @db.Decimal(10, 4)
+  width         Decimal? @db.Decimal(10, 4)
+  height        Decimal? @db.Decimal(10, 4)
+  volume_weight Decimal? @db.Decimal(10, 4)
+
+  tracking_number  String?
+  carrier          String?
+  shipping_cost    Decimal? @default(0) @db.Decimal(19, 4)
+  estimated_arrive DateTime?
+  shipped_at       DateTime?
+  delivered_at     DateTime?
+
+  notes String?
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean?  @default(false)
+  deleted_at DateTime?
+
+  created_by String
+  updated_by String?
+  deleted_by String?
+
+  export  Export          @relation(fields: [export_id], references: [id], onDelete: Cascade)
+  details PackageDetail[]
+
+  @@index([export_id])
+  @@index([organization_id])
+  @@index([tracking_number])
+  @@map("packages")
+}
+
+model PackageDetail {
+  id         String  @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  package_id String  @db.Uuid
+  product_id String  @db.Uuid
+  batch_id   String? @db.Uuid
+  quantity   Decimal @db.Decimal(19, 4)
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean?  @default(false)
+  deleted_at DateTime?
+
+  created_by String?
+  updated_by String?
+  deleted_by String?
+
+  package Package @relation(fields: [package_id], references: [id], onDelete: Cascade)
+
+  @@index([package_id])
+  @@index([product_id])
+  @@map("package_details")
+}
+
 enum StockTakeStatus {
+
   DRAFT
   IN_PROGRESS
   COMPLETED
@@ -1067,9 +1250,9 @@ model StockTakeDetail {
   block_id      String  @db.Uuid
   batch_id      String? @db.Uuid
 
-  system_qty Decimal @default(0)
-  actual_qty Decimal @default(0)
-  difference Decimal @default(0)
+  system_qty Decimal @default(0) @db.Decimal(19, 4)
+  actual_qty Decimal @default(0) @db.Decimal(19, 4)
+  difference Decimal @default(0) @db.Decimal(19, 4)
   reason     String?
 
   stock_take StockTake @relation(fields: [stock_take_id], references: [id], onDelete: Cascade)
