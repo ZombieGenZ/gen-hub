@@ -262,11 +262,16 @@ enum DimensionUnit {
   KILOMETER
 }
 
-enum WarehouseStatus {
+enum ContractStatus {
+  PENDING
   ACTIVE
   OVERDUE_LEVEL_1
   OVERDUE_LEVEL_2
+  OVERDUE_LEVEL_3
+  SEALED
+  LIQUIDATED
   CANCELLED
+  COMPLETED
 }
 
 model WarehouseTemplate {
@@ -280,17 +285,25 @@ model WarehouseTemplate {
 
   is_rented             Boolean @default(false)
   price_per_day         Decimal @db.Decimal(19, 4)
-  discount_1_week       Decimal @default(0) @db.Decimal(5, 2) // 0%
-  discount_1_month      Decimal @default(0) @db.Decimal(5, 2) // 0%
-  discount_3_months     Decimal @default(5) @db.Decimal(5, 2) // 5%
-  discount_6_months     Decimal @default(10) @db.Decimal(5, 2) // 10%
-  discount_1_year       Decimal @default(15) @db.Decimal(5, 2) // 15%
-  discount_2_years      Decimal @default(20) @db.Decimal(5, 2) // 20%
-  discount_3_years_plus Decimal @default(25) @db.Decimal(5, 2) // 25%
+  discount_1_week       Decimal @default(0) @db.Decimal(5, 2)
+  discount_1_month      Decimal @default(0) @db.Decimal(5, 2)
+  discount_3_months     Decimal @default(5) @db.Decimal(5, 2)
+  discount_6_months     Decimal @default(10) @db.Decimal(5, 2)
+  discount_1_year       Decimal @default(15) @db.Decimal(5, 2)
+  discount_2_years      Decimal @default(20) @db.Decimal(5, 2)
+  discount_3_years_plus    Decimal @default(25) @db.Decimal(5, 2)
+  whole_warehouse_discount Decimal @default(10) @db.Decimal(5, 2)
 
-  address   String?
+  address_detail String?
+  ward_id String? @db.Uuid
+  ward    Ward?   @relation(fields: [ward_id], references: [id])
+  
   latitude  Decimal? @db.Decimal(10, 8)
   longitude Decimal? @db.Decimal(11, 8)
+
+  block_unit   DimensionUnit
+  block_length Decimal       @db.Decimal(10, 4)
+  block_width  Decimal       @db.Decimal(10, 4)
 
   is_active  Boolean   @default(true)
   created_at DateTime  @default(now())
@@ -412,15 +425,12 @@ model BlockTemplate {
   code              String
   description       String?
 
-  // Position
   position_x Decimal? @db.Decimal(10, 4)
   position_y Decimal? @db.Decimal(10, 4)
 
-  // Dimensions
   dimensions_width  Decimal? @db.Decimal(10, 4)
   dimensions_height Decimal? @db.Decimal(10, 4)
 
-  // Audit fields
   is_active  Boolean   @default(true)
   created_at DateTime  @default(now())
   updated_at DateTime? @updatedAt
@@ -437,22 +447,27 @@ model BlockTemplate {
   @@map("block_templates")
 }
 
-// ========================================
-// RENTAL CONTRACT MODELS (Hợp đồng thuê)
-// ========================================
-
 model RentalContract {
-  id              String  @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
-  organization_id String  @db.Uuid
+  id              String         @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  organization_id String         @db.Uuid
   code            String
   name            String?
+  status          ContractStatus @default(PENDING)
 
-  started_at DateTime
-  expired_at DateTime?
+  started_at         DateTime
+  expired_at         DateTime?
+  overdue_level_1_at DateTime?
+  overdue_level_2_at DateTime?
+  overdue_level_3_at DateTime?
 
-  total_price   Decimal @db.Decimal(19, 4)
-  discount_rate Decimal @default(0) @db.Decimal(5, 2)
-  final_price   Decimal @db.Decimal(19, 4)
+  is_sealed     Boolean @default(false)
+  is_liquidated Boolean @default(false)
+
+  total_price            Decimal  @db.Decimal(19, 4)
+  discount_rate          Decimal  @default(0) @db.Decimal(5, 2)
+  final_price            Decimal  @db.Decimal(19, 4)
+  overdue_penalty        Decimal? @default(0) @db.Decimal(19, 4)
+  overdue_penalty_percent Decimal? @default(0) @db.Decimal(5, 2)
 
   notes String?
 
@@ -543,10 +558,6 @@ model Organization {
   is_active  Boolean? @default(true)
   is_deleted Boolean? @default(false)
   owner_id   String   @db.Uuid
-
-  block_unit   DimensionUnit
-  block_length Decimal       @db.Decimal(10, 4)
-  block_width  Decimal       @db.Decimal(10, 4)
 
   created_at DateTime  @default(now())
   updated_at DateTime? @updatedAt
@@ -819,15 +830,13 @@ model Partner {
 }
 
 model Warehouse {
-  id              String          @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  id              String  @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
   name            String
   description     String?
-  is_active       Boolean?        @default(true)
-  is_deleted      Boolean?        @default(false)
-  organization_id String          @db.Uuid
+  is_active       Boolean? @default(true)
+  is_deleted      Boolean? @default(false)
+  organization_id String   @db.Uuid
   address_detail  String?
-  status          WarehouseStatus @default(ACTIVE)
-  is_rented       Boolean         @default(false)
 
   ward_id String? @db.Uuid
   ward    Ward?   @relation(fields: [ward_id], references: [id])
@@ -835,6 +844,13 @@ model Warehouse {
   unit   DimensionUnit
   length Int
   width  Int
+
+  latitude  Decimal? @db.Decimal(10, 8)
+  longitude Decimal? @db.Decimal(11, 8)
+
+  block_unit   DimensionUnit
+  block_length Decimal       @db.Decimal(10, 4)
+  block_width  Decimal       @db.Decimal(10, 4)
 
   organization Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
 
