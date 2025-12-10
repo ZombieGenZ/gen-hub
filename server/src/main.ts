@@ -1,8 +1,8 @@
 import { NestFactory } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
-import { I18nValidationPipe, I18nValidationExceptionFilter } from 'nestjs-i18n';
+import { I18nValidationPipe, I18nService } from 'nestjs-i18n';
 import { AppModule } from './app.module';
-import { GlobalExceptionFilter } from './common/filters';
+import { GlobalExceptionFilter, CustomValidationExceptionFilter } from './common/filters';
 import { HttpLoggingInterceptor } from './common/interceptors';
 import { SystemLogService } from './modules/system-log/system-log.service';
 
@@ -13,6 +13,7 @@ const serverStartTime = new Date();
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const systemLogService = app.get(SystemLogService);
+  const i18nService = app.get<I18nService<Record<string, unknown>>>(I18nService);
 
   app.useGlobalPipes(
     new I18nValidationPipe({
@@ -23,10 +24,8 @@ async function bootstrap() {
   );
 
   app.useGlobalFilters(
-    new I18nValidationExceptionFilter({
-      detailedErrors: false,
-    }),
     new GlobalExceptionFilter(systemLogService),
+    new CustomValidationExceptionFilter(i18nService),
   );
 
   app.useGlobalInterceptors(new HttpLoggingInterceptor(systemLogService));

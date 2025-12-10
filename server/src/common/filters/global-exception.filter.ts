@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { SystemLogService } from '../../modules/system-log/system-log.service';
+import { ResponseCode } from '../responses';
 
 /**
  * Request interface với user info
@@ -67,19 +68,26 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     this.logToDatabase(errorInfo, request);
 
     // Return response to client
-    response.status(errorInfo.status).json({
-      statusCode: errorInfo.status,
+    const responseBody: Record<string, unknown> = {
+      code: errorInfo.code,
       message: errorInfo.clientMessage,
-      timestamp: new Date().toISOString(),
-      path: request.url,
-    });
+      success: false,
+    };
+
+    // Thêm errors array nếu có
+    if (errorInfo.errors && errorInfo.errors.length > 0) {
+      responseBody.errors = errorInfo.errors;
+    }
+
+    response.status(errorInfo.status).json(responseBody);
   }
 
   /**
-   * Parse exception và trả về thông tin chi tiết
+   * Error item trong response
    */
   private parseException(exception: unknown): {
     status: number;
+    code: string;
     message: string;
     clientMessage: string;
     errorType: string;
@@ -87,6 +95,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     errorResponse?: unknown;
     prismaCode?: string;
     prismaMeta?: Record<string, unknown>;
+    errors?: Array<{ field: string; message: string }>;
   } {
     // HttpException (từ NestJS)
     if (exception instanceof HttpException) {
@@ -99,6 +108,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
       return {
         status,
+        code: this.getHttpErrorCode(status),
         message: exception.message,
         clientMessage: message,
         errorType: 'HttpException',
@@ -113,12 +123,14 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       const parsed = this.parsePrismaError(prismaError);
       return {
         status: parsed.status,
+        code: parsed.code,
         message: prismaError.message,
         clientMessage: parsed.clientMessage,
         errorType: `PrismaError:${prismaError.code || 'Unknown'}`,
         stack: prismaError.stack,
         prismaCode: prismaError.code,
         prismaMeta: prismaError.meta,
+        errors: parsed.errors,
       };
     }
 
@@ -126,6 +138,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     if (exception instanceof Error) {
       return {
         status: HttpStatus.INTERNAL_SERVER_ERROR,
+        code: ResponseCode.ERROR_INTERNAL,
         message: exception.message,
         clientMessage: 'Internal server error',
         errorType: exception.constructor.name,
@@ -136,10 +149,28 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     // Unknown error
     return {
       status: HttpStatus.INTERNAL_SERVER_ERROR,
+      code: ResponseCode.ERROR_UNKNOWN,
       message: String(exception),
       clientMessage: 'Internal server error',
       errorType: 'UnknownError',
     };
+  }
+
+  /**
+   * Get error code from HTTP status
+   */
+  private getHttpErrorCode(status: number): ResponseCode | string {
+    const codeMap: Record<number, ResponseCode> = {
+      400: ResponseCode.ERROR_BAD_REQUEST,
+      401: ResponseCode.ERROR_UNAUTHORIZED,
+      403: ResponseCode.ERROR_FORBIDDEN,
+      404: ResponseCode.ERROR_NOT_FOUND,
+      409: ResponseCode.ERROR_CONFLICT,
+      429: ResponseCode.ERROR_TOO_MANY_REQUESTS,
+      500: ResponseCode.ERROR_INTERNAL,
+      503: ResponseCode.ERROR_SERVICE_UNAVAILABLE,
+    };
+    return codeMap[status] || `error.http_${status}`;
   }
 
   /**
@@ -160,39 +191,158 @@ export class GlobalExceptionFilter implements ExceptionFilter {
    */
   private parsePrismaError(error: PrismaError): {
     status: number;
+    code: string;
     clientMessage: string;
+    errors?: Array<{ field: string; message: string }>;
   } {
+    // Lấy tên entity từ meta nếu có
+    const entityName = this.extractEntityName(error.meta);
+
     switch (error.code) {
-      case 'P2002': // Unique constraint violation
+      case 'P2002': { // Unique constraint violation
+        const target = error.meta?.target;
+        const fieldName = Array.isArray(target) ? target[0] : target;
+        const message = fieldName
+          ? `Giá trị ${fieldName} đã tồn tại`
+          : 'Dữ liệu đã tồn tại trong hệ thống';
         return {
           status: HttpStatus.CONFLICT,
-          clientMessage: 'A record with this value already exists',
+          code: ResponseCode.ERROR_DUPLICATE,
+          clientMessage: 'Dữ liệu đầu vào không hợp lệ',
+          errors: [{
+            field: fieldName as string || 'unknown',
+            message,
+          }],
         };
-      case 'P2003': // Foreign key constraint violation
+      }
+      case 'P2003': { // Foreign key constraint violation
+        const fieldName = error.meta?.field_name as string | undefined;
+        const cleanFieldName = fieldName
+          ? fieldName.replace('_id', '').replace(/_/g, ' ')
+          : 'unknown';
+        const message = fieldName
+          ? `ID ${cleanFieldName} không hợp lệ`
+          : 'Dữ liệu liên quan không tồn tại';
         return {
-          status: HttpStatus.BAD_REQUEST,
-          clientMessage: 'Related record not found',
+          status: HttpStatus.UNPROCESSABLE_ENTITY,
+          code: ResponseCode.ERROR_VALIDATION,
+          clientMessage: 'Dữ liệu đầu vào không hợp lệ',
+          errors: [{
+            field: fieldName || 'unknown',
+            message,
+          }],
         };
-      case 'P2025': // Record not found
+      }
+      case 'P2025': { // Record not found
+        const fieldName = this.extractFieldName(error.meta) || 'id';
+        const message = entityName
+          ? `${entityName} không tồn tại`
+          : 'Dữ liệu không tồn tại';
         return {
-          status: HttpStatus.NOT_FOUND,
-          clientMessage: 'Record not found',
+          status: HttpStatus.UNPROCESSABLE_ENTITY,
+          code: ResponseCode.ERROR_VALIDATION,
+          clientMessage: 'Dữ liệu đầu vào không hợp lệ',
+          errors: [{
+            field: fieldName,
+            message,
+          }],
         };
+      }
       case 'P2024': // Connection timeout
         return {
           status: HttpStatus.SERVICE_UNAVAILABLE,
-          clientMessage: 'Database connection timeout',
+          code: ResponseCode.ERROR_DATABASE_CONNECTION,
+          clientMessage: 'Lỗi kết nối cơ sở dữ liệu',
         };
       default:
         return {
           status: HttpStatus.INTERNAL_SERVER_ERROR,
-          clientMessage: 'Database error occurred',
+          code: ResponseCode.ERROR_DATABASE,
+          clientMessage: 'Lỗi cơ sở dữ liệu',
         };
     }
   }
 
   /**
+   * Trích xuất field name từ Prisma error meta
+   */
+  private extractFieldName(meta?: Record<string, unknown>): string | null {
+    if (!meta) return null;
+
+    // Thử lấy từ cause - ví dụ: "...on 'WarehouseTemplate' record(s)) was found for a nested connect on one-to-many relation 'WardToWarehouseTemplate'"
+    const cause = meta.cause as string | undefined;
+    if (cause && typeof cause === 'string') {
+      // Tìm relation name và extract field từ đó
+      const relationMatch = cause.match(/relation '(\w+)To(\w+)'/i);
+      if (relationMatch) {
+        // Chuyển PascalCase thành snake_case + _id
+        const entityName = relationMatch[1];
+        return this.toSnakeCase(entityName) + '_id';
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Chuyển PascalCase thành snake_case
+   */
+  private toSnakeCase(str: string): string {
+    return str.replace(/([A-Z])/g, '_$1').toLowerCase().replace(/^_/, '');
+  }
+
+  /**
+   * Trích xuất tên entity từ Prisma error meta
+   * Ưu tiên lấy từ cause (entity thực sự bị lỗi) trước modelName (entity đang thao tác)
+   */
+  private extractEntityName(meta?: Record<string, unknown>): string | null {
+    if (!meta) return null;
+
+    // Ưu tiên lấy từ cause trước - đây là entity thực sự bị thiếu
+    const cause = meta.cause as string | undefined;
+    if (cause && typeof cause === 'string') {
+      // Extract model name from messages like "No 'Ward' record..."
+      const match = cause.match(/No '(\w+)' record/i);
+      if (match) {
+        return this.formatModelName(match[1]);
+      }
+    }
+
+    // Fallback: lấy từ modelName nếu không tìm thấy trong cause
+    const modelName = meta.modelName as string | undefined;
+    if (modelName) {
+      return this.formatModelName(modelName);
+    }
+
+    return null;
+  }
+
+  /**
+   * Format model name thành dạng hiển thị
+   */
+  private formatModelName(modelName: string): string {
+    const modelNameMap: Record<string, string> = {
+      'User': 'Người dùng',
+      'Product': 'Sản phẩm',
+      'Category': 'Danh mục',
+      'Order': 'Đơn hàng',
+      'Warehouse': 'Kho hàng',
+      'WarehouseTemplate': 'Template kho',
+      'Ward': 'Phường/Xã',
+      'District': 'Quận/Huyện',
+      'Province': 'Tỉnh/Thành phố',
+      'RefreshToken': 'Phiên đăng nhập',
+      'BackupCode': 'Mã backup',
+      'SystemLog': 'Log hệ thống',
+    };
+
+    return modelNameMap[modelName] || modelName;
+  }
+
+  /**
    * Log to console with colors for development
+   * Chỉ log chi tiết cho server errors (5xx) và Prisma errors
+   * Bỏ qua client errors (4xx) để tránh spam console
    */
   private logToConsole(
     errorInfo: {
@@ -205,7 +355,13 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     request: RequestWithUser,
   ): void {
     const isServerError = errorInfo.status >= 500;
-    const logMethod = isServerError ? 'error' : 'warn';
+    const isPrismaError = !!errorInfo.prismaCode;
+
+    // Chỉ log chi tiết cho server errors và Prisma errors
+    // Bỏ qua client errors (4xx) để không spam console
+    if (!isServerError && !isPrismaError) {
+      return;
+    }
 
     // Create a structured log message
     const logMessage = [
@@ -223,7 +379,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       .filter(Boolean)
       .join('\n');
 
-    this.logger[logMethod](logMessage);
+    this.logger.error(logMessage);
 
     // Also log stack trace for server errors
     if (isServerError && errorInfo.stack) {

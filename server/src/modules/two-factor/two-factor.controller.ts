@@ -21,7 +21,7 @@ import type { Request } from 'express';
 import { VerifyTwoFactorSetupDto, VerifyTwoFactorLoginDto } from '../auth/dto';
 import { JwtAuthGuard, AccessVerificationGuard } from '../../common/guards';
 import { Public, CurrentUser } from '../../common/decorators';
-import { OkResponse, GetResponse } from '../../common/responses';
+import { OkResponse, GetResponse, ResponseCode } from '../../common/responses';
 import { TwoFactorService } from './two-factor.service';
 
 /**
@@ -52,7 +52,7 @@ function getDeviceInfo(req: Request) {
 @ApiTags('Two-Factor Authentication')
 @Controller('2fa')
 export class TwoFactorController {
-  constructor(private readonly twoFactorService: TwoFactorService) {}
+  constructor(private readonly twoFactorService: TwoFactorService) { }
 
   @ApiOperation({ summary: 'Thiết lập xác thực 2 yếu tố (2FA)' })
   @ApiResponse({
@@ -72,6 +72,7 @@ export class TwoFactorController {
       lang || 'vi',
     );
     return new OkResponse(
+      ResponseCode.TWO_FACTOR_SETUP_SUCCESS,
       {
         secret: result.secret,
         qr_code_url: result.qr_code_url,
@@ -97,7 +98,7 @@ export class TwoFactorController {
       dto,
       lang || 'vi',
     );
-    return new OkResponse(null, result.message);
+    return new OkResponse(ResponseCode.TWO_FACTOR_VERIFY_SETUP_SUCCESS, null, result.message);
   }
 
   @ApiOperation({ summary: 'Tắt xác thực 2 yếu tố (2FA)' })
@@ -114,7 +115,7 @@ export class TwoFactorController {
       user.userId,
       lang || 'vi',
     );
-    return new OkResponse(null, result.message);
+    return new OkResponse(ResponseCode.TWO_FACTOR_DISABLE_SUCCESS, null, result.message);
   }
 
   @ApiOperation({ summary: 'Xác minh 2FA khi đăng nhập' })
@@ -134,7 +135,7 @@ export class TwoFactorController {
       deviceInfo,
       lang || 'vi',
     );
-    return new OkResponse(result.user, result.message, {
+    return new OkResponse(ResponseCode.TWO_FACTOR_VERIFY_LOGIN_SUCCESS, result.user, result.message, {
       access_token: result.access_token,
       refresh_token: result.refresh_token,
     });
@@ -158,6 +159,7 @@ export class TwoFactorController {
       lang || 'vi',
     );
     return new OkResponse(
+      ResponseCode.TWO_FACTOR_REGENERATE_BACKUP_CODES_SUCCESS,
       { backup_codes: result.backup_codes },
       result.message,
     );

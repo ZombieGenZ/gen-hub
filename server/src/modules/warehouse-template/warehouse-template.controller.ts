@@ -33,6 +33,7 @@ import {
     UpdatedResponse,
     GetResponse,
     DeletedResponse,
+    ResponseCode,
 } from '../../common/responses';
 import { IWarehouseTemplateWithRelations, IPaginatedResponse } from './interfaces';
 
@@ -55,7 +56,7 @@ export class WarehouseTemplateController {
         @I18nLang() lang: string,
     ): Promise<CreatedResponse<IWarehouseTemplateWithRelations>> {
         const result = await this.service.create(dto, userId, lang);
-        return new CreatedResponse(result);
+        return new CreatedResponse(ResponseCode.WAREHOUSE_TEMPLATE_CREATE_SUCCESS, result);
     }
 
     @Get()
@@ -66,7 +67,7 @@ export class WarehouseTemplateController {
         @Query() query: QueryWarehouseTemplateDto,
     ): Promise<GetResponse<IPaginatedResponse<IWarehouseTemplateWithRelations>>> {
         const result = await this.service.findMany(query);
-        return new GetResponse(result);
+        return new GetResponse(ResponseCode.WAREHOUSE_TEMPLATE_LIST_SUCCESS, result);
     }
 
     @Get(':id')
@@ -80,7 +81,7 @@ export class WarehouseTemplateController {
         @I18nLang() lang: string,
     ): Promise<GetResponse<IWarehouseTemplateWithRelations>> {
         const result = await this.service.findById(id, lang);
-        return new GetResponse(result);
+        return new GetResponse(ResponseCode.WAREHOUSE_TEMPLATE_GET_SUCCESS, result);
     }
 
     @Put(':id')
@@ -97,7 +98,7 @@ export class WarehouseTemplateController {
         @I18nLang() lang: string,
     ): Promise<UpdatedResponse<IWarehouseTemplateWithRelations>> {
         const result = await this.service.update(id, dto, userId, lang);
-        return new UpdatedResponse(result);
+        return new UpdatedResponse(ResponseCode.WAREHOUSE_TEMPLATE_UPDATE_SUCCESS, result);
     }
 
     @Delete(':id')
@@ -112,7 +113,7 @@ export class WarehouseTemplateController {
         @I18nLang() lang: string,
     ): Promise<DeletedResponse<null>> {
         await this.service.delete(id, userId, lang);
-        return new DeletedResponse(null);
+        return new DeletedResponse(ResponseCode.WAREHOUSE_TEMPLATE_DELETE_SUCCESS, null);
     }
 
     @Put(':id/layout')
@@ -128,6 +129,6 @@ export class WarehouseTemplateController {
         @I18nLang() lang: string,
     ): Promise<UpdatedResponse<IWarehouseTemplateWithRelations>> {
         const result = await this.service.upsertLayout(id, dto, userId, lang);
-        return new UpdatedResponse(result);
+        return new UpdatedResponse(ResponseCode.WAREHOUSE_TEMPLATE_LAYOUT_UPDATE_SUCCESS, result);
     }
 }

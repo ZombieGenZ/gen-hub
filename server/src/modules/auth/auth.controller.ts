@@ -32,7 +32,7 @@ import {
 } from './dto';
 import { JwtAuthGuard } from '../../common/guards';
 import { Public, CurrentUser } from '../../common/decorators';
-import { CreatedResponse, OkResponse } from '../../common/responses';
+import { CreatedResponse, OkResponse, ResponseCode } from '../../common/responses';
 
 /**
  * Interface cho JWT Payload
@@ -62,7 +62,7 @@ function getDeviceInfo(req: Request) {
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(private readonly authService: AuthService) { }
 
   @ApiOperation({ summary: 'Đăng ký tài khoản mới' })
   @ApiResponse({ status: 201, description: 'Đăng ký thành công' })
@@ -81,7 +81,7 @@ export class AuthController {
       deviceInfo,
       lang || 'vi',
     );
-    return new CreatedResponse(result.user, result.message, {
+    return new CreatedResponse(ResponseCode.AUTH_REGISTER_SUCCESS, result.user, result.message, {
       access_token: result.access_token,
       refresh_token: result.refresh_token,
     });
@@ -107,6 +107,7 @@ export class AuthController {
 
     if ('requires_2fa' in result && result.requires_2fa) {
       return new OkResponse(
+        ResponseCode.AUTH_LOGIN_2FA_REQUIRED,
         { requires_2fa: true, temp_token: result.temp_token },
         result.message,
       );
@@ -119,7 +120,7 @@ export class AuthController {
       refresh_token: string;
     };
 
-    return new OkResponse(successResult.user, successResult.message, {
+    return new OkResponse(ResponseCode.AUTH_LOGIN_SUCCESS, successResult.user, successResult.message, {
       access_token: successResult.access_token,
       refresh_token: successResult.refresh_token,
     });
@@ -146,7 +147,7 @@ export class AuthController {
       deviceInfo,
       lang || 'vi',
     );
-    return new OkResponse(null, result.message, {
+    return new OkResponse(ResponseCode.AUTH_REFRESH_TOKEN_SUCCESS, null, result.message, {
       access_token: result.access_token,
       refresh_token: result.refresh_token,
     });
@@ -163,7 +164,7 @@ export class AuthController {
     @Headers('accept-language') lang?: string,
   ) {
     const result = await this.authService.logout(dto, lang || 'vi');
-    return new OkResponse(null, result.message);
+    return new OkResponse(ResponseCode.AUTH_LOGOUT_SUCCESS, null, result.message);
   }
 
   @ApiOperation({ summary: 'Đăng xuất tất cả thiết bị' })
@@ -177,7 +178,7 @@ export class AuthController {
     @Headers('accept-language') lang?: string,
   ) {
     const result = await this.authService.logoutAll(user.userId, lang || 'vi');
-    return new OkResponse(null, result.message);
+    return new OkResponse(ResponseCode.AUTH_LOGOUT_ALL_SUCCESS, null, result.message);
   }
 
   @ApiOperation({ summary: 'Xác thực email' })
@@ -191,7 +192,7 @@ export class AuthController {
     @Headers('accept-language') lang?: string,
   ) {
     const result = await this.authService.verifyEmail(dto, lang || 'vi');
-    return new OkResponse(null, result.message);
+    return new OkResponse(ResponseCode.AUTH_VERIFY_EMAIL_SUCCESS, null, result.message);
   }
 
   @ApiOperation({ summary: 'Gửi lại email xác thực' })
@@ -209,7 +210,7 @@ export class AuthController {
       user.userId,
       lang || 'vi',
     );
-    return new OkResponse(null, result.message);
+    return new OkResponse(ResponseCode.AUTH_RESEND_VERIFICATION_SUCCESS, null, result.message);
   }
 
   @ApiOperation({ summary: 'Xác thực quyền để thực hiện thao tác nhạy cảm' })
@@ -233,6 +234,7 @@ export class AuthController {
       lang || 'vi',
     );
     return new OkResponse(
+      ResponseCode.AUTH_VERIFY_ACCESS_SUCCESS,
       { access_verification_token: result.access_verification_token },
       result.message,
     );
@@ -249,7 +251,7 @@ export class AuthController {
     @Headers('accept-language') lang?: string,
   ) {
     const result = await this.authService.forgotPassword(dto, lang || 'vi');
-    return new OkResponse(null, result.message);
+    return new OkResponse(ResponseCode.AUTH_FORGOT_PASSWORD_SENT, null, result.message);
   }
 
   @ApiOperation({ summary: 'Kiểm tra token đặt lại mật khẩu' })
@@ -268,7 +270,7 @@ export class AuthController {
       dto,
       lang || 'vi',
     );
-    return new OkResponse({ valid: result.valid }, result.message);
+    return new OkResponse(ResponseCode.AUTH_VERIFY_FORGOT_PASSWORD_TOKEN_SUCCESS, { valid: result.valid }, result.message);
   }
 
   @ApiOperation({ summary: 'Đặt lại mật khẩu mới' })
@@ -286,6 +288,6 @@ export class AuthController {
     @Headers('accept-language') lang?: string,
   ) {
     const result = await this.authService.resetPassword(dto, lang || 'vi');
-    return new OkResponse(null, result.message);
+    return new OkResponse(ResponseCode.AUTH_RESET_PASSWORD_SUCCESS, null, result.message);
   }
 }

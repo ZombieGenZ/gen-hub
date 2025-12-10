@@ -25,6 +25,7 @@ import {
   OkResponse,
   GetResponse,
   UpdatedResponse,
+  ResponseCode,
 } from '../../common/responses';
 import { AccountService } from './account.service';
 
@@ -57,7 +58,7 @@ function getDeviceInfo(req: Request) {
 @Controller('account')
 @ApiBearerAuth('JWT-auth')
 export class AccountController {
-  constructor(private readonly accountService: AccountService) {}
+  constructor(private readonly accountService: AccountService) { }
 
   @ApiOperation({ summary: 'Lấy thông tin tài khoản' })
   @ApiResponse({
@@ -75,6 +76,7 @@ export class AccountController {
       lang || 'vi',
     );
     return new GetResponse(
+      ResponseCode.ACCOUNT_GET_PROFILE_SUCCESS,
       {
         user: result.user,
         roles: result.roles,
@@ -98,7 +100,7 @@ export class AccountController {
       dto,
       lang || 'vi',
     );
-    return new UpdatedResponse(null, result.message);
+    return new UpdatedResponse(ResponseCode.ACCOUNT_UPDATE_PROFILE_SUCCESS, null, result.message);
   }
 
   @ApiOperation({ summary: 'Thay đổi mật khẩu' })
@@ -119,6 +121,6 @@ export class AccountController {
       deviceInfo,
       lang || 'vi',
     );
-    return new OkResponse(null, result.message);
+    return new OkResponse(ResponseCode.ACCOUNT_CHANGE_PASSWORD_SUCCESS, null, result.message);
   }
 }

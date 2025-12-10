@@ -7,8 +7,8 @@
  * Interface cơ bản cho tất cả response
  */
 export interface IBaseResponse<T> {
-  /** Mã trạng thái HTTP */
-  statusCode: number;
+  /** Mã code để client xác định xử lý (format: module.action, ví dụ: login.success) */
+  code: string;
   /** Thông báo */
   message: string;
   /** Trạng thái thành công */
@@ -23,23 +23,44 @@ export interface IBaseResponse<T> {
  * Class response cơ bản cho các request thành công
  */
 export class SuccessResponse<T> implements IBaseResponse<T> {
-  statusCode: number;
+  code: string;
   message: string;
   success: boolean;
   data?: T;
   authorization?: Record<string, unknown>;
 
   constructor(
+    code: string,
     data?: T,
     message = 'Thao tác thành công',
-    statusCode = 200,
     authorization?: Record<string, unknown>,
   ) {
-    this.statusCode = statusCode;
+    this.code = code;
     this.message = message;
     this.success = true;
     this.data = data;
     this.authorization = authorization;
+  }
+
+  /**
+   * Custom JSON serialization - loại bỏ các trường null/undefined
+   */
+  toJSON(): Record<string, unknown> {
+    const result: Record<string, unknown> = {
+      code: this.code,
+      message: this.message,
+      success: this.success,
+    };
+
+    if (this.data !== undefined && this.data !== null) {
+      result.data = this.data;
+    }
+
+    if (this.authorization !== undefined && this.authorization !== null) {
+      result.authorization = this.authorization;
+    }
+
+    return result;
   }
 }
 
@@ -49,11 +70,12 @@ export class SuccessResponse<T> implements IBaseResponse<T> {
  */
 export class CreatedResponse<T> extends SuccessResponse<T> {
   constructor(
+    code: string,
     data?: T,
     message = 'Tạo mới thành công',
     authorization?: Record<string, unknown>,
   ) {
-    super(data, message, 201, authorization);
+    super(code, data, message, authorization);
   }
 }
 
@@ -62,11 +84,12 @@ export class CreatedResponse<T> extends SuccessResponse<T> {
  */
 export class UpdatedResponse<T> extends SuccessResponse<T> {
   constructor(
+    code: string,
     data?: T,
     message = 'Cập nhật thành công',
     authorization?: Record<string, unknown>,
   ) {
-    super(data, message, 200, authorization);
+    super(code, data, message, authorization);
   }
 }
 
@@ -75,11 +98,12 @@ export class UpdatedResponse<T> extends SuccessResponse<T> {
  */
 export class GetResponse<T> extends SuccessResponse<T> {
   constructor(
+    code: string,
     data?: T,
     message = 'Lấy dữ liệu thành công',
     authorization?: Record<string, unknown>,
   ) {
-    super(data, message, 200, authorization);
+    super(code, data, message, authorization);
   }
 }
 
@@ -88,11 +112,12 @@ export class GetResponse<T> extends SuccessResponse<T> {
  */
 export class DeletedResponse<T> extends SuccessResponse<T> {
   constructor(
+    code: string,
     data?: T,
     message = 'Xóa thành công',
     authorization?: Record<string, unknown>,
   ) {
-    super(data, message, 200, authorization);
+    super(code, data, message, authorization);
   }
 }
 
@@ -101,10 +126,11 @@ export class DeletedResponse<T> extends SuccessResponse<T> {
  */
 export class OkResponse<T> extends SuccessResponse<T> {
   constructor(
+    code: string,
     data?: T,
     message = 'OK',
     authorization?: Record<string, unknown>,
   ) {
-    super(data, message, 200, authorization);
+    super(code, data, message, authorization);
   }
 }
