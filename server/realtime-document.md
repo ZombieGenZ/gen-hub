@@ -381,4 +381,128 @@ interface SocketError {
   message: string;
   details?: Record<string, unknown>;
 }
+
+// WarehouseTemplate Events
+interface WarehouseTemplateCreatedEvent {
+  warehouseTemplateId: string;
+  name: string;
+  createdBy: string;
+  timestamp: string;
+}
+
+interface WarehouseTemplateUpdatedEvent {
+  warehouseTemplateId: string;
+  name: string;
+  updatedFields: string[];
+  updatedBy: string;
+  timestamp: string;
+}
+
+interface WarehouseTemplateDeletedEvent {
+  warehouseTemplateId: string;
+  name: string;
+  deletedBy: string;
+  timestamp: string;
+}
+
+interface WarehouseTemplateLayoutUpdatedEvent {
+  warehouseTemplateId: string;
+  name: string;
+  updatedBy: string;
+  summary: {
+    rowsCreated: number;
+    rowsUpdated: number;
+    rowsDeleted: number;
+    racksCreated: number;
+    racksUpdated: number;
+    racksDeleted: number;
+    shelvesCreated: number;
+    shelvesUpdated: number;
+    shelvesDeleted: number;
+    blocksCreated: number;
+    blocksUpdated: number;
+    blocksDeleted: number;
+  };
+  timestamp: string;
+}
 ```
+
+---
+
+## WarehouseTemplate Events
+
+### `warehouseTemplate:created`
+
+Được emit khi tạo mới WarehouseTemplate.
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `warehouseTemplateId` | `string` | ID của template |
+| `name` | `string` | Tên template |
+| `createdBy` | `string` | User ID người tạo |
+| `timestamp` | `string` | ISO timestamp |
+
+**Client Handler:**
+```javascript
+socket.on('warehouseTemplate:created', (data) => {
+  // Cập nhật danh sách templates
+  store.dispatch(addTemplate(data));
+});
+```
+
+---
+
+### `warehouseTemplate:updated`
+
+Được emit khi cập nhật thông tin WarehouseTemplate.
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `warehouseTemplateId` | `string` | ID của template |
+| `name` | `string` | Tên template |
+| `updatedFields` | `string[]` | Danh sách fields đã cập nhật |
+| `updatedBy` | `string` | User ID người cập nhật |
+| `timestamp` | `string` | ISO timestamp |
+
+---
+
+### `warehouseTemplate:deleted`
+
+Được emit khi xóa WarehouseTemplate.
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `warehouseTemplateId` | `string` | ID của template |
+| `name` | `string` | Tên template |
+| `deletedBy` | `string` | User ID người xóa |
+| `timestamp` | `string` | ISO timestamp |
+
+---
+
+### `warehouseTemplate:layoutUpdated`
+
+Được emit khi cập nhật layout của WarehouseTemplate (rows, racks, shelves, blocks).
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `warehouseTemplateId` | `string` | ID của template |
+| `name` | `string` | Tên template |
+| `updatedBy` | `string` | User ID người cập nhật |
+| `summary` | `object` | Tóm tắt các thay đổi |
+| `timestamp` | `string` | ISO timestamp |
+
+**Summary Object:**
+| Property | Type | Description |
+|----------|------|-------------|
+| `rowsCreated` | `number` | Số rows được tạo mới |
+| `rowsUpdated` | `number` | Số rows được cập nhật |
+| `rowsDeleted` | `number` | Số rows bị xóa |
+| `racksCreated` | `number` | Số racks được tạo mới |
+| `racksUpdated` | `number` | Số racks được cập nhật |
+| `racksDeleted` | `number` | Số racks bị xóa |
+| `shelvesCreated` | `number` | Số shelves được tạo mới |
+| `shelvesUpdated` | `number` | Số shelves được cập nhật |
+| `shelvesDeleted` | `number` | Số shelves bị xóa |
+| `blocksCreated` | `number` | Số blocks được tạo mới |
+| `blocksUpdated` | `number` | Số blocks được cập nhật |
+| `blocksDeleted` | `number` | Số blocks bị xóa |

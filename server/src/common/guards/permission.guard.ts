@@ -34,6 +34,24 @@ export class PermissionGuard implements CanActivate {
       throw new ForbiddenException('Không có quyền truy cập');
     }
 
+    // Kiểm tra tài khoản đã được xác minh chưa
+    const userRecord = await this.prisma.user.findUnique({
+      where: { id: user.userId },
+      select: { is_verified: true, is_banned: true },
+    });
+
+    if (!userRecord) {
+      throw new ForbiddenException('Tài khoản không tồn tại');
+    }
+
+    if (userRecord.is_banned) {
+      throw new ForbiddenException('Tài khoản đã bị khóa');
+    }
+
+    if (!userRecord.is_verified) {
+      throw new ForbiddenException('Tài khoản chưa được xác minh. Vui lòng xác minh email để tiếp tục.');
+    }
+
     const userPermissions = await this.getUserPermissions(user.userId);
 
     const hasPermission = requiredPermissions.every((permission) =>

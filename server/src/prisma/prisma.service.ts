@@ -61,22 +61,15 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
 
     try {
       await adminClient.connect();
-      this.logger.log('🔌 Connected to PostgreSQL server');
 
-      // Kiểm tra và tạo database
       const dbCheckResult = await adminClient.query(
         `SELECT 1 FROM pg_database WHERE datname = $1`,
         [config.database],
       );
 
       if (dbCheckResult.rows.length === 0) {
-        this.logger.log(`📦 Creating database "${config.database}"...`);
         await adminClient.query(`CREATE DATABASE "${config.database}"`);
-        this.logger.log(
-          `✅ Database "${config.database}" created successfully`,
-        );
-      } else {
-        this.logger.log(`✅ Database "${config.database}" already exists`);
+        this.logger.log(`✅ Database "${config.database}" created`);
       }
 
       await adminClient.end();
@@ -91,11 +84,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
       });
 
       await dbClient.connect();
-
-      // Tạo extension uuid-ossp
-      this.logger.log('🔧 Creating uuid-ossp extension...');
       await dbClient.query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"');
-      this.logger.log('✅ uuid-ossp extension is ready');
 
       await dbClient.end();
 
@@ -129,8 +118,6 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
     try {
       await adminClient.connect();
 
-      // Terminate tất cả connections tới database
-      this.logger.log(`🔌 Terminating connections to "${config.database}"...`);
       await adminClient.query(
         `
                 SELECT pg_terminate_backend(pg_stat_activity.pid)
@@ -140,18 +127,12 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
             `,
         [config.database],
       );
-
-      // Xóa database
-      this.logger.log(`🗑️ Dropping database "${config.database}"...`);
       // await adminClient.query(`DROP DATABASE IF EXISTS "${config.database}"`);
 
-      // Tạo lại database
-      this.logger.log(`📦 Creating database "${config.database}"...`);
       await adminClient.query(`CREATE DATABASE "${config.database}"`);
 
       await adminClient.end();
 
-      // Kết nối tới database mới để thêm extension
       const dbClient = new Client({
         user: config.user,
         password: config.password,
@@ -161,11 +142,8 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
       });
 
       await dbClient.connect();
-
-      // Tạo extension uuid-ossp
-      this.logger.log('🔧 Creating uuid-ossp extension...');
       await dbClient.query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"');
-      this.logger.log('✅ Database recreated with uuid-ossp extension');
+      this.logger.log('✅ Database recreated');
 
       await dbClient.end();
     } catch (error: unknown) {
@@ -183,71 +161,53 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
     let needsSchemaSync = false;
 
     try {
-      // Thử kết nối để kiểm tra database tồn tại
       await this.$connect();
-      this.logger.log('✅ Database connection successful');
 
-      // Kiểm tra xem tables đã được tạo chưa
       try {
         await this.$queryRaw`SELECT 1 FROM roles LIMIT 1`;
-        this.logger.log('✅ Database schema is ready');
       } catch {
-        this.logger.warn('⚠️ Database tables not found, need schema sync');
+        this.logger.warn('⚠️ Tables not found, syncing schema...');
         needsSchemaSync = true;
       }
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
-      this.logger.warn(`⚠️ Database connection failed: ${errorMessage}`);
-
-      // Tạo database và extension trước
+      this.logger.warn(`⚠️ Connection failed: ${errorMessage}`);
       await this.ensureDatabaseAndExtension();
       needsSchemaSync = true;
     }
 
-    // Nếu cần sync schema (không có tables hoặc sau tạo database)
     if (needsSchemaSync) {
-      this.logger.log('🔧 Running Prisma db push to sync schema...');
       try {
         execSync('npx prisma db push', {
           cwd: process.cwd(),
           stdio: 'inherit',
         });
-        this.logger.log('✅ Database schema synced successfully');
-
-        // Generate Prisma Client để đảm bảo client đồng bộ với schema
         execSync('npx prisma generate', {
           cwd: process.cwd(),
           stdio: 'inherit',
         });
+        this.logger.log('✅ Schema synced');
       } catch {
-        // Khi db push thất bại, thử xóa và tạo lại database
-        this.logger.warn(
-          '⚠️ Database push failed, attempting to recreate database...',
-        );
+        this.logger.warn('⚠️ Db push failed, recreating...');
         await this.recreateDatabase();
 
-        // Thử lại db push
-        this.logger.log('🔧 Retrying Prisma db push...');
         try {
           execSync('npx prisma db push', {
             cwd: process.cwd(),
             stdio: 'inherit',
           });
-          this.logger.log('✅ Database schema synced successfully');
-
           execSync('npx prisma generate', {
             cwd: process.cwd(),
             stdio: 'inherit',
           });
+          this.logger.log('✅ Schema synced');
         } catch (retryError: unknown) {
           const retryErrorMessage =
             retryError instanceof Error
               ? retryError.message
               : String(retryError);
-          this.logger.error(
-            `❌ Database push retry failed: ${retryErrorMessage}`,
-          );
+          this.logger.error(`❌ Schema sync failed: ${retryErrorMessage}`);
           throw new Error('Failed to initialize database schema after retry');
         }
       }
@@ -259,13 +219,9 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
    */
   private async seedDefaultRoles() {
     try {
-      // Kiểm tra xem đã có roles chưa
       const existingRoles = await this.role.count();
 
       if (existingRoles === 0) {
-        this.logger.log('🌱 Seeding default roles...');
-
-        // Tạo 3 roles: User (is_default=true), Admin, Super Admin
         await this.role.createMany({
           data: [
             {
@@ -291,18 +247,12 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
             },
           ],
         });
-
-        this.logger.log('✅ Default roles created successfully:');
-        this.logger.log('   - User (is_default: true)');
-        this.logger.log('   - Admin');
-        this.logger.log('   - Super Admin');
-      } else {
-        this.logger.log(
-          `📋 Found ${existingRoles} existing roles, skipping seed`,
-        );
+        this.logger.log('✅ Default roles seeded');
       }
 
       await this.seedConfigPermissions();
+      await this.seedWarehouseTemplatePermissions();
+      await this.seedVietnamAdministrative();
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
@@ -348,7 +298,6 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
               is_deleted: false,
             },
           });
-          this.logger.log(`✅ Created permission: ${perm.key}`);
         }
       }
 
@@ -381,7 +330,6 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
                 is_deleted: false,
               },
             });
-            this.logger.log(`✅ Assigned ${permission.key} to Super Admin`);
           }
         }
       }
@@ -394,9 +342,210 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
     }
   }
 
+  /**
+   * Seed các permissions cho WarehouseTemplate và gán vào Admin & Super Admin roles
+   */
+  private async seedWarehouseTemplatePermissions() {
+    try {
+      const warehouseTemplatePermissions = [
+        {
+          key: 'warehouse-template.create',
+          name: 'Tạo template kho hàng',
+          description: 'Quyền tạo mới template kho hàng',
+        },
+        {
+          key: 'warehouse-template.read',
+          name: 'Xem template kho hàng',
+          description: 'Quyền xem danh sách và chi tiết template kho hàng',
+        },
+        {
+          key: 'warehouse-template.update',
+          name: 'Cập nhật template kho hàng',
+          description: 'Quyền cập nhật thông tin và layout template kho hàng',
+        },
+        {
+          key: 'warehouse-template.delete',
+          name: 'Xóa template kho hàng',
+          description: 'Quyền xóa template kho hàng',
+        },
+      ];
+
+      for (const perm of warehouseTemplatePermissions) {
+        const existing = await this.permission.findFirst({
+          where: { key: perm.key },
+        });
+
+        if (!existing) {
+          await this.permission.create({
+            data: {
+              key: perm.key,
+              name: perm.name,
+              description: perm.description,
+              is_active: true,
+              is_deleted: false,
+            },
+          });
+        }
+      }
+
+      const adminRoles = await this.role.findMany({
+        where: {
+          name: { in: ['Admin', 'Super Admin'] },
+          is_deleted: false,
+        },
+      });
+
+      const permissions = await this.permission.findMany({
+        where: {
+          key: { in: warehouseTemplatePermissions.map((p) => p.key) },
+          is_deleted: false,
+        },
+      });
+
+      for (const role of adminRoles) {
+        for (const permission of permissions) {
+          const existingAssignment = await this.rolePermission.findFirst({
+            where: {
+              role_id: role.id,
+              permission_id: permission.id,
+            },
+          });
+
+          if (!existingAssignment) {
+            await this.rolePermission.create({
+              data: {
+                role_id: role.id,
+                permission_id: permission.id,
+                is_active: true,
+                is_deleted: false,
+              },
+            });
+          }
+        }
+      }
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `❌ Failed to seed warehouse-template permissions: ${errorMessage}`,
+      );
+    }
+  }
+
+  /**
+   * Seed dữ liệu đơn vị hành chính Việt Nam sau sáp nhập 07/2025
+   * Nguồn: VietMap - github.com/vietmap-company/vietnam_administrative_address
+   * Cấu trúc: 2 cấp (Province > Ward) - 34 tỉnh/thành, ~3321 phường/xã
+   */
+  private async seedVietnamAdministrative() {
+    try {
+      const existingProvinces = await this.province.count();
+      if (existingProvinces > 0) {
+        return;
+      }
+
+      this.logger.log('🌱 Seeding Vietnam administrative...');
+
+      const provincesUrl = 'https://raw.githubusercontent.com/vietmap-company/vietnam_administrative_address/main/admin_new/province.json';
+      const wardsUrl = 'https://raw.githubusercontent.com/vietmap-company/vietnam_administrative_address/main/admin_new/ward.json';
+
+      const [provincesResponse, wardsResponse] = await Promise.all([
+        fetch(provincesUrl),
+        fetch(wardsUrl),
+      ]);
+
+      if (!provincesResponse.ok) {
+        throw new Error(`Provinces API failed: ${provincesResponse.status}`);
+      }
+      if (!wardsResponse.ok) {
+        throw new Error(`Wards API failed: ${wardsResponse.status}`);
+      }
+
+      const provincesData = await provincesResponse.json() as Record<string, VietMapProvince>;
+      const wardsData = await wardsResponse.json() as Record<string, VietMapWard>;
+
+      const provinces = Object.values(provincesData);
+      const wards = Object.values(wardsData);
+
+      const wardsByProvince = new Map<string, VietMapWard[]>();
+      for (const ward of wards) {
+        const provinceCode = ward.parent_code;
+        if (!wardsByProvince.has(provinceCode)) {
+          wardsByProvince.set(provinceCode, []);
+        }
+        wardsByProvince.get(provinceCode)!.push(ward);
+      }
+
+      for (const province of provinces) {
+        const provinceWards = wardsByProvince.get(province.code) || [];
+
+        await this.province.create({
+          data: {
+            code: province.code,
+            name: province.name,
+            slug: province.slug,
+            type: this.mapProvinceType(province.type),
+            wards: {
+              create: provinceWards.map((ward) => ({
+                code: ward.code,
+                name: ward.name,
+                slug: ward.slug,
+                type: this.mapWardType(ward.type),
+              })),
+            },
+          },
+        });
+      }
+
+      this.logger.log(`✅ Seeded ${provinces.length} provinces, ${wards.length} wards`);
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error(`❌ Failed to seed Vietnam administrative: ${errorMessage}`);
+    }
+  }
+
+
+  private mapProvinceType(type: string): 'CITY' | 'PROVINCE' {
+    const typeMap: Record<string, 'CITY' | 'PROVINCE'> = {
+      'thanh-pho': 'CITY',
+      'tinh': 'PROVINCE',
+    };
+    return typeMap[type?.toLowerCase()] || 'PROVINCE';
+  }
+
+  private mapWardType(type: string): 'WARD' | 'COMMUNE' | 'TOWNSHIP' | 'TOWN' | 'CITY' {
+    const typeMap: Record<string, 'WARD' | 'COMMUNE' | 'TOWNSHIP' | 'TOWN' | 'CITY'> = {
+      'phuong': 'WARD',
+      'xa': 'COMMUNE',
+      'thi-tran': 'TOWNSHIP',
+      'thi-xa': 'TOWN',
+      'thanh-pho': 'CITY',
+    };
+    return typeMap[type?.toLowerCase()] || 'COMMUNE';
+  }
+
   enableShutdownHooks(app: INestApplication) {
     process.on('beforeExit', () => {
       app.close();
     });
   }
+}
+
+
+interface VietMapProvince {
+  code: string;
+  name: string;
+  slug: string;
+  type: string;
+  name_with_type: string;
+}
+
+interface VietMapWard {
+  code: string;
+  name: string;
+  slug: string;
+  type: string;
+  name_with_type: string;
+  parent_code: string;
 }

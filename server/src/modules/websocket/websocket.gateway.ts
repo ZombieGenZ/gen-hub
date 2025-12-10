@@ -19,6 +19,10 @@ import {
   UserTokenRevokedEvent,
   UserProfileUpdatedEvent,
   SocketError,
+  WarehouseTemplateCreatedEvent,
+  WarehouseTemplateUpdatedEvent,
+  WarehouseTemplateDeletedEvent,
+  WarehouseTemplateLayoutUpdatedEvent,
 } from './websocket.interfaces';
 
 /**
@@ -35,8 +39,7 @@ import {
   transports: ['websocket', 'polling'],
 })
 export class WebsocketGateway
-  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
-{
+  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
 
@@ -51,7 +54,7 @@ export class WebsocketGateway
   constructor(
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
-  ) {}
+  ) { }
 
   afterInit() {
     this.logger.log('🔌 WebSocket Gateway initialized');
@@ -138,7 +141,6 @@ export class WebsocketGateway
       message,
     };
     this.server.to(`user:${userId}`).emit('user:logout', event);
-    this.logger.debug(`Emitted user:logout to user:${userId}`);
   }
 
   /**
@@ -152,7 +154,6 @@ export class WebsocketGateway
       excludeSocketId: excludeSocketId || null,
     };
     this.server.to(`user:${userId}`).emit('user:logoutAll', event);
-    this.logger.debug(`Emitted user:logoutAll to user:${userId}`);
   }
 
   /**
@@ -170,7 +171,6 @@ export class WebsocketGateway
       message,
     };
     this.server.to(`user:${userId}`).emit('user:tokenRevoked', event);
-    this.logger.debug(`Emitted user:tokenRevoked to user:${userId}`);
   }
 
   /**
@@ -188,7 +188,74 @@ export class WebsocketGateway
       timestamp: new Date().toISOString(),
     };
     this.server.to(`user:${userId}`).emit('user:profileUpdated', event);
-    this.logger.debug(`Emitted user:profileUpdated to user:${userId}`);
+  }
+
+  // ========================
+  // WAREHOUSE TEMPLATE EVENTS
+  // ========================
+
+  /**
+   * Emit event khi tạo mới WarehouseTemplate
+   */
+  emitWarehouseTemplateCreated(warehouseTemplateId: string, name: string, createdBy: string) {
+    const event: WarehouseTemplateCreatedEvent = {
+      warehouseTemplateId,
+      name,
+      createdBy,
+      timestamp: new Date().toISOString(),
+    };
+    this.server.emit('warehouseTemplate:created', event);
+  }
+
+  /**
+   * Emit event khi cập nhật WarehouseTemplate
+   */
+  emitWarehouseTemplateUpdated(
+    warehouseTemplateId: string,
+    name: string,
+    updatedFields: string[],
+    updatedBy: string,
+  ) {
+    const event: WarehouseTemplateUpdatedEvent = {
+      warehouseTemplateId,
+      name,
+      updatedFields,
+      updatedBy,
+      timestamp: new Date().toISOString(),
+    };
+    this.server.emit('warehouseTemplate:updated', event);
+  }
+
+  /**
+   * Emit event khi xóa WarehouseTemplate
+   */
+  emitWarehouseTemplateDeleted(warehouseTemplateId: string, name: string, deletedBy: string) {
+    const event: WarehouseTemplateDeletedEvent = {
+      warehouseTemplateId,
+      name,
+      deletedBy,
+      timestamp: new Date().toISOString(),
+    };
+    this.server.emit('warehouseTemplate:deleted', event);
+  }
+
+  /**
+   * Emit event khi cập nhật layout WarehouseTemplate
+   */
+  emitWarehouseTemplateLayoutUpdated(
+    warehouseTemplateId: string,
+    name: string,
+    updatedBy: string,
+    summary: WarehouseTemplateLayoutUpdatedEvent['summary'],
+  ) {
+    const event: WarehouseTemplateLayoutUpdatedEvent = {
+      warehouseTemplateId,
+      name,
+      updatedBy,
+      summary,
+      timestamp: new Date().toISOString(),
+    };
+    this.server.emit('warehouseTemplate:layoutUpdated', event);
   }
 
   // ========================

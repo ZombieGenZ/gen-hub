@@ -28,7 +28,6 @@ export class BanSchedulerService implements OnModuleInit, OnModuleDestroy {
     ) { }
 
     async onModuleInit() {
-        this.logger.log('🔄 Initializing ban scheduler...');
         await this.processExistingBans();
     }
 
@@ -40,7 +39,6 @@ export class BanSchedulerService implements OnModuleInit, OnModuleDestroy {
                 this.schedulerRegistry.deleteTimeout(name);
             }
         });
-        this.logger.log('🛑 Ban scheduler cleaned up');
     }
 
     /**
@@ -51,32 +49,22 @@ export class BanSchedulerService implements OnModuleInit, OnModuleDestroy {
             const bannedUsers = await this.userRepository.findBannedUsers();
 
             if (bannedUsers.length === 0) {
-                this.logger.log('✅ No banned users found');
                 return;
             }
 
-            this.logger.log(`📋 Found ${bannedUsers.length} banned user(s)`);
+
 
             const now = new Date();
-            this.logger.debug(`🕐 Current time: ${now.toLocaleString('vi-VN')} (${now.toISOString()})`);
 
             let unbannedCount = 0;
             let scheduledCount = 0;
 
             for (const user of bannedUsers) {
                 if (!user.banned_end) {
-                    // Permanent ban - không tự động gỡ
-                    this.logger.debug(
-                        `⏸️ User ${user.email || user.id} has permanent ban (no banned_end)`,
-                    );
                     continue;
                 }
 
                 const bannedEnd = new Date(user.banned_end);
-
-                this.logger.debug(
-                    `👤 User ${user.email}: banned_end = ${bannedEnd.toLocaleString('vi-VN')} (raw: ${user.banned_end})`
-                );
 
                 if (bannedEnd <= now) {
                     // Ban đã hết hạn - gỡ ban ngay
@@ -89,9 +77,11 @@ export class BanSchedulerService implements OnModuleInit, OnModuleDestroy {
                 }
             }
 
-            this.logger.log(
-                `✅ Processed bans: ${unbannedCount} unbanned immediately, ${scheduledCount} scheduled for future`,
-            );
+            if (unbannedCount > 0 || scheduledCount > 0) {
+                this.logger.log(
+                    `✅ Ban scheduler: ${unbannedCount} unbanned, ${scheduledCount} scheduled`,
+                );
+            }
         } catch (error) {
             this.logger.error('❌ Error processing existing bans:', error);
         }
@@ -137,11 +127,6 @@ export class BanSchedulerService implements OnModuleInit, OnModuleDestroy {
         }, delay);
 
         this.schedulerRegistry.addTimeout(timeoutName, timeout);
-
-        const unbannedAt = bannedEnd.toLocaleString('vi-VN');
-        this.logger.log(
-            `⏰ Scheduled unban for user ${userIdentifier} at ${unbannedAt} (in ${Math.round(delay / 1000 / 60)} minutes)`,
-        );
     }
 
     /**
@@ -174,7 +159,6 @@ export class BanSchedulerService implements OnModuleInit, OnModuleDestroy {
         const timeoutName = `unban_${userId}`;
         try {
             this.schedulerRegistry.deleteTimeout(timeoutName);
-            this.logger.log(`🚫 Cancelled scheduled unban for user ${userId}`);
         } catch {
             // Timeout không tồn tại
         }

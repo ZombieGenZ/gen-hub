@@ -3,10 +3,6 @@
  * Định nghĩa các interface cho socket events
  */
 
-// ========================
-// Server → Client Events
-// ========================
-
 /**
  * Event khi user logout khỏi 1 thiết bị
  */
@@ -52,20 +48,12 @@ export interface UserProfileUpdatedEvent {
   timestamp: string;
 }
 
-// ========================
-// Client → Server Events
-// ========================
-
 /**
  * Payload cho subscribe event
  */
 export interface SubscribePayload {
   rooms: string[];
 }
-
-// ========================
-// Error Event
-// ========================
 
 /**
  * Socket error event
@@ -75,10 +63,6 @@ export interface SocketError {
   message: string;
   details?: Record<string, unknown>;
 }
-
-// ========================
-// Socket with Auth
-// ========================
 
 /**
  * Socket với user data đã authenticate
@@ -94,4 +78,59 @@ export interface AuthenticatedSocket {
   join: (room: string) => void;
   leave: (room: string) => void;
   emit: (event: string, data: unknown) => void;
+}
+
+/**
+ * Event khi tạo mới WarehouseTemplate
+ */
+export interface WarehouseTemplateCreatedEvent {
+  warehouseTemplateId: string;
+  name: string;
+  createdBy: string;
+  timestamp: string;
+}
+
+/**
+ * Event khi cập nhật WarehouseTemplate
+ */
+export interface WarehouseTemplateUpdatedEvent {
+  warehouseTemplateId: string;
+  name: string;
+  updatedFields: string[];
+  updatedBy: string;
+  timestamp: string;
+}
+
+/**
+ * Event khi xóa WarehouseTemplate
+ */
+export interface WarehouseTemplateDeletedEvent {
+  warehouseTemplateId: string;
+  name: string;
+  deletedBy: string;
+  timestamp: string;
+}
+
+/**
+ * Event khi cập nhật layout WarehouseTemplate
+ */
+export interface WarehouseTemplateLayoutUpdatedEvent {
+  warehouseTemplateId: string;
+  name: string;
+  updatedBy: string;
+  summary: {
+    rowsCreated: number;
+    rowsUpdated: number;
+    rowsDeleted: number;
+    racksCreated: number;
+    racksUpdated: number;
+    racksDeleted: number;
+    shelvesCreated: number;
+    shelvesUpdated: number;
+    shelvesDeleted: number;
+    blocksCreated: number;
+    blocksUpdated: number;
+    blocksDeleted: number;
+  };
+  timestamp: string;
 }

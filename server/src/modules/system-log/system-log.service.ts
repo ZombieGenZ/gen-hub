@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateLogDto, LogBuilder } from './dto';
@@ -10,7 +10,9 @@ import { CreateLogDto, LogBuilder } from './dto';
  */
 @Injectable()
 export class SystemLogService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger('SystemLog');
+
+  constructor(private readonly prisma: PrismaService) { }
 
   /**
    * Log async - fire-and-forget, không await
@@ -18,6 +20,11 @@ export class SystemLogService {
    * @param params CreateLogDto hoặc LogBuilder result
    */
   logAsync(params: CreateLogDto): void {
+    // Console output cho ERROR level trong development
+    if (params.level === 'ERROR') {
+      this.logger.error(`[${params.module}:${params.action}] ${params.message}`);
+    }
+
     this.createLog(params).catch((error) => {
       console.error('[SystemLog] Failed to create log:', error.message);
     });
@@ -28,6 +35,11 @@ export class SystemLogService {
    * @param params CreateLogDto
    */
   async log(params: CreateLogDto): Promise<void> {
+    // Console output cho ERROR level
+    if (params.level === 'ERROR') {
+      this.logger.error(`[${params.module}:${params.action}] ${params.message}`);
+    }
+
     await this.createLog(params);
   }
 

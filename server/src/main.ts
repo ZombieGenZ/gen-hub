@@ -6,16 +6,12 @@ import { GlobalExceptionFilter } from './common/filters';
 import { HttpLoggingInterceptor } from './common/interceptors';
 import { SystemLogService } from './modules/system-log/system-log.service';
 
-// Đặt timezone mặc định cho ứng dụng (GMT+7)
 process.env.TZ = process.env.TZ || 'Asia/Ho_Chi_Minh';
 
-// Thời gian server bắt đầu
 const serverStartTime = new Date();
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-
-  // Lấy SystemLogService từ container
   const systemLogService = app.get(SystemLogService);
 
   app.useGlobalPipes(
@@ -26,15 +22,13 @@ async function bootstrap() {
     }),
   );
 
-  // Đăng ký GlobalExceptionFilter (xử lý trước I18nValidationExceptionFilter)
   app.useGlobalFilters(
-    new GlobalExceptionFilter(systemLogService),
     new I18nValidationExceptionFilter({
       detailedErrors: false,
     }),
+    new GlobalExceptionFilter(systemLogService),
   );
 
-  // Đăng ký HTTP Logging Interceptor
   app.useGlobalInterceptors(new HttpLoggingInterceptor(systemLogService));
 
   app.enableCors({
@@ -70,18 +64,12 @@ async function bootstrap() {
 
   const port = process.env.PORT ?? 4000;
   await app.listen(port);
-
-  // Log server startup
   systemLogService.logServerStart(port, serverStartTime);
 
   console.log(`🚀 Server đang chạy tại http://localhost:${port}`);
   console.log(`📚 Swagger docs: http://localhost:${port}/api-docs`);
 
-  // ============================================================
-  // Graceful Shutdown & Crash Handlers
-  // ============================================================
-
-  // Xử lý graceful shutdown (SIGTERM, SIGINT)
+  // Graceful Shutdown
   const gracefulShutdown = async (signal: string) => {
     console.log(`\n📴 Nhận signal ${signal}, đang tắt server...`);
 
@@ -103,7 +91,6 @@ async function bootstrap() {
     gracefulShutdown('SIGINT');
   });
 
-  // Xử lý uncaught exceptions (crash)
   process.on('uncaughtException', (error: Error) => {
     console.error('💥 Uncaught Exception:', error);
 
@@ -117,7 +104,6 @@ async function bootstrap() {
       });
   });
 
-  // Xử lý unhandled promise rejections (crash)
   process.on('unhandledRejection', (reason: unknown) => {
     const error = reason instanceof Error ? reason : new Error(String(reason));
     console.error('💥 Unhandled Rejection:', error);

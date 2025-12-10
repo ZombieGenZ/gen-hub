@@ -18,9 +18,10 @@ model Province {
   id   String        @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
   code String        @unique
   name String
+  slug String?
   type ProvinceType?
 
-  districts District[]
+  wards Ward[]
 
   is_active  Boolean?  @default(true)
   created_at DateTime  @default(now())
@@ -31,47 +32,23 @@ model Province {
   @@map("provinces")
 }
 
-enum DistrictType {
-  URBAN_DISTRICT
-  DISTRICT
-  TOWN
-  CITY
-}
-
-model District {
-  id          String        @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
-  code        String        @unique
-  name        String
-  type        DistrictType?
-  province_id String        @db.Uuid
-
-  province Province @relation(fields: [province_id], references: [id], onDelete: Cascade)
-  wards    Ward[]
-
-  is_active  Boolean?  @default(true)
-  created_at DateTime  @default(now())
-  updated_at DateTime? @updatedAt
-  is_deleted Boolean?  @default(false)
-  deleted_at DateTime?
-
-  @@index([province_id])
-  @@map("districts")
-}
-
 enum WardType {
   WARD
   COMMUNE
   TOWNSHIP
+  TOWN
+  CITY
 }
 
 model Ward {
   id          String    @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
   code        String    @unique
   name        String
+  slug        String?
   type        WardType?
-  district_id String    @db.Uuid
+  province_id String    @db.Uuid
 
-  district District @relation(fields: [district_id], references: [id], onDelete: Cascade)
+  province Province @relation(fields: [province_id], references: [id], onDelete: Cascade)
 
   partners           Partner[]
   warehouses         Warehouse[]
@@ -83,7 +60,7 @@ model Ward {
   is_deleted Boolean?  @default(false)
   deleted_at DateTime?
 
-  @@index([district_id])
+  @@index([province_id])
   @@map("wards")
 }
 
