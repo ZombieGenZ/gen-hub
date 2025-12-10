@@ -255,7 +255,7 @@ export class LayoutRowDto {
     @IsNumber()
     @Min(0)
     @Type(() => Number)
-    price_per_day?: number;
+    price_per_month?: number;
 
     @ApiPropertyOptional({ description: 'Giảm giá 1 tuần (%)' })
     @IsOptional()

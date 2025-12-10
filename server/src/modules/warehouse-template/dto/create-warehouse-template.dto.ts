@@ -75,24 +75,16 @@ export class CreateWarehouseTemplateDto {
 
     @ApiProperty({ description: 'Giá thuê/ngày', example: 100000 })
     @IsNotEmpty({
-        message: i18nValidationMessage('warehouse-template.validation.price_per_day_required'),
+        message: i18nValidationMessage('warehouse-template.validation.price_per_month_required'),
     })
     @IsNumber({}, {
-        message: i18nValidationMessage('warehouse-template.validation.price_per_day_positive'),
+        message: i18nValidationMessage('warehouse-template.validation.price_per_month_positive'),
     })
     @Min(0, {
-        message: i18nValidationMessage('warehouse-template.validation.price_per_day_positive'),
+        message: i18nValidationMessage('warehouse-template.validation.price_per_month_positive'),
     })
     @Type(() => Number)
-    price_per_day: number;
-
-    @ApiPropertyOptional({ description: 'Giảm giá 1 tuần (%)', example: 0, default: 0 })
-    @IsOptional()
-    @IsNumber()
-    @Min(0, { message: i18nValidationMessage('warehouse-template.validation.discount_range') })
-    @Max(100, { message: i18nValidationMessage('warehouse-template.validation.discount_range') })
-    @Type(() => Number)
-    discount_1_week?: number;
+    price_per_month: number;
 
     @ApiPropertyOptional({ description: 'Giảm giá 1 tháng (%)', example: 0, default: 0 })
     @IsOptional()

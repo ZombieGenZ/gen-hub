@@ -262,8 +262,7 @@ model WarehouseTemplate {
   width  Int
 
   is_rented             Boolean @default(false)
-  price_per_day         Decimal @db.Decimal(19, 4)
-  discount_1_week       Decimal @default(0) @db.Decimal(5, 2)
+  price_per_month         Decimal @db.Decimal(19, 4)
   discount_1_month      Decimal @default(0) @db.Decimal(5, 2)
   discount_3_months     Decimal @default(5) @db.Decimal(5, 2)
   discount_6_months     Decimal @default(10) @db.Decimal(5, 2)
@@ -306,8 +305,7 @@ model RowTemplate {
   description           String?
 
   is_rented             Boolean @default(false)
-  price_per_day         Decimal @db.Decimal(19, 4)
-  discount_1_week       Decimal @default(0) @db.Decimal(5, 2)
+  price_per_month         Decimal @db.Decimal(19, 4)
   discount_1_month      Decimal @default(0) @db.Decimal(5, 2)
   discount_3_months     Decimal @default(5) @db.Decimal(5, 2)
   discount_6_months     Decimal @default(10) @db.Decimal(5, 2)
@@ -472,7 +470,7 @@ model RentalContractDetail {
   warehouse_id       String? @db.Uuid
   row_id             String? @db.Uuid
 
-  price_per_day Decimal @db.Decimal(19, 4)
+  price_per_month Decimal @db.Decimal(19, 4)
   discount_rate Decimal @default(0) @db.Decimal(5, 2)
   rental_days   Int
   subtotal      Decimal @db.Decimal(19, 4)
