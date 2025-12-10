@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { PrismaService } from '../../prisma/prisma.service';
+import { RedisService } from '../../modules/redis/redis.service';
 import { PERMISSIONS_KEY } from '../decorators/require-permission.decorator';
 
 @Injectable()
@@ -13,7 +14,8 @@ export class PermissionGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
     private readonly prisma: PrismaService,
-  ) {}
+    private readonly redisService: RedisService,
+  ) { }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const requiredPermissions = this.reflector.getAllAndOverride<string[]>(
@@ -46,6 +48,14 @@ export class PermissionGuard implements CanActivate {
   }
 
   private async getUserPermissions(userId: string): Promise<string[]> {
+    // 1. Check Redis cache first
+    const cachedPermissions =
+      await this.redisService.getUserPermissionsCache(userId);
+    if (cachedPermissions !== null) {
+      return cachedPermissions;
+    }
+
+    // 2. If not in cache, query database
     const directPermissions = await this.prisma.userPermission.findMany({
       where: {
         user_id: userId,
@@ -104,6 +114,11 @@ export class PermissionGuard implements CanActivate {
       }
     }
 
-    return Array.from(permissionKeys);
+    const permissions = Array.from(permissionKeys);
+
+    // 3. Cache the result for future requests
+    await this.redisService.setUserPermissionsCache(userId, permissions);
+
+    return permissions;
   }
 }

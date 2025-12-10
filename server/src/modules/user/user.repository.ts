@@ -9,7 +9,7 @@ import { User, Prisma, PlatformProvider } from '@prisma/client';
  */
 @Injectable()
 export class UserRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   /**
    * Tìm user theo ID
@@ -287,6 +287,42 @@ export class UserRepository {
     return this.prisma.user.update({
       where: { id: userId },
       data,
+    });
+  }
+
+  /**
+   * Tìm tất cả user đang bị banned
+   * @returns Danh sách user bị banned với thông tin banned_end
+   */
+  async findBannedUsers(): Promise<
+    Pick<User, 'id' | 'name' | 'email' | 'is_banned' | 'banned_end'>[]
+  > {
+    return this.prisma.user.findMany({
+      where: {
+        is_banned: true,
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        is_banned: true,
+        banned_end: true,
+      },
+    });
+  }
+
+  /**
+   * Gỡ ban cho user
+   * @param userId - ID của user cần gỡ ban
+   * @returns User đã được gỡ ban
+   */
+  async unbanUser(userId: string): Promise<User> {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        is_banned: false,
+        banned_end: null,
+      },
     });
   }
 }

@@ -73,8 +73,9 @@ model Ward {
 
   district District @relation(fields: [district_id], references: [id], onDelete: Cascade)
 
-  partners   Partner[]
-  warehouses Warehouse[]
+  partners           Partner[]
+  warehouses         Warehouse[]
+  warehouseTemplates WarehouseTemplate[]
 
   is_active  Boolean?  @default(true)
   created_at DateTime  @default(now())

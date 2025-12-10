@@ -6,6 +6,9 @@ import { GlobalExceptionFilter } from './common/filters';
 import { HttpLoggingInterceptor } from './common/interceptors';
 import { SystemLogService } from './modules/system-log/system-log.service';
 
+// Đặt timezone mặc định cho ứng dụng (GMT+7)
+process.env.TZ = process.env.TZ || 'Asia/Ho_Chi_Minh';
+
 // Thời gian server bắt đầu
 const serverStartTime = new Date();
 

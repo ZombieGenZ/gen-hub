@@ -16,10 +16,18 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(RedisService.name);
   private client: Redis;
 
-  /** TTL mặc định cho user cache (5 phút) */
-  private readonly USER_CACHE_TTL = 300;
+  /** TTL mặc định cho user cache (đọc từ env, default: 5 phút) */
+  private readonly USER_CACHE_TTL: number;
+
+  /** TTL mặc định cho permission cache (đọc từ env, default: 5 phút) */
+  private readonly PERMISSION_CACHE_TTL: number;
 
   constructor(private readonly configService: ConfigService) {
+    // Load TTL configuration from environment
+    this.USER_CACHE_TTL =
+      this.configService.get<number>('REDIS_USER_CACHE_TTL') || 300;
+    this.PERMISSION_CACHE_TTL =
+      this.configService.get<number>('REDIS_PERMISSION_CACHE_TTL') || 300;
     const redisUrl = this.configService.get<string>('REDIS_URL');
 
     if (redisUrl) {
@@ -150,5 +158,55 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   async invalidateAllUserCache(userId: string): Promise<void> {
     await this.delByPattern(`user:*:${userId}`);
     this.logger.debug(`All user cache invalidated: ${userId}`);
+  }
+
+  /**
+   * Tạo cache key cho user permissions
+   */
+  private getUserPermissionCacheKey(userId: string): string {
+    return `user:permissions:${userId}`;
+  }
+
+  /**
+   * Lấy user permissions từ cache
+   * @returns Mảng permission keys hoặc null nếu không có trong cache
+   */
+  async getUserPermissionsCache(userId: string): Promise<string[] | null> {
+    const data = await this.get(this.getUserPermissionCacheKey(userId));
+    if (!data) return null;
+
+    try {
+      return JSON.parse(data) as string[];
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Lưu user permissions vào cache
+   * @param permissions - Mảng các permission keys
+   * @param ttlSeconds - TTL tùy chỉnh (mặc định 5 phút)
+   */
+  async setUserPermissionsCache(
+    userId: string,
+    permissions: string[],
+    ttlSeconds?: number,
+  ): Promise<void> {
+    const ttl = ttlSeconds || this.PERMISSION_CACHE_TTL;
+    await this.set(
+      this.getUserPermissionCacheKey(userId),
+      JSON.stringify(permissions),
+      ttl,
+    );
+    this.logger.debug(`User permissions cached: ${userId} (TTL: ${ttl}s)`);
+  }
+
+  /**
+   * Xóa permission cache của user
+   * Gọi method này khi user được assign/remove role hoặc permission
+   */
+  async invalidateUserPermissionsCache(userId: string): Promise<void> {
+    await this.del(this.getUserPermissionCacheKey(userId));
+    this.logger.debug(`User permissions cache invalidated: ${userId}`);
   }
 }
