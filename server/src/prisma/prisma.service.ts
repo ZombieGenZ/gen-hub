@@ -354,14 +354,24 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
           description: 'Quyền tạo mới template kho hàng',
         },
         {
+          key: 'warehouse-template.list',
+          name: 'Xem danh sách template kho hàng',
+          description: 'Quyền xem danh sách template kho hàng',
+        },
+        {
           key: 'warehouse-template.read',
-          name: 'Xem template kho hàng',
-          description: 'Quyền xem danh sách và chi tiết template kho hàng',
+          name: 'Xem chi tiết template kho hàng',
+          description: 'Quyền xem chi tiết template kho hàng',
         },
         {
           key: 'warehouse-template.update',
           name: 'Cập nhật template kho hàng',
-          description: 'Quyền cập nhật thông tin và layout template kho hàng',
+          description: 'Quyền cập nhật thông tin template kho hàng',
+        },
+        {
+          key: 'warehouse-template.design',
+          name: 'Thiết kế layout template kho hàng',
+          description: 'Quyền thiết kế layout (rows, racks, shelves, blocks) template kho hàng',
         },
         {
           key: 'warehouse-template.delete',

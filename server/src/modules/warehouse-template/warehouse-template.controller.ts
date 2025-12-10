@@ -59,7 +59,7 @@ export class WarehouseTemplateController {
     }
 
     @Get()
-    @RequirePermission('warehouse-template.read')
+    @RequirePermission('warehouse-template.list')
     @ApiOperation({ summary: 'Lấy danh sách template kho hàng' })
     @ApiResponse({ status: 200, description: 'Lấy danh sách thành công' })
     async findMany(
@@ -116,7 +116,7 @@ export class WarehouseTemplateController {
     }
 
     @Put(':id/layout')
-    @RequirePermission('warehouse-template.update')
+    @RequirePermission('warehouse-template.design')
     @ApiOperation({ summary: 'Cập nhật layout (rows, racks, shelves, blocks)' })
     @ApiParam({ name: 'id', description: 'ID của template', type: 'string' })
     @ApiResponse({ status: 200, description: 'Cập nhật layout thành công' })
