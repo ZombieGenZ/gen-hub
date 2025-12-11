@@ -3,7 +3,10 @@
 import { useState } from 'react'
 import { User, Lock, Eye, EyeOff } from 'lucide-react'
 import Link from 'next/link'
+import { AuthService } from '@/services/auth/auth.service'
 import { useRouter } from 'next/navigation'
+
+const authServices = new AuthService();
 
 export default function LoginPage() {
   const router = useRouter()
@@ -12,24 +15,18 @@ export default function LoginPage() {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    rememberMe: false
   })
 
   const handleLogin = async () => {
     setLoading(true)
     try {
       // Call API login
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      })
-      
-      const data = await response.json()
-      
-      if (data.token) {
-        localStorage.setItem('token', data.token)
-        router.push('/dashboard')
+      const response = await authServices.login(formData)
+      console.log(response)
+      if (response) {
+        localStorage.setItem('access_token', response.authorization.access_token)
+        localStorage.setItem('refresh_token', response.authorization.refresh_token);
+        router.push('/')
       } else {
         alert('Đăng nhập thất bại!')
       }
@@ -114,15 +111,6 @@ export default function LoginPage() {
 
           {/* Remember & Forgot */}
           <div className="flex items-center justify-between">
-            <label className="flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={formData.rememberMe}
-                onChange={(e) => setFormData({ ...formData, rememberMe: e.target.checked })}
-                className="w-4 h-4 text-blue-600 bg-slate-700 border-slate-600 rounded focus:ring-blue-500 focus:ring-2"
-              />
-              <span className="ml-2 text-sm text-slate-400">Ghi nhớ đăng nhập</span>
-            </label>
             <Link href="/forgot-password" className="text-sm text-blue-400 hover:text-blue-300 font-medium">
               Quên mật khẩu?
             </Link>

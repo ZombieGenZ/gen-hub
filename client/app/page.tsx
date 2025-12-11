@@ -1,6 +1,51 @@
+'use client'
+
+import { useEffect } from "react";
 import Image from "next/image";
+import { UserService } from "@/services/user/user.service";
+import { AuthService } from "@/services/auth/auth.service";
 
 export default function Home() {
+  const userServices = new UserService();
+  const authServices = new AuthService();
+
+    useEffect(() => {
+    const access_token = localStorage.getItem('access_token');
+    if (access_token) {
+      userServices.getUser(access_token).then((response) => {
+        console.log(response);
+      });
+    }
+  }, []);
+
+  // useEffect mới: kiểm tra refresh_token mỗi 5 phút
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      const refresh_token = localStorage.getItem('refresh_token');
+      if (!refresh_token) return;
+
+      try {
+        const response = await authServices.getNewToken(refresh_token);
+        // tuỳ backend, bạn có thể cần gửi refresh_token trong body:
+        // const response = await authServices.getNewToken(refresh_token)
+        console.log(response)
+        if (response) {
+          localStorage.setItem('access_token', response.authorization.access_token);
+          if (response.authorization.refresh_token) {
+            localStorage.setItem('refresh_token', response.authorization.refresh_token);
+          }
+          console.log('Refreshed token:', response.authorization.access_token);
+        } else {
+          console.warn('Refresh token failed', response);
+        }
+      } catch (error) {
+        console.error('Error refreshing token:', error);
+      }
+    }, 5 * 60 * 1000); // 5 phút
+
+    return () => clearInterval(interval);
+  }, [authServices]);
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
       <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">

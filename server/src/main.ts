@@ -5,7 +5,6 @@ import { AppModule } from './app.module';
 import { GlobalExceptionFilter, CustomValidationExceptionFilter } from './common/filters';
 import { HttpLoggingInterceptor } from './common/interceptors';
 import { SystemLogService } from './modules/system-log/system-log.service';
-
 process.env.TZ = process.env.TZ || 'Asia/Ho_Chi_Minh';
 
 const serverStartTime = new Date();
