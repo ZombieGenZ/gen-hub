@@ -26,6 +26,7 @@ export default function LoginPage() {
       if (response) {
         localStorage.setItem('access_token', response.authorization.access_token)
         localStorage.setItem('refresh_token', response.authorization.refresh_token);
+        alert('Đăng nhập thành công!')
         router.push('/')
       } else {
         alert('Đăng nhập thất bại!')

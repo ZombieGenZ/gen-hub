@@ -1,6 +1,8 @@
 const API = process.env.NEXT_PUBLIC_API_URL
 
 export class UserService {
+   
+   // Lấy thông tin user
    async getUser(token: string) {
       try {
          const response = await fetch(`${API}/account/profile`, {
