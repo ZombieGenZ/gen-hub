@@ -3,11 +3,38 @@ import { ConfigService } from '@nestjs/config';
 import * as fs from 'fs';
 import * as path from 'path';
 
+export interface IAppColors {
+  // Primary Colors
+  primary: string;
+  primaryLight: string;
+  primaryDark: string;
+
+  // Neutral / Greys
+  gray900: string;
+  gray700: string;
+  gray500: string;
+  gray300: string;
+  gray100: string;
+
+  // Background & Surface
+  background: string;
+  cardSurface: string;
+  sidebarBg: string;
+
+  // Accent Colors
+  success: string;
+  warning: string;
+  error: string;
+  info: string;
+
+  // Border + Shadow
+  border: string;
+  shadow: string;
+}
+
 export interface IAppConfig {
-  appName: string;
-  appVersion: string;
-  teamName: string;
-  copyright: string;
+  brandName: string;
+  colors: IAppColors;
 }
 
 /**
@@ -30,14 +57,50 @@ export class AppConfigService implements OnModuleInit {
 
   private getDefaultConfig(): IAppConfig {
     return {
-      appName: this.configService.get<string>('APP_NAME') || 'GEN-HUB',
-      appVersion: this.configService.get<string>('APP_VERSION') || '1.0.0',
-      teamName:
-        this.configService.get<string>('APP_TEAM_NAME') ||
-        'TANK ZENITH GEN Development Team',
-      copyright:
-        this.configService.get<string>('APP_COPYRIGHT') ||
-        '© 2025 TANK ZENITH GEN. All rights reserved.',
+      brandName:
+        this.configService.get<string>('BRAND_NAME') || 'GEN-HUB',
+      colors: {
+        // Primary Colors
+        primary: this.configService.get<string>('COLOR_PRIMARY') || '#0F766E',
+        primaryLight:
+          this.configService.get<string>('COLOR_PRIMARY_LIGHT') || '#14B8A6',
+        primaryDark:
+          this.configService.get<string>('COLOR_PRIMARY_DARK') || '#0D5A52',
+
+        // Neutral / Greys
+        gray900:
+          this.configService.get<string>('COLOR_GRAY_900') || '#1E293B',
+        gray700:
+          this.configService.get<string>('COLOR_GRAY_700') || '#334155',
+        gray500:
+          this.configService.get<string>('COLOR_GRAY_500') || '#64748B',
+        gray300:
+          this.configService.get<string>('COLOR_GRAY_300') || '#CBD5E1',
+        gray100:
+          this.configService.get<string>('COLOR_GRAY_100') || '#F1F5F9',
+
+        // Background & Surface
+        background:
+          this.configService.get<string>('COLOR_BACKGROUND') || '#F8FAFC',
+        cardSurface:
+          this.configService.get<string>('COLOR_CARD_SURFACE') || '#FFFFFF',
+        sidebarBg:
+          this.configService.get<string>('COLOR_SIDEBAR_BG') || '#F1F5F9',
+
+        // Accent Colors
+        success:
+          this.configService.get<string>('COLOR_SUCCESS') || '#10B981',
+        warning:
+          this.configService.get<string>('COLOR_WARNING') || '#F59E0B',
+        error: this.configService.get<string>('COLOR_ERROR') || '#EF4444',
+        info: this.configService.get<string>('COLOR_INFO') || '#0EA5E9',
+
+        // Border + Shadow
+        border: this.configService.get<string>('COLOR_BORDER') || '#E2E8F0',
+        shadow:
+          this.configService.get<string>('COLOR_SHADOW') ||
+          'rgba(0, 0, 0, 0.04)',
+      },
     };
   }
 
