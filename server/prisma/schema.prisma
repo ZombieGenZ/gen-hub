@@ -530,7 +530,7 @@ model Row {
 model Organization {
   id         String   @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
   name       String
-  company    String
+  // company    String
   is_active  Boolean? @default(true)
   is_deleted Boolean? @default(false)
   owner_id   String   @db.Uuid
@@ -555,7 +555,6 @@ model Organization {
   warehouses Warehouse[]
 
   rental_contracts         RentalContract[]
-  organization_permissions OrganizationPermission[]
   inventory_transactions   InventoryTransaction[]
   inventories              Inventory[]
   audit_logs               OrganizationAuditLog[]
@@ -621,7 +620,6 @@ model OrganizationPermission {
   name            String
   description     String?
   key             String
-  organization_id String   @db.Uuid
   is_active       Boolean? @default(true)
 
   created_at DateTime  @default(now())
@@ -629,7 +627,6 @@ model OrganizationPermission {
   is_deleted Boolean   @default(false)
   deleted_at DateTime?
 
-  organization Organization                 @relation(fields: [organization_id], references: [id], onDelete: Cascade)
   roles        OrganizationRolePermission[]
 
   api_key_assignments ApiKeyPermission[]

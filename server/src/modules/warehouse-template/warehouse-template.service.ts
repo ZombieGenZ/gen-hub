@@ -628,10 +628,6 @@ export class WarehouseTemplateService {
         }
     }
 
-    // =========================================
-    // BUILD DATA HELPERS
-    // =========================================
-
     private buildRowCreateData(row: LayoutRowDto, userId: string) {
         return {
             name: row.name,
@@ -759,10 +755,6 @@ export class WarehouseTemplateService {
             updated_by: userId,
         };
     }
-
-    // =========================================
-    // FLAT BUILD DATA HELPERS (for createMany)
-    // =========================================
 
     private buildRowCreateDataFlat(row: LayoutRowDto, userId: string): Omit<Prisma.RowTemplateCreateManyInput, 'id' | 'warehouse_template_id'> {
         return {

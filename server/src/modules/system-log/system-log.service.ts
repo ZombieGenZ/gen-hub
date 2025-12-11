@@ -150,10 +150,6 @@ export class SystemLogService {
     });
   }
 
-  // ============================================================
-  // Server Lifecycle Logging Methods
-  // ============================================================
-
   /**
    * Log server startup - gọi khi server khởi động thành công
    * @param port - Port server đang chạy

@@ -252,6 +252,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
 
       await this.seedConfigPermissions();
       await this.seedWarehouseTemplatePermissions();
+      await this.seedOrganizationPermissions();
       await this.seedVietnamAdministrative();
     } catch (error: unknown) {
       const errorMessage =
@@ -438,6 +439,197 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         error instanceof Error ? error.message : String(error);
       this.logger.error(
         `❌ Failed to seed warehouse-template permissions: ${errorMessage}`,
+      );
+    }
+  }
+
+  /**
+   * Seed các permissions cho Organization và gán vào các roles tương ứng
+   * - organization.create/list/read/update/delete: Tất cả user
+   * - organization.list.all/read.all: Chỉ Admin và Super Admin
+   */
+  private async seedOrganizationPermissions() {
+    try {
+      // Permissions cơ bản cho tất cả user
+      const basicPermissions = [
+        {
+          key: 'organization.create',
+          name: 'Tạo tổ chức',
+          description: 'Quyền tạo mới tổ chức',
+        },
+        {
+          key: 'organization.list',
+          name: 'Xem danh sách tổ chức',
+          description: 'Quyền xem danh sách tổ chức của mình',
+        },
+        {
+          key: 'organization.read',
+          name: 'Xem chi tiết tổ chức',
+          description: 'Quyền xem chi tiết tổ chức của mình',
+        },
+        {
+          key: 'organization.update',
+          name: 'Cập nhật tổ chức',
+          description: 'Quyền cập nhật tổ chức của mình',
+        },
+        {
+          key: 'organization.delete',
+          name: 'Xóa tổ chức',
+          description: 'Quyền xóa tổ chức của mình',
+        },
+      ];
+
+      // Permissions đặc biệt chỉ cho Admin và Super Admin
+      const adminPermissions = [
+        {
+          key: 'organization.list.all',
+          name: 'Xem tất cả tổ chức',
+          description: 'Quyền xem danh sách tất cả tổ chức trên hệ thống',
+        },
+        {
+          key: 'organization.read.all',
+          name: 'Xem chi tiết tất cả tổ chức',
+          description: 'Quyền xem chi tiết bất kỳ tổ chức nào trên hệ thống',
+        },
+      ];
+
+      const allSystemPermissions = [...basicPermissions, ...adminPermissions];
+
+      // Tạo system permissions
+      for (const perm of allSystemPermissions) {
+        const existing = await this.permission.findFirst({
+          where: { key: perm.key },
+        });
+
+        if (!existing) {
+          await this.permission.create({
+            data: {
+              key: perm.key,
+              name: perm.name,
+              description: perm.description,
+              is_active: true,
+              is_deleted: false,
+            },
+          });
+        }
+      }
+
+      // Gán basic permissions cho tất cả roles
+      const allRoles = await this.role.findMany({
+        where: { is_deleted: false },
+      });
+
+      const basicPermissionRecords = await this.permission.findMany({
+        where: {
+          key: { in: basicPermissions.map((p) => p.key) },
+          is_deleted: false,
+        },
+      });
+
+      for (const role of allRoles) {
+        for (const permission of basicPermissionRecords) {
+          const existingAssignment = await this.rolePermission.findFirst({
+            where: {
+              role_id: role.id,
+              permission_id: permission.id,
+            },
+          });
+
+          if (!existingAssignment) {
+            await this.rolePermission.create({
+              data: {
+                role_id: role.id,
+                permission_id: permission.id,
+                is_active: true,
+                is_deleted: false,
+              },
+            });
+          }
+        }
+      }
+
+      // Gán admin permissions chỉ cho Admin và Super Admin
+      const adminRoles = await this.role.findMany({
+        where: {
+          name: { in: ['Admin', 'Super Admin'] },
+          is_deleted: false,
+        },
+      });
+
+      const adminPermissionRecords = await this.permission.findMany({
+        where: {
+          key: { in: adminPermissions.map((p) => p.key) },
+          is_deleted: false,
+        },
+      });
+
+      for (const role of adminRoles) {
+        for (const permission of adminPermissionRecords) {
+          const existingAssignment = await this.rolePermission.findFirst({
+            where: {
+              role_id: role.id,
+              permission_id: permission.id,
+            },
+          });
+
+          if (!existingAssignment) {
+            await this.rolePermission.create({
+              data: {
+                role_id: role.id,
+                permission_id: permission.id,
+                is_active: true,
+                is_deleted: false,
+              },
+            });
+          }
+        }
+      }
+
+      const orgLevelPermissions = [
+        // Member management
+        { key: 'organization.member.invite', name: 'Mời thành viên', description: 'Quyền mời thành viên vào tổ chức' },
+        { key: 'organization.member.invite.remove', name: 'Hủy lời mời', description: 'Quyền hủy lời mời thành viên' },
+        { key: 'organization.member.list', name: 'Xem danh sách thành viên', description: 'Quyền xem danh sách thành viên' },
+        { key: 'organization.member.role.assign', name: 'Gán vai trò cho thành viên', description: 'Quyền gán vai trò cho thành viên' },
+        { key: 'organization.member.permission.assign', name: 'Gán quyền cho thành viên', description: 'Quyền gán quyền trực tiếp cho thành viên' },
+        { key: 'organization.member.remove', name: 'Xóa thành viên', description: 'Quyền xóa thành viên khỏi tổ chức' },
+        // Role management
+        { key: 'organization.role.create', name: 'Tạo vai trò', description: 'Quyền tạo vai trò trong tổ chức' },
+        { key: 'organization.role.read', name: 'Xem danh sách vai trò', description: 'Quyền xem danh sách vai trò' },
+        { key: 'organization.role.update', name: 'Cập nhật vai trò', description: 'Quyền cập nhật vai trò' },
+        { key: 'organization.role.delete', name: 'Xóa vai trò', description: 'Quyền xóa vai trò' },
+        // API Key management
+        { key: 'organization.apikey.create', name: 'Tạo API key', description: 'Quyền tạo API key' },
+        { key: 'organization.apikey.read', name: 'Xem danh sách API key', description: 'Quyền xem danh sách API key' },
+        { key: 'organization.apikey.update', name: 'Cập nhật API key', description: 'Quyền cập nhật API key' },
+        { key: 'organization.apikey.reset', name: 'Reset API key', description: 'Quyền reset API key' },
+        { key: 'organization.apikey.delete', name: 'Xóa API key', description: 'Quyền xóa API key' },
+      ];
+
+      for (const perm of orgLevelPermissions) {
+        const existing = await this.organizationPermission.findFirst({
+          where: { key: perm.key },
+        });
+
+        if (!existing) {
+          await this.organizationPermission.create({
+            data: {
+              key: perm.key,
+              name: perm.name,
+              description: perm.description,
+              is_active: true,
+              is_deleted: false,
+            },
+          });
+        }
+      }
+
+      this.logger.log('✅ Organization permissions seeded');
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `❌ Failed to seed organization permissions: ${errorMessage}`,
       );
     }
   }

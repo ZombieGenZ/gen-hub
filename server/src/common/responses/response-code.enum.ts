@@ -50,6 +50,39 @@ export enum ResponseCode {
     WAREHOUSE_TEMPLATE_LAYOUT_UPDATE_SUCCESS = 'warehouse_template.layout_update_success',
 
     // ========================
+    // ORGANIZATION MODULE
+    // ========================
+    ORGANIZATION_CREATE_SUCCESS = 'organization.create_success',
+    ORGANIZATION_LIST_SUCCESS = 'organization.list_success',
+    ORGANIZATION_GET_SUCCESS = 'organization.get_success',
+    ORGANIZATION_UPDATE_SUCCESS = 'organization.update_success',
+    ORGANIZATION_DELETE_SUCCESS = 'organization.delete_success',
+    ORGANIZATION_TRANSFER_OWNERSHIP_SUCCESS = 'organization.transfer_ownership_success',
+
+    // Organization Member
+    ORGANIZATION_MEMBER_INVITE_SUCCESS = 'organization.member.invite_success',
+    ORGANIZATION_MEMBER_INVITE_REMOVE_SUCCESS = 'organization.member.invite_remove_success',
+    ORGANIZATION_MEMBER_ACCEPT_SUCCESS = 'organization.member.accept_success',
+    ORGANIZATION_MEMBER_REJECT_SUCCESS = 'organization.member.reject_success',
+    ORGANIZATION_MEMBER_LIST_SUCCESS = 'organization.member.list_success',
+    ORGANIZATION_MEMBER_ROLE_ASSIGN_SUCCESS = 'organization.member.role_assign_success',
+    ORGANIZATION_MEMBER_PERMISSION_ASSIGN_SUCCESS = 'organization.member.permission_assign_success',
+    ORGANIZATION_MEMBER_REMOVE_SUCCESS = 'organization.member.remove_success',
+
+    // Organization Role
+    ORGANIZATION_ROLE_CREATE_SUCCESS = 'organization.role.create_success',
+    ORGANIZATION_ROLE_LIST_SUCCESS = 'organization.role.list_success',
+    ORGANIZATION_ROLE_UPDATE_SUCCESS = 'organization.role.update_success',
+    ORGANIZATION_ROLE_DELETE_SUCCESS = 'organization.role.delete_success',
+
+    // API Key
+    APIKEY_CREATE_SUCCESS = 'apikey.create_success',
+    APIKEY_LIST_SUCCESS = 'apikey.list_success',
+    APIKEY_UPDATE_SUCCESS = 'apikey.update_success',
+    APIKEY_RESET_SUCCESS = 'apikey.reset_success',
+    APIKEY_DELETE_SUCCESS = 'apikey.delete_success',
+
+    // ========================
     // ERROR CODES
     // ========================
     // Client Errors (4xx)

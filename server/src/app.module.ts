@@ -19,6 +19,7 @@ import { RedisModule } from './modules/redis/redis.module';
 import { WebsocketModule } from './modules/websocket/websocket.module';
 import { BanSchedulerModule } from './modules/ban-scheduler/ban-scheduler.module';
 import { WarehouseTemplateModule } from './modules/warehouse-template/warehouse-template.module';
+import { OrganizationModule } from './modules/organization/organization.module';
 import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
 
 @Module({
@@ -56,6 +57,8 @@ import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
     BanSchedulerModule,
 
     WarehouseTemplateModule,
+
+    OrganizationModule,
   ],
   controllers: [AppController],
   providers: [

@@ -23,6 +23,12 @@ import {
   WarehouseTemplateUpdatedEvent,
   WarehouseTemplateDeletedEvent,
   WarehouseTemplateLayoutUpdatedEvent,
+  OrganizationCreatedEvent,
+  OrganizationUpdatedEvent,
+  OrganizationDeletedEvent,
+  MemberInvitedEvent,
+  MemberRemovedEvent,
+  OwnershipTransferredEvent,
 } from './websocket.interfaces';
 
 /**
@@ -256,6 +262,90 @@ export class WebsocketGateway
       timestamp: new Date().toISOString(),
     };
     this.server.emit('warehouseTemplate:layoutUpdated', event);
+  }
+
+  // ========================
+  // ORGANIZATION EVENTS
+  // ========================
+
+  /**
+   * Emit event khi tạo Organization
+   */
+  emitOrganizationCreated(ownerId: string, org: { id: string; name: string }) {
+    const event: OrganizationCreatedEvent = {
+      organizationId: org.id,
+      name: org.name,
+      ownerId,
+      timestamp: new Date().toISOString(),
+    };
+    this.server.to(`user:${ownerId}`).emit('organization:created', event);
+  }
+
+  /**
+   * Emit event khi cập nhật Organization
+   */
+  emitOrganizationUpdated(ownerId: string, org: { id: string; name: string }) {
+    const event: OrganizationUpdatedEvent = {
+      organizationId: org.id,
+      name: org.name,
+      updatedBy: ownerId,
+      timestamp: new Date().toISOString(),
+    };
+    this.server.to(`user:${ownerId}`).emit('organization:updated', event);
+  }
+
+  /**
+   * Emit event khi xóa Organization
+   */
+  emitOrganizationDeleted(deletedBy: string, orgId: string) {
+    const event: OrganizationDeletedEvent = {
+      organizationId: orgId,
+      deletedBy,
+      timestamp: new Date().toISOString(),
+    };
+    this.server.to(`user:${deletedBy}`).emit('organization:deleted', event);
+  }
+
+  /**
+   * Emit event khi mời thành viên
+   */
+  emitMemberInvited(invitedUserId: string, data: { organization: { id: string; name: string }; member: unknown }) {
+    const event: MemberInvitedEvent = {
+      organizationId: data.organization.id,
+      organizationName: data.organization.name,
+      invitedUserId,
+      invitedBy: '',
+      timestamp: new Date().toISOString(),
+    };
+    this.server.to(`user:${invitedUserId}`).emit('organization:memberInvited', event);
+  }
+
+  /**
+   * Emit event khi xóa thành viên
+   */
+  emitMemberRemoved(removedUserId: string, data: { organizationId: string; memberId: string }) {
+    const event: MemberRemovedEvent = {
+      organizationId: data.organizationId,
+      memberId: data.memberId,
+      removedBy: '',
+      timestamp: new Date().toISOString(),
+    };
+    this.server.to(`user:${removedUserId}`).emit('organization:memberRemoved', event);
+  }
+
+  /**
+   * Emit event khi chuyển quyền sở hữu
+   */
+  emitOwnershipTransferred(oldOwnerId: string, newOwnerId: string, org: { id: string; name: string }) {
+    const event: OwnershipTransferredEvent = {
+      organizationId: org.id,
+      organizationName: org.name,
+      oldOwnerId,
+      newOwnerId,
+      timestamp: new Date().toISOString(),
+    };
+    this.server.to(`user:${oldOwnerId}`).emit('organization:ownershipTransferred', event);
+    this.server.to(`user:${newOwnerId}`).emit('organization:ownershipTransferred', event);
   }
 
   // ========================

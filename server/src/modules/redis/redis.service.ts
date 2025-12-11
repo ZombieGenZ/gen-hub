@@ -20,6 +20,9 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   private readonly PERMISSION_CACHE_TTL: number;
   private readonly WAREHOUSE_TEMPLATE_CACHE_TTL: number;
   private readonly WAREHOUSE_TEMPLATE_LIST_CACHE_TTL: number;
+  private readonly ORGANIZATION_CACHE_TTL: number;
+  private readonly ORGANIZATION_LIST_CACHE_TTL: number;
+  private readonly ORGANIZATION_MEMBER_CACHE_TTL: number;
 
   constructor(private readonly configService: ConfigService) {
     this.USER_CACHE_TTL =
@@ -30,6 +33,12 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
       this.configService.get<number>('REDIS_WAREHOUSE_TEMPLATE_CACHE_TTL') || 300;
     this.WAREHOUSE_TEMPLATE_LIST_CACHE_TTL =
       this.configService.get<number>('REDIS_WAREHOUSE_TEMPLATE_LIST_CACHE_TTL') || 60;
+    this.ORGANIZATION_CACHE_TTL =
+      this.configService.get<number>('REDIS_ORGANIZATION_CACHE_TTL') || 300;
+    this.ORGANIZATION_LIST_CACHE_TTL =
+      this.configService.get<number>('REDIS_ORGANIZATION_LIST_CACHE_TTL') || 60;
+    this.ORGANIZATION_MEMBER_CACHE_TTL =
+      this.configService.get<number>('REDIS_ORGANIZATION_MEMBER_CACHE_TTL') || 300;
     const redisUrl = this.configService.get<string>('REDIS_URL');
 
     if (redisUrl) {
@@ -204,5 +213,98 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
 
   async invalidateWarehouseTemplateListCache(): Promise<void> {
     await this.delByPattern('warehouse-template:list:*');
+  }
+
+  private getOrganizationCacheKey(orgId: string): string {
+    return `organization:${orgId}`;
+  }
+
+  getOrganizationListCacheKey(query: Record<string, unknown>): string {
+    const sortedParams = Object.keys(query)
+      .sort()
+      .map((key) => `${key}=${query[key]}`)
+      .join('&');
+    return `organization:list:${sortedParams}`;
+  }
+
+  private getOrganizationMemberCacheKey(orgId: string): string {
+    return `organization:${orgId}:members`;
+  }
+
+  async getOrganizationCache<T>(orgId: string): Promise<T | null> {
+    const data = await this.get(this.getOrganizationCacheKey(orgId));
+    if (!data) return null;
+
+    try {
+      return JSON.parse(data) as T;
+    } catch {
+      return null;
+    }
+  }
+
+  async setOrganizationCache<T>(
+    orgId: string,
+    data: T,
+    ttlSeconds?: number,
+  ): Promise<void> {
+    const ttl = ttlSeconds || this.ORGANIZATION_CACHE_TTL;
+    await this.set(this.getOrganizationCacheKey(orgId), JSON.stringify(data), ttl);
+  }
+
+  async invalidateOrganizationCache(orgId: string): Promise<void> {
+    await this.del(this.getOrganizationCacheKey(orgId));
+  }
+
+  async getOrganizationListCache<T>(cacheKey: string): Promise<T | null> {
+    const data = await this.get(cacheKey);
+    if (!data) return null;
+
+    try {
+      return JSON.parse(data) as T;
+    } catch {
+      return null;
+    }
+  }
+
+  async setOrganizationListCache<T>(cacheKey: string, data: T, ttlSeconds?: number): Promise<void> {
+    const ttl = ttlSeconds || this.ORGANIZATION_LIST_CACHE_TTL;
+    await this.set(cacheKey, JSON.stringify(data), ttl);
+  }
+
+  async invalidateOrganizationListCache(): Promise<void> {
+    await this.delByPattern('organization:list:*');
+  }
+
+  async getOrganizationMemberCache<T>(orgId: string): Promise<T | null> {
+    const data = await this.get(this.getOrganizationMemberCacheKey(orgId));
+    if (!data) return null;
+
+    try {
+      return JSON.parse(data) as T;
+    } catch {
+      return null;
+    }
+  }
+
+  async setOrganizationMemberCache<T>(
+    orgId: string,
+    data: T,
+    ttlSeconds?: number,
+  ): Promise<void> {
+    const ttl = ttlSeconds || this.ORGANIZATION_MEMBER_CACHE_TTL;
+    await this.set(this.getOrganizationMemberCacheKey(orgId), JSON.stringify(data), ttl);
+  }
+
+  async invalidateOrganizationMemberCache(orgId: string): Promise<void> {
+    await this.del(this.getOrganizationMemberCacheKey(orgId));
+  }
+
+  /** Invalidate tất cả cache liên quan đến organization */
+  async invalidateAllOrganizationCache(orgId: string): Promise<void> {
+    await Promise.all([
+      this.invalidateOrganizationCache(orgId),
+      this.invalidateOrganizationMemberCache(orgId),
+      this.invalidateOrganizationListCache(),
+    ]);
   }
 }

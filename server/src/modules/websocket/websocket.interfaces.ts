@@ -134,3 +134,69 @@ export interface WarehouseTemplateLayoutUpdatedEvent {
   };
   timestamp: string;
 }
+
+// ========================
+// ORGANIZATION EVENTS
+// ========================
+
+/**
+ * Event khi tạo mới Organization
+ */
+export interface OrganizationCreatedEvent {
+  organizationId: string;
+  name: string;
+  ownerId: string;
+  timestamp: string;
+}
+
+/**
+ * Event khi cập nhật Organization
+ */
+export interface OrganizationUpdatedEvent {
+  organizationId: string;
+  name: string;
+  updatedBy: string;
+  timestamp: string;
+}
+
+/**
+ * Event khi xóa Organization
+ */
+export interface OrganizationDeletedEvent {
+  organizationId: string;
+  deletedBy: string;
+  timestamp: string;
+}
+
+/**
+ * Event khi mời thành viên vào Organization
+ */
+export interface MemberInvitedEvent {
+  organizationId: string;
+  organizationName: string;
+  invitedUserId: string;
+  invitedBy: string;
+  timestamp: string;
+}
+
+/**
+ * Event khi xóa thành viên khỏi Organization
+ */
+export interface MemberRemovedEvent {
+  organizationId: string;
+  memberId: string;
+  removedBy: string;
+  timestamp: string;
+}
+
+/**
+ * Event khi chuyển quyền sở hữu Organization
+ */
+export interface OwnershipTransferredEvent {
+  organizationId: string;
+  organizationName: string;
+  oldOwnerId: string;
+  newOwnerId: string;
+  timestamp: string;
+}
+

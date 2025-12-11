@@ -190,10 +190,6 @@ export class WarehouseTemplateRepository {
         }) as unknown as IWarehouseTemplateWithRelations;
     }
 
-    // =========================================
-    // ROW TEMPLATE OPERATIONS
-    // =========================================
-
     async createRow(data: Prisma.RowTemplateCreateInput) {
         return this.prisma.rowTemplate.create({ data });
     }
@@ -232,10 +228,6 @@ export class WarehouseTemplateRepository {
         });
     }
 
-    // =========================================
-    // RACK TEMPLATE OPERATIONS
-    // =========================================
-
     async createRack(data: Prisma.RackTemplateCreateInput) {
         return this.prisma.rackTemplate.create({ data });
     }
@@ -254,10 +246,6 @@ export class WarehouseTemplateRepository {
             },
         });
     }
-
-    // =========================================
-    // SHELF TEMPLATE OPERATIONS
-    // =========================================
 
     async createShelf(data: Prisma.ShelfTemplateCreateInput) {
         return this.prisma.shelfTemplate.create({ data });
@@ -278,10 +266,6 @@ export class WarehouseTemplateRepository {
         });
     }
 
-    // =========================================
-    // BLOCK TEMPLATE OPERATIONS
-    // =========================================
-
     async createBlock(data: Prisma.BlockTemplateCreateInput) {
         return this.prisma.blockTemplate.create({ data });
     }
@@ -300,10 +284,6 @@ export class WarehouseTemplateRepository {
             },
         });
     }
-
-    // =========================================
-    // BATCH OPERATIONS - Performance optimized
-    // =========================================
 
     /**
      * Batch create rows - single query thay vì N queries
