@@ -10,7 +10,7 @@ export class AppController {
   constructor(
     private readonly appService: AppService,
     private readonly appConfigService: AppConfigService,
-  ) {}
+  ) { }
 
   @ApiOperation({ summary: 'Trang chủ' })
   @Public()
@@ -36,7 +36,7 @@ export class AppController {
   @Public()
   @Get('health')
   healthCheck() {
-    const appName = this.appConfigService.get('appName');
+    const appName = this.appConfigService.get('brandName');
     return {
       status: 'ok',
       message: `${appName} API đang hoạt động`,

@@ -120,7 +120,7 @@ export class EmailService {
     const primaryEmail = this.configService.get<string>('EMAIL_PRIMARY_ADDRESS');
 
     try {
-      const appName = this.appConfigService.get('appName');
+      const appName = this.appConfigService.get('brandName');
       await transporter.sendMail({
         from: `"${appName}" <${sendEmail || primaryEmail}>`,
         to: options.to,
@@ -230,7 +230,7 @@ export class EmailService {
   ): Promise<boolean> {
     const frontendUrl = this.configService.get<string>('FRONTEND_URL');
     const verifyUrl = `${frontendUrl}/verify-email?token=${token}`;
-    const appName = this.appConfigService.get('appName');
+    const appName = this.appConfigService.get('brandName');
 
     const greeting = await this.i18n.t('email.verification.greeting', { lang });
     const welcome = await this.i18n.t('email.verification.welcome', { lang });
@@ -323,7 +323,7 @@ export class EmailService {
   ): Promise<boolean> {
     const frontendUrl = this.configService.get<string>('FRONTEND_URL');
     const resetUrl = `${frontendUrl}/reset-password?token=${token}`;
-    const appName = this.appConfigService.get('appName');
+    const appName = this.appConfigService.get('brandName');
     const locale = lang === 'vi' ? 'vi-VN' : 'en-US';
 
     const title = await this.i18n.t('email.forgotPassword.title', { lang });
@@ -414,7 +414,7 @@ export class EmailService {
     name: string,
     lang: string = 'vi',
   ): Promise<boolean> {
-    const appName = this.appConfigService.get('appName');
+    const appName = this.appConfigService.get('brandName');
     const frontendUrl = this.configService.get<string>('FRONTEND_URL');
 
     const greeting = await this.i18n.t('email.welcome.greeting', { lang });
@@ -454,7 +454,7 @@ export class EmailService {
     deviceInfo: { device?: string; ip?: string },
     lang: string = 'vi',
   ): Promise<boolean> {
-    const appName = this.appConfigService.get('appName');
+    const appName = this.appConfigService.get('brandName');
     const locale = lang === 'vi' ? 'vi-VN' : 'en-US';
 
     const greeting = await this.i18n.t('email.loginNotification.greeting', { lang });
@@ -499,7 +499,7 @@ export class EmailService {
     name: string,
     lang: string = 'vi',
   ): Promise<boolean> {
-    const appName = this.appConfigService.get('appName');
+    const appName = this.appConfigService.get('brandName');
     const locale = lang === 'vi' ? 'vi-VN' : 'en-US';
 
     const greeting = await this.i18n.t('email.passwordChanged.greeting', { lang });
@@ -541,7 +541,7 @@ export class EmailService {
     platform: string,
     lang: string = 'vi',
   ): Promise<boolean> {
-    const appName = this.appConfigService.get('appName');
+    const appName = this.appConfigService.get('brandName');
     const locale = lang === 'vi' ? 'vi-VN' : 'en-US';
 
     const greeting = await this.i18n.t('email.platformLinked.greeting', { lang });
@@ -577,7 +577,7 @@ export class EmailService {
     platform: string,
     lang: string = 'vi',
   ): Promise<boolean> {
-    const appName = this.appConfigService.get('appName');
+    const appName = this.appConfigService.get('brandName');
     const locale = lang === 'vi' ? 'vi-VN' : 'en-US';
 
     const greeting = await this.i18n.t('email.platformUnlinked.greeting', { lang });

@@ -14,7 +14,7 @@ import { JwtAuthGuard, PermissionGuard } from '../guards';
 @ApiTags('Config')
 @Controller('config')
 export class AppConfigController {
-  constructor(private readonly appConfigService: AppConfigService) {}
+  constructor(private readonly appConfigService: AppConfigService) { }
 
   @ApiOperation({ summary: 'Lấy cấu hình ứng dụng' })
   @ApiResponse({
@@ -23,15 +23,14 @@ export class AppConfigController {
     schema: {
       type: 'object',
       properties: {
-        appName: { type: 'string', example: 'GEN-HUB' },
-        appVersion: { type: 'string', example: '1.0.0' },
-        teamName: {
-          type: 'string',
-          example: 'TANK ZENITH GEN Development Team',
-        },
-        copyright: {
-          type: 'string',
-          example: '© 2025 TANK ZENITH GEN. All rights reserved.',
+        brandName: { type: 'string', example: 'GEN-HUB' },
+        colors: {
+          type: 'object',
+          properties: {
+            primary: { type: 'string', example: '#0F766E' },
+            primaryLight: { type: 'string', example: '#14B8A6' },
+            primaryDark: { type: 'string', example: '#0D5A52' },
+          },
         },
       },
     },
@@ -54,7 +53,7 @@ export class AppConfigController {
   @RequirePermission('config.update')
   @Patch()
   async updateConfig(@Body() dto: UpdateAppConfigDto): Promise<IAppConfig> {
-    return this.appConfigService.update(dto);
+    return this.appConfigService.update(dto as Partial<IAppConfig>);
   }
 
   @ApiOperation({ summary: 'Reset cấu hình về mặc định' })

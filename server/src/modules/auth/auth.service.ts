@@ -75,7 +75,7 @@ export class AuthService {
     private readonly systemLogService: SystemLogService,
     private readonly appConfigService: AppConfigService,
     private readonly websocketGateway: WebsocketGateway,
-  ) {}
+  ) { }
 
   /**
    * Đăng ký tài khoản mới bằng email
@@ -651,14 +651,11 @@ export class AuthService {
     deviceInfo?: IDeviceInfo,
     isPrimaryAuth: boolean = true,
   ) {
-    const config = this.appConfigService.getAll();
+    const brandName = this.appConfigService.get('brandName');
     const payload = {
       userId,
       is_primary_auth: isPrimaryAuth,
-      project: config.appName,
-      team: config.teamName,
-      version: config.appVersion,
-      copyright: config.copyright,
+      project: brandName,
     };
 
     const accessToken = await this.jwtService.signAsync(payload, {

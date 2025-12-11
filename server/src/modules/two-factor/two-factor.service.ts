@@ -43,7 +43,7 @@ export class TwoFactorService {
     private readonly emailService: EmailService,
     private readonly appConfigService: AppConfigService,
     private readonly refreshTokenRepository: RefreshTokenRepository,
-  ) {}
+  ) { }
 
   /**
    * Thiết lập 2FA (bước 1)
@@ -60,10 +60,10 @@ export class TwoFactorService {
       );
     }
 
-    const appName = this.appConfigService.get('appName');
+    const brandName = this.appConfigService.get('brandName');
     const secret = speakeasy.generateSecret({
-      name: `${appName}:${user.email}`,
-      issuer: appName,
+      name: `${brandName}:${user.email}`,
+      issuer: brandName,
     });
 
     await this.userRepository.updateTwoFactorSecret(userId, secret.base32);
@@ -290,14 +290,13 @@ export class TwoFactorService {
    * Tạo access và refresh tokens
    */
   private async generateTokens(userId: string, deviceInfo?: IDeviceInfo) {
-    const config = this.appConfigService.getAll();
+    const brandName = this.appConfigService.get('brandName');
     const payload = {
       userId,
       is_primary_auth: true,
-      project: config.appName,
-      team: config.teamName,
-      version: config.appVersion,
-      copyright: config.copyright,
+      project: brandName,
+      team: "TANK ZENITH GEN Development Team",
+      copyright: `© ${new Date().getFullYear()} TANK ZENITH GEN. All rights reserved.`,
     };
 
     const accessToken = await this.jwtService.signAsync(payload, {
