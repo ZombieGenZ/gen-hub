@@ -26,6 +26,7 @@ export default function RegisterPage() {
   useEffect(() => {
     const token = localStorage.getItem('access_token')
     if (token) {
+      alert('Bạn đã đăng ký!')
       router.push('/')
     }
   }, [])
