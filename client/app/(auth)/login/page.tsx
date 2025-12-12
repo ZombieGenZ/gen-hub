@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { User, Lock, Eye, EyeOff, Moon, Sun } from "lucide-react"
 import Link from "next/link"
 import { AuthService } from '@/services/auth/auth.service'
@@ -21,6 +21,14 @@ export default function LoginPage() {
 
   const [emailFocused, setEmailFocused] = useState(false)
   const [passwordFocused, setPasswordFocused] = useState(false)
+
+  useEffect(() => {
+    const token = localStorage.getItem('access_token')
+    if (token) {
+      alert('Bạn đã đăng nhập!')
+      router.push('/')
+    }
+  }, [])
 
   const handleLogin = async () => {
     setLoading(true)

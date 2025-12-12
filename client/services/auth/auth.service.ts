@@ -129,4 +129,26 @@ export class AuthService {
             throw new Error(error.message)
         }
     }
+
+    // Gửi email quên mật khẩu
+    async forgotPass(email: string) {
+        try {
+            const res = await fetch(`${API}/auth/forgot-password`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept-Language': 'vi',
+                },
+                body: JSON.stringify({ email }),
+            })
+
+            const data = await res.json()
+
+            if(data.success) {
+                return data
+            }
+        } catch (error: any) {
+            throw new Error(error.message)
+        }
+    }
 }

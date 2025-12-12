@@ -9,7 +9,7 @@ export default function Home() {
   const userServices = new UserService();
   const authServices = new AuthService();
 
-    useEffect(() => {
+  useEffect(() => {
     const access_token = localStorage.getItem('access_token');
     if (access_token) {
       userServices.getUser(access_token).then((response) => {

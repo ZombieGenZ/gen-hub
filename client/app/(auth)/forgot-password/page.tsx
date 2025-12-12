@@ -1,14 +1,25 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Mail } from 'lucide-react'
 import Link from 'next/link'
+import { AuthService } from '@/services/auth/auth.service'
+import { useRouter } from 'next/navigation'
 
-const API = process.env.NEXT_PUBLIC_API_URL
+const authServices = new AuthService();
 
 export default function ForgotPasswordPage() {
+  const router = useRouter()
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    const token = localStorage.getItem('access_token')
+    if (token) {
+      alert('Không có quyền truy cập!')
+      router.push('/')
+    }
+  }, [])
 
   const handleSubmit = async () => {
     if (!email) {
@@ -18,18 +29,9 @@ export default function ForgotPasswordPage() {
 
     setLoading(true)
     try {
-      const res = await fetch(`${API}/auth/forgot-password`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept-Language': 'vi',
-        },
-        body: JSON.stringify({ email }),
-      })
-
-      const data = await res.json()
+      const res: any = authServices.forgotpassword(email)
       // BE đang trả về message (theo auth.service.ts)
-      alert(data?.message || 'Nếu email tồn tại, hướng dẫn đặt lại mật khẩu đã được gửi!')
+      alert(res?.message || 'Nếu email tồn tại, hướng dẫn đặt lại mật khẩu đã được gửi!')
     } catch (err) {
       console.error(err)
       alert('Có lỗi xảy ra, vui lòng thử lại sau!')

@@ -25,6 +25,7 @@ export default function ResetPasswordPage() {
     if (!t) {
       // Không có token -> chuyển sang trang 404
       router.replace('/error')
+      alert('token không hợp lệ hoặc không có token!')
       return
     }
     try {
