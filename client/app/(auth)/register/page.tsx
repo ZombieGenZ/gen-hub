@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { User, Mail, Lock, Eye, EyeOff, UserCircle } from 'lucide-react'
 import Link from 'next/link'
 import { AuthService } from '@/services/auth/auth.service'
@@ -17,6 +17,13 @@ export default function RegisterPage() {
     email: '',
     password: ''
   })
+
+  useEffect(() => {
+    const token = localStorage.getItem('access_token')
+    if (token) {
+      router.push('/')
+    }
+  }, [])
 
   const handleRegister = async () => {
     // Có thể bật validate đơn giản nếu muốn
