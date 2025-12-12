@@ -61,6 +61,45 @@ export class AuthService {
         }
     }
 
+    //Xác minh email
+    async confirmEmail(access_token: string , token: string) {
+        try {
+            const response = await fetch(`${API}/auth/verify-email`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${access_token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ token })
+            })
+            const data = await response.json()
+            if(data.success) {
+                return data
+            }
+        }  catch (error: any) {
+            throw new Error(error.message)
+        }
+    }
+
+    //Xác minh token
+    async confirmToken(token: string) {
+        try {
+            const response = await fetch(`${API}/auth/resend-verification`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            })
+            const data = await response.json()
+            if(data.success) {
+                return data
+            }
+        } catch (error: any) {
+            throw new Error(error.message)
+        }
+    }
+
     // Quên mật khẩu
     async forgotpassword(email: string) {
         try {

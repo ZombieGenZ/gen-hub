@@ -7,6 +7,9 @@ import { User, Shield, Bell, Pencil, ExternalLink, Loader2, Check, Smartphone, P
 import Link from 'next/link'
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { AvatarUploader } from "@/components/ui/avatar-uploader"
+import { useRouter } from 'next/navigation'
+import { redirect } from 'next/navigation'
+import type { UpdateUserRequest } from '@/types/user/user.type'
 
 const userService = new UserService()
 
@@ -14,10 +17,11 @@ export default function ProfilePage() {
   const [userData, setUserData] = useState<UserData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const router = useRouter()    
 
   // Form states
   const [name, setName] = useState('')
-  const [saving, setSaving] = useState(false)
+  const [saving, setSaving] = useState<boolean>(false)
   const [saveMessage, setSaveMessage] = useState<string | null>(null)
 
   // 2FA states
@@ -34,6 +38,8 @@ export default function ProfilePage() {
         const token = localStorage.getItem('access_token')
         if (!token) {
           setError('Bạn chưa đăng nhập')
+          alert('Bạn chưa đăng nhập')
+          redirect('/login')
           return
         }
         const data = await userService.getUser(token)
@@ -57,9 +63,17 @@ export default function ProfilePage() {
     e.preventDefault()
     // Placeholder for update logic
     setSaving(true)
-    setTimeout(() => {
-      setSaving(false)
-      setSaveMessage('Đã lưu thay đổi (Mô phỏng)')
+    setTimeout(async () => {
+      try {
+        const response = await userService.updateUser(localStorage.getItem('access_token')!, { name: name })
+        if(response) {
+          setSaveMessage(response.message)
+        }
+      } catch (error) {
+        console.error(error)
+      } finally {
+        setSaving(false)
+      }
     }, 1000)
   }
 

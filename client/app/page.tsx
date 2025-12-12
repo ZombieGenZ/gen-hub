@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { UserService } from "@/services/user/user.service";
 import { AuthService } from "@/services/auth/auth.service";
@@ -8,12 +8,14 @@ import { AuthService } from "@/services/auth/auth.service";
 export default function Home() {
   const userServices = new UserService();
   const authServices = new AuthService();
+  const [isEmailConfirmed, setIsEmailConfirmed] = useState<boolean | null>(null);
 
   useEffect(() => {
     const access_token = localStorage.getItem('access_token');
     if (access_token) {
-      userServices.getUser(access_token).then((response) => {
+      userServices.getUser(access_token).then((response: any) => {
         console.log(response);
+        setIsEmailConfirmed(response.user.email_confirmed);
       });
     }
   }, []);
@@ -26,8 +28,6 @@ export default function Home() {
 
       try {
         const response = await authServices.getNewToken(refresh_token);
-        // tuỳ backend, bạn có thể cần gửi refresh_token trong body:
-        // const response = await authServices.getNewToken(refresh_token)
         console.log(response)
         if (response) {
           localStorage.setItem('access_token', response.authorization.access_token);
@@ -46,63 +46,84 @@ export default function Home() {
     return () => clearInterval(interval);
   }, [authServices]);
 
+  const handleVerifyEmail = async () => {
+    try {
+      const token = localStorage.getItem('access_token');
+      if (!token) return;
+      const response = await authServices.confirmToken(token)
+      if (response) {
+        alert("Đã gửi lại email xác minh. Vui lòng kiểm tra hộp thư của bạn.");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Có lỗi xảy ra khi gửi email xác minh. Vui lòng thử lại sau.");
+    }
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
+    <div className="min-h-screen w-full flex items-center justify-center bg-slate-900 font-sans">
+      <main className="w-full max-w-2xl px-4">
+        <div className="bg-slate-900/60 border border-slate-800 rounded-2xl shadow-2xl p-8 md:p-10">
+          {/* Header */}
+          <div className="mb-6">
+            <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
+              Gen Hub
+            </h1>
+            <p className="text-slate-400">
+              Nơi quản lý tài khoản và trải nghiệm các tính năng AI của bạn.
+            </p>
+          </div>
+
+          {/* Banner chưa xác minh email */}
+          {isEmailConfirmed === false && (
+            <div className="mb-6 w-full rounded-md bg-yellow-50 border border-yellow-200 px-4 py-3 text-sm text-yellow-800">
+              <p className="mb-2">
+                Email của bạn chưa được xác minh. Vui lòng xác minh tài khoản để sử dụng đầy đủ tính năng.
+              </p>
+              <button
+                onClick={handleVerifyEmail}
+                className="inline-flex items-center rounded-md bg-yellow-500 px-3 py-1 text-xs font-semibold text-white hover:bg-yellow-600 transition-colors"
+              >
+                Gửi lại email xác minh
+              </button>
+            </div>
+          )}
+
+          {/* Nội dung chính */}
+          <div className="space-y-4">
+            <h2 className="text-xl md:text-2xl font-semibold text-white">
+              Chào mừng bạn đến với Gen Hub
+            </h2>
+            <p className="text-slate-400">
+              Sau khi đăng nhập và xác minh email, bạn có thể quản lý hồ sơ cá nhân, cài đặt bảo mật
+              và khám phá các dịch vụ được tích hợp.
+            </p>
+          </div>
+
+          {/* Hành động */}
+          <div className="mt-8 flex flex-wrap gap-3">
             <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+              href="/user/profile"
+              className="inline-flex justify-center items-center px-5 py-3 rounded-lg text-sm font-semibold text-white transition-all shadow-lg hover:scale-[1.02] active:scale-[0.98]"
+              style={{
+                background: "linear-gradient(135deg, #0F766E 0%, #14B8A6 100%)",
+                boxShadow: "0 10px 25px rgba(15, 118, 110, 0.35)",
+              }}
             >
-              Templates
-            </a>{" "}
-            or the{" "}
+              Đi đến hồ sơ cá nhân
+            </a>
             <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+              href="/login"
+              className="inline-flex justify-center items-center px-5 py-3 rounded-lg text-sm font-semibold border border-slate-700 text-slate-200 hover:bg-slate-800 transition-colors"
             >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+              Đăng nhập / Đăng ký
+            </a>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/8 px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        {/* Footer nhỏ cho đồng bộ */}
+        <div className="mt-4 text-center text-xs text-slate-500">
+          © 2025 Gen Hub. All rights reserved.
         </div>
       </main>
     </div>

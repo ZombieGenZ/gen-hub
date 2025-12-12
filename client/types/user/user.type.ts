@@ -29,3 +29,8 @@ export interface UserData {
 export interface UserResponse {
   data: UserData;
 }
+
+export interface UpdateUserRequest {
+  name?: string;
+  email?: string;
+}
