@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { Lock, Eye, EyeOff } from 'lucide-react'
 import Link from 'next/link'
 import { AuthService } from '@/services/auth/auth.service'
@@ -9,7 +9,7 @@ import { AuthService } from '@/services/auth/auth.service'
 const API = process.env.NEXT_PUBLIC_API_URL
 const authServices = new AuthService()
 
-export default function ResetPasswordPage() {
+function ResetPasswordContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [isCheckingToken, setIsCheckingToken] = useState(true)
@@ -29,14 +29,14 @@ export default function ResetPasswordPage() {
       return
     }
     try {
-        const res: any = authServices.checkToken(t)
-        if (res) {
-            setToken(t)
-            setIsCheckingToken(false)
-        }
+      const res: any = authServices.checkToken(t)
+      if (res) {
+        setToken(t)
+        setIsCheckingToken(false)
+      }
     } catch (error) {
-        console.error(error)
-        alert('Có lỗi xảy ra, vui lòng thử lại sau!')
+      console.error(error)
+      alert('Có lỗi xảy ra, vui lòng thử lại sau!')
     }
   }, [searchParams, router])
 
@@ -53,9 +53,9 @@ export default function ResetPasswordPage() {
     }
 
     if (!token) {
-        alert('Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn!')
-        router.replace('/error')
-        return
+      alert('Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn!')
+      router.replace('/error')
+      return
     }
 
     setLoading(true)
@@ -83,12 +83,12 @@ export default function ResetPasswordPage() {
     }
   }
 
-    // Trong lúc đang kiểm tra token thì chưa render form
+  // Trong lúc đang kiểm tra token thì chưa render form
   if (isCheckingToken) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <h1 className="text-3xl font-bold text-white mb-2">
-            Đang kiểm tra liên kết đặt lại mật khẩu...
+          Đang kiểm tra liên kết đặt lại mật khẩu...
         </h1>
       </div>
     )
@@ -194,5 +194,19 @@ export default function ResetPasswordPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <h1 className="text-3xl font-bold text-white mb-2">
+          Đang tải...
+        </h1>
+      </div>
+    }>
+      <ResetPasswordContent />
+    </Suspense>
   )
 }

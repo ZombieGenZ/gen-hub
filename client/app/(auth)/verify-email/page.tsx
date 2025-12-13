@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { CheckCircle2, XCircle } from 'lucide-react'
@@ -8,7 +8,7 @@ import { AuthService } from '@/services/auth/auth.service'
 
 const authServices = new AuthService()
 
-export default function VerifyEmailPage() {
+function VerifyEmailContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -31,7 +31,7 @@ export default function VerifyEmailPage() {
     const verify = async () => {
       try {
         const access_token = localStorage.getItem('access_token')
-        if(!access_token) return;
+        if (!access_token) return;
         const res: any = await authServices.confirmEmail(access_token, token)
         if (res) {
           setIsSuccess(true)
@@ -101,5 +101,19 @@ export default function VerifyEmailPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function VerifyEmailPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-slate-950">
+        <h1 className="text-2xl md:text-3xl font-bold text-white">
+          Đang tải...
+        </h1>
+      </div>
+    }>
+      <VerifyEmailContent />
+    </Suspense>
   )
 }

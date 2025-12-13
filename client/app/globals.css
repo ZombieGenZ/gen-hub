@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -12,11 +14,18 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
+/* @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
   }
+} */
+/* Commenting out media query preference to let class-control take over fully for now or we can keep it for default variables, but manual toggle relies on classes */
+/* Actually, for variables to switch, we need to bind them to the class too */
+
+.dark {
+    --background: #0a0a0a;
+    --foreground: #ededed;
 }
 
 body {
