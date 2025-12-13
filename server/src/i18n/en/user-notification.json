@@ -1,0 +1,30 @@
+{
+    "success": {
+        "fetched": "Notification fetched successfully",
+        "list": "Notifications fetched successfully",
+        "sent": "Notification sent successfully",
+        "marked_read": "Notification marked as read",
+        "marked_all_read": "All notifications marked as read"
+    },
+    "errors": {
+        "not_found": "Notification not found",
+        "send_failed": "Failed to send notification",
+        "user_not_found": "User not found",
+        "not_owner": "You do not have permission to access this notification"
+    },
+    "validation": {
+        "user_id_required": "User ID is required",
+        "user_id_uuid": "User ID must be a valid UUID",
+        "title_required": "Title is required",
+        "title_string": "Title must be a string",
+        "title_max_length": "Title must not exceed 255 characters",
+        "content_required": "Content is required",
+        "content_string": "Content must be a string",
+        "type_invalid": "Invalid notification type (INFO, WARNING, ERROR, SUCCESS)",
+        "is_read_boolean": "Read status must be a boolean",
+        "limit_positive": "Limit must be a positive number",
+        "offset_min": "Offset must be >= 0",
+        "keywords_string": "Keywords must be a string",
+        "id_uuid": "ID must be a valid UUID"
+    }
+}

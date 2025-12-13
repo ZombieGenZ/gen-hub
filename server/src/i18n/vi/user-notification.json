@@ -1,0 +1,30 @@
+{
+    "success": {
+        "fetched": "Lấy thông báo thành công",
+        "list": "Lấy danh sách thông báo thành công",
+        "sent": "Gửi thông báo thành công",
+        "marked_read": "Đánh dấu đã đọc thành công",
+        "marked_all_read": "Đánh dấu tất cả đã đọc thành công"
+    },
+    "errors": {
+        "not_found": "Không tìm thấy thông báo",
+        "send_failed": "Không thể gửi thông báo",
+        "user_not_found": "Không tìm thấy người dùng",
+        "not_owner": "Bạn không có quyền truy cập thông báo này"
+    },
+    "validation": {
+        "user_id_required": "ID người dùng không được để trống",
+        "user_id_uuid": "ID người dùng phải là UUID hợp lệ",
+        "title_required": "Tiêu đề không được để trống",
+        "title_string": "Tiêu đề phải là chuỗi",
+        "title_max_length": "Tiêu đề không được quá 255 ký tự",
+        "content_required": "Nội dung không được để trống",
+        "content_string": "Nội dung phải là chuỗi",
+        "type_invalid": "Loại thông báo không hợp lệ (INFO, WARNING, ERROR, SUCCESS)",
+        "is_read_boolean": "Trạng thái đã đọc phải là boolean",
+        "limit_positive": "Limit phải là số dương",
+        "offset_min": "Offset phải >= 0",
+        "keywords_string": "Từ khóa tìm kiếm phải là chuỗi",
+        "id_uuid": "ID phải là UUID hợp lệ"
+    }
+}

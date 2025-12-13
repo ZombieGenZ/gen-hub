@@ -32,9 +32,23 @@ export interface IAppColors {
   shadow: string;
 }
 
+export interface IPaginationConfig {
+  /** Số lượng record mặc định mỗi trang */
+  defaultLimit: number;
+  /** Vị trí bắt đầu mặc định */
+  defaultOffset: number;
+  /** Số lượng record tối đa cho phép mỗi trang */
+  maxLimit: number;
+  /** Số lượng record tối thiểu mỗi trang */
+  minLimit: number;
+}
+
 export interface IAppConfig {
   brandName: string;
+  supportEmail: string;
+  supportPhone: string;
   colors: IAppColors;
+  pagination: IPaginationConfig;
 }
 
 /**
@@ -59,6 +73,10 @@ export class AppConfigService implements OnModuleInit {
     return {
       brandName:
         this.configService.get<string>('BRAND_NAME') || 'GEN-HUB',
+      supportEmail:
+        this.configService.get<string>('SUPPORT_EMAIL') || 'support@gen-hub.com',
+      supportPhone:
+        this.configService.get<string>('SUPPORT_PHONE') || '1900-xxxx',
       colors: {
         // Primary Colors
         primary: this.configService.get<string>('COLOR_PRIMARY') || '#0F766E',
@@ -100,6 +118,12 @@ export class AppConfigService implements OnModuleInit {
         shadow:
           this.configService.get<string>('COLOR_SHADOW') ||
           'rgba(0, 0, 0, 0.04)',
+      },
+      pagination: {
+        defaultLimit: this.configService.get<number>('DEFAULT_LIMIT') || 10,
+        defaultOffset: this.configService.get<number>('DEFAULT_OFFSET') || 0,
+        maxLimit: this.configService.get<number>('MAX_LIMIT') || 100,
+        minLimit: this.configService.get<number>('MIN_LIMIT') || 1,
       },
     };
   }

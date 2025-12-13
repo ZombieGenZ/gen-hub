@@ -7,9 +7,6 @@
  * - Error: ERROR_TYPE (ví dụ: ERROR_VALIDATION)
  */
 export enum ResponseCode {
-    // ========================
-    // AUTH MODULE
-    // ========================
     AUTH_REGISTER_SUCCESS = 'auth.register_success',
     AUTH_LOGIN_SUCCESS = 'auth.login_success',
     AUTH_LOGIN_2FA_REQUIRED = 'auth.login_2fa_required',
@@ -23,25 +20,16 @@ export enum ResponseCode {
     AUTH_VERIFY_FORGOT_PASSWORD_TOKEN_SUCCESS = 'auth.verify_forgot_password_token_success',
     AUTH_RESET_PASSWORD_SUCCESS = 'auth.reset_password_success',
 
-    // ========================
-    // ACCOUNT MODULE
-    // ========================
     ACCOUNT_GET_PROFILE_SUCCESS = 'account.get_profile_success',
     ACCOUNT_UPDATE_PROFILE_SUCCESS = 'account.update_profile_success',
     ACCOUNT_CHANGE_PASSWORD_SUCCESS = 'account.change_password_success',
 
-    // ========================
-    // TWO-FACTOR (2FA) MODULE
-    // ========================
     TWO_FACTOR_SETUP_SUCCESS = '2fa.setup_success',
     TWO_FACTOR_VERIFY_SETUP_SUCCESS = '2fa.verify_setup_success',
     TWO_FACTOR_DISABLE_SUCCESS = '2fa.disable_success',
     TWO_FACTOR_VERIFY_LOGIN_SUCCESS = '2fa.verify_login_success',
     TWO_FACTOR_REGENERATE_BACKUP_CODES_SUCCESS = '2fa.regenerate_backup_codes_success',
 
-    // ========================
-    // WAREHOUSE TEMPLATE MODULE
-    // ========================
     WAREHOUSE_TEMPLATE_CREATE_SUCCESS = 'warehouse_template.create_success',
     WAREHOUSE_TEMPLATE_LIST_SUCCESS = 'warehouse_template.list_success',
     WAREHOUSE_TEMPLATE_GET_SUCCESS = 'warehouse_template.get_success',
@@ -49,9 +37,6 @@ export enum ResponseCode {
     WAREHOUSE_TEMPLATE_DELETE_SUCCESS = 'warehouse_template.delete_success',
     WAREHOUSE_TEMPLATE_LAYOUT_UPDATE_SUCCESS = 'warehouse_template.layout_update_success',
 
-    // ========================
-    // ORGANIZATION MODULE
-    // ========================
     ORGANIZATION_CREATE_SUCCESS = 'organization.create_success',
     ORGANIZATION_LIST_SUCCESS = 'organization.list_success',
     ORGANIZATION_GET_SUCCESS = 'organization.get_success',
@@ -68,6 +53,8 @@ export enum ResponseCode {
     ORGANIZATION_MEMBER_ROLE_ASSIGN_SUCCESS = 'organization.member.role_assign_success',
     ORGANIZATION_MEMBER_PERMISSION_ASSIGN_SUCCESS = 'organization.member.permission_assign_success',
     ORGANIZATION_MEMBER_REMOVE_SUCCESS = 'organization.member.remove_success',
+    ORGANIZATION_MEMBER_INVITE_VERIFY_SUCCESS = 'organization.member.invite_verify_success',
+    ORGANIZATION_MEMBER_LEAVE_SUCCESS = 'organization.member.leave_success',
 
     // Organization Role
     ORGANIZATION_ROLE_CREATE_SUCCESS = 'organization.role.create_success',
@@ -82,9 +69,24 @@ export enum ResponseCode {
     APIKEY_RESET_SUCCESS = 'apikey.reset_success',
     APIKEY_DELETE_SUCCESS = 'apikey.delete_success',
 
-    // ========================
-    // ERROR CODES
-    // ========================
+    GLOBAL_NOTIFICATION_CREATE_SUCCESS = 'global_notification.create_success',
+    GLOBAL_NOTIFICATION_LIST_SUCCESS = 'global_notification.list_success',
+    GLOBAL_NOTIFICATION_GET_SUCCESS = 'global_notification.get_success',
+    GLOBAL_NOTIFICATION_UPDATE_SUCCESS = 'global_notification.update_success',
+    GLOBAL_NOTIFICATION_DELETE_SUCCESS = 'global_notification.delete_success',
+
+    USER_NOTIFICATION_LIST_SUCCESS = 'user_notification.list_success',
+    USER_NOTIFICATION_GET_SUCCESS = 'user_notification.get_success',
+    USER_NOTIFICATION_SEND_SUCCESS = 'user_notification.send_success',
+    USER_NOTIFICATION_MARK_READ_SUCCESS = 'user_notification.mark_read_success',
+    USER_NOTIFICATION_MARK_ALL_READ_SUCCESS = 'user_notification.mark_all_read_success',
+
+    ORG_NOTIFICATION_CREATE_SUCCESS = 'org_notification.create_success',
+    ORG_NOTIFICATION_LIST_SUCCESS = 'org_notification.list_success',
+    ORG_NOTIFICATION_GET_SUCCESS = 'org_notification.get_success',
+    ORG_NOTIFICATION_UPDATE_SUCCESS = 'org_notification.update_success',
+    ORG_NOTIFICATION_DELETE_SUCCESS = 'org_notification.delete_success',
+
     // Client Errors (4xx)
     ERROR_VALIDATION = 'error.validation',
     ERROR_BAD_REQUEST = 'error.bad_request',

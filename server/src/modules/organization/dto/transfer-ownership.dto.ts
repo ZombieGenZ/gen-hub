@@ -1,17 +1,17 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsUUID } from 'class-validator';
+import { IsNotEmpty, IsEmail } from 'class-validator';
 import { i18nValidationMessage } from 'nestjs-i18n';
 
 /**
  * DTO chuyển quyền sở hữu Organization
  */
 export class TransferOwnershipDto {
-    @ApiProperty({ description: 'ID của chủ sở hữu mới', example: 'uuid-here' })
+    @ApiProperty({ description: 'Email của chủ sở hữu mới', example: 'newowner@example.com' })
     @IsNotEmpty({
-        message: i18nValidationMessage('organization.validation.new_owner_id_required'),
+        message: i18nValidationMessage('organization.validation.new_owner_email_required'),
     })
-    @IsUUID('4', {
-        message: i18nValidationMessage('organization.validation.new_owner_id_uuid'),
+    @IsEmail({}, {
+        message: i18nValidationMessage('organization.validation.new_owner_email_invalid'),
     })
-    new_owner_id: string;
+    new_owner_email: string;
 }

@@ -1,0 +1,30 @@
+{
+    "success": {
+        "created": "Tạo thông báo toàn cầu thành công",
+        "updated": "Cập nhật thông báo toàn cầu thành công",
+        "deleted": "Xóa thông báo toàn cầu thành công",
+        "fetched": "Lấy thông báo toàn cầu thành công",
+        "list": "Lấy danh sách thông báo toàn cầu thành công"
+    },
+    "errors": {
+        "not_found": "Không tìm thấy thông báo toàn cầu",
+        "create_failed": "Không thể tạo thông báo toàn cầu",
+        "update_failed": "Không thể cập nhật thông báo toàn cầu",
+        "delete_failed": "Không thể xóa thông báo toàn cầu"
+    },
+    "validation": {
+        "title_required": "Tiêu đề không được để trống",
+        "title_string": "Tiêu đề phải là chuỗi",
+        "title_max_length": "Tiêu đề không được quá 255 ký tự",
+        "content_required": "Nội dung không được để trống",
+        "content_string": "Nội dung phải là chuỗi",
+        "type_invalid": "Loại thông báo không hợp lệ (INFO, WARNING, ERROR, SUCCESS)",
+        "starts_at_date": "Ngày bắt đầu phải là ngày hợp lệ",
+        "ends_at_date": "Ngày kết thúc phải là ngày hợp lệ",
+        "is_active_boolean": "Trạng thái phải là boolean",
+        "limit_positive": "Limit phải là số dương",
+        "offset_min": "Offset phải >= 0",
+        "keywords_string": "Từ khóa tìm kiếm phải là chuỗi",
+        "id_uuid": "ID phải là UUID hợp lệ"
+    }
+}

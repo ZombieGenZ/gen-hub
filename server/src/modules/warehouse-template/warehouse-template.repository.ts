@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { PaginationConfigService } from '../../common/config/pagination-config.service';
 import { QueryWarehouseTemplateDto } from './dto';
 import { IWarehouseTemplateWithRelations, IPaginatedResponse } from './interfaces';
 
@@ -9,7 +10,10 @@ import { IWarehouseTemplateWithRelations, IPaginatedResponse } from './interface
  */
 @Injectable()
 export class WarehouseTemplateRepository {
-    constructor(private readonly prisma: PrismaService) { }
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly paginationConfig: PaginationConfigService,
+    ) { }
 
     /** Include relations đầy đủ */
     private readonly fullInclude = {
@@ -122,7 +126,9 @@ export class WarehouseTemplateRepository {
         query: QueryWarehouseTemplateDto,
         options?: { includeFullRelations?: boolean },
     ): Promise<IPaginatedResponse<IWarehouseTemplateWithRelations>> {
-        const { limit = 10, offset = 0, keywords, is_active } = query;
+        const limit = this.paginationConfig.getLimit(query.limit);
+        const offset = this.paginationConfig.getOffset(query.offset);
+        const { keywords, is_active } = query;
 
         const where: Prisma.WarehouseTemplateWhereInput = {
             is_deleted: false,

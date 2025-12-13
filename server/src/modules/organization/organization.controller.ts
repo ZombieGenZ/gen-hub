@@ -148,7 +148,8 @@ export class OrganizationController {
         @CurrentUser('userId') userId: string,
         @I18nLang() lang: string,
     ) {
-        const result = await this.service.update(id, dto, userId, lang);
+        const hasUpdateAllPermission = await this.hasPermission(userId, 'organization.update.all');
+        const result = await this.service.update(id, dto, userId, lang, hasUpdateAllPermission);
         return new UpdatedResponse(
             ResponseCode.ORGANIZATION_UPDATE_SUCCESS,
             result,
@@ -165,11 +166,29 @@ export class OrganizationController {
         @CurrentUser('userId') userId: string,
         @I18nLang() lang: string,
     ) {
-        await this.service.delete(id, userId, lang);
+        const hasDeleteAllPermission = await this.hasPermission(userId, 'organization.delete.all');
+        await this.service.delete(id, userId, lang, hasDeleteAllPermission);
         return new DeletedResponse(
             ResponseCode.ORGANIZATION_DELETE_SUCCESS,
             undefined,
             'Xóa tổ chức thành công',
+        );
+    }
+
+    @Post(':id/leave')
+    @RequirePermission('organization.read')
+    @ApiOperation({ summary: 'Rời khỏi tổ chức' })
+    @ApiParam({ name: 'id', description: 'ID tổ chức' })
+    async leaveOrganization(
+        @Param('id', ParseUUIDPipe) id: string,
+        @CurrentUser('userId') userId: string,
+        @I18nLang() lang: string,
+    ) {
+        await this.service.leaveOrganization(id, userId, lang);
+        return new OkResponse(
+            ResponseCode.ORGANIZATION_MEMBER_LEAVE_SUCCESS,
+            undefined,
+            'Đã rời khỏi tổ chức thành công',
         );
     }
 
@@ -255,6 +274,57 @@ export class OrganizationController {
         @I18nLang() lang: string,
     ) {
         await this.service.rejectInvite(id, userId, lang);
+        return new OkResponse(
+            ResponseCode.ORGANIZATION_MEMBER_REJECT_SUCCESS,
+            undefined,
+            'Đã từ chối lời mời thành công',
+        );
+    }
+
+    @Get('invite/verify/:token')
+    @RequirePermission('organization.read')
+    @ApiOperation({ summary: 'Kiểm tra token mời có hợp lệ không (chỉ kiểm tra token của user hiện tại)' })
+    @ApiParam({ name: 'token', description: 'Token mời' })
+    async verifyInviteToken(
+        @Param('token') token: string,
+        @CurrentUser('userId') userId: string,
+        @I18nLang() lang: string,
+    ) {
+        const result = await this.service.verifyInviteToken(token, userId, lang);
+        return new GetResponse(
+            ResponseCode.ORGANIZATION_MEMBER_INVITE_VERIFY_SUCCESS,
+            result,
+            'Kiểm tra token mời thành công',
+        );
+    }
+
+    @Post('invite/accept/:token')
+    @RequirePermission('organization.read')
+    @ApiOperation({ summary: 'Chấp nhận lời mời bằng token' })
+    @ApiParam({ name: 'token', description: 'Token mời' })
+    async acceptInviteByToken(
+        @Param('token') token: string,
+        @CurrentUser('userId') userId: string,
+        @I18nLang() lang: string,
+    ) {
+        const result = await this.service.acceptInviteByToken(token, userId, lang);
+        return new OkResponse(
+            ResponseCode.ORGANIZATION_MEMBER_ACCEPT_SUCCESS,
+            result,
+            'Đã chấp nhận lời mời thành công',
+        );
+    }
+
+    @Post('invite/reject/:token')
+    @RequirePermission('organization.read')
+    @ApiOperation({ summary: 'Từ chối lời mời bằng token' })
+    @ApiParam({ name: 'token', description: 'Token mời' })
+    async rejectInviteByToken(
+        @Param('token') token: string,
+        @CurrentUser('userId') userId: string,
+        @I18nLang() lang: string,
+    ) {
+        await this.service.rejectInviteByToken(token, userId, lang);
         return new OkResponse(
             ResponseCode.ORGANIZATION_MEMBER_REJECT_SUCCESS,
             undefined,

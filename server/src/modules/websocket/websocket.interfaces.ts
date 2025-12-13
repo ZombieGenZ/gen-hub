@@ -135,10 +135,6 @@ export interface WarehouseTemplateLayoutUpdatedEvent {
   timestamp: string;
 }
 
-// ========================
-// ORGANIZATION EVENTS
-// ========================
-
 /**
  * Event khi tạo mới Organization
  */

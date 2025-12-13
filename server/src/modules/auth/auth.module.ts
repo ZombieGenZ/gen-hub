@@ -7,15 +7,16 @@ import { RefreshTokenRepository } from './repositories/refresh-token.repository'
 import { UserModule } from '../user/user.module';
 import { BackupCodeModule } from '../backup-code/backup-code.module';
 import { NotificationModule } from '../notification/notification.module';
+import { RedisModule } from '../redis/redis.module';
 
 /**
  * Auth Module
  * Quản lý authentication và authorization
  */
 @Module({
-  imports: [UserModule, BackupCodeModule, NotificationModule],
+  imports: [UserModule, BackupCodeModule, NotificationModule, RedisModule],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy, RefreshTokenRepository],
   exports: [AuthService, JwtStrategy, RefreshTokenRepository],
 })
-export class AuthModule {}
+export class AuthModule { }

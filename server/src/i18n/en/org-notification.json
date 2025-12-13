@@ -1,0 +1,34 @@
+{
+    "success": {
+        "created": "Organization notification created successfully",
+        "updated": "Organization notification updated successfully",
+        "deleted": "Organization notification deleted successfully",
+        "fetched": "Organization notification fetched successfully",
+        "list": "Organization notifications fetched successfully"
+    },
+    "errors": {
+        "not_found": "Organization notification not found",
+        "create_failed": "Failed to create organization notification",
+        "update_failed": "Failed to update organization notification",
+        "delete_failed": "Failed to delete organization notification",
+        "organization_not_found": "Organization not found",
+        "warehouse_not_found": "Warehouse not found",
+        "no_permission": "You do not have permission to perform this action"
+    },
+    "validation": {
+        "organization_id_required": "Organization ID is required",
+        "organization_id_uuid": "Organization ID must be a valid UUID",
+        "warehouse_id_uuid": "Warehouse ID must be a valid UUID",
+        "title_required": "Title is required",
+        "title_string": "Title must be a string",
+        "title_max_length": "Title must not exceed 255 characters",
+        "content_required": "Content is required",
+        "content_string": "Content must be a string",
+        "type_invalid": "Invalid notification type (INFO, WARNING, ERROR, SUCCESS)",
+        "is_active_boolean": "Status must be a boolean",
+        "limit_positive": "Limit must be a positive number",
+        "offset_min": "Offset must be >= 0",
+        "keywords_string": "Keywords must be a string",
+        "id_uuid": "ID must be a valid UUID"
+    }
+}

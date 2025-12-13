@@ -60,6 +60,18 @@
         "requestTime": "Yêu cầu được gửi vào lúc",
         "subjectPrefix": "🔐 Đặt lại mật khẩu"
     },
+    "organizationInvite": {
+        "greeting": "Xin chào",
+        "message": "Bạn đã được mời tham gia tổ chức",
+        "invitedBy": "Được mời bởi",
+        "orgLabel": "Tổ chức",
+        "expirationLabel": "Hiệu lực",
+        "expirationValue": "7 ngày",
+        "buttonText": "Chấp nhận lời mời",
+        "copyLinkText": "Hoặc sao chép đường link dưới đây:",
+        "warningText": "Nếu bạn không mong đợi email này, vui lòng bỏ qua.",
+        "subjectPrefix": "Lời mời tham gia {organizationName}"
+    },
     "footer": {
         "supportText": "Cần hỗ trợ? Liên hệ với chúng tôi qua email hoặc hotline",
         "copyright": "Tất cả quyền được bảo lưu.",

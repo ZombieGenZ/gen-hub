@@ -3,6 +3,7 @@ import { SharedModule } from '../../common/shared.module';
 import { RedisModule } from '../redis/redis.module';
 import { WebsocketModule } from '../websocket/websocket.module';
 import { SystemLogModule } from '../system-log/system-log.module';
+import { NotificationModule } from '../notification/notification.module';
 import { OrganizationController } from './organization.controller';
 import { OrganizationRoleController } from './organization-role.controller';
 import { ApiKeyController } from './api-key.controller';
@@ -17,6 +18,7 @@ import { ApiKeyLogService } from './api-key-log.service';
         RedisModule,
         WebsocketModule,
         SystemLogModule,
+        NotificationModule,
     ],
     controllers: [
         OrganizationController,

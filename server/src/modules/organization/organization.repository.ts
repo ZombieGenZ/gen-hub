@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { PaginationConfigService } from '../../common/config/pagination-config.service';
 import { QueryOrganizationDto } from './dto';
 import {
     IOrganizationWithRelations,
@@ -16,7 +17,10 @@ import {
  */
 @Injectable()
 export class OrganizationRepository {
-    constructor(private readonly prisma: PrismaService) { }
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly paginationConfig: PaginationConfigService,
+    ) { }
 
     /** Include relations cho Organization */
     private readonly orgInclude = {
@@ -32,20 +36,49 @@ export class OrganizationRepository {
         },
     };
 
-    /** Include relations cho Member */
-    private readonly memberInclude = {
+    /** Select fields cho Member (ẩn invite_token) */
+    private readonly memberSelect = {
+        id: true,
+        user_id: true,
+        organization_id: true,
+        is_accepted: true,
+        is_active: true,
+        is_deleted: true,
+        invite_token_expires_at: true,
+        created_at: true,
+        updated_at: true,
         user: {
             select: { id: true, name: true, email: true },
         },
         roles: {
             where: { is_deleted: false, is_active: true },
             include: {
-                role: { select: { id: true, name: true } },
+                role: {
+                    select: {
+                        id: true,
+                        name: true,
+                        permissions: {
+                            where: { is_deleted: false, is_active: true },
+                            include: {
+                                permission: { select: { id: true, name: true, key: true } },
+                            },
+                        },
+                    },
+                },
             },
         },
         permissions: {
             where: { is_deleted: false, is_active: true },
-            include: {
+            select: {
+                id: true,
+                organization_member_id: true,
+                organization_permission_id: true,
+                warehouse_id: true,
+                is_active: true,
+                created_at: true,
+                updated_at: true,
+                is_deleted: true,
+                deleted_at: true,
                 permission: { select: { id: true, name: true, key: true } },
             },
         },
@@ -80,7 +113,9 @@ export class OrganizationRepository {
         query: QueryOrganizationDto,
         userId?: string,
     ): Promise<IPaginatedResponse<IOrganizationWithRelations>> {
-        const { limit = 10, offset = 0, keywords, is_active } = query;
+        const limit = this.paginationConfig.getLimit(query.limit);
+        const offset = this.paginationConfig.getOffset(query.offset);
+        const { keywords, is_active } = query;
 
         const where: Prisma.OrganizationWhereInput = {
             is_deleted: false,
@@ -140,21 +175,28 @@ export class OrganizationRepository {
     async createMember(data: Prisma.OrganizationMemberCreateInput): Promise<IOrganizationMember> {
         return this.prisma.organizationMember.create({
             data,
-            include: this.memberInclude,
+            select: this.memberSelect,
         }) as unknown as IOrganizationMember;
     }
 
     async findMemberById(id: string): Promise<IOrganizationMember | null> {
         return this.prisma.organizationMember.findFirst({
             where: { id, is_deleted: false },
-            include: this.memberInclude,
+            select: this.memberSelect,
         }) as unknown as IOrganizationMember | null;
     }
 
     async findMemberByUserAndOrg(userId: string, orgId: string): Promise<IOrganizationMember | null> {
         return this.prisma.organizationMember.findFirst({
             where: { user_id: userId, organization_id: orgId, is_deleted: false },
-            include: this.memberInclude,
+            select: this.memberSelect,
+        }) as unknown as IOrganizationMember | null;
+    }
+
+    async findMemberByInviteToken(token: string): Promise<IOrganizationMember | null> {
+        return this.prisma.organizationMember.findFirst({
+            where: { invite_token: token, is_deleted: false },
+            select: this.memberSelect,
         }) as unknown as IOrganizationMember | null;
     }
 
@@ -162,7 +204,9 @@ export class OrganizationRepository {
         orgId: string,
         query: { limit?: number; offset?: number; is_accepted?: boolean },
     ): Promise<IPaginatedResponse<IOrganizationMember>> {
-        const { limit = 10, offset = 0, is_accepted } = query;
+        const limit = this.paginationConfig.getLimit(query.limit);
+        const offset = this.paginationConfig.getOffset(query.offset);
+        const { is_accepted } = query;
 
         const where: Prisma.OrganizationMemberWhereInput = {
             organization_id: orgId,
@@ -173,7 +217,7 @@ export class OrganizationRepository {
         const [items, total] = await Promise.all([
             this.prisma.organizationMember.findMany({
                 where,
-                include: this.memberInclude,
+                select: this.memberSelect,
                 orderBy: { created_at: 'desc' },
                 take: limit,
                 skip: offset,
@@ -194,7 +238,7 @@ export class OrganizationRepository {
         return this.prisma.organizationMember.update({
             where: { id },
             data,
-            include: this.memberInclude,
+            select: this.memberSelect,
         }) as unknown as IOrganizationMember;
     }
 
@@ -339,6 +383,46 @@ export class OrganizationRepository {
     }
 
     /**
+     * Cập nhật is_active của tất cả OrganizationMemberRole theo role_id
+     */
+    async updateMemberRolesStatusByRoleId(roleId: string, isActive: boolean): Promise<void> {
+        await this.prisma.organizationMemberRole.updateMany({
+            where: { organization_role_id: roleId, is_deleted: false },
+            data: { is_active: isActive, updated_at: new Date() },
+        });
+    }
+
+    /**
+     * Cập nhật is_active của tất cả ApiKeyRole theo role_id
+     */
+    async updateApiKeyRolesStatusByRoleId(roleId: string, isActive: boolean): Promise<void> {
+        await this.prisma.apiKeyRole.updateMany({
+            where: { organization_role_id: roleId, is_deleted: false },
+            data: { is_active: isActive, updated_at: new Date() },
+        });
+    }
+
+    /**
+     * Soft delete tất cả OrganizationMemberRole theo role_id
+     */
+    async softDeleteMemberRolesByRoleId(roleId: string): Promise<void> {
+        await this.prisma.organizationMemberRole.updateMany({
+            where: { organization_role_id: roleId, is_deleted: false },
+            data: { is_deleted: true, deleted_at: new Date() },
+        });
+    }
+
+    /**
+     * Soft delete tất cả ApiKeyRole theo role_id
+     */
+    async softDeleteApiKeyRolesByRoleId(roleId: string): Promise<void> {
+        await this.prisma.apiKeyRole.updateMany({
+            where: { organization_role_id: roleId, is_deleted: false },
+            data: { is_deleted: true, deleted_at: new Date() },
+        });
+    }
+
+    /**
      * Lấy tất cả organization-level permissions (shared)
      */
     async findAllOrganizationPermissions(): Promise<IOrganizationPermission[]> {
@@ -467,6 +551,53 @@ export class OrganizationRepository {
         return this.prisma.user.findFirst({
             where: { id: userId },
             select: { id: true, name: true, email: true },
+        });
+    }
+
+    async findUserByEmail(email: string) {
+        return this.prisma.user.findFirst({
+            where: { email },
+            select: { id: true, name: true, email: true },
+        });
+    }
+
+    /**
+     * Soft delete tất cả members của organization
+     */
+    async softDeleteAllMembersByOrgId(orgId: string, deletedBy: string): Promise<void> {
+        await this.prisma.organizationMember.updateMany({
+            where: { organization_id: orgId, is_deleted: false },
+            data: {
+                is_deleted: true,
+                deleted_at: new Date(),
+                deleted_by: deletedBy,
+            },
+        });
+    }
+
+    /**
+     * Soft delete tất cả roles của organization
+     */
+    async softDeleteAllRolesByOrgId(orgId: string): Promise<void> {
+        await this.prisma.organizationRole.updateMany({
+            where: { organization_id: orgId, is_deleted: false },
+            data: {
+                is_deleted: true,
+                deleted_at: new Date(),
+            },
+        });
+    }
+
+    /**
+     * Soft delete tất cả API keys của organization
+     */
+    async softDeleteAllApiKeysByOrgId(orgId: string): Promise<void> {
+        await this.prisma.apiKey.updateMany({
+            where: { organization_id: orgId, is_deleted: false },
+            data: {
+                is_deleted: true,
+                deleted_at: new Date(),
+            },
         });
     }
 }

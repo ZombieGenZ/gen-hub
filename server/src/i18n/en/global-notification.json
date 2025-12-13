@@ -1,0 +1,30 @@
+{
+    "success": {
+        "created": "Global notification created successfully",
+        "updated": "Global notification updated successfully",
+        "deleted": "Global notification deleted successfully",
+        "fetched": "Global notification fetched successfully",
+        "list": "Global notifications fetched successfully"
+    },
+    "errors": {
+        "not_found": "Global notification not found",
+        "create_failed": "Failed to create global notification",
+        "update_failed": "Failed to update global notification",
+        "delete_failed": "Failed to delete global notification"
+    },
+    "validation": {
+        "title_required": "Title is required",
+        "title_string": "Title must be a string",
+        "title_max_length": "Title must not exceed 255 characters",
+        "content_required": "Content is required",
+        "content_string": "Content must be a string",
+        "type_invalid": "Invalid notification type (INFO, WARNING, ERROR, SUCCESS)",
+        "starts_at_date": "Start date must be a valid date",
+        "ends_at_date": "End date must be a valid date",
+        "is_active_boolean": "Status must be a boolean",
+        "limit_positive": "Limit must be a positive number",
+        "offset_min": "Offset must be >= 0",
+        "keywords_string": "Keywords must be a string",
+        "id_uuid": "ID must be a valid UUID"
+    }
+}

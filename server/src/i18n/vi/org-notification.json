@@ -1,0 +1,34 @@
+{
+    "success": {
+        "created": "Tạo thông báo tổ chức thành công",
+        "updated": "Cập nhật thông báo tổ chức thành công",
+        "deleted": "Xóa thông báo tổ chức thành công",
+        "fetched": "Lấy thông báo tổ chức thành công",
+        "list": "Lấy danh sách thông báo tổ chức thành công"
+    },
+    "errors": {
+        "not_found": "Không tìm thấy thông báo tổ chức",
+        "create_failed": "Không thể tạo thông báo tổ chức",
+        "update_failed": "Không thể cập nhật thông báo tổ chức",
+        "delete_failed": "Không thể xóa thông báo tổ chức",
+        "organization_not_found": "Không tìm thấy tổ chức",
+        "warehouse_not_found": "Không tìm thấy kho hàng",
+        "no_permission": "Bạn không có quyền thực hiện thao tác này"
+    },
+    "validation": {
+        "organization_id_required": "ID tổ chức không được để trống",
+        "organization_id_uuid": "ID tổ chức phải là UUID hợp lệ",
+        "warehouse_id_uuid": "ID kho hàng phải là UUID hợp lệ",
+        "title_required": "Tiêu đề không được để trống",
+        "title_string": "Tiêu đề phải là chuỗi",
+        "title_max_length": "Tiêu đề không được quá 255 ký tự",
+        "content_required": "Nội dung không được để trống",
+        "content_string": "Nội dung phải là chuỗi",
+        "type_invalid": "Loại thông báo không hợp lệ (INFO, WARNING, ERROR, SUCCESS)",
+        "is_active_boolean": "Trạng thái phải là boolean",
+        "limit_positive": "Limit phải là số dương",
+        "offset_min": "Offset phải >= 0",
+        "keywords_string": "Từ khóa tìm kiếm phải là chuỗi",
+        "id_uuid": "ID phải là UUID hợp lệ"
+    }
+}

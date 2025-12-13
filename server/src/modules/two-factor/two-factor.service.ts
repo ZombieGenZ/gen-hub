@@ -327,7 +327,7 @@ export class TwoFactorService {
     email_confirmed: boolean;
     is_verified?: boolean | null;
     two_factor_enabled: boolean;
-    provider: string;
+    language: string;
     created_at: Date;
   }) {
     return {
@@ -337,7 +337,7 @@ export class TwoFactorService {
       email_confirmed: user.email_confirmed,
       is_verified: user.is_verified,
       two_factor_enabled: user.two_factor_enabled,
-      provider: user.provider,
+      language: user.language,
       created_at: user.created_at,
     };
   }

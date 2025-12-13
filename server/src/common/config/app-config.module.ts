@@ -1,6 +1,7 @@
 import { Global, Module } from '@nestjs/common';
 import { AppConfigService } from './app-config.service';
 import { AppConfigController } from './app-config.controller';
+import { PaginationConfigService } from './pagination-config.service';
 
 /**
  * Module quản lý cấu hình động
@@ -9,7 +10,8 @@ import { AppConfigController } from './app-config.controller';
 @Global()
 @Module({
   controllers: [AppConfigController],
-  providers: [AppConfigService],
-  exports: [AppConfigService],
+  providers: [AppConfigService, PaginationConfigService],
+  exports: [AppConfigService, PaginationConfigService],
 })
-export class AppConfigModule {}
+export class AppConfigModule { }
+

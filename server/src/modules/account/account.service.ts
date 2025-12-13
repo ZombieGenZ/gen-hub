@@ -14,7 +14,7 @@ import { RefreshTokenRepository } from '../auth/repositories/refresh-token.repos
 import { RedisService } from '../redis/redis.service';
 import { WebsocketGateway } from '../websocket/websocket.gateway';
 import { UpdateProfileDto, ChangePasswordDto } from '../auth/dto';
-import { PlatformProvider } from '@prisma/client';
+
 
 /**
  * Interface cho device info từ request
@@ -46,7 +46,7 @@ export class AccountService {
     private readonly refreshTokenRepository: RefreshTokenRepository,
     private readonly redisService: RedisService,
     private readonly websocketGateway: WebsocketGateway,
-  ) {}
+  ) { }
 
   /**
    * Lấy thông tin profile
@@ -78,23 +78,43 @@ export class AccountService {
       description: ur.role.description,
     }));
 
-    const rolePermissions = user.system_roles.flatMap((ur) =>
-      ur.role.permissions.map((rp) => ({
-        id: rp.permission.id,
-        name: rp.permission.name,
-        key: rp.permission.key,
-        description: rp.permission.description,
-      })),
-    );
+    // Gom các roles có cùng permission vào mảng roles
+    const rolePermissionsMap = new Map<string, any>();
+    for (const ur of user.system_roles) {
+      for (const rp of ur.role.permissions) {
+        const permissionId = rp.permission.id;
+        if (rolePermissionsMap.has(permissionId)) {
+          // Thêm role vào danh sách roles của permission đã tồn tại
+          rolePermissionsMap.get(permissionId).roles.push({
+            id: ur.role.id,
+            name: ur.role.name,
+          });
+        } else {
+          // Tạo permission mới với role đầu tiên
+          rolePermissionsMap.set(permissionId, {
+            id: rp.permission.id,
+            name: rp.permission.name,
+            key: rp.permission.key,
+            description: rp.permission.description,
+            source: 'role' as const,
+            roles: [{ id: ur.role.id, name: ur.role.name }],
+          });
+        }
+      }
+    }
+    const rolePermissions = Array.from(rolePermissionsMap.values());
 
     const directPermissions = user.system_permissions.map((up) => ({
       id: up.permission.id,
       name: up.permission.name,
       key: up.permission.key,
       description: up.permission.description,
+      source: 'permission' as const,
+      roles: [],
     }));
 
-    const allPermissions = [...rolePermissions, ...directPermissions];
+    // Merge permission + role permissions, ưu tiên permission nếu trùng
+    const allPermissions = [...directPermissions, ...rolePermissions];
     const uniquePermissions = allPermissions.filter(
       (p, index, self) => index === self.findIndex((t) => t.id === p.id),
     );
@@ -107,7 +127,7 @@ export class AccountService {
         email_confirmed: user.email_confirmed,
         is_verified: user.is_verified,
         two_factor_enabled: user.two_factor_enabled,
-        provider: user.provider,
+        language: user.language,
         created_at: user.created_at,
       },
       roles,
@@ -177,14 +197,6 @@ export class AccountService {
   ) {
     const user = await this.userRepository.findById(userId);
     if (!user) throw new BadRequestException('User không tồn tại');
-
-    if (user.provider !== PlatformProvider.DEFAULT) {
-      throw new BadRequestException(
-        await this.i18n.t('auth.change_password.cannot_change_social_account', {
-          lang,
-        }),
-      );
-    }
 
     if (!user.password) {
       throw new BadRequestException('Tài khoản không có mật khẩu');

@@ -253,6 +253,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
       await this.seedConfigPermissions();
       await this.seedWarehouseTemplatePermissions();
       await this.seedOrganizationPermissions();
+      await this.seedNotificationPermissions();
       await this.seedVietnamAdministrative();
     } catch (error: unknown) {
       const errorMessage =
@@ -491,6 +492,16 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
           name: 'Xem chi tiết tất cả tổ chức',
           description: 'Quyền xem chi tiết bất kỳ tổ chức nào trên hệ thống',
         },
+        {
+          key: 'organization.update.all',
+          name: 'Cập nhật tất cả tổ chức',
+          description: 'Quyền cập nhật bất kỳ tổ chức nào trên hệ thống',
+        },
+        {
+          key: 'organization.delete.all',
+          name: 'Xóa tất cả tổ chức',
+          description: 'Quyền xóa bất kỳ tổ chức nào trên hệ thống',
+        },
       ];
 
       const allSystemPermissions = [...basicPermissions, ...adminPermissions];
@@ -594,8 +605,9 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         { key: 'organization.member.permission.assign', name: 'Gán quyền cho thành viên', description: 'Quyền gán quyền trực tiếp cho thành viên' },
         { key: 'organization.member.remove', name: 'Xóa thành viên', description: 'Quyền xóa thành viên khỏi tổ chức' },
         // Role management
+        { key: 'organization.role.list', name: 'Xem danh sách vai trò', description: 'Quyền xem danh sách vai trò' },
+        { key: 'organization.role.read', name: 'Xem chi tiết vai trò', description: 'Quyền xem chi tiết vai trò' },
         { key: 'organization.role.create', name: 'Tạo vai trò', description: 'Quyền tạo vai trò trong tổ chức' },
-        { key: 'organization.role.read', name: 'Xem danh sách vai trò', description: 'Quyền xem danh sách vai trò' },
         { key: 'organization.role.update', name: 'Cập nhật vai trò', description: 'Quyền cập nhật vai trò' },
         { key: 'organization.role.delete', name: 'Xóa vai trò', description: 'Quyền xóa vai trò' },
         // API Key management
@@ -604,6 +616,12 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         { key: 'organization.apikey.update', name: 'Cập nhật API key', description: 'Quyền cập nhật API key' },
         { key: 'organization.apikey.reset', name: 'Reset API key', description: 'Quyền reset API key' },
         { key: 'organization.apikey.delete', name: 'Xóa API key', description: 'Quyền xóa API key' },
+        // Organization Notification management
+        { key: 'organization.notification.create', name: 'Tạo thông báo tổ chức', description: 'Quyền tạo thông báo cho tổ chức' },
+        { key: 'organization.notification.list', name: 'Xem danh sách thông báo', description: 'Quyền xem danh sách thông báo tổ chức' },
+        { key: 'organization.notification.read', name: 'Xem chi tiết thông báo', description: 'Quyền xem chi tiết thông báo tổ chức' },
+        { key: 'organization.notification.update', name: 'Cập nhật thông báo', description: 'Quyền cập nhật thông báo tổ chức' },
+        { key: 'organization.notification.delete', name: 'Xóa thông báo', description: 'Quyền xóa thông báo tổ chức' },
       ];
 
       for (const perm of orgLevelPermissions) {
@@ -630,6 +648,125 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         error instanceof Error ? error.message : String(error);
       this.logger.error(
         `❌ Failed to seed organization permissions: ${errorMessage}`,
+      );
+    }
+  }
+
+  /**
+   * Seed các permissions cho Notification modules (GlobalNotification, UserNotification)
+   */
+  private async seedNotificationPermissions() {
+    try {
+      // Global Notification permissions - Admin only
+      const globalNotificationPermissions = [
+        {
+          key: 'global-notification.create',
+          name: 'Tạo thông báo toàn cầu',
+          description: 'Quyền tạo thông báo toàn cầu',
+        },
+        {
+          key: 'global-notification.list',
+          name: 'Xem danh sách thông báo toàn cầu',
+          description: 'Quyền xem danh sách thông báo toàn cầu',
+        },
+        {
+          key: 'global-notification.read',
+          name: 'Xem chi tiết thông báo toàn cầu',
+          description: 'Quyền xem chi tiết thông báo toàn cầu',
+        },
+        {
+          key: 'global-notification.update',
+          name: 'Cập nhật thông báo toàn cầu',
+          description: 'Quyền cập nhật thông báo toàn cầu',
+        },
+        {
+          key: 'global-notification.delete',
+          name: 'Xóa thông báo toàn cầu',
+          description: 'Quyền xóa thông báo toàn cầu',
+        },
+      ];
+
+      // User Notification admin permissions
+      const userNotificationAdminPermissions = [
+        {
+          key: 'user-notification.list.all',
+          name: 'Xem thông báo của tất cả user',
+          description: 'Quyền xem danh sách thông báo của bất kỳ user nào',
+        },
+        {
+          key: 'user-notification.send',
+          name: 'Gửi thông báo cho user',
+          description: 'Quyền gửi thông báo cho user bất kỳ',
+        },
+      ];
+
+      const allNotificationPermissions = [
+        ...globalNotificationPermissions,
+        ...userNotificationAdminPermissions,
+      ];
+
+      // Tạo permissions
+      for (const perm of allNotificationPermissions) {
+        const existing = await this.permission.findFirst({
+          where: { key: perm.key },
+        });
+
+        if (!existing) {
+          await this.permission.create({
+            data: {
+              key: perm.key,
+              name: perm.name,
+              description: perm.description,
+              is_active: true,
+              is_deleted: false,
+            },
+          });
+        }
+      }
+
+      // Gán cho Admin và Super Admin roles
+      const adminRoles = await this.role.findMany({
+        where: {
+          name: { in: ['Admin', 'Super Admin'] },
+          is_deleted: false,
+        },
+      });
+
+      const permissionRecords = await this.permission.findMany({
+        where: {
+          key: { in: allNotificationPermissions.map((p) => p.key) },
+          is_deleted: false,
+        },
+      });
+
+      for (const role of adminRoles) {
+        for (const permission of permissionRecords) {
+          const existingAssignment = await this.rolePermission.findFirst({
+            where: {
+              role_id: role.id,
+              permission_id: permission.id,
+            },
+          });
+
+          if (!existingAssignment) {
+            await this.rolePermission.create({
+              data: {
+                role_id: role.id,
+                permission_id: permission.id,
+                is_active: true,
+                is_deleted: false,
+              },
+            });
+          }
+        }
+      }
+
+      this.logger.log('✅ Notification permissions seeded');
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `❌ Failed to seed notification permissions: ${errorMessage}`,
       );
     }
   }

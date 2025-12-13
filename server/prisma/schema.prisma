@@ -64,10 +64,6 @@ model Ward {
   @@map("wards")
 }
 
-enum PlatformProvider {
-  DEFAULT
-}
-
 model User {
   id                   String    @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
   language             String    @default("vi")
@@ -87,7 +83,6 @@ model User {
   two_factor_enabled      Boolean          @default(false)
   two_factor_token        String?
   password                String?
-  provider                PlatformProvider @default(DEFAULT)
   forgot_password_token   String?
   forgot_password_expired DateTime?
 
@@ -572,6 +567,9 @@ model OrganizationMember {
   is_active       Boolean? @default(true)
   is_deleted      Boolean? @default(false)
 
+  invite_token            String?   @unique
+  invite_token_expires_at DateTime?
+
   created_at DateTime  @default(now())
   updated_at DateTime? @updatedAt
   deleted_at DateTime?
@@ -588,6 +586,7 @@ model OrganizationMember {
 
   @@index([user_id])
   @@index([organization_id])
+  @@index([invite_token])
   @@map("organizations_members")
 }
 

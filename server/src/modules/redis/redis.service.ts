@@ -307,4 +307,163 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
       this.invalidateOrganizationListCache(),
     ]);
   }
+
+  private readonly GLOBAL_NOTIFICATION_CACHE_TTL: number = 300;
+  private readonly GLOBAL_NOTIFICATION_LIST_CACHE_TTL: number = 60;
+
+  private getGlobalNotificationCacheKey(id: string): string {
+    return `global-notification:${id}`;
+  }
+
+  getGlobalNotificationListCacheKey(query: Record<string, unknown>): string {
+    const sortedParams = Object.keys(query)
+      .sort()
+      .map((key) => `${key}=${query[key]}`)
+      .join('&');
+    return `global-notification:list:${sortedParams}`;
+  }
+
+  async getGlobalNotificationCache<T>(id: string): Promise<T | null> {
+    const data = await this.get(this.getGlobalNotificationCacheKey(id));
+    if (!data) return null;
+    try {
+      return JSON.parse(data) as T;
+    } catch {
+      return null;
+    }
+  }
+
+  async setGlobalNotificationCache<T>(id: string, data: T, ttlSeconds?: number): Promise<void> {
+    const ttl = ttlSeconds || this.GLOBAL_NOTIFICATION_CACHE_TTL;
+    await this.set(this.getGlobalNotificationCacheKey(id), JSON.stringify(data), ttl);
+  }
+
+  async invalidateGlobalNotificationCache(id: string): Promise<void> {
+    await this.del(this.getGlobalNotificationCacheKey(id));
+  }
+
+  async getGlobalNotificationListCache<T>(cacheKey: string): Promise<T | null> {
+    const data = await this.get(cacheKey);
+    if (!data) return null;
+    try {
+      return JSON.parse(data) as T;
+    } catch {
+      return null;
+    }
+  }
+
+  async setGlobalNotificationListCache<T>(cacheKey: string, data: T, ttlSeconds?: number): Promise<void> {
+    const ttl = ttlSeconds || this.GLOBAL_NOTIFICATION_LIST_CACHE_TTL;
+    await this.set(cacheKey, JSON.stringify(data), ttl);
+  }
+
+  async invalidateGlobalNotificationListCache(): Promise<void> {
+    await this.delByPattern('global-notification:list:*');
+  }
+
+  private readonly USER_NOTIFICATION_CACHE_TTL: number = 300;
+  private readonly USER_NOTIFICATION_LIST_CACHE_TTL: number = 60;
+
+  private getUserNotificationCacheKey(id: string): string {
+    return `user-notification:${id}`;
+  }
+
+  getUserNotificationListCacheKey(userId: string, query: Record<string, unknown>): string {
+    const sortedParams = Object.keys(query)
+      .sort()
+      .map((key) => `${key}=${query[key]}`)
+      .join('&');
+    return `user-notification:list:${userId}:${sortedParams}`;
+  }
+
+  async getUserNotificationCache<T>(id: string): Promise<T | null> {
+    const data = await this.get(this.getUserNotificationCacheKey(id));
+    if (!data) return null;
+    try {
+      return JSON.parse(data) as T;
+    } catch {
+      return null;
+    }
+  }
+
+  async setUserNotificationCache<T>(id: string, data: T, ttlSeconds?: number): Promise<void> {
+    const ttl = ttlSeconds || this.USER_NOTIFICATION_CACHE_TTL;
+    await this.set(this.getUserNotificationCacheKey(id), JSON.stringify(data), ttl);
+  }
+
+  async invalidateUserNotificationCache(id: string): Promise<void> {
+    await this.del(this.getUserNotificationCacheKey(id));
+  }
+
+  async getUserNotificationListCache<T>(cacheKey: string): Promise<T | null> {
+    const data = await this.get(cacheKey);
+    if (!data) return null;
+    try {
+      return JSON.parse(data) as T;
+    } catch {
+      return null;
+    }
+  }
+
+  async setUserNotificationListCache<T>(cacheKey: string, data: T, ttlSeconds?: number): Promise<void> {
+    const ttl = ttlSeconds || this.USER_NOTIFICATION_LIST_CACHE_TTL;
+    await this.set(cacheKey, JSON.stringify(data), ttl);
+  }
+
+  async invalidateUserNotificationListCache(userId: string): Promise<void> {
+    await this.delByPattern(`user-notification:list:${userId}:*`);
+  }
+
+  private readonly ORG_NOTIFICATION_CACHE_TTL: number = 300;
+  private readonly ORG_NOTIFICATION_LIST_CACHE_TTL: number = 60;
+
+  private getOrgNotificationCacheKey(id: string): string {
+    return `org-notification:${id}`;
+  }
+
+  getOrgNotificationListCacheKey(orgId: string, query: Record<string, unknown>): string {
+    const sortedParams = Object.keys(query)
+      .sort()
+      .map((key) => `${key}=${query[key]}`)
+      .join('&');
+    return `org-notification:list:${orgId}:${sortedParams}`;
+  }
+
+  async getOrgNotificationCache<T>(id: string): Promise<T | null> {
+    const data = await this.get(this.getOrgNotificationCacheKey(id));
+    if (!data) return null;
+    try {
+      return JSON.parse(data) as T;
+    } catch {
+      return null;
+    }
+  }
+
+  async setOrgNotificationCache<T>(id: string, data: T, ttlSeconds?: number): Promise<void> {
+    const ttl = ttlSeconds || this.ORG_NOTIFICATION_CACHE_TTL;
+    await this.set(this.getOrgNotificationCacheKey(id), JSON.stringify(data), ttl);
+  }
+
+  async invalidateOrgNotificationCache(id: string): Promise<void> {
+    await this.del(this.getOrgNotificationCacheKey(id));
+  }
+
+  async getOrgNotificationListCache<T>(cacheKey: string): Promise<T | null> {
+    const data = await this.get(cacheKey);
+    if (!data) return null;
+    try {
+      return JSON.parse(data) as T;
+    } catch {
+      return null;
+    }
+  }
+
+  async setOrgNotificationListCache<T>(cacheKey: string, data: T, ttlSeconds?: number): Promise<void> {
+    const ttl = ttlSeconds || this.ORG_NOTIFICATION_LIST_CACHE_TTL;
+    await this.set(cacheKey, JSON.stringify(data), ttl);
+  }
+
+  async invalidateOrgNotificationListCache(orgId: string): Promise<void> {
+    await this.delByPattern(`org-notification:list:${orgId}:*`);
+  }
 }

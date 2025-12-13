@@ -7,7 +7,7 @@ import { Type, Transform } from 'class-transformer';
  * DTO query danh sách WarehouseTemplate với phân trang và lọc
  */
 export class QueryWarehouseTemplateDto {
-    @ApiPropertyOptional({ description: 'Số lượng record', example: 10, default: 10 })
+    @ApiPropertyOptional({ description: 'Số lượng record', example: 10 })
     @IsOptional()
     @IsNumber({}, {
         message: i18nValidationMessage('warehouse-template.validation.limit_positive'),
@@ -16,9 +16,9 @@ export class QueryWarehouseTemplateDto {
         message: i18nValidationMessage('warehouse-template.validation.limit_positive'),
     })
     @Type(() => Number)
-    limit?: number = 10;
+    limit?: number;
 
-    @ApiPropertyOptional({ description: 'Vị trí bắt đầu', example: 0, default: 0 })
+    @ApiPropertyOptional({ description: 'Vị trí bắt đầu', example: 0 })
     @IsOptional()
     @IsNumber({}, {
         message: i18nValidationMessage('warehouse-template.validation.offset_min'),
@@ -27,7 +27,7 @@ export class QueryWarehouseTemplateDto {
         message: i18nValidationMessage('warehouse-template.validation.offset_min'),
     })
     @Type(() => Number)
-    offset?: number = 0;
+    offset?: number;
 
     @ApiPropertyOptional({ description: 'Từ khóa tìm kiếm', example: 'kho A' })
     @IsOptional()

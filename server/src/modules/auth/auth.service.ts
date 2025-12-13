@@ -18,6 +18,7 @@ import { EmailService } from '../notification/email.service';
 import { SystemLogService } from '../system-log/system-log.service';
 import { AppConfigService } from '../../common/config/app-config.service';
 import { WebsocketGateway } from '../websocket/websocket.gateway';
+import { RedisService } from '../redis/redis.service';
 import {
   RegisterDto,
   LoginDto,
@@ -75,6 +76,7 @@ export class AuthService {
     private readonly systemLogService: SystemLogService,
     private readonly appConfigService: AppConfigService,
     private readonly websocketGateway: WebsocketGateway,
+    private readonly redisService: RedisService,
   ) { }
 
   /**
@@ -274,6 +276,9 @@ export class AuthService {
     }
 
     await this.userRepository.verifyEmail(user.id);
+
+    // Invalidate user cache để đảm bảo dữ liệu mới được cập nhật
+    await this.redisService.invalidateUserCache(user.id);
 
     this.systemLogService.info(
       'auth',
@@ -706,7 +711,7 @@ export class AuthService {
     email_confirmed: boolean;
     is_verified?: boolean | null;
     two_factor_enabled: boolean;
-    provider: string;
+    language: string;
     created_at: Date;
   }) {
     return {
@@ -716,7 +721,7 @@ export class AuthService {
       email_confirmed: user.email_confirmed,
       is_verified: user.is_verified,
       two_factor_enabled: user.two_factor_enabled,
-      provider: user.provider,
+      language: user.language,
       created_at: user.created_at,
     };
   }

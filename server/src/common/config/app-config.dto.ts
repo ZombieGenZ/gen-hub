@@ -1,4 +1,4 @@
-import { IsOptional, IsString, MaxLength, ValidateNested, IsHexColor } from 'class-validator';
+import { IsOptional, IsString, MaxLength, ValidateNested, IsHexColor, IsNumber, Min, Max } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 
@@ -105,6 +105,34 @@ class UpdateAppColorsDto {
   shadow?: string;
 }
 
+class UpdatePaginationConfigDto {
+  @ApiPropertyOptional({ description: 'Số lượng record mặc định mỗi trang', example: 10 })
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  @Max(1000)
+  defaultLimit?: number;
+
+  @ApiPropertyOptional({ description: 'Vị trí bắt đầu mặc định', example: 0 })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  defaultOffset?: number;
+
+  @ApiPropertyOptional({ description: 'Số lượng record tối đa cho phép mỗi trang', example: 100 })
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  @Max(1000)
+  maxLimit?: number;
+
+  @ApiPropertyOptional({ description: 'Số lượng record tối thiểu mỗi trang', example: 1 })
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  minLimit?: number;
+}
+
 export class UpdateAppConfigDto {
   @ApiPropertyOptional({
     description: 'Tên thương hiệu',
@@ -117,6 +145,26 @@ export class UpdateAppConfigDto {
   brandName?: string;
 
   @ApiPropertyOptional({
+    description: 'Email hỗ trợ',
+    example: 'support@gen-hub.dev',
+    maxLength: 255,
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  supportEmail?: string;
+
+  @ApiPropertyOptional({
+    description: 'Số điện thoại hỗ trợ',
+    example: '0783 504 540',
+    maxLength: 20,
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  supportPhone?: string;
+
+  @ApiPropertyOptional({
     description: 'Bảng màu theme',
     type: UpdateAppColorsDto,
   })
@@ -124,4 +172,14 @@ export class UpdateAppConfigDto {
   @ValidateNested()
   @Type(() => UpdateAppColorsDto)
   colors?: UpdateAppColorsDto;
+
+  @ApiPropertyOptional({
+    description: 'Cấu hình phân trang mặc định',
+    type: UpdatePaginationConfigDto,
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => UpdatePaginationConfigDto)
+  pagination?: UpdatePaginationConfigDto;
 }
+

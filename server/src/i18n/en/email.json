@@ -60,6 +60,18 @@
         "requestTime": "Request sent at",
         "subjectPrefix": "🔐 Reset Password"
     },
+    "organizationInvite": {
+        "greeting": "Hello",
+        "message": "You have been invited to join the organization",
+        "invitedBy": "Invited by",
+        "orgLabel": "Organization",
+        "expirationLabel": "Valid for",
+        "expirationValue": "7 days",
+        "buttonText": "Accept Invitation",
+        "copyLinkText": "Or copy the link below:",
+        "warningText": "If you did not expect this email, please ignore it.",
+        "subjectPrefix": "Invitation to join {organizationName}"
+    },
     "footer": {
         "supportText": "Need help? Contact us via email or hotline",
         "copyright": "All rights reserved.",

@@ -44,13 +44,6 @@ export class WarehouseTemplateService {
         userId: string,
         lang: string,
     ): Promise<IWarehouseTemplateWithRelations> {
-        // Kiểm tra tên trùng
-        const nameExists = await this.repository.findByName(dto.name);
-        if (nameExists) {
-            throw new ConflictException(
-                this.i18n.t('warehouse-template.errors.name_exists', { lang }),
-            );
-        }
 
         const template = await this.repository.create({
             name: dto.name,
@@ -163,15 +156,6 @@ export class WarehouseTemplateService {
             );
         }
 
-        // Kiểm tra tên trùng (trừ chính nó)
-        if (dto.name && dto.name !== existing.name) {
-            const nameExists = await this.repository.findByName(dto.name, id);
-            if (nameExists) {
-                throw new ConflictException(
-                    this.i18n.t('warehouse-template.errors.name_exists', { lang }),
-                );
-            }
-        }
 
         const updatedFields = Object.keys(dto);
 

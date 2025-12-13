@@ -1,508 +1,404 @@
-# Realtime Documentation - Socket.io
+# Realtime Events Documentation
 
-Tài liệu mô tả chi tiết về các rooms, events và dữ liệu trong hệ thống realtime của GEN-HUB.
+## 📡 Kết nối WebSocket
 
-## Connection
-
-### Kết nối WebSocket
-
+### Kết nối có xác thực (Authenticated)
 ```javascript
-import { io } from 'socket.io-client';
-
 const socket = io('http://localhost:4000', {
-  auth: {
-    token: 'Bearer <access_token>'
-  },
+  auth: { token: 'Bearer <access_token>' },
   transports: ['websocket', 'polling']
 });
 ```
 
-### Xác thực
-
-WebSocket gateway sử dụng JWT token để xác thực. Token phải được gửi trong `auth.token` khi kết nối.
-
-**Lỗi xác thực:**
-```typescript
-{
-  event: 'error',
-  data: {
-    code: 'UNAUTHORIZED',
-    message: 'Invalid or expired token'
-  }
-}
-```
-
----
-
-## Rooms
-
-### User Room
-
-Mỗi user có 1 room riêng để nhận notifications cá nhân.
-
-| Room Name | Format | Description |
-|-----------|--------|-------------|
-| User Room | `user:{userId}` | Room riêng của mỗi user |
-
-**Ví dụ:** `user:550e8400-e29b-41d4-a716-446655440000`
-
-> [!NOTE]
-> User tự động join vào room của mình sau khi kết nối và xác thực thành công.
-
----
-
-## Events Reference
-
-### Server → Client Events
-
-#### 1. `user:logout`
-
-Được emit khi user logout khỏi 1 thiết bị cụ thể.
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `userId` | `string` | ID của user bị logout |
-| `tokenId` | `string` | ID của refresh token bị hủy |
-| `timestamp` | `string` | ISO timestamp |
-| `message` | `string` | Message thông báo |
-
-**Payload:**
-```typescript
-{
-  userId: "550e8400-e29b-41d4-a716-446655440000",
-  tokenId: "abc123-token-id",
-  timestamp: "2025-12-08T12:00:00.000Z",
-  message: "Đã đăng xuất thành công"
-}
-```
-
-**Client Handler:**
+### Kết nối không xác thực (Guest)
 ```javascript
-socket.on('user:logout', (data) => {
-  // Kiểm tra nếu tokenId trùng với token hiện tại
-  if (data.tokenId === currentRefreshTokenId) {
-    // Clear local storage và redirect to login
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    window.location.href = '/login';
-  }
+const socket = io('http://localhost:4000', {
+  transports: ['websocket', 'polling']
 });
 ```
 
+> **Note:** Guest chỉ có thể join vào public rooms.
+
 ---
 
-#### 2. `user:logoutAll`
+## 🏠 Rooms
 
-Được emit khi user logout khỏi tất cả các thiết bị.
+| Room | Loại | Cách Join | Yêu cầu Auth |
+|------|------|-----------|--------------|
+| `user:{userId}` | Private | Tự động (khi có token) | ✅ Có |
+| `public` | Public | Tự động (tất cả) | ❌ Không |
+| `notifications` | Private | `subscribe` | ✅ Có |
+| `announcements` | Public | `subscribe` | ❌ Không |
+| `system-status` | Public | `subscribe` | ❌ Không |
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `userId` | `string` | ID của user bị logout |
-| `timestamp` | `string` | ISO timestamp |
-| `message` | `string` | Message thông báo |
-| `excludeSocketId` | `string \| null` | Socket ID không bị logout (socket gọi API) |
+### Cách subscribe:
+```javascript
+socket.emit('subscribe', { rooms: ['announcements', 'notifications'] });
+```
 
-**Payload:**
-```typescript
+---
+
+## 📤 Client → Server Events
+
+| Event | Data | Chức năng |
+|-------|------|-----------|
+| `ping` | `{}` | Giữ kết nối |
+| `subscribe` | `{ rooms: string[] }` | Join room |
+
+---
+
+## 📥 Server → Client Events
+
+### 🔌 Connection Events
+
+#### `connected`
+**Chức năng:** Xác nhận kết nối thành công
+
+```json
 {
-  userId: "550e8400-e29b-41d4-a716-446655440000",
-  timestamp: "2025-12-08T12:00:00.000Z",
-  message: "Đã đăng xuất khỏi tất cả thiết bị",
-  excludeSocketId: "socket-id-of-caller"
+  "socketId": "abc123xyz",
+  "userId": "550e8400-e29b-41d4-a716-446655440000",
+  "authenticated": true,
+  "timestamp": "2025-12-13T10:00:00.000Z"
+}
+```
+> Guest sẽ có `userId: null` và `authenticated: false`
+
+---
+
+#### `subscribed`
+**Chức năng:** Xác nhận join room
+
+```json
+{
+  "rooms": ["announcements"],
+  "rejected": ["notifications"],
+  "success": true
+}
+```
+> `rejected` chỉ xuất hiện nếu guest cố join private room
+
+---
+
+### 🏠 User Room Events (Yêu cầu Auth)
+
+#### `user:logout`
+```json
+{
+  "userId": "550e8400-e29b-41d4-a716-446655440000",
+  "tokenId": "token-abc-123",
+  "timestamp": "2025-12-13T10:00:00.000Z",
+  "message": "Đã đăng xuất thành công"
 }
 ```
 
-**Client Handler:**
-```javascript
-socket.on('user:logoutAll', (data) => {
-  // Kiểm tra nếu không phải socket hiện tại
-  if (data.excludeSocketId !== socket.id) {
-    // Clear local storage và redirect to login
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    window.location.href = '/login?reason=logout_all';
-  }
-});
-```
-
 ---
 
-#### 3. `user:tokenRevoked`
-
-Được emit khi refresh token bị vô hiệu hóa (password changed với logout_all_devices, admin revoke, etc.).
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `userId` | `string` | ID của user |
-| `reason` | `string` | Lý do token bị revoke |
-| `timestamp` | `string` | ISO timestamp |
-| `message` | `string` | Message thông báo |
-
-**Payload:**
-```typescript
+#### `user:logoutAll`
+```json
 {
-  userId: "550e8400-e29b-41d4-a716-446655440000",
-  reason: "password_changed",
-  timestamp: "2025-12-08T12:00:00.000Z",
-  message: "Mật khẩu đã được thay đổi. Vui lòng đăng nhập lại."
+  "userId": "550e8400-e29b-41d4-a716-446655440000",
+  "timestamp": "2025-12-13T10:00:00.000Z",
+  "message": "Đã đăng xuất khỏi tất cả thiết bị",
+  "excludeSocketId": "socket-id-caller"
 }
 ```
 
-**Reasons:**
-| Reason | Description |
-|--------|-------------|
-| `password_changed` | User đổi mật khẩu với option logout_all_devices |
-| `admin_revoke` | Admin vô hiệu hóa session |
-| `security_alert` | Phát hiện hoạt động đáng ngờ |
+---
 
-**Client Handler:**
-```javascript
-socket.on('user:tokenRevoked', (data) => {
-  alert(data.message);
-  // Force logout
-  localStorage.clear();
-  window.location.href = '/login?reason=' + data.reason;
-});
+#### `user:tokenRevoked`
+```json
+{
+  "userId": "550e8400-e29b-41d4-a716-446655440000",
+  "reason": "password_changed",
+  "timestamp": "2025-12-13T10:00:00.000Z",
+  "message": "Mật khẩu đã được thay đổi. Vui lòng đăng nhập lại."
+}
 ```
+> Reason: `password_changed` | `admin_revoke` | `security_alert`
 
 ---
 
-#### 4. `user:profileUpdated`
-
-Được emit khi user cập nhật thông tin cá nhân.
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `userId` | `string` | ID của user |
-| `updatedFields` | `string[]` | Danh sách các fields đã được cập nhật |
-| `profile` | `object` | Thông tin profile mới |
-| `timestamp` | `string` | ISO timestamp |
-
-**Payload:**
-```typescript
+#### `user:profileUpdated`
+```json
 {
-  userId: "550e8400-e29b-41d4-a716-446655440000",
-  updatedFields: ["name", "language"],
-  profile: {
-    id: "550e8400-e29b-41d4-a716-446655440000",
-    name: "Nguyễn Văn B",
-    email: "user@example.com",
-    language: "en"
+  "userId": "550e8400-e29b-41d4-a716-446655440000",
+  "updatedFields": ["name", "language"],
+  "profile": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "name": "Nguyễn Văn A",
+    "email": "user@example.com",
+    "language": "vi"
   },
-  timestamp: "2025-12-08T12:00:00.000Z"
+  "timestamp": "2025-12-13T10:00:00.000Z"
 }
-```
-
-**Client Handler:**
-```javascript
-socket.on('user:profileUpdated', (data) => {
-  // Cập nhật state/store với thông tin mới
-  store.dispatch(updateUserProfile(data.profile));
-  
-  // Hoặc refresh user data
-  if (data.updatedFields.includes('language')) {
-    i18n.changeLanguage(data.profile.language);
-  }
-});
 ```
 
 ---
 
-### Client → Server Events
+### 🏢 Organization Events (Yêu cầu Auth)
 
-#### 1. `ping`
-
-Client gửi ping để giữ kết nối.
-
-**Emit:**
-```javascript
-socket.emit('ping');
-```
-
-**Response Event:** `pong`
-```typescript
+#### `organization:created`
+```json
 {
-  timestamp: "2025-12-08T12:00:00.000Z"
+  "organizationId": "org-123-uuid",
+  "name": "My Company",
+  "ownerId": "550e8400-e29b-41d4-a716-446655440000",
+  "timestamp": "2025-12-13T10:00:00.000Z"
 }
 ```
 
 ---
 
-#### 2. `subscribe`
-
-Client subscribe vào các rooms bổ sung (nếu cần).
-
-**Emit:**
-```javascript
-socket.emit('subscribe', { rooms: ['notifications', 'announcements'] });
-```
-
-**Response Event:** `subscribed`
-```typescript
+#### `organization:updated`
+```json
 {
-  rooms: ['notifications', 'announcements'],
-  success: true
+  "organizationId": "org-123-uuid",
+  "name": "My Company Updated",
+  "updatedBy": "550e8400-e29b-41d4-a716-446655440000",
+  "timestamp": "2025-12-13T10:00:00.000Z"
 }
 ```
 
 ---
 
-## Error Events
-
-### `error`
-
-Được emit khi có lỗi xảy ra.
-
-**Payload:**
-```typescript
+#### `organization:deleted`
+```json
 {
-  code: "ERROR_CODE",
-  message: "Human readable error message",
-  details?: object
-}
-```
-
-**Error Codes:**
-| Code | Description |
-|------|-------------|
-| `UNAUTHORIZED` | Token không hợp lệ hoặc hết hạn |
-| `FORBIDDEN` | Không có quyền thực hiện action |
-| `INVALID_PAYLOAD` | Dữ liệu gửi lên không hợp lệ |
-| `INTERNAL_ERROR` | Lỗi server |
-
----
-
-## Connection Events
-
-### `connect`
-Kết nối thành công.
-
-### `disconnect`
-Ngắt kết nối.
-
-**Reasons:**
-| Reason | Description |
-|--------|-------------|
-| `io server disconnect` | Server ngắt kết nối |
-| `io client disconnect` | Client ngắt kết nối |
-| `ping timeout` | Timeout |
-| `transport close` | Transport bị đóng |
-| `transport error` | Lỗi transport |
-
----
-
-## Sequence Diagrams
-
-### Logout Flow
-
-```mermaid
-sequenceDiagram
-    participant Client1 as Client 1 (Browser)
-    participant Client2 as Client 2 (Mobile)
-    participant API as NestJS API
-    participant WS as WebSocket Gateway
-    participant Redis as Redis
-
-    Client1->>API: POST /auth/logout
-    API->>Redis: Delete refresh token
-    API->>WS: Emit user:logout to user room
-    WS->>Client1: user:logout event
-    WS->>Client2: user:logout event
-    API->>Client1: 200 OK
-```
-
-### Profile Update Flow
-
-```mermaid
-sequenceDiagram
-    participant Client1 as Client 1
-    participant Client2 as Client 2
-    participant API as NestJS API
-    participant WS as WebSocket Gateway
-    participant Redis as Redis
-    participant DB as Database
-
-    Client1->>API: PUT /account/update-profile
-    API->>DB: Update user profile
-    API->>Redis: Invalidate user cache
-    API->>WS: Emit user:profileUpdated
-    WS->>Client1: user:profileUpdated event
-    WS->>Client2: user:profileUpdated event
-    API->>Client1: 200 OK
-```
-
----
-
-## TypeScript Interfaces
-
-```typescript
-// Socket Events - Server to Client
-interface UserLogoutEvent {
-  userId: string;
-  tokenId: string;
-  timestamp: string;
-  message: string;
-}
-
-interface UserLogoutAllEvent {
-  userId: string;
-  timestamp: string;
-  message: string;
-  excludeSocketId: string | null;
-}
-
-interface UserTokenRevokedEvent {
-  userId: string;
-  reason: 'password_changed' | 'admin_revoke' | 'security_alert';
-  timestamp: string;
-  message: string;
-}
-
-interface UserProfileUpdatedEvent {
-  userId: string;
-  updatedFields: string[];
-  profile: {
-    id: string;
-    name: string;
-    email: string;
-    language?: string;
-  };
-  timestamp: string;
-}
-
-// Socket Events - Client to Server
-interface SubscribePayload {
-  rooms: string[];
-}
-
-// Error Event
-interface SocketError {
-  code: string;
-  message: string;
-  details?: Record<string, unknown>;
-}
-
-// WarehouseTemplate Events
-interface WarehouseTemplateCreatedEvent {
-  warehouseTemplateId: string;
-  name: string;
-  createdBy: string;
-  timestamp: string;
-}
-
-interface WarehouseTemplateUpdatedEvent {
-  warehouseTemplateId: string;
-  name: string;
-  updatedFields: string[];
-  updatedBy: string;
-  timestamp: string;
-}
-
-interface WarehouseTemplateDeletedEvent {
-  warehouseTemplateId: string;
-  name: string;
-  deletedBy: string;
-  timestamp: string;
-}
-
-interface WarehouseTemplateLayoutUpdatedEvent {
-  warehouseTemplateId: string;
-  name: string;
-  updatedBy: string;
-  summary: {
-    rowsCreated: number;
-    rowsUpdated: number;
-    rowsDeleted: number;
-    racksCreated: number;
-    racksUpdated: number;
-    racksDeleted: number;
-    shelvesCreated: number;
-    shelvesUpdated: number;
-    shelvesDeleted: number;
-    blocksCreated: number;
-    blocksUpdated: number;
-    blocksDeleted: number;
-  };
-  timestamp: string;
+  "organizationId": "org-123-uuid",
+  "deletedBy": "550e8400-e29b-41d4-a716-446655440000",
+  "timestamp": "2025-12-13T10:00:00.000Z"
 }
 ```
 
 ---
 
-## WarehouseTemplate Events
-
-### `warehouseTemplate:created`
-
-Được emit khi tạo mới WarehouseTemplate.
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `warehouseTemplateId` | `string` | ID của template |
-| `name` | `string` | Tên template |
-| `createdBy` | `string` | User ID người tạo |
-| `timestamp` | `string` | ISO timestamp |
-
-**Client Handler:**
-```javascript
-socket.on('warehouseTemplate:created', (data) => {
-  // Cập nhật danh sách templates
-  store.dispatch(addTemplate(data));
-});
+#### `organization:memberInvited`
+```json
+{
+  "organizationId": "org-123-uuid",
+  "organizationName": "My Company",
+  "invitedUserId": "invited-user-uuid",
+  "invitedBy": "owner-user-uuid",
+  "timestamp": "2025-12-13T10:00:00.000Z"
+}
 ```
 
 ---
 
-### `warehouseTemplate:updated`
-
-Được emit khi cập nhật thông tin WarehouseTemplate.
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `warehouseTemplateId` | `string` | ID của template |
-| `name` | `string` | Tên template |
-| `updatedFields` | `string[]` | Danh sách fields đã cập nhật |
-| `updatedBy` | `string` | User ID người cập nhật |
-| `timestamp` | `string` | ISO timestamp |
+#### `organization:memberRemoved`
+```json
+{
+  "organizationId": "org-123-uuid",
+  "memberId": "member-uuid",
+  "removedBy": "owner-user-uuid",
+  "timestamp": "2025-12-13T10:00:00.000Z"
+}
+```
 
 ---
 
-### `warehouseTemplate:deleted`
-
-Được emit khi xóa WarehouseTemplate.
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `warehouseTemplateId` | `string` | ID của template |
-| `name` | `string` | Tên template |
-| `deletedBy` | `string` | User ID người xóa |
-| `timestamp` | `string` | ISO timestamp |
+#### `organization:ownershipTransferred`
+```json
+{
+  "organizationId": "org-123-uuid",
+  "organizationName": "My Company",
+  "oldOwnerId": "old-owner-uuid",
+  "newOwnerId": "new-owner-uuid",
+  "timestamp": "2025-12-13T10:00:00.000Z"
+}
+```
 
 ---
 
-### `warehouseTemplate:layoutUpdated`
+### 🏭 WarehouseTemplate Events (Global Broadcast)
 
-Được emit khi cập nhật layout của WarehouseTemplate (rows, racks, shelves, blocks).
+#### `warehouseTemplate:created`
+```json
+{
+  "warehouseTemplateId": "template-123-uuid",
+  "name": "Template Kho Hàng A",
+  "createdBy": "550e8400-e29b-41d4-a716-446655440000",
+  "timestamp": "2025-12-13T10:00:00.000Z"
+}
+```
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `warehouseTemplateId` | `string` | ID của template |
-| `name` | `string` | Tên template |
-| `updatedBy` | `string` | User ID người cập nhật |
-| `summary` | `object` | Tóm tắt các thay đổi |
-| `timestamp` | `string` | ISO timestamp |
+---
 
-**Summary Object:**
-| Property | Type | Description |
-|----------|------|-------------|
-| `rowsCreated` | `number` | Số rows được tạo mới |
-| `rowsUpdated` | `number` | Số rows được cập nhật |
-| `rowsDeleted` | `number` | Số rows bị xóa |
-| `racksCreated` | `number` | Số racks được tạo mới |
-| `racksUpdated` | `number` | Số racks được cập nhật |
-| `racksDeleted` | `number` | Số racks bị xóa |
-| `shelvesCreated` | `number` | Số shelves được tạo mới |
-| `shelvesUpdated` | `number` | Số shelves được cập nhật |
-| `shelvesDeleted` | `number` | Số shelves bị xóa |
-| `blocksCreated` | `number` | Số blocks được tạo mới |
-| `blocksUpdated` | `number` | Số blocks được cập nhật |
-| `blocksDeleted` | `number` | Số blocks bị xóa |
+#### `warehouseTemplate:updated`
+```json
+{
+  "warehouseTemplateId": "template-123-uuid",
+  "name": "Template Kho Hàng A Updated",
+  "updatedFields": ["name", "description"],
+  "updatedBy": "550e8400-e29b-41d4-a716-446655440000",
+  "timestamp": "2025-12-13T10:00:00.000Z"
+}
+```
+
+---
+
+#### `warehouseTemplate:deleted`
+```json
+{
+  "warehouseTemplateId": "template-123-uuid",
+  "name": "Template Kho Hàng A",
+  "deletedBy": "550e8400-e29b-41d4-a716-446655440000",
+  "timestamp": "2025-12-13T10:00:00.000Z"
+}
+```
+
+---
+
+#### `warehouseTemplate:layoutUpdated`
+```json
+{
+  "warehouseTemplateId": "template-123-uuid",
+  "name": "Template Kho Hàng A",
+  "updatedBy": "550e8400-e29b-41d4-a716-446655440000",
+  "summary": {
+    "rowsCreated": 2,
+    "rowsUpdated": 1,
+    "rowsDeleted": 0,
+    "racksCreated": 5,
+    "racksUpdated": 3,
+    "racksDeleted": 1,
+    "shelvesCreated": 10,
+    "shelvesUpdated": 5,
+    "shelvesDeleted": 2,
+    "blocksCreated": 20,
+    "blocksUpdated": 10,
+    "blocksDeleted": 5
+  },
+  "timestamp": "2025-12-13T10:00:00.000Z"
+}
+```
+
+---
+
+### 🔔 Global Notification Events (Global Broadcast)
+
+#### `globalNotification:created`
+```json
+{
+  "notificationId": "notification-123-uuid",
+  "title": "Thông báo bảo trì",
+  "createdBy": "550e8400-e29b-41d4-a716-446655440000",
+  "timestamp": "2025-12-13T10:00:00.000Z"
+}
+```
+
+---
+
+#### `globalNotification:updated`
+```json
+{
+  "notificationId": "notification-123-uuid",
+  "title": "Thông báo bảo trì (cập nhật)",
+  "updatedFields": ["title", "content"],
+  "updatedBy": "550e8400-e29b-41d4-a716-446655440000",
+  "timestamp": "2025-12-13T10:00:00.000Z"
+}
+```
+
+---
+
+#### `globalNotification:deleted`
+```json
+{
+  "notificationId": "notification-123-uuid",
+  "title": "Thông báo bảo trì",
+  "deletedBy": "550e8400-e29b-41d4-a716-446655440000",
+  "timestamp": "2025-12-13T10:00:00.000Z"
+}
+```
+
+---
+
+### 📨 User Notification Events (Private, user:{userId})
+
+#### `userNotification:received`
+```json
+{
+  "notificationId": "notification-123-uuid",
+  "title": "Thông báo mới",
+  "content": "Nội dung thông báo cho bạn",
+  "type": "INFO",
+  "timestamp": "2025-12-13T10:00:00.000Z"
+}
+```
+
+---
+
+#### `userNotification:read`
+```json
+{
+  "notificationId": "notification-123-uuid",
+  "timestamp": "2025-12-13T10:00:00.000Z"
+}
+```
+
+---
+
+#### `userNotification:allRead`
+```json
+{
+  "timestamp": "2025-12-13T10:00:00.000Z"
+}
+```
+
+---
+
+### 🏢 Organization Notification Events (organization:{orgId})
+
+#### `orgNotification:created`
+```json
+{
+  "organizationId": "org-123-uuid",
+  "notificationId": "notification-123-uuid",
+  "title": "Thông báo nội bộ",
+  "createdBy": "550e8400-e29b-41d4-a716-446655440000",
+  "timestamp": "2025-12-13T10:00:00.000Z"
+}
+```
+
+---
+
+#### `orgNotification:updated`
+```json
+{
+  "organizationId": "org-123-uuid",
+  "notificationId": "notification-123-uuid",
+  "title": "Thông báo nội bộ (cập nhật)",
+  "updatedFields": ["title", "content"],
+  "updatedBy": "550e8400-e29b-41d4-a716-446655440000",
+  "timestamp": "2025-12-13T10:00:00.000Z"
+}
+```
+
+---
+
+#### `orgNotification:deleted`
+```json
+{
+  "organizationId": "org-123-uuid",
+  "notificationId": "notification-123-uuid",
+  "title": "Thông báo nội bộ",
+  "deletedBy": "550e8400-e29b-41d4-a716-446655440000",
+  "timestamp": "2025-12-13T10:00:00.000Z"
+}
+```
+
+---
+
+## 📋 Tổng hợp
+
+| Room | Auth | Events |
+|------|------|--------|
+| `user:{userId}` | ✅ | `user:*`, `organization:*`, `userNotification:*` |
+| `organization:{orgId}` | ✅ | `orgNotification:*` |
+| `public` | ❌ | (tự động join) |
+| `notifications` | ✅ | `userNotification:*` |
+| `announcements` | ❌ | (chờ implement) |
+| `system-status` | ❌ | (chờ implement) |
+| Global | - | `warehouseTemplate:*`, `globalNotification:*`, `pong`, `error` |

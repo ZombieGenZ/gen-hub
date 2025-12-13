@@ -17,7 +17,7 @@ export interface User {
   email_confirmed: boolean;
   is_verified: boolean;
   two_factor_enabled: boolean;
-  provider: Provider;
+  language: string;
   created_at: string; // hoặc Date nếu bạn parse
 }
 export interface UserData {

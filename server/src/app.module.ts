@@ -20,6 +20,9 @@ import { WebsocketModule } from './modules/websocket/websocket.module';
 import { BanSchedulerModule } from './modules/ban-scheduler/ban-scheduler.module';
 import { WarehouseTemplateModule } from './modules/warehouse-template/warehouse-template.module';
 import { OrganizationModule } from './modules/organization/organization.module';
+import { GlobalNotificationModule } from './modules/global-notification/global-notification.module';
+import { UserNotificationModule } from './modules/user-notification/user-notification.module';
+import { OrgNotificationModule } from './modules/org-notification/org-notification.module';
 import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
 
 @Module({
@@ -59,6 +62,12 @@ import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
     WarehouseTemplateModule,
 
     OrganizationModule,
+
+    GlobalNotificationModule,
+
+    UserNotificationModule,
+
+    OrgNotificationModule,
   ],
   controllers: [AppController],
   providers: [

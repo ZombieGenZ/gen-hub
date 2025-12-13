@@ -68,43 +68,52 @@ export class WebsocketGateway
 
   /**
    * Xử lý khi client kết nối
+   * Hỗ trợ Optional Authentication - có thể kết nối không cần token
    */
   async handleConnection(socket: Socket) {
     try {
-      // Lấy token từ auth header
+      // Lấy token từ auth header (optional)
       const token = this.extractToken(socket);
-      if (!token) {
-        this.sendError(socket, 'UNAUTHORIZED', 'Token is required');
-        socket.disconnect();
-        return;
+      let userId: string | null = null;
+      let isAuthenticated = false;
+
+      if (token) {
+        // Có token -> xác thực
+        const payload = await this.verifyToken(token);
+        if (payload?.userId) {
+          userId = payload.userId;
+          isAuthenticated = true;
+
+          // Lưu mapping cho authenticated user
+          this.socketUsers.set(socket.id, userId);
+          if (!this.userSockets.has(userId)) {
+            this.userSockets.set(userId, new Set());
+          }
+          this.userSockets.get(userId)!.add(socket.id);
+
+          // Join user room
+          socket.join(`user:${userId}`);
+
+          this.logger.log(`✅ Client connected: ${socket.id} (User: ${userId})`);
+        } else {
+          // Token không hợp lệ
+          this.sendError(socket, 'UNAUTHORIZED', 'Invalid or expired token');
+          socket.disconnect();
+          return;
+        }
+      } else {
+        // Không có token -> guest connection
+        this.logger.log(`✅ Guest connected: ${socket.id}`);
       }
 
-      // Verify token
-      const payload = await this.verifyToken(token);
-      if (!payload || !payload.userId) {
-        this.sendError(socket, 'UNAUTHORIZED', 'Invalid or expired token');
-        socket.disconnect();
-        return;
-      }
-
-      const userId = payload.userId;
-
-      // Lưu mapping
-      this.socketUsers.set(socket.id, userId);
-      if (!this.userSockets.has(userId)) {
-        this.userSockets.set(userId, new Set());
-      }
-      this.userSockets.get(userId)!.add(socket.id);
-
-      // Join user room
-      socket.join(`user:${userId}`);
-
-      this.logger.log(`✅ Client connected: ${socket.id} (User: ${userId})`);
+      // Tất cả đều join public room
+      socket.join('public');
 
       // Gửi xác nhận kết nối thành công
       socket.emit('connected', {
         socketId: socket.id,
         userId: userId,
+        authenticated: isAuthenticated,
         timestamp: new Date().toISOString(),
       });
     } catch (error) {
@@ -131,10 +140,6 @@ export class WebsocketGateway
     }
     this.logger.log(`❌ Client disconnected: ${socket.id}`);
   }
-
-  // ========================
-  // EMIT METHODS
-  // ========================
 
   /**
    * Emit event logout cho user
@@ -195,10 +200,6 @@ export class WebsocketGateway
     };
     this.server.to(`user:${userId}`).emit('user:profileUpdated', event);
   }
-
-  // ========================
-  // WAREHOUSE TEMPLATE EVENTS
-  // ========================
 
   /**
    * Emit event khi tạo mới WarehouseTemplate
@@ -263,10 +264,6 @@ export class WebsocketGateway
     };
     this.server.emit('warehouseTemplate:layoutUpdated', event);
   }
-
-  // ========================
-  // ORGANIZATION EVENTS
-  // ========================
 
   /**
    * Emit event khi tạo Organization
@@ -348,9 +345,125 @@ export class WebsocketGateway
     this.server.to(`user:${newOwnerId}`).emit('organization:ownershipTransferred', event);
   }
 
-  // ========================
-  // MESSAGE HANDLERS
-  // ========================
+  /**
+   * Emit event khi tạo GlobalNotification - broadcast đến tất cả
+   */
+  emitGlobalNotificationCreated(notificationId: string, title: string, createdBy: string) {
+    this.server.emit('globalNotification:created', {
+      notificationId,
+      title,
+      createdBy,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  /**
+   * Emit event khi cập nhật GlobalNotification
+   */
+  emitGlobalNotificationUpdated(
+    notificationId: string,
+    title: string,
+    updatedFields: string[],
+    updatedBy: string,
+  ) {
+    this.server.emit('globalNotification:updated', {
+      notificationId,
+      title,
+      updatedFields,
+      updatedBy,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  /**
+   * Emit event khi xóa GlobalNotification
+   */
+  emitGlobalNotificationDeleted(notificationId: string, title: string, deletedBy: string) {
+    this.server.emit('globalNotification:deleted', {
+      notificationId,
+      title,
+      deletedBy,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  /**
+   * Emit event khi user nhận thông báo mới
+   */
+  emitUserNotificationReceived(userId: string, notification: { id: string; title: string; content: string; type: string }) {
+    this.server.to(`user:${userId}`).emit('userNotification:received', {
+      notificationId: notification.id,
+      title: notification.title,
+      content: notification.content,
+      type: notification.type,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  /**
+   * Emit event khi đánh dấu đã đọc một thông báo
+   */
+  emitUserNotificationRead(userId: string, notificationId: string) {
+    this.server.to(`user:${userId}`).emit('userNotification:read', {
+      notificationId,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  /**
+   * Emit event khi đánh dấu tất cả đã đọc
+   */
+  emitUserNotificationAllRead(userId: string) {
+    this.server.to(`user:${userId}`).emit('userNotification:allRead', {
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  /**
+   * Emit event khi tạo OrganizationNotification
+   */
+  emitOrgNotificationCreated(orgId: string, notificationId: string, title: string, createdBy: string) {
+    this.server.to(`organization:${orgId}`).emit('orgNotification:created', {
+      organizationId: orgId,
+      notificationId,
+      title,
+      createdBy,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  /**
+   * Emit event khi cập nhật OrganizationNotification
+   */
+  emitOrgNotificationUpdated(
+    orgId: string,
+    notificationId: string,
+    title: string,
+    updatedFields: string[],
+    updatedBy: string,
+  ) {
+    this.server.to(`organization:${orgId}`).emit('orgNotification:updated', {
+      organizationId: orgId,
+      notificationId,
+      title,
+      updatedFields,
+      updatedBy,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  /**
+   * Emit event khi xóa OrganizationNotification
+   */
+  emitOrgNotificationDeleted(orgId: string, notificationId: string, title: string, deletedBy: string) {
+    this.server.to(`organization:${orgId}`).emit('orgNotification:deleted', {
+      organizationId: orgId,
+      notificationId,
+      title,
+      deletedBy,
+      timestamp: new Date().toISOString(),
+    });
+  }
 
   @SubscribeMessage('ping')
   handlePing(@ConnectedSocket() socket: Socket) {
@@ -363,27 +476,36 @@ export class WebsocketGateway
     @MessageBody() payload: { rooms: string[] },
   ) {
     const userId = this.socketUsers.get(socket.id);
-    if (!userId) {
-      this.sendError(socket, 'UNAUTHORIZED', 'Not authenticated');
-      return;
-    }
 
-    // Chỉ cho phép subscribe vào rooms được phép
-    const allowedRooms = payload.rooms.filter(
-      (room) => room === 'notifications' || room === 'announcements',
-    );
+    // Định nghĩa rooms
+    const publicRooms = ['announcements', 'system-status'];
+    const privateRooms = ['notifications'];
 
-    allowedRooms.forEach((room) => socket.join(room));
+    const joinedRooms: string[] = [];
+    const rejectedRooms: string[] = [];
+
+    payload.rooms.forEach((room) => {
+      if (publicRooms.includes(room)) {
+        // Public rooms - ai cũng join được
+        socket.join(room);
+        joinedRooms.push(room);
+      } else if (privateRooms.includes(room)) {
+        // Private rooms - chỉ authenticated users
+        if (userId) {
+          socket.join(room);
+          joinedRooms.push(room);
+        } else {
+          rejectedRooms.push(room);
+        }
+      }
+    });
 
     socket.emit('subscribed', {
-      rooms: allowedRooms,
+      rooms: joinedRooms,
+      rejected: rejectedRooms.length > 0 ? rejectedRooms : undefined,
       success: true,
     });
   }
-
-  // ========================
-  // HELPER METHODS
-  // ========================
 
   /**
    * Extract token từ socket handshake

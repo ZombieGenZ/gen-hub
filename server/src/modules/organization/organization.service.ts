@@ -12,6 +12,7 @@ import { RedisService } from '../redis/redis.service';
 import { WebsocketGateway } from '../websocket/websocket.gateway';
 import { SystemLogService } from '../system-log/system-log.service';
 import { OrganizationAuditLogService } from './organization-audit-log.service';
+import { EmailService } from '../notification/email.service';
 import {
     CreateOrganizationDto,
     UpdateOrganizationDto,
@@ -40,12 +41,15 @@ import {
  */
 @Injectable()
 export class OrganizationService {
+    private readonly INVITE_TOKEN_EXPIRY_DAYS = 7;
+
     constructor(
         private readonly repository: OrganizationRepository,
         private readonly redisService: RedisService,
         private readonly websocketGateway: WebsocketGateway,
         private readonly systemLogService: SystemLogService,
         private readonly auditLogService: OrganizationAuditLogService,
+        private readonly emailService: EmailService,
         private readonly i18n: I18nService,
     ) { }
 
@@ -67,6 +71,15 @@ export class OrganizationService {
             name: dto.name,
             is_active: dto.is_active ?? true,
             owner: { connect: { id: userId } },
+            created_by: userId,
+        });
+
+        // Thêm owner vào danh sách members với trạng thái đã chấp nhận
+        await this.repository.createMember({
+            organization: { connect: { id: org.id } },
+            user: { connect: { id: userId } },
+            is_accepted: true,
+            is_active: true,
             created_by: userId,
         });
 
@@ -153,11 +166,12 @@ export class OrganizationService {
         dto: UpdateOrganizationDto,
         userId: string,
         lang: string,
+        hasUpdateAllPermission?: boolean,
     ): Promise<IOrganizationWithRelations> {
         const org = await this.findById(id, lang);
 
-        // Kiểm tra quyền: phải là owner
-        if (org.owner_id !== userId) {
+        // Kiểm tra quyền: phải là owner HOẶC có quyền organization.update.all
+        if (!hasUpdateAllPermission && org.owner_id !== userId) {
             throw new ForbiddenException(
                 await this.i18n.translate('organization.errors.not_owner', { lang }),
             );
@@ -197,16 +211,27 @@ export class OrganizationService {
         id: string,
         userId: string,
         lang: string,
+        hasDeleteAllPermission?: boolean,
     ): Promise<void> {
         const org = await this.findById(id, lang);
 
-        // Kiểm tra quyền: phải là owner
-        if (org.owner_id !== userId) {
+        // Kiểm tra quyền: phải là owner HOẶC có quyền organization.delete.all
+        if (!hasDeleteAllPermission && org.owner_id !== userId) {
             throw new ForbiddenException(
                 await this.i18n.translate('organization.errors.not_owner', { lang }),
             );
         }
 
+        // Soft delete tất cả members
+        await this.repository.softDeleteAllMembersByOrgId(id, userId);
+
+        // Soft delete tất cả roles
+        await this.repository.softDeleteAllRolesByOrgId(id);
+
+        // Soft delete tất cả API keys
+        await this.repository.softDeleteAllApiKeysByOrgId(id);
+
+        // Soft delete organization
         const oldData = { name: org.name, is_active: org.is_active };
         await this.repository.softDelete(id, userId);
 
@@ -236,16 +261,23 @@ export class OrganizationService {
             );
         }
 
-        // Kiểm tra new owner tồn tại
-        const newOwner = await this.repository.findUserById(dto.new_owner_id);
+        // Kiểm tra new owner tồn tại theo email
+        const newOwner = await this.repository.findUserByEmail(dto.new_owner_email);
         if (!newOwner) {
             throw new NotFoundException(
                 await this.i18n.translate('organization.errors.user_not_found', { lang }),
             );
         }
 
+        // Kiểm tra không được transfer cho chính mình
+        if (newOwner.id === userId) {
+            throw new ForbiddenException(
+                await this.i18n.translate('organization.errors.cannot_transfer_to_self', { lang }),
+            );
+        }
+
         // Kiểm tra new owner là member của org
-        const member = await this.repository.findMemberByUserAndOrg(dto.new_owner_id, id);
+        const member = await this.repository.findMemberByUserAndOrg(newOwner.id, id);
         if (!member || !member.is_accepted) {
             throw new ForbiddenException(
                 await this.i18n.translate('organization.errors.new_owner_not_member', { lang }),
@@ -254,7 +286,7 @@ export class OrganizationService {
 
         const oldOwnerId = org.owner_id;
         const updated = await this.repository.update(id, {
-            owner: { connect: { id: dto.new_owner_id } },
+            owner: { connect: { id: newOwner.id } },
             updated_by: userId,
             updated_at: new Date(),
         });
@@ -263,11 +295,11 @@ export class OrganizationService {
         await this.redisService.invalidateAllOrganizationCache(id);
 
         // Log
-        this.systemLogService.info('organization', 'transfer_ownership', `Ownership transferred from ${oldOwnerId} to ${dto.new_owner_id}`, { userId });
-        this.auditLogService.logUpdate(id, 'Organization', id, { owner_id: oldOwnerId }, { owner_id: dto.new_owner_id }, { userId, description: 'Ownership transferred' });
+        this.systemLogService.info('organization', 'transfer_ownership', `Ownership transferred from ${oldOwnerId} to ${newOwner.id}`, { userId });
+        this.auditLogService.logUpdate(id, 'Organization', id, { owner_id: oldOwnerId }, { owner_id: newOwner.id }, { userId, description: 'Ownership transferred' });
 
         // Emit WebSocket to both old and new owner
-        this.websocketGateway.emitOwnershipTransferred(oldOwnerId, dto.new_owner_id, updated);
+        this.websocketGateway.emitOwnershipTransferred(oldOwnerId, newOwner.id, updated);
 
         return updated;
     }
@@ -283,8 +315,8 @@ export class OrganizationService {
         // Kiểm tra quyền
         await this.checkOrgPermission(orgId, userId, 'organization.member.invite', org.owner_id, lang);
 
-        // Kiểm tra user tồn tại
-        const user = await this.repository.findUserById(dto.user_id);
+        // Kiểm tra user tồn tại theo email
+        const user = await this.repository.findUserByEmail(dto.email);
         if (!user) {
             throw new NotFoundException(
                 await this.i18n.translate('organization.errors.user_not_found', { lang }),
@@ -292,7 +324,7 @@ export class OrganizationService {
         }
 
         // Kiểm tra đã là member chưa
-        const existingMember = await this.repository.findMemberByUserAndOrg(dto.user_id, orgId);
+        const existingMember = await this.repository.findMemberByUserAndOrg(user.id, orgId);
         if (existingMember && existingMember.is_accepted) {
             throw new ConflictException(
                 await this.i18n.translate('organization.errors.already_member', { lang }),
@@ -304,30 +336,191 @@ export class OrganizationService {
             );
         }
 
+        // Generate invite token
+        const inviteToken = crypto.randomBytes(32).toString('hex');
+        const inviteTokenExpiresAt = new Date();
+        inviteTokenExpiresAt.setDate(inviteTokenExpiresAt.getDate() + this.INVITE_TOKEN_EXPIRY_DAYS);
+
         // Tạo member (pending invitation)
         const member = await this.repository.createMember({
             organization: { connect: { id: orgId } },
-            user: { connect: { id: dto.user_id } },
+            user: { connect: { id: user.id } },
             is_accepted: false,
             is_active: true,
+            invite_token: inviteToken,
+            invite_token_expires_at: inviteTokenExpiresAt,
             created_by: userId,
         });
-
-        // Nếu có role_ids thì gán roles
-        if (dto.role_ids && dto.role_ids.length > 0) {
-            await this.repository.assignMemberRoles(member.id, dto.role_ids, userId);
-        }
 
         // Invalidate cache
         await this.redisService.invalidateOrganizationMemberCache(orgId);
 
         // Log
-        this.auditLogService.logCreate(orgId, 'OrganizationMember', member.id, { user_id: dto.user_id, invited_by: userId }, { userId });
+        this.auditLogService.logCreate(orgId, 'OrganizationMember', member.id, { email: dto.email, user_id: user.id, invited_by: userId }, { userId });
 
         // Emit WebSocket to the invited user
-        this.websocketGateway.emitMemberInvited(dto.user_id, { organization: org, member });
+        this.websocketGateway.emitMemberInvited(user.id, { organization: org, member });
+
+        // Lấy thông tin người mời
+        const inviter = await this.repository.findUserById(userId);
+        const inviterName = inviter?.name || inviter?.email || 'Unknown';
+        const inviterEmail = inviter?.email || '';
+        const inviteeName = user.name || user.email || 'User';
+
+        // Gửi email mời
+        this.emailService.sendOrganizationInviteEmail(
+            dto.email,
+            inviteToken,
+            inviteeName,
+            org.name,
+            inviterName,
+            inviterEmail,
+            lang,
+        ).catch((err) => {
+            this.systemLogService.error('organization', 'invite_email', `Failed to send invite email: ${err.message}`, { userId });
+        });
 
         return member;
+    }
+
+    /**
+     * Kiểm tra token mời có hợp lệ không (chỉ kiểm tra token của user hiện tại)
+     */
+    async verifyInviteToken(
+        token: string,
+        userId: string,
+        lang: string,
+    ): Promise<{ valid: boolean; organization?: { id: string; name: string }; invitedEmail?: string; expiresAt?: Date }> {
+        const member = await this.repository.findMemberByInviteToken(token);
+
+        if (!member) {
+            return { valid: false };
+        }
+
+        // Kiểm tra token có thuộc về user hiện tại không
+        if (member.user_id !== userId) {
+            return { valid: false };
+        }
+
+        // Kiểm tra đã accept chưa
+        if (member.is_accepted) {
+            return { valid: false };
+        }
+
+        // Kiểm tra token hết hạn
+        if (member.invite_token_expires_at && new Date() > member.invite_token_expires_at) {
+            return { valid: false };
+        }
+
+        // Lấy thông tin organization
+        const org = await this.repository.findById(member.organization_id);
+        const user = await this.repository.findUserById(member.user_id);
+
+        return {
+            valid: true,
+            organization: org ? { id: org.id, name: org.name } : undefined,
+            invitedEmail: user?.email ?? undefined,
+            expiresAt: member.invite_token_expires_at || undefined,
+        };
+    }
+
+    /**
+     * Chấp nhận lời mời bằng token
+     */
+    async acceptInviteByToken(
+        token: string,
+        userId: string,
+        lang: string,
+    ): Promise<IOrganizationMember> {
+        const member = await this.repository.findMemberByInviteToken(token);
+
+        if (!member) {
+            throw new NotFoundException(
+                await this.i18n.translate('organization.errors.invite_not_found', { lang }),
+            );
+        }
+
+        // Kiểm tra user có phải người được mời không
+        if (member.user_id !== userId) {
+            throw new ForbiddenException(
+                await this.i18n.translate('organization.errors.invite_not_for_you', { lang }),
+            );
+        }
+
+        // Kiểm tra đã accept chưa
+        if (member.is_accepted) {
+            throw new ConflictException(
+                await this.i18n.translate('organization.errors.already_member', { lang }),
+            );
+        }
+
+        // Kiểm tra token hết hạn
+        if (member.invite_token_expires_at && new Date() > member.invite_token_expires_at) {
+            throw new ForbiddenException(
+                await this.i18n.translate('organization.errors.invite_expired', { lang }),
+            );
+        }
+
+        const updated = await this.repository.updateMember(member.id, {
+            is_accepted: true,
+            invite_token: null,
+            invite_token_expires_at: null,
+            updated_at: new Date(),
+        });
+
+        // Invalidate cache
+        await this.redisService.invalidateOrganizationMemberCache(member.organization_id);
+
+        // Log
+        this.auditLogService.logUpdate(member.organization_id, 'OrganizationMember', member.id, { is_accepted: false }, { is_accepted: true }, { userId });
+
+        return updated;
+    }
+
+    /**
+     * Từ chối lời mời bằng token
+     */
+    async rejectInviteByToken(
+        token: string,
+        userId: string,
+        lang: string,
+    ): Promise<void> {
+        const member = await this.repository.findMemberByInviteToken(token);
+
+        if (!member) {
+            throw new NotFoundException(
+                await this.i18n.translate('organization.errors.invite_not_found', { lang }),
+            );
+        }
+
+        // Kiểm tra user có phải người được mời không
+        if (member.user_id !== userId) {
+            throw new ForbiddenException(
+                await this.i18n.translate('organization.errors.invite_not_for_you', { lang }),
+            );
+        }
+
+        // Kiểm tra đã accept chưa
+        if (member.is_accepted) {
+            throw new ConflictException(
+                await this.i18n.translate('organization.errors.already_member', { lang }),
+            );
+        }
+
+        // Kiểm tra token hết hạn
+        if (member.invite_token_expires_at && new Date() > member.invite_token_expires_at) {
+            throw new ForbiddenException(
+                await this.i18n.translate('organization.errors.invite_expired', { lang }),
+            );
+        }
+
+        await this.repository.softDeleteMember(member.id, userId);
+
+        // Invalidate cache
+        await this.redisService.invalidateOrganizationMemberCache(member.organization_id);
+
+        // Log
+        this.auditLogService.logDelete(member.organization_id, 'OrganizationMember', member.id, { user_id: userId, rejected: true }, { userId });
     }
 
     async cancelInvite(
@@ -433,7 +626,80 @@ export class OrganizationService {
         // Kiểm tra quyền
         await this.checkOrgPermission(orgId, userId, 'organization.member.list', org.owner_id, lang);
 
-        return this.repository.findMembersByOrgId(orgId, query);
+        const result = await this.repository.findMembersByOrgId(orgId, query);
+
+        // Merge permissions từ roles vào mảng permissions của member
+        const membersWithMergedPermissions = result.items.map((member: any) => {
+            // Lấy direct permissions và đánh dấu source
+            const directPermissions = (member.permissions || []).map((p: any) => ({
+                ...p,
+                source: 'permission',
+                roles: [],
+            }));
+
+            // Lấy permissions từ roles và gom các roles có cùng permission
+            const rolePermissionsMap = new Map<string, any>();
+            for (const memberRole of (member.roles || [])) {
+                const role = memberRole.role;
+                if (role && role.permissions) {
+                    for (const rolePermission of role.permissions) {
+                        const permissionId = rolePermission.permission.id;
+                        if (rolePermissionsMap.has(permissionId)) {
+                            // Thêm role vào danh sách roles của permission đã tồn tại
+                            rolePermissionsMap.get(permissionId).roles.push({
+                                id: role.id,
+                                name: role.name,
+                            });
+                        } else {
+                            // Tạo permission mới với role đầu tiên
+                            rolePermissionsMap.set(permissionId, {
+                                id: rolePermission.id,
+                                organization_member_id: member.id,
+                                organization_permission_id: rolePermission.organization_permission_id,
+                                warehouse_id: null,
+                                is_active: true,
+                                created_at: rolePermission.created_at || new Date(),
+                                updated_at: rolePermission.updated_at || new Date(),
+                                is_deleted: false,
+                                deleted_at: null,
+                                permission: rolePermission.permission,
+                                source: 'role',
+                                roles: [{ id: role.id, name: role.name }],
+                            });
+                        }
+                    }
+                }
+            }
+            const rolePermissions = Array.from(rolePermissionsMap.values());
+
+            // Merge permission + role permissions, ưu tiên permission nếu trùng
+            const allPermissions = [...directPermissions, ...rolePermissions];
+            const uniquePermissions = allPermissions.filter(
+                (p, index, self) =>
+                    index === self.findIndex((t) => t.permission.id === p.permission.id)
+            );
+
+            // Xóa permissions nested trong roles để tránh lặp dữ liệu
+            const cleanedRoles = (member.roles || []).map((mr: any) => ({
+                id: mr.id,
+                organization_role_id: mr.organization_role_id,
+                role: {
+                    id: mr.role.id,
+                    name: mr.role.name,
+                },
+            }));
+
+            return {
+                ...member,
+                roles: cleanedRoles,
+                permissions: uniquePermissions,
+            };
+        });
+
+        return {
+            ...result,
+            items: membersWithMergedPermissions as IOrganizationMember[],
+        };
     }
 
     async assignMemberRoles(
@@ -544,6 +810,43 @@ export class OrganizationService {
         this.websocketGateway.emitMemberRemoved(member.user_id, { organizationId: orgId, memberId });
     }
 
+    /**
+     * Rời khỏi tổ chức (member tự rời)
+     */
+    async leaveOrganization(
+        orgId: string,
+        userId: string,
+        lang: string,
+    ): Promise<void> {
+        const org = await this.findById(orgId, lang);
+
+        // Owner không thể rời khỏi tổ chức
+        if (org.owner_id === userId) {
+            throw new ForbiddenException(
+                await this.i18n.translate('organization.errors.owner_cannot_leave', { lang }),
+            );
+        }
+
+        // Tìm membership
+        const member = await this.repository.findMemberByUserAndOrg(userId, orgId);
+        if (!member) {
+            throw new NotFoundException(
+                await this.i18n.translate('organization.errors.member_not_found', { lang }),
+            );
+        }
+
+        await this.repository.softDeleteMember(member.id, userId);
+
+        // Invalidate cache
+        await this.redisService.invalidateOrganizationMemberCache(orgId);
+
+        // Log
+        this.auditLogService.logDelete(orgId, 'OrganizationMember', member.id, { user_id: userId, left: true }, { userId });
+
+        // Emit WebSocket
+        this.websocketGateway.emitMemberRemoved(userId, { organizationId: orgId, memberId: member.id });
+    }
+
     async createRole(
         orgId: string,
         dto: CreateOrganizationRoleDto,
@@ -584,9 +887,30 @@ export class OrganizationService {
         const org = await this.findById(orgId, lang);
 
         // Kiểm tra quyền
-        await this.checkOrgPermission(orgId, userId, 'organization.role.read', org.owner_id, lang);
+        await this.checkOrgPermission(orgId, userId, 'organization.role.list', org.owner_id, lang);
 
         return this.repository.findRolesByOrgId(orgId);
+    }
+
+    async getRoleById(
+        orgId: string,
+        roleId: string,
+        userId: string,
+        lang: string,
+    ): Promise<IOrganizationRole> {
+        const org = await this.findById(orgId, lang);
+
+        // Kiểm tra quyền
+        await this.checkOrgPermission(orgId, userId, 'organization.role.read', org.owner_id, lang);
+
+        const role = await this.repository.findRoleById(roleId);
+        if (!role || role.organization_id !== orgId) {
+            throw new NotFoundException(
+                await this.i18n.translate('organization.errors.role_not_found', { lang }),
+            );
+        }
+
+        return role;
     }
 
     async updateRole(
@@ -608,7 +932,14 @@ export class OrganizationService {
             );
         }
 
-        const oldData = { name: role.name, description: role.description };
+        const oldData = { name: role.name, description: role.description, is_active: role.is_active };
+
+        // Kiểm tra nếu is_active thay đổi thì cascade update sang member roles và api key roles
+        if (dto.is_active !== undefined && dto.is_active !== role.is_active) {
+            await this.repository.updateMemberRolesStatusByRoleId(roleId, dto.is_active);
+            await this.repository.updateApiKeyRolesStatusByRoleId(roleId, dto.is_active);
+        }
+
         await this.repository.updateRole(roleId, {
             name: dto.name,
             description: dto.description,
@@ -624,7 +955,7 @@ export class OrganizationService {
         const updated = await this.repository.findRoleById(roleId);
 
         // Log
-        this.auditLogService.logUpdate(orgId, 'OrganizationRole', roleId, oldData, { name: updated?.name, description: updated?.description }, { userId });
+        this.auditLogService.logUpdate(orgId, 'OrganizationRole', roleId, oldData, { name: updated?.name, description: updated?.description, is_active: updated?.is_active }, { userId });
 
         return updated!;
     }
@@ -647,13 +978,9 @@ export class OrganizationService {
             );
         }
 
-        // Kiểm tra role có đang được sử dụng không
-        const inUse = await this.repository.isRoleInUse(roleId);
-        if (inUse) {
-            throw new ConflictException(
-                await this.i18n.translate('organization.errors.role_in_use', { lang }),
-            );
-        }
+        // Cascade soft delete member roles và api key roles trước khi xóa role
+        await this.repository.softDeleteMemberRolesByRoleId(roleId);
+        await this.repository.softDeleteApiKeyRolesByRoleId(roleId);
 
         await this.repository.softDeleteRole(roleId);
 

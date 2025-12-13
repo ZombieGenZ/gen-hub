@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { User, Prisma, PlatformProvider } from '@prisma/client';
+import { User, Prisma } from '@prisma/client';
 
 /**
  * Repository cho User
@@ -44,7 +44,6 @@ export class UserRepository {
     email: string;
     password: string;
     language?: string;
-    provider?: PlatformProvider;
     email_verify_token?: string;
     email_verify_expired?: Date;
   }): Promise<User> {
@@ -63,7 +62,6 @@ export class UserRepository {
         email: data.email,
         password: data.password,
         language: data.language || 'vi',
-        provider: data.provider || PlatformProvider.DEFAULT,
         email_verify_token: data.email_verify_token,
         email_verify_expired: data.email_verify_expired,
         system_roles: {

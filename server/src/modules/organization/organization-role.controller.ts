@@ -34,7 +34,7 @@ export class OrganizationRoleController {
     constructor(private readonly service: OrganizationService) { }
 
     @Post()
-    @RequirePermission('organization.read')
+    @RequirePermission('organization.list')
     @ApiOperation({ summary: 'Tạo vai trò mới trong tổ chức' })
     @ApiParam({ name: 'orgId', description: 'ID tổ chức' })
     async create(
@@ -52,7 +52,7 @@ export class OrganizationRoleController {
     }
 
     @Get()
-    @RequirePermission('organization.read')
+    @RequirePermission('organization.list')
     @ApiOperation({ summary: 'Lấy danh sách vai trò của tổ chức' })
     @ApiParam({ name: 'orgId', description: 'ID tổ chức' })
     async findMany(
@@ -68,8 +68,27 @@ export class OrganizationRoleController {
         );
     }
 
+    @Get(':roleId')
+    @RequirePermission('organization.list')
+    @ApiOperation({ summary: 'Lấy chi tiết vai trò' })
+    @ApiParam({ name: 'orgId', description: 'ID tổ chức' })
+    @ApiParam({ name: 'roleId', description: 'ID vai trò' })
+    async findById(
+        @Param('orgId', ParseUUIDPipe) orgId: string,
+        @Param('roleId', ParseUUIDPipe) roleId: string,
+        @CurrentUser('userId') userId: string,
+        @I18nLang() lang: string,
+    ) {
+        const result = await this.service.getRoleById(orgId, roleId, userId, lang);
+        return new GetResponse(
+            ResponseCode.ORGANIZATION_ROLE_LIST_SUCCESS,
+            result,
+            'Lấy chi tiết vai trò thành công',
+        );
+    }
+
     @Put(':roleId')
-    @RequirePermission('organization.read')
+    @RequirePermission('organization.list')
     @ApiOperation({ summary: 'Cập nhật vai trò' })
     @ApiParam({ name: 'orgId', description: 'ID tổ chức' })
     @ApiParam({ name: 'roleId', description: 'ID vai trò' })
@@ -89,7 +108,7 @@ export class OrganizationRoleController {
     }
 
     @Delete(':roleId')
-    @RequirePermission('organization.read')
+    @RequirePermission('organization.list')
     @ApiOperation({ summary: 'Xóa vai trò' })
     @ApiParam({ name: 'orgId', description: 'ID tổ chức' })
     @ApiParam({ name: 'roleId', description: 'ID vai trò' })

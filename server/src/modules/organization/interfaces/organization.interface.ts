@@ -35,7 +35,10 @@ export interface IOrganizationMember {
     is_accepted: boolean | null;
     is_active: boolean | null;
     is_deleted: boolean | null;
+    invite_token?: string | null;
+    invite_token_expires_at?: Date | null;
     created_at: Date;
+
     user: {
         id: string;
         name: string;
@@ -51,12 +54,21 @@ export interface IOrganizationMember {
     }[];
     permissions?: {
         id: string;
+        organization_member_id: string;
         organization_permission_id: string;
+        warehouse_id: string | null;
+        is_active: boolean;
+        created_at: Date;
+        updated_at: Date;
+        is_deleted: boolean;
+        deleted_at: Date | null;
         permission: {
             id: string;
             name: string;
             key: string;
         };
+        source: 'permission' | 'role';
+        roles: { id: string; name: string }[];
     }[];
 }
 
