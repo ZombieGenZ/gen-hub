@@ -114,12 +114,17 @@ export interface IApiKey {
     name: string;
     description: string | null;
     key_prefix: string;
+    key_hash: string;
     is_active: boolean;
     expires_at: Date | null;
     last_used_at: Date | null;
     organization_id: string;
     created_by_user_id: string;
     created_at: Date;
+    organization?: {
+        id: string;
+        name: string;
+    };
     roles?: {
         id: string;
         organization_role_id: string;

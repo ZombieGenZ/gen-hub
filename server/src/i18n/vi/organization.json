@@ -39,6 +39,8 @@
         "role_not_found": "Không tìm thấy vai trò",
         "role_in_use": "Vai trò đang được sử dụng, không thể xóa",
         "apikey_not_found": "Không tìm thấy API key",
+        "apikey_invalid_format": "Định dạng API key không hợp lệ",
+        "apikey_expired": "API key đã hết hạn",
         "invalid_new_owner": "Chủ sở hữu mới không hợp lệ",
         "new_owner_not_member": "Chủ sở hữu mới phải là thành viên của tổ chức",
         "invite_expired": "Lời mời đã hết hạn",

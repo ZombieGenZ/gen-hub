@@ -437,11 +437,24 @@ export class OrganizationRepository {
             data,
             include: {
                 roles: {
-                    where: { is_deleted: false },
-                    include: { role: { select: { id: true, name: true } } },
+                    where: { is_deleted: false, is_active: true },
+                    include: {
+                        role: {
+                            select: {
+                                id: true,
+                                name: true,
+                                permissions: {
+                                    where: { is_deleted: false, is_active: true },
+                                    include: {
+                                        permission: { select: { id: true, name: true, key: true } },
+                                    },
+                                },
+                            },
+                        },
+                    },
                 },
                 permissions: {
-                    where: { is_deleted: false },
+                    where: { is_deleted: false, is_active: true },
                     include: { permission: { select: { id: true, name: true, key: true } } },
                 },
             },
@@ -453,11 +466,24 @@ export class OrganizationRepository {
             where: { id, is_deleted: false },
             include: {
                 roles: {
-                    where: { is_deleted: false },
-                    include: { role: { select: { id: true, name: true } } },
+                    where: { is_deleted: false, is_active: true },
+                    include: {
+                        role: {
+                            select: {
+                                id: true,
+                                name: true,
+                                permissions: {
+                                    where: { is_deleted: false, is_active: true },
+                                    include: {
+                                        permission: { select: { id: true, name: true, key: true } },
+                                    },
+                                },
+                            },
+                        },
+                    },
                 },
                 permissions: {
-                    where: { is_deleted: false },
+                    where: { is_deleted: false, is_active: true },
                     include: { permission: { select: { id: true, name: true, key: true } } },
                 },
             },
@@ -469,15 +495,66 @@ export class OrganizationRepository {
             where: { organization_id: orgId, is_deleted: false },
             include: {
                 roles: {
-                    where: { is_deleted: false },
-                    include: { role: { select: { id: true, name: true } } },
+                    where: { is_deleted: false, is_active: true },
+                    include: {
+                        role: {
+                            select: {
+                                id: true,
+                                name: true,
+                                permissions: {
+                                    where: { is_deleted: false, is_active: true },
+                                    include: {
+                                        permission: { select: { id: true, name: true, key: true } },
+                                    },
+                                },
+                            },
+                        },
+                    },
                 },
                 permissions: {
-                    where: { is_deleted: false },
+                    where: { is_deleted: false, is_active: true },
                     include: { permission: { select: { id: true, name: true, key: true } } },
                 },
             },
             orderBy: { created_at: 'desc' },
+        }) as unknown as IApiKey[];
+    }
+
+    /**
+     * Tìm API key theo key_prefix (dùng để verify API key từ plain key)
+     */
+    async findApiKeysByKeyPrefix(keyPrefix: string): Promise<IApiKey[]> {
+        return this.prisma.apiKey.findMany({
+            where: {
+                key_prefix: keyPrefix,
+                is_deleted: false,
+                is_active: true,
+            },
+            include: {
+                organization: {
+                    select: { id: true, name: true },
+                },
+                roles: {
+                    where: { is_deleted: false, is_active: true },
+                    include: {
+                        role: {
+                            select: {
+                                id: true,
+                                name: true,
+                                permissions: {
+                                    where: { is_deleted: false, is_active: true },
+                                    include: {
+                                        permission: { select: { id: true, name: true, key: true } },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+                permissions: {
+                    include: { permission: { select: { id: true, name: true, key: true } } },
+                },
+            },
         }) as unknown as IApiKey[];
     }
 
@@ -487,11 +564,24 @@ export class OrganizationRepository {
             data,
             include: {
                 roles: {
-                    where: { is_deleted: false },
-                    include: { role: { select: { id: true, name: true } } },
+                    where: { is_deleted: false, is_active: true },
+                    include: {
+                        role: {
+                            select: {
+                                id: true,
+                                name: true,
+                                permissions: {
+                                    where: { is_deleted: false, is_active: true },
+                                    include: {
+                                        permission: { select: { id: true, name: true, key: true } },
+                                    },
+                                },
+                            },
+                        },
+                    },
                 },
                 permissions: {
-                    where: { is_deleted: false },
+                    where: { is_deleted: false, is_active: true },
                     include: { permission: { select: { id: true, name: true, key: true } } },
                 },
             },
@@ -599,5 +689,55 @@ export class OrganizationRepository {
                 deleted_at: new Date(),
             },
         });
+    }
+
+    /**
+     * Tìm tất cả API keys active có expires_at
+     */
+    async findActiveApiKeysWithExpiration(): Promise<{ id: string; name: string; expires_at: Date; organization_id: string }[]> {
+        return this.prisma.apiKey.findMany({
+            where: {
+                is_deleted: false,
+                is_active: true,
+                expires_at: { not: null },
+            },
+            select: {
+                id: true,
+                name: true,
+                expires_at: true,
+                organization_id: true,
+            },
+        }) as unknown as { id: string; name: string; expires_at: Date; organization_id: string }[];
+    }
+
+    /**
+     * Deactivate API key (set is_active = false)
+     */
+    async deactivateApiKey(id: string): Promise<void> {
+        await this.prisma.apiKey.update({
+            where: { id },
+            data: {
+                is_active: false,
+                updated_at: new Date(),
+            },
+        });
+    }
+
+    /**
+     * Deactivate tất cả API keys đã hết hạn
+     */
+    async deactivateExpiredApiKeys(): Promise<number> {
+        const result = await this.prisma.apiKey.updateMany({
+            where: {
+                is_deleted: false,
+                is_active: true,
+                expires_at: { lte: new Date() },
+            },
+            data: {
+                is_active: false,
+                updated_at: new Date(),
+            },
+        });
+        return result.count;
     }
 }

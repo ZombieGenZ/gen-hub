@@ -4,6 +4,7 @@ import {
     ConflictException,
     ForbiddenException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { I18nService } from 'nestjs-i18n';
 import * as crypto from 'crypto';
 import * as bcrypt from 'bcrypt';
@@ -51,6 +52,7 @@ export class OrganizationService {
         private readonly auditLogService: OrganizationAuditLogService,
         private readonly emailService: EmailService,
         private readonly i18n: I18nService,
+        private readonly configService: ConfigService,
     ) { }
 
     async create(
@@ -1022,7 +1024,9 @@ export class OrganizationService {
         // Generate API key
         const plainKey = this.generateApiKey();
         const hashedKey = await bcrypt.hash(plainKey, 10);
-        const keyPrefix = plainKey.substring(0, 8);
+        // key_prefix: PREFIX + 8 ký tự đầu của phần random (vd: GENHUB-A1B2C3D4)
+        const prefix = this.configService.get<string>('API_KEY_PREFIX') || 'GENHUB';
+        const keyPrefix = `${prefix}-${plainKey.substring(prefix.length + 1, prefix.length + 9)}`;
 
         const apiKey = await this.repository.createApiKey({
             organization: { connect: { id: orgId } },
@@ -1061,7 +1065,158 @@ export class OrganizationService {
         // Kiểm tra quyền
         await this.checkOrgPermission(orgId, userId, 'organization.apikey.read', org.owner_id, lang);
 
-        return this.repository.findApiKeysByOrgId(orgId);
+        const apiKeys = await this.repository.findApiKeysByOrgId(orgId);
+
+        // Merge permissions từ roles vào mảng permissions của api key
+        return this.mergeApiKeyPermissions(apiKeys);
+    }
+
+    async getApiKeyById(
+        orgId: string,
+        keyId: string,
+        userId: string,
+        lang: string,
+    ): Promise<IApiKey> {
+        const org = await this.findById(orgId, lang);
+
+        // Kiểm tra quyền
+        await this.checkOrgPermission(orgId, userId, 'organization.apikey.read', org.owner_id, lang);
+
+        const apiKey = await this.repository.findApiKeyById(keyId);
+        if (!apiKey || apiKey.organization_id !== orgId) {
+            throw new NotFoundException(
+                await this.i18n.translate('organization.errors.apikey_not_found', { lang }),
+            );
+        }
+
+        // Merge permissions từ roles vào mảng permissions
+        const [result] = this.mergeApiKeyPermissions([apiKey]);
+        return result;
+    }
+
+    /**
+     * Merge permissions từ roles vào mảng permissions của API key
+     * Tương tự như logic trong getMembers
+     */
+    private mergeApiKeyPermissions(apiKeys: IApiKey[]): IApiKey[] {
+        return apiKeys.map((apiKey: any) => {
+            // Lấy direct permissions và đánh dấu source
+            const directPermissions = (apiKey.permissions || []).map((p: any) => ({
+                ...p,
+                source: 'permission',
+                roles: [],
+            }));
+
+            // Lấy permissions từ roles và gom các roles có cùng permission
+            const rolePermissionsMap = new Map<string, any>();
+            for (const apiKeyRole of (apiKey.roles || [])) {
+                const role = apiKeyRole.role;
+                if (role && role.permissions) {
+                    for (const rolePermission of role.permissions) {
+                        const permissionId = rolePermission.permission.id;
+                        if (rolePermissionsMap.has(permissionId)) {
+                            // Thêm role vào danh sách roles của permission đã tồn tại
+                            rolePermissionsMap.get(permissionId).roles.push({
+                                id: role.id,
+                                name: role.name,
+                            });
+                        } else {
+                            // Tạo permission mới với role đầu tiên
+                            rolePermissionsMap.set(permissionId, {
+                                id: rolePermission.id,
+                                api_key_id: apiKey.id,
+                                organization_permission_id: rolePermission.organization_permission_id,
+                                is_active: true,
+                                created_at: rolePermission.created_at || new Date(),
+                                updated_at: rolePermission.updated_at || new Date(),
+                                is_deleted: false,
+                                deleted_at: null,
+                                permission: rolePermission.permission,
+                                source: 'role',
+                                roles: [{ id: role.id, name: role.name }],
+                            });
+                        }
+                    }
+                }
+            }
+            const rolePermissions = Array.from(rolePermissionsMap.values());
+
+            // Merge permission + role permissions, ưu tiên permission nếu trùng
+            const allPermissions = [...directPermissions, ...rolePermissions];
+            const uniquePermissions = allPermissions.filter(
+                (p, index, self) =>
+                    index === self.findIndex((t) => t.permission.id === p.permission.id)
+            );
+
+            // Xóa permissions nested trong roles để tránh lặp dữ liệu
+            const cleanedRoles = (apiKey.roles || []).map((ar: any) => ({
+                id: ar.id,
+                organization_role_id: ar.organization_role_id,
+                role: {
+                    id: ar.role.id,
+                    name: ar.role.name,
+                },
+            }));
+
+            return {
+                ...apiKey,
+                roles: cleanedRoles,
+                permissions: uniquePermissions,
+            };
+        }) as IApiKey[];
+    }
+
+    /**
+     * Lấy thông tin API key từ plain key
+     * Dùng để verify API key và lấy thông tin permissions
+     */
+    async getApiKeyByPlainKey(
+        plainKey: string,
+        lang: string,
+    ): Promise<IApiKey> {
+        // Lấy prefix từ config
+        const prefix = this.configService.get<string>('API_KEY_PREFIX') || 'GENHUB';
+
+        // Validate format của key
+        if (!plainKey.startsWith(`${prefix}-`)) {
+            throw new NotFoundException(
+                await this.i18n.translate('organization.errors.apikey_invalid_format', { lang }),
+            );
+        }
+
+        // Tính key_prefix (PREFIX + 8 ký tự đầu của phần random)
+        const randomPart = plainKey.substring(prefix.length + 1);
+        const keyPrefix = `${prefix}-${randomPart.substring(0, 8)}`;
+
+        // Tìm các API key có key_prefix match
+        const apiKeys = await this.repository.findApiKeysByKeyPrefix(keyPrefix);
+
+        if (apiKeys.length === 0) {
+            throw new NotFoundException(
+                await this.i18n.translate('organization.errors.apikey_not_found', { lang }),
+            );
+        }
+
+        // So sánh hash để tìm đúng API key
+        for (const apiKey of apiKeys) {
+            const isMatch = await bcrypt.compare(plainKey, apiKey.key_hash);
+            if (isMatch) {
+                // Kiểm tra hết hạn
+                if (apiKey.expires_at && new Date() > new Date(apiKey.expires_at)) {
+                    throw new ForbiddenException(
+                        await this.i18n.translate('organization.errors.apikey_expired', { lang }),
+                    );
+                }
+
+                // Merge permissions và trả về
+                const [result] = this.mergeApiKeyPermissions([apiKey]);
+                return result;
+            }
+        }
+
+        throw new NotFoundException(
+            await this.i18n.translate('organization.errors.apikey_not_found', { lang }),
+        );
     }
 
     async updateApiKey(
@@ -1130,7 +1285,9 @@ export class OrganizationService {
         // Generate new key
         const plainKey = this.generateApiKey();
         const hashedKey = await bcrypt.hash(plainKey, 10);
-        const keyPrefix = plainKey.substring(0, 8);
+        // key_prefix: PREFIX + 8 ký tự đầu của phần random (vd: GENHUB-A1B2C3D4)
+        const prefix = this.configService.get<string>('API_KEY_PREFIX') || 'GENHUB';
+        const keyPrefix = `${prefix}-${plainKey.substring(prefix.length + 1, prefix.length + 9)}`;
 
         await this.repository.updateApiKey(keyId, {
             key_hash: hashedKey,
@@ -1172,7 +1329,12 @@ export class OrganizationService {
     }
 
     private generateApiKey(): string {
-        return `genhub_${crypto.randomBytes(32).toString('hex')}`;
+        const prefix = this.configService.get<string>('API_KEY_PREFIX') || 'GENHUB';
+        // Tạo chuỗi ngẫu nhiên gồm số và ký tự in hoa (32 ký tự)
+        const randomPart = crypto.randomBytes(16)
+            .toString('hex')
+            .toUpperCase();
+        return `${prefix}-${randomPart}`;
     }
 
     /**

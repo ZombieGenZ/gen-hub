@@ -18,6 +18,7 @@ import { AccountModule } from './modules/account/account.module';
 import { RedisModule } from './modules/redis/redis.module';
 import { WebsocketModule } from './modules/websocket/websocket.module';
 import { BanSchedulerModule } from './modules/ban-scheduler/ban-scheduler.module';
+import { ApiKeySchedulerModule } from './modules/apikey-scheduler/apikey-scheduler.module';
 import { WarehouseTemplateModule } from './modules/warehouse-template/warehouse-template.module';
 import { OrganizationModule } from './modules/organization/organization.module';
 import { GlobalNotificationModule } from './modules/global-notification/global-notification.module';
@@ -58,6 +59,8 @@ import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
     AccountModule,
 
     BanSchedulerModule,
+
+    ApiKeySchedulerModule,
 
     WarehouseTemplateModule,
 

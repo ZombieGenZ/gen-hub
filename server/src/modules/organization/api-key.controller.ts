@@ -68,6 +68,25 @@ export class ApiKeyController {
         );
     }
 
+    @Get(':keyId')
+    @RequirePermission('organization.read')
+    @ApiOperation({ summary: 'Lấy chi tiết API key' })
+    @ApiParam({ name: 'orgId', description: 'ID tổ chức' })
+    @ApiParam({ name: 'keyId', description: 'ID API key' })
+    async findOne(
+        @Param('orgId', ParseUUIDPipe) orgId: string,
+        @Param('keyId', ParseUUIDPipe) keyId: string,
+        @CurrentUser('userId') userId: string,
+        @I18nLang() lang: string,
+    ) {
+        const result = await this.service.getApiKeyById(orgId, keyId, userId, lang);
+        return new GetResponse(
+            ResponseCode.APIKEY_DETAIL_SUCCESS,
+            result,
+            'Lấy chi tiết API key thành công',
+        );
+    }
+
     @Put(':keyId')
     @RequirePermission('organization.read')
     @ApiOperation({ summary: 'Cập nhật API key' })

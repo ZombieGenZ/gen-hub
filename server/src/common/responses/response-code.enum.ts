@@ -65,9 +65,11 @@ export enum ResponseCode {
     // API Key
     APIKEY_CREATE_SUCCESS = 'apikey.create_success',
     APIKEY_LIST_SUCCESS = 'apikey.list_success',
+    APIKEY_DETAIL_SUCCESS = 'apikey.detail_success',
     APIKEY_UPDATE_SUCCESS = 'apikey.update_success',
     APIKEY_RESET_SUCCESS = 'apikey.reset_success',
     APIKEY_DELETE_SUCCESS = 'apikey.delete_success',
+    APIKEY_VERIFY_SUCCESS = 'apikey.verify_success',
 
     GLOBAL_NOTIFICATION_CREATE_SUCCESS = 'global_notification.create_success',
     GLOBAL_NOTIFICATION_LIST_SUCCESS = 'global_notification.list_success',

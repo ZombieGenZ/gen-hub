@@ -39,6 +39,8 @@
         "role_not_found": "Role not found",
         "role_in_use": "Role is in use and cannot be deleted",
         "apikey_not_found": "API key not found",
+        "apikey_invalid_format": "Invalid API key format",
+        "apikey_expired": "API key has expired",
         "invalid_new_owner": "Invalid new owner",
         "new_owner_not_member": "New owner must be a member of the organization",
         "invite_expired": "Invitation has expired",
