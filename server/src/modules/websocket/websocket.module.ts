@@ -2,6 +2,7 @@ import { Module, Global } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { WebsocketGateway } from './websocket.gateway';
+import { UserModule } from '../user/user.module';
 
 /**
  * WebSocket Module
@@ -11,6 +12,7 @@ import { WebsocketGateway } from './websocket.gateway';
 @Module({
   imports: [
     ConfigModule,
+    UserModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -23,4 +25,4 @@ import { WebsocketGateway } from './websocket.gateway';
   providers: [WebsocketGateway],
   exports: [WebsocketGateway],
 })
-export class WebsocketModule {}
+export class WebsocketModule { }

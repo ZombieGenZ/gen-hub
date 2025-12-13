@@ -323,4 +323,84 @@ export class UserRepository {
       },
     });
   }
+
+  /**
+   * Cập nhật trạng thái online của user
+   */
+  async updateOnlineStatus(
+    userId: string,
+    isOnline: boolean,
+    lastOnline?: Date,
+  ): Promise<User> {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        is_online: isOnline,
+        last_online: lastOnline || (isOnline ? null : new Date()),
+      },
+    });
+  }
+
+  /**
+   * Set user online
+   */
+  async setUserOnline(userId: string): Promise<User> {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        is_online: true,
+        last_online: null,
+      },
+    });
+  }
+
+  /**
+   * Set user offline
+   */
+  async setUserOffline(userId: string): Promise<User> {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        is_online: false,
+        last_online: new Date(),
+      },
+    });
+  }
+
+  /**
+   * Set nhiều users offline (bulk update)
+   */
+  async setUsersOffline(userIds: string[]): Promise<number> {
+    const result = await this.prisma.user.updateMany({
+      where: {
+        id: { in: userIds },
+        is_online: true,
+      },
+      data: {
+        is_online: false,
+        last_online: new Date(),
+      },
+    });
+    return result.count;
+  }
+
+  /**
+   * Lấy danh sách user đang online
+   */
+  async getOnlineUsers(): Promise<
+    Pick<User, 'id' | 'name' | 'email' | 'is_online' | 'last_online'>[]
+  > {
+    return this.prisma.user.findMany({
+      where: {
+        is_online: true,
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        is_online: true,
+        last_online: true,
+      },
+    });
+  }
 }

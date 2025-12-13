@@ -1,0 +1,12 @@
+{
+    "status": {
+        "online": "User is now online",
+        "offline": "User is now offline",
+        "updated": "User online status updated"
+    },
+    "events": {
+        "user_connected": "User connected",
+        "user_disconnected": "User disconnected",
+        "heartbeat_timeout": "Connection timeout due to no heartbeat"
+    }
+}

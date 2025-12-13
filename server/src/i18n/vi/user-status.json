@@ -1,0 +1,12 @@
+{
+    "status": {
+        "online": "Người dùng đang trực tuyến",
+        "offline": "Người dùng đã ngoại tuyến",
+        "updated": "Đã cập nhật trạng thái trực tuyến"
+    },
+    "events": {
+        "user_connected": "Người dùng đã kết nối",
+        "user_disconnected": "Người dùng đã ngắt kết nối",
+        "heartbeat_timeout": "Hết thời gian kết nối do không có heartbeat"
+    }
+}

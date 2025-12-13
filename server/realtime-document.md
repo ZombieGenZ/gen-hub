@@ -42,7 +42,7 @@ socket.emit('subscribe', { rooms: ['announcements', 'notifications'] });
 
 | Event | Data | Chức năng |
 |-------|------|-----------|
-| `ping` | `{}` | Giữ kết nối |
+| `ping` | `{}` | Giữ kết nối và cập nhật heartbeat (user online status) |
 | `subscribe` | `{ rooms: string[] }` | Join room |
 
 ---
@@ -133,6 +133,37 @@ socket.emit('subscribe', { rooms: ['announcements', 'notifications'] });
   "timestamp": "2025-12-13T10:00:00.000Z"
 }
 ```
+
+---
+
+#### `user:onlineStatus`
+**Chức năng:** Thông báo khi trạng thái online của user thay đổi (broadcast đến tất cả authenticated users)
+
+```json
+{
+  "userId": "550e8400-e29b-41d4-a716-446655440000",
+  "isOnline": true,
+  "lastOnline": null,
+  "timestamp": "2025-12-13T10:00:00.000Z"
+}
+```
+
+**Khi user offline:**
+```json
+{
+  "userId": "550e8400-e29b-41d4-a716-446655440000",
+  "isOnline": false,
+  "lastOnline": "2025-12-13T10:00:00.000Z",
+  "timestamp": "2025-12-13T10:00:00.000Z"
+}
+```
+
+> **Lưu ý:**
+> - Event này được broadcast đến tất cả users khi có ai đó online/offline
+> - `lastOnline` là `null` khi user đang online
+> - User được coi là offline khi:
+>   - Ngắt kết nối tất cả socket
+>   - Không gửi `ping` trong khoảng thời gian `USER_ONLINE_TIMEOUT_SECONDS` (mặc định 60s)
 
 ---
 
@@ -401,4 +432,4 @@ socket.emit('subscribe', { rooms: ['announcements', 'notifications'] });
 | `notifications` | ✅ | `userNotification:*` |
 | `announcements` | ❌ | (chờ implement) |
 | `system-status` | ❌ | (chờ implement) |
-| Global | - | `warehouseTemplate:*`, `globalNotification:*`, `pong`, `error` |
+| Global | - | `warehouseTemplate:*`, `globalNotification:*`, `user:onlineStatus`, `pong`, `error` |

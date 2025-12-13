@@ -196,3 +196,12 @@ export interface OwnershipTransferredEvent {
   timestamp: string;
 }
 
+/**
+ * Event khi trạng thái online của user thay đổi
+ */
+export interface UserOnlineStatusEvent {
+  userId: string;
+  isOnline: boolean;
+  lastOnline: string | null;
+  timestamp: string;
+}

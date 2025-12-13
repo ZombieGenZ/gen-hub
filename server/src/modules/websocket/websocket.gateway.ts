@@ -8,7 +8,7 @@ import {
   MessageBody,
   ConnectedSocket,
 } from '@nestjs/websockets';
-import { Logger, Injectable } from '@nestjs/common';
+import { Logger, Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { Server, Socket } from 'socket.io';
@@ -29,11 +29,14 @@ import {
   MemberInvitedEvent,
   MemberRemovedEvent,
   OwnershipTransferredEvent,
+  UserOnlineStatusEvent,
 } from './websocket.interfaces';
+import { UserRepository } from '../user/user.repository';
 
 /**
  * WebSocket Gateway
  * Xử lý realtime communication với clients
+ * Theo dõi trạng thái online của user
  */
 @Injectable()
 @WebSocketGateway({
@@ -45,7 +48,7 @@ import {
   transports: ['websocket', 'polling'],
 })
 export class WebsocketGateway
-  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
+  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect, OnModuleInit, OnModuleDestroy {
   @WebSocketServer()
   server: Server;
 
@@ -57,10 +60,44 @@ export class WebsocketGateway
   /** Map socketId -> userId */
   private socketUsers = new Map<string, string>();
 
+  /** Map userId -> timestamp của lần heartbeat cuối */
+  private userLastHeartbeat = new Map<string, number>();
+
+  /** Interval để kiểm tra user offline */
+  private offlineCheckInterval: NodeJS.Timeout | null = null;
+
   constructor(
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly userRepository: UserRepository,
   ) { }
+
+  /**
+   * Khởi tạo module - bắt đầu interval check offline users
+   */
+  onModuleInit() {
+    const checkIntervalMs = this.configService.get<number>(
+      'USER_ONLINE_CHECK_INTERVAL_MS',
+      30000,
+    );
+
+    this.offlineCheckInterval = setInterval(() => {
+      this.checkAndSetOfflineUsers();
+    }, checkIntervalMs);
+
+    this.logger.log(`⏰ User online status check interval started (${checkIntervalMs}ms)`);
+  }
+
+  /**
+   * Cleanup khi module bị destroy
+   */
+  onModuleDestroy() {
+    if (this.offlineCheckInterval) {
+      clearInterval(this.offlineCheckInterval);
+      this.offlineCheckInterval = null;
+      this.logger.log('⏰ User online status check interval stopped');
+    }
+  }
 
   afterInit() {
     this.logger.log('🔌 WebSocket Gateway initialized');
@@ -86,13 +123,22 @@ export class WebsocketGateway
 
           // Lưu mapping cho authenticated user
           this.socketUsers.set(socket.id, userId);
+          const isFirstConnection = !this.userSockets.has(userId) || this.userSockets.get(userId)!.size === 0;
           if (!this.userSockets.has(userId)) {
             this.userSockets.set(userId, new Set());
           }
           this.userSockets.get(userId)!.add(socket.id);
 
+          // Cập nhật heartbeat
+          this.userLastHeartbeat.set(userId, Date.now());
+
           // Join user room
           socket.join(`user:${userId}`);
+
+          // Nếu đây là connection đầu tiên của user, set user online
+          if (isFirstConnection) {
+            await this.setUserOnlineStatus(userId, true);
+          }
 
           this.logger.log(`✅ Client connected: ${socket.id} (User: ${userId})`);
         } else {
@@ -126,15 +172,18 @@ export class WebsocketGateway
   /**
    * Xử lý khi client ngắt kết nối
    */
-  handleDisconnect(socket: Socket) {
+  async handleDisconnect(socket: Socket) {
     const userId = this.socketUsers.get(socket.id);
     if (userId) {
       this.socketUsers.delete(socket.id);
       const userSocketSet = this.userSockets.get(userId);
       if (userSocketSet) {
         userSocketSet.delete(socket.id);
+        // Nếu không còn socket nào, set user offline
         if (userSocketSet.size === 0) {
           this.userSockets.delete(userId);
+          this.userLastHeartbeat.delete(userId);
+          await this.setUserOnlineStatus(userId, false);
         }
       }
     }
@@ -467,6 +516,11 @@ export class WebsocketGateway
 
   @SubscribeMessage('ping')
   handlePing(@ConnectedSocket() socket: Socket) {
+    // Cập nhật heartbeat nếu user đã authenticated
+    const userId = this.socketUsers.get(socket.id);
+    if (userId) {
+      this.updateUserHeartbeat(userId);
+    }
     socket.emit('pong', { timestamp: new Date().toISOString() });
   }
 
@@ -568,5 +622,91 @@ export class WebsocketGateway
    */
   getTotalConnectionsCount(): number {
     return this.socketUsers.size;
+  }
+
+  /**
+   * Cập nhật trạng thái online của user vào database và emit event
+   */
+  private async setUserOnlineStatus(userId: string, isOnline: boolean): Promise<void> {
+    try {
+      if (isOnline) {
+        await this.userRepository.setUserOnline(userId);
+      } else {
+        await this.userRepository.setUserOffline(userId);
+      }
+
+      // Emit event thay đổi trạng thái online
+      this.emitUserOnlineStatus(userId, isOnline);
+    } catch (error) {
+      this.logger.error(`Failed to update online status for user ${userId}: ${error}`);
+    }
+  }
+
+  /**
+   * Emit event trạng thái online của user
+   */
+  emitUserOnlineStatus(userId: string, isOnline: boolean, lastOnline?: Date) {
+    const event: UserOnlineStatusEvent = {
+      userId,
+      isOnline,
+      lastOnline: lastOnline?.toISOString() || (isOnline ? null : new Date().toISOString()),
+      timestamp: new Date().toISOString(),
+    };
+
+    // Broadcast cho tất cả authenticated users
+    this.server.emit('user:onlineStatus', event);
+  }
+
+  /**
+   * Kiểm tra và set offline cho các user không có heartbeat
+   */
+  private async checkAndSetOfflineUsers(): Promise<void> {
+    const timeoutSeconds = this.configService.get<number>(
+      'USER_ONLINE_TIMEOUT_SECONDS',
+      60,
+    );
+    const timeoutMs = timeoutSeconds * 1000;
+    const now = Date.now();
+
+    const usersToSetOffline: string[] = [];
+
+    // Kiểm tra từng user trong database đang online
+    try {
+      const onlineUsers = await this.userRepository.getOnlineUsers();
+
+      for (const user of onlineUsers) {
+        // Nếu user không có socket kết nối
+        if (!this.userSockets.has(user.id) || this.userSockets.get(user.id)!.size === 0) {
+          const lastHeartbeat = this.userLastHeartbeat.get(user.id);
+
+          // Nếu không có heartbeat hoặc heartbeat quá timeout
+          if (!lastHeartbeat || now - lastHeartbeat > timeoutMs) {
+            usersToSetOffline.push(user.id);
+          }
+        }
+      }
+
+      if (usersToSetOffline.length > 0) {
+        // Bulk update offline
+        const count = await this.userRepository.setUsersOffline(usersToSetOffline);
+
+        // Emit events cho từng user
+        for (const userId of usersToSetOffline) {
+          this.userLastHeartbeat.delete(userId);
+          this.emitUserOnlineStatus(userId, false);
+        }
+
+        this.logger.log(`⏰ Set ${count} users offline due to timeout`);
+      }
+    } catch (error) {
+      this.logger.error(`Error checking offline users: ${error}`);
+    }
+  }
+
+  /**
+   * Cập nhật heartbeat cho user (được gọi khi nhận ping)
+   */
+  updateUserHeartbeat(userId: string): void {
+    this.userLastHeartbeat.set(userId, Date.now());
   }
 }
