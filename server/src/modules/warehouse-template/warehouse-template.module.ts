@@ -11,6 +11,6 @@ import { SystemLogModule } from '../system-log/system-log.module';
     imports: [SharedModule, RedisModule, WebsocketModule, SystemLogModule],
     controllers: [WarehouseTemplateController],
     providers: [WarehouseTemplateService, WarehouseTemplateRepository],
-    exports: [WarehouseTemplateService],
+    exports: [WarehouseTemplateService, WarehouseTemplateRepository],
 })
 export class WarehouseTemplateModule { }

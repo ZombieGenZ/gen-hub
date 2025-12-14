@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
+import { ScheduleModule } from '@nestjs/schedule';
 import {
   I18nModule,
   AcceptLanguageResolver,
@@ -24,6 +25,9 @@ import { OrganizationModule } from './modules/organization/organization.module';
 import { GlobalNotificationModule } from './modules/global-notification/global-notification.module';
 import { UserNotificationModule } from './modules/user-notification/user-notification.module';
 import { OrgNotificationModule } from './modules/org-notification/org-notification.module';
+import { WarehouseModule } from './modules/warehouse/warehouse.module';
+import { RentalContractModule } from './modules/rental-contract/rental-contract.module';
+import { RentalSchedulerModule } from './modules/rental-scheduler/rental-scheduler.module';
 import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
 
 @Module({
@@ -32,6 +36,8 @@ import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
       isGlobal: true,
       envFilePath: '.env',
     }),
+
+    ScheduleModule.forRoot(),
 
     SharedModule,
 
@@ -71,6 +77,12 @@ import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
     UserNotificationModule,
 
     OrgNotificationModule,
+
+    WarehouseModule,
+
+    RentalContractModule,
+
+    RentalSchedulerModule,
   ],
   controllers: [AppController],
   providers: [
@@ -86,3 +98,4 @@ import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
   ],
 })
 export class AppModule { }
+

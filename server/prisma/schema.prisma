@@ -259,6 +259,9 @@ model WarehouseTemplate {
   length Int
   width  Int
 
+  // Cho phép thuê theo từng row (shared warehouse)
+  is_shared_warehouse Boolean @default(false)
+
   is_rented             Boolean @default(false)
   price_per_month         Decimal @db.Decimal(19, 4)
   discount_1_month      Decimal @default(0) @db.Decimal(5, 2)
@@ -290,9 +293,36 @@ model WarehouseTemplate {
   updated_by String?
   deleted_by String?
 
-  rows RowTemplate[]
+  rows   RowTemplate[]
+  images WarehouseTemplateImage[]
 
   @@map("warehouse_templates")
+}
+
+// Ảnh preview của WarehouseTemplate (có thể upload nhiều ảnh)
+model WarehouseTemplateImage {
+  id                    String  @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  warehouse_template_id String  @db.Uuid
+  url                   String  // URL ảnh đã xử lý (nén + watermark)
+  thumbnail_url         String? // URL thumbnail
+  file_id               String  // ImageKit file ID để xóa
+  original_name         String? // Tên file gốc
+  size                  Int?    // Kích thước file (bytes)
+  order                 Int     @default(0) // Thứ tự hiển thị
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean?  @default(false)
+  deleted_at DateTime?
+
+  created_by String
+  deleted_by String?
+
+  warehouse_template WarehouseTemplate @relation(fields: [warehouse_template_id], references: [id], onDelete: Cascade)
+
+  @@index([warehouse_template_id])
+  @@map("warehouse_template_images")
 }
 
 model RowTemplate {

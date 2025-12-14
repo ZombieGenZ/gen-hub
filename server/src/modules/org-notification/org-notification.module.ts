@@ -11,6 +11,6 @@ import { OrganizationModule } from '../organization/organization.module';
     imports: [SharedModule, RedisModule, WebsocketModule, OrganizationModule],
     controllers: [OrgNotificationController],
     providers: [OrgNotificationService, OrgNotificationRepository],
-    exports: [OrgNotificationService],
+    exports: [OrgNotificationService, OrgNotificationRepository],
 })
 export class OrgNotificationModule { }

@@ -1,0 +1,44 @@
+{
+    "success": {
+        "created": "Tạo kho thành công",
+        "updated": "Cập nhật kho thành công",
+        "deleted": "Xóa kho thành công",
+        "fetched": "Lấy dữ liệu kho thành công",
+        "layout_fetched": "Lấy layout kho thành công"
+    },
+    "errors": {
+        "not_found": "Không tìm thấy kho",
+        "create_failed": "Không thể tạo kho",
+        "update_failed": "Không thể cập nhật kho",
+        "delete_failed": "Không thể xóa kho",
+        "template_not_found": "Không tìm thấy template kho",
+        "template_not_available": "Template kho không khả dụng để thuê",
+        "row_not_available": "Dãy không khả dụng để thuê",
+        "row_locked": "Dãy đang được giữ chỗ bởi người khác",
+        "template_locked": "Template kho đang được giữ chỗ bởi người khác",
+        "not_shared_warehouse": "Kho này không cho phép thuê theo dãy",
+        "no_permission": "Bạn không có quyền thực hiện thao tác này",
+        "organization_not_found": "Không tìm thấy tổ chức"
+    },
+    "validation": {
+        "name_required": "Tên kho không được để trống",
+        "name_string": "Tên kho phải là chuỗi",
+        "name_max_length": "Tên kho không được quá 255 ký tự",
+        "description_string": "Mô tả phải là chuỗi",
+        "template_id_required": "ID template không được để trống",
+        "template_id_uuid": "ID template phải là UUID hợp lệ",
+        "organization_id_required": "ID tổ chức không được để trống",
+        "organization_id_uuid": "ID tổ chức phải là UUID hợp lệ",
+        "row_ids_array": "Danh sách ID dãy phải là mảng",
+        "row_id_uuid": "ID dãy phải là UUID hợp lệ",
+        "rental_months_required": "Số tháng thuê không được để trống",
+        "rental_months_positive": "Số tháng thuê phải là số dương",
+        "rental_months_min": "Số tháng thuê tối thiểu là 1",
+        "id_required": "ID không được để trống",
+        "id_uuid": "ID phải là UUID hợp lệ",
+        "limit_positive": "Limit phải là số dương",
+        "offset_min": "Offset phải >= 0",
+        "keywords_string": "Từ khóa tìm kiếm phải là chuỗi",
+        "is_active_boolean": "Trạng thái phải là boolean"
+    }
+}
