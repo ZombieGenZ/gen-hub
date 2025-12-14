@@ -93,6 +93,13 @@ export enum ResponseCode {
     ORG_NOTIFICATION_UPDATE_SUCCESS = 'org_notification.update_success',
     ORG_NOTIFICATION_DELETE_SUCCESS = 'org_notification.delete_success',
 
+    // Warehouse
+    WAREHOUSE_LIST_SUCCESS = 'warehouse.list_success',
+    WAREHOUSE_READ_SUCCESS = 'warehouse.read_success',
+    WAREHOUSE_LAYOUT_SUCCESS = 'warehouse.layout_success',
+    WAREHOUSE_UPDATE_SUCCESS = 'warehouse.update_success',
+    WAREHOUSE_DELETE_SUCCESS = 'warehouse.delete_success',
+
     // Client Errors (4xx)
     ERROR_VALIDATION = 'error.validation',
     ERROR_BAD_REQUEST = 'error.bad_request',
