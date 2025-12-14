@@ -294,4 +294,119 @@ export class PayosService {
             data: { status: PaymentStatus.CANCELLED },
         });
     }
+
+    /**
+     * Lấy thông tin payment từ PayOS API và sync vào database
+     * Dùng khi webhook không hoạt động (localhost, etc.)
+     */
+    async syncPaymentStatus(orderCode: bigint): Promise<{ synced: boolean; status: string; message: string; debug?: unknown }> {
+        this.logger.log(`[SYNC] Calling PayOS API for orderCode: ${orderCode}`);
+
+        // Gọi PayOS API để lấy thông tin payment
+        const response = await fetch(`${this.PAYOS_API_URL}/v2/payment-requests/${orderCode}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-client-id': this.clientId,
+                'x-api-key': this.apiKey,
+            },
+        });
+
+        const result = await response.json() as {
+            code: string;
+            desc: string;
+            data?: {
+                orderCode: number;
+                amount: number;
+                status: string;
+                transactions?: Array<{
+                    transactionDateTime: string;
+                }>;
+            };
+        };
+
+        this.logger.log(`[SYNC] PayOS response: ${JSON.stringify(result)}`);
+
+        if (result.code !== '00' || !result.data) {
+            return {
+                synced: false,
+                status: 'ERROR',
+                message: `PayOS error: ${result.desc}`,
+                debug: result,
+            };
+        }
+
+        const payosStatus = result.data.status; // PENDING, PAID, CANCELLED, EXPIRED
+        this.logger.log(`[SYNC] PayOS status: ${payosStatus}`);
+
+        // Tìm payment trong DB
+        const payment = await this.prisma.payment.findUnique({
+            where: { order_code: orderCode },
+            include: { rental_contract: true },
+        });
+
+        if (!payment) {
+            this.logger.log(`[SYNC] Payment not found in DB for orderCode: ${orderCode}`);
+            return {
+                synced: false,
+                status: payosStatus,
+                message: 'Payment not found in database',
+            };
+        }
+
+        this.logger.log(`[SYNC] Found payment in DB: id=${payment.id}, status=${payment.status}, type=${payment.type}`);
+
+        // Nếu đã PAID trong PayOS nhưng chưa PAID trong DB
+        if (payosStatus === 'PAID' && payment.status !== PaymentStatus.PAID) {
+            // Cập nhật payment
+            await this.prisma.payment.update({
+                where: { id: payment.id },
+                data: {
+                    status: PaymentStatus.PAID,
+                    paid_at: result.data.transactions?.[0]?.transactionDateTime
+                        ? new Date(result.data.transactions[0].transactionDateTime)
+                        : new Date(),
+                },
+            });
+
+            // Cập nhật contract status nếu là NEW_CONTRACT
+            if (payment.type === PaymentType.NEW_CONTRACT) {
+                await this.prisma.rentalContract.update({
+                    where: { id: payment.rental_contract_id },
+                    data: { status: 'ACTIVE' },
+                });
+            }
+
+            this.systemLogService.info('payment', 'sync',
+                `Payment synced: ${orderCode.toString()} -> PAID`,
+                { metaData: { paymentId: payment.id, orderCode: orderCode.toString() } });
+
+            return {
+                synced: true,
+                status: 'PAID',
+                message: 'Payment status synced successfully. Contract is now ACTIVE.',
+            };
+        }
+
+        // Nếu CANCELLED hoặc EXPIRED
+        if ((payosStatus === 'CANCELLED' || payosStatus === 'EXPIRED') && payment.status === PaymentStatus.PENDING) {
+            const newStatus = payosStatus === 'CANCELLED' ? PaymentStatus.CANCELLED : PaymentStatus.EXPIRED;
+            await this.prisma.payment.update({
+                where: { id: payment.id },
+                data: { status: newStatus },
+            });
+
+            return {
+                synced: true,
+                status: payosStatus,
+                message: `Payment status synced: ${payosStatus}`,
+            };
+        }
+
+        return {
+            synced: false,
+            status: payosStatus,
+            message: `Payment already in sync. PayOS status: ${payosStatus}, DB status: ${payment.status}`,
+        };
+    }
 }

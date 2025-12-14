@@ -4,11 +4,12 @@ import {
     Body,
     Get,
     Query,
+    Param,
     Logger,
     HttpCode,
     HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiParam } from '@nestjs/swagger';
 
 import { PayosService } from './payos.service';
 import { PayOSWebhookDto, PaymentCallbackQueryDto } from './dto';
@@ -40,6 +41,20 @@ export class PaymentController {
             this.logger.error(`Webhook error: ${error}`);
             return { code: '01', desc: 'error' };
         }
+    }
+
+    /**
+     * Sync payment status từ PayOS API
+     * Dùng khi webhook không hoạt động (localhost, etc.)
+     */
+    @Post('sync/:orderCode')
+    @ApiOperation({ summary: 'Sync payment status từ PayOS (dùng khi webhook không hoạt động)' })
+    @ApiParam({ name: 'orderCode', description: 'Mã đơn hàng PayOS' })
+    async syncPaymentStatus(@Param('orderCode') orderCode: string) {
+        this.logger.log(`Syncing payment status: orderCode=${orderCode}`);
+
+        const result = await this.payosService.syncPaymentStatus(BigInt(orderCode));
+        return result;
     }
 
     /**
