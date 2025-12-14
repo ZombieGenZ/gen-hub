@@ -250,6 +250,18 @@ enum ContractStatus {
   COMPLETED
 }
 
+enum PaymentStatus {
+  PENDING
+  PAID
+  CANCELLED
+  EXPIRED
+}
+
+enum PaymentType {
+  NEW_CONTRACT
+  RENEWAL
+}
+
 model WarehouseTemplate {
   id          String  @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
   name        String
@@ -259,7 +271,6 @@ model WarehouseTemplate {
   length Int
   width  Int
 
-  // Cho phép thuê theo từng row (shared warehouse)
   is_shared_warehouse Boolean @default(false)
 
   is_rented             Boolean @default(false)
@@ -300,16 +311,15 @@ model WarehouseTemplate {
   @@map("warehouse_templates")
 }
 
-// Ảnh preview của WarehouseTemplate (có thể upload nhiều ảnh)
 model WarehouseTemplateImage {
   id                    String  @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
   warehouse_template_id String  @db.Uuid
-  url                   String  // URL ảnh đã xử lý (nén + watermark)
-  thumbnail_url         String? // URL thumbnail
-  file_id               String  // ImageKit file ID để xóa
-  original_name         String? // Tên file gốc
-  size                  Int?    // Kích thước file (bytes)
-  order                 Int     @default(0) // Thứ tự hiển thị
+  url                   String
+  thumbnail_url         String?
+  file_id               String
+  original_name         String?
+  size                  Int?
+  order                 Int     @default(0)
 
   is_active  Boolean   @default(true)
   created_at DateTime  @default(now())
@@ -489,6 +499,7 @@ model RentalContract {
 
   organization Organization           @relation(fields: [organization_id], references: [id], onDelete: Cascade)
   details      RentalContractDetail[]
+  payments     Payment[]
 
   @@index([organization_id])
   @@map("rental_contracts")
@@ -498,14 +509,11 @@ model RentalContractDetail {
   id                 String  @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
   rental_contract_id String  @db.Uuid
 
-  // Template reference (dùng để copy sang warehouse sau thanh toán)
   warehouse_template_id String  @db.Uuid
-  warehouse_name        String              // Tên kho (dùng khi tạo warehouse)
-  warehouse_description String?             // Mô tả kho
-  row_template_ids      String[] @default([]) // Mảng ID row templates (nếu thuê theo row)
-  is_whole_warehouse    Boolean  @default(true) // True nếu thuê cả kho
-
-  // Warehouse/Row thực tế (sau khi thanh toán và copy từ template)
+  warehouse_name        String
+  warehouse_description String?
+  row_template_ids      String[] @default([])
+  is_whole_warehouse    Boolean  @default(true)
   warehouse_id       String? @db.Uuid
   row_id             String? @db.Uuid
 
@@ -538,10 +546,42 @@ model RentalContractDetail {
   @@map("rental_contract_details")
 }
 
+model Payment {
+  id                 String        @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  rental_contract_id String        @db.Uuid
+  order_code         BigInt        @unique
+  amount             Int
+  description        String
+  type               PaymentType
+  status             PaymentStatus @default(PENDING)
+
+  payment_link_id    String?
+  checkout_url       String?
+  qr_code            String? @db.Text
+
+  expired_at         DateTime?
+  paid_at            DateTime?
+
+  is_active          Boolean       @default(true)
+  created_at         DateTime      @default(now())
+  updated_at         DateTime?     @updatedAt
+  is_deleted         Boolean?      @default(false)
+  deleted_at         DateTime?
+
+  created_by         String?
+  updated_by         String?
+
+  rental_contract    RentalContract @relation(fields: [rental_contract_id], references: [id], onDelete: Cascade)
+
+  @@index([rental_contract_id])
+  @@index([order_code])
+  @@index([status])
+  @@map("payments")
+}
+
 model Organization {
   id         String   @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
   name       String
-  // company    String
   is_active  Boolean? @default(true)
   is_deleted Boolean? @default(false)
   owner_id   String   @db.Uuid
@@ -821,7 +861,6 @@ model Unit {
   id                         String    @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
   organization_id            String    @db.Uuid
   is_used_multiple_languages Boolean   @default(false)
-  // language_key               String?
   name                       String?
   description                String?
   is_active                  Boolean   @default(true)

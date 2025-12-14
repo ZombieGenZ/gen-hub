@@ -63,7 +63,28 @@ export interface IRentalPriceCalculation {
  */
 export interface ICreateContractResult {
     contract: IRentalContractWithRelations;
-    paymentUrl?: string;
+    payment?: IPaymentInfo;
+}
+
+/**
+ * Interface kết quả gia hạn contract
+ */
+export interface IRenewContractResult {
+    contract: IRentalContractWithRelations;
+    payment?: IPaymentInfo;
+}
+
+/**
+ * Interface thông tin thanh toán từ PayOS
+ */
+export interface IPaymentInfo {
+    paymentId: string;
+    orderCode: number;
+    amount: number;
+    checkoutUrl: string;
+    qrCode: string;
+    status: string;
+    expiredAt: Date;
 }
 
 /**

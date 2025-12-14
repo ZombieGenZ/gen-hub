@@ -31,6 +31,8 @@ import { OrganizationAuditLogService } from '../organization/organization-audit-
 import { WarehouseTemplateRepository } from '../warehouse-template/warehouse-template.repository';
 import { EmailService } from '../notification/email.service';
 import { OrganizationRepository } from '../organization/organization.repository';
+import { PayosService } from '../payment/payos.service';
+import { PaymentType } from '@prisma/client';
 
 /**
  * Service xử lý business logic cho RentalContract
@@ -55,6 +57,7 @@ export class RentalContractService {
     private readonly configService: ConfigService,
     private readonly i18n: I18nService,
     private readonly emailService: EmailService,
+    private readonly payosService: PayosService,
   ) {
     this.CONTRACT_CACHE_TTL =
       this.configService.get<number>('REDIS_RENTAL_CONTRACT_CACHE_TTL') || 300;
@@ -294,8 +297,18 @@ export class RentalContractService {
       // Invalidate list cache
       await this.invalidateContractListCache();
 
+      // Tạo payment link với PayOS
+      const paymentResult = await this.payosService.createContractPayment(
+        contract.id,
+        Math.round(parseFloat(contract.final_price.toString())),
+        `${code}`,
+        PaymentType.NEW_CONTRACT,
+        userId,
+      );
+
       return {
         contract,
+        payment: paymentResult,
       };
     } catch (error) {
       await this.releaseLock(lockKeys);

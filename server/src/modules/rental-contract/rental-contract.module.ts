@@ -6,6 +6,7 @@ import { SystemLogModule } from '../system-log/system-log.module';
 import { OrganizationModule } from '../organization/organization.module';
 import { WarehouseTemplateModule } from '../warehouse-template/warehouse-template.module';
 import { NotificationModule } from '../notification/notification.module';
+import { PaymentModule } from '../payment/payment.module';
 
 import { RentalContractController } from './rental-contract.controller';
 import { OrgRentalContractController } from './org-rental-contract.controller';
@@ -20,6 +21,7 @@ import { RentalContractRepository } from './rental-contract.repository';
         SystemLogModule,
         OrganizationModule,
         NotificationModule,
+        PaymentModule,
         forwardRef(() => WarehouseTemplateModule),
     ],
     controllers: [RentalContractController, OrgRentalContractController],

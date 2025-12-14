@@ -24,6 +24,7 @@ import { OrgNotificationModule } from './modules/org-notification/org-notificati
 import { WarehouseModule } from './modules/warehouse/warehouse.module';
 import { RentalContractModule } from './modules/rental-contract/rental-contract.module';
 import { RentalSchedulerModule } from './modules/rental-scheduler/rental-scheduler.module';
+import { PaymentModule } from './modules/payment/payment.module';
 import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
 
 @Module({
@@ -75,6 +76,8 @@ import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
     RentalContractModule,
 
     RentalSchedulerModule,
+
+    PaymentModule,
   ],
   controllers: [AppController],
   providers: [
