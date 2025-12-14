@@ -19,6 +19,7 @@ import { SystemLogService } from '../system-log/system-log.service';
 import { OrganizationAuditLogService } from '../organization/organization-audit-log.service';
 import { WarehouseTemplateRepository } from '../warehouse-template/warehouse-template.repository';
 import { EmailService } from '../notification/email.service';
+import { OrganizationRepository } from '../organization/organization.repository';
 
 /**
  * Service xử lý business logic cho RentalContract
@@ -35,6 +36,7 @@ export class RentalContractService {
     constructor(
         private readonly repository: RentalContractRepository,
         private readonly templateRepository: WarehouseTemplateRepository,
+        private readonly organizationRepository: OrganizationRepository,
         private readonly redisService: RedisService,
         private readonly websocketGateway: WebsocketGateway,
         private readonly systemLogService: SystemLogService,
@@ -52,6 +54,56 @@ export class RentalContractService {
         // Parse allowed months từ config
         const allowedMonthsStr = this.configService.get<string>('RENTAL_ALLOWED_MONTHS') || '1,3,6,12,24,36';
         this.ALLOWED_MONTHS = allowedMonthsStr.split(',').map(m => parseInt(m.trim(), 10)).filter(m => !isNaN(m));
+    }
+
+    /**
+     * Kiểm tra quyền organization.
+     * Owner có full quyền, member cần có permission tương ứng.
+     */
+    private async checkOrgPermission(
+        orgId: string,
+        userId: string,
+        permissionKey: string,
+        lang: string,
+    ): Promise<void> {
+        // Lấy thông tin organization
+        const org = await this.organizationRepository.findById(orgId);
+        if (!org) {
+            throw new NotFoundException(
+                await this.i18n.translate('organization.errors.not_found', { lang }),
+            );
+        }
+
+        // Owner có full quyền
+        if (userId === org.owner_id) {
+            return;
+        }
+
+        // Kiểm tra member và permission
+        const member = await this.organizationRepository.findMemberByUserAndOrg(userId, orgId);
+        if (!member || !member.is_accepted) {
+            throw new ForbiddenException(
+                await this.i18n.translate('rental-contract.errors.no_permission', { lang }),
+            );
+        }
+
+        // Kiểm tra direct permissions
+        const hasDirectPermission = member.permissions?.some(
+            (p) => p.permission.key === permissionKey,
+        );
+        if (hasDirectPermission) return;
+
+        // Kiểm tra role permissions
+        const hasRolePermission = member.roles?.some((r) =>
+            // TODO: implement full check when roles include permissions
+            false
+        );
+
+        if (!hasRolePermission && !hasDirectPermission) {
+            throw new ForbiddenException(
+                await this.i18n.translate('rental-contract.errors.no_permission', { lang }),
+            );
+        }
     }
 
     /**
@@ -203,17 +255,28 @@ export class RentalContractService {
 
     /**
      * Lấy danh sách hợp đồng
+     * Nếu có organizationId, kiểm tra quyền đọc trong org đó
      */
     async findMany(
         query: QueryRentalContractDto,
         userId: string,
+        organizationId?: string,
+        lang: string = 'vi',
     ): Promise<IPaginatedResponse<IRentalContractWithRelations>> {
+        // Nếu có organizationId, kiểm tra quyền đọc
+        if (organizationId) {
+            await this.checkOrgPermission(organizationId, userId, 'rental-contract.list', lang);
+            // Ghi đè organization_id trong query
+            query.organization_id = organizationId;
+        }
+
         const queryParams: Record<string, unknown> = {
             limit: query.limit,
             offset: query.offset,
             keywords: query.keywords,
             status: query.status,
             organization_id: query.organization_id,
+            userId, // Thêm userId vào cache key để phân biệt
         };
         const cacheKey = this.getContractListCacheKey(queryParams);
 
@@ -235,14 +298,31 @@ export class RentalContractService {
 
     /**
      * Lấy chi tiết hợp đồng
+     * Kiểm tra quyền: phải là owner/member của org đó hoặc có permission
      */
-    async findById(id: string, lang: string): Promise<IRentalContractWithRelations> {
+    async findById(
+        id: string,
+        userId: string,
+        organizationId?: string,
+        lang: string = 'vi',
+    ): Promise<IRentalContractWithRelations> {
         const cacheKey = this.getContractCacheKey(id);
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
             try {
-                return JSON.parse(cached);
-            } catch {
+                const contract = JSON.parse(cached) as IRentalContractWithRelations;
+                // Kiểm tra quyền truy cập
+                if (organizationId && contract.organization_id !== organizationId) {
+                    throw new ForbiddenException(
+                        await this.i18n.translate('rental-contract.errors.no_permission', { lang }),
+                    );
+                }
+                if (organizationId) {
+                    await this.checkOrgPermission(contract.organization_id, userId, 'rental-contract.read', lang);
+                }
+                return contract;
+            } catch (err) {
+                if (err instanceof ForbiddenException) throw err;
                 // Cache không hợp lệ
             }
         }
@@ -253,6 +333,16 @@ export class RentalContractService {
                 this.i18n.t('rental-contract.errors.not_found', { lang }),
             );
         }
+
+        // Kiểm tra quyền truy cập
+        if (organizationId && contract.organization_id !== organizationId) {
+            throw new ForbiddenException(
+                await this.i18n.translate('rental-contract.errors.no_permission', { lang }),
+            );
+        }
+
+        // Kiểm tra user có phải owner/member của org không
+        await this.checkOrgPermission(contract.organization_id, userId, 'rental-contract.read', lang);
 
         await this.redisService.set(cacheKey, JSON.stringify(contract), this.CONTRACT_CACHE_TTL);
 
@@ -281,6 +371,9 @@ export class RentalContractService {
                 this.i18n.t('rental-contract.errors.no_permission', { lang }),
             );
         }
+
+        // Kiểm tra quyền cấp org: owner có full quyền, member cần permission
+        await this.checkOrgPermission(organizationId, userId, 'rental-contract.update', lang);
 
         // Chỉ cho phép điều chỉnh thời gian hợp đồng ACTIVE
         if (dto.adjust_months && existing.status !== ContractStatus.ACTIVE) {
@@ -381,6 +474,9 @@ export class RentalContractService {
                 this.i18n.t('rental-contract.errors.no_permission', { lang }),
             );
         }
+
+        // Kiểm tra quyền cấp org: owner có full quyền, member cần permission
+        await this.checkOrgPermission(organizationId, userId, 'rental-contract.delete', lang);
 
         // Không cho hủy hợp đồng đã COMPLETED hoặc LIQUIDATED
         const nonCancellableStatuses: ContractStatus[] = [ContractStatus.COMPLETED, ContractStatus.LIQUIDATED];

@@ -142,6 +142,13 @@ export class CreateWarehouseTemplateDto {
     @Type(() => Number)
     whole_warehouse_discount?: number;
 
+    @ApiPropertyOptional({ description: 'Cho phép thuê theo từng row (shared warehouse)', default: false })
+    @IsOptional()
+    @IsBoolean({
+        message: i18nValidationMessage('warehouse-template.validation.is_shared_warehouse_boolean'),
+    })
+    is_shared_warehouse?: boolean;
+
     @ApiPropertyOptional({ description: 'Địa chỉ chi tiết' })
     @IsOptional()
     @IsString()
