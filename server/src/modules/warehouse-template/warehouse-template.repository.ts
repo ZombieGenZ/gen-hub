@@ -33,6 +33,20 @@ export class WarehouseTemplateRepository {
                 },
             },
         },
+        images: {
+            where: { is_deleted: false },
+            orderBy: { order: 'asc' as const },
+            select: {
+                id: true,
+                url: true,
+                thumbnail_url: true,
+                file_id: true,
+                original_name: true,
+                size: true,
+                order: true,
+                created_at: true,
+            },
+        },
         rows: {
             where: { is_deleted: false },
             orderBy: { created_at: 'asc' as const },
@@ -75,9 +89,20 @@ export class WarehouseTemplateRepository {
                 },
             },
         },
+        images: {
+            where: { is_deleted: false },
+            orderBy: { order: 'asc' as const },
+            take: 1, // Chỉ lấy ảnh đầu tiên cho list
+            select: {
+                id: true,
+                url: true,
+                thumbnail_url: true,
+            },
+        },
         _count: {
             select: {
                 rows: { where: { is_deleted: false } },
+                images: { where: { is_deleted: false } },
             },
         },
     };
@@ -477,5 +502,98 @@ export class WarehouseTemplateRepository {
      */
     async transaction<T>(fn: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
         return this.prisma.$transaction(fn);
+    }
+
+    // ==================== IMAGE METHODS ====================
+
+    /**
+     * Tạo mới image cho template
+     */
+    async createImage(data: Prisma.WarehouseTemplateImageCreateInput) {
+        return this.prisma.warehouseTemplateImage.create({ data });
+    }
+
+    /**
+     * Tạo nhiều images
+     */
+    async createManyImages(data: Prisma.WarehouseTemplateImageCreateManyInput[]) {
+        return this.prisma.warehouseTemplateImage.createMany({ data });
+    }
+
+    /**
+     * Tìm image theo ID
+     */
+    async findImageById(id: string) {
+        return this.prisma.warehouseTemplateImage.findFirst({
+            where: { id, is_deleted: false },
+        });
+    }
+
+    /**
+     * Lấy danh sách images của template
+     */
+    async findImagesByTemplateId(templateId: string) {
+        return this.prisma.warehouseTemplateImage.findMany({
+            where: { warehouse_template_id: templateId, is_deleted: false },
+            orderBy: { order: 'asc' },
+        });
+    }
+
+    /**
+     * Đếm số lượng images của template
+     */
+    async countImagesByTemplateId(templateId: string): Promise<number> {
+        return this.prisma.warehouseTemplateImage.count({
+            where: { warehouse_template_id: templateId, is_deleted: false },
+        });
+    }
+
+    /**
+     * Lấy order lớn nhất hiện tại
+     */
+    async getMaxImageOrder(templateId: string): Promise<number> {
+        const result = await this.prisma.warehouseTemplateImage.aggregate({
+            where: { warehouse_template_id: templateId, is_deleted: false },
+            _max: { order: true },
+        });
+        return result._max.order ?? -1;
+    }
+
+    /**
+     * Soft delete image
+     */
+    async softDeleteImage(id: string, deletedBy: string) {
+        return this.prisma.warehouseTemplateImage.update({
+            where: { id },
+            data: {
+                is_deleted: true,
+                deleted_at: new Date(),
+                deleted_by: deletedBy,
+            },
+        });
+    }
+
+    /**
+     * Cập nhật order của images (reorder)
+     */
+    async updateImageOrder(id: string, order: number) {
+        return this.prisma.warehouseTemplateImage.update({
+            where: { id },
+            data: { order },
+        });
+    }
+
+    /**
+     * Batch update order cho nhiều images
+     */
+    async batchUpdateImageOrder(updates: { id: string; order: number }[]) {
+        return this.prisma.$transaction(
+            updates.map((u) =>
+                this.prisma.warehouseTemplateImage.update({
+                    where: { id: u.id },
+                    data: { order: u.order },
+                }),
+            ),
+        );
     }
 }

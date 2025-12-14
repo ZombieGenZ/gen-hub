@@ -4,7 +4,10 @@
         "updated": "Cập nhật template kho hàng thành công",
         "deleted": "Xóa template kho hàng thành công",
         "fetched": "Lấy dữ liệu template kho hàng thành công",
-        "layout_updated": "Cập nhật layout template thành công"
+        "layout_updated": "Cập nhật layout template thành công",
+        "image_uploaded": "Upload ảnh thành công",
+        "image_deleted": "Xóa ảnh thành công",
+        "image_reordered": "Sắp xếp ảnh thành công"
     },
     "errors": {
         "not_found": "Không tìm thấy template kho hàng",
@@ -16,7 +19,10 @@
         "row_not_found": "Không tìm thấy dãy",
         "rack_not_found": "Không tìm thấy kệ",
         "shelf_not_found": "Không tìm thấy tầng",
-        "block_not_found": "Không tìm thấy ô"
+        "block_not_found": "Không tìm thấy ô",
+        "image_not_found": "Không tìm thấy ảnh",
+        "max_images_exceeded": "Số lượng ảnh vượt quá giới hạn ({max} ảnh)",
+        "image_upload_failed": "Upload ảnh thất bại"
     },
     "validation": {
         "name_required": "Tên template không được để trống",

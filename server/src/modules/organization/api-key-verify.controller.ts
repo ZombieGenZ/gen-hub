@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBody } from '@nestjs/swagger';
 import { I18nLang } from 'nestjs-i18n';
+import { IsNotEmpty, IsString } from 'class-validator';
 import { OrganizationService } from './organization.service';
 import { Public } from '../../common/decorators';
 import {
@@ -13,6 +14,8 @@ import {
 } from '../../common/responses';
 
 class VerifyApiKeyDto {
+    @IsNotEmpty()
+    @IsString()
     api_key: string;
 }
 
