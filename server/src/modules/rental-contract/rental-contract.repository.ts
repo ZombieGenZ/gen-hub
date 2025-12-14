@@ -58,7 +58,7 @@ export class RentalContractRepository {
                     select: {
                         id: true,
                         email: true,
-                        full_name: true,
+                        name: true,
                     },
                 },
             },
