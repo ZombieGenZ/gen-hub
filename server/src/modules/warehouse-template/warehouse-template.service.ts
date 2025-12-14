@@ -56,6 +56,7 @@ export class WarehouseTemplateService {
             unit: dto.unit,
             length: dto.length,
             width: dto.width,
+            is_shared_warehouse: dto.is_shared_warehouse ?? false,
             price_per_month: new Decimal(dto.price_per_month),
             discount_1_month: dto.discount_1_month ? new Decimal(dto.discount_1_month) : undefined,
             discount_3_months: dto.discount_3_months ? new Decimal(dto.discount_3_months) : undefined,

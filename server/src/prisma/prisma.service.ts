@@ -254,6 +254,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
       await this.seedWarehouseTemplatePermissions();
       await this.seedOrganizationPermissions();
       await this.seedNotificationPermissions();
+      await this.seedRentalContractPermissions();
       await this.seedVietnamAdministrative();
     } catch (error: unknown) {
       const errorMessage =
@@ -767,6 +768,130 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         error instanceof Error ? error.message : String(error);
       this.logger.error(
         `❌ Failed to seed notification permissions: ${errorMessage}`,
+      );
+    }
+  }
+
+  /**
+   * Seed các permissions cho Rental Contract và gán vào tất cả roles
+   * Rental Contract là resource cấp tổ chức, tất cả user đã đăng nhập đều có thể sử dụng
+   */
+  private async seedRentalContractPermissions() {
+    try {
+      const rentalContractPermissions = [
+        {
+          key: 'rental-contract.create',
+          name: 'Tạo hợp đồng thuê',
+          description: 'Quyền tạo hợp đồng thuê kho mới',
+        },
+        {
+          key: 'rental-contract.list',
+          name: 'Xem danh sách hợp đồng',
+          description: 'Quyền xem danh sách hợp đồng thuê',
+        },
+        {
+          key: 'rental-contract.read',
+          name: 'Xem chi tiết hợp đồng',
+          description: 'Quyền xem chi tiết hợp đồng thuê',
+        },
+        {
+          key: 'rental-contract.update',
+          name: 'Cập nhật hợp đồng',
+          description: 'Quyền cập nhật/gia hạn hợp đồng thuê',
+        },
+        {
+          key: 'rental-contract.delete',
+          name: 'Hủy hợp đồng',
+          description: 'Quyền hủy hợp đồng thuê',
+        },
+      ];
+
+      // Tạo system permissions
+      for (const perm of rentalContractPermissions) {
+        const existing = await this.permission.findFirst({
+          where: { key: perm.key },
+        });
+
+        if (!existing) {
+          await this.permission.create({
+            data: {
+              key: perm.key,
+              name: perm.name,
+              description: perm.description,
+              is_active: true,
+              is_deleted: false,
+            },
+          });
+        }
+      }
+
+      // Gán cho tất cả roles (tương tự organization permissions)
+      const allRoles = await this.role.findMany({
+        where: { is_deleted: false },
+      });
+
+      const permissionRecords = await this.permission.findMany({
+        where: {
+          key: { in: rentalContractPermissions.map((p) => p.key) },
+          is_deleted: false,
+        },
+      });
+
+      for (const role of allRoles) {
+        for (const permission of permissionRecords) {
+          const existingAssignment = await this.rolePermission.findFirst({
+            where: {
+              role_id: role.id,
+              permission_id: permission.id,
+            },
+          });
+
+          if (!existingAssignment) {
+            await this.rolePermission.create({
+              data: {
+                role_id: role.id,
+                permission_id: permission.id,
+                is_active: true,
+                is_deleted: false,
+              },
+            });
+          }
+        }
+      }
+
+      // Tạo org-level permissions cho rental contract
+      const orgLevelRentalPermissions = [
+        { key: 'rental-contract.list', name: 'Xem danh sách hợp đồng', description: 'Quyền xem danh sách hợp đồng trong tổ chức' },
+        { key: 'rental-contract.read', name: 'Xem chi tiết hợp đồng', description: 'Quyền xem chi tiết hợp đồng trong tổ chức' },
+        { key: 'rental-contract.create', name: 'Tạo hợp đồng thuê', description: 'Quyền tạo hợp đồng thuê trong tổ chức' },
+        { key: 'rental-contract.update', name: 'Cập nhật hợp đồng', description: 'Quyền cập nhật hợp đồng trong tổ chức' },
+        { key: 'rental-contract.delete', name: 'Hủy hợp đồng', description: 'Quyền hủy hợp đồng trong tổ chức' },
+      ];
+
+      for (const perm of orgLevelRentalPermissions) {
+        const existing = await this.organizationPermission.findFirst({
+          where: { key: perm.key },
+        });
+
+        if (!existing) {
+          await this.organizationPermission.create({
+            data: {
+              key: perm.key,
+              name: perm.name,
+              description: perm.description,
+              is_active: true,
+              is_deleted: false,
+            },
+          });
+        }
+      }
+
+      this.logger.log('✅ Rental contract permissions seeded');
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `❌ Failed to seed rental contract permissions: ${errorMessage}`,
       );
     }
   }
