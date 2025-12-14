@@ -4,7 +4,10 @@
         "updated": "Warehouse template updated successfully",
         "deleted": "Warehouse template deleted successfully",
         "fetched": "Warehouse template fetched successfully",
-        "layout_updated": "Template layout updated successfully"
+        "layout_updated": "Template layout updated successfully",
+        "image_uploaded": "Images uploaded successfully",
+        "image_deleted": "Image deleted successfully",
+        "image_reordered": "Images reordered successfully"
     },
     "errors": {
         "not_found": "Warehouse template not found",
@@ -16,7 +19,10 @@
         "row_not_found": "Row not found",
         "rack_not_found": "Rack not found",
         "shelf_not_found": "Shelf not found",
-        "block_not_found": "Block not found"
+        "block_not_found": "Block not found",
+        "image_not_found": "Image not found",
+        "max_images_exceeded": "Maximum images exceeded ({max} images allowed)",
+        "image_upload_failed": "Failed to upload images"
     },
     "validation": {
         "name_required": "Template name is required",

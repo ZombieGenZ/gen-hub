@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { I18nService } from 'nestjs-i18n';
 import { Decimal } from '@prisma/client/runtime/library';
 import { Prisma } from '@prisma/client';
@@ -22,6 +22,10 @@ import {
 import { RedisService } from '../redis/redis.service';
 import { WebsocketGateway } from '../websocket/websocket.gateway';
 import { SystemLogService } from '../system-log/system-log.service';
+import { ImageUploadService, ImageUploadResult } from '../../common/services/image-upload.service';
+
+// Giới hạn số lượng ảnh tối đa
+const MAX_IMAGES_PER_TEMPLATE = 10;
 
 /**
  * Service xử lý business logic cho WarehouseTemplate
@@ -34,6 +38,7 @@ export class WarehouseTemplateService {
         private readonly websocketGateway: WebsocketGateway,
         private readonly systemLogService: SystemLogService,
         private readonly i18n: I18nService,
+        private readonly imageUploadService: ImageUploadService,
     ) { }
 
     /**
@@ -802,5 +807,175 @@ export class WarehouseTemplateService {
             is_active: block.is_active ?? true,
             created_by: userId,
         };
+    }
+
+    // ==================== IMAGE METHODS ====================
+
+    /**
+     * Upload ảnh cho WarehouseTemplate
+     * @param templateId ID của template
+     * @param files Danh sách files upload
+     * @param userId ID user thực hiện
+     * @param lang Ngôn ngữ
+     */
+    async uploadImages(
+        templateId: string,
+        files: Express.Multer.File[],
+        userId: string,
+        lang: string,
+    ): Promise<ImageUploadResult[]> {
+        // Kiểm tra template tồn tại
+        const template = await this.repository.findById(templateId);
+        if (!template) {
+            throw new NotFoundException(
+                this.i18n.t('warehouse-template.errors.not_found', { lang }),
+            );
+        }
+
+        // Kiểm tra số lượng ảnh
+        const currentCount = await this.repository.countImagesByTemplateId(templateId);
+        if (currentCount + files.length > MAX_IMAGES_PER_TEMPLATE) {
+            throw new BadRequestException(
+                this.i18n.t('warehouse-template.errors.max_images_exceeded', {
+                    lang,
+                    args: { max: MAX_IMAGES_PER_TEMPLATE },
+                }),
+            );
+        }
+
+        // Upload lên ImageKit
+        const uploadResults = await this.imageUploadService.processAndUploadMultiple(
+            files.map((f) => ({ buffer: f.buffer, originalname: f.originalname })),
+            `/warehouse-templates/${templateId}`,
+        );
+
+        // Lấy order hiện tại
+        let currentOrder = await this.repository.getMaxImageOrder(templateId);
+
+        // Lưu vào database
+        const imageRecords = uploadResults.map((result) => ({
+            warehouse_template_id: templateId,
+            url: result.url,
+            thumbnail_url: result.thumbnailUrl,
+            file_id: result.fileId,
+            original_name: result.name,
+            size: result.size,
+            order: ++currentOrder,
+            created_by: userId,
+        }));
+
+        await this.repository.createManyImages(imageRecords);
+
+        // Invalidate cache
+        await this.redisService.invalidateWarehouseTemplateCache(templateId);
+
+        // Log
+        this.systemLogService.info('warehouse-template', 'upload_images', `Uploaded ${files.length} images for: ${template.name}`, {
+            userId,
+            metaData: { templateId, count: files.length },
+        });
+
+        return uploadResults;
+    }
+
+    /**
+     * Xóa ảnh của WarehouseTemplate
+     * @param templateId ID template
+     * @param imageId ID ảnh
+     * @param userId ID user
+     * @param lang Ngôn ngữ
+     */
+    async deleteImage(
+        templateId: string,
+        imageId: string,
+        userId: string,
+        lang: string,
+    ): Promise<void> {
+        // Kiểm tra template tồn tại
+        const template = await this.repository.findById(templateId);
+        if (!template) {
+            throw new NotFoundException(
+                this.i18n.t('warehouse-template.errors.not_found', { lang }),
+            );
+        }
+
+        // Kiểm tra image tồn tại
+        const image = await this.repository.findImageById(imageId);
+        if (!image || image.warehouse_template_id !== templateId) {
+            throw new NotFoundException(
+                this.i18n.t('warehouse-template.errors.image_not_found', { lang }),
+            );
+        }
+
+        // Xóa trên ImageKit
+        try {
+            await this.imageUploadService.deleteImage(image.file_id);
+        } catch (error) {
+            // Log lỗi nhưng không throw - vẫn xóa trong DB
+            this.systemLogService.error('warehouse-template', 'delete_image_imagekit', `Failed to delete from ImageKit: ${error}`, {
+                userId,
+                metaData: { templateId, imageId, fileId: image.file_id },
+            });
+        }
+
+        // Soft delete trong DB
+        await this.repository.softDeleteImage(imageId, userId);
+
+        // Invalidate cache
+        await this.redisService.invalidateWarehouseTemplateCache(templateId);
+
+        // Log
+        this.systemLogService.info('warehouse-template', 'delete_image', `Deleted image from: ${template.name}`, {
+            userId,
+            metaData: { templateId, imageId },
+        });
+    }
+
+    /**
+     * Sắp xếp lại thứ tự ảnh
+     * @param templateId ID template
+     * @param imageOrders Danh sách { id, order }
+     * @param userId ID user
+     * @param lang Ngôn ngữ
+     */
+    async reorderImages(
+        templateId: string,
+        imageOrders: { id: string; order: number }[],
+        userId: string,
+        lang: string,
+    ): Promise<void> {
+        // Kiểm tra template tồn tại
+        const template = await this.repository.findById(templateId);
+        if (!template) {
+            throw new NotFoundException(
+                this.i18n.t('warehouse-template.errors.not_found', { lang }),
+            );
+        }
+
+        // Batch update order
+        await this.repository.batchUpdateImageOrder(imageOrders);
+
+        // Invalidate cache
+        await this.redisService.invalidateWarehouseTemplateCache(templateId);
+
+        // Log
+        this.systemLogService.info('warehouse-template', 'reorder_images', `Reordered images for: ${template.name}`, {
+            userId,
+            metaData: { templateId, count: imageOrders.length },
+        });
+    }
+
+    /**
+     * Lấy danh sách ảnh của template
+     */
+    async getImages(templateId: string, lang: string) {
+        const template = await this.repository.findById(templateId);
+        if (!template) {
+            throw new NotFoundException(
+                this.i18n.t('warehouse-template.errors.not_found', { lang }),
+            );
+        }
+
+        return this.repository.findImagesByTemplateId(templateId);
     }
 }

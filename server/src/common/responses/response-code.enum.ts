@@ -36,6 +36,10 @@ export enum ResponseCode {
     WAREHOUSE_TEMPLATE_UPDATE_SUCCESS = 'warehouse_template.update_success',
     WAREHOUSE_TEMPLATE_DELETE_SUCCESS = 'warehouse_template.delete_success',
     WAREHOUSE_TEMPLATE_LAYOUT_UPDATE_SUCCESS = 'warehouse_template.layout_update_success',
+    WAREHOUSE_TEMPLATE_IMAGE_UPLOAD_SUCCESS = 'warehouse_template.image_upload_success',
+    WAREHOUSE_TEMPLATE_IMAGE_LIST_SUCCESS = 'warehouse_template.image_list_success',
+    WAREHOUSE_TEMPLATE_IMAGE_DELETE_SUCCESS = 'warehouse_template.image_delete_success',
+    WAREHOUSE_TEMPLATE_IMAGE_REORDER_SUCCESS = 'warehouse_template.image_reorder_success',
 
     ORGANIZATION_CREATE_SUCCESS = 'organization.create_success',
     ORGANIZATION_LIST_SUCCESS = 'organization.list_success',

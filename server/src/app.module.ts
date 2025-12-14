@@ -1,17 +1,14 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
-import {
-  I18nModule,
-  AcceptLanguageResolver,
-  HeaderResolver,
-  QueryResolver,
-} from 'nestjs-i18n';
+import { ScheduleModule } from '@nestjs/schedule';
+import { I18nModule } from 'nestjs-i18n';
 import * as path from 'path';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { SharedModule } from './common/shared.module';
+import { CustomLanguageResolver } from './common/resolvers';
 import { AuthModule } from './modules/auth/auth.module';
 import { TwoFactorModule } from './modules/two-factor/two-factor.module';
 import { AccountModule } from './modules/account/account.module';
@@ -24,6 +21,9 @@ import { OrganizationModule } from './modules/organization/organization.module';
 import { GlobalNotificationModule } from './modules/global-notification/global-notification.module';
 import { UserNotificationModule } from './modules/user-notification/user-notification.module';
 import { OrgNotificationModule } from './modules/org-notification/org-notification.module';
+import { WarehouseModule } from './modules/warehouse/warehouse.module';
+import { RentalContractModule } from './modules/rental-contract/rental-contract.module';
+import { RentalSchedulerModule } from './modules/rental-scheduler/rental-scheduler.module';
 import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
 
 @Module({
@@ -32,6 +32,8 @@ import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
       isGlobal: true,
       envFilePath: '.env',
     }),
+
+    ScheduleModule.forRoot(),
 
     SharedModule,
 
@@ -45,11 +47,7 @@ import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
         path: path.join(__dirname, '/i18n/'),
         watch: true,
       },
-      resolvers: [
-        { use: QueryResolver, options: ['lang'] },
-        AcceptLanguageResolver,
-        new HeaderResolver(['x-lang']),
-      ],
+      resolvers: [CustomLanguageResolver],
     }),
 
     AuthModule,
@@ -71,6 +69,12 @@ import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
     UserNotificationModule,
 
     OrgNotificationModule,
+
+    WarehouseModule,
+
+    RentalContractModule,
+
+    RentalSchedulerModule,
   ],
   controllers: [AppController],
   providers: [
@@ -86,3 +90,4 @@ import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
   ],
 })
 export class AppModule { }
+

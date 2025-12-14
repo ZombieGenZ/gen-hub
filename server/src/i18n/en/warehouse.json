@@ -1,0 +1,44 @@
+{
+    "success": {
+        "created": "Warehouse created successfully",
+        "updated": "Warehouse updated successfully",
+        "deleted": "Warehouse deleted successfully",
+        "fetched": "Warehouse data fetched successfully",
+        "layout_fetched": "Warehouse layout fetched successfully"
+    },
+    "errors": {
+        "not_found": "Warehouse not found",
+        "create_failed": "Cannot create warehouse",
+        "update_failed": "Cannot update warehouse",
+        "delete_failed": "Cannot delete warehouse",
+        "template_not_found": "Warehouse template not found",
+        "template_not_available": "Warehouse template is not available for rent",
+        "row_not_available": "Row is not available for rent",
+        "row_locked": "Row is being held by another user",
+        "template_locked": "Warehouse template is being held by another user",
+        "not_shared_warehouse": "This warehouse does not allow row-based rental",
+        "no_permission": "You do not have permission to perform this action",
+        "organization_not_found": "Organization not found"
+    },
+    "validation": {
+        "name_required": "Warehouse name is required",
+        "name_string": "Warehouse name must be a string",
+        "name_max_length": "Warehouse name must not exceed 255 characters",
+        "description_string": "Description must be a string",
+        "template_id_required": "Template ID is required",
+        "template_id_uuid": "Template ID must be a valid UUID",
+        "organization_id_required": "Organization ID is required",
+        "organization_id_uuid": "Organization ID must be a valid UUID",
+        "row_ids_array": "Row IDs must be an array",
+        "row_id_uuid": "Row ID must be a valid UUID",
+        "rental_months_required": "Rental months is required",
+        "rental_months_positive": "Rental months must be a positive number",
+        "rental_months_min": "Minimum rental period is 1 month",
+        "id_required": "ID is required",
+        "id_uuid": "ID must be a valid UUID",
+        "limit_positive": "Limit must be a positive number",
+        "offset_min": "Offset must be >= 0",
+        "keywords_string": "Keywords must be a string",
+        "is_active_boolean": "Status must be a boolean"
+    }
+}

@@ -259,6 +259,9 @@ model WarehouseTemplate {
   length Int
   width  Int
 
+  // Cho phép thuê theo từng row (shared warehouse)
+  is_shared_warehouse Boolean @default(false)
+
   is_rented             Boolean @default(false)
   price_per_month         Decimal @db.Decimal(19, 4)
   discount_1_month      Decimal @default(0) @db.Decimal(5, 2)
@@ -290,9 +293,37 @@ model WarehouseTemplate {
   updated_by String?
   deleted_by String?
 
-  rows RowTemplate[]
+  rows   RowTemplate[]
+  images WarehouseTemplateImage[]
+  rental_contract_details RentalContractDetail[]
 
   @@map("warehouse_templates")
+}
+
+// Ảnh preview của WarehouseTemplate (có thể upload nhiều ảnh)
+model WarehouseTemplateImage {
+  id                    String  @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  warehouse_template_id String  @db.Uuid
+  url                   String  // URL ảnh đã xử lý (nén + watermark)
+  thumbnail_url         String? // URL thumbnail
+  file_id               String  // ImageKit file ID để xóa
+  original_name         String? // Tên file gốc
+  size                  Int?    // Kích thước file (bytes)
+  order                 Int     @default(0) // Thứ tự hiển thị
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean?  @default(false)
+  deleted_at DateTime?
+
+  created_by String
+  deleted_by String?
+
+  warehouse_template WarehouseTemplate @relation(fields: [warehouse_template_id], references: [id], onDelete: Cascade)
+
+  @@index([warehouse_template_id])
+  @@map("warehouse_template_images")
 }
 
 model RowTemplate {
@@ -430,6 +461,7 @@ model RentalContract {
 
   started_at         DateTime
   expired_at         DateTime?
+  actual_ended_at    DateTime?
   overdue_level_1_at DateTime?
   overdue_level_2_at DateTime?
   overdue_level_3_at DateTime?
@@ -465,13 +497,22 @@ model RentalContract {
 model RentalContractDetail {
   id                 String  @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
   rental_contract_id String  @db.Uuid
+
+  // Template reference (dùng để copy sang warehouse sau thanh toán)
+  warehouse_template_id String  @db.Uuid
+  warehouse_name        String              // Tên kho (dùng khi tạo warehouse)
+  warehouse_description String?             // Mô tả kho
+  row_template_ids      String[] @default([]) // Mảng ID row templates (nếu thuê theo row)
+  is_whole_warehouse    Boolean  @default(true) // True nếu thuê cả kho
+
+  // Warehouse/Row thực tế (sau khi thanh toán và copy từ template)
   warehouse_id       String? @db.Uuid
   row_id             String? @db.Uuid
 
   price_per_month Decimal @db.Decimal(19, 4)
-  discount_rate Decimal @default(0) @db.Decimal(5, 2)
-  rental_days   Int
-  subtotal      Decimal @db.Decimal(19, 4)
+  discount_rate   Decimal @default(0) @db.Decimal(5, 2)
+  rental_days     Int
+  subtotal        Decimal @db.Decimal(19, 4)
 
   notes String?
 
@@ -485,44 +526,16 @@ model RentalContractDetail {
   updated_by String?
   deleted_by String?
 
-  rental_contract RentalContract @relation(fields: [rental_contract_id], references: [id], onDelete: Cascade)
-  warehouse       Warehouse?     @relation(fields: [warehouse_id], references: [id])
-  row             Row?           @relation(fields: [row_id], references: [id])
+  rental_contract    RentalContract     @relation(fields: [rental_contract_id], references: [id], onDelete: Cascade)
+  warehouse_template WarehouseTemplate  @relation(fields: [warehouse_template_id], references: [id])
+  warehouse          Warehouse?         @relation(fields: [warehouse_id], references: [id])
+  row                Row?               @relation(fields: [row_id], references: [id])
 
   @@index([rental_contract_id])
+  @@index([warehouse_template_id])
   @@index([warehouse_id])
   @@index([row_id])
   @@map("rental_contract_details")
-}
-
-model Row {
-  id           String  @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
-  warehouse_id String  @db.Uuid
-  name         String
-  code         String
-  description  String?
-  is_rented    Boolean @default(false)
-
-  position_x        Decimal? @db.Decimal(10, 4)
-  position_y        Decimal? @db.Decimal(10, 4)
-  position_rotation Decimal? @db.Decimal(10, 4)
-
-  is_active  Boolean   @default(true)
-  created_at DateTime  @default(now())
-  updated_at DateTime? @updatedAt
-  is_deleted Boolean?  @default(false)
-  deleted_at DateTime?
-
-  created_by String
-  updated_by String?
-  deleted_by String?
-
-  warehouse               Warehouse              @relation(fields: [warehouse_id], references: [id], onDelete: Cascade)
-  racks                   Rack[]
-  rental_contract_details RentalContractDetail[]
-
-  @@index([warehouse_id])
-  @@map("rows")
 }
 
 model Organization {
@@ -804,6 +817,33 @@ model Partner {
   @@map("partners")
 }
 
+model Unit {
+  id                         String    @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  organization_id            String    @db.Uuid
+  is_used_multiple_languages Boolean   @default(false)
+  // language_key               String?
+  name                       String?
+  description                String?
+  is_active                  Boolean   @default(true)
+  created_at                 DateTime  @default(now())
+  updated_at                 DateTime  @updatedAt
+  is_deleted                 Boolean?  @default(false)
+  deleted_at                 DateTime?
+
+  created_by String
+  updated_by String?
+  deleted_by String?
+
+  organization Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+
+  products_as_base      Product[]       @relation("ProductBaseUnit")
+  product_units_as_conv ProductUnit[]   @relation("UnitConversion")
+  receipt_details       ReceiptDetail[]
+  export_details        ExportDetail[]
+
+  @@map("units")
+}
+
 model Warehouse {
   id              String  @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
   name            String
@@ -856,31 +896,34 @@ model Warehouse {
   @@map("warehouses")
 }
 
-model Unit {
-  id                         String    @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
-  organization_id            String    @db.Uuid
-  is_used_multiple_languages Boolean   @default(false)
-  // language_key               String?
-  name                       String?
-  description                String?
-  is_active                  Boolean   @default(true)
-  created_at                 DateTime  @default(now())
-  updated_at                 DateTime  @updatedAt
-  is_deleted                 Boolean?  @default(false)
-  deleted_at                 DateTime?
+model Row {
+  id           String  @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  warehouse_id String  @db.Uuid
+  name         String
+  code         String
+  description  String?
+  is_rented    Boolean @default(false)
+
+  position_x        Decimal? @db.Decimal(10, 4)
+  position_y        Decimal? @db.Decimal(10, 4)
+  position_rotation Decimal? @db.Decimal(10, 4)
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean?  @default(false)
+  deleted_at DateTime?
 
   created_by String
   updated_by String?
   deleted_by String?
 
-  organization Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  warehouse               Warehouse              @relation(fields: [warehouse_id], references: [id], onDelete: Cascade)
+  racks                   Rack[]
+  rental_contract_details RentalContractDetail[]
 
-  products_as_base      Product[]       @relation("ProductBaseUnit")
-  product_units_as_conv ProductUnit[]   @relation("UnitConversion")
-  receipt_details       ReceiptDetail[]
-  export_details        ExportDetail[]
-
-  @@map("units")
+  @@index([warehouse_id])
+  @@map("rows")
 }
 
 model Product {

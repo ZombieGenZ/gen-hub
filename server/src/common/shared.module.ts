@@ -12,6 +12,8 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { AccessVerificationGuard } from './guards/access-verification.guard';
 import { CustomThrottlerGuard } from './guards/throttler.guard';
 
+import { ImageUploadService } from './services/image-upload.service';
+
 /**
  * Shared Module
  * Chứa các module, providers và exports thường được sử dụng chung
@@ -50,7 +52,12 @@ import { CustomThrottlerGuard } from './guards/throttler.guard';
       },
     ]),
   ],
-  providers: [JwtAuthGuard, AccessVerificationGuard, CustomThrottlerGuard],
+  providers: [
+    JwtAuthGuard,
+    AccessVerificationGuard,
+    CustomThrottlerGuard,
+    ImageUploadService,
+  ],
   exports: [
     ConfigModule,
     AppConfigModule,
@@ -63,6 +70,8 @@ import { CustomThrottlerGuard } from './guards/throttler.guard';
     JwtAuthGuard,
     AccessVerificationGuard,
     CustomThrottlerGuard,
+    ImageUploadService,
   ],
 })
-export class SharedModule {}
+export class SharedModule { }
+
