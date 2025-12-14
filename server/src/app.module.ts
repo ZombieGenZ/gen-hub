@@ -2,17 +2,13 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
-import {
-  I18nModule,
-  AcceptLanguageResolver,
-  HeaderResolver,
-  QueryResolver,
-} from 'nestjs-i18n';
+import { I18nModule } from 'nestjs-i18n';
 import * as path from 'path';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { SharedModule } from './common/shared.module';
+import { CustomLanguageResolver } from './common/resolvers';
 import { AuthModule } from './modules/auth/auth.module';
 import { TwoFactorModule } from './modules/two-factor/two-factor.module';
 import { AccountModule } from './modules/account/account.module';
@@ -51,11 +47,7 @@ import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
         path: path.join(__dirname, '/i18n/'),
         watch: true,
       },
-      resolvers: [
-        { use: QueryResolver, options: ['lang'] },
-        AcceptLanguageResolver,
-        new HeaderResolver(['x-lang']),
-      ],
+      resolvers: [CustomLanguageResolver],
     }),
 
     AuthModule,

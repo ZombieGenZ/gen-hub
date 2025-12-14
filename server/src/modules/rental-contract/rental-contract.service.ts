@@ -11,13 +11,14 @@ import { Decimal } from '@prisma/client/runtime/library';
 import { ContractStatus, Prisma } from '@prisma/client';
 
 import { RentalContractRepository } from './rental-contract.repository';
-import { CreateRentalContractDto, UpdateRentalContractDto, QueryRentalContractDto } from './dto';
-import { IRentalContractWithRelations, IPaginatedResponse, ICreateContractResult, IRentalPriceCalculation } from './interfaces';
+import { CreateRentalContractDto, UpdateRentalContractDto, QueryRentalContractDto, RentalTemplateItemDto } from './dto';
+import { IRentalContractWithRelations, IPaginatedResponse, ICreateContractResult, IRentalPriceCalculation, IContractTimeChangedEmail } from './interfaces';
 import { RedisService } from '../redis/redis.service';
 import { WebsocketGateway } from '../websocket/websocket.gateway';
 import { SystemLogService } from '../system-log/system-log.service';
 import { OrganizationAuditLogService } from '../organization/organization-audit-log.service';
 import { WarehouseTemplateRepository } from '../warehouse-template/warehouse-template.repository';
+import { EmailService } from '../notification/email.service';
 
 /**
  * Service xử lý business logic cho RentalContract
@@ -29,6 +30,7 @@ export class RentalContractService {
     private readonly LOCK_DURATION_HOURS: number;
     private readonly MAX_PENDING_PER_USER: number;
     private readonly CONTRACT_PREFIX: string;
+    private readonly ALLOWED_MONTHS: number[];
 
     constructor(
         private readonly repository: RentalContractRepository,
@@ -39,22 +41,37 @@ export class RentalContractService {
         private readonly auditLogService: OrganizationAuditLogService,
         private readonly configService: ConfigService,
         private readonly i18n: I18nService,
+        private readonly emailService: EmailService,
     ) {
         this.CONTRACT_CACHE_TTL = this.configService.get<number>('REDIS_RENTAL_CONTRACT_CACHE_TTL') || 300;
         this.CONTRACT_LIST_CACHE_TTL = this.configService.get<number>('REDIS_RENTAL_CONTRACT_LIST_CACHE_TTL') || 60;
         this.LOCK_DURATION_HOURS = this.configService.get<number>('RENTAL_LOCK_DURATION_HOURS') || 1;
         this.MAX_PENDING_PER_USER = this.configService.get<number>('RENTAL_MAX_PENDING_PER_USER') || 3;
         this.CONTRACT_PREFIX = this.configService.get<string>('RENTAL_CONTRACT_PREFIX') || 'GENHUB';
+
+        // Parse allowed months từ config
+        const allowedMonthsStr = this.configService.get<string>('RENTAL_ALLOWED_MONTHS') || '1,3,6,12,24,36';
+        this.ALLOWED_MONTHS = allowedMonthsStr.split(',').map(m => parseInt(m.trim(), 10)).filter(m => !isNaN(m));
     }
 
     /**
-     * Tạo hợp đồng thuê mới
+     * Tạo hợp đồng thuê mới (hỗ trợ nhiều templates)
      */
     async create(
         dto: CreateRentalContractDto,
         userId: string,
         lang: string,
     ): Promise<ICreateContractResult> {
+        // Validate rental_months
+        if (!this.ALLOWED_MONTHS.includes(dto.rental_months)) {
+            throw new BadRequestException(
+                this.i18n.t('rental-contract.validation.rental_months_invalid', {
+                    lang,
+                    args: { allowed: this.ALLOWED_MONTHS.join(', ') },
+                }),
+            );
+        }
+
         // Kiểm tra giới hạn pending contracts
         const pendingCount = await this.repository.countPendingByUser(userId);
         if (pendingCount >= this.MAX_PENDING_PER_USER) {
@@ -63,70 +80,91 @@ export class RentalContractService {
             );
         }
 
-        // Lấy template
-        const template = await this.templateRepository.findById(dto.template_id);
-        if (!template) {
-            throw new NotFoundException(
-                this.i18n.t('warehouse.errors.template_not_found', { lang }),
+        // Validate và tính giá cho tất cả templates
+        const allPriceDetails: IRentalPriceCalculation[] = [];
+        const lockKeys: string[] = [];
+        let totalPrice = 0;
+        let overallDiscountRate = 0;
+
+        for (const templateItem of dto.templates) {
+            const template = await this.templateRepository.findById(templateItem.template_id);
+            if (!template) {
+                throw new NotFoundException(
+                    this.i18n.t('rental-contract.errors.template_not_found', { lang }),
+                );
+            }
+
+            const isWholeWarehouse = !templateItem.row_template_ids || templateItem.row_template_ids.length === 0;
+
+            // Validate row templates nếu thuê theo row
+            if (!isWholeWarehouse && !template.is_shared_warehouse) {
+                throw new BadRequestException(
+                    this.i18n.t('warehouse.errors.not_shared_warehouse', { lang }),
+                );
+            }
+
+            // Tạo lock keys
+            if (isWholeWarehouse) {
+                lockKeys.push(`rental:lock:template:${templateItem.template_id}`);
+            } else {
+                templateItem.row_template_ids!.forEach(rowId => {
+                    lockKeys.push(`rental:lock:row:${rowId}`);
+                });
+            }
+
+            // Tính giá cho template này
+            const priceDetail = await this.calculateRentalPriceForTemplate(
+                template,
+                templateItem,
+                dto.rental_months,
+                isWholeWarehouse,
             );
+            allPriceDetails.push(priceDetail);
+            totalPrice += priceDetail.subtotal;
         }
 
-        // Validate và lock kho/rows
-        const isWholeWarehouse = !dto.row_ids || dto.row_ids.length === 0;
-
-        if (!isWholeWarehouse && !template.is_shared_warehouse) {
-            throw new BadRequestException(
-                this.i18n.t('warehouse.errors.not_shared_warehouse', { lang }),
-            );
+        // Tính discount rate trung bình
+        if (allPriceDetails.length > 0) {
+            overallDiscountRate = allPriceDetails.reduce((sum, d) => sum + d.discountRate, 0) / allPriceDetails.length;
         }
 
-        // Kiểm tra và khóa trong Redis
-        const lockKey = isWholeWarehouse
-            ? `rental:lock:template:${dto.template_id}`
-            : dto.row_ids!.map(id => `rental:lock:row:${id}`);
-
-        const lockResult = await this.acquireLock(lockKey);
+        // Acquire locks
+        const lockResult = await this.acquireLock(lockKeys);
         if (!lockResult.success) {
             throw new ConflictException(
-                isWholeWarehouse
-                    ? this.i18n.t('warehouse.errors.template_locked', { lang })
-                    : this.i18n.t('warehouse.errors.row_locked', { lang }),
+                this.i18n.t('warehouse.errors.template_locked', { lang }),
             );
         }
 
         try {
-            // Tính giá thuê
-            const rentalDays = dto.rental_months * 30;
-            const { totalPrice, discountRate, details } = await this.calculateRentalPrice(
-                template,
-                dto.row_ids,
-                dto.rental_months,
-                isWholeWarehouse,
-            );
-
             // Generate contract code
             const code = this.generateContractCode();
+            const rentalDays = dto.rental_months * 30;
 
-            // Tạo contract
             const startedAt = new Date();
             const expiredAt = new Date(startedAt.getTime() + rentalDays * 24 * 60 * 60 * 1000);
 
             const contractData: Prisma.RentalContractCreateInput = {
                 code,
-                name: dto.name || `Hợp đồng thuê kho ${template.name}`,
+                name: `Hợp đồng thuê ${dto.templates.length} kho`,
                 status: ContractStatus.PENDING,
                 started_at: startedAt,
                 expired_at: expiredAt,
                 total_price: new Decimal(totalPrice),
-                discount_rate: new Decimal(discountRate),
-                final_price: new Decimal(totalPrice * (1 - discountRate / 100)),
+                discount_rate: new Decimal(overallDiscountRate),
+                final_price: new Decimal(totalPrice),
                 notes: dto.notes,
                 created_by: userId,
                 organization: { connect: { id: dto.organization_id } },
             };
 
-            const detailsData = details.map(d => ({
-                rental_contract_id: '', // Placeholder, sẽ được set trong createWithDetails
+            const detailsData = allPriceDetails.map(d => ({
+                rental_contract_id: '',
+                warehouse_template_id: d.templateId,
+                warehouse_name: d.warehouseName,
+                warehouse_description: d.warehouseDescription || null,
+                row_template_ids: d.rowTemplateIds,
+                is_whole_warehouse: d.isWholeWarehouse,
                 price_per_month: new Decimal(d.pricePerMonth),
                 discount_rate: new Decimal(d.discountRate),
                 rental_days: d.rentalDays,
@@ -139,7 +177,7 @@ export class RentalContractService {
             // Log
             this.systemLogService.info('rental-contract', 'create', `Created rental contract: ${code}`, {
                 userId,
-                metaData: { contractId: contract.id, templateId: dto.template_id, code },
+                metaData: { contractId: contract.id, templateCount: dto.templates.length, code },
             });
 
             // Audit log
@@ -156,11 +194,9 @@ export class RentalContractService {
 
             return {
                 contract,
-                // paymentUrl sẽ được tạo từ PayOS service
             };
         } catch (error) {
-            // Release lock nếu có lỗi
-            await this.releaseLock(lockKey);
+            await this.releaseLock(lockKeys);
             throw error;
         }
     }
@@ -224,7 +260,7 @@ export class RentalContractService {
     }
 
     /**
-     * Cập nhật/gia hạn hợp đồng
+     * Cập nhật hợp đồng (name, notes, điều chỉnh thời gian)
      */
     async update(
         id: string,
@@ -233,7 +269,7 @@ export class RentalContractService {
         organizationId: string,
         lang: string,
     ): Promise<IRentalContractWithRelations> {
-        const existing = await this.repository.findById(id);
+        const existing = await this.repository.findByIdWithOrganization(id);
         if (!existing) {
             throw new NotFoundException(
                 this.i18n.t('rental-contract.errors.not_found', { lang }),
@@ -246,8 +282,8 @@ export class RentalContractService {
             );
         }
 
-        // Chỉ cho phép gia hạn hợp đồng ACTIVE
-        if (dto.additional_months && existing.status !== ContractStatus.ACTIVE) {
+        // Chỉ cho phép điều chỉnh thời gian hợp đồng ACTIVE
+        if (dto.adjust_months && existing.status !== ContractStatus.ACTIVE) {
             throw new BadRequestException(
                 this.i18n.t('rental-contract.errors.cannot_renew', { lang }),
             );
@@ -258,12 +294,21 @@ export class RentalContractService {
         };
 
         if (dto.name) updateData.name = dto.name;
-        if (dto.notes) updateData.notes = dto.notes;
+        if (dto.notes !== undefined) updateData.notes = dto.notes;
 
-        // Gia hạn hợp đồng
-        if (dto.additional_months && existing.expired_at) {
-            const newExpiredAt = new Date(existing.expired_at);
-            newExpiredAt.setDate(newExpiredAt.getDate() + dto.additional_months * 30);
+        // Điều chỉnh thời gian hợp đồng
+        let newExpiredAt: Date | null = null;
+        if (dto.adjust_months && dto.adjust_months !== 0 && existing.expired_at) {
+            newExpiredAt = new Date(existing.expired_at);
+            newExpiredAt.setMonth(newExpiredAt.getMonth() + dto.adjust_months);
+
+            // Validate: không cho giảm xuống dưới ngày hiện tại
+            if (newExpiredAt < new Date()) {
+                throw new BadRequestException(
+                    this.i18n.t('rental-contract.errors.cannot_reduce_past_now', { lang }),
+                );
+            }
+
             updateData.expired_at = newExpiredAt;
         }
 
@@ -275,11 +320,31 @@ export class RentalContractService {
             this.invalidateContractListCache(),
         ]);
 
+        // Gửi email thông báo nếu thay đổi thời gian
+        if (dto.adjust_months && dto.adjust_months !== 0 && newExpiredAt && existing.organization?.owner) {
+            try {
+                await this.sendContractTimeChangedEmail({
+                    ownerEmail: existing.organization.owner.email,
+                    ownerName: existing.organization.owner.full_name,
+                    contractCode: existing.code,
+                    adjustMonths: dto.adjust_months,
+                    newExpiredAt,
+                    lang,
+                });
+            } catch (emailError) {
+                // Log lỗi email nhưng không throw
+                this.systemLogService.error('rental-contract', 'email', 'Failed to send contract time changed email', {
+                    userId,
+                    metaData: { contractId: id, error: String(emailError) },
+                });
+            }
+        }
+
         // Log
-        const action = dto.additional_months ? 'renew' : 'update';
-        this.systemLogService.info('rental-contract', action, `${action === 'renew' ? 'Renewed' : 'Updated'} rental contract: ${contract.code}`, {
+        const action = dto.adjust_months && dto.adjust_months > 0 ? 'renew' : dto.adjust_months && dto.adjust_months < 0 ? 'reduce' : 'update';
+        this.systemLogService.info('rental-contract', action, `${action} rental contract: ${contract.code}`, {
             userId,
-            metaData: { contractId: id, additionalMonths: dto.additional_months },
+            metaData: { contractId: id, adjustMonths: dto.adjust_months },
         });
 
         // Audit log
@@ -289,7 +354,7 @@ export class RentalContractService {
             id,
             { name: existing.name, expired_at: existing.expired_at } as unknown as Record<string, unknown>,
             dto as unknown as Record<string, unknown>,
-            { userId, description: `${action === 'renew' ? 'Renewed' : 'Updated'} rental contract: ${contract.code}` },
+            { userId, description: `${action} rental contract: ${contract.code}` },
         );
 
         return contract;
@@ -325,7 +390,8 @@ export class RentalContractService {
             );
         }
 
-        await this.repository.softDelete(id, userId);
+        // Set actual_ended_at và soft delete
+        await this.repository.cancelContract(id, userId);
 
         // Release lock nếu còn
         const lockKey = `rental:lock:contract:${id}`;
@@ -364,50 +430,42 @@ export class RentalContractService {
         return `${this.CONTRACT_PREFIX}-${result}`;
     }
 
-    private async calculateRentalPrice(
+    private async calculateRentalPriceForTemplate(
         template: any,
-        rowIds: string[] | undefined,
+        templateItem: RentalTemplateItemDto,
         months: number,
         isWholeWarehouse: boolean,
-    ): Promise<{
-        totalPrice: number;
-        discountRate: number;
-        details: IRentalPriceCalculation[];
-    }> {
+    ): Promise<IRentalPriceCalculation> {
         const discountRate = this.getDiscountRate(months, isWholeWarehouse, template);
         const rentalDays = months * 30;
-        const details: IRentalPriceCalculation[] = [];
 
-        let totalPrice = 0;
+        let pricePerMonth = 0;
+        let subtotal = 0;
 
         if (isWholeWarehouse) {
-            const pricePerMonth = Number(template.price_per_month);
-            const subtotal = pricePerMonth * months * (1 - discountRate / 100);
-            totalPrice = subtotal;
-            details.push({
-                pricePerMonth,
-                discountRate,
-                rentalDays,
-                subtotal,
-            });
-        } else if (rowIds && rowIds.length > 0) {
-            for (const rowId of rowIds) {
+            pricePerMonth = Number(template.price_per_month);
+            subtotal = pricePerMonth * months * (1 - discountRate / 100);
+        } else if (templateItem.row_template_ids && templateItem.row_template_ids.length > 0) {
+            for (const rowId of templateItem.row_template_ids) {
                 const row = template.rows?.find((r: any) => r.id === rowId);
                 if (row) {
-                    const pricePerMonth = Number(row.price_per_month);
-                    const subtotal = pricePerMonth * months * (1 - discountRate / 100);
-                    totalPrice += subtotal;
-                    details.push({
-                        pricePerMonth,
-                        discountRate,
-                        rentalDays,
-                        subtotal,
-                    });
+                    pricePerMonth += Number(row.price_per_month);
                 }
             }
+            subtotal = pricePerMonth * months * (1 - discountRate / 100);
         }
 
-        return { totalPrice, discountRate, details };
+        return {
+            templateId: templateItem.template_id,
+            warehouseName: templateItem.warehouse_name,
+            warehouseDescription: templateItem.warehouse_description,
+            rowTemplateIds: templateItem.row_template_ids || [],
+            isWholeWarehouse,
+            pricePerMonth,
+            discountRate,
+            rentalDays,
+            subtotal,
+        };
     }
 
     private getDiscountRate(months: number, isWholeWarehouse: boolean, template: any): number {
@@ -433,6 +491,31 @@ export class RentalContractService {
         }
 
         return Math.min(baseDiscount, 100);
+    }
+
+    private async sendContractTimeChangedEmail(data: IContractTimeChangedEmail): Promise<void> {
+        const isExtension = data.adjustMonths > 0;
+        const subject = this.i18n.t(
+            isExtension ? 'rental-contract.email.contract_extended_subject' : 'rental-contract.email.contract_reduced_subject',
+            { lang: data.lang, args: { code: data.contractCode } },
+        );
+        const body = this.i18n.t(
+            isExtension ? 'rental-contract.email.contract_extended_body' : 'rental-contract.email.contract_reduced_body',
+            {
+                lang: data.lang,
+                args: {
+                    code: data.contractCode,
+                    months: Math.abs(data.adjustMonths),
+                    date: data.newExpiredAt.toLocaleDateString('vi-VN'),
+                },
+            },
+        );
+
+        await this.emailService.sendEmail({
+            to: data.ownerEmail,
+            subject: String(subject),
+            text: String(body),
+        });
     }
 
     private async acquireLock(keys: string | string[]): Promise<{ success: boolean }> {

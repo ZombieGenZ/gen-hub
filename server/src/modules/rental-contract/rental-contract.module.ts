@@ -5,6 +5,7 @@ import { WebsocketModule } from '../websocket/websocket.module';
 import { SystemLogModule } from '../system-log/system-log.module';
 import { OrganizationModule } from '../organization/organization.module';
 import { WarehouseTemplateModule } from '../warehouse-template/warehouse-template.module';
+import { NotificationModule } from '../notification/notification.module';
 
 import { RentalContractController } from './rental-contract.controller';
 import { RentalContractService } from './rental-contract.service';
@@ -17,6 +18,7 @@ import { RentalContractRepository } from './rental-contract.repository';
         WebsocketModule,
         SystemLogModule,
         OrganizationModule,
+        NotificationModule,
         forwardRef(() => WarehouseTemplateModule),
     ],
     controllers: [RentalContractController],
@@ -24,3 +26,4 @@ import { RentalContractRepository } from './rental-contract.repository';
     exports: [RentalContractService, RentalContractRepository],
 })
 export class RentalContractModule { }
+

@@ -25,6 +25,53 @@ export class RentalContractRepository {
         details: {
             where: { is_deleted: false },
             include: {
+                warehouse_template: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+                warehouse: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+                row: {
+                    select: {
+                        id: true,
+                        name: true,
+                        code: true,
+                    },
+                },
+            },
+        },
+    };
+
+    // Include với owner info để gửi email
+    private readonly fullIncludeWithOwner = {
+        organization: {
+            select: {
+                id: true,
+                name: true,
+                owner: {
+                    select: {
+                        id: true,
+                        email: true,
+                        full_name: true,
+                    },
+                },
+            },
+        },
+        details: {
+            where: { is_deleted: false },
+            include: {
+                warehouse_template: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
                 warehouse: {
                     select: {
                         id: true,
@@ -65,7 +112,7 @@ export class RentalContractRepository {
 
     async createWithDetails(
         contractData: Prisma.RentalContractCreateInput,
-        detailsData: Prisma.RentalContractDetailCreateManyInput[],
+        detailsData: any[],
     ): Promise<IRentalContractWithRelations> {
         return this.prisma.$transaction(async (tx) => {
             const contract = await tx.rentalContract.create({
@@ -92,6 +139,16 @@ export class RentalContractRepository {
         return this.prisma.rentalContract.findFirst({
             where: { id, is_deleted: false },
             include: this.fullInclude,
+        }) as unknown as IRentalContractWithRelations | null;
+    }
+
+    /**
+     * Lấy contract kèm thông tin owner (để gửi email)
+     */
+    async findByIdWithOrganization(id: string): Promise<IRentalContractWithRelations | null> {
+        return this.prisma.rentalContract.findFirst({
+            where: { id, is_deleted: false },
+            include: this.fullIncludeWithOwner,
         }) as unknown as IRentalContractWithRelations | null;
     }
 
@@ -174,6 +231,23 @@ export class RentalContractRepository {
     }
 
     /**
+     * Hủy hợp đồng với actual_ended_at
+     */
+    async cancelContract(id: string, deletedBy: string): Promise<IRentalContractWithRelations> {
+        return this.prisma.rentalContract.update({
+            where: { id },
+            data: {
+                is_deleted: true,
+                deleted_at: new Date(),
+                deleted_by: deletedBy,
+                status: ContractStatus.CANCELLED,
+                actual_ended_at: new Date(),
+            },
+            include: this.fullInclude,
+        }) as unknown as IRentalContractWithRelations;
+    }
+
+    /**
      * Đếm số hợp đồng PENDING của user trong organization
      */
     async countPendingByUser(userId: string): Promise<number> {
@@ -249,3 +323,4 @@ export class RentalContractRepository {
         return this.prisma.$transaction(fn);
     }
 }
+
