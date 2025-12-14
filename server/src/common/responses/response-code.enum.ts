@@ -100,6 +100,13 @@ export enum ResponseCode {
     WAREHOUSE_UPDATE_SUCCESS = 'warehouse.update_success',
     WAREHOUSE_DELETE_SUCCESS = 'warehouse.delete_success',
 
+    // Rental Contract
+    RENTAL_CONTRACT_CREATE_SUCCESS = 'rental_contract.create_success',
+    RENTAL_CONTRACT_LIST_SUCCESS = 'rental_contract.list_success',
+    RENTAL_CONTRACT_READ_SUCCESS = 'rental_contract.read_success',
+    RENTAL_CONTRACT_UPDATE_SUCCESS = 'rental_contract.update_success',
+    RENTAL_CONTRACT_DELETE_SUCCESS = 'rental_contract.delete_success',
+
     // Client Errors (4xx)
     ERROR_VALIDATION = 'error.validation',
     ERROR_BAD_REQUEST = 'error.bad_request',

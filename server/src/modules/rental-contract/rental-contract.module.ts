@@ -8,6 +8,7 @@ import { WarehouseTemplateModule } from '../warehouse-template/warehouse-templat
 import { NotificationModule } from '../notification/notification.module';
 
 import { RentalContractController } from './rental-contract.controller';
+import { OrgRentalContractController } from './org-rental-contract.controller';
 import { RentalContractService } from './rental-contract.service';
 import { RentalContractRepository } from './rental-contract.repository';
 
@@ -21,7 +22,7 @@ import { RentalContractRepository } from './rental-contract.repository';
         NotificationModule,
         forwardRef(() => WarehouseTemplateModule),
     ],
-    controllers: [RentalContractController],
+    controllers: [RentalContractController, OrgRentalContractController],
     providers: [RentalContractService, RentalContractRepository],
     exports: [RentalContractService, RentalContractRepository],
 })

@@ -255,6 +255,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
       await this.seedOrganizationPermissions();
       await this.seedNotificationPermissions();
       await this.seedRentalContractPermissions();
+      await this.seedWarehousePermissions();
       await this.seedVietnamAdministrative();
     } catch (error: unknown) {
       const errorMessage =
@@ -892,6 +893,131 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         error instanceof Error ? error.message : String(error);
       this.logger.error(
         `❌ Failed to seed rental contract permissions: ${errorMessage}`,
+      );
+    }
+  }
+
+  /**
+   * Seed các permissions cho Warehouse module
+   * Warehouse là resource cấp tổ chức, tất cả user đã đăng nhập đều có thể sử dụng
+   */
+  private async seedWarehousePermissions() {
+    try {
+      // System-level permissions cho tất cả roles
+      const warehousePermissions = [
+        {
+          key: 'warehouse.list',
+          name: 'Xem danh sách kho',
+          description: 'Quyền xem danh sách kho hàng',
+        },
+        {
+          key: 'warehouse.read',
+          name: 'Xem chi tiết kho',
+          description: 'Quyền xem chi tiết kho hàng',
+        },
+        {
+          key: 'warehouse.update',
+          name: 'Cập nhật kho',
+          description: 'Quyền cập nhật thông tin kho hàng',
+        },
+        {
+          key: 'warehouse.delete',
+          name: 'Xóa kho',
+          description: 'Quyền xóa kho hàng',
+        },
+        {
+          key: 'warehouse.layout.view',
+          name: 'Xem layout kho',
+          description: 'Quyền xem sơ đồ bố trí kho hàng',
+        },
+      ];
+
+      // Tạo system permissions
+      for (const perm of warehousePermissions) {
+        const existing = await this.permission.findFirst({
+          where: { key: perm.key },
+        });
+
+        if (!existing) {
+          await this.permission.create({
+            data: {
+              key: perm.key,
+              name: perm.name,
+              description: perm.description,
+              is_active: true,
+              is_deleted: false,
+            },
+          });
+        }
+      }
+
+      // Gán cho tất cả roles
+      const allRoles = await this.role.findMany({
+        where: { is_deleted: false },
+      });
+
+      const permissionRecords = await this.permission.findMany({
+        where: {
+          key: { in: warehousePermissions.map((p) => p.key) },
+          is_deleted: false,
+        },
+      });
+
+      for (const role of allRoles) {
+        for (const permission of permissionRecords) {
+          const existingAssignment = await this.rolePermission.findFirst({
+            where: {
+              role_id: role.id,
+              permission_id: permission.id,
+            },
+          });
+
+          if (!existingAssignment) {
+            await this.rolePermission.create({
+              data: {
+                role_id: role.id,
+                permission_id: permission.id,
+                is_active: true,
+                is_deleted: false,
+              },
+            });
+          }
+        }
+      }
+
+      // Tạo org-level permissions cho warehouse
+      const orgLevelWarehousePermissions = [
+        { key: 'warehouse.list', name: 'Xem danh sách kho', description: 'Quyền xem danh sách kho trong tổ chức' },
+        { key: 'warehouse.read', name: 'Xem chi tiết kho', description: 'Quyền xem chi tiết kho trong tổ chức' },
+        { key: 'warehouse.update', name: 'Cập nhật kho', description: 'Quyền cập nhật kho trong tổ chức' },
+        { key: 'warehouse.delete', name: 'Xóa kho', description: 'Quyền xóa kho trong tổ chức' },
+        { key: 'warehouse.layout.view', name: 'Xem layout kho', description: 'Quyền xem sơ đồ bố trí kho trong tổ chức' },
+      ];
+
+      for (const perm of orgLevelWarehousePermissions) {
+        const existing = await this.organizationPermission.findFirst({
+          where: { key: perm.key },
+        });
+
+        if (!existing) {
+          await this.organizationPermission.create({
+            data: {
+              key: perm.key,
+              name: perm.name,
+              description: perm.description,
+              is_active: true,
+              is_deleted: false,
+            },
+          });
+        }
+      }
+
+      this.logger.log('✅ Warehouse permissions seeded');
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `❌ Failed to seed warehouse permissions: ${errorMessage}`,
       );
     }
   }
