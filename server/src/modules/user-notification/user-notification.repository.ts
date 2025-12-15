@@ -32,8 +32,8 @@ export class UserNotificationRepository {
         userId: string,
         query: QueryUserNotificationDto,
     ): Promise<IPaginatedResponse<IUserNotification>> {
-        const limit = query.limit ?? this.paginationConfig.defaultLimit;
-        const offset = query.offset ?? this.paginationConfig.defaultOffset;
+        const limit = this.paginationConfig.getLimit(query.limit);
+        const offset = this.paginationConfig.getOffset(query.offset);
 
         const where: Prisma.UserNotificationWhereInput = {
             user_id: userId,

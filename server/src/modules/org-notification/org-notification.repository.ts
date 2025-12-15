@@ -39,8 +39,8 @@ export class OrgNotificationRepository {
         orgId: string,
         query: QueryOrgNotificationDto,
     ): Promise<IPaginatedResponse<IOrgNotification>> {
-        const limit = query.limit ?? this.paginationConfig.defaultLimit;
-        const offset = query.offset ?? this.paginationConfig.defaultOffset;
+        const limit = this.paginationConfig.getLimit(query.limit);
+        const offset = this.paginationConfig.getOffset(query.offset);
 
         const where: Prisma.OrganizationNotificationWhereInput = {
             organization_id: orgId,
