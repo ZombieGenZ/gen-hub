@@ -67,7 +67,9 @@
         "sealed_title": "Kho đã bị niêm phong",
         "sealed_content": "Kho của hợp đồng {code} đã bị niêm phong do quá hạn thanh toán. Vui lòng liên hệ hỗ trợ.",
         "liquidated_title": "Kho đã bị thanh lý",
-        "liquidated_content": "Kho của hợp đồng {code} đã bị thanh lý do không thanh toán trong thời gian quy định."
+        "liquidated_content": "Kho của hợp đồng {code} đã bị thanh lý do không thanh toán trong thời gian quy định.",
+        "cancelled_by_conflict_title": "Hợp đồng đã bị hủy",
+        "cancelled_by_conflict_content": "Hợp đồng {code} đã bị hủy do kho đã được người khác thanh toán và thuê thành công."
     },
     "email": {
         "contract_extended_subject": "[GEN-HUB] Hợp đồng {code} đã được gia hạn",

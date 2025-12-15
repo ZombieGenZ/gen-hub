@@ -4,6 +4,8 @@ import {
   ForbiddenException,
   BadRequestException,
   ConflictException,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { I18nService } from 'nestjs-i18n';
 import { ConfigService } from '@nestjs/config';
@@ -60,6 +62,7 @@ export class RentalContractService {
     private readonly configService: ConfigService,
     private readonly i18n: I18nService,
     private readonly emailService: EmailService,
+    @Inject(forwardRef(() => SepayService))
     private readonly sepayService: SepayService,
     private readonly paymentScheduler: PaymentSchedulerService,
     @InjectQueue('rental-contract') private readonly contractQueue: Queue,
@@ -335,24 +338,33 @@ export class RentalContractService {
 
   /**
    * Lấy danh sách hợp đồng
-   * Nếu có organizationId, kiểm tra quyền đọc trong org đó
+   * - hasListAllPermission = true: xem tất cả
+   * - hasListAllPermission = false: chỉ xem contracts của orgs mà user là owner/member
+   * - Có organization_id trong query: lọc theo org đó
    */
   async findMany(
     query: QueryRentalContractDto,
     userId: string,
-    organizationId?: string,
+    hasListAllPermission: boolean,
     lang: string = 'vi',
   ): Promise<IPaginatedResponse<IRentalContractWithRelations>> {
-    // Nếu có organizationId, kiểm tra quyền đọc
-    if (organizationId) {
+    // Nếu có organization_id trong query, kiểm tra quyền đọc trong org đó
+    if (query.organization_id) {
       await this.checkOrgPermission(
-        organizationId,
+        query.organization_id,
         userId,
         'rental-contract.list',
         lang,
       );
-      // Ghi đè organization_id trong query
-      query.organization_id = organizationId;
+    } else if (!hasListAllPermission) {
+      // Không có quyền list.all và không chỉ định org -> lọc theo user's orgs
+      // Tìm tất cả orgs mà user là owner hoặc member
+      const userOrgs = await this.organizationRepository.findOrgIdsByUser(userId);
+      if (userOrgs.length === 0) {
+        return { items: [], total: 0, limit: query.limit || 10, offset: query.offset || 0, hasMore: false };
+      }
+      // Sẽ lọc theo danh sách org IDs trong repository
+      (query as any).organization_ids = userOrgs;
     }
 
     const queryParams: Record<string, unknown> = {
@@ -361,7 +373,8 @@ export class RentalContractService {
       keywords: query.keywords,
       status: query.status,
       organization_id: query.organization_id,
-      userId, // Thêm userId vào cache key để phân biệt
+      userId,
+      hasListAllPermission,
     };
     const cacheKey = this.getContractListCacheKey(queryParams);
 
@@ -387,12 +400,11 @@ export class RentalContractService {
 
   /**
    * Lấy chi tiết hợp đồng
-   * Kiểm tra quyền: phải là owner/member của org đó hoặc có permission
+   * Kiểm tra quyền: phải là owner/member của org đó
    */
   async findById(
     id: string,
     userId: string,
-    organizationId?: string,
     lang: string = 'vi',
   ): Promise<IRentalContractWithRelations> {
     const cacheKey = this.getContractCacheKey(id);
@@ -400,22 +412,13 @@ export class RentalContractService {
     if (cached) {
       try {
         const contract = JSON.parse(cached) as IRentalContractWithRelations;
-        // Kiểm tra quyền truy cập
-        if (organizationId && contract.organization_id !== organizationId) {
-          throw new ForbiddenException(
-            await this.i18n.translate('rental-contract.errors.no_permission', {
-              lang,
-            }),
-          );
-        }
-        if (organizationId) {
-          await this.checkOrgPermission(
-            contract.organization_id,
-            userId,
-            'rental-contract.read',
-            lang,
-          );
-        }
+        // Kiểm tra user có phải owner/member của org không
+        await this.checkOrgPermission(
+          contract.organization_id,
+          userId,
+          'rental-contract.read',
+          lang,
+        );
         return contract;
       } catch (err) {
         if (err instanceof ForbiddenException) throw err;
@@ -427,15 +430,6 @@ export class RentalContractService {
     if (!contract) {
       throw new NotFoundException(
         this.i18n.t('rental-contract.errors.not_found', { lang }),
-      );
-    }
-
-    // Kiểm tra quyền truy cập
-    if (organizationId && contract.organization_id !== organizationId) {
-      throw new ForbiddenException(
-        await this.i18n.translate('rental-contract.errors.no_permission', {
-          lang,
-        }),
       );
     }
 
@@ -463,7 +457,6 @@ export class RentalContractService {
     id: string,
     dto: UpdateRentalContractDto,
     userId: string,
-    organizationId: string,
     lang: string,
   ): Promise<IRentalContractWithRelations> {
     const existing = await this.repository.findByIdWithOrganization(id);
@@ -473,11 +466,7 @@ export class RentalContractService {
       );
     }
 
-    if (existing.organization_id !== organizationId) {
-      throw new ForbiddenException(
-        this.i18n.t('rental-contract.errors.no_permission', { lang }),
-      );
-    }
+    const organizationId = existing.organization_id;
 
     // Kiểm tra quyền cấp org: owner có full quyền, member cần permission
     await this.checkOrgPermission(
@@ -596,7 +585,6 @@ export class RentalContractService {
   async delete(
     id: string,
     userId: string,
-    organizationId: string,
     lang: string,
   ): Promise<void> {
     const existing = await this.repository.findById(id);
@@ -606,11 +594,7 @@ export class RentalContractService {
       );
     }
 
-    if (existing.organization_id !== organizationId) {
-      throw new ForbiddenException(
-        this.i18n.t('rental-contract.errors.no_permission', { lang }),
-      );
-    }
+    const organizationId = existing.organization_id;
 
     // Kiểm tra quyền cấp org: owner có full quyền, member cần permission
     await this.checkOrgPermission(
@@ -667,11 +651,6 @@ export class RentalContractService {
       { userId, description: `Cancelled rental contract: ${existing.code}` },
     );
   }
-
-  // =====================================================
-  // ORG-LEVEL METHODS (dành cho /organizations/:orgId/rental-contracts)
-  // Yêu cầu: owner hoặc member của organization
-  // =====================================================
 
   /**
    * Lấy danh sách hợp đồng của tổ chức
@@ -1056,6 +1035,96 @@ export class RentalContractService {
       contract,
       payment: paymentResult,
     };
+  }
+
+  /**
+   * Hủy các contracts PENDING xung đột khi một contract được thanh toán thành công
+   * Được gọi từ SepayService khi nhận webhook thanh toán thành công
+   */
+  async cancelConflictingContracts(contractId: string): Promise<void> {
+    // Lấy contract vừa được thanh toán
+    const contract = await this.repository.findById(contractId);
+    if (!contract || !contract.details) {
+      return;
+    }
+
+    // Thu thập templateIds và rowTemplateIds từ contract
+    const templateIds: string[] = [];
+    const rowTemplateIds: string[] = [];
+
+    for (const detail of contract.details) {
+      if (detail.warehouse_template_id) {
+        templateIds.push(detail.warehouse_template_id);
+      }
+      if (detail.row_template_ids && detail.row_template_ids.length > 0) {
+        rowTemplateIds.push(...detail.row_template_ids);
+      }
+    }
+
+    if (templateIds.length === 0 && rowTemplateIds.length === 0) {
+      return;
+    }
+
+    // Tìm các contracts xung đột
+    const conflictingContracts = await this.repository.findConflictingPendingContracts(
+      templateIds,
+      rowTemplateIds,
+      contractId,
+    );
+
+    if (conflictingContracts.length === 0) {
+      return;
+    }
+
+    // Hủy từng contract xung đột
+    for (const conflictContract of conflictingContracts) {
+      try {
+        // Hủy contract
+        await this.repository.cancelContract(conflictContract.id, 'SYSTEM');
+
+        // Hủy các scheduled payments/contracts
+        const payments = await this.repository.findPaymentsByContract(conflictContract.id);
+        for (const payment of payments) {
+          if (payment.status === 'PENDING') {
+            this.paymentScheduler.cancelScheduledExpire(payment.id);
+          }
+        }
+        this.paymentScheduler.cancelScheduledCancel(conflictContract.id);
+
+        // Emit socket event thông báo cho user
+        if (conflictContract.created_by) {
+          this.websocketGateway.server.to(`user:${conflictContract.created_by}`).emit('contract:cancelled_by_conflict', {
+            contractId: conflictContract.id,
+            code: conflictContract.code,
+            reason: 'warehouse_rented_by_others',
+            conflictWithContractId: contractId,
+          });
+        }
+
+        // Log
+        this.systemLogService.info(
+          'rental-contract',
+          'cancel-by-conflict',
+          `Contract ${conflictContract.code} cancelled due to conflict with ${contract.code}`,
+          {
+            metaData: {
+              cancelledContractId: conflictContract.id,
+              activeContractId: contractId,
+            },
+          },
+        );
+      } catch (error) {
+        this.systemLogService.error(
+          'rental-contract',
+          'cancel-by-conflict',
+          `Failed to cancel conflicting contract ${conflictContract.id}: ${error}`,
+          { metaData: { contractId: conflictContract.id, error: String(error) } },
+        );
+      }
+    }
+
+    // Invalidate cache
+    await this.invalidateContractListCache();
   }
 
   // Private helper methods

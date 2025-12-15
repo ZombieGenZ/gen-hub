@@ -125,16 +125,30 @@ export class WarehouseTemplateService {
 
     /**
      * Lấy chi tiết WarehouseTemplate theo ID
+     * Nếu không có quyền list.all, chỉ trả về template is_active = true
      */
-    async findById(id: string, lang: string): Promise<IWarehouseTemplateWithRelations> {
+    async findById(id: string, lang: string, hasListAllPermission: boolean = false): Promise<IWarehouseTemplateWithRelations> {
         // Kiểm tra cache
         const cached = await this.redisService.getWarehouseTemplateCache<IWarehouseTemplateWithRelations>(id);
         if (cached) {
+            // Nếu không có quyền list.all và template không active, trả về not found
+            if (!hasListAllPermission && !cached.is_active) {
+                throw new NotFoundException(
+                    this.i18n.t('warehouse-template.errors.not_found', { lang }),
+                );
+            }
             return cached;
         }
 
         const template = await this.repository.findById(id);
         if (!template) {
+            throw new NotFoundException(
+                this.i18n.t('warehouse-template.errors.not_found', { lang }),
+            );
+        }
+
+        // Nếu không có quyền list.all và template không active, trả về not found
+        if (!hasListAllPermission && !template.is_active) {
             throw new NotFoundException(
                 this.i18n.t('warehouse-template.errors.not_found', { lang }),
             );
@@ -809,8 +823,6 @@ export class WarehouseTemplateService {
             created_by: userId,
         };
     }
-
-    // ==================== IMAGE METHODS ====================
 
     /**
      * Upload ảnh cho WarehouseTemplate

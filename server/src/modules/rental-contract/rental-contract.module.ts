@@ -23,7 +23,7 @@ import { RentalContractProcessor } from './rental-contract.processor';
         SystemLogModule,
         OrganizationModule,
         NotificationModule,
-        PaymentModule,
+        forwardRef(() => PaymentModule),
         forwardRef(() => WarehouseTemplateModule),
         BullModule.registerQueue({
             name: 'rental-contract',

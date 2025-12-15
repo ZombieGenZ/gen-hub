@@ -1,7 +1,8 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, IsBoolean, IsNumber, Min } from 'class-validator';
+import { IsOptional, IsString, IsBoolean, IsNumber, Min, IsEnum } from 'class-validator';
 import { i18nValidationMessage } from 'nestjs-i18n';
 import { Type, Transform } from 'class-transformer';
+import { TemplateRentalStatus } from '@prisma/client';
 
 /**
  * DTO query danh sách WarehouseTemplate với phân trang và lọc
@@ -47,4 +48,15 @@ export class QueryWarehouseTemplateDto {
         message: i18nValidationMessage('warehouse-template.validation.is_active_boolean'),
     })
     is_active?: boolean;
+
+    @ApiPropertyOptional({
+        description: 'Lọc theo trạng thái cho thuê',
+        enum: TemplateRentalStatus,
+        example: 'AVAILABLE'
+    })
+    @IsOptional()
+    @IsEnum(TemplateRentalStatus, {
+        message: i18nValidationMessage('warehouse-template.validation.rental_status_invalid'),
+    })
+    rental_status?: TemplateRentalStatus;
 }
