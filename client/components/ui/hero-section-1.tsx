@@ -72,8 +72,13 @@ const transitionVariants: { container?: Variants; item?: Variants } = {
 const HeroHeader = () => {
     const [menuState, setMenuState] = React.useState(false)
     const [isScrolled, setIsScrolled] = React.useState(false)
+    const [isLoggedIn, setIsLoggedIn] = React.useState<boolean>(false)
 
     React.useEffect(() => {
+        const token = localStorage.getItem('access_token')
+        if (token) {
+            setIsLoggedIn(true)
+        }
         const handleScroll = () => {
             setIsScrolled(window.scrollY > 50)
         }
@@ -132,13 +137,22 @@ const HeroHeader = () => {
                                     ))}
                                 </ul>
                             </div>
+                            {isLoggedIn ? 
+                            <Button
+                                asChild
+                                size="sm"
+                                className={cn(isScrolled && 'lg:hidden')}>
+                                <Link href="/user/profile">
+                                    <span>Profile</span>
+                                </Link>
+                            </Button> : 
                             <div className="flex w-full flex-col space-y-3 sm:flex-row sm:gap-3 sm:space-y-0 md:w-fit">
                                 <Button
                                     asChild
                                     variant="outline"
                                     size="sm"
                                     className={cn(isScrolled && 'lg:hidden')}>
-                                    <Link href="#">
+                                    <Link href="/login">
                                         <span>Login</span>
                                     </Link>
                                 </Button>
@@ -146,7 +160,7 @@ const HeroHeader = () => {
                                     asChild
                                     size="sm"
                                     className={cn(isScrolled && 'lg:hidden')}>
-                                    <Link href="#">
+                                    <Link href="/register">
                                         <span>Sign Up</span>
                                     </Link>
                                 </Button>
@@ -158,7 +172,7 @@ const HeroHeader = () => {
                                         <span>Get Started</span>
                                     </Link>
                                 </Button>
-                            </div>
+                            </div> }
                         </div>
                     </div>
                 </div>

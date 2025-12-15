@@ -42,6 +42,28 @@ export class AuthService {
         }
     }
 
+    //Đăng xuất
+    async logout(token: string, refresh_token: string) {
+        try {
+            const response = await fetch(`${API}/auth/logout`, {
+                method: 'POST',
+                headers: { 
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json' 
+                },
+                body: JSON.stringify({ refresh_token })
+            })
+
+            const data = await response.json()
+
+            if (data.success) {
+                return data
+            }
+        } catch (error: any) {
+            throw new Error(error.message)
+        }
+    }
+
     // Lấy token mới
     async getNewToken(refresh_token: string) {
         try {

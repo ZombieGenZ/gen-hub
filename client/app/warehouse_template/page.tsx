@@ -95,7 +95,7 @@ const WarehousePage: React.FC = () => {
                                 className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-teal-500 transition-colors"
                             />
                         </div>
-
+                        
                         {/* Filter Status */}
                         <div className="lg:w-48">
                             <select
@@ -168,12 +168,12 @@ const WarehousePage: React.FC = () => {
                                             )}
                                             
                                             {/* Image Count Badge */}
-                                            {warehouse._count.images > 0 && (
+                                            {warehouse.images.length > 0 && (
                                                 <div className="absolute top-3 right-3 bg-slate-900/80 px-2 py-1 rounded-lg text-xs text-white flex items-center">
                                                     <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
                                                         <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
                                                     </svg>
-                                                    {warehouse._count.images}
+                                                    {warehouse.images.length}
                                                 </div>
                                             )}
 
@@ -235,7 +235,7 @@ const WarehousePage: React.FC = () => {
                                                     <svg className="w-4 h-4 mr-2 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
                                                     </svg>
-                                                    <span>Số dãy: {warehouse._count.rows}</span>
+                                                    <span>Số dãy: {warehouse._count?.rows}</span>
                                                 </div>
                                                 
                                                 <div className="flex items-start text-sm text-slate-300">

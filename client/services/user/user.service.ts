@@ -1,11 +1,13 @@
 import { UpdateUserRequest, UserData } from "@/types/user/user.type"
+import { AuthService } from "../auth/auth.service"
 
+const authService = new AuthService()
 const API = process.env.NEXT_PUBLIC_API_URL
 
 export class UserService {
    
    // Lấy thông tin user
-   async getUser(token: string) {
+   async getUser(token: string, refresh_token: string): Promise<UserData | null> {
       try {
          const response = await fetch(`${API}/account/profile`, {
             method: 'GET',
@@ -17,6 +19,11 @@ export class UserService {
          const data = await response.json()
          if(data.success) {
             return data.data as UserData
+         } else {
+            const response = await authService.getNewToken(refresh_token)
+            localStorage.setItem('access_token', response.authorization.access_token)
+            localStorage.setItem('refresh_token', response.authorization.refresh_token)
+            return await this.getUser(response.authorization.access_token, response.authorization.refresh_token)
          }
       } catch (error) {
          console.error('Get user error:', error)
@@ -26,7 +33,7 @@ export class UserService {
 
    // Cập nhật thông tin user
    // Mới: gửi trực tiếp các field, không bọc newInfo
-   async updateUser(token: string, newInfo: UpdateUserRequest) {
+   async updateUser(token: string, newInfo: UpdateUserRequest): Promise<UserData | null> {
    try {
       const response = await fetch(`${API}/account/profile`, {
          method: 'PATCH',
@@ -53,7 +60,7 @@ export class UserService {
    
    // Bật xác thực 2fa
    // trong class UserService ( hiện chưa hoàn thiện )
-   async enableTwoFactor(token: string) {
+   async enableTwoFactor(token: string): Promise<UserData | null> {
       try {
          const response = await fetch(`${API}/account/2fa/enable`, {
             method: 'POST',

@@ -236,8 +236,8 @@ export default function RegisterPage() {
                 <span className={loading ? "opacity-0" : ""}>{loading ? "Đang đăng ký..." : "Đăng ký"}</span>
               </button>
 
-              {/* Login Link */}}
-              <p className={`text-center text-sm mt-6 ${darkMode ? "text-slate-400" : "text-gray-600"}`}>
+            {/* Login Link */}
+            <p className={`text-center text-sm mt-6 ${darkMode ? "text-slate-400" : "text-gray-600"}`}>
                 Đã có tài khoản?{" "}
                 <Link
                   href="/login"
@@ -248,65 +248,10 @@ export default function RegisterPage() {
                 >
                   Đăng nhập ngay
                 </Link>
-              </p>
-            </div>
+            </p>
           </div>
         </div>
       </div>
-
-      {/* Footer */}
-      <div className={`p-4 text-center text-sm ${darkMode ? "text-slate-500" : "text-gray-500"}`}>
-        © 2025 SecureAuth Todo. All rights reserved.
-      </div>
-
-      <style jsx>{`
-        @keyframes fade-in {
-          from {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        
-        @keyframes bounce-subtle {
-          0%, 100% {
-            transform: translateY(0) scale(1);
-          }
-          50% {
-            transform: translateY(-3px) scale(1.1);
-          }
-        }
-        
-        @keyframes shake-subtle {
-          0%, 100% {
-            transform: translateX(0) scale(1);
-          }
-          25% {
-            transform: translateX(-2px) scale(1.05);
-          }
-          75% {
-            transform: translateX(2px) scale(1.05);
-          }
-        }
-        
-        @keyframes blink {
-          0%, 100% {
-            opacity: 1;
-            transform: scale(1);
-          }
-          50% {
-            opacity: 0.5;
-            transform: scale(0.9);
-          }
-        }
-        
-        .animate-fade-in {
-          animation: fade-in 0.4s ease-out;
-        }
-      `}</style>
     </div>
   )
 }

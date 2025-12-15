@@ -9,7 +9,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { AvatarUploader } from "@/components/ui/avatar-uploader"
 import { useRouter } from 'next/navigation'
 import { redirect } from 'next/navigation'
-import type { UpdateUserRequest } from '@/types/user/user.type'
+import { AuthService } from '@/services/auth/auth.service'
+
 import {
   Drawer,
   DrawerClose,
@@ -22,6 +23,7 @@ import {
 } from "@/components/ui/drawer"
 
 const userService = new UserService()
+const authService = new AuthService()
 
 export default function ProfilePage() {
   const [userData, setUserData] = useState<UserData | null>(null)
@@ -49,15 +51,17 @@ export default function ProfilePage() {
         setLoading(true)
         setError(null)
         const token = localStorage.getItem('access_token')
-        if (!token) {
-          setError('Bạn chưa đăng nhập')
-          alert('Bạn chưa đăng nhập')
-          redirect('/login')
+        const refresh_token = localStorage.getItem('refresh_token')
+        if (!token || !refresh_token) {
+          setError('Vui lòng đăng nhập')
+          alert('Vui lòng đăng nhập')
           return
         }
-        const data = await userService.getUser(token)
+        const data = await userService.getUser(token, refresh_token)
         if (!data) {
-          setError('Không lấy được thông tin người dùng')
+          setError('Không lấy được thông tin người dùng, vui lòng đăng nhập lại')
+          alert('Không lấy được thông tin người dùng, vui lòng đăng nhập lại')
+          return
         } else {
           setUserData(data)
           setName(data.user.name)
@@ -80,7 +84,7 @@ export default function ProfilePage() {
       try {
         const response = await userService.updateUser(localStorage.getItem('access_token')!, { name: name })
         if (response) {
-          setSaveMessage(response.message)
+          setSaveMessage("Cập nhật thông tin thành công!")
         }
       } catch (error) {
         console.error(error)
@@ -96,7 +100,7 @@ export default function ProfilePage() {
       const token = localStorage.getItem('access_token')
       if (token) {
         const res = await userService.enableTwoFactor(token)
-        if (res && res.success) {
+        if (res) {
           alert("Đã yêu cầu bật 2FA (Cần implement flow QR code)")
         }
       }
@@ -123,6 +127,18 @@ export default function ProfilePage() {
     setDarkMode(!darkMode)
   }
 
+  const handleLogout = async () => {
+    const token = localStorage.getItem('access_token');
+    const refresh_token = localStorage.getItem('refresh_token');
+    if (token && refresh_token) {
+      const response = await authService.logout(token, refresh_token);
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      alert(response.message);
+      router.push('/');
+    }
+  };
+
   if (loading) {
     return (
       <div className={`min-h-screen flex items-center justify-center ${darkMode ? 'bg-slate-950' : 'bg-slate-50'}`}>
@@ -133,10 +149,11 @@ export default function ProfilePage() {
 
   if (error) {
     return (
-      <div className={`min-h-screen flex items-center justify-center ${darkMode ? 'bg-slate-950' : 'bg-slate-50'}`}>
+      <div className={`min-h-screen flex items-center justify-center flex-col gap-5 ${darkMode ? 'bg-slate-950' : 'bg-slate-50'}`}>
         <div className="bg-white dark:bg-slate-900 p-6 rounded shadow border border-red-200 text-red-600">
           {error}
         </div>
+        <button onClick={() => router.push('/login')} className="bg-red-700 hover:bg-red-800 dark:bg-red-600 dark:hover:bg-red-700 text-white font-medium px-8 py-3 rounded-lg transition-all shadow-lg shadow-red-700/20 hover:shadow-red-700/40 flex items-center gap-2 justify-center active:scale-[0.98]">Đăng nhập</button>
       </div>
     )
   }
@@ -213,6 +230,9 @@ export default function ProfilePage() {
             </button>
           </div>
           <SidebarContent />
+          <button onClick={handleLogout} className="btn-logout mt-10">
+            Đăng xuất
+          </button>
         </aside>
 
         {/* Main Content */}
@@ -303,6 +323,12 @@ export default function ProfilePage() {
                         {saving ? 'Đang lưu...' : 'Lưu thay đổi'}
                       </button>
                       {saveMessage && <span className="text-emerald-500 dark:text-emerald-400 font-medium text-sm animate-in fade-in slide-in-from-left-2">{saveMessage}</span>}
+                      <button
+                        onClick={handleLogout}
+                        className="bg-red-700 hover:bg-red-800 dark:bg-red-600 dark:hover:bg-red-700 text-white font-medium px-8 py-3 rounded-lg transition-all shadow-lg shadow-red-700/20 hover:shadow-red-700/40 flex items-center gap-2 w-full md:w-auto justify-center active:scale-[0.98]"
+                      >
+                        Đăng xuất
+                      </button>
                     </div>
                   </form>
                 </div>
