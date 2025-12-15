@@ -2,6 +2,7 @@ import {
     Controller,
     Get,
     Put,
+    Post,
     Delete,
     Body,
     Param,
@@ -82,6 +83,24 @@ export class OrgRentalContractController {
     ) {
         const data = await this.rentalContractService.renewByOrg(id, dto, userId, orgId, lang);
         return new UpdatedResponse(ResponseCode.RENTAL_CONTRACT_UPDATE_SUCCESS, data, 'Gia hạn hợp đồng thành công');
+    }
+
+    /**
+     * Tạo lại link thanh toán cho hợp đồng PENDING đã hết hạn
+     * Kiểm tra templates không bị block và tạo payment mới
+     */
+    @Post(':id/retry-payment')
+    @ApiOperation({ summary: 'Tạo lại link thanh toán cho hợp đồng PENDING' })
+    @ApiParam({ name: 'orgId', description: 'ID của tổ chức', type: 'string' })
+    @ApiParam({ name: 'id', description: 'ID của hợp đồng', type: 'string' })
+    async retryPayment(
+        @Param('orgId', ParseUUIDPipe) orgId: string,
+        @Param('id', ParseUUIDPipe) id: string,
+        @CurrentUser('userId') userId: string,
+        @I18nLang() lang: string,
+    ) {
+        const data = await this.rentalContractService.retryPayment(id, userId, orgId, lang);
+        return new UpdatedResponse(ResponseCode.RENTAL_CONTRACT_UPDATE_SUCCESS, data, 'Tạo lại link thanh toán thành công');
     }
 
     /**

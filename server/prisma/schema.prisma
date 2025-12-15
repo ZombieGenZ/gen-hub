@@ -549,14 +549,13 @@ model RentalContractDetail {
 model Payment {
   id                 String        @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
   rental_contract_id String        @db.Uuid
-  order_code         BigInt        @unique
+  payment_code       String        @unique
+  sepay_transaction_id BigInt?     @unique
   amount             Int
   description        String
   type               PaymentType
   status             PaymentStatus @default(PENDING)
 
-  payment_link_id    String?
-  checkout_url       String?
   qr_code            String? @db.Text
 
   expired_at         DateTime?
@@ -574,7 +573,7 @@ model Payment {
   rental_contract    RentalContract @relation(fields: [rental_contract_id], references: [id], onDelete: Cascade)
 
   @@index([rental_contract_id])
-  @@index([order_code])
+  @@index([payment_code])
   @@index([status])
   @@map("payments")
 }

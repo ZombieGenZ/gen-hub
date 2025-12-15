@@ -8,76 +8,115 @@ import {
     Logger,
     HttpCode,
     HttpStatus,
+    Headers,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiParam } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiParam, ApiHeader } from '@nestjs/swagger';
 
-import { PayosService } from './payos.service';
-import { PayOSWebhookDto, PaymentCallbackQueryDto } from './dto';
+import { SepayService } from './sepay.service';
+import { PaymentSchedulerService } from './payment-scheduler.service';
+import { SepayWebhookDto, PaymentCallbackQueryDto } from './dto';
+import { Public } from '../../common/decorators/public.decorator';
 
 /**
- * Controller xử lý webhook và callback từ PayOS
+ * Controller xử lý webhook và callback từ SePay
  */
 @ApiTags('Payment')
 @Controller('payment')
 export class PaymentController {
     private readonly logger = new Logger(PaymentController.name);
 
-    constructor(private readonly payosService: PayosService) { }
+    constructor(
+        private readonly sepayService: SepayService,
+        private readonly paymentScheduler: PaymentSchedulerService,
+    ) { }
 
     /**
-     * Webhook nhận thông tin thanh toán từ PayOS
-     * PayOS sẽ gọi endpoint này khi có giao dịch thành công
+     * Webhook nhận thông tin thanh toán từ SePay
+     * SePay sẽ gọi endpoint này khi có giao dịch mới
      */
     @Post('webhook')
+    @Public()
     @HttpCode(HttpStatus.OK)
-    @ApiOperation({ summary: 'Webhook nhận thông tin thanh toán từ PayOS' })
-    async handleWebhook(@Body() webhookDto: PayOSWebhookDto) {
-        this.logger.log(`Received payment webhook: orderCode=${webhookDto.data?.orderCode}`);
+    @ApiOperation({ summary: 'Webhook nhận thông tin thanh toán từ SePay' })
+    @ApiHeader({ name: 'Authorization', description: 'Apikey YOUR_API_KEY' })
+    async handleWebhook(
+        @Body() webhookDto: SepayWebhookDto,
+        @Headers('Authorization') authorization: string,
+    ) {
+        this.logger.log(`Received SePay webhook: id=${webhookDto.id}, content=${webhookDto.content}`);
 
         try {
-            await this.payosService.handlePaymentWebhook(webhookDto as any);
-            return { code: '00', desc: 'success' };
-        } catch (error) {
-            this.logger.error(`Webhook error: ${error}`);
-            return { code: '01', desc: 'error' };
+            // Xác thực API Key
+            this.sepayService.verifyWebhookAuth(authorization);
+
+            // Xử lý webhook
+            const result = await this.sepayService.handlePaymentWebhook(webhookDto);
+
+            // Hủy scheduled expire nếu thanh toán thành công
+            if (result.success && result.message === 'Payment processed successfully') {
+                // Payment đã được xử lý, cancel scheduled jobs
+                const payment = await this.sepayService.getPaymentByCode(
+                    webhookDto.content.toUpperCase()
+                );
+                if (payment) {
+                    this.paymentScheduler.cancelScheduledExpire(payment.id);
+                    this.paymentScheduler.cancelScheduledCancel(payment.rental_contract_id);
+                }
+            }
+
+            return { success: result.success };
+        } catch (error: any) {
+            this.logger.error(`Webhook error: ${error.message}`);
+            return { success: false, message: error.message };
         }
     }
 
     /**
-     * Sync payment status từ PayOS API
-     * Dùng khi webhook không hoạt động (localhost, etc.)
+     * Lấy thông tin payment theo payment_code
      */
-    @Post('sync/:orderCode')
-    @ApiOperation({ summary: 'Sync payment status từ PayOS (dùng khi webhook không hoạt động)' })
-    @ApiParam({ name: 'orderCode', description: 'Mã đơn hàng PayOS' })
-    async syncPaymentStatus(@Param('orderCode') orderCode: string) {
-        this.logger.log(`Syncing payment status: orderCode=${orderCode}`);
+    @Get(':paymentCode')
+    @ApiOperation({ summary: 'Lấy thông tin payment theo mã thanh toán' })
+    @ApiParam({ name: 'paymentCode', description: 'Mã thanh toán (VD: GENHUB1702612345678)' })
+    async getPayment(@Param('paymentCode') paymentCode: string) {
+        this.logger.log(`Getting payment: paymentCode=${paymentCode}`);
 
-        const result = await this.payosService.syncPaymentStatus(BigInt(orderCode));
-        return result;
+        const payment = await this.sepayService.getPaymentByCode(paymentCode);
+        if (!payment) {
+            return {
+                success: false,
+                message: 'Payment not found',
+            };
+        }
+
+        return {
+            success: true,
+            data: {
+                paymentCode: payment.payment_code,
+                amount: payment.amount,
+                status: payment.status,
+                qrCode: payment.qr_code,
+                expiredAt: payment.expired_at,
+                contractId: payment.rental_contract_id,
+            },
+        };
     }
 
     /**
      * Return URL sau khi thanh toán thành công
-     * Frontend sẽ redirect user đến trang này
+     * Frontend redirect user đến trang này
      */
-    @Get('success')
+    @Get('callback/success')
     @ApiOperation({ summary: 'Callback URL khi thanh toán thành công' })
     async handleSuccess(@Query() query: PaymentCallbackQueryDto) {
-        this.logger.log(`Payment success callback: orderCode=${query.orderCode}`);
+        this.logger.log(`Payment success callback: paymentCode=${query.paymentCode}`);
 
-        // Lấy thông tin payment
-        if (query.orderCode) {
-            const payment = await this.payosService.getPaymentByOrderCode(
-                typeof query.orderCode === 'string'
-                    ? parseInt(query.orderCode)
-                    : query.orderCode
-            );
+        if (query.paymentCode) {
+            const payment = await this.sepayService.getPaymentByCode(query.paymentCode);
             return {
                 success: true,
                 message: 'Thanh toán thành công',
                 data: payment ? {
-                    orderCode: payment.order_code,
+                    paymentCode: payment.payment_code,
                     amount: payment.amount,
                     status: payment.status,
                     contractId: payment.rental_contract_id,
@@ -91,24 +130,10 @@ export class PaymentController {
     /**
      * Cancel URL khi hủy thanh toán
      */
-    @Get('cancel')
+    @Get('callback/cancel')
     @ApiOperation({ summary: 'Callback URL khi hủy thanh toán' })
     async handleCancel(@Query() query: PaymentCallbackQueryDto) {
-        this.logger.log(`Payment cancelled: orderCode=${query.orderCode}`);
-
-        // Cập nhật status payment nếu có orderCode
-        if (query.orderCode) {
-            try {
-                await this.payosService.cancelPaymentLink(
-                    typeof query.orderCode === 'string'
-                        ? parseInt(query.orderCode)
-                        : query.orderCode
-                );
-            } catch (error) {
-                this.logger.error(`Cancel payment error: ${error}`);
-            }
-        }
-
+        this.logger.log(`Payment cancelled: paymentCode=${query.paymentCode}`);
         return { success: false, message: 'Đã hủy thanh toán' };
     }
 }

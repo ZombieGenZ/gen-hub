@@ -1,53 +1,79 @@
-import { IsNotEmpty, IsString, IsOptional, IsNumber } from 'class-validator';
+import { IsNotEmpty, IsString, IsOptional, IsNumber, IsIn } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 /**
- * DTO cho webhook từ PayOS
+ * DTO cho webhook từ SePay
  */
-export class PayOSWebhookDto {
-    @ApiProperty({ description: 'Mã lỗi từ PayOS' })
+export class SepayWebhookDto {
+    @ApiProperty({ description: 'ID giao dịch trên SePay' })
+    @IsNotEmpty()
+    @IsNumber()
+    id: number;
+
+    @ApiProperty({ description: 'Brand name ngân hàng' })
     @IsNotEmpty()
     @IsString()
-    code: string;
+    gateway: string;
 
-    @ApiProperty({ description: 'Mô tả lỗi' })
+    @ApiProperty({ description: 'Thời gian giao dịch' })
     @IsNotEmpty()
     @IsString()
-    desc: string;
+    transactionDate: string;
 
-    @ApiProperty({ description: 'Dữ liệu thanh toán' })
-    @IsNotEmpty()
-    data: any;
-
-    @ApiProperty({ description: 'Chữ ký xác thực' })
+    @ApiProperty({ description: 'Số tài khoản ngân hàng' })
     @IsNotEmpty()
     @IsString()
-    signature: string;
+    accountNumber: string;
+
+    @ApiPropertyOptional({ description: 'Tài khoản định danh' })
+    @IsOptional()
+    @IsString()
+    subAccount?: string;
+
+    @ApiPropertyOptional({ description: 'Mã code thanh toán' })
+    @IsOptional()
+    @IsString()
+    code?: string;
+
+    @ApiProperty({ description: 'Nội dung chuyển khoản' })
+    @IsNotEmpty()
+    @IsString()
+    content: string;
+
+    @ApiProperty({ description: 'Loại giao dịch: in hoặc out' })
+    @IsNotEmpty()
+    @IsIn(['in', 'out'])
+    transferType: 'in' | 'out';
+
+    @ApiProperty({ description: 'Số tiền giao dịch' })
+    @IsNotEmpty()
+    @IsNumber()
+    transferAmount: number;
+
+    @ApiProperty({ description: 'Số dư tài khoản' })
+    @IsNotEmpty()
+    @IsNumber()
+    accumulated: number;
+
+    @ApiProperty({ description: 'Mã tham chiếu' })
+    @IsNotEmpty()
+    @IsString()
+    referenceCode: string;
+
+    @ApiProperty({ description: 'Toàn bộ nội dung tin nhắn' })
+    @IsNotEmpty()
+    @IsString()
+    description: string;
 }
 
 /**
  * Query params cho callback URLs
  */
 export class PaymentCallbackQueryDto {
-    @ApiPropertyOptional({ description: 'Mã đơn hàng' })
-    @IsOptional()
-    @IsNumber()
-    orderCode?: number;
-
-    @ApiPropertyOptional({ description: 'Mã lỗi' })
+    @ApiPropertyOptional({ description: 'Mã thanh toán' })
     @IsOptional()
     @IsString()
-    code?: string;
-
-    @ApiPropertyOptional({ description: 'ID thanh toán' })
-    @IsOptional()
-    @IsString()
-    id?: string;
-
-    @ApiPropertyOptional({ description: 'Trạng thái hủy' })
-    @IsOptional()
-    @IsString()
-    cancel?: string;
+    paymentCode?: string;
 
     @ApiPropertyOptional({ description: 'Trạng thái' })
     @IsOptional()

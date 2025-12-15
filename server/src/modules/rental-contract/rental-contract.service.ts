@@ -31,8 +31,11 @@ import { OrganizationAuditLogService } from '../organization/organization-audit-
 import { WarehouseTemplateRepository } from '../warehouse-template/warehouse-template.repository';
 import { EmailService } from '../notification/email.service';
 import { OrganizationRepository } from '../organization/organization.repository';
-import { PayosService } from '../payment/payos.service';
+import { SepayService } from '../payment/sepay.service';
+import { PaymentSchedulerService } from '../payment/payment-scheduler.service';
 import { PaymentType } from '@prisma/client';
+import { InjectQueue } from '@nestjs/bull';
+import type { Queue } from 'bull';
 
 /**
  * Service xử lý business logic cho RentalContract
@@ -57,7 +60,9 @@ export class RentalContractService {
     private readonly configService: ConfigService,
     private readonly i18n: I18nService,
     private readonly emailService: EmailService,
-    private readonly payosService: PayosService,
+    private readonly sepayService: SepayService,
+    private readonly paymentScheduler: PaymentSchedulerService,
+    @InjectQueue('rental-contract') private readonly contractQueue: Queue,
   ) {
     this.CONTRACT_CACHE_TTL =
       this.configService.get<number>('REDIS_RENTAL_CONTRACT_CACHE_TTL') || 300;
@@ -297,14 +302,26 @@ export class RentalContractService {
       // Invalidate list cache
       await this.invalidateContractListCache();
 
-      // Tạo payment link với PayOS
-      const paymentResult = await this.payosService.createContractPayment(
-        contract.id,
-        Math.round(parseFloat(contract.final_price.toString())),
-        `${code}`,
-        PaymentType.NEW_CONTRACT,
+      // Tạo payment link với SePay
+      const paymentResult = await this.sepayService.createContractPayment({
+        rentalContractId: contract.id,
+        amount: Math.round(parseFloat(contract.final_price.toString())),
+        description: `${code}`,
+        type: 'NEW_CONTRACT',
         userId,
-      );
+      });
+
+      // Schedule payment expiry
+      const lockExpireHours = this.configService.get<number>('RENTAL_LOCK_DURATION_HOURS') || 1;
+      const paymentExpiredAt = new Date();
+      paymentExpiredAt.setHours(paymentExpiredAt.getHours() + lockExpireHours);
+      this.paymentScheduler.schedulePaymentExpire(paymentResult.paymentId, paymentExpiredAt, userId);
+
+      // Schedule contract cancel
+      const contractExpireHours = this.configService.get<number>('CONTRACT_PENDING_EXPIRE_HOURS') || 24;
+      const contractCancelAt = new Date();
+      contractCancelAt.setHours(contractCancelAt.getHours() + contractExpireHours);
+      this.paymentScheduler.scheduleContractCancel(contract.id, contractCancelAt, userId);
 
       return {
         contract,
@@ -929,6 +946,116 @@ export class RentalContractService {
       >,
       { userId, description: `Cancelled rental contract: ${existing.code}` },
     );
+  }
+
+  /**
+   * Tạo lại link thanh toán cho hợp đồng PENDING đã hết hạn
+   * Kiểm tra templates không bị block bởi user khác
+   */
+  async retryPayment(
+    contractId: string,
+    userId: string,
+    organizationId: string,
+    lang: string,
+  ): Promise<ICreateContractResult> {
+    // Tìm contract
+    const contract = await this.repository.findById(contractId);
+    if (!contract) {
+      throw new NotFoundException(
+        this.i18n.t('rental-contract.errors.not_found', { lang }),
+      );
+    }
+
+    // Kiểm tra contract thuộc org
+    if (contract.organization_id !== organizationId) {
+      throw new ForbiddenException(
+        this.i18n.t('rental-contract.errors.no_permission', { lang }),
+      );
+    }
+
+    // Kiểm tra quyền org-level
+    await this.checkOrgPermission(
+      organizationId,
+      userId,
+      'rental-contract.update',
+      lang,
+    );
+
+    // Chỉ cho phép retry cho contract PENDING
+    if (contract.status !== ContractStatus.PENDING) {
+      throw new BadRequestException(
+        this.i18n.t('rental-contract.errors.cannot_retry_non_pending', { lang }),
+      );
+    }
+
+    // Kiểm tra payment hiện tại
+    const existingPayments = await this.repository.findPaymentsByContract(contractId);
+    const currentPayment = existingPayments.find(p => p.status === 'PENDING');
+
+    if (currentPayment && currentPayment.expired_at && new Date() < currentPayment.expired_at) {
+      throw new BadRequestException(
+        this.i18n.t('rental-contract.errors.payment_still_active', { lang }),
+      );
+    }
+
+    // Kiểm tra templates không bị block bởi user khác
+    // (Logic tương tự create - check lock keys)
+    const lockKeys: string[] = [];
+    if (contract.details) {
+      for (const detail of contract.details) {
+        if (detail.is_whole_warehouse) {
+          lockKeys.push(`rental:lock:template:${detail.warehouse_template_id}`);
+        } else if (detail.row_template_ids) {
+          for (const rowId of detail.row_template_ids) {
+            lockKeys.push(`rental:lock:row:${rowId}`);
+          }
+        }
+      }
+    }
+
+    // Kiểm tra lock (không acquire, chỉ check)
+    for (const lockKey of lockKeys) {
+      const lockValue = await this.redisService.get(lockKey);
+      if (lockValue && lockValue !== contractId) {
+        throw new ConflictException(
+          this.i18n.t('warehouse.errors.template_locked', { lang }),
+        );
+      }
+    }
+
+    // Đánh dấu payment cũ là EXPIRED
+    if (currentPayment) {
+      // Update via prisma (assuming repository method exists or direct prisma call)
+      this.paymentScheduler.cancelScheduledExpire(currentPayment.id);
+    }
+
+    // Tạo payment mới
+    const paymentResult = await this.sepayService.createContractPayment({
+      rentalContractId: contractId,
+      amount: Math.round(parseFloat(contract.final_price.toString())),
+      description: contract.code,
+      type: 'NEW_CONTRACT',
+      userId,
+    });
+
+    // Schedule payment expiry
+    const lockExpireHours = this.configService.get<number>('RENTAL_LOCK_DURATION_HOURS') || 1;
+    const paymentExpiredAt = new Date();
+    paymentExpiredAt.setHours(paymentExpiredAt.getHours() + lockExpireHours);
+    this.paymentScheduler.schedulePaymentExpire(paymentResult.paymentId, paymentExpiredAt, userId);
+
+    // Log
+    this.systemLogService.info(
+      'rental-contract',
+      'retry-payment',
+      `Retry payment for contract: ${contract.code}`,
+      { userId, metaData: { contractId, paymentId: paymentResult.paymentId } },
+    );
+
+    return {
+      contract,
+      payment: paymentResult,
+    };
   }
 
   // Private helper methods

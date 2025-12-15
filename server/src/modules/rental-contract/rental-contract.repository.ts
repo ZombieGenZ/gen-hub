@@ -319,6 +319,19 @@ export class RentalContractRepository {
         });
     }
 
+    /**
+     * Lấy danh sách payments của contract
+     */
+    async findPaymentsByContract(contractId: string) {
+        return this.prisma.payment.findMany({
+            where: {
+                rental_contract_id: contractId,
+                is_deleted: false,
+            },
+            orderBy: { created_at: 'desc' },
+        });
+    }
+
     async transaction<T>(fn: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
         return this.prisma.$transaction(fn);
     }

@@ -75,14 +75,13 @@ export interface IRenewContractResult {
 }
 
 /**
- * Interface thông tin thanh toán từ PayOS
+ * Interface thông tin thanh toán từ SePay
  */
 export interface IPaymentInfo {
     paymentId: string;
-    orderCode: number;
+    paymentCode: string;      // Mã thanh toán (thay orderCode)
     amount: number;
-    checkoutUrl: string;
-    qrCode: string;
+    qrCode: string;           // URL QR từ qr.sepay.vn
     status: string;
     expiredAt: Date;
 }
