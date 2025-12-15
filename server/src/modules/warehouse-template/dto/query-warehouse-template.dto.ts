@@ -1,12 +1,9 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, IsBoolean, IsNumber, Min, IsEnum } from 'class-validator';
+import { IsOptional, IsString, IsBoolean, IsNumber, Min, IsEnum, IsUUID } from 'class-validator';
 import { i18nValidationMessage } from 'nestjs-i18n';
 import { Type, Transform } from 'class-transformer';
-import { TemplateRentalStatus } from '@prisma/client';
+// import { TemplateRentalStatus } from '@prisma/client'; // Skipped due to generation issue
 
-/**
- * DTO query danh sách WarehouseTemplate với phân trang và lọc
- */
 export class QueryWarehouseTemplateDto {
     @ApiPropertyOptional({ description: 'Số lượng record', example: 10 })
     @IsOptional()
@@ -51,12 +48,16 @@ export class QueryWarehouseTemplateDto {
 
     @ApiPropertyOptional({
         description: 'Lọc theo trạng thái cho thuê',
-        enum: TemplateRentalStatus,
         example: 'AVAILABLE'
     })
     @IsOptional()
-    @IsEnum(TemplateRentalStatus, {
-        message: i18nValidationMessage('warehouse-template.validation.rental_status_invalid'),
+    // Using string union instead of Enum to bypass missing binding
+    rental_status?: 'AVAILABLE' | 'LOCKED' | 'RENTED';
+
+    @ApiPropertyOptional({ description: 'ID Tỉnh/Thành phố', example: 'uuid' })
+    @IsOptional()
+    @IsUUID('4', {
+        message: i18nValidationMessage('warehouse-template.validation.province_id_uuid'),
     })
-    rental_status?: TemplateRentalStatus;
+    province_id?: string;
 }

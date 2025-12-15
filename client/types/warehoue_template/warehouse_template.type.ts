@@ -22,29 +22,36 @@ export interface WarehousePrototype {
     type: string;
 }
 
+export interface WarehouseImage {
+    id: string;
+    url: string;
+    thumbnail_url?: string;
+}
+
 export interface Warehouse {
     // Thông tin cơ bản
     id: string;
     name: string;
     description: string;
-    
+    type?: string; 
+
     // Kích thước và đơn vị
     unit: string;
     length: number;
     width: number;
-    
+
     // Thông tin khối (block)
     block_unit: string;
     block_length: string;
     block_width: string;
-    
+
     // Trạng thái
     is_active: boolean;
     is_rented: boolean;
     is_shared_warehouse: boolean;
     is_deleted: boolean;
     rental_status: string;
-    
+
     // Giá và giảm giá
     price_per_month: string;
     discount_1_month: string;
@@ -54,14 +61,14 @@ export interface Warehouse {
     discount_3_years_plus: string;
     discount_6_months: string;
     whole_warehouse_discount: string;
-    
+
     // Địa chỉ và vị trí
     address_detail: string;
     ward_id: string;
     ward: Ward;
     latitude: string;
     longitude: string;
-    
+
     // Audit fields (thông tin theo dõi)
     created_at: string;
     created_by: string;
@@ -69,14 +76,14 @@ export interface Warehouse {
     updated_by: string;
     deleted_at: string | null;
     deleted_by: string | null;
-    
+
     // Media và count
-    images: string[];
+    images: WarehouseImage[];
     _count: WarehouseCount;
-    
+
     // Prototype (nếu có)
     __prototype__?: WarehousePrototype[];
-    
+
     // Rows (nếu có)
     rows?: any[];
 }
@@ -84,17 +91,19 @@ export interface Warehouse {
 // Interface cho response API
 export interface WarehouseListResponse {
     items: Warehouse[];
-    total?: number;
-    page?: number;
-    limit?: number;
+    total: number;
+    limit: number;
+    offset: number;
+    hasMore: boolean;
 }
 
 // Interface cho query parameters
 export interface WarehouseQueryParams {
-    search?: string;
+    keywords?: string;
     is_rented?: boolean;
     is_shared_warehouse?: boolean;
     is_active?: boolean;
+    rental_status?: string;
     ward_id?: string;
     province_id?: string;
     min_price?: number;

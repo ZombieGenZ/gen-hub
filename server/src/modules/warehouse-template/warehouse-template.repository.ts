@@ -152,12 +152,13 @@ export class WarehouseTemplateRepository {
     ): Promise<IPaginatedResponse<IWarehouseTemplateWithRelations>> {
         const limit = this.paginationConfig.getLimit(query.limit);
         const offset = this.paginationConfig.getOffset(query.offset);
-        const { keywords, is_active, rental_status } = query;
+        const { keywords, is_active, rental_status, province_id } = query;
 
         const where: Prisma.WarehouseTemplateWhereInput = {
             is_deleted: false,
             ...(is_active !== undefined && { is_active }),
             ...(rental_status && { rental_status }),
+            ...(province_id && { ward: { province_id } }),
             ...(keywords && {
                 OR: [
                     { name: { contains: keywords, mode: 'insensitive' } },

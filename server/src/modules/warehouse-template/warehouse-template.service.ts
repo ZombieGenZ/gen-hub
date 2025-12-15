@@ -103,6 +103,8 @@ export class WarehouseTemplateService {
             offset: query.offset,
             keywords: query.keywords,
             is_active: query.is_active,
+            rental_status: query.rental_status,
+            province_id: query.province_id,
         };
         const cacheKey = this.redisService.getWarehouseTemplateListCacheKey(queryParams);
 
