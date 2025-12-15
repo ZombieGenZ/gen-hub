@@ -58,7 +58,7 @@ export class RentalContractRepository {
                     select: {
                         id: true,
                         email: true,
-                        full_name: true,
+                        name: true,
                     },
                 },
             },
@@ -316,6 +316,19 @@ export class RentalContractRepository {
                 status,
                 ...overdueData,
             },
+        });
+    }
+
+    /**
+     * Lấy danh sách payments của contract
+     */
+    async findPaymentsByContract(contractId: string) {
+        return this.prisma.payment.findMany({
+            where: {
+                rental_contract_id: contractId,
+                is_deleted: false,
+            },
+            orderBy: { created_at: 'desc' },
         });
     }
 

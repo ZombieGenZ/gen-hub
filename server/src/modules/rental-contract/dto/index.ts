@@ -72,6 +72,7 @@ export class CreateRentalContractDto {
 
 /**
  * DTO để cập nhật hợp đồng (chỉ cho phép update name, notes, điều chỉnh thời gian)
+ * Dành cho system-level endpoint
  */
 export class UpdateRentalContractDto {
     @ApiPropertyOptional({ description: 'Tên hợp đồng mới', example: 'Hợp đồng thuê kho B2' })
@@ -92,6 +93,20 @@ export class UpdateRentalContractDto {
     @IsOptional()
     @IsInt({ message: i18nValidationMessage('rental-contract.validation.adjust_months_int') })
     adjust_months?: number;
+}
+
+/**
+ * DTO để gia hạn hợp đồng (chỉ cho phép điều chỉnh thời gian)
+ * Dành cho org-level endpoint - chỉ owner/member của org mới có thể gia hạn
+ */
+export class RenewRentalContractDto {
+    @ApiProperty({
+        description: 'Số tháng điều chỉnh (dương = gia hạn, âm = giảm thời gian)',
+        example: 3
+    })
+    @IsNotEmpty({ message: i18nValidationMessage('rental-contract.validation.adjust_months_required') })
+    @IsInt({ message: i18nValidationMessage('rental-contract.validation.adjust_months_int') })
+    adjust_months: number;
 }
 
 /**

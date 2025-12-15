@@ -1,7 +1,8 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
+import { BullModule } from '@nestjs/bull';
 import { I18nModule } from 'nestjs-i18n';
 import * as path from 'path';
 
@@ -24,6 +25,7 @@ import { OrgNotificationModule } from './modules/org-notification/org-notificati
 import { WarehouseModule } from './modules/warehouse/warehouse.module';
 import { RentalContractModule } from './modules/rental-contract/rental-contract.module';
 import { RentalSchedulerModule } from './modules/rental-scheduler/rental-scheduler.module';
+import { PaymentModule } from './modules/payment/payment.module';
 import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
 
 @Module({
@@ -34,6 +36,14 @@ import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
     }),
 
     ScheduleModule.forRoot(),
+
+    BullModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        url: configService.get('REDIS_URL') || 'redis://localhost:6379/0',
+      }),
+      inject: [ConfigService],
+    }),
 
     SharedModule,
 
@@ -75,6 +85,8 @@ import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
     RentalContractModule,
 
     RentalSchedulerModule,
+
+    PaymentModule,
   ],
   controllers: [AppController],
   providers: [

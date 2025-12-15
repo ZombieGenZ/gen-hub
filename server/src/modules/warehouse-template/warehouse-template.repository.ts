@@ -144,12 +144,11 @@ export class WarehouseTemplateRepository {
     }
 
     /**
-     * Lấy danh sách với phân trang (lightweight - không load nested rows)
-     * Dùng cho list/search operations
+     * Lấy danh sách với phân trang (bao gồm full rows hierarchy)
      */
     async findMany(
         query: QueryWarehouseTemplateDto,
-        options?: { includeFullRelations?: boolean },
+        options?: { lightweightMode?: boolean },
     ): Promise<IPaginatedResponse<IWarehouseTemplateWithRelations>> {
         const limit = this.paginationConfig.getLimit(query.limit);
         const offset = this.paginationConfig.getOffset(query.offset);
@@ -166,8 +165,8 @@ export class WarehouseTemplateRepository {
             }),
         };
 
-        // Sử dụng lightweight include mặc định để giảm data transfer
-        const includeOption = options?.includeFullRelations ? this.fullInclude : this.listInclude;
+        // Mặc định sử dụng fullInclude để lấy rows, dùng listInclude nếu cần lightweight
+        const includeOption = options?.lightweightMode ? this.listInclude : this.fullInclude;
 
         const [items, total] = await Promise.all([
             this.prisma.warehouseTemplate.findMany({

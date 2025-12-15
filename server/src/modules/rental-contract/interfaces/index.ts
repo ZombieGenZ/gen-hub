@@ -63,7 +63,27 @@ export interface IRentalPriceCalculation {
  */
 export interface ICreateContractResult {
     contract: IRentalContractWithRelations;
-    paymentUrl?: string;
+    payment?: IPaymentInfo;
+}
+
+/**
+ * Interface kết quả gia hạn contract
+ */
+export interface IRenewContractResult {
+    contract: IRentalContractWithRelations;
+    payment?: IPaymentInfo;
+}
+
+/**
+ * Interface thông tin thanh toán từ SePay
+ */
+export interface IPaymentInfo {
+    paymentId: string;
+    paymentCode: string;      // Mã thanh toán (thay orderCode)
+    amount: number;
+    qrCode: string;           // URL QR từ qr.sepay.vn
+    status: string;
+    expiredAt: Date;
 }
 
 /**

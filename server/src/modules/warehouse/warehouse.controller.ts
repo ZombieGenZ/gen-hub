@@ -7,103 +7,112 @@ import {
     Param,
     Query,
     UseGuards,
-    Request,
+    ParseUUIDPipe,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
 import { I18nLang } from 'nestjs-i18n';
 
 import { WarehouseService } from './warehouse.service';
 import { UpdateWarehouseDto, QueryWarehouseDto } from './dto';
-import { JwtAuthGuard, PermissionGuard } from '../../common/guards';
-import { RequirePermission, RequireOrgPermission } from '../../common/decorators';
-import { GetResponse, UpdatedResponse, DeletedResponse } from '../../common/responses';
+import { PermissionGuard } from '../../common/guards';
+import { RequirePermission, CurrentUser } from '../../common/decorators';
+import { GetResponse, UpdatedResponse, DeletedResponse, ResponseCode } from '../../common/responses';
 
-@ApiTags('Warehouses')
+@ApiTags('Organization Warehouses')
 @ApiBearerAuth()
-@Controller('warehouses')
-@UseGuards(JwtAuthGuard)
+@Controller('organizations/:orgId/warehouses')
+@UseGuards(PermissionGuard)
 export class WarehouseController {
     constructor(private readonly warehouseService: WarehouseService) { }
 
     /**
-     * Lấy danh sách warehouse
+     * Lấy danh sách warehouse của tổ chức
      */
     @Get()
-    @UseGuards(PermissionGuard)
     @RequirePermission('warehouse.list')
-    @ApiOperation({ summary: 'Lấy danh sách warehouse' })
+    @ApiOperation({ summary: 'Lấy danh sách warehouse của tổ chức' })
+    @ApiParam({ name: 'orgId', description: 'ID tổ chức' })
     async findMany(
+        @Param('orgId', ParseUUIDPipe) orgId: string,
         @Query() query: QueryWarehouseDto,
-        @Request() req: any,
+        @CurrentUser('userId') userId: string,
         @I18nLang() lang: string,
     ) {
-        const data = await this.warehouseService.findMany(query, req.user.id);
-        return new GetResponse('warehouse.list.success', data, 'Lấy danh sách kho thành công');
+        const data = await this.warehouseService.findMany(query, userId, orgId, lang);
+        return new GetResponse(ResponseCode.WAREHOUSE_LIST_SUCCESS, data, 'Lấy danh sách kho thành công');
     }
 
     /**
      * Lấy chi tiết warehouse
      */
     @Get(':id')
-    @UseGuards(PermissionGuard)
     @RequirePermission('warehouse.read')
     @ApiOperation({ summary: 'Lấy chi tiết warehouse' })
+    @ApiParam({ name: 'orgId', description: 'ID tổ chức' })
+    @ApiParam({ name: 'id', description: 'ID warehouse' })
     async findById(
-        @Param('id') id: string,
+        @Param('orgId', ParseUUIDPipe) orgId: string,
+        @Param('id', ParseUUIDPipe) id: string,
+        @CurrentUser('userId') userId: string,
         @I18nLang() lang: string,
     ) {
-        const data = await this.warehouseService.findById(id, lang);
-        return new GetResponse('warehouse.read.success', data, 'Lấy thông tin kho thành công');
+        const data = await this.warehouseService.findById(id, userId, orgId, lang);
+        return new GetResponse(ResponseCode.WAREHOUSE_READ_SUCCESS, data, 'Lấy thông tin kho thành công');
     }
 
     /**
      * Lấy layout warehouse
      */
     @Get(':id/layout')
-    @UseGuards(PermissionGuard)
     @RequirePermission('warehouse.layout.view')
     @ApiOperation({ summary: 'Lấy layout warehouse' })
+    @ApiParam({ name: 'orgId', description: 'ID tổ chức' })
+    @ApiParam({ name: 'id', description: 'ID warehouse' })
     async getLayout(
-        @Param('id') id: string,
+        @Param('orgId', ParseUUIDPipe) orgId: string,
+        @Param('id', ParseUUIDPipe) id: string,
+        @CurrentUser('userId') userId: string,
         @I18nLang() lang: string,
     ) {
-        const data = await this.warehouseService.getLayout(id, lang);
-        return new GetResponse('warehouse.layout.success', data, 'Lấy layout kho thành công');
+        const data = await this.warehouseService.getLayout(id, userId, orgId, lang);
+        return new GetResponse(ResponseCode.WAREHOUSE_LAYOUT_SUCCESS, data, 'Lấy layout kho thành công');
     }
 
     /**
      * Cập nhật warehouse (chỉ name/description)
      */
     @Put(':id')
-    @UseGuards(PermissionGuard)
-    @RequireOrgPermission('warehouse.update')
+    @RequirePermission('warehouse.update')
     @ApiOperation({ summary: 'Cập nhật warehouse' })
+    @ApiParam({ name: 'orgId', description: 'ID tổ chức' })
+    @ApiParam({ name: 'id', description: 'ID warehouse' })
     async update(
-        @Param('id') id: string,
+        @Param('orgId', ParseUUIDPipe) orgId: string,
+        @Param('id', ParseUUIDPipe) id: string,
         @Body() dto: UpdateWarehouseDto,
-        @Request() req: any,
+        @CurrentUser('userId') userId: string,
         @I18nLang() lang: string,
     ) {
-        const organizationId = req.headers['x-organization-id'];
-        const data = await this.warehouseService.update(id, dto, req.user.id, organizationId, lang);
-        return new UpdatedResponse('warehouse.update.success', data, 'Cập nhật kho thành công');
+        const data = await this.warehouseService.update(id, dto, userId, orgId, lang);
+        return new UpdatedResponse(ResponseCode.WAREHOUSE_UPDATE_SUCCESS, data, 'Cập nhật kho thành công');
     }
 
     /**
      * Xóa warehouse
      */
     @Delete(':id')
-    @UseGuards(PermissionGuard)
-    @RequireOrgPermission('warehouse.delete')
+    @RequirePermission('warehouse.delete')
     @ApiOperation({ summary: 'Xóa warehouse' })
+    @ApiParam({ name: 'orgId', description: 'ID tổ chức' })
+    @ApiParam({ name: 'id', description: 'ID warehouse' })
     async delete(
-        @Param('id') id: string,
-        @Request() req: any,
+        @Param('orgId', ParseUUIDPipe) orgId: string,
+        @Param('id', ParseUUIDPipe) id: string,
+        @CurrentUser('userId') userId: string,
         @I18nLang() lang: string,
     ) {
-        const organizationId = req.headers['x-organization-id'];
-        await this.warehouseService.delete(id, req.user.id, organizationId, lang);
-        return new DeletedResponse('warehouse.delete.success', null, 'Xóa kho thành công');
+        await this.warehouseService.delete(id, userId, orgId, lang);
+        return new DeletedResponse(ResponseCode.WAREHOUSE_DELETE_SUCCESS, null, 'Xóa kho thành công');
     }
 }
 

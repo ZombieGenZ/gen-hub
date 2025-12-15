@@ -93,6 +93,20 @@ export enum ResponseCode {
     ORG_NOTIFICATION_UPDATE_SUCCESS = 'org_notification.update_success',
     ORG_NOTIFICATION_DELETE_SUCCESS = 'org_notification.delete_success',
 
+    // Warehouse
+    WAREHOUSE_LIST_SUCCESS = 'warehouse.list_success',
+    WAREHOUSE_READ_SUCCESS = 'warehouse.read_success',
+    WAREHOUSE_LAYOUT_SUCCESS = 'warehouse.layout_success',
+    WAREHOUSE_UPDATE_SUCCESS = 'warehouse.update_success',
+    WAREHOUSE_DELETE_SUCCESS = 'warehouse.delete_success',
+
+    // Rental Contract
+    RENTAL_CONTRACT_CREATE_SUCCESS = 'rental_contract.create_success',
+    RENTAL_CONTRACT_LIST_SUCCESS = 'rental_contract.list_success',
+    RENTAL_CONTRACT_READ_SUCCESS = 'rental_contract.read_success',
+    RENTAL_CONTRACT_UPDATE_SUCCESS = 'rental_contract.update_success',
+    RENTAL_CONTRACT_DELETE_SUCCESS = 'rental_contract.delete_success',
+
     // Client Errors (4xx)
     ERROR_VALIDATION = 'error.validation',
     ERROR_BAD_REQUEST = 'error.bad_request',
