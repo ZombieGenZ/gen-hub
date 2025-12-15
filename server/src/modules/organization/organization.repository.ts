@@ -740,4 +740,21 @@ export class OrganizationRepository {
         });
         return result.count;
     }
+
+    /**
+     * Lấy danh sách organization IDs mà user là owner hoặc member
+     */
+    async findOrgIdsByUser(userId: string): Promise<string[]> {
+        const orgs = await this.prisma.organization.findMany({
+            where: {
+                is_deleted: false,
+                OR: [
+                    { owner_id: userId },
+                    { members: { some: { user_id: userId, is_deleted: false, is_accepted: true } } },
+                ],
+            },
+            select: { id: true },
+        });
+        return orgs.map(org => org.id);
+    }
 }

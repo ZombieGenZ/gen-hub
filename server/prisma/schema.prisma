@@ -262,6 +262,12 @@ enum PaymentType {
   RENEWAL
 }
 
+enum TemplateRentalStatus {
+  AVAILABLE
+  LOCKED
+  RENTED
+}
+
 model WarehouseTemplate {
   id          String  @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
   name        String
@@ -273,6 +279,7 @@ model WarehouseTemplate {
 
   is_shared_warehouse Boolean @default(false)
 
+  rental_status TemplateRentalStatus @default(AVAILABLE)
   is_rented             Boolean @default(false)
   price_per_month         Decimal @db.Decimal(19, 4)
   discount_1_month      Decimal @default(0) @db.Decimal(5, 2)

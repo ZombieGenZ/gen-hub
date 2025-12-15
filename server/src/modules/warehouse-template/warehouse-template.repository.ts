@@ -152,11 +152,12 @@ export class WarehouseTemplateRepository {
     ): Promise<IPaginatedResponse<IWarehouseTemplateWithRelations>> {
         const limit = this.paginationConfig.getLimit(query.limit);
         const offset = this.paginationConfig.getOffset(query.offset);
-        const { keywords, is_active } = query;
+        const { keywords, is_active, rental_status } = query;
 
         const where: Prisma.WarehouseTemplateWhereInput = {
             is_deleted: false,
             ...(is_active !== undefined && { is_active }),
+            ...(rental_status && { rental_status }),
             ...(keywords && {
                 OR: [
                     { name: { contains: keywords, mode: 'insensitive' } },
@@ -502,8 +503,6 @@ export class WarehouseTemplateRepository {
     async transaction<T>(fn: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
         return this.prisma.$transaction(fn);
     }
-
-    // ==================== IMAGE METHODS ====================
 
     /**
      * Tạo mới image cho template

@@ -160,16 +160,20 @@ export class RentalContractRepository {
     }
 
     async findMany(
-        query: QueryRentalContractDto,
+        query: QueryRentalContractDto & { organization_ids?: string[] },
     ): Promise<IPaginatedResponse<IRentalContractWithRelations>> {
         const limit = this.paginationConfig.getLimit(query.limit);
         const offset = this.paginationConfig.getOffset(query.offset);
-        const { keywords, status, organization_id } = query;
+        const { keywords, status, organization_id, organization_ids } = query;
 
         const where: Prisma.RentalContractWhereInput = {
             is_deleted: false,
             ...(status && { status }),
             ...(organization_id && { organization_id }),
+            // Nếu có organization_ids, lọc theo danh sách này (dùng khi không có quyền list.all)
+            ...(organization_ids && organization_ids.length > 0 && !organization_id && {
+                organization_id: { in: organization_ids },
+            }),
             ...(keywords && {
                 OR: [
                     { code: { contains: keywords, mode: 'insensitive' } },
@@ -332,8 +336,57 @@ export class RentalContractRepository {
         });
     }
 
+    /**
+     * Tìm các contracts PENDING khác có xung đột về template hoặc row
+     * Dùng để hủy khi có contract được thanh toán thành công
+     */
+    async findConflictingPendingContracts(
+        templateIds: string[],
+        rowTemplateIds: string[],
+        excludeContractId: string,
+    ): Promise<IRentalContractWithRelations[]> {
+        // Tìm contracts PENDING khác có chứa cùng template hoặc row
+        const contracts = await this.prisma.rentalContract.findMany({
+            where: {
+                id: { not: excludeContractId },
+                status: ContractStatus.PENDING,
+                is_deleted: false,
+                details: {
+                    some: {
+                        is_deleted: false,
+                        OR: [
+                            // Xung đột: thuê cả kho (template) trùng với template đang thuê
+                            {
+                                is_whole_warehouse: true,
+                                warehouse_template_id: { in: templateIds },
+                            },
+                            // Xung đột: thuê row trùng với row đang thuê
+                            {
+                                is_whole_warehouse: false,
+                                row_template_ids: { hasSome: rowTemplateIds },
+                            },
+                            // Xung đột: thuê cả kho nhưng có row của kho đó đang được thuê
+                            {
+                                is_whole_warehouse: true,
+                                warehouse_template: {
+                                    rows: {
+                                        some: {
+                                            id: { in: rowTemplateIds },
+                                        },
+                                    },
+                                },
+                            },
+                        ],
+                    },
+                },
+            },
+            include: this.fullInclude,
+        });
+
+        return contracts as unknown as IRentalContractWithRelations[];
+    }
+
     async transaction<T>(fn: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
         return this.prisma.$transaction(fn);
     }
 }
-

@@ -347,7 +347,9 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
   }
 
   /**
-   * Seed các permissions cho WarehouseTemplate và gán vào Admin & Super Admin roles
+   * Seed các permissions cho WarehouseTemplate
+   * - CRUD permissions: Chỉ Admin và Super Admin
+   * - list.all: Cho phép xem tất cả templates kể cả is_active = false
    */
   private async seedWarehouseTemplatePermissions() {
     try {
@@ -360,7 +362,12 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         {
           key: 'warehouse-template.list',
           name: 'Xem danh sách template kho hàng',
-          description: 'Quyền xem danh sách template kho hàng',
+          description: 'Quyền xem danh sách template kho hàng (chỉ is_active)',
+        },
+        {
+          key: 'warehouse-template.list.all',
+          name: 'Xem tất cả template kho hàng',
+          description: 'Quyền xem tất cả template kho hàng bao gồm cả is_active = false',
         },
         {
           key: 'warehouse-template.read',
@@ -437,6 +444,8 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
           }
         }
       }
+
+      this.logger.log('✅ Warehouse template permissions seeded');
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
@@ -774,12 +783,15 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
   }
 
   /**
-   * Seed các permissions cho Rental Contract và gán vào tất cả roles
-   * Rental Contract là resource cấp tổ chức, tất cả user đã đăng nhập đều có thể sử dụng
+   * Seed các permissions cho Rental Contract
+   * - rental-contract.create/list/read: Tất cả user
+   * - rental-contract.update/delete: Chỉ Admin và Super Admin
+   * - rental-contract.list.all: Chỉ Admin và Super Admin
    */
   private async seedRentalContractPermissions() {
     try {
-      const rentalContractPermissions = [
+      // Permissions cơ bản cho tất cả user
+      const basicPermissions = [
         {
           key: 'rental-contract.create',
           name: 'Tạo hợp đồng thuê',
@@ -788,13 +800,17 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         {
           key: 'rental-contract.list',
           name: 'Xem danh sách hợp đồng',
-          description: 'Quyền xem danh sách hợp đồng thuê',
+          description: 'Quyền xem danh sách hợp đồng thuê của mình',
         },
         {
           key: 'rental-contract.read',
           name: 'Xem chi tiết hợp đồng',
-          description: 'Quyền xem chi tiết hợp đồng thuê',
+          description: 'Quyền xem chi tiết hợp đồng thuê của mình',
         },
+      ];
+
+      // Permissions đặc biệt chỉ cho Admin và Super Admin
+      const adminPermissions = [
         {
           key: 'rental-contract.update',
           name: 'Cập nhật hợp đồng',
@@ -805,10 +821,17 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
           name: 'Hủy hợp đồng',
           description: 'Quyền hủy hợp đồng thuê',
         },
+        {
+          key: 'rental-contract.list.all',
+          name: 'Xem tất cả hợp đồng',
+          description: 'Quyền xem danh sách tất cả hợp đồng thuê trên hệ thống',
+        },
       ];
 
+      const allSystemPermissions = [...basicPermissions, ...adminPermissions];
+
       // Tạo system permissions
-      for (const perm of rentalContractPermissions) {
+      for (const perm of allSystemPermissions) {
         const existing = await this.permission.findFirst({
           where: { key: perm.key },
         });
@@ -826,20 +849,57 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         }
       }
 
-      // Gán cho tất cả roles (tương tự organization permissions)
+      // Gán basic permissions cho tất cả roles
       const allRoles = await this.role.findMany({
         where: { is_deleted: false },
       });
 
-      const permissionRecords = await this.permission.findMany({
+      const basicPermissionRecords = await this.permission.findMany({
         where: {
-          key: { in: rentalContractPermissions.map((p) => p.key) },
+          key: { in: basicPermissions.map((p) => p.key) },
           is_deleted: false,
         },
       });
 
       for (const role of allRoles) {
-        for (const permission of permissionRecords) {
+        for (const permission of basicPermissionRecords) {
+          const existingAssignment = await this.rolePermission.findFirst({
+            where: {
+              role_id: role.id,
+              permission_id: permission.id,
+            },
+          });
+
+          if (!existingAssignment) {
+            await this.rolePermission.create({
+              data: {
+                role_id: role.id,
+                permission_id: permission.id,
+                is_active: true,
+                is_deleted: false,
+              },
+            });
+          }
+        }
+      }
+
+      // Gán admin permissions chỉ cho Admin và Super Admin
+      const adminRoles = await this.role.findMany({
+        where: {
+          name: { in: ['Admin', 'Super Admin'] },
+          is_deleted: false,
+        },
+      });
+
+      const adminPermissionRecords = await this.permission.findMany({
+        where: {
+          key: { in: adminPermissions.map((p) => p.key) },
+          is_deleted: false,
+        },
+      });
+
+      for (const role of adminRoles) {
+        for (const permission of adminPermissionRecords) {
           const existingAssignment = await this.rolePermission.findFirst({
             where: {
               role_id: role.id,

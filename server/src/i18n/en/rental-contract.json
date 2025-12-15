@@ -67,7 +67,9 @@
         "sealed_title": "Warehouse Sealed",
         "sealed_content": "The warehouse for contract {code} has been sealed due to overdue payment. Please contact support.",
         "liquidated_title": "Warehouse Liquidated",
-        "liquidated_content": "The warehouse for contract {code} has been liquidated due to non-payment within the specified period."
+        "liquidated_content": "The warehouse for contract {code} has been liquidated due to non-payment within the specified period.",
+        "cancelled_by_conflict_title": "Contract Cancelled",
+        "cancelled_by_conflict_content": "Contract {code} has been cancelled because the warehouse was paid and rented by another user."
     },
     "email": {
         "contract_extended_subject": "[GEN-HUB] Contract {code} has been extended",

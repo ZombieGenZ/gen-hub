@@ -1,10 +1,11 @@
-import { Injectable, Logger, BadRequestException, UnauthorizedException } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException, UnauthorizedException, Inject, forwardRef } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ISepayWebhookData, IPaymentResult, ICreatePaymentOptions } from './interfaces';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PaymentStatus, PaymentType } from '@prisma/client';
 import { SystemLogService } from '../system-log/system-log.service';
 import { WebsocketGateway } from '../websocket/websocket.gateway';
+import { RentalContractService } from '../rental-contract/rental-contract.service';
 
 /**
  * Service xử lý tích hợp SePay payment gateway
@@ -30,6 +31,8 @@ export class SepayService {
         private readonly prisma: PrismaService,
         private readonly systemLogService: SystemLogService,
         private readonly websocketGateway: WebsocketGateway,
+        @Inject(forwardRef(() => RentalContractService))
+        private readonly rentalContractService: RentalContractService,
     ) {
         this.accountNumber = this.configService.get<string>('SEPAY_ACCOUNT_NUMBER') || '';
         this.bankName = this.configService.get<string>('SEPAY_BANK_NAME') || '';
@@ -199,6 +202,9 @@ export class SepayService {
                 where: { id: payment.rental_contract_id },
                 data: { status: 'ACTIVE' },
             });
+
+            // Hủy các contracts PENDING xung đột
+            await this.rentalContractService.cancelConflictingContracts(payment.rental_contract_id);
 
             // Emit socket contract:activated
             const contract = await this.prisma.rentalContract.findUnique({

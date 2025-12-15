@@ -32,7 +32,7 @@ import {
     QueryWarehouseTemplateDto,
     UpsertLayoutDto,
 } from './dto';
-import { JwtAuthGuard, PermissionGuard } from '../../common/guards';
+import { JwtAuthGuard, PermissionGuard, OptionalJwtAuthGuard } from '../../common/guards';
 import { RequirePermission, CurrentUser } from '../../common/decorators';
 import {
     CreatedResponse,
@@ -42,6 +42,7 @@ import {
     ResponseCode,
 } from '../../common/responses';
 import { IWarehouseTemplateWithRelations, IPaginatedResponse } from './interfaces';
+import { PrismaService } from '../../prisma/prisma.service';
 
 // Cấu hình upload ảnh
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -51,11 +52,58 @@ const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'
 @ApiTags('Warehouse Templates')
 @ApiBearerAuth('JWT-auth')
 @Controller('warehouse-templates')
-@UseGuards(JwtAuthGuard, PermissionGuard)
 export class WarehouseTemplateController {
-    constructor(private readonly service: WarehouseTemplateService) { }
+    constructor(
+        private readonly service: WarehouseTemplateService,
+        private readonly prisma: PrismaService,
+    ) { }
+
+    /**
+     * Kiểm tra user có permission cụ thể không
+     */
+    private async hasPermission(userId: string | undefined, permissionKey: string): Promise<boolean> {
+        if (!userId) return false;
+
+        const user = await this.prisma.user.findFirst({
+            where: { id: userId },
+            include: {
+                system_roles: {
+                    where: { is_deleted: false, is_active: true },
+                    include: {
+                        role: {
+                            include: {
+                                permissions: {
+                                    where: { is_deleted: false, is_active: true },
+                                    include: { permission: true },
+                                },
+                            },
+                        },
+                    },
+                },
+                system_permissions: {
+                    where: { is_deleted: false, is_active: true },
+                    include: { permission: true },
+                },
+            },
+        });
+
+        if (!user) return false;
+
+        // Check direct permissions
+        const hasDirectPerm = user.system_permissions.some(
+            (p) => p.permission.key === permissionKey,
+        );
+        if (hasDirectPerm) return true;
+
+        // Check role permissions
+        const hasRolePerm = user.system_roles.some((ur) =>
+            ur.role.permissions.some((rp) => rp.permission.key === permissionKey),
+        );
+        return hasRolePerm;
+    }
 
     @Post()
+    @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('warehouse-template.create')
     @ApiOperation({ summary: 'Tạo mới template kho hàng' })
     @ApiResponse({ status: 201, description: 'Tạo thành công' })
@@ -70,32 +118,52 @@ export class WarehouseTemplateController {
         return new CreatedResponse(ResponseCode.WAREHOUSE_TEMPLATE_CREATE_SUCCESS, result);
     }
 
+    /**
+     * Lấy danh sách template - không cần xác thực
+     * - Có quyền list.all: có thể filter is_active = false hoặc không truyền is_active
+     * - Không có quyền list.all: chỉ xem is_active = true
+     */
     @Get()
-    @RequirePermission('warehouse-template.list')
+    @UseGuards(OptionalJwtAuthGuard)
     @ApiOperation({ summary: 'Lấy danh sách template kho hàng' })
     @ApiResponse({ status: 200, description: 'Lấy danh sách thành công' })
     async findMany(
         @Query() query: QueryWarehouseTemplateDto,
+        @CurrentUser('userId') userId: string | undefined,
     ): Promise<GetResponse<IPaginatedResponse<IWarehouseTemplateWithRelations>>> {
+        const hasListAllPermission = await this.hasPermission(userId, 'warehouse-template.list.all');
+
+        // Nếu không có quyền list.all, buộc is_active = true
+        if (!hasListAllPermission) {
+            query.is_active = true;
+        }
+
         const result = await this.service.findMany(query);
         return new GetResponse(ResponseCode.WAREHOUSE_TEMPLATE_LIST_SUCCESS, result);
     }
 
+    /**
+     * Lấy chi tiết template - không cần xác thực
+     */
     @Get(':id')
-    @RequirePermission('warehouse-template.read')
+    @UseGuards(OptionalJwtAuthGuard)
     @ApiOperation({ summary: 'Lấy chi tiết template kho hàng' })
     @ApiParam({ name: 'id', description: 'ID của template', type: 'string' })
     @ApiResponse({ status: 200, description: 'Lấy thành công' })
     @ApiResponse({ status: 404, description: 'Không tìm thấy template' })
     async findById(
         @Param('id', ParseUUIDPipe) id: string,
+        @CurrentUser('userId') userId: string | undefined,
         @I18nLang() lang: string,
     ): Promise<GetResponse<IWarehouseTemplateWithRelations>> {
-        const result = await this.service.findById(id, lang);
+        const hasListAllPermission = await this.hasPermission(userId, 'warehouse-template.list.all');
+        const result = await this.service.findById(id, lang, hasListAllPermission);
         return new GetResponse(ResponseCode.WAREHOUSE_TEMPLATE_GET_SUCCESS, result);
     }
 
+
     @Put(':id')
+    @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('warehouse-template.update')
     @ApiOperation({ summary: 'Cập nhật thông tin template kho hàng' })
     @ApiParam({ name: 'id', description: 'ID của template', type: 'string' })
@@ -113,6 +181,7 @@ export class WarehouseTemplateController {
     }
 
     @Delete(':id')
+    @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('warehouse-template.delete')
     @ApiOperation({ summary: 'Xóa template kho hàng' })
     @ApiParam({ name: 'id', description: 'ID của template', type: 'string' })
@@ -128,6 +197,7 @@ export class WarehouseTemplateController {
     }
 
     @Put(':id/layout')
+    @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('warehouse-template.design')
     @ApiOperation({ summary: 'Cập nhật layout (rows, racks, shelves, blocks)' })
     @ApiParam({ name: 'id', description: 'ID của template', type: 'string' })
@@ -143,9 +213,8 @@ export class WarehouseTemplateController {
         return new UpdatedResponse(ResponseCode.WAREHOUSE_TEMPLATE_LAYOUT_UPDATE_SUCCESS, result);
     }
 
-    // ==================== IMAGE ENDPOINTS ====================
-
     @Post(':id/images')
+    @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('warehouse-template.update')
     @UseInterceptors(FilesInterceptor('images', MAX_FILES, {
         limits: { fileSize: MAX_FILE_SIZE },
@@ -189,8 +258,11 @@ export class WarehouseTemplateController {
         return new CreatedResponse(ResponseCode.WAREHOUSE_TEMPLATE_IMAGE_UPLOAD_SUCCESS, result);
     }
 
+    /**
+     * Lấy danh sách ảnh - không cần xác thực
+     */
     @Get(':id/images')
-    @RequirePermission('warehouse-template.read')
+    @UseGuards(OptionalJwtAuthGuard)
     @ApiOperation({ summary: 'Lấy danh sách ảnh của template' })
     @ApiParam({ name: 'id', description: 'ID của template', type: 'string' })
     @ApiResponse({ status: 200, description: 'Lấy danh sách ảnh thành công' })
@@ -204,6 +276,7 @@ export class WarehouseTemplateController {
     }
 
     @Delete(':id/images/:imageId')
+    @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('warehouse-template.update')
     @ApiOperation({ summary: 'Xóa ảnh của template' })
     @ApiParam({ name: 'id', description: 'ID của template', type: 'string' })
@@ -221,6 +294,7 @@ export class WarehouseTemplateController {
     }
 
     @Put(':id/images/reorder')
+    @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('warehouse-template.update')
     @ApiOperation({ summary: 'Sắp xếp lại thứ tự ảnh' })
     @ApiParam({ name: 'id', description: 'ID của template', type: 'string' })
