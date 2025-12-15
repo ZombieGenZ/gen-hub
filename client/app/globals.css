@@ -3,29 +3,102 @@
 @variant dark (&:where(.dark, .dark *));
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Core Base Colors */
+  --background: #F8FAFC; /* ColorKit Background */
+  --foreground: #1E293B; /* ColorKit Gray 900 */
+
+  /* Primary - Deep Teal */
+  --primary: #0F766E;
+  --primary-foreground: #FFFFFF;
+  --primary-light: #14B8A6;
+  --primary-dark: #0D5A52;
+
+  /* Secondary / Muted */
+  --secondary: #F1F5F9; /* Sidebar BG / Gray 100 */
+  --secondary-foreground: #0F766E; /* Using Primary for contrast or Gray 900 */
+  
+  --muted: #F1F5F9; /* Gray 100 */
+  --muted-foreground: #64748B; /* Gray 500 */
+
+  --accent: #F1F5F9; /* Gray 100 */
+  --accent-foreground: #0F766E;
+
+  --destructive: #EF4444; /* Error */
+  --destructive-foreground: #FFFFFF;
+
+  /* Form / Borders */
+  --border: #E2E8F0;
+  --input: #E2E8F0;
+  --ring: #0F766E;
+
+  --radius: 0.5rem;
+
+  /* ColorKit Specific */
+  --color-success: #10B981;
+  --color-warning: #F59E0B;
+  --color-info: #0EA5E9;
+  
+  /* Chart / Visualization placeholders if needed */
+  --chart-1: #0F766E;
+  --chart-2: #14B8A6;
+  --chart-3: #F59E0B;
+}
+
+.dark {
+  --background: #020617; /* Slate 950 */
+  --foreground: #F8FAFC; /* Slate 50 */
+
+  --primary: #14B8A6; /* Primary Light for Dark Mode for visibility */
+  --primary-foreground: #020617;
+
+  --secondary: #1E293B; /* Slate 800 */
+  --secondary-foreground: #F8FAFC;
+
+  --muted: #1E293B;
+  --muted-foreground: #94A3B8;
+
+  --accent: #1E293B;
+  --accent-foreground: #F8FAFC;
+
+  --destructive: #7F1D1D;
+  --destructive-foreground: #F8FAFC;
+
+  --border: #1E293B;
+  --input: #1E293B;
+  --ring: #14B8A6;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-light: var(--primary-light);
+  --color-primary-dark: var(--primary-dark);
+  
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
 
-/* @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-} */
-/* Commenting out media query preference to let class-control take over fully for now or we can keep it for default variables, but manual toggle relies on classes */
-/* Actually, for variables to switch, we need to bind them to the class too */
-
-.dark {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  /* Helper colors matching ColorKit */
+  --color-warning: var(--color-warning);
+  --color-success: var(--color-success);
+  --color-info: var(--color-info);
+  
+  --radius: var(--radius);
 }
 
 body {
