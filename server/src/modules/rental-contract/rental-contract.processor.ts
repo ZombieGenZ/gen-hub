@@ -43,8 +43,8 @@ export interface RetryPaymentJobData {
 @Injectable()
 export class RentalContractProcessor {
     private readonly logger = new Logger(RentalContractProcessor.name);
-    private readonly contractPendingExpireHours: number;
-    private readonly lockDurationHours: number;
+    private readonly contractPendingExpireSeconds: number;
+    private readonly lockDurationSeconds: number;
 
     constructor(
         private readonly prisma: PrismaService,
@@ -55,8 +55,8 @@ export class RentalContractProcessor {
         private readonly configService: ConfigService,
         private readonly i18n: I18nService,
     ) {
-        this.contractPendingExpireHours = this.configService.get<number>('CONTRACT_PENDING_EXPIRE_HOURS') || 24;
-        this.lockDurationHours = this.configService.get<number>('RENTAL_LOCK_DURATION_HOURS') || 1;
+        this.contractPendingExpireSeconds = this.configService.get<number>('CONTRACT_PENDING_EXPIRE_SECONDS') || 86400;
+        this.lockDurationSeconds = this.configService.get<number>('RENTAL_LOCK_DURATION_SECONDS') || 3600;
     }
 
     /**
@@ -123,7 +123,7 @@ export class RentalContractProcessor {
 
             // Schedule payment expire
             const expiredAt = new Date();
-            expiredAt.setHours(expiredAt.getHours() + this.lockDurationHours);
+            expiredAt.setSeconds(expiredAt.getSeconds() + this.lockDurationSeconds);
             this.paymentScheduler.schedulePaymentExpire(paymentResult.paymentId, expiredAt, userId);
 
             // Emit socket event
@@ -209,7 +209,7 @@ export class RentalContractProcessor {
 
             // Schedule payment expire
             const expiredAt = new Date();
-            expiredAt.setHours(expiredAt.getHours() + this.lockDurationHours);
+            expiredAt.setSeconds(expiredAt.getSeconds() + this.lockDurationSeconds);
             this.paymentScheduler.schedulePaymentExpire(paymentResult.paymentId, expiredAt, userId);
 
             this.systemLogService.info('rental-contract', 'retry-payment',

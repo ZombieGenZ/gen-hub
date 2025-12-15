@@ -21,7 +21,7 @@ export class SepayService {
     private readonly apiKey: string;
     private readonly paymentCodePrefix: string;
     private readonly paymentCodeLength: number;
-    private readonly lockDurationHours: number;
+    private readonly lockDurationSeconds: number;
 
     // Ký tự được phép trong payment code: chữ viết hoa + số
     private readonly ALPHANUMERIC_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -40,7 +40,7 @@ export class SepayService {
         this.apiKey = this.configService.get<string>('SEPAY_API_KEY') || '';
         this.paymentCodePrefix = this.configService.get<string>('PAYMENT_CODE_PREFIX') || 'GENHUB';
         this.paymentCodeLength = this.configService.get<number>('PAYMENT_CODE_LENGTH') || 8;
-        this.lockDurationHours = this.configService.get<number>('RENTAL_LOCK_DURATION_HOURS') || 1;
+        this.lockDurationSeconds = this.configService.get<number>('RENTAL_LOCK_DURATION_SECONDS') || 3600;
     }
 
     /**
@@ -97,7 +97,7 @@ export class SepayService {
 
         // Tính thời gian hết hạn
         const expiredAt = new Date();
-        expiredAt.setHours(expiredAt.getHours() + this.lockDurationHours);
+        expiredAt.setSeconds(expiredAt.getSeconds() + this.lockDurationSeconds);
 
         // Tạo QR URL
         const qrCode = this.generateQRUrl(paymentCode, options.amount);

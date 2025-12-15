@@ -46,7 +46,7 @@ import type { Queue } from 'bull';
 export class RentalContractService {
   private readonly CONTRACT_CACHE_TTL: number;
   private readonly CONTRACT_LIST_CACHE_TTL: number;
-  private readonly LOCK_DURATION_HOURS: number;
+  private readonly LOCK_DURATION_SECONDS: number;
   private readonly MAX_PENDING_PER_USER: number;
   private readonly CONTRACT_PREFIX: string;
   private readonly ALLOWED_MONTHS: number[];
@@ -72,8 +72,8 @@ export class RentalContractService {
     this.CONTRACT_LIST_CACHE_TTL =
       this.configService.get<number>('REDIS_RENTAL_CONTRACT_LIST_CACHE_TTL') ||
       60;
-    this.LOCK_DURATION_HOURS =
-      this.configService.get<number>('RENTAL_LOCK_DURATION_HOURS') || 1;
+    this.LOCK_DURATION_SECONDS =
+      this.configService.get<number>('RENTAL_LOCK_DURATION_SECONDS') || 3600;
     this.MAX_PENDING_PER_USER =
       this.configService.get<number>('RENTAL_MAX_PENDING_PER_USER') || 3;
     this.CONTRACT_PREFIX =
@@ -315,15 +315,15 @@ export class RentalContractService {
       });
 
       // Schedule payment expiry
-      const lockExpireHours = this.configService.get<number>('RENTAL_LOCK_DURATION_HOURS') || 1;
+      const lockExpireSeconds = this.configService.get<number>('RENTAL_LOCK_DURATION_SECONDS') || 3600;
       const paymentExpiredAt = new Date();
-      paymentExpiredAt.setHours(paymentExpiredAt.getHours() + lockExpireHours);
+      paymentExpiredAt.setSeconds(paymentExpiredAt.getSeconds() + lockExpireSeconds);
       this.paymentScheduler.schedulePaymentExpire(paymentResult.paymentId, paymentExpiredAt, userId);
 
       // Schedule contract cancel
-      const contractExpireHours = this.configService.get<number>('CONTRACT_PENDING_EXPIRE_HOURS') || 24;
+      const contractExpireSeconds = this.configService.get<number>('CONTRACT_PENDING_EXPIRE_SECONDS') || 86400;
       const contractCancelAt = new Date();
-      contractCancelAt.setHours(contractCancelAt.getHours() + contractExpireHours);
+      contractCancelAt.setSeconds(contractCancelAt.getSeconds() + contractExpireSeconds);
       this.paymentScheduler.scheduleContractCancel(contract.id, contractCancelAt, userId);
 
       return {
@@ -1247,7 +1247,7 @@ export class RentalContractService {
     keys: string | string[],
   ): Promise<{ success: boolean }> {
     const lockKeys = Array.isArray(keys) ? keys : [keys];
-    const ttl = this.LOCK_DURATION_HOURS * 3600;
+    const ttl = this.LOCK_DURATION_SECONDS;
 
     for (const key of lockKeys) {
       const exists = await this.redisService.exists(key);

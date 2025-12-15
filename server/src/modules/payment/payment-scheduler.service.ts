@@ -23,7 +23,7 @@ import { WebsocketGateway } from '../websocket/websocket.gateway';
 @Injectable()
 export class PaymentSchedulerService implements OnModuleInit, OnModuleDestroy {
     private readonly logger = new Logger(PaymentSchedulerService.name);
-    private readonly contractPendingExpireHours: number;
+    private readonly contractPendingExpireSeconds: number;
 
     constructor(
         private readonly prisma: PrismaService,
@@ -32,7 +32,7 @@ export class PaymentSchedulerService implements OnModuleInit, OnModuleDestroy {
         private readonly systemLogService: SystemLogService,
         private readonly websocketGateway: WebsocketGateway,
     ) {
-        this.contractPendingExpireHours = this.configService.get<number>('CONTRACT_PENDING_EXPIRE_HOURS') || 24;
+        this.contractPendingExpireSeconds = this.configService.get<number>('CONTRACT_PENDING_EXPIRE_SECONDS') || 86400;
     }
 
     async onModuleInit() {
@@ -113,7 +113,7 @@ export class PaymentSchedulerService implements OnModuleInit, OnModuleDestroy {
 
             for (const contract of pendingContracts) {
                 const cancelAt = new Date(contract.created_at);
-                cancelAt.setHours(cancelAt.getHours() + this.contractPendingExpireHours);
+                cancelAt.setSeconds(cancelAt.getSeconds() + this.contractPendingExpireSeconds);
 
                 if (cancelAt <= now) {
                     // Kiểm tra xem có payment nào PENDING không
