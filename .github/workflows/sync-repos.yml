@@ -1,0 +1,46 @@
+name: Sync Monorepo to Polyrepos
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'client/**'
+      - 'server/**'
+
+jobs:
+  sync-client:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Push Client folder
+        uses: cpina/github-action-push-to-another-repository@main
+        env:
+          API_TOKEN_GITHUB: ${{ secrets.API_TOKEN_GITHUB }}
+        with:
+          source-directory: 'client'
+          destination-github-username: ${{ secrets.GH_USERNAME }}
+          destination-repository-name: ${{ secrets.REPO_CLIENT }}
+          user-email: ${{ secrets.GH_EMAIL }}
+          target-branch: main
+          commit-message: "Sync client: ${{ github.event.head_commit.message }}"
+
+  sync-server:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Push Server folder
+        uses: cpina/github-action-push-to-another-repository@main
+        env:
+          API_TOKEN_GITHUB: ${{ secrets.API_TOKEN_GITHUB }}
+        with:
+          source-directory: 'server'
+          destination-github-username: ${{ secrets.GH_USERNAME }}
+          destination-repository-name: ${{ secrets.REPO_SERVER }}
+          user-email: ${{ secrets.GH_EMAIL }}
+          target-branch: main
+          commit-message: "Sync server: ${{ github.event.head_commit.message }}"
