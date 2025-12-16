@@ -3,7 +3,7 @@ name: Sync Monorepo to Polyrepos
 on:
   push:
     branches:
-      - main
+      - master
 
   workflow_dispatch:
 
