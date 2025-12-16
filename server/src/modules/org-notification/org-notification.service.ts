@@ -202,4 +202,43 @@ export class OrgNotificationService {
             { userId, description: `Deleted organization notification: ${existing.title}` },
         );
     }
+
+    async deleteMany(orgId: string, ids: string[], userId: string, lang: string): Promise<void> {
+        const notifications = await this.repository.findByIds(ids);
+        if (notifications.length === 0) {
+            throw new NotFoundException(
+                this.i18n.t('org-notification.errors.not_found', { lang }),
+            );
+        }
+
+        const invalidNotif = notifications.find(n => n.organization_id !== orgId);
+        if (invalidNotif) {
+            throw new NotFoundException(
+                this.i18n.t('org-notification.errors.not_found', { lang }),
+            );
+        }
+
+        await this.repository.softDeleteMany(ids, userId);
+
+        // Invalidate cache
+        await Promise.all(ids.map(id => this.redisService.invalidateOrgNotificationCache(id)));
+        await this.redisService.invalidateOrgNotificationListCache(orgId);
+
+        // Emit realtime events
+        this.websocketGateway.emitToOrganization(orgId, 'orgNotification:deletedMany', {
+            ids,
+            actorId: userId
+        });
+
+        // Audit log
+        notifications.forEach(n => {
+            this.auditLogService.logDelete(
+                orgId,
+                'OrganizationNotification',
+                n.id,
+                n as unknown as Record<string, unknown>,
+                { userId, description: `Deleted organization notification: ${n.title}` },
+            );
+        });
+    }
 }

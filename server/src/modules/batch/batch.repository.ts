@@ -146,4 +146,27 @@ export class BatchRepository {
             },
         });
     }
+
+    async softDeleteMany(ids: string[], actorId: string): Promise<void> {
+        await this.prisma.batch.updateMany({
+            where: { id: { in: ids } },
+            data: {
+                is_deleted: true,
+                deleted_at: new Date(),
+                deleted_by: actorId,
+                is_active: false,
+            },
+        });
+    }
+
+    async findByIds(ids: string[]): Promise<IBatch[]> {
+        return this.prisma.batch.findMany({
+            where: { id: { in: ids }, is_deleted: false },
+            include: {
+                product: {
+                    select: { id: true, name: true, sku: true, organization_id: true },
+                },
+            },
+        }) as unknown as IBatch[];
+    }
 }

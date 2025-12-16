@@ -10,7 +10,7 @@ import {
     ParseUUIDPipe,
     UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation, ApiParam, ApiQuery, ApiResponse } from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { I18nLang } from 'nestjs-i18n';
 import { OrganizationService } from './organization.service';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -23,6 +23,7 @@ import {
     AssignMemberRolesDto,
     AssignMemberPermissionsDto,
 } from './dto';
+import { DeleteManyDto } from '../../common/dto';
 import { CurrentUser, RequirePermission, Public } from '../../common/decorators';
 import { PermissionGuard } from '../../common/guards';
 import {
@@ -154,6 +155,24 @@ export class OrganizationController {
             ResponseCode.ORGANIZATION_UPDATE_SUCCESS,
             result,
             'Cập nhật tổ chức thành công',
+        );
+    }
+
+    @Delete('delete/many')
+    @RequirePermission('organization.delete')
+    @ApiOperation({ summary: 'Xóa nhiều tổ chức' })
+    @ApiBody({ type: DeleteManyDto })
+    async deleteMany(
+        @Body() dto: DeleteManyDto,
+        @CurrentUser('userId') userId: string,
+        @I18nLang() lang: string,
+    ) {
+        const hasDeleteAllPermission = await this.hasPermission(userId, 'organization.delete.all');
+        await this.service.deleteMany(dto.ids, userId, lang, hasDeleteAllPermission);
+        return new DeletedResponse(
+            ResponseCode.ORGANIZATION_DELETE_SUCCESS,
+            undefined,
+            'Xóa nhiều tổ chức thành công',
         );
     }
 

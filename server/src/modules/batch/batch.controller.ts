@@ -17,11 +17,13 @@ import {
     ApiBearerAuth,
     ApiParam,
     ApiHeader,
+    ApiBody,
 } from '@nestjs/swagger';
 import { I18nLang } from 'nestjs-i18n';
 
 import { BatchService } from './batch.service';
 import { CreateBatchDto, UpdateBatchDto, QueryBatchDto } from './dto';
+import { DeleteManyDto } from '../../common/dto';
 import { CombinedAuthGuard, OrgPermissionGuard } from '../../common/guards';
 import { CurrentActor, RequireOrgPermission } from '../../common/decorators';
 import {
@@ -107,6 +109,23 @@ export class BatchController {
     ): Promise<UpdatedResponse<IBatch>> {
         const result = await this.service.update(orgId, id, dto, actorId, lang);
         return new UpdatedResponse(ResponseCode.BATCH_UPDATE_SUCCESS, result);
+    }
+
+    @Delete('batches/delete/many')
+    @RequireOrgPermission('batch.delete')
+    @ApiOperation({ summary: 'Xóa nhiều lô hàng' })
+    @ApiParam({ name: 'orgId', description: 'ID của tổ chức' })
+    @ApiBody({ type: DeleteManyDto })
+    @ApiResponse({ status: 200, description: 'Xóa thành công' })
+    @ApiResponse({ status: 404, description: 'Không tìm thấy lô hàng' })
+    async deleteMany(
+        @Param('orgId', ParseUUIDPipe) orgId: string,
+        @Body() dto: DeleteManyDto,
+        @CurrentActor() actorId: string,
+        @I18nLang() lang: string,
+    ): Promise<DeletedResponse<null>> {
+        await this.service.deleteMany(orgId, dto.ids, actorId, lang);
+        return new DeletedResponse(ResponseCode.BATCH_DELETE_SUCCESS, null);
     }
 
     @Delete('batches/:id')

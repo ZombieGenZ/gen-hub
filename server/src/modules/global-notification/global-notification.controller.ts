@@ -16,6 +16,7 @@ import {
     ApiResponse,
     ApiBearerAuth,
     ApiParam,
+    ApiBody,
 } from '@nestjs/swagger';
 import { I18nLang } from 'nestjs-i18n';
 
@@ -25,6 +26,7 @@ import {
     UpdateGlobalNotificationDto,
     QueryGlobalNotificationDto,
 } from './dto';
+import { DeleteManyDto } from '../../common/dto';
 import { JwtAuthGuard, PermissionGuard } from '../../common/guards';
 import { RequirePermission, CurrentUser } from '../../common/decorators';
 import {
@@ -121,6 +123,23 @@ export class GlobalNotificationController {
         @I18nLang() lang: string,
     ): Promise<DeletedResponse<null>> {
         await this.service.delete(id, userId, lang);
+        return new DeletedResponse(ResponseCode.GLOBAL_NOTIFICATION_DELETE_SUCCESS, null);
+    }
+
+    @Delete('delete/many')
+    @ApiBearerAuth('JWT-auth')
+    @UseGuards(JwtAuthGuard, PermissionGuard)
+    @RequirePermission('global-notification.delete')
+    @ApiOperation({ summary: 'Xóa nhiều thông báo toàn cầu' })
+    @ApiBody({ type: DeleteManyDto })
+    @ApiResponse({ status: 200, description: 'Xóa thành công' })
+    @ApiResponse({ status: 404, description: 'Không tìm thấy thông báo' })
+    async deleteMany(
+        @Body() dto: DeleteManyDto,
+        @CurrentUser('userId') userId: string,
+        @I18nLang() lang: string,
+    ): Promise<DeletedResponse<null>> {
+        await this.service.deleteMany(dto.ids, userId, lang);
         return new DeletedResponse(ResponseCode.GLOBAL_NOTIFICATION_DELETE_SUCCESS, null);
     }
 }

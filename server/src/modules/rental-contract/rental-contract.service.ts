@@ -652,6 +652,140 @@ export class RentalContractService {
     );
   }
 
+  async deleteMany(ids: string[], userId: string, lang: string): Promise<void> {
+    const contracts = await this.repository.findByIds(ids);
+    if (contracts.length === 0) {
+      throw new NotFoundException(
+        this.i18n.t('rental-contract.errors.not_found', { lang }),
+      );
+    }
+
+    // Check non-cancellable
+    const nonCancellable = contracts.find(c =>
+      ([ContractStatus.COMPLETED, ContractStatus.LIQUIDATED] as ContractStatus[]).includes(c.status)
+    );
+    if (nonCancellable) {
+      throw new BadRequestException(
+        this.i18n.t('rental-contract.errors.cannot_cancel', { lang }),
+      );
+    }
+
+    // Group by Org to check permissions
+    const contractsByOrg = contracts.reduce((acc, c) => {
+      acc[c.organization_id] = acc[c.organization_id] || [];
+      acc[c.organization_id].push(c);
+      return acc;
+    }, {} as Record<string, IRentalContractWithRelations[]>);
+
+    for (const orgId in contractsByOrg) {
+      await this.checkOrgPermission(orgId, userId, 'rental-contract.delete', lang);
+    }
+
+    await this.repository.softDeleteMany(ids, userId);
+
+    // Release locks
+    const lockKeys = ids.map(id => `rental:lock:contract:${id}`);
+    await this.releaseLock(lockKeys);
+
+    // Invalidate caches
+    await Promise.all(ids.map(id => this.invalidateContractCache(id)));
+    await this.invalidateContractListCache();
+
+    // Emit & Log
+    for (const orgId in contractsByOrg) {
+      const orgContracts = contractsByOrg[orgId];
+      const orgContractIds = orgContracts.map(c => c.id);
+
+      this.websocketGateway.emitToOrganization(orgId, 'rentalContract:deletedMany', {
+        ids: orgContractIds,
+        orgId,
+        deletedBy: userId,
+        timestamp: new Date().toISOString(),
+      });
+
+      orgContracts.forEach(c => {
+        this.systemLogService.info(
+          'rental-contract',
+          'delete_many',
+          `Cancelled rental contract: ${c.code}`,
+          { userId, metaData: { contractId: c.id, code: c.code } },
+        );
+
+        this.auditLogService.logDelete(
+          orgId,
+          'rental_contract',
+          c.id,
+          { status: c.status, code: c.code } as Record<string, unknown>,
+          { userId, description: `Batch cancelled rental contract: ${c.code}` },
+        );
+      });
+    }
+  }
+
+  async deleteManyByOrg(
+    ids: string[],
+    userId: string,
+    organizationId: string,
+    lang: string,
+  ): Promise<void> {
+    const contracts = await this.repository.findByIds(ids);
+    if (contracts.length === 0) {
+      throw new NotFoundException(
+        this.i18n.t('rental-contract.errors.not_found', { lang }),
+      );
+    }
+
+    await this.checkOrgPermission(organizationId, userId, 'rental-contract.delete', lang);
+
+    const invalidContract = contracts.find(c => c.organization_id !== organizationId);
+    if (invalidContract) {
+      throw new ForbiddenException(
+        this.i18n.t('rental-contract.errors.no_permission', { lang }),
+      );
+    }
+
+    const nonCancellable = contracts.find(c =>
+      ([ContractStatus.COMPLETED, ContractStatus.LIQUIDATED] as ContractStatus[]).includes(c.status)
+    );
+    if (nonCancellable) {
+      throw new BadRequestException(
+        this.i18n.t('rental-contract.errors.cannot_cancel', { lang }),
+      );
+    }
+
+    await this.repository.softDeleteMany(ids, userId);
+
+    const lockKeys = ids.map(id => `rental:lock:contract:${id}`);
+    await this.releaseLock(lockKeys);
+
+    await Promise.all(ids.map(id => this.invalidateContractCache(id)));
+    await this.invalidateContractListCache();
+
+    this.websocketGateway.emitToOrganization(organizationId, 'rentalContract:deletedMany', {
+      ids,
+      orgId: organizationId,
+      deletedBy: userId,
+      timestamp: new Date().toISOString(),
+    });
+
+    contracts.forEach(c => {
+      this.systemLogService.info(
+        'rental-contract',
+        'delete_many',
+        `Cancelled rental contract: ${c.code}`,
+        { userId, metaData: { contractId: c.id, code: c.code } },
+      );
+
+      this.auditLogService.logDelete(
+        organizationId,
+        'rental_contract',
+        c.id,
+        { status: c.status, code: c.code } as Record<string, unknown>,
+        { userId, description: `Batch cancelled rental contract: ${c.code}` },
+      );
+    });
+  }
+
   /**
    * Lấy danh sách hợp đồng của tổ chức
    * Chỉ owner/member của org mới được xem

@@ -9,13 +9,14 @@ import {
     ParseUUIDPipe,
     UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation, ApiParam } from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiParam, ApiBody } from '@nestjs/swagger';
 import { I18nLang } from 'nestjs-i18n';
 import { OrganizationService } from './organization.service';
 import {
     CreateApiKeyDto,
     UpdateApiKeyDto,
 } from './dto';
+import { DeleteManyDto } from '../../common/dto';
 import { CurrentUser, RequirePermission } from '../../common/decorators';
 import { PermissionGuard } from '../../common/guards';
 import {
@@ -142,6 +143,25 @@ export class ApiKeyController {
             ResponseCode.APIKEY_DELETE_SUCCESS,
             undefined,
             'Xóa API key thành công',
+        );
+    }
+
+    @Delete('delete/many')
+    @RequirePermission('organization.read')
+    @ApiOperation({ summary: 'Xóa nhiều API keys' })
+    @ApiParam({ name: 'orgId', description: 'ID tổ chức' })
+    @ApiBody({ type: DeleteManyDto })
+    async deleteMany(
+        @Param('orgId', ParseUUIDPipe) orgId: string,
+        @Body() dto: DeleteManyDto,
+        @CurrentUser('userId') userId: string,
+        @I18nLang() lang: string,
+    ) {
+        await this.service.deleteManyApiKeys(orgId, dto.ids, userId, lang);
+        return new DeletedResponse(
+            ResponseCode.APIKEY_DELETE_SUCCESS,
+            undefined,
+            'Xóa nhiều API keys thành công',
         );
     }
 }

@@ -17,6 +17,7 @@ import {
     ApiBearerAuth,
     ApiParam,
     ApiHeader,
+    ApiBody,
 } from '@nestjs/swagger';
 import { I18nLang } from 'nestjs-i18n';
 
@@ -26,6 +27,7 @@ import {
     UpdatePartnerDto,
     QueryPartnerDto,
 } from './dto';
+import { DeleteManyDto } from '../../common/dto';
 import { CombinedAuthGuard, OrgPermissionGuard } from '../../common/guards';
 import { CurrentActor, RequireOrgPermission } from '../../common/decorators';
 import {
@@ -110,6 +112,23 @@ export class PartnerController {
     ): Promise<UpdatedResponse<IPartner>> {
         const result = await this.service.update(orgId, id, dto, actorId, lang);
         return new UpdatedResponse(ResponseCode.PARTNER_UPDATE_SUCCESS, result);
+    }
+
+    @Delete('delete/many')
+    @RequireOrgPermission('partner.delete')
+    @ApiOperation({ summary: 'Xóa nhiều đối tác' })
+    @ApiParam({ name: 'orgId', description: 'ID của tổ chức' })
+    @ApiBody({ type: DeleteManyDto })
+    @ApiResponse({ status: 200, description: 'Xóa thành công' })
+    @ApiResponse({ status: 404, description: 'Không tìm thấy đối tác' })
+    async deleteMany(
+        @Param('orgId', ParseUUIDPipe) orgId: string,
+        @Body() dto: DeleteManyDto,
+        @CurrentActor() actorId: string,
+        @I18nLang() lang: string,
+    ): Promise<DeletedResponse<null>> {
+        await this.service.deleteMany(orgId, dto.ids, actorId, lang);
+        return new DeletedResponse(ResponseCode.PARTNER_DELETE_SUCCESS, null, 'Xóa nhiều đối tác thành công');
     }
 
     @Delete(':id')

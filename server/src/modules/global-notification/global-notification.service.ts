@@ -173,6 +173,42 @@ export class GlobalNotificationService {
         });
     }
 
+    async deleteMany(ids: string[], userId: string, lang: string): Promise<void> {
+        const notifications = await this.repository.findByIds(ids);
+        if (notifications.length === 0) {
+            throw new NotFoundException(
+                this.i18n.t('global-notification.errors.not_found', { lang }),
+            );
+        }
+
+        await this.repository.softDeleteMany(ids, userId);
+
+        // Invalidate cache
+        await Promise.all(
+            ids.map(id => this.redisService.invalidateGlobalNotificationCache(id))
+        );
+        await this.redisService.invalidateGlobalNotificationListCache();
+
+        // Emit realtime event
+        this.websocketGateway.server.emit('globalNotification:deletedMany', {
+            ids,
+            deletedBy: userId,
+            timestamp: new Date().toISOString(),
+        });
+
+        // Log
+        notifications.forEach(notification => {
+            this.systemLogService.log({
+                level: 'INFO',
+                module: 'GlobalNotification',
+                action: 'DELETE',
+                message: `Deleted global notification: ${notification.title}`,
+                userId,
+                metaData: { notificationId: notification.id },
+            });
+        });
+    }
+
     // Lấy danh sách thông báo đang active (public)
     async getActiveNotifications(): Promise<IGlobalNotification[]> {
         return this.repository.findActiveNotifications();

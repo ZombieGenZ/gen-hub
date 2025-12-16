@@ -9,11 +9,12 @@ import {
     UseGuards,
     ParseUUIDPipe,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam, ApiHeader } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam, ApiHeader, ApiBody } from '@nestjs/swagger';
 import { I18nLang } from 'nestjs-i18n';
 
 import { WarehouseService } from './warehouse.service';
 import { UpdateWarehouseDto, QueryWarehouseDto } from './dto';
+import { DeleteManyDto } from '../../common/dto';
 import { CombinedAuthGuard, PermissionGuard } from '../../common/guards';
 import { RequirePermission, CurrentActor } from '../../common/decorators';
 import { GetResponse, UpdatedResponse, DeletedResponse, ResponseCode } from '../../common/responses';
@@ -96,6 +97,24 @@ export class WarehouseController {
     ) {
         const data = await this.warehouseService.update(id, dto, actorId, orgId, lang);
         return new UpdatedResponse(ResponseCode.WAREHOUSE_UPDATE_SUCCESS, data, 'Cập nhật kho thành công');
+    }
+
+    /**
+     * Xóa nhiều warehouse
+     */
+    @Delete('delete/many')
+    @RequirePermission('warehouse.delete')
+    @ApiOperation({ summary: 'Xóa nhiều warehouse' })
+    @ApiParam({ name: 'orgId', description: 'ID tổ chức' })
+    @ApiBody({ type: DeleteManyDto })
+    async deleteMany(
+        @Param('orgId', ParseUUIDPipe) orgId: string,
+        @Body() dto: DeleteManyDto,
+        @CurrentActor() actorId: string,
+        @I18nLang() lang: string,
+    ) {
+        await this.warehouseService.deleteMany(dto.ids, actorId, orgId, lang);
+        return new DeletedResponse(ResponseCode.WAREHOUSE_DELETE_SUCCESS, null, 'Xóa nhiều kho thành công');
     }
 
     /**

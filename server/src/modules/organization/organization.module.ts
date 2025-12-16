@@ -8,6 +8,7 @@ import { OrganizationController } from './organization.controller';
 import { OrganizationRoleController } from './organization-role.controller';
 import { ApiKeyController } from './api-key.controller';
 import { ApiKeyVerifyController } from './api-key-verify.controller';
+import { ApiKeyAdminController } from './api-key-admin.controller';
 import { OrganizationService } from './organization.service';
 import { OrganizationRepository } from './organization.repository';
 import { OrganizationAuditLogService } from './organization-audit-log.service';
@@ -26,7 +27,9 @@ import { ApiKeyLogService } from './api-key-log.service';
         OrganizationRoleController,
         ApiKeyController,
         ApiKeyVerifyController,
+        ApiKeyAdminController,
     ],
+
     providers: [
         OrganizationService,
         OrganizationRepository,

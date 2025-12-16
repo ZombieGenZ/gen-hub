@@ -11,11 +11,12 @@ import {
     Request,
     ParseUUIDPipe,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam, ApiBody } from '@nestjs/swagger';
 import { I18nLang } from 'nestjs-i18n';
 
 import { RentalContractService } from './rental-contract.service';
 import { CreateRentalContractDto, UpdateRentalContractDto, QueryRentalContractDto } from './dto';
+import { DeleteManyDto } from '../../common/dto';
 import { JwtAuthGuard, PermissionGuard } from '../../common/guards';
 import { RequirePermission, CurrentUser } from '../../common/decorators';
 import { GetResponse, CreatedResponse, UpdatedResponse, DeletedResponse } from '../../common/responses';
@@ -143,10 +144,6 @@ export class RentalContractController {
     /**
      * Hủy hợp đồng
      */
-    @Delete(':id')
-    @RequirePermission('rental-contract.delete')
-    @ApiOperation({ summary: 'Hủy hợp đồng' })
-    @ApiParam({ name: 'id', description: 'ID hợp đồng' })
     async delete(
         @Param('id', ParseUUIDPipe) id: string,
         @CurrentUser('userId') userId: string,
@@ -154,5 +151,18 @@ export class RentalContractController {
     ) {
         await this.rentalContractService.delete(id, userId, lang);
         return new DeletedResponse('rental-contract.delete.success', null, 'Hủy hợp đồng thành công');
+    }
+
+    @Delete('delete/many')
+    @RequirePermission('rental-contract.delete')
+    @ApiOperation({ summary: 'Hủy nhiều hợp đồng' })
+    @ApiBody({ type: DeleteManyDto })
+    async deleteMany(
+        @Body() dto: DeleteManyDto,
+        @CurrentUser('userId') userId: string,
+        @I18nLang() lang: string,
+    ) {
+        await this.rentalContractService.deleteMany(dto.ids, userId, lang);
+        return new DeletedResponse('rental-contract.delete.success', null, 'Hủy nhiều hợp đồng thành công');
     }
 }

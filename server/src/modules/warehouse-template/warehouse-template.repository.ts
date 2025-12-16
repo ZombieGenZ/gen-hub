@@ -144,6 +144,16 @@ export class WarehouseTemplateRepository {
     }
 
     /**
+     * Find many by IDs
+     */
+    async findByIds(ids: string[]): Promise<{ id: string; name: string }[]> {
+        return this.prisma.warehouseTemplate.findMany({
+            where: { id: { in: ids }, is_deleted: false },
+            select: { id: true, name: true },
+        });
+    }
+
+    /**
      * Lấy danh sách với phân trang (bao gồm full rows hierarchy)
      */
     async findMany(
@@ -220,6 +230,20 @@ export class WarehouseTemplateRepository {
             },
             include: this.fullInclude,
         }) as unknown as IWarehouseTemplateWithRelations;
+    }
+
+    /**
+     * Delete many templates (soft delete)
+     */
+    async softDeleteMany(ids: string[], deletedBy: string): Promise<{ count: number }> {
+        return this.prisma.warehouseTemplate.updateMany({
+            where: { id: { in: ids } },
+            data: {
+                is_deleted: true,
+                deleted_at: new Date(),
+                deleted_by: deletedBy,
+            },
+        });
     }
 
     async createRow(data: Prisma.RowTemplateCreateInput) {
@@ -564,6 +588,23 @@ export class WarehouseTemplateRepository {
     async softDeleteImage(id: string, deletedBy: string) {
         return this.prisma.warehouseTemplateImage.update({
             where: { id },
+            data: {
+                is_deleted: true,
+                deleted_at: new Date(),
+                deleted_by: deletedBy,
+            },
+        });
+    }
+
+    async findImagesByIds(ids: string[]) {
+        return this.prisma.warehouseTemplateImage.findMany({
+            where: { id: { in: ids }, is_deleted: false },
+        });
+    }
+
+    async softDeleteManyImages(ids: string[], deletedBy: string) {
+        return this.prisma.warehouseTemplateImage.updateMany({
+            where: { id: { in: ids } },
             data: {
                 is_deleted: true,
                 deleted_at: new Date(),

@@ -232,4 +232,43 @@ export class BatchService {
             { userId: actorId, description: `Deleted batch: ${existing.code}` },
         );
     }
+
+    async deleteMany(orgId: string, ids: string[], actorId: string, lang: string): Promise<void> {
+        const batches = await this.repository.findByIds(ids);
+        if (batches.length === 0) {
+            throw new NotFoundException(
+                await this.i18n.translate('batch.errors.not_found', { lang }),
+            );
+        }
+
+        const invalidBatch = batches.find(b => b.product?.organization_id !== orgId);
+        if (invalidBatch) {
+            throw new NotFoundException(
+                await this.i18n.translate('batch.errors.not_found', { lang }),
+            );
+        }
+
+        await this.repository.softDeleteMany(ids, actorId);
+
+        // Invalidate cache
+        await Promise.all(ids.map(id => this.redisService.del(this.getDetailCacheKey(id))));
+        const productIds = new Set(batches.map(b => b.product_id));
+        await Promise.all(Array.from(productIds).map(pid => this.redisService.delByPattern(`batch:list:${pid}:*`)));
+
+        // Emit realtime events
+        this.websocketGateway.emitToOrganization(orgId, 'batch:deletedMany', {
+            ids,
+            actorId
+        });
+
+        batches.forEach(b => {
+            this.auditLogService.logDelete(
+                orgId,
+                'Batch',
+                b.id,
+                b as unknown as Record<string, unknown>,
+                { userId: actorId, description: `Deleted batch: ${b.code}` },
+            );
+        });
+    }
 }

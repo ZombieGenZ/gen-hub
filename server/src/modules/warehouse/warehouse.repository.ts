@@ -165,6 +165,24 @@ export class WarehouseRepository {
         }) as unknown as IWarehouseWithRelations;
     }
 
+    async findByIds(ids: string[]): Promise<{ id: string; name: string; organization_id: string }[]> {
+        return this.prisma.warehouse.findMany({
+            where: { id: { in: ids }, is_deleted: false },
+            select: { id: true, name: true, organization_id: true },
+        });
+    }
+
+    async softDeleteMany(ids: string[], deletedBy: string): Promise<{ count: number }> {
+        return this.prisma.warehouse.updateMany({
+            where: { id: { in: ids } },
+            data: {
+                is_deleted: true,
+                deleted_at: new Date(),
+                deleted_by: deletedBy,
+            },
+        });
+    }
+
     /**
      * Lấy layout warehouse với toàn bộ cấu trúc rows/racks/shelves/blocks
      */

@@ -170,4 +170,22 @@ export class PartnerRepository {
             },
         });
     }
+
+    async softDeleteMany(ids: string[]): Promise<void> {
+        await this.prisma.partner.updateMany({
+            where: { id: { in: ids } },
+            data: {
+                is_deleted: true,
+                deleted_at: new Date(),
+                is_active: false,
+            },
+        });
+    }
+
+    async findByIds(ids: string[]): Promise<{ id: string; name: string; organization_id: string }[]> {
+        return this.prisma.partner.findMany({
+            where: { id: { in: ids }, is_deleted: false },
+            select: { id: true, name: true, organization_id: true },
+        });
+    }
 }

@@ -32,6 +32,7 @@ import {
     QueryWarehouseTemplateDto,
     UpsertLayoutDto,
 } from './dto';
+import { DeleteManyDto } from '../../common/dto';
 import { JwtAuthGuard, PermissionGuard, OptionalJwtAuthGuard } from '../../common/guards';
 import { RequirePermission, CurrentUser } from '../../common/decorators';
 import {
@@ -180,6 +181,22 @@ export class WarehouseTemplateController {
         return new UpdatedResponse(ResponseCode.WAREHOUSE_TEMPLATE_UPDATE_SUCCESS, result);
     }
 
+    @Delete('delete/many')
+    @UseGuards(JwtAuthGuard, PermissionGuard)
+    @RequirePermission('warehouse-template.delete')
+    @ApiOperation({ summary: 'Xóa nhiều template kho hàng' })
+    @ApiBody({ type: DeleteManyDto })
+    @ApiResponse({ status: 200, description: 'Xóa thành công' })
+    @ApiResponse({ status: 404, description: 'Không tìm thấy template' })
+    async deleteMany(
+        @Body() dto: DeleteManyDto,
+        @CurrentUser('userId') userId: string,
+        @I18nLang() lang: string,
+    ): Promise<DeletedResponse<null>> {
+        await this.service.deleteMany(dto.ids, userId, lang);
+        return new DeletedResponse(ResponseCode.WAREHOUSE_TEMPLATE_DELETE_SUCCESS, null, 'Xóa nhiều template thành công');
+    }
+
     @Delete(':id')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('warehouse-template.delete')
@@ -291,6 +308,24 @@ export class WarehouseTemplateController {
     ) {
         await this.service.deleteImage(id, imageId, userId, lang);
         return new DeletedResponse(ResponseCode.WAREHOUSE_TEMPLATE_IMAGE_DELETE_SUCCESS, null);
+    }
+
+    @Delete(':id/images/delete/many')
+    @UseGuards(JwtAuthGuard, PermissionGuard)
+    @RequirePermission('warehouse-template.update')
+    @ApiOperation({ summary: 'Xóa nhiều ảnh của template' })
+    @ApiParam({ name: 'id', description: 'ID của template', type: 'string' })
+    @ApiBody({ type: DeleteManyDto })
+    @ApiResponse({ status: 200, description: 'Xóa nhiều ảnh thành công' })
+    @ApiResponse({ status: 404, description: 'Không tìm thấy template hoặc ảnh' })
+    async deleteManyImages(
+        @Param('id', ParseUUIDPipe) id: string,
+        @Body() dto: DeleteManyDto,
+        @CurrentUser('userId') userId: string,
+        @I18nLang() lang: string,
+    ): Promise<DeletedResponse<null>> {
+        await this.service.deleteManyImages(id, dto.ids, userId, lang);
+        return new DeletedResponse(ResponseCode.WAREHOUSE_TEMPLATE_IMAGE_DELETE_SUCCESS, null, 'Xóa nhiều ảnh thành công');
     }
 
     @Put(':id/images/reorder')

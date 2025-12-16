@@ -281,6 +281,29 @@ socket.emit('subscribe', { rooms: ['announcements', 'notifications'] });
 
 ---
 
+#### `warehouseTemplate:deletedMany`
+```json
+{
+  "ids": ["template-123-uuid", "template-456-uuid"],
+  "deletedBy": "550e8400-e29b-41d4-a716-446655440000",
+  "timestamp": "2025-12-13T10:00:00.000Z"
+}
+```
+
+---
+
+#### `warehouseTemplate:imagesDeletedMany`
+```json
+{
+  "templateId": "template-123-uuid",
+  "imageIds": ["image-123-uuid", "image-456-uuid"],
+  "deletedBy": "550e8400-e29b-41d4-a716-446655440000",
+  "timestamp": "2025-12-13T10:00:00.000Z"
+}
+```
+
+---
+
 #### `warehouseTemplate:layoutUpdated`
 ```json
 {
@@ -422,6 +445,30 @@ socket.emit('subscribe', { rooms: ['announcements', 'notifications'] });
 
 ---
 
+#### `orgNotification:deletedMany`
+```json
+{
+  "ids": ["notification-123-uuid", "notification-456-uuid"],
+  "actorId": "550e8400-e29b-41d4-a716-446655440000",
+  "timestamp": "2025-12-13T10:00:00.000Z"
+}
+```
+
+---
+
+### 🏭 Warehouse Events (organization:{orgId})
+
+#### `warehouse:deletedMany`
+```json
+{
+  "ids": ["warehouse-123-uuid", "warehouse-456-uuid"],
+  "deletedBy": "550e8400-e29b-41d4-a716-446655440000",
+  "timestamp": "2025-12-13T10:00:00.000Z"
+}
+```
+
+---
+
 ### 🏗️ Amenity Events (Global Broadcast)
 
 #### `amenity:created`
@@ -460,6 +507,18 @@ socket.emit('subscribe', { rooms: ['announcements', 'notifications'] });
 {
   "amenityId": "amenity-123-uuid",
   "name": "WiFi",
+  "deletedBy": "550e8400-e29b-41d4-a716-446655440000",
+  "timestamp": "2025-12-16T10:00:00.000Z"
+}
+```
+
+---
+
+#### `amenity:deletedMany`
+**Chức năng:** Thông báo khi xóa nhiều tiện ích
+```json
+{
+  "amenityIds": ["amenity-123-uuid", "amenity-456-uuid"],
   "deletedBy": "550e8400-e29b-41d4-a716-446655440000",
   "timestamp": "2025-12-16T10:00:00.000Z"
 }
@@ -517,6 +576,18 @@ socket.emit('subscribe', { rooms: ['announcements', 'notifications'] });
 
 ---
 
+#### `partner:deletedMany`
+**Chức năng:** Thông báo khi xóa nhiều đối tác
+```json
+{
+  "ids": ["partner-123-uuid", "partner-456-uuid"],
+  "actorId": "550e8400-e29b-41d4-a716-446655440000",
+  "timestamp": "2025-12-16T10:00:00.000Z"
+}
+```
+
+---
+
 ### 📦 Product Events (organization:{orgId})
 
 #### `product:created`
@@ -559,6 +630,18 @@ socket.emit('subscribe', { rooms: ['announcements', 'notifications'] });
   "id": "product-123-uuid",
   "organizationId": "org-123-uuid",
   "name": "Nước suối Aquafina 500ml",
+  "actorId": "550e8400-e29b-41d4-a716-446655440000",
+  "timestamp": "2025-12-16T10:00:00.000Z"
+}
+```
+
+---
+
+#### `product:deletedMany`
+**Chức năng:** Thông báo khi xóa nhiều sản phẩm
+```json
+{
+  "ids": ["product-123-uuid", "product-456-uuid"],
   "actorId": "550e8400-e29b-41d4-a716-446655440000",
   "timestamp": "2025-12-16T10:00:00.000Z"
 }
@@ -615,7 +698,80 @@ socket.emit('subscribe', { rooms: ['announcements', 'notifications'] });
 
 ---
 
+#### `batch:deletedMany`
+**Chức năng:** Thông báo khi xóa nhiều lô hàng
+```json
+{
+  "ids": ["batch-123-uuid", "batch-456-uuid"],
+  "actorId": "550e8400-e29b-41d4-a716-446655440000",
+  "timestamp": "2025-12-16T10:00:00.000Z"
+}
+```
+
+---
+
+### 🔑 API Key Events (organization:{orgId})
+
+#### `apiKey:updated`
+**Chức năng:** Thông báo khi API key được cập nhật (bởi admin)
+
+```json
+{
+  "apiKeyId": "apikey-123-uuid",
+  "name": "Production API Key",
+  "updatedBy": "550e8400-e29b-41d4-a716-446655440000",
+  "isAdminAction": true,
+  "timestamp": "2025-12-16T10:00:00.000Z"
+}
+```
+
+---
+
+#### `apiKey:deleted`
+**Chức năng:** Thông báo khi API key bị xóa (bởi admin)
+
+```json
+{
+  "apiKeyId": "apikey-123-uuid",
+  "name": "Production API Key",
+  "deletedBy": "550e8400-e29b-41d4-a716-446655440000",
+  "isAdminAction": true,
+  "timestamp": "2025-12-16T10:00:00.000Z"
+}
+```
+
+---
+
+#### `apiKey:deletedMany`
+**Chức năng:** Thông báo khi xóa nhiều API key (bởi admin)
+```json
+{
+  "apiKeyIds": ["apikey-123-uuid", "apikey-456-uuid"],
+  "organizationId": "org-123-uuid",
+  "deletedBy": "550e8400-e29b-41d4-a716-446655440000",
+  "timestamp": "2025-12-16T10:00:00.000Z"
+}
+```
+
+---
+
+### 📝 Rental Contract Events (organization:{orgId})
+
+#### `rentalContract:deletedMany`
+**Chức năng:** Thông báo khi nhiều hợp đồng bị hủy
+```json
+{
+  "ids": ["contract-123-uuid", "contract-456-uuid"],
+  "orgId": "org-123-uuid",
+  "deletedBy": "550e8400-e29b-41d4-a716-446655440000",
+  "timestamp": "2025-12-13T10:00:00.000Z"
+}
+```
+
+---
+
 ## 📋 Tổng hợp
+
 
 | Room | Auth | Events |
 |------|------|--------|

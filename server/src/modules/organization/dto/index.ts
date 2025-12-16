@@ -5,3 +5,4 @@ export * from './transfer-ownership.dto';
 export * from './member.dto';
 export * from './organization-role.dto';
 export * from './api-key.dto';
+export * from './api-key-admin.dto';

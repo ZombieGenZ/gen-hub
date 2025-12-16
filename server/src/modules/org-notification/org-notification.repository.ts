@@ -105,6 +105,23 @@ export class OrgNotificationRepository {
         });
     }
 
+    async softDeleteMany(ids: string[], deletedBy: string): Promise<void> {
+        await this.prisma.organizationNotification.updateMany({
+            where: { id: { in: ids } },
+            data: {
+                is_deleted: true,
+                deleted_at: new Date(),
+                deleted_by: deletedBy,
+            },
+        });
+    }
+
+    async findByIds(ids: string[]): Promise<IOrgNotification[]> {
+        return this.prisma.organizationNotification.findMany({
+            where: { id: { in: ids }, is_deleted: false },
+        });
+    }
+
     // Kiểm tra organization tồn tại
     async orgExists(orgId: string): Promise<boolean> {
         const org = await this.prisma.organization.findFirst({

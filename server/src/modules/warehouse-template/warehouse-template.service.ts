@@ -244,6 +244,37 @@ export class WarehouseTemplateService {
     }
 
     /**
+     * Xóa nhiều WarehouseTemplate
+     */
+    async deleteMany(ids: string[], userId: string, lang: string): Promise<void> {
+        const templates = await this.repository.findByIds(ids);
+        if (templates.length === 0) {
+            throw new NotFoundException(
+                this.i18n.t('warehouse-template.errors.not_found', { lang }),
+            );
+        }
+
+        await this.repository.softDeleteMany(ids, userId);
+
+        // Invalidate caches
+        await Promise.all(ids.map(id => this.redisService.invalidateWarehouseTemplateCache(id)));
+        await this.redisService.invalidateWarehouseTemplateListCache();
+
+        // Log
+        this.systemLogService.info('warehouse-template', 'delete_many', `Deleted ${templates.length} warehouse templates`, {
+            userId,
+            metaData: { ids, names: templates.map(t => t.name) },
+        });
+
+        // Emit WebSocket events
+        this.websocketGateway.server.emit('warehouseTemplate:deletedMany', {
+            ids,
+            deletedBy: userId,
+            timestamp: new Date().toISOString(),
+        });
+    }
+
+    /**
      * Cập nhật layout (rows, racks, shelves, blocks) - OPTIMIZED với batch operations
      * Giảm từ N queries xuống còn ~8-12 queries bất kể số lượng items
      */
@@ -941,6 +972,63 @@ export class WarehouseTemplateService {
         this.systemLogService.info('warehouse-template', 'delete_image', `Deleted image from: ${template.name}`, {
             userId,
             metaData: { templateId, imageId },
+        });
+    }
+
+    async deleteManyImages(
+        templateId: string,
+        ids: string[],
+        userId: string,
+        lang: string,
+    ): Promise<void> {
+        const template = await this.repository.findById(templateId);
+        if (!template) {
+            throw new NotFoundException(
+                this.i18n.t('warehouse-template.errors.not_found', { lang }),
+            );
+        }
+
+        const images = await this.repository.findImagesByIds(ids);
+        if (images.length === 0) {
+            throw new NotFoundException(
+                this.i18n.t('warehouse-template.errors.image_not_found', { lang }),
+            );
+        }
+
+        // Validate images belong to template
+        const invalidImage = images.find(img => img.warehouse_template_id !== templateId);
+        if (invalidImage) {
+            throw new BadRequestException(
+                this.i18n.t('warehouse-template.errors.image_not_found', { lang }),
+            );
+        }
+
+        // Delete from ImageKit
+        await Promise.all(
+            images.map(image =>
+                this.imageUploadService.deleteImage(image.file_id).catch(error => {
+                    this.systemLogService.error('warehouse-template', 'delete_image_imagekit', `Failed to delete from ImageKit: ${error}`, {
+                        userId,
+                        metaData: { templateId, imageId: image.id, fileId: image.file_id },
+                    });
+                })
+            )
+        );
+
+        await this.repository.softDeleteManyImages(ids, userId);
+
+        await this.redisService.invalidateWarehouseTemplateCache(templateId);
+
+        this.websocketGateway.server.emit('warehouseTemplate:imagesDeletedMany', {
+            templateId,
+            imageIds: ids,
+            deletedBy: userId,
+            timestamp: new Date().toISOString(),
+        });
+
+        this.systemLogService.info('warehouse-template', 'delete_images_many', `Deleted ${ids.length} images from: ${template.name}`, {
+            userId,
+            metaData: { templateId, count: ids.length },
         });
     }
 

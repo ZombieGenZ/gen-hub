@@ -213,4 +213,36 @@ export class ProductRepository {
             });
         });
     }
+
+    async softDeleteMany(ids: string[], actorId: string): Promise<void> {
+        await this.prisma.$transaction(async (tx) => {
+            // Soft delete products
+            await tx.product.updateMany({
+                where: { id: { in: ids } },
+                data: {
+                    is_deleted: true,
+                    deleted_at: new Date(),
+                    deleted_by: actorId,
+                    is_active: false,
+                },
+            });
+
+            // Soft delete related units
+            await tx.productUnit.updateMany({
+                where: { product_id: { in: ids }, is_deleted: false },
+                data: {
+                    is_deleted: true,
+                    deleted_at: new Date(),
+                    deleted_by: actorId,
+                },
+            });
+        });
+    }
+
+    async findByIds(ids: string[]): Promise<{ id: string; name: string; organization_id: string }[]> {
+        return this.prisma.product.findMany({
+            where: { id: { in: ids }, is_deleted: false },
+            select: { id: true, name: true, organization_id: true },
+        });
+    }
 }

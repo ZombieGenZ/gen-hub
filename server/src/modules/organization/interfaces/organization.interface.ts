@@ -118,6 +118,9 @@ export interface IApiKey {
     is_active: boolean;
     expires_at: Date | null;
     last_used_at: Date | null;
+    allowed_origins: string[];
+    rate_limit_ttl: number;
+    rate_limit_max: number;
     organization_id: string;
     created_by_user_id: string;
     created_at: Date;

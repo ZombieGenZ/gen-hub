@@ -9,13 +9,14 @@ import {
     ParseUUIDPipe,
     UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation, ApiParam } from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiParam, ApiBody } from '@nestjs/swagger';
 import { I18nLang } from 'nestjs-i18n';
 import { OrganizationService } from './organization.service';
 import {
     CreateOrganizationRoleDto,
     UpdateOrganizationRoleDto,
 } from './dto';
+import { DeleteManyDto } from '../../common/dto';
 import { CurrentUser, RequirePermission } from '../../common/decorators';
 import { PermissionGuard } from '../../common/guards';
 import {
@@ -123,6 +124,25 @@ export class OrganizationRoleController {
             ResponseCode.ORGANIZATION_ROLE_DELETE_SUCCESS,
             undefined,
             'Xóa vai trò thành công',
+        );
+    }
+
+    @Delete('delete/many')
+    @RequirePermission('organization.list')
+    @ApiOperation({ summary: 'Xóa nhiều vai trò' })
+    @ApiParam({ name: 'orgId', description: 'ID tổ chức' })
+    @ApiBody({ type: DeleteManyDto })
+    async deleteMany(
+        @Param('orgId', ParseUUIDPipe) orgId: string,
+        @Body() dto: DeleteManyDto,
+        @CurrentUser('userId') userId: string,
+        @I18nLang() lang: string,
+    ) {
+        await this.service.deleteManyRoles(orgId, dto.ids, userId, lang);
+        return new DeletedResponse(
+            ResponseCode.ORGANIZATION_ROLE_DELETE_SUCCESS,
+            undefined,
+            'Xóa nhiều vai trò thành công',
         );
     }
 }

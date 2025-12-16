@@ -356,6 +356,28 @@ export class OrganizationRepository {
         });
     }
 
+    async findRolesByIds(ids: string[]): Promise<IOrganizationRole[]> {
+        return this.prisma.organizationRole.findMany({
+            where: { id: { in: ids }, is_deleted: false },
+            include: {
+                permissions: {
+                    where: { is_deleted: false },
+                    include: { permission: { select: { id: true, name: true, key: true } } },
+                },
+            },
+        }) as unknown as IOrganizationRole[];
+    }
+
+    async softDeleteManyRoles(ids: string[], deletedBy: string): Promise<void> {
+        await this.prisma.organizationRole.updateMany({
+            where: { id: { in: ids } },
+            data: {
+                is_deleted: true,
+                deleted_at: new Date(),
+            },
+        });
+    }
+
     async assignRolePermissions(roleId: string, permissionIds: string[]): Promise<void> {
         // Xóa permissions cũ
         await this.prisma.organizationRolePermission.updateMany({
@@ -599,6 +621,35 @@ export class OrganizationRepository {
         });
     }
 
+    async findApiKeysByIds(ids: string[]): Promise<IApiKey[]> {
+        return this.prisma.apiKey.findMany({
+            where: { id: { in: ids }, is_deleted: false },
+            include: {
+                roles: {
+                    where: { is_deleted: false, is_active: true },
+                    include: {
+                        role: { select: { id: true, name: true } },
+                    },
+                },
+                permissions: {
+                    where: { is_deleted: false, is_active: true },
+                    include: { permission: { select: { id: true, name: true, key: true } } },
+                },
+            },
+        }) as unknown as IApiKey[];
+    }
+
+    async softDeleteManyApiKeys(ids: string[], deletedBy: string): Promise<void> {
+        await this.prisma.apiKey.updateMany({
+            where: { id: { in: ids } },
+            data: {
+                is_deleted: true,
+                deleted_at: new Date(),
+                deleted_by: deletedBy,
+            },
+        });
+    }
+
     async assignApiKeyRoles(apiKeyId: string, roleIds: string[]): Promise<void> {
         // Xóa roles cũ
         await this.prisma.apiKeyRole.updateMany({
@@ -691,6 +742,55 @@ export class OrganizationRepository {
         });
     }
 
+    async softDeleteAllApiKeysByOrgIds(orgIds: string[]): Promise<void> {
+        await this.prisma.apiKey.updateMany({
+            where: { organization_id: { in: orgIds }, is_deleted: false },
+            data: {
+                is_deleted: true,
+                deleted_at: new Date(),
+            },
+        });
+    }
+
+    async softDeleteAllRolesByOrgIds(orgIds: string[]): Promise<void> {
+        await this.prisma.organizationRole.updateMany({
+            where: { organization_id: { in: orgIds }, is_deleted: false },
+            data: {
+                is_deleted: true,
+                deleted_at: new Date(),
+            },
+        });
+    }
+
+    async softDeleteAllMembersByOrgIds(orgIds: string[], deletedBy: string): Promise<void> {
+        await this.prisma.organizationMember.updateMany({
+            where: { organization_id: { in: orgIds }, is_deleted: false },
+            data: {
+                is_deleted: true,
+                deleted_at: new Date(),
+                deleted_by: deletedBy,
+            },
+        });
+    }
+
+    async softDeleteMany(ids: string[], deletedBy: string): Promise<void> {
+        await this.prisma.organization.updateMany({
+            where: { id: { in: ids } },
+            data: {
+                is_deleted: true,
+                deleted_at: new Date(),
+                deleted_by: deletedBy,
+            },
+        });
+    }
+
+    async findByIds(ids: string[]): Promise<IOrganizationWithRelations[]> {
+        return this.prisma.organization.findMany({
+            where: { id: { in: ids }, is_deleted: false },
+            include: this.orgInclude,
+        }) as unknown as IOrganizationWithRelations[];
+    }
+
     /**
      * Tìm tất cả API keys active có expires_at
      */
@@ -757,4 +857,76 @@ export class OrganizationRepository {
         });
         return orgs.map(org => org.id);
     }
+
+    /**
+     * Lấy tất cả API keys với phân trang và filter (Admin)
+     */
+    async findAllApiKeys(query: {
+        limit?: number;
+        offset?: number;
+        keywords?: string;
+        is_active?: boolean;
+        organization_id?: string;
+    }): Promise<IPaginatedResponse<IApiKey>> {
+        const limit = this.paginationConfig.getLimit(query.limit);
+        const offset = this.paginationConfig.getOffset(query.offset);
+        const { keywords, is_active, organization_id } = query;
+
+        const where: Prisma.ApiKeyWhereInput = {
+            is_deleted: false,
+            ...(is_active !== undefined && { is_active }),
+            ...(organization_id && { organization_id }),
+            ...(keywords && {
+                OR: [
+                    { name: { contains: keywords, mode: 'insensitive' as Prisma.QueryMode } },
+                    { description: { contains: keywords, mode: 'insensitive' as Prisma.QueryMode } },
+                ],
+            }),
+        };
+
+        const [items, total] = await Promise.all([
+            this.prisma.apiKey.findMany({
+                where,
+                include: {
+                    organization: {
+                        select: { id: true, name: true },
+                    },
+                    roles: {
+                        where: { is_deleted: false, is_active: true },
+                        include: {
+                            role: {
+                                select: {
+                                    id: true,
+                                    name: true,
+                                    permissions: {
+                                        where: { is_deleted: false, is_active: true },
+                                        include: {
+                                            permission: { select: { id: true, name: true, key: true } },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    permissions: {
+                        where: { is_deleted: false, is_active: true },
+                        include: { permission: { select: { id: true, name: true, key: true } } },
+                    },
+                },
+                orderBy: { created_at: 'desc' },
+                take: limit,
+                skip: offset,
+            }),
+            this.prisma.apiKey.count({ where }),
+        ]);
+
+        return {
+            items: items as unknown as IApiKey[],
+            total,
+            limit,
+            offset,
+            hasMore: offset + items.length < total,
+        };
+    }
 }
+

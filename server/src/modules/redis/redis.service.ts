@@ -95,6 +95,31 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     return result === 1;
   }
 
+  /**
+   * Tăng giá trị của key lên 1 (atomic increment)
+   * Nếu key không tồn tại, tạo mới với giá trị 1
+   */
+  async incr(key: string): Promise<number> {
+    return this.client.incr(key);
+  }
+
+  /**
+   * Set TTL cho key (giây)
+   */
+  async expire(key: string, ttlSeconds: number): Promise<boolean> {
+    const result = await this.client.expire(key, ttlSeconds);
+    return result === 1;
+  }
+
+  /**
+   * Lấy TTL còn lại của key (giây)
+   * Trả về -1 nếu key không có TTL, -2 nếu key không tồn tại
+   */
+  async ttl(key: string): Promise<number> {
+    return this.client.ttl(key);
+  }
+
+
   private getUserCacheKey(userId: string): string {
     return `user:profile:${userId}`;
   }

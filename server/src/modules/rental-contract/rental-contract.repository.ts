@@ -234,6 +234,25 @@ export class RentalContractRepository {
         }) as unknown as IRentalContractWithRelations;
     }
 
+    async findByIds(ids: string[]): Promise<IRentalContractWithRelations[]> {
+        return this.prisma.rentalContract.findMany({
+            where: { id: { in: ids }, is_deleted: false },
+            include: this.fullInclude,
+        }) as unknown as IRentalContractWithRelations[];
+    }
+
+    async softDeleteMany(ids: string[], deletedBy: string): Promise<void> {
+        await this.prisma.rentalContract.updateMany({
+            where: { id: { in: ids } },
+            data: {
+                is_deleted: true,
+                deleted_at: new Date(),
+                deleted_by: deletedBy,
+                status: ContractStatus.CANCELLED,
+            },
+        });
+    }
+
     /**
      * Hủy hợp đồng với actual_ended_at
      */

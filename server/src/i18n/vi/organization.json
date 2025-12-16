@@ -75,6 +75,9 @@
         "apikey_name_max_length": "Tên API key không được quá 100 ký tự",
         "apikey_description_string": "Mô tả API key phải là chuỗi",
         "apikey_expires_at_date": "Ngày hết hạn phải là ngày hợp lệ",
+        "apikey_allowed_origins_array": "Danh sách allowed origins phải là mảng",
+        "apikey_allowed_origins_string": "Mỗi allowed origin phải là chuỗi",
+        "apikey_allowed_origins_format": "Định dạng allowed origin không hợp lệ. Phải là URL, IPv4 hoặc IPv6",
         "limit_positive": "Limit phải là số dương",
         "offset_min": "Offset phải >= 0",
         "keywords_string": "Từ khóa tìm kiếm phải là chuỗi",
@@ -84,6 +87,11 @@
         "google_client_secret_string": "Google Client Secret phải là chuỗi",
         "google_refresh_token_string": "Google Refresh Token phải là chuỗi",
         "email_primary_invalid": "Email chính không hợp lệ",
-        "email_primary_max_length": "Email chính không được quá 255 ký tự"
+        "email_primary_max_length": "Email chính không được quá 255 ký tự",
+        "rate_limit_ttl_int": "TTL rate limit phải là số nguyên",
+        "rate_limit_ttl_min": "TTL rate limit phải lớn hơn 0",
+        "rate_limit_max_int": "Số request tối đa phải là số nguyên",
+        "rate_limit_max_min": "Số request tối đa phải lớn hơn 0",
+        "org_id_uuid": "ID tổ chức phải là UUID hợp lệ"
     }
 }

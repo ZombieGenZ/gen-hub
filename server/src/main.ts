@@ -32,14 +32,40 @@ async function bootstrap() {
 
   app.useGlobalInterceptors(new HttpLoggingInterceptor(systemLogService));
 
-  // Build CORS origins array
+  // Build CORS origins array from CORS_ORIGINS environment variable
+  // Example: CORS_ORIGINS=https://gen-hub.dev,http://localhost:3000
   const corsOrigins: string[] = [];
-  if (process.env.FRONTEND_URL) {
-    corsOrigins.push(process.env.FRONTEND_URL);
+
+  // Add default CORS origins from environment
+  if (process.env.CORS_ORIGINS) {
+    const defaultOrigins = process.env.CORS_ORIGINS.split(',').map((origin) => origin.trim()).filter(Boolean);
+    corsOrigins.push(...defaultOrigins);
   }
-  if (process.env.FRONTEND_DEVELOP_URL) {
-    corsOrigins.push(process.env.FRONTEND_DEVELOP_URL);
+
+  // Get PrismaService for database queries
+  const { PrismaService } = require('./prisma/prisma.service');
+  const { getApiKeyModules } = require('./common/config/api-key-modules.config');
+  const prismaService = app.get(PrismaService);
+
+  // Add allowed_origins from active API keys to CORS
+  const apiKeysWithOrigins = await prismaService.apiKey.findMany({
+    where: {
+      is_deleted: false,
+      is_active: true,
+      allowed_origins: { isEmpty: false },
+    },
+    select: { allowed_origins: true },
+  });
+
+  const apiKeyOrigins = new Set<string>();
+  for (const apiKey of apiKeysWithOrigins) {
+    for (const origin of apiKey.allowed_origins) {
+      apiKeyOrigins.add(origin);
+    }
   }
+
+  corsOrigins.push(...apiKeyOrigins);
+  console.log(`🌐 CORS origins: ${corsOrigins.length > 0 ? corsOrigins.join(', ') : '*'}`);
 
   app.enableCors({
     origin: corsOrigins.length > 0 ? corsOrigins : '*',
@@ -75,9 +101,6 @@ async function bootstrap() {
 
   // API Key Swagger - Dynamically include modules based on DB permissions
   // Query permissions with allow_api_key = true from database
-  const { PrismaService } = require('./prisma/prisma.service');
-  const { getApiKeyModules } = require('./common/config/api-key-modules.config');
-  const prismaService = app.get(PrismaService);
 
   const apiKeyPermissions = await prismaService.organizationPermission.findMany({
     where: {

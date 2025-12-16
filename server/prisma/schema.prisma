@@ -772,15 +772,20 @@ model OrganizationMemberPermission {
 }
 
 model ApiKey {
-  id           String    @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
-  name         String
-  description  String?
-  key_prefix   String
-  key_hash     String    @unique
-  is_active    Boolean   @default(true)
-  expires_at   DateTime?
-  last_used_at DateTime?
-  last_used_ip String?
+  id              String    @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  name            String
+  description     String?
+  key_prefix      String
+  key_hash        String    @unique
+  is_active       Boolean   @default(true)
+  expires_at      DateTime?
+  last_used_at    DateTime?
+  last_used_ip    String?
+  allowed_origins String[]  @default([])
+
+  rate_limit_ttl  Int       @default(60)
+  rate_limit_max  Int       @default(100)
+
 
   organization_id String       @db.Uuid
   organization    Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)

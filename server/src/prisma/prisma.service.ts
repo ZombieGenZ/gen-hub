@@ -260,6 +260,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
       await this.seedPartnerPermissions();
       await this.seedProductPermissions();
       await this.seedBatchPermissions();
+      await this.seedApiKeyAdminPermissions();
       await this.seedVietnamAdministrative();
     } catch (error: unknown) {
       const errorMessage =
@@ -1396,6 +1397,100 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
     process.on('beforeExit', () => {
       app.close();
     });
+  }
+
+  /**
+   * Seed các permissions cho Admin API Key Management
+   */
+  private async seedApiKeyAdminPermissions() {
+    try {
+      const apiKeyAdminPermissions = [
+        {
+          key: 'apikey.admin.list',
+          name: 'Xem danh sách tất cả API keys',
+          description: 'Quyền xem danh sách API keys của tất cả tổ chức',
+        },
+        {
+          key: 'apikey.admin.read',
+          name: 'Xem chi tiết API key',
+          description: 'Quyền xem chi tiết API key của bất kỳ tổ chức nào',
+        },
+        {
+          key: 'apikey.admin.update',
+          name: 'Cập nhật API key',
+          description: 'Quyền cập nhật API key của bất kỳ tổ chức nào',
+        },
+        {
+          key: 'apikey.admin.delete',
+          name: 'Xóa API key',
+          description: 'Quyền xóa API key của bất kỳ tổ chức nào',
+        },
+      ];
+
+      // Tạo permissions
+      for (const perm of apiKeyAdminPermissions) {
+        const existing = await this.permission.findFirst({
+          where: { key: perm.key },
+        });
+
+        if (!existing) {
+          await this.permission.create({
+            data: {
+              key: perm.key,
+              name: perm.name,
+              description: perm.description,
+              is_active: true,
+              is_deleted: false,
+            },
+          });
+        }
+      }
+
+      // Gán cho Admin và Super Admin roles
+      const adminRoles = await this.role.findMany({
+        where: {
+          name: { in: ['Admin', 'Super Admin'] },
+          is_deleted: false,
+        },
+      });
+
+      const permissionRecords = await this.permission.findMany({
+        where: {
+          key: { in: apiKeyAdminPermissions.map((p) => p.key) },
+          is_deleted: false,
+        },
+      });
+
+      for (const role of adminRoles) {
+        for (const permission of permissionRecords) {
+          const existingAssignment = await this.rolePermission.findFirst({
+            where: {
+              role_id: role.id,
+              permission_id: permission.id,
+            },
+          });
+
+          if (!existingAssignment) {
+            await this.rolePermission.create({
+              data: {
+                role_id: role.id,
+                permission_id: permission.id,
+                is_active: true,
+                is_deleted: false,
+              },
+            });
+          }
+        }
+      }
+
+      this.logger.log('✅ API Key Admin permissions seeded');
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `❌ Failed to seed API Key Admin permissions: ${errorMessage}`,
+      );
+    }
   }
 }
 

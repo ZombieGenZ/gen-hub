@@ -26,6 +26,8 @@ import {
   UpdateOrganizationRoleDto,
   CreateApiKeyDto,
   UpdateApiKeyDto,
+  QueryAdminApiKeyDto,
+  UpdateAdminApiKeyDto,
 } from './dto';
 import {
   IOrganizationWithRelations,
@@ -53,7 +55,7 @@ export class OrganizationService {
     private readonly emailService: EmailService,
     private readonly i18n: I18nService,
     private readonly configService: ConfigService,
-  ) {}
+  ) { }
 
   async create(
     dto: CreateOrganizationDto,
@@ -292,6 +294,60 @@ export class OrganizationService {
 
     // Emit WebSocket
     this.websocketGateway.emitOrganizationDeleted(org.owner_id, id);
+  }
+
+  async deleteMany(
+    ids: string[],
+    userId: string,
+    lang: string,
+    hasDeleteAllPermission?: boolean,
+  ): Promise<void> {
+    const orgs = await this.repository.findByIds(ids);
+    if (orgs.length === 0) {
+      throw new NotFoundException(
+        await this.i18n.translate('organization.errors.not_found', { lang }),
+      );
+    }
+
+    // Check permissions
+    if (!hasDeleteAllPermission) {
+      const unauthorizedOrg = orgs.find(
+        (org) => org.owner_id !== userId && org.owner?.id !== userId,
+      );
+      if (unauthorizedOrg) {
+        throw new ForbiddenException(
+          await this.i18n.translate('organization.errors.not_owner', { lang }),
+        );
+      }
+    }
+
+    // Cascade delete
+    await this.repository.softDeleteAllMembersByOrgIds(ids, userId);
+    await this.repository.softDeleteAllRolesByOrgIds(ids);
+    await this.repository.softDeleteAllApiKeysByOrgIds(ids);
+    await this.repository.softDeleteMany(ids, userId);
+
+    // Invalidate cache and emit events
+    await Promise.all(
+      orgs.map(async (org) => {
+        await this.redisService.invalidateAllOrganizationCache(org.id);
+
+        this.systemLogService.info(
+          'organization',
+          'delete',
+          `Organization deleted: ${org.name}`,
+          { userId },
+        );
+        this.auditLogService.logDelete(
+          org.id,
+          'Organization',
+          org.id,
+          { name: org.name, is_active: org.is_active } as Record<string, unknown>,
+          { userId },
+        );
+        this.websocketGateway.emitOrganizationDeleted(org.owner_id, org.id);
+      }),
+    );
   }
 
   async transferOwnership(
@@ -1326,6 +1382,70 @@ export class OrganizationService {
     );
   }
 
+  async deleteManyRoles(
+    orgId: string,
+    ids: string[],
+    userId: string,
+    lang: string,
+  ): Promise<void> {
+    const org = await this.findById(orgId, lang);
+
+    // Check permission
+    await this.checkOrgPermission(
+      orgId,
+      userId,
+      'organization.role.delete',
+      org.owner_id,
+      lang,
+    );
+
+    const roles = await this.repository.findRolesByIds(ids);
+    if (roles.length === 0) {
+      throw new NotFoundException(
+        await this.i18n.translate('organization.errors.role_not_found', {
+          lang,
+        }),
+      );
+    }
+
+    // Check organization mismatch
+    const invalidRole = roles.find(r => r.organization_id !== orgId);
+    if (invalidRole) {
+      throw new ForbiddenException(
+        await this.i18n.translate('organization.errors.role_not_found', {
+          lang,
+        }),
+      );
+    }
+
+    // Cascade soft delete dependencies
+    await Promise.all([
+      ...ids.map(id => this.repository.softDeleteMemberRolesByRoleId(id)),
+      ...ids.map(id => this.repository.softDeleteApiKeyRolesByRoleId(id)),
+    ]);
+
+    await this.repository.softDeleteManyRoles(ids, userId);
+
+    // Emit WebSocket events
+    this.websocketGateway.server.emit('organizationRole:deletedMany', {
+      ids,
+      orgId,
+      deletedBy: userId,
+      timestamp: new Date().toISOString(),
+    });
+
+    // Log
+    roles.forEach(role => {
+      this.auditLogService.logDelete(
+        orgId,
+        'OrganizationRole',
+        role.id,
+        { name: role.name } as Record<string, unknown>,
+        { userId, description: `Deleted role: ${role.name}` },
+      );
+    });
+  }
+
   async getPermissions(
     orgId: string,
     userId: string,
@@ -1384,6 +1504,9 @@ export class OrganizationService {
       key_hash: hashedKey,
       key_prefix: keyPrefix,
       expires_at: dto.expires_at ? new Date(dto.expires_at) : null,
+      allowed_origins: dto.allowed_origins || [],
+      rate_limit_ttl: this.configService.get<number>('API_KEY_RATE_LIMIT_TTL') ?? 60,
+      rate_limit_max: this.configService.get<number>('API_KEY_RATE_LIMIT_MAX') ?? 100,
       is_active: true,
     });
 
@@ -1629,6 +1752,7 @@ export class OrganizationService {
       description: dto.description,
       is_active: dto.is_active,
       expires_at: dto.expires_at ? new Date(dto.expires_at) : undefined,
+      allowed_origins: dto.allowed_origins,
       updated_by: userId,
       updated_at: new Date(),
     });
@@ -1747,6 +1871,274 @@ export class OrganizationService {
       { name: apiKey.name },
       { userId },
     );
+  }
+
+  async deleteManyApiKeys(
+    orgId: string,
+    ids: string[],
+    userId: string,
+    lang: string,
+  ): Promise<void> {
+    const org = await this.findById(orgId, lang);
+
+    // Check permission
+    await this.checkOrgPermission(
+      orgId,
+      userId,
+      'organization.apikey.delete',
+      org.owner_id,
+      lang,
+    );
+
+    const apiKeys = await this.repository.findApiKeysByIds(ids);
+    if (apiKeys.length === 0) {
+      throw new NotFoundException(
+        await this.i18n.translate('organization.errors.apikey_not_found', {
+          lang,
+        }),
+      );
+    }
+
+    // Check organization mismatch
+    const invalidKey = apiKeys.find(k => k.organization_id !== orgId);
+    if (invalidKey) {
+      throw new ForbiddenException(
+        await this.i18n.translate('organization.errors.apikey_not_found', {
+          lang,
+        }),
+      );
+    }
+
+    await this.repository.softDeleteManyApiKeys(ids, userId);
+
+    // Emit WebSocket events
+    this.websocketGateway.server.emit('apiKey:deletedMany', {
+      ids,
+      orgId,
+      deletedBy: userId,
+      timestamp: new Date().toISOString(),
+    });
+
+    // Log
+    apiKeys.forEach(apiKey => {
+      this.auditLogService.logDelete(
+        orgId,
+        'ApiKey',
+        apiKey.id,
+        { name: apiKey.name } as Record<string, unknown>,
+        { userId, description: `Deleted API key: ${apiKey.name}` },
+      );
+    });
+  }
+
+  // ==================== ADMIN API KEY METHODS ====================
+
+  /**
+   * Lấy danh sách tất cả API keys (Admin)
+   */
+  async getAdminApiKeys(
+    query: QueryAdminApiKeyDto,
+    userId: string,
+    lang: string,
+  ): Promise<IPaginatedResponse<IApiKey>> {
+    const result = await this.repository.findAllApiKeys(query);
+
+    // Merge permissions từ roles
+    const mergedItems = this.mergeApiKeyPermissions(result.items);
+
+    return {
+      ...result,
+      items: mergedItems,
+    };
+  }
+
+  /**
+   * Lấy chi tiết API key theo ID (Admin)
+   */
+  async getAdminApiKeyById(
+    id: string,
+    userId: string,
+    lang: string,
+  ): Promise<IApiKey> {
+    const apiKey = await this.repository.findApiKeyById(id);
+    if (!apiKey) {
+      throw new NotFoundException(
+        await this.i18n.translate('organization.errors.apikey_not_found', {
+          lang,
+        }),
+      );
+    }
+
+    // Merge permissions từ roles
+    const [result] = this.mergeApiKeyPermissions([apiKey]);
+    return result;
+  }
+
+  /**
+   * Cập nhật API key (Admin)
+   */
+  async updateAdminApiKey(
+    id: string,
+    dto: UpdateAdminApiKeyDto,
+    userId: string,
+    lang: string,
+  ): Promise<IApiKey> {
+    const apiKey = await this.repository.findApiKeyById(id);
+    if (!apiKey) {
+      throw new NotFoundException(
+        await this.i18n.translate('organization.errors.apikey_not_found', {
+          lang,
+        }),
+      );
+    }
+
+    const oldData = {
+      name: apiKey.name,
+      is_active: apiKey.is_active,
+      rate_limit_ttl: apiKey.rate_limit_ttl,
+      rate_limit_max: apiKey.rate_limit_max,
+    };
+
+    await this.repository.updateApiKey(id, {
+      name: dto.name,
+      description: dto.description,
+      is_active: dto.is_active,
+      rate_limit_ttl: dto.rate_limit_ttl,
+      rate_limit_max: dto.rate_limit_max,
+      updated_by: userId,
+      updated_at: new Date(),
+    });
+
+    const updated = await this.repository.findApiKeyById(id);
+
+    // Log - ghi vào SystemLog vì là hành động admin
+    this.systemLogService.info(
+      'apikey',
+      'admin_update',
+      `API key ${apiKey.name} updated by admin`,
+      { userId, metaData: { apiKeyId: id, orgId: apiKey.organization_id } },
+    );
+    this.auditLogService.logUpdate(
+      apiKey.organization_id,
+      'ApiKey',
+      id,
+      oldData,
+      { name: updated?.name, is_active: updated?.is_active, rate_limit_ttl: updated?.rate_limit_ttl, rate_limit_max: updated?.rate_limit_max },
+      { userId, description: 'Admin update' },
+    );
+
+    // Emit WebSocket
+    this.websocketGateway.emitToOrganization(apiKey.organization_id, 'apiKey:updated', {
+      apiKeyId: id,
+      name: updated?.name,
+      updatedBy: userId,
+      isAdminAction: true,
+      timestamp: new Date().toISOString(),
+    });
+
+    const [result] = this.mergeApiKeyPermissions([updated!]);
+    return result;
+  }
+
+  /**
+   * Xóa API key (Admin)
+   */
+  async deleteAdminApiKey(
+    id: string,
+    userId: string,
+    lang: string,
+  ): Promise<void> {
+    const apiKey = await this.repository.findApiKeyById(id);
+    if (!apiKey) {
+      throw new NotFoundException(
+        await this.i18n.translate('organization.errors.apikey_not_found', {
+          lang,
+        }),
+      );
+    }
+
+    await this.repository.softDeleteApiKey(id, userId);
+
+    // Log - ghi vào SystemLog vì là hành động admin
+    this.systemLogService.info(
+      'apikey',
+      'admin_delete',
+      `API key ${apiKey.name} deleted by admin`,
+      { userId, metaData: { apiKeyId: id, orgId: apiKey.organization_id } },
+    );
+    this.auditLogService.logDelete(
+      apiKey.organization_id,
+      'ApiKey',
+      id,
+      { name: apiKey.name },
+      { userId, description: 'Admin delete' },
+    );
+
+    // Emit WebSocket
+    this.websocketGateway.emitToOrganization(apiKey.organization_id, 'apiKey:deleted', {
+      apiKeyId: id,
+      name: apiKey.name,
+      deletedBy: userId,
+      isAdminAction: true,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  async deleteManyAdminApiKeys(
+    ids: string[],
+    userId: string,
+    lang: string,
+  ): Promise<void> {
+    const apiKeys = await this.repository.findApiKeysByIds(ids);
+    if (apiKeys.length === 0) {
+      throw new NotFoundException(
+        await this.i18n.translate('organization.errors.apikey_not_found', {
+          lang,
+        }),
+      );
+    }
+
+    await this.repository.softDeleteManyApiKeys(ids, userId);
+
+    // Group by OrgId for logging and event emission
+    const keysByOrg = apiKeys.reduce((acc, key) => {
+      acc[key.organization_id] = acc[key.organization_id] || [];
+      acc[key.organization_id].push(key);
+      return acc;
+    }, {} as Record<string, IApiKey[]>);
+
+    // Process per Org
+    for (const orgId in keysByOrg) {
+      const keys = keysByOrg[orgId];
+      const keyIds = keys.map(k => k.id);
+
+      // Audit Log for each key
+      keys.forEach(key => {
+        this.auditLogService.logDelete(
+          orgId,
+          'ApiKey',
+          key.id,
+          { name: key.name } as Record<string, unknown>,
+          { userId, description: `Admin batch delete: ${key.name}` },
+        );
+
+        this.systemLogService.info(
+          'apikey',
+          'admin_delete',
+          `API key ${key.name} deleted by admin`,
+          { userId, metaData: { apiKeyId: key.id, orgId } },
+        );
+      });
+
+      // Emit WebSocket per Org
+      this.websocketGateway.emitToOrganization(orgId, 'apiKey:deletedMany', {
+        ids: keyIds,
+        orgId,
+        deletedBy: userId,
+        isAdminAction: true,
+        timestamp: new Date().toISOString(),
+      });
+    }
   }
 
   private generateApiKey(): string {

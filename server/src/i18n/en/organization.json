@@ -75,6 +75,9 @@
         "apikey_name_max_length": "API key name cannot exceed 100 characters",
         "apikey_description_string": "API key description must be a string",
         "apikey_expires_at_date": "Expiration date must be a valid date",
+        "apikey_allowed_origins_array": "Allowed origins must be an array",
+        "apikey_allowed_origins_string": "Each allowed origin must be a string",
+        "apikey_allowed_origins_format": "Invalid allowed origin format. Must be URL, IPv4 or IPv6",
         "limit_positive": "Limit must be a positive number",
         "offset_min": "Offset must be >= 0",
         "keywords_string": "Search keywords must be a string",
@@ -84,6 +87,11 @@
         "google_client_secret_string": "Google Client Secret must be a string",
         "google_refresh_token_string": "Google Refresh Token must be a string",
         "email_primary_invalid": "Primary email is invalid",
-        "email_primary_max_length": "Primary email cannot exceed 255 characters"
+        "email_primary_max_length": "Primary email cannot exceed 255 characters",
+        "rate_limit_ttl_int": "Rate limit TTL must be an integer",
+        "rate_limit_ttl_min": "Rate limit TTL must be greater than 0",
+        "rate_limit_max_int": "Max requests must be an integer",
+        "rate_limit_max_min": "Max requests must be greater than 0",
+        "org_id_uuid": "Organization ID must be a valid UUID"
     }
 }

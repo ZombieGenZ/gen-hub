@@ -17,11 +17,13 @@ import {
     ApiBearerAuth,
     ApiParam,
     ApiHeader,
+    ApiBody,
 } from '@nestjs/swagger';
 import { I18nLang } from 'nestjs-i18n';
 
 import { ProductService } from './product.service';
 import { CreateProductDto, UpdateProductDto, QueryProductDto } from './dto';
+import { DeleteManyDto } from '../../common/dto';
 import { CombinedAuthGuard, OrgPermissionGuard } from '../../common/guards';
 import { CurrentActor, RequireOrgPermission } from '../../common/decorators';
 import {
@@ -105,6 +107,23 @@ export class ProductController {
     ): Promise<UpdatedResponse<IProduct>> {
         const result = await this.service.update(orgId, id, dto, actorId, lang);
         return new UpdatedResponse(ResponseCode.PRODUCT_UPDATE_SUCCESS, result);
+    }
+
+    @Delete('delete/many')
+    @RequireOrgPermission('product.delete')
+    @ApiOperation({ summary: 'Xóa nhiều sản phẩm' })
+    @ApiParam({ name: 'orgId', description: 'ID của tổ chức' })
+    @ApiBody({ type: DeleteManyDto })
+    @ApiResponse({ status: 200, description: 'Xóa thành công' })
+    @ApiResponse({ status: 404, description: 'Không tìm thấy sản phẩm' })
+    async deleteMany(
+        @Param('orgId', ParseUUIDPipe) orgId: string,
+        @Body() dto: DeleteManyDto,
+        @CurrentActor() actorId: string,
+        @I18nLang() lang: string,
+    ): Promise<DeletedResponse<null>> {
+        await this.service.deleteMany(orgId, dto.ids, actorId, lang);
+        return new DeletedResponse(ResponseCode.PRODUCT_DELETE_SUCCESS, null, 'Xóa nhiều sản phẩm thành công');
     }
 
     @Delete(':id')

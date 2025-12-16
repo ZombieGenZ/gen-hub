@@ -10,11 +10,12 @@ import {
     ParseUUIDPipe,
     UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam, ApiBody } from '@nestjs/swagger';
 import { I18nLang } from 'nestjs-i18n';
 
 import { RentalContractService } from './rental-contract.service';
 import { RenewRentalContractDto, QueryRentalContractDto } from './dto';
+import { DeleteManyDto } from '../../common/dto';
 import { JwtAuthGuard } from '../../common/guards';
 import { CurrentUser } from '../../common/decorators';
 import { GetResponse, UpdatedResponse, DeletedResponse, ResponseCode } from '../../common/responses';
@@ -107,10 +108,6 @@ export class OrgRentalContractController {
      * Hủy hợp đồng của tổ chức
      * Chỉ owner/member của org mới được hủy
      */
-    @Delete(':id')
-    @ApiOperation({ summary: 'Hủy hợp đồng của tổ chức' })
-    @ApiParam({ name: 'orgId', description: 'ID của tổ chức', type: 'string' })
-    @ApiParam({ name: 'id', description: 'ID của hợp đồng', type: 'string' })
     async delete(
         @Param('orgId', ParseUUIDPipe) orgId: string,
         @Param('id', ParseUUIDPipe) id: string,
@@ -119,5 +116,19 @@ export class OrgRentalContractController {
     ) {
         await this.rentalContractService.deleteByOrg(id, userId, orgId, lang);
         return new DeletedResponse(ResponseCode.RENTAL_CONTRACT_DELETE_SUCCESS, null, 'Hủy hợp đồng thành công');
+    }
+
+    @Delete('delete/many')
+    @ApiOperation({ summary: 'Hủy nhiều hợp đồng của tổ chức' })
+    @ApiParam({ name: 'orgId', description: 'ID của tổ chức', type: 'string' })
+    @ApiBody({ type: DeleteManyDto })
+    async deleteMany(
+        @Param('orgId', ParseUUIDPipe) orgId: string,
+        @Body() dto: DeleteManyDto,
+        @CurrentUser('userId') userId: string,
+        @I18nLang() lang: string,
+    ) {
+        await this.rentalContractService.deleteManyByOrg(dto.ids, userId, orgId, lang);
+        return new DeletedResponse(ResponseCode.RENTAL_CONTRACT_DELETE_SUCCESS, null, 'Hủy nhiều hợp đồng thành công');
     }
 }

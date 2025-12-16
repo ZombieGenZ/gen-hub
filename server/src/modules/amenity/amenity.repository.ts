@@ -107,4 +107,32 @@ export class AmenityRepository {
             },
         });
     }
+
+    async softDeleteMany(ids: string[], deletedBy: string) {
+        return this.prisma.amenity.updateMany({
+            where: { id: { in: ids } },
+            data: {
+                is_deleted: true,
+                deleted_at: new Date(),
+                deleted_by: deletedBy,
+            },
+        });
+    }
+
+    async softDeleteMappingsMany(amenityIds: string[], deletedBy: string) {
+        return this.prisma.amenityOnWarehouseTemplate.updateMany({
+            where: { amenity_id: { in: amenityIds } },
+            data: {
+                is_deleted: true,
+                deleted_at: new Date(),
+                deleted_by: deletedBy,
+            },
+        });
+    }
+
+    async findByIds(ids: string[]) {
+        return this.prisma.amenity.findMany({
+            where: { id: { in: ids }, is_deleted: false },
+        });
+    }
 }

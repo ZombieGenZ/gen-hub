@@ -285,4 +285,43 @@ export class ProductService {
             { userId: actorId, description: `Deleted product: ${existing.name}` },
         );
     }
+
+    async deleteMany(orgId: string, ids: string[], actorId: string, lang: string): Promise<void> {
+        const products = await this.repository.findByIds(ids);
+        if (products.length === 0) {
+            throw new NotFoundException(
+                await this.i18n.translate('product.errors.not_found', { lang }),
+            );
+        }
+
+        // Check if all products belong to the organization
+        const invalidOrg = products.find(p => p.organization_id !== orgId);
+        if (invalidOrg) {
+            throw new NotFoundException(
+                await this.i18n.translate('product.errors.not_found', { lang }),
+            );
+        }
+
+        await this.repository.softDeleteMany(ids, actorId);
+
+        // Invalidate cache
+        await Promise.all(ids.map(id => this.redisService.del(this.getDetailCacheKey(id))));
+        await this.redisService.delByPattern(`product:list:${orgId}:*`);
+
+        // Emit realtime events
+        this.websocketGateway.emitToOrganization(orgId, 'product:deleted_many', {
+            ids,
+            actorId
+        });
+
+        products.forEach(p => {
+            this.auditLogService.logDelete(
+                orgId,
+                'Product',
+                p.id,
+                { name: p.name } as Record<string, unknown>,
+                { userId: actorId, description: `Deleted product: ${p.name}` },
+            );
+        });
+    }
 }

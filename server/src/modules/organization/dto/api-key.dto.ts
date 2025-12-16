@@ -8,6 +8,7 @@ import {
     IsUUID,
     IsDateString,
     MaxLength,
+    Matches,
 } from 'class-validator';
 import { i18nValidationMessage } from 'nestjs-i18n';
 
@@ -40,6 +41,28 @@ export class CreateApiKeyDto {
         message: i18nValidationMessage('organization.validation.apikey_expires_at_date'),
     })
     expires_at?: string;
+
+    @ApiPropertyOptional({
+        description: 'Danh sách allowed origins cho CORS (URL, IPv4, IPv6)',
+        example: ['https://example.com', 'http://192.168.1.100:3000', 'http://[::1]:3000'],
+        type: [String],
+    })
+    @IsOptional()
+    @IsArray({
+        message: i18nValidationMessage('organization.validation.apikey_allowed_origins_array'),
+    })
+    @IsString({
+        each: true,
+        message: i18nValidationMessage('organization.validation.apikey_allowed_origins_string'),
+    })
+    @Matches(
+        /^(https?:\/\/)?(\[?[\da-fA-F:.]+\]?|[\w.-]+)(:\d+)?(\/.*)?$/,
+        {
+            each: true,
+            message: i18nValidationMessage('organization.validation.apikey_allowed_origins_format'),
+        },
+    )
+    allowed_origins?: string[];
 
     @ApiPropertyOptional({ description: 'Danh sách ID vai trò gán cho API key', type: [String] })
     @IsOptional()
@@ -98,6 +121,28 @@ export class UpdateApiKeyDto {
         message: i18nValidationMessage('organization.validation.apikey_expires_at_date'),
     })
     expires_at?: string;
+
+    @ApiPropertyOptional({
+        description: 'Danh sách allowed origins cho CORS (URL, IPv4, IPv6)',
+        example: ['https://example.com', 'http://192.168.1.100:3000', 'http://[::1]:3000'],
+        type: [String],
+    })
+    @IsOptional()
+    @IsArray({
+        message: i18nValidationMessage('organization.validation.apikey_allowed_origins_array'),
+    })
+    @IsString({
+        each: true,
+        message: i18nValidationMessage('organization.validation.apikey_allowed_origins_string'),
+    })
+    @Matches(
+        /^(https?:\/\/)?(\[?[\da-fA-F:.]+\]?|[\w.-]+)(:\d+)?(\/.*)?$/,
+        {
+            each: true,
+            message: i18nValidationMessage('organization.validation.apikey_allowed_origins_format'),
+        },
+    )
+    allowed_origins?: string[];
 
     @ApiPropertyOptional({ description: 'Danh sách ID vai trò gán cho API key (thay thế toàn bộ)', type: [String] })
     @IsOptional()

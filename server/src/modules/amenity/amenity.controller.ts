@@ -16,11 +16,14 @@ import {
     ApiResponse,
     ApiBearerAuth,
     ApiParam,
+    ApiHeader,
+    ApiBody,
 } from '@nestjs/swagger';
 import { I18nLang } from 'nestjs-i18n';
 
 import { AmenityService } from './amenity.service';
 import { CreateAmenityDto, UpdateAmenityDto, QueryAmenityDto } from './dto';
+import { DeleteManyDto } from '../../common/dto';
 import { JwtAuthGuard, PermissionGuard } from '../../common/guards';
 import { RequirePermission, CurrentUser } from '../../common/decorators';
 import {
@@ -105,6 +108,23 @@ export class AmenityController {
     ) {
         const result = await this.amenityService.update(id, dto, userId, lang);
         return new UpdatedResponse('amenity.update.success', result, 'Cập nhật tiện ích thành công');
+    }
+
+    @Delete('delete/many')
+    @ApiBearerAuth('JWT-auth')
+    @UseGuards(JwtAuthGuard, PermissionGuard)
+    @RequirePermission('amenity.delete')
+    @ApiOperation({ summary: 'Xóa nhiều tiện ích' })
+    @ApiBody({ type: DeleteManyDto })
+    @ApiResponse({ status: 200, description: 'Xóa thành công' })
+    @ApiResponse({ status: 404, description: 'Không tìm thấy tiện ích' })
+    async deleteMany(
+        @Body() dto: DeleteManyDto,
+        @CurrentUser('userId') userId: string,
+        @I18nLang() lang: string,
+    ) {
+        await this.amenityService.deleteMany(dto.ids, userId, lang);
+        return new DeletedResponse('amenity.delete.success', undefined, 'Xóa nhiều tiện ích thành công');
     }
 
     @Delete(':id')

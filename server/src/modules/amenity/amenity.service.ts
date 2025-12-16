@@ -212,6 +212,38 @@ export class AmenityService {
         });
     }
 
+    async deleteMany(ids: string[], userId: string, lang: string) {
+        const amenities = await this.repository.findByIds(ids);
+        if (amenities.length === 0) {
+            throw new NotFoundException(
+                this.i18n.t('amenity.errors.not_found', { lang }),
+            );
+        }
+
+        // Soft delete amenities and mappings
+        await this.repository.softDeleteMany(ids, userId);
+        await this.repository.softDeleteMappingsMany(ids, userId);
+
+        // Invalidate cache
+        await Promise.all(ids.map(id => this.invalidateCache(id)));
+        await this.invalidateListCache();
+
+        // Emit socket event for batch
+        this.websocketGateway.server.emit('amenity:deletedMany', {
+            amenityIds: ids,
+            deletedBy: userId,
+            timestamp: new Date().toISOString(),
+        });
+
+        // Log
+        amenities.forEach(a => {
+            this.systemLogService.info('Amenity', 'DELETE', `Xóa tiện ích: ${a.name}`, {
+                userId,
+                metaData: { amenityId: a.id, name: a.name },
+            });
+        });
+    }
+
     private async invalidateCache(id: string) {
         await this.redisService.del(this.getCacheKey(id));
     }

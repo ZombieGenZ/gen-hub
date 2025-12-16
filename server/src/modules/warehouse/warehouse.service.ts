@@ -356,6 +356,79 @@ export class WarehouseService {
   }
 
   /**
+   * Delete many warehouses
+   */
+  async deleteMany(
+    ids: string[],
+    userId: string,
+    organizationId: string,
+    lang: string,
+  ): Promise<void> {
+    const warehouses = await this.repository.findByIds(ids);
+    if (warehouses.length === 0) {
+      throw new NotFoundException(
+        this.i18n.t('warehouse.errors.not_found', { lang }),
+      );
+    }
+
+    // Check organization mismatch
+    const invalidOrg = warehouses.find(w => w.organization_id !== organizationId);
+    if (invalidOrg) {
+      throw new ForbiddenException(
+        this.i18n.t('warehouse.errors.no_permission', { lang })
+      );
+    }
+
+    // Verify permission
+    await this.checkOrgPermission(
+      organizationId,
+      userId,
+      'warehouse.delete',
+      lang,
+    );
+
+    await this.repository.softDeleteMany(ids, userId);
+
+    // Invalidate caches
+    await Promise.all([
+      ...ids.map(id => this.invalidateWarehouseCache(id)),
+      this.invalidateWarehouseListCache(),
+    ]);
+
+    // Log
+    this.systemLogService.info(
+      'warehouse',
+      'delete_many',
+      `Deleted ${warehouses.length} warehouses`,
+      {
+        userId,
+        metaData: { ids, names: warehouses.map(w => w.name) },
+      },
+    );
+
+    // Emit realtime event
+    this.websocketGateway.emitToOrganization(
+      organizationId,
+      'warehouse:deletedMany',
+      {
+        ids,
+        deletedBy: userId,
+        timestamp: new Date().toISOString(),
+      },
+    );
+
+    warehouses.forEach(w => {
+      this.auditLogService.logDelete(
+        organizationId,
+        'warehouse',
+        w.id,
+        { name: w.name } as Record<string, unknown>,
+        { userId, description: `Deleted warehouse: ${w.name}` },
+      );
+    });
+  }
+
+  /**
    * Lấy layout warehouse
    * Kiểm tra quyền nếu có organizationId
    */

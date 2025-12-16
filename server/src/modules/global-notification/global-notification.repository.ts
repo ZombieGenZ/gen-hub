@@ -113,4 +113,21 @@ export class GlobalNotificationRepository {
             },
         });
     }
+
+    async findByIds(ids: string[]): Promise<IGlobalNotification[]> {
+        return this.prisma.globalNotification.findMany({
+            where: { id: { in: ids }, is_deleted: false },
+        });
+    }
+
+    async softDeleteMany(ids: string[], deletedBy: string): Promise<void> {
+        await this.prisma.globalNotification.updateMany({
+            where: { id: { in: ids } },
+            data: {
+                is_deleted: true,
+                deleted_at: new Date(),
+                deleted_by: deletedBy,
+            },
+        });
+    }
 }
