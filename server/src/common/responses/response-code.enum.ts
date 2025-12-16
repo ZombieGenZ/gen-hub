@@ -65,6 +65,7 @@ export enum ResponseCode {
     ORGANIZATION_ROLE_LIST_SUCCESS = 'organization.role.list_success',
     ORGANIZATION_ROLE_UPDATE_SUCCESS = 'organization.role.update_success',
     ORGANIZATION_ROLE_DELETE_SUCCESS = 'organization.role.delete_success',
+    ORGANIZATION_PERMISSION_LIST_SUCCESS = 'organization.permission.list_success',
 
     // API Key
     APIKEY_CREATE_SUCCESS = 'apikey.create_success',

@@ -73,6 +73,64 @@ async function bootstrap() {
     jsonDocumentUrl: '/api-docs-json',
   });
 
+  // API Key Swagger - Dynamically include modules based on DB permissions
+  // Query permissions with allow_api_key = true from database
+  const { PrismaService } = require('./prisma/prisma.service');
+  const { getApiKeyModules } = require('./common/config/api-key-modules.config');
+  const prismaService = app.get(PrismaService);
+
+  const apiKeyPermissions = await prismaService.organizationPermission.findMany({
+    where: {
+      is_deleted: false,
+      is_active: true,
+      allow_api_key: true,
+    },
+    select: { key: true },
+  });
+
+  // Get enabled modules based on DB permissions
+  const permissionKeys = apiKeyPermissions.map((p: { key: string }) => p.key);
+  const { modules: includeModules, enabledModuleNames } = getApiKeyModules(permissionKeys);
+
+  console.log(`🔑 API Key enabled modules: ${enabledModuleNames.join(', ')}`);
+
+  const apiKeyConfig = new DocumentBuilder()
+    .setTitle('GEN-HUB API Key Documentation')
+    .setDescription('API documentation cho các chức năng hổ trợ API Key của GEN-HUB')
+    .setVersion('1.0')
+    .addApiKey(
+      {
+        type: 'apiKey',
+        name: 'X-API-Key',
+        in: 'header',
+        description: 'API Key cho xác thực',
+      },
+      'api-key',
+    )
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        name: 'JWT',
+        description: 'Nhập JWT token',
+        in: 'header',
+      },
+      'JWT-auth',
+    )
+    .build();
+
+  const apiKeyDocument = SwaggerModule.createDocument(app, apiKeyConfig, {
+    include: includeModules,
+  });
+
+  SwaggerModule.setup('api-docs-apikey', app, apiKeyDocument, {
+    swaggerOptions: {
+      persistAuthorization: true,
+    },
+    jsonDocumentUrl: '/api-docs-apikey-json',
+  });
+
   const port = process.env.PORT ?? 4000;
   const backendUrl = process.env.BACKEND_URL || `http://localhost:${port}`;
   await app.listen(port);
@@ -81,6 +139,8 @@ async function bootstrap() {
   console.log(`🚀 Server đang chạy tại ${backendUrl}`);
   console.log(`📚 Swagger docs: ${backendUrl}/api-docs`);
   console.log(`📄 Swagger JSON: ${backendUrl}/api-docs-json`);
+  console.log(`🔑 API Key Swagger: ${backendUrl}/api-docs-apikey`);
+  console.log(`📄 API Key Swagger JSON: ${backendUrl}/api-docs-apikey-json`);
 
   // Graceful Shutdown
   const gracefulShutdown = async (signal: string) => {

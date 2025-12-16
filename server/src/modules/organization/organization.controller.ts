@@ -10,7 +10,7 @@ import {
     ParseUUIDPipe,
     UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation, ApiParam, ApiQuery } from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiParam, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { I18nLang } from 'nestjs-i18n';
 import { OrganizationService } from './organization.service';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -23,7 +23,7 @@ import {
     AssignMemberRolesDto,
     AssignMemberPermissionsDto,
 } from './dto';
-import { CurrentUser, RequirePermission } from '../../common/decorators';
+import { CurrentUser, RequirePermission, Public } from '../../common/decorators';
 import { PermissionGuard } from '../../common/guards';
 import {
     CreatedResponse,
@@ -428,6 +428,26 @@ export class OrganizationController {
             ResponseCode.ORGANIZATION_ROLE_LIST_SUCCESS,
             result,
             'Lấy danh sách quyền thành công',
+        );
+    }
+
+    @Get('permissions/api-key-enabled')
+    @Public()
+    @ApiOperation({ summary: 'Lấy danh sách permissions cho phép API key (Public)' })
+    @ApiResponse({ status: 200, description: 'Danh sách permissions hỗ trợ API key' })
+    async getApiKeyEnabledPermissions() {
+        const permissions = await this.prisma.organizationPermission.findMany({
+            where: {
+                is_deleted: false,
+                is_active: true,
+                allow_api_key: true,
+            },
+            orderBy: { key: 'asc' },
+        });
+        return new GetResponse(
+            ResponseCode.ORGANIZATION_PERMISSION_LIST_SUCCESS,
+            permissions,
+            'Lấy danh sách permissions cho phép API key thành công',
         );
     }
 }
