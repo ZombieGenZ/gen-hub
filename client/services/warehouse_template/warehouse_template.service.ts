@@ -43,4 +43,26 @@ export class WarehouseTemplateService {
             throw error
         }
     }
+
+    async getWarehouseTemplateById(token: string, id: string) {
+        try {
+            const response = await fetch(`${API}/warehouse-templates/${id}`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+            })
+            const data = await response.json()
+            if (data.success) {
+                return data.data
+            } else {
+                console.error('Get warehouse template detail error:', data)
+                throw new Error(data.message || 'Get warehouse template detail failed')
+            }
+        } catch (error) {
+            console.error('Get warehouse template detail error:', error)
+            throw error
+        }
+    }
 }

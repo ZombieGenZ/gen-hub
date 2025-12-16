@@ -5,7 +5,7 @@ import { WarehouseTemplateService } from "@/services/warehouse_template/warehous
 import { Warehouse } from "@/types/warehoue_template/warehouse_template.type";
 import { useDebounce } from "@/hooks/use-debounce";
 import { DashboardHeader } from "@/components/layouts/DashboardHeader";
-
+import Image from "next/image";
 
 
 import { useRouter } from "next/navigation";
@@ -246,14 +246,21 @@ export default function WarehouseTemplatePage() {
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
                         {warehouses.map((warehouse) => (
-                            <div key={warehouse.id} className="bg-white rounded-xl shadow-sm border border-slate-200 hover:shadow-lg transition-all duration-300 hover:-translate-y-1 group flex flex-col h-full">
+                            <div 
+                                key={warehouse.id} 
+                                className="bg-white rounded-xl shadow-sm border border-slate-200 hover:shadow-lg transition-all duration-300 hover:-translate-y-1 group flex flex-col h-full cursor-pointer"
+                                onClick={() => router.push(`/dashboard/warehouse_template/${warehouse.id}`)}
+                            >
                                 <div className="relative h-64 overflow-hidden rounded-t-xl bg-slate-100">
-                                    <img
+                                    <Image
                                         src={warehouse.images?.[0]?.url || "https://placehold.co/600x400?text=No+Image"}
                                         alt={warehouse.name}
-                                        className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500"
+                                        fill
+                                        className="object-cover transform group-hover:scale-110 transition-transform duration-500"
+                                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                                        loading="lazy"
                                     />
-                                    <div className="absolute top-3 right-3 flex gap-2">
+                                    <div className="absolute top-3 right-3 flex gap-2 z-10">
                                         <span className={`px-2.5 py-1 rounded-lg text-xs font-semibold backdrop-blur-md shadow-sm ${warehouse.is_active
                                             ? "bg-green-500/90 text-white"
                                             : "bg-orange-500/90 text-white"
