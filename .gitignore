@@ -68,7 +68,7 @@ pids
 *.pid.lock
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
-package-lock.json
-yarn.lock
+# package-lock.json
+# yarn.lock
 
 app-config.json
