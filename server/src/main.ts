@@ -32,8 +32,17 @@ async function bootstrap() {
 
   app.useGlobalInterceptors(new HttpLoggingInterceptor(systemLogService));
 
+  // Build CORS origins array
+  const corsOrigins: string[] = [];
+  if (process.env.FRONTEND_URL) {
+    corsOrigins.push(process.env.FRONTEND_URL);
+  }
+  if (process.env.FRONTEND_DEVELOP_URL) {
+    corsOrigins.push(process.env.FRONTEND_DEVELOP_URL);
+  }
+
   app.enableCors({
-    origin: process.env.FRONTEND_URL || '*',
+    origin: corsOrigins.length > 0 ? corsOrigins : '*',
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });
