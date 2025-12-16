@@ -102,21 +102,21 @@ export default function RentalRequestPage() {
                         
                         {/* Section 1: Rental Info */}
                         <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                            <div className="flex items-center gap-2 mb-4 text-blue-600 font-medium">
+                            <div className="flex items-center gap-2 mb-4 text-primary font-medium">
                                 <MapPin className="w-5 h-5" />
                                 <h2>Thông tin thuê</h2>
                             </div>
                             
                             <div className="space-y-4">
                                 <div>
-                                    <Label htmlFor="warehouseId" className="mb-2 block">Chọn Kho mong muốn</Label>
+                                    <Label htmlFor="warehouseId" className="mb-2 block text-slate-700">Chọn Kho mong muốn</Label>
                                     <div className="relative">
                                         <select
                                             id="warehouseId"
                                             name="warehouseId"
                                             value={formData.warehouseId}
                                             onChange={handleInputChange}
-                                            className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
+                                            className="w-full bg-white text-slate-900 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary appearance-none"
                                         >
                                             <option value="">Chọn kho từ danh sách...</option>
                                             {warehouses.map(w => (
@@ -131,7 +131,7 @@ export default function RentalRequestPage() {
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
-                                        <Label htmlFor="fromDate" className="mb-2 block">Từ ngày</Label>
+                                        <Label htmlFor="fromDate" className="mb-2 block text-slate-700">Từ ngày</Label>
                                         <div className="relative">
                                             <Input 
                                                 type="date" 
@@ -139,13 +139,13 @@ export default function RentalRequestPage() {
                                                 name="fromDate"
                                                 value={formData.fromDate}
                                                 onChange={handleInputChange}
-                                                className="pl-10"
+                                                className="pl-10 bg-white text-slate-900 focus-visible:ring-primary"
                                             />
                                             <Calendar className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
                                         </div>
                                     </div>
                                     <div>
-                                        <Label htmlFor="toDate" className="mb-2 block">Đến ngày</Label>
+                                        <Label htmlFor="toDate" className="mb-2 block text-slate-700">Đến ngày</Label>
                                         <div className="relative">
                                             <Input 
                                                 type="date" 
@@ -153,7 +153,7 @@ export default function RentalRequestPage() {
                                                 name="toDate"
                                                 value={formData.toDate}
                                                 onChange={handleInputChange}
-                                                className="pl-10"
+                                                className="pl-10 bg-white text-slate-900 focus-visible:ring-primary"
                                             />
                                             <Calendar className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
                                         </div>
@@ -164,9 +164,9 @@ export default function RentalRequestPage() {
 
                         {/* Section 2: Request Details */}
                         <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                            <div className="flex items-center gap-2 mb-4 text-blue-600 font-medium">
-                                <div className="w-5 h-5 flex items-center justify-center border-2 border-blue-600 rounded text-[10px] font-bold">
-                                    <div className="w-3 h-0.5 bg-blue-600"></div>
+                            <div className="flex items-center gap-2 mb-4 text-primary font-medium">
+                                <div className="w-5 h-5 flex items-center justify-center border-2 border-primary rounded text-[10px] font-bold">
+                                    <div className="w-3 h-0.5 bg-primary"></div>
                                 </div>
                                 <h2>Chi tiết nhu cầu</h2>
                             </div>
@@ -174,7 +174,7 @@ export default function RentalRequestPage() {
                             <div className="space-y-4">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
-                                        <Label htmlFor="area" className="mb-2 block">Diện tích mong muốn (m²)</Label>
+                                        <Label htmlFor="area" className="mb-2 block text-slate-700">Diện tích mong muốn (m²)</Label>
                                         <Input 
                                             type="number" 
                                             id="area" 
@@ -182,17 +182,18 @@ export default function RentalRequestPage() {
                                             placeholder="VD: 500"
                                             value={formData.area}
                                             onChange={handleInputChange}
+                                            className="bg-white text-slate-900 focus-visible:ring-primary"
                                         />
                                     </div>
                                     <div>
-                                        <Label htmlFor="purpose" className="mb-2 block">Mục đích thuê</Label>
+                                        <Label htmlFor="purpose" className="mb-2 block text-slate-700">Mục đích thuê</Label>
                                         <div className="relative">
                                             <select
                                                 id="purpose"
                                                 name="purpose"
                                                 value={formData.purpose}
                                                 onChange={handleInputChange}
-                                                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
+                                                className="w-full bg-white text-slate-900 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary appearance-none"
                                             >
                                                 <option value="">Chọn mục đích...</option>
                                                 <option value="Lưu trữ linh kiện điện tử">Lưu trữ linh kiện điện tử</option>
@@ -209,12 +210,12 @@ export default function RentalRequestPage() {
                                 </div>
 
                                 <div>
-                                    <Label htmlFor="notes" className="mb-2 block">Ghi chú thêm</Label>
+                                    <Label htmlFor="notes" className="mb-2 block text-slate-700">Ghi chú thêm</Label>
                                     <textarea
                                         id="notes"
                                         name="notes"
                                         rows={4}
-                                        className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                                        className="w-full bg-white text-slate-900 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none"
                                         placeholder="Nhập các yêu cầu đặc biệt về nhiệt độ, độ ẩm, an ninh..."
                                         value={formData.notes}
                                         onChange={handleInputChange}
@@ -225,14 +226,14 @@ export default function RentalRequestPage() {
 
                         {/* Section 3: Contact Info */}
                         <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                            <div className="flex items-center gap-2 mb-4 text-blue-600 font-medium">
+                            <div className="flex items-center gap-2 mb-4 text-primary font-medium">
                                 <User className="w-5 h-5" />
                                 <h2>Thông tin liên hệ</h2>
                             </div>
 
                             <div className="space-y-4">
                                 <div>
-                                    <Label htmlFor="contactName" className="mb-2 block">Họ và tên người liên hệ</Label>
+                                    <Label htmlFor="contactName" className="mb-2 block text-slate-700">Họ và tên người liên hệ</Label>
                                     <div className="relative">
                                         <Input 
                                             type="text" 
@@ -241,7 +242,7 @@ export default function RentalRequestPage() {
                                             placeholder="Nguyễn Văn A"
                                             value={formData.contactName}
                                             onChange={handleInputChange}
-                                            className="pl-10"
+                                            className="pl-10 bg-white text-slate-900 focus-visible:ring-primary"
                                         />
                                         <User className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
                                     </div>
@@ -249,7 +250,7 @@ export default function RentalRequestPage() {
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
-                                        <Label htmlFor="contactPhone" className="mb-2 block">Số điện thoại</Label>
+                                        <Label htmlFor="contactPhone" className="mb-2 block text-slate-700">Số điện thoại</Label>
                                         <div className="relative">
                                             <Input 
                                                 type="tel" 
@@ -258,13 +259,13 @@ export default function RentalRequestPage() {
                                                 placeholder="0909 123 456"
                                                 value={formData.contactPhone}
                                                 onChange={handleInputChange}
-                                                className="pl-10"
+                                                className="pl-10 bg-white text-slate-900 focus-visible:ring-primary"
                                             />
                                             <Phone className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
                                         </div>
                                     </div>
                                     <div>
-                                        <Label htmlFor="contactEmail" className="mb-2 block">Email công ty</Label>
+                                        <Label htmlFor="contactEmail" className="mb-2 block text-slate-700">Email công ty</Label>
                                         <div className="relative">
                                             <Input 
                                                 type="email" 
@@ -273,7 +274,7 @@ export default function RentalRequestPage() {
                                                 placeholder="contact@company.com"
                                                 value={formData.contactEmail}
                                                 onChange={handleInputChange}
-                                                className="pl-10"
+                                                className="pl-10 bg-white text-slate-900 focus-visible:ring-primary"
                                             />
                                             <Mail className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
                                         </div>
@@ -331,41 +332,43 @@ export default function RentalRequestPage() {
                                 </div>
                             </div>
 
-                            <div className="mt-6 bg-blue-50 p-3 rounded-lg flex gap-3">
-                                <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                                <p className="text-xs text-blue-700 leading-relaxed">
+                            <div className="mt-6 bg-teal-50 p-3 rounded-lg flex gap-3">
+                                <Info className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                                <p className="text-xs text-primary leading-relaxed">
                                     Yêu cầu của bạn sẽ được xử lý trong vòng 24h. Nhân viên tư vấn sẽ liên hệ qua số điện thoại cung cấp.
                                 </p>
                             </div>
+                            {/* Support Card */}
+                            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                                <div className="flex items-center gap-3 mb-2">
+                                    <div className="w-10 h-10 bg-teal-50 rounded-full flex items-center justify-center text-primary">
+                                        <Phone className="w-5 h-5" />
+                                    </div>
+                                    <div>
+                                        <p className="font-bold text-slate-900">Cần hỗ trợ?</p>
+                                        <p className="text-xs text-slate-500">Gọi hotline miễn phí</p>
+                                    </div>
+                                </div>
+                                <div className="text-center mt-4">
+                                    <span className="text-2xl font-bold text-slate-900">1800 6688</span>
+                                </div>
+                            </div>
+                            {/* Footer Actions */}
+                            <div className="mt-8 flex justify-end gap-4 border-t border-slate-200 pt-6">
+                                <Button variant="outline" className="h-11 px-8 bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-700 hover:text-slate-900" onClick={() => router.back()}>
+                                    Hủy bỏ
+                                </Button>
+                                <Button className="h-11 px-8 bg-primary hover:bg-teal-700 text-white gap-2 shadow-lg shadow-primary/30" onClick={handleSubmit}>
+                                    Gửi yêu cầu <ArrowRight className="w-4 h-4" />
+                                </Button>
+                            </div>
                         </div>
 
-                        {/* Support Card */}
-                        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                            <div className="flex items-center gap-3 mb-2">
-                                <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center text-green-600">
-                                    <Phone className="w-5 h-5" />
-                                </div>
-                                <div>
-                                    <p className="font-bold text-slate-900">Cần hỗ trợ?</p>
-                                    <p className="text-xs text-slate-500">Gọi hotline miễn phí</p>
-                                </div>
-                            </div>
-                            <div className="text-center mt-4">
-                                <span className="text-2xl font-bold text-slate-900">1800 6688</span>
-                            </div>
-                        </div>
+                        
                     </div>
                 </div>
 
-                {/* Footer Actions */}
-                <div className="mt-8 flex justify-end gap-4 border-t border-slate-200 pt-6">
-                    <Button variant="outline" className="h-11 px-8" onClick={() => router.back()}>
-                        Hủy bỏ
-                    </Button>
-                    <Button className="h-11 px-8 bg-blue-600 hover:bg-blue-700 text-white gap-2" onClick={handleSubmit}>
-                        Gửi yêu cầu <ArrowRight className="w-4 h-4" />
-                    </Button>
-                </div>
+                
             </div>
         </div>
     );

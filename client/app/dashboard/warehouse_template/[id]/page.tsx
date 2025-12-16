@@ -77,7 +77,7 @@ export default function WarehouseDetailPage() {
                 <div className="flex-1 flex flex-col">
                     <DashboardHeader />
                     <div className="flex-1 flex items-center justify-center">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
                     </div>
                 </div>
             </div>
@@ -91,7 +91,10 @@ export default function WarehouseDetailPage() {
                     <DashboardHeader />
                     <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
                         <div className="text-red-500 text-xl mb-4">⚠️ {error || "Warehouse not found"}</div>
-                        <Button onClick={() => router.push("/dashboard/warehouse_template")}>
+                        <Button 
+                            onClick={() => router.push("/dashboard/warehouse_template")}
+                            className="bg-primary hover:bg-teal-700"
+                        >
                             Quay lại danh sách
                         </Button>
                     </div>
@@ -118,11 +121,11 @@ export default function WarehouseDetailPage() {
         <div className="flex flex-col min-h-screen bg-slate-50">
             <DashboardHeader>
                 <div className="flex items-center text-sm text-slate-500">
-                    <Link href="/dashboard" className="hover:text-blue-600 flex items-center gap-1">
+                    <Link href="/dashboard" className="hover:text-primary flex items-center gap-1">
                         <Home className="w-4 h-4" /> Trang chủ
                     </Link>
                     <ChevronRight className="w-4 h-4 mx-2" />
-                    <Link href="/dashboard/warehouse_template" className="hover:text-blue-600">
+                    <Link href="/dashboard/warehouse_template" className="hover:text-primary">
                         Danh sách kho
                     </Link>
                     <ChevronRight className="w-4 h-4 mx-2" />
@@ -181,7 +184,7 @@ export default function WarehouseDetailPage() {
                                         key={idx}
                                         onClick={() => setActiveImage(img)}
                                         className={`aspect-video rounded-lg overflow-hidden border-2 transition-all relative ${
-                                            activeImage === img ? "border-blue-600 ring-2 ring-blue-100" : "border-transparent hover:border-slate-300"
+                                            activeImage === img ? "border-primary ring-2 ring-teal-100" : "border-transparent hover:border-slate-300"
                                         }`}
                                     >
                                         <Image 
@@ -199,28 +202,28 @@ export default function WarehouseDetailPage() {
                         {/* Key Metrics Grid */}
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-                                <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 mb-3">
+                                <div className="w-10 h-10 rounded-full bg-teal-50 flex items-center justify-center text-primary mb-3">
                                     <Ruler className="w-5 h-5" />
                                 </div>
                                 <p className="text-sm text-slate-500 mb-1">Diện tích</p>
                                 <p className="text-lg font-bold text-slate-900">{area.toLocaleString()} {warehouse.unit}²</p>
                             </div>
                             <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-                                <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 mb-3">
+                                <div className="w-10 h-10 rounded-full bg-teal-50 flex items-center justify-center text-primary mb-3">
                                     <ArrowUpFromLine className="w-5 h-5" />
                                 </div>
                                 <p className="text-sm text-slate-500 mb-1">Chiều cao trần</p>
                                 <p className="text-lg font-bold text-slate-900">12m</p>
                             </div>
                             <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-                                <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 mb-3">
+                                <div className="w-10 h-10 rounded-full bg-teal-50 flex items-center justify-center text-primary mb-3">
                                     <Weight className="w-5 h-5" />
                                 </div>
                                 <p className="text-sm text-slate-500 mb-1">Tải trọng sàn</p>
                                 <p className="text-lg font-bold text-slate-900">5 tấn/m²</p>
                             </div>
                             <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-                                <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 mb-3">
+                                <div className="w-10 h-10 rounded-full bg-teal-50 flex items-center justify-center text-primary mb-3">
                                     <Box className="w-5 h-5" />
                                 </div>
                                 <p className="text-sm text-slate-500 mb-1">Loại kho</p>
@@ -246,7 +249,7 @@ export default function WarehouseDetailPage() {
                             {/* Environment */}
                             <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
                                 <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
-                                    <Thermometer className="w-5 h-5 text-blue-600" /> Môi trường kho
+                                    <Thermometer className="w-5 h-5 text-primary" /> Môi trường kho
                                 </h3>
                                 <div className="space-y-6">
                                     <div>
@@ -255,7 +258,7 @@ export default function WarehouseDetailPage() {
                                             <span className="font-bold text-slate-900">20°C - 25°C</span>
                                         </div>
                                         <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                                            <div className="h-full bg-gradient-to-r from-blue-400 to-red-400 w-3/4 ml-4 rounded-full"></div>
+                                            <div className="h-full bg-gradient-to-r from-teal-400 to-red-400 w-3/4 ml-4 rounded-full"></div>
                                         </div>
                                         <p className="text-xs text-slate-400 mt-1 text-center">Dải nhiệt độ lý tưởng</p>
                                     </div>
@@ -265,7 +268,7 @@ export default function WarehouseDetailPage() {
                                             <span className="font-bold text-slate-900">40% - 60%</span>
                                         </div>
                                         <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                                            <div className="h-full bg-blue-500 w-1/2 rounded-full"></div>
+                                            <div className="h-full bg-teal-500 w-1/2 rounded-full"></div>
                                         </div>
                                     </div>
                                 </div>
@@ -274,7 +277,7 @@ export default function WarehouseDetailPage() {
                             {/* Utilities */}
                             <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
                                 <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
-                                    <CheckCircle className="w-5 h-5 text-blue-600" /> Tiện ích & Hạ tầng
+                                    <CheckCircle className="w-5 h-5 text-primary" /> Tiện ích & Hạ tầng
                                 </h3>
                                 <ul className="space-y-3">
                                     <li className="flex items-start gap-3">
@@ -341,7 +344,7 @@ export default function WarehouseDetailPage() {
                             <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
                                 <p className="text-sm text-slate-500 mb-1">Giá thuê đề xuất</p>
                                 <div className="flex items-baseline gap-1 mb-2">
-                                    <span className="text-3xl font-bold text-blue-600">
+                                    <span className="text-3xl font-bold text-primary">
                                         {warehouse.price_per_month 
                                             ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(Number(warehouse.price_per_month))
                                             : "Liên hệ"}
@@ -352,12 +355,12 @@ export default function WarehouseDetailPage() {
                                 
                                 <div className="space-y-3">
                                     <Button 
-                                        className="w-full bg-blue-600 hover:bg-blue-700 text-white h-12 text-base font-medium"
+                                        className="w-full bg-primary hover:bg-teal-700 text-white h-12 text-base font-medium shadow-lg shadow-primary/30"
                                         onClick={() => router.push(`/dashboard/rental_request?warehouse_id=${warehouse.id}`)}
                                     >
                                         Yêu cầu thuê ngay
                                     </Button>
-                                    <Button variant="outline" className="w-full border-slate-200 hover:bg-slate-50 h-12 text-base font-medium text-slate-700">
+                                    <Button variant="outline" className="w-full border-slate-200 bg-slate-100 hover:bg-slate-200 h-12 text-base font-medium text-slate-700 hover:text-slate-900">
                                         <FileText className="w-4 h-4 mr-2" /> Tải brochure PDF
                                     </Button>
                                 </div>
@@ -376,11 +379,11 @@ export default function WarehouseDetailPage() {
                                     </div>
                                 </div>
                                 <div className="space-y-3">
-                                    <a href="tel:0912345678" className="flex items-center gap-3 text-slate-600 hover:text-blue-600 transition-colors p-2 rounded-lg hover:bg-blue-50">
+                                    <a href="tel:0912345678" className="flex items-center gap-3 text-slate-600 hover:text-primary transition-colors p-2 rounded-lg hover:bg-teal-50">
                                         <Phone className="w-4 h-4" />
                                         <span className="font-medium">0912 345 678</span>
                                     </a>
-                                    <a href="mailto:minh.nv@smartwarehouse.com" className="flex items-center gap-3 text-slate-600 hover:text-blue-600 transition-colors p-2 rounded-lg hover:bg-blue-50">
+                                    <a href="mailto:minh.nv@smartwarehouse.com" className="flex items-center gap-3 text-slate-600 hover:text-primary transition-colors p-2 rounded-lg hover:bg-teal-50">
                                         <Mail className="w-4 h-4" />
                                         <span className="font-medium">minh.nv@smartwarehouse.com</span>
                                     </a>
