@@ -64,11 +64,12 @@ async function bootstrap() {
   });
 
   const port = process.env.PORT ?? 4000;
+  const backendUrl = process.env.BACKEND_URL || `http://localhost:${port}`;
   await app.listen(port);
   systemLogService.logServerStart(port, serverStartTime);
 
-  console.log(`🚀 Server đang chạy tại http://localhost:${port}`);
-  console.log(`📚 Swagger docs: http://localhost:${port}/api-docs`);
+  console.log(`🚀 Server đang chạy tại ${backendUrl}`);
+  console.log(`📚 Swagger docs: ${backendUrl}/api-docs`);
 
   // Graceful Shutdown
   const gracefulShutdown = async (signal: string) => {
