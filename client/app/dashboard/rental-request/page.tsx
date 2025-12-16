@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { DashboardHeader } from "@/components/layouts/DashboardHeader";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { Warehouse } from "@/types/warehoue_template/warehouse_template.type";
 import { Calendar, Info, Phone, Mail, User, MapPin, ArrowRight } from "lucide-react";
 import Image from "next/image";
 
-export default function RentalRequestPage() {
+function RentalRequestContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const preSelectedWarehouseId = searchParams.get("warehouse_id");
@@ -43,7 +43,7 @@ export default function RentalRequestPage() {
                 const service = new WarehouseTemplateService();
                 // Fetch all active warehouses
                 const data: any = await service.getWarehouseTemplates(token, { is_active: true, limit: 100 });
-                
+
                 let items: Warehouse[] = [];
                 if (Array.isArray(data)) {
                     items = data;
@@ -72,7 +72,7 @@ export default function RentalRequestPage() {
         const start = new Date(formData.fromDate);
         const end = new Date(formData.toDate);
         const diffTime = Math.abs(end.getTime() - start.getTime());
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         return diffDays > 0 ? diffDays : 0;
     };
 
@@ -99,14 +99,14 @@ export default function RentalRequestPage() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Left Column - Form */}
                     <div className="lg:col-span-2 space-y-6">
-                        
+
                         {/* Section 1: Rental Info */}
                         <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
                             <div className="flex items-center gap-2 mb-4 text-primary font-medium">
                                 <MapPin className="w-5 h-5" />
                                 <h2>Thông tin thuê</h2>
                             </div>
-                            
+
                             <div className="space-y-4">
                                 <div>
                                     <Label htmlFor="warehouseId" className="mb-2 block text-slate-700">Chọn Kho mong muốn</Label>
@@ -124,7 +124,7 @@ export default function RentalRequestPage() {
                                             ))}
                                         </select>
                                         <div className="absolute right-3 top-2.5 pointer-events-none text-slate-400">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
                                         </div>
                                     </div>
                                 </div>
@@ -133,9 +133,9 @@ export default function RentalRequestPage() {
                                     <div>
                                         <Label htmlFor="fromDate" className="mb-2 block text-slate-700">Từ ngày</Label>
                                         <div className="relative">
-                                            <Input 
-                                                type="date" 
-                                                id="fromDate" 
+                                            <Input
+                                                type="date"
+                                                id="fromDate"
                                                 name="fromDate"
                                                 value={formData.fromDate}
                                                 onChange={handleInputChange}
@@ -147,9 +147,9 @@ export default function RentalRequestPage() {
                                     <div>
                                         <Label htmlFor="toDate" className="mb-2 block text-slate-700">Đến ngày</Label>
                                         <div className="relative">
-                                            <Input 
-                                                type="date" 
-                                                id="toDate" 
+                                            <Input
+                                                type="date"
+                                                id="toDate"
                                                 name="toDate"
                                                 value={formData.toDate}
                                                 onChange={handleInputChange}
@@ -175,9 +175,9 @@ export default function RentalRequestPage() {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
                                         <Label htmlFor="area" className="mb-2 block text-slate-700">Diện tích mong muốn (m²)</Label>
-                                        <Input 
-                                            type="number" 
-                                            id="area" 
+                                        <Input
+                                            type="number"
+                                            id="area"
                                             name="area"
                                             placeholder="VD: 500"
                                             value={formData.area}
@@ -203,7 +203,7 @@ export default function RentalRequestPage() {
                                                 <option value="Khác">Khác</option>
                                             </select>
                                             <div className="absolute right-3 top-2.5 pointer-events-none text-slate-400">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
                                             </div>
                                         </div>
                                     </div>
@@ -235,9 +235,9 @@ export default function RentalRequestPage() {
                                 <div>
                                     <Label htmlFor="contactName" className="mb-2 block text-slate-700">Họ và tên người liên hệ</Label>
                                     <div className="relative">
-                                        <Input 
-                                            type="text" 
-                                            id="contactName" 
+                                        <Input
+                                            type="text"
+                                            id="contactName"
                                             name="contactName"
                                             placeholder="Nguyễn Văn A"
                                             value={formData.contactName}
@@ -252,9 +252,9 @@ export default function RentalRequestPage() {
                                     <div>
                                         <Label htmlFor="contactPhone" className="mb-2 block text-slate-700">Số điện thoại</Label>
                                         <div className="relative">
-                                            <Input 
-                                                type="tel" 
-                                                id="contactPhone" 
+                                            <Input
+                                                type="tel"
+                                                id="contactPhone"
                                                 name="contactPhone"
                                                 placeholder="0909 123 456"
                                                 value={formData.contactPhone}
@@ -267,9 +267,9 @@ export default function RentalRequestPage() {
                                     <div>
                                         <Label htmlFor="contactEmail" className="mb-2 block text-slate-700">Email công ty</Label>
                                         <div className="relative">
-                                            <Input 
-                                                type="email" 
-                                                id="contactEmail" 
+                                            <Input
+                                                type="email"
+                                                id="contactEmail"
                                                 name="contactEmail"
                                                 placeholder="contact@company.com"
                                                 value={formData.contactEmail}
@@ -291,8 +291,8 @@ export default function RentalRequestPage() {
                         <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 sticky top-24">
                             {selectedWarehouse ? (
                                 <div className="mb-6 relative h-40 rounded-lg overflow-hidden">
-                                    <Image 
-                                        src={selectedWarehouse.images?.[0]?.url || "https://placehold.co/600x400?text=Warehouse"} 
+                                    <Image
+                                        src={selectedWarehouse.images?.[0]?.url || "https://placehold.co/600x400?text=Warehouse"}
                                         alt={selectedWarehouse.name}
                                         fill
                                         className="object-cover"
@@ -309,7 +309,7 @@ export default function RentalRequestPage() {
                             )}
 
                             <h3 className="font-bold text-slate-900 mb-4">Tóm tắt yêu cầu</h3>
-                            
+
                             <div className="space-y-3 text-sm">
                                 <div className="flex justify-between py-2 border-b border-slate-100">
                                     <span className="text-slate-500">Thời gian thuê</span>
@@ -317,7 +317,7 @@ export default function RentalRequestPage() {
                                         <span className="font-medium text-slate-900 block">{calculateDays()} ngày</span>
                                         {formData.fromDate && formData.toDate && (
                                             <span className="text-xs text-slate-400">
-                                                {new Date(formData.fromDate).toLocaleDateString('vi-VN', {day: '2-digit', month: '2-digit'})} - {new Date(formData.toDate).toLocaleDateString('vi-VN', {day: '2-digit', month: '2-digit'})}
+                                                {new Date(formData.fromDate).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })} - {new Date(formData.toDate).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })}
                                             </span>
                                         )}
                                     </div>
@@ -364,12 +364,24 @@ export default function RentalRequestPage() {
                             </div>
                         </div>
 
-                        
+
                     </div>
                 </div>
 
-                
+
             </div>
         </div>
+    );
+}
+
+export default function RentalRequestPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex flex-col min-h-screen bg-slate-50 items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+        }>
+            <RentalRequestContent />
+        </Suspense>
     );
 }
