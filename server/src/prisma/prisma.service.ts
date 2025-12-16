@@ -256,6 +256,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
       await this.seedNotificationPermissions();
       await this.seedRentalContractPermissions();
       await this.seedWarehousePermissions();
+      await this.seedAmenityPermissions();
       await this.seedVietnamAdministrative();
     } catch (error: unknown) {
       const errorMessage =
@@ -958,8 +959,6 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
   }
 
   /**
-<<<<<<< HEAD
-=======
    * Seed các permissions cho Warehouse module
    * Warehouse là resource cấp tổ chức, tất cả user đã đăng nhập đều có thể sử dụng
    */
@@ -1085,7 +1084,102 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
   }
 
   /**
->>>>>>> 9da68dd8dd6829bca228d114b0bd3c99d8d0a625
+   * Seed các permissions cho Amenity module
+   * Amenity là resource cấp hệ thống, users có thể xem danh sách tiện ích công khai
+   */
+  private async seedAmenityPermissions() {
+    try {
+      // Admin-only permissions cho Amenity
+      const adminPermissions = [
+        {
+          key: 'amenity.create',
+          name: 'Tạo tiện ích',
+          description: 'Quyền tạo tiện ích mới',
+        },
+        {
+          key: 'amenity.update',
+          name: 'Cập nhật tiện ích',
+          description: 'Quyền cập nhật tiện ích',
+        },
+        {
+          key: 'amenity.delete',
+          name: 'Xóa tiện ích',
+          description: 'Quyền xóa tiện ích',
+        },
+        {
+          key: 'amenity.list.all',
+          name: 'Xem tất cả tiện ích',
+          description: 'Quyền xem tất cả tiện ích bao gồm inactive',
+        },
+      ];
+
+      // Tạo permissions
+      for (const perm of adminPermissions) {
+        const existing = await this.permission.findFirst({
+          where: { key: perm.key },
+        });
+
+        if (!existing) {
+          await this.permission.create({
+            data: {
+              key: perm.key,
+              name: perm.name,
+              description: perm.description,
+              is_active: true,
+              is_deleted: false,
+            },
+          });
+        }
+      }
+
+      // Gán permissions cho Admin và Super Admin
+      const adminRoles = await this.role.findMany({
+        where: {
+          name: { in: ['Admin', 'Super Admin'] },
+          is_deleted: false,
+        },
+      });
+
+      const permissionRecords = await this.permission.findMany({
+        where: {
+          key: { in: adminPermissions.map((p) => p.key) },
+          is_deleted: false,
+        },
+      });
+
+      for (const role of adminRoles) {
+        for (const permission of permissionRecords) {
+          const existingAssignment = await this.rolePermission.findFirst({
+            where: {
+              role_id: role.id,
+              permission_id: permission.id,
+            },
+          });
+
+          if (!existingAssignment) {
+            await this.rolePermission.create({
+              data: {
+                role_id: role.id,
+                permission_id: permission.id,
+                is_active: true,
+                is_deleted: false,
+              },
+            });
+          }
+        }
+      }
+
+      this.logger.log('✅ Amenity permissions seeded');
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `❌ Failed to seed amenity permissions: ${errorMessage}`,
+      );
+    }
+  }
+
+  /**
    * Seed dữ liệu đơn vị hành chính Việt Nam sau sáp nhập 07/2025
    * Nguồn: VietMap - github.com/vietmap-company/vietnam_administrative_address
    * Cấu trúc: 2 cấp (Province > Ward) - 34 tỉnh/thành, ~3321 phường/xã

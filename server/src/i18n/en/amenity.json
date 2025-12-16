@@ -1,0 +1,28 @@
+{
+    "success": {
+        "created": "Amenity created successfully",
+        "updated": "Amenity updated successfully",
+        "deleted": "Amenity deleted successfully",
+        "fetched": "Amenity fetched successfully"
+    },
+    "errors": {
+        "not_found": "Amenity not found",
+        "name_exists": "Amenity name already exists",
+        "create_failed": "Failed to create amenity",
+        "update_failed": "Failed to update amenity",
+        "delete_failed": "Failed to delete amenity"
+    },
+    "validation": {
+        "name_required": "Amenity name is required",
+        "name_string": "Amenity name must be a string",
+        "name_max_length": "Amenity name must not exceed 255 characters",
+        "description_string": "Description must be a string",
+        "icon_string": "Icon must be a string",
+        "id_required": "ID is required",
+        "id_uuid": "ID must be a valid UUID",
+        "limit_positive": "Limit must be a positive number",
+        "offset_min": "Offset must be >= 0",
+        "keywords_string": "Keywords must be a string",
+        "is_active_boolean": "Status must be a boolean"
+    }
+}

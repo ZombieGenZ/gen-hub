@@ -53,7 +53,6 @@ export class WarehouseTemplateService {
         const template = await this.repository.create({
             name: dto.name,
             description: dto.description,
-            unit: dto.unit,
             length: dto.length,
             width: dto.width,
             is_shared_warehouse: dto.is_shared_warehouse ?? false,
@@ -69,7 +68,6 @@ export class WarehouseTemplateService {
             ward: dto.ward_id ? { connect: { id: dto.ward_id } } : undefined,
             latitude: dto.latitude ? new Decimal(dto.latitude) : undefined,
             longitude: dto.longitude ? new Decimal(dto.longitude) : undefined,
-            block_unit: dto.block_unit,
             block_length: new Decimal(dto.block_length),
             block_width: new Decimal(dto.block_width),
             is_active: dto.is_active ?? true,

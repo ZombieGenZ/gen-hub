@@ -56,7 +56,6 @@ export interface IWarehouseLayout {
     id: string;
     name: string;
     description: string | null;
-    unit: string;
     length: number;
     width: number;
     rows: {

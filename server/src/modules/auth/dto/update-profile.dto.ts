@@ -1,6 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsOptional, IsString, MinLength } from 'class-validator';
 import { i18nValidationMessage } from 'nestjs-i18n';
+import { IsValidLanguage } from '../../../common/validators';
 
 /**
  * DTO cho cập nhật thông tin tài khoản
@@ -19,12 +20,16 @@ export class UpdateProfileDto {
   name?: string;
 
   @ApiPropertyOptional({
-    description: 'Ngôn ngữ mới (vi, en, zh, hi, es, fr, ar, ...)',
+    description: 'Ngôn ngữ (vi, en)',
     example: 'en',
   })
   @IsOptional()
   @IsString({
     message: i18nValidationMessage('auth.validation.language_string'),
   })
+  @IsValidLanguage({
+    message: i18nValidationMessage('auth.validation.language_invalid'),
+  })
   language?: string;
 }
+

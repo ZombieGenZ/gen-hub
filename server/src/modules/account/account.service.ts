@@ -14,6 +14,7 @@ import { RefreshTokenRepository } from '../auth/repositories/refresh-token.repos
 import { RedisService } from '../redis/redis.service';
 import { WebsocketGateway } from '../websocket/websocket.gateway';
 import { UpdateProfileDto, ChangePasswordDto } from '../auth/dto';
+import { normalizeLanguage } from '../../common/validators';
 
 
 /**
@@ -150,9 +151,12 @@ export class AccountService {
     const user = await this.userRepository.findById(userId);
     if (!user) throw new BadRequestException('User không tồn tại');
 
+    // Normalize language trước khi lưu (lowercase)
+    const normalizedLanguage = dto.language ? normalizeLanguage(dto.language) : undefined;
+
     await this.userRepository.updateProfile(userId, {
       name: dto.name,
-      language: dto.language,
+      language: normalizedLanguage,
     });
 
     // Invalidate user cache

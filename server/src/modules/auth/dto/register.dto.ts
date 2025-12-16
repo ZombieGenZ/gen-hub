@@ -1,12 +1,14 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsEmail,
   IsNotEmpty,
+  IsOptional,
   IsString,
   Matches,
   MinLength,
 } from 'class-validator';
 import { i18nValidationMessage } from 'nestjs-i18n';
+import { IsValidLanguage } from '../../../common/validators';
 
 /**
  * DTO cho đăng ký tài khoản mới
@@ -62,4 +64,18 @@ export class RegisterDto {
     },
   )
   password: string;
+
+  @ApiPropertyOptional({
+    description: 'Ngôn ngữ (vi, en)',
+    example: 'vi',
+  })
+  @IsOptional()
+  @IsString({
+    message: i18nValidationMessage('auth.validation.language_string'),
+  })
+  @IsValidLanguage({
+    message: i18nValidationMessage('auth.validation.language_invalid'),
+  })
+  language?: string;
 }
+

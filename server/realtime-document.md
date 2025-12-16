@@ -422,6 +422,51 @@ socket.emit('subscribe', { rooms: ['announcements', 'notifications'] });
 
 ---
 
+### 🏗️ Amenity Events (Global Broadcast)
+
+#### `amenity:created`
+**Chức năng:** Thông báo khi tạo tiện ích mới
+
+```json
+{
+  "amenityId": "amenity-123-uuid",
+  "name": "WiFi",
+  "createdBy": "550e8400-e29b-41d4-a716-446655440000",
+  "timestamp": "2025-12-16T10:00:00.000Z"
+}
+```
+
+---
+
+#### `amenity:updated`
+**Chức năng:** Thông báo khi cập nhật tiện ích
+
+```json
+{
+  "amenityId": "amenity-123-uuid",
+  "name": "WiFi tốc độ cao",
+  "updatedFields": ["name", "description"],
+  "updatedBy": "550e8400-e29b-41d4-a716-446655440000",
+  "timestamp": "2025-12-16T10:00:00.000Z"
+}
+```
+
+---
+
+#### `amenity:deleted`
+**Chức năng:** Thông báo khi xóa tiện ích
+
+```json
+{
+  "amenityId": "amenity-123-uuid",
+  "name": "WiFi",
+  "deletedBy": "550e8400-e29b-41d4-a716-446655440000",
+  "timestamp": "2025-12-16T10:00:00.000Z"
+}
+```
+
+---
+
 ## 📋 Tổng hợp
 
 | Room | Auth | Events |
@@ -432,4 +477,5 @@ socket.emit('subscribe', { rooms: ['announcements', 'notifications'] });
 | `notifications` | ✅ | `userNotification:*` |
 | `announcements` | ❌ | (chờ implement) |
 | `system-status` | ❌ | (chờ implement) |
-| Global | - | `warehouseTemplate:*`, `globalNotification:*`, `user:onlineStatus`, `pong`, `error` |
+| Global | - | `warehouseTemplate:*`, `globalNotification:*`, `amenity:*`, `user:onlineStatus`, `pong`, `error` |
+

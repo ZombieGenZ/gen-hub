@@ -2,18 +2,18 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
     IsNotEmpty,
     IsString,
-    IsEnum,
     IsNumber,
     IsOptional,
     IsBoolean,
     IsUUID,
+    IsEmail,
+    IsArray,
     Min,
     Max,
     MaxLength,
 } from 'class-validator';
 import { i18nValidationMessage } from 'nestjs-i18n';
 import { Type } from 'class-transformer';
-import { DimensionUnit } from '@prisma/client';
 
 /**
  * DTO tạo mới WarehouseTemplate
@@ -38,16 +38,7 @@ export class CreateWarehouseTemplateDto {
     })
     description?: string;
 
-    @ApiProperty({ description: 'Đơn vị đo', enum: DimensionUnit, example: 'METER' })
-    @IsNotEmpty({
-        message: i18nValidationMessage('warehouse-template.validation.unit_required'),
-    })
-    @IsEnum(DimensionUnit, {
-        message: i18nValidationMessage('warehouse-template.validation.unit_invalid'),
-    })
-    unit: DimensionUnit;
-
-    @ApiProperty({ description: 'Chiều dài', example: 100 })
+    @ApiProperty({ description: 'Chiều dài (mét)', example: 100 })
     @IsNotEmpty({
         message: i18nValidationMessage('warehouse-template.validation.length_required'),
     })
@@ -60,7 +51,7 @@ export class CreateWarehouseTemplateDto {
     @Type(() => Number)
     length: number;
 
-    @ApiProperty({ description: 'Chiều rộng', example: 50 })
+    @ApiProperty({ description: 'Chiều rộng (mét)', example: 50 })
     @IsNotEmpty({
         message: i18nValidationMessage('warehouse-template.validation.width_required'),
     })
@@ -73,7 +64,7 @@ export class CreateWarehouseTemplateDto {
     @Type(() => Number)
     width: number;
 
-    @ApiProperty({ description: 'Giá thuê/ngày', example: 100000 })
+    @ApiProperty({ description: 'Giá thuê/tháng (VND)', example: 100000 })
     @IsNotEmpty({
         message: i18nValidationMessage('warehouse-template.validation.price_per_month_required'),
     })
@@ -177,16 +168,7 @@ export class CreateWarehouseTemplateDto {
     @Type(() => Number)
     longitude?: number;
 
-    @ApiProperty({ description: 'Đơn vị đo ô', enum: DimensionUnit, example: 'CENTIMETER' })
-    @IsNotEmpty({
-        message: i18nValidationMessage('warehouse-template.validation.block_unit_required'),
-    })
-    @IsEnum(DimensionUnit, {
-        message: i18nValidationMessage('warehouse-template.validation.block_unit_invalid'),
-    })
-    block_unit: DimensionUnit;
-
-    @ApiProperty({ description: 'Chiều dài ô', example: 50 })
+    @ApiProperty({ description: 'Chiều dài ô (mét)', example: 0.5 })
     @IsNotEmpty({
         message: i18nValidationMessage('warehouse-template.validation.block_length_required'),
     })
@@ -199,7 +181,7 @@ export class CreateWarehouseTemplateDto {
     @Type(() => Number)
     block_length: number;
 
-    @ApiProperty({ description: 'Chiều rộng ô', example: 50 })
+    @ApiProperty({ description: 'Chiều rộng ô (mét)', example: 0.5 })
     @IsNotEmpty({
         message: i18nValidationMessage('warehouse-template.validation.block_width_required'),
     })
@@ -211,6 +193,133 @@ export class CreateWarehouseTemplateDto {
     })
     @Type(() => Number)
     block_width: number;
+
+    // Thông tin người quản lý kho
+    @ApiPropertyOptional({ description: 'Tên người quản lý kho', example: 'Nguyễn Văn A' })
+    @IsOptional()
+    @IsString({
+        message: i18nValidationMessage('warehouse-template.validation.manager_name_string'),
+    })
+    @MaxLength(255, {
+        message: i18nValidationMessage('warehouse-template.validation.manager_name_max_length'),
+    })
+    manager_name?: string;
+
+    @ApiPropertyOptional({ description: 'Số điện thoại người quản lý', example: '0901234567' })
+    @IsOptional()
+    @IsString({
+        message: i18nValidationMessage('warehouse-template.validation.manager_phone_string'),
+    })
+    @MaxLength(20, {
+        message: i18nValidationMessage('warehouse-template.validation.manager_phone_max_length'),
+    })
+    manager_phone?: string;
+
+    @ApiPropertyOptional({ description: 'Email người quản lý', example: 'manager@example.com' })
+    @IsOptional()
+    @IsEmail({}, {
+        message: i18nValidationMessage('warehouse-template.validation.manager_email_invalid'),
+    })
+    manager_email?: string;
+
+    // Thông số kỹ thuật
+    @ApiPropertyOptional({ description: 'Chiều cao trần (mét)', example: 5.5 })
+    @IsOptional()
+    @IsNumber({}, {
+        message: i18nValidationMessage('warehouse-template.validation.ceiling_height_positive'),
+    })
+    @Min(0, {
+        message: i18nValidationMessage('warehouse-template.validation.ceiling_height_positive'),
+    })
+    @Type(() => Number)
+    ceiling_height?: number;
+
+    @ApiPropertyOptional({ description: 'Tải trọng tối đa (kg/m²)', example: 500 })
+    @IsOptional()
+    @IsNumber({}, {
+        message: i18nValidationMessage('warehouse-template.validation.max_load_capacity_positive'),
+    })
+    @Min(0, {
+        message: i18nValidationMessage('warehouse-template.validation.max_load_capacity_positive'),
+    })
+    @Type(() => Number)
+    max_load_capacity?: number;
+
+    // Tiện ích
+    @ApiPropertyOptional({ description: 'Danh sách ID tiện ích', example: ['uuid1', 'uuid2'] })
+    @IsOptional()
+    @IsArray({
+        message: i18nValidationMessage('warehouse-template.validation.amenity_ids_array'),
+    })
+    @IsUUID('4', {
+        each: true,
+        message: i18nValidationMessage('warehouse-template.validation.amenity_id_uuid'),
+    })
+    amenity_ids?: string[];
+
+    // Thông tin kho lạnh
+    @ApiPropertyOptional({ description: 'Đánh dấu là kho lạnh', example: false, default: false })
+    @IsOptional()
+    @IsBoolean({
+        message: i18nValidationMessage('warehouse-template.validation.is_cold_storage_boolean'),
+    })
+    is_cold_storage?: boolean;
+
+    @ApiPropertyOptional({ description: 'Nhiệt độ tối thiểu (°C)', example: -20 })
+    @IsOptional()
+    @IsNumber({}, {
+        message: i18nValidationMessage('warehouse-template.validation.temperature_number'),
+    })
+    @Min(-100, {
+        message: i18nValidationMessage('warehouse-template.validation.temperature_range'),
+    })
+    @Max(100, {
+        message: i18nValidationMessage('warehouse-template.validation.temperature_range'),
+    })
+    @Type(() => Number)
+    min_temperature?: number;
+
+    @ApiPropertyOptional({ description: 'Nhiệt độ tối đa (°C)', example: 5 })
+    @IsOptional()
+    @IsNumber({}, {
+        message: i18nValidationMessage('warehouse-template.validation.temperature_number'),
+    })
+    @Min(-100, {
+        message: i18nValidationMessage('warehouse-template.validation.temperature_range'),
+    })
+    @Max(100, {
+        message: i18nValidationMessage('warehouse-template.validation.temperature_range'),
+    })
+    @Type(() => Number)
+    max_temperature?: number;
+
+    @ApiPropertyOptional({ description: 'Độ ẩm tối thiểu (%)', example: 30 })
+    @IsOptional()
+    @IsNumber({}, {
+        message: i18nValidationMessage('warehouse-template.validation.humidity_number'),
+    })
+    @Min(0, {
+        message: i18nValidationMessage('warehouse-template.validation.humidity_range'),
+    })
+    @Max(100, {
+        message: i18nValidationMessage('warehouse-template.validation.humidity_range'),
+    })
+    @Type(() => Number)
+    min_humidity?: number;
+
+    @ApiPropertyOptional({ description: 'Độ ẩm tối đa (%)', example: 70 })
+    @IsOptional()
+    @IsNumber({}, {
+        message: i18nValidationMessage('warehouse-template.validation.humidity_number'),
+    })
+    @Min(0, {
+        message: i18nValidationMessage('warehouse-template.validation.humidity_range'),
+    })
+    @Max(100, {
+        message: i18nValidationMessage('warehouse-template.validation.humidity_range'),
+    })
+    @Type(() => Number)
+    max_humidity?: number;
 
     @ApiPropertyOptional({ description: 'Trạng thái hoạt động', default: true })
     @IsOptional()

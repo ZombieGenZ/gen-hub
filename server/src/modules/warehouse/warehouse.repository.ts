@@ -180,7 +180,6 @@ export class WarehouseRepository {
             id: warehouse.id,
             name: warehouse.name,
             description: warehouse.description,
-            unit: warehouse.unit,
             length: warehouse.length,
             width: warehouse.width,
             rows: warehouse.rows.map(row => ({

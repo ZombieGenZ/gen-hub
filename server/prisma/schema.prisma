@@ -67,6 +67,7 @@ model Ward {
 model User {
   id                   String    @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
   language             String    @default("vi")
+  avatar               String?
   name                 String
   email                String?
   email_confirmed      Boolean   @default(false)
@@ -77,10 +78,10 @@ model User {
   // phone_verify_token   String?
   // phone_verify_expired DateTime?
 
-  is_verified             Boolean?         @default(false)
-  is_banned               Boolean?         @default(false)
+  is_verified             Boolean?  @default(false)
+  is_banned               Boolean?  @default(false)
   banned_end              DateTime?
-  two_factor_enabled      Boolean          @default(false)
+  two_factor_enabled      Boolean   @default(false)
   two_factor_token        String?
   password                String?
   forgot_password_token   String?
@@ -232,12 +233,6 @@ model UserPermission {
   @@map("users_permissions")
 }
 
-enum DimensionUnit {
-  CENTIMETER
-  METER
-  KILOMETER
-}
-
 enum ContractStatus {
   PENDING
   ACTIVE
@@ -273,33 +268,44 @@ model WarehouseTemplate {
   name        String
   description String?
 
-  unit   DimensionUnit
   length Int
   width  Int
 
   is_shared_warehouse Boolean @default(false)
 
-  rental_status TemplateRentalStatus @default(AVAILABLE)
-  is_rented             Boolean @default(false)
-  price_per_month         Decimal @db.Decimal(19, 4)
-  discount_1_month      Decimal @default(0) @db.Decimal(5, 2)
-  discount_3_months     Decimal @default(5) @db.Decimal(5, 2)
-  discount_6_months     Decimal @default(10) @db.Decimal(5, 2)
-  discount_1_year       Decimal @default(15) @db.Decimal(5, 2)
-  discount_2_years      Decimal @default(20) @db.Decimal(5, 2)
-  discount_3_years_plus    Decimal @default(25) @db.Decimal(5, 2)
-  whole_warehouse_discount Decimal @default(10) @db.Decimal(5, 2)
+  rental_status            TemplateRentalStatus @default(AVAILABLE)
+  is_rented                Boolean              @default(false)
+  price_per_month          Decimal              @db.Decimal(19, 4)
+  discount_1_month         Decimal              @default(0) @db.Decimal(5, 2)
+  discount_3_months        Decimal              @default(5) @db.Decimal(5, 2)
+  discount_6_months        Decimal              @default(10) @db.Decimal(5, 2)
+  discount_1_year          Decimal              @default(15) @db.Decimal(5, 2)
+  discount_2_years         Decimal              @default(20) @db.Decimal(5, 2)
+  discount_3_years_plus    Decimal              @default(25) @db.Decimal(5, 2)
+  whole_warehouse_discount Decimal              @default(10) @db.Decimal(5, 2)
 
   address_detail String?
-  ward_id String? @db.Uuid
-  ward    Ward?   @relation(fields: [ward_id], references: [id])
-  
+  ward_id        String? @db.Uuid
+  ward           Ward?   @relation(fields: [ward_id], references: [id])
+
   latitude  Decimal? @db.Decimal(10, 8)
   longitude Decimal? @db.Decimal(11, 8)
 
-  block_unit   DimensionUnit
-  block_length Decimal       @db.Decimal(10, 4)
-  block_width  Decimal       @db.Decimal(10, 4)
+  block_length Decimal @db.Decimal(10, 4)
+  block_width  Decimal @db.Decimal(10, 4)
+
+  manager_name  String?
+  manager_phone String?
+  manager_email String?
+
+  ceiling_height    Decimal? @db.Decimal(10, 4)
+  max_load_capacity Decimal? @db.Decimal(19, 4)
+
+  is_cold_storage Boolean  @default(false)
+  min_temperature Decimal? @db.Decimal(5, 2)
+  max_temperature Decimal? @db.Decimal(5, 2)
+  min_humidity    Decimal? @db.Decimal(5, 2)
+  max_humidity    Decimal? @db.Decimal(5, 2)
 
   is_active  Boolean   @default(true)
   created_at DateTime  @default(now())
@@ -311,8 +317,9 @@ model WarehouseTemplate {
   updated_by String?
   deleted_by String?
 
-  rows   RowTemplate[]
-  images WarehouseTemplateImage[]
+  rows                    RowTemplate[]
+  images                  WarehouseTemplateImage[]
+  amenities               AmenityOnWarehouseTemplate[]
   rental_contract_details RentalContractDetail[]
 
   @@map("warehouse_templates")
@@ -351,7 +358,7 @@ model RowTemplate {
   description           String?
 
   is_rented             Boolean @default(false)
-  price_per_month         Decimal @db.Decimal(19, 4)
+  price_per_month       Decimal @db.Decimal(19, 4)
   discount_1_month      Decimal @default(0) @db.Decimal(5, 2)
   discount_3_months     Decimal @default(5) @db.Decimal(5, 2)
   discount_6_months     Decimal @default(10) @db.Decimal(5, 2)
@@ -486,10 +493,10 @@ model RentalContract {
   is_sealed     Boolean @default(false)
   is_liquidated Boolean @default(false)
 
-  total_price            Decimal  @db.Decimal(19, 4)
-  discount_rate          Decimal  @default(0) @db.Decimal(5, 2)
-  final_price            Decimal  @db.Decimal(19, 4)
-  overdue_penalty        Decimal? @default(0) @db.Decimal(19, 4)
+  total_price             Decimal  @db.Decimal(19, 4)
+  discount_rate           Decimal  @default(0) @db.Decimal(5, 2)
+  final_price             Decimal  @db.Decimal(19, 4)
+  overdue_penalty         Decimal? @default(0) @db.Decimal(19, 4)
   overdue_penalty_percent Decimal? @default(0) @db.Decimal(5, 2)
 
   notes String?
@@ -513,16 +520,16 @@ model RentalContract {
 }
 
 model RentalContractDetail {
-  id                 String  @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
-  rental_contract_id String  @db.Uuid
+  id                 String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  rental_contract_id String @db.Uuid
 
-  warehouse_template_id String  @db.Uuid
+  warehouse_template_id String   @db.Uuid
   warehouse_name        String
   warehouse_description String?
   row_template_ids      String[] @default([])
   is_whole_warehouse    Boolean  @default(true)
-  warehouse_id       String? @db.Uuid
-  row_id             String? @db.Uuid
+  warehouse_id          String?  @db.Uuid
+  row_id                String?  @db.Uuid
 
   price_per_month Decimal @db.Decimal(19, 4)
   discount_rate   Decimal @default(0) @db.Decimal(5, 2)
@@ -541,10 +548,10 @@ model RentalContractDetail {
   updated_by String?
   deleted_by String?
 
-  rental_contract    RentalContract     @relation(fields: [rental_contract_id], references: [id], onDelete: Cascade)
-  warehouse_template WarehouseTemplate  @relation(fields: [warehouse_template_id], references: [id])
-  warehouse          Warehouse?         @relation(fields: [warehouse_id], references: [id])
-  row                Row?               @relation(fields: [row_id], references: [id])
+  rental_contract    RentalContract    @relation(fields: [rental_contract_id], references: [id], onDelete: Cascade)
+  warehouse_template WarehouseTemplate @relation(fields: [warehouse_template_id], references: [id])
+  warehouse          Warehouse?        @relation(fields: [warehouse_id], references: [id])
+  row                Row?              @relation(fields: [row_id], references: [id])
 
   @@index([rental_contract_id])
   @@index([warehouse_template_id])
@@ -554,30 +561,30 @@ model RentalContractDetail {
 }
 
 model Payment {
-  id                 String        @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
-  rental_contract_id String        @db.Uuid
-  payment_code       String        @unique
-  sepay_transaction_id BigInt?     @unique
-  amount             Int
-  description        String
-  type               PaymentType
-  status             PaymentStatus @default(PENDING)
+  id                   String        @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  rental_contract_id   String        @db.Uuid
+  payment_code         String        @unique
+  sepay_transaction_id BigInt?       @unique
+  amount               Int
+  description          String
+  type                 PaymentType
+  status               PaymentStatus @default(PENDING)
 
-  qr_code            String? @db.Text
+  qr_code String? @db.Text
 
-  expired_at         DateTime?
-  paid_at            DateTime?
+  expired_at DateTime?
+  paid_at    DateTime?
 
-  is_active          Boolean       @default(true)
-  created_at         DateTime      @default(now())
-  updated_at         DateTime?     @updatedAt
-  is_deleted         Boolean?      @default(false)
-  deleted_at         DateTime?
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean?  @default(false)
+  deleted_at DateTime?
 
-  created_by         String?
-  updated_by         String?
+  created_by String?
+  updated_by String?
 
-  rental_contract    RentalContract @relation(fields: [rental_contract_id], references: [id], onDelete: Cascade)
+  rental_contract RentalContract @relation(fields: [rental_contract_id], references: [id], onDelete: Cascade)
 
   @@index([rental_contract_id])
   @@index([payment_code])
@@ -591,6 +598,11 @@ model Organization {
   is_active  Boolean? @default(true)
   is_deleted Boolean? @default(false)
   owner_id   String   @db.Uuid
+
+  google_client_id      String? @db.Text
+  google_client_secret  String? @db.Text
+  google_refresh_token  String? @db.Text
+  email_primary_address String?
 
   created_at DateTime  @default(now())
   updated_at DateTime? @updatedAt
@@ -611,12 +623,12 @@ model Organization {
   units      Unit[]
   warehouses Warehouse[]
 
-  rental_contracts         RentalContract[]
-  inventory_transactions   InventoryTransaction[]
-  inventories              Inventory[]
-  audit_logs               OrganizationAuditLog[]
-  api_key_logs             ApiKeyLog[]
-  notifications            OrganizationNotification[]
+  rental_contracts       RentalContract[]
+  inventory_transactions InventoryTransaction[]
+  inventories            Inventory[]
+  audit_logs             OrganizationAuditLog[]
+  api_key_logs           ApiKeyLog[]
+  notifications          OrganizationNotification[]
 
   @@map("organizations")
 }
@@ -677,18 +689,18 @@ model OrganizationRole {
 }
 
 model OrganizationPermission {
-  id              String   @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
-  name            String
-  description     String?
-  key             String
-  is_active       Boolean? @default(true)
+  id          String   @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  name        String
+  description String?
+  key         String
+  is_active   Boolean? @default(true)
 
   created_at DateTime  @default(now())
   updated_at DateTime? @updatedAt
   is_deleted Boolean   @default(false)
   deleted_at DateTime?
 
-  roles        OrganizationRolePermission[]
+  roles OrganizationRolePermission[]
 
   api_key_assignments ApiKeyPermission[]
   members             OrganizationMemberPermission[]
@@ -890,7 +902,7 @@ model Unit {
 }
 
 model Warehouse {
-  id              String  @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  id              String   @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
   name            String
   description     String?
   is_active       Boolean? @default(true)
@@ -901,16 +913,17 @@ model Warehouse {
   ward_id String? @db.Uuid
   ward    Ward?   @relation(fields: [ward_id], references: [id])
 
-  unit   DimensionUnit
   length Int
   width  Int
 
   latitude  Decimal? @db.Decimal(10, 8)
   longitude Decimal? @db.Decimal(11, 8)
 
-  block_unit   DimensionUnit
-  block_length Decimal       @db.Decimal(10, 4)
-  block_width  Decimal       @db.Decimal(10, 4)
+  block_length Decimal @db.Decimal(10, 4)
+  block_width  Decimal @db.Decimal(10, 4)
+
+  ceiling_height    Decimal? @db.Decimal(10, 4)
+  max_load_capacity Decimal? @db.Decimal(19, 4)
 
   organization Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
 
@@ -980,10 +993,11 @@ model Product {
   image_url       String?
   barcode         String?
 
-  weight Decimal? @db.Decimal(10, 4)
-  length Decimal? @db.Decimal(10, 4)
-  width  Decimal? @db.Decimal(10, 4)
-  height Decimal? @db.Decimal(10, 4)
+  weight              Decimal? @db.Decimal(10, 4)
+  length              Decimal? @db.Decimal(10, 4)
+  width               Decimal? @db.Decimal(10, 4)
+  height              Decimal? @db.Decimal(10, 4)
+  max_weight_capacity Decimal? @db.Decimal(19, 4)
 
   cost_price Decimal? @default(0) @db.Decimal(19, 4)
 
@@ -1038,16 +1052,16 @@ model ProductUnit {
 }
 
 model Rack {
-  id          String   @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
-  row_id      String   @db.Uuid
+  id          String    @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  row_id      String    @db.Uuid
   name        String
   code        String
   description String?
-  is_rented   Boolean  @default(false)
-  is_active   Boolean  @default(true)
-  created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
-  is_deleted  Boolean? @default(false)
+  is_rented   Boolean   @default(false)
+  is_active   Boolean   @default(true)
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
+  is_deleted  Boolean?  @default(false)
   deleted_at  DateTime?
 
   created_by String
@@ -1714,4 +1728,408 @@ model OrganizationNotification {
   @@index([organization_id])
   @@index([warehouse_id])
   @@map("organization_notifications")
+}
+
+model Amenity {
+  id          String  @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  name        String
+  description String?
+  icon        String?
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean?  @default(false)
+  deleted_at DateTime?
+
+  created_by String
+  updated_by String?
+  deleted_by String?
+
+  warehouse_templates AmenityOnWarehouseTemplate[]
+
+  @@map("amenities")
+}
+
+model AmenityOnWarehouseTemplate {
+  id                    String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  amenity_id            String @db.Uuid
+  warehouse_template_id String @db.Uuid
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean?  @default(false)
+  deleted_at DateTime?
+
+  created_by String?
+  deleted_by String?
+
+  amenity            Amenity           @relation(fields: [amenity_id], references: [id], onDelete: Cascade)
+  warehouse_template WarehouseTemplate @relation(fields: [warehouse_template_id], references: [id], onDelete: Cascade)
+
+  @@unique([amenity_id, warehouse_template_id])
+  @@index([amenity_id])
+  @@index([warehouse_template_id])
+  @@map("amenities_warehouse_templates")
+}
+
+enum CategoryStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model Category {
+  id String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+
+  name        String
+  slug        String  @unique
+  description String? @db.Text
+  icon        String?
+  image_url   String?
+  color       String?
+
+  parent_id String? @db.Uuid
+  order     Int     @default(0)
+
+  status CategoryStatus @default(DRAFT)
+
+  is_featured Boolean   @default(false)
+  is_active   Boolean   @default(true)
+  created_at  DateTime  @default(now())
+  updated_at  DateTime? @updatedAt
+  is_deleted  Boolean   @default(false)
+  deleted_at  DateTime?
+
+  created_by String
+  updated_by String?
+  deleted_by String?
+
+  parent   Category?         @relation("CategoryHierarchy", fields: [parent_id], references: [id])
+  children Category[]        @relation("CategoryHierarchy")
+  articles ArticleCategory[]
+
+  @@index([parent_id])
+  @@index([slug])
+  @@index([status])
+  @@map("categories")
+}
+
+enum ArticleStatus {
+  DRAFT
+  PENDING_REVIEW
+  PUBLISHED
+  ARCHIVED
+}
+
+enum ArticleType {
+  NEWS
+  BLOG
+  ANNOUNCEMENT
+  TUTORIAL
+  FAQ
+}
+
+model Article {
+  id String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+
+  title   String
+  slug    String  @unique
+  excerpt String? @db.Text
+  content String  @db.Text
+
+  thumbnail_url   String?
+  cover_image_url String?
+
+  type   ArticleType   @default(BLOG)
+  status ArticleStatus @default(DRAFT)
+
+  author_id   String? @db.Uuid
+  author_name String?
+
+  view_count  Int @default(0)
+  like_count  Int @default(0)
+  share_count Int @default(0)
+
+  is_featured    Boolean @default(false)
+  is_pinned      Boolean @default(false)
+  allow_comments Boolean @default(true)
+
+  published_at DateTime?
+  scheduled_at DateTime?
+
+  seo_title       String?
+  seo_description String?
+  seo_keywords    String[] @default([])
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean   @default(false)
+  deleted_at DateTime?
+
+  created_by String
+  updated_by String?
+  deleted_by String?
+
+  categories ArticleCategory[]
+
+  @@index([author_id])
+  @@index([slug])
+  @@index([status])
+  @@index([type])
+  @@index([published_at])
+  @@map("articles")
+}
+
+model ArticleCategory {
+  id          String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  article_id  String @db.Uuid
+  category_id String @db.Uuid
+  order       Int    @default(0)
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean   @default(false)
+  deleted_at DateTime?
+
+  created_by String?
+  deleted_by String?
+
+  article  Article  @relation(fields: [article_id], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [category_id], references: [id], onDelete: Cascade)
+
+  @@unique([article_id, category_id])
+  @@index([article_id])
+  @@index([category_id])
+  @@map("articles_categories")
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  HIDDEN
+}
+
+model CustomerReview {
+  id String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+
+  customer_name     String
+  customer_email    String?
+  customer_phone    String?
+  customer_company  String?
+  customer_position String?
+  customer_avatar   String?
+
+  rating  Int
+  title   String?
+  content String  @db.Text
+
+  reply      String?   @db.Text
+  replied_at DateTime?
+  replied_by String?   @db.Uuid
+
+  status ReviewStatus @default(PENDING)
+
+  is_featured   Boolean @default(false)
+  display_order Int     @default(0)
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean   @default(false)
+  deleted_at DateTime?
+
+  created_by String?
+  updated_by String?
+  deleted_by String?
+
+  @@index([status])
+  @@index([rating])
+  @@index([is_featured])
+  @@map("customer_reviews")
+}
+
+enum PartnershipType {
+  TECHNOLOGY
+  LOGISTICS
+  SUPPLIER
+  CUSTOMER
+  INVESTOR
+  STRATEGIC
+  OTHER
+}
+
+model MajorPartner {
+  id String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+
+  name              String
+  slug              String  @unique
+  logo_url          String?
+  banner_url        String?
+  description       String? @db.Text
+  short_description String?
+
+  website String?
+  email   String?
+  phone   String?
+  address String?
+
+  type              PartnershipType @default(STRATEGIC)
+  partnership_since DateTime?
+
+  display_order Int     @default(0)
+  is_featured   Boolean @default(false)
+
+  metadata Json?
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean   @default(false)
+  deleted_at DateTime?
+
+  created_by String
+  updated_by String?
+  deleted_by String?
+
+  @@index([type])
+  @@index([is_featured])
+  @@index([slug])
+  @@map("major_partners")
+}
+
+enum ContactStatus {
+  OPEN
+  PENDING
+  RESOLVED
+  CLOSED
+  SPAM
+}
+
+enum ContactPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum ContactChannel {
+  EMAIL
+  WEBSITE_FORM
+  PHONE
+  SOCIAL_MEDIA
+  OTHER
+}
+
+enum MessageSender {
+  CUSTOMER
+  STAFF
+  SYSTEM
+}
+
+enum MessageType {
+  TEXT
+  EMAIL
+  ATTACHMENT
+  SYSTEM_NOTE
+}
+
+model ContactConversation {
+  id   String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  code String @unique
+
+  customer_name    String
+  customer_email   String
+  customer_phone   String?
+  customer_company String?
+
+  subject  String?
+  status   ContactStatus   @default(OPEN)
+  priority ContactPriority @default(MEDIUM)
+  channel  ContactChannel  @default(WEBSITE_FORM)
+
+  email_thread_id   String?  @unique
+  email_message_id  String?
+  email_in_reply_to String?
+  email_references  String[] @default([])
+
+  assigned_staff_id   String?   @db.Uuid
+  assigned_staff_name String?
+  assigned_at         DateTime?
+
+  first_response_at DateTime?
+  resolved_at       DateTime?
+  closed_at         DateTime?
+  last_activity_at  DateTime?
+
+  tags String[] @default([])
+
+  satisfaction_rating  Int?
+  satisfaction_comment String?
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean   @default(false)
+  deleted_at DateTime?
+
+  created_by String?
+  updated_by String?
+  deleted_by String?
+
+  messages ContactMessage[]
+
+  @@index([customer_email])
+  @@index([status])
+  @@index([priority])
+  @@index([assigned_staff_id])
+  @@index([email_thread_id])
+  @@index([created_at])
+  @@map("contact_conversations")
+}
+
+model ContactMessage {
+  id              String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  conversation_id String @db.Uuid
+
+  sender_type  MessageSender
+  sender_id    String?       @db.Uuid
+  sender_name  String
+  sender_email String?
+
+  message_type MessageType @default(TEXT)
+  content      String      @db.Text
+  content_html String?     @db.Text
+
+  email_message_id  String?
+  email_in_reply_to String?
+  email_subject     String?
+  email_received_at DateTime?
+
+  attachments Json?
+
+  is_read     Boolean   @default(false)
+  read_at     DateTime?
+  is_internal Boolean   @default(false)
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean   @default(false)
+  deleted_at DateTime?
+
+  created_by String?
+  deleted_by String?
+
+  conversation ContactConversation @relation(fields: [conversation_id], references: [id], onDelete: Cascade)
+
+  @@index([conversation_id])
+  @@index([sender_type])
+  @@index([email_message_id])
+  @@index([created_at])
+  @@map("contact_messages")
 }

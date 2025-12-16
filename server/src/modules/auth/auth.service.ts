@@ -19,6 +19,7 @@ import { SystemLogService } from '../system-log/system-log.service';
 import { AppConfigService } from '../../common/config/app-config.service';
 import { WebsocketGateway } from '../websocket/websocket.gateway';
 import { RedisService } from '../redis/redis.service';
+import { normalizeLanguage } from '../../common/validators';
 import {
   RegisterDto,
   LoginDto,
@@ -97,11 +98,14 @@ export class AuthService {
       Date.now() + this.EMAIL_VERIFY_EXPIRATION,
     );
 
+    // Normalize language: sử dụng dto.language, nếu không có dùng lang từ header
+    const normalizedLanguage = normalizeLanguage(dto.language || lang);
+
     const user = await this.userRepository.create({
       name: dto.name,
       email: dto.email,
       password: hashedPassword,
-      language: lang,
+      language: normalizedLanguage,
       email_verify_token: emailVerifyToken,
       email_verify_expired: emailVerifyExpired,
     });
