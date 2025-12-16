@@ -467,15 +467,162 @@ socket.emit('subscribe', { rooms: ['announcements', 'notifications'] });
 
 ---
 
+### 🤝 Partner Events (organization:{orgId})
+
+#### `partner:created`
+**Chức năng:** Thông báo khi tạo đối tác mới
+
+```json
+{
+  "id": "partner-123-uuid",
+  "organizationId": "org-123-uuid",
+  "name": "Công ty TNHH ABC",
+  "code": "ABC001",
+  "type": "CUSTOMER",
+  "actorId": "550e8400-e29b-41d4-a716-446655440000",
+  "timestamp": "2025-12-16T10:00:00.000Z"
+}
+```
+
+---
+
+#### `partner:updated`
+**Chức năng:** Thông báo khi cập nhật đối tác
+
+```json
+{
+  "id": "partner-123-uuid",
+  "organizationId": "org-123-uuid",
+  "name": "Công ty TNHH ABC",
+  "changedFields": ["name", "phone"],
+  "actorId": "550e8400-e29b-41d4-a716-446655440000",
+  "timestamp": "2025-12-16T10:00:00.000Z"
+}
+```
+
+---
+
+#### `partner:deleted`
+**Chức năng:** Thông báo khi xóa đối tác
+
+```json
+{
+  "id": "partner-123-uuid",
+  "organizationId": "org-123-uuid",
+  "name": "Công ty TNHH ABC",
+  "actorId": "550e8400-e29b-41d4-a716-446655440000",
+  "timestamp": "2025-12-16T10:00:00.000Z"
+}
+```
+
+---
+
+### 📦 Product Events (organization:{orgId})
+
+#### `product:created`
+**Chức năng:** Thông báo khi tạo sản phẩm mới
+
+```json
+{
+  "id": "product-123-uuid",
+  "organizationId": "org-123-uuid",
+  "name": "Nước suối Aquafina 500ml",
+  "sku": "AQUA-500ML",
+  "actorId": "550e8400-e29b-41d4-a716-446655440000",
+  "timestamp": "2025-12-16T10:00:00.000Z"
+}
+```
+
+---
+
+#### `product:updated`
+**Chức năng:** Thông báo khi cập nhật sản phẩm
+
+```json
+{
+  "id": "product-123-uuid",
+  "organizationId": "org-123-uuid",
+  "name": "Nước suối Aquafina 500ml",
+  "changedFields": ["name", "cost_price", "units"],
+  "actorId": "550e8400-e29b-41d4-a716-446655440000",
+  "timestamp": "2025-12-16T10:00:00.000Z"
+}
+```
+
+---
+
+#### `product:deleted`
+**Chức năng:** Thông báo khi xóa sản phẩm
+
+```json
+{
+  "id": "product-123-uuid",
+  "organizationId": "org-123-uuid",
+  "name": "Nước suối Aquafina 500ml",
+  "actorId": "550e8400-e29b-41d4-a716-446655440000",
+  "timestamp": "2025-12-16T10:00:00.000Z"
+}
+```
+
+---
+
+### 📋 Batch Events (organization:{orgId})
+
+#### `batch:created`
+**Chức năng:** Thông báo khi tạo lô hàng mới
+
+```json
+{
+  "id": "batch-123-uuid",
+  "organizationId": "org-123-uuid",
+  "code": "LOT-2024-001",
+  "productId": "product-123-uuid",
+  "actorId": "550e8400-e29b-41d4-a716-446655440000",
+  "timestamp": "2025-12-16T10:00:00.000Z"
+}
+```
+
+---
+
+#### `batch:updated`
+**Chức năng:** Thông báo khi cập nhật lô hàng
+
+```json
+{
+  "id": "batch-123-uuid",
+  "organizationId": "org-123-uuid",
+  "code": "LOT-2024-001",
+  "changedFields": ["expiry_date", "import_price"],
+  "actorId": "550e8400-e29b-41d4-a716-446655440000",
+  "timestamp": "2025-12-16T10:00:00.000Z"
+}
+```
+
+---
+
+#### `batch:deleted`
+**Chức năng:** Thông báo khi xóa lô hàng
+
+```json
+{
+  "id": "batch-123-uuid",
+  "organizationId": "org-123-uuid",
+  "code": "LOT-2024-001",
+  "actorId": "550e8400-e29b-41d4-a716-446655440000",
+  "timestamp": "2025-12-16T10:00:00.000Z"
+}
+```
+
+---
+
 ## 📋 Tổng hợp
 
 | Room | Auth | Events |
 |------|------|--------|
 | `user:{userId}` | ✅ | `user:*`, `organization:*`, `userNotification:*` |
-| `organization:{orgId}` | ✅ | `orgNotification:*` |
+| `organization:{orgId}` | ✅ | `orgNotification:*`, `partner:*`, `product:*`, `batch:*` |
 | `public` | ❌ | (tự động join) |
 | `notifications` | ✅ | `userNotification:*` |
 | `announcements` | ❌ | (chờ implement) |
 | `system-status` | ❌ | (chờ implement) |
 | Global | - | `warehouseTemplate:*`, `globalNotification:*`, `amenity:*`, `user:onlineStatus`, `pong`, `error` |
-

@@ -46,7 +46,9 @@
         "invite_expired": "Invitation has expired",
         "invite_not_for_you": "This invitation is not for you",
         "cannot_transfer_to_self": "Cannot transfer ownership to yourself",
-        "owner_cannot_leave": "Owner cannot leave the organization. Please transfer ownership first."
+        "owner_cannot_leave": "Owner cannot leave the organization. Please transfer ownership first.",
+        "apikey_permission_not_allowed": "This permission does not allow API key access",
+        "apikey_no_permission": "API key does not have permission for this operation"
     },
     "validation": {
         "name_required": "Organization name is required",
@@ -77,6 +79,11 @@
         "offset_min": "Offset must be >= 0",
         "keywords_string": "Search keywords must be a string",
         "is_active_boolean": "Status must be a boolean",
-        "is_accepted_boolean": "Accepted status must be a boolean"
+        "is_accepted_boolean": "Accepted status must be a boolean",
+        "google_client_id_string": "Google Client ID must be a string",
+        "google_client_secret_string": "Google Client Secret must be a string",
+        "google_refresh_token_string": "Google Refresh Token must be a string",
+        "email_primary_invalid": "Primary email is invalid",
+        "email_primary_max_length": "Primary email cannot exceed 255 characters"
     }
 }

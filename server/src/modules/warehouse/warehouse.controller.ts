@@ -9,19 +9,20 @@ import {
     UseGuards,
     ParseUUIDPipe,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam, ApiHeader } from '@nestjs/swagger';
 import { I18nLang } from 'nestjs-i18n';
 
 import { WarehouseService } from './warehouse.service';
 import { UpdateWarehouseDto, QueryWarehouseDto } from './dto';
-import { PermissionGuard } from '../../common/guards';
-import { RequirePermission, CurrentUser } from '../../common/decorators';
+import { CombinedAuthGuard, PermissionGuard } from '../../common/guards';
+import { RequirePermission, CurrentActor } from '../../common/decorators';
 import { GetResponse, UpdatedResponse, DeletedResponse, ResponseCode } from '../../common/responses';
 
 @ApiTags('Organization Warehouses')
 @ApiBearerAuth()
+@ApiHeader({ name: 'X-API-Key', description: 'API Key for authentication (alternative to JWT)', required: false })
 @Controller('organizations/:orgId/warehouses')
-@UseGuards(PermissionGuard)
+@UseGuards(CombinedAuthGuard, PermissionGuard)
 export class WarehouseController {
     constructor(private readonly warehouseService: WarehouseService) { }
 
@@ -35,10 +36,10 @@ export class WarehouseController {
     async findMany(
         @Param('orgId', ParseUUIDPipe) orgId: string,
         @Query() query: QueryWarehouseDto,
-        @CurrentUser('userId') userId: string,
+        @CurrentActor() actorId: string,
         @I18nLang() lang: string,
     ) {
-        const data = await this.warehouseService.findMany(query, userId, orgId, lang);
+        const data = await this.warehouseService.findMany(query, actorId, orgId, lang);
         return new GetResponse(ResponseCode.WAREHOUSE_LIST_SUCCESS, data, 'Lấy danh sách kho thành công');
     }
 
@@ -53,10 +54,10 @@ export class WarehouseController {
     async findById(
         @Param('orgId', ParseUUIDPipe) orgId: string,
         @Param('id', ParseUUIDPipe) id: string,
-        @CurrentUser('userId') userId: string,
+        @CurrentActor() actorId: string,
         @I18nLang() lang: string,
     ) {
-        const data = await this.warehouseService.findById(id, userId, orgId, lang);
+        const data = await this.warehouseService.findById(id, actorId, orgId, lang);
         return new GetResponse(ResponseCode.WAREHOUSE_READ_SUCCESS, data, 'Lấy thông tin kho thành công');
     }
 
@@ -71,10 +72,10 @@ export class WarehouseController {
     async getLayout(
         @Param('orgId', ParseUUIDPipe) orgId: string,
         @Param('id', ParseUUIDPipe) id: string,
-        @CurrentUser('userId') userId: string,
+        @CurrentActor() actorId: string,
         @I18nLang() lang: string,
     ) {
-        const data = await this.warehouseService.getLayout(id, userId, orgId, lang);
+        const data = await this.warehouseService.getLayout(id, actorId, orgId, lang);
         return new GetResponse(ResponseCode.WAREHOUSE_LAYOUT_SUCCESS, data, 'Lấy layout kho thành công');
     }
 
@@ -90,10 +91,10 @@ export class WarehouseController {
         @Param('orgId', ParseUUIDPipe) orgId: string,
         @Param('id', ParseUUIDPipe) id: string,
         @Body() dto: UpdateWarehouseDto,
-        @CurrentUser('userId') userId: string,
+        @CurrentActor() actorId: string,
         @I18nLang() lang: string,
     ) {
-        const data = await this.warehouseService.update(id, dto, userId, orgId, lang);
+        const data = await this.warehouseService.update(id, dto, actorId, orgId, lang);
         return new UpdatedResponse(ResponseCode.WAREHOUSE_UPDATE_SUCCESS, data, 'Cập nhật kho thành công');
     }
 
@@ -108,10 +109,10 @@ export class WarehouseController {
     async delete(
         @Param('orgId', ParseUUIDPipe) orgId: string,
         @Param('id', ParseUUIDPipe) id: string,
-        @CurrentUser('userId') userId: string,
+        @CurrentActor() actorId: string,
         @I18nLang() lang: string,
     ) {
-        await this.warehouseService.delete(id, userId, orgId, lang);
+        await this.warehouseService.delete(id, actorId, orgId, lang);
         return new DeletedResponse(ResponseCode.WAREHOUSE_DELETE_SUCCESS, null, 'Xóa kho thành công');
     }
 }

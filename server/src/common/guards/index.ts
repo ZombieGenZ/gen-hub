@@ -4,3 +4,6 @@ export * from './access-verification.guard';
 export * from './throttler.guard';
 export * from './primary-auth.guard';
 export * from './permission.guard';
+export * from './api-key-auth.guard';
+export * from './combined-auth.guard';
+export * from './org-permission.guard';

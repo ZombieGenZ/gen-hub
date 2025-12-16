@@ -1,0 +1,31 @@
+{
+    "success": {
+        "created": "Batch created successfully",
+        "updated": "Batch updated successfully",
+        "deleted": "Batch deleted successfully",
+        "list": "Batch list retrieved successfully",
+        "get": "Batch retrieved successfully"
+    },
+    "errors": {
+        "not_found": "Batch not found",
+        "product_not_found": "Product not found or does not belong to this organization",
+        "code_exists": "Batch code already exists in this product"
+    },
+    "validation": {
+        "product_id_required": "Product ID is required",
+        "product_id_uuid": "Product ID must be a valid UUID",
+        "code_required": "Batch code is required",
+        "code_string": "Batch code must be a string",
+        "code_max_length": "Batch code cannot exceed 50 characters",
+        "manufacturing_date_invalid": "Manufacturing date is invalid",
+        "expiry_date_invalid": "Expiry date is invalid",
+        "import_price_number": "Import price must be a number",
+        "import_price_min": "Import price must be >= 0",
+        "is_active_boolean": "Status must be a boolean",
+        "limit_int": "Limit must be an integer",
+        "limit_min": "Limit must be >= 1",
+        "offset_int": "Offset must be an integer",
+        "offset_min": "Offset must be >= 0",
+        "keywords_string": "Keywords must be a string"
+    }
+}

@@ -107,6 +107,42 @@ export enum ResponseCode {
     RENTAL_CONTRACT_UPDATE_SUCCESS = 'rental_contract.update_success',
     RENTAL_CONTRACT_DELETE_SUCCESS = 'rental_contract.delete_success',
 
+    // Province (Public API)
+    PROVINCE_LIST_SUCCESS = 'province.list_success',
+    PROVINCE_GET_SUCCESS = 'province.get_success',
+
+    // Ward (Public API)
+    WARD_LIST_SUCCESS = 'ward.list_success',
+    WARD_GET_SUCCESS = 'ward.get_success',
+
+    // Partner
+    PARTNER_CREATE_SUCCESS = 'partner.create_success',
+    PARTNER_LIST_SUCCESS = 'partner.list_success',
+    PARTNER_GET_SUCCESS = 'partner.get_success',
+    PARTNER_UPDATE_SUCCESS = 'partner.update_success',
+    PARTNER_DELETE_SUCCESS = 'partner.delete_success',
+
+    // Product
+    PRODUCT_CREATE_SUCCESS = 'product.create_success',
+    PRODUCT_LIST_SUCCESS = 'product.list_success',
+    PRODUCT_GET_SUCCESS = 'product.get_success',
+    PRODUCT_UPDATE_SUCCESS = 'product.update_success',
+    PRODUCT_DELETE_SUCCESS = 'product.delete_success',
+
+    // Batch
+    BATCH_CREATE_SUCCESS = 'batch.create_success',
+    BATCH_LIST_SUCCESS = 'batch.list_success',
+    BATCH_GET_SUCCESS = 'batch.get_success',
+    BATCH_UPDATE_SUCCESS = 'batch.update_success',
+    BATCH_DELETE_SUCCESS = 'batch.delete_success',
+
+    // Amenity
+    AMENITY_CREATE_SUCCESS = 'amenity.create_success',
+    AMENITY_LIST_SUCCESS = 'amenity.list_success',
+    AMENITY_GET_SUCCESS = 'amenity.get_success',
+    AMENITY_UPDATE_SUCCESS = 'amenity.update_success',
+    AMENITY_DELETE_SUCCESS = 'amenity.delete_success',
+
     // Client Errors (4xx)
     ERROR_VALIDATION = 'error.validation',
     ERROR_BAD_REQUEST = 'error.bad_request',

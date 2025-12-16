@@ -27,6 +27,11 @@ import { RentalContractModule } from './modules/rental-contract/rental-contract.
 import { RentalSchedulerModule } from './modules/rental-scheduler/rental-scheduler.module';
 import { PaymentModule } from './modules/payment/payment.module';
 import { AmenityModule } from './modules/amenity/amenity.module';
+import { ProvinceModule } from './modules/province/province.module';
+import { WardModule } from './modules/ward/ward.module';
+import { PartnerModule } from './modules/partner/partner.module';
+import { ProductModule } from './modules/product/product.module';
+import { BatchModule } from './modules/batch/batch.module';
 import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
 
 @Module({
@@ -90,6 +95,18 @@ import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
     PaymentModule,
 
     AmenityModule,
+
+    // Public APIs
+    ProvinceModule,
+
+    WardModule,
+
+    // Organization-level modules
+    PartnerModule,
+
+    ProductModule,
+
+    BatchModule,
   ],
   controllers: [AppController],
   providers: [
@@ -105,4 +122,3 @@ import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
   ],
 })
 export class AppModule { }
-

@@ -1,0 +1,16 @@
+{
+    "success": {
+        "list": "Lấy danh sách tỉnh/thành phố thành công",
+        "get": "Lấy thông tin tỉnh/thành phố thành công"
+    },
+    "errors": {
+        "not_found": "Không tìm thấy tỉnh/thành phố"
+    },
+    "validation": {
+        "limit_int": "Limit phải là số nguyên",
+        "limit_min": "Limit phải >= 1",
+        "offset_int": "Offset phải là số nguyên",
+        "offset_min": "Offset phải >= 0",
+        "keywords_string": "Từ khóa tìm kiếm phải là chuỗi"
+    }
+}

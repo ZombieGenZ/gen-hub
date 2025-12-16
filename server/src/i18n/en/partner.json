@@ -1,0 +1,39 @@
+{
+    "success": {
+        "created": "Partner created successfully",
+        "updated": "Partner updated successfully",
+        "deleted": "Partner deleted successfully",
+        "list": "Partner list retrieved successfully",
+        "get": "Partner retrieved successfully"
+    },
+    "errors": {
+        "not_found": "Partner not found",
+        "organization_not_found": "Organization not found",
+        "code_exists": "Partner code already exists in this organization",
+        "ward_not_found": "Ward not found"
+    },
+    "validation": {
+        "name_required": "Partner name is required",
+        "name_string": "Partner name must be a string",
+        "name_max_length": "Partner name cannot exceed 255 characters",
+        "code_required": "Partner code is required",
+        "code_string": "Partner code must be a string",
+        "code_max_length": "Partner code cannot exceed 50 characters",
+        "type_required": "Partner type is required",
+        "type_invalid": "Partner type is invalid (CUSTOMER or SUPPLIER)",
+        "phone_string": "Phone must be a string",
+        "phone_max_length": "Phone cannot exceed 20 characters",
+        "email_invalid": "Email is invalid",
+        "email_max_length": "Email cannot exceed 255 characters",
+        "tax_code_string": "Tax code must be a string",
+        "tax_code_max_length": "Tax code cannot exceed 20 characters",
+        "address_string": "Address must be a string",
+        "ward_id_uuid": "Ward ID must be a valid UUID",
+        "is_active_boolean": "Status must be a boolean",
+        "limit_int": "Limit must be an integer",
+        "limit_min": "Limit must be >= 1",
+        "offset_int": "Offset must be an integer",
+        "offset_min": "Offset must be >= 0",
+        "keywords_string": "Keywords must be a string"
+    }
+}

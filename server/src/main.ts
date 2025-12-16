@@ -70,6 +70,7 @@ async function bootstrap() {
     swaggerOptions: {
       persistAuthorization: true,
     },
+    jsonDocumentUrl: '/api-docs-json',
   });
 
   const port = process.env.PORT ?? 4000;
@@ -79,6 +80,7 @@ async function bootstrap() {
 
   console.log(`🚀 Server đang chạy tại ${backendUrl}`);
   console.log(`📚 Swagger docs: ${backendUrl}/api-docs`);
+  console.log(`📄 Swagger JSON: ${backendUrl}/api-docs-json`);
 
   // Graceful Shutdown
   const gracefulShutdown = async (signal: string) => {

@@ -1,0 +1,53 @@
+{
+    "success": {
+        "created": "Product created successfully",
+        "updated": "Product updated successfully",
+        "deleted": "Product deleted successfully",
+        "list": "Product list retrieved successfully",
+        "get": "Product retrieved successfully"
+    },
+    "errors": {
+        "not_found": "Product not found",
+        "organization_not_found": "Organization not found",
+        "sku_exists": "SKU already exists in this organization",
+        "base_unit_not_found": "Base unit not found",
+        "unit_not_found": "Unit not found"
+    },
+    "validation": {
+        "name_required": "Product name is required",
+        "name_string": "Product name must be a string",
+        "name_max_length": "Product name cannot exceed 255 characters",
+        "sku_required": "SKU is required",
+        "sku_string": "SKU must be a string",
+        "sku_max_length": "SKU cannot exceed 50 characters",
+        "description_string": "Description must be a string",
+        "image_url_string": "Image URL must be a string",
+        "barcode_string": "Barcode must be a string",
+        "weight_number": "Weight must be a number",
+        "weight_min": "Weight must be >= 0",
+        "length_number": "Length must be a number",
+        "length_min": "Length must be >= 0",
+        "width_number": "Width must be a number",
+        "width_min": "Width must be >= 0",
+        "height_number": "Height must be a number",
+        "height_min": "Height must be >= 0",
+        "max_weight_number": "Max weight capacity must be a number",
+        "max_weight_min": "Max weight capacity must be >= 0",
+        "cost_price_number": "Cost price must be a number",
+        "cost_price_min": "Cost price must be >= 0",
+        "base_unit_id_required": "Base unit ID is required",
+        "base_unit_id_uuid": "Base unit ID must be a valid UUID",
+        "unit_id_required": "Unit ID is required",
+        "unit_id_uuid": "Unit ID must be a valid UUID",
+        "conversion_rate_required": "Conversion rate is required",
+        "conversion_rate_number": "Conversion rate must be a number",
+        "conversion_rate_min": "Conversion rate must be > 0",
+        "units_array": "Units must be an array",
+        "is_active_boolean": "Status must be a boolean",
+        "limit_int": "Limit must be an integer",
+        "limit_min": "Limit must be >= 1",
+        "offset_int": "Offset must be an integer",
+        "offset_min": "Offset must be >= 0",
+        "keywords_string": "Keywords must be a string"
+    }
+}

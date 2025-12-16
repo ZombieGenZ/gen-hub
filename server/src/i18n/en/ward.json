@@ -1,0 +1,17 @@
+{
+    "success": {
+        "list": "Ward list retrieved successfully",
+        "get": "Ward retrieved successfully"
+    },
+    "errors": {
+        "not_found": "Ward not found"
+    },
+    "validation": {
+        "limit_int": "Limit must be an integer",
+        "limit_min": "Limit must be >= 1",
+        "offset_int": "Offset must be an integer",
+        "offset_min": "Offset must be >= 0",
+        "keywords_string": "Keywords must be a string",
+        "province_id_uuid": "Province ID must be a valid UUID"
+    }
+}

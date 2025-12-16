@@ -514,6 +514,17 @@ export class WebsocketGateway
     });
   }
 
+  /**
+   * Generic emit to organization room - dùng cho các entity khác nhau
+   */
+  emitToOrganization(orgId: string, event: string, data: Record<string, unknown>) {
+    this.server.to(`organization:${orgId}`).emit(event, {
+      ...data,
+      organizationId: orgId,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
   @SubscribeMessage('ping')
   handlePing(@ConnectedSocket() socket: Socket) {
     // Cập nhật heartbeat nếu user đã authenticated

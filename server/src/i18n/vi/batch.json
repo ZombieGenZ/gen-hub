@@ -1,0 +1,31 @@
+{
+    "success": {
+        "created": "Tạo lô hàng thành công",
+        "updated": "Cập nhật lô hàng thành công",
+        "deleted": "Xóa lô hàng thành công",
+        "list": "Lấy danh sách lô hàng thành công",
+        "get": "Lấy thông tin lô hàng thành công"
+    },
+    "errors": {
+        "not_found": "Không tìm thấy lô hàng",
+        "product_not_found": "Không tìm thấy sản phẩm hoặc sản phẩm không thuộc tổ chức",
+        "code_exists": "Mã lô hàng đã tồn tại trong sản phẩm này"
+    },
+    "validation": {
+        "product_id_required": "ID sản phẩm không được để trống",
+        "product_id_uuid": "ID sản phẩm phải là UUID hợp lệ",
+        "code_required": "Mã lô hàng không được để trống",
+        "code_string": "Mã lô hàng phải là chuỗi",
+        "code_max_length": "Mã lô hàng không được quá 50 ký tự",
+        "manufacturing_date_invalid": "Ngày sản xuất không hợp lệ",
+        "expiry_date_invalid": "Ngày hết hạn không hợp lệ",
+        "import_price_number": "Giá nhập phải là số",
+        "import_price_min": "Giá nhập phải >= 0",
+        "is_active_boolean": "Trạng thái phải là boolean",
+        "limit_int": "Limit phải là số nguyên",
+        "limit_min": "Limit phải >= 1",
+        "offset_int": "Offset phải là số nguyên",
+        "offset_min": "Offset phải >= 0",
+        "keywords_string": "Từ khóa tìm kiếm phải là chuỗi"
+    }
+}

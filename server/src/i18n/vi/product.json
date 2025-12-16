@@ -1,0 +1,53 @@
+{
+    "success": {
+        "created": "Tạo sản phẩm thành công",
+        "updated": "Cập nhật sản phẩm thành công",
+        "deleted": "Xóa sản phẩm thành công",
+        "list": "Lấy danh sách sản phẩm thành công",
+        "get": "Lấy thông tin sản phẩm thành công"
+    },
+    "errors": {
+        "not_found": "Không tìm thấy sản phẩm",
+        "organization_not_found": "Không tìm thấy tổ chức",
+        "sku_exists": "Mã SKU đã tồn tại trong tổ chức",
+        "base_unit_not_found": "Không tìm thấy đơn vị tính cơ bản",
+        "unit_not_found": "Không tìm thấy đơn vị tính"
+    },
+    "validation": {
+        "name_required": "Tên sản phẩm không được để trống",
+        "name_string": "Tên sản phẩm phải là chuỗi",
+        "name_max_length": "Tên sản phẩm không được quá 255 ký tự",
+        "sku_required": "Mã SKU không được để trống",
+        "sku_string": "Mã SKU phải là chuỗi",
+        "sku_max_length": "Mã SKU không được quá 50 ký tự",
+        "description_string": "Mô tả phải là chuỗi",
+        "image_url_string": "URL hình ảnh phải là chuỗi",
+        "barcode_string": "Barcode phải là chuỗi",
+        "weight_number": "Trọng lượng phải là số",
+        "weight_min": "Trọng lượng phải >= 0",
+        "length_number": "Chiều dài phải là số",
+        "length_min": "Chiều dài phải >= 0",
+        "width_number": "Chiều rộng phải là số",
+        "width_min": "Chiều rộng phải >= 0",
+        "height_number": "Chiều cao phải là số",
+        "height_min": "Chiều cao phải >= 0",
+        "max_weight_number": "Sức chịu tải tối đa phải là số",
+        "max_weight_min": "Sức chịu tải tối đa phải >= 0",
+        "cost_price_number": "Giá vốn phải là số",
+        "cost_price_min": "Giá vốn phải >= 0",
+        "base_unit_id_required": "ID đơn vị tính cơ bản không được để trống",
+        "base_unit_id_uuid": "ID đơn vị tính cơ bản phải là UUID hợp lệ",
+        "unit_id_required": "ID đơn vị tính không được để trống",
+        "unit_id_uuid": "ID đơn vị tính phải là UUID hợp lệ",
+        "conversion_rate_required": "Tỷ lệ quy đổi không được để trống",
+        "conversion_rate_number": "Tỷ lệ quy đổi phải là số",
+        "conversion_rate_min": "Tỷ lệ quy đổi phải > 0",
+        "units_array": "Danh sách đơn vị tính phải là mảng",
+        "is_active_boolean": "Trạng thái phải là boolean",
+        "limit_int": "Limit phải là số nguyên",
+        "limit_min": "Limit phải >= 1",
+        "offset_int": "Offset phải là số nguyên",
+        "offset_min": "Offset phải >= 0",
+        "keywords_string": "Từ khóa tìm kiếm phải là chuỗi"
+    }
+}

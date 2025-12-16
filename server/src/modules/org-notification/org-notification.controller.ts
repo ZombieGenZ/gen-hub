@@ -16,6 +16,7 @@ import {
     ApiResponse,
     ApiBearerAuth,
     ApiParam,
+    ApiHeader,
 } from '@nestjs/swagger';
 import { I18nLang } from 'nestjs-i18n';
 
@@ -25,8 +26,8 @@ import {
     UpdateOrgNotificationDto,
     QueryOrgNotificationDto,
 } from './dto';
-import { JwtAuthGuard } from '../../common/guards';
-import { CurrentUser, RequireOrgPermission } from '../../common/decorators';
+import { CombinedAuthGuard, OrgPermissionGuard } from '../../common/guards';
+import { CurrentActor, RequireOrgPermission } from '../../common/decorators';
 import {
     CreatedResponse,
     UpdatedResponse,
@@ -38,8 +39,9 @@ import { IOrgNotification, IPaginatedResponse } from './interfaces';
 
 @ApiTags('Organization Notifications')
 @ApiBearerAuth('JWT-auth')
+@ApiHeader({ name: 'X-API-Key', description: 'API Key for authentication (alternative to JWT)', required: false })
 @Controller('organizations/:orgId/notifications')
-@UseGuards(JwtAuthGuard)
+@UseGuards(CombinedAuthGuard, OrgPermissionGuard)
 export class OrgNotificationController {
     constructor(private readonly service: OrgNotificationService) { }
 
@@ -54,10 +56,10 @@ export class OrgNotificationController {
     async create(
         @Param('orgId', ParseUUIDPipe) orgId: string,
         @Body() dto: CreateOrgNotificationDto,
-        @CurrentUser('userId') userId: string,
+        @CurrentActor() actorId: string,
         @I18nLang() lang: string,
     ): Promise<CreatedResponse<IOrgNotification>> {
-        const result = await this.service.create(orgId, dto, userId, lang);
+        const result = await this.service.create(orgId, dto, actorId, lang);
         return new CreatedResponse(ResponseCode.ORG_NOTIFICATION_CREATE_SUCCESS, result);
     }
 
@@ -102,10 +104,10 @@ export class OrgNotificationController {
         @Param('orgId', ParseUUIDPipe) orgId: string,
         @Param('id', ParseUUIDPipe) id: string,
         @Body() dto: UpdateOrgNotificationDto,
-        @CurrentUser('userId') userId: string,
+        @CurrentActor() actorId: string,
         @I18nLang() lang: string,
     ): Promise<UpdatedResponse<IOrgNotification>> {
-        const result = await this.service.update(orgId, id, dto, userId, lang);
+        const result = await this.service.update(orgId, id, dto, actorId, lang);
         return new UpdatedResponse(ResponseCode.ORG_NOTIFICATION_UPDATE_SUCCESS, result);
     }
 
@@ -119,10 +121,10 @@ export class OrgNotificationController {
     async delete(
         @Param('orgId', ParseUUIDPipe) orgId: string,
         @Param('id', ParseUUIDPipe) id: string,
-        @CurrentUser('userId') userId: string,
+        @CurrentActor() actorId: string,
         @I18nLang() lang: string,
     ): Promise<DeletedResponse<null>> {
-        await this.service.delete(orgId, id, userId, lang);
+        await this.service.delete(orgId, id, actorId, lang);
         return new DeletedResponse(ResponseCode.ORG_NOTIFICATION_DELETE_SUCCESS, null);
     }
 }

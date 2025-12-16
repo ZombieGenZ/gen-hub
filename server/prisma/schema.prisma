@@ -689,11 +689,12 @@ model OrganizationRole {
 }
 
 model OrganizationPermission {
-  id          String   @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
-  name        String
-  description String?
-  key         String
-  is_active   Boolean? @default(true)
+  id            String   @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  name          String
+  description   String?
+  key           String
+  is_active     Boolean? @default(true)
+  allow_api_key Boolean  @default(true)
 
   created_at DateTime  @default(now())
   updated_at DateTime? @updatedAt
