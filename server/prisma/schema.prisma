@@ -637,6 +637,7 @@ model OrganizationMember {
   id              String   @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
   user_id         String   @db.Uuid
   organization_id String   @db.Uuid
+  display_name    String?
   is_accepted     Boolean? @default(false)
   is_active       Boolean? @default(true)
   is_deleted      Boolean? @default(false)

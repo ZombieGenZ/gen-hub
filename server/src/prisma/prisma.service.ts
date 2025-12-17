@@ -261,6 +261,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
       await this.seedProductPermissions();
       await this.seedBatchPermissions();
       await this.seedApiKeyAdminPermissions();
+      await this.seedPaymentPermissions();
       await this.seedVietnamAdministrative();
     } catch (error: unknown) {
       const errorMessage =
@@ -1489,6 +1490,89 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         error instanceof Error ? error.message : String(error);
       this.logger.error(
         `❌ Failed to seed API Key Admin permissions: ${errorMessage}`,
+      );
+    }
+  }
+
+  /**
+   * Seed các permissions cho Payment (Admin only)
+   */
+  private async seedPaymentPermissions() {
+    try {
+      const paymentPermissions = [
+        {
+          key: 'payment.list.all',
+          name: 'Xem tất cả thanh toán',
+          description: 'Quyền xem danh sách tất cả thanh toán trên hệ thống',
+        },
+        {
+          key: 'payment.read.all',
+          name: 'Xem chi tiết thanh toán',
+          description: 'Quyền xem chi tiết bất kỳ thanh toán nào trên hệ thống',
+        },
+      ];
+
+      for (const perm of paymentPermissions) {
+        const existing = await this.permission.findFirst({
+          where: { key: perm.key },
+        });
+
+        if (!existing) {
+          await this.permission.create({
+            data: {
+              key: perm.key,
+              name: perm.name,
+              description: perm.description,
+              is_active: true,
+              is_deleted: false,
+            },
+          });
+        }
+      }
+
+      // Gán cho Admin và Super Admin roles
+      const adminRoles = await this.role.findMany({
+        where: {
+          name: { in: ['Admin', 'Super Admin'] },
+          is_deleted: false,
+        },
+      });
+
+      const permissionRecords = await this.permission.findMany({
+        where: {
+          key: { in: paymentPermissions.map((p) => p.key) },
+          is_deleted: false,
+        },
+      });
+
+      for (const role of adminRoles) {
+        for (const permission of permissionRecords) {
+          const existingAssignment = await this.rolePermission.findFirst({
+            where: {
+              role_id: role.id,
+              permission_id: permission.id,
+            },
+          });
+
+          if (!existingAssignment) {
+            await this.rolePermission.create({
+              data: {
+                role_id: role.id,
+                permission_id: permission.id,
+                is_active: true,
+                is_deleted: false,
+              },
+            });
+          }
+        }
+      }
+
+      this.logger.log('✅ Payment permissions seeded');
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `❌ Failed to seed payment permissions: ${errorMessage}`,
       );
     }
   }

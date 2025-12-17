@@ -8,6 +8,7 @@ import { RentalContractModule } from '../rental-contract/rental-contract.module'
 import { SepayService } from './sepay.service';
 import { PaymentSchedulerService } from './payment-scheduler.service';
 import { PaymentController } from './payment.controller';
+import { PaymentAdminController } from './payment-admin.controller';
 
 @Module({
     imports: [
@@ -19,7 +20,7 @@ import { PaymentController } from './payment.controller';
             name: 'rental-contract',
         }),
     ],
-    controllers: [PaymentController],
+    controllers: [PaymentController, PaymentAdminController],
     providers: [SepayService, PaymentSchedulerService],
     exports: [SepayService, PaymentSchedulerService],
 })

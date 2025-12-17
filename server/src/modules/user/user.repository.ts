@@ -280,7 +280,7 @@ export class UserRepository {
    */
   async updateProfile(
     userId: string,
-    data: { name?: string; language?: string },
+    data: { name?: string; language?: string; avatar?: string },
   ): Promise<User> {
     return this.prisma.user.update({
       where: { id: userId },
@@ -402,5 +402,23 @@ export class UserRepository {
         last_online: true,
       },
     });
+  }
+  /**
+   * Lấy danh sách Organization ID mà user tham gia
+   */
+  async getUserOrganizations(userId: string): Promise<string[]> {
+    const members = await this.prisma.organizationMember.findMany({
+      where: {
+        user_id: userId,
+        is_accepted: true,
+        is_deleted: false,
+        organization: {
+          is_active: true,
+          is_deleted: false,
+        },
+      },
+      select: { organization_id: true },
+    });
+    return members.map((m) => m.organization_id);
   }
 }

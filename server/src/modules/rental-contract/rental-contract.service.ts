@@ -302,6 +302,9 @@ export class RentalContractService {
         { userId, description: `Created rental contract: ${code}` },
       );
 
+      // Emit socket event
+      this.websocketGateway.emitRentalContractCreated(dto.organization_id, contract.id, code, userId);
+
       // Invalidate list cache
       await this.invalidateContractListCache();
 
@@ -576,6 +579,9 @@ export class RentalContractService {
       { userId, description: `${action} rental contract: ${contract.code}` },
     );
 
+    // Emit socket event
+    this.websocketGateway.emitRentalContractUpdated(organizationId, id, contract.code, userId, contract.status);
+
     return contract;
   }
 
@@ -650,6 +656,9 @@ export class RentalContractService {
       >,
       { userId, description: `Cancelled rental contract: ${existing.code}` },
     );
+
+    // Emit socket event
+    this.websocketGateway.emitRentalContractDeleted(organizationId, id, userId);
   }
 
   async deleteMany(ids: string[], userId: string, lang: string): Promise<void> {
@@ -979,6 +988,15 @@ export class RentalContractService {
       { expired_at: existing.expired_at } as unknown as Record<string, unknown>,
       { adjust_months: dto.adjust_months } as unknown as Record<string, unknown>,
       { userId, description: `${action} rental contract: ${contract.code}` },
+    );
+
+    // Emit socket event
+    this.websocketGateway.emitRentalContractRenewed(
+      organizationId,
+      id,
+      contract.code,
+      newExpiredAt.toISOString(),
+      userId,
     );
 
     return contract;

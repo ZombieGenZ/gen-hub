@@ -48,7 +48,8 @@
         "cannot_transfer_to_self": "Cannot transfer ownership to yourself",
         "owner_cannot_leave": "Owner cannot leave the organization. Please transfer ownership first.",
         "apikey_permission_not_allowed": "This permission does not allow API key access",
-        "apikey_no_permission": "API key does not have permission for this operation"
+        "apikey_no_permission": "API key does not have permission for this operation",
+        "invite_failed_all": "Failed to invite any members"
     },
     "validation": {
         "name_required": "Organization name is required",
@@ -83,6 +84,12 @@
         "keywords_string": "Search keywords must be a string",
         "is_active_boolean": "Status must be a boolean",
         "is_accepted_boolean": "Accepted status must be a boolean",
+        "emails_required": "Email list is required",
+        "emails_array": "Emails must be an array",
+        "emails_min_one": "At least one email is required",
+        "display_name_required": "Display name is required",
+        "display_name_string": "Display name must be a string",
+        "display_name_max_length": "Display name cannot exceed 100 characters",
         "google_client_id_string": "Google Client ID must be a string",
         "google_client_secret_string": "Google Client Secret must be a string",
         "google_refresh_token_string": "Google Refresh Token must be a string",

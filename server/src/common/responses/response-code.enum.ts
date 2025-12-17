@@ -144,6 +144,10 @@ export enum ResponseCode {
     AMENITY_UPDATE_SUCCESS = 'amenity.update_success',
     AMENITY_DELETE_SUCCESS = 'amenity.delete_success',
 
+    // Payment
+    PAYMENT_LIST_SUCCESS = 'payment.list_success',
+    PAYMENT_GET_SUCCESS = 'payment.get_success',
+
     // Client Errors (4xx)
     ERROR_VALIDATION = 'error.validation',
     ERROR_BAD_REQUEST = 'error.bad_request',

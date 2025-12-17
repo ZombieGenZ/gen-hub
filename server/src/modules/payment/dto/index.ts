@@ -80,3 +80,36 @@ export class PaymentCallbackQueryDto {
     @IsString()
     status?: string;
 }
+
+/**
+ * Query params cho admin list payments
+ */
+export class QueryPaymentDto {
+    @ApiPropertyOptional({ description: 'Số lượng tối đa', default: 20 })
+    @IsOptional()
+    @IsNumber()
+    limit?: number = 20;
+
+    @ApiPropertyOptional({ description: 'Vị trí bắt đầu', default: 0 })
+    @IsOptional()
+    @IsNumber()
+    offset?: number = 0;
+
+    @ApiPropertyOptional({ description: 'Từ khóa tìm kiếm (payment_code, contract code)' })
+    @IsOptional()
+    @IsString()
+    keywords?: string;
+
+    @ApiPropertyOptional({
+        description: 'Trạng thái thanh toán',
+        enum: ['PENDING', 'PAID', 'EXPIRED', 'CANCELLED']
+    })
+    @IsOptional()
+    @IsIn(['PENDING', 'PAID', 'EXPIRED', 'CANCELLED'])
+    status?: 'PENDING' | 'PAID' | 'EXPIRED' | 'CANCELLED';
+
+    @ApiPropertyOptional({ description: 'ID tổ chức' })
+    @IsOptional()
+    @IsString()
+    organizationId?: string;
+}

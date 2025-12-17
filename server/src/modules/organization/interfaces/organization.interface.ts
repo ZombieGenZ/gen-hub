@@ -32,6 +32,7 @@ export interface IOrganizationMember {
     id: string;
     user_id: string;
     organization_id: string;
+    display_name: string | null;
     is_accepted: boolean | null;
     is_active: boolean | null;
     is_deleted: boolean | null;

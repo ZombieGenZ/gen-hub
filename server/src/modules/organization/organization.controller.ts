@@ -3,6 +3,7 @@ import {
     Get,
     Post,
     Put,
+    Patch,
     Delete,
     Body,
     Param,
@@ -22,6 +23,7 @@ import {
     InviteMemberDto,
     AssignMemberRolesDto,
     AssignMemberPermissionsDto,
+    UpdateMemberDisplayNameDto,
 } from './dto';
 import { DeleteManyDto } from '../../common/dto';
 import { CurrentUser, RequirePermission, Public } from '../../common/decorators';
@@ -430,6 +432,50 @@ export class OrganizationController {
             ResponseCode.ORGANIZATION_MEMBER_REMOVE_SUCCESS,
             undefined,
             'Đã xóa thành viên thành công',
+        );
+    }
+
+    @Patch(':id/members/:memberId/display-name')
+    @RequirePermission('organization.read')
+    @ApiOperation({ summary: 'Admin cập nhật display name của thành viên' })
+    @ApiParam({ name: 'id', description: 'ID tổ chức' })
+    @ApiParam({ name: 'memberId', description: 'ID thành viên' })
+    async updateMemberDisplayName(
+        @Param('id', ParseUUIDPipe) id: string,
+        @Param('memberId', ParseUUIDPipe) memberId: string,
+        @Body() dto: UpdateMemberDisplayNameDto,
+        @CurrentUser('userId') userId: string,
+        @I18nLang() lang: string,
+    ) {
+        const result = await this.service.updateMemberDisplayName(
+            id, memberId, dto.display_name, userId, lang, false
+        );
+        return new UpdatedResponse(
+            ResponseCode.ORGANIZATION_UPDATE_SUCCESS,
+            result,
+            'Cập nhật display name thành công',
+        );
+    }
+
+    @Patch(':id/me/display-name')
+    @RequirePermission('organization.read')
+    @ApiOperation({ summary: 'Thành viên tự cập nhật display name trong tổ chức' })
+    @ApiParam({ name: 'id', description: 'ID tổ chức' })
+    async updateMyDisplayName(
+        @Param('id', ParseUUIDPipe) id: string,
+        @Body() dto: UpdateMemberDisplayNameDto,
+        @CurrentUser('userId') userId: string,
+        @I18nLang() lang: string,
+    ) {
+        // Tìm memberId của user trong org
+        const member = await this.service.findMemberByUserAndOrg(userId, id, lang);
+        const result = await this.service.updateMemberDisplayName(
+            id, member.id, dto.display_name, userId, lang, true
+        );
+        return new UpdatedResponse(
+            ResponseCode.ORGANIZATION_UPDATE_SUCCESS,
+            result,
+            'Cập nhật display name thành công',
         );
     }
 

@@ -234,6 +234,42 @@ export class WebsocketGateway
   }
 
   /**
+   * Emit event password changed
+   */
+  emitPasswordChanged(userId: string, message: string) {
+    this.server.to(`user:${userId}`).emit('user:passwordChanged', {
+      userId,
+      timestamp: new Date().toISOString(),
+      message,
+    });
+  }
+
+  /**
+   * Emit event email verified
+   */
+  emitEmailVerified(userId: string, email: string, message: string) {
+    this.server.to(`user:${userId}`).emit('user:emailVerified', {
+      userId,
+      email,
+      timestamp: new Date().toISOString(),
+      message,
+    });
+  }
+
+  /**
+   * Emit event 2FA status changed
+   */
+  emit2FAStatusChanged(userId: string, enabled: boolean, message: string) {
+    this.server.to(`user:${userId}`).emit('user:2faStatusChanged', {
+      userId,
+      enabled,
+      action: enabled ? 'enabled' : 'disabled',
+      timestamp: new Date().toISOString(),
+      message,
+    });
+  }
+
+  /**
    * Emit event profile updated
    */
   emitProfileUpdated(
@@ -353,6 +389,18 @@ export class WebsocketGateway
   }
 
   /**
+   * Emit event khi xóa nhiều Organizations
+   */
+  emitOrganizationsDeletedMany(deletedBy: string, orgIds: string[]) {
+    this.server.to(`user:${deletedBy}`).emit('organization:deletedMany', {
+      organizationIds: orgIds,
+      count: orgIds.length,
+      deletedBy,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  /**
    * Emit event khi mời thành viên
    */
   emitMemberInvited(invitedUserId: string, data: { organization: { id: string; name: string }; member: unknown }) {
@@ -392,6 +440,68 @@ export class WebsocketGateway
     };
     this.server.to(`user:${oldOwnerId}`).emit('organization:ownershipTransferred', event);
     this.server.to(`user:${newOwnerId}`).emit('organization:ownershipTransferred', event);
+  }
+
+  /**
+   * Emit event khi thành viên chấp nhận lời mời
+   */
+  emitMemberAccepted(orgId: string, orgName: string, memberId: string, userId: string) {
+    this.server.to(`organization:${orgId}`).emit('organization:memberAccepted', {
+      organizationId: orgId,
+      organizationName: orgName,
+      memberId,
+      userId,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  /**
+   * Emit event khi thành viên từ chối lời mời
+   */
+  emitMemberRejected(orgId: string, userId: string) {
+    this.server.to(`organization:${orgId}`).emit('organization:memberRejected', {
+      organizationId: orgId,
+      userId,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  /**
+   * Emit event khi thành viên rời tổ chức
+   */
+  emitMemberLeft(orgId: string, memberId: string, userId: string) {
+    this.server.to(`organization:${orgId}`).emit('organization:memberLeft', {
+      organizationId: orgId,
+      memberId,
+      userId,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  /**
+   * Emit event khi cập nhật roles của thành viên
+   */
+  emitMemberRolesUpdated(orgId: string, memberId: string, roleIds: string[], updatedBy: string) {
+    this.server.to(`organization:${orgId}`).emit('organization:memberRolesUpdated', {
+      organizationId: orgId,
+      memberId,
+      roleIds,
+      updatedBy,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  /**
+   * Emit event khi cập nhật permissions của thành viên
+   */
+  emitMemberPermissionsUpdated(orgId: string, memberId: string, permissionIds: string[], updatedBy: string) {
+    this.server.to(`organization:${orgId}`).emit('organization:memberPermissionsUpdated', {
+      organizationId: orgId,
+      memberId,
+      permissionIds,
+      updatedBy,
+      timestamp: new Date().toISOString(),
+    });
   }
 
   /**
@@ -510,6 +620,287 @@ export class WebsocketGateway
       notificationId,
       title,
       deletedBy,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  /**
+   * Emit event khi tạo Organization Role
+   */
+  emitOrgRoleCreated(orgId: string, roleId: string, roleName: string, createdBy: string) {
+    this.server.to(`organization:${orgId}`).emit('orgRole:created', {
+      organizationId: orgId,
+      roleId,
+      roleName,
+      createdBy,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  /**
+   * Emit event khi cập nhật Organization Role
+   */
+  emitOrgRoleUpdated(orgId: string, roleId: string, roleName: string, updatedBy: string) {
+    this.server.to(`organization:${orgId}`).emit('orgRole:updated', {
+      organizationId: orgId,
+      roleId,
+      roleName,
+      updatedBy,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  /**
+   * Emit event khi xóa Organization Role
+   */
+  emitOrgRoleDeleted(orgId: string, roleId: string, deletedBy: string) {
+    this.server.to(`organization:${orgId}`).emit('orgRole:deleted', {
+      organizationId: orgId,
+      roleId,
+      deletedBy,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  /**
+   * Emit event khi xóa nhiều Organization Roles
+   */
+  emitOrgRolesDeletedMany(orgId: string, roleIds: string[], deletedBy: string) {
+    this.server.to(`organization:${orgId}`).emit('orgRole:deletedMany', {
+      organizationId: orgId,
+      roleIds,
+      count: roleIds.length,
+      deletedBy,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  /**
+   * Emit event khi tạo API Key
+   */
+  emitApiKeyCreated(orgId: string, apiKeyId: string, name: string, createdBy: string) {
+    this.server.to(`organization:${orgId}`).emit('apiKey:created', {
+      organizationId: orgId,
+      apiKeyId,
+      name,
+      createdBy,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  /**
+   * Emit event khi cập nhật API Key
+   */
+  emitApiKeyUpdated(orgId: string, apiKeyId: string, name: string, updatedBy: string) {
+    this.server.to(`organization:${orgId}`).emit('apiKey:updated', {
+      organizationId: orgId,
+      apiKeyId,
+      name,
+      updatedBy,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  /**
+   * Emit event khi xóa API Key
+   */
+  emitApiKeyDeleted(orgId: string, apiKeyId: string, deletedBy: string) {
+    this.server.to(`organization:${orgId}`).emit('apiKey:deleted', {
+      organizationId: orgId,
+      apiKeyId,
+      deletedBy,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  /**
+   * Emit event khi xóa nhiều API Keys
+   */
+  emitApiKeysDeletedMany(orgId: string, apiKeyIds: string[], deletedBy: string) {
+    this.server.to(`organization:${orgId}`).emit('apiKey:deletedMany', {
+      organizationId: orgId,
+      apiKeyIds,
+      count: apiKeyIds.length,
+      deletedBy,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  /**
+   * Emit event khi cập nhật Warehouse
+   */
+  emitWarehouseUpdated(orgId: string, warehouseId: string, name: string, updatedFields: string[], updatedBy: string) {
+    this.server.to(`organization:${orgId}`).emit('warehouse:updated', {
+      organizationId: orgId,
+      warehouseId,
+      name,
+      updatedFields,
+      updatedBy,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  /**
+   * Emit event khi xóa Warehouse
+   */
+  emitWarehouseDeleted(orgId: string, warehouseId: string, deletedBy: string) {
+    this.server.to(`organization:${orgId}`).emit('warehouse:deleted', {
+      organizationId: orgId,
+      warehouseId,
+      deletedBy,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  /**
+   * Emit event khi xóa nhiều Warehouses
+   */
+  emitWarehousesDeletedMany(orgId: string, warehouseIds: string[], deletedBy: string) {
+    this.server.to(`organization:${orgId}`).emit('warehouse:deletedMany', {
+      organizationId: orgId,
+      warehouseIds,
+      count: warehouseIds.length,
+      deletedBy,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  /**
+   * Emit event khi cập nhật layout Warehouse
+   */
+  emitWarehouseLayoutUpdated(orgId: string, warehouseId: string, name: string, updatedBy: string, summary: Record<string, number>) {
+    this.server.to(`organization:${orgId}`).emit('warehouse:layoutUpdated', {
+      organizationId: orgId,
+      warehouseId,
+      name,
+      updatedBy,
+      summary,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  /**
+   * Emit event khi tạo Rental Contract
+   */
+  emitRentalContractCreated(orgId: string, contractId: string, contractNumber: string, createdBy: string) {
+    this.server.to(`organization:${orgId}`).emit('rentalContract:created', {
+      organizationId: orgId,
+      contractId,
+      contractNumber,
+      createdBy,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  /**
+   * Emit event khi cập nhật Rental Contract
+   */
+  emitRentalContractUpdated(orgId: string, contractId: string, contractNumber: string, updatedBy: string, status?: string) {
+    this.server.to(`organization:${orgId}`).emit('rentalContract:updated', {
+      organizationId: orgId,
+      contractId,
+      contractNumber,
+      status,
+      updatedBy,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  /**
+   * Emit event khi xóa Rental Contract
+   */
+  emitRentalContractDeleted(orgId: string, contractId: string, deletedBy: string) {
+    this.server.to(`organization:${orgId}`).emit('rentalContract:deleted', {
+      organizationId: orgId,
+      contractId,
+      deletedBy,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  /**
+   * Emit event khi xóa nhiều Rental Contracts
+   */
+  emitRentalContractsDeletedMany(orgId: string, contractIds: string[], deletedBy: string) {
+    this.server.to(`organization:${orgId}`).emit('rentalContract:deletedMany', {
+      organizationId: orgId,
+      contractIds,
+      count: contractIds.length,
+      deletedBy,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  /**
+   * Emit event khi gia hạn Rental Contract
+   */
+  emitRentalContractRenewed(orgId: string, contractId: string, contractNumber: string, newEndDate: string, renewedBy: string) {
+    this.server.to(`organization:${orgId}`).emit('rentalContract:renewed', {
+      organizationId: orgId,
+      contractId,
+      contractNumber,
+      newEndDate,
+      renewedBy,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  /**
+   * Emit event khi upload ảnh cho template
+   */
+  emitWarehouseTemplateImagesUploaded(templateId: string, count: number, uploadedBy: string) {
+    this.server.emit('warehouseTemplateImage:created', {
+      templateId,
+      count,
+      uploadedBy,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  /**
+   * Emit event khi xóa ảnh của template
+   */
+  emitWarehouseTemplateImageDeleted(templateId: string, imageId: string, deletedBy: string) {
+    this.server.emit('warehouseTemplateImage:deleted', {
+      templateId,
+      imageId,
+      deletedBy,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  /**
+   * Emit event khi xóa nhiều ảnh của template
+   */
+  emitWarehouseTemplateImagesDeletedMany(templateId: string, imageIds: string[], deletedBy: string) {
+    this.server.emit('warehouseTemplateImage:deletedMany', {
+      templateId,
+      imageIds,
+      count: imageIds.length,
+      deletedBy,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  /**
+   * Emit event khi reorder ảnh của template
+   */
+  emitWarehouseTemplateImagesReordered(templateId: string, updatedBy: string) {
+    this.server.emit('warehouseTemplateImage:updated', {
+      templateId,
+      action: 'reorder',
+      updatedBy,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  /**
+   * Emit event khi cập nhật config - broadcast đến tất cả clients
+   */
+  emitConfigUpdated(action: 'updated' | 'reset' | 'reloaded', updatedBy?: string) {
+    this.server.emit('config:updated', {
+      action,
+      updatedBy,
       timestamp: new Date().toISOString(),
     });
   }
@@ -640,14 +1031,30 @@ export class WebsocketGateway
    */
   private async setUserOnlineStatus(userId: string, isOnline: boolean): Promise<void> {
     try {
+      let user;
       if (isOnline) {
-        await this.userRepository.setUserOnline(userId);
+        user = await this.userRepository.setUserOnline(userId);
       } else {
-        await this.userRepository.setUserOffline(userId);
+        user = await this.userRepository.setUserOffline(userId);
       }
 
-      // Emit event thay đổi trạng thái online
+      // 1. Emit Global (bảo thù - giữ lại nếu frontend cũ đang dùng)
       this.emitUserOnlineStatus(userId, isOnline);
+
+      // 2. Emit to Organizations
+      const orgIds = await this.userRepository.getUserOrganizations(userId);
+      const timestamp = new Date().toISOString();
+
+      orgIds.forEach(orgId => {
+        this.server.to(`organization:${orgId}`).emit('organization:memberOnlineStatus', {
+          organizationId: orgId,
+          userId,
+          isOnline,
+          lastOnline: user.last_online,
+          timestamp
+        });
+      });
+
     } catch (error) {
       this.logger.error(`Failed to update online status for user ${userId}: ${error}`);
     }

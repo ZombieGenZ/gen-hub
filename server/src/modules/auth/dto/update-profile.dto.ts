@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, MinLength } from 'class-validator';
+import { IsOptional, IsString, MinLength, IsUrl, MaxLength } from 'class-validator';
 import { i18nValidationMessage } from 'nestjs-i18n';
 import { IsValidLanguage } from '../../../common/validators';
 
@@ -31,5 +31,18 @@ export class UpdateProfileDto {
     message: i18nValidationMessage('auth.validation.language_invalid'),
   })
   language?: string;
-}
 
+  @ApiPropertyOptional({
+    description: 'URL avatar',
+    example: 'https://example.com/avatar.jpg',
+    maxLength: 500,
+  })
+  @IsOptional()
+  @IsString({
+    message: i18nValidationMessage('auth.validation.avatar_string'),
+  })
+  @MaxLength(500, {
+    message: i18nValidationMessage('auth.validation.avatar_max_length'),
+  })
+  avatar?: string;
+}

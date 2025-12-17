@@ -154,6 +154,32 @@ async function bootstrap() {
     jsonDocumentUrl: '/api-docs-apikey-json',
   });
 
+  // Count endpoints from Swagger documents
+  const countEndpoints = (doc: any): { total: number; byMethod: Record<string, number> } => {
+    const byMethod: Record<string, number> = {};
+    let total = 0;
+
+    if (doc.paths) {
+      for (const path of Object.keys(doc.paths)) {
+        const methods = doc.paths[path];
+        for (const method of Object.keys(methods)) {
+          if (['get', 'post', 'put', 'patch', 'delete', 'head', 'options'].includes(method)) {
+            byMethod[method.toUpperCase()] = (byMethod[method.toUpperCase()] || 0) + 1;
+            total++;
+          }
+        }
+      }
+    }
+
+    return { total, byMethod };
+  };
+
+  const mainStats = countEndpoints(document);
+  const apiKeyStats = countEndpoints(apiKeyDocument);
+
+  console.log(`📊 Main API: ${mainStats.total} endpoints (${Object.entries(mainStats.byMethod).map(([m, c]) => `${m}: ${c}`).join(', ')})`);
+  console.log(`📊 API Key API: ${apiKeyStats.total} endpoints (${Object.entries(apiKeyStats.byMethod).map(([m, c]) => `${m}: ${c}`).join(', ')})`);
+
   const port = process.env.PORT ?? 4000;
   const backendUrl = process.env.BACKEND_URL || `http://localhost:${port}`;
   await app.listen(port);

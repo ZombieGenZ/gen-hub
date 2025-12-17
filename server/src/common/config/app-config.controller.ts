@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Post, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Patch, Post, Body, UseGuards, Request } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -10,11 +10,15 @@ import type { IAppConfig } from './app-config.service';
 import { UpdateAppConfigDto } from './app-config.dto';
 import { Public, RequirePermission } from '../decorators';
 import { JwtAuthGuard, PermissionGuard } from '../guards';
+import { WebsocketGateway } from '../../modules/websocket/websocket.gateway';
 
 @ApiTags('Config')
 @Controller('config')
 export class AppConfigController {
-  constructor(private readonly appConfigService: AppConfigService) { }
+  constructor(
+    private readonly appConfigService: AppConfigService,
+    private readonly websocketGateway: WebsocketGateway,
+  ) { }
 
   @ApiOperation({ summary: 'Lấy cấu hình ứng dụng' })
   @ApiResponse({
@@ -52,8 +56,10 @@ export class AppConfigController {
   @UseGuards(JwtAuthGuard, PermissionGuard)
   @RequirePermission('config.update')
   @Patch()
-  async updateConfig(@Body() dto: UpdateAppConfigDto): Promise<IAppConfig> {
-    return this.appConfigService.update(dto as Partial<IAppConfig>);
+  async updateConfig(@Body() dto: UpdateAppConfigDto, @Request() req: any): Promise<IAppConfig> {
+    const result = await this.appConfigService.update(dto as Partial<IAppConfig>);
+    this.websocketGateway.emitConfigUpdated('updated', req.user?.userId);
+    return result;
   }
 
   @ApiOperation({ summary: 'Reset cấu hình về mặc định' })
@@ -66,8 +72,10 @@ export class AppConfigController {
   @UseGuards(JwtAuthGuard, PermissionGuard)
   @RequirePermission('config.reset')
   @Post('reset')
-  async resetConfig(): Promise<IAppConfig> {
-    return this.appConfigService.reset();
+  async resetConfig(@Request() req: any): Promise<IAppConfig> {
+    const result = await this.appConfigService.reset();
+    this.websocketGateway.emitConfigUpdated('reset', req.user?.userId);
+    return result;
   }
 
   @ApiOperation({ summary: 'Reload cấu hình từ file' })
@@ -80,7 +88,9 @@ export class AppConfigController {
   @UseGuards(JwtAuthGuard, PermissionGuard)
   @RequirePermission('config.reload')
   @Post('reload')
-  async reloadConfig(): Promise<IAppConfig> {
-    return this.appConfigService.reload();
+  async reloadConfig(@Request() req: any): Promise<IAppConfig> {
+    const result = await this.appConfigService.reload();
+    this.websocketGateway.emitConfigUpdated('reloaded', req.user?.userId);
+    return result;
   }
 }

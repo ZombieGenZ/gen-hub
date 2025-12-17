@@ -293,4 +293,70 @@ export class SepayService {
             `Payment expired: ${payment.payment_code}`,
             { metaData: { paymentId } });
     }
+
+    /**
+     * Lấy danh sách tất cả payments (Admin only)
+     */
+    async findAllPayments(query: {
+        limit?: number;
+        offset?: number;
+        keywords?: string;
+        status?: 'PENDING' | 'PAID' | 'EXPIRED' | 'CANCELLED';
+        organizationId?: string;
+    }) {
+        const { limit = 20, offset = 0, keywords, status, organizationId } = query;
+
+        const where: any = {
+            is_deleted: false,
+        };
+
+        if (status) {
+            where.status = status;
+        }
+
+        if (keywords) {
+            where.OR = [
+                { payment_code: { contains: keywords, mode: 'insensitive' } },
+                { rental_contract: { code: { contains: keywords, mode: 'insensitive' } } },
+            ];
+        }
+
+        if (organizationId) {
+            where.rental_contract = {
+                ...where.rental_contract,
+                organization_id: organizationId,
+            };
+        }
+
+        const [items, total] = await Promise.all([
+            this.prisma.payment.findMany({
+                where,
+                include: {
+                    rental_contract: {
+                        select: {
+                            id: true,
+                            code: true,
+                            status: true,
+                            organization_id: true,
+                            organization: {
+                                select: { id: true, name: true },
+                            },
+                        },
+                    },
+                },
+                orderBy: { created_at: 'desc' },
+                take: limit,
+                skip: offset,
+            }),
+            this.prisma.payment.count({ where }),
+        ]);
+
+        return {
+            items,
+            total,
+            limit,
+            offset,
+            hasMore: offset + items.length < total,
+        };
+    }
 }

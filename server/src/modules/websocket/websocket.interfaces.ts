@@ -34,6 +34,36 @@ export interface UserTokenRevokedEvent {
 }
 
 /**
+ * Event khi password được thay đổi
+ */
+export interface UserPasswordChangedEvent {
+  userId: string;
+  timestamp: string;
+  message: string;
+}
+
+/**
+ * Event khi email được xác thực
+ */
+export interface UserEmailVerifiedEvent {
+  userId: string;
+  email: string;
+  timestamp: string;
+  message: string;
+}
+
+/**
+ * Event khi 2FA status thay đổi
+ */
+export interface User2FAStatusChangedEvent {
+  userId: string;
+  enabled: boolean;
+  action: 'enabled' | 'disabled';
+  timestamp: string;
+  message: string;
+}
+
+/**
  * Event khi profile được cập nhật
  */
 export interface UserProfileUpdatedEvent {
@@ -43,6 +73,7 @@ export interface UserProfileUpdatedEvent {
     id: string;
     name: string;
     email: string | null;
+    avatar?: string | null;
     language?: string;
   };
   timestamp: string;
@@ -186,6 +217,69 @@ export interface MemberRemovedEvent {
 }
 
 /**
+ * Event khi thành viên chấp nhận lời mời
+ */
+export interface MemberAcceptedEvent {
+  organizationId: string;
+  organizationName: string;
+  memberId: string;
+  userId: string;
+  timestamp: string;
+}
+
+/**
+ * Event khi thành viên từ chối lời mời
+ */
+export interface MemberRejectedEvent {
+  organizationId: string;
+  userId: string;
+  timestamp: string;
+}
+
+/**
+ * Event khi thành viên rời khỏi tổ chức
+ */
+export interface MemberLeftEvent {
+  organizationId: string;
+  memberId: string;
+  userId: string;
+  timestamp: string;
+}
+
+/**
+ * Event khi cập nhật roles của thành viên
+ */
+export interface MemberRolesUpdatedEvent {
+  organizationId: string;
+  memberId: string;
+  roleIds: string[];
+  updatedBy: string;
+  timestamp: string;
+}
+
+/**
+ * Event khi cập nhật permissions của thành viên
+ */
+export interface MemberPermissionsUpdatedEvent {
+  organizationId: string;
+  memberId: string;
+  permissionIds: string[];
+  updatedBy: string;
+  timestamp: string;
+}
+
+/**
+ * Event khi cập nhật display name của thành viên
+ */
+export interface MemberDisplayNameUpdatedEvent {
+  organizationId: string;
+  memberId: string;
+  displayName: string;
+  updatedBy: string;
+  timestamp: string;
+}
+
+/**
  * Event khi chuyển quyền sở hữu Organization
  */
 export interface OwnershipTransferredEvent {
@@ -203,5 +297,69 @@ export interface UserOnlineStatusEvent {
   userId: string;
   isOnline: boolean;
   lastOnline: string | null;
+  timestamp: string;
+}
+
+/**
+ * Event khi tạo Organization Role
+ */
+export interface OrgRoleCreatedEvent {
+  organizationId: string;
+  roleId: string;
+  roleName: string;
+  createdBy: string;
+  timestamp: string;
+}
+
+/**
+ * Event khi cập nhật Organization Role
+ */
+export interface OrgRoleUpdatedEvent {
+  organizationId: string;
+  roleId: string;
+  roleName: string;
+  updatedBy: string;
+  timestamp: string;
+}
+
+/**
+ * Event khi xóa Organization Role
+ */
+export interface OrgRoleDeletedEvent {
+  organizationId: string;
+  roleId: string;
+  deletedBy: string;
+  timestamp: string;
+}
+
+/**
+ * Event khi tạo API Key
+ */
+export interface ApiKeyCreatedEvent {
+  organizationId: string;
+  apiKeyId: string;
+  name: string;
+  createdBy: string;
+  timestamp: string;
+}
+
+/**
+ * Event khi cập nhật API Key
+ */
+export interface ApiKeyUpdatedEvent {
+  organizationId: string;
+  apiKeyId: string;
+  name: string;
+  updatedBy: string;
+  timestamp: string;
+}
+
+/**
+ * Event khi xóa API Key
+ */
+export interface ApiKeyDeletedEvent {
+  organizationId: string;
+  apiKeyId: string;
+  deletedBy: string;
   timestamp: string;
 }

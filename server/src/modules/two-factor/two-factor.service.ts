@@ -15,6 +15,7 @@ import { SystemLogService } from '../system-log/system-log.service';
 import { EmailService } from '../notification/email.service';
 import { AppConfigService } from '../../common/config/app-config.service';
 import { RefreshTokenRepository } from '../auth/repositories/refresh-token.repository';
+import { WebsocketGateway } from '../websocket/websocket.gateway';
 import { VerifyTwoFactorSetupDto, VerifyTwoFactorLoginDto } from '../auth/dto';
 
 /**
@@ -43,6 +44,7 @@ export class TwoFactorService {
     private readonly emailService: EmailService,
     private readonly appConfigService: AppConfigService,
     private readonly refreshTokenRepository: RefreshTokenRepository,
+    private readonly websocketGateway: WebsocketGateway,
   ) { }
 
   /**
@@ -118,6 +120,11 @@ export class TwoFactorService {
 
     await this.userRepository.enableTwoFactor(userId);
 
+    const message = await this.i18n.t('auth.two_factor.setup_success', { lang });
+
+    // Emit socket event
+    this.websocketGateway.emit2FAStatusChanged(userId, true, message);
+
     this.systemLogService.info(
       'two-factor',
       'enable_2fa',
@@ -128,9 +135,7 @@ export class TwoFactorService {
       },
     );
 
-    return {
-      message: await this.i18n.t('auth.two_factor.setup_success', { lang }),
-    };
+    return { message };
   }
 
   /**
@@ -152,6 +157,11 @@ export class TwoFactorService {
 
     await this.backupCodeService.deleteAllBackupCodes(userId);
 
+    const message = await this.i18n.t('auth.two_factor.disabled_success', { lang });
+
+    // Emit socket event
+    this.websocketGateway.emit2FAStatusChanged(userId, false, message);
+
     this.systemLogService.info(
       'two-factor',
       'disable_2fa',
@@ -162,9 +172,7 @@ export class TwoFactorService {
       },
     );
 
-    return {
-      message: await this.i18n.t('auth.two_factor.disabled_success', { lang }),
-    };
+    return { message };
   }
 
   /**

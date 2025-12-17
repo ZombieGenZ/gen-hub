@@ -284,6 +284,11 @@ export class AuthService {
     // Invalidate user cache để đảm bảo dữ liệu mới được cập nhật
     await this.redisService.invalidateUserCache(user.id);
 
+    const message = await this.i18n.t('auth.verification.email_verified', { lang });
+
+    // Emit socket event
+    this.websocketGateway.emitEmailVerified(user.id, user.email || '', message);
+
     this.systemLogService.info(
       'auth',
       'verify_email',
@@ -294,9 +299,7 @@ export class AuthService {
       },
     );
 
-    return {
-      message: await this.i18n.t('auth.verification.email_verified', { lang }),
-    };
+    return { message };
   }
 
   /**

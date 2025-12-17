@@ -919,6 +919,9 @@ export class WarehouseTemplateService {
             metaData: { templateId, count: files.length },
         });
 
+        // Emit WebSocket event
+        this.websocketGateway.emitWarehouseTemplateImagesUploaded(templateId, files.length, userId);
+
         return uploadResults;
     }
 
@@ -973,6 +976,9 @@ export class WarehouseTemplateService {
             userId,
             metaData: { templateId, imageId },
         });
+
+        // Emit WebSocket event
+        this.websocketGateway.emitWarehouseTemplateImageDeleted(templateId, imageId, userId);
     }
 
     async deleteManyImages(
@@ -1019,12 +1025,8 @@ export class WarehouseTemplateService {
 
         await this.redisService.invalidateWarehouseTemplateCache(templateId);
 
-        this.websocketGateway.server.emit('warehouseTemplate:imagesDeletedMany', {
-            templateId,
-            imageIds: ids,
-            deletedBy: userId,
-            timestamp: new Date().toISOString(),
-        });
+        // Emit WebSocket event
+        this.websocketGateway.emitWarehouseTemplateImagesDeletedMany(templateId, ids, userId);
 
         this.systemLogService.info('warehouse-template', 'delete_images_many', `Deleted ${ids.length} images from: ${template.name}`, {
             userId,
@@ -1064,6 +1066,9 @@ export class WarehouseTemplateService {
             userId,
             metaData: { templateId, count: imageOrders.length },
         });
+
+        // Emit WebSocket event
+        this.websocketGateway.emitWarehouseTemplateImagesReordered(templateId, userId);
     }
 
     /**

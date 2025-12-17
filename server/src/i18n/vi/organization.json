@@ -48,7 +48,8 @@
         "cannot_transfer_to_self": "Không thể chuyển quyền sở hữu cho chính mình",
         "owner_cannot_leave": "Chủ sở hữu không thể rời khỏi tổ chức. Hãy chuyển quyền sở hữu trước.",
         "apikey_permission_not_allowed": "Permission này không cho phép sử dụng API key",
-        "apikey_no_permission": "API key không có quyền thực hiện thao tác này"
+        "apikey_no_permission": "API key không có quyền thực hiện thao tác này",
+        "invite_failed_all": "Không thể mời bất kỳ thành viên nào"
     },
     "validation": {
         "name_required": "Tên tổ chức không được để trống",
@@ -83,6 +84,12 @@
         "keywords_string": "Từ khóa tìm kiếm phải là chuỗi",
         "is_active_boolean": "Trạng thái phải là boolean",
         "is_accepted_boolean": "Trạng thái chấp nhận phải là boolean",
+        "emails_required": "Danh sách email không được để trống",
+        "emails_array": "Email phải là mảng",
+        "emails_min_one": "Phải có ít nhất một email",
+        "display_name_required": "Tên hiển thị không được để trống",
+        "display_name_string": "Tên hiển thị phải là chuỗi",
+        "display_name_max_length": "Tên hiển thị không được quá 100 ký tự",
         "google_client_id_string": "Google Client ID phải là chuỗi",
         "google_client_secret_string": "Google Client Secret phải là chuỗi",
         "google_refresh_token_string": "Google Refresh Token phải là chuỗi",

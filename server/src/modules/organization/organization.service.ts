@@ -348,6 +348,9 @@ export class OrganizationService {
         this.websocketGateway.emitOrganizationDeleted(org.owner_id, org.id);
       }),
     );
+
+    // Emit deletedMany event
+    this.websocketGateway.emitOrganizationsDeletedMany(userId, ids);
   }
 
   async transferOwnership(
@@ -440,7 +443,7 @@ export class OrganizationService {
     dto: InviteMemberDto,
     userId: string,
     lang: string,
-  ): Promise<IOrganizationMember> {
+  ): Promise<IOrganizationMember[]> {
     const org = await this.findById(orgId, lang);
 
     // Kiểm tra quyền
@@ -452,99 +455,137 @@ export class OrganizationService {
       lang,
     );
 
-    // Kiểm tra user tồn tại theo email
-    const user = await this.repository.findUserByEmail(dto.email);
-    if (!user) {
-      throw new NotFoundException(
-        await this.i18n.translate('organization.errors.user_not_found', {
-          lang,
-        }),
-      );
-    }
-
-    // Kiểm tra đã là member chưa
-    const existingMember = await this.repository.findMemberByUserAndOrg(
-      user.id,
-      orgId,
-    );
-    if (existingMember && existingMember.is_accepted) {
-      throw new ConflictException(
-        await this.i18n.translate('organization.errors.already_member', {
-          lang,
-        }),
-      );
-    }
-    if (existingMember && !existingMember.is_accepted) {
-      throw new ConflictException(
-        await this.i18n.translate('organization.errors.already_invited', {
-          lang,
-        }),
-      );
-    }
-
-    // Generate invite token
-    const inviteToken = crypto.randomBytes(32).toString('hex');
-    const inviteTokenExpiresAt = new Date();
-    inviteTokenExpiresAt.setDate(
-      inviteTokenExpiresAt.getDate() + this.INVITE_TOKEN_EXPIRY_DAYS,
-    );
-
-    // Tạo member (pending invitation)
-    const member = await this.repository.createMember({
-      organization: { connect: { id: orgId } },
-      user: { connect: { id: user.id } },
-      is_accepted: false,
-      is_active: true,
-      invite_token: inviteToken,
-      invite_token_expires_at: inviteTokenExpiresAt,
-      created_by: userId,
-    });
-
-    // Invalidate cache
-    await this.redisService.invalidateOrganizationMemberCache(orgId);
-
-    // Log
-    this.auditLogService.logCreate(
-      orgId,
-      'OrganizationMember',
-      member.id,
-      { email: dto.email, user_id: user.id, invited_by: userId },
-      { userId },
-    );
-
-    // Emit WebSocket to the invited user
-    this.websocketGateway.emitMemberInvited(user.id, {
-      organization: org,
-      member,
-    });
-
-    // Lấy thông tin người mời
+    // Lấy thông tin người mời trước
     const inviter = await this.repository.findUserById(userId);
     const inviterName = inviter?.name || inviter?.email || 'Unknown';
     const inviterEmail = inviter?.email || '';
-    const inviteeName = user.name || user.email || 'User';
 
-    // Gửi email mời
-    this.emailService
-      .sendOrganizationInviteEmail(
-        dto.email,
-        inviteToken,
-        inviteeName,
-        org.name,
-        inviterName,
-        inviterEmail,
-        lang,
-      )
-      .catch((err) => {
-        this.systemLogService.error(
-          'organization',
-          'invite_email',
-          `Failed to send invite email: ${err.message}`,
+    const results: IOrganizationMember[] = [];
+    const errors: { email: string; error: string }[] = [];
+
+    // Xử lý từng email
+    for (const email of dto.emails) {
+      try {
+        // Kiểm tra user tồn tại theo email
+        const user = await this.repository.findUserByEmail(email);
+        if (!user) {
+          errors.push({
+            email,
+            error: await this.i18n.translate('organization.errors.user_not_found', { lang }),
+          });
+          continue;
+        }
+
+        // Kiểm tra đã là member chưa
+        const existingMember = await this.repository.findMemberByUserAndOrg(
+          user.id,
+          orgId,
+        );
+        if (existingMember && existingMember.is_accepted) {
+          errors.push({
+            email,
+            error: await this.i18n.translate('organization.errors.already_member', { lang }),
+          });
+          continue;
+        }
+        if (existingMember && !existingMember.is_accepted) {
+          errors.push({
+            email,
+            error: await this.i18n.translate('organization.errors.already_invited', { lang }),
+          });
+          continue;
+        }
+
+        // Generate invite token
+        const inviteToken = crypto.randomBytes(32).toString('hex');
+        const inviteTokenExpiresAt = new Date();
+        inviteTokenExpiresAt.setDate(
+          inviteTokenExpiresAt.getDate() + this.INVITE_TOKEN_EXPIRY_DAYS,
+        );
+
+        // Tạo member (pending invitation) với display_name tự động lấy từ user.name
+        const member = await this.repository.createMember({
+          organization: { connect: { id: orgId } },
+          user: { connect: { id: user.id } },
+          display_name: user.name || user.email?.split('@')[0] || null,
+          is_accepted: false,
+          is_active: true,
+          invite_token: inviteToken,
+          invite_token_expires_at: inviteTokenExpiresAt,
+          created_by: userId,
+        });
+
+        // Log
+        this.auditLogService.logCreate(
+          orgId,
+          'OrganizationMember',
+          member.id,
+          { email, user_id: user.id, invited_by: userId, display_name: member.display_name },
           { userId },
         );
-      });
 
-    return member;
+        // Emit WebSocket to the invited user
+        this.websocketGateway.emitMemberInvited(user.id, {
+          organization: org,
+          member,
+        });
+
+        const inviteeName = user.name || user.email || 'User';
+
+        // Gửi email mời (không block)
+        this.emailService
+          .sendOrganizationInviteEmail(
+            email,
+            inviteToken,
+            inviteeName,
+            org.name,
+            inviterName,
+            inviterEmail,
+            lang,
+          )
+          .catch((err) => {
+            this.systemLogService.error(
+              'organization',
+              'invite_email',
+              `Failed to send invite email to ${email}: ${err.message}`,
+              { userId },
+            );
+          });
+
+        results.push(member);
+      } catch (err) {
+        errors.push({
+          email,
+          error: err instanceof Error ? err.message : 'Unknown error',
+        });
+      }
+    }
+
+    // Invalidate cache sau khi xử lý xong tất cả
+    if (results.length > 0) {
+      await this.redisService.invalidateOrganizationMemberCache(orgId);
+    }
+
+    // Log tổng kết
+    if (results.length > 0) {
+      this.systemLogService.info(
+        'organization',
+        'invite_members',
+        `Invited ${results.length} members to ${org.name}`,
+        { userId, metaData: { successCount: results.length, errorCount: errors.length } },
+      );
+    }
+
+    // Nếu không có kết quả thành công nào và có lỗi, throw để frontend xử lý
+    if (results.length === 0 && errors.length > 0) {
+      throw new NotFoundException(
+        await this.i18n.translate('organization.errors.invite_failed_all', { lang }) +
+        ': ' +
+        errors.map((e) => `${e.email}: ${e.error}`).join(', '),
+      );
+    }
+
+    return results;
   }
 
   /**
@@ -823,6 +864,10 @@ export class OrganizationService {
       { userId },
     );
 
+    // Emit socket event
+    const org = await this.findById(orgId, lang);
+    this.websocketGateway.emitMemberAccepted(orgId, org.name, member.id, userId);
+
     return updated;
   }
 
@@ -861,6 +906,9 @@ export class OrganizationService {
       { user_id: userId, rejected: true },
       { userId },
     );
+
+    // Emit socket event
+    this.websocketGateway.emitMemberRejected(orgId, userId);
   }
 
   async getMembers(
@@ -1001,6 +1049,9 @@ export class OrganizationService {
       { userId, description: 'Roles assigned' },
     );
 
+    // Emit socket event
+    this.websocketGateway.emitMemberRolesUpdated(orgId, memberId, dto.role_ids, userId);
+
     return updated!;
   }
 
@@ -1052,7 +1103,102 @@ export class OrganizationService {
       { userId, description: 'Permissions assigned' },
     );
 
+    // Emit socket event
+    this.websocketGateway.emitMemberPermissionsUpdated(orgId, memberId, dto.permission_ids, userId);
+
     return updated!;
+  }
+
+  /**
+   * Cập nhật display name của member (Admin or Self)
+   */
+  async updateMemberDisplayName(
+    orgId: string,
+    memberId: string,
+    displayName: string,
+    userId: string,
+    lang: string,
+    isSelf: boolean = false,
+  ): Promise<IOrganizationMember> {
+    const org = await this.findById(orgId, lang);
+
+    const member = await this.repository.findMemberById(memberId);
+    if (!member || member.organization_id !== orgId) {
+      throw new NotFoundException(
+        await this.i18n.translate('organization.errors.member_not_found', {
+          lang,
+        }),
+      );
+    }
+
+    // Nếu là self update, kiểm tra memberId phải thuộc về userId
+    if (isSelf) {
+      if (member.user_id !== userId) {
+        throw new ForbiddenException(
+          await this.i18n.translate('organization.errors.permission_denied', {
+            lang,
+          }),
+        );
+      }
+    } else {
+      // Admin update: cần quyền
+      await this.checkOrgPermission(
+        orgId,
+        userId,
+        'organization.member.update',
+        org.owner_id,
+        lang,
+      );
+    }
+
+    const oldDisplayName = member.display_name;
+    const updated = await this.repository.updateMember(memberId, {
+      display_name: displayName,
+      updated_by: userId,
+      updated_at: new Date(),
+    });
+
+    // Invalidate cache
+    await this.redisService.invalidateOrganizationMemberCache(orgId);
+
+    // Log
+    this.auditLogService.logUpdate(
+      orgId,
+      'OrganizationMember',
+      memberId,
+      { display_name: oldDisplayName },
+      { display_name: displayName },
+      { userId, description: isSelf ? 'Self display name updated' : 'Display name updated by admin' },
+    );
+
+    // Emit WebSocket event
+    this.websocketGateway.server.to(`organization:${orgId}`).emit('member:displayNameUpdated', {
+      organizationId: orgId,
+      memberId,
+      displayName,
+      updatedBy: userId,
+    });
+
+    return updated;
+  }
+
+  /**
+   * Tìm member theo userId và orgId
+   */
+  async findMemberByUserAndOrg(
+    userId: string,
+    orgId: string,
+    lang: string,
+  ): Promise<IOrganizationMember> {
+    const member = await this.repository.findMemberByUserAndOrg(userId, orgId);
+    if (!member) {
+      throw new NotFoundException(
+        await this.i18n.translate('organization.errors.member_not_found', {
+          lang,
+        }),
+      );
+    }
+    return member;
   }
 
   async removeMember(
@@ -1166,10 +1312,7 @@ export class OrganizationService {
     );
 
     // Emit WebSocket
-    this.websocketGateway.emitMemberRemoved(userId, {
-      organizationId: orgId,
-      memberId: member.id,
-    });
+    this.websocketGateway.emitMemberLeft(orgId, member.id, userId);
   }
 
   async createRole(
@@ -1212,6 +1355,9 @@ export class OrganizationService {
       { name: role.name },
       { userId },
     );
+
+    // Emit socket event
+    this.websocketGateway.emitOrgRoleCreated(orgId, role.id, role.name, userId);
 
     return result!;
   }
@@ -1337,6 +1483,9 @@ export class OrganizationService {
       { userId },
     );
 
+    // Emit socket event
+    this.websocketGateway.emitOrgRoleUpdated(orgId, roleId, updated?.name || '', userId);
+
     return updated!;
   }
 
@@ -1380,6 +1529,9 @@ export class OrganizationService {
       { name: role.name },
       { userId },
     );
+
+    // Emit socket event
+    this.websocketGateway.emitOrgRoleDeleted(orgId, roleId, userId);
   }
 
   async deleteManyRoles(
@@ -1426,13 +1578,8 @@ export class OrganizationService {
 
     await this.repository.softDeleteManyRoles(ids, userId);
 
-    // Emit WebSocket events
-    this.websocketGateway.server.emit('organizationRole:deletedMany', {
-      ids,
-      orgId,
-      deletedBy: userId,
-      timestamp: new Date().toISOString(),
-    });
+    // Emit WebSocket event
+    this.websocketGateway.emitOrgRolesDeletedMany(orgId, ids, userId);
 
     // Log
     roles.forEach(role => {
@@ -1531,6 +1678,9 @@ export class OrganizationService {
       { name: apiKey.name },
       { userId },
     );
+
+    // Emit socket event
+    this.websocketGateway.emitApiKeyCreated(orgId, apiKey.id, apiKey.name, userId);
 
     return { ...result!, plain_key: plainKey };
   }
@@ -1777,6 +1927,9 @@ export class OrganizationService {
       { userId },
     );
 
+    // Emit socket event
+    this.websocketGateway.emitApiKeyUpdated(orgId, keyId, updated?.name || '', userId);
+
     return updated!;
   }
 
@@ -1871,6 +2024,9 @@ export class OrganizationService {
       { name: apiKey.name },
       { userId },
     );
+
+    // Emit socket event
+    this.websocketGateway.emitApiKeyDeleted(orgId, keyId, userId);
   }
 
   async deleteManyApiKeys(
@@ -1911,13 +2067,8 @@ export class OrganizationService {
 
     await this.repository.softDeleteManyApiKeys(ids, userId);
 
-    // Emit WebSocket events
-    this.websocketGateway.server.emit('apiKey:deletedMany', {
-      ids,
-      orgId,
-      deletedBy: userId,
-      timestamp: new Date().toISOString(),
-    });
+    // Emit WebSocket event
+    this.websocketGateway.emitApiKeysDeletedMany(orgId, ids, userId);
 
     // Log
     apiKeys.forEach(apiKey => {
@@ -1930,8 +2081,6 @@ export class OrganizationService {
       );
     });
   }
-
-  // ==================== ADMIN API KEY METHODS ====================
 
   /**
    * Lấy danh sách tất cả API keys (Admin)
@@ -2033,7 +2182,6 @@ export class OrganizationService {
       name: updated?.name,
       updatedBy: userId,
       isAdminAction: true,
-      timestamp: new Date().toISOString(),
     });
 
     const [result] = this.mergeApiKeyPermissions([updated!]);
@@ -2080,7 +2228,6 @@ export class OrganizationService {
       name: apiKey.name,
       deletedBy: userId,
       isAdminAction: true,
-      timestamp: new Date().toISOString(),
     });
   }
 
@@ -2132,11 +2279,10 @@ export class OrganizationService {
 
       // Emit WebSocket per Org
       this.websocketGateway.emitToOrganization(orgId, 'apiKey:deletedMany', {
-        ids: keyIds,
-        orgId,
+        apiKeyIds: keyIds,
+        count: keyIds.length,
         deletedBy: userId,
         isAdminAction: true,
-        timestamp: new Date().toISOString(),
       });
     }
   }
