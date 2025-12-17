@@ -48,24 +48,33 @@ async function bootstrap() {
   const prismaService = app.get(PrismaService);
 
   // Add allowed_origins from active API keys to CORS
-  const apiKeysWithOrigins = await prismaService.apiKey.findMany({
-    where: {
-      is_deleted: false,
-      is_active: true,
-      allowed_origins: { isEmpty: false },
-    },
-    select: { allowed_origins: true },
-  });
+  let apiKeysWithOrigins: { allowed_origins: string[] }[] = [];
+  try {
+    apiKeysWithOrigins = await prismaService.apiKey.findMany({
+      where: {
+        is_deleted: false,
+        is_active: true,
+        allowed_origins: { isEmpty: false },
+      },
+      select: { allowed_origins: true },
+    });
+  } catch (error) {
+    console.error('⚠️ Warning: Failed to fetch API keys for CORS configuration. Database might be unreachable.');
+    console.error(error.message);
+    // Proceed with empty list or exit? 
+    // Proceeding might be safer for debugging, but security-wise it means no API keys allow origins. Default is fine.
+  }
 
   const apiKeyOrigins = new Set<string>();
   for (const apiKey of apiKeysWithOrigins) {
-    for (const origin of apiKey.allowed_origins) {
-      apiKeyOrigins.add(origin);
+    for (const apiKeyOrigin of apiKey.allowed_origins) {
+      apiKeyOrigins.add(apiKeyOrigin);
     }
   }
 
   corsOrigins.push(...apiKeyOrigins);
   console.log(`🌐 CORS origins: ${corsOrigins.length > 0 ? corsOrigins.join(', ') : '*'}`);
+
 
   app.enableCors({
     origin: corsOrigins.length > 0 ? corsOrigins : '*',
@@ -101,18 +110,22 @@ async function bootstrap() {
 
   // API Key Swagger - Dynamically include modules based on DB permissions
   // Query permissions with allow_api_key = true from database
-
-  const apiKeyPermissions = await prismaService.organizationPermission.findMany({
-    where: {
-      is_deleted: false,
-      is_active: true,
-      allow_api_key: true,
-    },
-    select: { key: true },
-  });
+  let permissionKeys: string[] = [];
+  try {
+    const apiKeyPermissions = await prismaService.organizationPermission.findMany({
+      where: {
+        is_deleted: false,
+        is_active: true,
+        allow_api_key: true,
+      },
+      select: { key: true },
+    });
+    permissionKeys = apiKeyPermissions.map((p: { key: string }) => p.key);
+  } catch (error) {
+    console.error('⚠️ Warning: Failed to fetch API Key permissions. Using default modules.');
+  }
 
   // Get enabled modules based on DB permissions
-  const permissionKeys = apiKeyPermissions.map((p: { key: string }) => p.key);
   const { modules: includeModules, enabledModuleNames } = getApiKeyModules(permissionKeys);
 
   console.log(`🔑 API Key enabled modules: ${enabledModuleNames.join(', ')}`);
