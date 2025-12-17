@@ -14,6 +14,7 @@ import { WebsocketGateway } from '../websocket/websocket.gateway';
 import { SystemLogService } from '../system-log/system-log.service';
 import { OrganizationAuditLogService } from './organization-audit-log.service';
 import { EmailService } from '../notification/email.service';
+import { CipherService } from '../../common/services/cipher.service';
 import {
   CreateOrganizationDto,
   UpdateOrganizationDto,
@@ -55,6 +56,7 @@ export class OrganizationService {
     private readonly emailService: EmailService,
     private readonly i18n: I18nService,
     private readonly configService: ConfigService,
+    private readonly cipherService: CipherService,
   ) { }
 
   async create(
@@ -162,6 +164,12 @@ export class OrganizationService {
     // Cache result
     await this.redisService.setOrganizationCache(id, org);
 
+    // Decrypt sensitive fields for response
+    if (org.google_client_id) org.google_client_id = this.cipherService.decrypt(org.google_client_id);
+    if (org.google_client_secret) org.google_client_secret = this.cipherService.decrypt(org.google_client_secret);
+    if (org.google_refresh_token) org.google_refresh_token = this.cipherService.decrypt(org.google_refresh_token);
+    if (org.email_primary_address) org.email_primary_address = this.cipherService.decrypt(org.email_primary_address);
+
     return org;
   }
 
@@ -186,6 +194,14 @@ export class OrganizationService {
 
     // Cache result
     await this.redisService.setOrganizationListCache(cacheKey, result);
+
+    // Decrypt email_primary_address for list view
+    if (result.items) {
+      result.items.forEach(org => {
+        if (org.email_primary_address) org.email_primary_address = this.cipherService.decrypt(org.email_primary_address);
+        // Don't decrypt google secrets for list view to save performance and security
+      });
+    }
 
     return result;
   }
@@ -220,6 +236,12 @@ export class OrganizationService {
     }
 
     const oldData = { name: org.name, is_active: org.is_active };
+    // Encrypt sensitive fields
+    if (dto.google_client_id) dto.google_client_id = this.cipherService.encrypt(dto.google_client_id);
+    if (dto.google_client_secret) dto.google_client_secret = this.cipherService.encrypt(dto.google_client_secret);
+    if (dto.google_refresh_token) dto.google_refresh_token = this.cipherService.encrypt(dto.google_refresh_token);
+    if (dto.email_primary_address) dto.email_primary_address = this.cipherService.encrypt(dto.email_primary_address);
+
     const updated = await this.repository.update(id, {
       ...dto,
       updated_by: userId,

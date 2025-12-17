@@ -13,6 +13,7 @@ import { AccessVerificationGuard } from './guards/access-verification.guard';
 import { CustomThrottlerGuard } from './guards/throttler.guard';
 
 import { ImageUploadService } from './services/image-upload.service';
+import { CipherService } from './services/cipher.service';
 
 /**
  * Shared Module
@@ -57,6 +58,7 @@ import { ImageUploadService } from './services/image-upload.service';
     AccessVerificationGuard,
     CustomThrottlerGuard,
     ImageUploadService,
+    CipherService,
   ],
   exports: [
     ConfigModule,
@@ -71,6 +73,7 @@ import { ImageUploadService } from './services/image-upload.service';
     AccessVerificationGuard,
     CustomThrottlerGuard,
     ImageUploadService,
+    CipherService,
   ],
 })
 export class SharedModule { }

@@ -18,6 +18,10 @@ export interface IOrganizationWithRelations {
         name: string;
         email: string | null;
     };
+    email_primary_address?: string | null;
+    google_client_id?: string | null;
+    google_client_secret?: string | null;
+    google_refresh_token?: string | null;
     _count?: {
         members: number;
         roles: number;
