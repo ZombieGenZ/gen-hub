@@ -65,4 +65,3 @@ jobs:
           user-email: ${{ secrets.GH_EMAIL }}
           target-branch: master
           commit-message: "Sync status: ${{ github.event.head_commit.message }}"
-          
