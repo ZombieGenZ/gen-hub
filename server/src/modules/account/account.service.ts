@@ -125,7 +125,7 @@ export class AccountService {
         id: user.id,
         name: user.name,
         email: user.email,
-        avatar: user.avatar,
+
         email_confirmed: user.email_confirmed,
         is_verified: user.is_verified,
         two_factor_enabled: user.two_factor_enabled,
@@ -158,7 +158,6 @@ export class AccountService {
     await this.userRepository.updateProfile(userId, {
       name: dto.name,
       language: normalizedLanguage,
-      avatar: dto.avatar,
     });
 
     // Invalidate user cache
@@ -168,14 +167,13 @@ export class AccountService {
     const updatedFields: string[] = [];
     if (dto.name) updatedFields.push('name');
     if (dto.language) updatedFields.push('language');
-    if (dto.avatar) updatedFields.push('avatar');
+
 
     // Emit realtime profile updated event
     this.websocketGateway.emitProfileUpdated(userId, updatedFields, {
       id: user.id,
       name: dto.name || user.name,
       email: user.email,
-      avatar: dto.avatar || user.avatar || undefined,
       language: dto.language || user.language || undefined,
     });
 
@@ -185,7 +183,7 @@ export class AccountService {
       `Profile updated: ${user.email}`,
       {
         userId: user.id,
-        metaData: { name: dto.name, language: dto.language, avatar: dto.avatar ? 'updated' : undefined },
+        metaData: { name: dto.name, language: dto.language },
       },
     );
 

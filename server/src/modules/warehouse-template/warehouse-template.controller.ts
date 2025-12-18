@@ -45,10 +45,10 @@ import {
 import { IWarehouseTemplateWithRelations, IPaginatedResponse } from './interfaces';
 import { PrismaService } from '../../prisma/prisma.service';
 
-// Cấu hình upload ảnh
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-const MAX_FILES = 10;
-const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+// Cấu hình upload ảnh từ environment variables
+const MAX_FILE_SIZE = parseInt(process.env.UPLOAD_WAREHOUSE_MAX_SIZE || '5242880', 10); // Default: 5MB
+const MAX_FILES = parseInt(process.env.UPLOAD_WAREHOUSE_MAX_FILES || '50', 10); // Default: 50 files
+const ALLOWED_MIME_TYPES = (process.env.UPLOAD_WAREHOUSE_ALLOWED_TYPES || 'image/jpeg,image/png,image/webp,image/gif').split(',');
 
 @ApiTags('Warehouse Templates')
 @ApiBearerAuth('JWT-auth')
@@ -247,7 +247,7 @@ export class WarehouseTemplateController {
     @ApiConsumes('multipart/form-data')
     @ApiParam({ name: 'id', description: 'ID của template', type: 'string' })
     @ApiBody({
-        description: 'Danh sách ảnh (tối đa 10 ảnh, mỗi ảnh max 5MB)',
+        description: `Danh sách ảnh (có thể cấu hình qua env: UPLOAD_WAREHOUSE_MAX_FILES, UPLOAD_WAREHOUSE_MAX_SIZE, UPLOAD_WAREHOUSE_ALLOWED_TYPES)`,
         schema: {
             type: 'object',
             properties: {

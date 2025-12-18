@@ -67,7 +67,6 @@ model Ward {
 model User {
   id                   String    @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
   language             String    @default("vi")
-  avatar               String?
   name                 String
   email                String?
   email_confirmed      Boolean   @default(false)
