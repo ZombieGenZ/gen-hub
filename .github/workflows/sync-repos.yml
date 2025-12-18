@@ -7,6 +7,7 @@ on:
     paths:
       - 'client/**'
       - 'server/**'
+      - 'status/**'
 
   workflow_dispatch:
 
@@ -46,3 +47,21 @@ jobs:
           user-email: ${{ secrets.GH_EMAIL }}
           target-branch: master
           commit-message: "Sync server: ${{ github.event.head_commit.message }}"
+
+  sync-status:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Push status folder
+        uses: cpina/github-action-push-to-another-repository@main
+        env:
+          API_TOKEN_GITHUB: ${{ secrets.API_TOKEN_GITHUB }}
+        with:
+          source-directory: 'status'
+          destination-github-username: ${{ secrets.GH_USERNAME }}
+          destination-repository-name: ${{ secrets.REPO_STATUS }}
+          user-email: ${{ secrets.GH_EMAIL }}
+          target-branch: master
+          commit-message: "Sync status: ${{ github.event.head_commit.message }}"

@@ -1,0 +1,94 @@
+@import "tailwindcss";
+
+:root {
+  /* Deep Teal - Slate Palette */
+
+  /* Primary */
+  --primary: #0F766E;
+  --primary-light: #14B8A6;
+  --primary-dark: #0D5A52;
+
+  /* Neutral / Greys */
+  --gray-900: #1E293B;
+  --gray-700: #334155;
+  --gray-500: #64748B;
+  --gray-300: #CBD5E1;
+  --gray-100: #F1F5F9;
+
+  /* Background & Surface */
+  --background: #F8FAFC;
+  --surface: #FFFFFF;
+  --sidebar-bg: #F1F5F9;
+
+  /* Accent Colors */
+  --success: #10B981;
+  --warning: #F59E0B;
+  --error: #EF4444;
+  --info: #0EA5E9;
+
+  /* Border */
+  --border: #E2E8F0;
+
+  /* Default Text */
+  --foreground: var(--gray-900);
+}
+
+.dark {
+  /* Dark Mode Mappings (Inferred for Slate/Teal dark theme) */
+
+  /* Backgrounds shift to dark slate */
+  --background: #0f172a;
+  /* Slate 900 */
+  --surface: #1e293b;
+  /* Slate 800 */
+  --sidebar-bg: #1e293b;
+
+  /* Text inverts */
+  --foreground: #f8fafc;
+  /* Slate 50 */
+  --gray-900: #f8fafc;
+  --gray-700: #cbd5e1;
+  --gray-500: #94a3b8;
+  --gray-300: #475569;
+  --gray-100: #1e293b;
+
+  /* Borders */
+  --border: #334155;
+  /* Slate 700 */
+
+  /* Adjustment for primary readability if needed, usually same is fine or slightly lighter */
+  --primary: #14B8A6;
+  /* Use Primary Light for better visibility on dark */
+  --primary-dark: #0F766E;
+}
+
+@theme {
+  --color-primary: var(--primary);
+  --color-primary-light: var(--primary-light);
+  --color-primary-dark: var(--primary-dark);
+
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-foreground: var(--foreground);
+
+  --color-border: var(--border);
+
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-error: var(--error);
+  --color-info: var(--info);
+
+  --color-gray-900: var(--gray-900);
+  --color-gray-700: var(--gray-700);
+  --color-gray-500: var(--gray-500);
+  --color-gray-300: var(--gray-300);
+  --color-gray-100: var(--gray-100);
+}
+
+/* Base Styles */
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}

@@ -27,20 +27,15 @@ export class AppController {
       type: 'object',
       properties: {
         status: { type: 'string', example: 'ok' },
-        message: { type: 'string', example: 'GEN-HUB API đang hoạt động' },
-        timestamp: { type: 'string', example: '2025-12-06T12:30:00.000Z' },
-        uptime: { type: 'number', example: 12345.67 },
+        uptime: { type: 'number', example: 123.45 },
       },
     },
   })
   @Public()
   @Get('health')
   healthCheck() {
-    const appName = this.appConfigService.get('brandName');
     return {
       status: 'ok',
-      message: `${appName} API đang hoạt động`,
-      timestamp: new Date().toISOString(),
       uptime: process.uptime(),
     };
   }
