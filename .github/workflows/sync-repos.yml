@@ -4,10 +4,10 @@ on:
   push:
     branches:
       - master
-    # paths:
-    #   - 'client/**'
-    #   - 'server/**'
-    #   - 'status/**'
+    paths:
+      - 'client/**'
+      - 'server/**'
+      - 'status/**'
 
   workflow_dispatch:
 
