@@ -98,8 +98,10 @@ export default function ProfilePage() {
     setEnabling2FA(true)
     try {
       const token = localStorage.getItem('access_token')
-      if (token) {
-        const res = await userService.enableTwoFactor(token)
+      const access_verification_token = localStorage.getItem('access_verification_token')
+      
+      if (token && access_verification_token) {
+        const res = await userService.enableTwoFactor(token, access_verification_token)
         if (res) {
           alert("Đã yêu cầu bật 2FA (Cần implement flow QR code)")
         }

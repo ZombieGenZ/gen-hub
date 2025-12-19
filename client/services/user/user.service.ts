@@ -1,4 +1,4 @@
-import { UpdateUserRequest, UserData } from "@/types/user/user.type"
+import { UpdateUserRequest, UserData, ChangePasswordRequest } from "@/types/user/user.type"
 import { AuthService } from "../auth/auth.service"
 
 const authService = new AuthService()
@@ -57,23 +57,86 @@ export class UserService {
       throw error
    }
    }
+
+   //Thay đổi mật khẩu
+   async change_password(token: string, newInfo: ChangePasswordRequest) {
+      try {
+         const response = await fetch(`${API}/account/change-password`, {
+            method: 'POST',
+            headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(newInfo),
+         })
+
+         const data = await response.json()
+         if (data.success) {
+            if (newInfo.logout_all_devices) {
+               await authService.logoutAllDevices(token)
+            }
+            return data
+         } else {
+            // để debug thêm nếu BE trả lỗi định dạng
+            console.error('Change password failed:', data)
+            throw new Error(data.message || 'Change password failed')
+         }
+      } catch (error) {
+         console.error('Change password error:', error)
+         throw error
+      }
+   }
    
    // Bật xác thực 2fa
    // trong class UserService ( hiện chưa hoàn thiện )
-   async enableTwoFactor(token: string): Promise<UserData | null> {
+   async enableTwoFactor(token: string, access_verification_token: string) {
       try {
-         const response = await fetch(`${API}/account/2fa/enable`, {
+         const response = await fetch(`${API}/2fa/setup`, {
             method: 'POST',
             headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
+               Authorization: `Bearer ${token}`,
+               'Content-Type': 'application/json',
+               'x-access-verification-token': access_verification_token
             },
          })
 
          const data = await response.json()
-         return data
+         if (data.success) {
+            return data
+         } else {
+            // để debug thêm nếu BE trả lỗi định dạng
+            console.error('Enable 2FA failed:', data)
+            throw new Error(data.message || 'Enable 2FA failed')
+         }
       } catch (error) {
          console.error('Enable 2FA error:', error)
+         throw error
+      }
+   }
+
+   // Tắt xác thực 2fa
+   // trong class UserService ( hiện chưa hoàn thiện )
+   async disableTwoFactor(token: string, access_verification_token: string) {
+      try {
+         const response = await fetch(`${API}/2fa/disable`, {
+            method: 'POST',
+            headers: {
+               Authorization: `Bearer ${token}`,
+               'Content-Type': 'application/json',
+               'x-access-verification-token': access_verification_token
+            },
+         })
+
+         const data = await response.json()
+         if (data.success) {
+            return data
+         } else {
+            // để debug thêm nếu BE trả lỗi định dạng
+            console.error('Disable 2FA failed:', data)
+            throw new Error(data.message || 'Disable 2FA failed')
+         }
+      } catch (error) {
+         console.error('Disable 2FA error:', error)
          throw error
       }
    }

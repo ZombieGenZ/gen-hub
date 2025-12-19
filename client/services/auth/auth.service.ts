@@ -35,9 +35,35 @@ export class AuthService {
             const data = await response.json()
 
             if (data.success) {
+                if(data.data.two_factor_enabled == false) {
+                    await this.verify_password(data.authorization.access_token, input.password)
+                }
                 return data
             }
         } catch (error: any) {
+            throw new Error(error.message)
+        }
+    }
+
+    //Xác minh bằng mật khẩu
+    async verify_password(token: string, password: string) {
+        try {
+            const response = await fetch(`${API}/auth/verify-access`, {
+                method: 'POST',
+                headers: { 
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json' 
+                },
+                body: JSON.stringify({ password })
+            })
+
+            const data = await response.json()
+
+            if (data.success) {
+                localStorage.setItem('access_verification_token', data.data.access_verification_token)
+                return data
+            }
+        }  catch (error: any) {
             throw new Error(error.message)
         }
     }
@@ -52,6 +78,27 @@ export class AuthService {
                     'Content-Type': 'application/json' 
                 },
                 body: JSON.stringify({ refresh_token })
+            })
+
+            const data = await response.json()
+
+            if (data.success) {
+                return data
+            }
+        } catch (error: any) {
+            throw new Error(error.message)
+        }
+    }
+    
+    //Đăng xuất tất cả thiết bị
+    async logoutAllDevices(token: string) {
+        try {
+            const response = await fetch(`${API}/auth/logout-all`, {
+                method: 'POST',
+                headers: { 
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json' 
+                }
             })
 
             const data = await response.json()
