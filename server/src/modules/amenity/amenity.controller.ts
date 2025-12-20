@@ -16,7 +16,6 @@ import {
     ApiResponse,
     ApiBearerAuth,
     ApiParam,
-    ApiHeader,
     ApiBody,
 } from '@nestjs/swagger';
 import { I18nLang } from 'nestjs-i18n';
@@ -32,6 +31,7 @@ import {
     GetResponse,
     DeletedResponse,
 } from '../../common/responses';
+import { IAmenity, IPaginatedResponse } from './interfaces';
 
 @ApiTags('Amenities')
 @Controller('amenities')
@@ -50,44 +50,38 @@ export class AmenityController {
         @Body() dto: CreateAmenityDto,
         @CurrentUser('userId') userId: string,
         @I18nLang() lang: string,
-    ) {
+    ): Promise<CreatedResponse<IAmenity>> {
         const result = await this.amenityService.create(dto, userId, lang);
         return new CreatedResponse('amenity.create.success', result, 'Tạo tiện ích thành công');
     }
 
     @Get()
-    @ApiOperation({ summary: 'Lấy danh sách tiện ích (public)' })
-    @ApiResponse({ status: 200, description: 'Lấy danh sách thành công' })
-    async findAll(
-        @Query() query: QueryAmenityDto,
-    ) {
-        // Public endpoint, không có quyền list.all
-        const result = await this.amenityService.findAll(query, false);
-        return new GetResponse('amenity.list.success', result, 'Lấy danh sách tiện ích thành công');
-    }
-
-    @Get('admin')
     @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
-    @RequirePermission('amenity.list.all')
-    @ApiOperation({ summary: 'Lấy danh sách tiện ích (Admin - bao gồm inactive)' })
+    @RequirePermission('amenity.list')
+    @ApiOperation({ summary: 'Lấy danh sách tiện ích (Admin)' })
     @ApiResponse({ status: 200, description: 'Lấy danh sách thành công' })
-    async findAllAdmin(
+    @ApiResponse({ status: 403, description: 'Không có quyền' })
+    async findAll(
         @Query() query: QueryAmenityDto,
-    ) {
-        const result = await this.amenityService.findAll(query, true);
+    ): Promise<GetResponse<IPaginatedResponse<IAmenity>>> {
+        const result = await this.amenityService.findAll(query);
         return new GetResponse('amenity.list.success', result, 'Lấy danh sách tiện ích thành công');
     }
 
     @Get(':id')
-    @ApiOperation({ summary: 'Lấy chi tiết tiện ích (public)' })
+    @ApiBearerAuth('JWT-auth')
+    @UseGuards(JwtAuthGuard, PermissionGuard)
+    @RequirePermission('amenity.read')
+    @ApiOperation({ summary: 'Lấy chi tiết tiện ích (Admin)' })
     @ApiParam({ name: 'id', description: 'ID của tiện ích', type: 'string' })
     @ApiResponse({ status: 200, description: 'Lấy thành công' })
     @ApiResponse({ status: 404, description: 'Không tìm thấy tiện ích' })
+    @ApiResponse({ status: 403, description: 'Không có quyền' })
     async findById(
         @Param('id', ParseUUIDPipe) id: string,
         @I18nLang() lang: string,
-    ) {
+    ): Promise<GetResponse<IAmenity>> {
         const result = await this.amenityService.findById(id, lang);
         return new GetResponse('amenity.get.success', result, 'Lấy chi tiết tiện ích thành công');
     }
@@ -105,7 +99,7 @@ export class AmenityController {
         @Body() dto: UpdateAmenityDto,
         @CurrentUser('userId') userId: string,
         @I18nLang() lang: string,
-    ) {
+    ): Promise<UpdatedResponse<IAmenity>> {
         const result = await this.amenityService.update(id, dto, userId, lang);
         return new UpdatedResponse('amenity.update.success', result, 'Cập nhật tiện ích thành công');
     }
@@ -122,9 +116,9 @@ export class AmenityController {
         @Body() dto: DeleteManyDto,
         @CurrentUser('userId') userId: string,
         @I18nLang() lang: string,
-    ) {
+    ): Promise<DeletedResponse<null>> {
         await this.amenityService.deleteMany(dto.ids, userId, lang);
-        return new DeletedResponse('amenity.delete.success', undefined, 'Xóa nhiều tiện ích thành công');
+        return new DeletedResponse('amenity.delete.success', null, 'Xóa nhiều tiện ích thành công');
     }
 
     @Delete(':id')
@@ -139,8 +133,8 @@ export class AmenityController {
         @Param('id', ParseUUIDPipe) id: string,
         @CurrentUser('userId') userId: string,
         @I18nLang() lang: string,
-    ) {
+    ): Promise<DeletedResponse<null>> {
         await this.amenityService.delete(id, userId, lang);
-        return new DeletedResponse('amenity.delete.success', undefined, 'Xóa tiện ích thành công');
+        return new DeletedResponse('amenity.delete.success', null, 'Xóa tiện ích thành công');
     }
 }

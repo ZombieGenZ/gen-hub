@@ -1,0 +1,26 @@
+{
+    "success": {
+        "created": "Tạo tier giảm giá thành công",
+        "updated": "Cập nhật tier giảm giá thành công",
+        "deleted": "Xóa tier giảm giá thành công"
+    },
+    "errors": {
+        "not_found": "Không tìm thấy tier giảm giá",
+        "duplicate_duration": "Đã tồn tại tier với thời gian này"
+    },
+    "validation": {
+        "id_uuid": "ID tier phải là UUID hợp lệ",
+        "name_required": "Tên tier không được để trống",
+        "name_string": "Tên tier phải là chuỗi ký tự",
+        "duration_value_required": "Giá trị thời gian không được để trống",
+        "duration_value_int": "Giá trị thời gian phải là số nguyên",
+        "duration_value_min": "Giá trị thời gian phải lớn hơn 0",
+        "duration_unit_required": "Đơn vị thời gian không được để trống",
+        "duration_unit_invalid": "Đơn vị thời gian không hợp lệ (MONTH hoặc YEAR)",
+        "discount_percent_required": "Phần trăm giảm giá không được để trống",
+        "discount_percent_number": "Phần trăm giảm giá phải là số",
+        "discount_range": "Phần trăm giảm giá phải từ 0 đến 100",
+        "description_string": "Mô tả phải là chuỗi ký tự",
+        "is_active_boolean": "Trạng thái hoạt động phải là true hoặc false"
+    }
+}

@@ -69,6 +69,13 @@ export class WarehouseTemplateRepository {
                 },
             },
         },
+        discount_tiers: {
+            where: { is_deleted: false },
+            orderBy: [
+                { duration_unit: 'asc' as const }, // MONTH trước YEAR
+                { duration_value: 'asc' as const }, // 1 trước 3 trước 6...
+            ],
+        },
     };
 
     /** Lightweight include for list queries - không load nested rows */
@@ -635,5 +642,78 @@ export class WarehouseTemplateRepository {
                 }),
             ),
         );
+    }
+
+    /**
+     * Upsert discount tiers cho warehouse template
+     * - Create new tiers
+     * - Update existing tiers
+     * - Soft delete removed tiers
+     */
+    async upsertDiscountTiers(
+        templateId: string,
+        tiersToCreate: Array<{
+            name: string;
+            duration_value: number;
+            duration_unit: string;
+            discount_percent: any;
+            description?: string;
+            is_active: boolean;
+            created_by: string;
+        }>,
+        tiersToUpdate: Array<{
+            id: string;
+            data: {
+                name?: string;
+                discount_percent?: any;
+                description?: string;
+                is_active?: boolean;
+                updated_by?: string;
+            };
+        }>,
+        tierIdsToDelete: string[],
+        userId: string,
+    ): Promise<void> {
+        const now = new Date();
+
+        await this.prisma.$transaction(async (tx) => {
+            // Soft delete tiers không còn trong request
+            if (tierIdsToDelete.length > 0) {
+                await tx.warehouseDiscountTier.updateMany({
+                    where: { id: { in: tierIdsToDelete } },
+                    data: {
+                        is_deleted: true,
+                        deleted_at: now,
+                        deleted_by: userId,
+                    },
+                });
+            }
+
+            // Create new tiers
+            if (tiersToCreate.length > 0) {
+                await tx.warehouseDiscountTier.createMany({
+                    data: tiersToCreate.map(t => ({
+                        warehouse_template_id: templateId,
+                        name: t.name,
+                        duration_value: t.duration_value,
+                        duration_unit: t.duration_unit as any,
+                        discount_percent: t.discount_percent,
+                        description: t.description,
+                        is_active: t.is_active,
+                        created_by: t.created_by,
+                    })),
+                });
+            }
+
+            // Update existing tiers
+            await Promise.all(
+                tiersToUpdate.map(t =>
+                    tx.warehouseDiscountTier.update({
+                        where: { id: t.id },
+                        data: t.data,
+                    }),
+                ),
+            );
+        });
     }
 }

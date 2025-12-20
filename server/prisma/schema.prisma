@@ -256,10 +256,58 @@ enum PaymentType {
   RENEWAL
 }
 
+enum DurationUnit {
+  MONTH
+  YEAR
+}
+
 enum TemplateRentalStatus {
   AVAILABLE
   LOCKED
   RENTED
+}
+
+model Amenity {
+  id          String  @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  name        String
+  description String?
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean?  @default(false)
+  deleted_at DateTime?
+
+  created_by String
+  updated_by String?
+  deleted_by String?
+
+  warehouse_templates AmenityOnWarehouseTemplate[]
+
+  @@map("amenities")
+}
+
+model AmenityOnWarehouseTemplate {
+  id                    String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  amenity_id            String @db.Uuid
+  warehouse_template_id String @db.Uuid
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean?  @default(false)
+  deleted_at DateTime?
+
+  created_by String?
+  deleted_by String?
+
+  amenity            Amenity           @relation(fields: [amenity_id], references: [id], onDelete: Cascade)
+  warehouse_template WarehouseTemplate @relation(fields: [warehouse_template_id], references: [id], onDelete: Cascade)
+
+  @@unique([amenity_id, warehouse_template_id])
+  @@index([amenity_id])
+  @@index([warehouse_template_id])
+  @@map("amenities_warehouse_templates")
 }
 
 model WarehouseTemplate {
@@ -275,12 +323,6 @@ model WarehouseTemplate {
   rental_status            TemplateRentalStatus @default(AVAILABLE)
   is_rented                Boolean              @default(false)
   price_per_month          Decimal              @db.Decimal(19, 4)
-  discount_1_month         Decimal              @default(0) @db.Decimal(5, 2)
-  discount_3_months        Decimal              @default(5) @db.Decimal(5, 2)
-  discount_6_months        Decimal              @default(10) @db.Decimal(5, 2)
-  discount_1_year          Decimal              @default(15) @db.Decimal(5, 2)
-  discount_2_years         Decimal              @default(20) @db.Decimal(5, 2)
-  discount_3_years_plus    Decimal              @default(25) @db.Decimal(5, 2)
   whole_warehouse_discount Decimal              @default(10) @db.Decimal(5, 2)
 
   address_detail String?
@@ -320,8 +362,36 @@ model WarehouseTemplate {
   images                  WarehouseTemplateImage[]
   amenities               AmenityOnWarehouseTemplate[]
   rental_contract_details RentalContractDetail[]
+  discount_tiers          WarehouseDiscountTier[]
 
   @@map("warehouse_templates")
+}
+
+model WarehouseDiscountTier {
+  id                    String       @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  warehouse_template_id String       @db.Uuid
+  name                  String
+  duration_value        Int
+  duration_unit         DurationUnit @default(MONTH)
+  discount_percent      Decimal      @default(0) @db.Decimal(5, 2)
+  description           String?
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean?  @default(false)
+  deleted_at DateTime?
+
+  created_by String
+  updated_by String?
+  deleted_by String?
+
+  warehouse_template WarehouseTemplate @relation(fields: [warehouse_template_id], references: [id], onDelete: Cascade)
+  payments           Payment[]
+
+  @@unique([warehouse_template_id, duration_value, duration_unit])
+  @@index([warehouse_template_id])
+  @@map("warehouse_discount_tiers")
 }
 
 model WarehouseTemplateImage {
@@ -569,6 +639,9 @@ model Payment {
   type                 PaymentType
   status               PaymentStatus @default(PENDING)
 
+  discount_tier_id String? @db.Uuid
+  duration_months  Int?
+
   qr_code String? @db.Text
 
   expired_at DateTime?
@@ -583,11 +656,13 @@ model Payment {
   created_by String?
   updated_by String?
 
-  rental_contract RentalContract @relation(fields: [rental_contract_id], references: [id], onDelete: Cascade)
+  rental_contract RentalContract         @relation(fields: [rental_contract_id], references: [id], onDelete: Cascade)
+  discount_tier   WarehouseDiscountTier? @relation(fields: [discount_tier_id], references: [id])
 
   @@index([rental_contract_id])
   @@index([payment_code])
   @@index([status])
+  @@index([discount_tier_id])
   @@map("payments")
 }
 
@@ -1734,50 +1809,6 @@ model OrganizationNotification {
   @@index([organization_id])
   @@index([warehouse_id])
   @@map("organization_notifications")
-}
-
-model Amenity {
-  id          String  @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
-  name        String
-  description String?
-  icon        String?
-
-  is_active  Boolean   @default(true)
-  created_at DateTime  @default(now())
-  updated_at DateTime? @updatedAt
-  is_deleted Boolean?  @default(false)
-  deleted_at DateTime?
-
-  created_by String
-  updated_by String?
-  deleted_by String?
-
-  warehouse_templates AmenityOnWarehouseTemplate[]
-
-  @@map("amenities")
-}
-
-model AmenityOnWarehouseTemplate {
-  id                    String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
-  amenity_id            String @db.Uuid
-  warehouse_template_id String @db.Uuid
-
-  is_active  Boolean   @default(true)
-  created_at DateTime  @default(now())
-  updated_at DateTime? @updatedAt
-  is_deleted Boolean?  @default(false)
-  deleted_at DateTime?
-
-  created_by String?
-  deleted_by String?
-
-  amenity            Amenity           @relation(fields: [amenity_id], references: [id], onDelete: Cascade)
-  warehouse_template WarehouseTemplate @relation(fields: [warehouse_template_id], references: [id], onDelete: Cascade)
-
-  @@unique([amenity_id, warehouse_template_id])
-  @@index([amenity_id])
-  @@index([warehouse_template_id])
-  @@map("amenities_warehouse_templates")
 }
 
 enum CategoryStatus {

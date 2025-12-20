@@ -11,9 +11,11 @@ import {
     Min,
     Max,
     MaxLength,
+    ValidateNested,
 } from 'class-validator';
 import { i18nValidationMessage } from 'nestjs-i18n';
 import { Type } from 'class-transformer';
+import { DiscountTierDto } from './discount-tier.dto';
 
 /**
  * DTO tạo mới WarehouseTemplate
@@ -77,54 +79,6 @@ export class CreateWarehouseTemplateDto {
     @Type(() => Number)
     price_per_month: number;
 
-    @ApiPropertyOptional({ description: 'Giảm giá 1 tháng (%)', example: 0, default: 0 })
-    @IsOptional()
-    @IsNumber()
-    @Min(0, { message: i18nValidationMessage('warehouse-template.validation.discount_range') })
-    @Max(100, { message: i18nValidationMessage('warehouse-template.validation.discount_range') })
-    @Type(() => Number)
-    discount_1_month?: number;
-
-    @ApiPropertyOptional({ description: 'Giảm giá 3 tháng (%)', example: 5, default: 5 })
-    @IsOptional()
-    @IsNumber()
-    @Min(0, { message: i18nValidationMessage('warehouse-template.validation.discount_range') })
-    @Max(100, { message: i18nValidationMessage('warehouse-template.validation.discount_range') })
-    @Type(() => Number)
-    discount_3_months?: number;
-
-    @ApiPropertyOptional({ description: 'Giảm giá 6 tháng (%)', example: 10, default: 10 })
-    @IsOptional()
-    @IsNumber()
-    @Min(0, { message: i18nValidationMessage('warehouse-template.validation.discount_range') })
-    @Max(100, { message: i18nValidationMessage('warehouse-template.validation.discount_range') })
-    @Type(() => Number)
-    discount_6_months?: number;
-
-    @ApiPropertyOptional({ description: 'Giảm giá 1 năm (%)', example: 15, default: 15 })
-    @IsOptional()
-    @IsNumber()
-    @Min(0, { message: i18nValidationMessage('warehouse-template.validation.discount_range') })
-    @Max(100, { message: i18nValidationMessage('warehouse-template.validation.discount_range') })
-    @Type(() => Number)
-    discount_1_year?: number;
-
-    @ApiPropertyOptional({ description: 'Giảm giá 2 năm (%)', example: 20, default: 20 })
-    @IsOptional()
-    @IsNumber()
-    @Min(0, { message: i18nValidationMessage('warehouse-template.validation.discount_range') })
-    @Max(100, { message: i18nValidationMessage('warehouse-template.validation.discount_range') })
-    @Type(() => Number)
-    discount_2_years?: number;
-
-    @ApiPropertyOptional({ description: 'Giảm giá 3 năm trở lên (%)', example: 25, default: 25 })
-    @IsOptional()
-    @IsNumber()
-    @Min(0, { message: i18nValidationMessage('warehouse-template.validation.discount_range') })
-    @Max(100, { message: i18nValidationMessage('warehouse-template.validation.discount_range') })
-    @Type(() => Number)
-    discount_3_years_plus?: number;
-
     @ApiPropertyOptional({ description: 'Giảm giá thuê toàn bộ kho (%)', example: 10, default: 10 })
     @IsOptional()
     @IsNumber()
@@ -132,6 +86,26 @@ export class CreateWarehouseTemplateDto {
     @Max(100, { message: i18nValidationMessage('warehouse-template.validation.discount_range') })
     @Type(() => Number)
     whole_warehouse_discount?: number;
+
+    @ApiPropertyOptional({
+        description: 'Danh sách tier giảm giá',
+        type: [DiscountTierDto],
+        example: [
+            { name: '1 tháng', duration_value: 1, duration_unit: 'MONTH', discount_percent: 0 },
+            { name: '3 tháng', duration_value: 3, duration_unit: 'MONTH', discount_percent: 5 },
+            { name: '6 tháng', duration_value: 6, duration_unit: 'MONTH', discount_percent: 10 },
+            { name: '1 năm', duration_value: 1, duration_unit: 'YEAR', discount_percent: 15 },
+            { name: '2 năm', duration_value: 3, duration_unit: 'YEAR', discount_percent: 20 },
+            { name: '3 năm', duration_value: 3, duration_unit: 'YEAR', discount_percent: 25 },
+        ],
+    })
+    @IsOptional()
+    @IsArray({
+        message: i18nValidationMessage('warehouse-template.validation.discount_tiers_array'),
+    })
+    @ValidateNested({ each: true })
+    @Type(() => DiscountTierDto)
+    discount_tiers?: DiscountTierDto[];
 
     @ApiPropertyOptional({ description: 'Cho phép thuê theo từng row (shared warehouse)', default: false })
     @IsOptional()

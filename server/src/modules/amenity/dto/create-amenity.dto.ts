@@ -31,13 +31,6 @@ export class CreateAmenityDto {
     })
     description?: string;
 
-    @ApiPropertyOptional({ description: 'Icon class hoặc URL', example: 'wifi-icon' })
-    @IsOptional()
-    @IsString({
-        message: i18nValidationMessage('amenity.validation.icon_string'),
-    })
-    icon?: string;
-
     @ApiPropertyOptional({ description: 'Trạng thái hoạt động', default: true })
     @IsOptional()
     @IsBoolean({

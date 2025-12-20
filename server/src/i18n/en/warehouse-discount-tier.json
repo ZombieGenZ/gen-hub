@@ -1,0 +1,26 @@
+{
+    "success": {
+        "created": "Discount tier created successfully",
+        "updated": "Discount tier updated successfully",
+        "deleted": "Discount tier deleted successfully"
+    },
+    "errors": {
+        "not_found": "Discount tier not found",
+        "duplicate_duration": "Tier with this duration already exists"
+    },
+    "validation": {
+        "id_uuid": "Tier ID must be a valid UUID",
+        "name_required": "Tier name is required",
+        "name_string": "Tier name must be a string",
+        "duration_value_required": "Duration value is required",
+        "duration_value_int": "Duration value must be an integer",
+        "duration_value_min": "Duration value must be greater than 0",
+        "duration_unit_required": "Duration unit is required",
+        "duration_unit_invalid": "Duration unit must be MONTH or YEAR",
+        "discount_percent_required": "Discount percent is required",
+        "discount_percent_number": "Discount percent must be a number",
+        "discount_range": "Discount percent must be between 0 and 100",
+        "description_string": "Description must be a string",
+        "is_active_boolean": "Is active must be true or false"
+    }
+}

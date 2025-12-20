@@ -251,12 +251,12 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
       }
 
       await this.seedConfigPermissions();
+      await this.seedAmenityPermissions();
       await this.seedWarehouseTemplatePermissions();
       await this.seedOrganizationPermissions();
       await this.seedNotificationPermissions();
       await this.seedRentalContractPermissions();
       await this.seedWarehousePermissions();
-      await this.seedAmenityPermissions();
       await this.seedPartnerPermissions();
       await this.seedProductPermissions();
       await this.seedBatchPermissions();
@@ -1112,9 +1112,14 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
           description: 'Quyền xóa tiện ích',
         },
         {
-          key: 'amenity.list.all',
+          key: 'amenity.list',
           name: 'Xem tất cả tiện ích',
-          description: 'Quyền xem tất cả tiện ích bao gồm inactive',
+          description: 'Quyền xem tất cả tiện ích',
+        },
+        {
+          key: 'amenity.read',
+          name: 'Xem chi tiết tiện ích',
+          description: 'Quyền xem chi tiết tiện ích',
         },
       ];
 

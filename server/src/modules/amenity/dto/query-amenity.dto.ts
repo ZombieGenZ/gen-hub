@@ -1,7 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsOptional, IsString, IsBoolean, IsInt, Min } from 'class-validator';
 import { i18nValidationMessage } from 'nestjs-i18n';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 
 /**
  * DTO query cho danh sách Amenity
@@ -30,9 +30,13 @@ export class QueryAmenityDto {
 
     @ApiPropertyOptional({ description: 'Lọc theo trạng thái' })
     @IsOptional()
+    @Transform(({ value }) => {
+        if (value === 'true') return true;
+        if (value === 'false') return false;
+        return value;
+    })
     @IsBoolean({
         message: i18nValidationMessage('amenity.validation.is_active_boolean'),
     })
-    @Type(() => Boolean)
     is_active?: boolean;
 }

@@ -1,10 +1,16 @@
-import { WarehouseTemplate, RowTemplate, RackTemplate, ShelfTemplate, BlockTemplate } from '@prisma/client';
+import { WarehouseTemplate, RowTemplate, RackTemplate, ShelfTemplate, BlockTemplate, WarehouseDiscountTier } from '@prisma/client';
+
+/**
+ * WarehouseDiscountTier với relations
+ */
+export interface IDiscountTierWithRelations extends WarehouseDiscountTier { }
 
 /**
  * WarehouseTemplate với relations đầy đủ
  */
 export interface IWarehouseTemplateWithRelations extends WarehouseTemplate {
     rows: IRowTemplateWithRelations[];
+    discount_tiers?: IDiscountTierWithRelations[];
     ward?: {
         id: string;
         name: string;

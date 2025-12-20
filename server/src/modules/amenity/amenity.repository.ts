@@ -8,7 +8,6 @@ export class AmenityRepository {
     async create(data: {
         name: string;
         description?: string;
-        icon?: string;
         is_active?: boolean;
         created_by: string;
     }) {
@@ -16,7 +15,6 @@ export class AmenityRepository {
             data: {
                 name: data.name,
                 description: data.description,
-                icon: data.icon,
                 is_active: data.is_active ?? true,
                 created_by: data.created_by,
             },
@@ -61,7 +59,6 @@ export class AmenityRepository {
     async update(id: string, data: {
         name?: string;
         description?: string;
-        icon?: string;
         is_active?: boolean;
         updated_by: string;
     }) {
@@ -70,7 +67,6 @@ export class AmenityRepository {
             data: {
                 name: data.name,
                 description: data.description,
-                icon: data.icon,
                 is_active: data.is_active,
                 updated_by: data.updated_by,
             },

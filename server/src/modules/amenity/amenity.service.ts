@@ -66,11 +66,11 @@ export class AmenityService {
         return amenity;
     }
 
-    async findAll(query: QueryAmenityDto, hasListAllPermission: boolean) {
+    async findAll(query: QueryAmenityDto) {
         const { limit = 10, offset = 0, keywords, is_active } = query;
 
-        // Check cache - include hasListAllPermission in key
-        const cacheKey = `amenity:list:${JSON.stringify({ ...query })}:${hasListAllPermission}`;
+        // Check cache
+        const cacheKey = this.getListCacheKey(query);
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
             return JSON.parse(cached);
@@ -78,10 +78,8 @@ export class AmenityService {
 
         const where: any = { is_deleted: false };
 
-        // Nếu không có quyền list.all, chỉ hiển thị is_active = true
-        if (!hasListAllPermission) {
-            where.is_active = true;
-        } else if (is_active !== undefined) {
+        // Admin có thể filter theo is_active
+        if (is_active !== undefined) {
             where.is_active = is_active;
         }
 
@@ -102,7 +100,7 @@ export class AmenityService {
             this.repository.count(where),
         ]);
 
-        const result = { data, total, limit, offset };
+        const result = { items: data, total, limit, offset };
 
         // Set cache
         await this.redisService.set(cacheKey, JSON.stringify(result), this.listCacheTTL);
