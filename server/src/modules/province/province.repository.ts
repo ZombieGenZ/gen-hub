@@ -27,7 +27,7 @@ export class ProvinceRepository {
         }
 
         if (type) {
-            where.type = type as any;
+            where.type = type;
         }
 
         const items = await this.prisma.province.findMany({

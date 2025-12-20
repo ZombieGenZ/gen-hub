@@ -44,21 +44,4 @@ export class WardController {
         const result = await this.service.findById(id, lang);
         return new GetResponse(ResponseCode.WARD_GET_SUCCESS, result);
     }
-
-    /**
-     * Lấy danh sách phường/xã theo Province ID (Public API)
-     */
-    @Get('provinces/:provinceId/wards')
-    @Public()
-    @ApiOperation({ summary: 'Lấy danh sách phường/xã theo tỉnh/thành phố' })
-    @ApiParam({ name: 'provinceId', description: 'ID của tỉnh/thành phố' })
-    @ApiResponse({ status: 200, description: 'Lấy danh sách thành công' })
-    async findByProvinceId(
-        @Param('provinceId', ParseUUIDPipe) provinceId: string,
-        @Query() query: QueryWardDto,
-        @I18nLang() lang: string,
-    ): Promise<GetResponse<IWard[]>> {
-        const result = await this.service.findByProvinceId(provinceId, query, lang);
-        return new GetResponse(ResponseCode.WARD_LIST_SUCCESS, result);
-    }
 }

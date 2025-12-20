@@ -208,8 +208,8 @@ export class WarehouseTemplateService {
 
         const updatedFields = Object.keys(dto);
 
-        // Destructure ward_id and discount_tiers out for separate handling
-        const { ward_id, discount_tiers, ...restDto } = dto;
+        // Destructure ward_id, discount_tiers, and amenity_ids out for separate handling
+        const { ward_id, discount_tiers, amenity_ids, ...restDto } = dto;
 
         const template = await this.repository.update(id, {
             ...restDto,

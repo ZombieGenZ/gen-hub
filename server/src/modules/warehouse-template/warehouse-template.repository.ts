@@ -222,34 +222,221 @@ export class WarehouseTemplateRepository {
     }
 
     /**
-     * Xóa mềm WarehouseTemplate
+     * Xóa mềm WarehouseTemplate và cascade xóa tất cả entities liên quan
+     * - WarehouseTemplateImage
+     * - WarehouseDiscountTier  
+     * - RowTemplate, RackTemplate, ShelfTemplate, BlockTemplate
      */
     async softDelete(
         id: string,
         deletedBy: string,
     ): Promise<IWarehouseTemplateWithRelations> {
-        return this.prisma.warehouseTemplate.update({
-            where: { id },
-            data: {
-                is_deleted: true,
-                deleted_at: new Date(),
-                deleted_by: deletedBy,
-            },
-            include: this.fullInclude,
+        const now = new Date();
+
+        return this.prisma.$transaction(async (tx) => {
+            // Cascade soft delete images
+            await tx.warehouseTemplateImage.updateMany({
+                where: { warehouse_template_id: id, is_deleted: false },
+                data: {
+                    is_deleted: true,
+                    deleted_at: now,
+                    deleted_by: deletedBy,
+                },
+            });
+
+            // Cascade soft delete discount tiers
+            await tx.warehouseDiscountTier.updateMany({
+                where: { warehouse_template_id: id, is_deleted: false },
+                data: {
+                    is_deleted: true,
+                    deleted_at: now,
+                    deleted_by: deletedBy,
+                },
+            });
+
+            // Get all rows of this template to cascade delete nested entities
+            const rows = await tx.rowTemplate.findMany({
+                where: { warehouse_template_id: id, is_deleted: false },
+                select: { id: true },
+            });
+            const rowIds = rows.map(r => r.id);
+
+            if (rowIds.length > 0) {
+                // Get all racks
+                const racks = await tx.rackTemplate.findMany({
+                    where: { row_template_id: { in: rowIds }, is_deleted: false },
+                    select: { id: true },
+                });
+                const rackIds = racks.map(r => r.id);
+
+                if (rackIds.length > 0) {
+                    // Get all shelves
+                    const shelves = await tx.shelfTemplate.findMany({
+                        where: { rack_template_id: { in: rackIds }, is_deleted: false },
+                        select: { id: true },
+                    });
+                    const shelfIds = shelves.map(s => s.id);
+
+                    if (shelfIds.length > 0) {
+                        // Cascade soft delete blocks
+                        await tx.blockTemplate.updateMany({
+                            where: { shelf_template_id: { in: shelfIds }, is_deleted: false },
+                            data: {
+                                is_deleted: true,
+                                deleted_at: now,
+                                deleted_by: deletedBy,
+                            },
+                        });
+                    }
+
+                    // Cascade soft delete shelves
+                    await tx.shelfTemplate.updateMany({
+                        where: { rack_template_id: { in: rackIds }, is_deleted: false },
+                        data: {
+                            is_deleted: true,
+                            deleted_at: now,
+                            deleted_by: deletedBy,
+                        },
+                    });
+                }
+
+                // Cascade soft delete racks
+                await tx.rackTemplate.updateMany({
+                    where: { row_template_id: { in: rowIds }, is_deleted: false },
+                    data: {
+                        is_deleted: true,
+                        deleted_at: now,
+                        deleted_by: deletedBy,
+                    },
+                });
+
+                // Cascade soft delete rows
+                await tx.rowTemplate.updateMany({
+                    where: { warehouse_template_id: id, is_deleted: false },
+                    data: {
+                        is_deleted: true,
+                        deleted_at: now,
+                        deleted_by: deletedBy,
+                    },
+                });
+            }
+
+            // Finally soft delete the template itself
+            return tx.warehouseTemplate.update({
+                where: { id },
+                data: {
+                    is_deleted: true,
+                    deleted_at: now,
+                    deleted_by: deletedBy,
+                },
+                include: this.fullInclude,
+            });
         }) as unknown as IWarehouseTemplateWithRelations;
     }
 
     /**
-     * Delete many templates (soft delete)
+     * Delete many templates (soft delete) với cascade xóa tất cả entities liên quan
      */
     async softDeleteMany(ids: string[], deletedBy: string): Promise<{ count: number }> {
-        return this.prisma.warehouseTemplate.updateMany({
-            where: { id: { in: ids } },
-            data: {
-                is_deleted: true,
-                deleted_at: new Date(),
-                deleted_by: deletedBy,
-            },
+        const now = new Date();
+
+        return this.prisma.$transaction(async (tx) => {
+            // Cascade soft delete images
+            await tx.warehouseTemplateImage.updateMany({
+                where: { warehouse_template_id: { in: ids }, is_deleted: false },
+                data: {
+                    is_deleted: true,
+                    deleted_at: now,
+                    deleted_by: deletedBy,
+                },
+            });
+
+            // Cascade soft delete discount tiers
+            await tx.warehouseDiscountTier.updateMany({
+                where: { warehouse_template_id: { in: ids }, is_deleted: false },
+                data: {
+                    is_deleted: true,
+                    deleted_at: now,
+                    deleted_by: deletedBy,
+                },
+            });
+
+            // Get all rows of these templates to cascade delete nested entities
+            const rows = await tx.rowTemplate.findMany({
+                where: { warehouse_template_id: { in: ids }, is_deleted: false },
+                select: { id: true },
+            });
+            const rowIds = rows.map(r => r.id);
+
+            if (rowIds.length > 0) {
+                // Get all racks
+                const racks = await tx.rackTemplate.findMany({
+                    where: { row_template_id: { in: rowIds }, is_deleted: false },
+                    select: { id: true },
+                });
+                const rackIds = racks.map(r => r.id);
+
+                if (rackIds.length > 0) {
+                    // Get all shelves
+                    const shelves = await tx.shelfTemplate.findMany({
+                        where: { rack_template_id: { in: rackIds }, is_deleted: false },
+                        select: { id: true },
+                    });
+                    const shelfIds = shelves.map(s => s.id);
+
+                    if (shelfIds.length > 0) {
+                        // Cascade soft delete blocks
+                        await tx.blockTemplate.updateMany({
+                            where: { shelf_template_id: { in: shelfIds }, is_deleted: false },
+                            data: {
+                                is_deleted: true,
+                                deleted_at: now,
+                                deleted_by: deletedBy,
+                            },
+                        });
+                    }
+
+                    // Cascade soft delete shelves
+                    await tx.shelfTemplate.updateMany({
+                        where: { rack_template_id: { in: rackIds }, is_deleted: false },
+                        data: {
+                            is_deleted: true,
+                            deleted_at: now,
+                            deleted_by: deletedBy,
+                        },
+                    });
+                }
+
+                // Cascade soft delete racks
+                await tx.rackTemplate.updateMany({
+                    where: { row_template_id: { in: rowIds }, is_deleted: false },
+                    data: {
+                        is_deleted: true,
+                        deleted_at: now,
+                        deleted_by: deletedBy,
+                    },
+                });
+
+                // Cascade soft delete rows
+                await tx.rowTemplate.updateMany({
+                    where: { warehouse_template_id: { in: ids }, is_deleted: false },
+                    data: {
+                        is_deleted: true,
+                        deleted_at: now,
+                        deleted_by: deletedBy,
+                    },
+                });
+            }
+
+            // Finally soft delete the templates
+            return tx.warehouseTemplate.updateMany({
+                where: { id: { in: ids } },
+                data: {
+                    is_deleted: true,
+                    deleted_at: now,
+                    deleted_by: deletedBy,
+                },
+            });
         });
     }
 

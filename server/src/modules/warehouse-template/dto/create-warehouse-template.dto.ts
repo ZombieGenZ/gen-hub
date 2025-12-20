@@ -15,7 +15,7 @@ import {
 } from 'class-validator';
 import { i18nValidationMessage } from 'nestjs-i18n';
 import { Type } from 'class-transformer';
-import { DiscountTierDto } from './discount-tier.dto';
+import { CreateDiscountTierDto } from './discount-tier.dto';
 
 /**
  * DTO tạo mới WarehouseTemplate
@@ -89,13 +89,13 @@ export class CreateWarehouseTemplateDto {
 
     @ApiPropertyOptional({
         description: 'Danh sách tier giảm giá',
-        type: [DiscountTierDto],
+        type: [CreateDiscountTierDto],
         example: [
             { name: '1 tháng', duration_value: 1, duration_unit: 'MONTH', discount_percent: 0 },
             { name: '3 tháng', duration_value: 3, duration_unit: 'MONTH', discount_percent: 5 },
             { name: '6 tháng', duration_value: 6, duration_unit: 'MONTH', discount_percent: 10 },
             { name: '1 năm', duration_value: 1, duration_unit: 'YEAR', discount_percent: 15 },
-            { name: '2 năm', duration_value: 3, duration_unit: 'YEAR', discount_percent: 20 },
+            { name: '2 năm', duration_value: 2, duration_unit: 'YEAR', discount_percent: 20 },
             { name: '3 năm', duration_value: 3, duration_unit: 'YEAR', discount_percent: 25 },
         ],
     })
@@ -104,8 +104,8 @@ export class CreateWarehouseTemplateDto {
         message: i18nValidationMessage('warehouse-template.validation.discount_tiers_array'),
     })
     @ValidateNested({ each: true })
-    @Type(() => DiscountTierDto)
-    discount_tiers?: DiscountTierDto[];
+    @Type(() => CreateDiscountTierDto)
+    discount_tiers?: CreateDiscountTierDto[];
 
     @ApiPropertyOptional({ description: 'Cho phép thuê theo từng row (shared warehouse)', default: false })
     @IsOptional()

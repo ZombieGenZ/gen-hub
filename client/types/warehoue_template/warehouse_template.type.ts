@@ -33,7 +33,7 @@ export interface Warehouse {
     id: string;
     name: string;
     description: string;
-    type?: string; 
+    type?: string;
 
     // Kích thước và đơn vị
     unit: string;
@@ -41,7 +41,6 @@ export interface Warehouse {
     width: number;
 
     // Thông tin khối (block)
-    block_unit: string;
     block_length: string;
     block_width: string;
 

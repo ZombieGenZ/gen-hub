@@ -1,6 +1,7 @@
-import { IsOptional, IsString } from 'class-validator';
+import { IsOptional, IsString, IsEnum } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { i18nValidationMessage } from 'nestjs-i18n';
+import { ProvinceType } from '@prisma/client';
 
 export class QueryProvinceDto {
     @ApiPropertyOptional({ description: 'Từ khóa tìm kiếm (tên, mã)' })
@@ -8,8 +9,8 @@ export class QueryProvinceDto {
     @IsString({ message: i18nValidationMessage('province.validation.keywords_string') })
     keywords?: string;
 
-    @ApiPropertyOptional({ description: 'Loại tỉnh/thành', enum: ['TINH', 'THANH_PHO'] })
+    @ApiPropertyOptional({ description: 'Loại tỉnh/thành', enum: ProvinceType })
     @IsOptional()
-    @IsString()
-    type?: string;
+    @IsEnum(ProvinceType)
+    type?: ProvinceType;
 }

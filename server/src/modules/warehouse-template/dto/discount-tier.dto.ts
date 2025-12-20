@@ -23,21 +23,9 @@ export enum DurationUnit {
 }
 
 /**
- * DTO để tạo/cập nhật discount tier trong WarehouseTemplate
- * - Nếu có id: update tier hiện có
- * - Nếu không có id: tạo tier mới
+ * DTO để tạo discount tier mới trong WarehouseTemplate (không có id)
  */
-export class DiscountTierDto {
-  @ApiPropertyOptional({
-    description: 'ID của tier (nếu có = update, không có = create)',
-    example: '550e8400-e29b-41d4-a716-446655440000',
-  })
-  @IsOptional()
-  @IsUUID('4', {
-    message: i18nValidationMessage('warehouse-discount-tier.validation.id_uuid'),
-  })
-  id?: string;
-
+export class CreateDiscountTierDto {
   @ApiProperty({
     description: 'Tên tier',
     example: '1 tháng',
@@ -122,3 +110,27 @@ export class DiscountTierDto {
   })
   is_active?: boolean;
 }
+
+/**
+ * DTO để cập nhật discount tier trong WarehouseTemplate
+ * - Nếu có id: update tier hiện có
+ * - Nếu không có id: tạo tier mới
+ * - Tier hiện có nhưng không trong danh sách sẽ bị xóa
+ */
+export class UpdateDiscountTierDto extends CreateDiscountTierDto {
+  @ApiPropertyOptional({
+    description: 'ID của tier (nếu có = update, không có = create)',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @IsOptional()
+  @IsUUID('4', {
+    message: i18nValidationMessage('warehouse-discount-tier.validation.id_uuid'),
+  })
+  id?: string;
+}
+
+/**
+ * @deprecated Use CreateDiscountTierDto or UpdateDiscountTierDto instead
+ */
+export const DiscountTierDto = UpdateDiscountTierDto;
+
