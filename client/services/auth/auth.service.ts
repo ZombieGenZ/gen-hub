@@ -1,4 +1,5 @@
 import type { RegisterInput, LoginInput, ChangePass } from '@/types/auth/auth.type';
+import { authStorage } from './auth-storage.service';
 
 const API = process.env.NEXT_PUBLIC_API_URL
 
@@ -35,7 +36,12 @@ export class AuthService {
             const data = await response.json()
 
             if (data.success) {
-                if(data.data.two_factor_enabled == false) {
+                // Store tokens if 2FA is not enabled
+                if (data.data.two_factor_enabled === false) {
+                    authStorage.setTokens(
+                        data.authorization.access_token,
+                        data.authorization.refresh_token
+                    )
                     await this.verify_password(data.authorization.access_token, input.password)
                 }
                 return data
@@ -60,10 +66,10 @@ export class AuthService {
             const data = await response.json()
 
             if (data.success) {
-                localStorage.setItem('access_verification_token', data.data.access_verification_token)
+                authStorage.setVerificationToken(data.data.access_verification_token)
                 return data
             }
-        }  catch (error: any) {
+        } catch (error: any) {
             throw new Error(error.message)
         }
     }
@@ -83,9 +89,13 @@ export class AuthService {
             const data = await response.json()
 
             if (data.success) {
+                // Clear all auth tokens on successful logout
+                authStorage.clearTokens()
                 return data
             }
         } catch (error: any) {
+            // Clear tokens even if there's an error to ensure clean state
+            authStorage.clearTokens()
             throw new Error(error.message)
         }
     }
@@ -104,9 +114,13 @@ export class AuthService {
             const data = await response.json()
 
             if (data.success) {
+                // Clear all auth tokens on successful logout
+                authStorage.clearTokens()
                 return data
             }
         } catch (error: any) {
+            // Clear tokens even if there's an error to ensure clean state
+            authStorage.clearTokens()
             throw new Error(error.message)
         }
     }
@@ -123,9 +137,17 @@ export class AuthService {
             const data = await response.json()
 
             if (data.success) {
+                // Update tokens in storage
+                authStorage.setTokens(
+                    data.authorization.access_token,
+                    data.authorization.refresh_token
+                )
                 return data
             }
+            return null
         } catch (error: any) {
+            // Clear tokens on error
+            authStorage.clearTokens()
             throw new Error(error.message)
         }
     }

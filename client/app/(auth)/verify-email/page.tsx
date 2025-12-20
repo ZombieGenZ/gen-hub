@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { CheckCircle2, XCircle } from 'lucide-react'
 import { AuthService } from '@/services/auth/auth.service'
+import { authStorage } from '@/services/auth/auth-storage.service'
 
 const authServices = new AuthService()
 
@@ -30,14 +31,17 @@ function VerifyEmailContent() {
 
     const verify = async () => {
       try {
-        const access_token = localStorage.getItem('access_token')
-        if (!access_token) return;
+        const access_token = authStorage.getAccessToken()
+        if (!access_token) {
+          setMessage('Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại.')
+          setIsSuccess(false)
+          return;
+        }
         const res: any = await authServices.confirmEmail(access_token, token)
         if (res) {
           setIsSuccess(true)
           setMessage(res?.message || 'Xác minh email thành công, vui lòng đăng nhập lại.')
-          localStorage.removeItem('access_token')
-          localStorage.removeItem('refresh_token')
+          authStorage.clearTokens()
         } else {
           setIsSuccess(false)
           setMessage('Xác minh email thất bại.')

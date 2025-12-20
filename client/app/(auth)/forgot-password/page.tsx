@@ -5,18 +5,17 @@ import { Mail } from 'lucide-react'
 import Link from 'next/link'
 import { AuthService } from '@/services/auth/auth.service'
 import { useRouter } from 'next/navigation'
+import { authStorage } from '@/services/auth/auth-storage.service'
 
 const authServices = new AuthService();
-
 export default function ForgotPasswordPage() {
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    const token = localStorage.getItem('access_token')
-    if (token) {
-      alert('Không có quyền truy cập!')
+    if (authStorage.isAuthenticated()) {
+      alert('Bạn đã đăng nhập!')
       router.push('/')
     }
   }, [])

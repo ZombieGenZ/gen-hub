@@ -1,12 +1,13 @@
 'use client';
 
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { ArrowRight, ChevronRight, Menu, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { AnimatedGroup } from '@/components/ui/animated-group'
 import { cn } from '@/lib/utils'
 import { Variants } from 'framer-motion'
+import { authStorage } from '@/services/auth/auth-storage.service';
 
 const menuItems = [
     { name: 'Features', href: '#link' },
@@ -72,13 +73,22 @@ const transitionVariants: { container?: Variants; item?: Variants } = {
 const HeroHeader = () => {
     const [menuState, setMenuState] = React.useState(false)
     const [isScrolled, setIsScrolled] = React.useState(false)
-    const [isLoggedIn, setIsLoggedIn] = React.useState<boolean>(false)
+    const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false)
 
-    React.useEffect(() => {
-        const token = localStorage.getItem('access_token')
-        if (token) {
-            setIsLoggedIn(true)
+    useEffect(() => {
+        const checkAuth = () => {
+            setIsLoggedIn(authStorage.isAuthenticated())
         }
+        
+        checkAuth()
+        
+        // Optional: Listen for auth state changes if needed
+        const handleStorageChange = () => {
+            checkAuth()
+        }
+        
+        window.addEventListener('storage', handleStorageChange)
+        return () => window.removeEventListener('storage', handleStorageChange)
         const handleScroll = () => {
             setIsScrolled(window.scrollY > 50)
         }

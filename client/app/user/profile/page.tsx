@@ -1,6 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { ShieldCheck } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { UserService } from '@/services/user/user.service'
 import type { UserData } from '@/types/user/user.type'
 import { User, Shield, Bell, Pencil, ExternalLink, Loader2, Check, Smartphone, Plus, Upload, Menu, Sun, Moon } from 'lucide-react'
@@ -11,6 +14,8 @@ import { useRouter } from 'next/navigation'
 import { redirect } from 'next/navigation'
 import { AuthService } from '@/services/auth/auth.service'
 import { Enable2FAResponse } from '@/types/user/2fa.type'
+import { getCookie, removeCookie } from '@/lib/cookies'
+import { authStorage } from '@/services/auth/auth-storage.service'
 
 import {
   Drawer,
@@ -30,6 +35,8 @@ export default function ProfilePage() {
   const [userData, setUserData] = useState<UserData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [twoFactorCode, setTwoFactorCode] = useState<string>('')
+  const [isSubmitting2FA, setIsSubmitting2FA] = useState(false)
   const router = useRouter()
 
   // Theme state
@@ -52,90 +59,102 @@ export default function ProfilePage() {
       try {
         setLoading(true)
         setError(null)
-        const token = localStorage.getItem('access_token')
-        const refresh_token = localStorage.getItem('refresh_token')
-        if (!token || !refresh_token) {
+        
+        const token = authStorage.getAccessToken()
+        const refreshToken = authStorage.getRefreshToken()
+        
+        if (!token || !refreshToken) {
           setError('Vui lòng đăng nhập')
-          alert('Vui lòng đăng nhập')
-          return
-        }
-        const data = await userService.getUser(token, refresh_token)
-        if (!data) {
-          setError('Không lấy được thông tin người dùng, vui lòng đăng nhập lại')
-          alert('Không lấy được thông tin người dùng, vui lòng đăng nhập lại')
-          localStorage.removeItem('access_token')
-          localStorage.removeItem('refresh_token')
           router.push('/login')
           return
-        } else {
-          console.log(data)
+        }
+
+        const data = await userService.getUser(token, refreshToken)
+        if (data) {
           setUserData(data)
-          setName(data.user.name)
+          setName(data.user?.name || '')
         }
       } catch (err) {
+        console.error('Error fetching user:', err)
         setError('Đã xảy ra lỗi khi tải thông tin người dùng')
-        console.error(err)
       } finally {
         setLoading(false)
       }
     }
+
     fetchUser()
   }, [])
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Placeholder for update logic
     setSaving(true)
-    setTimeout(async () => {
-      try {
-        const response = await userService.updateUser(localStorage.getItem('access_token')!, { name: name })
-        if (response) {
-          setSaveMessage("Cập nhật thông tin thành công!")
-        }
-      } catch (error) {
-        console.error(error)
-      } finally {
-        setSaving(false)
+    try {
+      const token = authStorage.getAccessToken()
+      if (!token) {
+        alert('Vui lòng đăng nhập lại')
+        router.push('/login')
+        return
       }
-    }, 1000)
+
+      const updatedUser = await userService.updateUser(token, { name })
+      if (updatedUser) {
+        setSaveMessage('Cập nhật thông tin thành công')
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error)
+      setSaveMessage('Có lỗi xảy ra khi cập nhật thông tin')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const handleEnable2FA = async () => {
     setEnabling2FA(true)
     try {
-      const token = localStorage.getItem('access_token')
-      const access_verification_token = localStorage.getItem('access_verification_token')
+      const token = authStorage.getAccessToken()
+      const accessVerificationToken = authStorage.getVerificationToken()
       
-      if (token && access_verification_token) {
-        const res = await userService.enableTwoFactor(token, access_verification_token)
+      if (token && accessVerificationToken) {
+        const res = await userService.enableTwoFactor(token, accessVerificationToken)
         if (res) {
           alert("Đã yêu cầu bật 2FA (Cần implement flow QR code)")
           setEnable2FAData(res)
         } else {
           alert("Bật 2FA thất bại")
         }
+      } else {
+        alert('Vui lòng đăng nhập lại')
+        router.push('/login')
       }
     } catch (e) {
       console.error(e)
+      alert('Có lỗi xảy ra khi bật 2FA')
     } finally {
       setEnabling2FA(false)
     }
   }
 
   const handleDisable2FA = async () => {
-    try {
-      const token = localStorage.getItem('access_token')
-      const access_verification_token = localStorage.getItem('access_verification_token')
-      if(token && access_verification_token) {
-        const response = await userService.disableTwoFactor(token, access_verification_token)
-        if (response) {
-          alert("Đã tắt 2FA")
-        } else {
-          alert("Tắt 2FA thất bại")
+    if (window.confirm('Bạn có chắc chắn muốn tắt xác thực 2 yếu tố?')) {
+      try {
+        const token = authStorage.getAccessToken()
+        const accessVerificationToken = authStorage.getVerificationToken()
+        if (!token || !accessVerificationToken) {
+          alert('Vui lòng đăng nhập lại')
+          router.push('/login')
+          return
         }
+
+        const success = await userService.disableTwoFactor(token, accessVerificationToken)
+        if (success) {
+          alert('Đã tắt xác thực 2 yếu tố thành công')
+        } else {
+          alert('Tắt xác thực 2 yếu tố thất bại')
+        }
+      } catch (error) {
+        console.error('Error disabling 2FA:', error)
+        alert('Có lỗi xảy ra khi tắt xác thực 2 yếu tố')
       }
-    } catch (e) {
-      console.error(e)
     }
   }
 
@@ -156,18 +175,22 @@ export default function ProfilePage() {
   }
 
   const handleLogout = async () => {
-    const token = localStorage.getItem('access_token');
-    const refresh_token = localStorage.getItem('refresh_token');
+    const token = getCookie('access_token');
+    const refresh_token = getCookie('refresh_token');
     if (token && refresh_token) {
       const response = await authService.logout(token, refresh_token);
       if(response) {
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
+        removeCookie('access_token');
+        removeCookie('refresh_token');
+        removeCookie('access_verification_token');
         alert(response.message);
         router.push('/');
       } else {
         alert("Đăng xuất thất bại");
       }
+    } else {
+      alert('Vui lòng đăng nhập lại');
+      router.push('/login');
     }
   };
 
@@ -188,6 +211,46 @@ export default function ProfilePage() {
         <button onClick={() => router.push('/login')} className="bg-red-700 hover:bg-red-800 dark:bg-red-600 dark:hover:bg-red-700 text-white font-medium px-8 py-3 rounded-lg transition-all shadow-lg shadow-red-700/20 hover:shadow-red-700/40 flex items-center gap-2 justify-center active:scale-[0.98]">Đăng nhập</button>
       </div>
     )
+  }
+
+  const handleVerify2FACode = async () => {
+    if (twoFactorCode.length !== 6) return
+    
+    setIsSubmitting2FA(true)
+    try {
+      const token = authStorage.getAccessToken()
+      if (!token || !enable2FAData?.data.secret) {
+        router.push('/login')
+        return
+      }
+      
+      const response = await userService.verifyTwoFactor(
+        token,
+        enable2FAData.data.secret,
+        twoFactorCode
+      )
+      
+      // if (response) {
+      //   // Handle successful verification
+      //   setUserData(prev => prev ? {
+      //     ...prev,
+      //     user: {
+      //       ...prev.user,
+      //       two_factor_enabled: true
+      //     }
+      //   } : null)
+      //   setEnable2FAData(null)
+      //   setTwoFactorCode('')
+      //   // Show success message
+      // } else {
+      //   // Show error message
+      // }
+    } catch (error) {
+      console.error('2FA verification failed:', error)
+      // Show error message
+    } finally {
+      setIsSubmitting2FA(false)
+    }
   }
 
   if (!userData) return null
@@ -459,7 +522,7 @@ export default function ProfilePage() {
                   <button
                     onClick={handleEnable2FA}
                     disabled={enabling2FA}
-                    className="w-full md:w-auto bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-slate-300 dark:hover:border-slate-600 font-bold px-5 py-2.5 rounded-lg transition-all shadow-sm flex items-center justify-center gap-2 group"
+                    className="w-full cursor-pointer md:w-auto bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-slate-300 dark:hover:border-slate-600 font-bold px-5 py-2.5 rounded-lg transition-all shadow-sm flex items-center justify-center gap-2 group"
                   >
                     {enabling2FA ? <Loader2 className="w-4 h-4 animate-spin" /> :
                       <div className="bg-slate-100 dark:bg-slate-700/50 p-1.5 rounded-md group-hover:bg-slate-200 dark:group-hover:bg-slate-600 transition-colors">
@@ -502,29 +565,59 @@ export default function ProfilePage() {
                     Hoặc nhập mã thủ công: <span className="font-mono font-bold text-gray-900 dark:text-white">{enable2FAData.data.secret}</span>
                   </p>
                 </div>
-
-                <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-6">
-                  <h3 className="text-lg font-semibold text-amber-900 dark:text-amber-100 mb-4 flex items-center gap-2">
-                    <Shield className="w-5 h-5" />
-                    Mã dự phòng
+              </div>
+            )}
+            {enable2FAData && (
+              <div className="mt-6 p-6 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700">
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                    <ShieldCheck className="w-5 h-5 text-blue-500" />
+                    Xác nhận mã 2FA
                   </h3>
-                  <p className="text-sm text-amber-800 dark:text-amber-200 mb-4">
-                    Lưu trữ các mã này ở nơi an toàn. Mỗi mã chỉ sử dụng được một lần.
-                  </p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {enable2FAData.data.backup_codes.map((code, index) => (
-                      <div 
-                        key={index} 
-                        className="font-mono bg-white dark:bg-slate-800 text-center p-2 rounded border border-amber-200 dark:border-amber-800 text-sm"
-                      >
-                        {code}
+                  
+                  <div className="space-y-3">
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                      Nhập mã xác thực 6 số từ ứng dụng xác thực của bạn
+                    </p>
+                    
+                    <div className="flex items-start gap-3">
+                      <div className="flex-1 max-w-[240px]">
+                        <Input
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          placeholder="Mã xác thực"
+                          maxLength={6}
+                          value={twoFactorCode}
+                          onChange={(e) => {
+                            const value = e.target.value.replace(/\D/g, '')
+                            setTwoFactorCode(value)
+                          }}
+                          className="text-center text-lg font-mono tracking-widest h-12"
+                        />
                       </div>
-                    ))}
+                      
+                      <Button
+                        onClick={handleVerify2FACode}
+                        disabled={twoFactorCode.length !== 6 || isSubmitting2FA}
+                        className="h-12 px-6"
+                      >
+                        {isSubmitting2FA ? (
+                          <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                            Đang xác thực...
+                          </div>
+                        ) : 'Xác nhận'}
+                      </Button>
+                    </div>
+                    
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Mã xác thực sẽ hết hạn sau 30 giây
+                    </p>
                   </div>
                 </div>
               </div>
             )}
-            
           </div>
         </main>
       </div>

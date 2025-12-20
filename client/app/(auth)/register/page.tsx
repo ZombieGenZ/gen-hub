@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { AuthService } from '@/services/auth/auth.service'
 import { useRouter } from 'next/navigation'
 import { useTheme } from '../ThemeContext'
+import { authStorage } from '@/services/auth/auth-storage.service';
 
 const authServices = new AuthService();
 
@@ -25,9 +26,8 @@ export default function RegisterPage() {
   const [passwordFocused, setPasswordFocused] = useState(false)
 
   useEffect(() => {
-    const token = localStorage.getItem('access_token')
-    if (token) {
-      alert('Bạn đã đăng ký!')
+    if (authStorage.isAuthenticated()) {
+      alert('Bạn đã đăng nhập!')
       router.push('/')
     }
   }, [])

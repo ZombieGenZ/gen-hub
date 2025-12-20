@@ -6,7 +6,6 @@ import { Lock, Eye, EyeOff } from 'lucide-react'
 import Link from 'next/link'
 import { AuthService } from '@/services/auth/auth.service'
 
-const API = process.env.NEXT_PUBLIC_API_URL
 const authServices = new AuthService()
 
 function ResetPasswordContent() {

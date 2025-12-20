@@ -6,6 +6,7 @@ import Link from "next/link"
 import { AuthService } from '@/services/auth/auth.service'
 import { useRouter } from "next/navigation"
 import { useTheme } from '../ThemeContext'
+import { authStorage } from '@/services/auth/auth-storage.service'
 
 const authServices = new AuthService()
 
@@ -24,12 +25,11 @@ export default function LoginPage() {
   const [passwordFocused, setPasswordFocused] = useState(false)
 
   useEffect(() => {
-    const token = localStorage.getItem('access_token')
-    if (token) {
+    if (authStorage.isAuthenticated()) {
       alert('Bạn đã đăng nhập!')
       router.push('/')
     }
-  }, [])
+  }, [router])
 
   const handleLogin = async () => {
     setLoading(true)
@@ -38,8 +38,10 @@ export default function LoginPage() {
       const response = await authServices.login(formData)
       console.log(response)
       if (response) {
-        localStorage.setItem("access_token", response.authorization.access_token)
-        localStorage.setItem("refresh_token", response.authorization.refresh_token)
+        authStorage.setTokens(
+          response.authorization.access_token,
+          response.authorization.refresh_token
+        )
         alert("Đăng nhập thành công!")
         router.push("/")
       } else {

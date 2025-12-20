@@ -1,6 +1,7 @@
 'use client'
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import { authStorage } from '@/services/auth/auth-storage.service'
 
 interface ThemeContextType {
   darkMode: boolean
@@ -14,14 +15,16 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [darkMode, setDarkMode] = useState(true)
 
   useEffect(() => {
-    const savedTheme = localStorage.getItem('auth-theme')
-    if (savedTheme !== null) {
+    const savedTheme = authStorage.getTheme()
+    if (savedTheme) {
       setDarkMode(savedTheme === 'dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      setDarkMode(true)
     }
   }, [])
 
   useEffect(() => {
-    localStorage.setItem('auth-theme', darkMode ? 'dark' : 'light')
+    authStorage.setTheme(darkMode ? 'dark' : 'light')
   }, [darkMode])
 
   const toggleDarkMode = () => setDarkMode(!darkMode)
