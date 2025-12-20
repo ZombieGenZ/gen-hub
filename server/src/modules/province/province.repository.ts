@@ -9,10 +9,10 @@ export class ProvinceRepository {
     constructor(private readonly prisma: PrismaService) { }
 
     /**
-     * Lấy danh sách tỉnh/thành có phân trang và filter
+     * Lấy danh sách tất cả tỉnh/thành với filter
      */
-    async findMany(query: QueryProvinceDto): Promise<{ items: IProvince[]; total: number }> {
-        const { limit = 100, offset = 0, keywords, type } = query;
+    async findMany(query: QueryProvinceDto): Promise<IProvince[]> {
+        const { keywords, type } = query;
 
         const where: Prisma.ProvinceWhereInput = {
             is_deleted: false,
@@ -30,27 +30,22 @@ export class ProvinceRepository {
             where.type = type as any;
         }
 
-        const [items, total] = await Promise.all([
-            this.prisma.province.findMany({
-                where,
-                take: limit,
-                skip: offset,
-                orderBy: { name: 'asc' },
-                select: {
-                    id: true,
-                    code: true,
-                    name: true,
-                    slug: true,
-                    type: true,
-                    is_active: true,
-                    created_at: true,
-                    updated_at: true,
-                },
-            }),
-            this.prisma.province.count({ where }),
-        ]);
+        const items = await this.prisma.province.findMany({
+            where,
+            orderBy: { name: 'asc' },
+            select: {
+                id: true,
+                code: true,
+                name: true,
+                slug: true,
+                type: true,
+                is_active: true,
+                created_at: true,
+                updated_at: true,
+            },
+        });
 
-        return { items: items as IProvince[], total };
+        return items as IProvince[];
     }
 
     /**

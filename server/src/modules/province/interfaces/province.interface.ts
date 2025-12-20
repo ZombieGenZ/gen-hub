@@ -18,11 +18,3 @@ export interface IProvinceWithWards extends IProvince {
         type: string | null;
     }[];
 }
-
-export interface IPaginatedResponse<T> {
-    items: T[];
-    total: number;
-    limit: number;
-    offset: number;
-    hasMore: boolean;
-}

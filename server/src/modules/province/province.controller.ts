@@ -6,7 +6,7 @@ import { ProvinceService } from './province.service';
 import { QueryProvinceDto } from './dto';
 import { GetResponse, ResponseCode } from '../../common/responses';
 import { Public } from '../../common/decorators';
-import { IProvince, IProvinceWithWards, IPaginatedResponse } from './interfaces';
+import { IProvince, IProvinceWithWards } from './interfaces';
 
 @ApiTags('Provinces')
 @Controller('provinces')
@@ -23,7 +23,7 @@ export class ProvinceController {
     async findMany(
         @Query() query: QueryProvinceDto,
         @I18nLang() lang: string,
-    ): Promise<GetResponse<IPaginatedResponse<IProvince>>> {
+    ): Promise<GetResponse<IProvince[]>> {
         const result = await this.service.findMany(query, lang);
         return new GetResponse(ResponseCode.PROVINCE_LIST_SUCCESS, result);
     }

@@ -9,10 +9,10 @@ export class WardRepository {
     constructor(private readonly prisma: PrismaService) { }
 
     /**
-     * Lấy danh sách phường/xã có phân trang và filter
+     * Lấy danh sách tất cả phường/xã với filter
      */
-    async findMany(query: QueryWardDto): Promise<{ items: IWard[]; total: number }> {
-        const { limit = 100, offset = 0, keywords, type, province_id } = query;
+    async findMany(query: QueryWardDto): Promise<IWard[]> {
+        const { keywords, type, province_id } = query;
 
         const where: Prisma.WardWhereInput = {
             is_deleted: false,
@@ -34,28 +34,23 @@ export class WardRepository {
             where.province_id = province_id;
         }
 
-        const [items, total] = await Promise.all([
-            this.prisma.ward.findMany({
-                where,
-                take: limit,
-                skip: offset,
-                orderBy: { name: 'asc' },
-                select: {
-                    id: true,
-                    code: true,
-                    name: true,
-                    slug: true,
-                    type: true,
-                    province_id: true,
-                    is_active: true,
-                    created_at: true,
-                    updated_at: true,
-                },
-            }),
-            this.prisma.ward.count({ where }),
-        ]);
+        const items = await this.prisma.ward.findMany({
+            where,
+            orderBy: { name: 'asc' },
+            select: {
+                id: true,
+                code: true,
+                name: true,
+                slug: true,
+                type: true,
+                province_id: true,
+                is_active: true,
+                created_at: true,
+                updated_at: true,
+            },
+        });
 
-        return { items: items as IWard[], total };
+        return items as IWard[];
     }
 
     /**
@@ -81,7 +76,7 @@ export class WardRepository {
     /**
      * Lấy danh sách phường/xã theo province ID
      */
-    async findByProvinceId(provinceId: string, query: QueryWardDto): Promise<{ items: IWard[]; total: number }> {
+    async findByProvinceId(provinceId: string, query: QueryWardDto): Promise<IWard[]> {
         const queryWithProvince = { ...query, province_id: provinceId };
         return this.findMany(queryWithProvince);
     }

@@ -72,9 +72,6 @@ export class TwoFactorService {
 
     const qrCodeUrl = await QRCode.toDataURL(secret.otpauth_url || '');
 
-    const backupCodes =
-      await this.backupCodeService.generateAndSaveBackupCodes(userId);
-
     this.systemLogService.info(
       'two-factor',
       'setup_2fa',
@@ -89,7 +86,6 @@ export class TwoFactorService {
       message: await this.i18n.t('auth.two_factor.setup_in_progress', { lang }),
       secret: secret.base32,
       qr_code_url: qrCodeUrl,
-      backup_codes: backupCodes,
     };
   }
 
@@ -120,6 +116,10 @@ export class TwoFactorService {
 
     await this.userRepository.enableTwoFactor(userId);
 
+    // Generate backup codes after successful verification
+    const backupCodes =
+      await this.backupCodeService.generateAndSaveBackupCodes(userId);
+
     const message = await this.i18n.t('auth.two_factor.setup_success', { lang });
 
     // Emit socket event
@@ -135,7 +135,7 @@ export class TwoFactorService {
       },
     );
 
-    return { message };
+    return { message, backup_codes: backupCodes };
   }
 
   /**

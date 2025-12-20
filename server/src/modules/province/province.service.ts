@@ -4,7 +4,7 @@ import { I18nService } from 'nestjs-i18n';
 import { ProvinceRepository } from './province.repository';
 import { RedisService } from '../redis/redis.service';
 import { QueryProvinceDto } from './dto';
-import { IProvince, IProvinceWithWards, IPaginatedResponse } from './interfaces';
+import { IProvince, IProvinceWithWards } from './interfaces';
 
 @Injectable()
 export class ProvinceService {
@@ -41,9 +41,9 @@ export class ProvinceService {
     }
 
     /**
-     * Lấy danh sách tỉnh/thành với cache
+     * Lấy danh sách tất cả tỉnh/thành với cache
      */
-    async findMany(query: QueryProvinceDto, lang: string): Promise<IPaginatedResponse<IProvince>> {
+    async findMany(query: QueryProvinceDto, lang: string): Promise<IProvince[]> {
         const cacheKey = this.getListCacheKey(query);
 
         // Kiểm tra cache
@@ -53,20 +53,12 @@ export class ProvinceService {
         }
 
         // Query từ database
-        const { items, total } = await this.repository.findMany(query);
-
-        const result: IPaginatedResponse<IProvince> = {
-            items,
-            total,
-            limit: query.limit || 100,
-            offset: query.offset || 0,
-            hasMore: (query.offset || 0) + items.length < total,
-        };
+        const items = await this.repository.findMany(query);
 
         // Lưu vào cache
-        await this.redisService.set(cacheKey, JSON.stringify(result), this.PROVINCE_LIST_TTL);
+        await this.redisService.set(cacheKey, JSON.stringify(items), this.PROVINCE_LIST_TTL);
 
-        return result;
+        return items;
     }
 
     /**

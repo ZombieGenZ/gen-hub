@@ -6,7 +6,7 @@ import { WardService } from './ward.service';
 import { QueryWardDto } from './dto';
 import { GetResponse, ResponseCode } from '../../common/responses';
 import { Public } from '../../common/decorators';
-import { IWard, IWardWithProvince, IPaginatedResponse } from './interfaces';
+import { IWard, IWardWithProvince } from './interfaces';
 
 @ApiTags('Wards')
 @Controller()
@@ -23,7 +23,7 @@ export class WardController {
     async findMany(
         @Query() query: QueryWardDto,
         @I18nLang() lang: string,
-    ): Promise<GetResponse<IPaginatedResponse<IWard>>> {
+    ): Promise<GetResponse<IWard[]>> {
         const result = await this.service.findMany(query, lang);
         return new GetResponse(ResponseCode.WARD_LIST_SUCCESS, result);
     }
@@ -57,7 +57,7 @@ export class WardController {
         @Param('provinceId', ParseUUIDPipe) provinceId: string,
         @Query() query: QueryWardDto,
         @I18nLang() lang: string,
-    ): Promise<GetResponse<IPaginatedResponse<IWard>>> {
+    ): Promise<GetResponse<IWard[]>> {
         const result = await this.service.findByProvinceId(provinceId, query, lang);
         return new GetResponse(ResponseCode.WARD_LIST_SUCCESS, result);
     }

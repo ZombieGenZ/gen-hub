@@ -57,7 +57,7 @@ export class TwoFactorController {
   @ApiOperation({ summary: 'Thiết lập xác thực 2 yếu tố (2FA)' })
   @ApiResponse({
     status: 200,
-    description: 'Trả về secret, QR code và backup codes',
+    description: 'Trả về secret và QR code',
   })
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard, AccessVerificationGuard)
@@ -76,14 +76,13 @@ export class TwoFactorController {
       {
         secret: result.secret,
         qr_code_url: result.qr_code_url,
-        backup_codes: result.backup_codes,
       },
       result.message,
     );
   }
 
   @ApiOperation({ summary: 'Xác minh và bật 2FA' })
-  @ApiResponse({ status: 200, description: 'Bật 2FA thành công' })
+  @ApiResponse({ status: 200, description: 'Bật 2FA thành công và trả về backup codes' })
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard)
   @Post('verify-setup')
@@ -98,7 +97,11 @@ export class TwoFactorController {
       dto,
       lang || 'vi',
     );
-    return new OkResponse(ResponseCode.TWO_FACTOR_VERIFY_SETUP_SUCCESS, null, result.message);
+    return new OkResponse(
+      ResponseCode.TWO_FACTOR_VERIFY_SETUP_SUCCESS,
+      { backup_codes: result.backup_codes },
+      result.message,
+    );
   }
 
   @ApiOperation({ summary: 'Tắt xác thực 2 yếu tố (2FA)' })

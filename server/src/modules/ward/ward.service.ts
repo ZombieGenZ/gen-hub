@@ -4,7 +4,7 @@ import { I18nService } from 'nestjs-i18n';
 import { WardRepository } from './ward.repository';
 import { RedisService } from '../redis/redis.service';
 import { QueryWardDto } from './dto';
-import { IWard, IWardWithProvince, IPaginatedResponse } from './interfaces';
+import { IWard, IWardWithProvince } from './interfaces';
 
 @Injectable()
 export class WardService {
@@ -53,9 +53,9 @@ export class WardService {
     }
 
     /**
-     * Lấy danh sách phường/xã với cache
+     * Lấy danh sách tất cả phường/xã với cache
      */
-    async findMany(query: QueryWardDto, lang: string): Promise<IPaginatedResponse<IWard>> {
+    async findMany(query: QueryWardDto, lang: string): Promise<IWard[]> {
         const cacheKey = this.getListCacheKey(query);
 
         // Kiểm tra cache
@@ -65,20 +65,12 @@ export class WardService {
         }
 
         // Query từ database
-        const { items, total } = await this.repository.findMany(query);
-
-        const result: IPaginatedResponse<IWard> = {
-            items,
-            total,
-            limit: query.limit || 100,
-            offset: query.offset || 0,
-            hasMore: (query.offset || 0) + items.length < total,
-        };
+        const items = await this.repository.findMany(query);
 
         // Lưu vào cache
-        await this.redisService.set(cacheKey, JSON.stringify(result), this.WARD_LIST_TTL);
+        await this.redisService.set(cacheKey, JSON.stringify(items), this.WARD_LIST_TTL);
 
-        return result;
+        return items;
     }
 
     /**
@@ -111,7 +103,7 @@ export class WardService {
     /**
      * Lấy danh sách phường/xã theo province ID với cache
      */
-    async findByProvinceId(provinceId: string, query: QueryWardDto, lang: string): Promise<IPaginatedResponse<IWard>> {
+    async findByProvinceId(provinceId: string, query: QueryWardDto, lang: string): Promise<IWard[]> {
         const cacheKey = this.getByProvinceCacheKey(provinceId, query);
 
         // Kiểm tra cache
@@ -121,19 +113,11 @@ export class WardService {
         }
 
         // Query từ database
-        const { items, total } = await this.repository.findByProvinceId(provinceId, query);
-
-        const result: IPaginatedResponse<IWard> = {
-            items,
-            total,
-            limit: query.limit || 100,
-            offset: query.offset || 0,
-            hasMore: (query.offset || 0) + items.length < total,
-        };
+        const items = await this.repository.findByProvinceId(provinceId, query);
 
         // Lưu vào cache
-        await this.redisService.set(cacheKey, JSON.stringify(result), this.WARD_LIST_TTL);
+        await this.redisService.set(cacheKey, JSON.stringify(items), this.WARD_LIST_TTL);
 
-        return result;
+        return items;
     }
 }

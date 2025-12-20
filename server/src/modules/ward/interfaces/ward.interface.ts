@@ -17,11 +17,3 @@ export interface IWardWithProvince extends IWard {
         name: string;
     };
 }
-
-export interface IPaginatedResponse<T> {
-    items: T[];
-    total: number;
-    limit: number;
-    offset: number;
-    hasMore: boolean;
-}
