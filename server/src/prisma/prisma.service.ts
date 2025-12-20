@@ -12,10 +12,43 @@ import { Client } from 'pg';
 export class PrismaService extends PrismaClient implements OnModuleInit {
   private readonly logger = new Logger(PrismaService.name);
 
+  private isSeedingInProgress = false;
+
   async onModuleInit() {
     await this.initializeDatabase();
     await this.$connect();
-    await this.seedDefaultRoles();
+
+    // Chạy seed data trong background để không block server startup
+    // Sử dụng setImmediate để đảm bảo server ready trước khi bắt đầu seed
+    setImmediate(() => {
+      this.runSeedInBackground().catch((error: unknown) => {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        this.logger.error(`❌ Background seeding failed: ${errorMessage}`);
+      });
+    });
+  }
+
+  /**
+   * Chạy seed data trong background để không ảnh hưởng đến thời gian khởi động server
+   */
+  private async runSeedInBackground() {
+    if (this.isSeedingInProgress) {
+      this.logger.warn('⚠️ Seeding already in progress, skipping...');
+      return;
+    }
+
+    this.isSeedingInProgress = true;
+    this.logger.log('🌱 Starting background seeding...');
+
+    try {
+      await this.seedDefaultRoles();
+      this.logger.log('✅ Background seeding completed successfully');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error(`❌ Background seeding failed: ${errorMessage}`);
+    } finally {
+      this.isSeedingInProgress = false;
+    }
   }
 
   /**
