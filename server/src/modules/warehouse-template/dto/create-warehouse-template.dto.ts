@@ -15,7 +15,7 @@ import {
 } from 'class-validator';
 import { i18nValidationMessage } from 'nestjs-i18n';
 import { Type } from 'class-transformer';
-import { CreateDiscountTierDto } from './discount-tier.dto';
+import { CreateDiscountConfigDto } from './discount-config.dto';
 
 /**
  * DTO tạo mới WarehouseTemplate
@@ -88,24 +88,21 @@ export class CreateWarehouseTemplateDto {
     whole_warehouse_discount?: number;
 
     @ApiPropertyOptional({
-        description: 'Danh sách tier giảm giá',
-        type: [CreateDiscountTierDto],
+        description: 'Danh sách config giảm giá theo mốc thời gian',
+        type: [CreateDiscountConfigDto],
         example: [
-            { name: '1 tháng', duration_value: 1, duration_unit: 'MONTH', discount_percent: 0 },
-            { name: '3 tháng', duration_value: 3, duration_unit: 'MONTH', discount_percent: 5 },
-            { name: '6 tháng', duration_value: 6, duration_unit: 'MONTH', discount_percent: 10 },
-            { name: '1 năm', duration_value: 1, duration_unit: 'YEAR', discount_percent: 15 },
-            { name: '2 năm', duration_value: 2, duration_unit: 'YEAR', discount_percent: 20 },
-            { name: '3 năm', duration_value: 3, duration_unit: 'YEAR', discount_percent: 25 },
+            { duration_tier_id: 'uuid-tier-1', discount_percent: 0 },
+            { duration_tier_id: 'uuid-tier-2', discount_percent: 5 },
+            { duration_tier_id: 'uuid-tier-3', discount_percent: 10 },
         ],
     })
     @IsOptional()
     @IsArray({
-        message: i18nValidationMessage('warehouse-template.validation.discount_tiers_array'),
+        message: i18nValidationMessage('warehouse-template.validation.discount_configs_array'),
     })
     @ValidateNested({ each: true })
-    @Type(() => CreateDiscountTierDto)
-    discount_tiers?: CreateDiscountTierDto[];
+    @Type(() => CreateDiscountConfigDto)
+    discount_configs?: CreateDiscountConfigDto[];
 
     @ApiPropertyOptional({ description: 'Cho phép thuê theo từng row (shared warehouse)', default: false })
     @IsOptional()

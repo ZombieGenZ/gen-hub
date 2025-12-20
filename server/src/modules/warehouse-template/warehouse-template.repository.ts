@@ -69,12 +69,12 @@ export class WarehouseTemplateRepository {
                 },
             },
         },
-        discount_tiers: {
+        discount_configs: {
             where: { is_deleted: false },
-            orderBy: [
-                { duration_unit: 'asc' as const }, // MONTH trước YEAR
-                { duration_value: 'asc' as const }, // 1 trước 3 trước 6...
-            ],
+            orderBy: { created_at: 'asc' as const },
+            include: {
+                duration_tier: true,
+            },
         },
     };
 
@@ -244,8 +244,8 @@ export class WarehouseTemplateRepository {
                 },
             });
 
-            // Cascade soft delete discount tiers
-            await tx.warehouseDiscountTier.updateMany({
+            // Cascade soft delete discount configs
+            await tx.warehouseDiscountConfig.updateMany({
                 where: { warehouse_template_id: id, is_deleted: false },
                 data: {
                     is_deleted: true,
@@ -351,8 +351,8 @@ export class WarehouseTemplateRepository {
                 },
             });
 
-            // Cascade soft delete discount tiers
-            await tx.warehouseDiscountTier.updateMany({
+            // Cascade soft delete discount configs
+            await tx.warehouseDiscountConfig.updateMany({
                 where: { warehouse_template_id: { in: ids }, is_deleted: false },
                 data: {
                     is_deleted: true,
@@ -832,42 +832,37 @@ export class WarehouseTemplateRepository {
     }
 
     /**
-     * Upsert discount tiers cho warehouse template
-     * - Create new tiers
-     * - Update existing tiers
-     * - Soft delete removed tiers
+     * Upsert discount configs cho warehouse template
+     * - Create new configs
+     * - Update existing configs
+     * - Soft delete removed configs
      */
-    async upsertDiscountTiers(
+    async upsertDiscountConfigs(
         templateId: string,
-        tiersToCreate: Array<{
-            name: string;
-            duration_value: number;
-            duration_unit: string;
+        configsToCreate: Array<{
+            duration_tier_id: string;
             discount_percent: any;
-            description?: string;
             is_active: boolean;
             created_by: string;
         }>,
-        tiersToUpdate: Array<{
+        configsToUpdate: Array<{
             id: string;
             data: {
-                name?: string;
                 discount_percent?: any;
-                description?: string;
                 is_active?: boolean;
                 updated_by?: string;
             };
         }>,
-        tierIdsToDelete: string[],
+        configIdsToDelete: string[],
         userId: string,
     ): Promise<void> {
         const now = new Date();
 
         await this.prisma.$transaction(async (tx) => {
-            // Soft delete tiers không còn trong request
-            if (tierIdsToDelete.length > 0) {
-                await tx.warehouseDiscountTier.updateMany({
-                    where: { id: { in: tierIdsToDelete } },
+            // Soft delete configs không còn trong request
+            if (configIdsToDelete.length > 0) {
+                await tx.warehouseDiscountConfig.updateMany({
+                    where: { id: { in: configIdsToDelete } },
                     data: {
                         is_deleted: true,
                         deleted_at: now,
@@ -876,28 +871,25 @@ export class WarehouseTemplateRepository {
                 });
             }
 
-            // Create new tiers
-            if (tiersToCreate.length > 0) {
-                await tx.warehouseDiscountTier.createMany({
-                    data: tiersToCreate.map(t => ({
+            // Create new configs
+            if (configsToCreate.length > 0) {
+                await tx.warehouseDiscountConfig.createMany({
+                    data: configsToCreate.map(c => ({
                         warehouse_template_id: templateId,
-                        name: t.name,
-                        duration_value: t.duration_value,
-                        duration_unit: t.duration_unit as any,
-                        discount_percent: t.discount_percent,
-                        description: t.description,
-                        is_active: t.is_active,
-                        created_by: t.created_by,
+                        duration_tier_id: c.duration_tier_id,
+                        discount_percent: c.discount_percent,
+                        is_active: c.is_active,
+                        created_by: c.created_by,
                     })),
                 });
             }
 
-            // Update existing tiers
+            // Update existing configs
             await Promise.all(
-                tiersToUpdate.map(t =>
-                    tx.warehouseDiscountTier.update({
-                        where: { id: t.id },
-                        data: t.data,
+                configsToUpdate.map(c =>
+                    tx.warehouseDiscountConfig.update({
+                        where: { id: c.id },
+                        data: c.data,
                     }),
                 ),
             );

@@ -262,6 +262,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
       await this.seedBatchPermissions();
       await this.seedApiKeyAdminPermissions();
       await this.seedPaymentPermissions();
+      await this.seedRentalDurationTierPermissions();
       await this.seedVietnamAdministrative();
     } catch (error: unknown) {
       const errorMessage =
@@ -1185,6 +1186,105 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         error instanceof Error ? error.message : String(error);
       this.logger.error(
         `❌ Failed to seed amenity permissions: ${errorMessage}`,
+      );
+    }
+  }
+
+  /**
+   * Seed các permissions cho RentalDurationTier module
+   * - Chỉ Admin và Super Admin có quyền CRUD
+   */
+  private async seedRentalDurationTierPermissions() {
+    try {
+      const rentalDurationTierPermissions = [
+        {
+          key: 'rental-duration-tier.create',
+          name: 'Tạo mốc thời gian thuê',
+          description: 'Quyền tạo mốc thời gian thuê mới',
+        },
+        {
+          key: 'rental-duration-tier.list',
+          name: 'Xem danh sách mốc thời gian thuê',
+          description: 'Quyền xem danh sách mốc thời gian thuê',
+        },
+        {
+          key: 'rental-duration-tier.read',
+          name: 'Xem chi tiết mốc thời gian thuê',
+          description: 'Quyền xem chi tiết mốc thời gian thuê',
+        },
+        {
+          key: 'rental-duration-tier.update',
+          name: 'Cập nhật mốc thời gian thuê',
+          description: 'Quyền cập nhật mốc thời gian thuê',
+        },
+        {
+          key: 'rental-duration-tier.delete',
+          name: 'Xóa mốc thời gian thuê',
+          description: 'Quyền xóa mốc thời gian thuê',
+        },
+      ];
+
+      for (const perm of rentalDurationTierPermissions) {
+        const existing = await this.permission.findFirst({
+          where: { key: perm.key },
+        });
+
+        if (!existing) {
+          await this.permission.create({
+            data: {
+              key: perm.key,
+              name: perm.name,
+              description: perm.description,
+              is_active: true,
+              is_deleted: false,
+            },
+          });
+        }
+      }
+
+      // Gán permissions cho Admin và Super Admin
+      const adminRoles = await this.role.findMany({
+        where: {
+          name: { in: ['Admin', 'Super Admin'] },
+          is_deleted: false,
+        },
+      });
+
+      const permissionRecords = await this.permission.findMany({
+        where: {
+          key: { in: rentalDurationTierPermissions.map((p) => p.key) },
+          is_deleted: false,
+        },
+      });
+
+      for (const role of adminRoles) {
+        for (const permission of permissionRecords) {
+          const existingAssignment = await this.rolePermission.findFirst({
+            where: {
+              role_id: role.id,
+              permission_id: permission.id,
+            },
+          });
+
+          if (!existingAssignment) {
+            await this.rolePermission.create({
+              data: {
+                role_id: role.id,
+                permission_id: permission.id,
+                is_active: true,
+                is_deleted: false,
+              },
+            });
+          }
+        }
+      }
+
+      this.logger.log('✅ RentalDurationTier permissions seeded');
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `❌ Failed to seed rental-duration-tier permissions: ${errorMessage}`,
       );
     }
   }

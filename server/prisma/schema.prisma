@@ -362,19 +362,19 @@ model WarehouseTemplate {
   images                  WarehouseTemplateImage[]
   amenities               AmenityOnWarehouseTemplate[]
   rental_contract_details RentalContractDetail[]
-  discount_tiers          WarehouseDiscountTier[]
+  discount_configs        WarehouseDiscountConfig[]
 
   @@map("warehouse_templates")
 }
 
-model WarehouseDiscountTier {
-  id                    String       @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
-  warehouse_template_id String       @db.Uuid
-  name                  String
-  duration_value        Int
-  duration_unit         DurationUnit @default(MONTH)
-  discount_percent      Decimal      @default(0) @db.Decimal(5, 2)
-  description           String?
+// Bảng master chứa các mốc thời gian thuê toàn cục
+model RentalDurationTier {
+  id             String       @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  name           String       // "1 Tháng", "3 Tháng", "6 Tháng", "1 Năm"
+  duration_value Int          // 1, 3, 6, 12
+  duration_unit  DurationUnit @default(MONTH)
+  description    String?
+  order          Int          @default(0)
 
   is_active  Boolean   @default(true)
   created_at DateTime  @default(now())
@@ -386,12 +386,64 @@ model WarehouseDiscountTier {
   updated_by String?
   deleted_by String?
 
-  warehouse_template WarehouseTemplate @relation(fields: [warehouse_template_id], references: [id], onDelete: Cascade)
-  payments           Payment[]
+  warehouse_discount_configs WarehouseDiscountConfig[]
+  row_discount_configs       RowDiscountConfig[]
+  payments                   Payment[]
 
-  @@unique([warehouse_template_id, duration_value, duration_unit])
+  @@unique([duration_value, duration_unit])
+  @@map("rental_duration_tiers")
+}
+
+// Config discount cho Warehouse theo từng mốc
+model WarehouseDiscountConfig {
+  id                    String  @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  warehouse_template_id String  @db.Uuid
+  duration_tier_id      String  @db.Uuid
+  discount_percent      Decimal @default(0) @db.Decimal(5, 2)
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean?  @default(false)
+  deleted_at DateTime?
+
+  created_by String
+  updated_by String?
+  deleted_by String?
+
+  warehouse_template WarehouseTemplate  @relation(fields: [warehouse_template_id], references: [id], onDelete: Cascade)
+  duration_tier      RentalDurationTier @relation(fields: [duration_tier_id], references: [id], onDelete: Cascade)
+
+  @@unique([warehouse_template_id, duration_tier_id])
   @@index([warehouse_template_id])
-  @@map("warehouse_discount_tiers")
+  @@index([duration_tier_id])
+  @@map("warehouse_discount_configs")
+}
+
+// Config discount cho Row theo từng mốc
+model RowDiscountConfig {
+  id               String  @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  row_template_id  String  @db.Uuid
+  duration_tier_id String  @db.Uuid
+  discount_percent Decimal @default(0) @db.Decimal(5, 2)
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean?  @default(false)
+  deleted_at DateTime?
+
+  created_by String
+  updated_by String?
+  deleted_by String?
+
+  row_template  RowTemplate        @relation(fields: [row_template_id], references: [id], onDelete: Cascade)
+  duration_tier RentalDurationTier @relation(fields: [duration_tier_id], references: [id], onDelete: Cascade)
+
+  @@unique([row_template_id, duration_tier_id])
+  @@index([row_template_id])
+  @@index([duration_tier_id])
+  @@map("row_discount_configs")
 }
 
 model WarehouseTemplateImage {
@@ -426,14 +478,8 @@ model RowTemplate {
   code                  String
   description           String?
 
-  is_rented             Boolean @default(false)
-  price_per_month       Decimal @db.Decimal(19, 4)
-  discount_1_month      Decimal @default(0) @db.Decimal(5, 2)
-  discount_3_months     Decimal @default(5) @db.Decimal(5, 2)
-  discount_6_months     Decimal @default(10) @db.Decimal(5, 2)
-  discount_1_year       Decimal @default(15) @db.Decimal(5, 2)
-  discount_2_years      Decimal @default(20) @db.Decimal(5, 2)
-  discount_3_years_plus Decimal @default(25) @db.Decimal(5, 2)
+  is_rented       Boolean @default(false)
+  price_per_month Decimal @db.Decimal(19, 4)
 
   address   String?
   latitude  Decimal? @db.Decimal(10, 8)
@@ -453,8 +499,9 @@ model RowTemplate {
   updated_by String?
   deleted_by String?
 
-  warehouse_template WarehouseTemplate @relation(fields: [warehouse_template_id], references: [id], onDelete: Cascade)
+  warehouse_template WarehouseTemplate   @relation(fields: [warehouse_template_id], references: [id], onDelete: Cascade)
   racks              RackTemplate[]
+  discount_configs   RowDiscountConfig[]
 
   @@index([warehouse_template_id])
   @@map("row_templates")
@@ -639,7 +686,7 @@ model Payment {
   type                 PaymentType
   status               PaymentStatus @default(PENDING)
 
-  discount_tier_id String? @db.Uuid
+  duration_tier_id String? @db.Uuid
   duration_months  Int?
 
   qr_code String? @db.Text
@@ -656,15 +703,16 @@ model Payment {
   created_by String?
   updated_by String?
 
-  rental_contract RentalContract         @relation(fields: [rental_contract_id], references: [id], onDelete: Cascade)
-  discount_tier   WarehouseDiscountTier? @relation(fields: [discount_tier_id], references: [id])
+  rental_contract RentalContract      @relation(fields: [rental_contract_id], references: [id], onDelete: Cascade)
+  duration_tier   RentalDurationTier? @relation(fields: [duration_tier_id], references: [id])
 
   @@index([rental_contract_id])
   @@index([payment_code])
   @@index([status])
-  @@index([discount_tier_id])
+  @@index([duration_tier_id])
   @@map("payments")
 }
+
 
 model Organization {
   id         String   @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid

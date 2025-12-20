@@ -1,0 +1,33 @@
+{
+    "success": {
+        "created": "Rental duration tier created successfully",
+        "updated": "Rental duration tier updated successfully",
+        "deleted": "Rental duration tier deleted successfully",
+        "fetched": "Rental duration tier fetched successfully"
+    },
+    "errors": {
+        "not_found": "Rental duration tier not found",
+        "name_exists": "Rental duration tier name already exists",
+        "duration_exists": "This duration tier already exists (duplicate value and unit)",
+        "create_failed": "Failed to create rental duration tier",
+        "update_failed": "Failed to update rental duration tier",
+        "delete_failed": "Failed to delete rental duration tier"
+    },
+    "validation": {
+        "name_required": "Rental duration tier name is required",
+        "name_string": "Rental duration tier name must be a string",
+        "name_max_length": "Rental duration tier name must not exceed 255 characters",
+        "duration_value_required": "Duration value is required",
+        "duration_value_int": "Duration value must be an integer",
+        "duration_value_min": "Duration value must be >= 1",
+        "duration_unit_enum": "Duration unit must be MONTH or YEAR",
+        "description_string": "Description must be a string",
+        "order_int": "Order must be an integer",
+        "id_required": "ID is required",
+        "id_uuid": "ID must be a valid UUID",
+        "limit_positive": "Limit must be a positive number",
+        "offset_min": "Offset must be >= 0",
+        "keywords_string": "Keywords must be a string",
+        "is_active_boolean": "Status must be a boolean"
+    }
+}

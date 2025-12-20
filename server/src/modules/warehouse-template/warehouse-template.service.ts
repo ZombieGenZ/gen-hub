@@ -49,9 +49,9 @@ export class WarehouseTemplateService {
         userId: string,
         lang: string,
     ): Promise<IWarehouseTemplateWithRelations> {
-        // Chuẩn bị discount tiers data nếu có
-        const discountTiersCreate = dto.discount_tiers?.length
-            ? this.prepareDiscountTiersCreate(dto.discount_tiers, userId)
+        // Chuẩn bị discount configs data nếu có
+        const discountConfigsCreate = dto.discount_configs?.length
+            ? this.prepareDiscountConfigsCreate(dto.discount_configs, userId)
             : undefined;
 
         const template = await this.repository.create({
@@ -70,8 +70,8 @@ export class WarehouseTemplateService {
             block_width: new Decimal(dto.block_width),
             is_active: dto.is_active ?? true,
             created_by: userId,
-            // Nested create discount tiers
-            discount_tiers: discountTiersCreate,
+            // Nested create discount configs
+            discount_configs: discountConfigsCreate,
         });
 
         // Invalidate list cache
@@ -90,29 +90,25 @@ export class WarehouseTemplateService {
     }
 
     /**
-     * Chuẩn bị data để nested create discount tiers
-     * - De-dupe theo duration_value + duration_unit
+     * Chuẩn bị data để nested create discount configs
+     * - De-dupe theo duration_tier_id
      */
-    private prepareDiscountTiersCreate(tiers: CreateWarehouseTemplateDto['discount_tiers'], userId: string) {
-        if (!tiers || tiers.length === 0) return undefined;
+    private prepareDiscountConfigsCreate(configs: CreateWarehouseTemplateDto['discount_configs'], userId: string) {
+        if (!configs || configs.length === 0) return undefined;
 
-        // De-dupe: giữ tier cuối cùng nếu trùng duration
-        const uniqueMap = new Map<string, typeof tiers[0]>();
-        for (const tier of tiers) {
-            const key = `${tier.duration_value}-${tier.duration_unit}`;
-            uniqueMap.set(key, tier);
+        // De-dupe: giữ config cuối cùng nếu trùng duration_tier_id
+        const uniqueMap = new Map<string, typeof configs[0]>();
+        for (const config of configs) {
+            uniqueMap.set(config.duration_tier_id, config);
         }
 
-        const uniqueTiers = Array.from(uniqueMap.values());
+        const uniqueConfigs = Array.from(uniqueMap.values());
 
         return {
-            create: uniqueTiers.map(tier => ({
-                name: tier.name,
-                duration_value: tier.duration_value,
-                duration_unit: tier.duration_unit,
-                discount_percent: new Decimal(tier.discount_percent),
-                description: tier.description,
-                is_active: tier.is_active ?? true,
+            create: uniqueConfigs.map(config => ({
+                duration_tier: { connect: { id: config.duration_tier_id } },
+                discount_percent: new Decimal(config.discount_percent),
+                is_active: config.is_active ?? true,
                 created_by: userId,
             })),
         };
@@ -208,8 +204,8 @@ export class WarehouseTemplateService {
 
         const updatedFields = Object.keys(dto);
 
-        // Destructure ward_id, discount_tiers, and amenity_ids out for separate handling
-        const { ward_id, discount_tiers, amenity_ids, ...restDto } = dto;
+        // Destructure ward_id, discount_configs, and amenity_ids out for separate handling
+        const { ward_id, discount_configs, amenity_ids, ...restDto } = dto;
 
         const template = await this.repository.update(id, {
             ...restDto,
@@ -223,16 +219,16 @@ export class WarehouseTemplateService {
             updated_by: userId,
         });
 
-        // Xử lý discount tiers upsert nếu có
-        if (discount_tiers !== undefined) {
-            await this.upsertDiscountTiers(id, discount_tiers, existing.discount_tiers || [], userId);
+        // Xử lý discount configs upsert nếu có
+        if (discount_configs !== undefined) {
+            await this.upsertDiscountConfigs(id, discount_configs, existing.discount_configs || [], userId);
         }
 
         // Invalidate caches
         await this.redisService.invalidateWarehouseTemplateCache(id);
         await this.redisService.invalidateWarehouseTemplateListCache();
 
-        // Fetch lại để có discount_tiers mới nhất
+        // Fetch lại để có discount_configs mới nhất
         const updatedTemplate = await this.repository.findById(id);
 
         // Log
@@ -248,83 +244,74 @@ export class WarehouseTemplateService {
     }
 
     /**
-     * Upsert discount tiers cho warehouse template
-     * - Tiers có id trong request → update
-     * - Tiers không có id → create (với de-dupe)
-     * - Tiers hiện có nhưng không trong request → soft delete
+     * Upsert discount configs cho warehouse template
+     * - Configs có id trong request → update
+     * - Configs không có id → create (với de-dupe)
+     * - Configs hiện có nhưng không trong request → soft delete
      */
-    private async upsertDiscountTiers(
+    private async upsertDiscountConfigs(
         templateId: string,
-        newTiers: UpdateWarehouseTemplateDto['discount_tiers'],
-        existingTiers: Array<{ id: string; duration_value: number; duration_unit: string }>,
+        newConfigs: UpdateWarehouseTemplateDto['discount_configs'],
+        existingConfigs: Array<{ id: string; duration_tier_id: string }>,
         userId: string,
     ): Promise<void> {
-        if (!newTiers) return;
+        if (!newConfigs) return;
 
-        const requestTierIds = new Set<string>();
-        const tiersToCreate: Array<{ name: string; duration_value: number; duration_unit: string; discount_percent: number; description?: string; is_active?: boolean }> = [];
-        const tiersToUpdate: Array<{ id: string; data: { name?: string; discount_percent?: Decimal; description?: string; is_active?: boolean; updated_by?: string } }> = [];
+        const requestConfigIds = new Set<string>();
+        const configsToCreate: Array<{ duration_tier_id: string; discount_percent: number; is_active?: boolean }> = [];
+        const configsToUpdate: Array<{ id: string; data: { discount_percent?: Decimal; is_active?: boolean; updated_by?: string } }> = [];
 
-        // De-dupe theo duration_value + duration_unit - sử dụng explicit type
+        // De-dupe theo duration_tier_id
         const uniqueMap = new Map<string, {
             id?: string;
-            name: string;
-            duration_value: number;
-            duration_unit: string;
+            duration_tier_id: string;
             discount_percent: number;
-            description?: string;
             is_active?: boolean;
         }>();
 
-        for (const tier of newTiers) {
-            const key = `${tier.duration_value}-${tier.duration_unit}`;
-            uniqueMap.set(key, tier);
+        for (const config of newConfigs) {
+            uniqueMap.set(config.duration_tier_id, config);
         }
-        const uniqueTiers = Array.from(uniqueMap.values());
+        const uniqueConfigs = Array.from(uniqueMap.values());
 
-        for (const tier of uniqueTiers) {
-            if (tier.id) {
-                // Update existing tier
-                requestTierIds.add(tier.id);
-                tiersToUpdate.push({
-                    id: tier.id,
+        for (const config of uniqueConfigs) {
+            if (config.id) {
+                // Update existing config
+                requestConfigIds.add(config.id);
+                configsToUpdate.push({
+                    id: config.id,
                     data: {
-                        name: tier.name,
-                        discount_percent: new Decimal(tier.discount_percent),
-                        description: tier.description,
-                        is_active: tier.is_active,
+                        discount_percent: new Decimal(config.discount_percent),
+                        is_active: config.is_active,
                         updated_by: userId,
                     },
                 });
             } else {
-                // Create new tier
-                tiersToCreate.push({
-                    name: tier.name,
-                    duration_value: tier.duration_value,
-                    duration_unit: tier.duration_unit,
-                    discount_percent: tier.discount_percent,
-                    description: tier.description,
-                    is_active: tier.is_active,
+                // Create new config
+                configsToCreate.push({
+                    duration_tier_id: config.duration_tier_id,
+                    discount_percent: config.discount_percent,
+                    is_active: config.is_active,
                 });
             }
         }
 
-        // Tìm tiers cần soft delete (hiện có nhưng không trong request)
-        const tierIdsToDelete = existingTiers
-            .filter(t => !requestTierIds.has(t.id))
-            .map(t => t.id);
+        // Tìm configs cần soft delete (hiện có nhưng không trong request)
+        const configIdsToDelete = existingConfigs
+            .filter(c => !requestConfigIds.has(c.id))
+            .map(c => c.id);
 
         // Execute upsert operations
-        await this.repository.upsertDiscountTiers(
+        await this.repository.upsertDiscountConfigs(
             templateId,
-            tiersToCreate.map(t => ({
-                ...t,
-                discount_percent: new Decimal(t.discount_percent),
-                is_active: t.is_active ?? true,
+            configsToCreate.map(c => ({
+                ...c,
+                discount_percent: new Decimal(c.discount_percent),
+                is_active: c.is_active ?? true,
                 created_by: userId,
             })),
-            tiersToUpdate,
-            tierIdsToDelete,
+            configsToUpdate,
+            configIdsToDelete,
             userId,
         );
     }
@@ -911,12 +898,6 @@ export class WarehouseTemplateService {
             description: row.description,
             is_rented: row.is_rented ?? false,
             price_per_month: row.price_per_month ?? 0,
-            discount_1_month: row.discount_1_month ?? 0,
-            discount_3_months: row.discount_3_months ?? 5,
-            discount_6_months: row.discount_6_months ?? 10,
-            discount_1_year: row.discount_1_year ?? 15,
-            discount_2_years: row.discount_2_years ?? 20,
-            discount_3_years_plus: row.discount_3_years_plus ?? 25,
             address: row.address,
             latitude: row.latitude,
             longitude: row.longitude,
@@ -927,6 +908,7 @@ export class WarehouseTemplateService {
             created_by: userId,
         };
     }
+
 
     private buildRackCreateDataFlat(rack: LayoutRackDto, userId: string): Omit<Prisma.RackTemplateCreateManyInput, 'id' | 'row_template_id'> {
         return {

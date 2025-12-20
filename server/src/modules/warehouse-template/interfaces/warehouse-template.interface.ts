@@ -1,16 +1,25 @@
-import { WarehouseTemplate, RowTemplate, RackTemplate, ShelfTemplate, BlockTemplate, WarehouseDiscountTier } from '@prisma/client';
+import { WarehouseTemplate, RowTemplate, RackTemplate, ShelfTemplate, BlockTemplate, WarehouseDiscountConfig, RowDiscountConfig, RentalDurationTier } from '@prisma/client';
 
 /**
- * WarehouseDiscountTier với relations
+ * WarehouseDiscountConfig với duration_tier relation
  */
-export interface IDiscountTierWithRelations extends WarehouseDiscountTier { }
+export interface IDiscountConfigWithRelations extends WarehouseDiscountConfig {
+    duration_tier?: RentalDurationTier;
+}
+
+/**
+ * RowDiscountConfig với duration_tier relation
+ */
+export interface IRowDiscountConfigWithRelations extends RowDiscountConfig {
+    duration_tier?: RentalDurationTier;
+}
 
 /**
  * WarehouseTemplate với relations đầy đủ
  */
 export interface IWarehouseTemplateWithRelations extends WarehouseTemplate {
     rows: IRowTemplateWithRelations[];
-    discount_tiers?: IDiscountTierWithRelations[];
+    discount_configs?: IDiscountConfigWithRelations[];
     ward?: {
         id: string;
         name: string;
@@ -30,7 +39,9 @@ export interface IWarehouseTemplateWithRelations extends WarehouseTemplate {
  */
 export interface IRowTemplateWithRelations extends RowTemplate {
     racks: IRackTemplateWithRelations[];
+    discount_configs?: IRowDiscountConfigWithRelations[];
 }
+
 
 /**
  * RackTemplate với relations

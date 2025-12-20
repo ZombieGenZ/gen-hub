@@ -32,6 +32,7 @@ import { WardModule } from './modules/ward/ward.module';
 import { PartnerModule } from './modules/partner/partner.module';
 import { ProductModule } from './modules/product/product.module';
 import { BatchModule } from './modules/batch/batch.module';
+import { RentalDurationTierModule } from './modules/rental-duration-tier/rental-duration-tier.module';
 import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
 
 @Module({
@@ -107,6 +108,8 @@ import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
     ProductModule,
 
     BatchModule,
+
+    RentalDurationTierModule,
   ],
   controllers: [AppController],
   providers: [

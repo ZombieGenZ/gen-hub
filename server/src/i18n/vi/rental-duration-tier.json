@@ -1,0 +1,33 @@
+{
+    "success": {
+        "created": "Đã tạo mốc thời gian thuê thành công",
+        "updated": "Đã cập nhật mốc thời gian thuê thành công",
+        "deleted": "Đã xóa mốc thời gian thuê thành công",
+        "fetched": "Lấy dữ liệu mốc thời gian thuê thành công"
+    },
+    "errors": {
+        "not_found": "Không tìm thấy mốc thời gian thuê",
+        "name_exists": "Tên mốc thời gian thuê đã tồn tại",
+        "duration_exists": "Mốc thời gian này đã tồn tại (trùng giá trị và đơn vị thời gian)",
+        "create_failed": "Không thể tạo mốc thời gian thuê",
+        "update_failed": "Không thể cập nhật mốc thời gian thuê",
+        "delete_failed": "Không thể xóa mốc thời gian thuê"
+    },
+    "validation": {
+        "name_required": "Tên mốc thời gian thuê không được để trống",
+        "name_string": "Tên mốc thời gian thuê phải là chuỗi",
+        "name_max_length": "Tên mốc thời gian thuê không được quá 255 ký tự",
+        "duration_value_required": "Giá trị thời gian không được để trống",
+        "duration_value_int": "Giá trị thời gian phải là số nguyên",
+        "duration_value_min": "Giá trị thời gian phải >= 1",
+        "duration_unit_enum": "Đơn vị thời gian phải là MONTH hoặc YEAR",
+        "description_string": "Mô tả phải là chuỗi",
+        "order_int": "Thứ tự hiển thị phải là số nguyên",
+        "id_required": "ID không được để trống",
+        "id_uuid": "ID phải là UUID hợp lệ",
+        "limit_positive": "Limit phải là số dương",
+        "offset_min": "Offset phải >= 0",
+        "keywords_string": "Từ khóa tìm kiếm phải là chuỗi",
+        "is_active_boolean": "Trạng thái phải là boolean"
+    }
+}
