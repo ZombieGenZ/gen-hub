@@ -10,6 +10,7 @@ import { AvatarUploader } from "@/components/ui/avatar-uploader"
 import { useRouter } from 'next/navigation'
 import { redirect } from 'next/navigation'
 import { AuthService } from '@/services/auth/auth.service'
+import { Enable2FAResponse } from '@/types/user/2fa.type'
 
 import {
   Drawer,
@@ -41,6 +42,7 @@ export default function ProfilePage() {
 
   // 2FA states
   const [enabling2FA, setEnabling2FA] = useState(false)
+  const [enable2FAData, setEnable2FAData] = useState<Enable2FAResponse | null>(null)
 
   // Avatar state
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
@@ -61,8 +63,12 @@ export default function ProfilePage() {
         if (!data) {
           setError('Không lấy được thông tin người dùng, vui lòng đăng nhập lại')
           alert('Không lấy được thông tin người dùng, vui lòng đăng nhập lại')
+          localStorage.removeItem('access_token')
+          localStorage.removeItem('refresh_token')
+          router.push('/login')
           return
         } else {
+          console.log(data)
           setUserData(data)
           setName(data.user.name)
         }
@@ -104,12 +110,32 @@ export default function ProfilePage() {
         const res = await userService.enableTwoFactor(token, access_verification_token)
         if (res) {
           alert("Đã yêu cầu bật 2FA (Cần implement flow QR code)")
+          setEnable2FAData(res)
+        } else {
+          alert("Bật 2FA thất bại")
         }
       }
     } catch (e) {
       console.error(e)
     } finally {
       setEnabling2FA(false)
+    }
+  }
+
+  const handleDisable2FA = async () => {
+    try {
+      const token = localStorage.getItem('access_token')
+      const access_verification_token = localStorage.getItem('access_verification_token')
+      if(token && access_verification_token) {
+        const response = await userService.disableTwoFactor(token, access_verification_token)
+        if (response) {
+          alert("Đã tắt 2FA")
+        } else {
+          alert("Tắt 2FA thất bại")
+        }
+      }
+    } catch (e) {
+      console.error(e)
     }
   }
 
@@ -134,10 +160,14 @@ export default function ProfilePage() {
     const refresh_token = localStorage.getItem('refresh_token');
     if (token && refresh_token) {
       const response = await authService.logout(token, refresh_token);
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
-      alert(response.message);
-      router.push('/');
+      if(response) {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        alert(response.message);
+        router.push('/');
+      } else {
+        alert("Đăng xuất thất bại");
+      }
     }
   };
 
@@ -441,6 +471,7 @@ export default function ProfilePage() {
                 )}
                 {userData.user.two_factor_enabled && (
                   <button
+                    onClick={handleDisable2FA}
                     className="w-full md:w-auto bg-white dark:bg-slate-800 border border-red-200 dark:border-red-900/50 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:border-red-300 dark:hover:border-red-800 font-semibold px-5 py-2.5 rounded-lg transition-all shadow-sm flex items-center justify-center gap-2"
                   >
                     Vô hiệu hóa
@@ -448,6 +479,52 @@ export default function ProfilePage() {
                 )}
               </div>
             </div>
+
+            {/* Hiển thị QR code và backup code */}
+            {enable2FAData?.data && (
+              <div className="mt-6 space-y-6">
+                <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-slate-700">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                    <Smartphone className="w-5 h-5" />
+                    Quét mã QR
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                    Quét mã QR bằng ứng dụng xác thực của bạn để thêm tài khoản
+                  </p>
+                  <div className="flex justify-center p-4 bg-white rounded-lg border border-gray-200 dark:bg-slate-700 dark:border-slate-600">
+                    <img 
+                      src={enable2FAData.data.qr_code_url} 
+                      alt="2FA QR Code" 
+                      className="w-48 h-48"
+                    />
+                  </div>
+                  <p className="mt-3 text-xs text-gray-500 dark:text-gray-400 text-center">
+                    Hoặc nhập mã thủ công: <span className="font-mono font-bold text-gray-900 dark:text-white">{enable2FAData.data.secret}</span>
+                  </p>
+                </div>
+
+                <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-6">
+                  <h3 className="text-lg font-semibold text-amber-900 dark:text-amber-100 mb-4 flex items-center gap-2">
+                    <Shield className="w-5 h-5" />
+                    Mã dự phòng
+                  </h3>
+                  <p className="text-sm text-amber-800 dark:text-amber-200 mb-4">
+                    Lưu trữ các mã này ở nơi an toàn. Mỗi mã chỉ sử dụng được một lần.
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {enable2FAData.data.backup_codes.map((code, index) => (
+                      <div 
+                        key={index} 
+                        className="font-mono bg-white dark:bg-slate-800 text-center p-2 rounded border border-amber-200 dark:border-amber-800 text-sm"
+                      >
+                        {code}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+            
           </div>
         </main>
       </div>

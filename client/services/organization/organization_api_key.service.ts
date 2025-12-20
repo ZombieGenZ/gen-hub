@@ -3,6 +3,7 @@ import { OrganizationApiKeyData } from '@/types/organization/organization_api_ke
 const API = process.env.NEXT_PUBLIC_API_URL
 
 export class OrganizationApiKeyService {
+   
    // Lấy thông tin api key của organization
    async getOrganizationApiKey(access_token: string, organization_id: string): Promise<OrganizationApiKeyData | null> {
       try {

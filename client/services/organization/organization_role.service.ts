@@ -5,6 +5,7 @@ const authService = new AuthService()
 const API = process.env.NEXT_PUBLIC_API_URL
 
 export class OrganizationRoleService {
+   
    // Lấy thông tin role của organization
    async getOrganizationRole(access_token: string, organization_id: string) {
       try {
