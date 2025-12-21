@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { WarehouseTemplateService } from "@/services/warehouse_template/warehouse_template.service";
 import { Warehouse } from "@/types/warehoue_template/warehouse_template.type";
+import { authStorage } from "@/services/auth/auth-storage.service";
 import { DashboardHeader } from "@/components/layouts/DashboardHeader";
 import { Button } from "@/components/ui/button";
 import { 
@@ -44,7 +45,7 @@ export default function WarehouseDetailPage() {
             if (!id) return;
 
             try {
-                const token = localStorage.getItem("access_token");
+                const token = authStorage.getAccessToken();
                 if (!token) {
                     router.push("/login");
                     return;

@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { WarehouseTemplateService } from "@/services/warehouse_template/warehouse_template.service";
 import { Warehouse } from "@/types/warehoue_template/warehouse_template.type";
+import { authStorage } from "@/services/auth/auth-storage.service";
 import { Calendar, Info, Phone, Mail, User, MapPin, ArrowRight } from "lucide-react";
 import Image from "next/image";
 
@@ -35,7 +36,7 @@ function RentalRequestContent() {
     useEffect(() => {
         const fetchWarehouses = async () => {
             try {
-                const token = localStorage.getItem("access_token");
+                const token = authStorage.getAccessToken();
                 if (!token) {
                     router.push("/login");
                     return;

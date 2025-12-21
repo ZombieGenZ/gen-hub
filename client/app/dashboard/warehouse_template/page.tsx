@@ -6,9 +6,8 @@ import { Warehouse } from "@/types/warehoue_template/warehouse_template.type";
 import { useDebounce } from "@/hooks/use-debounce";
 import { DashboardHeader } from "@/components/layouts/DashboardHeader";
 import Image from "next/image";
-
-
 import { useRouter } from "next/navigation";
+import { authStorage } from "@/services/auth/auth-storage.service";
 
 // ... (other imports)
 
@@ -43,7 +42,7 @@ export default function WarehouseTemplatePage() {
 
     const fetchWarehouses = async () => {
         try {
-            const token = localStorage.getItem("access_token");
+            const token = authStorage.getAccessToken();
             if (!token) {
                 router.push("/login");
                 return;

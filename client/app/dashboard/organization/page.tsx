@@ -3,9 +3,12 @@
 import React, { useEffect, useState } from "react";
 import { OrganizationService } from "@/services/organization/organization.service";
 import { Organization } from "@/types/organization/organization.type";
+import { authStorage } from '@/services/auth/auth-storage.service';
 import { useDebounce } from "@/hooks/use-debounce";
 import { DashboardHeader } from "@/components/layouts/DashboardHeader";
 import { useRouter } from "next/navigation";
+
+const organizationService = new OrganizationService();
 
 export default function OrganizationPage() {
     const router = useRouter();
@@ -16,8 +19,12 @@ export default function OrganizationPage() {
     const fetchOrganizations = async () => {
         setLoading(true);
         try {
-            const token = localStorage.getItem('access_token'); // Replace with actual token logic
-            const response = await new OrganizationService().getOrganizations(token!, { limit: 10 });
+            const token = authStorage.getAccessToken();
+            if (!token) {
+                router.push('/login');
+                return;
+            }
+            const response = await organizationService.getOrganizations(token, { limit: 10 });
             if (!Array.isArray(response.items)) {
                 throw new Error('Expected an array of organizations');
             }
