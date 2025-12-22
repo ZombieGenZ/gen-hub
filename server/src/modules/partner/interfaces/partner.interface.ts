@@ -23,10 +23,5 @@ export interface IPartner {
     is_deleted: boolean;
 }
 
-export interface IPaginatedResponse<T> {
-    items: T[];
-    total: number;
-    limit: number;
-    offset: number;
-    hasMore: boolean;
-}
+// Re-export IPaginatedResponse từ common
+export type { IPaginatedResponse } from '../../../common/interfaces/index.js';

@@ -1,20 +1,12 @@
 import { GlobalNotification, NotificationType } from '@prisma/client';
 
+// Re-export IPaginatedResponse từ common
+export type { IPaginatedResponse } from '../../../common/interfaces/index.js';
+
 /**
  * Interface cho GlobalNotification với đầy đủ thông tin
  */
 export interface IGlobalNotification extends GlobalNotification { }
-
-/**
- * Interface cho response phân trang
- */
-export interface IPaginatedResponse<T> {
-    data: T[];
-    total: number;
-    limit: number;
-    offset: number;
-    hasMore: boolean;
-}
 
 /**
  * Interface cho query params

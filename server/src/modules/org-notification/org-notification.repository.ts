@@ -66,7 +66,7 @@ export class OrgNotificationRepository {
             where.warehouse_id = query.warehouse_id;
         }
 
-        const [data, total] = await Promise.all([
+        const [items, total] = await Promise.all([
             this.prisma.organizationNotification.findMany({
                 where,
                 orderBy: { created_at: 'desc' },
@@ -77,11 +77,11 @@ export class OrgNotificationRepository {
         ]);
 
         return {
-            data,
+            items,
             total,
             limit,
             offset,
-            hasMore: offset + data.length < total,
+            hasMore: offset + items.length < total,
         };
     }
 

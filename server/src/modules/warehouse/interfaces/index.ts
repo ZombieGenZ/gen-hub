@@ -38,16 +38,8 @@ export interface IShelfWithRelations extends Shelf {
     blocks?: Block[];
 }
 
-/**
- * Interface response phân trang
- */
-export interface IPaginatedResponse<T> {
-    items: T[];
-    total: number;
-    limit: number;
-    offset: number;
-    hasMore: boolean;
-}
+// Re-export IPaginatedResponse từ common
+export type { IPaginatedResponse } from '../../../common/interfaces/index.js';
 
 /**
  * Interface warehouse layout (toàn bộ cấu trúc)

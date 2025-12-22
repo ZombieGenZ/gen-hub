@@ -5,12 +5,5 @@ import { RentalDurationTier } from '@prisma/client';
  */
 export interface IRentalDurationTier extends RentalDurationTier { }
 
-/**
- * Response phân trang
- */
-export interface IPaginatedResponse<T> {
-    items: T[];
-    total: number;
-    limit: number;
-    offset: number;
-}
+// Re-export IPaginatedResponse từ common
+export type { IPaginatedResponse } from '../../../common/interfaces/index.js';

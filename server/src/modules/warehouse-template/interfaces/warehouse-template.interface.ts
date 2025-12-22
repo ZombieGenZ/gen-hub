@@ -57,16 +57,8 @@ export interface IShelfTemplateWithRelations extends ShelfTemplate {
     blocks: BlockTemplate[];
 }
 
-/**
- * Response phân trang
- */
-export interface IPaginatedResponse<T> {
-    items: T[];
-    total: number;
-    limit: number;
-    offset: number;
-    hasMore: boolean;
-}
+// Re-export IPaginatedResponse từ common
+export type { IPaginatedResponse } from '../../../common/interfaces/index.js';
 
 /**
  * WebSocket events cho WarehouseTemplate

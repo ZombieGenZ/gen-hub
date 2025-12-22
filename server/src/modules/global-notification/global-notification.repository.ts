@@ -51,7 +51,7 @@ export class GlobalNotificationRepository {
             where.type = query.type;
         }
 
-        const [data, total] = await Promise.all([
+        const [items, total] = await Promise.all([
             this.prisma.globalNotification.findMany({
                 where,
                 orderBy: { created_at: 'desc' },
@@ -62,11 +62,11 @@ export class GlobalNotificationRepository {
         ]);
 
         return {
-            data,
+            items,
             total,
             limit,
             offset,
-            hasMore: offset + data.length < total,
+            hasMore: offset + items.length < total,
         };
     }
 

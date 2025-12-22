@@ -32,16 +32,8 @@ export interface IRentalContractDetailWithRelations extends RentalContractDetail
     } | null;
 }
 
-/**
- * Interface response phân trang
- */
-export interface IPaginatedResponse<T> {
-    items: T[];
-    total: number;
-    limit: number;
-    offset: number;
-    hasMore: boolean;
-}
+// Re-export IPaginatedResponse từ common
+export type { IPaginatedResponse } from '../../../common/interfaces/index.js';
 
 /**
  * Interface tính giá thuê cho mỗi template

@@ -55,7 +55,7 @@ export class UserNotificationRepository {
             where.type = query.type;
         }
 
-        const [data, total] = await Promise.all([
+        const [items, total] = await Promise.all([
             this.prisma.userNotification.findMany({
                 where,
                 orderBy: { created_at: 'desc' },
@@ -66,11 +66,11 @@ export class UserNotificationRepository {
         ]);
 
         return {
-            data,
+            items,
             total,
             limit,
             offset,
-            hasMore: offset + data.length < total,
+            hasMore: offset + items.length < total,
         };
     }
 
