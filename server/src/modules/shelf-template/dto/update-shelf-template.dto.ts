@@ -1,4 +1,4 @@
-import { PartialType } from '@nestjs/mapped-types';
+import { PartialType } from '@nestjs/swagger';
 import { CreateShelfTemplateDto } from './create-shelf-template.dto';
 
 /**
