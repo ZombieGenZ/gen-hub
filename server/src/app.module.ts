@@ -56,10 +56,9 @@ import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
       inject: [ConfigService],
     }),
 
+    // Core Infrastructure
     SharedModule,
-
     RedisModule,
-
     WebsocketModule,
 
     I18nModule.forRoot({
@@ -71,58 +70,54 @@ import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
       resolvers: [CustomLanguageResolver],
     }),
 
+    // Auth & Account
     AuthModule,
-
-    TwoFactorModule,
-
     AccountModule,
-
-    BanSchedulerModule,
-
-    ApiKeySchedulerModule,
-
-    WarehouseTemplateModule,
-
-    OrganizationModule,
-
-    GlobalNotificationModule,
-
-    UserNotificationModule,
-
-    OrgNotificationModule,
-
-    WarehouseModule,
-
-    RentalContractModule,
-
-    RentalSchedulerModule,
-
-    PaymentModule,
-
-    AmenityModule,
+    TwoFactorModule,
 
     // Public APIs
     ProvinceModule,
-
     WardModule,
 
-    // Organization-level modules
-    PartnerModule,
+    // Amenities
+    AmenityModule,
 
-    ProductModule,
-
-    BatchModule,
-
+    // Rental Duration Tiers
     RentalDurationTierModule,
 
     // Layout Template Modules
+    WarehouseTemplateModule,
     RowTemplateModule,
-
     RackTemplateModule,
-
     ShelfTemplateModule,
-
     BlockTemplateModule,
+
+    // Organizations
+    OrganizationModule,
+
+    // Rental Contracts
+    RentalContractModule,
+
+    // Warehouses
+    WarehouseModule,
+
+    // Payment
+    PaymentModule,
+
+    // Notifications
+    GlobalNotificationModule,
+    UserNotificationModule,
+    OrgNotificationModule,
+
+    // Schedulers
+    BanSchedulerModule,
+    ApiKeySchedulerModule,
+    RentalSchedulerModule,
+
+    // Organization-level modules
+    PartnerModule,
+    ProductModule,
+    BatchModule,
   ],
   controllers: [AppController],
   providers: [

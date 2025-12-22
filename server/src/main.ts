@@ -95,7 +95,6 @@ async function bootstrap() {
       },
       'JWT-auth',
     )
-    .addTag('Auth', 'Các API liên quan đến xác thực')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
