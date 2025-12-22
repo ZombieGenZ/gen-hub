@@ -1356,10 +1356,7 @@ export class RentalContractService {
       baseDiscount = Number(template.discount_1_month);
     }
 
-    // Thêm giảm giá cho thuê cả kho
-    if (isWholeWarehouse) {
-      baseDiscount += Number(template.whole_warehouse_discount);
-    }
+    // Giảm giá đã được xử lý qua discount_configs
 
     return Math.min(baseDiscount, 100);
   }

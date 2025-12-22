@@ -13,6 +13,7 @@ import {
 } from 'class-validator';
 import { i18nValidationMessage } from 'nestjs-i18n';
 import { Type } from 'class-transformer';
+import { UpdateDiscountConfigDto } from './discount-config.dto';
 
 /**
  * DTO cho Block trong layout
@@ -73,10 +74,7 @@ export class LayoutBlockDto {
     @IsBoolean()
     is_active?: boolean;
 
-    @ApiPropertyOptional({ description: 'Đánh dấu xóa', default: false })
-    @IsOptional()
-    @IsBoolean()
-    _delete?: boolean;
+
 }
 
 /**
@@ -114,10 +112,14 @@ export class LayoutShelfDto {
     @IsBoolean()
     is_active?: boolean;
 
-    @ApiPropertyOptional({ description: 'Đánh dấu xóa', default: false })
+
+
+    @ApiPropertyOptional({ description: 'Chiều cao tầng kệ (met)' })
     @IsOptional()
-    @IsBoolean()
-    _delete?: boolean;
+    @IsNumber()
+    @Min(0)
+    @Type(() => Number)
+    height?: number;
 
     @ApiPropertyOptional({ description: 'Danh sách blocks', type: [LayoutBlockDto] })
     @IsOptional()
@@ -200,10 +202,22 @@ export class LayoutRackDto {
     @IsBoolean()
     is_active?: boolean;
 
-    @ApiPropertyOptional({ description: 'Đánh dấu xóa', default: false })
+
+
+    @ApiPropertyOptional({ description: 'Trọng tải mặc định cho mỗi block (kg)' })
     @IsOptional()
-    @IsBoolean()
-    _delete?: boolean;
+    @IsNumber()
+    @Min(0)
+    @Type(() => Number)
+    default_block_max_weight_capacity?: number;
+
+    @ApiPropertyOptional({ description: 'Ngưỡng vượt tải cho phép (%)', default: 10 })
+    @IsOptional()
+    @IsNumber()
+    @Min(0)
+    @Max(100)
+    @Type(() => Number)
+    overload_threshold_percent?: number;
 
     @ApiPropertyOptional({ description: 'Danh sách shelves', type: [LayoutShelfDto] })
     @IsOptional()
@@ -257,61 +271,22 @@ export class LayoutRowDto {
     @Type(() => Number)
     price_per_month?: number;
 
-    @ApiPropertyOptional({ description: 'Giảm giá 1 tuần (%)' })
+    @ApiPropertyOptional({
+        description: 'Danh sách config giảm giá theo mốc thời gian. Config có id sẽ được cập nhật, config không có id sẽ được tạo mới, config hiện có nhưng không trong danh sách sẽ bị xóa.',
+        type: [UpdateDiscountConfigDto],
+        example: [
+            { id: 'uuid-config-1', duration_tier_id: 'uuid-tier-1', discount_percent: 0 },
+            { id: 'uuid-config-2', duration_tier_id: 'uuid-tier-2', discount_percent: 5 },
+            { duration_tier_id: 'uuid-tier-3', discount_percent: 10 },
+        ],
+    })
     @IsOptional()
-    @IsNumber()
-    @Min(0)
-    @Max(100)
-    @Type(() => Number)
-    discount_1_week?: number;
-
-    @ApiPropertyOptional({ description: 'Giảm giá 1 tháng (%)' })
-    @IsOptional()
-    @IsNumber()
-    @Min(0)
-    @Max(100)
-    @Type(() => Number)
-    discount_1_month?: number;
-
-    @ApiPropertyOptional({ description: 'Giảm giá 3 tháng (%)' })
-    @IsOptional()
-    @IsNumber()
-    @Min(0)
-    @Max(100)
-    @Type(() => Number)
-    discount_3_months?: number;
-
-    @ApiPropertyOptional({ description: 'Giảm giá 6 tháng (%)' })
-    @IsOptional()
-    @IsNumber()
-    @Min(0)
-    @Max(100)
-    @Type(() => Number)
-    discount_6_months?: number;
-
-    @ApiPropertyOptional({ description: 'Giảm giá 1 năm (%)' })
-    @IsOptional()
-    @IsNumber()
-    @Min(0)
-    @Max(100)
-    @Type(() => Number)
-    discount_1_year?: number;
-
-    @ApiPropertyOptional({ description: 'Giảm giá 2 năm (%)' })
-    @IsOptional()
-    @IsNumber()
-    @Min(0)
-    @Max(100)
-    @Type(() => Number)
-    discount_2_years?: number;
-
-    @ApiPropertyOptional({ description: 'Giảm giá 3 năm trở lên (%)' })
-    @IsOptional()
-    @IsNumber()
-    @Min(0)
-    @Max(100)
-    @Type(() => Number)
-    discount_3_years_plus?: number;
+    @IsArray({
+        message: i18nValidationMessage('warehouse-template.validation.discount_configs_array'),
+    })
+    @ValidateNested({ each: true })
+    @Type(() => UpdateDiscountConfigDto)
+    discount_configs?: UpdateDiscountConfigDto[];
 
     @ApiPropertyOptional({ description: 'Địa chỉ' })
     @IsOptional()
@@ -353,10 +328,7 @@ export class LayoutRowDto {
     @IsBoolean()
     is_active?: boolean;
 
-    @ApiPropertyOptional({ description: 'Đánh dấu xóa', default: false })
-    @IsOptional()
-    @IsBoolean()
-    _delete?: boolean;
+
 
     @ApiPropertyOptional({ description: 'Danh sách racks', type: [LayoutRackDto] })
     @IsOptional()

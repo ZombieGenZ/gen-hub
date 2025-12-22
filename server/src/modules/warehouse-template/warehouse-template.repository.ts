@@ -51,6 +51,13 @@ export class WarehouseTemplateRepository {
             where: { is_deleted: false },
             orderBy: { created_at: 'asc' as const },
             include: {
+                discount_configs: {
+                    where: { is_deleted: false },
+                    orderBy: { created_at: 'asc' as const },
+                    include: {
+                        duration_tier: true,
+                    },
+                },
                 racks: {
                     where: { is_deleted: false },
                     orderBy: { created_at: 'asc' as const },
@@ -459,6 +466,31 @@ export class WarehouseTemplateRepository {
         });
     }
 
+    /**
+     * Lấy tất cả rows của template, bao gồm cả đã xóa (dùng cho layout upsert/restore)
+     */
+    async findAllRowsByTemplateId(templateId: string, includeDeleted: boolean = false) {
+        return this.prisma.rowTemplate.findMany({
+            where: {
+                warehouse_template_id: templateId,
+                ...(includeDeleted ? {} : { is_deleted: false })
+            },
+            include: {
+                racks: {
+                    where: includeDeleted ? {} : { is_deleted: false },
+                    include: {
+                        shelves: {
+                            where: includeDeleted ? {} : { is_deleted: false },
+                            include: {
+                                blocks: { where: includeDeleted ? {} : { is_deleted: false } },
+                            },
+                        },
+                    },
+                },
+            },
+        });
+    }
+
     async findRowsByTemplateId(templateId: string) {
         return this.prisma.rowTemplate.findMany({
             where: { warehouse_template_id: templateId, is_deleted: false },
@@ -636,15 +668,19 @@ export class WarehouseTemplateRepository {
             rowsToCreate: Prisma.RowTemplateCreateManyInput[];
             rowsToUpdate: { id: string; data: Prisma.RowTemplateUpdateInput }[];
             rowIdsToDelete: string[];
+            rowIdsToRestore: string[];
             racksToCreate: Prisma.RackTemplateCreateManyInput[];
             racksToUpdate: { id: string; data: Prisma.RackTemplateUpdateInput }[];
             rackIdsToDelete: string[];
+            rackIdsToRestore: string[];
             shelvesToCreate: Prisma.ShelfTemplateCreateManyInput[];
             shelvesToUpdate: { id: string; data: Prisma.ShelfTemplateUpdateInput }[];
             shelfIdsToDelete: string[];
+            shelfIdsToRestore: string[];
             blocksToCreate: Prisma.BlockTemplateCreateManyInput[];
             blocksToUpdate: { id: string; data: Prisma.BlockTemplateUpdateInput }[];
             blockIdsToDelete: string[];
+            blockIdsToRestore: string[];
         },
         userId: string,
     ): Promise<void> {
@@ -680,6 +716,35 @@ export class WarehouseTemplateRepository {
                 });
             }
 
+            // Restore soft-deleted items (top-down) trước khi create/update
+            if (operations.rowIdsToRestore.length > 0) {
+                await tx.rowTemplate.updateMany({
+                    where: { id: { in: operations.rowIdsToRestore } },
+                    data: { is_deleted: false, deleted_at: null, deleted_by: null, updated_by: userId },
+                });
+            }
+
+            if (operations.rackIdsToRestore.length > 0) {
+                await tx.rackTemplate.updateMany({
+                    where: { id: { in: operations.rackIdsToRestore } },
+                    data: { is_deleted: false, deleted_at: null, deleted_by: null, updated_by: userId },
+                });
+            }
+
+            if (operations.shelfIdsToRestore.length > 0) {
+                await tx.shelfTemplate.updateMany({
+                    where: { id: { in: operations.shelfIdsToRestore } },
+                    data: { is_deleted: false, deleted_at: null, deleted_by: null, updated_by: userId },
+                });
+            }
+
+            if (operations.blockIdsToRestore.length > 0) {
+                await tx.blockTemplate.updateMany({
+                    where: { id: { in: operations.blockIdsToRestore } },
+                    data: { is_deleted: false, deleted_at: null, deleted_by: null, updated_by: userId },
+                });
+            }
+
             // Batch creates (top-down)
             if (operations.rowsToCreate.length > 0) {
                 await tx.rowTemplate.createMany({ data: operations.rowsToCreate });
@@ -698,7 +763,6 @@ export class WarehouseTemplateRepository {
             }
 
             // Updates phải sequential vì updateMany không hỗ trợ different data per record
-            // Nhưng vẫn trong 1 transaction nên atomic
             await Promise.all([
                 ...operations.rowsToUpdate.map((r) =>
                     tx.rowTemplate.update({ where: { id: r.id }, data: r.data }),
@@ -893,6 +957,83 @@ export class WarehouseTemplateRepository {
                     }),
                 ),
             );
+        });
+    }
+
+    /**
+     * Upsert discount configs cho row template
+     * - Create new configs
+     * - Update existing configs
+     * - Soft delete removed configs
+     */
+    async upsertRowDiscountConfigs(
+        rowId: string,
+        configsToCreate: Array<{
+            duration_tier_id: string;
+            discount_percent: any;
+            is_active: boolean;
+            created_by: string;
+        }>,
+        configsToUpdate: Array<{
+            id: string;
+            data: {
+                discount_percent?: any;
+                is_active?: boolean;
+                updated_by?: string;
+            };
+        }>,
+        configIdsToDelete: string[],
+        userId: string,
+    ): Promise<void> {
+        const now = new Date();
+
+        await this.prisma.$transaction(async (tx) => {
+            // Soft delete configs không còn trong request
+            if (configIdsToDelete.length > 0) {
+                await tx.rowDiscountConfig.updateMany({
+                    where: { id: { in: configIdsToDelete } },
+                    data: {
+                        is_deleted: true,
+                        deleted_at: now,
+                        deleted_by: userId,
+                    },
+                });
+            }
+
+            // Create new configs
+            if (configsToCreate.length > 0) {
+                await tx.rowDiscountConfig.createMany({
+                    data: configsToCreate.map(c => ({
+                        row_template_id: rowId,
+                        duration_tier_id: c.duration_tier_id,
+                        discount_percent: c.discount_percent,
+                        is_active: c.is_active,
+                        created_by: c.created_by,
+                    })),
+                });
+            }
+
+            // Update existing configs
+            await Promise.all(
+                configsToUpdate.map(c =>
+                    tx.rowDiscountConfig.update({
+                        where: { id: c.id },
+                        data: c.data,
+                    }),
+                ),
+            );
+        });
+    }
+
+    /**
+     * Lấy tất cả discount configs của một row
+     */
+    async findRowDiscountConfigs(rowId: string) {
+        return this.prisma.rowDiscountConfig.findMany({
+            where: { row_template_id: rowId, is_deleted: false },
+            include: {
+                duration_tier: true,
+            },
         });
     }
 }

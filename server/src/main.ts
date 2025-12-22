@@ -73,8 +73,6 @@ async function bootstrap() {
   }
 
   corsOrigins.push(...apiKeyOrigins);
-  console.log(`🌐 CORS origins: ${corsOrigins.length > 0 ? corsOrigins.join(', ') : '*'}`);
-
 
   app.enableCors({
     origin: corsOrigins.length > 0 ? corsOrigins : '*',
@@ -127,8 +125,6 @@ async function bootstrap() {
 
   // Get enabled modules based on DB permissions
   const { modules: includeModules, enabledModuleNames } = getApiKeyModules(permissionKeys);
-
-  console.log(`🔑 API Key enabled modules: ${enabledModuleNames.join(', ')}`);
 
   const apiKeyConfig = new DocumentBuilder()
     .setTitle('GEN-HUB API Key Documentation')
@@ -190,19 +186,21 @@ async function bootstrap() {
   const mainStats = countEndpoints(document);
   const apiKeyStats = countEndpoints(apiKeyDocument);
 
-  console.log(`📊 Main API: ${mainStats.total} endpoints (${Object.entries(mainStats.byMethod).map(([m, c]) => `${m}: ${c}`).join(', ')})`);
-  console.log(`📊 API Key API: ${apiKeyStats.total} endpoints (${Object.entries(apiKeyStats.byMethod).map(([m, c]) => `${m}: ${c}`).join(', ')})`);
-
   const port = process.env.PORT ?? 4000;
   const backendUrl = process.env.BACKEND_URL || `http://localhost:${port}`;
   await app.listen(port);
   systemLogService.logServerStart(port, serverStartTime);
 
+  // In các log sau khi server đã khởi động
   console.log(`🚀 Server đang chạy tại ${backendUrl}`);
   console.log(`📚 Swagger docs: ${backendUrl}/api-docs`);
   console.log(`📄 Swagger JSON: ${backendUrl}/api-docs-json`);
   console.log(`🔑 API Key Swagger: ${backendUrl}/api-docs-apikey`);
   console.log(`📄 API Key Swagger JSON: ${backendUrl}/api-docs-apikey-json`);
+  console.log(`🌐 CORS origins: ${corsOrigins.length > 0 ? corsOrigins.join(', ') : '*'}`);
+  console.log(`🔑 API Key enabled modules: ${enabledModuleNames.join(', ')}`);
+  console.log(`📊 Main API: ${mainStats.total} endpoints (${Object.entries(mainStats.byMethod).map(([m, c]) => `${m}: ${c}`).join(', ')})`);
+  console.log(`📊 API Key API: ${apiKeyStats.total} endpoints (${Object.entries(apiKeyStats.byMethod).map(([m, c]) => `${m}: ${c}`).join(', ')})`);
 
   // Graceful Shutdown
   const gracefulShutdown = async (signal: string) => {

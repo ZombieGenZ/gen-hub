@@ -79,14 +79,6 @@ export class CreateWarehouseTemplateDto {
     @Type(() => Number)
     price_per_month: number;
 
-    @ApiPropertyOptional({ description: 'Giảm giá thuê toàn bộ kho (%)', example: 10, default: 10 })
-    @IsOptional()
-    @IsNumber()
-    @Min(0, { message: i18nValidationMessage('warehouse-template.validation.discount_range') })
-    @Max(100, { message: i18nValidationMessage('warehouse-template.validation.discount_range') })
-    @Type(() => Number)
-    whole_warehouse_discount?: number;
-
     @ApiPropertyOptional({
         description: 'Danh sách config giảm giá theo mốc thời gian',
         type: [CreateDiscountConfigDto],
@@ -205,16 +197,7 @@ export class CreateWarehouseTemplateDto {
     @Type(() => Number)
     ceiling_height?: number;
 
-    @ApiPropertyOptional({ description: 'Tải trọng tối đa (kg/m²)', example: 500 })
-    @IsOptional()
-    @IsNumber({}, {
-        message: i18nValidationMessage('warehouse-template.validation.max_load_capacity_positive'),
-    })
-    @Min(0, {
-        message: i18nValidationMessage('warehouse-template.validation.max_load_capacity_positive'),
-    })
-    @Type(() => Number)
-    max_load_capacity?: number;
+
 
     // Tiện ích
     @ApiPropertyOptional({ description: 'Danh sách ID tiện ích', example: ['uuid1', 'uuid2'] })

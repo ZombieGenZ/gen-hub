@@ -61,7 +61,6 @@ export class WarehouseTemplateService {
             width: dto.width,
             is_shared_warehouse: dto.is_shared_warehouse ?? false,
             price_per_month: new Decimal(dto.price_per_month),
-            whole_warehouse_discount: dto.whole_warehouse_discount ? new Decimal(dto.whole_warehouse_discount) : undefined,
             address_detail: dto.address_detail,
             ward: dto.ward_id ? { connect: { id: dto.ward_id } } : undefined,
             latitude: dto.latitude ? new Decimal(dto.latitude) : undefined,
@@ -201,52 +200,54 @@ export class WarehouseTemplateService {
             );
         }
 
-
         const updatedFields = Object.keys(dto);
 
-        // Destructure ward_id, discount_configs, and amenity_ids out for separate handling
+        // Destructure ward_id và discount_configs để xử lý riêng
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { ward_id, discount_configs, amenity_ids, ...restDto } = dto;
 
-        const template = await this.repository.update(id, {
-            ...restDto,
-            price_per_month: dto.price_per_month ? new Decimal(dto.price_per_month) : undefined,
-            whole_warehouse_discount: dto.whole_warehouse_discount !== undefined ? new Decimal(dto.whole_warehouse_discount) : undefined,
-            latitude: dto.latitude !== undefined ? new Decimal(dto.latitude) : undefined,
-            longitude: dto.longitude !== undefined ? new Decimal(dto.longitude) : undefined,
-            block_length: dto.block_length !== undefined ? new Decimal(dto.block_length) : undefined,
-            block_width: dto.block_width !== undefined ? new Decimal(dto.block_width) : undefined,
-            ward: dto.ward_id ? { connect: { id: dto.ward_id } } : undefined,
-            updated_by: userId,
-        });
-
-        // Xử lý discount configs upsert nếu có
+        // Xử lý discount configs upsert nếu có (trước khi update template)
         if (discount_configs !== undefined) {
             await this.upsertDiscountConfigs(id, discount_configs, existing.discount_configs || [], userId);
         }
 
-        // Invalidate caches
-        await this.redisService.invalidateWarehouseTemplateCache(id);
-        await this.redisService.invalidateWarehouseTemplateListCache();
+        // Update template với các trường cơ bản
+        await this.repository.update(id, {
+            ...restDto,
+            price_per_month: dto.price_per_month !== undefined ? new Decimal(dto.price_per_month) : undefined,
+            latitude: dto.latitude !== undefined ? new Decimal(dto.latitude) : undefined,
+            longitude: dto.longitude !== undefined ? new Decimal(dto.longitude) : undefined,
+            block_length: dto.block_length !== undefined ? new Decimal(dto.block_length) : undefined,
+            block_width: dto.block_width !== undefined ? new Decimal(dto.block_width) : undefined,
+            ward: ward_id ? { connect: { id: ward_id } } : undefined,
+            updated_by: userId,
+        });
 
-        // Fetch lại để có discount_configs mới nhất
+        // Invalidate caches
+        await Promise.all([
+            this.redisService.invalidateWarehouseTemplateCache(id),
+            this.redisService.invalidateWarehouseTemplateListCache(),
+        ]);
+
+        // Fetch lại template với đầy đủ relations để trả về format giống create và findMany
         const updatedTemplate = await this.repository.findById(id);
 
         // Log
-        this.systemLogService.info('warehouse-template', 'update', `Updated warehouse template: ${template.name}`, {
+        this.systemLogService.info('warehouse-template', 'update', `Updated warehouse template: ${updatedTemplate!.name}`, {
             userId,
             metaData: { templateId: id, updatedFields },
         });
 
         // Emit WebSocket event
-        this.websocketGateway.emitWarehouseTemplateUpdated(id, template.name, updatedFields, userId);
+        this.websocketGateway.emitWarehouseTemplateUpdated(id, updatedTemplate!.name, updatedFields, userId);
 
         return updatedTemplate!;
     }
 
     /**
      * Upsert discount configs cho warehouse template
-     * - Configs có id trong request → update
-     * - Configs không có id → create (với de-dupe)
+     * - Configs có id trong request VÀ tồn tại trong DB → update
+     * - Configs không có id HOẶC id không tồn tại trong DB → create (với de-dupe)
      * - Configs hiện có nhưng không trong request → soft delete
      */
     private async upsertDiscountConfigs(
@@ -257,11 +258,14 @@ export class WarehouseTemplateService {
     ): Promise<void> {
         if (!newConfigs) return;
 
+        // Build set các existing config IDs để validate
+        const existingConfigIds = new Set(existingConfigs.map(c => c.id));
+
         const requestConfigIds = new Set<string>();
         const configsToCreate: Array<{ duration_tier_id: string; discount_percent: number; is_active?: boolean }> = [];
         const configsToUpdate: Array<{ id: string; data: { discount_percent?: Decimal; is_active?: boolean; updated_by?: string } }> = [];
 
-        // De-dupe theo duration_tier_id
+        // De-dupe theo duration_tier_id (giữ config cuối cùng nếu trùng)
         const uniqueMap = new Map<string, {
             id?: string;
             duration_tier_id: string;
@@ -275,7 +279,8 @@ export class WarehouseTemplateService {
         const uniqueConfigs = Array.from(uniqueMap.values());
 
         for (const config of uniqueConfigs) {
-            if (config.id) {
+            // Chỉ update nếu config có ID VÀ ID đó tồn tại trong existingConfigs
+            if (config.id && existingConfigIds.has(config.id)) {
                 // Update existing config
                 requestConfigIds.add(config.id);
                 configsToUpdate.push({
@@ -287,7 +292,7 @@ export class WarehouseTemplateService {
                     },
                 });
             } else {
-                // Create new config
+                // Create new config (nếu không có ID hoặc ID không tồn tại trong DB)
                 configsToCreate.push({
                     duration_tier_id: config.duration_tier_id,
                     discount_percent: config.discount_percent,
@@ -304,6 +309,83 @@ export class WarehouseTemplateService {
         // Execute upsert operations
         await this.repository.upsertDiscountConfigs(
             templateId,
+            configsToCreate.map(c => ({
+                ...c,
+                discount_percent: new Decimal(c.discount_percent),
+                is_active: c.is_active ?? true,
+                created_by: userId,
+            })),
+            configsToUpdate,
+            configIdsToDelete,
+            userId,
+        );
+    }
+
+    /**
+     * Upsert discount configs cho row template
+     * - Configs có id trong request VÀ tồn tại trong DB → update
+     * - Configs không có id HOẶC id không tồn tại trong DB → create (với de-dupe)
+     * - Configs hiện có nhưng không trong request → soft delete
+     */
+    private async upsertRowDiscountConfigs(
+        rowId: string,
+        newConfigs: Array<{ id?: string; duration_tier_id: string; discount_percent: number; is_active?: boolean }>,
+        existingConfigs: Array<{ id: string; duration_tier_id: string }>,
+        userId: string,
+    ): Promise<void> {
+        if (!newConfigs || newConfigs.length === 0) return;
+
+        // Build set các existing config IDs để validate
+        const existingConfigIds = new Set(existingConfigs.map(c => c.id));
+
+        const requestConfigIds = new Set<string>();
+        const configsToCreate: Array<{ duration_tier_id: string; discount_percent: number; is_active?: boolean }> = [];
+        const configsToUpdate: Array<{ id: string; data: { discount_percent?: Decimal; is_active?: boolean; updated_by?: string } }> = [];
+
+        // De-dupe theo duration_tier_id (giữ config cuối cùng nếu trùng)
+        const uniqueMap = new Map<string, {
+            id?: string;
+            duration_tier_id: string;
+            discount_percent: number;
+            is_active?: boolean;
+        }>();
+
+        for (const config of newConfigs) {
+            uniqueMap.set(config.duration_tier_id, config);
+        }
+        const uniqueConfigs = Array.from(uniqueMap.values());
+
+        for (const config of uniqueConfigs) {
+            // Chỉ update nếu config có ID VÀ ID đó tồn tại trong existingConfigs
+            if (config.id && existingConfigIds.has(config.id)) {
+                // Update existing config
+                requestConfigIds.add(config.id);
+                configsToUpdate.push({
+                    id: config.id,
+                    data: {
+                        discount_percent: new Decimal(config.discount_percent),
+                        is_active: config.is_active,
+                        updated_by: userId,
+                    },
+                });
+            } else {
+                // Create new config (nếu không có ID hoặc ID không tồn tại trong DB)
+                configsToCreate.push({
+                    duration_tier_id: config.duration_tier_id,
+                    discount_percent: config.discount_percent,
+                    is_active: config.is_active,
+                });
+            }
+        }
+
+        // Tìm configs cần soft delete (hiện có nhưng không trong request)
+        const configIdsToDelete = existingConfigs
+            .filter(c => !requestConfigIds.has(c.id))
+            .map(c => c.id);
+
+        // Execute upsert operations
+        await this.repository.upsertRowDiscountConfigs(
+            rowId,
             configsToCreate.map(c => ({
                 ...c,
                 discount_percent: new Decimal(c.discount_percent),
@@ -375,8 +457,8 @@ export class WarehouseTemplateService {
     }
 
     /**
-     * Cập nhật layout (rows, racks, shelves, blocks) - OPTIMIZED với batch operations
-     * Giảm từ N queries xuống còn ~8-12 queries bất kể số lượng items
+     * Cập nhật layout (rows, racks, shelves, blocks) - Auto-detect deletions và restore
+     * Logic: Items không gửi = xóa, items có ID đã xóa nhưng gửi lại = restore
      */
     async upsertLayout(
         templateId: string,
@@ -392,372 +474,325 @@ export class WarehouseTemplateService {
         }
 
         const summary = {
-            rowsCreated: 0,
-            rowsUpdated: 0,
-            rowsDeleted: 0,
-            racksCreated: 0,
-            racksUpdated: 0,
-            racksDeleted: 0,
-            shelvesCreated: 0,
-            shelvesUpdated: 0,
-            shelvesDeleted: 0,
-            blocksCreated: 0,
-            blocksUpdated: 0,
-            blocksDeleted: 0,
+            rowsCreated: 0, rowsUpdated: 0, rowsDeleted: 0, rowsRestored: 0,
+            racksCreated: 0, racksUpdated: 0, racksDeleted: 0, racksRestored: 0,
+            shelvesCreated: 0, shelvesUpdated: 0, shelvesDeleted: 0, shelvesRestored: 0,
+            blocksCreated: 0, blocksUpdated: 0, blocksDeleted: 0, blocksRestored: 0,
         };
 
-        // Collect all operations first
+        // Lấy tất cả existing data (bao gồm cả đã xóa)
+        const allExistingRows = await this.repository.findAllRowsByTemplateId(templateId, true);
+
+        // Build lookup maps và collect existing active IDs
+        const existingRowMap = new Map(allExistingRows.map(r => [r.id, r]));
+        const existingRackMap = new Map<string, { id: string; is_deleted: boolean | null; row_id: string }>();
+        const existingShelfMap = new Map<string, { id: string; is_deleted: boolean | null; rack_id: string }>();
+        const existingBlockMap = new Map<string, { id: string; is_deleted: boolean | null; shelf_id: string }>();
+
+        // Collect active existing IDs - dùng để detect deletions
+        const activeRowIds = new Set<string>();
+        const activeRackIds = new Set<string>();
+        const activeShelfIds = new Set<string>();
+        const activeBlockIds = new Set<string>();
+
+        for (const row of allExistingRows) {
+            if (!row.is_deleted) activeRowIds.add(row.id);
+            for (const rack of row.racks || []) {
+                existingRackMap.set(rack.id, { id: rack.id, is_deleted: rack.is_deleted, row_id: row.id });
+                if (!rack.is_deleted) activeRackIds.add(rack.id);
+                for (const shelf of rack.shelves || []) {
+                    existingShelfMap.set(shelf.id, { id: shelf.id, is_deleted: shelf.is_deleted, rack_id: rack.id });
+                    if (!shelf.is_deleted) activeShelfIds.add(shelf.id);
+                    for (const block of shelf.blocks || []) {
+                        existingBlockMap.set(block.id, { id: block.id, is_deleted: block.is_deleted, shelf_id: shelf.id });
+                        if (!block.is_deleted) activeBlockIds.add(block.id);
+                    }
+                }
+            }
+        }
+
+        // Collect incoming IDs
+        const incomingRowIds = new Set<string>();
+        const incomingRackIds = new Set<string>();
+        const incomingShelfIds = new Set<string>();
+        const incomingBlockIds = new Set<string>();
+
+        // Operations - sử dụng Set cho delete IDs để O(1) dedup
+        const rowIdsToDelete = new Set<string>();
+        const rackIdsToDelete = new Set<string>();
+        const shelfIdsToDelete = new Set<string>();
+        const blockIdsToDelete = new Set<string>();
+
         const operations = {
             rowsToCreate: [] as Prisma.RowTemplateCreateManyInput[],
             rowsToUpdate: [] as { id: string; data: Prisma.RowTemplateUpdateInput }[],
-            rowIdsToDelete: [] as string[],
+            rowIdsToRestore: [] as string[],
             racksToCreate: [] as Prisma.RackTemplateCreateManyInput[],
             racksToUpdate: [] as { id: string; data: Prisma.RackTemplateUpdateInput }[],
-            rackIdsToDelete: [] as string[],
+            rackIdsToRestore: [] as string[],
             shelvesToCreate: [] as Prisma.ShelfTemplateCreateManyInput[],
             shelvesToUpdate: [] as { id: string; data: Prisma.ShelfTemplateUpdateInput }[],
-            shelfIdsToDelete: [] as string[],
+            shelfIdsToRestore: [] as string[],
             blocksToCreate: [] as Prisma.BlockTemplateCreateManyInput[],
             blocksToUpdate: [] as { id: string; data: Prisma.BlockTemplateUpdateInput }[],
-            blockIdsToDelete: [] as string[],
+            blockIdsToRestore: [] as string[],
         };
 
-        // Lấy existing data để xác định cần delete
-        const existingRows = await this.repository.findRowsByTemplateId(templateId);
-        const incomingRowIds = dto.rows.filter(r => r.id && !r._delete).map(r => r.id!);
-
-        // Collect row operations
+        // Process incoming rows
         for (const row of dto.rows) {
-            if (row._delete && row.id) {
-                operations.rowIdsToDelete.push(row.id);
-                summary.rowsDeleted++;
-                // Also mark nested items for deletion
-                const existingRow = existingRows.find(r => r.id === row.id);
-                if (existingRow) {
-                    this.collectNestedDeletions(existingRow, operations, summary);
-                }
-                continue;
-            }
-
             if (row.id) {
-                // Update existing row
-                operations.rowsToUpdate.push({
-                    id: row.id,
-                    data: this.buildRowUpdateData(row, userId),
-                });
-                summary.rowsUpdated++;
-                // Process nested racks
+                incomingRowIds.add(row.id);
+                const existingRow = existingRowMap.get(row.id);
+                if (existingRow) {
+                    if (existingRow.is_deleted) {
+                        operations.rowIdsToRestore.push(row.id);
+                        summary.rowsRestored++;
+                    }
+                    operations.rowsToUpdate.push({ id: row.id, data: this.buildRowUpdateData(row, userId) });
+                    summary.rowsUpdated++;
+                }
                 if (row.racks) {
-                    this.collectRackOperations(row.id, row.racks, userId, operations, summary);
+                    this.processIncomingRacks(row.id, row.racks, userId, operations, summary, existingRackMap, existingShelfMap, existingBlockMap, incomingRackIds, incomingShelfIds, incomingBlockIds);
                 }
             } else {
-                // Create new row with generated ID
                 const newRowId = uuidv4();
-                operations.rowsToCreate.push({
-                    id: newRowId,
-                    warehouse_template_id: templateId,
-                    ...this.buildRowCreateDataFlat(row, userId),
-                });
+                operations.rowsToCreate.push({ id: newRowId, warehouse_template_id: templateId, ...this.buildRowCreateDataFlat(row, userId) });
                 summary.rowsCreated++;
-                // Process nested racks with the new row ID
                 if (row.racks) {
-                    this.collectRackOperations(newRowId, row.racks, userId, operations, summary);
+                    this.processIncomingRacks(newRowId, row.racks, userId, operations, summary, existingRackMap, existingShelfMap, existingBlockMap, incomingRackIds, incomingShelfIds, incomingBlockIds);
                 }
             }
         }
 
-        // Mark orphan rows for deletion
-        for (const existingRow of existingRows) {
-            if (!incomingRowIds.includes(existingRow.id) && !operations.rowIdsToDelete.includes(existingRow.id)) {
-                operations.rowIdsToDelete.push(existingRow.id);
+        // Auto-detect deletions - O(n) với Set lookup O(1)
+        for (const rowId of activeRowIds) {
+            if (!incomingRowIds.has(rowId)) {
+                rowIdsToDelete.add(rowId);
                 summary.rowsDeleted++;
-                this.collectNestedDeletions(existingRow, operations, summary);
+            }
+        }
+        for (const rackId of activeRackIds) {
+            if (!incomingRackIds.has(rackId)) {
+                rackIdsToDelete.add(rackId);
+                summary.racksDeleted++;
+            }
+        }
+        for (const shelfId of activeShelfIds) {
+            if (!incomingShelfIds.has(shelfId)) {
+                shelfIdsToDelete.add(shelfId);
+                summary.shelvesDeleted++;
+            }
+        }
+        for (const blockId of activeBlockIds) {
+            if (!incomingBlockIds.has(blockId)) {
+                blockIdsToDelete.add(blockId);
+                summary.blocksDeleted++;
             }
         }
 
-        // Execute all operations in batch
-        await this.repository.bulkUpsertLayout(operations, userId);
+        // Execute operations
+        await this.repository.bulkUpsertLayout({
+            ...operations,
+            rowIdsToDelete: [...rowIdsToDelete],
+            rackIdsToDelete: [...rackIdsToDelete],
+            shelfIdsToDelete: [...shelfIdsToDelete],
+            blockIdsToDelete: [...blockIdsToDelete],
+        }, userId);
 
-        // Invalidate caches in parallel
+        // Process discount configs for rows sau khi rows đã được create/update
+        // Thu thập tất cả row IDs và discount_configs của chúng
+        const rowDiscountConfigsToProcess: Array<{
+            rowId: string;
+            discountConfigs: NonNullable<typeof dto.rows[0]['discount_configs']>;
+            existingConfigs: Array<{ id: string; duration_tier_id: string }>;
+        }> = [];
+
+        for (const row of dto.rows) {
+            if (row.discount_configs && row.discount_configs.length > 0) {
+                // Nếu row có id, lấy existing configs từ existingRowMap
+                // Nếu row mới được tạo, tìm id từ rowsToCreate
+                let rowId: string | undefined;
+                let existingConfigs: Array<{ id: string; duration_tier_id: string }> = [];
+
+                if (row.id) {
+                    rowId = row.id;
+                    // Lấy existing discount configs từ existing row (cần fetch từ DB)
+                    const existingRow = existingRowMap.get(row.id);
+                    if (existingRow) {
+                        // Fetch existing discount configs cho row này
+                        const configs = await this.repository.findRowDiscountConfigs(row.id);
+                        existingConfigs = configs.map(c => ({ id: c.id, duration_tier_id: c.duration_tier_id }));
+                    }
+                } else {
+                    // Tìm rowId từ rowsToCreate (dựa trên name và code match)
+                    const createdRow = operations.rowsToCreate.find(
+                        r => r.name === row.name && r.code === row.code
+                    );
+                    if (createdRow) {
+                        rowId = createdRow.id;
+                    }
+                }
+
+                if (rowId) {
+                    rowDiscountConfigsToProcess.push({
+                        rowId,
+                        discountConfigs: row.discount_configs,
+                        existingConfigs,
+                    });
+                }
+            }
+        }
+
+        // Upsert discount configs cho mỗi row
+        for (const { rowId, discountConfigs, existingConfigs } of rowDiscountConfigsToProcess) {
+            await this.upsertRowDiscountConfigs(rowId, discountConfigs, existingConfigs, userId);
+        }
+
+        // Invalidate caches
         await Promise.all([
             this.redisService.invalidateWarehouseTemplateCache(templateId),
             this.redisService.invalidateWarehouseTemplateListCache(),
         ]);
 
-        // Log
         this.systemLogService.info('warehouse-template', 'layout_update', `Updated layout for: ${existing.name}`, {
             userId,
             metaData: { templateId, summary },
         });
 
-        // Emit WebSocket event
         this.websocketGateway.emitWarehouseTemplateLayoutUpdated(templateId, existing.name, userId, summary);
 
-        // Refresh and return
         return this.repository.findById(templateId) as unknown as IWarehouseTemplateWithRelations;
     }
 
     /**
-     * Collect rack operations for batch processing
+     * Process incoming racks và nested entities
      */
-    private collectRackOperations(
+    private processIncomingRacks(
         rowId: string,
         racks: LayoutRackDto[],
         userId: string,
         operations: {
             racksToCreate: Prisma.RackTemplateCreateManyInput[];
             racksToUpdate: { id: string; data: Prisma.RackTemplateUpdateInput }[];
-            rackIdsToDelete: string[];
+            rackIdsToRestore: string[];
             shelvesToCreate: Prisma.ShelfTemplateCreateManyInput[];
             shelvesToUpdate: { id: string; data: Prisma.ShelfTemplateUpdateInput }[];
-            shelfIdsToDelete: string[];
+            shelfIdsToRestore: string[];
             blocksToCreate: Prisma.BlockTemplateCreateManyInput[];
             blocksToUpdate: { id: string; data: Prisma.BlockTemplateUpdateInput }[];
-            blockIdsToDelete: string[];
+            blockIdsToRestore: string[];
         },
         summary: Record<string, number>,
+        existingRackMap: Map<string, { id: string; is_deleted: boolean | null }>,
+        existingShelfMap: Map<string, { id: string; is_deleted: boolean | null }>,
+        existingBlockMap: Map<string, { id: string; is_deleted: boolean | null }>,
+        incomingRackIds: Set<string>,
+        incomingShelfIds: Set<string>,
+        incomingBlockIds: Set<string>,
     ): void {
         for (const rack of racks) {
-            if (rack._delete && rack.id) {
-                operations.rackIdsToDelete.push(rack.id);
-                summary.racksDeleted++;
-                continue;
-            }
-
             if (rack.id) {
-                operations.racksToUpdate.push({
-                    id: rack.id,
-                    data: this.buildRackUpdateData(rack, userId),
-                });
-                summary.racksUpdated++;
+                incomingRackIds.add(rack.id);
+                const existing = existingRackMap.get(rack.id);
+                if (existing) {
+                    if (existing.is_deleted) {
+                        operations.rackIdsToRestore.push(rack.id);
+                        summary.racksRestored++;
+                    }
+                    operations.racksToUpdate.push({ id: rack.id, data: this.buildRackUpdateData(rack, userId) });
+                    summary.racksUpdated++;
+                }
                 if (rack.shelves) {
-                    this.collectShelfOperations(rack.id, rack.shelves, userId, operations, summary);
+                    this.processIncomingShelves(rack.id, rack.shelves, userId, operations, summary, existingShelfMap, existingBlockMap, incomingShelfIds, incomingBlockIds);
                 }
             } else {
-                const newRackId = uuidv4();
-                operations.racksToCreate.push({
-                    id: newRackId,
-                    row_template_id: rowId,
-                    ...this.buildRackCreateDataFlat(rack, userId),
-                });
+                const newId = uuidv4();
+                operations.racksToCreate.push({ id: newId, row_template_id: rowId, ...this.buildRackCreateDataFlat(rack, userId) });
                 summary.racksCreated++;
                 if (rack.shelves) {
-                    this.collectShelfOperations(newRackId, rack.shelves, userId, operations, summary);
+                    this.processIncomingShelves(newId, rack.shelves, userId, operations, summary, existingShelfMap, existingBlockMap, incomingShelfIds, incomingBlockIds);
                 }
             }
         }
     }
 
     /**
-     * Collect shelf operations for batch processing
+     * Process incoming shelves và nested blocks
      */
-    private collectShelfOperations(
+    private processIncomingShelves(
         rackId: string,
         shelves: LayoutShelfDto[],
         userId: string,
         operations: {
             shelvesToCreate: Prisma.ShelfTemplateCreateManyInput[];
             shelvesToUpdate: { id: string; data: Prisma.ShelfTemplateUpdateInput }[];
-            shelfIdsToDelete: string[];
+            shelfIdsToRestore: string[];
             blocksToCreate: Prisma.BlockTemplateCreateManyInput[];
             blocksToUpdate: { id: string; data: Prisma.BlockTemplateUpdateInput }[];
-            blockIdsToDelete: string[];
+            blockIdsToRestore: string[];
         },
         summary: Record<string, number>,
+        existingShelfMap: Map<string, { id: string; is_deleted: boolean | null }>,
+        existingBlockMap: Map<string, { id: string; is_deleted: boolean | null }>,
+        incomingShelfIds: Set<string>,
+        incomingBlockIds: Set<string>,
     ): void {
         for (const shelf of shelves) {
-            if (shelf._delete && shelf.id) {
-                operations.shelfIdsToDelete.push(shelf.id);
-                summary.shelvesDeleted++;
-                continue;
-            }
-
             if (shelf.id) {
-                operations.shelvesToUpdate.push({
-                    id: shelf.id,
-                    data: this.buildShelfUpdateData(shelf, userId),
-                });
-                summary.shelvesUpdated++;
+                incomingShelfIds.add(shelf.id);
+                const existing = existingShelfMap.get(shelf.id);
+                if (existing) {
+                    if (existing.is_deleted) {
+                        operations.shelfIdsToRestore.push(shelf.id);
+                        summary.shelvesRestored++;
+                    }
+                    operations.shelvesToUpdate.push({ id: shelf.id, data: this.buildShelfUpdateData(shelf, userId) });
+                    summary.shelvesUpdated++;
+                }
                 if (shelf.blocks) {
-                    this.collectBlockOperations(shelf.id, shelf.blocks, userId, operations, summary);
+                    this.processIncomingBlocks(shelf.id, shelf.blocks, userId, operations, summary, existingBlockMap, incomingBlockIds);
                 }
             } else {
-                const newShelfId = uuidv4();
-                operations.shelvesToCreate.push({
-                    id: newShelfId,
-                    rack_template_id: rackId,
-                    ...this.buildShelfCreateDataFlat(shelf, userId),
-                });
+                const newId = uuidv4();
+                operations.shelvesToCreate.push({ id: newId, rack_template_id: rackId, ...this.buildShelfCreateDataFlat(shelf, userId) });
                 summary.shelvesCreated++;
                 if (shelf.blocks) {
-                    this.collectBlockOperations(newShelfId, shelf.blocks, userId, operations, summary);
+                    this.processIncomingBlocks(newId, shelf.blocks, userId, operations, summary, existingBlockMap, incomingBlockIds);
                 }
             }
         }
     }
 
     /**
-     * Collect block operations for batch processing
+     * Process incoming blocks
      */
-    private collectBlockOperations(
+    private processIncomingBlocks(
         shelfId: string,
         blocks: LayoutBlockDto[],
         userId: string,
         operations: {
             blocksToCreate: Prisma.BlockTemplateCreateManyInput[];
             blocksToUpdate: { id: string; data: Prisma.BlockTemplateUpdateInput }[];
-            blockIdsToDelete: string[];
+            blockIdsToRestore: string[];
         },
         summary: Record<string, number>,
+        existingBlockMap: Map<string, { id: string; is_deleted: boolean | null }>,
+        incomingBlockIds: Set<string>,
     ): void {
         for (const block of blocks) {
-            if (block._delete && block.id) {
-                operations.blockIdsToDelete.push(block.id);
-                summary.blocksDeleted++;
-                continue;
-            }
-
             if (block.id) {
-                operations.blocksToUpdate.push({
-                    id: block.id,
-                    data: this.buildBlockUpdateData(block, userId),
-                });
-                summary.blocksUpdated++;
-            } else {
-                operations.blocksToCreate.push({
-                    id: uuidv4(),
-                    shelf_template_id: shelfId,
-                    ...this.buildBlockCreateDataFlat(block, userId),
-                });
-                summary.blocksCreated++;
-            }
-        }
-    }
-
-    /**
-     * Collect nested deletions when a parent is deleted
-     */
-    private collectNestedDeletions(
-        existingRow: Awaited<ReturnType<typeof this.repository.findRowsByTemplateId>>[0],
-        operations: {
-            rackIdsToDelete: string[];
-            shelfIdsToDelete: string[];
-            blockIdsToDelete: string[];
-        },
-        summary: Record<string, number>,
-    ): void {
-        for (const rack of existingRow.racks || []) {
-            operations.rackIdsToDelete.push(rack.id);
-            summary.racksDeleted++;
-            for (const shelf of rack.shelves || []) {
-                operations.shelfIdsToDelete.push(shelf.id);
-                summary.shelvesDeleted++;
-                for (const block of shelf.blocks || []) {
-                    operations.blockIdsToDelete.push(block.id);
-                    summary.blocksDeleted++;
+                incomingBlockIds.add(block.id);
+                const existing = existingBlockMap.get(block.id);
+                if (existing) {
+                    if (existing.is_deleted) {
+                        operations.blockIdsToRestore.push(block.id);
+                        summary.blocksRestored++;
+                    }
+                    operations.blocksToUpdate.push({ id: block.id, data: this.buildBlockUpdateData(block, userId) });
+                    summary.blocksUpdated++;
                 }
-            }
-        }
-    }
-
-    /**
-     * Xử lý racks trong layout (legacy - kept for backward compatibility)
-     */
-    private async processRacks(
-        rowId: string,
-        racks: LayoutRackDto[],
-        userId: string,
-        summary: Record<string, number>,
-    ): Promise<void> {
-        for (const rack of racks) {
-            if (rack._delete && rack.id) {
-                await this.repository.softDeleteRack(rack.id, userId);
-                summary.racksDeleted++;
-                continue;
-            }
-
-            let rackId: string;
-
-            if (rack.id) {
-                await this.repository.updateRack(rack.id, this.buildRackUpdateData(rack, userId));
-                rackId = rack.id;
-                summary.racksUpdated++;
             } else {
-                const newRack = await this.repository.createRack({
-                    row_template: { connect: { id: rowId } },
-                    ...this.buildRackCreateData(rack, userId),
-                });
-                rackId = newRack.id;
-                summary.racksCreated++;
-            }
-
-            if (rack.shelves) {
-                await this.processShelves(rackId, rack.shelves, userId, summary);
-            }
-        }
-    }
-
-    /**
-     * Xử lý shelves trong layout
-     */
-    private async processShelves(
-        rackId: string,
-        shelves: LayoutShelfDto[],
-        userId: string,
-        summary: Record<string, number>,
-    ): Promise<void> {
-        for (const shelf of shelves) {
-            if (shelf._delete && shelf.id) {
-                await this.repository.softDeleteShelf(shelf.id, userId);
-                summary.shelvesDeleted++;
-                continue;
-            }
-
-            let shelfId: string;
-
-            if (shelf.id) {
-                await this.repository.updateShelf(shelf.id, this.buildShelfUpdateData(shelf, userId));
-                shelfId = shelf.id;
-                summary.shelvesUpdated++;
-            } else {
-                const newShelf = await this.repository.createShelf({
-                    rack_template: { connect: { id: rackId } },
-                    ...this.buildShelfCreateData(shelf, userId),
-                });
-                shelfId = newShelf.id;
-                summary.shelvesCreated++;
-            }
-
-            if (shelf.blocks) {
-                await this.processBlocks(shelfId, shelf.blocks, userId, summary);
-            }
-        }
-    }
-
-    /**
-     * Xử lý blocks trong layout
-     */
-    private async processBlocks(
-        shelfId: string,
-        blocks: LayoutBlockDto[],
-        userId: string,
-        summary: Record<string, number>,
-    ): Promise<void> {
-        for (const block of blocks) {
-            if (block._delete && block.id) {
-                await this.repository.softDeleteBlock(block.id, userId);
-                summary.blocksDeleted++;
-                continue;
-            }
-
-            if (block.id) {
-                await this.repository.updateBlock(block.id, this.buildBlockUpdateData(block, userId));
-                summary.blocksUpdated++;
-            } else {
-                await this.repository.createBlock({
-                    shelf_template: { connect: { id: shelfId } },
-                    ...this.buildBlockCreateData(block, userId),
-                });
+                operations.blocksToCreate.push({ id: uuidv4(), shelf_template_id: shelfId, ...this.buildBlockCreateDataFlat(block, userId) });
                 summary.blocksCreated++;
             }
         }
@@ -770,12 +805,6 @@ export class WarehouseTemplateService {
             description: row.description,
             is_rented: row.is_rented ?? false,
             price_per_month: new Decimal(row.price_per_month ?? 0),
-            discount_1_month: row.discount_1_month ? new Decimal(row.discount_1_month) : new Decimal(0),
-            discount_3_months: row.discount_3_months ? new Decimal(row.discount_3_months) : new Decimal(5),
-            discount_6_months: row.discount_6_months ? new Decimal(row.discount_6_months) : new Decimal(10),
-            discount_1_year: row.discount_1_year ? new Decimal(row.discount_1_year) : new Decimal(15),
-            discount_2_years: row.discount_2_years ? new Decimal(row.discount_2_years) : new Decimal(20),
-            discount_3_years_plus: row.discount_3_years_plus ? new Decimal(row.discount_3_years_plus) : new Decimal(25),
             address: row.address,
             latitude: row.latitude ? new Decimal(row.latitude) : undefined,
             longitude: row.longitude ? new Decimal(row.longitude) : undefined,
@@ -794,12 +823,6 @@ export class WarehouseTemplateService {
             description: row.description,
             is_rented: row.is_rented,
             price_per_month: row.price_per_month !== undefined ? new Decimal(row.price_per_month) : undefined,
-            discount_1_month: row.discount_1_month !== undefined ? new Decimal(row.discount_1_month) : undefined,
-            discount_3_months: row.discount_3_months !== undefined ? new Decimal(row.discount_3_months) : undefined,
-            discount_6_months: row.discount_6_months !== undefined ? new Decimal(row.discount_6_months) : undefined,
-            discount_1_year: row.discount_1_year !== undefined ? new Decimal(row.discount_1_year) : undefined,
-            discount_2_years: row.discount_2_years !== undefined ? new Decimal(row.discount_2_years) : undefined,
-            discount_3_years_plus: row.discount_3_years_plus !== undefined ? new Decimal(row.discount_3_years_plus) : undefined,
             address: row.address,
             latitude: row.latitude !== undefined ? new Decimal(row.latitude) : undefined,
             longitude: row.longitude !== undefined ? new Decimal(row.longitude) : undefined,
@@ -822,6 +845,8 @@ export class WarehouseTemplateService {
             dimensions_width: rack.dimensions_width ? new Decimal(rack.dimensions_width) : undefined,
             dimensions_depth: rack.dimensions_depth ? new Decimal(rack.dimensions_depth) : undefined,
             dimensions_height: rack.dimensions_height ? new Decimal(rack.dimensions_height) : undefined,
+            default_block_max_weight_capacity: rack.default_block_max_weight_capacity ? new Decimal(rack.default_block_max_weight_capacity) : undefined,
+            overload_threshold_percent: rack.overload_threshold_percent ? new Decimal(rack.overload_threshold_percent) : undefined,
             is_active: rack.is_active ?? true,
             created_by: userId,
         };
@@ -838,6 +863,8 @@ export class WarehouseTemplateService {
             dimensions_width: rack.dimensions_width !== undefined ? new Decimal(rack.dimensions_width) : undefined,
             dimensions_depth: rack.dimensions_depth !== undefined ? new Decimal(rack.dimensions_depth) : undefined,
             dimensions_height: rack.dimensions_height !== undefined ? new Decimal(rack.dimensions_height) : undefined,
+            default_block_max_weight_capacity: rack.default_block_max_weight_capacity !== undefined ? new Decimal(rack.default_block_max_weight_capacity) : undefined,
+            overload_threshold_percent: rack.overload_threshold_percent !== undefined ? new Decimal(rack.overload_threshold_percent) : undefined,
             is_active: rack.is_active,
             updated_by: userId,
         };
@@ -848,6 +875,7 @@ export class WarehouseTemplateService {
             name: shelf.name,
             code: shelf.code,
             description: shelf.description,
+            height: shelf.height ? new Decimal(shelf.height) : undefined,
             is_active: shelf.is_active ?? true,
             created_by: userId,
         };
@@ -858,6 +886,7 @@ export class WarehouseTemplateService {
             name: shelf.name,
             code: shelf.code,
             description: shelf.description,
+            height: shelf.height !== undefined ? new Decimal(shelf.height) : undefined,
             is_active: shelf.is_active,
             updated_by: userId,
         };
@@ -921,6 +950,8 @@ export class WarehouseTemplateService {
             dimensions_width: rack.dimensions_width,
             dimensions_depth: rack.dimensions_depth,
             dimensions_height: rack.dimensions_height,
+            default_block_max_weight_capacity: rack.default_block_max_weight_capacity,
+            overload_threshold_percent: rack.overload_threshold_percent,
             is_active: rack.is_active ?? true,
             created_by: userId,
         };
@@ -931,6 +962,7 @@ export class WarehouseTemplateService {
             name: shelf.name,
             code: shelf.code,
             description: shelf.description,
+            height: shelf.height,
             is_active: shelf.is_active ?? true,
             created_by: userId,
         };
