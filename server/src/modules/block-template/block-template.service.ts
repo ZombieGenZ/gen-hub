@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { I18nService } from 'nestjs-i18n';
 import { Prisma } from '@prisma/client';
@@ -61,6 +61,19 @@ export class BlockTemplateService {
         if (existingCode) {
             throw new ConflictException(
                 this.i18n.t('block-template.errors.code_exists', { lang }),
+            );
+        }
+
+        // Validate position bounds
+        const warehouseLength = Number(shelf.rack_template.row_template.warehouse_template.length);
+        const warehouseWidth = Number(shelf.rack_template.row_template.warehouse_template.width);
+        if ((dto.position_x !== undefined && dto.position_x > warehouseLength) ||
+            (dto.position_y !== undefined && dto.position_y > warehouseWidth)) {
+            throw new BadRequestException(
+                this.i18n.t('block-template.errors.position_out_of_bounds', {
+                    lang,
+                    args: { name: dto.name, maxLength: warehouseLength, maxWidth: warehouseWidth },
+                }),
             );
         }
 
@@ -185,6 +198,24 @@ export class BlockTemplateService {
                 throw new ConflictException(
                     this.i18n.t('block-template.errors.code_exists', { lang }),
                 );
+            }
+        }
+
+        // Validate position bounds
+        if (dto.position_x !== undefined || dto.position_y !== undefined) {
+            const shelf = await this.repository.shelfTemplateExists(block.shelf_template_id);
+            if (shelf) {
+                const warehouseLength = Number(shelf.rack_template.row_template.warehouse_template.length);
+                const warehouseWidth = Number(shelf.rack_template.row_template.warehouse_template.width);
+                if ((dto.position_x !== undefined && dto.position_x > warehouseLength) ||
+                    (dto.position_y !== undefined && dto.position_y > warehouseWidth)) {
+                    throw new BadRequestException(
+                        this.i18n.t('block-template.errors.position_out_of_bounds', {
+                            lang,
+                            args: { name: dto.name || block.name, maxLength: warehouseLength, maxWidth: warehouseWidth },
+                        }),
+                    );
+                }
             }
         }
 

@@ -185,11 +185,6 @@ export class LayoutRackDto {
     @Type(() => Number)
     dimensions_width?: number;
 
-    @ApiPropertyOptional({ description: 'Chiều sâu' })
-    @IsOptional()
-    @IsNumber()
-    @Type(() => Number)
-    dimensions_depth?: number;
 
     @ApiPropertyOptional({ description: 'Chiều cao' })
     @IsOptional()
@@ -258,11 +253,6 @@ export class LayoutRowDto {
     @IsOptional()
     @IsString()
     description?: string;
-
-    @ApiPropertyOptional({ description: 'Đã được thuê', default: false })
-    @IsOptional()
-    @IsBoolean()
-    is_rented?: boolean;
 
     @ApiPropertyOptional({ description: 'Giá thuê/ngày' })
     @IsOptional()

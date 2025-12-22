@@ -86,6 +86,20 @@ export class CreateRackTemplateDto {
     @Type(() => Number)
     position_rotation?: number;
 
+    @ApiPropertyOptional({ description: 'Chiều rộng (mét)' })
+    @IsOptional()
+    @IsNumber()
+    @Min(0)
+    @Type(() => Number)
+    dimensions_width?: number;
+
+    @ApiPropertyOptional({ description: 'Chiều cao (mét)' })
+    @IsOptional()
+    @IsNumber()
+    @Min(0)
+    @Type(() => Number)
+    dimensions_height?: number;
+
     @ApiPropertyOptional({ description: 'Trạng thái hoạt động', default: true })
     @IsOptional()
     @IsBoolean({

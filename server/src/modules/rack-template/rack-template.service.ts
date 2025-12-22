@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { I18nService } from 'nestjs-i18n';
 import { Prisma } from '@prisma/client';
@@ -64,6 +64,31 @@ export class RackTemplateService {
             );
         }
 
+        // Validate position bounds
+        const warehouseLength = Number(row.warehouse_template.length);
+        const warehouseWidth = Number(row.warehouse_template.width);
+        if ((dto.position_x !== undefined && dto.position_x > warehouseLength) ||
+            (dto.position_y !== undefined && dto.position_y > warehouseWidth)) {
+            throw new BadRequestException(
+                this.i18n.t('rack-template.errors.position_out_of_bounds', {
+                    lang,
+                    args: { name: dto.name, maxLength: warehouseLength, maxWidth: warehouseWidth },
+                }),
+            );
+        }
+
+        // Validate rack overlap
+        await this.checkRackOverlap(
+            rowTemplateId,
+            dto.name,
+            dto.position_x,
+            dto.position_y,
+            dto.dimensions_width,
+            dto.dimensions_height,
+            undefined,
+            lang,
+        );
+
         const createData: Prisma.RackTemplateCreateInput = {
             ...dto,
             default_block_max_weight_capacity: dto.default_block_max_weight_capacity ? new Decimal(dto.default_block_max_weight_capacity) : undefined,
@@ -71,6 +96,8 @@ export class RackTemplateService {
             position_x: dto.position_x ? new Decimal(dto.position_x) : undefined,
             position_y: dto.position_y ? new Decimal(dto.position_y) : undefined,
             position_rotation: dto.position_rotation ? new Decimal(dto.position_rotation) : undefined,
+            dimensions_width: dto.dimensions_width ? new Decimal(dto.dimensions_width) : undefined,
+            dimensions_height: dto.dimensions_height ? new Decimal(dto.dimensions_height) : undefined,
             is_active: dto.is_active ?? true,
             created_by: userId,
             row_template: { connect: { id: rowTemplateId } },
@@ -182,6 +209,45 @@ export class RackTemplateService {
             }
         }
 
+        // Validate position bounds
+        if (dto.position_x !== undefined || dto.position_y !== undefined) {
+            const row = await this.repository.rowTemplateExists(rack.row_template_id);
+            if (row) {
+                const warehouseLength = Number(row.warehouse_template.length);
+                const warehouseWidth = Number(row.warehouse_template.width);
+                if ((dto.position_x !== undefined && dto.position_x > warehouseLength) ||
+                    (dto.position_y !== undefined && dto.position_y > warehouseWidth)) {
+                    throw new BadRequestException(
+                        this.i18n.t('rack-template.errors.position_out_of_bounds', {
+                            lang,
+                            args: { name: dto.name || rack.name, maxLength: warehouseLength, maxWidth: warehouseWidth },
+                        }),
+                    );
+                }
+            }
+        }
+
+        // Validate rack overlap (chỉ khi có thay đổi position hoặc dimensions)
+        if (dto.position_x !== undefined || dto.position_y !== undefined ||
+            dto.dimensions_width !== undefined || dto.dimensions_height !== undefined) {
+            // Lấy giá trị hiện tại nếu không có trong dto
+            const posX = dto.position_x ?? (rack.position_x ? Number(rack.position_x) : undefined);
+            const posY = dto.position_y ?? (rack.position_y ? Number(rack.position_y) : undefined);
+            const width = dto.dimensions_width ?? (rack.dimensions_width ? Number(rack.dimensions_width) : undefined);
+            const height = dto.dimensions_height ?? (rack.dimensions_height ? Number(rack.dimensions_height) : undefined);
+
+            await this.checkRackOverlap(
+                rack.row_template_id,
+                dto.name || rack.name,
+                posX,
+                posY,
+                width,
+                height,
+                id, // exclude current rack
+                lang,
+            );
+        }
+
         const updateData: Prisma.RackTemplateUpdateInput = {
             ...dto,
             default_block_max_weight_capacity: dto.default_block_max_weight_capacity !== undefined ? new Decimal(dto.default_block_max_weight_capacity) : undefined,
@@ -189,6 +255,8 @@ export class RackTemplateService {
             position_x: dto.position_x !== undefined ? new Decimal(dto.position_x) : undefined,
             position_y: dto.position_y !== undefined ? new Decimal(dto.position_y) : undefined,
             position_rotation: dto.position_rotation !== undefined ? new Decimal(dto.position_rotation) : undefined,
+            dimensions_width: dto.dimensions_width !== undefined ? new Decimal(dto.dimensions_width) : undefined,
+            dimensions_height: dto.dimensions_height !== undefined ? new Decimal(dto.dimensions_height) : undefined,
             updated_by: userId,
         };
 
@@ -313,5 +381,68 @@ export class RackTemplateService {
             this.redisService.del(`warehouse-template:${warehouseTemplateId}`),
             this.redisService.delByPattern('warehouse-template:list:*'),
         ]);
+    }
+
+    /**
+     * Kiểm tra 2 hình chữ nhật có đè lên nhau không
+     */
+    private isRectOverlapping(
+        rect1: { x: number; y: number; width: number; height: number },
+        rect2: { x: number; y: number; width: number; height: number },
+    ): boolean {
+        const noOverlap =
+            rect1.x + rect1.width <= rect2.x ||
+            rect1.x >= rect2.x + rect2.width ||
+            rect1.y + rect1.height <= rect2.y ||
+            rect1.y >= rect2.y + rect2.height;
+        return !noOverlap;
+    }
+
+    /**
+     * Kiểm tra rack mới có overlap với các racks đã tồn tại trong cùng row không
+     */
+    private async checkRackOverlap(
+        rowTemplateId: string,
+        rackName: string,
+        posX: number | undefined,
+        posY: number | undefined,
+        width: number | undefined,
+        height: number | undefined,
+        excludeRackId: string | undefined,
+        lang: string,
+    ): Promise<void> {
+        // Nếu không có đủ position và dimensions thì skip
+        if (posX === undefined || posY === undefined ||
+            width === undefined || height === undefined) {
+            return;
+        }
+
+        const existingRacks = await this.repository.findRacksInRow(rowTemplateId, excludeRackId);
+
+        const newRect = { x: posX, y: posY, width, height };
+
+        for (const rack of existingRacks) {
+            // Skip rack nếu không có đủ thông tin position và dimensions
+            if (rack.position_x === null || rack.position_y === null ||
+                rack.dimensions_width === null || rack.dimensions_height === null) {
+                continue;
+            }
+
+            const existingRect = {
+                x: Number(rack.position_x),
+                y: Number(rack.position_y),
+                width: Number(rack.dimensions_width),
+                height: Number(rack.dimensions_height),
+            };
+
+            if (this.isRectOverlapping(newRect, existingRect)) {
+                throw new BadRequestException(
+                    this.i18n.t('rack-template.errors.racks_overlap', {
+                        lang,
+                        args: { name: rackName, otherRack: rack.name },
+                    }),
+                );
+            }
+        }
     }
 }

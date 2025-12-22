@@ -233,13 +233,12 @@ export class RowTemplateRepository {
         });
     }
 
-    /** Kiểm tra warehouse template tồn tại */
+    /** Kiểm tra warehouse template tồn tại và trả về bounds */
     async warehouseTemplateExists(id: string) {
-        const template = await this.prisma.warehouseTemplate.findFirst({
+        return this.prisma.warehouseTemplate.findFirst({
             where: { id, is_deleted: false },
-            select: { id: true },
+            select: { id: true, length: true, width: true },
         });
-        return !!template;
     }
 
     /** Lấy discount configs hiện có của row */

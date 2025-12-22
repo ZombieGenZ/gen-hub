@@ -11,7 +11,8 @@
         "code_exists": "Row code already exists in this template",
         "create_failed": "Failed to create row",
         "update_failed": "Failed to update row",
-        "delete_failed": "Failed to delete row"
+        "delete_failed": "Failed to delete row",
+        "position_out_of_bounds": "Row '{name}' position exceeds warehouse limits (max: {maxLength}m x {maxWidth}m)"
     },
     "validation": {
         "name_required": "Row name is required",

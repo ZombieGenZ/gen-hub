@@ -175,12 +175,37 @@ export class RackTemplateRepository {
         });
     }
 
-    /** Kiểm tra row template tồn tại */
+    /** Kiểm tra row template tồn tại và trả về warehouse bounds */
     async rowTemplateExists(id: string) {
         const row = await this.prisma.rowTemplate.findFirst({
             where: { id, is_deleted: false },
-            select: { id: true, warehouse_template_id: true },
+            select: {
+                id: true,
+                warehouse_template_id: true,
+                warehouse_template: {
+                    select: { length: true, width: true },
+                },
+            },
         });
         return row;
+    }
+
+    /** Lấy tất cả racks trong một row với position và dimensions để kiểm tra overlap */
+    async findRacksInRow(rowTemplateId: string, excludeRackId?: string) {
+        return this.prisma.rackTemplate.findMany({
+            where: {
+                row_template_id: rowTemplateId,
+                is_deleted: false,
+                ...(excludeRackId && { id: { not: excludeRackId } }),
+            },
+            select: {
+                id: true,
+                name: true,
+                position_x: true,
+                position_y: true,
+                dimensions_width: true,
+                dimensions_height: true,
+            },
+        });
     }
 }

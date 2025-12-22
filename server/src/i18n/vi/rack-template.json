@@ -11,7 +11,9 @@
         "code_exists": "Mã kệ đã tồn tại trong dãy này",
         "create_failed": "Không thể tạo kệ",
         "update_failed": "Không thể cập nhật kệ",
-        "delete_failed": "Không thể xóa kệ"
+        "delete_failed": "Không thể xóa kệ",
+        "position_out_of_bounds": "Vị trí kệ '{name}' vượt quá giới hạn kho (tối đa: {maxLength}m x {maxWidth}m)",
+        "racks_overlap": "Kệ '{name}' bị đè lên kệ '{otherRack}' trong cùng dãy"
     },
     "validation": {
         "name_required": "Tên kệ không được để trống",

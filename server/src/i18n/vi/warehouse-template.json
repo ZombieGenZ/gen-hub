@@ -22,7 +22,11 @@
         "block_not_found": "Không tìm thấy ô",
         "image_not_found": "Không tìm thấy ảnh",
         "max_images_exceeded": "Số lượng ảnh vượt quá giới hạn ({max} ảnh)",
-        "image_upload_failed": "Upload ảnh thất bại"
+        "image_upload_failed": "Upload ảnh thất bại",
+        "racks_overlap": "Các kệ trong dãy '{rowName}' bị đè lên nhau: '{rack1}' và '{rack2}'",
+        "row_out_of_bounds": "Dãy '{name}' vượt quá giới hạn kho (tối đa: {maxLength}m x {maxWidth}m)",
+        "rack_out_of_bounds": "Kệ '{name}' trong dãy '{rowName}' vượt quá giới hạn kho (tối đa: {maxLength}m x {maxWidth}m)",
+        "block_out_of_bounds": "Block '{name}' vượt quá giới hạn kho (tối đa: {maxLength}m x {maxWidth}m)"
     },
     "validation": {
         "name_required": "Tên template không được để trống",

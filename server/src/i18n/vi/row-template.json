@@ -11,7 +11,8 @@
         "code_exists": "Mã dãy đã tồn tại trong template này",
         "create_failed": "Không thể tạo dãy",
         "update_failed": "Không thể cập nhật dãy",
-        "delete_failed": "Không thể xóa dãy"
+        "delete_failed": "Không thể xóa dãy",
+        "position_out_of_bounds": "Vị trí dãy '{name}' vượt quá giới hạn kho (tối đa: {maxLength}m x {maxWidth}m)"
     },
     "validation": {
         "name_required": "Tên dãy không được để trống",

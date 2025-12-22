@@ -473,6 +473,14 @@ export class WarehouseTemplateService {
             );
         }
 
+        // Validate racks không được overlap trong cùng một row
+        this.validateRacksNoOverlap(dto.rows, lang);
+
+        // Validate tọa độ không vượt quá giới hạn warehouse (length x width)
+        const warehouseLength = Number(existing.length);
+        const warehouseWidth = Number(existing.width);
+        this.validateLayoutBounds(dto.rows, warehouseLength, warehouseWidth, lang);
+
         const summary = {
             rowsCreated: 0, rowsUpdated: 0, rowsDeleted: 0, rowsRestored: 0,
             racksCreated: 0, racksUpdated: 0, racksDeleted: 0, racksRestored: 0,
@@ -803,7 +811,6 @@ export class WarehouseTemplateService {
             name: row.name,
             code: row.code,
             description: row.description,
-            is_rented: row.is_rented ?? false,
             price_per_month: new Decimal(row.price_per_month ?? 0),
             address: row.address,
             latitude: row.latitude ? new Decimal(row.latitude) : undefined,
@@ -821,7 +828,6 @@ export class WarehouseTemplateService {
             name: row.name,
             code: row.code,
             description: row.description,
-            is_rented: row.is_rented,
             price_per_month: row.price_per_month !== undefined ? new Decimal(row.price_per_month) : undefined,
             address: row.address,
             latitude: row.latitude !== undefined ? new Decimal(row.latitude) : undefined,
@@ -843,7 +849,6 @@ export class WarehouseTemplateService {
             position_y: rack.position_y ? new Decimal(rack.position_y) : undefined,
             position_rotation: rack.position_rotation ? new Decimal(rack.position_rotation) : undefined,
             dimensions_width: rack.dimensions_width ? new Decimal(rack.dimensions_width) : undefined,
-            dimensions_depth: rack.dimensions_depth ? new Decimal(rack.dimensions_depth) : undefined,
             dimensions_height: rack.dimensions_height ? new Decimal(rack.dimensions_height) : undefined,
             default_block_max_weight_capacity: rack.default_block_max_weight_capacity ? new Decimal(rack.default_block_max_weight_capacity) : undefined,
             overload_threshold_percent: rack.overload_threshold_percent ? new Decimal(rack.overload_threshold_percent) : undefined,
@@ -861,7 +866,6 @@ export class WarehouseTemplateService {
             position_y: rack.position_y !== undefined ? new Decimal(rack.position_y) : undefined,
             position_rotation: rack.position_rotation !== undefined ? new Decimal(rack.position_rotation) : undefined,
             dimensions_width: rack.dimensions_width !== undefined ? new Decimal(rack.dimensions_width) : undefined,
-            dimensions_depth: rack.dimensions_depth !== undefined ? new Decimal(rack.dimensions_depth) : undefined,
             dimensions_height: rack.dimensions_height !== undefined ? new Decimal(rack.dimensions_height) : undefined,
             default_block_max_weight_capacity: rack.default_block_max_weight_capacity !== undefined ? new Decimal(rack.default_block_max_weight_capacity) : undefined,
             overload_threshold_percent: rack.overload_threshold_percent !== undefined ? new Decimal(rack.overload_threshold_percent) : undefined,
@@ -925,7 +929,6 @@ export class WarehouseTemplateService {
             name: row.name,
             code: row.code,
             description: row.description,
-            is_rented: row.is_rented ?? false,
             price_per_month: row.price_per_month ?? 0,
             address: row.address,
             latitude: row.latitude,
@@ -948,7 +951,6 @@ export class WarehouseTemplateService {
             position_y: rack.position_y,
             position_rotation: rack.position_rotation,
             dimensions_width: rack.dimensions_width,
-            dimensions_depth: rack.dimensions_depth,
             dimensions_height: rack.dimensions_height,
             default_block_max_weight_capacity: rack.default_block_max_weight_capacity,
             overload_threshold_percent: rack.overload_threshold_percent,
@@ -980,6 +982,161 @@ export class WarehouseTemplateService {
             is_active: block.is_active ?? true,
             created_by: userId,
         };
+    }
+
+    /**
+     * Kiểm tra 2 hình chữ nhật có overlap hay không
+     */
+    private isRectOverlapping(
+        rect1: { x: number; y: number; width: number; height: number },
+        rect2: { x: number; y: number; width: number; height: number },
+    ): boolean {
+        // 2 hình chữ nhật KHÔNG overlap khi:
+        // - rect1 nằm hoàn toàn bên trái rect2: rect1.x + rect1.width <= rect2.x
+        // - rect1 nằm hoàn toàn bên phải rect2: rect1.x >= rect2.x + rect2.width
+        // - rect1 nằm hoàn toàn bên trên rect2: rect1.y + rect1.height <= rect2.y
+        // - rect1 nằm hoàn toàn bên dưới rect2: rect1.y >= rect2.y + rect2.height
+        const noOverlap =
+            rect1.x + rect1.width <= rect2.x ||
+            rect1.x >= rect2.x + rect2.width ||
+            rect1.y + rect1.height <= rect2.y ||
+            rect1.y >= rect2.y + rect2.height;
+
+        return !noOverlap;
+    }
+
+    /**
+     * Validate các rack trong cùng một row không được đè lên nhau
+     */
+    private validateRacksNoOverlap(rows: LayoutRowDto[], lang: string): void {
+        for (const row of rows) {
+            if (!row.racks || row.racks.length < 2) continue;
+
+            // Lọc các rack có đủ thông tin position và dimensions
+            const racksWithBounds = row.racks.filter(
+                rack =>
+                    rack.position_x !== undefined &&
+                    rack.position_y !== undefined &&
+                    rack.dimensions_width !== undefined &&
+                    rack.dimensions_height !== undefined
+            );
+
+            // Kiểm tra từng cặp rack
+            for (let i = 0; i < racksWithBounds.length; i++) {
+                for (let j = i + 1; j < racksWithBounds.length; j++) {
+                    const rack1 = racksWithBounds[i];
+                    const rack2 = racksWithBounds[j];
+
+                    const rect1 = {
+                        x: rack1.position_x!,
+                        y: rack1.position_y!,
+                        width: rack1.dimensions_width!,
+                        height: rack1.dimensions_height!,
+                    };
+
+                    const rect2 = {
+                        x: rack2.position_x!,
+                        y: rack2.position_y!,
+                        width: rack2.dimensions_width!,
+                        height: rack2.dimensions_height!,
+                    };
+
+                    if (this.isRectOverlapping(rect1, rect2)) {
+                        throw new BadRequestException(
+                            this.i18n.t('warehouse-template.errors.racks_overlap', {
+                                lang,
+                                args: {
+                                    rowName: row.name,
+                                    rack1: rack1.name,
+                                    rack2: rack2.name,
+                                },
+                            }),
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Validate tọa độ của tất cả elements không vượt quá giới hạn warehouse (length x width)
+     * - position_x + dimensions_width <= length
+     * - position_y + dimensions_height <= width  
+     * (Giả sử length là chiều dài theo trục X, width là chiều rộng theo trục Y)
+     */
+    private validateLayoutBounds(
+        rows: LayoutRowDto[],
+        warehouseLength: number,
+        warehouseWidth: number,
+        lang: string
+    ): void {
+        for (const row of rows) {
+            // Validate row position
+            if (row.position_x !== undefined && row.position_x > warehouseLength) {
+                throw new BadRequestException(
+                    this.i18n.t('warehouse-template.errors.row_out_of_bounds', {
+                        lang,
+                        args: { name: row.name, maxLength: warehouseLength, maxWidth: warehouseWidth },
+                    }),
+                );
+            }
+            if (row.position_y !== undefined && row.position_y > warehouseWidth) {
+                throw new BadRequestException(
+                    this.i18n.t('warehouse-template.errors.row_out_of_bounds', {
+                        lang,
+                        args: { name: row.name, maxLength: warehouseLength, maxWidth: warehouseWidth },
+                    }),
+                );
+            }
+
+            // Validate racks
+            if (row.racks) {
+                for (const rack of row.racks) {
+                    // Kiểm tra position + dimensions có vượt quá không
+                    const rackEndX = (rack.position_x ?? 0) + (rack.dimensions_width ?? 0);
+                    const rackEndY = (rack.position_y ?? 0) + (rack.dimensions_height ?? 0);
+
+                    if (rackEndX > warehouseLength || rackEndY > warehouseWidth) {
+                        throw new BadRequestException(
+                            this.i18n.t('warehouse-template.errors.rack_out_of_bounds', {
+                                lang,
+                                args: {
+                                    name: rack.name,
+                                    rowName: row.name,
+                                    maxLength: warehouseLength,
+                                    maxWidth: warehouseWidth,
+                                },
+                            }),
+                        );
+                    }
+
+                    // Validate blocks trong shelves
+                    if (rack.shelves) {
+                        for (const shelf of rack.shelves) {
+                            if (shelf.blocks) {
+                                for (const block of shelf.blocks) {
+                                    const blockEndX = (block.position_x ?? 0) + (block.dimensions_width ?? 0);
+                                    const blockEndY = (block.position_y ?? 0) + (block.dimensions_height ?? 0);
+
+                                    if (blockEndX > warehouseLength || blockEndY > warehouseWidth) {
+                                        throw new BadRequestException(
+                                            this.i18n.t('warehouse-template.errors.block_out_of_bounds', {
+                                                lang,
+                                                args: {
+                                                    name: block.name,
+                                                    maxLength: warehouseLength,
+                                                    maxWidth: warehouseWidth,
+                                                },
+                                            }),
+                                        );
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     /**

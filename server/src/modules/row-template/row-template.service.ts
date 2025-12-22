@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { I18nService } from 'nestjs-i18n';
 import { Prisma } from '@prisma/client';
@@ -49,10 +49,23 @@ export class RowTemplateService {
         lang: string,
     ) {
         // Kiểm tra warehouse template tồn tại
-        const warehouseExists = await this.repository.warehouseTemplateExists(warehouseTemplateId);
-        if (!warehouseExists) {
+        const warehouse = await this.repository.warehouseTemplateExists(warehouseTemplateId);
+        if (!warehouse) {
             throw new NotFoundException(
                 this.i18n.t('row-template.errors.warehouse_template_not_found', { lang }),
+            );
+        }
+
+        // Validate position bounds
+        const warehouseLength = Number(warehouse.length);
+        const warehouseWidth = Number(warehouse.width);
+        if ((dto.position_x !== undefined && dto.position_x > warehouseLength) ||
+            (dto.position_y !== undefined && dto.position_y > warehouseWidth)) {
+            throw new BadRequestException(
+                this.i18n.t('row-template.errors.position_out_of_bounds', {
+                    lang,
+                    args: { name: dto.name, maxLength: warehouseLength, maxWidth: warehouseWidth },
+                }),
             );
         }
 
@@ -76,7 +89,6 @@ export class RowTemplateService {
             position_y: dto.position_y ? new Decimal(dto.position_y) : undefined,
             position_rotation: dto.position_rotation ? new Decimal(dto.position_rotation) : undefined,
             is_active: dto.is_active ?? true,
-            is_rented: dto.is_rented ?? false,
             created_by: userId,
             warehouse_template: { connect: { id: warehouseTemplateId } },
             ...(discount_configs && discount_configs.length > 0 && {
@@ -124,8 +136,8 @@ export class RowTemplateService {
         lang: string,
     ): Promise<IPaginatedResponse<any>> {
         // Kiểm tra warehouse template tồn tại
-        const warehouseExists = await this.repository.warehouseTemplateExists(warehouseTemplateId);
-        if (!warehouseExists) {
+        const warehouse = await this.repository.warehouseTemplateExists(warehouseTemplateId);
+        if (!warehouse) {
             throw new NotFoundException(
                 this.i18n.t('row-template.errors.warehouse_template_not_found', { lang }),
             );
@@ -193,6 +205,24 @@ export class RowTemplateService {
                 throw new ConflictException(
                     this.i18n.t('row-template.errors.code_exists', { lang }),
                 );
+            }
+        }
+
+        // Validate position bounds
+        if (dto.position_x !== undefined || dto.position_y !== undefined) {
+            const warehouse = await this.repository.warehouseTemplateExists(row.warehouse_template_id);
+            if (warehouse) {
+                const warehouseLength = Number(warehouse.length);
+                const warehouseWidth = Number(warehouse.width);
+                if ((dto.position_x !== undefined && dto.position_x > warehouseLength) ||
+                    (dto.position_y !== undefined && dto.position_y > warehouseWidth)) {
+                    throw new BadRequestException(
+                        this.i18n.t('row-template.errors.position_out_of_bounds', {
+                            lang,
+                            args: { name: dto.name || row.name, maxLength: warehouseLength, maxWidth: warehouseWidth },
+                        }),
+                    );
+                }
             }
         }
 

@@ -11,7 +11,9 @@
         "code_exists": "Rack code already exists in this row",
         "create_failed": "Failed to create rack",
         "update_failed": "Failed to update rack",
-        "delete_failed": "Failed to delete rack"
+        "delete_failed": "Failed to delete rack",
+        "position_out_of_bounds": "Rack '{name}' position exceeds warehouse limits (max: {maxLength}m x {maxWidth}m)",
+        "racks_overlap": "Rack '{name}' overlaps with rack '{otherRack}' in the same row"
     },
     "validation": {
         "name_required": "Rack name is required",

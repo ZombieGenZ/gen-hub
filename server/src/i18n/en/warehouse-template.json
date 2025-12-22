@@ -22,7 +22,11 @@
         "block_not_found": "Block not found",
         "image_not_found": "Image not found",
         "max_images_exceeded": "Maximum images exceeded ({max} images allowed)",
-        "image_upload_failed": "Failed to upload images"
+        "image_upload_failed": "Failed to upload images",
+        "racks_overlap": "Racks in row '{rowName}' are overlapping: '{rack1}' and '{rack2}'",
+        "row_out_of_bounds": "Row '{name}' exceeds warehouse limits (max: {maxLength}m x {maxWidth}m)",
+        "rack_out_of_bounds": "Rack '{name}' in row '{rowName}' exceeds warehouse limits (max: {maxLength}m x {maxWidth}m)",
+        "block_out_of_bounds": "Block '{name}' exceeds warehouse limits (max: {maxLength}m x {maxWidth}m)"
     },
     "validation": {
         "name_required": "Template name is required",

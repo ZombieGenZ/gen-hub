@@ -107,7 +107,7 @@ export class BlockTemplateRepository {
         });
     }
 
-    /** Kiểm tra shelf template tồn tại và lấy parent info */
+    /** Kiểm tra shelf template tồn tại và lấy parent info with warehouse bounds */
     async shelfTemplateExists(id: string) {
         const shelf = await this.prisma.shelfTemplate.findFirst({
             where: { id, is_deleted: false },
@@ -118,7 +118,12 @@ export class BlockTemplateRepository {
                     select: {
                         row_template_id: true,
                         row_template: {
-                            select: { warehouse_template_id: true },
+                            select: {
+                                warehouse_template_id: true,
+                                warehouse_template: {
+                                    select: { length: true, width: true },
+                                },
+                            },
                         },
                     },
                 },

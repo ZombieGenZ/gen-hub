@@ -11,7 +11,8 @@
         "code_exists": "Block code already exists in this shelf",
         "create_failed": "Failed to create block",
         "update_failed": "Failed to update block",
-        "delete_failed": "Failed to delete block"
+        "delete_failed": "Failed to delete block",
+        "position_out_of_bounds": "Block '{name}' position exceeds warehouse limits (max: {maxLength}m x {maxWidth}m)"
     },
     "validation": {
         "name_required": "Block name is required",

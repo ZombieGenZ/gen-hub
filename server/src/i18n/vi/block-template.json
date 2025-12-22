@@ -11,7 +11,8 @@
         "code_exists": "Mã ô đã tồn tại trong tầng này",
         "create_failed": "Không thể tạo ô",
         "update_failed": "Không thể cập nhật ô",
-        "delete_failed": "Không thể xóa ô"
+        "delete_failed": "Không thể xóa ô",
+        "position_out_of_bounds": "Vị trí ô '{name}' vượt quá giới hạn kho (tối đa: {maxLength}m x {maxWidth}m)"
     },
     "validation": {
         "name_required": "Tên ô không được để trống",

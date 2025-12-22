@@ -77,13 +77,6 @@ export class CreateRowTemplateDto {
     })
     description?: string;
 
-    @ApiPropertyOptional({ description: 'Đã được thuê', default: false })
-    @IsOptional()
-    @IsBoolean({
-        message: i18nValidationMessage('row-template.validation.is_rented_boolean'),
-    })
-    is_rented?: boolean;
-
     @ApiProperty({ description: 'Giá thuê/tháng', example: 1000000 })
     @IsNumber({}, {
         message: i18nValidationMessage('row-template.validation.price_per_month_number'),
