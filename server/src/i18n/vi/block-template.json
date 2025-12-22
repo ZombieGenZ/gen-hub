@@ -1,0 +1,35 @@
+{
+    "success": {
+        "created": "Tạo ô thành công",
+        "updated": "Cập nhật ô thành công",
+        "deleted": "Xóa ô thành công",
+        "fetched": "Lấy dữ liệu ô thành công"
+    },
+    "errors": {
+        "not_found": "Không tìm thấy ô",
+        "shelf_template_not_found": "Không tìm thấy tầng",
+        "code_exists": "Mã ô đã tồn tại trong tầng này",
+        "create_failed": "Không thể tạo ô",
+        "update_failed": "Không thể cập nhật ô",
+        "delete_failed": "Không thể xóa ô"
+    },
+    "validation": {
+        "name_required": "Tên ô không được để trống",
+        "name_string": "Tên ô phải là chuỗi",
+        "name_max_length": "Tên ô không được quá 255 ký tự",
+        "code_required": "Mã ô không được để trống",
+        "code_string": "Mã ô phải là chuỗi",
+        "code_max_length": "Mã ô không được quá 50 ký tự",
+        "description_string": "Mô tả phải là chuỗi",
+        "max_weight_capacity_number": "Khả năng chịu tải tối đa phải là số",
+        "max_weight_capacity_min": "Khả năng chịu tải tối đa phải >= 0",
+        "height_number": "Chiều cao phải là số",
+        "height_min": "Chiều cao phải >= 0",
+        "is_active_boolean": "Trạng thái active phải là boolean",
+        "limit_number": "Limit phải là số",
+        "limit_min": "Limit phải >= 1",
+        "offset_number": "Offset phải là số",
+        "offset_min": "Offset phải >= 0",
+        "keywords_string": "Từ khóa tìm kiếm phải là chuỗi"
+    }
+}

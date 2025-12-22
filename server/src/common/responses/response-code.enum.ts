@@ -144,6 +144,34 @@ export enum ResponseCode {
     AMENITY_UPDATE_SUCCESS = 'amenity.update_success',
     AMENITY_DELETE_SUCCESS = 'amenity.delete_success',
 
+    // Row Template
+    ROW_TEMPLATE_CREATE_SUCCESS = 'row_template.create_success',
+    ROW_TEMPLATE_LIST_SUCCESS = 'row_template.list_success',
+    ROW_TEMPLATE_GET_SUCCESS = 'row_template.get_success',
+    ROW_TEMPLATE_UPDATE_SUCCESS = 'row_template.update_success',
+    ROW_TEMPLATE_DELETE_SUCCESS = 'row_template.delete_success',
+
+    // Rack Template
+    RACK_TEMPLATE_CREATE_SUCCESS = 'rack_template.create_success',
+    RACK_TEMPLATE_LIST_SUCCESS = 'rack_template.list_success',
+    RACK_TEMPLATE_GET_SUCCESS = 'rack_template.get_success',
+    RACK_TEMPLATE_UPDATE_SUCCESS = 'rack_template.update_success',
+    RACK_TEMPLATE_DELETE_SUCCESS = 'rack_template.delete_success',
+
+    // Shelf Template
+    SHELF_TEMPLATE_CREATE_SUCCESS = 'shelf_template.create_success',
+    SHELF_TEMPLATE_LIST_SUCCESS = 'shelf_template.list_success',
+    SHELF_TEMPLATE_GET_SUCCESS = 'shelf_template.get_success',
+    SHELF_TEMPLATE_UPDATE_SUCCESS = 'shelf_template.update_success',
+    SHELF_TEMPLATE_DELETE_SUCCESS = 'shelf_template.delete_success',
+
+    // Block Template
+    BLOCK_TEMPLATE_CREATE_SUCCESS = 'block_template.create_success',
+    BLOCK_TEMPLATE_LIST_SUCCESS = 'block_template.list_success',
+    BLOCK_TEMPLATE_GET_SUCCESS = 'block_template.get_success',
+    BLOCK_TEMPLATE_UPDATE_SUCCESS = 'block_template.update_success',
+    BLOCK_TEMPLATE_DELETE_SUCCESS = 'block_template.delete_success',
+
     // Payment
     PAYMENT_LIST_SUCCESS = 'payment.list_success',
     PAYMENT_GET_SUCCESS = 'payment.get_success',

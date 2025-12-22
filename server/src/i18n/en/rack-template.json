@@ -1,0 +1,35 @@
+{
+    "success": {
+        "created": "Rack created successfully",
+        "updated": "Rack updated successfully",
+        "deleted": "Rack deleted successfully",
+        "fetched": "Rack data fetched successfully"
+    },
+    "errors": {
+        "not_found": "Rack not found",
+        "row_template_not_found": "Row not found",
+        "code_exists": "Rack code already exists in this row",
+        "create_failed": "Failed to create rack",
+        "update_failed": "Failed to update rack",
+        "delete_failed": "Failed to delete rack"
+    },
+    "validation": {
+        "name_required": "Rack name is required",
+        "name_string": "Rack name must be a string",
+        "name_max_length": "Rack name must not exceed 255 characters",
+        "code_required": "Rack code is required",
+        "code_string": "Rack code must be a string",
+        "code_max_length": "Rack code must not exceed 50 characters",
+        "description_string": "Description must be a string",
+        "default_block_max_weight_capacity_number": "Default block max weight capacity must be a number",
+        "default_block_max_weight_capacity_min": "Default block max weight capacity must be >= 0",
+        "overload_threshold_percent_number": "Overload threshold percent must be a number",
+        "overload_threshold_percent_min": "Overload threshold percent must be >= 0",
+        "is_active_boolean": "Active status must be a boolean",
+        "limit_number": "Limit must be a number",
+        "limit_min": "Limit must be >= 1",
+        "offset_number": "Offset must be a number",
+        "offset_min": "Offset must be >= 0",
+        "keywords_string": "Keywords must be a string"
+    }
+}

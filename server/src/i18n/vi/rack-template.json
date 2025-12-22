@@ -1,0 +1,35 @@
+{
+    "success": {
+        "created": "Tạo kệ thành công",
+        "updated": "Cập nhật kệ thành công",
+        "deleted": "Xóa kệ thành công",
+        "fetched": "Lấy dữ liệu kệ thành công"
+    },
+    "errors": {
+        "not_found": "Không tìm thấy kệ",
+        "row_template_not_found": "Không tìm thấy dãy",
+        "code_exists": "Mã kệ đã tồn tại trong dãy này",
+        "create_failed": "Không thể tạo kệ",
+        "update_failed": "Không thể cập nhật kệ",
+        "delete_failed": "Không thể xóa kệ"
+    },
+    "validation": {
+        "name_required": "Tên kệ không được để trống",
+        "name_string": "Tên kệ phải là chuỗi",
+        "name_max_length": "Tên kệ không được quá 255 ký tự",
+        "code_required": "Mã kệ không được để trống",
+        "code_string": "Mã kệ phải là chuỗi",
+        "code_max_length": "Mã kệ không được quá 50 ký tự",
+        "description_string": "Mô tả phải là chuỗi",
+        "default_block_max_weight_capacity_number": "Khả năng chịu tải mặc định phải là số",
+        "default_block_max_weight_capacity_min": "Khả năng chịu tải mặc định phải >= 0",
+        "overload_threshold_percent_number": "Ngưỡng quá tải phải là số",
+        "overload_threshold_percent_min": "Ngưỡng quá tải phải >= 0",
+        "is_active_boolean": "Trạng thái active phải là boolean",
+        "limit_number": "Limit phải là số",
+        "limit_min": "Limit phải >= 1",
+        "offset_number": "Offset phải là số",
+        "offset_min": "Offset phải >= 0",
+        "keywords_string": "Từ khóa tìm kiếm phải là chuỗi"
+    }
+}

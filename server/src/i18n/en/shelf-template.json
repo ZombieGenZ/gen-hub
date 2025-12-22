@@ -1,0 +1,33 @@
+{
+    "success": {
+        "created": "Shelf created successfully",
+        "updated": "Shelf updated successfully",
+        "deleted": "Shelf deleted successfully",
+        "fetched": "Shelf data fetched successfully"
+    },
+    "errors": {
+        "not_found": "Shelf not found",
+        "rack_template_not_found": "Rack not found",
+        "code_exists": "Shelf code already exists in this rack",
+        "create_failed": "Failed to create shelf",
+        "update_failed": "Failed to update shelf",
+        "delete_failed": "Failed to delete shelf"
+    },
+    "validation": {
+        "name_required": "Shelf name is required",
+        "name_string": "Shelf name must be a string",
+        "name_max_length": "Shelf name must not exceed 255 characters",
+        "code_required": "Shelf code is required",
+        "code_string": "Shelf code must be a string",
+        "code_max_length": "Shelf code must not exceed 50 characters",
+        "description_string": "Description must be a string",
+        "height_number": "Height must be a number",
+        "height_min": "Height must be >= 0",
+        "is_active_boolean": "Active status must be a boolean",
+        "limit_number": "Limit must be a number",
+        "limit_min": "Limit must be >= 1",
+        "offset_number": "Offset must be a number",
+        "offset_min": "Offset must be >= 0",
+        "keywords_string": "Keywords must be a string"
+    }
+}

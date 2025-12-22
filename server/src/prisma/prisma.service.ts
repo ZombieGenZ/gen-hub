@@ -296,6 +296,10 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
       await this.seedApiKeyAdminPermissions();
       await this.seedPaymentPermissions();
       await this.seedRentalDurationTierPermissions();
+      await this.seedRowTemplatePermissions();
+      await this.seedRackTemplatePermissions();
+      await this.seedShelfTemplatePermissions();
+      await this.seedBlockTemplatePermissions();
       await this.seedVietnamAdministrative();
     } catch (error: unknown) {
       const errorMessage =
@@ -1318,6 +1322,394 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         error instanceof Error ? error.message : String(error);
       this.logger.error(
         `❌ Failed to seed rental-duration-tier permissions: ${errorMessage}`,
+      );
+    }
+  }
+
+  /**
+   * Seed các permissions cho RowTemplate
+   */
+  private async seedRowTemplatePermissions() {
+    try {
+      const rowTemplatePermissions = [
+        {
+          key: 'row-template.create',
+          name: 'Tạo dãy template',
+          description: 'Quyền tạo dãy mới cho warehouse template',
+        },
+        {
+          key: 'row-template.list',
+          name: 'Xem danh sách dãy template',
+          description: 'Quyền xem danh sách dãy của warehouse template',
+        },
+        {
+          key: 'row-template.read',
+          name: 'Xem chi tiết dãy template',
+          description: 'Quyền xem chi tiết dãy',
+        },
+        {
+          key: 'row-template.update',
+          name: 'Cập nhật dãy template',
+          description: 'Quyền cập nhật dãy',
+        },
+        {
+          key: 'row-template.delete',
+          name: 'Xóa dãy template',
+          description: 'Quyền xóa dãy',
+        },
+      ];
+
+      for (const perm of rowTemplatePermissions) {
+        const existing = await this.permission.findFirst({
+          where: { key: perm.key },
+        });
+
+        if (!existing) {
+          await this.permission.create({
+            data: {
+              key: perm.key,
+              name: perm.name,
+              description: perm.description,
+              is_active: true,
+              is_deleted: false,
+            },
+          });
+        }
+      }
+
+      const adminRoles = await this.role.findMany({
+        where: {
+          name: { in: ['Admin', 'Super Admin'] },
+          is_deleted: false,
+        },
+      });
+
+      const permissionRecords = await this.permission.findMany({
+        where: {
+          key: { in: rowTemplatePermissions.map((p) => p.key) },
+          is_deleted: false,
+        },
+      });
+
+      for (const role of adminRoles) {
+        for (const permission of permissionRecords) {
+          const existingAssignment = await this.rolePermission.findFirst({
+            where: {
+              role_id: role.id,
+              permission_id: permission.id,
+            },
+          });
+
+          if (!existingAssignment) {
+            await this.rolePermission.create({
+              data: {
+                role_id: role.id,
+                permission_id: permission.id,
+                is_active: true,
+                is_deleted: false,
+              },
+            });
+          }
+        }
+      }
+
+      this.logger.log('✅ RowTemplate permissions seeded');
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `❌ Failed to seed row-template permissions: ${errorMessage}`,
+      );
+    }
+  }
+
+  /**
+   * Seed các permissions cho RackTemplate
+   */
+  private async seedRackTemplatePermissions() {
+    try {
+      const rackTemplatePermissions = [
+        {
+          key: 'rack-template.create',
+          name: 'Tạo kệ template',
+          description: 'Quyền tạo kệ mới cho dãy',
+        },
+        {
+          key: 'rack-template.list',
+          name: 'Xem danh sách kệ template',
+          description: 'Quyền xem danh sách kệ của dãy',
+        },
+        {
+          key: 'rack-template.read',
+          name: 'Xem chi tiết kệ template',
+          description: 'Quyền xem chi tiết kệ',
+        },
+        {
+          key: 'rack-template.update',
+          name: 'Cập nhật kệ template',
+          description: 'Quyền cập nhật kệ',
+        },
+        {
+          key: 'rack-template.delete',
+          name: 'Xóa kệ template',
+          description: 'Quyền xóa kệ',
+        },
+      ];
+
+      for (const perm of rackTemplatePermissions) {
+        const existing = await this.permission.findFirst({
+          where: { key: perm.key },
+        });
+
+        if (!existing) {
+          await this.permission.create({
+            data: {
+              key: perm.key,
+              name: perm.name,
+              description: perm.description,
+              is_active: true,
+              is_deleted: false,
+            },
+          });
+        }
+      }
+
+      const adminRoles = await this.role.findMany({
+        where: {
+          name: { in: ['Admin', 'Super Admin'] },
+          is_deleted: false,
+        },
+      });
+
+      const permissionRecords = await this.permission.findMany({
+        where: {
+          key: { in: rackTemplatePermissions.map((p) => p.key) },
+          is_deleted: false,
+        },
+      });
+
+      for (const role of adminRoles) {
+        for (const permission of permissionRecords) {
+          const existingAssignment = await this.rolePermission.findFirst({
+            where: {
+              role_id: role.id,
+              permission_id: permission.id,
+            },
+          });
+
+          if (!existingAssignment) {
+            await this.rolePermission.create({
+              data: {
+                role_id: role.id,
+                permission_id: permission.id,
+                is_active: true,
+                is_deleted: false,
+              },
+            });
+          }
+        }
+      }
+
+      this.logger.log('✅ RackTemplate permissions seeded');
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `❌ Failed to seed rack-template permissions: ${errorMessage}`,
+      );
+    }
+  }
+
+  /**
+   * Seed các permissions cho ShelfTemplate
+   */
+  private async seedShelfTemplatePermissions() {
+    try {
+      const shelfTemplatePermissions = [
+        {
+          key: 'shelf-template.create',
+          name: 'Tạo tầng template',
+          description: 'Quyền tạo tầng mới cho kệ',
+        },
+        {
+          key: 'shelf-template.list',
+          name: 'Xem danh sách tầng template',
+          description: 'Quyền xem danh sách tầng của kệ',
+        },
+        {
+          key: 'shelf-template.read',
+          name: 'Xem chi tiết tầng template',
+          description: 'Quyền xem chi tiết tầng',
+        },
+        {
+          key: 'shelf-template.update',
+          name: 'Cập nhật tầng template',
+          description: 'Quyền cập nhật tầng',
+        },
+        {
+          key: 'shelf-template.delete',
+          name: 'Xóa tầng template',
+          description: 'Quyền xóa tầng',
+        },
+      ];
+
+      for (const perm of shelfTemplatePermissions) {
+        const existing = await this.permission.findFirst({
+          where: { key: perm.key },
+        });
+
+        if (!existing) {
+          await this.permission.create({
+            data: {
+              key: perm.key,
+              name: perm.name,
+              description: perm.description,
+              is_active: true,
+              is_deleted: false,
+            },
+          });
+        }
+      }
+
+      const adminRoles = await this.role.findMany({
+        where: {
+          name: { in: ['Admin', 'Super Admin'] },
+          is_deleted: false,
+        },
+      });
+
+      const permissionRecords = await this.permission.findMany({
+        where: {
+          key: { in: shelfTemplatePermissions.map((p) => p.key) },
+          is_deleted: false,
+        },
+      });
+
+      for (const role of adminRoles) {
+        for (const permission of permissionRecords) {
+          const existingAssignment = await this.rolePermission.findFirst({
+            where: {
+              role_id: role.id,
+              permission_id: permission.id,
+            },
+          });
+
+          if (!existingAssignment) {
+            await this.rolePermission.create({
+              data: {
+                role_id: role.id,
+                permission_id: permission.id,
+                is_active: true,
+                is_deleted: false,
+              },
+            });
+          }
+        }
+      }
+
+      this.logger.log('✅ ShelfTemplate permissions seeded');
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `❌ Failed to seed shelf-template permissions: ${errorMessage}`,
+      );
+    }
+  }
+
+  /**
+   * Seed các permissions cho BlockTemplate
+   */
+  private async seedBlockTemplatePermissions() {
+    try {
+      const blockTemplatePermissions = [
+        {
+          key: 'block-template.create',
+          name: 'Tạo ô template',
+          description: 'Quyền tạo ô mới cho tầng',
+        },
+        {
+          key: 'block-template.list',
+          name: 'Xem danh sách ô template',
+          description: 'Quyền xem danh sách ô của tầng',
+        },
+        {
+          key: 'block-template.read',
+          name: 'Xem chi tiết ô template',
+          description: 'Quyền xem chi tiết ô',
+        },
+        {
+          key: 'block-template.update',
+          name: 'Cập nhật ô template',
+          description: 'Quyền cập nhật ô',
+        },
+        {
+          key: 'block-template.delete',
+          name: 'Xóa ô template',
+          description: 'Quyền xóa ô',
+        },
+      ];
+
+      for (const perm of blockTemplatePermissions) {
+        const existing = await this.permission.findFirst({
+          where: { key: perm.key },
+        });
+
+        if (!existing) {
+          await this.permission.create({
+            data: {
+              key: perm.key,
+              name: perm.name,
+              description: perm.description,
+              is_active: true,
+              is_deleted: false,
+            },
+          });
+        }
+      }
+
+      const adminRoles = await this.role.findMany({
+        where: {
+          name: { in: ['Admin', 'Super Admin'] },
+          is_deleted: false,
+        },
+      });
+
+      const permissionRecords = await this.permission.findMany({
+        where: {
+          key: { in: blockTemplatePermissions.map((p) => p.key) },
+          is_deleted: false,
+        },
+      });
+
+      for (const role of adminRoles) {
+        for (const permission of permissionRecords) {
+          const existingAssignment = await this.rolePermission.findFirst({
+            where: {
+              role_id: role.id,
+              permission_id: permission.id,
+            },
+          });
+
+          if (!existingAssignment) {
+            await this.rolePermission.create({
+              data: {
+                role_id: role.id,
+                permission_id: permission.id,
+                is_active: true,
+                is_deleted: false,
+              },
+            });
+          }
+        }
+      }
+
+      this.logger.log('✅ BlockTemplate permissions seeded');
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `❌ Failed to seed block-template permissions: ${errorMessage}`,
       );
     }
   }

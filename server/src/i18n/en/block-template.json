@@ -1,0 +1,35 @@
+{
+    "success": {
+        "created": "Block created successfully",
+        "updated": "Block updated successfully",
+        "deleted": "Block deleted successfully",
+        "fetched": "Block data fetched successfully"
+    },
+    "errors": {
+        "not_found": "Block not found",
+        "shelf_template_not_found": "Shelf not found",
+        "code_exists": "Block code already exists in this shelf",
+        "create_failed": "Failed to create block",
+        "update_failed": "Failed to update block",
+        "delete_failed": "Failed to delete block"
+    },
+    "validation": {
+        "name_required": "Block name is required",
+        "name_string": "Block name must be a string",
+        "name_max_length": "Block name must not exceed 255 characters",
+        "code_required": "Block code is required",
+        "code_string": "Block code must be a string",
+        "code_max_length": "Block code must not exceed 50 characters",
+        "description_string": "Description must be a string",
+        "max_weight_capacity_number": "Max weight capacity must be a number",
+        "max_weight_capacity_min": "Max weight capacity must be >= 0",
+        "height_number": "Height must be a number",
+        "height_min": "Height must be >= 0",
+        "is_active_boolean": "Active status must be a boolean",
+        "limit_number": "Limit must be a number",
+        "limit_min": "Limit must be >= 1",
+        "offset_number": "Offset must be a number",
+        "offset_min": "Offset must be >= 0",
+        "keywords_string": "Keywords must be a string"
+    }
+}

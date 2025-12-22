@@ -33,6 +33,10 @@ import { PartnerModule } from './modules/partner/partner.module';
 import { ProductModule } from './modules/product/product.module';
 import { BatchModule } from './modules/batch/batch.module';
 import { RentalDurationTierModule } from './modules/rental-duration-tier/rental-duration-tier.module';
+import { RowTemplateModule } from './modules/row-template/row-template.module';
+import { RackTemplateModule } from './modules/rack-template/rack-template.module';
+import { ShelfTemplateModule } from './modules/shelf-template/shelf-template.module';
+import { BlockTemplateModule } from './modules/block-template/block-template.module';
 import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
 
 @Module({
@@ -110,6 +114,15 @@ import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
     BatchModule,
 
     RentalDurationTierModule,
+
+    // Layout Template Modules
+    RowTemplateModule,
+
+    RackTemplateModule,
+
+    ShelfTemplateModule,
+
+    BlockTemplateModule,
   ],
   controllers: [AppController],
   providers: [

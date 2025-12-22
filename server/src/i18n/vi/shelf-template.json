@@ -1,0 +1,33 @@
+{
+    "success": {
+        "created": "Tạo tầng thành công",
+        "updated": "Cập nhật tầng thành công",
+        "deleted": "Xóa tầng thành công",
+        "fetched": "Lấy dữ liệu tầng thành công"
+    },
+    "errors": {
+        "not_found": "Không tìm thấy tầng",
+        "rack_template_not_found": "Không tìm thấy kệ",
+        "code_exists": "Mã tầng đã tồn tại trong kệ này",
+        "create_failed": "Không thể tạo tầng",
+        "update_failed": "Không thể cập nhật tầng",
+        "delete_failed": "Không thể xóa tầng"
+    },
+    "validation": {
+        "name_required": "Tên tầng không được để trống",
+        "name_string": "Tên tầng phải là chuỗi",
+        "name_max_length": "Tên tầng không được quá 255 ký tự",
+        "code_required": "Mã tầng không được để trống",
+        "code_string": "Mã tầng phải là chuỗi",
+        "code_max_length": "Mã tầng không được quá 50 ký tự",
+        "description_string": "Mô tả phải là chuỗi",
+        "height_number": "Chiều cao phải là số",
+        "height_min": "Chiều cao phải >= 0",
+        "is_active_boolean": "Trạng thái active phải là boolean",
+        "limit_number": "Limit phải là số",
+        "limit_min": "Limit phải >= 1",
+        "offset_number": "Offset phải là số",
+        "offset_min": "Offset phải >= 0",
+        "keywords_string": "Từ khóa tìm kiếm phải là chuỗi"
+    }
+}

@@ -1,0 +1,40 @@
+{
+    "success": {
+        "created": "Row created successfully",
+        "updated": "Row updated successfully",
+        "deleted": "Row deleted successfully",
+        "fetched": "Row data fetched successfully"
+    },
+    "errors": {
+        "not_found": "Row not found",
+        "warehouse_template_not_found": "Warehouse template not found",
+        "code_exists": "Row code already exists in this template",
+        "create_failed": "Failed to create row",
+        "update_failed": "Failed to update row",
+        "delete_failed": "Failed to delete row"
+    },
+    "validation": {
+        "name_required": "Row name is required",
+        "name_string": "Row name must be a string",
+        "name_max_length": "Row name must not exceed 255 characters",
+        "code_required": "Row code is required",
+        "code_string": "Row code must be a string",
+        "code_max_length": "Row code must not exceed 50 characters",
+        "description_string": "Description must be a string",
+        "is_rented_boolean": "Rented status must be a boolean",
+        "price_per_month_number": "Price per month must be a number",
+        "price_per_month_min": "Price per month must be >= 0",
+        "is_active_boolean": "Active status must be a boolean",
+        "id_uuid": "ID must be a valid UUID",
+        "duration_tier_id_required": "Duration tier ID is required",
+        "duration_tier_id_uuid": "Duration tier ID must be a valid UUID",
+        "discount_percent_number": "Discount percent must be a number",
+        "discount_percent_min": "Discount percent must be >= 0",
+        "discount_configs_array": "Discount configs must be an array",
+        "limit_number": "Limit must be a number",
+        "limit_min": "Limit must be >= 1",
+        "offset_number": "Offset must be a number",
+        "offset_min": "Offset must be >= 0",
+        "keywords_string": "Keywords must be a string"
+    }
+}

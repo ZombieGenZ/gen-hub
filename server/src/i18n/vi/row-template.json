@@ -1,0 +1,40 @@
+{
+    "success": {
+        "created": "Tạo dãy thành công",
+        "updated": "Cập nhật dãy thành công",
+        "deleted": "Xóa dãy thành công",
+        "fetched": "Lấy dữ liệu dãy thành công"
+    },
+    "errors": {
+        "not_found": "Không tìm thấy dãy",
+        "warehouse_template_not_found": "Không tìm thấy template kho hàng",
+        "code_exists": "Mã dãy đã tồn tại trong template này",
+        "create_failed": "Không thể tạo dãy",
+        "update_failed": "Không thể cập nhật dãy",
+        "delete_failed": "Không thể xóa dãy"
+    },
+    "validation": {
+        "name_required": "Tên dãy không được để trống",
+        "name_string": "Tên dãy phải là chuỗi",
+        "name_max_length": "Tên dãy không được quá 255 ký tự",
+        "code_required": "Mã dãy không được để trống",
+        "code_string": "Mã dãy phải là chuỗi",
+        "code_max_length": "Mã dãy không được quá 50 ký tự",
+        "description_string": "Mô tả phải là chuỗi",
+        "is_rented_boolean": "Trạng thái thuê phải là boolean",
+        "price_per_month_number": "Giá thuê/tháng phải là số",
+        "price_per_month_min": "Giá thuê/tháng phải >= 0",
+        "is_active_boolean": "Trạng thái active phải là boolean",
+        "id_uuid": "ID phải là UUID hợp lệ",
+        "duration_tier_id_required": "ID mốc thời gian thuê không được để trống",
+        "duration_tier_id_uuid": "ID mốc thời gian thuê phải là UUID hợp lệ",
+        "discount_percent_number": "Phần trăm giảm giá phải là số",
+        "discount_percent_min": "Phần trăm giảm giá phải >= 0",
+        "discount_configs_array": "Danh sách config giảm giá phải là mảng",
+        "limit_number": "Limit phải là số",
+        "limit_min": "Limit phải >= 1",
+        "offset_number": "Offset phải là số",
+        "offset_min": "Offset phải >= 0",
+        "keywords_string": "Từ khóa tìm kiếm phải là chuỗi"
+    }
+}
