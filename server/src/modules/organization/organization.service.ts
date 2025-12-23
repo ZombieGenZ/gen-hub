@@ -3,7 +3,9 @@ import {
   NotFoundException,
   ConflictException,
   ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
+import axios from 'axios';
 import { ConfigService } from '@nestjs/config';
 import { I18nService } from 'nestjs-i18n';
 import * as crypto from 'crypto';
@@ -64,11 +66,41 @@ export class OrganizationService {
     userId: string,
     lang: string,
   ): Promise<IOrganizationWithRelations> {
-    // Kiểm tra tên đã tồn tại chưa
-    const nameExists = await this.repository.findByName(dto.name);
-    if (nameExists) {
-      throw new ConflictException(
-        await this.i18n.translate('organization.errors.name_exists', { lang }),
+
+
+    // Validate and check Google credentials if enabled
+    if (dto.is_using_google_email) {
+      if (
+        !dto.google_client_id ||
+        !dto.google_client_secret ||
+        !dto.google_refresh_token ||
+        !dto.email_primary_address
+      ) {
+        throw new BadRequestException(
+          await this.i18n.translate(
+            'organization.validation.google_fields_required',
+            { lang },
+          ),
+        );
+      }
+
+      await this.verifyGoogleCredentials(
+        dto.google_client_id,
+        dto.google_client_secret,
+        dto.google_refresh_token,
+        lang,
+      );
+
+      // Encrypt sensitive fields
+      dto.google_client_id = this.cipherService.encrypt(dto.google_client_id);
+      dto.google_client_secret = this.cipherService.encrypt(
+        dto.google_client_secret,
+      );
+      dto.google_refresh_token = this.cipherService.encrypt(
+        dto.google_refresh_token,
+      );
+      dto.email_primary_address = this.cipherService.encrypt(
+        dto.email_primary_address,
       );
     }
 
@@ -78,6 +110,11 @@ export class OrganizationService {
       is_active: dto.is_active ?? true,
       owner: { connect: { id: userId } },
       created_by: userId,
+      is_using_google_email: dto.is_using_google_email,
+      google_client_id: dto.google_client_id,
+      google_client_secret: dto.google_client_secret,
+      google_refresh_token: dto.google_refresh_token,
+      email_primary_address: dto.email_primary_address,
     });
 
     // Thêm owner vào danh sách members với trạng thái đã chấp nhận
@@ -103,7 +140,10 @@ export class OrganizationService {
       org.id,
       'Organization',
       org.id,
-      { name: org.name },
+      {
+        name: org.name,
+        is_using_google_email: org.is_using_google_email,
+      },
       { userId },
     );
 
@@ -111,6 +151,39 @@ export class OrganizationService {
     this.websocketGateway.emitOrganizationCreated(userId, org);
 
     return org;
+  }
+
+  private async verifyGoogleCredentials(
+    clientId: string,
+    clientSecret: string,
+    refreshToken: string,
+    lang: string,
+  ): Promise<void> {
+    try {
+      const response = await axios.post('https://oauth2.googleapis.com/token', {
+        client_id: clientId,
+        client_secret: clientSecret,
+        refresh_token: refreshToken,
+        grant_type: 'refresh_token',
+      });
+
+      if (!response.data || !response.data.access_token) {
+        throw new Error('No access token returned');
+      }
+    } catch (error) {
+      this.systemLogService.error(
+        'organization',
+        'verify_google',
+        `Google credential verification failed: ${error.message}`,
+        { metaData: { error: error?.response?.data || error } },
+      );
+      throw new BadRequestException(
+        await this.i18n.translate(
+          'organization.validation.google_credentials_invalid',
+          { lang },
+        ),
+      );
+    }
   }
 
   async findById(
@@ -223,24 +296,63 @@ export class OrganizationService {
       );
     }
 
-    // Kiểm tra tên trùng (nếu đổi tên)
-    if (dto.name && dto.name !== org.name) {
-      const nameExists = await this.repository.findByName(dto.name, id);
-      if (nameExists) {
-        throw new ConflictException(
-          await this.i18n.translate('organization.errors.name_exists', {
-            lang,
-          }),
+
+
+    const oldData = {
+      name: org.name,
+      is_active: org.is_active,
+      is_using_google_email: org.is_using_google_email,
+    };
+
+    // Validate if Google Email is being enabled or credentials are changed while enabled
+    const isUsingGoogle =
+      dto.is_using_google_email ?? org.is_using_google_email;
+
+    if (isUsingGoogle) {
+      // NOTE: org fields are already decrypted in findById
+      const clientId = dto.google_client_id ?? org.google_client_id;
+      const clientSecret =
+        dto.google_client_secret ?? org.google_client_secret;
+      const refreshToken =
+        dto.google_refresh_token ?? org.google_refresh_token;
+
+      // Note: email_primary_address is not strictly required for token verification but required for our usage
+      const emailPrimary =
+        dto.email_primary_address ?? org.email_primary_address;
+
+      if (!clientId || !clientSecret || !refreshToken || !emailPrimary) {
+        throw new BadRequestException(
+          await this.i18n.translate(
+            'organization.validation.google_fields_required',
+            { lang },
+          ),
         );
       }
+
+      // Verify connection
+      await this.verifyGoogleCredentials(
+        clientId,
+        clientSecret,
+        refreshToken,
+        lang,
+      );
     }
 
-    const oldData = { name: org.name, is_active: org.is_active };
     // Encrypt sensitive fields
-    if (dto.google_client_id) dto.google_client_id = this.cipherService.encrypt(dto.google_client_id);
-    if (dto.google_client_secret) dto.google_client_secret = this.cipherService.encrypt(dto.google_client_secret);
-    if (dto.google_refresh_token) dto.google_refresh_token = this.cipherService.encrypt(dto.google_refresh_token);
-    if (dto.email_primary_address) dto.email_primary_address = this.cipherService.encrypt(dto.email_primary_address);
+    if (dto.google_client_id)
+      dto.google_client_id = this.cipherService.encrypt(dto.google_client_id);
+    if (dto.google_client_secret)
+      dto.google_client_secret = this.cipherService.encrypt(
+        dto.google_client_secret,
+      );
+    if (dto.google_refresh_token)
+      dto.google_refresh_token = this.cipherService.encrypt(
+        dto.google_refresh_token,
+      );
+    if (dto.email_primary_address)
+      dto.email_primary_address = this.cipherService.encrypt(
+        dto.email_primary_address,
+      );
 
     const updated = await this.repository.update(id, {
       ...dto,
@@ -263,7 +375,11 @@ export class OrganizationService {
       'Organization',
       id,
       oldData,
-      { name: updated.name, is_active: updated.is_active },
+      {
+        name: updated.name,
+        is_active: updated.is_active,
+        is_using_google_email: updated.is_using_google_email,
+      },
       { userId },
     );
 
@@ -1938,6 +2054,18 @@ export class OrganizationService {
     }
 
     const updated = await this.repository.findApiKeyById(keyId);
+
+    // Update roles và permissions status nếu is_active thay đổi
+    if (dto.is_active !== undefined && dto.is_active !== apiKey.is_active) {
+      await this.repository.updateApiKeyRolesStatusByApiKeyId(
+        keyId,
+        dto.is_active,
+      );
+      await this.repository.updateApiKeyPermissionsStatusByApiKeyId(
+        keyId,
+        dto.is_active,
+      );
+    }
 
     // Log
     this.auditLogService.logUpdate(

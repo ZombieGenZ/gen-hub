@@ -99,6 +99,8 @@
         "rate_limit_ttl_min": "Rate limit TTL must be greater than 0",
         "rate_limit_max_int": "Max requests must be an integer",
         "rate_limit_max_min": "Max requests must be greater than 0",
-        "org_id_uuid": "Organization ID must be a valid UUID"
+        "org_id_uuid": "Organization ID must be a valid UUID",
+        "google_fields_required": "Google Client ID, Secret, Refresh Token and Primary Email are required when using Google Email",
+        "google_credentials_invalid": "Failed to verify Google credentials. Please check your credentials."
     }
 }

@@ -243,13 +243,43 @@ export class OrganizationRepository {
     }
 
     async softDeleteMember(id: string, deletedBy: string): Promise<void> {
-        await this.prisma.organizationMember.update({
-            where: { id },
-            data: {
-                is_deleted: true,
-                deleted_at: new Date(),
-                deleted_by: deletedBy,
-            },
+        await this.prisma.$transaction([
+            this.prisma.organizationMember.update({
+                where: { id },
+                data: {
+                    is_deleted: true,
+                    deleted_at: new Date(),
+                    deleted_by: deletedBy,
+                },
+            }),
+            this.prisma.organizationMemberRole.updateMany({
+                where: { organization_member_id: id, is_deleted: false },
+                data: { is_deleted: true, deleted_at: new Date() },
+            }),
+            this.prisma.organizationMemberPermission.updateMany({
+                where: { organization_member_id: id, is_deleted: false },
+                data: { is_deleted: true, deleted_at: new Date() },
+            }),
+        ]);
+    }
+
+    /**
+     * Cập nhật is_active của tất cả OrganizationMemberRole theo member_id
+     */
+    async updateMemberRolesStatusByMemberId(memberId: string, isActive: boolean): Promise<void> {
+        await this.prisma.organizationMemberRole.updateMany({
+            where: { organization_member_id: memberId, is_deleted: false },
+            data: { is_active: isActive, updated_at: new Date() },
+        });
+    }
+
+    /**
+     * Cập nhật is_active của tất cả OrganizationMemberPermission theo member_id
+     */
+    async updateMemberPermissionsStatusByMemberId(memberId: string, isActive: boolean): Promise<void> {
+        await this.prisma.organizationMemberPermission.updateMany({
+            where: { organization_member_id: memberId, is_deleted: false },
+            data: { is_active: isActive, updated_at: new Date() },
         });
     }
 
@@ -611,13 +641,43 @@ export class OrganizationRepository {
     }
 
     async softDeleteApiKey(id: string, deletedBy: string): Promise<void> {
-        await this.prisma.apiKey.update({
-            where: { id },
-            data: {
-                is_deleted: true,
-                deleted_at: new Date(),
-                deleted_by: deletedBy,
-            },
+        await this.prisma.$transaction([
+            this.prisma.apiKey.update({
+                where: { id },
+                data: {
+                    is_deleted: true,
+                    deleted_at: new Date(),
+                    deleted_by: deletedBy,
+                },
+            }),
+            this.prisma.apiKeyRole.updateMany({
+                where: { api_key_id: id, is_deleted: false },
+                data: { is_deleted: true, deleted_at: new Date() },
+            }),
+            this.prisma.apiKeyPermission.updateMany({
+                where: { api_key_id: id, is_deleted: false },
+                data: { is_deleted: true, deleted_at: new Date() },
+            }),
+        ]);
+    }
+
+    /**
+     * Cập nhật is_active của tất cả ApiKeyRole theo api_key_id
+     */
+    async updateApiKeyRolesStatusByApiKeyId(apiKeyId: string, isActive: boolean): Promise<void> {
+        await this.prisma.apiKeyRole.updateMany({
+            where: { api_key_id: apiKeyId, is_deleted: false },
+            data: { is_active: isActive, updated_at: new Date() },
+        });
+    }
+
+    /**
+     * Cập nhật is_active của tất cả ApiKeyPermission theo api_key_id
+     */
+    async updateApiKeyPermissionsStatusByApiKeyId(apiKeyId: string, isActive: boolean): Promise<void> {
+        await this.prisma.apiKeyPermission.updateMany({
+            where: { api_key_id: apiKeyId, is_deleted: false },
+            data: { is_active: isActive, updated_at: new Date() },
         });
     }
 

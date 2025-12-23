@@ -973,6 +973,7 @@ model Organization {
   google_client_secret  String? @db.Text
   google_refresh_token  String? @db.Text
   email_primary_address String?
+  is_using_google_email Boolean @default(false)
 
   created_at DateTime  @default(now())
   updated_at DateTime? @updatedAt

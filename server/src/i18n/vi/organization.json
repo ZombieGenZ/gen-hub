@@ -99,6 +99,8 @@
         "rate_limit_ttl_min": "TTL rate limit phải lớn hơn 0",
         "rate_limit_max_int": "Số request tối đa phải là số nguyên",
         "rate_limit_max_min": "Số request tối đa phải lớn hơn 0",
-        "org_id_uuid": "ID tổ chức phải là UUID hợp lệ"
+        "org_id_uuid": "ID tổ chức phải là UUID hợp lệ",
+        "google_fields_required": "Google Client ID, Secret, Refresh Token và Email chính là bắt buộc khi sử dụng Google Email",
+        "google_credentials_invalid": "Xác thực thông tin Google thất bại. Vui lòng kiểm tra lại thông tin."
     }
 }

@@ -22,6 +22,7 @@ export interface IOrganizationWithRelations {
     google_client_id?: string | null;
     google_client_secret?: string | null;
     google_refresh_token?: string | null;
+    is_using_google_email?: boolean | null;
     _count?: {
         members: number;
         roles: number;
