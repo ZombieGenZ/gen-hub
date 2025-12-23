@@ -214,4 +214,22 @@ export class CreateCouponScheduleDto {
     @IsOptional()
     @IsBoolean()
     is_active?: boolean;
+
+    // Stackability - Khả năng áp dụng chung với các coupon khác
+    @ApiPropertyOptional({ description: 'Có thể áp dụng chung với vô hạn coupon khác', default: false })
+    @IsOptional()
+    @IsBoolean({
+        message: i18nValidationMessage('coupon-schedule.validation.is_unlimited_stack_boolean'),
+    })
+    is_unlimited_stack?: boolean;
+
+    @ApiPropertyOptional({ description: 'Số coupon tối đa có thể áp dụng chung', example: 3 })
+    @IsOptional()
+    @IsInt({
+        message: i18nValidationMessage('coupon-schedule.validation.max_stack_count_int'),
+    })
+    @Min(1, {
+        message: i18nValidationMessage('coupon-schedule.validation.max_stack_count_min'),
+    })
+    max_stack_count?: number;
 }

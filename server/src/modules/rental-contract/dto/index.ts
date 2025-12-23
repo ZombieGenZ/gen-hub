@@ -58,11 +58,33 @@ export class CreateRentalContractDto {
     @Type(() => RentalTemplateItemDto)
     templates: RentalTemplateItemDto[];
 
-    @ApiProperty({ description: 'Số tháng thuê (chỉ chấp nhận: 1,3,6,12,24,36)', example: 6, minimum: 1 })
-    @IsNotEmpty({ message: i18nValidationMessage('rental-contract.validation.rental_months_required') })
-    @IsInt({ message: i18nValidationMessage('rental-contract.validation.rental_months_positive') })
-    @Min(1, { message: i18nValidationMessage('rental-contract.validation.rental_months_min') })
-    rental_months: number;
+    @ApiProperty({
+        description: 'ID của gói thời hạn thuê (duration tier)',
+        example: '550e8400-e29b-41d4-a716-446655440005'
+    })
+    @IsNotEmpty({ message: i18nValidationMessage('rental-contract.validation.duration_tier_id_required') })
+    @IsUUID('4', { message: i18nValidationMessage('rental-contract.validation.duration_tier_id_uuid') })
+    duration_tier_id: string;
+
+    @ApiPropertyOptional({
+        description: 'Danh sách ID addon cần đăng ký cùng hợp đồng',
+        type: [String],
+        example: ['addon-uuid-1', 'addon-uuid-2']
+    })
+    @IsOptional()
+    @IsArray({ message: i18nValidationMessage('rental-contract.validation.addon_ids_array') })
+    @IsUUID('4', { each: true, message: i18nValidationMessage('rental-contract.validation.addon_id_uuid') })
+    addon_ids?: string[];
+
+    @ApiPropertyOptional({
+        description: 'Danh sách mã coupon cần áp dụng',
+        type: [String],
+        example: ['SUMMER2024', 'NEWUSER10']
+    })
+    @IsOptional()
+    @IsArray({ message: i18nValidationMessage('rental-contract.validation.coupon_codes_array') })
+    @IsString({ each: true, message: i18nValidationMessage('rental-contract.validation.coupon_code_string') })
+    coupon_codes?: string[];
 
     @ApiPropertyOptional({ description: 'Ghi chú cho hợp đồng', example: 'Thanh toán hàng tháng' })
     @IsOptional()
@@ -70,8 +92,10 @@ export class CreateRentalContractDto {
     notes?: string;
 }
 
+
+
 /**
- * DTO để cập nhật hợp đồng (chỉ cho phép update name, notes, điều chỉnh thời gian)
+ * DTO để cập nhật hợp đồng
  * Dành cho system-level endpoint
  */
 export class UpdateRentalContractDto {
@@ -87,27 +111,88 @@ export class UpdateRentalContractDto {
     notes?: string;
 
     @ApiPropertyOptional({
-        description: 'Số tháng điều chỉnh (dương = gia hạn, âm = giảm thời gian)',
-        example: 3
+        description: 'ID gói thời hạn để gia hạn hợp đồng (thêm thời gian)',
+        example: '550e8400-e29b-41d4-a716-446655440005'
     })
     @IsOptional()
-    @IsInt({ message: i18nValidationMessage('rental-contract.validation.adjust_months_int') })
-    adjust_months?: number;
+    @IsUUID('4', { message: i18nValidationMessage('rental-contract.validation.duration_tier_id_uuid') })
+    extend_duration_tier_id?: string;
+
+    @ApiPropertyOptional({
+        description: 'Số tháng giảm thời gian (số dương = giảm số tháng đó)',
+        example: 2
+    })
+    @IsOptional()
+    @IsInt({ message: i18nValidationMessage('rental-contract.validation.reduce_months_int') })
+    @Min(1, { message: i18nValidationMessage('rental-contract.validation.reduce_months_min') })
+    reduce_months?: number;
+
+    @ApiPropertyOptional({
+        description: 'Danh sách ID addon. Logic: ID mới → thêm, ID đang có → giữ, ID không có trong list → hủy',
+        type: [String],
+        example: ['addon-uuid-1', 'addon-uuid-2']
+    })
+    @IsOptional()
+    @IsArray({ message: i18nValidationMessage('rental-contract.validation.addon_ids_array') })
+    @IsUUID('4', { each: true, message: i18nValidationMessage('rental-contract.validation.addon_id_uuid') })
+    addon_ids?: string[];
+
+    @ApiPropertyOptional({
+        description: 'Danh sách mã coupon cần áp dụng',
+        type: [String],
+        example: ['SUMMER2024', 'NEWUSER10']
+    })
+    @IsOptional()
+    @IsArray({ message: i18nValidationMessage('rental-contract.validation.coupon_codes_array') })
+    @IsString({ each: true, message: i18nValidationMessage('rental-contract.validation.coupon_code_string') })
+    coupon_codes?: string[];
 }
 
+
 /**
- * DTO để gia hạn hợp đồng (chỉ cho phép điều chỉnh thời gian)
+ * DTO để gia hạn hợp đồng
  * Dành cho org-level endpoint - chỉ owner/member của org mới có thể gia hạn
  */
 export class RenewRentalContractDto {
-    @ApiProperty({
-        description: 'Số tháng điều chỉnh (dương = gia hạn, âm = giảm thời gian)',
-        example: 3
+    @ApiPropertyOptional({
+        description: 'ID của gói thời hạn thuê để gia hạn (thêm thời gian)',
+        example: '550e8400-e29b-41d4-a716-446655440005'
     })
-    @IsNotEmpty({ message: i18nValidationMessage('rental-contract.validation.adjust_months_required') })
-    @IsInt({ message: i18nValidationMessage('rental-contract.validation.adjust_months_int') })
-    adjust_months: number;
+    @IsOptional()
+    @IsUUID('4', { message: i18nValidationMessage('rental-contract.validation.duration_tier_id_uuid') })
+    extend_duration_tier_id?: string;
+
+    @ApiPropertyOptional({
+        description: 'Số tháng giảm thời gian (số dương = giảm số tháng đó)',
+        example: 2
+    })
+    @IsOptional()
+    @IsInt({ message: i18nValidationMessage('rental-contract.validation.reduce_months_int') })
+    @Min(1, { message: i18nValidationMessage('rental-contract.validation.reduce_months_min') })
+    reduce_months?: number;
+
+    @ApiPropertyOptional({
+        description: 'Danh sách ID addon. Logic: ID mới → thêm, ID đang có → giữ, ID không có trong list → hủy',
+        type: [String],
+        example: ['addon-uuid-1', 'addon-uuid-2']
+    })
+    @IsOptional()
+    @IsArray({ message: i18nValidationMessage('rental-contract.validation.addon_ids_array') })
+    @IsUUID('4', { each: true, message: i18nValidationMessage('rental-contract.validation.addon_id_uuid') })
+    addon_ids?: string[];
+
+    @ApiPropertyOptional({
+        description: 'Danh sách mã coupon cần áp dụng cho đợt gia hạn',
+        type: [String],
+        example: ['RENEW20', 'VIP10']
+    })
+    @IsOptional()
+    @IsArray({ message: i18nValidationMessage('rental-contract.validation.coupon_codes_array') })
+    @IsString({ each: true, message: i18nValidationMessage('rental-contract.validation.coupon_code_string') })
+    coupon_codes?: string[];
 }
+
+
 
 /**
  * DTO query params cho danh sách hợp đồng
@@ -141,4 +226,114 @@ export class QueryRentalContractDto {
     @IsOptional()
     @IsUUID('4', { message: i18nValidationMessage('rental-contract.validation.organization_id_uuid') })
     organization_id?: string;
+}
+
+/**
+ * DTO để thêm addon vào hợp đồng
+ */
+export class AddAddonDto {
+    @ApiProperty({ description: 'ID của addon cần thêm', example: '550e8400-e29b-41d4-a716-446655440003' })
+    @IsNotEmpty({ message: i18nValidationMessage('rental-contract.validation.addon_id_required') })
+    @IsUUID('4', { message: i18nValidationMessage('rental-contract.validation.addon_id_uuid') })
+    addon_id: string;
+}
+
+/**
+ * DTO để thêm nhiều addons vào hợp đồng
+ */
+export class AddAddonsDto {
+    @ApiProperty({
+        description: 'Danh sách ID các addon cần thêm',
+        type: [String],
+        example: ['uuid-1', 'uuid-2']
+    })
+    @IsNotEmpty({ message: i18nValidationMessage('rental-contract.validation.addon_ids_required') })
+    @IsArray({ message: i18nValidationMessage('rental-contract.validation.addon_ids_array') })
+    @IsUUID('4', { each: true, message: i18nValidationMessage('rental-contract.validation.addon_id_uuid') })
+    addon_ids: string[];
+}
+
+/**
+ * DTO để hủy addon từ hợp đồng
+ */
+export class RemoveAddonDto {
+    @ApiProperty({ description: 'ID của rental_contract_addon cần hủy', example: '550e8400-e29b-41d4-a716-446655440004' })
+    @IsNotEmpty({ message: i18nValidationMessage('rental-contract.validation.contract_addon_id_required') })
+    @IsUUID('4', { message: i18nValidationMessage('rental-contract.validation.contract_addon_id_uuid') })
+    contract_addon_id: string;
+
+    @ApiPropertyOptional({ description: 'Lý do hủy addon', example: 'Không cần sử dụng nữa' })
+    @IsOptional()
+    @IsString({ message: i18nValidationMessage('rental-contract.validation.cancel_reason_string') })
+    @MaxLength(500, { message: i18nValidationMessage('rental-contract.validation.cancel_reason_max_length') })
+    cancel_reason?: string;
+}
+
+/**
+ * DTO để hủy hợp đồng
+ */
+export class CancelContractDto {
+    @ApiProperty({ description: 'Lý do hủy hợp đồng', example: 'Không còn nhu cầu sử dụng' })
+    @IsNotEmpty({ message: i18nValidationMessage('rental-contract.validation.cancel_reason_required') })
+    @IsString({ message: i18nValidationMessage('rental-contract.validation.cancel_reason_string') })
+    @MaxLength(1000, { message: i18nValidationMessage('rental-contract.validation.cancel_reason_max_length_contract') })
+    cancel_reason: string;
+}
+
+/**
+ * DTO để áp dụng coupon vào hợp đồng
+ */
+export class ApplyCouponsDto {
+    @ApiProperty({
+        description: 'Danh sách mã coupon cần áp dụng',
+        type: [String],
+        example: ['SUMMER2024', 'NEWUSER10']
+    })
+    @IsNotEmpty({ message: i18nValidationMessage('rental-contract.validation.coupon_codes_required') })
+    @IsArray({ message: i18nValidationMessage('rental-contract.validation.coupon_codes_array') })
+    @IsString({ each: true, message: i18nValidationMessage('rental-contract.validation.coupon_code_string') })
+    coupon_codes: string[];
+}
+
+/**
+ * DTO để validate coupons trước khi tạo/áp dụng
+ */
+export class ValidateCouponsDto {
+    @ApiProperty({
+        description: 'Danh sách mã coupon cần validate',
+        type: [String],
+        example: ['SUMMER2024', 'NEWUSER10']
+    })
+    @IsNotEmpty({ message: i18nValidationMessage('rental-contract.validation.coupon_codes_required') })
+    @IsArray({ message: i18nValidationMessage('rental-contract.validation.coupon_codes_array') })
+    @IsString({ each: true, message: i18nValidationMessage('rental-contract.validation.coupon_code_string') })
+    coupon_codes: string[];
+
+    @ApiProperty({ description: 'Tổng giá trị đơn hàng', example: 5000000 })
+    @IsNotEmpty({ message: i18nValidationMessage('rental-contract.validation.order_amount_required') })
+    @IsInt({ message: i18nValidationMessage('rental-contract.validation.order_amount_int') })
+    @Min(0, { message: i18nValidationMessage('rental-contract.validation.order_amount_min') })
+    order_amount: number;
+
+    @ApiPropertyOptional({ description: 'Số kho thuê', example: 2 })
+    @IsOptional()
+    @IsInt()
+    @Min(0)
+    warehouse_count?: number;
+
+    @ApiPropertyOptional({ description: 'Số row thuê', example: 5 })
+    @IsOptional()
+    @IsInt()
+    @Min(0)
+    row_count?: number;
+
+    @ApiPropertyOptional({ description: 'Số tháng thuê', example: 6 })
+    @IsOptional()
+    @IsInt()
+    @Min(1)
+    rental_months?: number;
+
+    @ApiPropertyOptional({ description: 'Là hợp đồng mới hay gia hạn', example: true })
+    @IsOptional()
+    is_first_rental?: boolean;
 }

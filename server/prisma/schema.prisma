@@ -442,7 +442,8 @@ model Addon {
   updated_by String?
   deleted_by String?
 
-  tier_gifts TierAddonGift[]
+  tier_gifts       TierAddonGift[]
+  rental_contracts RentalContractAddon[]
 
   @@map("addons")
 }
@@ -519,6 +520,10 @@ model Coupon {
   is_public              Boolean @default(false)
   apply_for_first_rental Boolean @default(true)
   apply_for_renewal      Boolean @default(true)
+  
+  is_unlimited_stack Boolean @default(false)
+  max_stack_count    Int?
+  
   schedule_id String?         @db.Uuid
   schedule    CouponSchedule? @relation(fields: [schedule_id], references: [id])
 
@@ -532,7 +537,8 @@ model Coupon {
   updated_by String?
   deleted_by String?
 
-  saved_by_users UserSavedCoupon[]
+  saved_by_users   UserSavedCoupon[]
+  rental_contracts RentalContractCoupon[]
 
   @@index([code])
   @@index([starts_at])
@@ -588,6 +594,9 @@ model CouponSchedule {
   is_public              Boolean @default(false)
   apply_for_first_rental Boolean @default(true)
   apply_for_renewal      Boolean @default(true)
+  
+  is_unlimited_stack Boolean @default(false)
+  max_stack_count    Int?
 
   last_run_at DateTime?
   next_run_at DateTime?
@@ -878,6 +887,9 @@ model RentalContract {
   organization Organization           @relation(fields: [organization_id], references: [id], onDelete: Cascade)
   details      RentalContractDetail[]
   payments     Payment[]
+  addons       RentalContractAddon[]
+  logs         RentalContractLog[]
+  coupons      RentalContractCoupon[]
 
   @@index([organization_id])
   @@map("rental_contracts")
@@ -922,6 +934,83 @@ model RentalContractDetail {
   @@index([warehouse_id])
   @@index([row_id])
   @@map("rental_contract_details")
+}
+
+model RentalContractAddon {
+  id                 String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  rental_contract_id String @db.Uuid
+  addon_id           String @db.Uuid
+
+  price_at_purchase Decimal @db.Decimal(19, 4)
+  is_gift      Boolean   @default(false)
+  is_cancelled Boolean   @default(false)
+  cancelled_at DateTime?
+  cancel_reason String?
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean?  @default(false)
+  deleted_at DateTime?
+
+  created_by String
+  updated_by String?
+  deleted_by String?
+
+  rental_contract RentalContract @relation(fields: [rental_contract_id], references: [id], onDelete: Cascade)
+  addon           Addon          @relation(fields: [addon_id], references: [id])
+
+  @@index([rental_contract_id])
+  @@index([addon_id])
+  @@map("rental_contract_addons")
+}
+
+enum RentalContractLogAction {
+  CREATED
+  RENEWED
+  ADDON_ADDED
+  ADDON_CANCELLED
+  COUPON_APPLIED
+  STATUS_CHANGED
+  CANCELLED
+  COMPLETED
+}
+
+model RentalContractLog {
+  id                 String                  @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  rental_contract_id String                  @db.Uuid
+  action             RentalContractLogAction
+  description        String
+  metadata           Json?
+
+  created_at DateTime @default(now())
+  created_by String
+
+  rental_contract RentalContract @relation(fields: [rental_contract_id], references: [id], onDelete: Cascade)
+
+  @@index([rental_contract_id])
+  @@index([created_at])
+  @@map("rental_contract_logs")
+}
+
+model RentalContractCoupon {
+  id                 String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  rental_contract_id String @db.Uuid
+  coupon_id          String @db.Uuid
+
+  discount_value  Decimal @db.Decimal(19, 4)
+  discount_amount Decimal @db.Decimal(19, 4)
+
+  created_at DateTime @default(now())
+  created_by String
+
+  rental_contract RentalContract @relation(fields: [rental_contract_id], references: [id], onDelete: Cascade)
+  coupon          Coupon         @relation(fields: [coupon_id], references: [id])
+
+  @@unique([rental_contract_id, coupon_id])
+  @@index([rental_contract_id])
+  @@index([coupon_id])
+  @@map("rental_contract_coupons")
 }
 
 model Payment {

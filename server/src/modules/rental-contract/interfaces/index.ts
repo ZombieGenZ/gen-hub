@@ -10,7 +10,7 @@ export interface IRentalContractWithRelations extends RentalContract {
         owner?: {
             id: string;
             email: string;
-            full_name?: string;
+            name?: string;
         };
     };
     details?: IRentalContractDetailWithRelations[];
@@ -87,5 +87,28 @@ export interface IContractTimeChangedEmail {
     contractCode: string;
     adjustMonths: number;
     newExpiredAt: Date;
+    lang: string;
+}
+
+/**
+ * Interface cho email thông báo hủy addon
+ */
+export interface IAddonCancelledEmail {
+    ownerEmail: string;
+    ownerName?: string;
+    contractCode: string;
+    addonName: string;
+    cancelReason: string;
+    lang: string;
+}
+
+/**
+ * Interface cho email thông báo hủy hợp đồng
+ */
+export interface IContractCancelledEmail {
+    ownerEmail: string;
+    ownerName?: string;
+    contractCodes: string[];
+    deletedBy?: string;
     lang: string;
 }

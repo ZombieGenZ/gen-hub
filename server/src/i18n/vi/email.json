@@ -79,5 +79,24 @@
     },
     "template": {
         "systemName": "Hệ thống Quản lý Kho thông minh"
+    },
+    "googleIntegrationError": {
+        "subject": "⚠️ Lỗi tích hợp Google Email",
+        "greeting": "Xin chào",
+        "title": "Lỗi tích hợp Google Email",
+        "message": "Chúng tôi phát hiện thông tin xác thực Google Email của tổ chức bạn không còn hợp lệ.",
+        "orgLabel": "Tổ chức:",
+        "errorLabel": "Chi tiết lỗi:",
+        "timeLabel": "Thời gian:",
+        "actionMessage": "Hành động cần thực hiện",
+        "disabledMessage": "Tính năng Google Email đã được tắt tự động. Vui lòng cập nhật lại thông tin xác thực Google (Client ID, Client Secret, Refresh Token) trong phần cài đặt tổ chức để kích hoạt lại."
+    },
+    "contractCancelled": {
+        "subject": "⛔ Thông báo hủy Hợp đồng thuê",
+        "greeting": "Xin chào",
+        "message": "Thông báo: Các hợp đồng thuê sau đây đã bị hủy:",
+        "deletedBy": "Người thực hiện:",
+        "contractListLabel": "Danh sách hợp đồng:",
+        "contactSupport": "Nếu bạn có thắc mắc, vui lòng liên hệ bộ phận hỗ trợ."
     }
 }

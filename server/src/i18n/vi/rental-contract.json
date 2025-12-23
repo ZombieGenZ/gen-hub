@@ -25,7 +25,17 @@
         "organization_not_found": "Không tìm thấy tổ chức",
         "invalid_status": "Trạng thái hợp đồng không hợp lệ",
         "template_not_found": "Không tìm thấy template kho",
-        "row_template_not_found": "Không tìm thấy row template"
+        "row_template_not_found": "Không tìm thấy row template",
+        "addon_not_found": "Không tìm thấy addon",
+        "addon_already_added": "Addon đã được thêm vào hợp đồng",
+        "contract_addon_not_found": "Không tìm thấy addon trong hợp đồng",
+        "addon_already_cancelled": "Addon đã được hủy trước đó",
+        "coupon_not_found": "Không tìm thấy coupon",
+        "coupon_expired": "Coupon đã hết hạn",
+        "coupon_usage_exceeded": "Coupon đã đạt giới hạn sử dụng",
+        "coupon_conditions_not_met": "Đơn hàng không đáp ứng điều kiện của coupon",
+        "coupon_stack_exceeded": "Số lượng coupon vượt quá giới hạn cho phép",
+        "coupon_already_applied": "Coupon đã được áp dụng cho hợp đồng này"
     },
     "validation": {
         "template_id_required": "ID template không được để trống",
@@ -52,12 +62,36 @@
         "id_required": "ID không được để trống",
         "id_uuid": "ID phải là UUID hợp lệ",
         "adjust_months_int": "Số tháng điều chỉnh phải là số nguyên",
+        "adjust_months_required": "Số tháng điều chỉnh không được để trống",
         "additional_months_required": "Số tháng gia hạn không được để trống",
         "additional_months_positive": "Số tháng gia hạn phải là số dương",
         "limit_positive": "Limit phải là số dương",
         "offset_min": "Offset phải >= 0",
         "keywords_string": "Từ khóa tìm kiếm phải là chuỗi",
-        "status_invalid": "Trạng thái không hợp lệ"
+        "status_invalid": "Trạng thái không hợp lệ",
+        "duration_tier_id_uuid": "ID gói thời hạn phải là UUID hợp lệ",
+        "duration_tier_id_required": "ID gói thời hạn không được để trống",
+        "duration_tier_not_found": "Không tìm thấy gói thời hạn",
+        "duration_tier_or_months_required": "Phải chọn gói thời hạn hoặc nhập số tháng thuê",
+        "reduce_months_int": "Số tháng giảm phải là số nguyên",
+        "reduce_months_min": "Số tháng giảm phải lớn hơn 0",
+        "extend_or_reduce_required": "Phải chọn gia hạn hoặc giảm thời gian",
+        "addon_id_required": "ID addon không được để trống",
+        "addon_id_uuid": "ID addon phải là UUID hợp lệ",
+        "addon_ids_required": "Danh sách ID addon không được để trống",
+        "addon_ids_array": "Danh sách ID addon phải là mảng",
+        "contract_addon_id_required": "ID addon trong hợp đồng không được để trống",
+        "contract_addon_id_uuid": "ID addon trong hợp đồng phải là UUID hợp lệ",
+        "cancel_reason_string": "Lý do hủy phải là chuỗi",
+        "cancel_reason_required": "Lý do hủy không được để trống",
+        "cancel_reason_max_length": "Lý do hủy không được quá 500 ký tự",
+        "cancel_reason_max_length_contract": "Lý do hủy hợp đồng không được quá 1000 ký tự",
+        "coupon_codes_required": "Mã coupon không được để trống",
+        "coupon_codes_array": "Mã coupon phải là mảng",
+        "coupon_code_string": "Mã coupon phải là chuỗi",
+        "order_amount_required": "Giá trị đơn hàng không được để trống",
+        "order_amount_int": "Giá trị đơn hàng phải là số nguyên",
+        "order_amount_min": "Giá trị đơn hàng phải >= 0"
     },
     "notifications": {
         "expiry_warning_title": "Hợp đồng sắp hết hạn",
@@ -69,12 +103,22 @@
         "liquidated_title": "Kho đã bị thanh lý",
         "liquidated_content": "Kho của hợp đồng {code} đã bị thanh lý do không thanh toán trong thời gian quy định.",
         "cancelled_by_conflict_title": "Hợp đồng đã bị hủy",
-        "cancelled_by_conflict_content": "Hợp đồng {code} đã bị hủy do kho đã được người khác thanh toán và thuê thành công."
+        "cancelled_by_conflict_content": "Hợp đồng {code} đã bị hủy do kho đã được người khác thanh toán và thuê thành công.",
+        "addon_added_title": "Đã thêm addon vào hợp đồng",
+        "addon_added_content": "Addon {addon} đã được thêm vào hợp đồng {code}.",
+        "addon_cancelled_title": "Addon đã bị hủy",
+        "addon_cancelled_content": "Addon {addon} đã bị hủy khỏi hợp đồng {code}.",
+        "contract_cancelled_title": "Hợp đồng đã bị hủy",
+        "contract_cancelled_content": "Hợp đồng {code} đã bị hủy. Lý do: {reason}"
     },
     "email": {
         "contract_extended_subject": "[GEN-HUB] Hợp đồng {code} đã được gia hạn",
         "contract_extended_body": "Hợp đồng {code} đã được gia hạn thêm {months} tháng. Ngày hết hạn mới: {date}.",
         "contract_reduced_subject": "[GEN-HUB] Hợp đồng {code} đã được rút ngắn",
-        "contract_reduced_body": "Hợp đồng {code} đã được rút ngắn {months} tháng. Ngày hết hạn mới: {date}."
+        "contract_reduced_body": "Hợp đồng {code} đã được rút ngắn {months} tháng. Ngày hết hạn mới: {date}.",
+        "addon_cancelled_subject": "[GEN-HUB] Addon {addon} đã bị hủy",
+        "addon_cancelled_body": "Addon {addon} đã bị hủy khỏi hợp đồng {code}. Lý do: {reason}",
+        "contract_cancelled_subject": "[GEN-HUB] Hợp đồng {code} đã bị hủy",
+        "contract_cancelled_body": "Hợp đồng {code} đã bị hủy. Lý do: {reason}"
     }
 }

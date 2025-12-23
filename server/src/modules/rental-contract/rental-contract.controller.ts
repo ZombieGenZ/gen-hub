@@ -144,6 +144,10 @@ export class RentalContractController {
     /**
      * Hủy hợp đồng
      */
+    @Delete(':id')
+    @RequirePermission('rental-contract.delete')
+    @ApiOperation({ summary: 'Hủy hợp đồng' })
+    @ApiParam({ name: 'id', description: 'ID hợp đồng' })
     async delete(
         @Param('id', ParseUUIDPipe) id: string,
         @CurrentUser('userId') userId: string,

@@ -408,4 +408,203 @@ export class RentalContractRepository {
     async transaction<T>(fn: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
         return this.prisma.$transaction(fn);
     }
+
+    /**
+     * Thêm addon vào hợp đồng
+     */
+    async addAddon(data: {
+        rental_contract_id: string;
+        addon_id: string;
+        price_at_purchase: number;
+        is_gift: boolean;
+        created_by: string;
+    }) {
+        return this.prisma.rentalContractAddon.create({
+            data: {
+                rental_contract_id: data.rental_contract_id,
+                addon_id: data.addon_id,
+                price_at_purchase: data.price_at_purchase,
+                is_gift: data.is_gift,
+                created_by: data.created_by,
+            },
+            include: {
+                addon: true,
+            },
+        });
+    }
+
+    /**
+     * Lấy danh sách addons của hợp đồng
+     */
+    async findContractAddons(contractId: string) {
+        return this.prisma.rentalContractAddon.findMany({
+            where: {
+                rental_contract_id: contractId,
+                is_deleted: false,
+            },
+            include: {
+                addon: true,
+            },
+            orderBy: { created_at: 'desc' },
+        });
+    }
+
+    /**
+     * Tìm addon trong hợp đồng theo ID
+     */
+    async findContractAddonById(id: string) {
+        return this.prisma.rentalContractAddon.findFirst({
+            where: { id, is_deleted: false },
+            include: {
+                addon: true,
+                rental_contract: true,
+            },
+        });
+    }
+
+    /**
+     * Kiểm tra addon đã được thêm vào hợp đồng chưa
+     */
+    async isAddonAlreadyAdded(contractId: string, addonId: string): Promise<boolean> {
+        const existing = await this.prisma.rentalContractAddon.findFirst({
+            where: {
+                rental_contract_id: contractId,
+                addon_id: addonId,
+                is_deleted: false,
+                is_cancelled: false,
+            },
+        });
+        return !!existing;
+    }
+
+    /**
+     * Hủy addon trong hợp đồng
+     */
+    async cancelAddon(id: string, cancelReason: string, userId: string) {
+        return this.prisma.rentalContractAddon.update({
+            where: { id },
+            data: {
+                is_cancelled: true,
+                cancelled_at: new Date(),
+                cancel_reason: cancelReason,
+                updated_by: userId,
+            },
+            include: {
+                addon: true,
+            },
+        });
+    }
+
+    /**
+     * Ghi log thay đổi hợp đồng
+     */
+    async createLog(data: {
+        rental_contract_id: string;
+        action: 'CREATED' | 'RENEWED' | 'ADDON_ADDED' | 'ADDON_CANCELLED' | 'COUPON_APPLIED' | 'STATUS_CHANGED' | 'CANCELLED' | 'COMPLETED';
+        description: string;
+        metadata?: Record<string, any>;
+        created_by: string;
+    }) {
+        return this.prisma.rentalContractLog.create({
+            data: {
+                rental_contract_id: data.rental_contract_id,
+                action: data.action,
+                description: data.description,
+                metadata: data.metadata,
+                created_by: data.created_by,
+            },
+        });
+    }
+
+    /**
+     * Lấy log của hợp đồng
+     */
+    async findContractLogs(contractId: string) {
+        return this.prisma.rentalContractLog.findMany({
+            where: { rental_contract_id: contractId },
+            orderBy: { created_at: 'desc' },
+        });
+    }
+
+    /**
+     * Thêm coupon vào hợp đồng
+     */
+    async addCoupon(data: {
+        rental_contract_id: string;
+        coupon_id: string;
+        discount_value: number;
+        discount_amount: number;
+        created_by: string;
+    }) {
+        return this.prisma.rentalContractCoupon.create({
+            data: {
+                rental_contract_id: data.rental_contract_id,
+                coupon_id: data.coupon_id,
+                discount_value: data.discount_value,
+                discount_amount: data.discount_amount,
+                created_by: data.created_by,
+            },
+            include: {
+                coupon: true,
+            },
+        });
+    }
+
+    /**
+     * Lấy danh sách coupons của hợp đồng
+     */
+    async findContractCoupons(contractId: string) {
+        return this.prisma.rentalContractCoupon.findMany({
+            where: { rental_contract_id: contractId },
+            include: {
+                coupon: true,
+            },
+            orderBy: { created_at: 'desc' },
+        });
+    }
+
+    /**
+     * Kiểm tra coupon đã được áp dụng cho hợp đồng chưa
+     */
+    async isCouponAlreadyApplied(contractId: string, couponId: string): Promise<boolean> {
+        const existing = await this.prisma.rentalContractCoupon.findFirst({
+            where: {
+                rental_contract_id: contractId,
+                coupon_id: couponId,
+            },
+        });
+        return !!existing;
+    }
+
+    /**
+     * Đếm số coupons đã áp dụng cho hợp đồng
+     */
+    async countAppliedCoupons(contractId: string): Promise<number> {
+        return this.prisma.rentalContractCoupon.count({
+            where: { rental_contract_id: contractId },
+        });
+    }
+
+    /**
+     * Lấy thông tin hợp đồng đầy đủ với addons, logs, coupons
+     */
+    async findByIdWithFullDetails(id: string) {
+        return this.prisma.rentalContract.findFirst({
+            where: { id, is_deleted: false },
+            include: {
+                ...this.fullInclude,
+                addons: {
+                    where: { is_deleted: false },
+                    include: { addon: true },
+                },
+                coupons: {
+                    include: { coupon: true },
+                },
+                logs: {
+                    orderBy: { created_at: 'desc' },
+                    take: 20, // Giới hạn 20 logs gần nhất
+                },
+            },
+        });
+    }
 }

@@ -13,6 +13,7 @@ import { OrganizationService } from './organization.service';
 import { OrganizationRepository } from './organization.repository';
 import { OrganizationAuditLogService } from './organization-audit-log.service';
 import { ApiKeyLogService } from './api-key-log.service';
+import { OrganizationEmailValidatorService } from './organization-email-validator.service';
 
 @Module({
     imports: [
@@ -35,6 +36,7 @@ import { ApiKeyLogService } from './api-key-log.service';
         OrganizationRepository,
         OrganizationAuditLogService,
         ApiKeyLogService,
+        OrganizationEmailValidatorService,
     ],
     exports: [
         OrganizationService,
@@ -44,3 +46,4 @@ import { ApiKeyLogService } from './api-key-log.service';
     ],
 })
 export class OrganizationModule { }
+

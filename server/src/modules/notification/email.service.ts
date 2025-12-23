@@ -749,5 +749,161 @@ export class EmailService {
       html: await this.createEmailTemplate(content, appName, lang),
     });
   }
+
+  /**
+   * Gửi email thông báo lỗi tích hợp Google Email cho tổ chức
+   * @param to - Email người nhận (owner)
+   * @param ownerName - Tên owner
+   * @param organizationName - Tên tổ chức
+   * @param errorMessage - Thông báo lỗi chi tiết
+   * @param lang - Ngôn ngữ
+   */
+  async sendGoogleIntegrationErrorEmail(
+    to: string,
+    ownerName: string,
+    organizationName: string,
+    errorMessage: string,
+    lang: string = 'vi',
+  ): Promise<boolean> {
+    const appName = this.appConfigService.get('brandName');
+    const locale = lang === 'vi' ? 'vi-VN' : 'en-US';
+
+    const greeting = await this.i18n.t('email.googleIntegrationError.greeting', { lang });
+    const title = await this.i18n.t('email.googleIntegrationError.title', { lang });
+    const message = await this.i18n.t('email.googleIntegrationError.message', { lang });
+    const orgLabel = await this.i18n.t('email.googleIntegrationError.orgLabel', { lang });
+    const errorLabel = await this.i18n.t('email.googleIntegrationError.errorLabel', { lang });
+    const timeLabel = await this.i18n.t('email.googleIntegrationError.timeLabel', { lang });
+    const actionMessage = await this.i18n.t('email.googleIntegrationError.actionMessage', { lang });
+    const disabledMessage = await this.i18n.t('email.googleIntegrationError.disabledMessage', { lang });
+    const subject = await this.i18n.t('email.googleIntegrationError.subject', { lang });
+
+    // Get colors from config
+    const colors = this.appConfigService.get('colors');
+
+    const content = `
+      <!-- Tiêu đề -->
+      <h2 style="margin: 0 0 20px; font-size: 24px; font-weight: 600; color: ${colors.error}; text-align: center;">
+        ⚠️ ${title}
+      </h2>
+
+      <p style="margin: 0 0 20px; font-size: 15px; color: ${colors.gray700}; line-height: 1.7; text-align: center;">
+        ${greeting}, <strong style="color: ${colors.primaryDark};">${ownerName}</strong>
+      </p>
+
+      <p style="margin: 0 0 20px; font-size: 15px; color: ${colors.gray700}; line-height: 1.7; text-align: center;">
+        ${message}
+      </p>
+
+      <!-- Thông tin lỗi -->
+      <div style="background: linear-gradient(135deg, ${colors.gray100} 0%, ${colors.background} 100%); border-left: 4px solid ${colors.error}; border-radius: 8px; padding: 20px; margin: 25px 0;">
+        <table role="presentation" style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="padding: 5px 0;">
+              <span style="font-size: 13px; color: ${colors.gray500};">${orgLabel}</span>
+            </td>
+            <td style="padding: 5px 0; text-align: right;">
+              <span style="font-size: 14px; color: ${colors.gray900}; font-weight: 500;">${organizationName}</span>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 5px 0;">
+              <span style="font-size: 13px; color: ${colors.gray500};">${timeLabel}</span>
+            </td>
+            <td style="padding: 5px 0; text-align: right;">
+              <span style="font-size: 14px; color: ${colors.gray900}; font-weight: 500;">${new Date().toLocaleString(locale, { timeZone: 'Asia/Ho_Chi_Minh' })}</span>
+            </td>
+          </tr>
+          <tr>
+            <td colspan="2" style="padding: 10px 0;">
+              <span style="font-size: 13px; color: ${colors.gray500};">${errorLabel}</span>
+              <p style="margin: 5px 0 0; font-size: 14px; color: ${colors.error}; font-weight: 500; background-color: ${colors.cardSurface}; padding: 10px; border-radius: 6px; border: 1px solid ${colors.border};">
+                ${errorMessage}
+              </p>
+            </td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- Thông báo hành động cần làm -->
+      <div style="background: linear-gradient(135deg, ${colors.gray100} 0%, ${colors.background} 100%); border-radius: 8px; padding: 20px; margin: 25px 0; border-left: 4px solid ${colors.warning};">
+        <p style="margin: 0 0 10px; font-size: 14px; color: ${colors.warning}; font-weight: 600;">
+          🔧 ${actionMessage}
+        </p>
+        <p style="margin: 0; font-size: 13px; color: ${colors.gray700}; line-height: 1.6;">
+          ${disabledMessage}
+        </p>
+      </div>
+    `;
+
+    return this.sendEmail({
+      to,
+      subject: `${subject} - ${appName}`,
+      html: await this.createEmailTemplate(content, appName, lang),
+    });
+  }
+
+  /**
+   * Gửi email thông báo hủy hợp đồng cho chủ sở hữu tổ chức
+   */
+  async sendContractCancelledEmail(
+    to: string,
+    ownerName: string,
+    contractCodes: string[],
+    deletedBy: string,
+    lang: string = 'vi',
+  ): Promise<boolean> {
+    const appName = this.appConfigService.get('brandName');
+
+    const subject = await this.i18n.t('email.contractCancelled.subject', { lang });
+    const greeting = await this.i18n.t('email.contractCancelled.greeting', { lang });
+    const message = await this.i18n.t('email.contractCancelled.message', { lang });
+    const deletedByLabel = await this.i18n.t('email.contractCancelled.deletedBy', { lang });
+    const contractListLabel = await this.i18n.t('email.contractCancelled.contractListLabel', { lang });
+    const contactSupport = await this.i18n.t('email.contractCancelled.contactSupport', { lang });
+
+    const colors = this.appConfigService.get('colors');
+
+    const contractListHtml = contractCodes.map(code =>
+      `<li style="margin-bottom: 5px; color: ${colors.gray900}; font-weight: 500;">${code}</li>`
+    ).join('');
+
+    const content = `
+      <h2 style="margin: 0 0 20px; font-size: 24px; font-weight: 600; color: ${colors.error}; text-align: center;">
+        ${subject}
+      </h2>
+
+      <p style="margin: 0 0 20px; font-size: 15px; color: ${colors.gray700}; line-height: 1.7; text-align: center;">
+        ${greeting}, <strong style="color: ${colors.primaryDark};">${ownerName}</strong>
+      </p>
+
+      <p style="margin: 0 0 10px; font-size: 15px; color: ${colors.gray700}; line-height: 1.7;">
+        ${message}
+      </p>
+
+      <div style="background: linear-gradient(135deg, ${colors.gray100} 0%, ${colors.background} 100%); border-left: 4px solid ${colors.error}; border-radius: 8px; padding: 20px; margin: 20px 0;">
+        <p style="margin: 0 0 10px; font-size: 14px; color: ${colors.gray500};">
+          ${contractListLabel}
+        </p>
+        <ul style="margin: 0; padding-left: 20px;">
+          ${contractListHtml}
+        </ul>
+      </div>
+
+       <p style="margin: 0 0 10px; font-size: 15px; color: ${colors.gray700}; line-height: 1.7;">
+        <strong>${deletedByLabel}</strong> ${deletedBy}
+      </p>
+      
+       <p style="margin: 20px 0 0; font-size: 14px; color: ${colors.gray500}; text-align: center; font-style: italic;">
+        ${contactSupport}
+      </p>
+    `;
+
+    return this.sendEmail({
+      to,
+      subject: `${subject} - ${appName}`,
+      html: await this.createEmailTemplate(content, appName, lang),
+    });
+  }
 }
 

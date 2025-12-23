@@ -133,8 +133,6 @@ export class RentalDurationTierRepository {
         });
     }
 
-    // ===== TierAddonGift Methods =====
-
     async findByIdWithGifts(id: string) {
         return this.prisma.rentalDurationTier.findFirst({
             where: { id, is_deleted: false },

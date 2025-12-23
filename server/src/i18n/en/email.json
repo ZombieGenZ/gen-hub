@@ -79,5 +79,24 @@
     },
     "template": {
         "systemName": "Smart Warehouse Management System"
+    },
+    "googleIntegrationError": {
+        "subject": "⚠️ Google Email Integration Error",
+        "greeting": "Hello",
+        "title": "Google Email Integration Error",
+        "message": "We detected that your organization's Google Email credentials are no longer valid.",
+        "orgLabel": "Organization:",
+        "errorLabel": "Error Details:",
+        "timeLabel": "Time:",
+        "actionMessage": "Action Required",
+        "disabledMessage": "Google Email feature has been automatically disabled. Please update your Google credentials (Client ID, Client Secret, Refresh Token) in the organization settings to re-enable."
+    },
+    "contractCancelled": {
+        "subject": "⛔ Rental Contract Cancelled Notice",
+        "greeting": "Hello",
+        "message": "Notice: The following rental contracts have been cancelled:",
+        "deletedBy": "Deleted by:",
+        "contractListLabel": "Contract List:",
+        "contactSupport": "If you have any questions, please contact support."
     }
 }

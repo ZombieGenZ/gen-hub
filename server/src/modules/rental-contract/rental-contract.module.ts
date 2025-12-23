@@ -8,6 +8,7 @@ import { OrganizationModule } from '../organization/organization.module';
 import { WarehouseTemplateModule } from '../warehouse-template/warehouse-template.module';
 import { NotificationModule } from '../notification/notification.module';
 import { PaymentModule } from '../payment/payment.module';
+import { UserNotificationModule } from '../user-notification/user-notification.module';
 
 import { RentalContractController } from './rental-contract.controller';
 import { OrgRentalContractController } from './org-rental-contract.controller';
@@ -23,6 +24,7 @@ import { RentalContractProcessor } from './rental-contract.processor';
         SystemLogModule,
         OrganizationModule,
         NotificationModule,
+        UserNotificationModule, // Added to resolve dependency
         forwardRef(() => PaymentModule),
         forwardRef(() => WarehouseTemplateModule),
         BullModule.registerQueue({

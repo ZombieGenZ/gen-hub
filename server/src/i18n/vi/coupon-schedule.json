@@ -50,6 +50,9 @@
         "discount_type_enum": "Loại giảm giá phải là PERCENT, AMOUNT hoặc FREE_MONTHS",
         "limit_positive": "Limit phải là số dương",
         "offset_min": "Offset phải >= 0",
-        "keywords_string": "Từ khóa tìm kiếm phải là chuỗi"
+        "keywords_string": "Từ khóa tìm kiếm phải là chuỗi",
+        "is_unlimited_stack_boolean": "Trường 'có thể áp dụng chung vô hạn' phải là boolean",
+        "max_stack_count_int": "Số coupon tối đa có thể áp dụng chung phải là số nguyên",
+        "max_stack_count_min": "Số coupon tối đa có thể áp dụng chung phải lớn hơn hoặc bằng 1"
     }
 }

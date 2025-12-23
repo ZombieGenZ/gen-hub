@@ -198,6 +198,9 @@ export class CouponScheduleRunnerService implements OnModuleInit {
             is_public: schedule.is_public,
             apply_for_first_rental: schedule.apply_for_first_rental,
             apply_for_renewal: schedule.apply_for_renewal,
+            // Kế thừa stackability từ schedule
+            is_unlimited_stack: schedule.is_unlimited_stack ?? false,
+            max_stack_count: schedule.max_stack_count,
             is_active: true,
             created_by: schedule.created_by,
         };

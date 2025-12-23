@@ -36,6 +36,9 @@
         "is_active_boolean": "Status must be a boolean",
         "limit_positive": "Limit must be a positive number",
         "offset_min": "Offset must be >= 0",
-        "keywords_string": "Keywords must be a string"
+        "keywords_string": "Keywords must be a string",
+        "is_unlimited_stack_boolean": "'Unlimited stack' field must be a boolean",
+        "max_stack_count_int": "Max stack count must be an integer",
+        "max_stack_count_min": "Max stack count must be at least 1"
     }
 }

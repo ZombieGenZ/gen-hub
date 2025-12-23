@@ -18,6 +18,7 @@ import {
   UpdateRentalContractDto,
   QueryRentalContractDto,
   RentalTemplateItemDto,
+  RenewRentalContractDto,
 } from './dto';
 import {
   IRentalContractWithRelations,
@@ -25,6 +26,7 @@ import {
   ICreateContractResult,
   IRentalPriceCalculation,
   IContractTimeChangedEmail,
+  IAddonCancelledEmail,
 } from './interfaces';
 import { RedisService } from '../redis/redis.service';
 import { WebsocketGateway } from '../websocket/websocket.gateway';
@@ -38,6 +40,7 @@ import { PaymentSchedulerService } from '../payment/payment-scheduler.service';
 import { PaymentType } from '@prisma/client';
 import { InjectQueue } from '@nestjs/bull';
 import type { Queue } from 'bull';
+import { UserNotificationService } from '../user-notification/user-notification.service';
 
 /**
  * Service xử lý business logic cho RentalContract
@@ -66,6 +69,7 @@ export class RentalContractService {
     private readonly sepayService: SepayService,
     private readonly paymentScheduler: PaymentSchedulerService,
     @InjectQueue('rental-contract') private readonly contractQueue: Queue,
+    private readonly userNotificationService: UserNotificationService,
   ) {
     this.CONTRACT_CACHE_TTL =
       this.configService.get<number>('REDIS_RENTAL_CONTRACT_CACHE_TTL') || 300;
@@ -155,8 +159,21 @@ export class RentalContractService {
     userId: string,
     lang: string,
   ): Promise<ICreateContractResult> {
+    // Lấy thông tin từ duration tier (bắt buộc)
+    const tier = await this.repository['prisma'].rentalDurationTier.findFirst({
+      where: { id: dto.duration_tier_id, is_deleted: false, is_active: true },
+    });
+    if (!tier) {
+      throw new BadRequestException(
+        this.i18n.t('rental-contract.validation.duration_tier_not_found', { lang }),
+      );
+    }
+
+    // Chuyển đổi duration_value theo unit sang tháng
+    const rentalMonths = this.convertDurationToMonths(tier.duration_value, tier.duration_unit);
+
     // Validate rental_months
-    if (!this.ALLOWED_MONTHS.includes(dto.rental_months)) {
+    if (!this.ALLOWED_MONTHS.includes(rentalMonths)) {
       throw new BadRequestException(
         this.i18n.t('rental-contract.validation.rental_months_invalid', {
           lang,
@@ -213,7 +230,7 @@ export class RentalContractService {
       const priceDetail = await this.calculateRentalPriceForTemplate(
         template,
         templateItem,
-        dto.rental_months,
+        rentalMonths,
         isWholeWarehouse,
       );
       allPriceDetails.push(priceDetail);
@@ -238,7 +255,7 @@ export class RentalContractService {
     try {
       // Generate contract code
       const code = this.generateContractCode();
-      const rentalDays = dto.rental_months * 30;
+      const rentalDays = rentalMonths * 30;
 
       const startedAt = new Date();
       const expiredAt = new Date(
@@ -479,8 +496,27 @@ export class RentalContractService {
       lang,
     );
 
+    // Xác định số tháng điều chỉnh từ extend_duration_tier_id hoặc reduce_months
+    let adjustMonths: number | null = null;
+
+    if (dto.extend_duration_tier_id) {
+      // Gia hạn bằng duration tier
+      const tier = await this.repository['prisma'].rentalDurationTier.findFirst({
+        where: { id: dto.extend_duration_tier_id, is_deleted: false, is_active: true },
+      });
+      if (!tier) {
+        throw new BadRequestException(
+          this.i18n.t('rental-contract.validation.duration_tier_not_found', { lang }),
+        );
+      }
+      adjustMonths = this.convertDurationToMonths(tier.duration_value, tier.duration_unit);
+    } else if (dto.reduce_months) {
+      // Giảm thời gian
+      adjustMonths = -dto.reduce_months;
+    }
+
     // Chỉ cho phép điều chỉnh thời gian hợp đồng ACTIVE
-    if (dto.adjust_months && existing.status !== ContractStatus.ACTIVE) {
+    if (adjustMonths && existing.status !== ContractStatus.ACTIVE) {
       throw new BadRequestException(
         this.i18n.t('rental-contract.errors.cannot_renew', { lang }),
       );
@@ -495,9 +531,9 @@ export class RentalContractService {
 
     // Điều chỉnh thời gian hợp đồng
     let newExpiredAt: Date | null = null;
-    if (dto.adjust_months && dto.adjust_months !== 0 && existing.expired_at) {
+    if (adjustMonths && adjustMonths !== 0 && existing.expired_at) {
       newExpiredAt = new Date(existing.expired_at);
-      newExpiredAt.setMonth(newExpiredAt.getMonth() + dto.adjust_months);
+      newExpiredAt.setMonth(newExpiredAt.getMonth() + adjustMonths);
 
       // Validate: không cho giảm xuống dưới ngày hiện tại
       if (newExpiredAt < new Date()) {
@@ -521,17 +557,17 @@ export class RentalContractService {
 
     // Gửi email thông báo nếu thay đổi thời gian
     if (
-      dto.adjust_months &&
-      dto.adjust_months !== 0 &&
+      adjustMonths &&
+      adjustMonths !== 0 &&
       newExpiredAt &&
       existing.organization?.owner
     ) {
       try {
         await this.sendContractTimeChangedEmail({
           ownerEmail: existing.organization.owner.email,
-          ownerName: existing.organization.owner.full_name,
+          ownerName: existing.organization.owner.name,
           contractCode: existing.code,
-          adjustMonths: dto.adjust_months,
+          adjustMonths: adjustMonths,
           newExpiredAt,
           lang,
         });
@@ -551,9 +587,9 @@ export class RentalContractService {
 
     // Log
     const action =
-      dto.adjust_months && dto.adjust_months > 0
+      adjustMonths && adjustMonths > 0
         ? 'renew'
-        : dto.adjust_months && dto.adjust_months < 0
+        : adjustMonths && adjustMonths < 0
           ? 'reduce'
           : 'update';
     this.systemLogService.info(
@@ -562,7 +598,7 @@ export class RentalContractService {
       `${action} rental contract: ${contract.code}`,
       {
         userId,
-        metaData: { contractId: id, adjustMonths: dto.adjust_months },
+        metaData: { contractId: id, adjustMonths },
       },
     );
 
@@ -593,7 +629,8 @@ export class RentalContractService {
     userId: string,
     lang: string,
   ): Promise<void> {
-    const existing = await this.repository.findById(id);
+    // Dùng findByIdWithOrganization để lấy owner email
+    const existing = await this.repository.findByIdWithOrganization(id);
     if (!existing) {
       throw new NotFoundException(
         this.i18n.t('rental-contract.errors.not_found', { lang }),
@@ -633,6 +670,29 @@ export class RentalContractService {
       this.invalidateContractCache(id),
       this.invalidateContractListCache(),
     ]);
+
+    // Gửi email thông báo cho owner
+    if (existing.organization?.owner?.email) {
+      try {
+        const deleter = await this.organizationRepository.findUserById(userId);
+        const deleterName = deleter?.name || userId;
+
+        await this.emailService.sendContractCancelledEmail(
+          existing.organization.owner.email,
+          existing.organization.owner.name || existing.organization.owner.email,
+          [existing.code],
+          deleterName,
+          lang,
+        );
+      } catch (error) {
+        this.systemLogService.error(
+          'rental-contract',
+          'email',
+          'Failed to send contract cancelled email',
+          { userId, metaData: { error } },
+        );
+      }
+    }
 
     // Log
     this.systemLogService.info(
@@ -700,6 +760,10 @@ export class RentalContractService {
     await Promise.all(ids.map(id => this.invalidateContractCache(id)));
     await this.invalidateContractListCache();
 
+    // Get deleter info
+    const deleter = await this.organizationRepository.findUserById(userId);
+    const deleterName = deleter?.name || userId;
+
     // Emit & Log
     for (const orgId in contractsByOrg) {
       const orgContracts = contractsByOrg[orgId];
@@ -711,6 +775,28 @@ export class RentalContractService {
         deletedBy: userId,
         timestamp: new Date().toISOString(),
       });
+
+      // Send Email
+      try {
+        const org = await this.organizationRepository.findById(orgId);
+        if (org && org.owner && org.owner.email) {
+          const codes = orgContracts.map(c => c.code);
+          await this.emailService.sendContractCancelledEmail(
+            org.owner.email,
+            org.owner.name || org.owner.email,
+            codes,
+            deleterName,
+            lang,
+          );
+        }
+      } catch (error) {
+        this.systemLogService.error(
+          'rental-contract',
+          'email',
+          'Failed to send contract cancelled email (deleteMany)',
+          { userId, metaData: { orgId, error } },
+        );
+      }
 
       orgContracts.forEach(c => {
         this.systemLogService.info(
@@ -776,6 +862,31 @@ export class RentalContractService {
       deletedBy: userId,
       timestamp: new Date().toISOString(),
     });
+
+    // Send Email
+    try {
+      const org = await this.organizationRepository.findById(organizationId);
+      const deleter = await this.organizationRepository.findUserById(userId);
+      const deleterName = deleter?.name || userId;
+
+      if (org && org.owner && org.owner.email) {
+        const codes = contracts.map(c => c.code);
+        await this.emailService.sendContractCancelledEmail(
+          org.owner.email,
+          org.owner.name || org.owner.email,
+          codes,
+          deleterName,
+          lang,
+        );
+      }
+    } catch (error) {
+      this.systemLogService.error(
+        'rental-contract',
+        'email',
+        'Failed to send contract cancelled email (deleteManyByOrg)',
+        { userId, metaData: { organizationId, error } },
+      );
+    }
 
     contracts.forEach(c => {
       this.systemLogService.info(
@@ -882,12 +993,12 @@ export class RentalContractService {
   }
 
   /**
-   * Gia hạn hợp đồng (chỉ cho phép adjust_months)
+   * Gia hạn hợp đồng
    * Chỉ owner/member của org mới được gia hạn
    */
   async renewByOrg(
     id: string,
-    dto: { adjust_months: number },
+    dto: RenewRentalContractDto,
     userId: string,
     organizationId: string,
     lang: string,
@@ -927,8 +1038,31 @@ export class RentalContractService {
       );
     }
 
+    // Xác định số tháng điều chỉnh từ extend_duration_tier_id hoặc reduce_months
+    let adjustMonths: number;
+
+    if (dto.extend_duration_tier_id) {
+      // Gia hạn bằng duration tier
+      const tier = await this.repository['prisma'].rentalDurationTier.findFirst({
+        where: { id: dto.extend_duration_tier_id, is_deleted: false, is_active: true },
+      });
+      if (!tier) {
+        throw new BadRequestException(
+          this.i18n.t('rental-contract.validation.duration_tier_not_found', { lang }),
+        );
+      }
+      adjustMonths = this.convertDurationToMonths(tier.duration_value, tier.duration_unit);
+    } else if (dto.reduce_months) {
+      // Giảm thời gian
+      adjustMonths = -dto.reduce_months;
+    } else {
+      throw new BadRequestException(
+        this.i18n.t('rental-contract.validation.extend_or_reduce_required', { lang }),
+      );
+    }
+
     const newExpiredAt = new Date(existing.expired_at);
-    newExpiredAt.setMonth(newExpiredAt.getMonth() + dto.adjust_months);
+    newExpiredAt.setMonth(newExpiredAt.getMonth() + adjustMonths);
 
     // Validate: không cho giảm xuống dưới ngày hiện tại
     if (newExpiredAt < new Date()) {
@@ -944,6 +1078,7 @@ export class RentalContractService {
 
     const contract = await this.repository.update(id, updateData);
 
+
     // Invalidate caches
     await Promise.all([
       this.invalidateContractCache(id),
@@ -955,9 +1090,9 @@ export class RentalContractService {
       try {
         await this.sendContractTimeChangedEmail({
           ownerEmail: existing.organization.owner.email,
-          ownerName: existing.organization.owner.full_name,
+          ownerName: existing.organization.owner.name,
           contractCode: existing.code,
-          adjustMonths: dto.adjust_months,
+          adjustMonths: adjustMonths,
           newExpiredAt,
           lang,
         });
@@ -972,12 +1107,12 @@ export class RentalContractService {
     }
 
     // Log
-    const action = dto.adjust_months > 0 ? 'renew' : 'reduce';
+    const action = adjustMonths > 0 ? 'renew' : 'reduce';
     this.systemLogService.info(
       'rental-contract',
       action,
       `${action} rental contract: ${contract.code}`,
-      { userId, metaData: { contractId: id, adjustMonths: dto.adjust_months } },
+      { userId, metaData: { contractId: id, adjustMonths: adjustMonths } },
     );
 
     // Audit log
@@ -986,7 +1121,7 @@ export class RentalContractService {
       'rental_contract',
       id,
       { expired_at: existing.expired_at } as unknown as Record<string, unknown>,
-      { adjust_months: dto.adjust_months } as unknown as Record<string, unknown>,
+      { adjustMonths: adjustMonths } as unknown as Record<string, unknown>,
       { userId, description: `${action} rental contract: ${contract.code}` },
     );
 
@@ -1279,7 +1414,443 @@ export class RentalContractService {
     await this.invalidateContractListCache();
   }
 
+  /**
+   * Thêm addon vào hợp đồng
+   * Chỉ owner/member của org mới được thêm
+   */
+  async addAddon(
+    contractId: string,
+    addonId: string,
+    userId: string,
+    organizationId: string,
+    lang: string,
+  ) {
+    // Tìm contract
+    const contract = await this.repository.findById(contractId);
+    if (!contract) {
+      throw new NotFoundException(
+        this.i18n.t('rental-contract.errors.not_found', { lang }),
+      );
+    }
+
+    // Kiểm tra contract thuộc org
+    if (contract.organization_id !== organizationId) {
+      throw new ForbiddenException(
+        this.i18n.t('rental-contract.errors.no_permission', { lang }),
+      );
+    }
+
+    // Kiểm tra quyền org-level
+    await this.checkOrgPermission(
+      organizationId,
+      userId,
+      'rental-contract.update',
+      lang,
+    );
+
+    // Chỉ thêm addon cho contract ACTIVE
+    if (contract.status !== ContractStatus.ACTIVE) {
+      throw new BadRequestException(
+        this.i18n.t('rental-contract.errors.not_active', { lang }),
+      );
+    }
+
+    // Kiểm tra addon đã được thêm chưa
+    const alreadyAdded = await this.repository.isAddonAlreadyAdded(contractId, addonId);
+    if (alreadyAdded) {
+      throw new BadRequestException(
+        this.i18n.t('rental-contract.errors.addon_already_added', { lang }),
+      );
+    }
+
+    // Lấy thông tin addon (cần import PrismaService hoặc tạo AddonRepository)
+    // Tạm thời lấy qua prisma direct
+    const addon = await this.repository['prisma'].addon.findFirst({
+      where: { id: addonId, is_deleted: false, is_active: true },
+    });
+    if (!addon) {
+      throw new NotFoundException(
+        this.i18n.t('rental-contract.errors.addon_not_found', { lang }),
+      );
+    }
+
+    // Thêm addon
+    const contractAddon = await this.repository.addAddon({
+      rental_contract_id: contractId,
+      addon_id: addonId,
+      price_at_purchase: Number(addon.price),
+      is_gift: false,
+      created_by: userId,
+    });
+
+    // Ghi log
+    await this.repository.createLog({
+      rental_contract_id: contractId,
+      action: 'ADDON_ADDED',
+      description: `Addon "${addon.name}" đã được thêm vào hợp đồng`,
+      metadata: {
+        addon_id: addonId,
+        addon_name: addon.name,
+        price: Number(addon.price),
+      },
+      created_by: userId,
+    });
+
+    // Log hệ thống
+    this.systemLogService.info(
+      'rental-contract',
+      'addon-added',
+      `Added addon ${addon.name} to contract ${contract.code}`,
+      { userId, metaData: { contractId, addonId, addonName: addon.name } },
+    );
+
+    // Emit socket event
+    this.websocketGateway.emitToOrganization(organizationId, 'rentalContract:addonAdded', {
+      contractId,
+      contractCode: contract.code,
+      addonId,
+      addonName: addon.name,
+      addedBy: userId,
+      timestamp: new Date().toISOString(),
+    });
+
+    // Invalidate cache
+    await this.invalidateContractCache(contractId);
+
+    return contractAddon;
+  }
+
+  /**
+   * Hủy addon từ hợp đồng
+   * Chỉ owner/member của org mới được hủy
+   */
+  async removeAddon(
+    contractAddonId: string,
+    cancelReason: string,
+    userId: string,
+    organizationId: string,
+    lang: string,
+  ) {
+    // Tìm contract addon
+    const contractAddon = await this.repository.findContractAddonById(contractAddonId);
+    if (!contractAddon) {
+      throw new NotFoundException(
+        this.i18n.t('rental-contract.errors.contract_addon_not_found', { lang }),
+      );
+    }
+
+    // Kiểm tra đã bị hủy chưa
+    if (contractAddon.is_cancelled) {
+      throw new BadRequestException(
+        this.i18n.t('rental-contract.errors.addon_already_cancelled', { lang }),
+      );
+    }
+
+    const contract = contractAddon.rental_contract;
+    if (!contract) {
+      throw new NotFoundException(
+        this.i18n.t('rental-contract.errors.not_found', { lang }),
+      );
+    }
+
+    // Kiểm tra contract thuộc org
+    if (contract.organization_id !== organizationId) {
+      throw new ForbiddenException(
+        this.i18n.t('rental-contract.errors.no_permission', { lang }),
+      );
+    }
+
+    // Kiểm tra quyền org-level
+    await this.checkOrgPermission(
+      organizationId,
+      userId,
+      'rental-contract.update',
+      lang,
+    );
+
+    // Hủy addon
+    const result = await this.repository.cancelAddon(contractAddonId, cancelReason, userId);
+
+    // Ghi log
+    await this.repository.createLog({
+      rental_contract_id: contract.id,
+      action: 'ADDON_CANCELLED',
+      description: `Addon "${result.addon.name}" đã bị hủy. Lý do: ${cancelReason}`,
+      metadata: {
+        contract_addon_id: contractAddonId,
+        addon_id: result.addon_id,
+        addon_name: result.addon.name,
+        cancel_reason: cancelReason,
+      },
+      created_by: userId,
+    });
+
+    // Log hệ thống
+    this.systemLogService.info(
+      'rental-contract',
+      'addon-cancelled',
+      `Cancelled addon ${result.addon.name} from contract ${contract.code}`,
+      { userId, metaData: { contractId: contract.id, addonId: result.addon_id, reason: cancelReason } },
+    );
+
+    // Emit socket event
+    this.websocketGateway.emitToOrganization(organizationId, 'rentalContract:addonCancelled', {
+      contractId: contract.id,
+      contractCode: contract.code,
+      contractAddonId,
+      addonId: result.addon_id,
+      addonName: result.addon.name,
+      cancelReason,
+      cancelledBy: userId,
+      timestamp: new Date().toISOString(),
+    });
+
+    // Gửi email thông báo hủy addon
+    const organization = await this.organizationRepository.findById(organizationId);
+    if (organization?.owner?.email) {
+      try {
+        await this.sendAddonCancelledEmail({
+          ownerEmail: organization.owner.email,
+          ownerName: organization.owner.name,
+          contractCode: contract.code,
+          addonName: result.addon.name,
+          cancelReason,
+          lang,
+        });
+      } catch (emailError) {
+        this.systemLogService.error(
+          'rental-contract',
+          'email',
+          'Failed to send addon cancelled email',
+          { userId, metaData: { contractId: contract.id, addonId: result.addon_id, error: String(emailError) } },
+        );
+      }
+
+      // Gửi User Notification cho Owner
+      if (organization.owner.id) {
+        try {
+          await this.userNotificationService.sendNotification({
+            user_id: organization.owner.id,
+            title: this.i18n.t('rental-contract.success.addon_cancelled_title', { lang }),
+            content: this.i18n.t('rental-contract.success.addon_cancelled_content', {
+              lang,
+              args: { addon: result.addon.name, code: contract.code }
+            }),
+            type: 'WARNING',
+          }, userId, lang);
+        } catch (notifError) {
+          this.systemLogService.error(
+            'rental-contract',
+            'notification',
+            'Failed to send addon cancelled notification',
+            { userId, metaData: { contractId: contract.id, addonId: result.addon_id, error: String(notifError) } },
+          );
+        }
+      }
+    }
+
+    // Invalidate cache
+    await this.invalidateContractCache(contract.id);
+
+    return result;
+  }
+
+  /**
+   * Hủy hợp đồng với lý do
+   */
+  async cancelContractWithReason(
+    contractId: string,
+    cancelReason: string,
+    userId: string,
+    organizationId: string,
+    lang: string,
+  ): Promise<void> {
+    const existing = await this.repository.findById(contractId);
+    if (!existing) {
+      throw new NotFoundException(
+        this.i18n.t('rental-contract.errors.not_found', { lang }),
+      );
+    }
+
+    // Kiểm tra contract thuộc org
+    if (existing.organization_id !== organizationId) {
+      throw new ForbiddenException(
+        this.i18n.t('rental-contract.errors.no_permission', { lang }),
+      );
+    }
+
+    // Kiểm tra quyền org-level
+    await this.checkOrgPermission(
+      organizationId,
+      userId,
+      'rental-contract.delete',
+      lang,
+    );
+
+    // Không cho hủy hợp đồng đã COMPLETED hoặc LIQUIDATED
+    const nonCancellableStatuses: ContractStatus[] = [
+      ContractStatus.COMPLETED,
+      ContractStatus.LIQUIDATED,
+    ];
+    if (nonCancellableStatuses.includes(existing.status)) {
+      throw new BadRequestException(
+        this.i18n.t('rental-contract.errors.cannot_cancel', { lang }),
+      );
+    }
+
+    // Ghi log trước khi hủy
+    await this.repository.createLog({
+      rental_contract_id: contractId,
+      action: 'CANCELLED',
+      description: `Hợp đồng đã bị hủy. Lý do: ${cancelReason}`,
+      metadata: {
+        previous_status: existing.status,
+        cancel_reason: cancelReason,
+      },
+      created_by: userId,
+    });
+
+    // Set actual_ended_at và soft delete
+    await this.repository.cancelContract(contractId, userId);
+
+    // Release lock nếu còn
+    const lockKey = `rental:lock:contract:${contractId}`;
+    await this.releaseLock([lockKey]);
+
+    // Invalidate caches
+    await Promise.all([
+      this.invalidateContractCache(contractId),
+      this.invalidateContractListCache(),
+    ]);
+
+    // Log
+    this.systemLogService.info(
+      'rental-contract',
+      'cancel',
+      `Cancelled contract ${existing.code} with reason: ${cancelReason}`,
+      { userId, metaData: { contractId, code: existing.code, reason: cancelReason } },
+    );
+
+    // Audit log
+    this.auditLogService.logDelete(
+      organizationId,
+      'rental_contract',
+      contractId,
+      { status: existing.status, code: existing.code, cancel_reason: cancelReason } as unknown as Record<
+        string,
+        unknown
+      >,
+      { userId, description: `Cancelled contract: ${existing.code}` },
+    );
+
+    // Emit socket event
+    this.websocketGateway.emitToOrganization(organizationId, 'rentalContract:cancelled', {
+      contractId,
+      code: existing.code,
+      cancelReason,
+      cancelledBy: userId,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  /**
+   * Lấy addons của hợp đồng
+   */
+  async getContractAddons(
+    contractId: string,
+    userId: string,
+    organizationId: string,
+    lang: string,
+  ) {
+    const contract = await this.repository.findById(contractId);
+    if (!contract) {
+      throw new NotFoundException(
+        this.i18n.t('rental-contract.errors.not_found', { lang }),
+      );
+    }
+
+    if (contract.organization_id !== organizationId) {
+      throw new ForbiddenException(
+        this.i18n.t('rental-contract.errors.no_permission', { lang }),
+      );
+    }
+
+    await this.checkOrgPermission(
+      organizationId,
+      userId,
+      'rental-contract.read',
+      lang,
+    );
+
+    return this.repository.findContractAddons(contractId);
+  }
+
+  /**
+   * Lấy log của hợp đồng
+   */
+  async getContractLogs(
+    contractId: string,
+    userId: string,
+    organizationId: string,
+    lang: string,
+  ) {
+    const contract = await this.repository.findById(contractId);
+    if (!contract) {
+      throw new NotFoundException(
+        this.i18n.t('rental-contract.errors.not_found', { lang }),
+      );
+    }
+
+    if (contract.organization_id !== organizationId) {
+      throw new ForbiddenException(
+        this.i18n.t('rental-contract.errors.no_permission', { lang }),
+      );
+    }
+
+    await this.checkOrgPermission(
+      organizationId,
+      userId,
+      'rental-contract.read',
+      lang,
+    );
+
+    return this.repository.findContractLogs(contractId);
+  }
+
+  /**
+   * Lấy thông tin đầy đủ của hợp đồng (với addons, logs, coupons)
+   */
+  async findByIdWithFullDetails(
+    contractId: string,
+    userId: string,
+    organizationId: string,
+    lang: string,
+  ) {
+    const contract = await this.repository.findByIdWithFullDetails(contractId);
+    if (!contract) {
+      throw new NotFoundException(
+        this.i18n.t('rental-contract.errors.not_found', { lang }),
+      );
+    }
+
+    if (contract.organization_id !== organizationId) {
+      throw new ForbiddenException(
+        this.i18n.t('rental-contract.errors.no_permission', { lang }),
+      );
+    }
+
+    await this.checkOrgPermission(
+      organizationId,
+      userId,
+      'rental-contract.read',
+      lang,
+    );
+
+    return contract;
+  }
+
   // Private helper methods
+
 
   private generateContractCode(): string {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -1438,4 +2009,52 @@ export class RentalContractService {
   private async invalidateContractListCache(): Promise<void> {
     await this.redisService.delByPattern('rental-contract:list:*');
   }
+
+  /**
+   * Chuyển đổi duration value theo unit sang số tháng
+   */
+  private convertDurationToMonths(value: number, unit: string): number {
+    switch (unit?.toUpperCase()) {
+      case 'DAY':
+        return Math.ceil(value / 30);
+      case 'WEEK':
+        return Math.ceil((value * 7) / 30);
+      case 'MONTH':
+        return value;
+      case 'YEAR':
+        return value * 12;
+      default:
+        return value; // Mặc định là tháng
+    }
+  }
+
+  /**
+   * Gửi email thông báo hủy addon
+   */
+  private async sendAddonCancelledEmail(
+    data: IAddonCancelledEmail,
+  ): Promise<void> {
+    const subject = this.i18n.t(
+      'rental-contract.email.addon_cancelled_subject',
+      { lang: data.lang, args: { addon: data.addonName } },
+    );
+    const body = this.i18n.t(
+      'rental-contract.email.addon_cancelled_body',
+      {
+        lang: data.lang,
+        args: {
+          addon: data.addonName,
+          code: data.contractCode,
+          reason: data.cancelReason || 'Không có lý do',
+        },
+      },
+    );
+
+    await this.emailService.sendEmail({
+      to: data.ownerEmail,
+      subject: String(subject),
+      text: String(body),
+    });
+  }
 }
+

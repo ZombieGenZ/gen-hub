@@ -61,6 +61,16 @@ export class OrganizationService {
     private readonly cipherService: CipherService,
   ) { }
 
+  /**
+   * Loại bỏ các trường nhạy cảm khỏi response
+   * Các trường google_client_id, google_client_secret, google_refresh_token, email_primary_address
+   * chỉ được sử dụng nội bộ bởi hệ thống
+   */
+  private stripSensitiveFields(org: IOrganizationWithRelations): IOrganizationWithRelations {
+    const { google_client_id, google_client_secret, google_refresh_token, email_primary_address, ...safeOrg } = org as any;
+    return safeOrg as IOrganizationWithRelations;
+  }
+
   async create(
     dto: CreateOrganizationDto,
     userId: string,
@@ -147,10 +157,10 @@ export class OrganizationService {
       { userId },
     );
 
-    // Emit WebSocket event
-    this.websocketGateway.emitOrganizationCreated(userId, org);
+    // Emit WebSocket event - gửi org đã strip sensitive fields
+    this.websocketGateway.emitOrganizationCreated(userId, this.stripSensitiveFields(org));
 
-    return org;
+    return this.stripSensitiveFields(org);
   }
 
   private async verifyGoogleCredentials(
@@ -237,13 +247,8 @@ export class OrganizationService {
     // Cache result
     await this.redisService.setOrganizationCache(id, org);
 
-    // Decrypt sensitive fields for response
-    if (org.google_client_id) org.google_client_id = this.cipherService.decrypt(org.google_client_id);
-    if (org.google_client_secret) org.google_client_secret = this.cipherService.decrypt(org.google_client_secret);
-    if (org.google_refresh_token) org.google_refresh_token = this.cipherService.decrypt(org.google_refresh_token);
-    if (org.email_primary_address) org.email_primary_address = this.cipherService.decrypt(org.email_primary_address);
-
-    return org;
+    // Ẩn các trường nhạy cảm khỏi response
+    return this.stripSensitiveFields(org);
   }
 
   async findMany(
@@ -268,12 +273,9 @@ export class OrganizationService {
     // Cache result
     await this.redisService.setOrganizationListCache(cacheKey, result);
 
-    // Decrypt email_primary_address for list view
+    // Ẩn các trường nhạy cảm khỏi response
     if (result.items) {
-      result.items.forEach(org => {
-        if (org.email_primary_address) org.email_primary_address = this.cipherService.decrypt(org.email_primary_address);
-        // Don't decrypt google secrets for list view to save performance and security
-      });
+      result.items = result.items.map(org => this.stripSensitiveFields(org));
     }
 
     return result;
@@ -286,7 +288,13 @@ export class OrganizationService {
     lang: string,
     hasUpdateAllPermission?: boolean,
   ): Promise<IOrganizationWithRelations> {
-    const org = await this.findById(id, lang);
+    // Lấy org trực tiếp từ repository vì cần dữ liệu gốc với sensitive fields
+    const org = await this.repository.findById(id);
+    if (!org) {
+      throw new NotFoundException(
+        await this.i18n.translate('organization.errors.not_found', { lang }),
+      );
+    }
 
     // Kiểm tra quyền: phải là owner HOẶC có quyền organization.update.all
     const isOwner = org.owner_id === userId || org.owner?.id === userId;
@@ -309,16 +317,16 @@ export class OrganizationService {
       dto.is_using_google_email ?? org.is_using_google_email;
 
     if (isUsingGoogle) {
-      // NOTE: org fields are already decrypted in findById
-      const clientId = dto.google_client_id ?? org.google_client_id;
-      const clientSecret =
-        dto.google_client_secret ?? org.google_client_secret;
-      const refreshToken =
-        dto.google_refresh_token ?? org.google_refresh_token;
+      // Decrypt stored credentials để so sánh và validate
+      const storedClientId = org.google_client_id ? this.cipherService.decrypt(org.google_client_id) : null;
+      const storedClientSecret = org.google_client_secret ? this.cipherService.decrypt(org.google_client_secret) : null;
+      const storedRefreshToken = org.google_refresh_token ? this.cipherService.decrypt(org.google_refresh_token) : null;
+      const storedEmailPrimary = org.email_primary_address ? this.cipherService.decrypt(org.email_primary_address) : null;
 
-      // Note: email_primary_address is not strictly required for token verification but required for our usage
-      const emailPrimary =
-        dto.email_primary_address ?? org.email_primary_address;
+      const clientId = dto.google_client_id ?? storedClientId;
+      const clientSecret = dto.google_client_secret ?? storedClientSecret;
+      const refreshToken = dto.google_refresh_token ?? storedRefreshToken;
+      const emailPrimary = dto.email_primary_address ?? storedEmailPrimary;
 
       if (!clientId || !clientSecret || !refreshToken || !emailPrimary) {
         throw new BadRequestException(
@@ -383,10 +391,10 @@ export class OrganizationService {
       { userId },
     );
 
-    // Emit WebSocket
-    this.websocketGateway.emitOrganizationUpdated(org.owner_id, updated);
+    // Emit WebSocket - gửi org đã strip sensitive fields
+    this.websocketGateway.emitOrganizationUpdated(org.owner_id, this.stripSensitiveFields(updated));
 
-    return updated;
+    return this.stripSensitiveFields(updated);
   }
 
   async delete(

@@ -25,7 +25,17 @@
         "organization_not_found": "Organization not found",
         "invalid_status": "Invalid contract status",
         "template_not_found": "Warehouse template not found",
-        "row_template_not_found": "Row template not found"
+        "row_template_not_found": "Row template not found",
+        "addon_not_found": "Addon not found",
+        "addon_already_added": "Addon is already added to the contract",
+        "contract_addon_not_found": "Contract addon not found",
+        "addon_already_cancelled": "Addon was already cancelled",
+        "coupon_not_found": "Coupon not found",
+        "coupon_expired": "Coupon has expired",
+        "coupon_usage_exceeded": "Coupon usage limit exceeded",
+        "coupon_conditions_not_met": "Order does not meet coupon conditions",
+        "coupon_stack_exceeded": "Coupon count exceeds stacking limit",
+        "coupon_already_applied": "Coupon is already applied to this contract"
     },
     "validation": {
         "template_id_required": "Template ID is required",
@@ -52,12 +62,36 @@
         "id_required": "ID is required",
         "id_uuid": "ID must be a valid UUID",
         "adjust_months_int": "Adjust months must be an integer",
+        "adjust_months_required": "Adjust months is required",
         "additional_months_required": "Additional months is required",
         "additional_months_positive": "Additional months must be a positive number",
         "limit_positive": "Limit must be a positive number",
         "offset_min": "Offset must be >= 0",
         "keywords_string": "Keywords must be a string",
-        "status_invalid": "Invalid status"
+        "status_invalid": "Invalid status",
+        "duration_tier_id_uuid": "Duration tier ID must be a valid UUID",
+        "duration_tier_id_required": "Duration tier ID is required",
+        "duration_tier_not_found": "Duration tier not found",
+        "duration_tier_or_months_required": "Must select a duration tier or enter rental months",
+        "reduce_months_int": "Reduce months must be an integer",
+        "reduce_months_min": "Reduce months must be greater than 0",
+        "extend_or_reduce_required": "Must select extend or reduce duration",
+        "addon_id_required": "Addon ID is required",
+        "addon_id_uuid": "Addon ID must be a valid UUID",
+        "addon_ids_required": "Addon IDs list is required",
+        "addon_ids_array": "Addon IDs must be an array",
+        "contract_addon_id_required": "Contract addon ID is required",
+        "contract_addon_id_uuid": "Contract addon ID must be a valid UUID",
+        "cancel_reason_string": "Cancel reason must be a string",
+        "cancel_reason_required": "Cancel reason is required",
+        "cancel_reason_max_length": "Cancel reason must not exceed 500 characters",
+        "cancel_reason_max_length_contract": "Contract cancel reason must not exceed 1000 characters",
+        "coupon_codes_required": "Coupon codes are required",
+        "coupon_codes_array": "Coupon codes must be an array",
+        "coupon_code_string": "Coupon code must be a string",
+        "order_amount_required": "Order amount is required",
+        "order_amount_int": "Order amount must be an integer",
+        "order_amount_min": "Order amount must be >= 0"
     },
     "notifications": {
         "expiry_warning_title": "Contract Expiring Soon",
@@ -69,12 +103,22 @@
         "liquidated_title": "Warehouse Liquidated",
         "liquidated_content": "The warehouse for contract {code} has been liquidated due to non-payment within the specified period.",
         "cancelled_by_conflict_title": "Contract Cancelled",
-        "cancelled_by_conflict_content": "Contract {code} has been cancelled because the warehouse was paid and rented by another user."
+        "cancelled_by_conflict_content": "Contract {code} has been cancelled because the warehouse was paid and rented by another user.",
+        "addon_added_title": "Addon Added to Contract",
+        "addon_added_content": "Addon {addon} has been added to contract {code}.",
+        "addon_cancelled_title": "Addon Cancelled",
+        "addon_cancelled_content": "Addon {addon} has been cancelled from contract {code}.",
+        "contract_cancelled_title": "Contract Cancelled",
+        "contract_cancelled_content": "Contract {code} has been cancelled. Reason: {reason}"
     },
     "email": {
         "contract_extended_subject": "[GEN-HUB] Contract {code} has been extended",
         "contract_extended_body": "Contract {code} has been extended by {months} months. New expiry date: {date}.",
         "contract_reduced_subject": "[GEN-HUB] Contract {code} duration reduced",
-        "contract_reduced_body": "Contract {code} duration has been reduced by {months} months. New expiry date: {date}."
+        "contract_reduced_body": "Contract {code} duration has been reduced by {months} months. New expiry date: {date}.",
+        "addon_cancelled_subject": "[GEN-HUB] Addon {addon} Cancelled",
+        "addon_cancelled_body": "Addon {addon} has been cancelled from contract {code}. Reason: {reason}",
+        "contract_cancelled_subject": "[GEN-HUB] Contract {code} Cancelled",
+        "contract_cancelled_body": "Contract {code} has been cancelled. Reason: {reason}"
     }
 }
