@@ -6,11 +6,15 @@ import {
     IsBoolean,
     IsInt,
     IsEnum,
+    IsArray,
+    ValidateNested,
     Min,
     MaxLength,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 import { i18nValidationMessage } from 'nestjs-i18n';
 import { DurationUnit } from '@prisma/client';
+import { TierAddonGiftDto } from './tier-addon-gift.dto';
 
 /**
  * DTO tạo mới mốc thời gian thuê
@@ -72,4 +76,11 @@ export class CreateRentalDurationTierDto {
         message: i18nValidationMessage('rental-duration-tier.validation.is_active_boolean'),
     })
     is_active?: boolean;
+
+    @ApiPropertyOptional({ description: 'Danh sách addon tặng kèm', type: [TierAddonGiftDto] })
+    @IsOptional()
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => TierAddonGiftDto)
+    addon_gifts?: TierAddonGiftDto[];
 }

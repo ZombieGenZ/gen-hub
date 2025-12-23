@@ -1,0 +1,41 @@
+{
+    "success": {
+        "created": "Coupon created successfully",
+        "updated": "Coupon updated successfully",
+        "deleted": "Coupon deleted successfully",
+        "fetched": "Coupon fetched successfully",
+        "saved": "Coupon saved successfully",
+        "unsaved": "Coupon removed from saved list"
+    },
+    "errors": {
+        "not_found": "Coupon not found",
+        "code_exists": "Coupon code already exists",
+        "name_exists": "Coupon name already exists",
+        "create_failed": "Failed to create coupon",
+        "update_failed": "Failed to update coupon",
+        "delete_failed": "Failed to delete coupon",
+        "already_saved": "Coupon is already saved",
+        "not_saved": "Coupon is not saved yet",
+        "expired": "Coupon has expired",
+        "usage_limit_reached": "Coupon usage limit reached",
+        "conditions_not_met": "Order does not meet coupon conditions"
+    },
+    "validation": {
+        "name_required": "Coupon name is required",
+        "name_string": "Coupon name must be a string",
+        "name_max_length": "Coupon name must not exceed 255 characters",
+        "description_string": "Description must be a string",
+        "code_required": "Coupon code is required",
+        "code_string": "Coupon code must be a string",
+        "code_max_length": "Coupon code must not exceed 50 characters",
+        "discount_value_required": "Discount value is required",
+        "discount_value_number": "Discount value must be a number",
+        "discount_value_min": "Discount value must be at least 0",
+        "discount_type_required": "Discount type is required",
+        "discount_type_enum": "Discount type must be PERCENT, AMOUNT or FREE_MONTHS",
+        "is_active_boolean": "Status must be a boolean",
+        "limit_positive": "Limit must be a positive number",
+        "offset_min": "Offset must be >= 0",
+        "keywords_string": "Keywords must be a string"
+    }
+}

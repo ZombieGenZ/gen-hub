@@ -1,0 +1,32 @@
+{
+    "success": {
+        "created": "Đã tạo addon thành công",
+        "updated": "Đã cập nhật addon thành công",
+        "deleted": "Đã xóa addon thành công",
+        "fetched": "Lấy dữ liệu addon thành công"
+    },
+    "errors": {
+        "not_found": "Không tìm thấy addon",
+        "name_exists": "Tên addon đã tồn tại",
+        "create_failed": "Không thể tạo addon",
+        "update_failed": "Không thể cập nhật addon",
+        "delete_failed": "Không thể xóa addon"
+    },
+    "validation": {
+        "name_required": "Tên addon không được để trống",
+        "name_string": "Tên addon phải là chuỗi",
+        "name_max_length": "Tên addon không được quá 255 ký tự",
+        "description_string": "Mô tả phải là chuỗi",
+        "price_required": "Giá không được để trống",
+        "price_number": "Giá phải là số",
+        "price_min": "Giá phải lớn hơn hoặc bằng 0",
+        "is_monthly_payment_boolean": "Trường trả phí hàng tháng phải là boolean",
+        "discount_value_number": "Giá trị giảm giá phải là số",
+        "discount_value_min": "Giá trị giảm giá phải lớn hơn hoặc bằng 0",
+        "discount_type_enum": "Loại giảm giá phải là PERCENT hoặc AMOUNT",
+        "is_active_boolean": "Trạng thái phải là boolean",
+        "limit_positive": "Limit phải là số dương",
+        "offset_min": "Offset phải >= 0",
+        "keywords_string": "Từ khóa tìm kiếm phải là chuỗi"
+    }
+}

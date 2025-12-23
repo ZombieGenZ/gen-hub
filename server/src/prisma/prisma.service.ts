@@ -285,6 +285,9 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
 
       await this.seedConfigPermissions();
       await this.seedAmenityPermissions();
+      await this.seedAddonPermissions();
+      await this.seedCouponPermissions();
+      await this.seedCouponSchedulePermissions();
       await this.seedWarehouseTemplatePermissions();
       await this.seedOrganizationPermissions();
       await this.seedNotificationPermissions();
@@ -2103,6 +2106,300 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         error instanceof Error ? error.message : String(error);
       this.logger.error(
         `❌ Failed to seed payment permissions: ${errorMessage}`,
+      );
+    }
+  }
+
+  /**
+   * Seed các permissions cho Addon
+   */
+  private async seedAddonPermissions() {
+    try {
+      const addonPermissions = [
+        {
+          key: 'addon.create',
+          name: 'Tạo addon',
+          description: 'Quyền tạo mới addon',
+        },
+        {
+          key: 'addon.list',
+          name: 'Xem danh sách addon',
+          description: 'Quyền xem danh sách addon',
+        },
+        {
+          key: 'addon.read',
+          name: 'Xem chi tiết addon',
+          description: 'Quyền xem chi tiết addon',
+        },
+        {
+          key: 'addon.update',
+          name: 'Cập nhật addon',
+          description: 'Quyền cập nhật addon',
+        },
+        {
+          key: 'addon.delete',
+          name: 'Xóa addon',
+          description: 'Quyền xóa addon',
+        },
+      ];
+
+      for (const perm of addonPermissions) {
+        const existing = await this.permission.findFirst({
+          where: { key: perm.key },
+        });
+
+        if (!existing) {
+          await this.permission.create({
+            data: {
+              key: perm.key,
+              name: perm.name,
+              description: perm.description,
+              is_active: true,
+              is_deleted: false,
+            },
+          });
+        }
+      }
+
+      // Gán permissions cho Admin và Super Admin roles
+      const roles = await this.role.findMany({
+        where: {
+          name: { in: ['Admin', 'Super Admin'] },
+          is_deleted: false,
+        },
+      });
+
+      const permissions = await this.permission.findMany({
+        where: {
+          key: { in: addonPermissions.map((p) => p.key) },
+          is_deleted: false,
+        },
+      });
+
+      for (const role of roles) {
+        for (const permission of permissions) {
+          const existingAssignment = await this.rolePermission.findFirst({
+            where: {
+              role_id: role.id,
+              permission_id: permission.id,
+            },
+          });
+
+          if (!existingAssignment) {
+            await this.rolePermission.create({
+              data: {
+                role_id: role.id,
+                permission_id: permission.id,
+                is_active: true,
+                is_deleted: false,
+              },
+            });
+          }
+        }
+      }
+
+      this.logger.log('✅ Addon permissions seeded');
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `❌ Failed to seed addon permissions: ${errorMessage}`,
+      );
+    }
+  }
+
+  /**
+   * Seed các permissions cho Coupon
+   */
+  private async seedCouponPermissions() {
+    try {
+      const couponPermissions = [
+        {
+          key: 'coupon.create',
+          name: 'Tạo coupon',
+          description: 'Quyền tạo mới coupon',
+        },
+        {
+          key: 'coupon.list',
+          name: 'Xem danh sách coupon',
+          description: 'Quyền xem danh sách coupon',
+        },
+        {
+          key: 'coupon.read',
+          name: 'Xem chi tiết coupon',
+          description: 'Quyền xem chi tiết coupon',
+        },
+        {
+          key: 'coupon.update',
+          name: 'Cập nhật coupon',
+          description: 'Quyền cập nhật coupon',
+        },
+        {
+          key: 'coupon.delete',
+          name: 'Xóa coupon',
+          description: 'Quyền xóa coupon',
+        },
+      ];
+
+      for (const perm of couponPermissions) {
+        const existing = await this.permission.findFirst({
+          where: { key: perm.key },
+        });
+
+        if (!existing) {
+          await this.permission.create({
+            data: {
+              key: perm.key,
+              name: perm.name,
+              description: perm.description,
+              is_active: true,
+              is_deleted: false,
+            },
+          });
+        }
+      }
+
+      // Gán permissions cho Admin và Super Admin roles
+      const roles = await this.role.findMany({
+        where: {
+          name: { in: ['Admin', 'Super Admin'] },
+          is_deleted: false,
+        },
+      });
+
+      const permissions = await this.permission.findMany({
+        where: {
+          key: { in: couponPermissions.map((p) => p.key) },
+          is_deleted: false,
+        },
+      });
+
+      for (const role of roles) {
+        for (const permission of permissions) {
+          const existingAssignment = await this.rolePermission.findFirst({
+            where: {
+              role_id: role.id,
+              permission_id: permission.id,
+            },
+          });
+
+          if (!existingAssignment) {
+            await this.rolePermission.create({
+              data: {
+                role_id: role.id,
+                permission_id: permission.id,
+                is_active: true,
+                is_deleted: false,
+              },
+            });
+          }
+        }
+      }
+
+      this.logger.log('✅ Coupon permissions seeded');
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `❌ Failed to seed coupon permissions: ${errorMessage}`,
+      );
+    }
+  }
+
+  /**
+   * Seed các permissions cho CouponSchedule
+   */
+  private async seedCouponSchedulePermissions() {
+    try {
+      const couponSchedulePermissions = [
+        {
+          key: 'coupon-schedule.create',
+          name: 'Tạo lịch coupon',
+          description: 'Quyền tạo lịch tự động tạo coupon',
+        },
+        {
+          key: 'coupon-schedule.list',
+          name: 'Xem danh sách lịch coupon',
+          description: 'Quyền xem danh sách lịch coupon',
+        },
+        {
+          key: 'coupon-schedule.read',
+          name: 'Xem chi tiết lịch coupon',
+          description: 'Quyền xem chi tiết lịch coupon',
+        },
+        {
+          key: 'coupon-schedule.update',
+          name: 'Cập nhật lịch coupon',
+          description: 'Quyền cập nhật lịch coupon',
+        },
+        {
+          key: 'coupon-schedule.delete',
+          name: 'Xóa lịch coupon',
+          description: 'Quyền xóa lịch coupon',
+        },
+      ];
+
+      for (const perm of couponSchedulePermissions) {
+        const existing = await this.permission.findFirst({
+          where: { key: perm.key },
+        });
+
+        if (!existing) {
+          await this.permission.create({
+            data: {
+              key: perm.key,
+              name: perm.name,
+              description: perm.description,
+              is_active: true,
+              is_deleted: false,
+            },
+          });
+        }
+      }
+
+      // Gán permissions cho Admin và Super Admin roles
+      const roles = await this.role.findMany({
+        where: {
+          name: { in: ['Admin', 'Super Admin'] },
+          is_deleted: false,
+        },
+      });
+
+      const permissions = await this.permission.findMany({
+        where: {
+          key: { in: couponSchedulePermissions.map((p) => p.key) },
+          is_deleted: false,
+        },
+      });
+
+      for (const role of roles) {
+        for (const permission of permissions) {
+          const existingAssignment = await this.rolePermission.findFirst({
+            where: {
+              role_id: role.id,
+              permission_id: permission.id,
+            },
+          });
+
+          if (!existingAssignment) {
+            await this.rolePermission.create({
+              data: {
+                role_id: role.id,
+                permission_id: permission.id,
+                is_active: true,
+                is_deleted: false,
+              },
+            });
+          }
+        }
+      }
+
+      this.logger.log('✅ CouponSchedule permissions seeded');
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `❌ Failed to seed coupon-schedule permissions: ${errorMessage}`,
       );
     }
   }

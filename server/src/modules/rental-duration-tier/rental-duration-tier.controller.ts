@@ -72,7 +72,7 @@ export class RentalDurationTierController {
     @Get('active')
     @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard)
-    @ApiOperation({ summary: 'Lấy tất cả mốc thời gian thuê đang active (cho dropdown)' })
+    @ApiOperation({ summary: 'Lấy tất cả mốc thời gian thuê đang active' })
     @ApiResponse({ status: 200, description: 'Lấy thành công' })
     async findAllActive(): Promise<GetResponse<IRentalDurationTier[]>> {
         const result = await this.service.findAllActive();

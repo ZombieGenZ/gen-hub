@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { ContractStatus } from '@prisma/client';
@@ -12,9 +12,13 @@ import { OrgNotificationRepository } from '../org-notification/org-notification.
  * - Thông báo hợp đồng sắp hết hạn
  * - Cập nhật status overdue
  * - Xử lý niêm phong và thanh lý
+ * 
+ * Logic:
+ * - Khi server khởi động: kiểm tra và xử lý ngay nếu chưa chạy hôm nay
+ * - Chạy hàng ngày theo lịch cron
  */
 @Injectable()
-export class RentalSchedulerService {
+export class RentalSchedulerService implements OnModuleInit {
     private readonly logger = new Logger(RentalSchedulerService.name);
 
     private readonly EXPIRY_WARNING_DAYS: number;
@@ -34,6 +38,25 @@ export class RentalSchedulerService {
         this.OVERDUE_LEVEL_2_DAYS = this.configService.get<number>('OVERDUE_LEVEL_2_DAYS') || 30;
         this.OVERDUE_LEVEL_3_DAYS = this.configService.get<number>('OVERDUE_LEVEL_3_DAYS') || 45;
         this.OVERDUE_SEALED_DAYS = this.configService.get<number>('OVERDUE_SEALED_DAYS') || 60;
+    }
+
+    /**
+     * Khi server khởi động, kiểm tra và xử lý ngay các hợp đồng cần cập nhật
+     */
+    async onModuleInit() {
+        this.logger.log('🚀 Khởi tạo Rental Scheduler...');
+
+        try {
+            // Chạy kiểm tra expiry notifications ngay
+            await this.handleExpiryNotifications();
+
+            // Chạy cập nhật overdue ngay
+            await this.handleOverdueUpdates();
+
+            this.logger.log('✅ Rental Scheduler đã sẵn sàng');
+        } catch (error) {
+            this.logger.error(`❌ Lỗi khởi tạo Rental Scheduler: ${error}`);
+        }
     }
 
     /**

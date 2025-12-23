@@ -106,6 +106,7 @@ model User {
   organization_audit_logs OrganizationAuditLog[]
   backupCodes             BackupCode[]
   notifications           UserNotification[]
+  saved_coupons           UserSavedCoupon[]
 
   @@map("users")
 }
@@ -267,6 +268,33 @@ enum TemplateRentalStatus {
   RENTED
 }
 
+enum DiscountType {
+  PERCENT
+  AMOUNT
+}
+
+enum CouponDiscountType {
+  PERCENT
+  AMOUNT
+  FREE_MONTHS
+}
+
+enum CouponSchedulePeriod {
+  YEARLY
+  QUARTERLY
+  MONTHLY
+  WEEKLY
+  DAILY
+}
+
+enum CouponDurationUnit {
+  HOUR
+  DAY
+  WEEK
+  MONTH
+  YEAR
+}
+
 model Amenity {
   id          String  @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
   name        String
@@ -389,9 +417,218 @@ model RentalDurationTier {
   warehouse_discount_configs WarehouseDiscountConfig[]
   row_discount_configs       RowDiscountConfig[]
   payments                   Payment[]
+  tier_addon_gifts           TierAddonGift[]
 
   @@unique([duration_value, duration_unit])
   @@map("rental_duration_tiers")
+}
+
+model Addon {
+  id                 String        @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  name               String
+  description        String?
+  price              Decimal       @db.Decimal(19, 4)
+  is_monthly_payment Boolean       @default(false)
+  discount_value     Decimal?      @db.Decimal(19, 4)
+  discount_type      DiscountType?
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean?  @default(false)
+  deleted_at DateTime?
+
+  created_by String
+  updated_by String?
+  deleted_by String?
+
+  tier_gifts TierAddonGift[]
+
+  @@map("addons")
+}
+
+model TierAddonGift {
+  id               String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  duration_tier_id String @db.Uuid
+  addon_id         String @db.Uuid
+
+  require_min_order_amount Boolean  @default(false)
+  min_order_amount         Decimal? @db.Decimal(19, 4)
+
+  require_min_warehouses Boolean @default(false)
+  min_warehouses         Int?
+
+  require_min_rows Boolean @default(false)
+  min_rows         Int?
+
+  is_until_service_end Boolean       @default(true)
+  gift_duration_value  Int?
+  gift_duration_unit   DurationUnit?
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean?  @default(false)
+  deleted_at DateTime?
+
+  created_by String
+  updated_by String?
+  deleted_by String?
+
+  duration_tier RentalDurationTier @relation(fields: [duration_tier_id], references: [id], onDelete: Cascade)
+  addon         Addon              @relation(fields: [addon_id], references: [id], onDelete: Cascade)
+
+  @@unique([duration_tier_id, addon_id])
+  @@index([duration_tier_id])
+  @@index([addon_id])
+  @@map("tier_addon_gifts")
+}
+
+model Coupon {
+  id          String             @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  name        String
+  description String?
+  code        String
+
+  discount_value Decimal            @db.Decimal(19, 4)
+  discount_type  CouponDiscountType
+
+  require_min_warehouses Boolean @default(false)
+  min_warehouses         Int?
+
+  require_min_rows Boolean @default(false)
+  min_rows         Int?
+
+  require_min_order_amount Boolean  @default(false)
+  min_order_amount         Decimal? @db.Decimal(19, 4)
+
+  require_min_rental_duration Boolean       @default(false)
+  min_rental_duration_value   Int?
+  min_rental_duration_unit    DurationUnit?
+
+  is_unlimited_discount Boolean  @default(false)
+  max_discount_amount   Decimal? @db.Decimal(19, 4)
+
+  is_permanent Boolean   @default(false)
+  starts_at    DateTime?
+  ends_at      DateTime?
+
+  max_usage     Int @default(0)
+  current_usage Int @default(0)
+
+  is_public              Boolean @default(false)
+  apply_for_first_rental Boolean @default(true)
+  apply_for_renewal      Boolean @default(true)
+  schedule_id String?         @db.Uuid
+  schedule    CouponSchedule? @relation(fields: [schedule_id], references: [id])
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean?  @default(false)
+  deleted_at DateTime?
+
+  created_by String
+  updated_by String?
+  deleted_by String?
+
+  saved_by_users UserSavedCoupon[]
+
+  @@index([code])
+  @@index([starts_at])
+  @@index([ends_at])
+  @@index([is_public])
+  @@index([schedule_id])
+  @@map("coupons")
+}
+
+model CouponSchedule {
+  id          String  @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  name        String
+  description String?
+  period CouponSchedulePeriod
+
+  scheduled_day     Int?
+  scheduled_month   Int?
+  scheduled_weekday Int?
+  scheduled_hour    Int?
+  scheduled_minute  Int?
+
+  is_random_code   Boolean @default(true)
+  is_fixed_code    Boolean @default(false)
+  fixed_code_value String?
+
+  use_suffix Boolean @default(false)
+  use_prefix Boolean @default(false)
+
+  is_permanent_coupon   Boolean             @default(false)
+  coupon_duration_value Int? 
+  coupon_duration_unit  CouponDurationUnit?
+
+  discount_value Decimal            @db.Decimal(19, 4)
+  discount_type  CouponDiscountType
+
+  require_min_warehouses Boolean @default(false)
+  min_warehouses         Int?
+
+  require_min_rows Boolean @default(false)
+  min_rows         Int?
+
+  require_min_order_amount Boolean  @default(false)
+  min_order_amount         Decimal? @db.Decimal(19, 4)
+
+  require_min_rental_duration Boolean       @default(false)
+  min_rental_duration_value   Int?
+  min_rental_duration_unit    DurationUnit?
+
+  is_unlimited_discount Boolean  @default(false)
+  max_discount_amount   Decimal? @db.Decimal(19, 4)
+
+  max_usage              Int     @default(0)
+  is_public              Boolean @default(false)
+  apply_for_first_rental Boolean @default(true)
+  apply_for_renewal      Boolean @default(true)
+
+  last_run_at DateTime?
+  next_run_at DateTime?
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean?  @default(false)
+  deleted_at DateTime?
+
+  created_by String
+  updated_by String?
+  deleted_by String?
+
+  created_coupons Coupon[]
+
+  @@map("coupon_schedules")
+}
+
+model UserSavedCoupon {
+  id        String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  user_id   String @db.Uuid
+  coupon_id String @db.Uuid
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean?  @default(false)
+  deleted_at DateTime?
+
+  created_by String
+  updated_by String?
+  deleted_by String?
+
+  user   User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  coupon Coupon @relation(fields: [coupon_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, coupon_id])
+  @@index([user_id])
+  @@index([coupon_id])
+  @@map("user_saved_coupons")
 }
 
 model WarehouseDiscountConfig {

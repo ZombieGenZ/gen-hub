@@ -102,6 +102,7 @@ socket.on('pong', () => {
 | Global (All) | Template Image: `warehouseTemplateImage:created`, `warehouseTemplateImage:updated`, `warehouseTemplateImage:deleted`, `warehouseTemplateImage:deletedMany` |
 | Global (All) | Notification: `globalNotification:created`, `globalNotification:updated`, `globalNotification:deleted` |
 | Global (All) | Amenity: `amenity:created`, `amenity:updated`, `amenity:deleted`, `amenity:deletedMany` |
+| Global (All) | CouponSchedule: `couponSchedule:created`, `couponSchedule:updated`, `couponSchedule:deleted`, `couponSchedule:deletedMany`, `couponSchedule:executed` |
 | Global (All) | Config: `config:updated` |
 | Global (All) | User: `user:onlineStatus` |
 | `notifications` | `userNotification:received`, `userNotification:read`, `userNotification:allRead` |

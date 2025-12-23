@@ -1,0 +1,32 @@
+{
+    "success": {
+        "created": "Addon created successfully",
+        "updated": "Addon updated successfully",
+        "deleted": "Addon deleted successfully",
+        "fetched": "Addon fetched successfully"
+    },
+    "errors": {
+        "not_found": "Addon not found",
+        "name_exists": "Addon name already exists",
+        "create_failed": "Failed to create addon",
+        "update_failed": "Failed to update addon",
+        "delete_failed": "Failed to delete addon"
+    },
+    "validation": {
+        "name_required": "Addon name is required",
+        "name_string": "Addon name must be a string",
+        "name_max_length": "Addon name must not exceed 255 characters",
+        "description_string": "Description must be a string",
+        "price_required": "Price is required",
+        "price_number": "Price must be a number",
+        "price_min": "Price must be at least 0",
+        "is_monthly_payment_boolean": "Monthly payment flag must be a boolean",
+        "discount_value_number": "Discount value must be a number",
+        "discount_value_min": "Discount value must be at least 0",
+        "discount_type_enum": "Discount type must be PERCENT or AMOUNT",
+        "is_active_boolean": "Status must be a boolean",
+        "limit_positive": "Limit must be a positive number",
+        "offset_min": "Offset must be >= 0",
+        "keywords_string": "Keywords must be a string"
+    }
+}

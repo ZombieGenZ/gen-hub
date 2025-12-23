@@ -52,10 +52,32 @@ export class RentalDurationTierService {
             );
         }
 
+        const { addon_gifts, ...tierData } = dto;
         const tier = await this.repository.create({
-            ...dto,
+            ...tierData,
             created_by: userId,
         });
+
+        // Tạo TierAddonGifts nếu có
+        if (addon_gifts && addon_gifts.length > 0) {
+            for (const gift of addon_gifts) {
+                await this.repository.createAddonGift({
+                    duration_tier_id: tier.id,
+                    addon_id: gift.addon_id,
+                    require_min_order_amount: gift.require_min_order_amount,
+                    min_order_amount: gift.min_order_amount,
+                    require_min_warehouses: gift.require_min_warehouses,
+                    min_warehouses: gift.min_warehouses,
+                    require_min_rows: gift.require_min_rows,
+                    min_rows: gift.min_rows,
+                    is_until_service_end: gift.is_until_service_end,
+                    gift_duration_value: gift.gift_duration_value,
+                    gift_duration_unit: gift.gift_duration_unit,
+                    is_active: gift.is_active,
+                    created_by: userId,
+                });
+            }
+        }
 
         // Xóa cache list
         await this.invalidateListCache();
@@ -63,7 +85,7 @@ export class RentalDurationTierService {
         // Ghi log
         this.systemLogService.info('RentalDurationTier', 'CREATE', `Tạo mốc thời gian thuê: ${tier.name}`, {
             userId,
-            metaData: { tierId: tier.id, name: tier.name, duration_value: tier.duration_value },
+            metaData: { tierId: tier.id, name: tier.name, duration_value: tier.duration_value, addon_gifts_count: addon_gifts?.length || 0 },
         });
 
         // Emit socket event
@@ -76,7 +98,8 @@ export class RentalDurationTierService {
             timestamp: new Date().toISOString(),
         });
 
-        return tier;
+        // Return với addon_gifts
+        return (await this.repository.findByIdWithGifts(tier.id))!;
     }
 
     async findAll(query: QueryRentalDurationTierDto) {
@@ -189,10 +212,62 @@ export class RentalDurationTierService {
             }
         }
 
+        const { addon_gifts, ...tierData } = dto;
         const updated = await this.repository.update(id, {
-            ...dto,
+            ...tierData,
             updated_by: userId,
         });
+
+        // Xử lý addon_gifts nếu có
+        if (addon_gifts !== undefined) {
+            // Lấy danh sách addon_gifts hiện tại
+            const existingGifts = await this.repository.findAddonGiftsByTierId(id);
+            const existingGiftIds = existingGifts.map(g => g.id);
+            const incomingGiftIds = addon_gifts.filter(g => g.id).map(g => g.id!);
+
+            // Xóa các gifts không còn trong danh sách mới
+            const toDelete = existingGiftIds.filter(id => !incomingGiftIds.includes(id));
+            for (const giftId of toDelete) {
+                await this.repository.softDeleteAddonGift(giftId, userId);
+            }
+
+            // Upsert các gifts
+            for (const gift of addon_gifts) {
+                if (gift.id && existingGiftIds.includes(gift.id)) {
+                    // Update
+                    await this.repository.updateAddonGift(gift.id, {
+                        require_min_order_amount: gift.require_min_order_amount,
+                        min_order_amount: gift.min_order_amount,
+                        require_min_warehouses: gift.require_min_warehouses,
+                        min_warehouses: gift.min_warehouses,
+                        require_min_rows: gift.require_min_rows,
+                        min_rows: gift.min_rows,
+                        is_until_service_end: gift.is_until_service_end,
+                        gift_duration_value: gift.gift_duration_value,
+                        gift_duration_unit: gift.gift_duration_unit,
+                        is_active: gift.is_active,
+                        updated_by: userId,
+                    });
+                } else {
+                    // Create
+                    await this.repository.createAddonGift({
+                        duration_tier_id: id,
+                        addon_id: gift.addon_id,
+                        require_min_order_amount: gift.require_min_order_amount,
+                        min_order_amount: gift.min_order_amount,
+                        require_min_warehouses: gift.require_min_warehouses,
+                        min_warehouses: gift.min_warehouses,
+                        require_min_rows: gift.require_min_rows,
+                        min_rows: gift.min_rows,
+                        is_until_service_end: gift.is_until_service_end,
+                        gift_duration_value: gift.gift_duration_value,
+                        gift_duration_unit: gift.gift_duration_unit,
+                        is_active: gift.is_active,
+                        created_by: userId,
+                    });
+                }
+            }
+        }
 
         // Xóa cache
         await this.invalidateCache(id);
@@ -201,7 +276,7 @@ export class RentalDurationTierService {
         // Ghi log
         this.systemLogService.info('RentalDurationTier', 'UPDATE', `Cập nhật mốc thời gian thuê: ${updated.name}`, {
             userId,
-            metaData: { tierId: id, updatedFields: Object.keys(dto) },
+            metaData: { tierId: id, updatedFields: Object.keys(dto), addon_gifts_count: addon_gifts?.length || 0 },
         });
 
         // Emit socket event
@@ -213,7 +288,8 @@ export class RentalDurationTierService {
             timestamp: new Date().toISOString(),
         });
 
-        return updated;
+        // Return với addon_gifts
+        return (await this.repository.findByIdWithGifts(id))!;
     }
 
     async delete(id: string, userId: string, lang: string) {

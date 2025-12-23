@@ -1,0 +1,41 @@
+{
+    "success": {
+        "created": "Đã tạo coupon thành công",
+        "updated": "Đã cập nhật coupon thành công",
+        "deleted": "Đã xóa coupon thành công",
+        "fetched": "Lấy dữ liệu coupon thành công",
+        "saved": "Đã lưu coupon thành công",
+        "unsaved": "Đã bỏ lưu coupon"
+    },
+    "errors": {
+        "not_found": "Không tìm thấy coupon",
+        "code_exists": "Mã coupon đã tồn tại",
+        "name_exists": "Tên coupon đã tồn tại",
+        "create_failed": "Không thể tạo coupon",
+        "update_failed": "Không thể cập nhật coupon",
+        "delete_failed": "Không thể xóa coupon",
+        "already_saved": "Coupon đã được lưu",
+        "not_saved": "Coupon chưa được lưu",
+        "expired": "Coupon đã hết hạn",
+        "usage_limit_reached": "Coupon đã đạt giới hạn sử dụng",
+        "conditions_not_met": "Đơn hàng không đáp ứng điều kiện coupon"
+    },
+    "validation": {
+        "name_required": "Tên coupon không được để trống",
+        "name_string": "Tên coupon phải là chuỗi",
+        "name_max_length": "Tên coupon không được quá 255 ký tự",
+        "description_string": "Mô tả phải là chuỗi",
+        "code_required": "Mã coupon không được để trống",
+        "code_string": "Mã coupon phải là chuỗi",
+        "code_max_length": "Mã coupon không được quá 50 ký tự",
+        "discount_value_required": "Giá trị giảm giá không được để trống",
+        "discount_value_number": "Giá trị giảm giá phải là số",
+        "discount_value_min": "Giá trị giảm giá phải lớn hơn hoặc bằng 0",
+        "discount_type_required": "Loại giảm giá không được để trống",
+        "discount_type_enum": "Loại giảm giá phải là PERCENT, AMOUNT hoặc FREE_MONTHS",
+        "is_active_boolean": "Trạng thái phải là boolean",
+        "limit_positive": "Limit phải là số dương",
+        "offset_min": "Offset phải >= 0",
+        "keywords_string": "Từ khóa tìm kiếm phải là chuỗi"
+    }
+}
