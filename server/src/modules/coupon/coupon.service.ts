@@ -45,10 +45,46 @@ export class CouponService {
             );
         }
 
-        const coupon = await this.repository.create({
-            ...dto,
+
+        const {
+            target_user_ids,
+            target_warehouse_ids,
+            target_row_ids,
+            target_addon_ids,
+            ...couponData
+        } = dto;
+
+        const data: any = {
+            ...couponData,
             created_by: userId,
-        });
+        };
+
+        // Handle relations
+        if (dto.coupon_type === 'PRIVATE' && target_user_ids?.length) {
+            data.target_users = {
+                create: target_user_ids.map(id => ({ user_id: id })),
+            };
+        }
+
+        if (dto.apply_for_all_warehouses === false && target_warehouse_ids?.length) {
+            data.target_warehouses = {
+                create: target_warehouse_ids.map(id => ({ warehouse_template_id: id })),
+            };
+        }
+
+        if (dto.apply_for_all_rows === false && target_row_ids?.length) {
+            data.target_rows = {
+                create: target_row_ids.map(id => ({ row_template_id: id })),
+            };
+        }
+
+        if (dto.apply_for_all_addons === false && target_addon_ids?.length) {
+            data.target_addons = {
+                create: target_addon_ids.map(id => ({ addon_id: id })),
+            };
+        }
+
+        const coupon = await this.repository.create(data);
 
         // Xóa cache list
         await this.invalidateListCache();
@@ -58,6 +94,7 @@ export class CouponService {
             userId,
             metaData: { couponId: coupon.id, name: coupon.name, code: coupon.code },
         });
+
 
         // Emit socket event
         this.websocketGateway.server.emit('coupon:created', {
@@ -166,10 +203,50 @@ export class CouponService {
             }
         }
 
-        const updated = await this.repository.update(id, {
-            ...dto,
+
+        const {
+            target_user_ids,
+            target_warehouse_ids,
+            target_row_ids,
+            target_addon_ids,
+            ...updateData
+        } = dto;
+
+        const data: any = {
+            ...updateData,
             updated_by: userId,
-        });
+        };
+
+        // Handle relations update
+        if (target_user_ids !== undefined) {
+            data.target_users = {
+                deleteMany: {},
+                create: target_user_ids?.map(id => ({ user_id: id })) || [],
+            };
+        }
+
+        if (target_warehouse_ids !== undefined) {
+            data.target_warehouses = {
+                deleteMany: {},
+                create: target_warehouse_ids?.map(id => ({ warehouse_template_id: id })) || [],
+            };
+        }
+
+        if (target_row_ids !== undefined) {
+            data.target_rows = {
+                deleteMany: {},
+                create: target_row_ids?.map(id => ({ row_template_id: id })) || [],
+            };
+        }
+
+        if (target_addon_ids !== undefined) {
+            data.target_addons = {
+                deleteMany: {},
+                create: target_addon_ids?.map(id => ({ addon_id: id })) || [],
+            };
+        }
+
+        const updated = await this.repository.update(id, data);
 
         // Xóa cache
         await this.invalidateCache(id);
@@ -180,6 +257,7 @@ export class CouponService {
             userId,
             metaData: { couponId: id, updatedFields: Object.keys(dto) },
         });
+
 
         // Emit socket event
         this.websocketGateway.server.emit('coupon:updated', {
