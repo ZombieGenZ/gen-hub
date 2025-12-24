@@ -70,6 +70,18 @@
         "scheduled_minute_required": "Phút không được để trống cho chu kỳ ngày",
         "fixed_code_value_required": "Giá trị code cố định không được để trống khi sử dụng code cố định",
         "coupon_duration_value_required": "Thời gian áp dụng coupon không được để trống khi không phải vĩnh viễn",
-        "coupon_duration_unit_required": "Đơn vị thời gian áp dụng không được để trống khi không phải vĩnh viễn"
+        "coupon_duration_unit_required": "Đơn vị thời gian áp dụng không được để trống khi không phải vĩnh viễn",
+        "coupon_type_enum": "Loại coupon phải là PUBLIC hoặc PRIVATE",
+        "apply_for_all_warehouses_boolean": "Trường 'áp dụng cho tất cả kho' phải là boolean",
+        "apply_for_all_rows_boolean": "Trường 'áp dụng cho tất cả row' phải là boolean",
+        "apply_for_all_addons_boolean": "Trường 'áp dụng cho tất cả addon' phải là boolean",
+        "target_user_ids_array": "Danh sách ID user phải là mảng",
+        "target_user_ids_required": "Phải có ít nhất 1 user được chỉ định cho coupon PRIVATE",
+        "target_warehouse_ids_array": "Danh sách ID kho phải là mảng",
+        "target_warehouse_ids_required": "Phải có ít nhất 1 kho được chỉ định khi không áp dụng cho tất cả kho",
+        "target_row_ids_array": "Danh sách ID row phải là mảng",
+        "target_row_ids_required": "Phải có ít nhất 1 row được chỉ định khi không áp dụng cho tất cả row",
+        "target_addon_ids_array": "Danh sách ID addon phải là mảng",
+        "target_addon_ids_required": "Phải có ít nhất 1 addon được chỉ định khi không áp dụng cho tất cả addon"
     }
 }

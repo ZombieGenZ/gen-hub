@@ -107,6 +107,9 @@ model User {
   backupCodes             BackupCode[]
   notifications           UserNotification[]
   saved_coupons           UserSavedCoupon[]
+  
+  coupon_targets          CouponTargetUser[]
+  coupon_schedule_targets CouponScheduleTargetUser[]
 
   @@map("users")
 }
@@ -295,6 +298,11 @@ enum CouponDurationUnit {
   YEAR
 }
 
+enum CouponType {
+  PUBLIC
+  PRIVATE
+}
+
 model Amenity {
   id          String  @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
   name        String
@@ -392,6 +400,9 @@ model WarehouseTemplate {
   amenities               AmenityOnWarehouseTemplate[]
   rental_contract_details RentalContractDetail[]
   discount_configs        WarehouseDiscountConfig[]
+  
+  coupon_targets          CouponTargetWarehouse[]
+  coupon_schedule_targets CouponScheduleTargetWarehouse[]
 
   @@map("warehouse_templates")
 }
@@ -442,6 +453,9 @@ model Addon {
 
   tier_gifts       TierAddonGift[]
   rental_contracts RentalContractAddon[]
+  
+  coupon_targets          CouponTargetAddon[]
+  coupon_schedule_targets CouponScheduleTargetAddon[]
 
   @@map("addons")
 }
@@ -489,6 +503,8 @@ model Coupon {
   description String?
   code        String
 
+  coupon_type CouponType @default(PUBLIC)
+
   discount_value Decimal            @db.Decimal(19, 4)
   discount_type  CouponDiscountType
 
@@ -518,9 +534,10 @@ model Coupon {
   is_public              Boolean @default(false)
   apply_for_first_rental Boolean @default(true)
   apply_for_renewal      Boolean @default(true)
-  apply_for_addon         Boolean @default(false)
-  apply_for_whole_warehouse Boolean @default(true)
-  apply_for_row           Boolean @default(true)
+  
+  apply_for_all_warehouses Boolean @default(true)
+  apply_for_all_rows       Boolean @default(true)
+  apply_for_all_addons     Boolean @default(true)
   
   is_unlimited_stack Boolean @default(false)
   max_stack_count    Int?
@@ -538,22 +555,31 @@ model Coupon {
   updated_by String?
   deleted_by String?
 
-  saved_by_users   UserSavedCoupon[]
-  rental_contracts RentalContractCoupon[]
+  saved_by_users    UserSavedCoupon[]
+  rental_contracts  RentalContractCoupon[]
+  
+  target_users      CouponTargetUser[]
+  target_warehouses CouponTargetWarehouse[]
+  target_rows       CouponTargetRow[]
+  target_addons     CouponTargetAddon[]
 
   @@index([code])
   @@index([starts_at])
   @@index([ends_at])
   @@index([is_public])
+  @@index([coupon_type])
   @@index([schedule_id])
   @@map("coupons")
 }
+
 
 model CouponSchedule {
   id          String  @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
   name        String
   description String?
   period CouponSchedulePeriod
+
+  coupon_type CouponType @default(PUBLIC)
 
   scheduled_day     Int?
   scheduled_month   Int?
@@ -595,9 +621,10 @@ model CouponSchedule {
   is_public              Boolean @default(false)
   apply_for_first_rental Boolean @default(true)
   apply_for_renewal      Boolean @default(true)
-  apply_for_addon         Boolean @default(false)
-  apply_for_whole_warehouse Boolean @default(true)
-  apply_for_row           Boolean @default(true)
+  
+  apply_for_all_warehouses Boolean @default(true)
+  apply_for_all_rows       Boolean @default(true)
+  apply_for_all_addons     Boolean @default(true)
   
   is_unlimited_stack Boolean @default(false)
   max_stack_count    Int?
@@ -616,9 +643,16 @@ model CouponSchedule {
   deleted_by String?
 
   created_coupons Coupon[]
+  
+  target_users      CouponScheduleTargetUser[]
+  target_warehouses CouponScheduleTargetWarehouse[]
+  target_rows       CouponScheduleTargetRow[]
+  target_addons     CouponScheduleTargetAddon[]
 
+  @@index([coupon_type])
   @@map("coupon_schedules")
 }
+
 
 model UserSavedCoupon {
   id        String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
@@ -752,6 +786,9 @@ model RowTemplate {
   warehouse_template WarehouseTemplate   @relation(fields: [warehouse_template_id], references: [id], onDelete: Cascade)
   racks              RackTemplate[]
   discount_configs   RowDiscountConfig[]
+  
+  coupon_targets          CouponTargetRow[]
+  coupon_schedule_targets CouponScheduleTargetRow[]
 
   @@index([warehouse_template_id])
   @@map("row_templates")
@@ -2576,4 +2613,140 @@ model ContactMessage {
   @@index([email_message_id])
   @@index([created_at])
   @@map("contact_messages")
+}
+
+model CouponTargetUser {
+  id        String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  coupon_id String @db.Uuid
+  user_id   String @db.Uuid
+
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now())
+
+  coupon Coupon @relation(fields: [coupon_id], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([coupon_id, user_id])
+  @@index([coupon_id])
+  @@index([user_id])
+  @@map("coupon_target_users")
+}
+
+model CouponTargetWarehouse {
+  id                    String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  coupon_id             String @db.Uuid
+  warehouse_template_id String @db.Uuid
+
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now())
+
+  coupon             Coupon            @relation(fields: [coupon_id], references: [id], onDelete: Cascade)
+  warehouse_template WarehouseTemplate @relation(fields: [warehouse_template_id], references: [id], onDelete: Cascade)
+
+  @@unique([coupon_id, warehouse_template_id])
+  @@index([coupon_id])
+  @@index([warehouse_template_id])
+  @@map("coupon_target_warehouses")
+}
+
+model CouponTargetRow {
+  id              String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  coupon_id       String @db.Uuid
+  row_template_id String @db.Uuid
+
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now())
+
+  coupon       Coupon      @relation(fields: [coupon_id], references: [id], onDelete: Cascade)
+  row_template RowTemplate @relation(fields: [row_template_id], references: [id], onDelete: Cascade)
+
+  @@unique([coupon_id, row_template_id])
+  @@index([coupon_id])
+  @@index([row_template_id])
+  @@map("coupon_target_rows")
+}
+
+model CouponTargetAddon {
+  id        String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  coupon_id String @db.Uuid
+  addon_id  String @db.Uuid
+
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now())
+
+  coupon Coupon @relation(fields: [coupon_id], references: [id], onDelete: Cascade)
+  addon  Addon  @relation(fields: [addon_id], references: [id], onDelete: Cascade)
+
+  @@unique([coupon_id, addon_id])
+  @@index([coupon_id])
+  @@index([addon_id])
+  @@map("coupon_target_addons")
+}
+
+model CouponScheduleTargetUser {
+  id                 String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  coupon_schedule_id String @db.Uuid
+  user_id            String @db.Uuid
+
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now())
+
+  coupon_schedule CouponSchedule @relation(fields: [coupon_schedule_id], references: [id], onDelete: Cascade)
+  user            User           @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([coupon_schedule_id, user_id])
+  @@index([coupon_schedule_id])
+  @@index([user_id])
+  @@map("coupon_schedule_target_users")
+}
+
+model CouponScheduleTargetWarehouse {
+  id                    String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  coupon_schedule_id    String @db.Uuid
+  warehouse_template_id String @db.Uuid
+
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now())
+
+  coupon_schedule    CouponSchedule    @relation(fields: [coupon_schedule_id], references: [id], onDelete: Cascade)
+  warehouse_template WarehouseTemplate @relation(fields: [warehouse_template_id], references: [id], onDelete: Cascade)
+
+  @@unique([coupon_schedule_id, warehouse_template_id])
+  @@index([coupon_schedule_id])
+  @@index([warehouse_template_id])
+  @@map("coupon_schedule_target_warehouses")
+}
+
+model CouponScheduleTargetRow {
+  id                 String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  coupon_schedule_id String @db.Uuid
+  row_template_id    String @db.Uuid
+
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now())
+
+  coupon_schedule CouponSchedule @relation(fields: [coupon_schedule_id], references: [id], onDelete: Cascade)
+  row_template    RowTemplate    @relation(fields: [row_template_id], references: [id], onDelete: Cascade)
+
+  @@unique([coupon_schedule_id, row_template_id])
+  @@index([coupon_schedule_id])
+  @@index([row_template_id])
+  @@map("coupon_schedule_target_rows")
+}
+
+model CouponScheduleTargetAddon {
+  id                 String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  coupon_schedule_id String @db.Uuid
+  addon_id           String @db.Uuid
+
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now())
+
+  coupon_schedule CouponSchedule @relation(fields: [coupon_schedule_id], references: [id], onDelete: Cascade)
+  addon           Addon          @relation(fields: [addon_id], references: [id], onDelete: Cascade)
+
+  @@unique([coupon_schedule_id, addon_id])
+  @@index([coupon_schedule_id])
+  @@index([addon_id])
+  @@map("coupon_schedule_target_addons")
 }

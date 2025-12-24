@@ -13,10 +13,13 @@ import {
     Max,
     ValidateIf,
     Validate,
+    IsArray,
+    IsUUID,
+    ArrayMinSize,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { i18nValidationMessage } from 'nestjs-i18n';
-import { CouponDiscountType, DurationUnit } from '@prisma/client';
+import { CouponDiscountType, DurationUnit, CouponType } from '@prisma/client';
 import { IsBeforeConstraint } from 'src/common/validators/is-before.validator';
 
 /**
@@ -53,6 +56,14 @@ export class CreateCouponDto {
         message: i18nValidationMessage('coupon.validation.code_max_length'),
     })
     code: string;
+
+    // Loại coupon: PUBLIC (có thể hiển thị công khai) hoặc PRIVATE (chỉ áp dụng cho user cụ thể)
+    @ApiPropertyOptional({ description: 'Loại coupon', enum: CouponType, default: 'PUBLIC' })
+    @IsOptional()
+    @IsEnum(CouponType, {
+        message: i18nValidationMessage('coupon.validation.coupon_type_enum'),
+    })
+    coupon_type?: CouponType;
 
     @ApiProperty({ description: 'Loại giảm giá', enum: CouponDiscountType })
     @IsNotEmpty({
@@ -213,20 +224,84 @@ export class CreateCouponDto {
     @IsBoolean()
     apply_for_renewal?: boolean;
 
-    @ApiPropertyOptional({ description: 'Áp dụng cho addon', default: false })
+    // Cờ áp dụng cho tất cả (true = tất cả, false = chỉ targets cụ thể)
+    @ApiPropertyOptional({ description: 'Áp dụng cho tất cả kho', default: true })
     @IsOptional()
-    @IsBoolean()
-    apply_for_addon?: boolean;
+    @IsBoolean({
+        message: i18nValidationMessage('coupon.validation.apply_for_all_warehouses_boolean'),
+    })
+    apply_for_all_warehouses?: boolean;
 
-    @ApiPropertyOptional({ description: 'Áp dụng cho thuê toàn kho', default: true })
+    @ApiPropertyOptional({ description: 'Áp dụng cho tất cả row', default: true })
     @IsOptional()
-    @IsBoolean()
-    apply_for_whole_warehouse?: boolean;
+    @IsBoolean({
+        message: i18nValidationMessage('coupon.validation.apply_for_all_rows_boolean'),
+    })
+    apply_for_all_rows?: boolean;
 
-    @ApiPropertyOptional({ description: 'Áp dụng cho thuê row', default: true })
+    @ApiPropertyOptional({ description: 'Áp dụng cho tất cả addon', default: true })
     @IsOptional()
-    @IsBoolean()
-    apply_for_row?: boolean;
+    @IsBoolean({
+        message: i18nValidationMessage('coupon.validation.apply_for_all_addons_boolean'),
+    })
+    apply_for_all_addons?: boolean;
+
+    // Target arrays - chỉ yêu cầu khi apply_for_all tương ứng = false
+    @ApiPropertyOptional({
+        description: 'Danh sách ID user được áp dụng (chỉ dùng khi coupon_type = PRIVATE)',
+        type: [String]
+    })
+    @ValidateIf(o => o.coupon_type === 'PRIVATE')
+    @IsArray({
+        message: i18nValidationMessage('coupon.validation.target_user_ids_array'),
+    })
+    @ArrayMinSize(1, {
+        message: i18nValidationMessage('coupon.validation.target_user_ids_required'),
+    })
+    @IsUUID('4', { each: true })
+    target_user_ids?: string[];
+
+    @ApiPropertyOptional({
+        description: 'Danh sách ID warehouse template được áp dụng',
+        type: [String]
+    })
+    @ValidateIf(o => o.apply_for_all_warehouses === false)
+    @IsArray({
+        message: i18nValidationMessage('coupon.validation.target_warehouse_ids_array'),
+    })
+    @ArrayMinSize(1, {
+        message: i18nValidationMessage('coupon.validation.target_warehouse_ids_required'),
+    })
+    @IsUUID('4', { each: true })
+    target_warehouse_ids?: string[];
+
+    @ApiPropertyOptional({
+        description: 'Danh sách ID row template được áp dụng',
+        type: [String]
+    })
+    @ValidateIf(o => o.apply_for_all_rows === false)
+    @IsArray({
+        message: i18nValidationMessage('coupon.validation.target_row_ids_array'),
+    })
+    @ArrayMinSize(1, {
+        message: i18nValidationMessage('coupon.validation.target_row_ids_required'),
+    })
+    @IsUUID('4', { each: true })
+    target_row_ids?: string[];
+
+    @ApiPropertyOptional({
+        description: 'Danh sách ID addon được áp dụng',
+        type: [String]
+    })
+    @ValidateIf(o => o.apply_for_all_addons === false)
+    @IsArray({
+        message: i18nValidationMessage('coupon.validation.target_addon_ids_array'),
+    })
+    @ArrayMinSize(1, {
+        message: i18nValidationMessage('coupon.validation.target_addon_ids_required'),
+    })
+    @IsUUID('4', { each: true })
+    target_addon_ids?: string[];
 
     @ApiPropertyOptional({ description: 'Trạng thái hoạt động', default: true })
     @IsOptional()

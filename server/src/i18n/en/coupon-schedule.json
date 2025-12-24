@@ -53,6 +53,18 @@
         "keywords_string": "Search keywords must be a string",
         "is_unlimited_stack_boolean": "'Unlimited stack' field must be a boolean",
         "max_stack_count_int": "Max stack count must be an integer",
-        "max_stack_count_min": "Max stack count must be at least 1"
+        "max_stack_count_min": "Max stack count must be at least 1",
+        "coupon_type_enum": "Coupon type must be PUBLIC or PRIVATE",
+        "apply_for_all_warehouses_boolean": "'Apply for all warehouses' field must be a boolean",
+        "apply_for_all_rows_boolean": "'Apply for all rows' field must be a boolean",
+        "apply_for_all_addons_boolean": "'Apply for all addons' field must be a boolean",
+        "target_user_ids_array": "Target user IDs must be an array",
+        "target_user_ids_required": "At least 1 user must be specified for PRIVATE coupon",
+        "target_warehouse_ids_array": "Target warehouse IDs must be an array",
+        "target_warehouse_ids_required": "At least 1 warehouse must be specified when not applying to all warehouses",
+        "target_row_ids_array": "Target row IDs must be an array",
+        "target_row_ids_required": "At least 1 row must be specified when not applying to all rows",
+        "target_addon_ids_array": "Target addon IDs must be an array",
+        "target_addon_ids_required": "At least 1 addon must be specified when not applying to all addons"
     }
 }

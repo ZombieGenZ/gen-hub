@@ -11,9 +11,12 @@ import {
     Min,
     Max,
     ValidateIf,
+    IsArray,
+    IsUUID,
+    ArrayMinSize,
 } from 'class-validator';
 import { i18nValidationMessage } from 'nestjs-i18n';
-import { CouponSchedulePeriod, CouponDiscountType, DurationUnit, CouponDurationUnit } from '@prisma/client';
+import { CouponSchedulePeriod, CouponDiscountType, DurationUnit, CouponDurationUnit, CouponType } from '@prisma/client';
 
 /**
  * DTO tạo mới CouponSchedule
@@ -35,6 +38,14 @@ export class CreateCouponScheduleDto {
     @IsNotEmpty({ message: i18nValidationMessage('coupon-schedule.validation.period_required') })
     @IsEnum(CouponSchedulePeriod, { message: i18nValidationMessage('coupon-schedule.validation.period_enum') })
     period: CouponSchedulePeriod;
+
+    // Loại coupon sẽ tạo: PUBLIC hoặc PRIVATE
+    @ApiPropertyOptional({ description: 'Loại coupon sẽ tạo', enum: CouponType, default: 'PUBLIC' })
+    @IsOptional()
+    @IsEnum(CouponType, {
+        message: i18nValidationMessage('coupon-schedule.validation.coupon_type_enum'),
+    })
+    coupon_type?: CouponType;
 
     // Cấu hình thời gian chạy theo period
     @ApiPropertyOptional({ description: 'Ngày trong tháng (1-31)', example: 15 })
@@ -235,20 +246,84 @@ export class CreateCouponScheduleDto {
     @IsBoolean()
     apply_for_renewal?: boolean;
 
-    @ApiPropertyOptional({ description: 'Áp dụng cho addon', default: false })
+    // Cờ áp dụng cho tất cả
+    @ApiPropertyOptional({ description: 'Áp dụng cho tất cả kho', default: true })
     @IsOptional()
-    @IsBoolean()
-    apply_for_addon?: boolean;
+    @IsBoolean({
+        message: i18nValidationMessage('coupon-schedule.validation.apply_for_all_warehouses_boolean'),
+    })
+    apply_for_all_warehouses?: boolean;
 
-    @ApiPropertyOptional({ description: 'Áp dụng cho thuê toàn kho', default: true })
+    @ApiPropertyOptional({ description: 'Áp dụng cho tất cả row', default: true })
     @IsOptional()
-    @IsBoolean()
-    apply_for_whole_warehouse?: boolean;
+    @IsBoolean({
+        message: i18nValidationMessage('coupon-schedule.validation.apply_for_all_rows_boolean'),
+    })
+    apply_for_all_rows?: boolean;
 
-    @ApiPropertyOptional({ description: 'Áp dụng cho thuê row', default: true })
+    @ApiPropertyOptional({ description: 'Áp dụng cho tất cả addon', default: true })
     @IsOptional()
-    @IsBoolean()
-    apply_for_row?: boolean;
+    @IsBoolean({
+        message: i18nValidationMessage('coupon-schedule.validation.apply_for_all_addons_boolean'),
+    })
+    apply_for_all_addons?: boolean;
+
+    // Target arrays
+    @ApiPropertyOptional({
+        description: 'Danh sách ID user được áp dụng (chỉ dùng khi coupon_type = PRIVATE)',
+        type: [String]
+    })
+    @ValidateIf(o => o.coupon_type === 'PRIVATE')
+    @IsArray({
+        message: i18nValidationMessage('coupon-schedule.validation.target_user_ids_array'),
+    })
+    @ArrayMinSize(1, {
+        message: i18nValidationMessage('coupon-schedule.validation.target_user_ids_required'),
+    })
+    @IsUUID('4', { each: true })
+    target_user_ids?: string[];
+
+    @ApiPropertyOptional({
+        description: 'Danh sách ID warehouse template được áp dụng',
+        type: [String]
+    })
+    @ValidateIf(o => o.apply_for_all_warehouses === false)
+    @IsArray({
+        message: i18nValidationMessage('coupon-schedule.validation.target_warehouse_ids_array'),
+    })
+    @ArrayMinSize(1, {
+        message: i18nValidationMessage('coupon-schedule.validation.target_warehouse_ids_required'),
+    })
+    @IsUUID('4', { each: true })
+    target_warehouse_ids?: string[];
+
+    @ApiPropertyOptional({
+        description: 'Danh sách ID row template được áp dụng',
+        type: [String]
+    })
+    @ValidateIf(o => o.apply_for_all_rows === false)
+    @IsArray({
+        message: i18nValidationMessage('coupon-schedule.validation.target_row_ids_array'),
+    })
+    @ArrayMinSize(1, {
+        message: i18nValidationMessage('coupon-schedule.validation.target_row_ids_required'),
+    })
+    @IsUUID('4', { each: true })
+    target_row_ids?: string[];
+
+    @ApiPropertyOptional({
+        description: 'Danh sách ID addon được áp dụng',
+        type: [String]
+    })
+    @ValidateIf(o => o.apply_for_all_addons === false)
+    @IsArray({
+        message: i18nValidationMessage('coupon-schedule.validation.target_addon_ids_array'),
+    })
+    @ArrayMinSize(1, {
+        message: i18nValidationMessage('coupon-schedule.validation.target_addon_ids_required'),
+    })
+    @IsUUID('4', { each: true })
+    target_addon_ids?: string[];
 
     @ApiPropertyOptional({ description: 'Trạng thái hoạt động', default: true })
     @IsOptional()
