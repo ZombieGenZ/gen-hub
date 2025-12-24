@@ -42,16 +42,22 @@
   --chart-1: #0F766E;
   --chart-2: #14B8A6;
   --chart-3: #F59E0B;
+
+  /* Card & Popover - Pure White */
+  --card: #FFFFFF;
+  --card-foreground: #1E293B;
+  --popover: #FFFFFF;
+  --popover-foreground: #1E293B;
 }
-
+/*
 .dark {
-  --background: #020617; /* Slate 950 */
-  --foreground: #F8FAFC; /* Slate 50 */
+  --background: #020617; 
+  --foreground: #F8FAFC; 
 
-  --primary: #14B8A6; /* Primary Light for Dark Mode for visibility */
+  --primary: #14B8A6;
   --primary-foreground: #020617;
 
-  --secondary: #1E293B; /* Slate 800 */
+  --secondary: #1E293B;
   --secondary-foreground: #F8FAFC;
 
   --muted: #1E293B;
@@ -67,7 +73,7 @@
   --input: #1E293B;
   --ring: #14B8A6;
 }
-
+*/
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

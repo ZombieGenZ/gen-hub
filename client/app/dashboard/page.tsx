@@ -13,6 +13,7 @@ import {
     ArrowRight
 } from "lucide-react";
 import Link from "next/link";
+// ... (rest of file)
 
 export default function DashboardPage() {
     return (
@@ -39,32 +40,32 @@ export default function DashboardPage() {
                 {/* Stat Cards Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
                     <StatCard
-                        title="Tổng Khách hàng"
-                        value="1,284"
-                        icon={Users}
-                        trend={{ value: 12.5, isPositive: true }}
-                        description="So với tháng trước"
-                    />
-                    <StatCard
-                        title="Kho đang hoạt động"
-                        value="42"
+                        title="Tổng số Kho"
+                        value="24"
                         icon={Warehouse}
-                        trend={{ value: 3.2, isPositive: true }}
-                        description="Thêm 2 kho mới"
+                        trend={{ value: 2, isPositive: true }}
+                        variant="emerald"
                     />
                     <StatCard
-                        title="Hợp đồng mới"
-                        value="156"
+                        title="Đơn thuê chờ duyệt"
+                        value="18"
                         icon={FileText}
-                        trend={{ value: 8.1, isPositive: false }}
-                        description="Trong 30 ngày qua"
+                        trend={{ value: 5, isPositive: true }}
+                        variant="blue"
                     />
                     <StatCard
-                        title="Doanh thu"
-                        value="$45,200"
+                        title="Khách hàng"
+                        value="156"
+                        icon={Users}
+                        trend={{ value: 12, isPositive: true }}
+                        variant="emerald" // Using emerald/green again or mix
+                    />
+                    <StatCard
+                        title="Doanh thu tháng"
+                        value="2.4 tỷ"
                         icon={TrendingUp}
-                        trend={{ value: 24.8, isPositive: true }}
-                        description="Tăng trưởng mạnh"
+                        trend={{ value: 8, isPositive: true }}
+                        variant="amber"
                     />
                 </div>
 
@@ -135,7 +136,7 @@ export default function DashboardPage() {
                                     <div key={idx} className="flex gap-4">
                                         <div className="relative">
                                             <div className={`w-2.5 h-2.5 rounded-full mt-1.5 ${item.type === 'success' ? 'bg-emerald-500' :
-                                                    item.type === 'warning' ? 'bg-amber-500' : 'bg-sky-500'
+                                                item.type === 'warning' ? 'bg-amber-500' : 'bg-sky-500'
                                                 }`}></div>
                                             {idx !== 2 && <div className="absolute top-4 left-[4.5px] w-[1px] h-10 bg-slate-100"></div>}
                                         </div>
@@ -149,24 +150,6 @@ export default function DashboardPage() {
                             <button className="w-full mt-8 py-2 text-sm font-medium text-slate-500 hover:text-slate-900 hover:bg-slate-50 rounded-lg transition-all border border-transparent hover:border-slate-200">
                                 Xem tất cả hoạt động
                             </button>
-                        </div>
-
-                        {/* Quick Stats Card */}
-                        <div className="bg-gradient-to-br from-primary to-primary-dark p-6 rounded-xl shadow-lg shadow-primary/20 text-white relative overflow-hidden">
-                            <div className="relative z-10">
-                                <h3 className="text-lg font-bold mb-2">Lời khuyên hệ thống</h3>
-                                <p className="text-teal-50/80 text-sm leading-relaxed">
-                                    Kho số 4 đang có tỉ lệ trống 45%. Bạn có thể xem xét giảm giá thuê trong tháng này để thu hút khách hàng mới.
-                                </p>
-                                <button className="mt-4 bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg text-xs font-bold backdrop-blur-sm transition-all">
-                                    Xem chi tiết
-                                </button>
-                            </div>
-                            {/* Decorative elements */}
-                            <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-white/10 rounded-full blur-2xl"></div>
-                            <div className="absolute top-0 right-0 p-4 opacity-20">
-                                <TrendingUp className="w-12 h-12" />
-                            </div>
                         </div>
                     </div>
                 </div>

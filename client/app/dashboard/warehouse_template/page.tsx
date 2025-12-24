@@ -99,8 +99,12 @@ export default function WarehouseTemplatePage() {
                     totalPages: Math.ceil(total / prev.limit)
                 }));
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error("Failed to fetch warehouses", err);
+            if (err.message === "Unauthorized") {
+                router.push("/login");
+                return;
+            }
             // Fallback for demo purposes if API fails completely
             setError("Không thể tải dữ liệu kho. Vui lòng thử lại sau.");
         } finally {
@@ -245,8 +249,8 @@ export default function WarehouseTemplatePage() {
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
                         {warehouses.map((warehouse) => (
-                            <div 
-                                key={warehouse.id} 
+                            <div
+                                key={warehouse.id}
                                 className="bg-white rounded-xl shadow-sm border border-slate-200 hover:shadow-lg transition-all duration-300 hover:-translate-y-1 group flex flex-col h-full cursor-pointer"
                                 onClick={() => router.push(`/dashboard/warehouse_template/${warehouse.id}`)}
                             >
