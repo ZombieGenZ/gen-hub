@@ -159,6 +159,25 @@ export class RentalContractService {
     userId: string,
     lang: string,
   ): Promise<ICreateContractResult> {
+    // Loại bỏ các giá trị trùng nhau trong arrays
+    if (dto.addon_ids) {
+      dto.addon_ids = [...new Set(dto.addon_ids)];
+    }
+    if (dto.coupon_codes) {
+      dto.coupon_codes = [...new Set(dto.coupon_codes)];
+    }
+    // Loại bỏ templates trùng template_id (giữ lại template đầu tiên)
+    const seenTemplateIds = new Set<string>();
+    dto.templates = dto.templates.filter(t => {
+      if (seenTemplateIds.has(t.template_id)) return false;
+      seenTemplateIds.add(t.template_id);
+      // Loại bỏ row_template_ids trùng nhau trong mỗi template
+      if (t.row_template_ids) {
+        t.row_template_ids = [...new Set(t.row_template_ids)];
+      }
+      return true;
+    });
+
     // Lấy thông tin từ duration tier (bắt buộc)
     const tier = await this.repository['prisma'].rentalDurationTier.findFirst({
       where: { id: dto.duration_tier_id, is_deleted: false, is_active: true },
@@ -1003,6 +1022,14 @@ export class RentalContractService {
     organizationId: string,
     lang: string,
   ): Promise<IRentalContractWithRelations> {
+    // Loại bỏ các giá trị trùng nhau trong arrays
+    if (dto.addon_ids) {
+      dto.addon_ids = [...new Set(dto.addon_ids)];
+    }
+    if (dto.coupon_codes) {
+      dto.coupon_codes = [...new Set(dto.coupon_codes)];
+    }
+
     const existing = await this.repository.findByIdWithOrganization(id);
     if (!existing) {
       throw new NotFoundException(

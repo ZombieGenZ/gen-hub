@@ -590,6 +590,9 @@ export class OrganizationService {
     userId: string,
     lang: string,
   ): Promise<IOrganizationMember[]> {
+    // Loại bỏ emails trùng nhau
+    dto.emails = [...new Set(dto.emails)];
+
     const org = await this.findById(orgId, lang);
 
     // Kiểm tra quyền
@@ -1158,6 +1161,9 @@ export class OrganizationService {
     userId: string,
     lang: string,
   ): Promise<IOrganizationMember> {
+    // Loại bỏ role_ids trùng nhau
+    dto.role_ids = [...new Set(dto.role_ids)];
+
     const org = await this.findById(orgId, lang);
 
     // Kiểm tra quyền
@@ -1208,6 +1214,9 @@ export class OrganizationService {
     userId: string,
     lang: string,
   ): Promise<IOrganizationMember> {
+    // Loại bỏ permission_ids trùng nhau
+    dto.permission_ids = [...new Set(dto.permission_ids)];
+
     const org = await this.findById(orgId, lang);
 
     // Kiểm tra quyền
@@ -1467,6 +1476,11 @@ export class OrganizationService {
     userId: string,
     lang: string,
   ): Promise<IOrganizationRole> {
+    // Loại bỏ permission_ids trùng nhau
+    if (dto.permission_ids) {
+      dto.permission_ids = [...new Set(dto.permission_ids)];
+    }
+
     const org = await this.findById(orgId, lang);
 
     // Kiểm tra quyền
@@ -1563,6 +1577,11 @@ export class OrganizationService {
     userId: string,
     lang: string,
   ): Promise<IOrganizationRole> {
+    // Loại bỏ permission_ids trùng nhau
+    if (dto.permission_ids) {
+      dto.permission_ids = [...new Set(dto.permission_ids)];
+    }
+
     const org = await this.findById(orgId, lang);
 
     // Kiểm tra quyền
@@ -1771,6 +1790,17 @@ export class OrganizationService {
     userId: string,
     lang: string,
   ): Promise<IApiKeyWithPlainKey> {
+    // Loại bỏ các giá trị trùng nhau trong arrays
+    if (dto.role_ids) {
+      dto.role_ids = [...new Set(dto.role_ids)];
+    }
+    if (dto.permission_ids) {
+      dto.permission_ids = [...new Set(dto.permission_ids)];
+    }
+    if (dto.allowed_origins) {
+      dto.allowed_origins = [...new Set(dto.allowed_origins)];
+    }
+
     const org = await this.findById(orgId, lang);
 
     // Kiểm tra quyền
@@ -2022,6 +2052,17 @@ export class OrganizationService {
     userId: string,
     lang: string,
   ): Promise<IApiKey> {
+    // Loại bỏ các giá trị trùng nhau trong arrays
+    if (dto.role_ids) {
+      dto.role_ids = [...new Set(dto.role_ids)];
+    }
+    if (dto.permission_ids) {
+      dto.permission_ids = [...new Set(dto.permission_ids)];
+    }
+    if (dto.allowed_origins) {
+      dto.allowed_origins = [...new Set(dto.allowed_origins)];
+    }
+
     const org = await this.findById(orgId, lang);
 
     // Kiểm tra quyền
