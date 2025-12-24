@@ -23,6 +23,13 @@ export class RowTemplateRepository {
                 duration_tier: true,
             },
         },
+        addon_gifts: {
+            where: { is_deleted: false },
+            orderBy: { created_at: 'asc' as const },
+            include: {
+                addon: true,
+            },
+        },
         racks: {
             where: { is_deleted: false },
             orderBy: { created_at: 'asc' as const },
@@ -283,6 +290,47 @@ export class RowTemplateRepository {
                 await tx.rowDiscountConfig.update({
                     where: { id: config.id },
                     data: config.data,
+                });
+            }
+        });
+    }
+
+    /** Upsert addon gifts cho row */
+    async upsertAddonGifts(
+        rowId: string,
+        createData: Prisma.RowAddonGiftCreateManyInput[],
+        updateData: { id: string; data: Prisma.RowAddonGiftUpdateInput }[],
+        deleteIds: string[],
+        userId: string,
+    ) {
+        const now = new Date();
+
+        await this.prisma.$transaction(async (tx) => {
+            // Delete gifts
+            if (deleteIds.length > 0) {
+                await tx.rowAddonGift.updateMany({
+                    where: { id: { in: deleteIds } },
+                    data: { is_deleted: true, deleted_at: now, deleted_by: userId },
+                });
+            }
+
+            // Create gifts
+            if (createData.length > 0) {
+                // Manually set row_template_id because createManyInput doesn't infer from context
+                const dataWithTemplateId = createData.map(d => ({
+                    ...d,
+                    row_template_id: rowId,
+                }));
+                await tx.rowAddonGift.createMany({
+                    data: dataWithTemplateId,
+                });
+            }
+
+            // Update gifts
+            for (const item of updateData) {
+                await tx.rowAddonGift.update({
+                    where: { id: item.id },
+                    data: item.data,
                 });
             }
         });

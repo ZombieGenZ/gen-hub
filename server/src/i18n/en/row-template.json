@@ -32,6 +32,7 @@
         "discount_percent_number": "Discount percent must be a number",
         "discount_percent_min": "Discount percent must be >= 0",
         "discount_configs_array": "Discount configs must be an array",
+        "addon_gifts_array": "Addon gifts must be an array",
         "limit_number": "Limit must be a number",
         "limit_min": "Limit must be >= 1",
         "offset_number": "Offset must be a number",

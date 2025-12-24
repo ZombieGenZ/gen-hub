@@ -5,6 +5,7 @@ import { Type } from 'class-transformer';
 import { i18nValidationMessage } from 'nestjs-i18n';
 import { CreateWarehouseTemplateDto } from './create-warehouse-template.dto';
 import { UpdateDiscountConfigDto } from './discount-config.dto';
+import { WarehouseAddonGiftDto } from './warehouse-addon-gift.dto';
 
 /**
  * DTO cập nhật WarehouseTemplate (partial of create)
@@ -27,4 +28,16 @@ export class UpdateWarehouseTemplateDto extends PartialType(CreateWarehouseTempl
     @ValidateNested({ each: true })
     @Type(() => UpdateDiscountConfigDto)
     discount_configs?: UpdateDiscountConfigDto[];
+
+    @ApiPropertyOptional({
+        description: 'Danh sách addon tặng kèm. Config có id sẽ được cập nhật, config không có id sẽ được tạo mới, config hiện có nhưng không trong danh sách sẽ bị xóa.',
+        type: [WarehouseAddonGiftDto],
+    })
+    @IsOptional()
+    @IsArray({
+        message: i18nValidationMessage('warehouse-template.validation.addon_gifts_array'),
+    })
+    @ValidateNested({ each: true })
+    @Type(() => WarehouseAddonGiftDto)
+    addon_gifts?: WarehouseAddonGiftDto[];
 }

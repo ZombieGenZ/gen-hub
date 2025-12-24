@@ -83,6 +83,13 @@ export class WarehouseTemplateRepository {
                 duration_tier: true,
             },
         },
+        addon_gifts: {
+            where: { is_deleted: false },
+            orderBy: { created_at: 'asc' as const },
+            include: {
+                addon: true,
+            },
+        },
     };
 
     /** Lightweight include for list queries - không load nested rows */
@@ -903,27 +910,15 @@ export class WarehouseTemplateRepository {
      */
     async upsertDiscountConfigs(
         templateId: string,
-        configsToCreate: Array<{
-            duration_tier_id: string;
-            discount_percent: any;
-            is_active: boolean;
-            created_by: string;
-        }>,
-        configsToUpdate: Array<{
-            id: string;
-            data: {
-                discount_percent?: any;
-                is_active?: boolean;
-                updated_by?: string;
-            };
-        }>,
+        configsToCreate: Omit<Prisma.WarehouseDiscountConfigCreateManyInput, 'warehouse_template_id'>[],
+        configsToUpdate: { id: string; data: Prisma.WarehouseDiscountConfigUpdateInput }[],
         configIdsToDelete: string[],
         userId: string,
     ): Promise<void> {
         const now = new Date();
 
         await this.prisma.$transaction(async (tx) => {
-            // Soft delete configs không còn trong request
+            // Delete configs
             if (configIdsToDelete.length > 0) {
                 await tx.warehouseDiscountConfig.updateMany({
                     where: { id: { in: configIdsToDelete } },
@@ -935,28 +930,79 @@ export class WarehouseTemplateRepository {
                 });
             }
 
-            // Create new configs
+            // Create configs
             if (configsToCreate.length > 0) {
+                // Manually set warehouse_template_id because createManyInput doesn't infer from context
+                const dataWithTemplateId = configsToCreate.map(d => ({
+                    ...d,
+                    warehouse_template_id: templateId,
+                }));
                 await tx.warehouseDiscountConfig.createMany({
-                    data: configsToCreate.map(c => ({
-                        warehouse_template_id: templateId,
-                        duration_tier_id: c.duration_tier_id,
-                        discount_percent: c.discount_percent,
-                        is_active: c.is_active,
-                        created_by: c.created_by,
-                    })),
+                    data: dataWithTemplateId,
                 });
             }
 
-            // Update existing configs
-            await Promise.all(
-                configsToUpdate.map(c =>
-                    tx.warehouseDiscountConfig.update({
-                        where: { id: c.id },
-                        data: c.data,
-                    }),
-                ),
-            );
+            // Update configs (sequential)
+            if (configsToUpdate.length > 0) {
+                await Promise.all(
+                    configsToUpdate.map(item =>
+                        tx.warehouseDiscountConfig.update({
+                            where: { id: item.id },
+                            data: item.data,
+                        }),
+                    ),
+                );
+            }
+        });
+    }
+
+    /**
+     * Upsert addon gifts cho warehouse template
+     */
+    async upsertAddonGifts(
+        templateId: string,
+        createData: Prisma.WarehouseAddonGiftCreateManyInput[],
+        updateData: { id: string; data: Prisma.WarehouseAddonGiftUpdateInput }[],
+        deleteIds: string[],
+        userId: string,
+    ): Promise<void> {
+        const now = new Date();
+
+        await this.prisma.$transaction(async (tx) => {
+            // Delete gifts
+            if (deleteIds.length > 0) {
+                await tx.warehouseAddonGift.updateMany({
+                    where: { id: { in: deleteIds } },
+                    data: {
+                        is_deleted: true,
+                        deleted_at: now,
+                        deleted_by: userId,
+                    },
+                });
+            }
+
+            // Create gifts
+            if (createData.length > 0) {
+                const dataWithTemplateId = createData.map(d => ({
+                    ...d,
+                    warehouse_template_id: templateId,
+                }));
+                await tx.warehouseAddonGift.createMany({
+                    data: dataWithTemplateId,
+                });
+            }
+
+            // Update gifts (sequential)
+            if (updateData.length > 0) {
+                await Promise.all(
+                    updateData.map(item =>
+                        tx.warehouseAddonGift.update({
+                            where: { id: item.id },
+                            data: item.data,
+                        }),
+                    ),
+                );
+            }
         });
     }
 

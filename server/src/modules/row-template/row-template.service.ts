@@ -101,6 +101,7 @@ export class RowTemplateService {
                     })),
                 },
             }),
+            addon_gifts: this.prepareAddonGiftsCreate(dto.addon_gifts, userId),
         };
 
         const row = await this.repository.create(createData);
@@ -226,11 +227,15 @@ export class RowTemplateService {
             }
         }
 
-        const { discount_configs, ...rowData } = dto;
+        const { discount_configs, addon_gifts, ...rowData } = dto;
 
         // Xử lý discount configs
         if (discount_configs !== undefined) {
             await this.upsertDiscountConfigs(id, discount_configs, userId);
+        }
+
+        if (addon_gifts !== undefined) {
+            await this.upsertAddonGifts(id, addon_gifts, userId);
         }
 
         // Update row
@@ -301,6 +306,31 @@ export class RowTemplateService {
             deletedBy: userId,
             timestamp: new Date().toISOString(),
         });
+    }
+
+    /**
+     * Prepare addon gifts for creation
+     */
+    private prepareAddonGiftsCreate(gifts: CreateRowTemplateDto['addon_gifts'], userId: string) {
+        if (!gifts || gifts.length === 0) return undefined;
+
+        // De-dupe by addon_id
+        const uniqueMap = new Map<string, typeof gifts[0]>();
+        for (const gift of gifts) {
+            uniqueMap.set(gift.addon_id, gift);
+        }
+        const uniqueGifts = Array.from(uniqueMap.values());
+
+        return {
+            create: uniqueGifts.map(gift => ({
+                addon: { connect: { id: gift.addon_id } },
+                is_until_service_end: gift.is_until_service_end ?? true,
+                gift_duration_value: gift.gift_duration_value,
+                gift_duration_unit: gift.gift_duration_unit,
+                is_active: gift.is_active ?? true,
+                created_by: userId,
+            })),
+        };
     }
 
     /**
@@ -393,6 +423,86 @@ export class RowTemplateService {
             configsToCreate,
             configsToUpdate,
             configIdsToDelete,
+            userId,
+        );
+    }
+
+    /**
+     * Upsert addon gifts cho row
+     */
+    private async upsertAddonGifts(
+        rowId: string,
+        newGifts: UpdateRowTemplateDto['addon_gifts'],
+        userId: string,
+    ) {
+        if (!newGifts) return;
+
+        // Need to fetch existing gifts first (implementation detail: Add findAddonGifts method to Repo or findById again?)
+        // Repo.findById includes addon_gifts in fullInclude, so we could just use that if we had it, but here we just have ID.
+        // It's better to fetch just the gifts or reuse logic.
+        // RowTemplateRepository doesn't expose findAddonGifts directly, but we can query via prisma easily or add it.
+        // For now, let's assume we can query them or add method to Repo.
+        // Actually, RowTemplateRepository doesn't have `findAddonGifts`. I will add it or query directly? No, creating repo method is better.
+        // But since I already edited repo, I can't do it in this tool call block if it was parallel.
+        // Wait, I am editing Service now.
+        // I will add `findAddonGifts` to Repository in the next turn or use `findById` which includes them.
+        // `findById` includes `addon_gifts`.
+        const row = await this.repository.findById(rowId);
+        if (!row || !row.addon_gifts) return; // Should exist if we are updating it
+
+        const existingGifts = row.addon_gifts;
+        const existingGiftIds = new Set(existingGifts.map(g => g.id));
+        const requestGiftIds = new Set<string>();
+
+        const giftsToCreate: Prisma.RowAddonGiftCreateManyInput[] = [];
+        const giftsToUpdate: Array<{ id: string; data: Prisma.RowAddonGiftUpdateInput }> = [];
+
+        // De-dupe by addon_id
+        const uniqueMap = new Map<string, typeof newGifts[0]>();
+        for (const gift of newGifts) {
+            uniqueMap.set(gift.addon_id, gift);
+        }
+        const uniqueGifts = Array.from(uniqueMap.values());
+
+        for (const gift of uniqueGifts) {
+            if (gift.id && existingGiftIds.has(gift.id)) {
+                // Update
+                requestGiftIds.add(gift.id);
+                giftsToUpdate.push({
+                    id: gift.id,
+                    data: {
+                        addon: { connect: { id: gift.addon_id } },
+                        is_until_service_end: gift.is_until_service_end,
+                        gift_duration_value: gift.gift_duration_value,
+                        gift_duration_unit: gift.gift_duration_unit,
+                        is_active: gift.is_active,
+                        updated_by: userId,
+                    },
+                });
+            } else {
+                // Create
+                giftsToCreate.push({
+                    row_template_id: rowId,
+                    addon_id: gift.addon_id,
+                    is_until_service_end: gift.is_until_service_end ?? true,
+                    gift_duration_value: gift.gift_duration_value,
+                    gift_duration_unit: gift.gift_duration_unit,
+                    is_active: gift.is_active ?? true,
+                    created_by: userId,
+                });
+            }
+        }
+
+        // Delete missing
+        const giftIdsToDelete = existingGifts
+            .filter(g => !requestGiftIds.has(g.id))
+            .map(g => g.id);
+
+        await this.repository.upsertAddonGifts(
+            rowId,
+            giftsToCreate,
+            giftsToUpdate,
+            giftIdsToDelete,
             userId,
         );
     }

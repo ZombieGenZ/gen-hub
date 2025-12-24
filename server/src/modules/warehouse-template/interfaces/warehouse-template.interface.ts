@@ -20,6 +20,14 @@ export interface IRowDiscountConfigWithRelations extends RowDiscountConfig {
 export interface IWarehouseTemplateWithRelations extends WarehouseTemplate {
     rows: IRowTemplateWithRelations[];
     discount_configs?: IDiscountConfigWithRelations[];
+    addon_gifts?: {
+        id: string;
+        addon_id: string;
+        addon: {
+            id: string;
+            name: string;
+        }
+    }[];
     ward?: {
         id: string;
         name: string;

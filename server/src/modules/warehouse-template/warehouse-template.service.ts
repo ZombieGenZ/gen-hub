@@ -71,6 +71,7 @@ export class WarehouseTemplateService {
             created_by: userId,
             // Nested create discount configs
             discount_configs: discountConfigsCreate,
+            addon_gifts: this.prepareAddonGiftsCreate(dto.addon_gifts, userId),
         });
 
         // Invalidate list cache
@@ -108,6 +109,32 @@ export class WarehouseTemplateService {
                 duration_tier: { connect: { id: config.duration_tier_id } },
                 discount_percent: new Decimal(config.discount_percent),
                 is_active: config.is_active ?? true,
+                created_by: userId,
+            })),
+        };
+    }
+
+    /**
+     * Prepare addon gifts for creation
+     */
+    private prepareAddonGiftsCreate(gifts: CreateWarehouseTemplateDto['addon_gifts'], userId: string) {
+        if (!gifts || gifts.length === 0) return undefined;
+
+        // De-dupe by addon_id
+        const uniqueMap = new Map<string, typeof gifts[0]>();
+        for (const gift of gifts) {
+            uniqueMap.set(gift.addon_id, gift);
+        }
+        const uniqueGifts = Array.from(uniqueMap.values());
+
+        return {
+            create: uniqueGifts.map(gift => ({
+                addon: { connect: { id: gift.addon_id } },
+                // condition fields removed
+                is_until_service_end: gift.is_until_service_end ?? true,
+                gift_duration_value: gift.gift_duration_value,
+                gift_duration_unit: gift.gift_duration_unit,
+                is_active: gift.is_active ?? true,
                 created_by: userId,
             })),
         };
@@ -204,11 +231,15 @@ export class WarehouseTemplateService {
 
         // Destructure ward_id và discount_configs để xử lý riêng
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { ward_id, discount_configs, amenity_ids, ...restDto } = dto;
+        const { ward_id, discount_configs, amenity_ids, addon_gifts, ...restDto } = dto;
 
         // Xử lý discount configs upsert nếu có (trước khi update template)
         if (discount_configs !== undefined) {
             await this.upsertDiscountConfigs(id, discount_configs, existing.discount_configs || [], userId);
+        }
+
+        if (dto.addon_gifts !== undefined) {
+            await this.upsertAddonGifts(id, dto.addon_gifts, existing.addon_gifts || [], userId);
         }
 
         // Update template với các trường cơ bản
@@ -317,6 +348,78 @@ export class WarehouseTemplateService {
             })),
             configsToUpdate,
             configIdsToDelete,
+            userId,
+        );
+    }
+
+    /**
+     * Upsert addon gifts for warehouse template
+     */
+    /**
+     * Upsert addon gifts for warehouse template
+     */
+    private async upsertAddonGifts(
+        templateId: string,
+        newGifts: UpdateWarehouseTemplateDto['addon_gifts'],
+        existingGifts: Array<{ id: string; addon_id: string }>,
+        userId: string,
+    ): Promise<void> {
+        if (!newGifts) return;
+
+        const existingGiftIds = new Set(existingGifts.map(g => g.id));
+        const requestGiftIds = new Set<string>();
+
+        const giftsToCreate: Prisma.WarehouseAddonGiftCreateManyInput[] = [];
+        const giftsToUpdate: Array<{ id: string; data: Prisma.WarehouseAddonGiftUpdateInput }> = [];
+
+        // De-dupe by addon_id
+        const uniqueMap = new Map<string, typeof newGifts[0]>();
+        for (const gift of newGifts) {
+            uniqueMap.set(gift.addon_id, gift);
+        }
+        const uniqueGifts = Array.from(uniqueMap.values());
+
+        for (const gift of uniqueGifts) {
+            if (gift.id && existingGiftIds.has(gift.id)) {
+                // Update
+                requestGiftIds.add(gift.id);
+                giftsToUpdate.push({
+                    id: gift.id,
+                    data: {
+                        addon: { connect: { id: gift.addon_id } },
+                        // conditions removed
+                        is_until_service_end: gift.is_until_service_end,
+                        gift_duration_value: gift.gift_duration_value,
+                        gift_duration_unit: gift.gift_duration_unit,
+                        is_active: gift.is_active,
+                        updated_by: userId,
+                    },
+                });
+            } else {
+                // Create
+                giftsToCreate.push({
+                    warehouse_template_id: templateId,
+                    addon_id: gift.addon_id,
+                    // conditions removed
+                    is_until_service_end: gift.is_until_service_end ?? true,
+                    gift_duration_value: gift.gift_duration_value,
+                    gift_duration_unit: gift.gift_duration_unit,
+                    is_active: gift.is_active ?? true,
+                    created_by: userId,
+                });
+            }
+        }
+
+        // Delete missing
+        const giftIdsToDelete = existingGifts
+            .filter(g => !requestGiftIds.has(g.id))
+            .map(g => g.id);
+
+        await this.repository.upsertAddonGifts(
+            templateId,
+            giftsToCreate,
+            giftsToUpdate,
+            giftIdsToDelete,
             userId,
         );
     }

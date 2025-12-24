@@ -400,6 +400,7 @@ model WarehouseTemplate {
   amenities               AmenityOnWarehouseTemplate[]
   rental_contract_details RentalContractDetail[]
   discount_configs        WarehouseDiscountConfig[]
+  addon_gifts             WarehouseAddonGift[]
   
   coupon_targets          CouponTargetWarehouse[]
   coupon_schedule_targets CouponScheduleTargetWarehouse[]
@@ -452,6 +453,8 @@ model Addon {
   deleted_by String?
 
   tier_gifts       TierAddonGift[]
+  warehouse_gifts  WarehouseAddonGift[]
+  row_gifts        RowAddonGift[]
   rental_contracts RentalContractAddon[]
   
   coupon_targets          CouponTargetAddon[]
@@ -495,6 +498,80 @@ model TierAddonGift {
   @@index([duration_tier_id])
   @@index([addon_id])
   @@map("tier_addon_gifts")
+}
+
+model WarehouseAddonGift {
+  id                    String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  warehouse_template_id String @db.Uuid
+  addon_id              String @db.Uuid
+
+  // require_min_order_amount Boolean  @default(false)
+  // min_order_amount         Decimal? @db.Decimal(19, 4)
+
+  // require_min_warehouses Boolean @default(false)
+  // min_warehouses         Int?
+
+  // require_min_rows Boolean @default(false)
+  // min_rows         Int?
+
+  is_until_service_end Boolean       @default(true)
+  gift_duration_value  Int?
+  gift_duration_unit   DurationUnit?
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean?  @default(false)
+  deleted_at DateTime?
+
+  created_by String
+  updated_by String?
+  deleted_by String?
+
+  warehouse_template WarehouseTemplate @relation(fields: [warehouse_template_id], references: [id], onDelete: Cascade)
+  addon              Addon             @relation(fields: [addon_id], references: [id], onDelete: Cascade)
+
+  @@unique([warehouse_template_id, addon_id])
+  @@index([warehouse_template_id])
+  @@index([addon_id])
+  @@map("warehouse_addon_gifts")
+}
+
+model RowAddonGift {
+  id              String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  row_template_id String @db.Uuid
+  addon_id        String @db.Uuid
+
+  // require_min_order_amount Boolean  @default(false)
+  // min_order_amount         Decimal? @db.Decimal(19, 4)
+
+  // require_min_warehouses Boolean @default(false)
+  // min_warehouses         Int?
+
+  // require_min_rows Boolean @default(false)
+  // min_rows         Int?
+
+  is_until_service_end Boolean       @default(true)
+  gift_duration_value  Int?
+  gift_duration_unit   DurationUnit?
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean?  @default(false)
+  deleted_at DateTime?
+
+  created_by String
+  updated_by String?
+  deleted_by String?
+
+  row_template RowTemplate @relation(fields: [row_template_id], references: [id], onDelete: Cascade)
+  addon        Addon       @relation(fields: [addon_id], references: [id], onDelete: Cascade)
+
+  @@unique([row_template_id, addon_id])
+  @@index([row_template_id])
+  @@index([addon_id])
+  @@map("row_addon_gifts")
 }
 
 model Coupon {
@@ -786,6 +863,7 @@ model RowTemplate {
   warehouse_template WarehouseTemplate   @relation(fields: [warehouse_template_id], references: [id], onDelete: Cascade)
   racks              RackTemplate[]
   discount_configs   RowDiscountConfig[]
+  addon_gifts        RowAddonGift[]
   
   coupon_targets          CouponTargetRow[]
   coupon_schedule_targets CouponScheduleTargetRow[]

@@ -13,6 +13,7 @@ import {
 } from 'class-validator';
 import { i18nValidationMessage } from 'nestjs-i18n';
 import { Type } from 'class-transformer';
+import { RowAddonGiftDto } from './row-addon-gift.dto';
 
 /**
  * DTO cho discount config khi tạo row
@@ -139,4 +140,17 @@ export class CreateRowTemplateDto {
     @ValidateNested({ each: true })
     @Type(() => CreateRowDiscountConfigDto)
     discount_configs?: CreateRowDiscountConfigDto[];
+
+
+    @ApiPropertyOptional({
+        description: 'Danh sách addon tặng kèm',
+        type: [RowAddonGiftDto],
+    })
+    @IsOptional()
+    @IsArray({
+        message: i18nValidationMessage('row-template.validation.addon_gifts_array'),
+    })
+    @ValidateNested({ each: true })
+    @Type(() => RowAddonGiftDto)
+    addon_gifts?: RowAddonGiftDto[];
 }
