@@ -45,6 +45,45 @@ export class CouponRepository {
         });
     }
 
+    /**
+     * Tìm coupon có code trùng và thời gian hiệu lực chồng chéo
+     * Overlap xảy ra khi: starts_at_A < ends_at_B AND starts_at_B < ends_at_A
+     */
+    async findByCodeWithOverlap(
+        code: string,
+        startsAt?: Date | null,
+        endsAt?: Date | null,
+        excludeId?: string,
+    ) {
+        const now = new Date();
+        return this.prisma.coupon.findFirst({
+            where: {
+                code,
+                is_deleted: false,
+                is_active: true,
+                ...(excludeId && { id: { not: excludeId } }),
+                // Kiểm tra overlap: (starts_at_A < ends_at_B) AND (starts_at_B < ends_at_A)
+                // Nếu coupon mới không có ends_at (is_permanent), coi như ends_at = vô cực
+                // Nếu coupon cũ không có ends_at, coi như ends_at = vô cực
+                OR: [
+                    // Coupon cũ là permanent (không có ends_at) - luôn overlap nếu starts_at mới < vô cực
+                    { ends_at: null },
+                    // Coupon cũ có ends_at và chưa hết hạn
+                    ...(endsAt
+                        ? [{ starts_at: { lt: endsAt } }]
+                        : [{}]), // Nếu coupon mới là permanent, luôn overlap với các coupon có starts_at
+                ],
+                // Coupon cũ phải chưa kết thúc hoặc kết thúc sau starts_at mới
+                ...(startsAt && {
+                    OR: [
+                        { ends_at: null },
+                        { ends_at: { gt: startsAt } },
+                    ],
+                }),
+            },
+        });
+    }
+
     async findByName(name: string, excludeId?: string) {
         return this.prisma.coupon.findFirst({
             where: {

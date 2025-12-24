@@ -5,12 +5,10 @@ import {
     IsOptional,
     IsBoolean,
     IsNumber,
-    IsEnum,
     MaxLength,
     Min,
 } from 'class-validator';
 import { i18nValidationMessage } from 'nestjs-i18n';
-import { DiscountType } from '@prisma/client';
 
 /**
  * DTO tạo mới Addon
@@ -53,23 +51,6 @@ export class CreateAddonDto {
         message: i18nValidationMessage('addon.validation.is_monthly_payment_boolean'),
     })
     is_monthly_payment?: boolean;
-
-    @ApiPropertyOptional({ description: 'Giá trị giảm giá', example: 10 })
-    @IsOptional()
-    @IsNumber({}, {
-        message: i18nValidationMessage('addon.validation.discount_value_number'),
-    })
-    @Min(0, {
-        message: i18nValidationMessage('addon.validation.discount_value_min'),
-    })
-    discount_value?: number;
-
-    @ApiPropertyOptional({ description: 'Loại giảm giá', enum: DiscountType })
-    @IsOptional()
-    @IsEnum(DiscountType, {
-        message: i18nValidationMessage('addon.validation.discount_type_enum'),
-    })
-    discount_type?: DiscountType;
 
     @ApiPropertyOptional({ description: 'Trạng thái hoạt động', default: true })
     @IsOptional()

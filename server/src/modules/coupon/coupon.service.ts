@@ -33,11 +33,15 @@ export class CouponService {
     }
 
     async create(dto: CreateCouponDto, userId: string, lang: string) {
-        // Kiểm tra mã code trùng
-        const existingCode = await this.repository.findByCode(dto.code);
+        // Kiểm tra mã code trùng với thời gian hiệu lực chồng chéo
+        const existingCode = await this.repository.findByCodeWithOverlap(
+            dto.code,
+            dto.starts_at,
+            dto.ends_at,
+        );
         if (existingCode) {
             throw new ConflictException(
-                this.i18n.t('coupon.errors.code_exists', { lang }),
+                this.i18n.t('coupon.errors.code_exists_with_overlap', { lang }),
             );
         }
 
@@ -143,12 +147,21 @@ export class CouponService {
             );
         }
 
-        // Kiểm tra mã code trùng nếu đang cập nhật code
-        if (dto.code && dto.code !== coupon.code) {
-            const existing = await this.repository.findByCode(dto.code, id);
+        // Kiểm tra mã code trùng với thời gian hiệu lực chồng chéo nếu đang cập nhật code hoặc thời gian
+        const newCode = dto.code ?? coupon.code;
+        const newStartsAt = dto.starts_at ?? coupon.starts_at;
+        const newEndsAt = dto.ends_at ?? coupon.ends_at;
+
+        if (dto.code || dto.starts_at || dto.ends_at) {
+            const existing = await this.repository.findByCodeWithOverlap(
+                newCode,
+                newStartsAt,
+                newEndsAt,
+                id,
+            );
             if (existing) {
                 throw new ConflictException(
-                    this.i18n.t('coupon.errors.code_exists', { lang }),
+                    this.i18n.t('coupon.errors.code_exists_with_overlap', { lang }),
                 );
             }
         }

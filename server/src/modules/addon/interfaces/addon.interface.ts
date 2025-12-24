@@ -1,5 +1,4 @@
 import { Decimal } from '@prisma/client/runtime/library';
-import { DiscountType } from '@prisma/client';
 import { IPaginatedResponse } from '../../../common/interfaces';
 
 /**
@@ -11,8 +10,6 @@ export interface IAddon {
     description: string | null;
     price: Decimal;
     is_monthly_payment: boolean;
-    discount_value: Decimal | null;
-    discount_type: DiscountType | null;
     is_active: boolean;
     created_at: Date;
     updated_at: Date | null;

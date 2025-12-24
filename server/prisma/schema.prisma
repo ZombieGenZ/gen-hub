@@ -429,8 +429,6 @@ model Addon {
   description        String?
   price              Decimal       @db.Decimal(19, 4)
   is_monthly_payment Boolean       @default(false)
-  discount_value     Decimal?      @db.Decimal(19, 4)
-  discount_type      DiscountType?
 
   is_active  Boolean   @default(true)
   created_at DateTime  @default(now())
@@ -520,6 +518,9 @@ model Coupon {
   is_public              Boolean @default(false)
   apply_for_first_rental Boolean @default(true)
   apply_for_renewal      Boolean @default(true)
+  apply_for_addon         Boolean @default(false)
+  apply_for_whole_warehouse Boolean @default(true)
+  apply_for_row           Boolean @default(true)
   
   is_unlimited_stack Boolean @default(false)
   max_stack_count    Int?
@@ -594,6 +595,9 @@ model CouponSchedule {
   is_public              Boolean @default(false)
   apply_for_first_rental Boolean @default(true)
   apply_for_renewal      Boolean @default(true)
+  apply_for_addon         Boolean @default(false)
+  apply_for_whole_warehouse Boolean @default(true)
+  apply_for_row           Boolean @default(true)
   
   is_unlimited_stack Boolean @default(false)
   max_stack_count    Int?

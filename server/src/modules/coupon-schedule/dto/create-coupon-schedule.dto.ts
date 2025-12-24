@@ -36,16 +36,18 @@ export class CreateCouponScheduleDto {
     @IsEnum(CouponSchedulePeriod, { message: i18nValidationMessage('coupon-schedule.validation.period_enum') })
     period: CouponSchedulePeriod;
 
-    // Cấu hình thời gian chạy
+    // Cấu hình thời gian chạy theo period
     @ApiPropertyOptional({ description: 'Ngày trong tháng (1-31)', example: 15 })
     @ValidateIf(o => ['YEARLY', 'QUARTERLY', 'MONTHLY'].includes(o.period))
+    @IsNotEmpty({ message: i18nValidationMessage('coupon-schedule.validation.scheduled_day_required') })
     @IsInt({ message: i18nValidationMessage('coupon-schedule.validation.scheduled_day_int') })
     @Min(1, { message: i18nValidationMessage('coupon-schedule.validation.scheduled_day_min') })
     @Max(31, { message: i18nValidationMessage('coupon-schedule.validation.scheduled_day_max') })
     scheduled_day?: number;
 
     @ApiPropertyOptional({ description: 'Tháng trong năm (1-12)', example: 1 })
-    @ValidateIf(o => o.period === 'YEARLY')
+    @ValidateIf(o => ['YEARLY', 'QUARTERLY'].includes(o.period))
+    @IsNotEmpty({ message: i18nValidationMessage('coupon-schedule.validation.scheduled_month_required') })
     @IsInt({ message: i18nValidationMessage('coupon-schedule.validation.scheduled_month_int') })
     @Min(1, { message: i18nValidationMessage('coupon-schedule.validation.scheduled_month_min') })
     @Max(12, { message: i18nValidationMessage('coupon-schedule.validation.scheduled_month_max') })
@@ -53,20 +55,23 @@ export class CreateCouponScheduleDto {
 
     @ApiPropertyOptional({ description: 'Thứ trong tuần (0-6, 0=CN)', example: 1 })
     @ValidateIf(o => o.period === 'WEEKLY')
+    @IsNotEmpty({ message: i18nValidationMessage('coupon-schedule.validation.scheduled_weekday_required') })
     @IsInt({ message: i18nValidationMessage('coupon-schedule.validation.scheduled_weekday_int') })
     @Min(0, { message: i18nValidationMessage('coupon-schedule.validation.scheduled_weekday_min') })
     @Max(6, { message: i18nValidationMessage('coupon-schedule.validation.scheduled_weekday_max') })
     scheduled_weekday?: number;
 
     @ApiPropertyOptional({ description: 'Giờ trong ngày (0-23)', example: 8 })
-    @IsOptional()
+    @ValidateIf(o => o.period === 'DAILY')
+    @IsNotEmpty({ message: i18nValidationMessage('coupon-schedule.validation.scheduled_hour_required') })
     @IsInt({ message: i18nValidationMessage('coupon-schedule.validation.scheduled_hour_int') })
     @Min(0, { message: i18nValidationMessage('coupon-schedule.validation.scheduled_hour_min') })
     @Max(23, { message: i18nValidationMessage('coupon-schedule.validation.scheduled_hour_max') })
     scheduled_hour?: number;
 
     @ApiPropertyOptional({ description: 'Phút (0-59)', example: 0 })
-    @IsOptional()
+    @ValidateIf(o => o.period === 'DAILY')
+    @IsNotEmpty({ message: i18nValidationMessage('coupon-schedule.validation.scheduled_minute_required') })
     @IsInt({ message: i18nValidationMessage('coupon-schedule.validation.scheduled_minute_int') })
     @Min(0, { message: i18nValidationMessage('coupon-schedule.validation.scheduled_minute_min') })
     @Max(59, { message: i18nValidationMessage('coupon-schedule.validation.scheduled_minute_max') })
@@ -78,23 +83,28 @@ export class CreateCouponScheduleDto {
     @IsBoolean()
     is_random_code?: boolean;
 
+    // Các trường chỉ áp dụng khi is_random_code = false
     @ApiPropertyOptional({ description: 'Code cố định', default: false })
+    @ValidateIf(o => o.is_random_code === false)
     @IsOptional()
     @IsBoolean()
     is_fixed_code?: boolean;
 
     @ApiPropertyOptional({ description: 'Giá trị code cố định', example: 'TET' })
-    @ValidateIf(o => o.is_fixed_code === true)
+    @ValidateIf(o => o.is_random_code === false)
+    @IsNotEmpty({ message: i18nValidationMessage('coupon-schedule.validation.fixed_code_value_required') })
     @IsString({ message: i18nValidationMessage('coupon-schedule.validation.fixed_code_string') })
     @MaxLength(30, { message: i18nValidationMessage('coupon-schedule.validation.fixed_code_max_length') })
     fixed_code_value?: string;
 
     @ApiPropertyOptional({ description: 'Sử dụng suffix', default: false })
+    @ValidateIf(o => o.is_random_code === false)
     @IsOptional()
     @IsBoolean()
     use_suffix?: boolean;
 
     @ApiPropertyOptional({ description: 'Sử dụng prefix', default: false })
+    @ValidateIf(o => o.is_random_code === false)
     @IsOptional()
     @IsBoolean()
     use_prefix?: boolean;
@@ -107,86 +117,101 @@ export class CreateCouponScheduleDto {
 
     @ApiPropertyOptional({ description: 'Giá trị thời gian áp dụng', example: 1 })
     @ValidateIf(o => o.is_permanent_coupon !== true)
+    @IsNotEmpty({ message: i18nValidationMessage('coupon-schedule.validation.coupon_duration_value_required') })
     @IsInt({ message: i18nValidationMessage('coupon-schedule.validation.coupon_duration_value_int') })
     @Min(1, { message: i18nValidationMessage('coupon-schedule.validation.coupon_duration_value_min') })
     coupon_duration_value?: number;
 
     @ApiPropertyOptional({ description: 'Đơn vị thời gian áp dụng', enum: CouponDurationUnit })
     @ValidateIf(o => o.is_permanent_coupon !== true)
+    @IsNotEmpty({ message: i18nValidationMessage('coupon-schedule.validation.coupon_duration_unit_required') })
     @IsEnum(CouponDurationUnit, { message: i18nValidationMessage('coupon-schedule.validation.coupon_duration_unit_enum') })
     coupon_duration_unit?: CouponDurationUnit;
 
-    // Thông số Coupon
-    @ApiProperty({ description: 'Giá trị giảm giá', example: 20 })
-    @IsNotEmpty({ message: i18nValidationMessage('coupon-schedule.validation.discount_value_required') })
-    @IsNumber({}, { message: i18nValidationMessage('coupon-schedule.validation.discount_value_number') })
-    @Min(0, { message: i18nValidationMessage('coupon-schedule.validation.discount_value_min') })
-    discount_value: number;
-
+    // Thông số Coupon - discount_type trước discount_value
     @ApiProperty({ description: 'Loại giảm giá', enum: CouponDiscountType })
     @IsNotEmpty({ message: i18nValidationMessage('coupon-schedule.validation.discount_type_required') })
     @IsEnum(CouponDiscountType, { message: i18nValidationMessage('coupon-schedule.validation.discount_type_enum') })
     discount_type: CouponDiscountType;
 
-    // Điều kiện
+    @ApiProperty({ description: 'Giá trị giảm giá', example: 20 })
+    @IsNotEmpty({ message: i18nValidationMessage('coupon-schedule.validation.discount_value_required') })
+    @IsNumber({}, { message: i18nValidationMessage('coupon-schedule.validation.discount_value_number') })
+    @Min(1, { message: i18nValidationMessage('coupon-schedule.validation.discount_value_min') })
+    @ValidateIf(o => o.discount_type === 'PERCENT')
+    @Max(100, { message: i18nValidationMessage('coupon-schedule.validation.discount_value_max_percent') })
+    discount_value: number;
+
+    // Điều kiện: Số kho tối thiểu
     @ApiPropertyOptional({ description: 'Yêu cầu số kho tối thiểu', default: false })
     @IsOptional()
     @IsBoolean()
     require_min_warehouses?: boolean;
 
     @ApiPropertyOptional({ description: 'Số kho tối thiểu', example: 2 })
-    @IsOptional()
+    @ValidateIf(o => o.require_min_warehouses === true)
+    @IsNotEmpty({ message: i18nValidationMessage('coupon-schedule.validation.min_warehouses_required') })
     @IsInt()
     @Min(1)
     min_warehouses?: number;
 
+    // Điều kiện: Số row tối thiểu
     @ApiPropertyOptional({ description: 'Yêu cầu số row tối thiểu', default: false })
     @IsOptional()
     @IsBoolean()
     require_min_rows?: boolean;
 
     @ApiPropertyOptional({ description: 'Số row tối thiểu', example: 10 })
-    @IsOptional()
+    @ValidateIf(o => o.require_min_rows === true)
+    @IsNotEmpty({ message: i18nValidationMessage('coupon-schedule.validation.min_rows_required') })
     @IsInt()
     @Min(1)
     min_rows?: number;
 
+    // Điều kiện: Đơn hàng tối thiểu
     @ApiPropertyOptional({ description: 'Yêu cầu đơn hàng tối thiểu', default: false })
     @IsOptional()
     @IsBoolean()
     require_min_order_amount?: boolean;
 
     @ApiPropertyOptional({ description: 'Giá trị đơn hàng tối thiểu', example: 1000000 })
-    @IsOptional()
+    @ValidateIf(o => o.require_min_order_amount === true)
+    @IsNotEmpty({ message: i18nValidationMessage('coupon-schedule.validation.min_order_amount_required') })
     @IsNumber()
-    @Min(0)
+    @Min(1)
     min_order_amount?: number;
 
+    // Điều kiện: Thời gian thuê tối thiểu
     @ApiPropertyOptional({ description: 'Yêu cầu thời gian thuê tối thiểu', default: false })
     @IsOptional()
     @IsBoolean()
     require_min_rental_duration?: boolean;
 
     @ApiPropertyOptional({ description: 'Thời gian thuê tối thiểu', example: 6 })
-    @IsOptional()
+    @ValidateIf(o => o.require_min_rental_duration === true)
+    @IsNotEmpty({ message: i18nValidationMessage('coupon-schedule.validation.min_rental_duration_value_required') })
     @IsInt()
     @Min(1)
     min_rental_duration_value?: number;
 
     @ApiPropertyOptional({ description: 'Đơn vị thời gian thuê', enum: DurationUnit })
-    @IsOptional()
+    @ValidateIf(o => o.require_min_rental_duration === true)
+    @IsNotEmpty({ message: i18nValidationMessage('coupon-schedule.validation.min_rental_duration_unit_required') })
     @IsEnum(DurationUnit)
     min_rental_duration_unit?: DurationUnit;
 
+    // Giới hạn giảm giá (chỉ áp dụng cho PERCENT)
     @ApiPropertyOptional({ description: 'Không giới hạn giảm giá', default: false })
+    @ValidateIf(o => o.discount_type === 'PERCENT')
     @IsOptional()
     @IsBoolean()
     is_unlimited_discount?: boolean;
 
     @ApiPropertyOptional({ description: 'Giá trị giảm tối đa (cho PERCENT)', example: 500000 })
-    @IsOptional()
+    @ValidateIf(o => o.discount_type === 'PERCENT' && o.is_unlimited_discount !== true)
+    @IsNotEmpty({ message: i18nValidationMessage('coupon-schedule.validation.max_discount_amount_required') })
     @IsNumber()
-    @Min(0)
+    @Min(1)
     max_discount_amount?: number;
 
     @ApiPropertyOptional({ description: 'Số lượng sử dụng tối đa (0 = không giới hạn)', default: 0 })
@@ -210,6 +235,21 @@ export class CreateCouponScheduleDto {
     @IsBoolean()
     apply_for_renewal?: boolean;
 
+    @ApiPropertyOptional({ description: 'Áp dụng cho addon', default: false })
+    @IsOptional()
+    @IsBoolean()
+    apply_for_addon?: boolean;
+
+    @ApiPropertyOptional({ description: 'Áp dụng cho thuê toàn kho', default: true })
+    @IsOptional()
+    @IsBoolean()
+    apply_for_whole_warehouse?: boolean;
+
+    @ApiPropertyOptional({ description: 'Áp dụng cho thuê row', default: true })
+    @IsOptional()
+    @IsBoolean()
+    apply_for_row?: boolean;
+
     @ApiPropertyOptional({ description: 'Trạng thái hoạt động', default: true })
     @IsOptional()
     @IsBoolean()
@@ -224,7 +264,8 @@ export class CreateCouponScheduleDto {
     is_unlimited_stack?: boolean;
 
     @ApiPropertyOptional({ description: 'Số coupon tối đa có thể áp dụng chung', example: 3 })
-    @IsOptional()
+    @ValidateIf(o => o.is_unlimited_stack === false)
+    @IsNotEmpty({ message: i18nValidationMessage('coupon-schedule.validation.max_stack_count_required') })
     @IsInt({
         message: i18nValidationMessage('coupon-schedule.validation.max_stack_count_int'),
     })

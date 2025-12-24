@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { I18nService } from 'nestjs-i18n';
 import { CouponScheduleRepository } from './coupon-schedule.repository';
 import { CouponScheduleRunnerService } from './coupon-schedule-runner.service';
+import { CouponRepository } from '../coupon/coupon.repository';
 import { RedisService } from '../redis/redis.service';
 import { WebsocketGateway } from '../websocket/websocket.gateway';
 import { SystemLogService } from '../system-log/system-log.service';
@@ -19,6 +20,7 @@ export class CouponScheduleService {
 
     constructor(
         private readonly repository: CouponScheduleRepository,
+        private readonly couponRepository: CouponRepository,
         @Inject(forwardRef(() => CouponScheduleRunnerService))
         private readonly runnerService: CouponScheduleRunnerService,
         private readonly redisService: RedisService,
@@ -185,10 +187,21 @@ export class CouponScheduleService {
     async create(dto: CreateCouponScheduleDto, userId: string, lang: string) {
         // Validate fixed_code nếu sử dụng
         if (dto.is_fixed_code && dto.fixed_code_value) {
-            const existing = await this.repository.findActiveByFixedCode(dto.fixed_code_value);
-            if (existing) {
+            // Kiểm tra xem có Schedule khác đang active với fixed_code này không
+            const existingSchedule = await this.repository.findActiveByFixedCode(dto.fixed_code_value);
+            if (existingSchedule) {
                 throw new ConflictException(
                     this.i18n.t('coupon-schedule.errors.fixed_code_exists', { lang }),
+                );
+            }
+
+            // Kiểm tra xem có Coupon đang active với code này không
+            // Lưu ý: Coupon được tạo từ Schedule này sẽ có starts_at = next_run_at
+            // và ends_at tính từ duration
+            const existingCoupon = await this.couponRepository.findByCode(dto.fixed_code_value);
+            if (existingCoupon && existingCoupon.is_active) {
+                throw new ConflictException(
+                    this.i18n.t('coupon-schedule.errors.fixed_code_conflicts_with_coupon', { lang }),
                 );
             }
         }
@@ -302,10 +315,19 @@ export class CouponScheduleService {
 
         // Validate fixed_code nếu đang cập nhật
         if (dto.is_fixed_code && dto.fixed_code_value && dto.fixed_code_value !== schedule.fixed_code_value) {
-            const existing = await this.repository.findActiveByFixedCode(dto.fixed_code_value, id);
-            if (existing) {
+            // Kiểm tra với CouponSchedule khác
+            const existingSchedule = await this.repository.findActiveByFixedCode(dto.fixed_code_value, id);
+            if (existingSchedule) {
                 throw new ConflictException(
                     this.i18n.t('coupon-schedule.errors.fixed_code_exists', { lang }),
+                );
+            }
+
+            // Kiểm tra với Coupon đang active
+            const existingCoupon = await this.couponRepository.findByCode(dto.fixed_code_value);
+            if (existingCoupon && existingCoupon.is_active) {
+                throw new ConflictException(
+                    this.i18n.t('coupon-schedule.errors.fixed_code_conflicts_with_coupon', { lang }),
                 );
             }
         }

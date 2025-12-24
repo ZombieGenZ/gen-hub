@@ -10,10 +10,14 @@ import {
     IsDate,
     MaxLength,
     Min,
+    Max,
+    ValidateIf,
+    Validate,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { i18nValidationMessage } from 'nestjs-i18n';
 import { CouponDiscountType, DurationUnit } from '@prisma/client';
+import { IsBeforeConstraint } from 'src/common/validators/is-before.validator';
 
 /**
  * DTO tạo mới Coupon
@@ -50,18 +54,6 @@ export class CreateCouponDto {
     })
     code: string;
 
-    @ApiProperty({ description: 'Giá trị giảm giá', example: 20 })
-    @IsNotEmpty({
-        message: i18nValidationMessage('coupon.validation.discount_value_required'),
-    })
-    @IsNumber({}, {
-        message: i18nValidationMessage('coupon.validation.discount_value_number'),
-    })
-    @Min(0, {
-        message: i18nValidationMessage('coupon.validation.discount_value_min'),
-    })
-    discount_value: number;
-
     @ApiProperty({ description: 'Loại giảm giá', enum: CouponDiscountType })
     @IsNotEmpty({
         message: i18nValidationMessage('coupon.validation.discount_type_required'),
@@ -71,6 +63,22 @@ export class CreateCouponDto {
     })
     discount_type: CouponDiscountType;
 
+    @ApiProperty({ description: 'Giá trị giảm giá', example: 20 })
+    @IsNotEmpty({
+        message: i18nValidationMessage('coupon.validation.discount_value_required'),
+    })
+    @IsNumber({}, {
+        message: i18nValidationMessage('coupon.validation.discount_value_number'),
+    })
+    @Min(1, {
+        message: i18nValidationMessage('coupon.validation.discount_value_min'),
+    })
+    @ValidateIf(o => o.discount_type === 'PERCENT')
+    @Max(100, {
+        message: i18nValidationMessage('coupon.validation.discount_value_max_percent'),
+    })
+    discount_value: number;
+
     // Điều kiện: Số kho tối thiểu
     @ApiPropertyOptional({ description: 'Yêu cầu số kho tối thiểu', default: false })
     @IsOptional()
@@ -78,7 +86,10 @@ export class CreateCouponDto {
     require_min_warehouses?: boolean;
 
     @ApiPropertyOptional({ description: 'Số kho tối thiểu', example: 2 })
-    @IsOptional()
+    @ValidateIf(o => o.require_min_warehouses === true)
+    @IsNotEmpty({
+        message: i18nValidationMessage('coupon.validation.min_warehouses_required'),
+    })
     @IsInt()
     @Min(1)
     min_warehouses?: number;
@@ -90,7 +101,10 @@ export class CreateCouponDto {
     require_min_rows?: boolean;
 
     @ApiPropertyOptional({ description: 'Số row tối thiểu', example: 10 })
-    @IsOptional()
+    @ValidateIf(o => o.require_min_rows === true)
+    @IsNotEmpty({
+        message: i18nValidationMessage('coupon.validation.min_rows_required'),
+    })
     @IsInt()
     @Min(1)
     min_rows?: number;
@@ -102,9 +116,12 @@ export class CreateCouponDto {
     require_min_order_amount?: boolean;
 
     @ApiPropertyOptional({ description: 'Giá trị đơn hàng tối thiểu', example: 1000000 })
-    @IsOptional()
+    @ValidateIf(o => o.require_min_order_amount === true)
+    @IsNotEmpty({
+        message: i18nValidationMessage('coupon.validation.min_order_amount_required'),
+    })
     @IsNumber()
-    @Min(0)
+    @Min(1)
     min_order_amount?: number;
 
     // Điều kiện: Thời gian thuê tối thiểu
@@ -114,26 +131,36 @@ export class CreateCouponDto {
     require_min_rental_duration?: boolean;
 
     @ApiPropertyOptional({ description: 'Thời gian thuê tối thiểu', example: 6 })
-    @IsOptional()
+    @ValidateIf(o => o.require_min_rental_duration === true)
+    @IsNotEmpty({
+        message: i18nValidationMessage('coupon.validation.min_rental_duration_value_required'),
+    })
     @IsInt()
     @Min(1)
     min_rental_duration_value?: number;
 
     @ApiPropertyOptional({ description: 'Đơn vị thời gian thuê', enum: DurationUnit })
-    @IsOptional()
+    @ValidateIf(o => o.require_min_rental_duration === true)
+    @IsNotEmpty({
+        message: i18nValidationMessage('coupon.validation.min_rental_duration_unit_required'),
+    })
     @IsEnum(DurationUnit)
     min_rental_duration_unit?: DurationUnit;
 
-    // Giới hạn giảm giá
+    // Giới hạn giảm giá (chỉ áp dụng cho PERCENT)
     @ApiPropertyOptional({ description: 'Không giới hạn giảm giá', default: false })
+    @ValidateIf(o => o.discount_type === 'PERCENT')
     @IsOptional()
     @IsBoolean()
     is_unlimited_discount?: boolean;
 
     @ApiPropertyOptional({ description: 'Giá trị giảm tối đa (cho PERCENT)', example: 500000 })
-    @IsOptional()
+    @ValidateIf(o => o.discount_type === 'PERCENT' && o.is_unlimited_discount !== true)
+    @IsNotEmpty({
+        message: i18nValidationMessage('coupon.validation.max_discount_amount_required'),
+    })
     @IsNumber()
-    @Min(0)
+    @Min(1)
     max_discount_amount?: number;
 
     // Thời gian hiệu lực
@@ -143,13 +170,22 @@ export class CreateCouponDto {
     is_permanent?: boolean;
 
     @ApiPropertyOptional({ description: 'Thời gian bắt đầu' })
-    @IsOptional()
+    @ValidateIf(o => o.is_permanent !== true)
+    @IsNotEmpty({
+        message: i18nValidationMessage('coupon.validation.starts_at_required'),
+    })
     @Type(() => Date)
     @IsDate()
+    @Validate(IsBeforeConstraint, ['ends_at'], {
+        message: i18nValidationMessage('coupon.validation.starts_at_before_ends_at'),
+    })
     starts_at?: Date;
 
     @ApiPropertyOptional({ description: 'Thời gian kết thúc' })
-    @IsOptional()
+    @ValidateIf(o => o.is_permanent !== true)
+    @IsNotEmpty({
+        message: i18nValidationMessage('coupon.validation.ends_at_required'),
+    })
     @Type(() => Date)
     @IsDate()
     ends_at?: Date;
@@ -177,6 +213,21 @@ export class CreateCouponDto {
     @IsBoolean()
     apply_for_renewal?: boolean;
 
+    @ApiPropertyOptional({ description: 'Áp dụng cho addon', default: false })
+    @IsOptional()
+    @IsBoolean()
+    apply_for_addon?: boolean;
+
+    @ApiPropertyOptional({ description: 'Áp dụng cho thuê toàn kho', default: true })
+    @IsOptional()
+    @IsBoolean()
+    apply_for_whole_warehouse?: boolean;
+
+    @ApiPropertyOptional({ description: 'Áp dụng cho thuê row', default: true })
+    @IsOptional()
+    @IsBoolean()
+    apply_for_row?: boolean;
+
     @ApiPropertyOptional({ description: 'Trạng thái hoạt động', default: true })
     @IsOptional()
     @IsBoolean()
@@ -191,7 +242,10 @@ export class CreateCouponDto {
     is_unlimited_stack?: boolean;
 
     @ApiPropertyOptional({ description: 'Số coupon tối đa có thể áp dụng chung', example: 3 })
-    @IsOptional()
+    @ValidateIf(o => o.is_unlimited_stack === false)
+    @IsNotEmpty({
+        message: i18nValidationMessage('coupon.validation.max_stack_count_required'),
+    })
     @IsInt({
         message: i18nValidationMessage('coupon.validation.max_stack_count_int'),
     })
