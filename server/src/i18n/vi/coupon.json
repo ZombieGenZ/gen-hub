@@ -5,7 +5,9 @@
         "deleted": "Đã xóa coupon thành công",
         "fetched": "Lấy dữ liệu coupon thành công",
         "saved": "Đã lưu coupon thành công",
-        "unsaved": "Đã bỏ lưu coupon"
+        "unsaved": "Đã bỏ lưu coupon",
+        "applicable_fetched": "Lấy danh sách coupon có thể áp dụng thành công",
+        "coupon_valid": "Coupon hợp lệ"
     },
     "errors": {
         "not_found": "Không tìm thấy coupon",
@@ -19,7 +21,20 @@
         "not_saved": "Coupon chưa được lưu",
         "expired": "Coupon đã hết hạn",
         "usage_limit_reached": "Coupon đã đạt giới hạn sử dụng",
-        "conditions_not_met": "Đơn hàng không đáp ứng điều kiện coupon"
+        "conditions_not_met": "Đơn hàng không đáp ứng điều kiện coupon",
+        "invalid_code": "Mã coupon không tồn tại hoặc đã hết hạn",
+        "not_applicable": "Coupon không thể áp dụng cho đơn hàng này",
+        "min_warehouses_not_met": "Đơn hàng chưa đạt số lượng kho tối thiểu",
+        "min_rows_not_met": "Đơn hàng chưa đạt số lượng row tối thiểu",
+        "min_order_amount_not_met": "Đơn hàng chưa đạt giá trị tối thiểu",
+        "min_rental_duration_not_met": "Thời gian thuê chưa đạt yêu cầu tối thiểu",
+        "not_for_new_contract": "Coupon không áp dụng cho hợp đồng mới",
+        "not_for_renewal": "Coupon không áp dụng cho gia hạn",
+        "warehouse_not_applicable": "Coupon không áp dụng cho kho đã chọn",
+        "row_not_applicable": "Coupon không áp dụng cho row đã chọn",
+        "addon_not_applicable": "Coupon không áp dụng cho addon đã chọn",
+        "user_not_targeted": "Coupon không dành cho tài khoản của bạn",
+        "rental_tier_not_found": "Không tìm thấy gói thời gian thuê"
     },
     "validation": {
         "name_required": "Tên coupon không được để trống",
@@ -63,6 +78,16 @@
         "target_row_ids_array": "Danh sách ID row phải là mảng",
         "target_row_ids_required": "Phải có ít nhất 1 row được chỉ định khi không áp dụng cho tất cả row",
         "target_addon_ids_array": "Danh sách ID addon phải là mảng",
-        "target_addon_ids_required": "Phải có ít nhất 1 addon được chỉ định khi không áp dụng cho tất cả addon"
+        "target_addon_ids_required": "Phải có ít nhất 1 addon được chỉ định khi không áp dụng cho tất cả addon",
+        "addon_ids_array": "Danh sách addon phải là mảng",
+        "addon_ids_uuid": "ID addon phải là UUID hợp lệ",
+        "warehouse_template_ids_array": "Danh sách kho template phải là mảng",
+        "warehouse_template_ids_uuid": "ID kho template phải là UUID hợp lệ",
+        "row_template_ids_array": "Danh sách row template phải là mảng",
+        "row_template_ids_uuid": "ID row template phải là UUID hợp lệ",
+        "rental_duration_tier_id_required": "ID gói thời gian thuê không được để trống",
+        "rental_duration_tier_id_uuid": "ID gói thời gian thuê phải là UUID hợp lệ",
+        "type_required": "Loại giao dịch không được để trống",
+        "type_enum": "Loại giao dịch phải là NEW_CONTRACT hoặc RENEWAL"
     }
 }

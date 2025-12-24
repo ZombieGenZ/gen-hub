@@ -195,4 +195,97 @@ export class CouponRepository {
             },
         });
     }
+
+    /**
+     * Tìm coupon theo code còn hiệu lực
+     */
+    async findCouponByCodeActive(code: string) {
+        const now = new Date();
+        return this.prisma.coupon.findFirst({
+            where: {
+                code,
+                is_deleted: false,
+                is_active: true,
+                OR: [
+                    { is_permanent: true },
+                    {
+                        AND: [
+                            { starts_at: { lte: now } },
+                            { ends_at: { gte: now } },
+                        ],
+                    },
+                ],
+            },
+            include: {
+                target_users: { where: { is_active: true } },
+                target_warehouses: { where: { is_active: true } },
+                target_rows: { where: { is_active: true } },
+                target_addons: { where: { is_active: true } },
+            },
+        });
+    }
+
+    /**
+     * Lấy coupon kèm thông tin targets
+     */
+    async getCouponWithTargets(id: string) {
+        return this.prisma.coupon.findFirst({
+            where: { id, is_deleted: false },
+            include: {
+                target_users: { where: { is_active: true } },
+                target_warehouses: { where: { is_active: true } },
+                target_rows: { where: { is_active: true } },
+                target_addons: { where: { is_active: true } },
+            },
+        });
+    }
+
+    /**
+     * Lấy danh sách coupon đã lưu của user có thể áp dụng
+     */
+    async findApplicableSavedCoupons(userId: string) {
+        const now = new Date();
+        return this.prisma.userSavedCoupon.findMany({
+            where: {
+                user_id: userId,
+                is_deleted: false,
+                is_active: true,
+                coupon: {
+                    is_deleted: false,
+                    is_active: true,
+                    AND: [
+                        // Điều kiện thời gian hiệu lực
+                        {
+                            OR: [
+                                { is_permanent: true },
+                                {
+                                    AND: [
+                                        { starts_at: { lte: now } },
+                                        { ends_at: { gte: now } },
+                                    ],
+                                },
+                            ],
+                        },
+                        // Điều kiện chưa đạt giới hạn sử dụng
+                        {
+                            OR: [
+                                { max_usage: 0 },
+                            ],
+                        },
+                    ],
+                },
+            },
+            include: {
+                coupon: {
+                    include: {
+                        target_users: { where: { is_active: true } },
+                        target_warehouses: { where: { is_active: true } },
+                        target_rows: { where: { is_active: true } },
+                        target_addons: { where: { is_active: true } },
+                    },
+                },
+            },
+            orderBy: { created_at: 'desc' },
+        });
+    }
 }

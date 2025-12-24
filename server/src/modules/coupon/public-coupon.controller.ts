@@ -3,6 +3,7 @@ import {
     Get,
     Post,
     Delete,
+    Body,
     Param,
     Query,
     UseGuards,
@@ -18,7 +19,7 @@ import {
 import { I18nLang } from 'nestjs-i18n';
 
 import { CouponService } from './coupon.service';
-import { QueryCouponDto } from './dto';
+import { QueryCouponDto, CheckApplicableCouponDto, ValidateCouponDto } from './dto';
 import { JwtAuthGuard } from '../../common/guards';
 import { CurrentUser, Public } from '../../common/decorators';
 import { GetResponse, OkResponse } from '../../common/responses';
@@ -53,6 +54,39 @@ export class PublicCouponController {
         return new GetResponse('coupon.saved.list.success', result, 'Lấy danh sách coupon đã lưu thành công');
     }
 
+    @Post('applicable')
+    @ApiBearerAuth('JWT-auth')
+    @UseGuards(JwtAuthGuard)
+    @ApiOperation({ summary: 'Lấy danh sách coupon đã lưu có thể áp dụng cho đơn hàng' })
+    @ApiResponse({ status: 200, description: 'Lấy danh sách coupon có thể áp dụng thành công' })
+    async getApplicableCoupons(
+        @CurrentUser('userId') userId: string,
+        @Body() dto: CheckApplicableCouponDto,
+        @I18nLang() lang: string,
+    ): Promise<GetResponse<any>> {
+        const result = await this.couponService.getApplicableCoupons(userId, dto, lang);
+        return new GetResponse('coupon.applicable.success', result, 'Lấy danh sách coupon có thể áp dụng thành công');
+    }
+
+    @Post('validate')
+    @ApiBearerAuth('JWT-auth')
+    @UseGuards(JwtAuthGuard)
+    @ApiOperation({ summary: 'Kiểm tra mã coupon có thể áp dụng cho đơn hàng' })
+    @ApiResponse({ status: 200, description: 'Kiểm tra coupon thành công' })
+    @ApiResponse({ status: 400, description: 'Coupon không hợp lệ hoặc không thể áp dụng' })
+    async validateCoupon(
+        @CurrentUser('userId') userId: string,
+        @Body() dto: ValidateCouponDto,
+        @I18nLang() lang: string,
+    ): Promise<OkResponse<any>> {
+        const result = await this.couponService.validateCoupon(userId, dto, lang);
+        if ('error' in result && result.error) {
+            return new OkResponse('coupon.validate.failed', result, result.error);
+        }
+        return new OkResponse('coupon.validate.success', result, 'Coupon hợp lệ');
+    }
+
+
     @Post(':id/save')
     @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard)
@@ -86,3 +120,4 @@ export class PublicCouponController {
         return new OkResponse('coupon.unsave.success', null, 'Bỏ lưu coupon thành công');
     }
 }
+
