@@ -103,6 +103,7 @@ model User {
   organization_memberships OrganizationMember[]
 
   system_logs             SystemLog[]
+  database_logs           DatabaseLog[]
   organization_audit_logs OrganizationAuditLog[]
   backupCodes             BackupCode[]
   notifications           UserNotification[]
@@ -505,15 +506,6 @@ model WarehouseAddonGift {
   warehouse_template_id String @db.Uuid
   addon_id              String @db.Uuid
 
-  // require_min_order_amount Boolean  @default(false)
-  // min_order_amount         Decimal? @db.Decimal(19, 4)
-
-  // require_min_warehouses Boolean @default(false)
-  // min_warehouses         Int?
-
-  // require_min_rows Boolean @default(false)
-  // min_rows         Int?
-
   is_until_service_end Boolean       @default(true)
   gift_duration_value  Int?
   gift_duration_unit   DurationUnit?
@@ -541,15 +533,6 @@ model RowAddonGift {
   id              String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
   row_template_id String @db.Uuid
   addon_id        String @db.Uuid
-
-  // require_min_order_amount Boolean  @default(false)
-  // min_order_amount         Decimal? @db.Decimal(19, 4)
-
-  // require_min_warehouses Boolean @default(false)
-  // min_warehouses         Int?
-
-  // require_min_rows Boolean @default(false)
-  // min_rows         Int?
 
   is_until_service_end Boolean       @default(true)
   gift_duration_value  Int?
@@ -1182,6 +1165,9 @@ model Organization {
   google_refresh_token  String? @db.Text
   email_primary_address String?
   is_using_google_email Boolean @default(false)
+
+  auto_delete_api_key_logs  Boolean? @default(true)
+  api_key_logs_retention_ms BigInt? @default(2592000000)
 
   created_at DateTime  @default(now())
   updated_at DateTime? @updatedAt
@@ -2186,6 +2172,30 @@ model SystemLog {
   @@index([module])
   @@index([created_at])
   @@map("system_logs")
+}
+
+model DatabaseLog {
+  id         String      @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  user_id    String?     @db.Uuid
+  action     AuditAction
+  table_name String
+  record_id  String?
+
+  old_data Json?
+  new_data Json?
+
+  ip_address String?
+  user_agent String?
+
+  created_at DateTime @default(now())
+
+  user User? @relation(fields: [user_id], references: [id], onDelete: SetNull)
+
+  @@index([table_name])
+  @@index([user_id])
+  @@index([created_at])
+  @@index([action])
+  @@map("database_logs")
 }
 
 enum AuditAction {

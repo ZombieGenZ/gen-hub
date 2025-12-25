@@ -284,6 +284,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
       }
 
       await this.seedConfigPermissions();
+      await this.seedDatabaseAdminPermission();
       await this.seedAmenityPermissions();
       await this.seedAddonPermissions();
       await this.seedCouponPermissions();
@@ -308,6 +309,69 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
       this.logger.error(`❌ Failed to seed default roles: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * Seed permission database.admin cho Database Panel
+   */
+  private async seedDatabaseAdminPermission() {
+    try {
+      const existing = await this.permission.findFirst({
+        where: { key: 'database.admin' },
+      });
+
+      let permissionId = existing?.id;
+
+      if (!existing) {
+        const newPermission = await this.permission.create({
+          data: {
+            key: 'database.admin',
+            name: 'Database Admin',
+            description: 'Quyền truy cập vào Database Panel',
+            is_active: true,
+            is_deleted: false,
+          },
+        });
+        permissionId = newPermission.id;
+        this.logger.log('✅ Database admin permission seeded');
+      }
+
+      // Assign to Super Admin
+      if (permissionId) {
+        const superAdminRole = await this.role.findFirst({
+          where: { name: 'Super Admin', is_deleted: false },
+        });
+
+        if (superAdminRole) {
+          const existingAssignment = await this.rolePermission.findFirst({
+            where: {
+              role_id: superAdminRole.id,
+              permission_id: permissionId,
+            },
+          });
+
+          if (!existingAssignment) {
+            await this.rolePermission.create({
+              data: {
+                role_id: superAdminRole.id,
+                permission_id: permissionId,
+                is_active: true,
+                is_deleted: false,
+              },
+            });
+            this.logger.log(
+              '✅ Database admin permission assigned to Super Admin',
+            );
+          }
+        }
+      }
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `❌ Failed to seed database admin permission: ${errorMessage}`,
+      );
     }
   }
 
