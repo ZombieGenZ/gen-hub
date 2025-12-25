@@ -39,9 +39,11 @@ export default function LoginPage() {
         }
       }
     } catch (err) {
-      const error = err as { response?: { status?: number; data?: { message?: string } } };
-      if (error.response?.status === 403) {
-        setError('Bạn không có quyền truy cập Database Admin Panel');
+      const error = err as { response?: { status?: number; data?: { message?: string } }; message?: string };
+      if (error.message === 'PERMISSION_DENIED') {
+        setError('Bạn không có quyền truy cập Database Panel');
+      } else if (error.response?.status === 403) {
+        setError('Bạn không có quyền truy cập Database Panel');
       } else if (error.response?.status === 401) {
         setError('Thông tin đăng nhập không chính xác');
       } else {

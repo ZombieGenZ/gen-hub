@@ -44,12 +44,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
             const data = await auth.getProfile();
             if (data.success && data.data?.user) {
+                // Check permissions
+                const permissions: string[] = data.data.permissions || [];
+                if (!permissions.includes('database.admin')) {
+                    await auth.logout();
+                    setUser(null);
+                    throw new Error('PERMISSION_DENIED');
+                }
                 setUser(data.data.user);
             }
         } catch (error) {
             console.error('Failed to fetch profile:', error);
-            // If profile fetch fails, we might want to logout or just not set user
-            // depending on if it's a 401 (handled by interceptor) or other error
+            if ((error as Error).message === 'PERMISSION_DENIED') {
+                throw error;
+            }
         }
     };
 
@@ -58,7 +66,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const checkAuth = async () => {
             const isAuth = auth.isAuthenticated();
             if (isAuth) {
-                await fetchProfile();
+                try {
+                    await fetchProfile();
+                } catch {
+                    // Ignore errors, user stays logged out
+                }
             }
             setIsLoading(false);
         };
