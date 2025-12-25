@@ -43,6 +43,7 @@ class AuthStorageService {
   clearTokens(): void {
     removeCookie(this.ACCESS_TOKEN_KEY!);
     removeCookie(this.REFRESH_TOKEN_KEY!);
+    removeCookie(this.THEME_KEY!);
     removeCookie(this.VERIFICATION_TOKEN_KEY!);
   }
 
@@ -68,7 +69,7 @@ class AuthStorageService {
     } catch {
         return false;
     }
-   }
+  }  
 }
 
 export const authStorage = AuthStorageService.getInstance();

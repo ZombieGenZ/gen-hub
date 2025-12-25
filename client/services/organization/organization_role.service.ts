@@ -8,23 +8,20 @@ export class OrganizationRoleService {
    
    // Lấy thông tin role của organization
    async getOrganizationRole(access_token: string, organization_id: string) {
-      try {
-         const response = await fetch(`${API}/organizations/${organization_id}`, {
-            method: 'GET',
-            headers: {
-               'Authorization': `Bearer ${access_token}`,
-               'Content-Type': 'application/json'
-            }
-         })
-         const data = await response.json()
-         if(data.success) {
-            return data.data
-         } else {
-            throw new Error(data.message || 'Get organization role failed')
+      const response = await fetch(`${API}/organizations/${organization_id}`, {
+         method: 'GET',
+         headers: {
+            'Authorization': `Bearer ${access_token}`,
+            'Content-Type': 'application/json'
          }
-      } catch (error) {
-         console.error('Get organization role error:', error)
-         throw error
+      });
+
+      if (!response.ok) {
+         const errorData = await response.json().catch(() => ({}));
+         throw new Error(errorData.message || 'Failed to get organization role');
       }
+      
+      const data = await response.json();
+      return data.data;
    }
 }

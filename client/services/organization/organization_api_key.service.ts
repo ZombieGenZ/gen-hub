@@ -14,12 +14,12 @@ export class OrganizationApiKeyService {
                'Content-Type': 'application/json'
             }
          })
-         const data = await response.json()
-         if(data.success) {
-            return data.data
-         } else {
-            throw new Error(data.message || 'Get organization api key failed')
+         if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Two-factor authentication failed');
          }
+         
+         return response.json();
       } catch (error) {
          console.error('Get organization api key error:', error)
          throw error

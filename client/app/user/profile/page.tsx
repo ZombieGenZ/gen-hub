@@ -74,6 +74,13 @@ export default function ProfilePage() {
           setUserData(data)
           setName(data.user?.name || '')
         }
+
+        // if (data && !data.success) {
+        //   alert(data.message)
+        // } else {
+        //   setUserData(data)
+        //   setName(data.user?.name || '')
+        // }
       } catch (err) {
         console.error('Error fetching user:', err)
         setError('Đã xảy ra lỗi khi tải thông tin người dùng')

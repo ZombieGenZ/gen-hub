@@ -51,13 +51,12 @@ export class RentalContractService {
                     'Content-Type': 'application/json',
                 },
             })
-            const data = await response.json()
-            if (data.success) {
-                return data.data
-            } else {
-                console.error('Get rental contract detail error:', data)
-                throw new Error(data.message || 'Get rental contract detail failed')
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Two-factor authentication failed');
             }
+            
+            return response.json();
         } catch (error) {
             console.error('Get rental contract detail error:', error)
             throw error
