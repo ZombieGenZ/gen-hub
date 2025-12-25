@@ -217,7 +217,7 @@ export default function TablePage() {
         setSchema(null);
         setColumns([]);
 
-        // Fetch schema first, then records
+        // Fetch schema first
         const init = async () => {
             try {
                 const schemaData = await adminApi.getTableSchema(tableName);
@@ -233,13 +233,12 @@ export default function TablePage() {
             } catch (error) {
                 console.error('Failed to fetch schema:', error);
             }
-
-            // Then fetch records
-            fetchRecords(1);
         };
 
-        init();
-    }, [tableName, fetchRecords]);
+        if (tableName) {
+            init();
+        }
+    }, [tableName]);
 
     // Handle page size change
     const handlePageSizeChange = (newSize: number) => {
@@ -250,12 +249,12 @@ export default function TablePage() {
     };
 
     // Fetch records when limit changes
+    // Fetch records when dependencies change
     useEffect(() => {
         if (tableName) {
             fetchRecords(1);
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [meta.limit]);
+    }, [fetchRecords, tableName]);
 
     const addFilter = () => {
         // Use first column if newFilter.column is empty
