@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
 import { BackupCode } from '@prisma/client';
 import * as crypto from 'crypto';
-import * as bcrypt from 'bcrypt';
+import * as argon2 from '@node-rs/argon2';
 
 /**
  * Repository cho BackupCode
@@ -11,7 +11,7 @@ import * as bcrypt from 'bcrypt';
  */
 @Injectable()
 export class BackupCodeRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   /**
    * Tạo backup codes cho user
@@ -116,15 +116,21 @@ export class BackupCodeService {
   private readonly CODES_COUNT = 10;
   /** Độ dài của mỗi backup code */
   private readonly CODE_LENGTH = 8;
-  /** Số vòng hash bcrypt (mặc định 10) */
-  private get SALT_ROUNDS(): number {
-    return Number(this.configService.get<number>('SALT_ROUNDS')) || 10;
+  /** Argon2id configuration */
+  private get ARGON2_MEMORY_COST(): number {
+    return Number(this.configService.get<number>('ARGON2_MEMORY_COST')) || 65536;
+  }
+  private get ARGON2_TIME_COST(): number {
+    return Number(this.configService.get<number>('ARGON2_TIME_COST')) || 3;
+  }
+  private get ARGON2_PARALLELISM(): number {
+    return Number(this.configService.get<number>('ARGON2_PARALLELISM')) || 1;
   }
 
   constructor(
     private readonly backupCodeRepository: BackupCodeRepository,
     private readonly configService: ConfigService,
-  ) {}
+  ) { }
 
   /**
    * Tạo mảng backup codes ngẫu nhiên
@@ -149,7 +155,11 @@ export class BackupCodeService {
    * @returns Backup code đã hash
    */
   async hashCode(code: string): Promise<string> {
-    return bcrypt.hash(code, this.SALT_ROUNDS);
+    return argon2.hash(code, {
+      memoryCost: this.ARGON2_MEMORY_COST,
+      timeCost: this.ARGON2_TIME_COST,
+      parallelism: this.ARGON2_PARALLELISM,
+    });
   }
 
   /**
@@ -183,7 +193,7 @@ export class BackupCodeService {
       if (storedCode.is_used) continue;
 
       try {
-        const isMatch = await bcrypt.compare(code, storedCode.code);
+        const isMatch = await argon2.verify(storedCode.code, code);
         if (isMatch) {
           await this.backupCodeRepository.markAsUsed(storedCode.id);
           return true;

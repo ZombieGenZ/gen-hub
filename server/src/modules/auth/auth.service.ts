@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import * as bcrypt from 'bcrypt';
+import * as argon2 from '@node-rs/argon2';
 import * as crypto from 'crypto';
 import * as speakeasy from 'speakeasy';
 import { I18nService } from 'nestjs-i18n';
@@ -47,9 +47,15 @@ interface IDeviceInfo {
  */
 @Injectable()
 export class AuthService {
-  /** Số vòng hash bcrypt (mặc định 12) */
-  private get SALT_ROUNDS(): number {
-    return Number(this.configService.get<number>('SALT_ROUNDS')) || 12;
+  /** Argon2id configuration */
+  private get ARGON2_MEMORY_COST(): number {
+    return Number(this.configService.get<number>('ARGON2_MEMORY_COST')) || 65536;
+  }
+  private get ARGON2_TIME_COST(): number {
+    return Number(this.configService.get<number>('ARGON2_TIME_COST')) || 3;
+  }
+  private get ARGON2_PARALLELISM(): number {
+    return Number(this.configService.get<number>('ARGON2_PARALLELISM')) || 1;
   }
   /** Thời gian hết hạn token xác thực email (mặc định 24 giờ = 86400000ms) */
   private get EMAIL_VERIFY_EXPIRATION(): number {
@@ -91,7 +97,11 @@ export class AuthService {
       );
     }
 
-    const hashedPassword = await bcrypt.hash(dto.password, this.SALT_ROUNDS);
+    const hashedPassword = await argon2.hash(dto.password, {
+      memoryCost: this.ARGON2_MEMORY_COST,
+      timeCost: this.ARGON2_TIME_COST,
+      parallelism: this.ARGON2_PARALLELISM,
+    });
 
     const emailVerifyToken = this.generateToken();
     const emailVerifyExpired = new Date(
@@ -174,7 +184,7 @@ export class AuthService {
 
     let isPasswordValid = false;
     try {
-      isPasswordValid = await bcrypt.compare(dto.password, user.password);
+      isPasswordValid = await argon2.verify(user.password, dto.password);
     } catch {
       // Password hash is invalid format
       this.systemLogService.warn(
@@ -360,7 +370,7 @@ export class AuthService {
 
       let isPasswordValid = false;
       try {
-        isPasswordValid = await bcrypt.compare(dto.password, user.password);
+        isPasswordValid = await argon2.verify(user.password, dto.password);
       } catch {
         throw new UnauthorizedException(
           await this.i18n.t('auth.access_verification.invalid_password', {
@@ -501,9 +511,13 @@ export class AuthService {
       );
     }
 
-    const hashedPassword = await bcrypt.hash(
+    const hashedPassword = await argon2.hash(
       dto.new_password,
-      this.SALT_ROUNDS,
+      {
+        memoryCost: this.ARGON2_MEMORY_COST,
+        timeCost: this.ARGON2_TIME_COST,
+        parallelism: this.ARGON2_PARALLELISM,
+      },
     );
 
     await this.userRepository.resetPassword(user.id, hashedPassword);

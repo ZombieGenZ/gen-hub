@@ -4,7 +4,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import * as bcrypt from 'bcrypt';
+import * as argon2 from '@node-rs/argon2';
 import { I18nService } from 'nestjs-i18n';
 
 import { UserRepository } from '../user/user.repository';
@@ -33,9 +33,15 @@ interface IDeviceInfo {
  */
 @Injectable()
 export class AccountService {
-  /** Số vòng hash bcrypt (mặc định 12) */
-  private get SALT_ROUNDS(): number {
-    return Number(this.configService.get<number>('SALT_ROUNDS')) || 12;
+  /** Argon2id configuration */
+  private get ARGON2_MEMORY_COST(): number {
+    return Number(this.configService.get<number>('ARGON2_MEMORY_COST')) || 65536;
+  }
+  private get ARGON2_TIME_COST(): number {
+    return Number(this.configService.get<number>('ARGON2_TIME_COST')) || 3;
+  }
+  private get ARGON2_PARALLELISM(): number {
+    return Number(this.configService.get<number>('ARGON2_PARALLELISM')) || 1;
   }
 
   constructor(
@@ -210,10 +216,7 @@ export class AccountService {
 
     let isPasswordValid = false;
     try {
-      isPasswordValid = await bcrypt.compare(
-        dto.current_password,
-        user.password,
-      );
+      isPasswordValid = await argon2.verify(user.password, dto.current_password);
     } catch {
       throw new UnauthorizedException(
         await this.i18n.t('auth.change_password.incorrect_current_password', {
@@ -235,9 +238,13 @@ export class AccountService {
       );
     }
 
-    const hashedPassword = await bcrypt.hash(
+    const hashedPassword = await argon2.hash(
       dto.new_password,
-      this.SALT_ROUNDS,
+      {
+        memoryCost: this.ARGON2_MEMORY_COST,
+        timeCost: this.ARGON2_TIME_COST,
+        parallelism: this.ARGON2_PARALLELISM,
+      },
     );
     await this.userRepository.updatePassword(userId, hashedPassword);
 

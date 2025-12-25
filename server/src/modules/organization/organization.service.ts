@@ -9,7 +9,7 @@ import axios from 'axios';
 import { ConfigService } from '@nestjs/config';
 import { I18nService } from 'nestjs-i18n';
 import * as crypto from 'crypto';
-import * as bcrypt from 'bcrypt';
+import * as argon2 from '@node-rs/argon2';
 import { OrganizationRepository } from './organization.repository';
 import { RedisService } from '../redis/redis.service';
 import { WebsocketGateway } from '../websocket/websocket.gateway';
@@ -1814,7 +1814,7 @@ export class OrganizationService {
 
     // Generate API key
     const plainKey = this.generateApiKey();
-    const hashedKey = await bcrypt.hash(plainKey, 10);
+    const hashedKey = await argon2.hash(plainKey);
     // key_prefix: PREFIX + 8 ký tự đầu của phần random (vd: GENHUB-A1B2C3D4)
     const prefix = this.configService.get<string>('API_KEY_PREFIX') || 'GENHUB';
     const keyPrefix = `${prefix}-${plainKey.substring(prefix.length + 1, prefix.length + 9)}`;
@@ -2021,7 +2021,7 @@ export class OrganizationService {
 
     // So sánh hash để tìm đúng API key
     for (const apiKey of apiKeys) {
-      const isMatch = await bcrypt.compare(plainKey, apiKey.key_hash);
+      const isMatch = await argon2.verify(apiKey.key_hash, plainKey);
       if (isMatch) {
         // Kiểm tra hết hạn
         if (apiKey.expires_at && new Date() > new Date(apiKey.expires_at)) {
@@ -2160,7 +2160,7 @@ export class OrganizationService {
 
     // Generate new key
     const plainKey = this.generateApiKey();
-    const hashedKey = await bcrypt.hash(plainKey, 10);
+    const hashedKey = await argon2.hash(plainKey);
     // key_prefix: PREFIX + 8 ký tự đầu của phần random (vd: GENHUB-A1B2C3D4)
     const prefix = this.configService.get<string>('API_KEY_PREFIX') || 'GENHUB';
     const keyPrefix = `${prefix}-${plainKey.substring(prefix.length + 1, prefix.length + 9)}`;
