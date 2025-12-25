@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import Sidebar from '@/components/layout/Sidebar';
+import Sidebar, { MobileHeader } from '@/components/layout/Sidebar';
 import { Loader2 } from 'lucide-react';
 
 export default function DashboardLayout({
@@ -13,6 +13,7 @@ export default function DashboardLayout({
 }) {
     const { isAuthenticated, isLoading } = useAuth();
     const router = useRouter();
+    const [sidebarOpen, setSidebarOpen] = useState(false);
 
     useEffect(() => {
         if (!isLoading && !isAuthenticated) {
@@ -34,8 +35,17 @@ export default function DashboardLayout({
 
     return (
         <div className="min-h-screen">
-            <Sidebar />
-            <main className="ml-64 min-h-screen p-8">
+            {/* Mobile Header */}
+            <MobileHeader onMenuClick={() => setSidebarOpen(true)} />
+
+            {/* Sidebar */}
+            <Sidebar
+                isOpen={sidebarOpen}
+                onClose={() => setSidebarOpen(false)}
+            />
+
+            {/* Main Content - pt-16 on mobile for header height (h-14 + extra space) */}
+            <main className="lg:ml-64 min-h-screen p-4 pt-16 lg:pt-8 lg:p-8">
                 {children}
             </main>
         </div>

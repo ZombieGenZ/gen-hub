@@ -170,12 +170,6 @@ export default function LoginPage() {
               )}
             </button>
           </form>
-
-          {!requires2FA && (
-            <p className="text-center text-xs text-[var(--text-muted)] mt-6">
-              Chỉ người dùng có quyền <span className="text-[var(--accent-primary)]">database.admin</span> mới có thể đăng nhập
-            </p>
-          )}
         </div>
 
         {/* Footer */}

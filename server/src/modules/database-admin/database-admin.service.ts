@@ -3,6 +3,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { DatabaseLogService } from './services/database-log.service';
 import { SystemLogService } from '../system-log/system-log.service';
 import { Prisma } from '@prisma/client';
+import { FilterCondition, BatchChanges } from './database-admin.controller';
 
 // Các tables nhạy cảm cần ẩn một số fields
 const SENSITIVE_FIELDS: Record<string, string[]> = {
@@ -69,7 +70,66 @@ export class DatabaseAdminService implements OnModuleInit {
     }
 
     /**
-     * Lấy records của một table với pagination
+     * Build Prisma where clause từ filter conditions
+     */
+    private buildWhereClause(filters?: FilterCondition[]): any {
+        if (!filters || filters.length === 0) return {};
+
+        const conditions: any[] = [];
+
+        for (const filter of filters) {
+            const { column, operator, value } = filter;
+            let condition: any = {};
+
+            switch (operator) {
+                case 'equals':
+                    condition[column] = { equals: value };
+                    break;
+                case 'not':
+                    condition[column] = { not: value };
+                    break;
+                case 'gt':
+                    condition[column] = { gt: value };
+                    break;
+                case 'gte':
+                    condition[column] = { gte: value };
+                    break;
+                case 'lt':
+                    condition[column] = { lt: value };
+                    break;
+                case 'lte':
+                    condition[column] = { lte: value };
+                    break;
+                case 'contains':
+                    condition[column] = { contains: value, mode: 'insensitive' };
+                    break;
+                case 'startsWith':
+                    condition[column] = { startsWith: value, mode: 'insensitive' };
+                    break;
+                case 'endsWith':
+                    condition[column] = { endsWith: value, mode: 'insensitive' };
+                    break;
+                case 'in':
+                    condition[column] = { in: Array.isArray(value) ? value : [value] };
+                    break;
+                case 'isNull':
+                    condition[column] = null;
+                    break;
+                case 'isNotNull':
+                    condition[column] = { not: null };
+                    break;
+                default:
+                    continue;
+            }
+
+            conditions.push(condition);
+        }
+
+        return conditions.length > 0 ? { AND: conditions } : {};
+    }
+
+    /**
+     * Lấy records của một table với pagination và filtering
      */
     async getRecords(
         tableName: string,
@@ -78,42 +138,49 @@ export class DatabaseAdminService implements OnModuleInit {
             limit?: number;
             orderBy?: string;
             orderDirection?: 'asc' | 'desc';
-            search?: string;
+            filters?: FilterCondition[];
         } = {},
     ) {
         this.validateTable(tableName);
 
-        const { page = 1, limit = 20, orderBy = 'created_at', orderDirection = 'desc' } = options;
+        const { page = 1, limit = 20, orderBy, orderDirection = 'desc', filters } = options;
         const skip = (page - 1) * limit;
 
         const prismaModel = this.getPrismaModel(tableName);
+        const whereClause = this.buildWhereClause(filters);
 
-        // Kiểm tra xem model có field orderBy không
-        let orderByClause: any = {};
-        try {
-            // Thử order by field được chỉ định
+        // Get available fields for this table from schema
+        const schema = await this.getTableSchema(tableName);
+        const availableFields = schema.fields.map((f: any) => f.name);
+
+        // Determine orderBy field - check if field exists
+        let orderByClause: any = undefined;
+
+        if (orderBy && availableFields.includes(orderBy)) {
+            // Use specified orderBy if it exists
             orderByClause = { [orderBy]: orderDirection };
-        } catch {
-            // Nếu không có field đó thì bỏ qua orderBy
-            orderByClause = {};
+        } else if (availableFields.includes('created_at')) {
+            // Fallback to created_at if exists
+            orderByClause = { created_at: orderDirection };
+        } else if (availableFields.includes('id')) {
+            // Fallback to id if exists
+            orderByClause = { id: orderDirection };
         }
+        // If none exist, don't order
 
         const [records, total] = await Promise.all([
             prismaModel.findMany({
+                where: whereClause,
                 take: limit,
                 skip,
-                orderBy: Object.keys(orderByClause).length > 0 ? orderByClause : undefined,
+                ...(orderByClause && { orderBy: orderByClause }),
             }),
-            prismaModel.count(),
+            prismaModel.count({ where: whereClause }),
         ]);
 
-        // Ẩn các fields nhạy cảm
-        const sanitizedRecords = records.map((record: any) =>
-            this.sanitizeRecord(tableName, record),
-        );
-
+        // Không ẩn các fields nhạy cảm - hiển thị đầy đủ
         return {
-            data: sanitizedRecords,
+            data: records,
             meta: {
                 total,
                 page,
@@ -222,6 +289,178 @@ export class DatabaseAdminService implements OnModuleInit {
     }
 
     /**
+     * Batch update - tạo, cập nhật, xóa nhiều records cùng lúc
+     */
+    async batchUpdate(
+        tableName: string,
+        changes: BatchChanges,
+        context: { userId?: string; ipAddress?: string; userAgent?: string },
+    ) {
+        this.validateTable(tableName);
+
+        const prismaModel = this.getPrismaModel(tableName);
+        const results = {
+            created: [] as any[],
+            updated: [] as any[],
+            deleted: [] as string[],
+            errors: [] as { type: string; id?: string; error: string }[],
+        };
+
+        // Use transaction for atomicity
+        await this.prisma.$transaction(async (tx) => {
+            const txModel = (tx as any)[tableName];
+
+            // Create records
+            for (const data of changes.created || []) {
+                try {
+                    const cleanData = this.cleanInputData(tableName, data);
+                    const record = await txModel.create({ data: cleanData });
+                    results.created.push(record);
+
+                    // Log after transaction
+                    await this.databaseLogService.logCreate(tableName, record.id, record, context);
+                } catch (error: any) {
+                    results.errors.push({ type: 'create', error: error.message });
+                }
+            }
+
+            // Update records
+            for (const { id, data } of changes.updated || []) {
+                try {
+                    const oldRecord = await txModel.findUnique({ where: { id } });
+                    if (!oldRecord) {
+                        results.errors.push({ type: 'update', id, error: 'Record not found' });
+                        continue;
+                    }
+
+                    const cleanData = this.cleanInputData(tableName, data);
+                    const record = await txModel.update({
+                        where: { id },
+                        data: cleanData,
+                    });
+                    results.updated.push(record);
+
+                    // Log after transaction
+                    await this.databaseLogService.logUpdate(tableName, id, oldRecord, record, context);
+                } catch (error: any) {
+                    results.errors.push({ type: 'update', id, error: error.message });
+                }
+            }
+
+            // Delete records
+            for (const id of changes.deleted || []) {
+                try {
+                    const oldRecord = await txModel.findUnique({ where: { id } });
+                    if (!oldRecord) {
+                        results.errors.push({ type: 'delete', id, error: 'Record not found' });
+                        continue;
+                    }
+
+                    await txModel.delete({ where: { id } });
+                    results.deleted.push(id);
+
+                    // Log after transaction
+                    await this.databaseLogService.logDelete(tableName, id, oldRecord, context);
+                } catch (error: any) {
+                    results.errors.push({ type: 'delete', id, error: error.message });
+                }
+            }
+        });
+
+        // Log batch operation to SystemLog
+        await this.systemLogService.info(
+            'admin',
+            'BATCH_UPDATE',
+            `Batch update on ${tableName}: ${results.created.length} created, ${results.updated.length} updated, ${results.deleted.length} deleted`,
+            {
+                userId: context.userId,
+                ipAddress: context.ipAddress,
+                userAgent: context.userAgent,
+                metaData: {
+                    tableName,
+                    createdCount: results.created.length,
+                    updatedCount: results.updated.length,
+                    deletedCount: results.deleted.length,
+                    errorCount: results.errors.length,
+                },
+            },
+        );
+
+        return results;
+    }
+
+    /**
+     * Bulk delete - xóa nhiều records
+     */
+    async bulkDelete(
+        tableName: string,
+        ids: string[],
+        context: { userId?: string; ipAddress?: string; userAgent?: string },
+    ) {
+        this.validateTable(tableName);
+
+        if (!ids || ids.length === 0) {
+            throw new BadRequestException('No IDs provided for bulk delete');
+        }
+
+        const prismaModel = this.getPrismaModel(tableName);
+        const results = {
+            deleted: [] as string[],
+            errors: [] as { id: string; error: string }[],
+        };
+
+        // Get old records for logging before delete
+        const oldRecords = await prismaModel.findMany({
+            where: { id: { in: ids } },
+        });
+
+        const oldRecordMap = new Map(oldRecords.map((r: any) => [r.id, r]));
+
+        // Delete records
+        await this.prisma.$transaction(async (tx) => {
+            const txModel = (tx as any)[tableName];
+
+            for (const id of ids) {
+                try {
+                    const oldRecord = oldRecordMap.get(id);
+                    if (!oldRecord) {
+                        results.errors.push({ id, error: 'Record not found' });
+                        continue;
+                    }
+
+                    await txModel.delete({ where: { id } });
+                    results.deleted.push(id);
+
+                    // Log deletion
+                    await this.databaseLogService.logDelete(tableName, id, oldRecord, context);
+                } catch (error: any) {
+                    results.errors.push({ id, error: error.message });
+                }
+            }
+        });
+
+        // Log bulk delete to SystemLog
+        await this.systemLogService.info(
+            'admin',
+            'BULK_DELETE',
+            `Bulk delete on ${tableName}: ${results.deleted.length} deleted, ${results.errors.length} errors`,
+            {
+                userId: context.userId,
+                ipAddress: context.ipAddress,
+                userAgent: context.userAgent,
+                metaData: {
+                    tableName,
+                    deletedCount: results.deleted.length,
+                    errorCount: results.errors.length,
+                    deletedIds: results.deleted,
+                },
+            },
+        );
+
+        return results;
+    }
+
+    /**
      * Xóa record
      */
     async deleteRecord(
@@ -308,8 +547,6 @@ export class DatabaseAdminService implements OnModuleInit {
             };
         }
     }
-
-    // ==================== PRIVATE METHODS ====================
 
     private validateTable(tableName: string) {
         if (!this.availableTables.includes(tableName)) {

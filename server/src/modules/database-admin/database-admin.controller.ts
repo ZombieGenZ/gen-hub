@@ -16,6 +16,18 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { DatabaseAdminGuard } from './guards/database-admin.guard';
 import { DatabaseAdminService } from './database-admin.service';
 
+export interface FilterCondition {
+    column: string;
+    operator: 'equals' | 'not' | 'gt' | 'gte' | 'lt' | 'lte' | 'contains' | 'startsWith' | 'endsWith' | 'in' | 'isNull' | 'isNotNull';
+    value?: any;
+}
+
+export interface BatchChanges {
+    created: any[];
+    updated: { id: string; data: any }[];
+    deleted: string[];
+}
+
 @ApiTags('Database Admin')
 @ApiBearerAuth()
 @Controller('admin')
@@ -42,29 +54,38 @@ export class DatabaseAdminController {
     }
 
     /**
-     * Lấy records của một table với pagination
+     * Lấy records của một table với pagination và filtering
      */
     @Get('tables/:tableName')
-    @ApiOperation({ summary: 'Get records of a table with pagination' })
+    @ApiOperation({ summary: 'Get records of a table with pagination and filtering' })
     @ApiQuery({ name: 'page', required: false, type: Number })
     @ApiQuery({ name: 'limit', required: false, type: Number })
     @ApiQuery({ name: 'orderBy', required: false, type: String })
     @ApiQuery({ name: 'orderDirection', required: false, enum: ['asc', 'desc'] })
-    @ApiQuery({ name: 'search', required: false, type: String })
+    @ApiQuery({ name: 'filters', required: false, type: String, description: 'JSON array of filter conditions' })
     async getRecords(
         @Param('tableName') tableName: string,
         @Query('page') page?: string,
         @Query('limit') limit?: string,
         @Query('orderBy') orderBy?: string,
         @Query('orderDirection') orderDirection?: 'asc' | 'desc',
-        @Query('search') search?: string,
+        @Query('filters') filters?: string,
     ) {
+        let parsedFilters: FilterCondition[] | undefined;
+        if (filters) {
+            try {
+                parsedFilters = JSON.parse(filters);
+            } catch {
+                parsedFilters = undefined;
+            }
+        }
+
         return this.databaseAdminService.getRecords(tableName, {
             page: page ? parseInt(page, 10) : undefined,
             limit: limit ? parseInt(limit, 10) : undefined,
             orderBy,
             orderDirection,
-            search,
+            filters: parsedFilters,
         });
     }
 
@@ -92,6 +113,34 @@ export class DatabaseAdminController {
     ) {
         const context = this.extractContext(req);
         return this.databaseAdminService.createRecord(tableName, data, context);
+    }
+
+    /**
+     * Batch update - tạo, cập nhật, xóa nhiều records cùng lúc
+     */
+    @Post('tables/:tableName/batch')
+    @ApiOperation({ summary: 'Batch create, update, delete records' })
+    async batchUpdate(
+        @Param('tableName') tableName: string,
+        @Body() changes: BatchChanges,
+        @Req() req: Request,
+    ) {
+        const context = this.extractContext(req);
+        return this.databaseAdminService.batchUpdate(tableName, changes, context);
+    }
+
+    /**
+     * Bulk delete - xóa nhiều records
+     */
+    @Delete('tables/:tableName/bulk')
+    @ApiOperation({ summary: 'Delete multiple records' })
+    async bulkDelete(
+        @Param('tableName') tableName: string,
+        @Body() body: { ids: string[] },
+        @Req() req: Request,
+    ) {
+        const context = this.extractContext(req);
+        return this.databaseAdminService.bulkDelete(tableName, body.ids, context);
     }
 
     /**

@@ -1,26 +1,19 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
     Database,
     Users,
-    Shield,
-    Key,
-    Building2,
-    Warehouse,
-    Package,
-    CreditCard,
-    Bell,
-    FileText,
-    Settings,
-    ChevronDown,
-    ChevronRight,
     LogOut,
     Loader2,
+    Search,
+    Menu,
+    X,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage, LanguageSwitcher } from '@/contexts/LanguageContext';
 import { adminApi } from '@/lib/api';
 
 interface TableInfo {
@@ -28,120 +21,28 @@ interface TableInfo {
     displayName: string;
 }
 
-// Icon mapping cho các table groups
-const TABLE_ICONS: Record<string, React.ElementType> = {
-    // Authentication
-    user: Shield,
-    role: Shield,
-    permission: Shield,
-    userRole: Shield,
-    userPermission: Shield,
-    rolePermission: Shield,
-    refreshToken: Key,
-    backupCode: Key,
+interface SidebarProps {
+    isOpen?: boolean;
+    onClose?: () => void;
+}
 
-    // Organizations
-    organization: Building2,
-    organizationMember: Building2,
-    organizationRole: Building2,
-    organizationPermission: Building2,
-    apiKey: Key,
-    apiKeyLog: FileText,
-
-    // Warehouses
-    warehouseTemplate: Warehouse,
-    rowTemplate: Warehouse,
-    rackTemplate: Warehouse,
-    shelfTemplate: Warehouse,
-    blockTemplate: Warehouse,
-    amenity: Package,
-    warehouse: Warehouse,
-    row: Warehouse,
-    rack: Warehouse,
-    shelf: Warehouse,
-    block: Warehouse,
-
-    // Rental
-    rentalDurationTier: CreditCard,
-    addon: Package,
-    coupon: CreditCard,
-    couponSchedule: CreditCard,
-    rentalContract: CreditCard,
-    payment: CreditCard,
-
-    // Notifications
-    globalNotification: Bell,
-    userNotification: Bell,
-    organizationNotification: Bell,
-
-    // Logs
-    systemLog: FileText,
-    databaseLog: FileText,
-    organizationAuditLog: FileText,
-
-    // Location
-    province: Package,
-    ward: Package,
-};
-
-// Nhóm tables theo category
-const categorizeTable = (tableName: string): string => {
-    const authTables = ['user', 'role', 'permission', 'userRole', 'userPermission', 'rolePermission', 'refreshToken', 'backupCode'];
-    const orgTables = ['organization', 'organizationMember', 'organizationRole', 'organizationPermission', 'organizationRolePermission', 'organizationMemberRole', 'organizationMemberPermission', 'apiKey', 'apiKeyRole', 'apiKeyPermission'];
-    const warehouseTables = ['warehouseTemplate', 'rowTemplate', 'rackTemplate', 'shelfTemplate', 'blockTemplate', 'amenity', 'warehouse', 'row', 'rack', 'shelf', 'block', 'inventory', 'inventoryTransaction'];
-    const rentalTables = ['rentalDurationTier', 'addon', 'coupon', 'couponSchedule', 'couponTargetUser', 'couponScheduleTargetUser', 'rentalContract', 'rentalContractLog', 'rentalContractCoupon', 'payment'];
-    const notificationTables = ['globalNotification', 'userNotification', 'organizationNotification'];
-    const logTables = ['systemLog', 'databaseLog', 'organizationAuditLog', 'apiKeyLog'];
-    const locationTables = ['province', 'ward'];
-    const partnerTables = ['partner', 'product', 'batch', 'unit'];
-
-    if (authTables.includes(tableName)) return 'Authentication';
-    if (orgTables.includes(tableName)) return 'Organizations';
-    if (warehouseTables.includes(tableName)) return 'Warehouses';
-    if (rentalTables.includes(tableName)) return 'Rental';
-    if (notificationTables.includes(tableName)) return 'Notifications';
-    if (logTables.includes(tableName)) return 'Logs';
-    if (locationTables.includes(tableName)) return 'Location';
-    if (partnerTables.includes(tableName)) return 'Partners';
-    return 'Other';
-};
-
-const GROUP_ICONS: Record<string, React.ElementType> = {
-    Authentication: Shield,
-    Organizations: Building2,
-    Warehouses: Warehouse,
-    Rental: CreditCard,
-    Notifications: Bell,
-    Logs: FileText,
-    Location: Package,
-    Partners: Users,
-    Other: Database,
-};
-
-export default function Sidebar() {
+export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
     const pathname = usePathname();
     const { user, logout } = useAuth();
-    const [expandedGroups, setExpandedGroups] = useState<string[]>(['Authentication']);
+    const { t } = useLanguage();
     const [tables, setTables] = useState<TableInfo[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [groupedTables, setGroupedTables] = useState<Record<string, TableInfo[]>>({});
+    const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
         const fetchTables = async () => {
             try {
                 const data = await adminApi.getTables();
-                setTables(data);
-
-                // Group tables by category
-                const grouped: Record<string, TableInfo[]> = {};
-                data.forEach((table: TableInfo) => {
-                    const category = categorizeTable(table.name);
-                    if (!grouped[category]) {
-                        grouped[category] = [];
-                    }
-                    grouped[category].push(table);
-                });
-                setGroupedTables(grouped);
+                // Sort tables alphabetically
+                const sortedTables = data.sort((a: TableInfo, b: TableInfo) =>
+                    a.displayName.localeCompare(b.displayName)
+                );
+                setTables(sortedTables);
             } catch (error) {
                 console.error('Failed to fetch tables:', error);
             } finally {
@@ -151,122 +52,170 @@ export default function Sidebar() {
         fetchTables();
     }, []);
 
-    const toggleGroup = (groupName: string) => {
-        setExpandedGroups((prev) =>
-            prev.includes(groupName)
-                ? prev.filter((g) => g !== groupName)
-                : [...prev, groupName]
+    // Close sidebar when navigating on mobile
+    useEffect(() => {
+        if (onClose) {
+            onClose();
+        }
+    }, [pathname]);
+
+    // Filter tables based on search query
+    const filteredTables = useMemo(() => {
+        if (!searchQuery.trim()) return tables;
+        const query = searchQuery.toLowerCase();
+        return tables.filter(
+            (table) =>
+                table.name.toLowerCase().includes(query) ||
+                table.displayName.toLowerCase().includes(query)
         );
-    };
+    }, [tables, searchQuery]);
 
     const isTableActive = (tableName: string) => {
         return pathname === `/dashboard/${tableName}`;
     };
 
-    const getTableIcon = (tableName: string) => {
-        return TABLE_ICONS[tableName] || Package;
+    const handleLinkClick = () => {
+        if (onClose) onClose();
     };
 
     return (
-        <aside className="fixed left-0 top-0 h-screen w-64 bg-[var(--background-secondary)] border-r border-[var(--border-primary)] flex flex-col">
-            {/* Logo */}
-            <div className="p-6 border-b border-[var(--border-primary)]">
-                <div className="flex items-center gap-3">
-                    <Database className="w-8 h-8 text-[var(--accent-primary)]" />
-                    <div>
-                        <h1 className="text-lg font-bold text-white glow-text">GEN-HUB</h1>
-                        <p className="text-xs text-[var(--text-muted)]">Database Admin</p>
-                    </div>
-                </div>
-            </div>
+        <>
+            {/* Mobile Overlay */}
+            {isOpen && (
+                <div
+                    className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+                    onClick={onClose}
+                />
+            )}
 
-            {/* Navigation */}
-            <nav className="flex-1 overflow-y-auto p-4">
-                <Link
-                    href="/dashboard"
-                    className={`flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-all ${pathname === '/dashboard'
+            {/* Sidebar */}
+            <aside className={`
+                fixed left-0 top-0 h-screen w-64 bg-[var(--background-secondary)] border-r border-[var(--border-primary)] flex flex-col z-50
+                transform transition-transform duration-300 ease-in-out
+                ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+                lg:translate-x-0
+            `}>
+                {/* Logo */}
+                <div className="p-6 border-b border-[var(--border-primary)] flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <Database className="w-8 h-8 text-[var(--accent-primary)]" />
+                        <div>
+                            <h1 className="text-lg font-bold text-white glow-text">GEN-HUB</h1>
+                            <p className="text-xs text-[var(--text-muted)]">Database Admin</p>
+                        </div>
+                    </div>
+                    {/* Close button for mobile */}
+                    <button
+                        onClick={onClose}
+                        className="lg:hidden p-2 text-[var(--text-muted)] hover:text-white"
+                    >
+                        <X className="w-5 h-5" />
+                    </button>
+                </div>
+
+                {/* Navigation */}
+                <nav className="flex-1 overflow-y-auto p-4">
+                    <Link
+                        href="/dashboard"
+                        onClick={handleLinkClick}
+                        className={`flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-all ${pathname === '/dashboard'
                             ? 'bg-[var(--accent-primary-muted)] text-[var(--accent-primary)]'
                             : 'text-[var(--text-secondary)] hover:bg-[var(--background-tertiary)] hover:text-white'
-                        }`}
-                >
-                    <Database className="w-5 h-5" />
-                    <span className="font-medium">Dashboard</span>
-                </Link>
+                            }`}
+                    >
+                        <Database className="w-5 h-5" />
+                        <span className="font-medium">{t('sidebar.dashboard')}</span>
+                    </Link>
 
-                {isLoading ? (
-                    <div className="flex items-center justify-center py-8">
-                        <Loader2 className="w-5 h-5 animate-spin text-[var(--accent-primary)]" />
+                    {/* Search Tables */}
+                    <div className="relative mb-4 mt-4">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
+                        <input
+                            type="text"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder="Search tables..."
+                            className="w-full pl-9 pr-3 py-2 bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded-lg text-sm text-white placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-primary)] transition-colors"
+                        />
                     </div>
-                ) : (
-                    <div className="mt-4">
-                        {Object.entries(groupedTables).map(([groupName, groupTables]) => {
-                            const Icon = GROUP_ICONS[groupName] || Database;
-                            const isExpanded = expandedGroups.includes(groupName);
-                            const hasActiveTable = groupTables.some((t) => isTableActive(t.name));
 
-                            return (
-                                <div key={groupName} className="mb-2">
-                                    <button
-                                        onClick={() => toggleGroup(groupName)}
-                                        className={`w-full flex items-center justify-between px-4 py-2 rounded-lg transition-all ${hasActiveTable
-                                                ? 'text-[var(--accent-primary)]'
-                                                : 'text-[var(--text-secondary)] hover:text-white'
-                                            }`}
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <Icon className="w-5 h-5" />
-                                            <span className="font-medium text-sm">{groupName}</span>
-                                            <span className="text-xs text-[var(--text-muted)]">({groupTables.length})</span>
-                                        </div>
-                                        {isExpanded ? (
-                                            <ChevronDown className="w-4 h-4" />
-                                        ) : (
-                                            <ChevronRight className="w-4 h-4" />
-                                        )}
-                                    </button>
+                    {/* Tables Label */}
+                    <div className="px-4 py-2 text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
+                        {t('sidebar.tables')} ({filteredTables.length})
+                    </div>
 
-                                    {isExpanded && (
-                                        <div className="mt-1 ml-8 space-y-1 animate-fadeIn">
-                                            {groupTables.map((table) => (
-                                                <Link
-                                                    key={table.name}
-                                                    href={`/dashboard/${table.name}`}
-                                                    className={`block px-4 py-2 rounded-lg text-sm transition-all ${isTableActive(table.name)
-                                                            ? 'bg-[var(--accent-primary-muted)] text-[var(--accent-primary)]'
-                                                            : 'text-[var(--text-muted)] hover:bg-[var(--background-tertiary)] hover:text-white'
-                                                        }`}
-                                                >
-                                                    {table.displayName}
-                                                </Link>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            );
-                        })}
-                    </div>
-                )}
-            </nav>
+                    {isLoading ? (
+                        <div className="flex items-center justify-center py-8">
+                            <Loader2 className="w-5 h-5 animate-spin text-[var(--accent-primary)]" />
+                        </div>
+                    ) : (
+                        <div className="space-y-1">
+                            {filteredTables.map((table) => (
+                                <Link
+                                    key={table.name}
+                                    href={`/dashboard/${table.name}`}
+                                    onClick={handleLinkClick}
+                                    prefetch={true}
+                                    className={`block px-4 py-2 rounded-lg text-sm transition-all ${isTableActive(table.name)
+                                        ? 'bg-[var(--accent-primary-muted)] text-[var(--accent-primary)]'
+                                        : 'text-[var(--text-muted)] hover:bg-[var(--background-tertiary)] hover:text-white'
+                                        }`}
+                                >
+                                    {table.displayName}
+                                </Link>
+                            ))}
+                            {filteredTables.length === 0 && (
+                                <p className="px-4 py-2 text-sm text-[var(--text-muted)]">
+                                    No tables found
+                                </p>
+                            )}
+                        </div>
+                    )}
+                </nav>
 
-            {/* User Info */}
-            <div className="p-4 border-t border-[var(--border-primary)]">
-                <div className="flex items-center gap-3 mb-3">
-                    <div className="w-10 h-10 rounded-full bg-[var(--accent-primary-muted)] flex items-center justify-center">
-                        <Users className="w-5 h-5 text-[var(--accent-primary)]" />
+                {/* User Info & Language Switcher */}
+                <div className="p-4 border-t border-[var(--border-primary)]">
+                    {/* Language Switcher */}
+                    <div className="mb-3">
+                        <LanguageSwitcher className="w-full justify-center" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-white truncate">{user?.name || 'Admin'}</p>
-                        <p className="text-xs text-[var(--text-muted)] truncate">{user?.email}</p>
+
+                    <div className="flex items-center gap-3 mb-3">
+                        <div className="w-10 h-10 rounded-full bg-[var(--accent-primary-muted)] flex items-center justify-center">
+                            <Users className="w-5 h-5 text-[var(--accent-primary)]" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-white truncate">{user?.name || 'Admin'}</p>
+                            <p className="text-xs text-[var(--text-muted)] truncate">{user?.email}</p>
+                        </div>
                     </div>
+                    <button
+                        onClick={logout}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm text-[var(--status-error)] hover:bg-[rgba(255,82,82,0.1)] transition-all"
+                    >
+                        <LogOut className="w-4 h-4" />
+                        <span>{t('sidebar.logout')}</span>
+                    </button>
                 </div>
-                <button
-                    onClick={logout}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm text-[var(--status-error)] hover:bg-[rgba(255,82,82,0.1)] transition-all"
-                >
-                    <LogOut className="w-4 h-4" />
-                    <span>Đăng xuất</span>
-                </button>
+            </aside>
+        </>
+    );
+}
+
+// Mobile Header with Menu Button
+export function MobileHeader({ onMenuClick }: { onMenuClick: () => void }) {
+    return (
+        <div className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-[var(--background-secondary)] border-b border-[var(--border-primary)] z-30 flex items-center px-4">
+            <button
+                onClick={onMenuClick}
+                className="p-2 text-[var(--text-muted)] hover:text-white mr-3"
+            >
+                <Menu className="w-6 h-6" />
+            </button>
+            <div className="flex items-center gap-2">
+                <Database className="w-6 h-6 text-[var(--accent-primary)]" />
+                <span className="font-bold text-white">GEN-HUB</span>
             </div>
-        </aside>
+        </div>
     );
 }

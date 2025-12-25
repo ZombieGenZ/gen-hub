@@ -121,8 +121,6 @@ export class OrgRentalContractController {
         return new UpdatedResponse(ResponseCode.RENTAL_CONTRACT_UPDATE_SUCCESS, data, 'Tạo lại link thanh toán thành công');
     }
 
-    // ============ ADDON MANAGEMENT ============
-
     /**
      * Lấy danh sách addons của hợp đồng
      */
@@ -180,8 +178,6 @@ export class OrgRentalContractController {
         return new UpdatedResponse(ResponseCode.RENTAL_CONTRACT_UPDATE_SUCCESS, data, 'Hủy addon thành công');
     }
 
-    // ============ CONTRACT LOGS ============
-
     /**
      * Lấy lịch sử thay đổi của hợp đồng
      */
@@ -198,8 +194,6 @@ export class OrgRentalContractController {
         const data = await this.rentalContractService.getContractLogs(id, userId, orgId, lang);
         return new GetResponse(ResponseCode.RENTAL_CONTRACT_READ_SUCCESS, data, 'Lấy lịch sử thay đổi thành công');
     }
-
-    // ============ CANCEL & DELETE ============
 
     /**
      * Hủy hợp đồng với lý do

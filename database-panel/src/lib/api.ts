@@ -143,6 +143,20 @@ export const auth = {
     },
 };
 
+// Filter condition interface
+export interface FilterCondition {
+    column: string;
+    operator: 'equals' | 'not' | 'gt' | 'gte' | 'lt' | 'lte' | 'contains' | 'startsWith' | 'endsWith' | 'in' | 'isNull' | 'isNotNull';
+    value?: any;
+}
+
+// Batch changes interface
+export interface BatchChanges {
+    created: any[];
+    updated: { id: string; data: any }[];
+    deleted: string[];
+}
+
 // Admin API functions
 export const adminApi = {
     // Tables
@@ -164,7 +178,7 @@ export const adminApi = {
             limit?: number;
             orderBy?: string;
             orderDirection?: 'asc' | 'desc';
-            search?: string;
+            filters?: FilterCondition[];
         }
     ) => {
         const params = new URLSearchParams();
@@ -172,7 +186,9 @@ export const adminApi = {
         if (options?.limit) params.append('limit', String(options.limit));
         if (options?.orderBy) params.append('orderBy', options.orderBy);
         if (options?.orderDirection) params.append('orderDirection', options.orderDirection);
-        if (options?.search) params.append('search', options.search);
+        if (options?.filters && options.filters.length > 0) {
+            params.append('filters', JSON.stringify(options.filters));
+        }
 
         const { data } = await api.get(`/admin/tables/${tableName}?${params.toString()}`);
         return data;
@@ -195,6 +211,17 @@ export const adminApi = {
 
     deleteRecord: async (tableName: string, id: string) => {
         const { data } = await api.delete(`/admin/tables/${tableName}/${id}`);
+        return data;
+    },
+
+    // Batch operations
+    batchUpdate: async (tableName: string, changes: BatchChanges) => {
+        const { data } = await api.post(`/admin/tables/${tableName}/batch`, changes);
+        return data;
+    },
+
+    bulkDelete: async (tableName: string, ids: string[]) => {
+        const { data } = await api.delete(`/admin/tables/${tableName}/bulk`, { data: { ids } });
         return data;
     },
 };

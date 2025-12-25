@@ -1,0 +1,92 @@
+{
+    "dashboard": {
+        "title": "Bảng điều khiển",
+        "welcome": "Chào mừng bạn đến với GEN-HUB Database Admin Panel",
+        "stats": {
+            "totalTables": "Tổng số Tables",
+            "totalRecords": "Tổng số Records",
+            "totalColumns": "Tổng số Columns",
+            "avgRecords": "TB Records/Table",
+            "loadStats": "Tải thống kê"
+        },
+        "quickAccess": {
+            "title": "Truy cập nhanh - Tables",
+            "tables": "tables",
+            "loading": "Đang tải dữ liệu...",
+            "records": "Records",
+            "columns": "Columns"
+        },
+        "auditNote": {
+            "title": "Lưu ý về Audit Logging",
+            "description": "Mọi thao tác Create, Update, Delete trên panel này đều được ghi log vào"
+        }
+    },
+    "table": {
+        "title": "Bảng",
+        "records": "bản ghi",
+        "columns": "cột",
+        "noData": "Không có dữ liệu",
+        "loading": "Đang tải...",
+        "actions": {
+            "addRecord": "Thêm bản ghi",
+            "deleteSelected": "Xóa",
+            "save": "Lưu",
+            "cancel": "Hủy",
+            "saveChanges": "Lưu thay đổi",
+            "discardChanges": "Hủy bỏ"
+        },
+        "filter": {
+            "title": "Bộ lọc",
+            "where": "where",
+            "and": "and",
+            "addFilter": "Thêm bộ lọc",
+            "clearFilters": "Xóa bộ lọc",
+            "apply": "Áp dụng",
+            "notApplied": "bộ lọc chưa được áp dụng",
+            "enterValue": "Nhập giá trị"
+        },
+        "edit": {
+            "editColumn": "Chỉnh sửa",
+            "setNull": "Set NULL",
+            "save": "Lưu",
+            "cancel": "Hủy",
+            "pressToSave": "Nhấn để lưu",
+            "pressToCancel": "để hủy",
+            "selectDate": "Chọn ngày"
+        },
+        "pagination": {
+            "page": "Trang",
+            "of": "của",
+            "previous": "Trước",
+            "next": "Sau"
+        },
+        "newRow": {
+            "title": "Hàng mới",
+            "placeholder": "Nhập giá trị..."
+        },
+        "delete": {
+            "confirmTitle": "Xác nhận xóa",
+            "confirmMessage": "Bạn có chắc chắn muốn xóa các bản ghi này?",
+            "deleted": "Đã xóa"
+        }
+    },
+    "common": {
+        "language": "Ngôn ngữ",
+        "english": "Tiếng Anh",
+        "vietnamese": "Tiếng Việt",
+        "yes": "Có",
+        "no": "Không",
+        "true": "TRUE",
+        "false": "FALSE",
+        "null": "NULL",
+        "error": "Lỗi",
+        "success": "Thành công",
+        "close": "Đóng"
+    },
+    "sidebar": {
+        "title": "Database Panel",
+        "dashboard": "Bảng điều khiển",
+        "tables": "Các bảng",
+        "logout": "Đăng xuất"
+    }
+}

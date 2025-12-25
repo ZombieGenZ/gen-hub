@@ -8,6 +8,7 @@ on:
       - 'client/**'
       - 'server/**'
       - 'status/**'
+      - 'database-panel/**'
 
   workflow_dispatch:
 
@@ -65,3 +66,21 @@ jobs:
           user-email: ${{ secrets.GH_EMAIL }}
           target-branch: master
           commit-message: "Sync status: ${{ github.event.head_commit.message }}"
+
+  sync-database-panel:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Push database-panel folder
+        uses: cpina/github-action-push-to-another-repository@main
+        env:
+          API_TOKEN_GITHUB: ${{ secrets.API_TOKEN_GITHUB }}
+        with:
+          source-directory: 'database-panel'
+          destination-github-username: ${{ secrets.GH_USERNAME }}
+          destination-repository-name: ${{ secrets.REPO_DATABASE_PANEL }}
+          user-email: ${{ secrets.GH_EMAIL }}
+          target-branch: master
+          commit-message: "Sync database-panel: ${{ github.event.head_commit.message }}"

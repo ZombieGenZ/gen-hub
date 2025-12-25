@@ -1,0 +1,92 @@
+{
+    "dashboard": {
+        "title": "Dashboard",
+        "welcome": "Welcome to GEN-HUB Database Admin Panel",
+        "stats": {
+            "totalTables": "Total Tables",
+            "totalRecords": "Total Records",
+            "totalColumns": "Total Columns",
+            "avgRecords": "Avg Records/Table",
+            "loadStats": "Load Statistics"
+        },
+        "quickAccess": {
+            "title": "Quick Access - Tables",
+            "tables": "tables",
+            "loading": "Loading data...",
+            "records": "Records",
+            "columns": "Columns"
+        },
+        "auditNote": {
+            "title": "Note about Audit Logging",
+            "description": "All Create, Update, Delete operations on this panel are logged to"
+        }
+    },
+    "table": {
+        "title": "Table",
+        "records": "records",
+        "columns": "columns",
+        "noData": "No data",
+        "loading": "Loading...",
+        "actions": {
+            "addRecord": "Add record",
+            "deleteSelected": "Delete",
+            "save": "Save",
+            "cancel": "Cancel",
+            "saveChanges": "Save Changes",
+            "discardChanges": "Discard"
+        },
+        "filter": {
+            "title": "Filters",
+            "where": "where",
+            "and": "and",
+            "addFilter": "Add filter",
+            "clearFilters": "Clear filters",
+            "apply": "Apply",
+            "notApplied": "filter(s) not applied",
+            "enterValue": "Enter a value"
+        },
+        "edit": {
+            "editColumn": "Edit",
+            "setNull": "Set NULL",
+            "save": "Save",
+            "cancel": "Cancel",
+            "pressToSave": "Press to save",
+            "pressToCancel": "to cancel",
+            "selectDate": "Select date"
+        },
+        "pagination": {
+            "page": "Page",
+            "of": "of",
+            "previous": "Previous",
+            "next": "Next"
+        },
+        "newRow": {
+            "title": "New Row",
+            "placeholder": "Enter value..."
+        },
+        "delete": {
+            "confirmTitle": "Confirm Delete",
+            "confirmMessage": "Are you sure you want to delete these records?",
+            "deleted": "Deleted"
+        }
+    },
+    "common": {
+        "language": "Language",
+        "english": "English",
+        "vietnamese": "Vietnamese",
+        "yes": "Yes",
+        "no": "No",
+        "true": "TRUE",
+        "false": "FALSE",
+        "null": "NULL",
+        "error": "Error",
+        "success": "Success",
+        "close": "Close"
+    },
+    "sidebar": {
+        "title": "Database Panel",
+        "dashboard": "Dashboard",
+        "tables": "Tables",
+        "logout": "Logout"
+    }
+}
