@@ -1,6 +1,7 @@
 "use client";
 
 import { DashboardHeader } from "@/components/layouts/DashboardHeader";
+import { Organization } from "@/types/organization/organization.type";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

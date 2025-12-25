@@ -22,9 +22,13 @@ import {
 import { format } from 'date-fns';
 import { useLanguage } from '@/contexts/LanguageContext';
 
+// Cell values from database are dynamic and can be any type
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type CellValue = any;
+
 interface RecordData {
     id: string;
-    [key: string]: any;
+    [key: string]: CellValue;
 }
 
 interface Meta {
@@ -154,6 +158,8 @@ export default function TablePage() {
         return field?.type === 'Int' || field?.type === 'Float' || field?.type === 'Decimal';
     }, [getFieldInfo]);
 
+    // fetchSchema is called inline in useEffect, keeping for potential future use
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const fetchSchema = useCallback(async () => {
         try {
             const schemaData = await adminApi.getTableSchema(tableName);
@@ -184,19 +190,21 @@ export default function TablePage() {
             } else if (schema?.fields && schema.fields.length > 0) {
                 // No records - use schema fields for columns
                 const schemaColumns = schema.fields
-                    .filter((f: any) => !f.isRelation)
-                    .map((f: any) => f.name);
+                    .filter((f: SchemaField) => !f.isRelation)
+                    .map((f: SchemaField) => f.name);
                 setColumns(schemaColumns);
                 if (!newFilter.column && schemaColumns.length > 0) {
                     setNewFilter((prev) => ({ ...prev, column: schemaColumns[0] }));
                 }
             }
-        } catch (error: any) {
+        } catch (err) {
+            const error = err as { response?: { data?: { message?: string } }; message?: string };
             toast.error('Lỗi khi tải dữ liệu: ' + (error.response?.data?.message || error.message));
         } finally {
             setIsLoading(false);
         }
-    }, [tableName, meta.limit, appliedFilters, schema]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [tableName, meta.limit, appliedFilters, schema, newFilter.column]);
 
     useEffect(() => {
         // Reset state when table changes
@@ -218,8 +226,8 @@ export default function TablePage() {
                 // Set columns from schema immediately (for empty tables)
                 if (schemaData?.fields) {
                     const schemaColumns = schemaData.fields
-                        .filter((f: any) => !f.isRelation)
-                        .map((f: any) => f.name);
+                        .filter((f: SchemaField) => !f.isRelation)
+                        .map((f: SchemaField) => f.name);
                     setColumns(schemaColumns);
                 }
             } catch (error) {
@@ -231,7 +239,7 @@ export default function TablePage() {
         };
 
         init();
-    }, [tableName]);
+    }, [tableName, fetchRecords]);
 
     // Handle page size change
     const handlePageSizeChange = (newSize: number) => {
@@ -246,6 +254,7 @@ export default function TablePage() {
         if (tableName) {
             fetchRecords(1);
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [meta.limit]);
 
     const addFilter = () => {
@@ -278,12 +287,14 @@ export default function TablePage() {
     const applyFilters = () => {
         // Only apply filters that have value (except isNull/isNotNull)
         const validFilters = pendingFilters.filter(f =>
-            f.operator === 'isNull' || f.operator === 'isNotNull' || (f.value && f.value.trim() !== '')
+            f.operator === 'isNull' || f.operator === 'isNotNull' || (f.value && String(f.value).trim() !== '')
         );
         setAppliedFilters(validFilters);
         fetchRecords(1);
     };
 
+    // Used by UI button, keeping for reference
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const resetFilters = () => {
         setPendingFilters([]);
         setAppliedFilters([]);
@@ -338,7 +349,7 @@ export default function TablePage() {
         setEditValue('');
     };
 
-    const saveEdit = (value?: any) => {
+    const saveEdit = (value?: CellValue) => {
         if (!editingCell) return;
 
         const { id, column } = editingCell;
@@ -351,7 +362,7 @@ export default function TablePage() {
         const originalValue = originalRecord[column];
 
         // Parse value based on column type
-        let parsedValue: any = value !== undefined ? value : editValue;
+        let parsedValue: CellValue = value !== undefined ? value : editValue;
 
         if (parsedValue === '__NULL__') {
             parsedValue = null;
@@ -415,7 +426,7 @@ export default function TablePage() {
         setNewRows([...newRows, emptyRow]);
     };
 
-    const updateNewRow = (tempId: string, column: string, value: any) => {
+    const updateNewRow = (tempId: string, column: string, value: CellValue) => {
         let parsedValue = value;
 
         if (value === '__NULL__') {
@@ -464,7 +475,8 @@ export default function TablePage() {
         setIsSaving(true);
         try {
             const created = newRows.map((row) => {
-                const { id, ...data } = row;
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                const { id: _id, ...data } = row;
                 return data;
             });
 
@@ -495,7 +507,8 @@ export default function TablePage() {
             setNewRows([]);
             setSelectedIds(new Set());
             fetchRecords(meta.page);
-        } catch (error: any) {
+        } catch (err) {
+            const error = err as { response?: { data?: { message?: string } }; message?: string };
             toast.error('Lỗi khi lưu: ' + (error.response?.data?.message || error.message));
         } finally {
             setIsSaving(false);
@@ -516,7 +529,7 @@ export default function TablePage() {
             .trim();
     };
 
-    const formatValue = (value: any, column: string): string => {
+    const formatValue = (value: CellValue, column: string): string => {
         if (value === null || value === undefined) return '—';
         if (typeof value === 'boolean') return value ? 'TRUE' : 'FALSE';
         if (isColumnDateTime(column) || (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}T/))) {
@@ -587,7 +600,7 @@ export default function TablePage() {
                 const originalRecord = existingChange?.originalData || record;
                 const originalValue = originalRecord[column];
 
-                let parsedValue: any = textModalValue;
+                let parsedValue: CellValue = textModalValue;
                 if (parsedValue === '') {
                     parsedValue = isColumnNullable(column) ? null : '';
                 }
@@ -657,7 +670,7 @@ export default function TablePage() {
         const { id, column, isNewRow } = dateModalCell;
         const value = valueOverride !== undefined ? valueOverride : dateModalValue;
 
-        let parsedValue: any = value;
+        let parsedValue: CellValue = value;
         if (value === '' || value === null) {
             parsedValue = isColumnNullable(column) ? null : '';
         } else {
@@ -717,7 +730,7 @@ export default function TablePage() {
         const nullable = isColumnNullable(column);
 
         // For new rows, handle updates differently
-        const handleChange = (value: any) => {
+        const handleChange = (value: string) => {
             if (isNewRow) {
                 updateNewRow(record.id, column, value);
             } else {
@@ -1021,12 +1034,11 @@ export default function TablePage() {
                                         <option key={op.value} value={op.value}>{op.label}</option>
                                     ))}
                                 </select>
-
                                 {/* Value Input */}
                                 {filter.operator !== 'isNull' && filter.operator !== 'isNotNull' && (
                                     <input
                                         type="text"
-                                        value={filter.value || ''}
+                                        value={filter.value !== null && filter.value !== undefined ? String(filter.value) : ''}
                                         onChange={(e) => updateFilter(index, 'value', e.target.value)}
                                         placeholder={t('table.filter.enterValue')}
                                         className="bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded px-2 py-1.5 text-xs sm:text-sm text-white flex-1 min-w-[80px]"

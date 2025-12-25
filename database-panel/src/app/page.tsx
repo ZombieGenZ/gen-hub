@@ -35,16 +35,17 @@ export default function LoginPage() {
         const response = await login(email, password);
         if (response?.data?.requires_2fa) {
           setRequires2FA(true);
-          setTempToken(response.data.temp_token);
+          setTempToken(response.data.temp_token || '');
         }
       }
-    } catch (err: any) {
-      if (err.response?.status === 403) {
+    } catch (err) {
+      const error = err as { response?: { status?: number; data?: { message?: string } } };
+      if (error.response?.status === 403) {
         setError('Bạn không có quyền truy cập Database Admin Panel');
-      } else if (err.response?.status === 401) {
+      } else if (error.response?.status === 401) {
         setError('Thông tin đăng nhập không chính xác');
       } else {
-        setError(err.response?.data?.message || 'Đã xảy ra lỗi. Vui lòng thử lại sau');
+        setError(error.response?.data?.message || 'Đã xảy ra lỗi. Vui lòng thử lại sau');
       }
     }
   };

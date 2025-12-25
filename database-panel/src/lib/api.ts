@@ -35,9 +35,9 @@ api.interceptors.request.use(
 api.interceptors.response.use(
     (response) => response,
     async (error: AxiosError) => {
-        const originalRequest = error.config;
-        if (error.response?.status === 401 && originalRequest && !(originalRequest as any)._retry) {
-            (originalRequest as any)._retry = true;
+        const originalRequest = error.config as (typeof error.config) & { _retry?: boolean };
+        if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
+            originalRequest._retry = true;
             try {
                 const refreshToken = Cookies.get(REFRESH_TOKEN_KEY);
                 if (refreshToken) {
@@ -54,7 +54,7 @@ api.interceptors.response.use(
                         return api(originalRequest);
                     }
                 }
-            } catch (refreshError) {
+            } catch {
                 // If refresh fails, clear tokens and redirect
                 if (typeof window !== 'undefined') {
                     Cookies.remove(ACCESS_TOKEN_KEY);
@@ -90,7 +90,7 @@ export const auth = {
     },
 
     verifyLogin2FA: async (temp_token: string, code?: string, backup_code?: string) => {
-        const body: any = { temp_token };
+        const body: Record<string, string> = { temp_token };
         if (code) body.two_factor_code = code;
         if (backup_code) body.backup_code = backup_code;
 
@@ -147,13 +147,13 @@ export const auth = {
 export interface FilterCondition {
     column: string;
     operator: 'equals' | 'not' | 'gt' | 'gte' | 'lt' | 'lte' | 'contains' | 'startsWith' | 'endsWith' | 'in' | 'isNull' | 'isNotNull';
-    value?: any;
+    value?: string | number | boolean | null;
 }
 
 // Batch changes interface
 export interface BatchChanges {
-    created: any[];
-    updated: { id: string; data: any }[];
+    created: Record<string, unknown>[];
+    updated: { id: string; data: Record<string, unknown> }[];
     deleted: string[];
 }
 
@@ -199,12 +199,12 @@ export const adminApi = {
         return data;
     },
 
-    createRecord: async (tableName: string, recordData: any) => {
+    createRecord: async (tableName: string, recordData: Record<string, unknown>) => {
         const { data } = await api.post(`/admin/tables/${tableName}`, recordData);
         return data;
     },
 
-    updateRecord: async (tableName: string, id: string, recordData: any) => {
+    updateRecord: async (tableName: string, id: string, recordData: Record<string, unknown>) => {
         const { data } = await api.put(`/admin/tables/${tableName}/${id}`, recordData);
         return data;
     },

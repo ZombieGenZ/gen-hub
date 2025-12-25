@@ -10,13 +10,27 @@ interface User {
     email: string;
 }
 
+interface LoginResponse {
+    success?: boolean;
+    code?: string;
+    data?: {
+        requires_2fa?: boolean;
+        temp_token?: string;
+        user?: User;
+    };
+    authorization?: {
+        access_token: string;
+        refresh_token: string;
+    };
+}
+
 interface AuthContextType {
     user: User | null;
     isLoading: boolean;
     isAuthenticated: boolean;
-    login: (email: string, password: string) => Promise<any>;
+    login: (email: string, password: string) => Promise<LoginResponse>;
     logout: () => Promise<void>;
-    verify2FA: (temp_token: string, code?: string, backup_code?: string) => Promise<any>;
+    verify2FA: (temp_token: string, code?: string, backup_code?: string) => Promise<LoginResponse>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);

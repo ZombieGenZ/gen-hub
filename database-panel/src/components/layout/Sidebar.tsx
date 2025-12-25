@@ -57,6 +57,7 @@ export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
         if (onClose) {
             onClose();
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [pathname]);
 
     // Filter tables based on search query

@@ -46,11 +46,11 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     // Get translation by dot-notation key (e.g., "dashboard.title")
     const t = useCallback((key: string): string => {
         const keys = key.split('.');
-        let value: any = translations[language];
+        let value: unknown = translations[language];
 
         for (const k of keys) {
             if (value && typeof value === 'object' && k in value) {
-                value = value[k];
+                value = (value as Record<string, unknown>)[k];
             } else {
                 // Return key if translation not found
                 return key;
@@ -84,8 +84,8 @@ export function LanguageSwitcher({ className = '' }: { className?: string }) {
             <button
                 onClick={() => setLanguage('en')}
                 className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${language === 'en'
-                        ? 'bg-[var(--accent-primary)] text-white shadow-sm'
-                        : 'text-[var(--text-muted)] hover:text-white hover:bg-[var(--background-secondary)]'
+                    ? 'bg-[var(--accent-primary)] text-white shadow-sm'
+                    : 'text-[var(--text-muted)] hover:text-white hover:bg-[var(--background-secondary)]'
                     }`}
             >
                 EN
@@ -93,8 +93,8 @@ export function LanguageSwitcher({ className = '' }: { className?: string }) {
             <button
                 onClick={() => setLanguage('vi')}
                 className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${language === 'vi'
-                        ? 'bg-[var(--accent-primary)] text-white shadow-sm'
-                        : 'text-[var(--text-muted)] hover:text-white hover:bg-[var(--background-secondary)]'
+                    ? 'bg-[var(--accent-primary)] text-white shadow-sm'
+                    : 'text-[var(--text-muted)] hover:text-white hover:bg-[var(--background-secondary)]'
                     }`}
             >
                 VI
