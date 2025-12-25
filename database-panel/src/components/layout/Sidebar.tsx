@@ -11,6 +11,7 @@ import {
     Search,
     Menu,
     X,
+    RefreshCw,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage, LanguageSwitcher } from '@/contexts/LanguageContext';
@@ -34,21 +35,23 @@ export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
 
+    const fetchTables = async () => {
+        setIsLoading(true);
+        try {
+            const data = await adminApi.getTables();
+            // Sort tables alphabetically
+            const sortedTables = data.sort((a: TableInfo, b: TableInfo) =>
+                a.displayName.localeCompare(b.displayName)
+            );
+            setTables(sortedTables);
+        } catch (error) {
+            console.error('Failed to fetch tables:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const fetchTables = async () => {
-            try {
-                const data = await adminApi.getTables();
-                // Sort tables alphabetically
-                const sortedTables = data.sort((a: TableInfo, b: TableInfo) =>
-                    a.displayName.localeCompare(b.displayName)
-                );
-                setTables(sortedTables);
-            } catch (error) {
-                console.error('Failed to fetch tables:', error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
         fetchTables();
     }, []);
 
@@ -141,8 +144,18 @@ export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
                     </div>
 
                     {/* Tables Label */}
-                    <div className="px-4 py-2 text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
-                        {t('sidebar.tables')} ({filteredTables.length})
+                    <div className="px-4 py-2 flex items-center justify-between">
+                        <span className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
+                            {t('sidebar.tables')} ({filteredTables.length})
+                        </span>
+                        <button
+                            onClick={fetchTables}
+                            disabled={isLoading}
+                            className="p-1 text-[var(--text-muted)] hover:text-[var(--accent-primary)] hover:bg-[var(--background-tertiary)] rounded transition-all"
+                            title="Refresh tables"
+                        >
+                            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+                        </button>
                     </div>
 
                     {isLoading ? (

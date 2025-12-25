@@ -165,6 +165,12 @@ export const adminApi = {
         return data;
     },
 
+    // Statistics - Get all stats in one call
+    getStatistics: async () => {
+        const { data } = await api.get('/admin/statistics');
+        return data;
+    },
+
     getTableSchema: async (tableName: string) => {
         const { data } = await api.get(`/admin/tables/${tableName}/schema`);
         return data;

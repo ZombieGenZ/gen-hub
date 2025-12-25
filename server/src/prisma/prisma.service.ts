@@ -283,27 +283,38 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         this.logger.log('✅ Default roles seeded');
       }
 
-      await this.seedConfigPermissions();
-      await this.seedDatabaseAdminPermission();
-      await this.seedAmenityPermissions();
-      await this.seedAddonPermissions();
-      await this.seedCouponPermissions();
-      await this.seedCouponSchedulePermissions();
-      await this.seedWarehouseTemplatePermissions();
-      await this.seedOrganizationPermissions();
-      await this.seedNotificationPermissions();
-      await this.seedRentalContractPermissions();
-      await this.seedWarehousePermissions();
-      await this.seedPartnerPermissions();
-      await this.seedProductPermissions();
-      await this.seedBatchPermissions();
-      await this.seedApiKeyAdminPermissions();
-      await this.seedPaymentPermissions();
-      await this.seedRentalDurationTierPermissions();
-      await this.seedRowTemplatePermissions();
-      await this.seedRackTemplatePermissions();
-      await this.seedShelfTemplatePermissions();
-      await this.seedBlockTemplatePermissions();
+      // Chạy các hàm seed theo batch để tránh lỗi too many connections
+      const seedFunctions = [
+        this.seedConfigPermissions.bind(this),
+        this.seedDatabaseAdminPermission.bind(this),
+        this.seedAmenityPermissions.bind(this),
+        this.seedAddonPermissions.bind(this),
+        this.seedCouponPermissions.bind(this),
+        this.seedCouponSchedulePermissions.bind(this),
+        this.seedWarehouseTemplatePermissions.bind(this),
+        this.seedOrganizationPermissions.bind(this),
+        this.seedNotificationPermissions.bind(this),
+        this.seedRentalContractPermissions.bind(this),
+        this.seedWarehousePermissions.bind(this),
+        this.seedPartnerPermissions.bind(this),
+        this.seedProductPermissions.bind(this),
+        this.seedBatchPermissions.bind(this),
+        this.seedApiKeyAdminPermissions.bind(this),
+        this.seedPaymentPermissions.bind(this),
+        this.seedRentalDurationTierPermissions.bind(this),
+        this.seedRowTemplatePermissions.bind(this),
+        this.seedRackTemplatePermissions.bind(this),
+        this.seedShelfTemplatePermissions.bind(this),
+        this.seedBlockTemplatePermissions.bind(this),
+      ];
+
+      const BATCH_SIZE = 3; // Chạy 3 seed functions cùng lúc
+      for (let i = 0; i < seedFunctions.length; i += BATCH_SIZE) {
+        const batch = seedFunctions.slice(i, i + BATCH_SIZE);
+        await Promise.all(batch.map(fn => fn()));
+      }
+
+      // Seed Vietnam administrative (có thể mất nhiều thời gian nên chạy riêng sau)
       await this.seedVietnamAdministrative();
     } catch (error: unknown) {
       const errorMessage =

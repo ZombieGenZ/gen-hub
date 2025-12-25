@@ -45,6 +45,15 @@ export class DatabaseAdminController {
     }
 
     /**
+     * Lấy thống kê tổng quan cho tất cả tables
+     */
+    @Get('statistics')
+    @ApiOperation({ summary: 'Get statistics for all tables' })
+    async getStatistics() {
+        return this.databaseAdminService.getStatistics();
+    }
+
+    /**
      * Lấy schema của một table
      */
     @Get('tables/:tableName/schema')

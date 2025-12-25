@@ -1,7 +1,7 @@
 {
     "dashboard": {
         "title": "Bảng điều khiển",
-        "welcome": "Chào mừng bạn đến với GEN-HUB Database Admin Panel",
+        "welcome": "Chào mừng bạn đến với GEN-HUB Database Panel",
         "stats": {
             "totalTables": "Tổng số Tables",
             "totalRecords": "Tổng số Records",

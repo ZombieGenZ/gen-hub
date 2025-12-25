@@ -18,6 +18,8 @@ import {
     Check,
     Calendar,
     Maximize2,
+    Copy,
+    AlertCircle,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -130,6 +132,10 @@ export default function TablePage() {
 
     // New row state
     const [newRows, setNewRows] = useState<RecordData[]>([]);
+
+    // Error modal state
+    const [errorModalOpen, setErrorModalOpen] = useState(false);
+    const [errorModalContent, setErrorModalContent] = useState<{ type: string; id?: string; error: string }[]>([]);
 
     const hasPendingChanges = pendingChanges.size > 0 || newRows.length > 0;
 
@@ -496,7 +502,9 @@ export default function TablePage() {
             const errorCount = result.errors?.length || 0;
 
             if (errorCount > 0) {
-                toast.warning(`Hoàn thành với ${errorCount} lỗi`);
+                // Show errors in modal popup
+                setErrorModalContent(result.errors);
+                setErrorModalOpen(true);
             } else {
                 toast.success(`Đã lưu ${successCount} thay đổi`);
             }
@@ -508,7 +516,9 @@ export default function TablePage() {
             fetchRecords(meta.page);
         } catch (err) {
             const error = err as { response?: { data?: { message?: string } }; message?: string };
-            toast.error('Lỗi khi lưu: ' + (error.response?.data?.message || error.message));
+            // Show error in modal popup
+            setErrorModalContent([{ type: 'system', error: error.response?.data?.message || error.message || 'Unknown error' }]);
+            setErrorModalOpen(true);
         } finally {
             setIsSaving(false);
         }
@@ -748,6 +758,11 @@ export default function TablePage() {
                             updateNewRow(record.id, column, val === '__NULL__' ? null : val === 'true');
                         } else {
                             saveEdit(val === '__NULL__' ? null : val === 'true');
+                        }
+                    }}
+                    onBlur={() => {
+                        if (!isNewRow) {
+                            cancelEdit();
                         }
                     }}
                     className="w-full bg-[var(--background-tertiary)] border border-[var(--accent-primary)] rounded px-2 py-0.5 text-sm outline-none"
@@ -1182,8 +1197,25 @@ export default function TablePage() {
                                             >
                                                 {editingCell?.id === record.id && editingCell?.column === col ? (
                                                     renderEditInput(record, col, false)
+                                                ) : col === 'id' ? (
+                                                    <div className="flex items-center gap-1 group">
+                                                        <span className="font-mono text-xs">
+                                                            {formatValue(record[col], col)}
+                                                        </span>
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                navigator.clipboard.writeText(record[col]);
+                                                                toast.success('Đã copy ID');
+                                                            }}
+                                                            className="opacity-0 group-hover:opacity-100 text-[var(--text-muted)] hover:text-[var(--accent-primary)] p-0.5 rounded hover:bg-[var(--background-tertiary)] transition-opacity"
+                                                            title="Copy ID"
+                                                        >
+                                                            <Copy className="w-3 h-3" />
+                                                        </button>
+                                                    </div>
                                                 ) : (
-                                                    <span className={col === 'id' ? 'font-mono text-xs' : ''}>
+                                                    <span>
                                                         {formatValue(record[col], col)}
                                                     </span>
                                                 )}
@@ -1356,7 +1388,7 @@ export default function TablePage() {
                                     if (e.key === 'Escape') closeDateModal();
                                     if (e.key === 'Enter') saveDateModal();
                                 }}
-                                className="w-full bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded-lg px-3 py-3 text-white text-base outline-none focus:border-[var(--accent-primary)]"
+                                className="w-full bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded-lg px-3 py-3 text-white text-base outline-none focus:border-[var(--accent-primary)] [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:brightness-200 [&::-webkit-calendar-picker-indicator]:sepia [&::-webkit-calendar-picker-indicator]:saturate-[5] [&::-webkit-calendar-picker-indicator]:hue-rotate-[175deg] [&::-webkit-calendar-picker-indicator]:cursor-pointer"
                                 autoFocus
                             />
 
@@ -1385,6 +1417,77 @@ export default function TablePage() {
                                 className="btn btn-primary text-sm py-1.5"
                             >
                                 Save <span className="opacity-70 ml-1">Enter</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Error Modal */}
+            {errorModalOpen && errorModalContent.length > 0 && (
+                <div
+                    className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 animate-fadeIn"
+                    onClick={(e) => {
+                        if (e.target === e.currentTarget) setErrorModalOpen(false);
+                    }}
+                >
+                    <div className="bg-[var(--background-secondary)] border border-[var(--border-primary)] rounded-lg shadow-2xl w-full max-w-2xl mx-4 animate-slideIn max-h-[80vh] flex flex-col">
+                        <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-primary)]">
+                            <div className="flex items-center gap-2">
+                                <AlertCircle className="w-5 h-5 text-[var(--status-error)]" />
+                                <h3 className="text-white font-medium">
+                                    Có {errorModalContent.length} lỗi xảy ra
+                                </h3>
+                            </div>
+                            <button
+                                onClick={() => setErrorModalOpen(false)}
+                                className="text-[var(--text-muted)] hover:text-white p-1 rounded hover:bg-[var(--background-tertiary)]"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+
+                        <div className="p-4 overflow-y-auto flex-1">
+                            <div className="space-y-3">
+                                {errorModalContent.map((err, index) => (
+                                    <div key={index} className="bg-[var(--background-tertiary)] border border-red-500/30 rounded-lg p-3">
+                                        <div className="flex items-start gap-2">
+                                            <span className="text-xs font-medium text-red-400 uppercase px-1.5 py-0.5 bg-red-500/20 rounded">
+                                                {err.type}
+                                            </span>
+                                            {err.id && (
+                                                <span className="text-xs text-[var(--text-muted)]">
+                                                    ID: <code className="font-mono">{err.id}</code>
+                                                </span>
+                                            )}
+                                        </div>
+                                        <pre className="mt-2 text-sm text-red-300 whitespace-pre-wrap font-mono bg-black/30 rounded p-2 overflow-x-auto">
+                                            {err.error}
+                                        </pre>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="flex items-center justify-end gap-2 px-4 py-3 border-t border-[var(--border-primary)]">
+                            <button
+                                onClick={() => {
+                                    const errorText = errorModalContent.map(e =>
+                                        `[${e.type}]${e.id ? ` ID: ${e.id}` : ''}\n${e.error}`
+                                    ).join('\n\n');
+                                    navigator.clipboard.writeText(errorText);
+                                    toast.success('Đã copy lỗi');
+                                }}
+                                className="btn btn-secondary text-sm py-1.5"
+                            >
+                                <Copy className="w-4 h-4" />
+                                Copy lỗi
+                            </button>
+                            <button
+                                onClick={() => setErrorModalOpen(false)}
+                                className="btn btn-primary text-sm py-1.5"
+                            >
+                                Đóng
                             </button>
                         </div>
                     </div>

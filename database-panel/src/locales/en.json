@@ -1,7 +1,7 @@
 {
     "dashboard": {
         "title": "Dashboard",
-        "welcome": "Welcome to GEN-HUB Database Admin Panel",
+        "welcome": "Welcome to GEN-HUB Database Panel",
         "stats": {
             "totalTables": "Total Tables",
             "totalRecords": "Total Records",

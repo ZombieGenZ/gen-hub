@@ -2,29 +2,41 @@
 
 import { useEffect, useState } from 'react';
 import { adminApi } from '@/lib/api';
-import { Database, Table, List, LayoutGrid, HardDrive, Activity, Loader2, BarChart3 } from 'lucide-react';
+import { Database, Table, List, LayoutGrid, HardDrive, Activity, Loader2, BarChart3, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import { useLanguage } from '@/contexts/LanguageContext';
+
+interface TableStats {
+    name: string;
+    displayName: string;
+    recordCount: number;
+    columnCount: number;
+}
+
+interface Statistics {
+    summary: {
+        totalTables: number;
+        totalRecords: number;
+        totalColumns: number;
+        avgRecordsPerTable: number;
+    };
+    tables: TableStats[];
+}
 
 interface TableInfo {
     name: string;
     displayName: string;
 }
 
-interface TableStats {
-    name: string;
-    recordCount: number;
-    columnCount: number;
-}
-
 export default function DashboardPage() {
     const { t } = useLanguage();
     const [tables, setTables] = useState<TableInfo[]>([]);
-    const [tableStats, setTableStats] = useState<TableStats[]>([]);
+    const [statistics, setStatistics] = useState<Statistics | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isLoadingStats, setIsLoadingStats] = useState(false);
     const [statsLoaded, setStatsLoaded] = useState(false);
 
+    // Load tables on mount
     useEffect(() => {
         const fetchTables = async () => {
             try {
@@ -39,62 +51,110 @@ export default function DashboardPage() {
         fetchTables();
     }, []);
 
-    // Load stats on demand
-    const loadStats = async () => {
-        if (isLoadingStats || statsLoaded) return;
+    // Load statistics on demand
+    const loadStatistics = async () => {
+        if (isLoadingStats) return;
 
         setIsLoadingStats(true);
         try {
-            const statsPromises = tables.map(async (table: TableInfo) => {
-                try {
-                    const [records, schema] = await Promise.all([
-                        adminApi.getRecords(table.name, { page: 1, limit: 1 }),
-                        adminApi.getTableSchema(table.name).catch(() => null)
-                    ]);
-                    return {
-                        name: table.name,
-                        recordCount: records.meta?.total || 0,
-                        columnCount: schema?.fields?.length || 0
-                    };
-                } catch {
-                    return { name: table.name, recordCount: 0, columnCount: 0 };
-                }
-            });
-            const stats = await Promise.all(statsPromises);
-            setTableStats(stats);
+            const data = await adminApi.getStatistics();
+            setStatistics(data);
             setStatsLoaded(true);
         } catch (error) {
-            console.error('Failed to fetch stats:', error);
+            console.error('Failed to fetch statistics:', error);
         } finally {
             setIsLoadingStats(false);
         }
     };
 
-    // Calculate aggregate stats
+    // Refresh statistics (force reload)
+    const refreshStatistics = async () => {
+        setStatsLoaded(false);
+        await loadStatistics();
+    };
+
+    // Refresh tables
+    const refreshTables = async () => {
+        setIsLoading(true);
+        try {
+            const data = await adminApi.getTables();
+            setTables(data);
+        } catch (error) {
+            console.error('Failed to fetch tables:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Calculate stats from statistics or show placeholder
     const totalTables = tables.length;
-    const totalRecords = tableStats.reduce((sum, t) => sum + t.recordCount, 0);
-    const totalColumns = tableStats.reduce((sum, t) => sum + t.columnCount, 0);
-    const avgRecordsPerTable = totalTables > 0 ? Math.round(totalRecords / totalTables) : 0;
+    const totalRecords = statistics?.summary.totalRecords ?? 0;
+    const totalColumns = statistics?.summary.totalColumns ?? 0;
+    const avgRecordsPerTable = statistics?.summary.avgRecordsPerTable ?? 0;
 
     const stats = [
-        { label: t('dashboard.stats.totalTables'), value: totalTables, icon: Table, color: 'var(--accent-primary)' },
-        { label: t('dashboard.stats.totalRecords'), value: statsLoaded ? totalRecords.toLocaleString() : '-', icon: List, color: '#3b82f6' },
-        { label: t('dashboard.stats.totalColumns'), value: statsLoaded ? totalColumns : '-', icon: LayoutGrid, color: '#8b5cf6' },
-        { label: t('dashboard.stats.avgRecords'), value: statsLoaded ? avgRecordsPerTable : '-', icon: HardDrive, color: '#f59e0b' },
+        {
+            label: t('dashboard.stats.totalTables'),
+            value: totalTables,
+            icon: Table,
+            color: 'var(--accent-primary)'
+        },
+        {
+            label: t('dashboard.stats.totalRecords'),
+            value: statsLoaded ? totalRecords.toLocaleString() : '-',
+            icon: List,
+            color: '#3b82f6'
+        },
+        {
+            label: t('dashboard.stats.totalColumns'),
+            value: statsLoaded ? totalColumns : '-',
+            icon: LayoutGrid,
+            color: '#8b5cf6'
+        },
+        {
+            label: t('dashboard.stats.avgRecords'),
+            value: statsLoaded ? avgRecordsPerTable : '-',
+            icon: HardDrive,
+            color: '#f59e0b'
+        },
     ];
 
     const getTableStats = (tableName: string) => {
-        return tableStats.find(t => t.name === tableName);
+        return statistics?.tables.find(t => t.name === tableName);
     };
 
     return (
         <div className="animate-fadeIn">
             {/* Header */}
-            <div className="mb-8">
-                <h1 className="text-3xl font-bold text-white mb-2">{t('dashboard.title')}</h1>
-                <p className="text-[var(--text-secondary)]">
-                    {t('dashboard.welcome')}
-                </p>
+            <div className="mb-8 flex items-center justify-between">
+                <div>
+                    <h1 className="text-3xl font-bold text-white mb-2">{t('dashboard.title')}</h1>
+                    <p className="text-[var(--text-secondary)]">
+                        {t('dashboard.welcome')}
+                    </p>
+                </div>
+                <div className="flex items-center gap-2">
+                    {statsLoaded && (
+                        <button
+                            onClick={refreshStatistics}
+                            disabled={isLoadingStats}
+                            className="btn btn-secondary"
+                            title="Refresh statistics"
+                        >
+                            <RefreshCw className={`w-4 h-4 ${isLoadingStats ? 'animate-spin' : ''}`} />
+                            <span className="hidden sm:inline">Refresh Stats</span>
+                        </button>
+                    )}
+                    <button
+                        onClick={refreshTables}
+                        disabled={isLoading}
+                        className="btn btn-secondary"
+                        title="Refresh tables"
+                    >
+                        <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+                        <span className="hidden sm:inline">Refresh Tables</span>
+                    </button>
+                </div>
             </div>
 
             {/* Stats Grid - With overlay when not loaded */}
@@ -102,7 +162,7 @@ export default function DashboardPage() {
                 {!statsLoaded && (
                     <div className="absolute inset-0 bg-[var(--background-primary)]/80 backdrop-blur-sm z-10 flex items-center justify-center rounded-xl">
                         <button
-                            onClick={loadStats}
+                            onClick={loadStatistics}
                             disabled={isLoadingStats}
                             className="btn btn-primary px-6 py-3 text-base"
                         >

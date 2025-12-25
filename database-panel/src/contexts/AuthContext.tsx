@@ -45,8 +45,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const data = await auth.getProfile();
             if (data.success && data.data?.user) {
                 // Check permissions
-                const permissions: string[] = data.data.permissions || [];
-                if (!permissions.includes('database.admin')) {
+                const rawPermissions = data.data.permissions || [];
+                const hasAdminPermission = rawPermissions.some((p: any) =>
+                    (typeof p === 'string' ? p : p.key) === 'database.admin'
+                );
+
+                if (!hasAdminPermission) {
                     await auth.logout();
                     setUser(null);
                     throw new Error('PERMISSION_DENIED');

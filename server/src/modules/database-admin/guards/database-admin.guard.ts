@@ -68,7 +68,7 @@ export class DatabaseAdminGuard implements CanActivate {
 
         if (!hasPermission) {
             throw new ForbiddenException(
-                'You do not have permission to access database admin panel',
+                'You do not have permission to access database panel',
             );
         }
 

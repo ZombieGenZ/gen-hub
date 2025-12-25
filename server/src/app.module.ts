@@ -132,7 +132,7 @@ import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
     ProductModule,
     BatchModule,
 
-    // Database Admin Panel
+    // Database Panel
     DatabaseAdminModule,
   ],
   controllers: [AppController],

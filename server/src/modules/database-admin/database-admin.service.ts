@@ -70,6 +70,75 @@ export class DatabaseAdminService implements OnModuleInit {
     }
 
     /**
+     * Lấy thống kê tổng quan cho tất cả tables
+     * Sử dụng batch processing để tránh lỗi too many connections
+     */
+    async getStatistics() {
+        const dmmf = Prisma.dmmf;
+        const tables = this.availableTables;
+        const BATCH_SIZE = 5; // Giới hạn số query song song
+
+        const tableStats: {
+            name: string;
+            displayName: string;
+            recordCount: number;
+            columnCount: number;
+        }[] = [];
+
+        // Process tables in batches
+        for (let i = 0; i < tables.length; i += BATCH_SIZE) {
+            const batch = tables.slice(i, i + BATCH_SIZE);
+
+            const batchResults = await Promise.all(
+                batch.map(async (tableName) => {
+                    try {
+                        const prismaModel = this.getPrismaModel(tableName);
+                        const count = await prismaModel.count();
+
+                        // Get column count from DMMF
+                        const modelName = tableName.charAt(0).toUpperCase() + tableName.slice(1);
+                        const model = dmmf.datamodel.models.find((m) => m.name === modelName);
+                        const columnCount = model?.fields.filter(f => !f.relationName).length || 0;
+
+                        return {
+                            name: tableName,
+                            displayName: this.formatTableName(tableName),
+                            recordCount: count,
+                            columnCount,
+                        };
+                    } catch (error) {
+                        this.logger.error(`Failed to get stats for ${tableName}`, error);
+                        return {
+                            name: tableName,
+                            displayName: this.formatTableName(tableName),
+                            recordCount: 0,
+                            columnCount: 0,
+                        };
+                    }
+                })
+            );
+
+            tableStats.push(...batchResults);
+        }
+
+        // Calculate aggregates
+        const totalTables = tableStats.length;
+        const totalRecords = tableStats.reduce((sum, t) => sum + t.recordCount, 0);
+        const totalColumns = tableStats.reduce((sum, t) => sum + t.columnCount, 0);
+        const avgRecordsPerTable = totalTables > 0 ? Math.round(totalRecords / totalTables) : 0;
+
+        return {
+            summary: {
+                totalTables,
+                totalRecords,
+                totalColumns,
+                avgRecordsPerTable,
+            },
+            tables: tableStats,
+        };
+    }
+
+    /**
      * Build Prisma where clause từ filter conditions
      */
     private buildWhereClause(filters?: FilterCondition[]): any {
@@ -592,6 +661,14 @@ export class DatabaseAdminService implements OnModuleInit {
         // Xóa các timestamp fields
         delete cleaned.created_at;
         delete cleaned.updated_at;
+
+        // Chuyển đổi chuỗi rỗng thành null cho các trường DateTime
+        // Prisma yêu cầu DateTime phải là ISO-8601 hợp lệ hoặc null
+        for (const key in cleaned) {
+            if (cleaned[key] === '' || cleaned[key] === undefined) {
+                cleaned[key] = null;
+            }
+        }
 
         return cleaned;
     }
