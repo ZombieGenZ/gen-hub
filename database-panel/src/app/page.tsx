@@ -175,7 +175,7 @@ export default function LoginPage() {
 
         {/* Footer */}
         <p className="text-center text-xs text-[var(--text-muted)] mt-8">
-          © 2024 GEN-HUB. All rights reserved.
+          © {new Date().getFullYear()} GEN-HUB. All rights reserved.
         </p>
       </div>
     </div>
