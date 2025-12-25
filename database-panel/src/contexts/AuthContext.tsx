@@ -46,7 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             if (data.success && data.data?.user) {
                 // Check permissions
                 const rawPermissions = data.data.permissions || [];
-                const hasAdminPermission = rawPermissions.some((p: any) =>
+                const hasAdminPermission = rawPermissions.some((p: string | { key: string }) =>
                     (typeof p === 'string' ? p : p.key) === 'database.admin'
                 );
 
