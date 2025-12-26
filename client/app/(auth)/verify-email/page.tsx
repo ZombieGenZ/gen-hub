@@ -37,14 +37,15 @@ function VerifyEmailContent() {
           setIsSuccess(false)
           return;
         }
-        const res: any = await authServices.confirmEmail(access_token, token)
-        if (res) {
+        const res: any = await authServices.confirmToken(access_token, token)
+        if (res.success) {
           setIsSuccess(true)
           setMessage(res?.message || 'Xác minh email thành công, vui lòng đăng nhập lại.')
-          authStorage.clearTokens()
+          authStorage.setEmailVerified("true")
         } else {
           setIsSuccess(false)
           setMessage('Xác minh email thất bại.')
+          authStorage.setEmailVerified("false")
         }
       } catch (error: any) {
         console.error(error)

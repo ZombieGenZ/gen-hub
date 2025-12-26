@@ -8,6 +8,9 @@ import { AnimatedGroup } from '@/components/ui/animated-group'
 import { cn } from '@/lib/utils'
 import { Variants } from 'framer-motion'
 import { authStorage } from '@/services/auth/auth-storage.service';
+import { AuthService } from '@/services/auth/auth.service';
+
+const authService = new AuthService();
 
 const menuItems = [
     { name: 'Features', href: '#link' },
@@ -192,10 +195,97 @@ const HeroHeader = () => {
 }
 
 export function HeroSection() {
+    const [verifyAlert, setVerifyAlert] = useState(false)
+    const email_verified = authStorage.getEmailVerified();
+    const access_token = authStorage.getAccessToken();
+    useEffect(() => {
+        if(!email_verified && access_token) {
+            setVerifyAlert(true)
+        } else {
+            setVerifyAlert(false)
+        }
+    }, [])
+
+    const sendEmailVerify = async () => {
+        if(access_token == null || undefined) {
+            alert("Đăng nhập để tiếp tục")
+        }
+        try {
+            const response = await authService.confirmEmail(access_token!);
+            if (response.success) {
+                // Handle success case
+                alert("Email xác nhận đã được gửi thành công!");
+            } else {
+                alert("Có lỗi xảy ra khi gửi email xác nhận");
+            }
+        } catch (error: any) {
+            console.error(error.message);
+            alert(error.message || "Có lỗi xảy ra");
+        }
+    }
+
     return (
         <>
             <HeroHeader />
-            <main className="overflow-hidden">
+            <main className="overflow-hidden pt-13">
+                {/* Email Verification Banner - Thêm ở đây */}
+                {verifyAlert && 
+                    <div className=" z-10 backdrop-blur-md bg-background/80 border-b">
+                        <div className="mx-auto max-w-6xl px-6 py-2.5">
+                            <div className="flex items-center justify-between gap-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="shrink-0">
+                                        <div className="relative">
+                                            <div className="absolute inset-0 rounded-full bg-gradient-to-r from-[#9B99FE] to-[#2BC8B7] opacity-20 blur-sm" />
+                                            <div className="relative bg-gradient-to-r from-[#9B99FE] to-[#2BC8B7] rounded-full p-1.5">
+                                                <svg 
+                                                    className="h-3.5 w-3.5 text-white" 
+                                                    fill="none" 
+                                                    viewBox="0 0 24 24" 
+                                                    stroke="currentColor"
+                                                >
+                                                    <path 
+                                                        strokeLinecap="round" 
+                                                        strokeLinejoin="round" 
+                                                        strokeWidth={2.5} 
+                                                        d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" 
+                                                    />
+                                                </svg>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <p className="text-sm text-foreground">
+                                            <span className="font-medium">Verify your email</span>
+                                            <span className="text-muted-foreground ml-1 hidden sm:inline">
+                                                — We've sent a verification link to your inbox
+                                            </span>
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Button 
+                                        onClick={sendEmailVerify}
+                                        size="sm" 
+                                        variant="ghost"
+                                        className="h-7 text-xs hover:bg-muted cursor-pointer"
+                                    >
+                                        Resend
+                                    </Button>
+                                    <button 
+                                        className="text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
+                                        aria-label="Dismiss"
+                                        onClick={() => setVerifyAlert(false)}
+                                    >
+                                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
                 <div
                     aria-hidden
                     className="z-[2] absolute inset-0 pointer-events-none isolate opacity-50 contain-strict hidden lg:block">

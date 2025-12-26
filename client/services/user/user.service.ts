@@ -33,6 +33,9 @@ export class UserService {
       }
       
       const data = await response.json();
+
+      // kiểm tra xác minh
+      await authStorage.setEmailVerified(data.data.user.is_verified);
       return data.data;
    }
 

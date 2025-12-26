@@ -153,7 +153,7 @@ export class AuthService {
     }
 
     //Xác minh email
-    async confirmEmail(access_token: string, token: string) {
+    async confirmToken(access_token: string, token: string) {
         const response = await fetch(`${API}/auth/verify-email`, {
             method: 'POST',
             headers: {
@@ -172,7 +172,7 @@ export class AuthService {
     }
 
     //Xác minh token
-    async confirmToken(token: string) {
+    async confirmEmail(token: string) {
         const response = await fetch(`${API}/auth/resend-verification`, {
             method: 'POST',
             headers: {

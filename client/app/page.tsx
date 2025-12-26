@@ -41,17 +41,17 @@ export default function Home() {
                         } catch (refreshError) {
                             console.error('Token refresh failed:', refreshError)
                             authStorage.clearTokens()
-                            router.push('/login')
+                            //router.push('/login')
                             return
                         }
                     }
                     // If we get here, authentication failed
                     authStorage.clearTokens()
-                    router.push('/login')
+                    //router.push('/login')
                 }
             } else {
                 authStorage.clearTokens()
-                router.push('/login')
+                //router.push('/login')
             }
         }
 

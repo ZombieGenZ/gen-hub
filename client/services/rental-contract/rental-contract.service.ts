@@ -1,6 +1,8 @@
 const API = process.env.NEXT_PUBLIC_API_URL
 
 export class RentalContractService {
+    
+    // Danh sách hợp đồng
     async getRentalContracts(token: string, params: {
         keywords?: string;
         status?: string;
@@ -42,6 +44,7 @@ export class RentalContractService {
         }
     }
 
+    // Danh sách hợp đồng bằng ID
     async getRentalContractById(token: string, id: string) {
         try {
             const response = await fetch(`${API}/rental-contracts/${id}`, {
@@ -63,5 +66,3 @@ export class RentalContractService {
         }
     }
 }
-
-export const rentalContractService = new RentalContractService();

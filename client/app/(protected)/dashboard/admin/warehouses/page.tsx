@@ -8,8 +8,11 @@ import { DashboardHeader } from "@/components/layouts/DashboardHeader";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { authStorage } from "@/services/auth/auth-storage.service";
+import { AuthService } from "@/services/auth/auth.service";
 
 // ... (other imports)
+
+const authService = new AuthService();
 
 export default function WarehouseTemplatePage() {
     const router = useRouter();

@@ -1,6 +1,8 @@
 const API = process.env.NEXT_PUBLIC_API_URL
 
 export class WarehouseTemplateService {
+
+    // Lấy danh sách kho
     async getWarehouseTemplates(token: string, params: {
         keywords?: string;
         is_active?: boolean;
@@ -40,6 +42,7 @@ export class WarehouseTemplateService {
         return data.data;
     }
 
+    // Lấy kho bằng ID
     async getWarehouseTemplateById(token: string, id: string) {
         const response = await fetch(`${API}/warehouse-templates/${id}`, {
             method: 'GET',
@@ -54,6 +57,24 @@ export class WarehouseTemplateService {
             throw new Error(errorData.message || 'Failed to fetch warehouse template details');
         }
         
+        const data = await response.json();
+        return data.data;
+    }
+
+    // Lấy ảnh từng kho
+    async getWarehouseImage(access_token: string, warehouse_id: string) {
+        const response = await fetch(`${API}/warehouse-templates/${warehouse_id}/images`, {
+            headers: {
+                'Authorization': `Bearer ${access_token}`,
+                'Content-Type': 'application/json',
+            },
+        })  
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Failed to fetch warehouse template details');
+        }
+
         const data = await response.json();
         return data.data;
     }

@@ -8,6 +8,7 @@ class AuthStorageService {
   private readonly REFRESH_TOKEN_KEY = process.env.NEXT_PUBLIC_REFRESH_TOKEN_KEY;
   private readonly VERIFICATION_TOKEN_KEY = process.env.NEXT_PUBLIC_VERIFICATION_TOKEN_KEY;
   private readonly THEME_KEY = process.env.NEXT_PUBLIC_THEME_KEY;
+  private readonly EMAIL_VERIFIED = process.env.NEXT_PUBLIC_EMAIL_VERIFIED
 
   private constructor() {}
 
@@ -16,6 +17,10 @@ class AuthStorageService {
       AuthStorageService.instance = new AuthStorageService();
     }
     return AuthStorageService.instance;
+  }
+
+  getEmailVerified(): string | null {
+    return getCookie(this.EMAIL_VERIFIED!);
   }
 
   // Token methods
@@ -40,7 +45,12 @@ class AuthStorageService {
     setCookie(this.VERIFICATION_TOKEN_KEY!, token, Number(process.env.NEXT_PUBLIC_ACCESS_VERIFICATION_TOKEN_EXPIRATION)!);
   }
 
+  setEmailVerified(is_verified: string) {
+    setCookie(this.EMAIL_VERIFIED!, is_verified, 365)
+  }
+
   clearTokens(): void {
+    removeCookie(this.EMAIL_VERIFIED!)
     removeCookie(this.ACCESS_TOKEN_KEY!);
     removeCookie(this.REFRESH_TOKEN_KEY!);
     removeCookie(this.THEME_KEY!);
