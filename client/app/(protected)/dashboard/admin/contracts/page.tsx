@@ -35,7 +35,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { rentalContractService } from "@/services/rental-contract/rental-contract.service";
+import { RentalContractService } from "@/services/rental-contract/rental-contract.service";
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { useRouter } from "next/navigation";
 import {
@@ -48,6 +48,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { Organization } from "@/types/organization/organization.type";
+
+const rentalContractService = new RentalContractService();
 
 interface Contract {
     id: string;
