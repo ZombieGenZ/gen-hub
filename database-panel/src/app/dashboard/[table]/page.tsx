@@ -221,7 +221,7 @@ export default function TablePage() {
             }
         } catch (err) {
             const error = err as { response?: { data?: { message?: string } }; message?: string };
-            toast.error('Lỗi khi tải dữ liệu: ' + (error.response?.data?.message || error.message));
+            toast.error(t('common.error') + ': ' + (error.response?.data?.message || error.message));
         } finally {
             setIsLoading(false);
         }
@@ -514,15 +514,12 @@ export default function TablePage() {
 
             const result = await adminApi.batchUpdate(tableName, { created, updated, deleted });
 
-            const successCount = result.created.length + result.updated.length + result.deleted.length;
-            const errorCount = result.errors?.length || 0;
-
-            if (errorCount > 0) {
+            if ((result.errors?.length || 0) > 0) {
                 // Show errors in modal popup
                 setErrorModalContent(result.errors);
                 setErrorModalOpen(true);
             } else {
-                toast.success(`Đã lưu ${successCount} thay đổi`);
+                toast.success(t('common.success'));
             }
 
             // Reset state and refresh
@@ -635,7 +632,7 @@ export default function TablePage() {
             try {
                 parsedValue = JSON.parse(textModalValue);
             } catch {
-                toast.error('JSON không hợp lệ. Vui lòng kiểm tra lại cú pháp.');
+                toast.error(t('common.error'));
                 return;
             }
         }
@@ -930,12 +927,12 @@ export default function TablePage() {
                 return (
                     <div className="flex items-center gap-1">
                         <span className="text-sm text-[var(--text-muted)] flex-1">
-                            {currentValue ? format(new Date(currentValue), 'dd/MM/yyyy HH:mm') : '— Chọn ngày —'}
+                            {currentValue ? format(new Date(currentValue), 'dd/MM/yyyy HH:mm') : t('table.edit.selectDate')}
                         </span>
                         <button
                             onClick={() => openDateModal(record, column, true)}
                             className="text-[var(--text-muted)] hover:text-[var(--accent-primary)] p-1 rounded hover:bg-[var(--background-tertiary)]"
-                            title="Chọn ngày giờ"
+                            title={t('table.edit.selectDate')}
                         >
                             <Calendar className="w-3 h-3" />
                         </button>
@@ -960,7 +957,7 @@ export default function TablePage() {
                         <button
                             onClick={() => saveEdit(null)}
                             className="text-xs text-[var(--text-muted)] hover:text-white px-1"
-                            title="Set to NULL"
+                            title={t('table.edit.setNull')}
                         >
                             NULL
                         </button>
@@ -983,12 +980,12 @@ export default function TablePage() {
                 return (
                     <div className="flex items-center gap-1">
                         <span className="text-sm text-[var(--text-muted)] flex-1">
-                            {currentValue !== null && currentValue !== undefined && currentValue !== '' ? currentValue : '— Nhập số —'}
+                            {currentValue !== null && currentValue !== undefined && currentValue !== '' ? currentValue : t('table.filter.enterValue')}
                         </span>
                         <button
                             onClick={() => openNumberModal(record, column, true)}
                             className="text-[var(--text-muted)] hover:text-[var(--accent-primary)] p-1 rounded hover:bg-[var(--background-tertiary)]"
-                            title="Nhập số"
+                            title={t('table.filter.enterValue')}
                         >
                             #
                         </button>
@@ -1014,7 +1011,7 @@ export default function TablePage() {
                         <button
                             onClick={() => saveEdit(null)}
                             className="text-xs text-[var(--text-muted)] hover:text-white px-1"
-                            title="Set to NULL"
+                            title={t('table.edit.setNull')}
                         >
                             NULL
                         </button>
@@ -1048,7 +1045,7 @@ export default function TablePage() {
                     <button
                         onClick={() => openTextModal(record, column, true)}
                         className="text-[var(--text-muted)] hover:text-[var(--accent-primary)] p-1 rounded hover:bg-[var(--background-tertiary)]"
-                        title="Mở trình chỉnh sửa lớn"
+                        title={t('table.edit.editColumn')}
                     >
                         <Maximize2 className="w-3 h-3" />
                     </button>
@@ -1079,7 +1076,7 @@ export default function TablePage() {
                             className="text-xs text-[var(--text-muted)] hover:text-white px-1 whitespace-nowrap"
                             title="Set to NULL"
                         >
-                            Set NULL
+                            {t('table.edit.setNull')}
                         </button>
                     )}
                     <>
@@ -1087,13 +1084,13 @@ export default function TablePage() {
                             onClick={cancelEdit}
                             className="text-[var(--text-muted)] hover:text-white border border-[var(--border-primary)] hover:border-[var(--border-secondary)] px-2 py-0.5 rounded text-xs"
                         >
-                            Cancel <span className="text-[var(--text-muted)]">Esc</span>
+                            {t('table.actions.cancel')} <span className="text-[var(--text-muted)]">Esc</span>
                         </button>
                         <button
                             onClick={() => saveEdit()}
                             className="text-white bg-[var(--accent-primary)] hover:bg-[var(--accent-secondary)] px-2 py-0.5 rounded text-xs"
                         >
-                            Save <span className="opacity-70">Enter</span>
+                            {t('table.actions.save')} <span className="opacity-70">Enter</span>
                         </button>
                     </>
                 </div>
@@ -1151,7 +1148,7 @@ export default function TablePage() {
                         className={`btn text-xs sm:text-sm ${appliedFilters.length > 0 ? 'btn-primary' : 'btn-secondary'}`}
                     >
                         <Filter className="w-4 h-4" />
-                        <span className="hidden sm:inline">Filters</span>
+                        <span className="hidden sm:inline">{t('table.filter.title')}</span>
                         {appliedFilters.length > 0 && <span>({appliedFilters.length})</span>}
                     </button>
                     <button
@@ -1186,7 +1183,7 @@ export default function TablePage() {
 
                                 {/* Where/And Label */}
                                 <span className="text-xs sm:text-sm text-[var(--text-muted)] w-10 sm:w-12">
-                                    {index === 0 ? 'where' : 'and'}
+                                    {index === 0 ? t('table.filter.where') : t('table.filter.and')}
                                 </span>
 
                                 {/* Column Select */}
@@ -1371,9 +1368,9 @@ export default function TablePage() {
                                                         onClick={(e) => {
                                                             e.stopPropagation();
                                                             navigator.clipboard.writeText(record[col]);
-                                                            toast.success('Đã copy ID');
+                                                            toast.success(t('common.success'));
                                                         }}
-                                                        title="Click để copy ID"
+                                                        title={t('dashboard.quickAccess.loading')}
                                                     >
                                                         {formatValue(record[col], col)}
                                                     </div>
@@ -1390,7 +1387,7 @@ export default function TablePage() {
                                 {records.length === 0 && newRows.length === 0 && (
                                     <tr>
                                         <td colSpan={columns.length + 1} className="text-center py-8 text-[var(--text-muted)]">
-                                            Không có dữ liệu
+                                            {t('table.noData')}
                                         </td>
                                     </tr>
                                 )}
@@ -1464,7 +1461,7 @@ export default function TablePage() {
                     <div className="bg-[var(--background-secondary)] border border-[var(--border-primary)] rounded-lg shadow-2xl w-full max-w-2xl mx-4 animate-slideIn max-h-[90vh] overflow-hidden flex flex-col">
                         <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-primary)]">
                             <h3 className="text-white font-medium">
-                                Chỉnh sửa: <span className="text-[var(--accent-primary)]">{textModalCell.column}</span>
+                                {t('table.edit.editColumn')}: <span className="text-[var(--accent-primary)]">{textModalCell.column}</span>
                             </h3>
                             <button
                                 onClick={closeTextModal}
@@ -1482,13 +1479,13 @@ export default function TablePage() {
                                     if (e.key === 'Escape') closeTextModal();
                                     if (e.key === 'Enter' && e.ctrlKey) saveTextModal();
                                 }}
-                                placeholder={isColumnNullable(textModalCell.column) ? 'NULL (để trống)' : 'Nhập giá trị...'}
+                                placeholder={isColumnNullable(textModalCell.column) ? t('common.null') + ' (' + t('table.edit.cancel') + ')' : t('table.newRow.placeholder')}
                                 className="w-full h-48 bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-[var(--accent-primary)] resize-y font-mono"
                                 autoFocus
                             />
 
                             <p className="text-xs text-[var(--text-muted)] mt-2">
-                                Nhấn <kbd className="px-1 py-0.5 rounded bg-[var(--background-tertiary)] text-[var(--text-secondary)]">Ctrl+Enter</kbd> để lưu, <kbd className="px-1 py-0.5 rounded bg-[var(--background-tertiary)] text-[var(--text-secondary)]">Esc</kbd> để hủy
+                                {t('table.edit.pressToSaveCombined')}
                             </p>
                         </div>
 
@@ -1500,27 +1497,27 @@ export default function TablePage() {
                                         saveTextModal();
                                     }}
                                     className="btn btn-secondary text-sm py-1.5 px-2 sm:px-3"
-                                    title="Set NULL"
+                                    title={t('table.edit.setNull')}
                                 >
-                                    <span className="hidden sm:inline">Set NULL</span>
-                                    <span className="sm:hidden">NULL</span>
+                                    <span className="hidden sm:inline">{t('table.edit.setNull')}</span>
+                                    <span className="sm:hidden">{t('common.null')}</span>
                                 </button>
                             )}
                             <button
                                 onClick={closeTextModal}
                                 className="btn btn-secondary text-sm py-1.5 px-2 sm:px-3"
-                                title="Cancel (Esc)"
+                                title={t('table.actions.cancel') + ' (Esc)'}
                             >
                                 <X className="w-4 h-4 sm:hidden" />
-                                <span className="hidden sm:inline">Cancel</span>
+                                <span className="hidden sm:inline">{t('table.actions.cancel')}</span>
                             </button>
                             <button
                                 onClick={saveTextModal}
                                 className="btn btn-primary text-sm py-1.5 px-2 sm:px-3"
-                                title="Save (Ctrl+Enter)"
+                                title={t('table.actions.save') + ' (Ctrl+Enter)'}
                             >
                                 <Check className="w-4 h-4 sm:hidden" />
-                                <span className="hidden sm:inline">Save</span>
+                                <span className="hidden sm:inline">{t('table.actions.save')}</span>
                             </button>
                         </div>
                     </div>
@@ -1538,7 +1535,7 @@ export default function TablePage() {
                     <div className="bg-[var(--background-secondary)] border border-[var(--border-primary)] rounded-lg shadow-2xl w-full max-w-md mx-4 animate-slideIn max-h-[90vh] overflow-hidden flex flex-col">
                         <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-primary)]">
                             <h3 className="text-white font-medium">
-                                Chỉnh sửa: <span className="text-[var(--accent-primary)]">{dateModalCell.column}</span>
+                                {t('table.edit.editColumn')}: <span className="text-[var(--accent-primary)]">{dateModalCell.column}</span>
                             </h3>
                             <button
                                 onClick={closeDateModal}
@@ -1571,27 +1568,27 @@ export default function TablePage() {
                                 <button
                                     onClick={() => saveDateModal(null)}
                                     className="btn btn-secondary text-sm py-1.5 px-2 sm:px-3"
-                                    title="Set NULL"
+                                    title={t('table.edit.setNull')}
                                 >
-                                    <span className="hidden sm:inline">Set NULL</span>
-                                    <span className="sm:hidden">NULL</span>
+                                    <span className="hidden sm:inline">{t('table.edit.setNull')}</span>
+                                    <span className="sm:hidden">{t('common.null')}</span>
                                 </button>
                             )}
                             <button
                                 onClick={closeDateModal}
                                 className="btn btn-secondary text-sm py-1.5 px-2 sm:px-3"
-                                title="Cancel (Esc)"
+                                title={t('table.actions.cancel') + ' (Esc)'}
                             >
                                 <X className="w-4 h-4 sm:hidden" />
-                                <span className="hidden sm:inline">Cancel</span>
+                                <span className="hidden sm:inline">{t('table.actions.cancel')}</span>
                             </button>
                             <button
                                 onClick={() => saveDateModal()}
                                 className="btn btn-primary text-sm py-1.5 px-2 sm:px-3"
-                                title="Save (Enter)"
+                                title={t('table.actions.save') + ' (Enter)'}
                             >
                                 <Check className="w-4 h-4 sm:hidden" />
-                                <span className="hidden sm:inline">Save</span>
+                                <span className="hidden sm:inline">{t('table.actions.save')}</span>
                             </button>
                         </div>
                     </div>
@@ -1609,7 +1606,7 @@ export default function TablePage() {
                     <div className="bg-[var(--background-secondary)] border border-[var(--border-primary)] rounded-lg shadow-2xl w-full max-w-md mx-4 animate-slideIn max-h-[90vh] overflow-hidden flex flex-col">
                         <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-primary)]">
                             <h3 className="text-white font-medium">
-                                Chỉnh sửa: <span className="text-[var(--accent-primary)]">{numberModalCell.column}</span>
+                                {t('table.edit.editColumn')}: <span className="text-[var(--accent-primary)]">{numberModalCell.column}</span>
                             </h3>
                             <button
                                 onClick={closeNumberModal}
@@ -1628,7 +1625,7 @@ export default function TablePage() {
                                     if (e.key === 'Escape') closeNumberModal();
                                     if (e.key === 'Enter') saveNumberModal();
                                 }}
-                                placeholder="Nhập số..."
+                                placeholder={t('table.newRow.placeholder')}
                                 className="w-full bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded-lg px-3 py-3 text-white text-base outline-none focus:border-[var(--accent-primary)]"
                                 autoFocus
                             />
@@ -1643,27 +1640,27 @@ export default function TablePage() {
                                 <button
                                     onClick={() => saveNumberModal(null)}
                                     className="btn btn-secondary text-sm py-1.5 px-2 sm:px-3"
-                                    title="Set NULL"
+                                    title={t('table.edit.setNull')}
                                 >
-                                    <span className="hidden sm:inline">Set NULL</span>
-                                    <span className="sm:hidden">NULL</span>
+                                    <span className="hidden sm:inline">{t('table.edit.setNull')}</span>
+                                    <span className="sm:hidden">{t('common.null')}</span>
                                 </button>
                             )}
                             <button
                                 onClick={closeNumberModal}
                                 className="btn btn-secondary text-sm py-1.5 px-2 sm:px-3"
-                                title="Cancel (Esc)"
+                                title={t('table.actions.cancel') + ' (Esc)'}
                             >
                                 <X className="w-4 h-4 sm:hidden" />
-                                <span className="hidden sm:inline">Cancel</span>
+                                <span className="hidden sm:inline">{t('table.actions.cancel')}</span>
                             </button>
                             <button
                                 onClick={() => saveNumberModal()}
                                 className="btn btn-primary text-sm py-1.5 px-2 sm:px-3"
-                                title="Save (Enter)"
+                                title={t('table.actions.save') + ' (Enter)'}
                             >
                                 <Check className="w-4 h-4 sm:hidden" />
-                                <span className="hidden sm:inline">Save</span>
+                                <span className="hidden sm:inline">{t('table.actions.save')}</span>
                             </button>
                         </div>
                     </div>
@@ -1728,13 +1725,13 @@ export default function TablePage() {
                                 className="btn btn-secondary text-sm py-1.5"
                             >
                                 <Copy className="w-4 h-4" />
-                                Copy lỗi
+                                {t('table.edit.editColumn')}
                             </button>
                             <button
                                 onClick={() => setErrorModalOpen(false)}
                                 className="btn btn-primary text-sm py-1.5"
                             >
-                                Đóng
+                                {t('common.close')}
                             </button>
                         </div>
                     </div>

@@ -139,20 +139,20 @@ export default function DashboardPage() {
                             onClick={refreshStatistics}
                             disabled={isLoadingStats}
                             className="btn btn-secondary"
-                            title="Refresh statistics"
+                            title={t('dashboard.stats.refresh')}
                         >
                             <RefreshCw className={`w-4 h-4 ${isLoadingStats ? 'animate-spin' : ''}`} />
-                            <span className="hidden sm:inline">Refresh Stats</span>
+                            <span className="hidden sm:inline">{t('dashboard.stats.refresh')}</span>
                         </button>
                     )}
                     <button
                         onClick={refreshTables}
                         disabled={isLoading}
                         className="btn btn-secondary"
-                        title="Refresh tables"
+                        title={t('dashboard.tables.refresh')}
                     >
                         <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-                        <span className="hidden sm:inline">Refresh Tables</span>
+                        <span className="hidden sm:inline">{t('dashboard.tables.refresh')}</span>
                     </button>
                 </div>
             </div>

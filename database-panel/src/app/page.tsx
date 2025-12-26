@@ -3,8 +3,10 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Database, Lock, Mail, AlertCircle, Loader2 } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function LoginPage() {
+  const { t } = useLanguage();
   const { login, verify2FA, isLoading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -67,7 +69,7 @@ export default function LoginPage() {
             <Database className="w-10 h-10 text-[var(--accent-primary)]" />
           </div>
           <h1 className="text-3xl font-bold text-white glow-text">GEN-HUB</h1>
-          <p className="text-[var(--text-secondary)] mt-2">Database Panel</p>
+          <p className="text-[var(--text-secondary)] mt-2">{t('sidebar.title')}</p>
         </div>
 
         {/* Login Card */}
@@ -127,7 +129,7 @@ export default function LoginPage() {
             ) : (
               <div className="space-y-4 animate-in fade-in slide-in-from-left-4 duration-300">
                 <div>
-                  <label className="block text-sm text-[var(--text-secondary)] mb-2">Email</label>
+                  <label className="block text-sm text-[var(--text-secondary)] mb-2">{t('dashboard.email')}</label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[var(--text-muted)]" />
                     <input

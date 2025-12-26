@@ -90,6 +90,7 @@ const AVAILABLE_COLORS = [
 
 // Custom Table Node Component - Memoized for performance
 const TableNodeComponent = ({ data }: { data: { label: string; fields: TableField[]; color: string; onColorChange: (color: string) => void } }) => {
+    const { t } = useLanguage();
     const [showColorPicker, setShowColorPicker] = useState(false);
 
     return (
@@ -125,7 +126,7 @@ const TableNodeComponent = ({ data }: { data: { label: string; fields: TableFiel
                         setShowColorPicker(!showColorPicker);
                     }}
                     className="p-1 rounded hover:bg-white/20 transition-colors nodrag nopan cursor-pointer export-hide"
-                    title="Change color"
+                    title={t('diagram.changeColor')}
                 >
                     <Palette className="w-3.5 h-3.5" />
                 </button>
@@ -164,21 +165,21 @@ const TableNodeComponent = ({ data }: { data: { label: string; fields: TableFiel
                     >
                         <div className="flex items-center gap-1.5 min-w-0">
                             {field.isId && (
-                                <span title="Primary Key"><Key className="w-3 h-3 text-yellow-500 flex-shrink-0" /></span>
+                                <span title={t('diagram.legend.primaryKey')}><Key className="w-3 h-3 text-yellow-500 flex-shrink-0" /></span>
                             )}
                             {field.name.endsWith('_id') && !field.isId && (
-                                <span title="Foreign Key"><LinkIcon className="w-3 h-3 text-blue-400 flex-shrink-0" /></span>
+                                <span title={t('diagram.legend.foreignKey')}><LinkIcon className="w-3 h-3 text-blue-400 flex-shrink-0" /></span>
                             )}
                             <span className={`truncate ${field.isRequired ? 'text-[var(--text-primary)] font-medium' : 'text-[var(--text-secondary)]'}`}>
                                 {field.name}
                             </span>
                             {field.isRequired && !field.isId && (
-                                <span className="text-[8px] px-1 py-0.5 rounded bg-red-500/20 text-red-400 font-mono flex-shrink-0" title="NOT NULL">
+                                <span className="text-[8px] px-1 py-0.5 rounded bg-red-500/20 text-red-400 font-mono flex-shrink-0" title={t('diagram.legend.notNull')}>
                                     NN
                                 </span>
                             )}
                             {field.isUnique && !field.isId && (
-                                <span className="text-[8px] px-1 py-0.5 rounded bg-purple-500/20 text-purple-400 font-mono flex-shrink-0" title="UNIQUE">
+                                <span className="text-[8px] px-1 py-0.5 rounded bg-purple-500/20 text-purple-400 font-mono flex-shrink-0" title={t('diagram.legend.unique')}>
                                     UQ
                                 </span>
                             )}
@@ -614,13 +615,13 @@ export default function DiagramPage() {
                     </button>
 
                     {/* Export PNG */}
-                    <button onClick={handleExportPNG} className="btn btn-secondary p-2 sm:p-2.5" title="Export PNG">
+                    <button onClick={handleExportPNG} className="btn btn-secondary p-2 sm:p-2.5" title={t('diagram.exportPng')}>
                         <FileImage className="w-4 h-4" />
                         <span className="hidden lg:inline ml-1">{t('diagram.exportPng')}</span>
                     </button>
 
                     {/* Export PDF */}
-                    <button onClick={handleExportPDF} className="btn btn-secondary p-2 sm:p-2.5" title="Export PDF">
+                    <button onClick={handleExportPDF} className="btn btn-secondary p-2 sm:p-2.5" title={t('diagram.exportPdf')}>
                         <FileText className="w-4 h-4" />
                         <span className="hidden lg:inline ml-1">{t('diagram.exportPdf')}</span>
                     </button>

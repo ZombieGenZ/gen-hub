@@ -7,8 +7,10 @@
             "totalRecords": "Total Records",
             "totalColumns": "Total Columns",
             "avgRecords": "Avg Records/Table",
-            "loadStats": "Load Statistics"
+            "loadStats": "Load Statistics",
+            "refresh": "Refresh Statistics"
         },
+        "email": "Email",
         "quickAccess": {
             "title": "Quick Access - Tables",
             "tables": "tables",
@@ -19,6 +21,9 @@
         "auditNote": {
             "title": "Note about Audit Logging",
             "description": "All Create, Update, Delete operations on this panel are logged to"
+        },
+        "tables": {
+            "refresh": "Refresh Tables"
         }
     },
     "table": {
@@ -52,6 +57,8 @@
             "cancel": "Cancel",
             "pressToSave": "Press to save",
             "pressToCancel": "to cancel",
+            "pressToSaveCombined": "Press Ctrl+Enter to save, Esc to cancel",
+            "pressEnterToSaveCombined": "Press Enter to save, Esc to cancel",
             "selectDate": "Select date"
         },
         "pagination": {
@@ -86,12 +93,13 @@
     "sidebar": {
         "title": "Database Panel",
         "dashboard": "Dashboard",
-        "erDiagram": "ER Diagram",
+        "erDiagram": "Diagram",
         "tables": "Tables",
-        "logout": "Logout"
+        "logout": "Logout",
+        "admin": "Database Panel"
     },
     "diagram": {
-        "title": "ER Diagram",
+        "title": "Diagram",
         "tables": "tables",
         "relations": "relations",
         "loading": "Loading diagram...",
@@ -100,6 +108,7 @@
         "refresh": "Refresh",
         "exportPng": "PNG",
         "exportPdf": "PDF",
+        "changeColor": "Change color",
         "save": "Save",
         "saving": "Saving...",
         "saved": "Saved!",

@@ -106,7 +106,7 @@ export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
                         <Database className="w-8 h-8 text-[var(--accent-primary)]" />
                         <div>
                             <h1 className="text-lg font-bold text-white glow-text">GEN-HUB</h1>
-                            <p className="text-xs text-[var(--text-muted)]">Database Admin</p>
+                            <p className="text-xs text-[var(--text-muted)]">{t('sidebar.admin')}</p>
                         </div>
                     </div>
                     {/* Close button for mobile */}
@@ -132,7 +132,7 @@ export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
                         <span className="font-medium">{t('sidebar.dashboard')}</span>
                     </Link>
 
-                    {/* ER Diagram Link */}
+                    {/* Diagram Link */}
                     <Link
                         href="/dashboard/diagram"
                         onClick={handleLinkClick}
@@ -152,7 +152,7 @@ export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
                             type="text"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Search tables..."
+                            placeholder={t('table.filter.enterValue') + '...'}
                             className="w-full pl-9 pr-3 py-2 bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded-lg text-sm text-white placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-primary)] transition-colors"
                         />
                     </div>
@@ -166,7 +166,7 @@ export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
                             onClick={fetchTables}
                             disabled={isLoading}
                             className="p-1 text-[var(--text-muted)] hover:text-[var(--accent-primary)] hover:bg-[var(--background-tertiary)] rounded transition-all"
-                            title="Refresh tables"
+                            title={t('dashboard.tables.refresh')}
                         >
                             <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
                         </button>
@@ -194,7 +194,7 @@ export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
                             ))}
                             {filteredTables.length === 0 && (
                                 <p className="px-4 py-2 text-sm text-[var(--text-muted)]">
-                                    No tables found
+                                    {t('table.noData')}
                                 </p>
                             )}
                         </div>
