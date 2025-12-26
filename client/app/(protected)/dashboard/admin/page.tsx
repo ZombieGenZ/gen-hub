@@ -95,7 +95,7 @@ export default function DashboardPage() {
                                     <Package className="w-5 h-5 text-primary" />
                                     Kho gần đây
                                 </h2>
-                                <Link href="/dashboard/warehouse_template" className="text-sm font-medium text-primary hover:underline flex items-center gap-1">
+                                <Link href="/dashboard/admin/warehouses" className="text-sm font-medium text-primary hover:underline flex items-center gap-1">
                                     Xem tất cả <ArrowRight className="w-4 h-4" />
                                 </Link>
                             </div>

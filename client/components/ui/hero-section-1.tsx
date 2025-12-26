@@ -79,14 +79,14 @@ const HeroHeader = () => {
         const checkAuth = () => {
             setIsLoggedIn(authStorage.isAuthenticated())
         }
-        
+
         checkAuth()
-        
+
         // Optional: Listen for auth state changes if needed
         const handleStorageChange = () => {
             checkAuth()
         }
-        
+
         window.addEventListener('storage', handleStorageChange)
         return () => window.removeEventListener('storage', handleStorageChange)
         const handleScroll = () => {
@@ -147,42 +147,42 @@ const HeroHeader = () => {
                                     ))}
                                 </ul>
                             </div>
-                            {isLoggedIn ? 
-                            <Button
-                                asChild
-                                size="sm"
-                                className={cn(isScrolled && 'lg:hidden')}>
-                                <Link href="/user/profile">
-                                    <span>Profile</span>
-                                </Link>
-                            </Button> : 
-                            <div className="flex w-full flex-col space-y-3 sm:flex-row sm:gap-3 sm:space-y-0 md:w-fit">
-                                <Button
-                                    asChild
-                                    variant="outline"
-                                    size="sm"
-                                    className={cn(isScrolled && 'lg:hidden')}>
-                                    <Link href="/login">
-                                        <span>Login</span>
-                                    </Link>
-                                </Button>
+                            {isLoggedIn ?
                                 <Button
                                     asChild
                                     size="sm"
                                     className={cn(isScrolled && 'lg:hidden')}>
-                                    <Link href="/register">
-                                        <span>Sign Up</span>
+                                    <Link href="/(protected)/dashboard/customer/profile">
+                                        <span>Profile</span>
                                     </Link>
-                                </Button>
-                                <Button
-                                    asChild
-                                    size="sm"
-                                    className={cn(isScrolled ? 'lg:inline-flex' : 'hidden')}>
-                                    <Link href="#">
-                                        <span>Get Started</span>
-                                    </Link>
-                                </Button>
-                            </div> }
+                                </Button> :
+                                <div className="flex w-full flex-col space-y-3 sm:flex-row sm:gap-3 sm:space-y-0 md:w-fit">
+                                    <Button
+                                        asChild
+                                        variant="outline"
+                                        size="sm"
+                                        className={cn(isScrolled && 'lg:hidden')}>
+                                        <Link href="/login">
+                                            <span>Login</span>
+                                        </Link>
+                                    </Button>
+                                    <Button
+                                        asChild
+                                        size="sm"
+                                        className={cn(isScrolled && 'lg:hidden')}>
+                                        <Link href="/register">
+                                            <span>Sign Up</span>
+                                        </Link>
+                                    </Button>
+                                    <Button
+                                        asChild
+                                        size="sm"
+                                        className={cn(isScrolled ? 'lg:inline-flex' : 'hidden')}>
+                                        <Link href="#">
+                                            <span>Get Started</span>
+                                        </Link>
+                                    </Button>
+                                </div>}
                         </div>
                     </div>
                 </div>

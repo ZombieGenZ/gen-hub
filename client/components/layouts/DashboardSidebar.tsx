@@ -75,26 +75,27 @@ export function DashboardSidebarNav() {
 
             {/* Navigation Links */}
             <nav className="flex-1 px-4 space-y-6 overflow-y-auto py-4">
+                {/* ADMIN MENU */}
                 <div>
-                    <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 px-2">Quản lý</div>
+                    <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 px-2">Quản trị</div>
                     <div className="space-y-1">
                         <NavItem
-                            href="/dashboard"
+                            href="/dashboard/admin"
                             icon={LayoutDashboard}
                             label="Tổng quan"
-                            isActive={pathname === '/dashboard'}
+                            isActive={pathname === '/dashboard/admin'}
                         />
                         <NavItem
-                            href="/dashboard/warehouse_template"
+                            href="/dashboard/admin/warehouses"
                             icon={Warehouse}
-                            label="Kho"
-                            isActive={isActive('/dashboard/warehouse_template')}
+                            label="Kho bãi"
+                            isActive={isActive('/dashboard/admin/warehouses')}
                         />
                         <NavItem
-                            href="/dashboard/Contracts"
+                            href="/dashboard/admin/contracts"
                             icon={FileText}
                             label="Hợp đồng"
-                            isActive={isActive('/dashboard/Contracts')}
+                            isActive={isActive('/dashboard/admin/contracts')}
                         />
                     </div>
                 </div>
@@ -103,22 +104,22 @@ export function DashboardSidebarNav() {
                     <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 px-2">Đối tác & Nhân sự</div>
                     <div className="space-y-1">
                         <NavItem
-                            href="/dashboard/customers"
+                            href="/dashboard/admin/customers"
                             icon={Users}
                             label="Khách hàng"
-                            isActive={isActive('/dashboard/customers')}
+                            isActive={isActive('/dashboard/admin/customers')}
                         />
                         <NavItem
-                            href="/dashboard/organization"
+                            href="/dashboard/admin/organization"
                             icon={Building2}
                             label="Đối tác"
-                            isActive={isActive('/dashboard/organization')}
+                            isActive={isActive('/dashboard/admin/organization')}
                         />
                         <NavItem
-                            href="/dashboard/staff"
+                            href="/dashboard/admin/users"
                             icon={UserCog}
                             label="Nhân viên"
-                            isActive={isActive('/dashboard/staff')}
+                            isActive={isActive('/dashboard/admin/users')}
                         />
                     </div>
                 </div>
@@ -127,16 +128,16 @@ export function DashboardSidebarNav() {
                     <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 px-2">Hệ thống</div>
                     <div className="space-y-1">
                         <NavItem
-                            href="/dashboard/revenue"
+                            href="/dashboard/admin/revenue"
                             icon={BarChart4}
                             label="Doanh thu"
-                            isActive={isActive('/dashboard/revenue')}
+                            isActive={isActive('/dashboard/admin/revenue')}
                         />
                         <NavItem
-                            href="/dashboard/settings"
+                            href="/dashboard/admin/settings"
                             icon={Settings}
                             label="Cài đặt"
-                            isActive={isActive('/dashboard/settings')}
+                            isActive={isActive('/dashboard/admin/settings')}
                         />
                     </div>
                 </div>

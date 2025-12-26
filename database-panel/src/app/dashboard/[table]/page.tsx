@@ -1006,7 +1006,7 @@ export default function TablePage() {
                 </div>
             </div>
 
-            {/* Filter Panel - Supabase Style */}
+            {/* Filter Panel - */}
             {showFilterPanel && (
                 <div className="mb-4 bg-[var(--background-secondary)] border border-[var(--border-primary)] rounded-lg animate-fadeIn overflow-hidden">
                     {/* Filter Rows */}
