@@ -5,8 +5,8 @@ import Cookies from 'js-cookie';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
 // Token storage keys
-const ACCESS_TOKEN_KEY = 'admin_access_token';
-const REFRESH_TOKEN_KEY = 'admin_refresh_token';
+const ACCESS_TOKEN_KEY = 'access_token';
+const REFRESH_TOKEN_KEY = 'refresh_token';
 
 // Create axios instance
 const api: AxiosInstance = axios.create({
@@ -31,13 +31,46 @@ api.interceptors.request.use(
     (error) => Promise.reject(error)
 );
 
+// Variables to handle token refresh logic
+let isRefreshing = false;
+let failedQueue: { resolve: (token: string | null) => void; reject: (error: unknown) => void }[] = [];
+
+const processQueue = (error: unknown, token: string | null = null) => {
+    failedQueue.forEach((prom) => {
+        if (error) {
+            prom.reject(error);
+        } else {
+            prom.resolve(token);
+        }
+    });
+
+    failedQueue = [];
+};
+
 // Response interceptor - Handle errors
 api.interceptors.response.use(
     (response) => response,
     async (error: AxiosError) => {
         const originalRequest = error.config as (typeof error.config) & { _retry?: boolean };
-        if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
+
+        // If 401 error and it's not a retry and not the refresh token call itself
+        if (error.response?.status === 401 && originalRequest && !originalRequest._retry && !originalRequest.url?.includes('/auth/refresh')) {
+
+            if (isRefreshing) {
+                // If already refreshing, add to queue
+                return new Promise(function (resolve, reject) {
+                    failedQueue.push({ resolve, reject });
+                }).then(token => {
+                    originalRequest.headers.Authorization = `Bearer ${token}`;
+                    return api(originalRequest);
+                }).catch(err => {
+                    return Promise.reject(err);
+                });
+            }
+
             originalRequest._retry = true;
+            isRefreshing = true;
+
             try {
                 const refreshToken = Cookies.get(REFRESH_TOKEN_KEY);
                 if (refreshToken) {
@@ -49,20 +82,35 @@ api.interceptors.response.use(
                             secure: process.env.NODE_ENV === 'production',
                             sameSite: 'strict',
                         });
+
                         // Retry original request with new token
+                        api.defaults.headers.common['Authorization'] = `Bearer ${authorization.access_token}`;
                         originalRequest.headers.Authorization = `Bearer ${authorization.access_token}`;
+
+                        processQueue(null, authorization.access_token);
                         return api(originalRequest);
                     }
                 }
-            } catch {
+
+                // If no refresh token or invalid refresh response, reject
+                processQueue(new Error('Refresh token missing or invalid'), null);
+                return Promise.reject(error);
+
+            } catch (refreshError) {
+                processQueue(refreshError, null);
+
                 // If refresh fails, clear tokens and redirect
                 if (typeof window !== 'undefined') {
                     Cookies.remove(ACCESS_TOKEN_KEY);
                     Cookies.remove(REFRESH_TOKEN_KEY);
                     window.location.href = '/';
                 }
+                return Promise.reject(refreshError);
+            } finally {
+                isRefreshing = false;
             }
         }
+
         return Promise.reject(error);
     }
 );
