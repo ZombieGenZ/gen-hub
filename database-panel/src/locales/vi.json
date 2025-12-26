@@ -86,7 +86,32 @@
     "sidebar": {
         "title": "Database Panel",
         "dashboard": "Bảng điều khiển",
+        "erDiagram": "Sơ đồ ER",
         "tables": "Các bảng",
         "logout": "Đăng xuất"
+    },
+    "diagram": {
+        "title": "Sơ đồ ER",
+        "tables": "bảng",
+        "relations": "quan hệ",
+        "loading": "Đang tải sơ đồ...",
+        "hideLines": "Ẩn đường nối",
+        "showLines": "Hiện đường nối",
+        "refresh": "Làm mới",
+        "exportPng": "PNG",
+        "exportPdf": "PDF",
+        "save": "Lưu",
+        "saving": "Đang lưu...",
+        "saved": "Đã lưu!",
+        "legend": {
+            "title": "Chú thích",
+            "primaryKey": "Khóa chính (PK)",
+            "foreignKey": "Khóa ngoại (FK)",
+            "notNull": "NOT NULL",
+            "unique": "UNIQUE",
+            "relations": "Quan hệ (1:1, 1:N, N:N)"
+        },
+        "hideLegend": "Ẩn chú thích",
+        "showLegend": "Hiện chú thích"
     }
 }

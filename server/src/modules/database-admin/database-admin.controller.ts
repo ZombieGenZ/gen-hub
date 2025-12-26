@@ -182,6 +182,49 @@ export class DatabaseAdminController {
     }
 
     /**
+     * Lấy schema cho ER Diagram
+     * Bao gồm thông tin tables, fields và relations
+     */
+    @Get('diagram/schema')
+    @ApiOperation({ summary: 'Get database schema for ER diagram visualization' })
+    async getDiagramSchema() {
+        return this.databaseAdminService.getDiagramSchema();
+    }
+
+    /**
+     * Lấy cấu hình diagram đã lưu của user
+     */
+    @Get('diagram/config')
+    @ApiOperation({ summary: 'Get saved diagram configuration' })
+    @ApiQuery({ name: 'name', required: false, type: String, description: 'Config name, default is "default"' })
+    async getDiagramConfig(
+        @Req() req: Request,
+        @Query('name') name?: string,
+    ) {
+        const user = req.user as any;
+        return this.databaseAdminService.getDiagramConfig(user.userId, name);
+    }
+
+    /**
+     * Lưu cấu hình diagram của user
+     */
+    @Put('diagram/config')
+    @ApiOperation({ summary: 'Save diagram configuration' })
+    async saveDiagramConfig(
+        @Req() req: Request,
+        @Body() config: {
+            name?: string;
+            node_positions?: Record<string, { x: number; y: number }>;
+            table_colors?: Record<string, string>;
+            show_relations?: boolean;
+            dark_mode?: boolean;
+        },
+    ) {
+        const user = req.user as any;
+        return this.databaseAdminService.saveDiagramConfig(user.userId, config);
+    }
+
+    /**
      * Extract context từ request
      */
     private extractContext(req: Request) {

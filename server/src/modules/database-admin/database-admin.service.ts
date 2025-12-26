@@ -679,4 +679,185 @@ export class DatabaseAdminService implements OnModuleInit {
             .replace(/^./, (str) => str.toUpperCase())
             .trim();
     }
+
+    /**
+     * Lấy thông tin schema cho ER Diagram
+     * Bao gồm danh sách tables, fields và relations
+     */
+    async getDiagramSchema() {
+        try {
+            const dmmf = Prisma.dmmf;
+            const models = dmmf.datamodel.models;
+
+            // Get visible table names (not in PROTECTED_TABLES)
+            const visibleTableNames = new Set(
+                models
+                    .map((model) => model.name.charAt(0).toLowerCase() + model.name.slice(1))
+                    .filter((name) => !PROTECTED_TABLES.includes(name)),
+            );
+
+            // Map để lưu thông tin tables
+            const tables = models
+                .filter((model) => !PROTECTED_TABLES.includes(model.name.charAt(0).toLowerCase() + model.name.slice(1)))
+                .map((model) => {
+                    const tableName = model.name.charAt(0).toLowerCase() + model.name.slice(1);
+
+                    // Lấy danh sách fields (không bao gồm relations)
+                    const fields = model.fields
+                        .filter((field) => !field.relationName)
+                        .map((field) => ({
+                            name: field.name,
+                            type: field.type,
+                            isId: field.isId,
+                            isRequired: field.isRequired,
+                            isUnique: field.isUnique,
+                            isList: field.isList,
+                            hasDefaultValue: field.hasDefaultValue,
+                        }));
+
+                    return {
+                        name: tableName,
+                        displayName: this.formatTableName(tableName),
+                        fields,
+                    };
+                });
+
+            // Lấy danh sách relations - dựa trên fields kết thúc bằng _id
+            const relations: {
+                id: string;
+                sourceTable: string;
+                sourceField: string;
+                targetTable: string;
+                targetField: string;
+                type: 'one-to-one' | 'one-to-many' | 'many-to-many';
+            }[] = [];
+
+            // Build a map of table names to check existence
+            const tableNameMap = new Map<string, boolean>();
+            visibleTableNames.forEach((name) => tableNameMap.set(name, true));
+
+            tables.forEach((table) => {
+                table.fields.forEach((field) => {
+                    // Check if field ends with _id and is not the primary id
+                    if (field.name.endsWith('_id') && !field.isId) {
+                        // Extract target table name from field name (e.g., user_id -> user, warehouse_template_id -> warehouseTemplate)
+                        const fieldNameWithoutId = field.name.slice(0, -3); // Remove _id
+
+                        // Convert snake_case to camelCase for matching
+                        const targetTableCamel = fieldNameWithoutId.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+
+                        // Check if target table exists in visible tables
+                        if (tableNameMap.has(targetTableCamel)) {
+                            // Determine relation type
+                            const relationType: 'one-to-one' | 'one-to-many' | 'many-to-many' = field.isUnique
+                                ? 'one-to-one'
+                                : 'one-to-many';
+
+                            relations.push({
+                                id: `${table.name}_${field.name}_${targetTableCamel}_id`,
+                                sourceTable: table.name,
+                                sourceField: field.name,
+                                targetTable: targetTableCamel,
+                                targetField: 'id',
+                                type: relationType,
+                            });
+                        }
+                    }
+                });
+            });
+
+            this.logger.log(`Diagram schema: ${tables.length} tables, ${relations.length} relations`);
+
+            return {
+                tables,
+                relations,
+            };
+        } catch (error) {
+            this.logger.error('Failed to get diagram schema', error);
+            return {
+                tables: [],
+                relations: [],
+            };
+        }
+    }
+
+    /**
+     * Lấy cấu hình diagram đã lưu của user
+     */
+    async getDiagramConfig(userId: string, name: string = 'default') {
+        const config = await this.prisma.diagramConfig.findUnique({
+            where: {
+                user_id_name: {
+                    user_id: userId,
+                    name,
+                },
+            },
+        });
+
+        if (!config) {
+            return {
+                node_positions: {},
+                table_colors: {},
+                show_relations: true,
+                dark_mode: true,
+            };
+        }
+
+        return {
+            node_positions: config.node_positions || {},
+            table_colors: config.table_colors || {},
+            show_relations: config.show_relations,
+            dark_mode: config.dark_mode,
+        };
+    }
+
+    /**
+     * Lưu cấu hình diagram của user
+     */
+    async saveDiagramConfig(
+        userId: string,
+        config: {
+            name?: string;
+            node_positions?: Record<string, { x: number; y: number }>;
+            table_colors?: Record<string, string>;
+            show_relations?: boolean;
+            dark_mode?: boolean;
+        },
+    ) {
+        const name = config.name || 'default';
+
+        const result = await this.prisma.diagramConfig.upsert({
+            where: {
+                user_id_name: {
+                    user_id: userId,
+                    name,
+                },
+            },
+            update: {
+                node_positions: config.node_positions,
+                table_colors: config.table_colors,
+                show_relations: config.show_relations,
+                dark_mode: config.dark_mode,
+                updated_at: new Date(),
+            },
+            create: {
+                user_id: userId,
+                name,
+                node_positions: config.node_positions,
+                table_colors: config.table_colors,
+                show_relations: config.show_relations ?? true,
+                dark_mode: config.dark_mode ?? true,
+            },
+        });
+
+        return {
+            success: true,
+            config: {
+                node_positions: result.node_positions || {},
+                table_colors: result.table_colors || {},
+                show_relations: result.show_relations,
+                dark_mode: result.dark_mode,
+            },
+        };
+    }
 }

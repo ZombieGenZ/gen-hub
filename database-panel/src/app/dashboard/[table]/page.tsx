@@ -130,6 +130,11 @@ export default function TablePage() {
     const [dateModalValue, setDateModalValue] = useState('');
     const [dateModalCell, setDateModalCell] = useState<{ id: string; column: string; isNewRow: boolean } | null>(null);
 
+    // Number modal state
+    const [numberModalOpen, setNumberModalOpen] = useState(false);
+    const [numberModalValue, setNumberModalValue] = useState('');
+    const [numberModalCell, setNumberModalCell] = useState<{ id: string; column: string; isNewRow: boolean } | null>(null);
+
     // New row state
     const [newRows, setNewRows] = useState<RecordData[]>([]);
 
@@ -162,6 +167,11 @@ export default function TablePage() {
     const isColumnNumber = useCallback((columnName: string): boolean => {
         const field = getFieldInfo(columnName);
         return field?.type === 'Int' || field?.type === 'Float' || field?.type === 'Decimal';
+    }, [getFieldInfo]);
+
+    const isColumnJson = useCallback((columnName: string): boolean => {
+        const field = getFieldInfo(columnName);
+        return field?.type === 'Json';
     }, [getFieldInfo]);
 
     // fetchSchema is called inline in useEffect, keeping for potential future use
@@ -582,7 +592,20 @@ export default function TablePage() {
 
     const openTextModal = (record: RecordData, column: string, isNewRow: boolean) => {
         const value = record[column];
-        setTextModalValue(value === null || value === undefined ? '' : String(value));
+        let displayValue = '';
+        if (value === null || value === undefined) {
+            displayValue = '';
+        } else if (typeof value === 'object') {
+            // JSON objects - stringify with formatting
+            try {
+                displayValue = JSON.stringify(value, null, 2);
+            } catch {
+                displayValue = String(value);
+            }
+        } else {
+            displayValue = String(value);
+        }
+        setTextModalValue(displayValue);
         setTextModalCell({ id: record.id, column, isNewRow });
         setTextModalOpen(true);
     };
@@ -598,8 +621,21 @@ export default function TablePage() {
 
         const { id, column, isNewRow } = textModalCell;
 
+        let parsedValue: CellValue = textModalValue;
+        if (parsedValue === '') {
+            parsedValue = isColumnNullable(column) ? null : '';
+        } else if (isColumnJson(column)) {
+            // Validate and parse JSON
+            try {
+                parsedValue = JSON.parse(textModalValue);
+            } catch {
+                toast.error('JSON không hợp lệ. Vui lòng kiểm tra lại cú pháp.');
+                return;
+            }
+        }
+
         if (isNewRow) {
-            updateNewRow(id, column, textModalValue || null);
+            updateNewRow(id, column, parsedValue);
         } else {
             // Find the record and save the change
             const record = records.find((r) => r.id === id);
@@ -609,14 +645,10 @@ export default function TablePage() {
                 const originalRecord = existingChange?.originalData || record;
                 const originalValue = originalRecord[column];
 
-                let parsedValue: CellValue = textModalValue;
-                if (parsedValue === '') {
-                    parsedValue = isColumnNullable(column) ? null : '';
-                }
-
                 // Check if value actually changed from original
-                const isUnchanged = parsedValue === originalValue ||
-                    (parsedValue === null && originalValue === null);
+                const isUnchanged = (parsedValue === null && originalValue === null) ||
+                    (isColumnJson(column) && JSON.stringify(parsedValue) === JSON.stringify(originalValue)) ||
+                    (!isColumnJson(column) && parsedValue === originalValue);
 
                 if (!isUnchanged) {
                     // Update local record to show new value
@@ -733,6 +765,83 @@ export default function TablePage() {
         closeDateModal();
     };
 
+    const openNumberModal = (record: RecordData, column: string, isNewRow: boolean) => {
+        const value = record[column];
+        if (value !== null && value !== undefined && value !== '') {
+            setNumberModalValue(String(value));
+        } else {
+            setNumberModalValue('');
+        }
+        setNumberModalCell({ id: record.id, column, isNewRow });
+        setNumberModalOpen(true);
+    };
+
+    const closeNumberModal = () => {
+        setNumberModalOpen(false);
+        setNumberModalValue('');
+        setNumberModalCell(null);
+    };
+
+    const saveNumberModal = (valueOverride?: string | null) => {
+        if (!numberModalCell) return;
+
+        const { id, column, isNewRow } = numberModalCell;
+        const value = valueOverride !== undefined ? valueOverride : numberModalValue;
+
+        let parsedValue: CellValue = value;
+        if (value === '' || value === null) {
+            parsedValue = isColumnNullable(column) ? null : '';
+        } else {
+            parsedValue = Number(value);
+        }
+
+        if (isNewRow) {
+            updateNewRow(id, column, parsedValue);
+        } else {
+            // Find the record and save the change
+            const record = records.find((r) => r.id === id);
+            if (record) {
+                const existingChange = pendingChanges.get(id);
+                const originalRecord = existingChange?.originalData || record;
+                const originalValue = originalRecord[column];
+
+                // Check if value actually changed from original
+                const isUnchanged = (parsedValue === null && originalValue === null) ||
+                    (parsedValue === originalValue);
+
+                if (!isUnchanged) {
+                    // Update local record to show new value
+                    const updatedRecords = records.map((r) => {
+                        if (r.id === id) {
+                            return { ...r, [column]: parsedValue };
+                        }
+                        return r;
+                    });
+                    setRecords(updatedRecords);
+
+                    // Track pending change with modified columns
+                    if (existingChange && existingChange.newData) {
+                        existingChange.newData = { ...existingChange.newData, [column]: parsedValue } as RecordData;
+                        existingChange.modifiedColumns = existingChange.modifiedColumns || new Set();
+                        existingChange.modifiedColumns.add(column);
+                        setPendingChanges(new Map(pendingChanges));
+                    } else {
+                        const newChange: PendingChange = {
+                            type: 'update',
+                            id,
+                            originalData: originalRecord,
+                            newData: { ...record, [column]: parsedValue },
+                            modifiedColumns: new Set([column]),
+                        };
+                        setPendingChanges(new Map(pendingChanges.set(id, newChange)));
+                    }
+                }
+            }
+        }
+
+        closeNumberModal();
+    };
+
     const renderEditInput = (record: RecordData, column: string, isNewRow = false) => {
         const currentValue = isNewRow ? record[column] : editValue;
         const isNull = currentValue === '__NULL__' || currentValue === null;
@@ -828,8 +937,25 @@ export default function TablePage() {
             );
         }
 
-        // Number column
+        // Number column - for new rows and existing rows, show button to open modal
         if (isColumnNumber(column)) {
+            if (isNewRow) {
+                return (
+                    <div className="flex items-center gap-1">
+                        <span className="text-sm text-[var(--text-muted)] flex-1">
+                            {currentValue !== null && currentValue !== undefined && currentValue !== '' ? currentValue : '— Nhập số —'}
+                        </span>
+                        <button
+                            onClick={() => openNumberModal(record, column, true)}
+                            className="text-[var(--text-muted)] hover:text-[var(--accent-primary)] p-1 rounded hover:bg-[var(--background-tertiary)]"
+                            title="Nhập số"
+                        >
+                            #
+                        </button>
+                    </div>
+                );
+            }
+            // This case shouldn't happen anymore since number opens modal
             return (
                 <div className="flex items-center gap-1">
                     <input
@@ -837,16 +963,14 @@ export default function TablePage() {
                         value={isNull ? '' : currentValue}
                         onChange={(e) => handleChange(e.target.value)}
                         onKeyDown={(e) => {
-                            if (!isNewRow) {
-                                if (e.key === 'Enter') saveEdit();
-                                if (e.key === 'Escape') cancelEdit();
-                            }
+                            if (e.key === 'Enter') saveEdit();
+                            if (e.key === 'Escape') cancelEdit();
                         }}
                         placeholder={nullable ? 'NULL' : ''}
                         className="w-full bg-[var(--background-tertiary)] border border-[var(--accent-primary)] rounded px-2 py-0.5 text-sm outline-none"
-                        autoFocus={!isNewRow}
+                        autoFocus
                     />
-                    {nullable && !isNewRow && (
+                    {nullable && (
                         <button
                             onClick={() => saveEdit(null)}
                             className="text-xs text-[var(--text-muted)] hover:text-white px-1"
@@ -855,16 +979,14 @@ export default function TablePage() {
                             NULL
                         </button>
                     )}
-                    {!isNewRow && (
-                        <>
-                            <button onClick={() => saveEdit()} className="text-green-500 hover:bg-green-500/20 p-1 rounded">
-                                <Check className="w-3 h-3" />
-                            </button>
-                            <button onClick={cancelEdit} className="text-[var(--status-error)] hover:bg-red-500/20 p-1 rounded">
-                                <X className="w-3 h-3" />
-                            </button>
-                        </>
-                    )}
+                    <>
+                        <button onClick={() => saveEdit()} className="text-green-500 hover:bg-green-500/20 p-1 rounded">
+                            <Check className="w-3 h-3" />
+                        </button>
+                        <button onClick={cancelEdit} className="text-[var(--status-error)] hover:bg-red-500/20 p-1 rounded">
+                            <X className="w-3 h-3" />
+                        </button>
+                    </>
                 </div>
             );
         }
@@ -1184,8 +1306,14 @@ export default function TablePage() {
                                                         return;
                                                     }
 
-                                                    // Boolean and Number - inline edit
-                                                    if (isColumnBoolean(col) || isColumnNumber(col)) {
+                                                    // Number columns - open number modal
+                                                    if (isColumnNumber(col)) {
+                                                        openNumberModal(record, col, false);
+                                                        return;
+                                                    }
+
+                                                    // Boolean - inline edit
+                                                    if (isColumnBoolean(col)) {
                                                         startEdit(record, col);
                                                         return;
                                                     }
@@ -1198,21 +1326,16 @@ export default function TablePage() {
                                                 {editingCell?.id === record.id && editingCell?.column === col ? (
                                                     renderEditInput(record, col, false)
                                                 ) : col === 'id' ? (
-                                                    <div className="flex items-center gap-1 group">
-                                                        <span className="font-mono text-xs">
-                                                            {formatValue(record[col], col)}
-                                                        </span>
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                navigator.clipboard.writeText(record[col]);
-                                                                toast.success('Đã copy ID');
-                                                            }}
-                                                            className="opacity-0 group-hover:opacity-100 text-[var(--text-muted)] hover:text-[var(--accent-primary)] p-0.5 rounded hover:bg-[var(--background-tertiary)] transition-opacity"
-                                                            title="Copy ID"
-                                                        >
-                                                            <Copy className="w-3 h-3" />
-                                                        </button>
+                                                    <div
+                                                        className="font-mono text-xs cursor-pointer hover:text-[var(--accent-primary)] transition-colors"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            navigator.clipboard.writeText(record[col]);
+                                                            toast.success('Đã copy ID');
+                                                        }}
+                                                        title="Click để copy ID"
+                                                    >
+                                                        {formatValue(record[col], col)}
                                                     </div>
                                                 ) : (
                                                     <span>
@@ -1298,7 +1421,7 @@ export default function TablePage() {
                         if (e.target === e.currentTarget) closeTextModal();
                     }}
                 >
-                    <div className="bg-[var(--background-secondary)] border border-[var(--border-primary)] rounded-lg shadow-2xl w-full max-w-2xl mx-4 animate-slideIn">
+                    <div className="bg-[var(--background-secondary)] border border-[var(--border-primary)] rounded-lg shadow-2xl w-full max-w-2xl mx-4 animate-slideIn max-h-[90vh] overflow-hidden flex flex-col">
                         <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-primary)]">
                             <h3 className="text-white font-medium">
                                 Chỉnh sửa: <span className="text-[var(--accent-primary)]">{textModalCell.column}</span>
@@ -1311,7 +1434,7 @@ export default function TablePage() {
                             </button>
                         </div>
 
-                        <div className="p-4">
+                        <div className="p-4 flex-1 overflow-y-auto min-h-0">
                             <textarea
                                 value={textModalValue}
                                 onChange={(e) => setTextModalValue(e.target.value)}
@@ -1336,22 +1459,28 @@ export default function TablePage() {
                                         setTextModalValue('');
                                         saveTextModal();
                                     }}
-                                    className="btn btn-secondary text-sm py-1.5"
+                                    className="btn btn-secondary text-sm py-1.5 px-2 sm:px-3"
+                                    title="Set NULL"
                                 >
-                                    Set NULL
+                                    <span className="hidden sm:inline">Set NULL</span>
+                                    <span className="sm:hidden">NULL</span>
                                 </button>
                             )}
                             <button
                                 onClick={closeTextModal}
-                                className="btn btn-secondary text-sm py-1.5"
+                                className="btn btn-secondary text-sm py-1.5 px-2 sm:px-3"
+                                title="Cancel (Esc)"
                             >
-                                Cancel <span className="text-[var(--text-muted)] ml-1">Esc</span>
+                                <X className="w-4 h-4 sm:hidden" />
+                                <span className="hidden sm:inline">Cancel</span>
                             </button>
                             <button
                                 onClick={saveTextModal}
-                                className="btn btn-primary text-sm py-1.5"
+                                className="btn btn-primary text-sm py-1.5 px-2 sm:px-3"
+                                title="Save (Ctrl+Enter)"
                             >
-                                Save <span className="opacity-70 ml-1">Ctrl+Enter</span>
+                                <Check className="w-4 h-4 sm:hidden" />
+                                <span className="hidden sm:inline">Save</span>
                             </button>
                         </div>
                     </div>
@@ -1366,7 +1495,7 @@ export default function TablePage() {
                         if (e.target === e.currentTarget) closeDateModal();
                     }}
                 >
-                    <div className="bg-[var(--background-secondary)] border border-[var(--border-primary)] rounded-lg shadow-2xl w-full max-w-md mx-4 animate-slideIn">
+                    <div className="bg-[var(--background-secondary)] border border-[var(--border-primary)] rounded-lg shadow-2xl w-full max-w-md mx-4 animate-slideIn max-h-[90vh] overflow-hidden flex flex-col">
                         <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-primary)]">
                             <h3 className="text-white font-medium">
                                 Chỉnh sửa: <span className="text-[var(--accent-primary)]">{dateModalCell.column}</span>
@@ -1401,22 +1530,100 @@ export default function TablePage() {
                             {isColumnNullable(dateModalCell.column) && (
                                 <button
                                     onClick={() => saveDateModal(null)}
-                                    className="btn btn-secondary text-sm py-1.5"
+                                    className="btn btn-secondary text-sm py-1.5 px-2 sm:px-3"
+                                    title="Set NULL"
                                 >
-                                    Set NULL
+                                    <span className="hidden sm:inline">Set NULL</span>
+                                    <span className="sm:hidden">NULL</span>
                                 </button>
                             )}
                             <button
                                 onClick={closeDateModal}
-                                className="btn btn-secondary text-sm py-1.5"
+                                className="btn btn-secondary text-sm py-1.5 px-2 sm:px-3"
+                                title="Cancel (Esc)"
                             >
-                                Cancel <span className="text-[var(--text-muted)] ml-1">Esc</span>
+                                <X className="w-4 h-4 sm:hidden" />
+                                <span className="hidden sm:inline">Cancel</span>
                             </button>
                             <button
                                 onClick={() => saveDateModal()}
-                                className="btn btn-primary text-sm py-1.5"
+                                className="btn btn-primary text-sm py-1.5 px-2 sm:px-3"
+                                title="Save (Enter)"
                             >
-                                Save <span className="opacity-70 ml-1">Enter</span>
+                                <Check className="w-4 h-4 sm:hidden" />
+                                <span className="hidden sm:inline">Save</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Number Edit Modal */}
+            {numberModalOpen && numberModalCell && (
+                <div
+                    className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 animate-fadeIn"
+                    onClick={(e) => {
+                        if (e.target === e.currentTarget) closeNumberModal();
+                    }}
+                >
+                    <div className="bg-[var(--background-secondary)] border border-[var(--border-primary)] rounded-lg shadow-2xl w-full max-w-md mx-4 animate-slideIn max-h-[90vh] overflow-hidden flex flex-col">
+                        <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-primary)]">
+                            <h3 className="text-white font-medium">
+                                Chỉnh sửa: <span className="text-[var(--accent-primary)]">{numberModalCell.column}</span>
+                            </h3>
+                            <button
+                                onClick={closeNumberModal}
+                                className="text-[var(--text-muted)] hover:text-white p-1 rounded hover:bg-[var(--background-tertiary)]"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+
+                        <div className="p-4">
+                            <input
+                                type="number"
+                                value={numberModalValue}
+                                onChange={(e) => setNumberModalValue(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Escape') closeNumberModal();
+                                    if (e.key === 'Enter') saveNumberModal();
+                                }}
+                                placeholder="Nhập số..."
+                                className="w-full bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded-lg px-3 py-3 text-white text-base outline-none focus:border-[var(--accent-primary)]"
+                                autoFocus
+                            />
+
+                            <p className="text-xs text-[var(--text-muted)] mt-2">
+                                Nhấn <kbd className="px-1 py-0.5 rounded bg-[var(--background-tertiary)] text-[var(--text-secondary)]">Enter</kbd> để lưu, <kbd className="px-1 py-0.5 rounded bg-[var(--background-tertiary)] text-[var(--text-secondary)]">Esc</kbd> để hủy
+                            </p>
+                        </div>
+
+                        <div className="flex items-center justify-end gap-2 px-4 py-3 border-t border-[var(--border-primary)]">
+                            {isColumnNullable(numberModalCell.column) && (
+                                <button
+                                    onClick={() => saveNumberModal(null)}
+                                    className="btn btn-secondary text-sm py-1.5 px-2 sm:px-3"
+                                    title="Set NULL"
+                                >
+                                    <span className="hidden sm:inline">Set NULL</span>
+                                    <span className="sm:hidden">NULL</span>
+                                </button>
+                            )}
+                            <button
+                                onClick={closeNumberModal}
+                                className="btn btn-secondary text-sm py-1.5 px-2 sm:px-3"
+                                title="Cancel (Esc)"
+                            >
+                                <X className="w-4 h-4 sm:hidden" />
+                                <span className="hidden sm:inline">Cancel</span>
+                            </button>
+                            <button
+                                onClick={() => saveNumberModal()}
+                                className="btn btn-primary text-sm py-1.5 px-2 sm:px-3"
+                                title="Save (Enter)"
+                            >
+                                <Check className="w-4 h-4 sm:hidden" />
+                                <span className="hidden sm:inline">Save</span>
                             </button>
                         </div>
                     </div>

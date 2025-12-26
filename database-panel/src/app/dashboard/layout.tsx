@@ -44,8 +44,8 @@ export default function DashboardLayout({
                 onClose={() => setSidebarOpen(false)}
             />
 
-            {/* Main Content - pt-16 on mobile for header height (h-14 + extra space) */}
-            <main className="lg:ml-64 min-h-screen p-4 pt-16 lg:pt-8 lg:p-8">
+            {/* Main Content - pt-20 on mobile for header height (h-14 + extra space) */}
+            <main className="lg:ml-64 min-h-screen p-4 pt-20 lg:pt-8 lg:p-8">
                 {children}
             </main>
         </div>

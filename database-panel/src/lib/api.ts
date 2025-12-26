@@ -230,6 +230,29 @@ export const adminApi = {
         const { data } = await api.delete(`/admin/tables/${tableName}/bulk`, { data: { ids } });
         return data;
     },
+
+    // Diagram API
+    getDiagramSchema: async () => {
+        const { data } = await api.get('/admin/diagram/schema');
+        return data;
+    },
+
+    getDiagramConfig: async (name?: string) => {
+        const params = name ? `?name=${name}` : '';
+        const { data } = await api.get(`/admin/diagram/config${params}`);
+        return data;
+    },
+
+    saveDiagramConfig: async (config: {
+        name?: string;
+        node_positions?: Record<string, { x: number; y: number }>;
+        table_colors?: Record<string, string>;
+        show_relations?: boolean;
+        dark_mode?: boolean;
+    }) => {
+        const { data } = await api.put('/admin/diagram/config', config);
+        return data;
+    },
 };
 
 export default api;

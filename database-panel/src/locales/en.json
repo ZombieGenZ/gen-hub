@@ -86,7 +86,32 @@
     "sidebar": {
         "title": "Database Panel",
         "dashboard": "Dashboard",
+        "erDiagram": "ER Diagram",
         "tables": "Tables",
         "logout": "Logout"
+    },
+    "diagram": {
+        "title": "ER Diagram",
+        "tables": "tables",
+        "relations": "relations",
+        "loading": "Loading diagram...",
+        "hideLines": "Hide Lines",
+        "showLines": "Show Lines",
+        "refresh": "Refresh",
+        "exportPng": "PNG",
+        "exportPdf": "PDF",
+        "save": "Save",
+        "saving": "Saving...",
+        "saved": "Saved!",
+        "legend": {
+            "title": "Legend",
+            "primaryKey": "Primary Key (PK)",
+            "foreignKey": "Foreign Key (FK)",
+            "notNull": "NOT NULL",
+            "unique": "UNIQUE",
+            "relations": "Relations (1:1, 1:N, N:N)"
+        },
+        "hideLegend": "Hide Legend",
+        "showLegend": "Show Legend"
     }
 }

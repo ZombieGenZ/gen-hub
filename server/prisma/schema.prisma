@@ -2838,3 +2838,27 @@ model CouponScheduleTargetAddon {
   @@index([addon_id])
   @@map("coupon_schedule_target_addons")
 }
+
+// Database Diagram Configuration
+model DiagramConfig {
+  id      String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  user_id String @db.Uuid
+  name    String @default("default")
+
+  // Node positions (JSON: { tableName: { x, y } })
+  node_positions Json?
+
+  // Color config (JSON: { tableName: "#color" })
+  table_colors Json?
+
+  // Diagram settings
+  show_relations Boolean @default(true)
+  dark_mode      Boolean @default(true)
+
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+
+  @@unique([user_id, name])
+  @@index([user_id])
+  @@map("diagram_configs")
+}
