@@ -14,10 +14,10 @@ import {
     MarkerType,
     Panel,
     Handle,
+    NodeChange,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import {
-    Download,
     Palette,
     Save,
     Loader2,
@@ -26,7 +26,6 @@ import {
     RefreshCw,
     FileImage,
     FileText,
-    X,
     Key,
     Link as LinkIcon,
     Info,
@@ -424,9 +423,9 @@ export default function DiagramPage() {
 
     // Track node position changes
     const handleNodesChange = useCallback(
-        (changes: any) => {
+        (changes: NodeChange<TableNode>[]) => {
             onNodesChange(changes);
-            const hasPositionChange = changes.some((change: any) => change.type === 'position' && change.dragging === false);
+            const hasPositionChange = changes.some((change) => change.type === 'position' && (change as { dragging?: boolean }).dragging === false);
             if (hasPositionChange) {
                 setHasChanges(true);
             }
@@ -474,7 +473,7 @@ export default function DiagramPage() {
             // Calculate bounding box of all nodes
             let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
             nodes.forEach((node) => {
-                const nodeHeight = calculateNodeHeight((node.data as any).fields?.length || 5);
+                const nodeHeight = calculateNodeHeight(node.data.fields?.length || 5);
                 minX = Math.min(minX, node.position.x);
                 minY = Math.min(minY, node.position.y);
                 maxX = Math.max(maxX, node.position.x + 280); // nodeWidth
@@ -524,7 +523,7 @@ export default function DiagramPage() {
             // Calculate bounding box of all nodes
             let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
             nodes.forEach((node) => {
-                const nodeHeight = calculateNodeHeight((node.data as any).fields?.length || 5);
+                const nodeHeight = calculateNodeHeight(node.data.fields?.length || 5);
                 minX = Math.min(minX, node.position.x);
                 minY = Math.min(minY, node.position.y);
                 maxX = Math.max(maxX, node.position.x + 280);
@@ -664,7 +663,7 @@ export default function DiagramPage() {
                         className="!bg-[var(--background-secondary)] !border-[var(--border-primary)] !shadow-xl [&_button]:!bg-[var(--background-tertiary)] [&_button]:!border-[var(--border-primary)] [&_button_svg]:!fill-[var(--text-primary)] [&_button:hover]:!bg-[var(--accent-primary)]"
                     />
                     <MiniMap
-                        nodeColor={(node) => (node.data as any)?.color || 'var(--accent-primary)'}
+                        nodeColor={(node) => (node.data as TableNodeData)?.color || 'var(--accent-primary)'}
                         maskColor="rgba(0, 0, 0, 0.8)"
                         style={{
                             backgroundColor: 'var(--background-secondary)',
