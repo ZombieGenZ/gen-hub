@@ -47,6 +47,7 @@ interface SchemaField {
     isId: boolean;
     hasDefaultValue: boolean;
     isRelation: boolean;
+    enumValues?: string[];
 }
 
 interface TableSchema {
@@ -172,6 +173,11 @@ export default function TablePage() {
     const isColumnJson = useCallback((columnName: string): boolean => {
         const field = getFieldInfo(columnName);
         return field?.type === 'Json';
+    }, [getFieldInfo]);
+
+    const isColumnEnum = useCallback((columnName: string): boolean => {
+        const field = getFieldInfo(columnName);
+        return !!field?.enumValues && field.enumValues.length > 0;
     }, [getFieldInfo]);
 
     // fetchSchema is called inline in useEffect, keeping for potential future use
@@ -880,6 +886,40 @@ export default function TablePage() {
                     {nullable && <option value="__NULL__">NULL</option>}
                     <option value="true">TRUE</option>
                     <option value="false">FALSE</option>
+                </select>
+            );
+        }
+
+        // Enum column
+        if (isColumnEnum(column)) {
+            const field = getFieldInfo(column);
+            const enumOptions = field?.enumValues || [];
+
+            return (
+                <select
+                    value={isNull ? '__NULL__' : String(currentValue)}
+                    onChange={(e) => {
+                        const val = e.target.value;
+                        if (isNewRow) {
+                            updateNewRow(record.id, column, val === '__NULL__' ? null : val);
+                        } else {
+                            saveEdit(val === '__NULL__' ? null : val);
+                        }
+                    }}
+                    onBlur={() => {
+                        if (!isNewRow) {
+                            cancelEdit();
+                        }
+                    }}
+                    className="w-full bg-[var(--background-tertiary)] border border-[var(--accent-primary)] rounded px-2 py-0.5 text-sm outline-none"
+                    autoFocus={!isNewRow}
+                >
+                    {nullable && <option value="__NULL__">NULL</option>}
+                    {enumOptions.map((opt) => (
+                        <option key={opt} value={opt}>
+                            {opt}
+                        </option>
+                    ))}
                 </select>
             );
         }

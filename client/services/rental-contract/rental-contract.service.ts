@@ -1,7 +1,7 @@
 const API = process.env.NEXT_PUBLIC_API_URL
 
 export class RentalContractService {
-    
+
     // Danh sách hợp đồng
     async getRentalContracts(token: string, params: {
         keywords?: string;
@@ -58,7 +58,7 @@ export class RentalContractService {
                 const errorData = await response.json().catch(() => ({}));
                 throw new Error(errorData.message || 'Two-factor authentication failed');
             }
-            
+
             return response.json();
         } catch (error) {
             console.error('Get rental contract detail error:', error)
@@ -66,3 +66,5 @@ export class RentalContractService {
         }
     }
 }
+
+export const rentalContractService = new RentalContractService();
