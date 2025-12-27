@@ -19,6 +19,9 @@ export enum ResponseCode {
     AUTH_FORGOT_PASSWORD_SENT = 'auth.forgot_password_sent',
     AUTH_VERIFY_FORGOT_PASSWORD_TOKEN_SUCCESS = 'auth.verify_forgot_password_token_success',
     AUTH_RESET_PASSWORD_SUCCESS = 'auth.reset_password_success',
+    AUTH_LOGIN_DATABASE_PANEL_SUCCESS = 'auth.login_database_panel_success',
+    AUTH_LOGIN_FEATURE_FLAG_PANEL_SUCCESS = 'auth.login_feature_flag_panel_success',
+    AUTH_LOGIN_RESOURCES_PANEL_SUCCESS = 'auth.login_resources_panel_success',
 
     ACCOUNT_GET_PROFILE_SUCCESS = 'account.get_profile_success',
     ACCOUNT_UPDATE_PROFILE_SUCCESS = 'account.update_profile_success',

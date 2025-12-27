@@ -1,0 +1,74 @@
+{
+    "sidebar": {
+        "title": "Resources",
+        "subtitle": "Giám sát hệ thống",
+        "dashboard": "Dashboard",
+        "logout": "Đăng xuất"
+    },
+    "login": {
+        "title": "Đăng nhập",
+        "email": "Email",
+        "password": "Mật khẩu",
+        "submit": "Đăng nhập",
+        "loggingIn": "Đang đăng nhập...",
+        "verify2FA": "Xác thực hai yếu tố",
+        "enterCode": "Nhập mã từ ứng dụng xác thực",
+        "enterBackupCode": "Nhập mã dự phòng",
+        "authenticatorCode": "Mã xác thực",
+        "backupCode": "Mã dự phòng",
+        "useAuthenticator": "Dùng ứng dụng xác thực",
+        "useBackupCode": "Dùng mã dự phòng",
+        "verify": "Xác thực",
+        "verifying": "Đang xác thực...",
+        "error": "Vui lòng điền đầy đủ thông tin",
+        "footer": "© {year} GEN-HUB. Đã đăng ký bản quyền.",
+        "warningTitle": "Khu vực giám sát tài nguyên",
+        "warningMessage": "Chỉ những người dùng được cấp quyền resources.admin mới có thể đăng nhập vào panel này.",
+        "errors": {
+            "missing2FA": "Vui lòng nhập mã xác thực",
+            "permissionDenied": "Bạn không có quyền truy cập tài nguyên này",
+            "invalidCredentials": "Email hoặc mật khẩu không đúng",
+            "generic": "Đã xảy ra lỗi. Vui lòng thử lại."
+        }
+    },
+    "dashboard": {
+        "title": "Resources Dashboard",
+        "subtitle": "Giám sát hệ thống realtime cho tất cả services",
+        "refresh": "Làm mới",
+        "connected": "Đã kết nối",
+        "disconnected": "Mất kết nối",
+        "overview": {
+            "title": "Tổng quan hệ thống",
+            "totalServices": "Tổng Services",
+            "online": "Hoạt động",
+            "offline": "Ngừng hoạt động",
+            "avgCpu": "CPU TB",
+            "avgMemory": "RAM TB",
+            "avgDisk": "Disk TB"
+        },
+        "services": {
+            "title": "Trạng thái Services",
+            "status": "Trạng thái",
+            "cpu": "CPU",
+            "memory": "Bộ nhớ",
+            "disk": "Ổ đĩa",
+            "network": "Mạng",
+            "uptime": "Uptime",
+            "responseTime": "Response",
+            "online": "Hoạt động",
+            "offline": "Ngừng"
+        },
+        "metrics": {
+            "usage": "Sử dụng",
+            "used": "Đã dùng",
+            "total": "Tổng",
+            "in": "Vào",
+            "out": "Ra"
+        }
+    },
+    "common": {
+        "loading": "Đang tải...",
+        "error": "Lỗi",
+        "cancel": "Hủy"
+    }
+}

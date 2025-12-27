@@ -118,7 +118,7 @@ api.interceptors.response.use(
 // Auth functions
 export const auth = {
     login: async (email: string, password: string) => {
-        const { data } = await api.post('/auth/login', { email, password });
+        const { data } = await api.post('/auth/login/database-panel', { email, password });
         if (data.authorization) {
             // Store tokens in cookies
             // Access token expires in 15 minutes (or match server config)

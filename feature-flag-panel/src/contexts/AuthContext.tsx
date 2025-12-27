@@ -44,24 +44,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
             const data = await auth.getProfile();
             if (data.success && data.data?.user) {
-                // Check permissions for featureflag.admin
-                const rawPermissions = data.data.permissions || [];
-                const hasAdminPermission = rawPermissions.some((p: string | { key: string }) =>
-                    (typeof p === 'string' ? p : p.key) === 'featureflag.admin'
-                );
-
-                if (!hasAdminPermission) {
-                    await auth.logout();
-                    setUser(null);
-                    throw new Error('PERMISSION_DENIED');
-                }
+                // Backend đã kiểm tra permission khi login, không cần kiểm tra lại
                 setUser(data.data.user);
             }
         } catch (error) {
             console.error('Failed to fetch profile:', error);
-            if ((error as Error).message === 'PERMISSION_DENIED') {
-                throw error;
-            }
         }
     };
 

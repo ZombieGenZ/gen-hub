@@ -3,6 +3,7 @@ import {
   BadRequestException,
   UnauthorizedException,
   ConflictException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
@@ -277,6 +278,238 @@ export class AuthService {
       ...tokens,
     };
   }
+
+  /**
+   * Đăng nhập cho Database Panel - yêu cầu quyền database.admin
+   */
+  async loginDatabasePanel(dto: LoginDto, deviceInfo?: IDeviceInfo, lang = 'vi') {
+    const result = await this.loginWithPermissionCheck(
+      dto,
+      deviceInfo,
+      'database.admin',
+      'auth.panel_login.database_permission_denied',
+      'auth.panel_login.database_success',
+      lang,
+    );
+    return result;
+  }
+
+  /**
+   * Đăng nhập cho Feature Flag Panel - yêu cầu quyền featureflag.admin
+   */
+  async loginFeatureFlagPanel(dto: LoginDto, deviceInfo?: IDeviceInfo, lang = 'vi') {
+    const result = await this.loginWithPermissionCheck(
+      dto,
+      deviceInfo,
+      'featureflag.admin',
+      'auth.panel_login.feature_flag_permission_denied',
+      'auth.panel_login.feature_flag_success',
+      lang,
+    );
+    return result;
+  }
+
+  /**
+   * Đăng nhập cho Resources Panel - yêu cầu quyền resources.admin
+   */
+  async loginResourcesPanel(dto: LoginDto, deviceInfo?: IDeviceInfo, lang = 'vi') {
+    const result = await this.loginWithPermissionCheck(
+      dto,
+      deviceInfo,
+      'resources.admin',
+      'auth.panel_login.resources_permission_denied',
+      'auth.panel_login.resources_success',
+      lang,
+    );
+    return result;
+  }
+
+  /**
+   * Login với kiểm tra permission - Helper method
+   */
+  private async loginWithPermissionCheck(
+    dto: LoginDto,
+    deviceInfo: IDeviceInfo | undefined,
+    requiredPermission: string,
+    permissionDeniedKey: string,
+    successMessageKey: string,
+    lang: string,
+  ) {
+    const user = await this.userRepository.findByEmail(dto.email);
+
+    if (!user || !user.password) {
+      this.systemLogService.warn(
+        'auth',
+        'panel_login_failed',
+        `Panel login failed: user not found - ${dto.email}`,
+        {
+          ipAddress: deviceInfo?.ip,
+          userAgent: deviceInfo?.device,
+          metaData: { email: dto.email, reason: 'user_not_found' },
+        },
+      );
+      throw new UnauthorizedException(
+        await this.i18n.t('auth.login.invalid_credentials', { lang }),
+      );
+    }
+
+    let isPasswordValid = false;
+    try {
+      isPasswordValid = await argon2.verify(user.password, dto.password);
+    } catch {
+      throw new UnauthorizedException(
+        await this.i18n.t('auth.login.invalid_credentials', { lang }),
+      );
+    }
+    if (!isPasswordValid) {
+      throw new UnauthorizedException(
+        await this.i18n.t('auth.login.invalid_credentials', { lang }),
+      );
+    }
+
+    if (user.is_banned) {
+      if (!user.banned_end || new Date(user.banned_end) > new Date()) {
+        throw new UnauthorizedException(
+          await this.i18n.t('auth.login.account_banned', { lang }),
+        );
+      }
+    }
+
+    // Kiểm tra permission TRƯỚC khi tạo token
+    const hasPermission = await this.checkUserPermission(user.id, requiredPermission);
+    if (!hasPermission) {
+      this.systemLogService.warn(
+        'auth',
+        'panel_login_permission_denied',
+        `Panel login denied: missing ${requiredPermission} - ${user.email}`,
+        {
+          userId: user.id,
+          ipAddress: deviceInfo?.ip,
+          userAgent: deviceInfo?.device,
+          metaData: { email: user.email, requiredPermission },
+        },
+      );
+      throw new ForbiddenException(
+        await this.i18n.t(permissionDeniedKey, { lang }),
+      );
+    }
+
+    if (user.two_factor_enabled) {
+      const tempToken = await this.generateTempToken(user.id);
+      return {
+        message: await this.i18n.t('auth.login.two_factor_required', { lang }),
+        requires_2fa: true,
+        temp_token: tempToken,
+      };
+    }
+
+    const tokens = await this.generateTokens(user.id, deviceInfo);
+
+    if (user.email) {
+      this.emailService
+        .sendLoginNotificationEmail(
+          user.email,
+          user.name,
+          { device: deviceInfo?.device, ip: deviceInfo?.ip },
+          user.language,
+        )
+        .catch((error) => {
+          this.systemLogService.error(
+            'auth',
+            'send_email_failed',
+            `Failed to send login notification email: ${user.email}`,
+            {
+              userId: user.id,
+              metaData: { error: error.message },
+            },
+          );
+        });
+    }
+
+    this.systemLogService.info(
+      'auth',
+      'panel_login',
+      `User logged in to panel: ${user.email}`,
+      {
+        userId: user.id,
+        ipAddress: deviceInfo?.ip,
+        userAgent: deviceInfo?.device,
+        metaData: { email: user.email, permission: requiredPermission },
+      },
+    );
+
+    return {
+      message: await this.i18n.t(successMessageKey, { lang }),
+      user: this.sanitizeUser(user),
+      ...tokens,
+    };
+  }
+
+  /**
+   * Kiểm tra user có permission cụ thể không
+   */
+  private async checkUserPermission(userId: string, permissionKey: string): Promise<boolean> {
+    // Check direct permissions
+    const directPermission = await this.redisService.getUserPermissionsCache(userId);
+    if (directPermission !== null && directPermission.includes(permissionKey)) {
+      return true;
+    }
+
+    // If not in cache, need to query (this logic mirrors PermissionGuard)
+    const userWithPermissions = await this.userRepository.findById(userId);
+    if (!userWithPermissions) return false;
+
+    // Get permissions from database via raw query (simpler approach)
+    const { PrismaClient } = await import('@prisma/client');
+    const prisma = new PrismaClient();
+
+    try {
+      // Check direct user permissions
+      const directPerms = await prisma.userPermission.findFirst({
+        where: {
+          user_id: userId,
+          is_active: true,
+          is_deleted: false,
+          permission: {
+            key: permissionKey,
+            is_active: true,
+            is_deleted: false,
+          },
+        },
+      });
+
+      if (directPerms) return true;
+
+      // Check role-based permissions
+      const rolePerms = await prisma.userRole.findFirst({
+        where: {
+          user_id: userId,
+          is_active: true,
+          is_deleted: false,
+          role: {
+            is_active: true,
+            is_deleted: false,
+            permissions: {
+              some: {
+                is_active: true,
+                is_deleted: false,
+                permission: {
+                  key: permissionKey,
+                  is_active: true,
+                  is_deleted: false,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      return !!rolePerms;
+    } finally {
+      await prisma.$disconnect();
+    }
+  }
+
 
   /**
    * Xác thực email

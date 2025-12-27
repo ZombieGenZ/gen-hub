@@ -42,6 +42,7 @@ import { CouponModule } from './modules/coupon/coupon.module';
 import { CouponScheduleModule } from './modules/coupon-schedule/coupon-schedule.module';
 import { DatabaseAdminModule } from './modules/database-admin/database-admin.module';
 import { FeatureFlagModule } from './modules/feature-flag/feature-flag.module';
+import { ResourcesModule } from './modules/resources/resources.module';
 import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
 
 @Module({
@@ -138,6 +139,9 @@ import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
 
     // Feature Flag Management
     FeatureFlagModule,
+
+    // Resources Management
+    ResourcesModule,
   ],
   controllers: [AppController],
   providers: [

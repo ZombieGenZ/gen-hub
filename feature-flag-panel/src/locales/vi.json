@@ -76,6 +76,8 @@
         "enterBackupCode": "Nhập mã dự phòng của bạn để tiếp tục.",
         "footer": "© {year} GEN-HUB. Đã đăng ký bản quyền.",
         "error": "Vui lòng nhập đầy đủ thông tin",
+        "warningTitle": "Khu vực quản trị Feature Flags",
+        "warningMessage": "Chỉ những người dùng được cấp quyền featureflag.admin mới có thể đăng nhập vào panel này.",
         "errors": {
             "missing2FA": "Vui lòng nhập mã xác thực",
             "permissionDenied": "Bạn không có quyền truy cập Feature Flag Panel",

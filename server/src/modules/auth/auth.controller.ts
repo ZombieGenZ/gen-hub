@@ -125,6 +125,126 @@ export class AuthController {
     });
   }
 
+  @ApiOperation({ summary: 'Đăng nhập Database Panel - yêu cầu quyền database.admin' })
+  @ApiResponse({
+    status: 200,
+    description: 'Đăng nhập thành công hoặc yêu cầu 2FA',
+  })
+  @ApiResponse({ status: 401, description: 'Thông tin đăng nhập không hợp lệ' })
+  @ApiResponse({ status: 403, description: 'Không có quyền truy cập Database Panel' })
+  @Public()
+  @Post('login/database-panel')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  async loginDatabasePanel(
+    @Body() dto: LoginDto,
+    @Req() req: Request,
+    @Headers('accept-language') lang?: string,
+  ) {
+    const deviceInfo = getDeviceInfo(req);
+    const result = await this.authService.loginDatabasePanel(dto, deviceInfo, lang || 'vi');
+
+    if ('requires_2fa' in result && result.requires_2fa) {
+      return new OkResponse(
+        ResponseCode.AUTH_LOGIN_2FA_REQUIRED,
+        { requires_2fa: true, temp_token: result.temp_token },
+        result.message,
+      );
+    }
+
+    const successResult = result as {
+      message: string;
+      user: object;
+      access_token: string;
+      refresh_token: string;
+    };
+
+    return new OkResponse(ResponseCode.AUTH_LOGIN_DATABASE_PANEL_SUCCESS, successResult.user, successResult.message, {
+      access_token: successResult.access_token,
+      refresh_token: successResult.refresh_token,
+    });
+  }
+
+  @ApiOperation({ summary: 'Đăng nhập Feature Flag Panel - yêu cầu quyền featureflag.admin' })
+  @ApiResponse({
+    status: 200,
+    description: 'Đăng nhập thành công hoặc yêu cầu 2FA',
+  })
+  @ApiResponse({ status: 401, description: 'Thông tin đăng nhập không hợp lệ' })
+  @ApiResponse({ status: 403, description: 'Không có quyền truy cập Feature Flag Panel' })
+  @Public()
+  @Post('login/feature-flag-panel')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  async loginFeatureFlagPanel(
+    @Body() dto: LoginDto,
+    @Req() req: Request,
+    @Headers('accept-language') lang?: string,
+  ) {
+    const deviceInfo = getDeviceInfo(req);
+    const result = await this.authService.loginFeatureFlagPanel(dto, deviceInfo, lang || 'vi');
+
+    if ('requires_2fa' in result && result.requires_2fa) {
+      return new OkResponse(
+        ResponseCode.AUTH_LOGIN_2FA_REQUIRED,
+        { requires_2fa: true, temp_token: result.temp_token },
+        result.message,
+      );
+    }
+
+    const successResult = result as {
+      message: string;
+      user: object;
+      access_token: string;
+      refresh_token: string;
+    };
+
+    return new OkResponse(ResponseCode.AUTH_LOGIN_FEATURE_FLAG_PANEL_SUCCESS, successResult.user, successResult.message, {
+      access_token: successResult.access_token,
+      refresh_token: successResult.refresh_token,
+    });
+  }
+
+  @ApiOperation({ summary: 'Đăng nhập Resources Panel - yêu cầu quyền resources.admin' })
+  @ApiResponse({
+    status: 200,
+    description: 'Đăng nhập thành công hoặc yêu cầu 2FA',
+  })
+  @ApiResponse({ status: 401, description: 'Thông tin đăng nhập không hợp lệ' })
+  @ApiResponse({ status: 403, description: 'Không có quyền truy cập Resources Panel' })
+  @Public()
+  @Post('login/resources-panel')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  async loginResourcesPanel(
+    @Body() dto: LoginDto,
+    @Req() req: Request,
+    @Headers('accept-language') lang?: string,
+  ) {
+    const deviceInfo = getDeviceInfo(req);
+    const result = await this.authService.loginResourcesPanel(dto, deviceInfo, lang || 'vi');
+
+    if ('requires_2fa' in result && result.requires_2fa) {
+      return new OkResponse(
+        ResponseCode.AUTH_LOGIN_2FA_REQUIRED,
+        { requires_2fa: true, temp_token: result.temp_token },
+        result.message,
+      );
+    }
+
+    const successResult = result as {
+      message: string;
+      user: object;
+      access_token: string;
+      refresh_token: string;
+    };
+
+    return new OkResponse(ResponseCode.AUTH_LOGIN_RESOURCES_PANEL_SUCCESS, successResult.user, successResult.message, {
+      access_token: successResult.access_token,
+      refresh_token: successResult.refresh_token,
+    });
+  }
+
   @ApiOperation({ summary: 'Làm mới access token từ refresh token' })
   @ApiResponse({ status: 200, description: 'Làm mới token thành công' })
   @ApiResponse({

@@ -76,6 +76,8 @@
         "enterBackupCode": "Enter your backup code to continue.",
         "footer": "© {year} GEN-HUB. All rights reserved.",
         "error": "Please enter all fields",
+        "warningTitle": "Feature Flags Administration Area",
+        "warningMessage": "Only users with featureflag.admin permission can login to this panel.",
         "errors": {
             "missing2FA": "Please enter verification code",
             "permissionDenied": "You do not have permission to access Feature Flag Panel",
