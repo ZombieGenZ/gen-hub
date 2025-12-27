@@ -51,12 +51,8 @@ export class ResourcesGateway
     ) { }
 
     onModuleInit() {
-        // Start broadcast interval
-        this.broadcastInterval = setInterval(() => {
-            this.broadcastResourcesUpdate();
-        }, this.BROADCAST_INTERVAL_MS);
-
-        this.logger.log(`📊 Resources broadcast started (${this.BROADCAST_INTERVAL_MS}ms interval)`);
+        // Broadcast interval will be started on-demand when clients subscribe
+        this.logger.log('📊 Resources Gateway ready (broadcast will start on first subscriber)');
     }
 
     onModuleDestroy() {
@@ -116,6 +112,7 @@ export class ResourcesGateway
      */
     handleDisconnect(socket: Socket) {
         this.subscribedSockets.delete(socket.id);
+        this.stopBroadcastIfEmpty();
         this.logger.log(`❌ Resources client disconnected: ${socket.id}`);
     }
 
@@ -128,6 +125,7 @@ export class ResourcesGateway
         @MessageBody() payload: ResourcesSubscribePayload,
     ) {
         this.subscribedSockets.add(socket.id);
+        this.startBroadcastIfNeeded();
 
         // Store filter preferences
         socket.data.filterServices = payload?.services || [];
@@ -146,9 +144,37 @@ export class ResourcesGateway
     @SubscribeMessage('resources:unsubscribe')
     handleUnsubscribe(@ConnectedSocket() socket: Socket) {
         this.subscribedSockets.delete(socket.id);
+        this.stopBroadcastIfEmpty();
         this.logger.log(`📊 Client ${socket.id} unsubscribed from resources`);
 
         return { success: true, message: 'Unsubscribed from resources updates' };
+    }
+
+    /**
+     * Start broadcast interval if not already running and there are subscribers
+     */
+    private startBroadcastIfNeeded(): void {
+        if (this.broadcastInterval) return; // Already running
+        if (this.subscribedSockets.size === 0) return; // No subscribers
+
+        this.broadcastInterval = setInterval(() => {
+            this.broadcastResourcesUpdate();
+        }, this.BROADCAST_INTERVAL_MS);
+
+        this.logger.log(`📊 Resources broadcast STARTED (${this.subscribedSockets.size} subscriber(s))`);
+    }
+
+    /**
+     * Stop broadcast interval if no more subscribers
+     */
+    private stopBroadcastIfEmpty(): void {
+        if (!this.broadcastInterval) return; // Not running
+        if (this.subscribedSockets.size > 0) return; // Still has subscribers
+
+        clearInterval(this.broadcastInterval);
+        this.broadcastInterval = null;
+
+        this.logger.log('📊 Resources broadcast STOPPED (no subscribers)');
     }
 
     /**
