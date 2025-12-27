@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { adminApi, FilterCondition } from '@/lib/api';
 import { toast } from 'sonner';
@@ -143,6 +143,9 @@ export default function TablePage() {
     const [errorModalOpen, setErrorModalOpen] = useState(false);
     const [errorModalContent, setErrorModalContent] = useState<{ type: string; id?: string; error: string }[]>([]);
 
+    // Ref for table container (Alt+scroll horizontal scrolling)
+    const tableContainerRef = useRef<HTMLDivElement>(null);
+
     const hasPendingChanges = pendingChanges.size > 0 || newRows.length > 0;
 
     // Get field info from schema
@@ -226,7 +229,7 @@ export default function TablePage() {
             setIsLoading(false);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [tableName, meta.limit, appliedFilters, schema, newFilter.column]);
+    }, [tableName, meta.limit, appliedFilters, schema]);
 
     useEffect(() => {
         // Reset state when table changes
@@ -269,6 +272,23 @@ export default function TablePage() {
             setMeta(prev => ({ ...prev, limit: newSize, page: 1 }));
         }
     };
+
+    // Alt + scroll to scroll horizontally in the table
+    useEffect(() => {
+        const container = tableContainerRef.current;
+        if (!container) return;
+
+        const handleWheel = (e: WheelEvent) => {
+            // Check if Alt key is pressed
+            if (e.altKey && e.deltaY !== 0) {
+                e.preventDefault();
+                container.scrollLeft += e.deltaY;
+            }
+        };
+
+        container.addEventListener('wheel', handleWheel, { passive: false });
+        return () => container.removeEventListener('wheel', handleWheel);
+    }, []);
 
     // Fetch records when limit changes
     // Fetch records when dependencies change
@@ -908,7 +928,7 @@ export default function TablePage() {
                             cancelEdit();
                         }
                     }}
-                    className="w-full bg-[var(--background-tertiary)] border border-[var(--accent-primary)] rounded px-2 py-0.5 text-sm outline-none"
+                    className="w-full min-w-[100px] bg-[var(--background-tertiary)] border border-[var(--accent-primary)] rounded px-2 py-1 text-sm outline-none cursor-pointer"
                     autoFocus={!isNewRow}
                 >
                     {nullable && <option value="__NULL__">NULL</option>}
@@ -1266,7 +1286,7 @@ export default function TablePage() {
             )}
 
             {/* Table */}
-            <div className="flex-1 overflow-auto table-container -mx-4 sm:mx-0 px-4 sm:px-0">
+            <div ref={tableContainerRef} className="flex-1 overflow-auto table-container -mx-4 sm:mx-0 px-4 sm:px-0">
                 <table className="data-table w-full min-w-[600px]">
                     <thead className="sticky top-0 z-10">
                         <tr>
@@ -1351,6 +1371,12 @@ export default function TablePage() {
 
                                                     // Boolean - inline edit
                                                     if (isColumnBoolean(col)) {
+                                                        startEdit(record, col);
+                                                        return;
+                                                    }
+
+                                                    // Enum - inline select
+                                                    if (isColumnEnum(col)) {
                                                         startEdit(record, col);
                                                         return;
                                                     }

@@ -122,5 +122,26 @@
         },
         "hideLegend": "Ẩn chú thích",
         "showLegend": "Hiện chú thích"
+    },
+    "query": {
+        "title": "Truy vấn SQL",
+        "execute": "Thực thi",
+        "clear": "Xóa",
+        "templates": "Mẫu",
+        "history": "Lịch sử",
+        "results": "Kết quả",
+        "noResults": "Không có kết quả",
+        "error": "Lỗi truy vấn",
+        "success": "Truy vấn thực thi thành công",
+        "rowsAffected": "hàng bị ảnh hưởng",
+        "executionTime": "Thời gian thực thi",
+        "placeholder": "Nhập truy vấn SQL của bạn tại đây...",
+        "selectTemplate": "Chọn một mẫu...",
+        "select": "SELECT",
+        "insert": "INSERT",
+        "update": "UPDATE",
+        "delete": "DELETE",
+        "createTable": "CREATE TABLE",
+        "alterTable": "ALTER TABLE"
     }
 }

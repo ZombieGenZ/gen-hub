@@ -29,6 +29,8 @@ import {
     Key,
     Link as LinkIcon,
     Info,
+    Map,
+    GripVertical,
 } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import { jsPDF } from 'jspdf';
@@ -278,10 +280,17 @@ export default function DiagramPage() {
     const [isSaving, setIsSaving] = useState(false);
     const [showRelations, setShowRelations] = useState(true);
     const [showLegend, setShowLegend] = useState(true);
+    const [showMiniMap, setShowMiniMap] = useState(true);
     const [hasChanges, setHasChanges] = useState(false);
     const [tableColors, setTableColors] = useState<Record<string, string>>({});
     const [schema, setSchema] = useState<{ tables: TableSchema[]; relations: Relation[] } | null>(null);
     const [hoveredNode, setHoveredNode] = useState<string | null>(null);
+
+    // Draggable panel positions
+    const [legendPosition, setLegendPosition] = useState({ x: 16, y: -200 });
+    const [miniMapPosition, setMiniMapPosition] = useState({ x: -180, y: -180 });
+    const [dragging, setDragging] = useState<'legend' | 'minimap' | null>(null);
+    const dragOffset = useRef({ x: 0, y: 0 });
 
     // Memoize nodeTypes to prevent recreation on every render
     const nodeTypes = useMemo(() => ({
@@ -440,6 +449,37 @@ export default function DiagramPage() {
         setHasChanges(true);
     }, []);
 
+    // Drag handlers for Legend and MiniMap
+    const handleDragStart = useCallback((e: React.MouseEvent, panel: 'legend' | 'minimap') => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDragging(panel);
+        const rect = (e.target as HTMLElement).closest('.draggable-panel')?.getBoundingClientRect();
+        if (rect) {
+            dragOffset.current = {
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top,
+            };
+        }
+    }, []);
+
+    const handleDragMove = useCallback((e: React.MouseEvent) => {
+        if (!dragging || !reactFlowWrapper.current) return;
+        const wrapperRect = reactFlowWrapper.current.getBoundingClientRect();
+        const newX = e.clientX - wrapperRect.left - dragOffset.current.x;
+        const newY = e.clientY - wrapperRect.top - dragOffset.current.y;
+
+        if (dragging === 'legend') {
+            setLegendPosition({ x: newX, y: newY });
+        } else {
+            setMiniMapPosition({ x: newX, y: newY });
+        }
+    }, [dragging]);
+
+    const handleDragEnd = useCallback(() => {
+        setDragging(null);
+    }, []);
+
     // Save configuration
     const handleSave = useCallback(async () => {
         setIsSaving(true);
@@ -593,10 +633,19 @@ export default function DiagramPage() {
                     {/* Toggle Legend */}
                     <button
                         onClick={() => setShowLegend(prev => !prev)}
-                        className="btn btn-secondary p-2 sm:p-2.5"
+                        className={`btn ${showLegend ? 'btn-secondary' : 'btn-primary'} p-2 sm:p-2.5`}
                         title={showLegend ? t('diagram.hideLegend') : t('diagram.showLegend')}
                     >
                         <Info className="w-4 h-4" />
+                    </button>
+
+                    {/* Toggle MiniMap */}
+                    <button
+                        onClick={() => setShowMiniMap(prev => !prev)}
+                        className={`btn ${showMiniMap ? 'btn-secondary' : 'btn-primary'} p-2 sm:p-2.5`}
+                        title={showMiniMap ? 'Hide MiniMap' : 'Show MiniMap'}
+                    >
+                        <Map className="w-4 h-4" />
                     </button>
 
                     {/* Toggle Relations */}
@@ -663,20 +712,27 @@ export default function DiagramPage() {
                     <Controls
                         className="!bg-[var(--background-secondary)] !border-[var(--border-primary)] !shadow-xl [&_button]:!bg-[var(--background-tertiary)] [&_button]:!border-[var(--border-primary)] [&_button_svg]:!fill-[var(--text-primary)] [&_button:hover]:!bg-[var(--accent-primary)]"
                     />
-                    <MiniMap
-                        nodeColor={(node) => (node.data as TableNodeData)?.color || 'var(--accent-primary)'}
-                        maskColor="rgba(0, 0, 0, 0.8)"
-                        style={{
-                            backgroundColor: 'var(--background-secondary)',
-                            border: '1px solid var(--border-primary)',
-                        }}
-                    />
+                    {showMiniMap && (
+                        <MiniMap
+                            nodeColor={(node) => (node.data as TableNodeData)?.color || 'var(--accent-primary)'}
+                            maskColor="rgba(0, 0, 0, 0.8)"
+                            pannable={true}
+                            zoomable={true}
+                            style={{
+                                backgroundColor: 'var(--background-secondary)',
+                                border: '1px solid var(--border-primary)',
+                            }}
+                        />
+                    )}
 
-                    {/* Legend Panel */}
+                    {/* Legend Panel - Draggable */}
                     {showLegend && (
                         <Panel position="bottom-left" className="!m-4">
-                            <div className="bg-[var(--background-secondary)] border border-[var(--border-primary)] rounded-lg p-3 text-xs">
-                                <div className="font-semibold text-[var(--text-primary)] mb-2">{t('diagram.legend.title')}</div>
+                            <div className="bg-[var(--background-secondary)] border border-[var(--border-primary)] rounded-lg p-3 text-xs shadow-xl">
+                                <div className="flex items-center gap-2 mb-2 pb-2 border-b border-[var(--border-primary)]">
+                                    <GripVertical className="w-3 h-3 text-[var(--text-muted)]" />
+                                    <span className="font-semibold text-[var(--text-primary)]">{t('diagram.legend.title')}</span>
+                                </div>
                                 <div className="space-y-1.5">
                                     {/* Keys */}
                                     <div className="flex items-center gap-2">

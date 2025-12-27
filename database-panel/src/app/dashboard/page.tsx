@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { adminApi } from '@/lib/api';
 import { Database, Table, List, LayoutGrid, HardDrive, Activity, Loader2, BarChart3, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useTables } from '@/contexts/TablesContext';
 
 interface TableStats {
     name: string;
@@ -23,33 +24,12 @@ interface Statistics {
     tables: TableStats[];
 }
 
-interface TableInfo {
-    name: string;
-    displayName: string;
-}
-
 export default function DashboardPage() {
     const { t } = useLanguage();
-    const [tables, setTables] = useState<TableInfo[]>([]);
+    const { tables, isLoading, refreshTables } = useTables();
     const [statistics, setStatistics] = useState<Statistics | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
     const [isLoadingStats, setIsLoadingStats] = useState(false);
     const [statsLoaded, setStatsLoaded] = useState(false);
-
-    // Load tables on mount
-    useEffect(() => {
-        const fetchTables = async () => {
-            try {
-                const data = await adminApi.getTables();
-                setTables(data);
-            } catch (error) {
-                console.error('Failed to fetch tables:', error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-        fetchTables();
-    }, []);
 
     // Load statistics on demand
     const loadStatistics = async () => {
@@ -71,19 +51,6 @@ export default function DashboardPage() {
     const refreshStatistics = async () => {
         setStatsLoaded(false);
         await loadStatistics();
-    };
-
-    // Refresh tables
-    const refreshTables = async () => {
-        setIsLoading(true);
-        try {
-            const data = await adminApi.getTables();
-            setTables(data);
-        } catch (error) {
-            console.error('Failed to fetch tables:', error);
-        } finally {
-            setIsLoading(false);
-        }
     };
 
     // Calculate stats from statistics or show placeholder

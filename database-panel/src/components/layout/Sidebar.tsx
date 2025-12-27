@@ -13,15 +13,11 @@ import {
     X,
     RefreshCw,
     Network,
+    Terminal,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage, LanguageSwitcher } from '@/contexts/LanguageContext';
-import { adminApi } from '@/lib/api';
-
-interface TableInfo {
-    name: string;
-    displayName: string;
-}
+import { useTables } from '@/contexts/TablesContext';
 
 interface SidebarProps {
     isOpen?: boolean;
@@ -32,29 +28,8 @@ export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
     const pathname = usePathname();
     const { user, logout } = useAuth();
     const { t } = useLanguage();
-    const [tables, setTables] = useState<TableInfo[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const { tables, isLoading, refreshTables } = useTables();
     const [searchQuery, setSearchQuery] = useState('');
-
-    const fetchTables = async () => {
-        setIsLoading(true);
-        try {
-            const data = await adminApi.getTables();
-            // Sort tables alphabetically
-            const sortedTables = data.sort((a: TableInfo, b: TableInfo) =>
-                a.displayName.localeCompare(b.displayName)
-            );
-            setTables(sortedTables);
-        } catch (error) {
-            console.error('Failed to fetch tables:', error);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        fetchTables();
-    }, []);
 
     // Close sidebar when navigating on mobile
     useEffect(() => {
@@ -145,6 +120,19 @@ export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
                         <span className="font-medium">{t('sidebar.erDiagram')}</span>
                     </Link>
 
+                    {/* SQL Query Link */}
+                    <Link
+                        href="/dashboard/query"
+                        onClick={handleLinkClick}
+                        className={`flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-all ${pathname === '/dashboard/query'
+                            ? 'bg-[var(--accent-primary-muted)] text-[var(--accent-primary)]'
+                            : 'text-[var(--text-secondary)] hover:bg-[var(--background-tertiary)] hover:text-white'
+                            }`}
+                    >
+                        <Terminal className="w-5 h-5" />
+                        <span className="font-medium">{t('query.title')}</span>
+                    </Link>
+
                     {/* Search Tables */}
                     <div className="relative mb-4 mt-4">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
@@ -163,7 +151,7 @@ export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
                             {t('sidebar.tables')} ({filteredTables.length})
                         </span>
                         <button
-                            onClick={fetchTables}
+                            onClick={refreshTables}
                             disabled={isLoading}
                             className="p-1 text-[var(--text-muted)] hover:text-[var(--accent-primary)] hover:bg-[var(--background-tertiary)] rounded transition-all"
                             title={t('dashboard.tables.refresh')}

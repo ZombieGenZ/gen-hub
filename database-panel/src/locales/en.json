@@ -122,5 +122,26 @@
         },
         "hideLegend": "Hide Legend",
         "showLegend": "Show Legend"
+    },
+    "query": {
+        "title": "SQL Query",
+        "execute": "Execute",
+        "clear": "Clear",
+        "templates": "Templates",
+        "history": "History",
+        "results": "Results",
+        "noResults": "No results",
+        "error": "Query Error",
+        "success": "Query executed successfully",
+        "rowsAffected": "rows affected",
+        "executionTime": "Execution time",
+        "placeholder": "Enter your SQL query here...",
+        "selectTemplate": "Select a template...",
+        "select": "SELECT",
+        "insert": "INSERT",
+        "update": "UPDATE",
+        "delete": "DELETE",
+        "createTable": "CREATE TABLE",
+        "alterTable": "ALTER TABLE"
     }
 }

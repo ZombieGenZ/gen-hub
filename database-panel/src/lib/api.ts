@@ -301,6 +301,12 @@ export const adminApi = {
         const { data } = await api.put('/admin/diagram/config', config);
         return data;
     },
+
+    // Raw SQL Query Execution
+    executeRawQuery: async (query: string) => {
+        const { data } = await api.post('/admin/query/execute', { query });
+        return data;
+    },
 };
 
 export default api;

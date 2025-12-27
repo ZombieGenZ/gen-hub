@@ -21,6 +21,10 @@ const PROTECTED_TABLES = ['_prisma_migrations'];
 export class DatabaseAdminService implements OnModuleInit {
     private readonly logger = new Logger(DatabaseAdminService.name);
     private availableTables: string[] = [];
+    // Mapping từ tên bảng DB (snake_case) sang tên model Prisma (camelCase)
+    private tableNameToModelName: Map<string, string> = new Map();
+    // Mapping từ tên bảng DB (snake_case) sang tên model trong DMMF (PascalCase)
+    private tableNameToDmmfName: Map<string, string> = new Map();
 
     constructor(
         private readonly prisma: PrismaService,
@@ -37,6 +41,7 @@ export class DatabaseAdminService implements OnModuleInit {
 
     /**
      * Tự động discover tables từ Prisma DMMF (Data Model Meta Format)
+     * Sử dụng tên bảng thực sự trong DB (từ @@map) thay vì tên model
      */
     private discoverTables() {
         try {
@@ -44,13 +49,26 @@ export class DatabaseAdminService implements OnModuleInit {
             const dmmf = Prisma.dmmf;
             const models = dmmf.datamodel.models;
 
-            this.availableTables = models
-                .map((model) => {
-                    // Convert PascalCase sang camelCase để match với prisma client
-                    const name = model.name;
-                    return name.charAt(0).toLowerCase() + name.slice(1);
-                })
-                .filter((name) => !PROTECTED_TABLES.includes(name));
+            this.availableTables = [];
+            this.tableNameToModelName.clear();
+            this.tableNameToDmmfName.clear();
+
+            models.forEach((model) => {
+                // Sử dụng dbName (từ @@map) nếu có, nếu không dùng tên model
+                const dbName = (model as { dbName?: string }).dbName;
+                // Prisma client dùng camelCase của model name
+                const prismaModelName = model.name.charAt(0).toLowerCase() + model.name.slice(1);
+
+                const tableName = dbName || prismaModelName;
+
+                if (!PROTECTED_TABLES.includes(tableName)) {
+                    this.availableTables.push(tableName);
+                    // Lưu mapping: DB table name -> Prisma model name (cho Prisma Client)
+                    this.tableNameToModelName.set(tableName, prismaModelName);
+                    // Lưu mapping: DB table name -> DMMF model name (cho Schema lookup)
+                    this.tableNameToDmmfName.set(tableName, model.name);
+                }
+            });
 
             this.logger.log(`📊 Discovered ${this.availableTables.length} tables from Prisma schema`);
         } catch (error) {
@@ -78,64 +96,129 @@ export class DatabaseAdminService implements OnModuleInit {
         const tables = this.availableTables;
         const BATCH_SIZE = 5; // Giới hạn số query song song
 
-        const tableStats: {
-            name: string;
-            displayName: string;
-            recordCount: number;
-            columnCount: number;
-        }[] = [];
-
-        // Process tables in batches
+        const stats: { tableName: string; rowCount: number; sizeBytes: number; lastUpdated: Date }[] = [];
         for (let i = 0; i < tables.length; i += BATCH_SIZE) {
             const batch = tables.slice(i, i + BATCH_SIZE);
+            const batchPromises = batch.map(async (tableName) => {
+                try {
+                    const model = this.getPrismaModel(tableName);
+                    const count = await model.count();
 
-            const batchResults = await Promise.all(
-                batch.map(async (tableName) => {
-                    try {
-                        const prismaModel = this.getPrismaModel(tableName);
-                        const count = await prismaModel.count();
+                    // Tính size (ước tính)
+                    // Note: Postgres specific query
+                    const sizeQuery = await this.prisma.$queryRawUnsafe(`
+                        SELECT pg_total_relation_size('${tableName}') as size
+                    `) as any[]; // Cast to any[] to avoid TS error
 
-                        // Get column count from DMMF
-                        const modelName = tableName.charAt(0).toUpperCase() + tableName.slice(1);
-                        const model = dmmf.datamodel.models.find((m) => m.name === modelName);
-                        const columnCount = model?.fields.filter(f => !f.relationName).length || 0;
+                    const size = sizeQuery[0]?.size ? Number(sizeQuery[0].size) : 0;
 
-                        return {
-                            name: tableName,
-                            displayName: this.formatTableName(tableName),
-                            recordCount: count,
-                            columnCount,
-                        };
-                    } catch (error) {
-                        this.logger.error(`Failed to get stats for ${tableName}`, error);
-                        return {
-                            name: tableName,
-                            displayName: this.formatTableName(tableName),
-                            recordCount: 0,
-                            columnCount: 0,
-                        };
-                    }
-                })
-            );
+                    return {
+                        tableName,
+                        rowCount: count,
+                        sizeBytes: size,
+                        lastUpdated: new Date() // TODO: Get actual last updated need triggers or audit logs
+                    };
+                } catch (error: any) {
+                    this.logger.warn(`Failed to get stats for table ${tableName}: ${error.message}`);
+                    return {
+                        tableName,
+                        rowCount: 0,
+                        sizeBytes: 0,
+                        lastUpdated: new Date()
+                    };
+                }
+            });
 
-            tableStats.push(...batchResults);
+            const batchResults = await Promise.all(batchPromises);
+            stats.push(...batchResults);
         }
 
-        // Calculate aggregates
-        const totalTables = tableStats.length;
-        const totalRecords = tableStats.reduce((sum, t) => sum + t.recordCount, 0);
-        const totalColumns = tableStats.reduce((sum, t) => sum + t.columnCount, 0);
-        const avgRecordsPerTable = totalTables > 0 ? Math.round(totalRecords / totalTables) : 0;
+        return stats;
+    }
 
-        return {
-            summary: {
-                totalTables,
-                totalRecords,
-                totalColumns,
-                avgRecordsPerTable,
-            },
-            tables: tableStats,
-        };
+    /**
+     * Execute raw SQL query
+     */
+    async executeQuery(query: string) {
+        try {
+            // Validate: chỉ cho phép SELECT
+            if (!query.trim().toLowerCase().startsWith('select')) {
+                throw new BadRequestException('Only SELECT queries are allowed for security reasons');
+            }
+
+            const result = await this.prisma.$queryRawUnsafe(query);
+
+            // Log query history
+            // TODO: Add logging
+
+            return result;
+        } catch (error) {
+            throw new BadRequestException(`Query execution failed: ${error.message}`);
+        }
+    }
+
+    /**
+     * Lấy dữ liệu của một table với phân trang và search
+     */
+    async getTableData(tableName: string, page = 1, pageSize = 10, search = '', sortBy = 'created_at', sortOrder: 'asc' | 'desc' = 'desc') {
+        this.validateTable(tableName);
+
+        const model = this.getPrismaModel(tableName);
+        const skip = (page - 1) * pageSize;
+
+        // Build where clause for search
+        let where = {};
+        if (search) {
+            // Get searchable fields (string types)
+            const dmmf = Prisma.dmmf;
+            const modelName = this.tableNameToDmmfName.get(tableName) || tableName;
+            const dmmfModel = dmmf.datamodel.models.find((m) => m.name === modelName);
+
+            if (dmmfModel) {
+                const searchFields = dmmfModel.fields
+                    .filter(f => f.type === 'String' && !f.isId)
+                    .map(f => f.name);
+
+                if (searchFields.length > 0) {
+                    where = {
+                        OR: searchFields.map(field => ({
+                            [field]: { contains: search, mode: 'insensitive' }
+                        }))
+                    };
+                }
+            }
+        }
+
+        // Build orderBy
+        const orderBy = {};
+        if (sortBy) {
+            orderBy[sortBy] = sortOrder;
+        }
+
+        try {
+            const [data, total] = await Promise.all([
+                model.findMany({
+                    where,
+                    skip,
+                    take: pageSize,
+                    orderBy: Object.keys(orderBy).length > 0 ? orderBy : undefined,
+                }),
+                model.count({ where }),
+            ]);
+
+            // Sanitize data (hide sensitive fields)
+            const sanitizedData = data.map(item => this.sanitizeRecord(tableName, item));
+
+            return {
+                data: sanitizedData,
+                total,
+                page,
+                pageSize,
+                totalPages: Math.ceil(total / pageSize),
+            };
+        } catch (error) {
+            throw new BadRequestException(`Failed to fetch data for ${tableName}: ${error.message}`);
+        }
     }
 
     /**
@@ -577,7 +660,8 @@ export class DatabaseAdminService implements OnModuleInit {
         try {
             // Lấy thông tin schema từ Prisma DMMF
             const dmmf = Prisma.dmmf;
-            const modelName = tableName.charAt(0).toUpperCase() + tableName.slice(1);
+            // Sử dụng mapping để lấy đúng DMMF model name
+            const modelName = this.tableNameToDmmfName.get(tableName) || tableName;
             const model = dmmf.datamodel.models.find((m) => m.name === modelName);
 
             if (!model) {
@@ -589,16 +673,32 @@ export class DatabaseAdminService implements OnModuleInit {
                 };
             }
 
-            const fields = model.fields.map((field) => ({
-                name: field.name,
-                type: field.type,
-                isRequired: field.isRequired,
-                isList: field.isList,
-                isId: field.isId,
-                isUnique: field.isUnique,
-                hasDefaultValue: field.hasDefaultValue,
-                isRelation: !!field.relationName,
-            }));
+            // Get enum definitions from DMMF
+            const enums = dmmf.datamodel.enums || [];
+            const enumMap = new Map<string, string[]>();
+            enums.forEach((e) => {
+                enumMap.set(e.name, e.values.map((v) => v.name));
+            });
+
+            const fields = model.fields.map((field) => {
+                const fieldDef: any = {
+                    name: field.name,
+                    type: field.type,
+                    isRequired: field.isRequired,
+                    isList: field.isList,
+                    isId: field.isId,
+                    isUnique: field.isUnique,
+                    hasDefaultValue: field.hasDefaultValue,
+                    isRelation: !!field.relationName,
+                };
+
+                // Add enumValues if field type is an enum
+                if (enumMap.has(field.type)) {
+                    fieldDef.enumValues = enumMap.get(field.type);
+                }
+
+                return fieldDef;
+            });
 
             return {
                 tableName,
@@ -624,9 +724,11 @@ export class DatabaseAdminService implements OnModuleInit {
     }
 
     private getPrismaModel(tableName: string) {
-        const model = (this.prisma as any)[tableName];
+        // Sử dụng mapping để lấy đúng tên model Prisma từ tên bảng DB
+        const prismaModelName = this.tableNameToModelName.get(tableName) || tableName;
+        const model = (this.prisma as any)[prismaModelName];
         if (!model) {
-            throw new BadRequestException(`Table "${tableName}" not found in Prisma Client`);
+            throw new BadRequestException(`Table "${tableName}" not found in Prisma Client (model: ${prismaModelName})`);
         }
         return model;
     }
@@ -859,5 +961,152 @@ export class DatabaseAdminService implements OnModuleInit {
                 dark_mode: result.dark_mode,
             },
         };
+    }
+
+    /**
+     * Thực thi raw SQL query
+     */
+    async executeRawQuery(
+        query: string,
+        context: { userId?: string; ipAddress?: string; userAgent?: string },
+    ) {
+        if (!query || !query.trim()) {
+            throw new BadRequestException('Query cannot be empty');
+        }
+
+        const trimmedQuery = query.trim();
+        const startTime = Date.now();
+
+        try {
+            // Determine query type
+            const queryType = this.getQueryType(trimmedQuery);
+
+            // Execute the query
+            const result = await this.prisma.$queryRawUnsafe(trimmedQuery);
+
+            const executionTime = Date.now() - startTime;
+
+            // Log the query execution
+            await this.systemLogService.info(
+                'admin',
+                'RAW_QUERY',
+                `Executed raw SQL query (${queryType})`,
+                {
+                    userId: context.userId,
+                    ipAddress: context.ipAddress,
+                    userAgent: context.userAgent,
+                    metaData: {
+                        queryType,
+                        executionTime,
+                        resultCount: Array.isArray(result) ? result.length : 1,
+                    },
+                },
+            );
+
+            // Format response based on query type
+            if (queryType === 'SELECT') {
+                // Serialize BigInt values to strings to prevent JSON serialization errors
+                const serializedResult = this.serializeBigInt(result);
+                const data = Array.isArray(serializedResult) ? serializedResult : [serializedResult];
+                const columns = data.length > 0 ? Object.keys(data[0] as object) : [];
+
+                return {
+                    success: true,
+                    data,
+                    columns,
+                    executionTime,
+                };
+            } else {
+                // For INSERT, UPDATE, DELETE, etc.
+                const rowsAffected = typeof result === 'number' ? result :
+                    (Array.isArray(result) ? result.length : 1);
+
+                return {
+                    success: true,
+                    rowsAffected,
+                    executionTime,
+                };
+            }
+        } catch (error: any) {
+            const executionTime = Date.now() - startTime;
+
+            // Log the error
+            await this.systemLogService.error(
+                'admin',
+                'RAW_QUERY_ERROR',
+                `Raw SQL query failed: ${error.message}`,
+                {
+                    userId: context.userId,
+                    ipAddress: context.ipAddress,
+                    userAgent: context.userAgent,
+                    metaData: {
+                        error: error.message,
+                        executionTime,
+                    },
+                },
+            );
+
+            // Clean up error message to be more user-friendly
+            let errorMessage = error.message;
+            // Try to extract the actual database error message
+            const match = errorMessage.match(/Message: `([^`]+)`/);
+            if (match) {
+                errorMessage = match[1];
+            } else {
+                // Remove Prisma boilerplate
+                errorMessage = errorMessage.replace(/Invalid `prisma\.\w+\(\)` invocation:\s*/g, '').trim();
+            }
+
+            return {
+                success: false,
+                error: errorMessage,
+                executionTime,
+            };
+        }
+    }
+
+    /**
+     * Helper to serialize BigInt values to strings
+     */
+    private serializeBigInt(data: any): any {
+        if (data === null || data === undefined) {
+            return data;
+        }
+
+        if (typeof data === 'bigint') {
+            return data.toString();
+        }
+
+        if (Array.isArray(data)) {
+            return data.map((item) => this.serializeBigInt(item));
+        }
+
+        if (typeof data === 'object') {
+            const newData: any = {};
+            for (const key in data) {
+                if (Object.prototype.hasOwnProperty.call(data, key)) {
+                    newData[key] = this.serializeBigInt(data[key]);
+                }
+            }
+            return newData;
+        }
+
+        return data;
+    }
+
+    /**
+     * Determine the type of SQL query
+     */
+    private getQueryType(query: string): string {
+        const upper = query.toUpperCase().trim();
+        if (upper.startsWith('SELECT')) return 'SELECT';
+        if (upper.startsWith('INSERT')) return 'INSERT';
+        if (upper.startsWith('UPDATE')) return 'UPDATE';
+        if (upper.startsWith('DELETE')) return 'DELETE';
+        if (upper.startsWith('CREATE')) return 'CREATE';
+        if (upper.startsWith('ALTER')) return 'ALTER';
+        if (upper.startsWith('DROP')) return 'DROP';
+        if (upper.startsWith('TRUNCATE')) return 'TRUNCATE';
+        return 'OTHER';
     }
 }

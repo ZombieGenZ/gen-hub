@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { TablesProvider } from '@/contexts/TablesContext';
 import Sidebar, { MobileHeader } from '@/components/layout/Sidebar';
 import { Loader2 } from 'lucide-react';
 
@@ -34,20 +35,22 @@ export default function DashboardLayout({
     }
 
     return (
-        <div className="min-h-screen">
-            {/* Mobile Header */}
-            <MobileHeader onMenuClick={() => setSidebarOpen(true)} />
+        <TablesProvider>
+            <div className="min-h-screen">
+                {/* Mobile Header */}
+                <MobileHeader onMenuClick={() => setSidebarOpen(true)} />
 
-            {/* Sidebar */}
-            <Sidebar
-                isOpen={sidebarOpen}
-                onClose={() => setSidebarOpen(false)}
-            />
+                {/* Sidebar */}
+                <Sidebar
+                    isOpen={sidebarOpen}
+                    onClose={() => setSidebarOpen(false)}
+                />
 
-            {/* Main Content - pt-20 on mobile for header height (h-14 + extra space) */}
-            <main className="lg:ml-64 min-h-screen p-4 pt-20 lg:pt-8 lg:p-8">
-                {children}
-            </main>
-        </div>
+                {/* Main Content - pt-20 on mobile for header height (h-14 + extra space) */}
+                <main className="lg:ml-64 min-h-screen p-4 pt-20 lg:pt-8 lg:p-8">
+                    {children}
+                </main>
+            </div>
+        </TablesProvider>
     );
 }

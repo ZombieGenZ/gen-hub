@@ -225,6 +225,19 @@ export class DatabaseAdminController {
     }
 
     /**
+     * Thực thi raw SQL query
+     */
+    @Post('query/execute')
+    @ApiOperation({ summary: 'Execute raw SQL query' })
+    async executeRawQuery(
+        @Body() body: { query: string },
+        @Req() req: Request,
+    ) {
+        const context = this.extractContext(req);
+        return this.databaseAdminService.executeRawQuery(body.query, context);
+    }
+
+    /**
      * Extract context từ request
      */
     private extractContext(req: Request) {
