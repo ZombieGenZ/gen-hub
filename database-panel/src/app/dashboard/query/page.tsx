@@ -129,6 +129,29 @@ export default function QueryPage() {
     const [showTemplates, setShowTemplates] = useState(false);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
+    const tableContainerRef = useRef<HTMLDivElement>(null);
+
+    // Alt + scroll to scroll horizontally in the table
+    useEffect(() => {
+        const container = tableContainerRef.current;
+        if (!container) return;
+
+        const handleWheel = (e: WheelEvent) => {
+            // Check if Alt key is pressed
+            if (e.altKey && e.deltaY !== 0) {
+                e.preventDefault();
+                container.scrollLeft += e.deltaY;
+            }
+        };
+
+        container.addEventListener('wheel', handleWheel, { passive: false });
+        // Clean up
+        return () => {
+            if (container) {
+                container.removeEventListener('wheel', handleWheel);
+            }
+        };
+    }, [result]); // Re-attach listener when result changes (table re-renders)
 
     // Autocomplete state
     const [showSuggestions, setShowSuggestions] = useState(false);
@@ -806,7 +829,7 @@ export default function QueryPage() {
                             {result.data && result.data.length > 0 ? (
                                 <div className="flex-1 flex flex-col min-h-0">
                                     {/* pgAdmin-style table */}
-                                    <div className="flex-1 overflow-auto border border-[var(--border-primary)] rounded-lg mt-3">
+                                    <div ref={tableContainerRef} className="flex-1 overflow-auto border border-[var(--border-primary)] rounded-lg mt-3">
                                         <table className="w-full border-collapse">
                                             <thead className="sticky top-0 z-10">
                                                 <tr className="bg-[#252542]">
