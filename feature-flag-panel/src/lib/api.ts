@@ -271,11 +271,7 @@ export const featureFlagApi = {
         return data;
     },
 
-    // Reload cache
-    reloadCache: async (): Promise<{ message: string }> => {
-        const { data } = await api.put('/admin/feature-flags/cache/reload');
-        return data;
-    },
+
 
     // Get stats (total counts)
     getStats: async (): Promise<{ total: number; active: number; inactive: number }> => {

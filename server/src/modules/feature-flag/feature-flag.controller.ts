@@ -38,6 +38,7 @@ export class FeatureFlagController {
         @Query('limit') limit?: string,
         @Query('module') module?: string,
         @Query('isActive') isActive?: string,
+        @Query('includeDeleted') includeDeleted?: string,
         @Query('search') search?: string,
     ) {
         return this.featureFlagService.getAll({
@@ -122,15 +123,7 @@ export class FeatureFlagController {
         return this.featureFlagService.bulkToggle(body.ids, body.is_active, context);
     }
 
-    /**
-     * Force reload cache
-     */
-    @Put('cache/reload')
-    @ApiOperation({ summary: 'Force reload feature flag cache' })
-    async reloadCache() {
-        await this.featureFlagService.invalidateCache();
-        return { message: 'Cache reloaded successfully' };
-    }
+
 
     /**
      * Extract context từ request

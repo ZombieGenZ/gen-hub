@@ -139,6 +139,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 }
 
 export function MobileHeader({ onMenuClick }: { onMenuClick: () => void }) {
+    const { t } = useLanguage();
     return (
         <header className="lg:hidden fixed top-0 left-0 right-0 z-30 h-14 bg-[var(--background-secondary)] border-b border-[var(--border-primary)]">
             <div className="flex items-center justify-between px-4 h-full">
@@ -150,7 +151,7 @@ export function MobileHeader({ onMenuClick }: { onMenuClick: () => void }) {
                 </button>
                 <div className="flex items-center gap-2">
                     <Flag className="w-5 h-5 text-[var(--accent-primary)]" />
-                    <span className="font-bold text-white">Feature Flags</span>
+                    <span className="font-bold text-white">{t('sidebar.title')}</span>
                 </div>
                 <div className="w-9" /> {/* Spacer for centering */}
             </div>

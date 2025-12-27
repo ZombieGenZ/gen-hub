@@ -40,7 +40,7 @@ export default function DashboardPage() {
     const [total, setTotal] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
     const [isTogglingId, setIsTogglingId] = useState<string | null>(null);
-    const [isReloadingCache, setIsReloadingCache] = useState(false);
+
 
     // Stats from API (total counts)
     const [stats, setStats] = useState({ total: 0, active: 0, inactive: 0 });
@@ -158,18 +158,7 @@ export default function DashboardPage() {
         }
     };
 
-    const handleReloadCache = async () => {
-        setIsReloadingCache(true);
-        try {
-            await featureFlagApi.reloadCache();
-            toast.success(t('dashboard.messages.cacheReloadSuccess'));
-        } catch (error) {
-            console.error('Failed to reload cache:', error);
-            toast.error(t('dashboard.messages.cacheReloadError'));
-        } finally {
-            setIsReloadingCache(false);
-        }
-    };
+
 
 
 
@@ -207,15 +196,7 @@ export default function DashboardPage() {
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <button
-                        onClick={handleReloadCache}
-                        disabled={isReloadingCache}
-                        className="btn btn-secondary"
-                        title={t('dashboard.actions.reloadCache')}
-                    >
-                        <RefreshCw className={`w-4 h-4 ${isReloadingCache ? 'animate-spin' : ''}`} />
-                        <span className="hidden sm:inline">{t('dashboard.actions.reloadCache')}</span>
-                    </button>
+
                     <button
                         onClick={() => fetchFlags()}
                         disabled={isLoading}
@@ -389,8 +370,8 @@ export default function DashboardPage() {
                                         className="custom-checkbox"
                                     />
                                 </th>
-                                <th style={{ width: '80px' }}>Method</th>
-                                <th>Path</th>
+                                <th style={{ width: '80px' }}>{t('dashboard.table.method') || 'Method'}</th>
+                                <th>{t('dashboard.table.path') || 'Path'}</th>
                                 <th style={{ width: '120px' }}>{t('dashboard.table.module')}</th>
                                 <th style={{ width: '100px' }}>{t('dashboard.table.status')}</th>
                                 <th style={{ width: '80px' }}>{t('dashboard.table.history')}</th>
@@ -435,7 +416,7 @@ export default function DashboardPage() {
                                         <Link
                                             href={`/dashboard/${flag.id}`}
                                             className="btn btn-secondary py-1 px-2 text-xs"
-                                            title="Xem logs"
+                                            title={t('dashboard.table.viewLogs') || 'Xem logs'}
                                         >
                                             <History className="w-4 h-4" />
                                         </Link>

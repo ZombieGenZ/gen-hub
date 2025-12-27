@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { featureFlagApi, FeatureFlag, FeatureFlagLog } from '@/lib/api';
 import { toast } from 'sonner';
+import { useLanguage } from '@/contexts/LanguageContext';
 import {
     ArrowLeft,
     Flag,
@@ -23,6 +24,7 @@ export default function FlagDetailPage() {
     const params = useParams();
     const router = useRouter();
     const id = params.id as string;
+    const { t, language } = useLanguage();
 
     const [flag, setFlag] = useState<FeatureFlag | null>(null);
     const [logs, setLogs] = useState<FeatureFlagLog[]>([]);
@@ -40,7 +42,7 @@ export default function FlagDetailPage() {
             setFlag(data);
         } catch (error) {
             console.error('Failed to fetch flag:', error);
-            toast.error('Không thể tải thông tin feature flag');
+            toast.error(t('detail.messages.fetchError'));
             router.push('/dashboard');
         } finally {
             setIsLoading(false);
@@ -58,7 +60,7 @@ export default function FlagDetailPage() {
             setTotalLogs(response.total);
         } catch (error) {
             console.error('Failed to fetch logs:', error);
-            toast.error('Không thể tải lịch sử thay đổi');
+            toast.error(t('detail.messages.fetchLogsError'));
         } finally {
             setIsLoadingLogs(false);
         }
@@ -80,19 +82,19 @@ export default function FlagDetailPage() {
         try {
             const updated = await featureFlagApi.toggle(flag.id, !flag.is_active);
             setFlag(updated);
-            toast.success(`Feature flag đã được ${!flag.is_active ? 'bật' : 'tắt'}`);
+            toast.success(t('detail.messages.toggleSuccess', { status: !flag.is_active ? t('detail.messages.enabled') : t('detail.messages.disabled') }));
             // Refresh logs
             fetchLogs();
         } catch (error) {
             console.error('Failed to toggle flag:', error);
-            toast.error('Không thể thay đổi trạng thái feature flag');
+            toast.error(t('detail.messages.toggleError'));
         } finally {
             setIsToggling(false);
         }
     };
 
     const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleString('vi-VN', {
+        return new Date(dateString).toLocaleString(language === 'vi' ? 'vi-VN' : 'en-US', {
             year: 'numeric',
             month: '2-digit',
             day: '2-digit',
@@ -110,13 +112,13 @@ export default function FlagDetailPage() {
     const getActionBadge = (action: string) => {
         switch (action) {
             case 'ENABLED':
-                return <span className="badge badge-success">Đã bật</span>;
+                return <span className="badge badge-success">{t('detail.actions.enabled')}</span>;
             case 'DISABLED':
-                return <span className="badge badge-error">Đã tắt</span>;
+                return <span className="badge badge-error">{t('detail.actions.disabled')}</span>;
             case 'CREATED':
-                return <span className="badge badge-info">Đã tạo</span>;
+                return <span className="badge badge-info">{t('detail.actions.created')}</span>;
             case 'DELETED':
-                return <span className="badge badge-warning">Đã xóa</span>;
+                return <span className="badge badge-warning">{t('detail.actions.deleted')}</span>;
             default:
                 return <span className="badge">{action}</span>;
         }
@@ -145,13 +147,13 @@ export default function FlagDetailPage() {
                     className="flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--accent-primary)] mb-4 transition-colors"
                 >
                     <ArrowLeft className="w-4 h-4" />
-                    Quay lại Dashboard
+                    {t('detail.backToDashboard')}
                 </button>
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                     <div>
                         <h1 className="text-2xl font-bold text-white mb-2 flex items-center gap-3">
                             <Flag className="w-6 h-6 text-[var(--accent-primary)]" />
-                            Chi tiết Feature Flag
+                            {t('detail.title')}
                         </h1>
                         <code className="text-[var(--accent-primary)] text-lg">{flag.path}</code>
                     </div>
@@ -161,29 +163,29 @@ export default function FlagDetailPage() {
                         className="btn btn-secondary"
                     >
                         <RefreshCw className={`w-4 h-4 ${isLoadingLogs ? 'animate-spin' : ''}`} />
-                        Refresh Logs
+                        {t('detail.refreshLogs')}
                     </button>
                 </div>
             </div>
 
             {/* Flag Info Card */}
             <div className="card mb-8">
-                <h2 className="text-lg font-semibold text-white mb-6">Thông tin Flag</h2>
+                <h2 className="text-lg font-semibold text-white mb-6">{t('detail.infoTitle')}</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <div>
-                        <p className="text-sm text-[var(--text-muted)] mb-1">Method</p>
+                        <p className="text-sm text-[var(--text-muted)] mb-1">{t('detail.method')}</p>
                         <span className={getMethodBadgeClass(flag.method)}>{flag.method}</span>
                     </div>
                     <div>
-                        <p className="text-sm text-[var(--text-muted)] mb-1">Path</p>
+                        <p className="text-sm text-[var(--text-muted)] mb-1">{t('detail.path')}</p>
                         <code className="text-sm text-[var(--text-primary)]">{flag.path}</code>
                     </div>
                     <div>
-                        <p className="text-sm text-[var(--text-muted)] mb-1">Module</p>
+                        <p className="text-sm text-[var(--text-muted)] mb-1">{t('detail.module')}</p>
                         <span className="badge badge-info">{flag.module}</span>
                     </div>
                     <div>
-                        <p className="text-sm text-[var(--text-muted)] mb-1">Trạng thái</p>
+                        <p className="text-sm text-[var(--text-muted)] mb-1">{t('detail.status')}</p>
                         <div className="flex items-center gap-3">
                             <label className="toggle">
                                 <input
@@ -195,7 +197,7 @@ export default function FlagDetailPage() {
                                 <span className="toggle-slider"></span>
                             </label>
                             <span className={`text-sm font-medium ${flag.is_active ? 'text-[var(--status-success)]' : 'text-[var(--status-error)]'}`}>
-                                {flag.is_active ? 'Đang bật' : 'Đang tắt'}
+                                {flag.is_active ? t('detail.active') : t('detail.inactive')}
                             </span>
                             {isToggling && <Loader2 className="w-4 h-4 animate-spin text-[var(--accent-primary)]" />}
                         </div>
@@ -205,20 +207,19 @@ export default function FlagDetailPage() {
                 <div className="mt-6 pt-6 border-t border-[var(--border-primary)] grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
                         <Clock className="w-4 h-4" />
-                        Tạo lúc: {formatDate(flag.created_at)}
+                        {t('detail.createdAt')}: {formatDate(flag.created_at)}
                     </div>
                     <div className="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
                         <Clock className="w-4 h-4" />
-                        Cập nhật: {formatDate(flag.updated_at)}
+                        {t('detail.updatedAt')}: {formatDate(flag.updated_at)}
                     </div>
                 </div>
             </div>
 
-            {/* Activity Logs */}
             <div className="card">
                 <h2 className="text-lg font-semibold text-white mb-6 flex items-center gap-2">
                     <Clock className="w-5 h-5 text-[var(--accent-primary)]" />
-                    Lịch sử thay đổi ({totalLogs} logs)
+                    {t('detail.historyTitle')} ({totalLogs} logs)
                 </h2>
 
                 {isLoadingLogs ? (
@@ -228,7 +229,7 @@ export default function FlagDetailPage() {
                 ) : logs.length === 0 ? (
                     <div className="text-center py-12 text-[var(--text-muted)]">
                         <Clock className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                        <p>Chưa có lịch sử thay đổi</p>
+                        <p>{t('detail.noLogs')}</p>
                     </div>
                 ) : (
                     <div className="space-y-4">
@@ -250,7 +251,7 @@ export default function FlagDetailPage() {
                                         <span className="text-sm text-[var(--text-secondary)]">
                                             {log.previous_state !== null && (
                                                 <>
-                                                    {log.previous_state ? 'Bật' : 'Tắt'} → {log.new_state ? 'Bật' : 'Tắt'}
+                                                    {log.previous_state ? t('detail.actions.enabled') : t('detail.actions.disabled')} → {log.new_state ? t('detail.actions.enabled') : t('detail.actions.disabled')}
                                                 </>
                                             )}
                                         </span>
@@ -270,13 +271,13 @@ export default function FlagDetailPage() {
                                     {log.user_id && (
                                         <div className="flex items-center gap-1">
                                             <User className="w-3 h-3" />
-                                            User: {log.user_id.substring(0, 8)}...
+                                            {t('detail.user')}: {log.user_id.substring(0, 8)}...
                                         </div>
                                     )}
                                     {log.ip_address && (
                                         <div className="flex items-center gap-1">
                                             <Globe className="w-3 h-3" />
-                                            IP: {log.ip_address}
+                                            {t('detail.ip')}: {log.ip_address}
                                         </div>
                                     )}
                                     {log.user_agent && (
@@ -295,7 +296,7 @@ export default function FlagDetailPage() {
                 {totalLogsPages > 1 && (
                     <div className="flex items-center justify-between mt-6 pt-6 border-t border-[var(--border-primary)]">
                         <p className="text-sm text-[var(--text-secondary)]">
-                            Trang {logsPage} / {totalLogsPages}
+                            {t('dashboard.pagination.page')} {logsPage} / {totalLogsPages}
                         </p>
                         <div className="flex items-center gap-2">
                             <button

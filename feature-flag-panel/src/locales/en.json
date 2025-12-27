@@ -29,7 +29,6 @@
         },
         "actions": {
             "refresh": "Refresh",
-            "reloadCache": "Reload Cache",
             "bulkAction": "Bulk Actions",
             "enableSelected": "Enable Selected",
             "disableSelected": "Disable Selected"
@@ -38,7 +37,10 @@
             "flag": "Flag (Method / Path)",
             "module": "Module",
             "status": "Status",
-            "history": "History"
+            "history": "History",
+            "method": "Method",
+            "path": "Path",
+            "viewLogs": "View logs"
         },
         "pagination": {
             "showing": "Showing",
@@ -52,8 +54,6 @@
             "toggleError": "Failed to toggle feature flag",
             "enabled": "enabled",
             "disabled": "disabled",
-            "cacheReloadSuccess": "Cache reloaded successfully",
-            "cacheReloadError": "Failed to reload cache",
             "bulkSuccess": "Updated {count} flags",
             "bulkError": "Failed to update flags",
             "noFlagsFound": "No feature flags found"
@@ -81,6 +81,36 @@
             "permissionDenied": "You do not have permission to access Feature Flag Panel",
             "invalidCredentials": "Invalid credentials",
             "generic": "An error occurred. Please try again later"
+        }
+    },
+    "detail": {
+        "backToDashboard": "Back to Dashboard",
+        "title": "Feature Flag Detail",
+        "refreshLogs": "Refresh Logs",
+        "infoTitle": "Flag Information",
+        "method": "Method",
+        "path": "Path",
+        "module": "Module",
+        "status": "Status",
+        "active": "Active",
+        "inactive": "Inactive",
+        "createdAt": "Created At",
+        "updatedAt": "Updated At",
+        "historyTitle": "Change History",
+        "noLogs": "No change history found",
+        "user": "User",
+        "ip": "IP",
+        "actions": {
+            "enabled": "Enabled",
+            "disabled": "Disabled",
+            "created": "Created",
+            "deleted": "Deleted"
+        },
+        "messages": {
+            "fetchError": "Failed to load feature flag information",
+            "fetchLogsError": "Failed to load change history",
+            "toggleError": "Failed to change feature flag status",
+            "toggleSuccess": "Feature flag has been {status}"
         }
     }
 }

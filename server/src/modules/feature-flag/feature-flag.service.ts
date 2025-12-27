@@ -198,6 +198,7 @@ export class FeatureFlagService implements OnModuleInit {
         const skip = (page - 1) * limit;
 
         const where: any = {};
+        const andConditions: any[] = [];
 
         if (!options?.includeDeleted) {
             where.is_deleted = false;
@@ -211,12 +212,25 @@ export class FeatureFlagService implements OnModuleInit {
             where.is_active = options.isActive;
         }
 
-        if (options?.search) {
-            where.OR = [
-                { path: { contains: options.search, mode: 'insensitive' } },
-                { module: { contains: options.search, mode: 'insensitive' } },
-                { method: { contains: options.search, mode: 'insensitive' } },
+        // Handle text search
+        if (options?.search && options.search.trim().length > 0) {
+            const searchTerm = options.search.trim();
+            // Note: 'method' is an enum, checking for contains(string) causes issues or is invalid.
+            // We focus on path and module for text search.
+            const searchConditions = [
+                { path: { contains: searchTerm, mode: 'insensitive' } },
+                { module: { contains: searchTerm, mode: 'insensitive' } },
             ];
+
+            // If the search term exactly matches an HTTP method, include it (optional/advanced)
+            // But for now, safely searching path and module is sufficient and fixes the crash/ignore issue.
+
+            // Allow explicit OR composition to ensure it doesn't get overridden
+            if (Object.keys(where).length > 0) {
+                // If we have other conditions (e.g. module, is_active), we must combine search carefully
+                // Prisma supports implicit top-level props as AND, but let's be explicit
+            }
+            where.OR = searchConditions;
         }
 
         const [data, total] = await Promise.all([
