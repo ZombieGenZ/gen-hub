@@ -24,6 +24,9 @@ type ServiceStatus = {
 type StatusResponse = {
   client: ServiceStatus;
   server: ServiceStatus;
+  databasePanel?: ServiceStatus;
+  featureFlagPanel?: ServiceStatus;
+  resourcesPanel?: ServiceStatus;
   timestamp: string;
 };
 
@@ -130,14 +133,26 @@ export default function Home() {
         </header>
 
         {loading && !data ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-pulse">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-pulse">
+            <div className="h-48 rounded-2xl bg-neutral-200 dark:bg-neutral-900/50 border border-neutral-300 dark:border-neutral-800"></div>
+            <div className="h-48 rounded-2xl bg-neutral-200 dark:bg-neutral-900/50 border border-neutral-300 dark:border-neutral-800"></div>
+            <div className="h-48 rounded-2xl bg-neutral-200 dark:bg-neutral-900/50 border border-neutral-300 dark:border-neutral-800"></div>
             <div className="h-48 rounded-2xl bg-neutral-200 dark:bg-neutral-900/50 border border-neutral-300 dark:border-neutral-800"></div>
             <div className="h-48 rounded-2xl bg-neutral-200 dark:bg-neutral-900/50 border border-neutral-300 dark:border-neutral-800"></div>
           </div>
         ) : data && data.client && data.server ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <StatusCard serviceKey="client" service={data.client} />
             <StatusCard serviceKey="server" service={data.server} />
+            {data.databasePanel && (
+              <StatusCard serviceKey="databasePanel" service={data.databasePanel} />
+            )}
+            {data.featureFlagPanel && (
+              <StatusCard serviceKey="featureFlagPanel" service={data.featureFlagPanel} />
+            )}
+            {data.resourcesPanel && (
+              <StatusCard serviceKey="resourcesPanel" service={data.resourcesPanel} />
+            )}
           </div>
         ) : (
           <div className="text-center text-red-500">
