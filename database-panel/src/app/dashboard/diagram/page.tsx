@@ -286,11 +286,7 @@ export default function DiagramPage() {
     const [schema, setSchema] = useState<{ tables: TableSchema[]; relations: Relation[] } | null>(null);
     const [hoveredNode, setHoveredNode] = useState<string | null>(null);
 
-    // Draggable panel positions
-    const [legendPosition, setLegendPosition] = useState({ x: 16, y: -200 });
-    const [miniMapPosition, setMiniMapPosition] = useState({ x: -180, y: -180 });
-    const [dragging, setDragging] = useState<'legend' | 'minimap' | null>(null);
-    const dragOffset = useRef({ x: 0, y: 0 });
+
 
     // Memoize nodeTypes to prevent recreation on every render
     const nodeTypes = useMemo(() => ({
@@ -449,36 +445,7 @@ export default function DiagramPage() {
         setHasChanges(true);
     }, []);
 
-    // Drag handlers for Legend and MiniMap
-    const handleDragStart = useCallback((e: React.MouseEvent, panel: 'legend' | 'minimap') => {
-        e.preventDefault();
-        e.stopPropagation();
-        setDragging(panel);
-        const rect = (e.target as HTMLElement).closest('.draggable-panel')?.getBoundingClientRect();
-        if (rect) {
-            dragOffset.current = {
-                x: e.clientX - rect.left,
-                y: e.clientY - rect.top,
-            };
-        }
-    }, []);
 
-    const handleDragMove = useCallback((e: React.MouseEvent) => {
-        if (!dragging || !reactFlowWrapper.current) return;
-        const wrapperRect = reactFlowWrapper.current.getBoundingClientRect();
-        const newX = e.clientX - wrapperRect.left - dragOffset.current.x;
-        const newY = e.clientY - wrapperRect.top - dragOffset.current.y;
-
-        if (dragging === 'legend') {
-            setLegendPosition({ x: newX, y: newY });
-        } else {
-            setMiniMapPosition({ x: newX, y: newY });
-        }
-    }, [dragging]);
-
-    const handleDragEnd = useCallback(() => {
-        setDragging(null);
-    }, []);
 
     // Save configuration
     const handleSave = useCallback(async () => {
