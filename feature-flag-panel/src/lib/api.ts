@@ -223,6 +223,7 @@ export const featureFlagApi = {
         module?: string;
         isActive?: boolean;
         includeDeleted?: boolean;
+        search?: string;
     }): Promise<{ data: FeatureFlag[]; total: number }> => {
         const params = new URLSearchParams();
         if (options?.page) params.append('page', String(options.page));
@@ -230,6 +231,7 @@ export const featureFlagApi = {
         if (options?.module) params.append('module', options.module);
         if (options?.isActive !== undefined) params.append('isActive', String(options.isActive));
         if (options?.includeDeleted) params.append('includeDeleted', 'true');
+        if (options?.search) params.append('search', options.search);
 
         const { data } = await api.get(`/admin/feature-flags?${params.toString()}`);
         return data;

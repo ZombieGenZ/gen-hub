@@ -32,12 +32,13 @@ export class FeatureFlagController {
     @ApiQuery({ name: 'module', required: false, type: String })
     @ApiQuery({ name: 'isActive', required: false, type: Boolean })
     @ApiQuery({ name: 'includeDeleted', required: false, type: Boolean })
+    @ApiQuery({ name: 'search', required: false, type: String })
     async getAll(
         @Query('page') page?: string,
         @Query('limit') limit?: string,
         @Query('module') module?: string,
         @Query('isActive') isActive?: string,
-        @Query('includeDeleted') includeDeleted?: string,
+        @Query('search') search?: string,
     ) {
         return this.featureFlagService.getAll({
             page: page ? parseInt(page, 10) : undefined,
@@ -45,6 +46,7 @@ export class FeatureFlagController {
             module,
             isActive: isActive !== undefined ? isActive === 'true' : undefined,
             includeDeleted: includeDeleted === 'true',
+            search,
         });
     }
 

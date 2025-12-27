@@ -55,9 +55,9 @@ export default function DashboardPage() {
 
     // Calculate stats from statistics or show placeholder
     const totalTables = tables.length;
-    const totalRecords = statistics?.summary.totalRecords ?? 0;
-    const totalColumns = statistics?.summary.totalColumns ?? 0;
-    const avgRecordsPerTable = statistics?.summary.avgRecordsPerTable ?? 0;
+    const totalRecords = statistics?.summary?.totalRecords ?? 0;
+    const totalColumns = statistics?.summary?.totalColumns ?? 0;
+    const avgRecordsPerTable = statistics?.summary?.avgRecordsPerTable ?? 0;
 
     const stats = [
         {
@@ -87,7 +87,7 @@ export default function DashboardPage() {
     ];
 
     const getTableStats = (tableName: string) => {
-        return statistics?.tables.find(t => t.name === tableName);
+        return statistics?.tables?.find(t => t.name === tableName);
     };
 
     return (

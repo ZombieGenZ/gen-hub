@@ -191,6 +191,7 @@ export class FeatureFlagService implements OnModuleInit {
         module?: string;
         isActive?: boolean;
         includeDeleted?: boolean;
+        search?: string;
     }): Promise<{ data: FeatureFlag[]; total: number }> {
         const page = options?.page || 1;
         const limit = options?.limit || 50;
@@ -208,6 +209,14 @@ export class FeatureFlagService implements OnModuleInit {
 
         if (options?.isActive !== undefined) {
             where.is_active = options.isActive;
+        }
+
+        if (options?.search) {
+            where.OR = [
+                { path: { contains: options.search, mode: 'insensitive' } },
+                { module: { contains: options.search, mode: 'insensitive' } },
+                { method: { contains: options.search, mode: 'insensitive' } },
+            ];
         }
 
         const [data, total] = await Promise.all([

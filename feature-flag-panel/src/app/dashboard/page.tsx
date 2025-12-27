@@ -51,6 +51,20 @@ export default function DashboardPage() {
     const [selectedModule, setSelectedModule] = useState<string>('');
     const [activeFilter, setActiveFilter] = useState<string>('');
     const [searchQuery, setSearchQuery] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
+
+    // Debounce search query
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(searchQuery);
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
+
+    // Reset page when search changes
+    useEffect(() => {
+        setPage(1);
+    }, [debouncedSearch]);
 
     // Bulk selection
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -64,6 +78,7 @@ export default function DashboardPage() {
                 limit,
                 module: selectedModule || undefined,
                 isActive: activeFilter === '' ? undefined : activeFilter === 'true',
+                search: debouncedSearch || undefined,
             });
             setFlags(response.data);
             setTotal(response.total);
@@ -73,7 +88,7 @@ export default function DashboardPage() {
         } finally {
             setIsLoading(false);
         }
-    }, [page, limit, selectedModule, activeFilter]);
+    }, [page, limit, selectedModule, activeFilter, debouncedSearch]);
 
     const fetchModules = useCallback(async () => {
         try {
@@ -156,13 +171,7 @@ export default function DashboardPage() {
         }
     };
 
-    const toggleSelectAll = () => {
-        if (selectedIds.size === filteredFlags.length) {
-            setSelectedIds(new Set());
-        } else {
-            setSelectedIds(new Set(filteredFlags.map(f => f.id)));
-        }
-    };
+
 
     const toggleSelect = (id: string) => {
         const newSelected = new Set(selectedIds);
@@ -174,19 +183,13 @@ export default function DashboardPage() {
         setSelectedIds(newSelected);
     };
 
-    // Filter flags by search query
-    const filteredFlags = flags.filter(flag => {
-        if (!searchQuery) return true;
-        const query = searchQuery.toLowerCase();
-        return flag.path.toLowerCase().includes(query) ||
-            flag.module.toLowerCase().includes(query) ||
-            flag.method.toLowerCase().includes(query);
-    });
-
     const totalPages = Math.ceil(total / limit);
     const activeCount = stats.active;
     const inactiveCount = stats.inactive;
     const totalCount = stats.total;
+
+    // Use flags directly as they are now filtered on server
+    const displayFlags = flags;
 
     const getMethodBadgeClass = (method: string) => {
         const methodLower = method.toLowerCase();
@@ -360,7 +363,7 @@ export default function DashboardPage() {
                     <div className="flex items-center justify-center py-12">
                         <Loader2 className="w-8 h-8 animate-spin text-[var(--accent-primary)]" />
                     </div>
-                ) : filteredFlags.length === 0 ? (
+                ) : displayFlags.length === 0 ? (
                     <div className="text-center py-12 text-[var(--text-muted)]">
                         <Flag className="w-12 h-12 mx-auto mb-4 opacity-50" />
                         <p>{t('dashboard.messages.noFlagsFound')}</p>
@@ -372,8 +375,14 @@ export default function DashboardPage() {
                                 <th style={{ width: '50px' }}>
                                     <input
                                         type="checkbox"
-                                        checked={selectedIds.size === filteredFlags.length && filteredFlags.length > 0}
-                                        onChange={toggleSelectAll}
+                                        checked={selectedIds.size === displayFlags.length && displayFlags.length > 0}
+                                        onChange={() => {
+                                            if (selectedIds.size === displayFlags.length) {
+                                                setSelectedIds(new Set());
+                                            } else {
+                                                setSelectedIds(new Set(displayFlags.map(f => f.id)));
+                                            }
+                                        }}
                                         className="custom-checkbox"
                                     />
                                 </th>
@@ -385,7 +394,7 @@ export default function DashboardPage() {
                             </tr>
                         </thead>
                         <tbody>
-                            {filteredFlags.map((flag) => (
+                            {displayFlags.map((flag) => (
                                 <tr key={flag.id}>
                                     <td>
                                         <input
