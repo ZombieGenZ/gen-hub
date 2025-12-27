@@ -277,49 +277,52 @@ export default function DashboardPage() {
             <div className="card mb-6">
                 <div className="flex flex-col lg:flex-row gap-4">
                     {/* Search */}
-                    <div className="relative flex-1">
+                    <div className="relative flex-1 w-full">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[var(--text-muted)]" />
                         <input
                             type="text"
                             placeholder={t('dashboard.filters.searchPlaceholder')}
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="input pl-10"
+                            className="input pl-10 w-full"
                         />
                     </div>
 
-                    {/* Module Filter */}
-                    <div className="flex items-center gap-2">
-                        <Filter className="w-5 h-5 text-[var(--text-muted)]" />
-                        <select
-                            value={selectedModule}
-                            onChange={(e) => {
-                                setSelectedModule(e.target.value);
-                                setPage(1);
-                            }}
-                            className="select"
-                        >
-                            <option value="">{t('dashboard.filters.allModules')}</option>
-                            {modules.map(module => (
-                                <option key={module} value={module}>{module}</option>
-                            ))}
-                        </select>
-                    </div>
+                    {/* Filters Container */}
+                    <div className="grid grid-cols-2 gap-3 w-full lg:w-auto lg:flex lg:gap-3">
+                        {/* Module Filter */}
+                        <div className="relative">
+                            <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[var(--text-muted)] pointer-events-none" />
+                            <select
+                                value={selectedModule}
+                                onChange={(e) => {
+                                    setSelectedModule(e.target.value);
+                                    setPage(1);
+                                }}
+                                className="select w-full pl-9"
+                            >
+                                <option value="">{t('dashboard.filters.allModules')}</option>
+                                {modules.map(module => (
+                                    <option key={module} value={module}>{module}</option>
+                                ))}
+                            </select>
+                        </div>
 
-                    {/* Status Filter */}
-                    <div className="flex items-center gap-2">
-                        <select
-                            value={activeFilter}
-                            onChange={(e) => {
-                                setActiveFilter(e.target.value);
-                                setPage(1);
-                            }}
-                            className="select"
-                        >
-                            <option value="">{t('dashboard.filters.allStatus')}</option>
-                            <option value="true">{t('dashboard.filters.active')}</option>
-                            <option value="false">{t('dashboard.filters.inactive')}</option>
-                        </select>
+                        {/* Status Filter */}
+                        <div>
+                            <select
+                                value={activeFilter}
+                                onChange={(e) => {
+                                    setActiveFilter(e.target.value);
+                                    setPage(1);
+                                }}
+                                className="select w-full"
+                            >
+                                <option value="">{t('dashboard.filters.allStatus')}</option>
+                                <option value="true">{t('dashboard.filters.active')}</option>
+                                <option value="false">{t('dashboard.filters.inactive')}</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
             </div>
