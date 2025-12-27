@@ -9,6 +9,7 @@ on:
       - 'server/**'
       - 'status/**'
       - 'database-panel/**'
+      - 'feature-flag-panel/**'
 
   workflow_dispatch:
 
@@ -84,3 +85,21 @@ jobs:
           user-email: ${{ secrets.GH_EMAIL }}
           target-branch: master
           commit-message: "Sync database-panel: ${{ github.event.head_commit.message }}"
+
+  sync-feature-flag-panel:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Push feature-flag-panel folder
+        uses: cpina/github-action-push-to-another-repository@main
+        env:
+          API_TOKEN_GITHUB: ${{ secrets.API_TOKEN_GITHUB }}
+        with:
+          source-directory: 'feature-flag-panel'
+          destination-github-username: ${{ secrets.GH_USERNAME }}
+          destination-repository-name: ${{ secrets.REPO_FEATURE_FLAG_PANEL }}
+          user-email: ${{ secrets.GH_EMAIL }}
+          target-branch: master
+          commit-message: "Sync feature-flag-panel: ${{ github.event.head_commit.message }}"

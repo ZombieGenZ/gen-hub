@@ -266,6 +266,23 @@ enum DurationUnit {
   YEAR
 }
 
+enum HttpMethod {
+  GET
+  POST
+  PUT
+  PATCH
+  DELETE
+  HEAD
+  OPTIONS
+}
+
+enum FeatureFlagAction {
+  CREATED
+  ENABLED
+  DISABLED
+  DELETED
+}
+
 enum TemplateRentalStatus {
   AVAILABLE
   LOCKED
@@ -1167,7 +1184,10 @@ model Organization {
   is_using_google_email Boolean @default(false)
 
   auto_delete_api_key_logs  Boolean? @default(true)
-  api_key_logs_retention_ms BigInt? @default(2592000000)
+  api_key_logs_retention_ms BigInt?  @default(2592000000)
+
+  auto_delete_org_audit_logs  Boolean? @default(true)
+  org_audit_logs_retention_ms BigInt?  @default(2592000000)
 
   created_at DateTime  @default(now())
   updated_at DateTime? @updatedAt
@@ -2181,8 +2201,18 @@ model DatabaseLog {
   table_name String
   record_id  String?
 
+  // Enhanced fields for comprehensive logging
+  primary_key_column String?
+  trigger_operation  String?   // INSERT/UPDATE/DELETE from trigger
+  query_type         String?   // SELECT/INSERT/UPDATE/DELETE
+  affected_rows      Int?      @default(1)
+  execution_time_ms  Int?
+
   old_data Json?
   new_data Json?
+
+  // Changed columns tracking
+  changed_columns String[] @default([])
 
   ip_address String?
   user_agent String?
@@ -2195,6 +2225,7 @@ model DatabaseLog {
   @@index([user_id])
   @@index([created_at])
   @@index([action])
+  @@index([trigger_operation])
   @@map("database_logs")
 }
 
@@ -2264,6 +2295,49 @@ model ApiKeyLog {
   @@index([api_key_id, created_at])
   @@index([organization_id, created_at])
   @@map("api_key_logs")
+}
+
+model FeatureFlag {
+  id          String     @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  module      String
+  method      HttpMethod
+  path        String
+  is_active   Boolean    @default(true)
+  description String?
+
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean   @default(false)
+  deleted_at DateTime?
+
+  logs FeatureFlagLog[]
+
+  @@unique([method, path])
+  @@index([module])
+  @@index([is_active])
+  @@index([is_deleted])
+  @@map("feature_flags")
+}
+
+model FeatureFlagLog {
+  id              String            @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  feature_flag_id String            @db.Uuid
+  action          FeatureFlagAction
+  previous_state  Boolean?
+  new_state       Boolean
+  description     String?
+
+  user_id    String? @db.Uuid
+  ip_address String?
+  user_agent String?
+
+  created_at DateTime @default(now())
+
+  feature_flag FeatureFlag @relation(fields: [feature_flag_id], references: [id], onDelete: Cascade)
+
+  @@index([feature_flag_id])
+  @@index([created_at])
+  @@map("feature_flag_logs")
 }
 
 enum NotificationType {

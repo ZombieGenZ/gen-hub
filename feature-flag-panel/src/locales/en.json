@@ -1,0 +1,86 @@
+{
+    "common": {
+        "success": "Success",
+        "error": "Error",
+        "loading": "Loading...",
+        "cancel": "Cancel",
+        "save": "Save"
+    },
+    "sidebar": {
+        "title": "GEN-HUB",
+        "subtitle": "Feature Flag Panel",
+        "dashboard": "Dashboard",
+        "logout": "Logout",
+        "profile": "Profile"
+    },
+    "dashboard": {
+        "title": "Feature Flags",
+        "stats": {
+            "total": "Total Flags",
+            "active": "Active",
+            "inactive": "Inactive"
+        },
+        "filters": {
+            "searchPlaceholder": "Search flags...",
+            "allModules": "All Modules",
+            "allStatus": "All Status",
+            "active": "Active",
+            "inactive": "Inactive"
+        },
+        "actions": {
+            "refresh": "Refresh",
+            "reloadCache": "Reload Cache",
+            "bulkAction": "Bulk Actions",
+            "enableSelected": "Enable Selected",
+            "disableSelected": "Disable Selected"
+        },
+        "table": {
+            "flag": "Flag (Method / Path)",
+            "module": "Module",
+            "status": "Status",
+            "history": "History"
+        },
+        "pagination": {
+            "showing": "Showing",
+            "of": "of",
+            "flags": "flags",
+            "page": "Page",
+            "rows": "Rows"
+        },
+        "messages": {
+            "toggleSuccess": "Feature flag has been {status}",
+            "toggleError": "Failed to toggle feature flag",
+            "enabled": "enabled",
+            "disabled": "disabled",
+            "cacheReloadSuccess": "Cache reloaded successfully",
+            "cacheReloadError": "Failed to reload cache",
+            "bulkSuccess": "Updated {count} flags",
+            "bulkError": "Failed to update flags",
+            "noFlagsFound": "No feature flags found"
+        }
+    },
+    "login": {
+        "title": "Login",
+        "email": "Email",
+        "password": "Password",
+        "submit": "Login",
+        "verify2FA": "Two-Factor Authentication",
+        "verify": "Verify",
+        "verifying": "Verifying...",
+        "loggingIn": "Logging in...",
+        "useAuthenticator": "Use Authenticator Code",
+        "useBackupCode": "Use Backup Code",
+        "authenticatorCode": "Authenticator Code",
+        "backupCode": "Backup Code",
+        "enterCode": "Enter the 6-digit code from your authenticator app.",
+        "enterBackupCode": "Enter your backup code to continue.",
+        "footer": "© {year} GEN-HUB. All rights reserved.",
+        "error": "Please enter all fields",
+        "errors": {
+            "missing2FA": "Please enter verification code",
+            "permissionDenied": "You do not have permission to access Feature Flag Panel",
+            "invalidCredentials": "Invalid credentials",
+            "generic": "An error occurred. Please try again later"
+        }
+    }
+}

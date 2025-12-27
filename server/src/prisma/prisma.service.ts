@@ -287,6 +287,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
       const seedFunctions = [
         this.seedConfigPermissions.bind(this),
         this.seedDatabaseAdminPermission.bind(this),
+        this.seedFeatureFlagPermission.bind(this),
         this.seedAmenityPermissions.bind(this),
         this.seedAddonPermissions.bind(this),
         this.seedCouponPermissions.bind(this),
@@ -382,6 +383,69 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         error instanceof Error ? error.message : String(error);
       this.logger.error(
         `❌ Failed to seed database admin permission: ${errorMessage}`,
+      );
+    }
+  }
+
+  /**
+   * Seed permission featureflag.admin cho Feature Flag Management
+   */
+  private async seedFeatureFlagPermission() {
+    try {
+      const existing = await this.permission.findFirst({
+        where: { key: 'featureflag.admin' },
+      });
+
+      let permissionId = existing?.id;
+
+      if (!existing) {
+        const newPermission = await this.permission.create({
+          data: {
+            key: 'featureflag.admin',
+            name: 'Feature Flag Admin',
+            description: 'Quyền quản lý bật/tắt các API endpoints',
+            is_active: true,
+            is_deleted: false,
+          },
+        });
+        permissionId = newPermission.id;
+        this.logger.log('✅ Feature flag admin permission seeded');
+      }
+
+      // Assign to Super Admin
+      if (permissionId) {
+        const superAdminRole = await this.role.findFirst({
+          where: { name: 'Super Admin', is_deleted: false },
+        });
+
+        if (superAdminRole) {
+          const existingAssignment = await this.rolePermission.findFirst({
+            where: {
+              role_id: superAdminRole.id,
+              permission_id: permissionId,
+            },
+          });
+
+          if (!existingAssignment) {
+            await this.rolePermission.create({
+              data: {
+                role_id: superAdminRole.id,
+                permission_id: permissionId,
+                is_active: true,
+                is_deleted: false,
+              },
+            });
+            this.logger.log(
+              '✅ Feature flag admin permission assigned to Super Admin',
+            );
+          }
+        }
+      }
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `❌ Failed to seed feature flag admin permission: ${errorMessage}`,
       );
     }
   }

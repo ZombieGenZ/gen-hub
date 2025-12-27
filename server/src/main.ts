@@ -201,6 +201,38 @@ async function bootstrap() {
   console.log(`📊 Main API: ${mainStats.total} endpoints (${Object.entries(mainStats.byMethod).map(([m, c]) => `${m}: ${c}`).join(', ')})`);
   console.log(`📊 API Key API: ${apiKeyStats.total} endpoints (${Object.entries(apiKeyStats.byMethod).map(([m, c]) => `${m}: ${c}`).join(', ')})`);
 
+  // Sync Feature Flags (run in background to not block server startup)
+  setImmediate(async () => {
+    try {
+      const { FeatureFlagService } = require('./modules/feature-flag/feature-flag.service');
+      const featureFlagService = app.get(FeatureFlagService);
+
+      // Extract routes from Swagger document
+      const discoveredRoutes: { module: string; method: any; path: string }[] = [];
+
+      if (document.paths) {
+        for (const path of Object.keys(document.paths)) {
+          const methods = document.paths[path] as Record<string, any>;
+          for (const method of Object.keys(methods)) {
+            if (['get', 'post', 'put', 'patch', 'delete', 'head', 'options'].includes(method)) {
+              const tags = methods[method]?.tags || ['Unknown'];
+              discoveredRoutes.push({
+                module: tags[0] || 'Unknown',
+                method: method.toUpperCase() as any,
+                path: path,
+              });
+            }
+          }
+        }
+      }
+
+      await featureFlagService.syncRoutes(discoveredRoutes);
+      console.log(`🚩 Feature flags synced: ${discoveredRoutes.length} routes`);
+    } catch (error) {
+      console.error('⚠️ Failed to sync feature flags:', error);
+    }
+  });
+
   // Graceful Shutdown
   const gracefulShutdown = async (signal: string) => {
     console.log(`\n📴 Nhận signal ${signal}, đang tắt server...`);

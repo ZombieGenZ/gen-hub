@@ -41,6 +41,7 @@ import { AddonModule } from './modules/addon/addon.module';
 import { CouponModule } from './modules/coupon/coupon.module';
 import { CouponScheduleModule } from './modules/coupon-schedule/coupon-schedule.module';
 import { DatabaseAdminModule } from './modules/database-admin/database-admin.module';
+import { FeatureFlagModule } from './modules/feature-flag/feature-flag.module';
 import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
 
 @Module({
@@ -134,6 +135,9 @@ import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
 
     // Database Panel
     DatabaseAdminModule,
+
+    // Feature Flag Management
+    FeatureFlagModule,
   ],
   controllers: [AppController],
   providers: [

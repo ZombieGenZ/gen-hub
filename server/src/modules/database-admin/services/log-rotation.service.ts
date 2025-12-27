@@ -24,6 +24,8 @@ export class LogRotationService {
                 this.cleanSystemLogs(),
                 this.cleanDatabaseLogs(),
                 this.cleanApiKeyLogs(),
+                this.cleanOrganizationAuditLogs(),
+                this.cleanFeatureFlagLogs(),
             ]);
 
             this.logger.log('✅ Log rotation completed');
@@ -133,6 +135,83 @@ export class LogRotationService {
             }
         } catch (error) {
             this.logger.error('Failed to clean ApiKeyLog', error);
+        }
+    }
+
+    /**
+     * Xóa OrganizationAuditLog cũ theo cấu hình của từng Organization
+     */
+    private async cleanOrganizationAuditLogs() {
+        try {
+            const orgs = await this.prisma.organization.findMany({
+                where: {
+                    auto_delete_org_audit_logs: true,
+                    org_audit_logs_retention_ms: { not: null },
+                },
+                select: {
+                    id: true,
+                    name: true,
+                    org_audit_logs_retention_ms: true,
+                },
+            });
+
+            if (orgs.length === 0) {
+                this.logger.debug('No organizations with OrganizationAuditLog auto-delete enabled');
+                return;
+            }
+
+            for (const org of orgs) {
+                if (!org.org_audit_logs_retention_ms) continue;
+
+                const cutoffDate = new Date(
+                    Date.now() - Number(org.org_audit_logs_retention_ms),
+                );
+
+                const result = await this.prisma.organizationAuditLog.deleteMany({
+                    where: {
+                        organization_id: org.id,
+                        created_at: { lt: cutoffDate },
+                    },
+                });
+
+                if (result.count > 0) {
+                    this.logger.log(
+                        `🗑️ Deleted ${result.count} old OrganizationAuditLog records for org "${org.name}"`,
+                    );
+                }
+            }
+        } catch (error) {
+            this.logger.error('Failed to clean OrganizationAuditLog', error);
+        }
+    }
+
+    /**
+     * Xóa FeatureFlagLog cũ theo cấu hình env
+     */
+    private async cleanFeatureFlagLogs() {
+        const autoDelete = this.configService.get<string>('AUTO_DELETE_FEATURE_FLAG_LOGS') === 'true';
+
+        if (!autoDelete) {
+            this.logger.debug('FeatureFlagLog auto-delete is disabled');
+            return;
+        }
+
+        const retentionMs = parseInt(
+            this.configService.get<string>('FEATURE_FLAG_LOGS_RETENTION_MS') || '2592000000',
+            10,
+        );
+        const cutoffDate = new Date(Date.now() - retentionMs);
+
+        try {
+            const result = await this.prisma.featureFlagLog.deleteMany({
+                where: { created_at: { lt: cutoffDate } },
+            });
+
+            if (result.count > 0) {
+                this.logger.log(`🗑️ Deleted ${result.count} old FeatureFlagLog records`);
+            }
+        } catch (error) {
+            this.logger.error('Failed to clean FeatureFlagLog', error);
         }
     }
 
