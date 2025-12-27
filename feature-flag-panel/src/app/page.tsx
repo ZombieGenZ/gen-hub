@@ -84,19 +84,6 @@ export default function LoginPage() {
 
         {/* Login Card */}
         <div className="card animate-fadeIn">
-          {/* Warning Box */}
-          <div className="flex items-start gap-3 p-4 rounded-lg bg-[rgba(255,180,0,0.1)] border border-[rgba(255,180,0,0.3)] mb-6">
-            <div className="flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-full bg-[rgba(255,180,0,0.2)]">
-              <span className="text-yellow-400 text-sm">⚠️</span>
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-medium text-yellow-400 mb-1">{t('login.warningTitle')}</p>
-              <p className="text-xs text-[var(--text-secondary)]">
-                {t('login.warningMessage')}
-              </p>
-            </div>
-          </div>
-
           <h2 className="text-xl font-semibold text-white mb-6">
             {requires2FA ? t('login.verify2FA') : t('login.title')}
           </h2>
