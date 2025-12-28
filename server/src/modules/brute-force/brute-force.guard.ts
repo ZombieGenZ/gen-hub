@@ -40,8 +40,8 @@ export class BruteForceGuard implements CanActivate {
         const lockInfo = await this.bruteForceService.isLocked(email, ip);
 
         if (lockInfo.locked) {
-            // Lấy language từ header
-            const lang = request.headers['accept-language']?.split(',')[0]?.split('-')[0] || 'vi';
+            // Lấy language từ header và chuyển thành lowercase
+            const lang = (request.headers['accept-language']?.split(',')[0]?.split('-')[0] || 'vi').toLowerCase();
 
             // Kiểm tra xem có thể tạo mã unlock mới không
             const canRegenerate = await this.bruteForceService.canRegenerateUnlockCode(email);
@@ -49,28 +49,37 @@ export class BruteForceGuard implements CanActivate {
                 // Tạo mã unlock mới
                 const newCode = await this.bruteForceService.generateAndSendUnlockCode(email, ip);
 
+                const message = await this.i18n.translate('bruteForce.lockedWithNewCode', {
+                    lang,
+                    args: { code: newCode },
+                });
+
                 throw new HttpException({
-                    statusCode: HttpStatus.LOCKED,
-                    message: await this.i18n.t('bruteForce.lockedWithNewCode', {
-                        lang,
-                        args: { code: newCode },
-                    }),
-                    error: 'Locked',
-                    unlockCode: newCode,
-                    type: lockInfo.type,
-                    remainingSeconds: lockInfo.remainingSeconds,
+                    code: 'error.account_locked',
+                    message,
+                    success: false,
+                    data: {
+                        type: lockInfo.type,
+                        remainingSeconds: lockInfo.remainingSeconds,
+                        unlockCodeSent: true,
+                    },
                 }, HttpStatus.LOCKED);
             }
 
-            // Trả về lỗi 423 Locked
+            // Trả về lỗi 423 Locked với format chuẩn
             const message = await this.bruteForceService.getLockedMessage(lockInfo, lang);
+            const code = lockInfo.type === 'permanent'
+                ? 'error.account_locked_permanent'
+                : 'error.account_locked';
 
             throw new HttpException({
-                statusCode: HttpStatus.LOCKED,
+                code,
                 message,
-                error: 'Locked',
-                type: lockInfo.type,
-                remainingSeconds: lockInfo.remainingSeconds,
+                success: false,
+                data: {
+                    type: lockInfo.type,
+                    remainingSeconds: lockInfo.remainingSeconds,
+                },
             }, HttpStatus.LOCKED);
         }
 

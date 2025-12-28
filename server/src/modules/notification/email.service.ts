@@ -984,13 +984,31 @@ export class EmailService {
 
       <!-- Hướng dẫn -->
       <div style="background-color: ${colors.gray100}; border-radius: 8px; padding: 20px; margin: 25px 0;">
-        <p style="margin: 0; font-size: 14px; color: ${colors.gray700}; text-align: center; line-height: 1.6;">
-          📧 ${lang === 'vi' ? 'Trả lời email này với nội dung:' : 'Reply to this email with:'}
-          <br/>
-          <code style="display: inline-block; margin-top: 10px; padding: 8px 16px; background-color: ${colors.cardSurface}; border: 1px solid ${colors.border}; border-radius: 6px; font-family: monospace; font-size: 14px; color: ${colors.primary};">
-            UNLOCK ${unlockCode}
-          </code>
+        <p style="margin: 0 0 15px; font-size: 14px; color: ${colors.gray700}; text-align: center; line-height: 1.6;">
+          📧 ${lang === 'vi' ? 'Gửi email đến' : 'Send email to'} <strong>${this.configService.get<string>('EMAIL_SUPPORT_ADDRESS') || 'support@gen-hub.dev'}</strong>
         </p>
+        <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+          <tr>
+            <td style="padding: 8px; font-size: 13px; color: ${colors.gray500}; text-align: right; width: 30%;">
+              ${lang === 'vi' ? 'Tiêu đề:' : 'Subject:'}
+            </td>
+            <td style="padding: 8px;">
+              <code style="display: inline-block; padding: 8px 16px; background-color: ${colors.cardSurface}; border: 1px solid ${colors.border}; border-radius: 6px; font-family: monospace; font-size: 14px; color: ${colors.primary};">
+                [UNLOCK] ${to}
+              </code>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; font-size: 13px; color: ${colors.gray500}; text-align: right;">
+              ${lang === 'vi' ? 'Nội dung:' : 'Body:'}
+            </td>
+            <td style="padding: 8px;">
+              <code style="display: inline-block; padding: 8px 16px; background-color: ${colors.cardSurface}; border: 1px solid ${colors.border}; border-radius: 6px; font-family: monospace; font-size: 14px; color: ${colors.primary};">
+                UNLOCK ${unlockCode}
+              </code>
+            </td>
+          </tr>
+        </table>
       </div>
 
       <!-- Cảnh báo bảo mật -->

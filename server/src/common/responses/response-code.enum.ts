@@ -190,6 +190,8 @@ export enum ResponseCode {
     ERROR_NOT_FOUND = 'error.not_found',
     ERROR_CONFLICT = 'error.conflict',
     ERROR_TOO_MANY_REQUESTS = 'error.too_many_requests',
+    ERROR_ACCOUNT_LOCKED = 'error.account_locked',
+    ERROR_ACCOUNT_LOCKED_PERMANENT = 'error.account_locked_permanent',
 
     // Database Errors
     ERROR_DUPLICATE = 'error.duplicate',

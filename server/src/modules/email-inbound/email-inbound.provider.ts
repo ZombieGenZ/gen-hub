@@ -31,7 +31,8 @@ export class EmailInboundProvider implements OnModuleInit, OnModuleDestroy {
     private oAuth2Client: InstanceType<typeof google.auth.OAuth2> | null = null;
     private isConnected = false;
     private reconnectTimeout: NodeJS.Timeout | null = null;
-    private readonly UNLOCK_PATTERN = /^UNLOCK\s+(\d{6})\s*$/i;
+    private readonly UNLOCK_BODY_PATTERN = /UNLOCK\s+(\d{6})/i;
+    private readonly UNLOCK_SUBJECT_PATTERN = /^\[UNLOCK\]\s+(.+@.+)$/i;
 
     constructor(
         private readonly configService: ConfigService,
@@ -287,15 +288,36 @@ export class EmailInboundProvider implements OnModuleInit, OnModuleDestroy {
 
             this.logger.debug(`Processing email from ${senderEmail}: ${subject}`);
 
-            // Kiểm tra pattern UNLOCK
-            const match = bodyText.match(this.UNLOCK_PATTERN);
-            if (!match) {
-                // Không phải unlock email, đánh dấu đã đọc
+            // Kiểm tra subject pattern [UNLOCK] email
+            const subjectMatch = subject.match(this.UNLOCK_SUBJECT_PATTERN);
+            if (!subjectMatch) {
+                // Không phải unlock email (subject không đúng format), đánh dấu đã đọc
+                this.logger.debug(`Subject doesn't match unlock pattern: ${subject}`);
                 await this.markAsRead(message.uid);
                 return;
             }
 
-            const unlockCode = match[1];
+            this.logger.log(`📩 Unlock email detected! Subject: ${subject}`);
+
+            const claimedEmail = subjectMatch[1].toLowerCase().trim();
+
+            // Kiểm tra email trong subject có khớp với sender không
+            if (claimedEmail !== senderEmail) {
+                this.logger.warn(`Subject email mismatch: claimed=${claimedEmail}, sender=${senderEmail}`);
+                await this.markAsRead(message.uid);
+                return;
+            }
+
+            // Kiểm tra body pattern UNLOCK [CODE]
+            this.logger.debug(`Body text: ${bodyText.substring(0, 100)}...`);
+            const bodyMatch = bodyText.match(this.UNLOCK_BODY_PATTERN);
+            if (!bodyMatch) {
+                this.logger.warn(`Invalid unlock body format from ${senderEmail}. Body: ${bodyText.substring(0, 50)}`);
+                await this.markAsRead(message.uid);
+                return;
+            }
+
+            const unlockCode = bodyMatch[1];
             this.logger.log(`Unlock request from ${senderEmail} with code ${unlockCode}`);
 
             // Xác thực mã unlock

@@ -101,6 +101,25 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     if (exception instanceof HttpException) {
       const status = exception.getStatus();
       const response = exception.getResponse();
+
+      // Check if response is custom format with code and message
+      if (typeof response === 'object' && response !== null) {
+        const customResponse = response as { code?: string; message?: string; success?: boolean; data?: unknown };
+
+        // Nếu response có custom code (từ BruteForceGuard hoặc các guard khác)
+        if (customResponse.code && customResponse.message) {
+          return {
+            status,
+            code: customResponse.code,
+            message: exception.message,
+            clientMessage: customResponse.message,
+            errorType: 'HttpException',
+            stack: exception.stack,
+            errorResponse: response,
+          };
+        }
+      }
+
       const message =
         typeof response === 'string'
           ? response

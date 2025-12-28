@@ -356,15 +356,39 @@ export class BruteForceService {
         type?: 'temporary' | 'permanent';
         remainingSeconds?: number;
     }, lang: string = 'vi'): Promise<string> {
+        const minutes = Math.ceil((lockInfo.remainingSeconds || 0) / 60);
+
         if (lockInfo.type === 'permanent') {
-            return await this.i18n.t('bruteForce.permanentlyLocked', { lang });
+            // Try i18n first, fallback to hardcoded message
+            try {
+                const translated = await this.i18n.translate('bruteForce.permanentlyLocked', { lang });
+                if (translated && translated !== 'bruteForce.permanentlyLocked') {
+                    return translated;
+                }
+            } catch (e) {
+                this.logger.warn('i18n translation failed for permanentlyLocked');
+            }
+            return lang === 'en'
+                ? 'Your account has been permanently locked due to too many failed login attempts. Please contact support.'
+                : 'Tài khoản của bạn đã bị khóa vĩnh viễn do quá nhiều lần đăng nhập sai. Vui lòng liên hệ hỗ trợ.';
         }
 
-        const minutes = Math.ceil((lockInfo.remainingSeconds || 0) / 60);
-        return await this.i18n.t('bruteForce.temporarilyLocked', {
-            lang,
-            args: { minutes },
-        });
+        // Try i18n first, fallback to hardcoded message
+        try {
+            const translated = await this.i18n.translate('bruteForce.temporarilyLocked', {
+                lang,
+                args: { minutes },
+            });
+            if (translated && translated !== 'bruteForce.temporarilyLocked') {
+                return translated;
+            }
+        } catch (e) {
+            this.logger.warn('i18n translation failed for temporarilyLocked');
+        }
+
+        return lang === 'en'
+            ? `Your account has been temporarily locked due to too many failed attempts. Please try again in ${minutes} minutes.`
+            : `Tài khoản của bạn tạm thời bị khóa do quá nhiều lần thử sai. Vui lòng thử lại sau ${minutes} phút.`;
     }
 
     /**
