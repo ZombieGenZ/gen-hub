@@ -79,11 +79,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 return data;
             }
 
-            // Normal login success
-            if (data.code === 'auth.login_success') {
+            // Login thành công khi có authorization (tokens)
+            if (data.authorization) {
                 // Fetch full profile to get roles permissions etc
                 await fetchProfile();
-                router.push('/dashboard');
+                window.location.href = '/dashboard';
             }
             return data;
         } catch (error) {
@@ -99,7 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const data = await auth.verifyLogin2FA(temp_token, code, backup_code);
             if (data.success) {
                 await fetchProfile();
-                router.push('/dashboard');
+                window.location.href = '/dashboard';
             }
             return data;
         } catch (error) {
