@@ -19,8 +19,15 @@ interface TablesContextType {
 const TablesContext = createContext<TablesContextType | undefined>(undefined);
 
 // Convert string to Title Case (capitalize first letter of each word)
+// Handles both snake_case and camelCase
 const toTitleCase = (str: string): string => {
-    return str.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
+    return str
+        // First handle camelCase: add space before uppercase letters
+        .replace(/([a-z])([A-Z])/g, '$1 $2')
+        // Then replace underscores with spaces
+        .replace(/_/g, ' ')
+        // Capitalize first letter of each word
+        .replace(/\b\w/g, (char) => char.toUpperCase());
 };
 
 export function TablesProvider({ children }: { children: ReactNode }) {

@@ -1,0 +1,25 @@
+{
+    "permanentlyLocked": "Tài khoản của bạn đã bị khóa vĩnh viễn do quá nhiều lần đăng nhập sai. Vui lòng liên hệ hỗ trợ.",
+    "temporarilyLocked": "Tài khoản của bạn tạm thời bị khóa do quá nhiều lần thử sai. Vui lòng thử lại sau {minutes} phút.",
+    "lockedWithNewCode": "Tài khoản của bạn đang bị khóa. Mã mở khóa mới đã được gửi đến email của bạn: {code}",
+    "unlockInstructions": "Để mở khóa tài khoản, hãy trả lời email này với: UNLOCK {code}",
+    "securityAlert": {
+        "subject": "Cảnh báo bảo mật - Tài khoản bị khóa",
+        "greeting": "Xin chào",
+        "title": "Phát hiện hoạt động đăng nhập đáng ngờ",
+        "message": "Chúng tôi phát hiện nhiều lần đăng nhập thất bại vào tài khoản của bạn từ địa chỉ IP:",
+        "lockMessage": "Tài khoản của bạn đã bị khóa tạm thời vì lý do bảo mật.",
+        "unlockInstructions": "Để mở khóa tài khoản ngay lập tức, hãy trả lời email này với mã sau:",
+        "codeLabel": "Mã mở khóa",
+        "warningText": "Nếu bạn không thực hiện các lần đăng nhập này, chúng tôi khuyên bạn nên đổi mật khẩu ngay.",
+        "expirationLabel": "Mã hết hạn sau",
+        "expirationValue": "15 phút"
+    },
+    "unlockSuccess": {
+        "subject": "Mở khóa tài khoản thành công",
+        "greeting": "Xin chào",
+        "title": "Tài khoản của bạn đã được mở khóa",
+        "message": "Tài khoản của bạn đã được mở khóa thành công. Bạn có thể đăng nhập bình thường.",
+        "securityTip": "Để bảo mật hơn, chúng tôi khuyên bạn nên bật xác thực hai yếu tố (2FA) để bảo vệ tài khoản."
+    }
+}

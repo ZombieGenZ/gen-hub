@@ -538,20 +538,47 @@ export default function TablePage() {
                 // Show errors in modal popup
                 setErrorModalContent(result.errors);
                 setErrorModalOpen(true);
-            } else {
-                toast.success(t('common.success'));
-            }
 
-            // Reset state and refresh
-            setPendingChanges(new Map());
-            setNewRows([]);
-            setSelectedIds(new Set());
-            fetchRecords(meta.page);
+                // Only remove successful changes, keep failed ones
+                // Remove successfully created rows (those not in errors)
+                const failedCreateIndices = new Set(
+                    result.errors
+                        .filter((e: { type: string }) => e.type === 'create')
+                        .map((e: { index?: number }) => e.index)
+                );
+                const remainingNewRows = newRows.filter((_, index) => failedCreateIndices.has(index));
+                setNewRows(remainingNewRows);
+
+                // Remove successfully updated/deleted changes (those not in errors)
+                const failedIds = new Set(
+                    result.errors
+                        .filter((e: { type: string; id?: string }) => e.type === 'update' || e.type === 'delete')
+                        .map((e: { id?: string }) => e.id)
+                        .filter(Boolean)
+                );
+                const remainingChanges = new Map(
+                    Array.from(pendingChanges.entries()).filter(([id]) => failedIds.has(id))
+                );
+                setPendingChanges(remainingChanges);
+
+                // Refresh to show current state
+                fetchRecords(meta.page);
+            } else {
+                // All changes successful
+                toast.success(t('common.success'));
+
+                // Reset state and refresh
+                setPendingChanges(new Map());
+                setNewRows([]);
+                setSelectedIds(new Set());
+                fetchRecords(meta.page);
+            }
         } catch (err) {
             const error = err as { response?: { data?: { message?: string } }; message?: string };
-            // Show error in modal popup
+            // Show error in modal popup - keep all pending changes for retry
             setErrorModalContent([{ type: 'system', error: error.response?.data?.message || error.message || 'Unknown error' }]);
             setErrorModalOpen(true);
+            // Do NOT reset state here - keep pending changes so user can retry
         } finally {
             setIsSaving(false);
         }
@@ -566,9 +593,12 @@ export default function TablePage() {
 
     const formatTableName = (name: string) => {
         return name
-            .replace(/([A-Z])/g, ' $1')
-            .replace(/^./, (str) => str.toUpperCase())
-            .trim();
+            // Handle camelCase: add space before uppercase letters
+            .replace(/([a-z])([A-Z])/g, '$1 $2')
+            // Replace underscores with spaces
+            .replace(/_/g, ' ')
+            // Capitalize first letter of each word
+            .replace(/\b\w/g, (char) => char.toUpperCase());
     };
 
     const formatValue = (value: CellValue, column: string): string => {

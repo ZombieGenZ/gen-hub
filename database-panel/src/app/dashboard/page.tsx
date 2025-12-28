@@ -31,14 +31,43 @@ export default function DashboardPage() {
     const [isLoadingStats, setIsLoadingStats] = useState(false);
     const [statsLoaded, setStatsLoaded] = useState(false);
 
+    // Helper function to format table name (handles both snake_case and camelCase)
+    const toTitleCase = (str: string): string => {
+        return str
+            .replace(/([a-z])([A-Z])/g, '$1 $2')
+            .replace(/_/g, ' ')
+            .replace(/\b\w/g, (char) => char.toUpperCase());
+    };
+
     // Load statistics on demand
     const loadStatistics = async () => {
         if (isLoadingStats) return;
 
         setIsLoadingStats(true);
         try {
-            const data = await adminApi.getStatistics();
-            setStatistics(data);
+            // Server returns: [{ tableName, rowCount, sizeBytes, lastUpdated }]
+            const rawData = await adminApi.getStatistics();
+
+            // Transform to expected format
+            const totalRecords = rawData.reduce((sum: number, t: { rowCount: number }) => sum + t.rowCount, 0);
+            const tableStats: TableStats[] = rawData.map((t: { tableName: string; rowCount: number }) => ({
+                name: t.tableName,
+                displayName: toTitleCase(t.tableName),
+                recordCount: t.rowCount,
+                columnCount: 0, // Server doesn't provide this yet
+            }));
+
+            const transformedData: Statistics = {
+                summary: {
+                    totalTables: rawData.length,
+                    totalRecords: totalRecords,
+                    totalColumns: 0, // Not provided by server
+                    avgRecordsPerTable: rawData.length > 0 ? Math.round(totalRecords / rawData.length) : 0,
+                },
+                tables: tableStats,
+            };
+
+            setStatistics(transformedData);
             setStatsLoaded(true);
         } catch (error) {
             console.error('Failed to fetch statistics:', error);
