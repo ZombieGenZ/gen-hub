@@ -18,6 +18,11 @@ interface TablesContextType {
 
 const TablesContext = createContext<TablesContextType | undefined>(undefined);
 
+// Convert string to Title Case (capitalize first letter of each word)
+const toTitleCase = (str: string): string => {
+    return str.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
+};
+
 export function TablesProvider({ children }: { children: ReactNode }) {
     const [tables, setTables] = useState<TableInfo[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -34,8 +39,13 @@ export function TablesProvider({ children }: { children: ReactNode }) {
         setError(null);
         try {
             const data = await adminApi.getTables();
+            // Format displayName: replace underscores with spaces and capitalize each word
+            const formattedTables = data.map((table: TableInfo) => ({
+                ...table,
+                displayName: toTitleCase(table.displayName)
+            }));
             // Sort tables alphabetically
-            const sortedTables = data.sort((a: TableInfo, b: TableInfo) =>
+            const sortedTables = formattedTables.sort((a: TableInfo, b: TableInfo) =>
                 a.displayName.localeCompare(b.displayName)
             );
             setTables(sortedTables);
@@ -54,8 +64,13 @@ export function TablesProvider({ children }: { children: ReactNode }) {
         setError(null);
         try {
             const data = await adminApi.getTables();
+            // Format displayName: replace underscores with spaces and capitalize each word
+            const formattedTables = data.map((table: TableInfo) => ({
+                ...table,
+                displayName: toTitleCase(table.displayName)
+            }));
             // Sort tables alphabetically
-            const sortedTables = data.sort((a: TableInfo, b: TableInfo) =>
+            const sortedTables = formattedTables.sort((a: TableInfo, b: TableInfo) =>
                 a.displayName.localeCompare(b.displayName)
             );
             setTables(sortedTables);
