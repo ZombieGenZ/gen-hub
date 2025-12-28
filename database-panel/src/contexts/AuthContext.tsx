@@ -28,7 +28,7 @@ interface AuthContextType {
     user: User | null;
     isLoading: boolean;
     isAuthenticated: boolean;
-    login: (email: string, password: string) => Promise<LoginResponse>;
+    login: (email: string, password: string, turnstileToken?: string) => Promise<LoginResponse>;
     logout: () => Promise<void>;
     verify2FA: (temp_token: string, code?: string, backup_code?: string) => Promise<LoginResponse>;
 }
@@ -69,10 +69,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         checkAuth();
     }, []);
 
-    const login = async (email: string, password: string) => {
+    const login = async (email: string, password: string, turnstileToken?: string) => {
         setIsLoading(true);
         try {
-            const data = await auth.login(email, password);
+            const data = await auth.login(email, password, turnstileToken);
             // Return data so the UI can check for requires_2fa
             if (data.data?.requires_2fa) {
                 // Do not set user yet

@@ -6,12 +6,14 @@ import Link from 'next/link'
 import { AuthService } from '@/services/auth/auth.service'
 import { useRouter } from 'next/navigation'
 import { authStorage } from '@/services/auth/auth-storage.service'
+import TurnstileWidget from '@/components/TurnstileWidget'
 
 const authServices = new AuthService();
 export default function ForgotPasswordPage() {
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
+  const [turnstileToken, setTurnstileToken] = useState<string>('')
 
   useEffect(() => {
     if (authStorage.isAuthenticated()) {
@@ -28,7 +30,7 @@ export default function ForgotPasswordPage() {
 
     setLoading(true)
     try {
-      const res: any = authServices.forgotpassword(email)
+      const res: any = authServices.forgotpassword({ email, turnstileToken })
       // BE đang trả về message (theo auth.service.ts)
       alert(res?.message || 'Nếu email tồn tại, hướng dẫn đặt lại mật khẩu đã được gửi!')
     } catch (err) {
@@ -74,6 +76,11 @@ export default function ForgotPasswordPage() {
               />
             </div>
           </div>
+
+          <TurnstileWidget
+            onSuccess={setTurnstileToken}
+            theme="dark"
+          />
 
           {/* Submit button */}
           <button

@@ -1,5 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsEmail, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { i18nValidationMessage } from 'nestjs-i18n';
 
 /**
@@ -19,4 +19,12 @@ export class ForgotPasswordDto {
     { message: i18nValidationMessage('auth.validation.email_invalid') },
   )
   email: string;
+
+  @ApiPropertyOptional({
+    description: 'Cloudflare Turnstile token',
+    example: '0.abc123...',
+  })
+  @IsOptional()
+  @IsString()
+  turnstileToken?: string;
 }

@@ -20,6 +20,8 @@ import { SystemLogService } from '../system-log/system-log.service';
 import { AppConfigService } from '../../common/config/app-config.service';
 import { WebsocketGateway } from '../websocket/websocket.gateway';
 import { RedisService } from '../redis/redis.service';
+import { TurnstileService } from '../../common/services/turnstile.service';
+import { HunterService } from '../../common/services/hunter.service';
 import { normalizeLanguage } from '../../common/validators';
 import {
   RegisterDto,
@@ -85,12 +87,20 @@ export class AuthService {
     private readonly appConfigService: AppConfigService,
     private readonly websocketGateway: WebsocketGateway,
     private readonly redisService: RedisService,
+    private readonly turnstileService: TurnstileService,
+    private readonly hunterService: HunterService,
   ) { }
 
   /**
    * Đăng ký tài khoản mới bằng email
    */
   async register(dto: RegisterDto, deviceInfo?: IDeviceInfo, lang = 'vi') {
+    // Verify captcha token
+    await this.turnstileService.verifyToken(dto.turnstileToken, deviceInfo?.ip, lang);
+
+    // Verify email with Hunter.io
+    await this.hunterService.verifyEmail(dto.email, lang);
+
     const existingEmail = await this.userRepository.findByEmail(dto.email);
     if (existingEmail) {
       throw new ConflictException(
@@ -165,6 +175,9 @@ export class AuthService {
    * Đăng nhập bằng email
    */
   async login(dto: LoginDto, deviceInfo?: IDeviceInfo, lang = 'vi') {
+    // Verify captcha token
+    await this.turnstileService.verifyToken(dto.turnstileToken, deviceInfo?.ip, lang);
+
     const user = await this.userRepository.findByEmail(dto.email);
 
     if (!user || !user.password) {
@@ -335,6 +348,9 @@ export class AuthService {
     successMessageKey: string,
     lang: string,
   ) {
+    // Verify captcha token - panel logins also require captcha
+    await this.turnstileService.verifyToken(dto.turnstileToken, deviceInfo?.ip, lang);
+
     const user = await this.userRepository.findByEmail(dto.email);
 
     if (!user || !user.password) {
@@ -672,6 +688,9 @@ export class AuthService {
    * Yêu cầu đặt lại mật khẩu qua email
    */
   async forgotPassword(dto: ForgotPasswordDto, lang = 'vi') {
+    // Verify captcha token
+    await this.turnstileService.verifyToken(dto.turnstileToken, undefined, lang);
+
     const user = await this.userRepository.findByEmail(dto.email);
 
     if (!user) {

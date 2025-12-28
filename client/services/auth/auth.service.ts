@@ -1,16 +1,16 @@
-import type { RegisterInput, LoginInput, ChangePass } from '@/types/auth/auth.type';
+import type { RegisterInput, LoginInput, ChangePass, ForgotPasswordInput } from '@/types/auth/auth.type';
 import { authStorage } from './auth-storage.service';
 
 const API = process.env.NEXT_PUBLIC_API_URL
 
 export class AuthService {
-    
+
     // Đăng ký
     async register(input: RegisterInput) {
         const response = await fetch(`${API}/auth/register`, {
             method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json' 
+            headers: {
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify(input)
         });
@@ -19,7 +19,7 @@ export class AuthService {
             const errorData = await response.json().catch(() => ({}));
             throw new Error(errorData.message || 'Registration failed');
         }
-        
+
         return response.json();
     }
 
@@ -27,8 +27,8 @@ export class AuthService {
     async login(input: LoginInput) {
         const response = await fetch(`${API}/auth/login`, {
             method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json' 
+            headers: {
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify(input)
         });
@@ -37,9 +37,9 @@ export class AuthService {
             const errorData = await response.json().catch(() => ({}));
             throw new Error(errorData.message || 'Login failed');
         }
-        
+
         const data = await response.json();
-        
+
         // Store tokens if 2FA is not enabled
         if (data.data?.two_factor_enabled === false) {
             authStorage.setTokens(
@@ -48,7 +48,7 @@ export class AuthService {
             );
             await this.verify_password(data.authorization.access_token, input.password);
         }
-        
+
         return data;
     }
 
@@ -56,9 +56,9 @@ export class AuthService {
     async verify_password(token: string, password: string) {
         const response = await fetch(`${API}/auth/verify-access`, {
             method: 'POST',
-            headers: { 
+            headers: {
                 'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json' 
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify({ password })
         });
@@ -67,7 +67,7 @@ export class AuthService {
             const errorData = await response.json().catch(() => ({}));
             throw new Error(errorData.message || 'Password verification failed');
         }
-        
+
         const data = await response.json();
         authStorage.setVerificationToken(data.data.access_verification_token);
         return data;
@@ -78,9 +78,9 @@ export class AuthService {
         try {
             const response = await fetch(`${API}/auth/logout`, {
                 method: 'POST',
-                headers: { 
+                headers: {
                     'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json' 
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ refresh_token })
             });
@@ -89,7 +89,7 @@ export class AuthService {
                 const errorData = await response.json().catch(() => ({}));
                 throw new Error(errorData.message || 'Logout failed');
             }
-            
+
             const data = await response.json();
             authStorage.clearTokens();
             return data;
@@ -99,15 +99,15 @@ export class AuthService {
             throw error;
         }
     }
-    
+
     //Đăng xuất tất cả thiết bị
     async logoutAllDevices(token: string) {
         try {
             const response = await fetch(`${API}/auth/logout-all`, {
                 method: 'POST',
-                headers: { 
+                headers: {
                     'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json' 
+                    'Content-Type': 'application/json'
                 }
             });
 
@@ -115,7 +115,7 @@ export class AuthService {
                 const errorData = await response.json().catch(() => ({}));
                 throw new Error(errorData.message || 'Logout from all devices failed');
             }
-            
+
             const data = await response.json();
             authStorage.clearTokens();
             return data;
@@ -140,15 +140,15 @@ export class AuthService {
             authStorage.clearTokens();
             throw new Error(errorData.message || 'Failed to refresh token');
         }
-        
+
         const data = await response.json();
-        
+
         // Update tokens in storage
         authStorage.setTokens(
             data.authorization.access_token,
             data.authorization.refresh_token
         );
-        
+
         return data;
     }
 
@@ -167,7 +167,7 @@ export class AuthService {
             const errorData = await response.json().catch(() => ({}));
             throw new Error(errorData.message || 'Email verification failed');
         }
-        
+
         return response.json();
     }
 
@@ -185,26 +185,26 @@ export class AuthService {
             const errorData = await response.json().catch(() => ({}));
             throw new Error(errorData.message || 'Token verification failed');
         }
-        
+
         return response.json();
     }
 
     // Quên mật khẩu
-    async forgotpassword(email: string) {
+    async forgotpassword(input: ForgotPasswordInput) {
         const response = await fetch(`${API}/auth/forgot-password`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Accept-Language': 'vi',
             },
-            body: JSON.stringify({ email }),
+            body: JSON.stringify(input),
         });
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
             throw new Error(errorData.message || 'Failed to process forgot password request');
         }
-        
+
         return response.json();
     }
 
@@ -223,10 +223,10 @@ export class AuthService {
             const errorData = await response.json().catch(() => ({}));
             throw new Error(errorData.message || 'Invalid or expired token');
         }
-        
+
         return response.json();
     }
-    
+
     // Thay đổi mật khẩu quên
     async changePass(req: ChangePass) {
         const response = await fetch(`${API}/auth/reset-password`, {
@@ -247,7 +247,7 @@ export class AuthService {
             const errorData = await response.json().catch(() => ({}));
             throw new Error(errorData.message || 'Failed to change password');
         }
-        
+
         return response.json();
     }
 
@@ -266,7 +266,7 @@ export class AuthService {
             const errorData = await response.json().catch(() => ({}));
             throw new Error(errorData.message || 'Failed to send password reset email');
         }
-        
+
         return response.json();
     }
 }

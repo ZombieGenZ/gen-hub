@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Flag, Lock, Mail, AlertCircle, Loader2 } from 'lucide-react';
+import TurnstileWidget from '@/components/TurnstileWidget';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -27,6 +28,7 @@ export default function LoginPage() {
   const [tempToken, setTempToken] = useState('');
   const [twoFactorCode, setTwoFactorCode] = useState('');
   const [isBackupCode, setIsBackupCode] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string>('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,7 +46,7 @@ export default function LoginPage() {
           setError(t('login.error'));
           return;
         }
-        const response = await login(email, password);
+        const response = await login(email, password, turnstileToken);
         if (response?.data?.requires_2fa) {
           setRequires2FA(true);
           setTempToken(response.data.temp_token || '');
@@ -169,6 +171,11 @@ export default function LoginPage() {
                 </div>
               </div>
             )}
+
+            <TurnstileWidget
+              onSuccess={setTurnstileToken}
+              theme="dark"
+            />
 
             <button
               type="submit"

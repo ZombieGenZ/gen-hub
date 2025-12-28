@@ -7,6 +7,7 @@ import { AuthService } from '@/services/auth/auth.service'
 import { useRouter } from 'next/navigation'
 import { useTheme } from '../ThemeContext'
 import { authStorage } from '@/services/auth/auth-storage.service';
+import TurnstileWidget from '@/components/TurnstileWidget'
 
 const authServices = new AuthService();
 
@@ -20,6 +21,7 @@ export default function RegisterPage() {
     email: '',
     password: ''
   })
+  const [turnstileToken, setTurnstileToken] = useState<string>('')
 
   const [nameFocused, setNameFocused] = useState(false)
   const [emailFocused, setEmailFocused] = useState(false)
@@ -40,7 +42,10 @@ export default function RegisterPage() {
 
     setLoading(true)
     try {
-      const response = await authServices.register(formData)
+      const response = await authServices.register({
+        ...formData,
+        turnstileToken
+      })
       console.log(response)
       if (response.success) {
         alert('Đăng ký thành công!')
@@ -74,180 +79,178 @@ export default function RegisterPage() {
 
       <div className="flex-1 flex flex-col items-center justify-center">
         <div className="w-full max-w-md px-8">
-            {/* Header */}
-            <div className="pb-6">
-              <h1 className={`text-3xl font-bold mb-2 ${darkMode ? "text-white" : "text-gray-900"}`}>Đăng ký</h1>
-              <p className={darkMode ? "text-slate-400" : "text-gray-600"}>Tạo tài khoản mới để bắt đầu sử dụng.</p>
+          {/* Header */}
+          <div className="pb-6">
+            <h1 className={`text-3xl font-bold mb-2 ${darkMode ? "text-white" : "text-gray-900"}`}>Đăng ký</h1>
+            <p className={darkMode ? "text-slate-400" : "text-gray-600"}>Tạo tài khoản mới để bắt đầu sử dụng.</p>
+          </div>
+
+          {/* Form */}
+          <div className="space-y-5">
+            {/* Username */}
+            <div className="group">
+              <label
+                className={`block text-sm font-medium mb-2 transition-colors ${darkMode ? "text-slate-300" : "text-gray-700"}`}
+              >
+                Username
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <User
+                    className={`h-5 w-5 transition-all duration-300 ${nameFocused ? "text-teal-500 scale-110" : darkMode ? "text-slate-500" : "text-gray-400"
+                      }`}
+                    style={{
+                      animation: nameFocused ? "bounce-subtle 0.5s ease-in-out" : "none",
+                    }}
+                  />
+                </div>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onKeyDown={(e) => e.key === "Enter" && handleRegister()}
+                  onFocus={() => setNameFocused(true)}
+                  onBlur={() => setNameFocused(false)}
+                  placeholder="Chọn username"
+                  className={`w-full pl-10 pr-4 py-3 rounded-lg transition-all focus:outline-none focus:ring-2 ${darkMode
+                    ? "bg-slate-700/50 border border-slate-600 text-white placeholder-slate-400 focus:border-teal-600 focus:ring-teal-600/20"
+                    : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-500 focus:border-teal-600 focus:ring-teal-600/20"
+                    }`}
+                />
+              </div>
             </div>
 
-            {/* Form */}
-            <div className="space-y-5">
-              {/* Username */}
-              <div className="group">
-                <label
-                  className={`block text-sm font-medium mb-2 transition-colors ${darkMode ? "text-slate-300" : "text-gray-700"}`}
-                >
-                  Username
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <User
-                      className={`h-5 w-5 transition-all duration-300 ${
-                        nameFocused ? "text-teal-500 scale-110" : darkMode ? "text-slate-500" : "text-gray-400"
-                      }`}
-                      style={{
-                        animation: nameFocused ? "bounce-subtle 0.5s ease-in-out" : "none",
-                      }}
-                    />
-                  </div>
-                  <input
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    onKeyDown={(e) => e.key === "Enter" && handleRegister()}
-                    onFocus={() => setNameFocused(true)}
-                    onBlur={() => setNameFocused(false)}
-                    placeholder="Chọn username"
-                    className={`w-full pl-10 pr-4 py-3 rounded-lg transition-all focus:outline-none focus:ring-2 ${
-                      darkMode
-                        ? "bg-slate-700/50 border border-slate-600 text-white placeholder-slate-400 focus:border-teal-600 focus:ring-teal-600/20"
-                        : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-500 focus:border-teal-600 focus:ring-teal-600/20"
-                    }`}
-                  />
-                </div>
-              </div>
-
-              {/* Email */}
-              <div className="group">
-                <label
-                  className={`block text-sm font-medium mb-2 transition-colors ${darkMode ? "text-slate-300" : "text-gray-700"}`}
-                >
-                  Email
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Mail
-                      className={`h-5 w-5 transition-all duration-300 ${
-                        emailFocused ? "text-teal-500 scale-110" : darkMode ? "text-slate-500" : "text-gray-400"
-                      }`}
-                      style={{
-                        animation: emailFocused ? "bounce-subtle 0.5s ease-in-out" : "none",
-                      }}
-                    />
-                  </div>
-                  <input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    onKeyDown={(e) => e.key === "Enter" && handleRegister()}
-                    onFocus={() => setEmailFocused(true)}
-                    onBlur={() => setEmailFocused(false)}
-                    placeholder="email@example.com"
-                    className={`w-full pl-10 pr-4 py-3 rounded-lg transition-all focus:outline-none focus:ring-2 ${
-                      darkMode
-                        ? "bg-slate-700/50 border border-slate-600 text-white placeholder-slate-400 focus:border-teal-600 focus:ring-teal-600/20"
-                        : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-500 focus:border-teal-600 focus:ring-teal-600/20"
-                    }`}
-                  />
-                </div>
-              </div>
-
-              {/* Password */}
-              <div className="group">
-                <label
-                  className={`block text-sm font-medium mb-2 transition-colors ${darkMode ? "text-slate-300" : "text-gray-700"}`}
-                >
-                  Mật khẩu
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock
-                      className={`h-5 w-5 transition-all duration-300 ${
-                        passwordFocused ? "text-teal-500 scale-110" : darkMode ? "text-slate-500" : "text-gray-400"
-                      }`}
-                      style={{
-                        animation: passwordFocused ? "shake-subtle 0.5s ease-in-out" : "none",
-                      }}
-                    />
-                  </div>
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    onKeyDown={(e) => e.key === "Enter" && handleRegister()}
-                    onFocus={() => setPasswordFocused(true)}
-                    onBlur={() => setPasswordFocused(false)}
-                    placeholder="Tạo mật khẩu"
-                    className={`w-full pl-10 pr-12 py-3 rounded-lg transition-all focus:outline-none focus:ring-2 ${
-                      darkMode
-                        ? "bg-slate-700/50 border border-slate-600 text-white placeholder-slate-400 focus:border-teal-600 focus:ring-teal-600/20"
-                        : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-500 focus:border-teal-600 focus:ring-teal-600/20"
-                    }`}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className={`absolute inset-y-0 right-0 pr-3 flex items-center transition-all duration-300 hover:scale-125 ${
-                      darkMode ? "text-slate-500 hover:text-teal-500" : "text-gray-500 hover:text-teal-600"
-                    }`}
-                  >
-                    <div className="transition-all duration-300" style={{ animation: "blink 0.3s ease-in-out" }}>
-                      {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                    </div>
-                  </button>
-                </div>
-              </div>
-
-              <button
-                onClick={handleRegister}
-                disabled={loading}
-                className="w-full py-3 rounded-lg font-semibold transition-all shadow-lg transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-white relative overflow-hidden"
-                style={{
-                  background: loading ? "#64748B" : "linear-gradient(135deg, #0F766E 0%, #14B8A6 100%)",
-                  boxShadow: "0 10px 25px rgba(15, 118, 110, 0.3)",
-                }}
-                onMouseOver={(e) => !loading && (e.currentTarget.style.boxShadow = "0 15px 35px rgba(15, 118, 110, 0.4)")}
-                onMouseOut={(e) => !loading && (e.currentTarget.style.boxShadow = "0 10px 25px rgba(15, 118, 110, 0.3)")}
+            {/* Email */}
+            <div className="group">
+              <label
+                className={`block text-sm font-medium mb-2 transition-colors ${darkMode ? "text-slate-300" : "text-gray-700"}`}
               >
-                {loading && (
-                  <span className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
-                    <svg
-                      className="animate-spin h-5 w-5 text-white"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      ></circle>
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      ></path>
-                    </svg>
-                  </span>
-                )}
-                <span className={loading ? "opacity-0" : ""}>{loading ? "Đang đăng ký..." : "Đăng ký"}</span>
-              </button>
+                Email
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Mail
+                    className={`h-5 w-5 transition-all duration-300 ${emailFocused ? "text-teal-500 scale-110" : darkMode ? "text-slate-500" : "text-gray-400"
+                      }`}
+                    style={{
+                      animation: emailFocused ? "bounce-subtle 0.5s ease-in-out" : "none",
+                    }}
+                  />
+                </div>
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  onKeyDown={(e) => e.key === "Enter" && handleRegister()}
+                  onFocus={() => setEmailFocused(true)}
+                  onBlur={() => setEmailFocused(false)}
+                  placeholder="email@example.com"
+                  className={`w-full pl-10 pr-4 py-3 rounded-lg transition-all focus:outline-none focus:ring-2 ${darkMode
+                    ? "bg-slate-700/50 border border-slate-600 text-white placeholder-slate-400 focus:border-teal-600 focus:ring-teal-600/20"
+                    : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-500 focus:border-teal-600 focus:ring-teal-600/20"
+                    }`}
+                />
+              </div>
+            </div>
+
+            {/* Password */}
+            <div className="group">
+              <label
+                className={`block text-sm font-medium mb-2 transition-colors ${darkMode ? "text-slate-300" : "text-gray-700"}`}
+              >
+                Mật khẩu
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Lock
+                    className={`h-5 w-5 transition-all duration-300 ${passwordFocused ? "text-teal-500 scale-110" : darkMode ? "text-slate-500" : "text-gray-400"
+                      }`}
+                    style={{
+                      animation: passwordFocused ? "shake-subtle 0.5s ease-in-out" : "none",
+                    }}
+                  />
+                </div>
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  onKeyDown={(e) => e.key === "Enter" && handleRegister()}
+                  onFocus={() => setPasswordFocused(true)}
+                  onBlur={() => setPasswordFocused(false)}
+                  placeholder="Tạo mật khẩu"
+                  className={`w-full pl-10 pr-12 py-3 rounded-lg transition-all focus:outline-none focus:ring-2 ${darkMode
+                    ? "bg-slate-700/50 border border-slate-600 text-white placeholder-slate-400 focus:border-teal-600 focus:ring-teal-600/20"
+                    : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-500 focus:border-teal-600 focus:ring-teal-600/20"
+                    }`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className={`absolute inset-y-0 right-0 pr-3 flex items-center transition-all duration-300 hover:scale-125 ${darkMode ? "text-slate-500 hover:text-teal-500" : "text-gray-500 hover:text-teal-600"
+                    }`}
+                >
+                  <div className="transition-all duration-300" style={{ animation: "blink 0.3s ease-in-out" }}>
+                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            <TurnstileWidget
+              onSuccess={setTurnstileToken}
+              theme={darkMode ? 'dark' : 'light'}
+            />
+
+            <button
+              onClick={handleRegister}
+              disabled={loading}
+              className="w-full py-3 rounded-lg font-semibold transition-all shadow-lg transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-white relative overflow-hidden"
+              style={{
+                background: loading ? "#64748B" : "linear-gradient(135deg, #0F766E 0%, #14B8A6 100%)",
+                boxShadow: "0 10px 25px rgba(15, 118, 110, 0.3)",
+              }}
+              onMouseOver={(e) => !loading && (e.currentTarget.style.boxShadow = "0 15px 35px rgba(15, 118, 110, 0.4)")}
+              onMouseOut={(e) => !loading && (e.currentTarget.style.boxShadow = "0 10px 25px rgba(15, 118, 110, 0.3)")}
+            >
+              {loading && (
+                <span className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
+                  <svg
+                    className="animate-spin h-5 w-5 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                </span>
+              )}
+              <span className={loading ? "opacity-0" : ""}>{loading ? "Đang đăng ký..." : "Đăng ký"}</span>
+            </button>
 
             {/* Login Link */}
             <p className={`text-center text-sm mt-6 ${darkMode ? "text-slate-400" : "text-gray-600"}`}>
-                Đã có tài khoản?{" "}
-                <Link
-                  href="/login"
-                  className="font-semibold transition-colors"
-                  style={{ color: "#14B8A6" }}
-                  onMouseOver={(e) => (e.currentTarget.style.color = "#0F766E")}
-                  onMouseOut={(e) => (e.currentTarget.style.color = "#14B8A6")}
-                >
-                  Đăng nhập ngay
-                </Link>
+              Đã có tài khoản?{" "}
+              <Link
+                href="/login"
+                className="font-semibold transition-colors"
+                style={{ color: "#14B8A6" }}
+                onMouseOver={(e) => (e.currentTarget.style.color = "#0F766E")}
+                onMouseOut={(e) => (e.currentTarget.style.color = "#14B8A6")}
+              >
+                Đăng nhập ngay
+              </Link>
             </p>
           </div>
         </div>
