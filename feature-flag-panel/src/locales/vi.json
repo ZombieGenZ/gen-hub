@@ -16,7 +16,7 @@
     "dashboard": {
         "title": "Feature Flags",
         "stats": {
-            "total": "Tổng số Flags",
+            "total": "Tổng số API",
             "active": "Đang bật",
             "inactive": "Đang tắt"
         },
