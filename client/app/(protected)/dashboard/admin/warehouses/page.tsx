@@ -180,7 +180,7 @@ export default function WarehouseTemplatePage() {
                             <span className="hidden sm:inline">Xuất Excel</span>
                             <span className="sm:hidden">Excel</span>
                         </button>
-                        <button className="px-4 py-2 bg-primary text-white rounded-lg font-medium hover:bg-teal-700 transition-all shadow-lg shadow-primary/30 flex items-center gap-2">
+                        <button className="px-4 py-2 bg-brand text-white rounded-lg font-medium hover:bg-brand-hover transition-all shadow-lg shadow-brand/30 flex items-center gap-2">
                             <i className="fas fa-plus"></i>
                             <span className="hidden sm:inline">Thêm kho mới</span>
                             <span className="sm:hidden">Thêm</span>
@@ -268,8 +268,8 @@ export default function WarehouseTemplatePage() {
                                     />
                                     <div className="absolute top-3 right-3 flex gap-2 z-10">
                                         <span className={`px-2.5 py-1 rounded-lg text-xs font-semibold backdrop-blur-md shadow-sm ${warehouse.is_active
-                                            ? "bg-green-500/90 text-white"
-                                            : "bg-orange-500/90 text-white"
+                                            ? "bg-success/90 text-white"
+                                            : "bg-warning/90 text-white"
                                             }`}>
                                             {warehouse.is_active ? "Hoạt động" : "Bảo trì"}
                                         </span>
@@ -287,7 +287,7 @@ export default function WarehouseTemplatePage() {
                                     </div>
 
                                     <div className="flex items-center gap-2 mb-4 text-slate-600">
-                                        <i className="fas fa-map-marker-alt text-teal-600"></i>
+                                        <i className="fas fa-map-marker-alt text-brand"></i>
                                         <span className="text-sm font-medium truncate" title={`${warehouse.ward?.name}, ${warehouse.ward?.province?.name}`}>
                                             {warehouse.ward?.name}, {warehouse.ward?.province?.name}
                                         </span>
@@ -369,7 +369,7 @@ export default function WarehouseTemplatePage() {
                                     <button
                                         key={pageNum}
                                         className={`w-10 h-10 flex items-center justify-center rounded-lg font-medium transition-all ${pagination.page === pageNum
-                                            ? "bg-primary text-white shadow-lg shadow-primary/30"
+                                            ? "bg-brand text-white shadow-lg shadow-brand/30"
                                             : "text-slate-600 hover:bg-slate-50 border border-transparent hover:border-slate-200"
                                             }`}
                                         onClick={() => handlePageChange(pageNum)}

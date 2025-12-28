@@ -51,12 +51,12 @@ export default function OrganizationPage() {
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                         <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-3">
-                            <Users className="w-8 h-8 text-primary bg-primary/10 p-1.5 rounded-lg" />
+                            <Users className="w-8 h-8 text-brand bg-brand-subtle p-1.5 rounded-lg" />
                             Quản lý Tổ chức
                         </h1>
                         <p className="text-slate-500 mt-1">Quản lý danh sách các công ty và đối tác trong hệ thống.</p>
                     </div>
-                    <button className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-bold hover:bg-primary-dark transition-all shadow-md shadow-primary/20">
+                    <button className="flex items-center gap-2 px-4 py-2 bg-brand text-white rounded-lg text-sm font-bold hover:bg-brand-active transition-all shadow-md shadow-brand/20">
                         <Plus className="w-4 h-4" />
                         Thêm Tổ chức
                     </button>
@@ -69,7 +69,7 @@ export default function OrganizationPage() {
                             <input
                                 type="text"
                                 placeholder="Tìm kiếm tổ chức..."
-                                className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand/20"
                             />
                         </div>
                         <div className="flex items-center gap-2">
@@ -98,7 +98,7 @@ export default function OrganizationPage() {
                                     <tr>
                                         <td colSpan={5} className="px-6 py-12 text-center text-slate-400">
                                             <div className="flex flex-col items-center gap-3">
-                                                <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                                                <div className="w-8 h-8 border-4 border-brand border-t-transparent rounded-full animate-spin"></div>
                                                 <p className="text-sm font-medium">Đang tải dữ liệu...</p>
                                             </div>
                                         </td>
@@ -114,7 +114,7 @@ export default function OrganizationPage() {
                                     <tr key={org.id} className="hover:bg-slate-50 transition-colors group">
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-lg bg-teal-50 flex items-center justify-center text-primary font-bold">
+                                                <div className="w-10 h-10 rounded-lg bg-brand-subtle flex items-center justify-center text-brand font-bold">
                                                     {org.name.charAt(0)}
                                                 </div>
                                                 <div>
@@ -131,7 +131,7 @@ export default function OrganizationPage() {
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${org.is_active
-                                                ? 'bg-emerald-50 text-emerald-600 border border-emerald-100'
+                                                ? 'bg-success/10 text-success border border-success/20'
                                                 : 'bg-slate-100 text-slate-500 border border-slate-200'
                                                 }`}>
                                                 {org.is_active ? 'Đang hoạt động' : 'Tạm dừng'}

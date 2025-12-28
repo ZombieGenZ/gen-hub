@@ -65,7 +65,7 @@ interface Contract {
 
 const statusConfig: Record<string, { label: string; className: string }> = {
     'PENDING': { label: 'Chờ duyệt', className: 'bg-yellow-100 text-yellow-700 border-yellow-200' },
-    'ACTIVE': { label: 'Đang hiệu lực', className: 'bg-green-100 text-green-700 border-green-200' },
+    'ACTIVE': { label: 'Đang hiệu lực', className: 'bg-success/10 text-success border-success/20' },
     'EXPIRED': { label: 'Hết hạn', className: 'bg-gray-100 text-gray-700 border-gray-200' },
     'CANCELLED': { label: 'Đã hủy', className: 'bg-red-100 text-red-700 border-red-200' },
     'TERMINATED': { label: 'Đã thanh lý', className: 'bg-slate-100 text-slate-700 border-slate-200' },
@@ -89,8 +89,8 @@ const ContractsPage = () => {
 
     // Using mock data for stats until API is ready or derived from contracts
     const stats = [
-        { title: "Tổng hợp đồng", value: total, icon: FileText, variant: "blue" as const },
-        { title: "Đang hiệu lực", value: contracts.filter(c => c.status === 'ACTIVE').length, icon: Calendar, variant: "green" as const },
+        { title: "Tổng hợp đồng", value: total, icon: FileText, variant: "brand" as const },
+        { title: "Đang hiệu lực", value: contracts.filter(c => c.status === 'ACTIVE').length, icon: Calendar, variant: "brand" as const },
         // Add more stats if needed
     ];
 
@@ -173,7 +173,7 @@ const ContractsPage = () => {
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                     <div>
                         <h1 className="text-2xl font-bold text-foreground flex items-center gap-3">
-                            <FileText className="w-8 h-8 text-primary bg-primary/10 p-1.5 rounded-lg" />
+                            <FileText className="w-8 h-8 text-brand bg-brand-subtle p-1.5 rounded-lg" />
                             Quản lý Hợp đồng
                         </h1>
                         <p className="text-muted-foreground mt-1 text-sm">Quản lý danh sách các hợp đồng thuê kho trong hệ thống.</p>
@@ -183,7 +183,7 @@ const ContractsPage = () => {
                             <Download className="w-4 h-4 mr-2" />
                             Xuất báo cáo
                         </Button>
-                        <Button className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2 shadow-md shadow-primary/20">
+                        <Button className="bg-brand hover:bg-brand-hover text-primary-foreground gap-2 shadow-md shadow-brand/20">
                             <Plus className="w-4 h-4" />
                             Tạo hợp đồng
                         </Button>
@@ -260,7 +260,7 @@ const ContractsPage = () => {
                                 <TableRow>
                                     <TableCell colSpan={6} className="h-48 text-center">
                                         <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
-                                            <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                                            <Loader2 className="w-6 h-6 animate-spin text-brand" />
                                             <p>Đang tải dữ liệu...</p>
                                         </div>
                                     </TableCell>

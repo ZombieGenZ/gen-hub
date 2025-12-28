@@ -40,7 +40,7 @@ export default function StaffPage() {
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                     <Input
                         placeholder="Tìm kiếm nhân viên..."
-                        className="pl-9 h-9 bg-slate-50 border-slate-200 focus:bg-white focus:ring-primary/20 transition-all rounded-lg text-sm"
+                        className="pl-9 h-9 bg-slate-50 border-slate-200 focus:bg-white focus:ring-brand/20 transition-all rounded-lg text-sm"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
@@ -53,7 +53,7 @@ export default function StaffPage() {
                         <h1 className="text-2xl font-bold text-slate-900">Nhân viên</h1>
                         <p className="text-sm text-slate-500 mt-1">Quản lý nhân sự và phân quyền truy cập</p>
                     </div>
-                    <Button className="bg-primary hover:bg-primary/90 text-white gap-2 rounded-lg shadow-sm shadow-primary/20">
+                    <Button className="bg-brand hover:bg-brand-hover text-white gap-2 rounded-lg shadow-sm shadow-brand/20">
                         <Plus className="w-4 h-4" />
                         Thêm nhân viên
                     </Button>
@@ -100,8 +100,8 @@ export default function StaffPage() {
                                     </TableCell>
                                     <TableCell>
                                         {staff.status === 'active' ? (
-                                            <span className="flex items-center gap-1.5 text-xs font-medium text-emerald-600">
-                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                            <span className="flex items-center gap-1.5 text-xs font-medium text-success">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-success"></span>
                                                 Hoạt động
                                             </span>
                                         ) : (

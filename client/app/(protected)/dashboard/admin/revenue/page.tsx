@@ -58,8 +58,8 @@ export default function RevenuePage() {
                         title="Chi phí vận hành"
                         value="1.2 Tỷ"
                         icon={CreditCard}
-                        trend={{ value: 2.1, isPositive: false }} // Negative trend meaning cost went down? actually rose-600 usually means bad. If cost went down it's good. But here let's assume rose means increased cost.
-                        variant="orange"
+                        trend={{ value: 2.1, isPositive: false }}
+                        variant="brand"
                         description="Chi phí bảo trì tăng"
                     />
                     <StatCard
@@ -67,7 +67,7 @@ export default function RevenuePage() {
                         value="+18.2%"
                         icon={TrendingUp}
                         trend={{ value: 4.5, isPositive: true }}
-                        variant="amber"
+                        variant="brand"
                         description="Đạt mục tiêu tháng"
                     />
                 </div>
@@ -88,7 +88,7 @@ export default function RevenuePage() {
                             {[40, 65, 45, 80, 55, 90, 75, 60, 85, 95, 80, 70].map((h, i) => (
                                 <div key={i} className="flex-1 flex flex-col items-center gap-2 group">
                                     <div
-                                        className="w-full bg-primary/10 group-hover:bg-primary/80 transition-all rounded-t-sm relative"
+                                        className="w-full bg-brand/10 group-hover:bg-brand/80 transition-all rounded-t-sm relative"
                                         style={{ height: `${h}%` }}
                                     >
                                         <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
@@ -105,10 +105,10 @@ export default function RevenuePage() {
                         <h3 className="font-bold text-slate-800 mb-6">Nguồn doanh thu</h3>
                         <div className="space-y-6">
                             {[
-                                { label: "Cho thuê kho", val: 65, color: "bg-emerald-500" },
-                                { label: "Dịch vụ vận chuyển", val: 20, color: "bg-blue-500" },
-                                { label: "Quản lý & Bốc xếp", val: 10, color: "bg-amber-500" },
-                                { label: "Khác", val: 5, color: "bg-slate-300" }
+                                { label: "Cho thuê kho", val: 65, color: "bg-success" },
+                                { label: "Dịch vụ vận chuyển", val: 20, color: "bg-info" },
+                                { label: "Quản lý & Bốc xếp", val: 10, color: "bg-brand" },
+                                { label: "Khác", val: 5, color: "bg-border-strong" }
                             ].map((item, i) => (
                                 <div key={i}>
                                     <div className="flex justify-between text-sm mb-2">

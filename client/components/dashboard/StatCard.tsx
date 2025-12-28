@@ -2,7 +2,7 @@ import React from "react";
 import { LucideIcon, ArrowUp, ArrowDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type StatCardVariant = "default" | "blue" | "green" | "emerald" | "orange" | "amber";
+type StatCardVariant = "default" | "blue" | "green" | "emerald" | "brand";
 
 interface StatCardProps {
     title: string;
@@ -25,46 +25,39 @@ const variantStyles: Record<StatCardVariant, {
     borderColor: string;
 }> = {
     default: {
-        bg: "bg-white",
-        iconBg: "bg-primary/10",
-        iconColor: "text-primary",
-        textColor: "text-slate-900",
-        borderColor: "border-slate-200"
+        bg: "bg-bg-elevated",
+        iconBg: "bg-brand/10",
+        iconColor: "text-brand",
+        textColor: "text-text",
+        borderColor: "border-border"
     },
     emerald: {
-        bg: "bg-emerald-50",
-        iconBg: "bg-emerald-500",
+        bg: "bg-success/5",
+        iconBg: "bg-success",
         iconColor: "text-white",
-        textColor: "text-emerald-900",
-        borderColor: "border-emerald-100"
+        textColor: "text-success",
+        borderColor: "border-success/10"
     },
-    green: { // Alias for emerald if needed, or slightly different
-        bg: "bg-emerald-50",
-        iconBg: "bg-emerald-500",
+    green: {
+        bg: "bg-success/5",
+        iconBg: "bg-success",
         iconColor: "text-white",
-        textColor: "text-emerald-900",
-        borderColor: "border-emerald-100"
+        textColor: "text-success",
+        borderColor: "border-success/10"
     },
     blue: {
-        bg: "bg-sky-50",
-        iconBg: "bg-sky-500",
+        bg: "bg-info/5",
+        iconBg: "bg-info",
         iconColor: "text-white",
-        textColor: "text-sky-900",
-        borderColor: "border-sky-100"
+        textColor: "text-info",
+        borderColor: "border-info/10"
     },
-    orange: {
-        bg: "bg-orange-50",
-        iconBg: "bg-orange-500",
+    brand: {
+        bg: "bg-brand/5",
+        iconBg: "bg-brand",
         iconColor: "text-white",
-        textColor: "text-orange-900",
-        borderColor: "border-orange-100"
-    },
-    amber: {
-        bg: "bg-amber-50",
-        iconBg: "bg-amber-500",
-        iconColor: "text-white",
-        textColor: "text-amber-900",
-        borderColor: "border-amber-100"
+        textColor: "text-brand",
+        borderColor: "border-brand/10"
     }
 };
 

@@ -42,13 +42,13 @@ function NavItem({ href, icon: Icon, label, isActive }: NavItemProps) {
             className={cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all group",
                 isActive
-                    ? "bg-primary/10 text-primary font-medium"
+                    ? "bg-brand/10 text-brand font-medium"
                     : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
             )}
         >
             <Icon className={cn(
                 "w-5 h-5 transition-colors",
-                isActive ? "text-primary" : "text-slate-400 group-hover:text-slate-600"
+                isActive ? "text-brand" : "text-slate-400 group-hover:text-slate-600"
             )} />
             <span>{label}</span>
         </Link>
@@ -64,10 +64,10 @@ export function DashboardSidebarNav() {
             {/* Logo Section */}
             <div className="p-6">
                 <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shadow-lg shadow-primary/20">
+                    <div className="w-8 h-8 bg-brand rounded-lg flex items-center justify-center shadow-lg shadow-brand/20">
                         <Warehouse className="w-5 h-5 text-white" />
                     </div>
-                    <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-teal-800">
+                    <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-brand to-brand-active">
                         GenHub
                     </span>
                 </div>
@@ -148,7 +148,7 @@ export function DashboardSidebarNav() {
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer group outline-none">
-                            <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-primary to-primary-light flex items-center justify-center text-white text-xs font-bold shadow-md ring-2 ring-white group-hover:ring-primary/20">
+                            <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-brand to-brand-hover flex items-center justify-center text-white text-xs font-bold shadow-md ring-2 ring-white group-hover:ring-brand/20">
                                 AD
                             </div>
                             <div className="flex-1 min-w-0">

@@ -33,7 +33,7 @@ export default function SettingsPage() {
                     {/* General Settings */}
                     <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
                         <div className="p-6 border-b border-border/50 flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
+                            <div className="w-10 h-10 rounded-lg bg-brand-subtle flex items-center justify-center text-brand">
                                 <Globe className="w-5 h-5" />
                             </div>
                             <div>
@@ -69,7 +69,7 @@ export default function SettingsPage() {
                             </div>
                         </div>
                         <div className="px-6 py-4 bg-muted/20 border-t border-border/50 flex justify-end">
-                            <Button className="gap-2 bg-primary text-white hover:bg-primary/90">
+                            <Button className="gap-2 bg-brand text-white hover:bg-brand-hover">
                                 <Save className="w-4 h-4" />
                                 Lưu thay đổi
                             </Button>
@@ -79,7 +79,7 @@ export default function SettingsPage() {
                     {/* Notifications */}
                     <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
                         <div className="p-6 border-b border-border/50 flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600">
+                            <div className="w-10 h-10 rounded-lg bg-warning/10 flex items-center justify-center text-warning">
                                 <Bell className="w-5 h-5" />
                             </div>
                             <div>

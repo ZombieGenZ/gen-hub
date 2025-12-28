@@ -77,7 +77,7 @@ function VerifyEmailContent() {
         <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-8 text-center space-y-4">
           <div className="flex justify-center">
             {isOk ? (
-              <CheckCircle2 className="h-16 w-16 text-emerald-400" />
+              <CheckCircle2 className="h-16 w-16 text-success" />
             ) : (
               <XCircle className="h-16 w-16 text-red-400" />
             )}
@@ -92,7 +92,7 @@ function VerifyEmailContent() {
           <div className="mt-6 flex flex-col gap-3">
             <button
               onClick={() => router.push('/')}
-              className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors shadow-lg shadow-blue-500/30"
+              className="w-full bg-brand text-white py-3 rounded-lg font-semibold hover:bg-brand-hover transition-colors shadow-lg shadow-brand/30"
             >
               Về trang chủ
             </button>

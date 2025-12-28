@@ -59,10 +59,10 @@ export default function ProfilePage() {
       try {
         setLoading(true)
         setError(null)
-        
+
         const token = authStorage.getAccessToken()
         const refreshToken = authStorage.getRefreshToken()
-        
+
         if (!token || !refreshToken) {
           setError('Vui lòng đăng nhập')
           router.push('/login')
@@ -120,7 +120,7 @@ export default function ProfilePage() {
     try {
       const token = authStorage.getAccessToken()
       const accessVerificationToken = authStorage.getVerificationToken()
-      
+
       if (token && accessVerificationToken) {
         const res = await userService.enableTwoFactor(token, accessVerificationToken)
         if (res) {
@@ -186,7 +186,7 @@ export default function ProfilePage() {
     const refresh_token = getCookie('refresh_token');
     if (token && refresh_token) {
       const response = await authService.logout(token, refresh_token);
-      if(response) {
+      if (response) {
         removeCookie('access_token');
         removeCookie('refresh_token');
         removeCookie('access_verification_token');
@@ -204,7 +204,7 @@ export default function ProfilePage() {
   if (loading) {
     return (
       <div className={`min-h-screen flex items-center justify-center ${darkMode ? 'bg-slate-950' : 'bg-slate-50'}`}>
-        <Loader2 className="w-8 h-8 animate-spin text-teal-600" />
+        <Loader2 className="w-8 h-8 animate-spin text-brand" />
       </div>
     )
   }
@@ -222,7 +222,7 @@ export default function ProfilePage() {
 
   const handleVerify2FACode = async () => {
     if (twoFactorCode.length !== 6) return
-    
+
     setIsSubmitting2FA(true)
     try {
       const token = authStorage.getAccessToken()
@@ -230,13 +230,13 @@ export default function ProfilePage() {
         router.push('/login')
         return
       }
-      
+
       const response = await userService.verifyTwoFactor(
         token,
         enable2FAData.data.secret,
         twoFactorCode
       )
-      
+
       // if (response) {
       //   // Handle successful verification
       //   setUserData(prev => prev ? {
@@ -264,7 +264,7 @@ export default function ProfilePage() {
 
   const SidebarContent = () => (
     <nav className="space-y-1">
-      <Link href="/user/profile" className="flex items-center gap-3 px-4 py-2 bg-slate-100 dark:bg-slate-800 text-teal-700 dark:text-teal-400 font-medium rounded-lg">
+      <Link href="/user/profile" className="flex items-center gap-3 px-4 py-2 bg-bg-subtle text-brand font-medium rounded-lg">
         <User className="w-4 h-4" />
         Tài khoản của tôi
       </Link>
@@ -287,7 +287,7 @@ export default function ProfilePage() {
 
         {/* Mobile Header */}
         <div className="md:hidden bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 p-4 flex items-center justify-between sticky top-0 z-30 shadow-sm transition-colors duration-300">
-          <div className="font-semibold text-lg text-teal-700 dark:text-teal-500 ml-2">GenHub</div>
+          <div className="font-semibold text-lg text-brand ml-2">GenHub</div>
           <div className="flex items-center gap-2">
             <button
               onClick={toggleTheme}
@@ -303,7 +303,7 @@ export default function ProfilePage() {
               </DrawerTrigger>
               <DrawerContent className="h-full w-[80%] max-w-sm rounded-r-2xl outline-none bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
                 <DrawerHeader className="border-b border-slate-200 dark:border-slate-800 pb-4 mb-4">
-                  <DrawerTitle className="text-xl font-bold text-teal-700 dark:text-teal-500 text-left px-2">GenHub</DrawerTitle>
+                  <DrawerTitle className="text-xl font-bold text-brand text-left px-2">GenHub</DrawerTitle>
                   <DrawerDescription className="sr-only">Menu nav</DrawerDescription>
                 </DrawerHeader>
                 <div className="px-4">
@@ -321,11 +321,11 @@ export default function ProfilePage() {
 
         {/* Desktop Sidebar Navigation */}
         <aside className="hidden md:block w-64 flex-shrink-0 p-8 pt-12 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 sticky top-0 h-screen overflow-y-auto z-20 transition-colors duration-300">
-          <div className="mb-10 px-4 font-bold text-2xl text-teal-700 dark:text-teal-500 flex items-center justify-between">
+          <div className="mb-10 px-4 font-bold text-2xl text-brand flex items-center justify-between">
             <span>GenHub</span>
             <button
               onClick={toggleTheme}
-              className="p-2 text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"
+              className="p-2 text-slate-400 hover:text-brand transition-colors rounded-full hover:bg-bg-subtle"
               title="Toggle Dark Mode"
             >
               {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
@@ -340,7 +340,7 @@ export default function ProfilePage() {
         {/* Main Content */}
         <main className="flex-1 p-4 md:p-8 pt-6 md:pt-12 max-w-5xl mx-auto w-full">
           <h1 className="text-2xl md:text-3xl text-slate-800 dark:text-white mb-6 md:mb-8 font-bold flex items-center gap-3">
-            <User className="w-8 h-8 text-teal-600 dark:text-teal-500 md:hidden" />
+            <User className="w-8 h-8 text-brand md:hidden" />
             Tài khoản của tôi
           </h1>
 
@@ -394,7 +394,7 @@ export default function ProfilePage() {
                           type="text"
                           value={name}
                           onChange={(e) => setName(e.target.value)}
-                          className="w-full bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all shadow-sm placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                          className="w-full bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none transition-all shadow-sm placeholder:text-slate-400 dark:placeholder:text-slate-500"
                           placeholder="Nhập họ và tên của bạn"
                         />
                       </div>
@@ -404,7 +404,7 @@ export default function ProfilePage() {
                     <div className="space-y-2">
                       <label className="text-sm font-semibold text-slate-600 dark:text-slate-400">Ngôn ngữ</label>
                       <div className="relative">
-                        <select className="w-full bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all appearance-none cursor-pointer shadow-sm">
+                        <select className="w-full bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none transition-all appearance-none cursor-pointer shadow-sm">
                           <option>English</option>
                           <option>Tiếng Việt</option>
                         </select>
@@ -415,11 +415,11 @@ export default function ProfilePage() {
                     </div>
 
                     {/* Actions */}
-                    <div className="pt-6 flex items-center gap-4 border-t border-slate-200 dark:border-slate-700 mt-8">
+                    <div className="pt-6 flex items-center gap-4 border-t border-border mt-8">
                       <button
                         type="submit"
                         disabled={saving}
-                        className="bg-teal-700 hover:bg-teal-800 dark:bg-teal-600 dark:hover:bg-teal-700 text-white font-medium px-8 py-3 rounded-lg transition-all shadow-lg shadow-teal-700/20 hover:shadow-teal-700/40 disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2 w-full md:w-auto justify-center active:scale-[0.98]"
+                        className="bg-brand hover:bg-brand-hover text-white font-medium px-8 py-3 rounded-lg transition-all shadow-lg shadow-brand/20 hover:shadow-brand/40 disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2 w-full md:w-auto justify-center active:scale-[0.98]"
                       >
                         {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />}
                         {saving ? 'Đang lưu...' : 'Lưu thay đổi'}
@@ -441,14 +441,14 @@ export default function ProfilePage() {
                     <h3 className="text-sm font-semibold text-slate-600 dark:text-slate-400 mb-4 hidden lg:block">Ảnh đại diện</h3>
                     <div className="border border-slate-200 dark:border-slate-800 rounded-2xl p-8 flex flex-col items-center text-center bg-gradient-to-b from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 flex-1 w-full justify-center min-h-[300px] relative overflow-hidden shadow-sm transition-colors duration-300">
                       {/* Background decorative blob */}
-                      <div className="absolute -top-10 -right-10 w-40 h-40 bg-teal-50 dark:bg-teal-900/20 rounded-full blur-2xl opacity-60" />
+                      <div className="absolute -top-10 -right-10 w-40 h-40 bg-brand-subtle rounded-full blur-2xl opacity-60" />
                       <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-slate-100 dark:bg-slate-800/50 rounded-full blur-2xl opacity-60" />
 
                       {/* Shadcn Avatar with Verification Badge */}
                       <div className="relative mb-6 z-10 group cursor-pointer transition-transform hover:scale-105 duration-300">
-                        <Avatar className="h-32 w-32 border-[6px] border-white dark:border-slate-800 shadow-2xl ring-1 ring-black/5 dark:ring-white/10 object-cover bg-white dark:bg-slate-700">
+                        <Avatar className="h-32 w-32 border-[6px] border-bg shadow-2xl ring-1 ring-black/5 dark:ring-white/10 object-cover bg-bg">
                           <AvatarImage className="object-cover" src={avatarPreview || `https://www.gravatar.com/avatar/${userData.user.email ? userData.user.email : 'default'}?d=mp`} alt={userData.user.name} />
-                          <AvatarFallback className="text-4xl font-bold bg-gradient-to-br from-teal-50 to-cyan-50 dark:from-slate-800 dark:to-slate-700 text-teal-600 dark:text-teal-400">
+                          <AvatarFallback className="text-4xl font-bold bg-gradient-to-br from-brand-subtle to-brand/10 text-brand">
                             {userData.user.name ? userData.user.name.charAt(0).toUpperCase() : 'U'}
                           </AvatarFallback>
                         </Avatar>
@@ -462,7 +462,7 @@ export default function ProfilePage() {
                               viewBox="0 0 24 24"
                               aria-hidden="true"
                             >
-                              <circle cx="12" cy="12" r="10" className="fill-teal-600 dark:fill-teal-500" />
+                              <circle cx="12" cy="12" r="10" className="fill-brand" />
                               <path
                                 className="fill-white dark:fill-slate-900"
                                 d="M9 16.2l-3.5-3.5 1.4-1.4 2.1 2.1 5.6-5.6 1.4 1.4z"
@@ -480,9 +480,9 @@ export default function ProfilePage() {
                       <AvatarUploader onUpload={handleAvatarUpload}>
                         <button
                           type="button"
-                          className="flex items-center gap-2 px-5 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-slate-700 dark:text-slate-200 rounded-lg text-sm font-medium transition-all shadow-sm hover:shadow group z-10 active:scale-95"
+                          className="flex items-center gap-2 px-5 py-2.5 bg-bg border border-border hover:bg-bg-subtle hover:border-border-strong text-text rounded-lg text-sm font-medium transition-all shadow-sm hover:shadow group z-10 active:scale-95"
                         >
-                          <Upload className="w-4 h-4 text-slate-500 dark:text-slate-400 group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors" />
+                          <Upload className="w-4 h-4 text-text-muted group-hover:text-brand transition-colors" />
                           Tải ảnh mới
                         </button>
                       </AvatarUploader>
@@ -502,8 +502,8 @@ export default function ProfilePage() {
               <div className="absolute top-0 right-0 w-24 h-full bg-gradient-to-l from-slate-50 dark:from-slate-800/20 to-transparent pointer-events-none md:block hidden" />
 
               <div className="flex-1 relative z-10">
-                <h3 className="text-xl font-semibold text-slate-800 dark:text-slate-100 mb-3 flex items-center gap-2">
-                  <Shield className="w-5 h-5 text-teal-600 dark:text-teal-500" />
+                <h3 className="text-xl font-semibold text-text mb-3 flex items-center gap-2">
+                  <Shield className="w-5 h-5 text-brand" />
                   Bảo mật 2 lớp (2FA)
                 </h3>
                 <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed max-w-2xl">
@@ -562,9 +562,9 @@ export default function ProfilePage() {
                     Quét mã QR bằng ứng dụng xác thực của bạn để thêm tài khoản
                   </p>
                   <div className="flex justify-center p-4 bg-white rounded-lg border border-gray-200 dark:bg-slate-700 dark:border-slate-600">
-                    <img 
-                      src={enable2FAData.data.qr_code_url} 
-                      alt="2FA QR Code" 
+                    <img
+                      src={enable2FAData.data.qr_code_url}
+                      alt="2FA QR Code"
                       className="w-48 h-48"
                     />
                   </div>
@@ -581,12 +581,12 @@ export default function ProfilePage() {
                     <ShieldCheck className="w-5 h-5 text-blue-500" />
                     Xác nhận mã 2FA
                   </h3>
-                  
+
                   <div className="space-y-3">
                     <p className="text-sm text-gray-600 dark:text-gray-300">
                       Nhập mã xác thực 6 số từ ứng dụng xác thực của bạn
                     </p>
-                    
+
                     <div className="flex items-start gap-3">
                       <div className="flex-1 max-w-[240px]">
                         <Input
@@ -603,7 +603,7 @@ export default function ProfilePage() {
                           className="text-center text-lg font-mono tracking-widest h-12"
                         />
                       </div>
-                      
+
                       <Button
                         onClick={handleVerify2FACode}
                         disabled={twoFactorCode.length !== 6 || isSubmitting2FA}
@@ -617,7 +617,7 @@ export default function ProfilePage() {
                         ) : 'Xác nhận'}
                       </Button>
                     </div>
-                    
+
                     <p className="text-xs text-gray-500 dark:text-gray-400">
                       Mã xác thực sẽ hết hạn sau 30 giây
                     </p>

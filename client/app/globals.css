@@ -3,127 +3,118 @@
 @variant dark (&:where(.dark, .dark *));
 
 :root {
-  /* Core Base Colors */
-  --background: #F8FAFC; /* ColorKit Background */
-  --foreground: #1E293B; /* ColorKit Gray 900 */
-
-  /* Primary - Deep Teal */
-  --primary: #0F766E;
-  --primary-foreground: #FFFFFF;
-  --primary-light: #14B8A6;
-  --primary-dark: #0D5A52;
-
-  /* Secondary / Muted */
-  --secondary: #F1F5F9; /* Sidebar BG / Gray 100 */
-  --secondary-foreground: #0F766E; /* Using Primary for contrast or Gray 900 */
+  --bg: 0 0% 100%;           
+  --bg-subtle: 0 0% 97%;     
+  --bg-elevated: 0 0% 100%; 
   
-  --muted: #F1F5F9; /* Gray 100 */
-  --muted-foreground: #64748B; /* Gray 500 */
-
-  --accent: #F1F5F9; /* Gray 100 */
-  --accent-foreground: #0F766E;
-
-  --destructive: #EF4444; /* Error */
-  --destructive-foreground: #FFFFFF;
-
-  /* Form / Borders */
-  --border: #E2E8F0;
-  --input: #E2E8F0;
-  --ring: #0F766E;
-
-  --radius: 0.5rem;
-
-  /* ColorKit Specific */
-  --color-success: #10B981;
-  --color-warning: #F59E0B;
-  --color-info: #0EA5E9;
+  --text: 0 0% 12%;           
+  --text-muted: 0 0% 45%;     
+  --text-inverse: 0 0% 100%;
   
-  /* Chart / Visualization placeholders if needed */
-  --chart-1: #0F766E;
-  --chart-2: #14B8A6;
-  --chart-3: #F59E0B;
+  --border: 0 0% 90%;         
+  --border-strong: 0 0% 80%;
 
-  /* Card & Popover - Pure White */
-  --card: #FFFFFF;
-  --card-foreground: #1E293B;
-  --popover: #FFFFFF;
-  --popover-foreground: #1E293B;
+  --brand: 175 77% 26%;
+  --brand-hover: 175 77% 22%;
+  --brand-active: 175 77% 18%;
+  --brand-subtle: 175 77% 96%;
+
+  /* 3. Semantic Group (From ColorKit-Genhub.md converted to HSL) */
+  --success: 161 84% 39%;     /* #10B981 */
+  --warning: 38 92% 50%;      /* #F59E0B */
+  --error: 0 84% 60%;         /* #EF4444 */
+  --info: 199 89% 48%;        /* #0EA5E9 */
+
+  /* 5. Borders, Shadows, Highlights */
+  /* Shadows: One short-strong and one long-soft shadow */
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+  /* Custom Premium Shadow for Hero */
+  --shadow-premium: 0 20px 50px -12px rgba(0, 0, 0, 0.15), 0 10px 20px -8px rgba(0, 0, 0, 0.1);
+
+  --radius: 1.5rem;
+  --radius-hero: 2.5rem;
+  --radius-pill: 9999px;
 }
-/*
+
 .dark {
-  --background: #020617; 
-  --foreground: #F8FAFC; 
-
-  --primary: #14B8A6;
-  --primary-foreground: #020617;
-
-  --secondary: #1E293B;
-  --secondary-foreground: #F8FAFC;
-
-  --muted: #1E293B;
-  --muted-foreground: #94A3B8;
-
-  --accent: #1E293B;
-  --accent-foreground: #F8FAFC;
-
-  --destructive: #7F1D1D;
-  --destructive-foreground: #F8FAFC;
-
-  --border: #1E293B;
-  --input: #1E293B;
-  --ring: #14B8A6;
+  /* Rule 3: 100-L variation for dark mode */
+  --bg: 0 0% 4%;              /* 100 - 96 -> ~4 */
+  --bg-subtle: 0 0% 8%;       /* Elevated base */
+  --bg-elevated: 0 0% 12%;
+  
+  --text: 0 0% 96%;           /* 100 - 12 -> 88 or higher for readability */
+  --text-muted: 0 0% 65%;
+  --text-inverse: 0 0% 100%;
+  
+  --border: 0 0% 15%;
+  --border-strong: 0 0% 25%;
+  
+  --brand-subtle: 175 40% 12%;
+  --primary: 175 77% 26%;
+  --primary-foreground: 0 0% 100%;
+  
+  --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.3), 0 2px 4px -1px rgba(0,0,0,0.2);
 }
-*/
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary-light: var(--primary-light);
-  --color-primary-dark: var(--primary-dark);
-  
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-  
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
 
-  /* Helper colors matching ColorKit */
-  --color-warning: var(--color-warning);
-  --color-success: var(--color-success);
-  --color-info: var(--color-info);
+@theme inline {
+  --color-bg: hsl(var(--bg));
+  --color-bg-subtle: hsl(var(--bg-subtle));
+  --color-bg-elevated: hsl(var(--bg-elevated));
   
-  --radius: var(--radius);
+  --color-text: hsl(var(--text));
+  --color-text-muted: hsl(var(--text-muted));
+  --color-text-inverse: hsl(var(--text-inverse));
+  
+  --color-border: hsl(var(--border));
+  --color-border-strong: hsl(var(--border-strong));
+  
+  --color-success: hsl(var(--success));
+  --color-warning: hsl(var(--warning));
+  --color-error: hsl(var(--error));
+  --color-info: hsl(var(--info));
+
+  --color-brand: hsl(var(--brand));
+  --color-brand-hover: hsl(var(--brand-hover));
+  --color-brand-active: hsl(var(--brand-active));
+  --color-brand-subtle: hsl(var(--brand-subtle));
+
+  --color-primary: hsl(var(--brand));
+  --color-primary-foreground: hsl(var(--text-inverse));
+  
+  --radius-hero: var(--radius-hero);
+  --radius-pill: var(--radius-pill);
+  
+  --shadow-premium: var(--shadow-premium);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: hsl(var(--bg));
+  color: hsl(var(--text));
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Custom utilities for smooth transitions */
-@layer utilities {
-  .bg-size-200 {
-    background-size: 200% 200%;
-  }
-  
-  .bg-pos-0 {
-    background-position: 0% 50%;
-  }
-  
-  .bg-pos-100 {
-    background-position: 100% 50%;
-  }
+/* Rule 4: Visual Hierarchy */
+h1, h2, h3, h4, h5, h6 {
+  color: hsl(var(--text));
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+p {
+  color: hsl(var(--text-muted));
+  line-height: 1.6;
+}
+
+.text-brand { color: hsl(var(--brand)); }
+.bg-brand { background-color: hsl(var(--brand)); }
+.border-brand { border-color: hsl(var(--brand)); }
+
+/* Accessibility */
+:focus-visible {
+  outline: 2px solid hsl(var(--brand));
+  outline-offset: 2px;
 }

@@ -16,6 +16,7 @@ const menuItems = [
     { name: 'Features', href: '#link' },
     { name: 'Solution', href: '#link' },
     { name: 'Pricing', href: '#link' },
+    { name: 'Routes', href: '/dev/routes' },
     { name: 'About', href: '#link' },
 ]
 
@@ -42,10 +43,10 @@ const Logo = ({ className }: { className?: string }) => {
                     x2="10"
                     y2="20"
                     gradientUnits="userSpaceOnUse">
-                    <stop stopColor="#9B99FE" />
+                    <stop stopColor="hsl(var(--brand))" />
                     <stop
                         offset="1"
-                        stopColor="#2BC8B7"
+                        stopColor="hsl(175 77% 50%)"
                     />
                 </linearGradient>
             </defs>
@@ -199,7 +200,7 @@ export function HeroSection() {
     const email_verified = authStorage.getEmailVerified();
     const access_token = authStorage.getAccessToken();
     useEffect(() => {
-        if(!email_verified && access_token) {
+        if (!email_verified && access_token) {
             setVerifyAlert(true)
         } else {
             setVerifyAlert(false)
@@ -207,7 +208,7 @@ export function HeroSection() {
     }, [])
 
     const sendEmailVerify = async () => {
-        if(access_token == null || undefined) {
+        if (access_token == null || undefined) {
             alert("Đăng nhập để tiếp tục")
         }
         try {
@@ -229,26 +230,26 @@ export function HeroSection() {
             <HeroHeader />
             <main className="overflow-hidden pt-13">
                 {/* Email Verification Banner - Thêm ở đây */}
-                {verifyAlert && 
+                {verifyAlert &&
                     <div className=" z-10 backdrop-blur-md bg-background/80 border-b">
                         <div className="mx-auto max-w-6xl px-6 py-2.5">
                             <div className="flex items-center justify-between gap-4">
                                 <div className="flex items-center gap-3">
                                     <div className="shrink-0">
                                         <div className="relative">
-                                            <div className="absolute inset-0 rounded-full bg-gradient-to-r from-[#9B99FE] to-[#2BC8B7] opacity-20 blur-sm" />
-                                            <div className="relative bg-gradient-to-r from-[#9B99FE] to-[#2BC8B7] rounded-full p-1.5">
-                                                <svg 
-                                                    className="h-3.5 w-3.5 text-white" 
-                                                    fill="none" 
-                                                    viewBox="0 0 24 24" 
+                                            <div className="absolute inset-0 rounded-full bg-brand/20 opacity-20 blur-sm" />
+                                            <div className="relative bg-brand rounded-full p-1.5">
+                                                <svg
+                                                    className="h-3.5 w-3.5 text-white"
+                                                    fill="none"
+                                                    viewBox="0 0 24 24"
                                                     stroke="currentColor"
                                                 >
-                                                    <path 
-                                                        strokeLinecap="round" 
-                                                        strokeLinejoin="round" 
-                                                        strokeWidth={2.5} 
-                                                        d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" 
+                                                    <path
+                                                        strokeLinecap="round"
+                                                        strokeLinejoin="round"
+                                                        strokeWidth={2.5}
+                                                        d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
                                                     />
                                                 </svg>
                                             </div>
@@ -264,15 +265,15 @@ export function HeroSection() {
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <Button 
+                                    <Button
                                         onClick={sendEmailVerify}
-                                        size="sm" 
+                                        size="sm"
                                         variant="ghost"
                                         className="h-7 text-xs hover:bg-muted cursor-pointer"
                                     >
                                         Resend
                                     </Button>
-                                    <button 
+                                    <button
                                         className="text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
                                         aria-label="Dismiss"
                                         onClick={() => setVerifyAlert(false)}
@@ -292,7 +293,7 @@ export function HeroSection() {
                     <div className="w-140 h-320 -translate-y-87.5 absolute left-0 top-0 -rotate-45 rounded-full bg-[radial-gradient(68.54%_68.72%_at_55.02%_31.46%,hsla(0,0%,85%,.08)_0,hsla(0,0%,55%,.02)_50%,hsla(0,0%,45%,0)_80%)]" />
                     <div className="h-320 absolute left-0 top-0 w-56 -rotate-45 rounded-full bg-[radial-gradient(50%_50%_at_50%_50%,hsla(0,0%,85%,.06)_0,hsla(0,0%,45%,.02)_80%,transparent_100%)] [translate:5%_-50%]" />
                     <div className="h-320 -translate-y-87.5 absolute left-0 top-0 w-56 -rotate-45 bg-[radial-gradient(50%_50%_at_50%_50%,hsla(0,0%,85%,.04)_0,hsla(0,0%,45%,.02)_80%,transparent_100%)]" />
-                </div>  
+                </div>
                 <section>
                     <div className="relative pt-24 md:pt-36">
                         <AnimatedGroup
