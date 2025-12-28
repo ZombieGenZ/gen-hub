@@ -49,6 +49,7 @@
     "cors": "^2.8.5",
     "googleapis": "^169.0.0",
     "imagekit": "^6.0.0",
+    "imapflow": "^1.2.3",
     "ioredis": "^5.8.2",
     "nestjs-i18n": "^10.6.0",
     "nodemailer": "^7.0.11",

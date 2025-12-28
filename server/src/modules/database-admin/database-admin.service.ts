@@ -459,8 +459,14 @@ export class DatabaseAdminService implements OnModuleInit {
         };
 
         // Use transaction for atomicity
+        // Get the correct Prisma model name (camelCase) from the mapping
+        const prismaModelName = this.tableNameToModelName.get(tableName) || tableName;
+
         await this.prisma.$transaction(async (tx) => {
-            const txModel = (tx as any)[tableName];
+            const txModel = (tx as any)[prismaModelName];
+            if (!txModel) {
+                throw new BadRequestException(`Model "${prismaModelName}" not found in Prisma transaction context for table "${tableName}"`);
+            }
 
             // Create records
             for (const data of changes.created || []) {
@@ -569,8 +575,14 @@ export class DatabaseAdminService implements OnModuleInit {
         const oldRecordMap = new Map(oldRecords.map((r: any) => [r.id, r]));
 
         // Delete records
+        // Get the correct Prisma model name (camelCase) from the mapping
+        const prismaModelName = this.tableNameToModelName.get(tableName) || tableName;
+
         await this.prisma.$transaction(async (tx) => {
-            const txModel = (tx as any)[tableName];
+            const txModel = (tx as any)[prismaModelName];
+            if (!txModel) {
+                throw new BadRequestException(`Model "${prismaModelName}" not found in Prisma transaction context for table "${tableName}"`);
+            }
 
             for (const id of ids) {
                 try {

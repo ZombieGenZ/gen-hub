@@ -116,8 +116,8 @@ api.interceptors.response.use(
 
 // Auth functions
 export const auth = {
-    login: async (email: string, password: string) => {
-        const { data } = await api.post('/auth/login/feature-flag-panel', { email, password });
+    login: async (email: string, password: string, turnstileToken?: string) => {
+        const { data } = await api.post('/auth/login/feature-flag-panel', { email, password, turnstileToken });
         if (data.authorization) {
             // Store tokens in cookies
             Cookies.set(ACCESS_TOKEN_KEY, data.authorization.access_token, {

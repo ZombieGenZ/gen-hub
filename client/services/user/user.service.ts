@@ -35,7 +35,8 @@ export class UserService {
       const data = await response.json();
 
       // kiểm tra xác minh
-      await authStorage.setEmailVerified(data.data.user.is_verified);
+      await authStorage.setEmailVerified(data.data.user.email_confirmed);
+      console.log(data)
       return data.data;
    }
 

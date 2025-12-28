@@ -7,6 +7,7 @@ import { AuthService } from '@/services/auth/auth.service'
 import { useRouter } from "next/navigation"
 import { useTheme } from '../ThemeContext'
 import { authStorage } from '@/services/auth/auth-storage.service'
+import TurnstileWidget from '@/components/TurnstileWidget'
 
 const authServices = new AuthService()
 
@@ -20,6 +21,7 @@ export default function LoginPage() {
     email: "",
     password: "",
   })
+  const [turnstileToken, setTurnstileToken] = useState<string>('')
 
   const [emailFocused, setEmailFocused] = useState(false)
   const [passwordFocused, setPasswordFocused] = useState(false)
@@ -35,7 +37,10 @@ export default function LoginPage() {
     setLoading(true)
     try {
       // Call API login
-      const response = await authServices.login(formData)
+      const response = await authServices.login({
+        ...formData,
+        turnstileToken
+      })
       console.log(response)
       if (response) {
         authStorage.setTokens(
@@ -73,14 +78,14 @@ export default function LoginPage() {
 
       <div className="flex-1 flex flex-col items-center justify-center">
         <div className="w-full max-w-md px-8">
-            {/* Header */}
-            <div className="pb-6">
-              <h1 className={`text-3xl font-bold mb-2 ${darkMode ? "text-white" : "text-gray-900"}`}>Đăng nhập</h1>
-              <p className={darkMode ? "text-slate-400" : "text-gray-600"}>Chào mừng trở lại! Đăng nhập để tiếp tục.</p>
-            </div>
+          {/* Header */}
+          <div className="pb-6">
+            <h1 className={`text-3xl font-bold mb-2 ${darkMode ? "text-white" : "text-gray-900"}`}>Đăng nhập</h1>
+            <p className={darkMode ? "text-slate-400" : "text-gray-600"}>Chào mừng trở lại! Đăng nhập để tiếp tục.</p>
+          </div>
 
-            {/* Form */}
-            <div className="space-y-5">
+          {/* Form */}
+          <div className="space-y-5">
             {/* Email/Username */}
             <div className="group">
               <label
@@ -91,9 +96,8 @@ export default function LoginPage() {
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <User
-                    className={`h-5 w-5 transition-all duration-300 ${
-                      emailFocused ? "text-teal-500 scale-110" : darkMode ? "text-slate-500" : "text-gray-400"
-                    }`}
+                    className={`h-5 w-5 transition-all duration-300 ${emailFocused ? "text-teal-500 scale-110" : darkMode ? "text-slate-500" : "text-gray-400"
+                      }`}
                     style={{
                       animation: emailFocused ? "bounce-subtle 0.5s ease-in-out" : "none",
                     }}
@@ -107,11 +111,10 @@ export default function LoginPage() {
                   onFocus={() => setEmailFocused(true)}
                   onBlur={() => setEmailFocused(false)}
                   placeholder="Nhập email hoặc username"
-                  className={`w-full pl-10 pr-4 py-3 rounded-lg transition-all focus:outline-none focus:ring-2 ${
-                    darkMode
-                      ? "bg-slate-700/50 border border-slate-600 text-white placeholder-slate-400 focus:border-teal-600 focus:ring-teal-600/20"
-                      : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-500 focus:border-teal-600 focus:ring-teal-600/20"
-                  }`}
+                  className={`w-full pl-10 pr-4 py-3 rounded-lg transition-all focus:outline-none focus:ring-2 ${darkMode
+                    ? "bg-slate-700/50 border border-slate-600 text-white placeholder-slate-400 focus:border-teal-600 focus:ring-teal-600/20"
+                    : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-500 focus:border-teal-600 focus:ring-teal-600/20"
+                    }`}
                 />
               </div>
             </div>
@@ -126,9 +129,8 @@ export default function LoginPage() {
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Lock
-                    className={`h-5 w-5 transition-all duration-300 ${
-                      passwordFocused ? "text-teal-500 scale-110" : darkMode ? "text-slate-500" : "text-gray-400"
-                    }`}
+                    className={`h-5 w-5 transition-all duration-300 ${passwordFocused ? "text-teal-500 scale-110" : darkMode ? "text-slate-500" : "text-gray-400"
+                      }`}
                     style={{
                       animation: passwordFocused ? "shake-subtle 0.5s ease-in-out" : "none",
                     }}
@@ -142,18 +144,16 @@ export default function LoginPage() {
                   onFocus={() => setPasswordFocused(true)}
                   onBlur={() => setPasswordFocused(false)}
                   placeholder="Nhập mật khẩu"
-                  className={`w-full pl-10 pr-12 py-3 rounded-lg transition-all focus:outline-none focus:ring-2 ${
-                    darkMode
-                      ? "bg-slate-700/50 border border-slate-600 text-white placeholder-slate-400 focus:border-teal-600 focus:ring-teal-600/20"
-                      : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-500 focus:border-teal-600 focus:ring-teal-600/20"
-                  }`}
+                  className={`w-full pl-10 pr-12 py-3 rounded-lg transition-all focus:outline-none focus:ring-2 ${darkMode
+                    ? "bg-slate-700/50 border border-slate-600 text-white placeholder-slate-400 focus:border-teal-600 focus:ring-teal-600/20"
+                    : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-500 focus:border-teal-600 focus:ring-teal-600/20"
+                    }`}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className={`absolute inset-y-0 right-0 pr-3 flex items-center transition-all duration-300 hover:scale-125 ${
-                    darkMode ? "text-slate-500 hover:text-teal-500" : "text-gray-500 hover:text-teal-600"
-                  }`}
+                  className={`absolute inset-y-0 right-0 pr-3 flex items-center transition-all duration-300 hover:scale-125 ${darkMode ? "text-slate-500 hover:text-teal-500" : "text-gray-500 hover:text-teal-600"
+                    }`}
                 >
                   <div className="transition-all duration-300" style={{ animation: "blink 0.3s ease-in-out" }}>
                     {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
@@ -172,13 +172,12 @@ export default function LoginPage() {
                     className="sr-only"
                   />
                   <div
-                    className={`w-5 h-5 rounded border-2 transition-all duration-300 flex items-center justify-center ${
-                      rememberMe
-                        ? "bg-teal-600 border-teal-600 scale-110"
-                        : darkMode
-                          ? "border-slate-600 hover:border-teal-600"
-                          : "border-gray-400 hover:border-teal-600"
-                    }`}
+                    className={`w-5 h-5 rounded border-2 transition-all duration-300 flex items-center justify-center ${rememberMe
+                      ? "bg-teal-600 border-teal-600 scale-110"
+                      : darkMode
+                        ? "border-slate-600 hover:border-teal-600"
+                        : "border-gray-400 hover:border-teal-600"
+                      }`}
                   >
                     {rememberMe && (
                       <svg
@@ -211,6 +210,11 @@ export default function LoginPage() {
                 Quên mật khẩu?
               </Link>
             </div>
+
+            <TurnstileWidget
+              onSuccess={setTurnstileToken}
+              theme={darkMode ? 'dark' : 'light'}
+            />
 
             <button
               onClick={handleLogin}

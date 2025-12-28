@@ -2,8 +2,15 @@
 
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, ChevronRight, Menu, X } from 'lucide-react'
+import { ArrowRight, Bell, BellRing, ChevronRight, Menu, X, Check, X as XIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { AnimatedGroup } from '@/components/ui/animated-group'
 import { cn } from '@/lib/utils'
 import { Variants } from 'framer-motion'
@@ -16,7 +23,6 @@ const menuItems = [
     { name: 'Features', href: '#link' },
     { name: 'Solution', href: '#link' },
     { name: 'Pricing', href: '#link' },
-    { name: 'Routes', href: '/dev/routes' },
     { name: 'About', href: '#link' },
 ]
 
@@ -78,6 +84,14 @@ const HeroHeader = () => {
     const [menuState, setMenuState] = React.useState(false)
     const [isScrolled, setIsScrolled] = React.useState(false)
     const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false)
+    const [isNotificationOpen, setIsNotificationOpen] = useState(false)
+    const [notifications, setNotifications] = useState([
+        { id: 1, title: 'Thông báo mới', message: 'Bạn có 1 đơn hàng mới', read: false, date: '10 phút trước' },
+        { id: 2, title: 'Cập nhật hệ thống', message: 'Phiên bản mới đã có sẵn', read: true, date: '2 giờ trước' },
+        { id: 3, title: 'Khuyến mãi', message: 'Giảm giá 20% cho đơn hàng đầu tiên', read: true, date: '1 ngày trước' },
+    ])
+    
+    const unreadCount = notifications.filter(n => !n.read).length
 
     useEffect(() => {
         const checkAuth = () => {
@@ -152,14 +166,30 @@ const HeroHeader = () => {
                                 </ul>
                             </div>
                             {isLoggedIn ?
-                                <Button
-                                    asChild
-                                    size="sm"
-                                    className={cn(isScrolled && 'lg:hidden')}>
-                                    <Link href="/(protected)/dashboard/customer/profile">
-                                        <span>Profile</span>
-                                    </Link>
-                                </Button> :
+                                <div className="flex items-center gap-2">
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="relative rounded-full"
+                                        onClick={() => setIsNotificationOpen(true)}
+                                    >
+                                        <Bell className="h-5 w-5" />
+                                        <span className="sr-only">Thông báo</span>
+                                        {unreadCount > 0 && (
+                                            <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs text-white">
+                                                {unreadCount}
+                                            </span>
+                                        )}
+                                    </Button>
+                                    <Button
+                                        asChild
+                                        size="sm"
+                                        className={cn(isScrolled && 'lg:hidden')}>
+                                        <Link href="/user/profile">
+                                            <span>Profile</span>
+                                        </Link>
+                                    </Button>
+                                </div> :
                                 <div className="flex w-full flex-col space-y-3 sm:flex-row sm:gap-3 sm:space-y-0 md:w-fit">
                                     <Button
                                         asChild
@@ -191,6 +221,71 @@ const HeroHeader = () => {
                     </div>
                 </div>
             </nav>
+            
+            {/* Notification Dialog */}
+            <Dialog open={isNotificationOpen} onOpenChange={setIsNotificationOpen}>
+                <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                        <DialogTitle>Thông báo</DialogTitle>
+                    </DialogHeader>
+                    <ScrollArea className="max-h-[60vh] pr-4">
+                        <div className="space-y-4">
+                            {notifications.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+                                    <Bell className="mb-2 h-8 w-8 opacity-30" />
+                                    <p>Không có thông báo nào</p>
+                                </div>
+                            ) : (
+                                notifications.map((notification) => (
+                                    <div 
+                                        key={notification.id}
+                                        className={`rounded-lg border p-4 transition-colors ${
+                                            !notification.read ? 'border-primary/20 bg-primary/5' : 'border-border/50'
+                                        }`}
+                                    >
+                                        <div className="flex items-start justify-between">
+                                            <div className="space-y-1">
+                                                <h4 className="font-medium">{notification.title}</h4>
+                                                <p className="text-sm text-muted-foreground">{notification.message}</p>
+                                                <span className="text-xs text-muted-foreground">{notification.date}</span>
+                                            </div>
+                                            {!notification.read && (
+                                                <button 
+                                                    className="text-muted-foreground hover:text-foreground"
+                                                    onClick={() => {
+                                                        // Mark as read logic here
+                                                        setNotifications(notifications.map(n => 
+                                                            n.id === notification.id ? {...n, read: true} : n
+                                                        ))
+                                                    }}
+                                                >
+                                                    <Check className="h-4 w-4" />
+                                                    <span className="sr-only">Đánh dấu đã đọc</span>
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </ScrollArea>
+                    {notifications.length > 0 && (
+                        <div className="flex justify-end pt-2">
+                            <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => {
+                                    // Mark all as read logic here
+                                    setNotifications(notifications.map(n => ({...n, read: true})))
+                                }}
+                            >
+                                <Check className="mr-2 h-4 w-4" />
+                                Đánh dấu tất cả đã đọc
+                            </Button>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
         </header>
     )
 }

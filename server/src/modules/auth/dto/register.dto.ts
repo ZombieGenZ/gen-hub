@@ -77,5 +77,13 @@ export class RegisterDto {
     message: i18nValidationMessage('auth.validation.language_invalid'),
   })
   language?: string;
+
+  @ApiPropertyOptional({
+    description: 'Cloudflare Turnstile token',
+    example: '0.abc123...',
+  })
+  @IsOptional()
+  @IsString()
+  turnstileToken?: string;
 }
 

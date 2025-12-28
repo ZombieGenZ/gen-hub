@@ -14,6 +14,8 @@ import { CustomThrottlerGuard } from './guards/throttler.guard';
 
 import { ImageUploadService } from './services/image-upload.service';
 import { CipherService } from './services/cipher.service';
+import { TurnstileService } from './services/turnstile.service';
+import { HunterService } from './services/hunter.service';
 
 /**
  * Shared Module
@@ -59,6 +61,8 @@ import { CipherService } from './services/cipher.service';
     CustomThrottlerGuard,
     ImageUploadService,
     CipherService,
+    TurnstileService,
+    HunterService,
   ],
   exports: [
     ConfigModule,
@@ -74,6 +78,8 @@ import { CipherService } from './services/cipher.service';
     CustomThrottlerGuard,
     ImageUploadService,
     CipherService,
+    TurnstileService,
+    HunterService,
   ],
 })
 export class SharedModule { }

@@ -198,7 +198,10 @@ export default function DashboardPage() {
                 <div className="flex items-center gap-2">
 
                     <button
-                        onClick={() => fetchFlags()}
+                        onClick={() => {
+                            fetchFlags();
+                            fetchStats();
+                        }}
                         disabled={isLoading}
                         className="btn btn-secondary"
                     >

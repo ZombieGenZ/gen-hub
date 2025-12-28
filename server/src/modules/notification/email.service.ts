@@ -905,5 +905,186 @@ export class EmailService {
       html: await this.createEmailTemplate(content, appName, lang),
     });
   }
+
+  /**
+   * Gửi email cảnh báo bảo mật khi tài khoản bị khóa do brute force
+   * @param to - Email người nhận
+   * @param name - Tên người dùng
+   * @param unlockCode - Mã mở khóa 6 số
+   * @param ip - IP đã thực hiện đăng nhập sai
+   * @param lang - Ngôn ngữ
+   */
+  async sendSecurityAlertEmail(
+    to: string,
+    name: string,
+    unlockCode: string,
+    ip: string,
+    lang: string = 'vi',
+  ): Promise<boolean> {
+    const appName = this.appConfigService.get('brandName');
+    const locale = lang === 'vi' ? 'vi-VN' : 'en-US';
+
+    const greeting = await this.i18n.t('bruteForce.securityAlert.greeting', { lang });
+    const title = await this.i18n.t('bruteForce.securityAlert.title', { lang });
+    const message = await this.i18n.t('bruteForce.securityAlert.message', { lang });
+    const lockMessage = await this.i18n.t('bruteForce.securityAlert.lockMessage', { lang });
+    const unlockInstructions = await this.i18n.t('bruteForce.securityAlert.unlockInstructions', { lang });
+    const codeLabel = await this.i18n.t('bruteForce.securityAlert.codeLabel', { lang });
+    const warningText = await this.i18n.t('bruteForce.securityAlert.warningText', { lang });
+    const expirationLabel = await this.i18n.t('bruteForce.securityAlert.expirationLabel', { lang });
+    const expirationValue = await this.i18n.t('bruteForce.securityAlert.expirationValue', { lang });
+    const subject = await this.i18n.t('bruteForce.securityAlert.subject', { lang });
+
+    // Get colors from config
+    const colors = this.appConfigService.get('colors');
+
+    const content = `
+      <!-- Tiêu đề -->
+      <h2 style="margin: 0 0 20px; font-size: 24px; font-weight: 600; color: ${colors.error}; text-align: center;">
+        ⚠️ ${title}
+      </h2>
+
+      <p style="margin: 0 0 20px; font-size: 15px; color: ${colors.gray700}; line-height: 1.7; text-align: center;">
+        ${greeting}, <strong style="color: ${colors.primaryDark};">${name}</strong>
+      </p>
+
+      <p style="margin: 0 0 20px; font-size: 15px; color: ${colors.gray700}; line-height: 1.7; text-align: center;">
+        ${message}
+      </p>
+
+      <!-- Thông tin IP -->
+      <div style="background: linear-gradient(135deg, ${colors.gray100} 0%, ${colors.background} 100%); border-left: 4px solid ${colors.error}; border-radius: 8px; padding: 20px; margin: 25px 0;">
+        <p style="margin: 0; font-size: 16px; font-weight: 600; color: ${colors.error}; font-family: monospace;">
+          ${ip}
+        </p>
+        <p style="margin: 10px 0 0; font-size: 13px; color: ${colors.gray500};">
+          🕐 ${new Date().toLocaleString(locale, { timeZone: 'Asia/Ho_Chi_Minh' })}
+        </p>
+      </div>
+
+      <p style="margin: 0 0 20px; font-size: 15px; color: ${colors.gray700}; line-height: 1.7; text-align: center;">
+        ${lockMessage}
+      </p>
+
+      <!-- Mã mở khóa -->
+      <div style="background: linear-gradient(135deg, ${colors.primaryLight} 0%, ${colors.primary} 100%); border-radius: 12px; padding: 30px; margin: 25px 0; text-align: center;">
+        <p style="margin: 0 0 10px; font-size: 14px; color: rgba(255, 255, 255, 0.9);">
+          ${unlockInstructions}
+        </p>
+        <p style="margin: 0 0 5px; font-size: 12px; color: rgba(255, 255, 255, 0.7);">
+          ${codeLabel}
+        </p>
+        <p style="margin: 0; font-size: 42px; font-weight: 700; color: #ffffff; letter-spacing: 8px; font-family: monospace;">
+          ${unlockCode}
+        </p>
+        <p style="margin: 15px 0 0; font-size: 12px; color: rgba(255, 255, 255, 0.7);">
+          ${expirationLabel}: <strong>${expirationValue}</strong>
+        </p>
+      </div>
+
+      <!-- Hướng dẫn -->
+      <div style="background-color: ${colors.gray100}; border-radius: 8px; padding: 20px; margin: 25px 0;">
+        <p style="margin: 0 0 15px; font-size: 14px; color: ${colors.gray700}; text-align: center; line-height: 1.6;">
+          📧 ${lang === 'vi' ? 'Gửi email đến' : 'Send email to'} <strong>${this.configService.get<string>('EMAIL_SUPPORT_ADDRESS') || 'support@gen-hub.dev'}</strong>
+        </p>
+        <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+          <tr>
+            <td style="padding: 8px; font-size: 13px; color: ${colors.gray500}; text-align: right; width: 30%;">
+              ${lang === 'vi' ? 'Tiêu đề:' : 'Subject:'}
+            </td>
+            <td style="padding: 8px;">
+              <code style="display: inline-block; padding: 8px 16px; background-color: ${colors.cardSurface}; border: 1px solid ${colors.border}; border-radius: 6px; font-family: monospace; font-size: 14px; color: ${colors.primary};">
+                [UNLOCK] ${to}
+              </code>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; font-size: 13px; color: ${colors.gray500}; text-align: right;">
+              ${lang === 'vi' ? 'Nội dung:' : 'Body:'}
+            </td>
+            <td style="padding: 8px;">
+              <code style="display: inline-block; padding: 8px 16px; background-color: ${colors.cardSurface}; border: 1px solid ${colors.border}; border-radius: 6px; font-family: monospace; font-size: 14px; color: ${colors.primary};">
+                UNLOCK ${unlockCode}
+              </code>
+            </td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- Cảnh báo bảo mật -->
+      <div style="background: linear-gradient(135deg, ${colors.gray100} 0%, ${colors.background} 100%); border-radius: 8px; padding: 15px; margin: 25px 0; border-left: 4px solid ${colors.warning};">
+        <p style="margin: 0; font-size: 13px; color: ${colors.warning}; text-align: center;">
+          ⚠️ ${warningText}
+        </p>
+      </div>
+    `;
+
+    return this.sendEmail({
+      to,
+      subject: `${subject} - ${appName}`,
+      html: await this.createEmailTemplate(content, appName, lang),
+    });
+  }
+
+  /**
+   * Gửi email thông báo mở khóa thành công
+   * @param to - Email người nhận
+   * @param name - Tên người dùng
+   * @param lang - Ngôn ngữ
+   */
+  async sendUnlockSuccessEmail(
+    to: string,
+    name: string,
+    lang: string = 'vi',
+  ): Promise<boolean> {
+    const appName = this.appConfigService.get('brandName');
+
+    const greeting = await this.i18n.t('bruteForce.unlockSuccess.greeting', { lang });
+    const title = await this.i18n.t('bruteForce.unlockSuccess.title', { lang });
+    const message = await this.i18n.t('bruteForce.unlockSuccess.message', { lang });
+    const securityTip = await this.i18n.t('bruteForce.unlockSuccess.securityTip', { lang });
+    const subject = await this.i18n.t('bruteForce.unlockSuccess.subject', { lang });
+
+    // Get colors from config
+    const colors = this.appConfigService.get('colors');
+
+    const content = `
+      <!-- Tiêu đề -->
+      <h2 style="margin: 0 0 20px; font-size: 24px; font-weight: 600; color: ${colors.success}; text-align: center;">
+        ✅ ${title}
+      </h2>
+
+      <p style="margin: 0 0 20px; font-size: 15px; color: ${colors.gray700}; line-height: 1.7; text-align: center;">
+        ${greeting}, <strong style="color: ${colors.primaryDark};">${name}</strong>
+      </p>
+
+      <p style="margin: 0 0 20px; font-size: 15px; color: ${colors.gray700}; line-height: 1.7; text-align: center;">
+        ${message}
+      </p>
+
+      <!-- Thông báo thành công -->
+      <div style="background: linear-gradient(135deg, ${colors.success} 0%, ${colors.primary} 100%); border-radius: 12px; padding: 30px; margin: 25px 0; text-align: center;">
+        <p style="margin: 0; font-size: 48px;">
+          🔓
+        </p>
+        <p style="margin: 15px 0 0; font-size: 16px; color: #ffffff; font-weight: 500;">
+          ${message}
+        </p>
+      </div>
+
+      <!-- Gợi ý bảo mật -->
+      <div style="background: linear-gradient(135deg, ${colors.gray100} 0%, ${colors.background} 100%); border-radius: 8px; padding: 20px; margin: 25px 0; border-left: 4px solid ${colors.info};">
+        <p style="margin: 0; font-size: 13px; color: ${colors.info}; text-align: center; line-height: 1.6;">
+          💡 ${securityTip}
+        </p>
+      </div>
+    `;
+
+    return this.sendEmail({
+      to,
+      subject: `${subject} - ${appName}`,
+      html: await this.createEmailTemplate(content, appName, lang),
+    });
+  }
 }
 

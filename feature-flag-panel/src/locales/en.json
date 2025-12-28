@@ -16,7 +16,7 @@
     "dashboard": {
         "title": "Feature Flags",
         "stats": {
-            "total": "Total Flags",
+            "total": "Total API",
             "active": "Active",
             "inactive": "Inactive"
         },

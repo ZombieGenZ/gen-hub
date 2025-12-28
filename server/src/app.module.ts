@@ -43,6 +43,9 @@ import { CouponScheduleModule } from './modules/coupon-schedule/coupon-schedule.
 import { DatabaseAdminModule } from './modules/database-admin/database-admin.module';
 import { FeatureFlagModule } from './modules/feature-flag/feature-flag.module';
 import { ResourcesModule } from './modules/resources/resources.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { BruteForceModule } from './modules/brute-force/brute-force.module';
+import { EmailInboundModule } from './modules/email-inbound/email-inbound.module';
 import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
 
 @Module({
@@ -142,6 +145,15 @@ import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
 
     // Resources Management
     ResourcesModule,
+
+    // Analytics
+    AnalyticsModule,
+
+    // Security - Brute Force Protection
+    BruteForceModule,
+
+    // Email Inbound Worker
+    EmailInboundModule,
   ],
   controllers: [AppController],
   providers: [

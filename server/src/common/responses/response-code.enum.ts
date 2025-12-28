@@ -23,6 +23,9 @@ export enum ResponseCode {
     AUTH_LOGIN_FEATURE_FLAG_PANEL_SUCCESS = 'auth.login_feature_flag_panel_success',
     AUTH_LOGIN_RESOURCES_PANEL_SUCCESS = 'auth.login_resources_panel_success',
 
+    // Analytics
+    ANALYTICS_TRAFFIC_SUCCESS = 'analytics.traffic_success',
+
     ACCOUNT_GET_PROFILE_SUCCESS = 'account.get_profile_success',
     ACCOUNT_UPDATE_PROFILE_SUCCESS = 'account.update_profile_success',
     ACCOUNT_CHANGE_PASSWORD_SUCCESS = 'account.change_password_success',
@@ -187,6 +190,8 @@ export enum ResponseCode {
     ERROR_NOT_FOUND = 'error.not_found',
     ERROR_CONFLICT = 'error.conflict',
     ERROR_TOO_MANY_REQUESTS = 'error.too_many_requests',
+    ERROR_ACCOUNT_LOCKED = 'error.account_locked',
+    ERROR_ACCOUNT_LOCKED_PERMANENT = 'error.account_locked_permanent',
 
     // Database Errors
     ERROR_DUPLICATE = 'error.duplicate',

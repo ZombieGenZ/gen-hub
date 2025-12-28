@@ -39,15 +39,18 @@ export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [pathname]);
 
-    // Filter tables based on search query
+    // Filter tables based on search query - supports searching by individual words in any order
     const filteredTables = useMemo(() => {
         if (!searchQuery.trim()) return tables;
-        const query = searchQuery.toLowerCase();
-        return tables.filter(
-            (table) =>
-                table.name.toLowerCase().includes(query) ||
-                table.displayName.toLowerCase().includes(query)
-        );
+
+        // Split query into individual words and filter out empty strings
+        const queryWords = searchQuery.toLowerCase().split(/\s+/).filter(word => word.length > 0);
+
+        return tables.filter((table) => {
+            const nameToSearch = `${table.name} ${table.displayName}`.toLowerCase();
+            // Check if ALL query words are found in the table name (in any order)
+            return queryWords.every(word => nameToSearch.includes(word));
+        });
     }, [tables, searchQuery]);
 
     const isTableActive = (tableName: string) => {

@@ -215,11 +215,51 @@ export class CouponScheduleService {
 
         const nextRunAt = this.calculateNextRunAt(dto);
 
-        const schedule = await this.repository.create({
-            ...dto,
+        // Tách các trường target_*_ids ra khỏi dto để xử lý riêng
+        const {
+            target_user_ids,
+            target_warehouse_ids,
+            target_row_ids,
+            target_addon_ids,
+            ...restDto
+        } = dto;
+
+        // Xây dựng data cho Prisma với nested relation
+        const createData: any = {
+            ...restDto,
             next_run_at: nextRunAt,
             created_by: userId,
-        });
+        };
+
+        // Chuyển đổi target_user_ids thành nested target_users
+        if (target_user_ids && target_user_ids.length > 0) {
+            createData.target_users = {
+                create: target_user_ids.map(user_id => ({ user_id })),
+            };
+        }
+
+        // Chuyển đổi target_warehouse_ids thành nested target_warehouses
+        if (target_warehouse_ids && target_warehouse_ids.length > 0) {
+            createData.target_warehouses = {
+                create: target_warehouse_ids.map(warehouse_template_id => ({ warehouse_template_id })),
+            };
+        }
+
+        // Chuyển đổi target_row_ids thành nested target_rows
+        if (target_row_ids && target_row_ids.length > 0) {
+            createData.target_rows = {
+                create: target_row_ids.map(row_template_id => ({ row_template_id })),
+            };
+        }
+
+        // Chuyển đổi target_addon_ids thành nested target_addons
+        if (target_addon_ids && target_addon_ids.length > 0) {
+            createData.target_addons = {
+                create: target_addon_ids.map(addon_id => ({ addon_id })),
+            };
+        }
+
+        const schedule = await this.repository.create(createData);
 
         await this.invalidateListCache();
 

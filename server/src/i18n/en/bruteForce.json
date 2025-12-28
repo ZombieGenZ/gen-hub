@@ -1,0 +1,25 @@
+{
+    "permanentlyLocked": "Your account has been permanently locked due to too many failed login attempts. Please contact support.",
+    "temporarilyLocked": "Your account is temporarily locked due to too many failed attempts. Please try again in {minutes} minutes.",
+    "lockedWithNewCode": "Your account is locked. A new unlock code has been sent to your email: {code}",
+    "unlockInstructions": "To unlock your account, reply to this email with: UNLOCK {code}",
+    "securityAlert": {
+        "subject": "Security Alert - Account Locked",
+        "greeting": "Hello",
+        "title": "Suspicious Login Activity Detected",
+        "message": "We detected multiple failed login attempts to your account from IP address:",
+        "lockMessage": "Your account has been temporarily locked for security reasons.",
+        "unlockInstructions": "To unlock your account immediately, reply to this email with the following code:",
+        "codeLabel": "Unlock Code",
+        "warningText": "If you did not attempt to log in, we recommend changing your password immediately.",
+        "expirationLabel": "Code Expiration",
+        "expirationValue": "15 minutes"
+    },
+    "unlockSuccess": {
+        "subject": "Account Unlocked Successfully",
+        "greeting": "Hello",
+        "title": "Your Account Has Been Unlocked",
+        "message": "Your account has been successfully unlocked. You can now log in normally.",
+        "securityTip": "For your security, we recommend enabling two-factor authentication (2FA) to protect your account."
+    }
+}

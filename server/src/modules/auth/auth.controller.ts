@@ -31,6 +31,7 @@ import {
 } from './dto';
 import { JwtAuthGuard } from '../../common/guards';
 import { Public, CurrentUser } from '../../common/decorators';
+import { BruteForceGuard } from '../brute-force/brute-force.guard';
 import { CreatedResponse, OkResponse, ResponseCode } from '../../common/responses';
 
 /**
@@ -93,6 +94,7 @@ export class AuthController {
   })
   @ApiResponse({ status: 401, description: 'Thông tin đăng nhập không hợp lệ' })
   @Public()
+  @UseGuards(BruteForceGuard)
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 10, ttl: 60000 } })
@@ -133,6 +135,7 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Thông tin đăng nhập không hợp lệ' })
   @ApiResponse({ status: 403, description: 'Không có quyền truy cập Database Panel' })
   @Public()
+  @UseGuards(BruteForceGuard)
   @Post('login/database-panel')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 10, ttl: 60000 } })
@@ -173,6 +176,7 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Thông tin đăng nhập không hợp lệ' })
   @ApiResponse({ status: 403, description: 'Không có quyền truy cập Feature Flag Panel' })
   @Public()
+  @UseGuards(BruteForceGuard)
   @Post('login/feature-flag-panel')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 10, ttl: 60000 } })
@@ -213,6 +217,7 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Thông tin đăng nhập không hợp lệ' })
   @ApiResponse({ status: 403, description: 'Không có quyền truy cập Resources Panel' })
   @Public()
+  @UseGuards(BruteForceGuard)
   @Post('login/resources-panel')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 10, ttl: 60000 } })
