@@ -9,8 +9,10 @@ import {
 } from '@nestjs/common';
 import { I18nService } from 'nestjs-i18n';
 import { ConfigService } from '@nestjs/config';
-import Decimal = Prisma.Decimal;
-import { ContractStatus, Prisma } from '@prisma/client';
+import { ContractStatus, Prisma, PaymentType } from '@prisma/client';
+
+const Decimal = Prisma.Decimal;
+type Decimal = Prisma.Decimal;
 
 import { RentalContractRepository } from './rental-contract.repository';
 import {
@@ -37,7 +39,7 @@ import { EmailService } from '../notification/email.service';
 import { OrganizationRepository } from '../organization/organization.repository';
 import { SepayService } from '../payment/sepay.service';
 import { PaymentSchedulerService } from '../payment/payment-scheduler.service';
-import { PaymentType } from '@prisma/client';
+
 import { InjectQueue } from '@nestjs/bull';
 import type { Queue } from 'bull';
 import { UserNotificationService } from '../user-notification/user-notification.service';
