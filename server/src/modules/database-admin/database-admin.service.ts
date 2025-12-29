@@ -96,13 +96,25 @@ export class DatabaseAdminService implements OnModuleInit {
         const tables = this.availableTables;
         const BATCH_SIZE = 5; // Giới hạn số query song song
 
-        const stats: { tableName: string; rowCount: number; sizeBytes: number; lastUpdated: Date }[] = [];
+        const stats: {
+            tableName: string;
+            rowCount: number;
+            columnCount: number;
+            sizeBytes: number;
+            lastUpdated: Date
+        }[] = [];
+
         for (let i = 0; i < tables.length; i += BATCH_SIZE) {
             const batch = tables.slice(i, i + BATCH_SIZE);
             const batchPromises = batch.map(async (tableName) => {
                 try {
                     const model = this.getPrismaModel(tableName);
                     const count = await model.count();
+
+                    // Get column count from DMMF
+                    const modelName = this.tableNameToDmmfName.get(tableName) || tableName;
+                    const dmmfModel = dmmf.datamodel.models.find((m) => m.name === modelName);
+                    const columnCount = dmmfModel ? dmmfModel.fields.length : 0;
 
                     // Tính size (ước tính)
                     // Note: Postgres specific query
@@ -115,6 +127,7 @@ export class DatabaseAdminService implements OnModuleInit {
                     return {
                         tableName,
                         rowCount: count,
+                        columnCount,
                         sizeBytes: size,
                         lastUpdated: new Date() // TODO: Get actual last updated need triggers or audit logs
                     };
@@ -123,6 +136,7 @@ export class DatabaseAdminService implements OnModuleInit {
                     return {
                         tableName,
                         rowCount: 0,
+                        columnCount: 0,
                         sizeBytes: 0,
                         lastUpdated: new Date()
                     };
