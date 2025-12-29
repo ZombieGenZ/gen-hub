@@ -77,6 +77,6 @@ export class WarehouseTemplateService {
         }
 
         const data = await response.json();
-        return data.data;
+        return data;
     }
 }

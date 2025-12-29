@@ -13,6 +13,7 @@ import { AuthService } from "@/services/auth/auth.service";
 // ... (other imports)
 
 const authService = new AuthService();
+const warehouseService = new WarehouseTemplateService();
 
 export default function WarehouseTemplatePage() {
     const router = useRouter();
@@ -78,8 +79,6 @@ export default function WarehouseTemplatePage() {
             }
 
             // Note: 'Type' filter is not yet supported by backend API, skipping mapping.
-
-            const warehouseService = new WarehouseTemplateService();
             const data: any = await warehouseService.getWarehouseTemplates(token, apiParams);
 
             if (data) {
@@ -112,6 +111,26 @@ export default function WarehouseTemplatePage() {
             setError("Không thể tải dữ liệu kho. Vui lòng thử lại sau.");
         } finally {
             setLoading(false);
+        }
+    };
+
+    const getWarehouseImage = async (warehouseId: string) => {
+        // TODO: Implement image fetching logic
+        console.log("Fetching image for warehouse:", warehouseId);
+        try {
+            const token = authStorage.getAccessToken()
+            if (!token) {
+                return "/placeholder-image.jpg";
+            }
+
+            const response = await warehouseService.getWarehouseImage(warehouseId, token);
+            if(response.success) {
+                return response.data.url || response.data.thumbnail_url
+            }
+            return response?.data?.url || "/placeholder-image.jpg";
+        } catch (error) {
+            console.error("Failed to fetch warehouse image:", error);
+            return "/placeholder-image.jpg";
         }
     };
 
@@ -259,7 +278,7 @@ export default function WarehouseTemplatePage() {
                             >
                                 <div className="relative h-64 overflow-hidden rounded-t-xl bg-slate-100">
                                     <Image
-                                        src={warehouse.images?.[0]?.url || "https://placehold.co/600x400?text=No+Image"}
+                                        src={() => getWarehouseImage(warehouse.id)}
                                         alt={warehouse.name}
                                         fill
                                         className="object-cover transform group-hover:scale-110 transition-transform duration-500"
