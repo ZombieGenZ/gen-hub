@@ -31,8 +31,11 @@ export class EmailInboundProvider implements OnModuleInit, OnModuleDestroy {
     private oAuth2Client: InstanceType<typeof google.auth.OAuth2> | null = null;
     private isConnected = false;
     private reconnectTimeout: NodeJS.Timeout | null = null;
-    private readonly UNLOCK_BODY_PATTERN = /UNLOCK\s+(\d{6})/i;
-    private readonly UNLOCK_SUBJECT_PATTERN = /^\[UNLOCK\]\s+(.+@.+)$/i;
+    private idleTimeout: NodeJS.Timeout | null = null;
+    private readonly IDLE_TIMEOUT = 20 * 60 * 1000; // 20 phút - restart IDLE trước Gmail timeout (~30 phút)
+    private readonly UNLOCK_CODE_PATTERN = /UNLOCK\s+(\d{6})/i;
+    // Subject format: [UNLOCK] email@domain.com hoặc [UNLOCK] email@domain.com - UNLOCK 123456
+    private readonly UNLOCK_SUBJECT_PATTERN = /^\[UNLOCK\]\s+([^\s-]+@[^\s-]+)/i;
 
     constructor(
         private readonly configService: ConfigService,
@@ -42,17 +45,31 @@ export class EmailInboundProvider implements OnModuleInit, OnModuleDestroy {
     ) { }
 
     async onModuleInit() {
+        this.logger.log('📧 EmailInboundProvider initializing...');
+
         // Chỉ khởi động nếu có đầy đủ config
         const imapHost = this.configService.get<string>('IMAP_HOST');
         const clientId = this.configService.get<string>('GOOGLE_CLIENT_ID');
         const clientSecret = this.configService.get<string>('GOOGLE_CLIENT_SECRET');
         const refreshToken = this.configService.get<string>('GOOGLE_REFRESH_TOKEN');
+        const email = this.configService.get<string>('EMAIL_PRIMARY_ADDRESS');
+
+        // Log config status (masked for security) - dùng log thay vì debug
+        this.logger.log(`Config check: IMAP_HOST=${imapHost ? '✓' : '✗'}, EMAIL_PRIMARY_ADDRESS=${email ? '✓' : '✗'}`);
+        this.logger.log(`Config check: GOOGLE_CLIENT_ID=${clientId ? '✓' : '✗'}, GOOGLE_CLIENT_SECRET=${clientSecret ? '✓' : '✗'}, GOOGLE_REFRESH_TOKEN=${refreshToken ? '✓' : '✗'}`);
 
         if (!imapHost || !clientId || !clientSecret || !refreshToken) {
-            this.logger.warn('IMAP configuration incomplete, skipping email inbound worker');
+            this.logger.error('⚠️ IMAP configuration incomplete, skipping email inbound worker');
+            this.logger.error(`Missing: ${[
+                !imapHost && 'IMAP_HOST',
+                !clientId && 'GOOGLE_CLIENT_ID',
+                !clientSecret && 'GOOGLE_CLIENT_SECRET',
+                !refreshToken && 'GOOGLE_REFRESH_TOKEN'
+            ].filter(Boolean).join(', ')}`);
             return;
         }
 
+        this.logger.log(`📧 Starting IMAP worker for email: ${email}`);
         this.initializeOAuth2Client();
         await this.connect();
     }
@@ -103,16 +120,21 @@ export class EmailInboundProvider implements OnModuleInit, OnModuleDestroy {
      * Kết nối IMAP
      */
     private async connect(): Promise<void> {
+        this.logger.log('🔌 Connecting to IMAP server...');
+
         const accessToken = await this.getAccessToken();
         if (!accessToken) {
-            this.logger.error('Cannot connect IMAP: no access token');
+            this.logger.error('❌ Cannot connect IMAP: no access token (OAuth2 failed)');
             this.scheduleReconnect();
             return;
         }
+        this.logger.debug('✓ OAuth2 access token obtained');
 
         const host = this.configService.get<string>('IMAP_HOST') || 'imap.gmail.com';
         const port = Number(this.configService.get<number>('IMAP_PORT')) || 993;
         const email = this.configService.get<string>('EMAIL_PRIMARY_ADDRESS');
+
+        this.logger.log(`🔌 Connecting to ${host}:${port} as ${email}`);
 
         try {
             this.client = new ImapFlow({
@@ -123,29 +145,43 @@ export class EmailInboundProvider implements OnModuleInit, OnModuleDestroy {
                     user: email!,
                     accessToken,
                 },
-                logger: false,
+                // Enable logging để debug
+                logger: {
+                    debug: (msg: any) => this.logger.debug(`[IMAP] ${JSON.stringify(msg)}`),
+                    info: (msg: any) => this.logger.log(`[IMAP] ${JSON.stringify(msg)}`),
+                    warn: (msg: any) => this.logger.warn(`[IMAP] ${JSON.stringify(msg)}`),
+                    error: (msg: any) => this.logger.error(`[IMAP] ${JSON.stringify(msg)}`),
+                },
             });
 
             this.client.on('error', (err) => {
-                this.logger.error('IMAP client error:', err);
+                this.logger.error('❌ IMAP client error:', err);
                 this.isConnected = false;
                 this.scheduleReconnect();
             });
 
             this.client.on('close', () => {
-                this.logger.warn('IMAP connection closed');
+                this.logger.warn('⚠️ IMAP connection closed');
                 this.isConnected = false;
                 this.scheduleReconnect();
             });
 
-            await this.client.connect();
+            // Thêm timeout 60 giây cho connection (Gmail thường throttle)
+            this.logger.log('⏳ Waiting for IMAP connection (60s timeout - Gmail may throttle)...');
+            const connectionPromise = this.client.connect();
+            const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('IMAP connection timeout after 60s')), 60000)
+            );
+
+            await Promise.race([connectionPromise, timeoutPromise]);
+
             this.isConnected = true;
-            this.logger.log('IMAP connected successfully');
+            this.logger.log('✅ IMAP connected successfully');
 
             // Bắt đầu lắng nghe inbox
             this.startListening();
         } catch (error) {
-            this.logger.error('Failed to connect IMAP:', error);
+            this.logger.error('❌ Failed to connect IMAP:', error);
             this.isConnected = false;
             this.scheduleReconnect();
         }
@@ -155,6 +191,12 @@ export class EmailInboundProvider implements OnModuleInit, OnModuleDestroy {
      * Ngắt kết nối IMAP
      */
     private async disconnect(): Promise<void> {
+        // Clear IDLE timeout
+        if (this.idleTimeout) {
+            clearTimeout(this.idleTimeout);
+            this.idleTimeout = null;
+        }
+
         if (this.reconnectTimeout) {
             clearTimeout(this.reconnectTimeout);
             this.reconnectTimeout = null;
@@ -195,19 +237,32 @@ export class EmailInboundProvider implements OnModuleInit, OnModuleDestroy {
         }
 
         try {
+            this.logger.log('📥 Opening INBOX...');
             // Chọn INBOX
             await this.client.mailboxOpen('INBOX');
+            this.logger.log('📥 INBOX opened successfully');
 
             // Sử dụng IDLE để lắng nghe email mới
-            this.client.on('exists', async (data) => {
-                this.logger.debug(`New email notification: ${JSON.stringify(data)}`);
-                await this.processNewEmails();
+            // CHÚ Ý: KHÔNG gọi processNewEmails() ở đây - idle() method sẽ xử lý
+            // để tránh race condition khi cả 2 cùng gọi IMAP commands
+            this.client.on('exists', (data) => {
+                this.logger.log(`📧 New email notification received! Data: ${JSON.stringify(data)}`);
+                // Break IDLE để idle() method có thể xử lý email
+                // imapflow sẽ tự động gửi DONE command khi gọi noop()
+                if (this.client && this.isConnected) {
+                    this.client.noop().catch(() => {
+                        // Ignore errors - IDLE sẽ tự break
+                    });
+                }
             });
+            this.logger.log('👂 Registered exists event handler');
 
-            // Xử lý email hiện có (unseen)
-            await this.processNewEmails();
+            // SKIP initial processing - Gmail throttle quá nặng
+            // Chỉ lắng nghe email MỚI từ bây giờ
+            this.logger.log('⚡ Skipping initial email scan (Gmail throttle), listening for NEW emails only...');
 
-            // Bắt đầu IDLE
+            // Bắt đầu IDLE ngay
+            this.logger.log('⏳ Starting IDLE mode...');
             await this.idle();
         } catch (error) {
             this.logger.error('Error starting IMAP listener:', error);
@@ -217,54 +272,122 @@ export class EmailInboundProvider implements OnModuleInit, OnModuleDestroy {
 
     /**
      * IDLE loop để lắng nghe email mới
+     * Gmail có IDLE timeout ~30 phút, nên cần restart IDLE định kỳ
      */
     private async idle(): Promise<void> {
         if (!this.client || !this.isConnected) {
             return;
         }
 
+        // Clear any existing IDLE timeout
+        if (this.idleTimeout) {
+            clearTimeout(this.idleTimeout);
+            this.idleTimeout = null;
+        }
+
         try {
-            // IDLE sẽ chờ đến khi có email mới
+            // Set timeout để break IDLE trước Gmail timeout (~30 phút)
+            this.idleTimeout = setTimeout(async () => {
+                this.logger.log('⏰ IDLE timeout reached (20 min), restarting IDLE...');
+                if (this.client && this.isConnected) {
+                    try {
+                        // Sử dụng NOOP để break IDLE gracefully
+                        await this.client.noop();
+                    } catch (e) {
+                        this.logger.debug('NOOP during IDLE break:', e);
+                    }
+                }
+            }, this.IDLE_TIMEOUT);
+
+            this.logger.log('🔄 IDLE command started, waiting for new emails...');
+
+            // IDLE sẽ chờ đến khi có email mới hoặc timeout
             await this.client.idle();
+
+            this.logger.log('🔔 IDLE ended, checking for new emails...');
         } catch (error) {
             if (this.isConnected) {
                 this.logger.error('IDLE error:', error);
             }
+        } finally {
+            // Clear timeout khi IDLE kết thúc
+            if (this.idleTimeout) {
+                clearTimeout(this.idleTimeout);
+                this.idleTimeout = null;
+            }
         }
 
-        // Tiếp tục IDLE nếu vẫn connected
+        // Xử lý email mới sau mỗi IDLE cycle và tiếp tục IDLE
         if (this.isConnected) {
+            await this.processNewEmails();
             setImmediate(() => this.idle());
         }
     }
 
     /**
      * Xử lý email mới
+     * CHỈ xử lý 1 email MỚI NHẤT để tránh bị block bởi Gmail throttle
+     * Có timeout 30s để đảm bảo IDLE luôn được restart
      */
     private async processNewEmails(): Promise<void> {
         if (!this.client || !this.isConnected) {
             return;
         }
 
+        // Timeout 30s cho toàn bộ quá trình fetch
+        const FETCH_TIMEOUT = 30000;
+        const timeoutPromise = new Promise<void>((_, reject) =>
+            setTimeout(() => reject(new Error('Fetch timeout after 30s')), FETCH_TIMEOUT)
+        );
+
         try {
-            // Tìm email chưa đọc
-            const messages = this.client.fetch('1:*', {
-                envelope: true,
-                source: true,
-                flags: true,
-            }, { uid: true });
-
-            for await (const message of messages) {
-                // Bỏ qua email đã đọc
-                if (message.flags?.has('\\Seen')) {
-                    continue;
-                }
-
-                await this.processEmail(message);
-            }
+            await Promise.race([
+                this.doProcessNewEmails(),
+                timeoutPromise,
+            ]);
         } catch (error) {
-            this.logger.error('Error processing emails:', error);
+            // Log error nhưng KHÔNG throw - đảm bảo IDLE luôn restart
+            this.logger.warn('⚠️ Email processing error (IDLE will restart):', error);
         }
+    }
+
+    /**
+     * Thực hiện xử lý email
+     */
+    private async doProcessNewEmails(): Promise<void> {
+        this.logger.log('🔍 Searching for UNSEEN emails...');
+
+        // Tìm email chưa đọc sử dụng SEARCH
+        const allUnseenUids = await this.client!.search({ seen: false }, { uid: true });
+
+        if (!allUnseenUids || allUnseenUids.length === 0) {
+            this.logger.log('📭 No unseen emails found');
+            return;
+        }
+
+        // CHỈ lấy 1 email MỚI NHẤT (uid cao nhất = mới nhất)
+        // Để tránh bị block bởi Gmail throttle
+        const sortedUids = [...allUnseenUids].sort((a, b) => b - a);
+        const latestUid = sortedUids[0];
+
+        this.logger.log(`📬 Found ${allUnseenUids.length} unseen email(s), fetching ONLY the most recent (UID: ${latestUid})...`);
+
+        // Fetch CHỈ 1 email mới nhất - chỉ cần envelope (không cần source để check pattern)
+        const messages = this.client!.fetch([latestUid], {
+            envelope: true,
+            source: true,
+            flags: true,
+        }, { uid: true });
+
+        let processed = 0;
+        for await (const message of messages) {
+            await this.processEmail(message);
+            processed++;
+            // Chỉ xử lý 1 email, break ngay
+            break;
+        }
+
+        this.logger.log(`✅ Processed ${processed} email(s)`);
     }
 
     /**
@@ -308,17 +431,33 @@ export class EmailInboundProvider implements OnModuleInit, OnModuleDestroy {
                 return;
             }
 
-            // Kiểm tra body pattern UNLOCK [CODE]
-            this.logger.debug(`Body text: ${bodyText.substring(0, 100)}...`);
-            const bodyMatch = bodyText.match(this.UNLOCK_BODY_PATTERN);
-            if (!bodyMatch) {
-                this.logger.warn(`Invalid unlock body format from ${senderEmail}. Body: ${bodyText.substring(0, 50)}`);
+            // Tìm UNLOCK code trong subject hoặc body
+            // Format 1: Subject có code: [UNLOCK] email@domain.com - UNLOCK 123456
+            // Format 2: Code trong body: UNLOCK 123456
+            let unlockCode: string | null = null;
+
+            // Thử tìm trong subject trước
+            const subjectCodeMatch = subject.match(this.UNLOCK_CODE_PATTERN);
+            if (subjectCodeMatch) {
+                unlockCode = subjectCodeMatch[1];
+                this.logger.debug(`Found unlock code in subject: ${unlockCode}`);
+            } else {
+                // Thử tìm trong body
+                this.logger.debug(`Body text: ${bodyText.substring(0, 100)}...`);
+                const bodyMatch = bodyText.match(this.UNLOCK_CODE_PATTERN);
+                if (bodyMatch) {
+                    unlockCode = bodyMatch[1];
+                    this.logger.debug(`Found unlock code in body: ${unlockCode}`);
+                }
+            }
+
+            if (!unlockCode) {
+                this.logger.warn(`No unlock code found in subject or body from ${senderEmail}. Subject: ${subject}, Body: ${bodyText.substring(0, 50)}`);
                 await this.markAsRead(message.uid);
                 return;
             }
 
-            const unlockCode = bodyMatch[1];
-            this.logger.log(`Unlock request from ${senderEmail} with code ${unlockCode}`);
+            this.logger.log(`🔓 Unlock request from ${senderEmail} with code ${unlockCode}`);
 
             // Xác thực mã unlock
             const success = await this.verifyAndUnlock(senderEmail, unlockCode);
@@ -348,14 +487,29 @@ export class EmailInboundProvider implements OnModuleInit, OnModuleDestroy {
 
     /**
      * Extract text body từ email source
+     * Gmail emails thường là multipart với text/plain và text/html
      */
     private extractTextBody(source: string): string {
-        // Đơn giản hóa: tìm nội dung text trong email
-        // Với email reply, nội dung thường nằm trước quote
-        const lines = source.split('\n');
+        // Phương pháp 1: Tìm phần text/plain trong multipart
+        const textPlainMatch = source.match(/Content-Type:\s*text\/plain[^\r\n]*\r?\n(?:Content-Transfer-Encoding:[^\r\n]*\r?\n)?(?:[^\r\n]*\r?\n)*?\r?\n([\s\S]*?)(?=\r?\n--|\r?\n\r?\n--)/i);
+        if (textPlainMatch && textPlainMatch[1]) {
+            const text = textPlainMatch[1].trim();
+            this.logger.debug(`Extracted text/plain: ${text.substring(0, 100)}...`);
+            return text;
+        }
+
+        // Phương pháp 2: Tìm UNLOCK pattern trực tiếp trong source
+        const unlockMatch = source.match(/UNLOCK\s+\d{6}/i);
+        if (unlockMatch) {
+            this.logger.debug(`Found UNLOCK pattern directly in source: ${unlockMatch[0]}`);
+            return unlockMatch[0];
+        }
+
+        // Phương pháp 3: Parse đơn giản - tìm nội dung sau headers
+        const lines = source.split(/\r?\n/);
         const bodyLines: string[] = [];
         let inBody = false;
-        let foundBoundary = false;
+        let skipUntilEmptyLine = false;
 
         for (const line of lines) {
             // Bỏ qua header
@@ -366,25 +520,43 @@ export class EmailInboundProvider implements OnModuleInit, OnModuleDestroy {
                 continue;
             }
 
-            // Dừng khi gặp quote hoặc signature
-            if (line.startsWith('>') || line.startsWith('--')) {
+            // Bỏ qua MIME headers trong multipart
+            if (line.startsWith('Content-Type:') || line.startsWith('Content-Transfer-Encoding:')) {
+                skipUntilEmptyLine = true;
+                continue;
+            }
+
+            if (skipUntilEmptyLine) {
+                if (line.trim() === '') {
+                    skipUntilEmptyLine = false;
+                }
+                continue;
+            }
+
+            // Dừng khi gặp quote (nhưng không dừng ở boundary)
+            if (line.startsWith('>')) {
                 break;
             }
 
-            // Bỏ qua boundary của multipart
-            if (line.includes('Content-Type:') || line.includes('boundary=')) {
-                foundBoundary = true;
+            // Bỏ qua boundary lines
+            if (line.startsWith('--') && line.length > 10) {
                 continue;
             }
 
-            if (foundBoundary && line.startsWith('--')) {
+            // Bỏ qua HTML
+            if (line.includes('<html') || line.includes('<body') || line.includes('<div')) {
                 continue;
             }
 
-            bodyLines.push(line.trim());
+            const trimmed = line.trim();
+            if (trimmed) {
+                bodyLines.push(trimmed);
+            }
         }
 
-        return bodyLines.join(' ').trim();
+        const result = bodyLines.join(' ').trim();
+        this.logger.debug(`Fallback body extraction: ${result.substring(0, 100)}...`);
+        return result;
     }
 
     /**
@@ -422,11 +594,34 @@ export class EmailInboundProvider implements OnModuleInit, OnModuleDestroy {
                 return false;
             }
 
+            // Kiểm tra user có bị ban do brute force không
+            const user = await this.prismaService.user.findFirst({
+                where: { email },
+                select: {
+                    id: true,
+                    name: true,
+                    language: true,
+                    is_brute_force_banned: true
+                },
+            });
+
+            if (!user) {
+                this.logger.warn(`User not found for ${email}`);
+                return false;
+            }
+
+            // Chỉ cho unlock nếu là brute force ban
+            if (!user.is_brute_force_banned) {
+                this.logger.warn(`Cannot unlock ${email} via email - not a brute force ban (admin banned)`);
+                return false;
+            }
+
             // Mã đúng - mở khóa tài khoản
             await this.prismaService.user.updateMany({
                 where: { email },
                 data: {
                     is_banned: false,
+                    is_brute_force_banned: false, // Reset flag
                     banned_end: null,
                 },
             });
@@ -437,6 +632,19 @@ export class EmailInboundProvider implements OnModuleInit, OnModuleDestroy {
             await this.redisService.delByPattern(`rate_limit:${email}:*`);
 
             this.logger.log(`Account unlocked successfully for ${email}`);
+
+            // Gửi email thông báo unlock thành công
+            try {
+                await this.emailService.sendUnlockSuccessEmail(
+                    email,
+                    user.name,
+                    user.language || 'vi',
+                );
+                this.logger.log(`Unlock success email sent to ${email}`);
+            } catch (emailError) {
+                this.logger.warn(`Failed to send unlock success email to ${email}:`, emailError);
+            }
+
             return true;
         } catch (error) {
             this.logger.error(`Error verifying unlock code for ${email}:`, error);

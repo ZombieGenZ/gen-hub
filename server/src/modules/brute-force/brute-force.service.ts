@@ -144,7 +144,10 @@ export class BruteForceService {
         // Cập nhật database
         await this.prismaService.user.updateMany({
             where: { email: email.toLowerCase() },
-            data: { is_banned: true },
+            data: {
+                is_banned: true,
+                is_brute_force_banned: true, // Đánh dấu là do brute force, không thể unlock bằng email
+            },
         });
 
         // Set lock status trong Redis
@@ -174,7 +177,10 @@ export class BruteForceService {
         // Cập nhật banned_end trong database nếu cần
         await this.prismaService.user.updateMany({
             where: { email: email.toLowerCase() },
-            data: { banned_end: new Date(unlockAt) },
+            data: {
+                banned_end: new Date(unlockAt),
+                is_brute_force_banned: true, // Đánh dấu là do brute force, có thể unlock bằng email
+            },
         });
 
         // Tạo mã unlock và gửi email
@@ -315,6 +321,7 @@ export class BruteForceService {
             where: { email: normalizedEmail },
             data: {
                 is_banned: false,
+                is_brute_force_banned: false, // Reset flag
                 banned_end: null,
             },
         });
