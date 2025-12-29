@@ -4,10 +4,10 @@ import React from "react";
 import Link from "next/link";
 
 const footerLinks = {
-    Product: ["Features", "Solutions", "Pricing", "Tutorials", "Updates"],
-    Company: ["About", "Careers", "Press", "News", "Contact"],
-    Resources: ["Blog", "Newsletter", "Events", "Help center", "Tutorials"],
-    Legal: ["Terms", "Privacy", "Cookies", "Licenses", "Settings"],
+    Sản_Phẩm: ["Tính Năng", "Giải Pháp", "Bảng Giá", "Hướng Dẫn", "Cập Nhật"],
+    Công_Ty: ["Giới Thiệu", "Tuyển Dụng", "Báo Chí", "Tin Tức", "Liên Hệ"],
+    Tài_Nguyên: ["Blog", "Bản Tin", "Sự Kiện", "Trung Tâm Hỗ Trợ", "Hướng Dẫn"],
+    Pháp_Lý: ["Điều Khoản", "Riêng Tư", "Cookies", "Giấy Phép", "Cài Đặt"],
 };
 
 const socialIcons = [
@@ -53,22 +53,16 @@ export function PrimeNestFooter() {
                     {/* Brand Column */}
                     <div className="col-span-2">
                         {/* Logo */}
-                        <Link href="/demo/primenest" className="flex items-center gap-2 mb-4">
-                            <div className="w-8 h-8 bg-linear-to-br from-orange-400 to-orange-600 rounded-lg flex items-center justify-center">
-                                <svg
-                                    className="w-5 h-5 text-white"
-                                    viewBox="0 0 24 24"
-                                    fill="currentColor"
-                                >
-                                    <path d="M12 3L4 9v12h16V9l-8-6zm0 2.5L18 10v9H6v-9l6-4.5z" />
-                                </svg>
-                            </div>
-                            <span className="text-xl font-bold text-white">Primenest</span>
+                        <Link href="/" className="flex items-center gap-2 mb-4">
+                            <img
+                                src="/assets/GenHub.svg"
+                                alt="GenHub"
+                                className="h-8 w-auto brightness-0 invert"
+                            />
                         </Link>
 
                         <p className="text-gray-400 text-sm leading-relaxed mb-6 max-w-xs">
-                            PrimeNest is a real estate company with a focus on creating
-                            exceptional living spaces and facilitating property transactions.
+                            Nền tảng kết nối kho bãi và dịch vụ logistics hàng đầu Việt Nam.
                         </p>
 
                         {/* Social Icons */}
@@ -77,7 +71,7 @@ export function PrimeNestFooter() {
                                 <a
                                     key={social.name}
                                     href="#"
-                                    className="w-10 h-10 bg-[#252525] rounded-full flex items-center justify-center text-gray-400 hover:text-orange-400 hover:bg-[#2a2a2a] transition-all"
+                                    className="w-10 h-10 bg-[#252525] rounded-full flex items-center justify-center text-gray-400 hover:text-[#0F766E] hover:bg-[#2a2a2a] transition-all"
                                     aria-label={social.name}
                                 >
                                     {social.icon}
@@ -89,13 +83,13 @@ export function PrimeNestFooter() {
                     {/* Link Columns */}
                     {Object.entries(footerLinks).map(([title, links]) => (
                         <div key={title}>
-                            <h4 className="text-white font-semibold mb-4">{title}</h4>
+                            <h4 className="text-white font-semibold mb-4">{title.replace('_', ' ')}</h4>
                             <ul className="space-y-3">
                                 {links.map((link) => (
                                     <li key={link}>
                                         <a
                                             href="#"
-                                            className="text-gray-400 text-sm hover:text-orange-400 transition-colors"
+                                            className="text-gray-400 text-sm hover:text-[#0F766E] transition-colors"
                                         >
                                             {link}
                                         </a>
@@ -109,7 +103,7 @@ export function PrimeNestFooter() {
                 {/* Bottom Bar */}
                 <div className="mt-16 pt-8 border-t border-gray-800">
                     <p className="text-center text-gray-500 text-sm">
-                        © 2024 PrimeNest. All rights reserved.
+                        © 2024 GenHub. All rights reserved.
                     </p>
                 </div>
             </div>

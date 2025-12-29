@@ -4,24 +4,24 @@ import React, { useState } from "react";
 
 const faqs = [
     {
-        question: "How do I start the process of buying a home?",
-        answer: "Starting is easy! Simply browse our listings or contact one of our agents. We'll guide you through pre-approval, finding properties, and making an offer.",
+        question: "Làm thế nào để bắt đầu thuê kho trên GenHub?",
+        answer: "Rất đơn giản! Bạn chỉ cần tìm kiếm kho phù hợp trên hệ thống, sau đó liên hệ trực tiếp hoặc đặt lịch tham quan. Đội ngũ GenHub sẽ hỗ trợ bạn ký hợp đồng nhanh chóng.",
     },
     {
-        question: "What fees are involved in buying a property?",
-        answer: "Typical fees include the down payment, closing costs (2-5% of loan amount), inspection fees, and appraisal fees. Our agents will provide a detailed breakdown.",
+        question: "Chi phí thuê kho bao gồm những khoản nào?",
+        answer: "Chi phí thường bao gồm tiền thuê theo m2/tháng, phí quản lý, phí điện nước và các dịch vụ đi kèm nếu có. Chúng tôi luôn công khai bảng giá rõ ràng.",
     },
     {
-        question: "Can I sell my current home while buying a new one?",
-        answer: "Yes, this is very common. We can help coordinate the sale of your current home with the purchase of your new one to ensure a smooth transition.",
+        question: "Tôi có thể thay đổi diện tích thuê sau này không?",
+        answer: "Có, GenHub linh hoạt cho phép bạn mở rộng hoặc thu hẹp diện tích thuê tùy theo nhu cầu kinh doanh thực tế, giúp tối ưu chi phí.",
     },
     {
-        question: "How long does the home buying process take?",
-        answer: "On average, it takes 30-45 days from offer acceptance to closing. However, finding the right home can take anywhere from a few weeks to several months.",
+        question: "GenHub có cung cấp dịch vụ vận chuyển và fulfillment không?",
+        answer: "Có, chúng tôi cung cấp giải pháp fulfillment toàn diện bao gồm đóng gói, dán nhãn, và vận chuyển đến tay khách hàng cuối cùng.",
     },
     {
-        question: "Do you offer property management services?",
-        answer: "Yes, we offer comprehensive property management services for investors, including tenant screening, rent collection, and maintenance.",
+        question: "Thời gian hợp đồng tối thiểu là bao lâu?",
+        answer: "Chúng tôi có các gói thuê linh hoạt từ ngắn hạn (1 tháng) đến dài hạn (trên 1 năm) để phù hợp với mọi mô hình kinh doanh.",
     },
 ];
 
@@ -37,11 +37,11 @@ export function PrimeNestFAQ() {
             <div className="max-w-4xl mx-auto px-6">
                 <div className="text-center mb-14">
                     <h2 className="text-3xl md:text-4xl font-bold mb-4">
-                        Frequently Asked <br />
-                        <span className="text-orange-500">Questions</span>
+                        Câu Hỏi <br />
+                        <span className="text-[#0F766E]">Thường Gặp</span>
                     </h2>
                     <p className="text-slate-600">
-                        Find answers to common questions about buying, selling, and renting properties.
+                        Giải đáp các thắc mắc về quy trình thuê kho, chi phí và vận hành trên GenHub.
                     </p>
                 </div>
 
@@ -49,14 +49,14 @@ export function PrimeNestFAQ() {
                     {faqs.map((faq, index) => (
                         <div
                             key={index}
-                            className={`bg-white rounded-xl overflow-hidden border transition-all duration-300 ${openIndex === index ? "border-orange-300 shadow-sm" : "border-slate-200 hover:border-orange-200"
+                            className={`bg-white rounded-xl overflow-hidden border transition-all duration-300 ${openIndex === index ? "border-teal-300 shadow-sm" : "border-slate-200 hover:border-teal-200"
                                 }`}
                         >
                             <button
                                 onClick={() => toggleFAQ(index)}
                                 className="w-full px-6 py-5 flex items-center justify-between text-left focus:outline-none"
                             >
-                                <span className={`font-semibold text-lg ${openIndex === index ? "text-orange-500" : "text-slate-900"}`}>
+                                <span className={`font-semibold text-lg ${openIndex === index ? "text-[#0F766E]" : "text-slate-900"}`}>
                                     {faq.question}
                                 </span>
                                 <span className={`transform transition-transform duration-300 ${openIndex === index ? "rotate-180" : ""}`}>

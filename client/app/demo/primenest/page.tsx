@@ -1,16 +1,16 @@
 "use client";
 
 import React from "react";
-import { PrimeNestHeader } from "@/components/landing/primenest/Header";
-import { PrimeNestHero } from "@/components/landing/primenest/Hero";
-import { PrimeNestSearch } from "@/components/landing/primenest/Search";
-import { PrimeNestFeatures } from "@/components/landing/primenest/Features";
-import { PrimeNestAbout } from "@/components/landing/primenest/About";
-import { PrimeNestFeatured } from "@/components/landing/primenest/Featured";
-import { PrimeNestTestimonials } from "@/components/landing/primenest/Testimonials";
-import { PrimeNestFAQ } from "@/components/landing/primenest/FAQ";
-import { PrimeNestContact } from "@/components/landing/primenest/Contact";
-import { PrimeNestFooter } from "@/components/landing/primenest/Footer";
+import { PrimeNestHeader } from "@/components/landing/homepage/Header";
+import { PrimeNestHero } from "@/components/landing/homepage/Hero";
+import { PrimeNestSearch } from "@/components/landing/homepage/Search";
+import { PrimeNestFeatures } from "@/components/landing/homepage/Features";
+import { PrimeNestAbout } from "@/components/landing/homepage/About";
+import { PrimeNestFeatured } from "@/components/landing/homepage/Featured";
+import { PrimeNestTestimonials } from "@/components/landing/homepage/Testimonials";
+import { PrimeNestFAQ } from "@/components/landing/homepage/FAQ";
+import { PrimeNestContact } from "@/components/landing/homepage/Contact";
+import { PrimeNestFooter } from "@/components/landing/homepage/Footer";
 
 export default function PrimeNestPage() {
     return (

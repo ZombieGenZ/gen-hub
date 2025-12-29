@@ -11,19 +11,19 @@ export function PrimeNestContact() {
                         {/* Content Side */}
                         <div className="p-12 lg:p-14 flex flex-col justify-center">
                             <h2 className="text-3xl md:text-4xl font-bold mb-4">
-                                Ready to Find Your <br />
-                                <span className="text-orange-500">Next Home?</span>
+                                Sẵn Sàng Tìm <br />
+                                <span className="text-[#0F766E]">Kho Bãi Mới?</span>
                             </h2>
                             <p className="text-slate-600 mb-8 max-w-md">
-                                Discover the latest and best properties. Our team is ready to help you every step of the way.
+                                Khám phá danh sách kho bãi mới nhất và tốt nhất. Đội ngũ của chúng tôi sẵn sàng hỗ trợ bạn từng bước.
                             </p>
 
                             <div className="flex flex-col sm:flex-row gap-4">
-                                <button className="px-8 py-3.5 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-lg transition-colors">
-                                    Contact Us
+                                <button className="px-8 py-3.5 bg-[#0F766E] hover:bg-[#0D5A52] text-white font-bold rounded-lg transition-colors">
+                                    Liên Hệ Ngay
                                 </button>
-                                <button className="px-8 py-3.5 bg-white border border-slate-200 hover:border-orange-400 text-slate-800 font-bold rounded-lg transition-colors">
-                                    Browse Properties
+                                <button className="px-8 py-3.5 bg-white border border-slate-200 hover:border-teal-400 text-slate-800 font-bold rounded-lg transition-colors">
+                                    Xem Kho Bãi
                                 </button>
                             </div>
                         </div>

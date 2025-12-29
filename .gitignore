@@ -72,3 +72,4 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 # yarn.lock
 
 app-config.json
+.agent/rules/genhub.md
