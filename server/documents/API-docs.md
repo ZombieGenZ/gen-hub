@@ -233,7 +233,7 @@
 | 231 | Feature Flags | PUT | /admin/feature-flags/{id} | ❎ | ❎ | ❎ |
 | 232 | Feature Flags | GET | /admin/feature-flags/{id}/logs | ❎ | ❎ | ❎ |
 | 233 | Feature Flags | PUT | /admin/feature-flags/bulk/toggle | ❎ | ❎ | ❎ |
-| 234 | Admin - Resources | GET | /admin/resources/overview | ❎ | ❎ | ❎ |
-| 235 | Admin - Resources | GET | /admin/resources/stats | ❎ | ❎ | ❎ |
-| 236 | Admin - Resources | GET | /admin/resources/service/{serviceName} | ❎ | ❎ | ❎ |
+| 234 | Resources | GET | /admin/resources/overview | ❎ | ❎ | ❎ |
+| 235 | Resources | GET | /admin/resources/stats | ❎ | ❎ | ❎ |
+| 236 | Resources | GET | /admin/resources/service/{serviceName} | ❎ | ❎ | ❎ |
 | 237 | Analytics | GET | /analytics/traffic | ❎ | ❎ | ❎ |

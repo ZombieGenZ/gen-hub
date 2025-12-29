@@ -15,7 +15,7 @@ import { GetResourcesDto } from './dto';
  * Resources Controller
  * API endpoints để lấy resource metrics
  */
-@ApiTags('Admin - Resources')
+@ApiTags('Resources')
 @Controller('admin/resources')
 @UseGuards(JwtAuthGuard, PermissionGuard)
 @ApiBearerAuth()
