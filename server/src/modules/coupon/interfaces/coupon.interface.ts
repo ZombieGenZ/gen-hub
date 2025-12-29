@@ -1,4 +1,5 @@
-import { Decimal } from '@prisma/client/runtime/library';
+import { Prisma } from '@prisma/client';
+import Decimal = Prisma.Decimal;
 import { CouponDiscountType, DurationUnit } from '@prisma/client';
 import { IPaginatedResponse } from '../../../common/interfaces';
 

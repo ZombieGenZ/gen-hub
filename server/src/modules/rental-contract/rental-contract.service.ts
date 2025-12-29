@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { I18nService } from 'nestjs-i18n';
 import { ConfigService } from '@nestjs/config';
-import { Decimal } from '@prisma/client/runtime/library';
+import Decimal = Prisma.Decimal;
 import { ContractStatus, Prisma } from '@prisma/client';
 
 import { RentalContractRepository } from './rental-contract.repository';

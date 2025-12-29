@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { I18nService } from 'nestjs-i18n';
-import { Decimal } from '@prisma/client/runtime/library';
 import { Prisma } from '@prisma/client';
+import Decimal = Prisma.Decimal;
 import { v4 as uuidv4 } from 'uuid';
 
 import { WarehouseTemplateRepository } from './warehouse-template.repository';

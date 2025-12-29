@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, ConflictException, BadRequestException }
 import { ConfigService } from '@nestjs/config';
 import { I18nService } from 'nestjs-i18n';
 import { Prisma } from '@prisma/client';
-import { Decimal } from '@prisma/client/runtime/library';
+import Decimal = Prisma.Decimal;
 
 import { RowTemplateRepository } from './row-template.repository';
 import { RedisService } from '../redis/redis.service';
