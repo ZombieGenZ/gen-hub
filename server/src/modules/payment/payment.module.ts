@@ -4,6 +4,7 @@ import { SharedModule } from '../../common/shared.module';
 import { SystemLogModule } from '../system-log/system-log.module';
 import { WebsocketModule } from '../websocket/websocket.module';
 import { RentalContractModule } from '../rental-contract/rental-contract.module';
+import { AccountBalanceModule } from '../account-balance/account-balance.module';
 
 import { SepayService } from './sepay.service';
 import { PaymentSchedulerService } from './payment-scheduler.service';
@@ -16,6 +17,7 @@ import { PaymentAdminController } from './payment-admin.controller';
         SystemLogModule,
         WebsocketModule,
         forwardRef(() => RentalContractModule),
+        forwardRef(() => AccountBalanceModule),
         BullModule.registerQueue({
             name: 'rental-contract',
         }),
@@ -25,3 +27,4 @@ import { PaymentAdminController } from './payment-admin.controller';
     exports: [SepayService, PaymentSchedulerService],
 })
 export class PaymentModule { }
+

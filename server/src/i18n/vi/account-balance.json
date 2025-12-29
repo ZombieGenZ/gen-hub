@@ -1,0 +1,21 @@
+{
+    "NOT_FOUND": "Không tìm thấy số dư tài khoản",
+    "AMOUNT_MUST_BE_INTEGER": "Số tiền phải là số nguyên",
+    "AMOUNT_MIN": "Số tiền tối thiểu là 10,000 VND",
+    "AMOUNT_MAX": "Số tiền tối đa là 100,000,000 VND",
+    "INVALID_ADJUSTMENT_TYPE": "Loại điều chỉnh không hợp lệ",
+    "USE_DEPOSIT_ENDPOINT": "Vui lòng sử dụng endpoint POST /account/balance/deposit để nạp tiền",
+    "INSUFFICIENT_BALANCE": "Số dư không đủ",
+    "DEPOSIT_SUCCESS": "Nạp tiền thành công",
+    "ADJUST_SUCCESS": "Điều chỉnh số dư thành công",
+    "GET_BALANCE_SUCCESS": "Lấy số dư thành công",
+    "GET_TRANSACTIONS_SUCCESS": "Lấy lịch sử giao dịch thành công",
+    "TRANSACTION_TYPE": {
+        "DEPOSIT": "Nạp tiền",
+        "WITHDRAW": "Rút tiền",
+        "PAYMENT": "Thanh toán",
+        "REFUND": "Hoàn tiền",
+        "ADJUSTMENT": "Điều chỉnh",
+        "BONUS": "Thưởng"
+    }
+}

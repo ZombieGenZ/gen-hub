@@ -60,7 +60,10 @@ export class PaymentController {
                 );
                 if (payment) {
                     this.paymentScheduler.cancelScheduledExpire(payment.id);
-                    this.paymentScheduler.cancelScheduledCancel(payment.rental_contract_id);
+                    // Chỉ cancel contract scheduled nếu payment có liên kết với rental_contract
+                    if (payment.rental_contract_id) {
+                        this.paymentScheduler.cancelScheduledCancel(payment.rental_contract_id);
+                    }
                 }
             }
 

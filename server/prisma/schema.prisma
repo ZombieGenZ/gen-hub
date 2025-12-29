@@ -112,8 +112,14 @@ model User {
   coupon_targets          CouponTargetUser[]
   coupon_schedule_targets CouponScheduleTargetUser[]
 
+  // Số dư tài khoản
+  account_balance      AccountBalance?
+  balance_transactions BalanceTransaction[]
+  payments             Payment[]
+
   @@map("users")
 }
+
 
 model RefreshToken {
   id         String    @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
@@ -259,6 +265,22 @@ enum PaymentStatus {
 enum PaymentType {
   NEW_CONTRACT
   RENEWAL
+  ACCOUNT_DEPOSIT
+}
+
+enum PaymentPurpose {
+  RENTAL_CONTRACT_NEW     // Thanh toán hợp đồng mới
+  RENTAL_CONTRACT_RENEWAL // Gia hạn hợp đồng
+  ACCOUNT_DEPOSIT         // Nạp tiền vào tài khoản
+}
+
+enum BalanceTransactionType {
+  DEPOSIT           // Nạp tiền
+  WITHDRAW          // Rút tiền
+  PAYMENT           // Thanh toán (trừ tiền)
+  REFUND            // Hoàn tiền
+  ADJUSTMENT        // Điều chỉnh số dư (admin)
+  BONUS             // Thưởng/khuyến mãi
 }
 
 enum DurationUnit {
@@ -1133,14 +1155,16 @@ model RentalContractCoupon {
 }
 
 model Payment {
-  id                   String        @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
-  rental_contract_id   String        @db.Uuid
-  payment_code         String        @unique
-  sepay_transaction_id BigInt?       @unique
+  id                   String         @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  user_id              String?        @db.Uuid  // User thực hiện thanh toán (cho deposit)
+  rental_contract_id   String?        @db.Uuid  // Optional: chỉ có khi thanh toán hợp đồng
+  payment_code         String         @unique
+  sepay_transaction_id BigInt?        @unique
   amount               Int
   description          String
   type                 PaymentType
-  status               PaymentStatus @default(PENDING)
+  purpose              PaymentPurpose @default(RENTAL_CONTRACT_NEW)
+  status               PaymentStatus  @default(PENDING)
 
   duration_tier_id String? @db.Uuid
   duration_months  Int?
@@ -1159,15 +1183,19 @@ model Payment {
   created_by String?
   updated_by String?
 
-  rental_contract RentalContract      @relation(fields: [rental_contract_id], references: [id], onDelete: Cascade)
+  user            User?               @relation(fields: [user_id], references: [id], onDelete: SetNull)
+  rental_contract RentalContract?     @relation(fields: [rental_contract_id], references: [id], onDelete: Cascade)
   duration_tier   RentalDurationTier? @relation(fields: [duration_tier_id], references: [id])
 
+  @@index([user_id])
   @@index([rental_contract_id])
   @@index([payment_code])
   @@index([status])
+  @@index([purpose])
   @@index([duration_tier_id])
   @@map("payments")
 }
+
 
 
 model Organization {
@@ -2935,4 +2963,57 @@ model DiagramConfig {
   @@unique([user_id, name])
   @@index([user_id])
   @@map("diagram_configs")
+}
+
+// Số dư tài khoản người dùng
+model AccountBalance {
+  id      String  @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  user_id String  @unique @db.Uuid
+  
+  balance         Decimal @default(0) @db.Decimal(19, 4)
+  total_deposited Decimal @default(0) @db.Decimal(19, 4)
+  total_spent     Decimal @default(0) @db.Decimal(19, 4)
+  total_refunded  Decimal @default(0) @db.Decimal(19, 4)
+  
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean?  @default(false)
+  deleted_at DateTime?
+
+  user         User                 @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  transactions BalanceTransaction[]
+
+  @@map("account_balances")
+}
+
+// Lịch sử biến động số dư
+model BalanceTransaction {
+  id                 String                 @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  account_balance_id String                 @db.Uuid
+  user_id            String                 @db.Uuid
+  
+  type               BalanceTransactionType
+  amount             Decimal                @db.Decimal(19, 4)
+  balance_before     Decimal                @db.Decimal(19, 4)
+  balance_after      Decimal                @db.Decimal(19, 4)
+  
+  reference_type     String?  // 'payment', 'rental_contract', 'refund', etc.
+  reference_id       String?  @db.Uuid
+  
+  description        String?
+  notes              String?  @db.Text
+  metadata           Json?
+  
+  created_at DateTime @default(now())
+
+  account_balance AccountBalance @relation(fields: [account_balance_id], references: [id], onDelete: Cascade)
+  user            User           @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([account_balance_id])
+  @@index([user_id])
+  @@index([type])
+  @@index([reference_type, reference_id])
+  @@index([created_at])
+  @@map("balance_transactions")
 }

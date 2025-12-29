@@ -323,6 +323,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         this.seedRackTemplatePermissions.bind(this),
         this.seedShelfTemplatePermissions.bind(this),
         this.seedBlockTemplatePermissions.bind(this),
+        this.seedAccountBalancePermissions.bind(this),
       ];
 
       const BATCH_SIZE = 3; // Chạy 3 seed functions cùng lúc
@@ -2618,6 +2619,94 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         error instanceof Error ? error.message : String(error);
       this.logger.error(
         `❌ Failed to seed coupon-schedule permissions: ${errorMessage}`,
+      );
+    }
+  }
+
+  /**
+   * Seed các permissions cho Account Balance (Admin only)
+   */
+  private async seedAccountBalancePermissions() {
+    try {
+      const accountBalancePermissions = [
+        {
+          key: 'account-balance.list.all',
+          name: 'Xem tất cả số dư',
+          description: 'Quyền xem số dư của tất cả users',
+        },
+        {
+          key: 'account-balance.adjust',
+          name: 'Điều chỉnh số dư',
+          description: 'Quyền điều chỉnh số dư (thưởng/phạt)',
+        },
+        {
+          key: 'balance-transaction.list.all',
+          name: 'Xem tất cả giao dịch',
+          description: 'Quyền xem lịch sử giao dịch của tất cả users',
+        },
+      ];
+
+      for (const perm of accountBalancePermissions) {
+        const existing = await this.permission.findFirst({
+          where: { key: perm.key },
+        });
+
+        if (!existing) {
+          await this.permission.create({
+            data: {
+              key: perm.key,
+              name: perm.name,
+              description: perm.description,
+              is_active: true,
+              is_deleted: false,
+            },
+          });
+        }
+      }
+
+      // Assign to Admin and Super Admin
+      const adminRoles = await this.role.findMany({
+        where: {
+          name: { in: ['Admin', 'Super Admin'] },
+          is_deleted: false,
+        },
+      });
+
+      const permissions = await this.permission.findMany({
+        where: {
+          key: { in: accountBalancePermissions.map((p) => p.key) },
+          is_deleted: false,
+        },
+      });
+
+      for (const role of adminRoles) {
+        for (const permission of permissions) {
+          const existingAssignment = await this.rolePermission.findFirst({
+            where: {
+              role_id: role.id,
+              permission_id: permission.id,
+            },
+          });
+
+          if (!existingAssignment) {
+            await this.rolePermission.create({
+              data: {
+                role_id: role.id,
+                permission_id: permission.id,
+                is_active: true,
+                is_deleted: false,
+              },
+            });
+          }
+        }
+      }
+
+      this.logger.log('✅ Account balance permissions seeded');
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `❌ Failed to seed account-balance permissions: ${errorMessage}`,
       );
     }
   }

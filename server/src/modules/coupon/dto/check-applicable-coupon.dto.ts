@@ -4,10 +4,12 @@ import {
     IsOptional,
     IsArray,
     IsUUID,
-    IsEnum,
+    IsIn,
 } from 'class-validator';
 import { i18nValidationMessage } from 'nestjs-i18n';
-import { PaymentType } from '@prisma/client';
+
+// Chỉ cho phép NEW_CONTRACT và RENEWAL cho coupon (không áp dụng cho ACCOUNT_DEPOSIT)
+export type CouponApplicableType = 'NEW_CONTRACT' | 'RENEWAL';
 
 /**
  * DTO kiểm tra coupon có thể áp dụng cho đơn hàng
@@ -72,14 +74,15 @@ export class CheckApplicableCouponDto {
 
     @ApiProperty({
         description: 'Loại giao dịch: NEW_CONTRACT hoặc RENEWAL',
-        enum: PaymentType,
-        example: PaymentType.NEW_CONTRACT,
+        enum: ['NEW_CONTRACT', 'RENEWAL'],
+        example: 'NEW_CONTRACT',
     })
     @IsNotEmpty({
         message: i18nValidationMessage('coupon.validation.type_required'),
     })
-    @IsEnum(PaymentType, {
+    @IsIn(['NEW_CONTRACT', 'RENEWAL'], {
         message: i18nValidationMessage('coupon.validation.type_enum'),
     })
-    type: PaymentType;
+    type: CouponApplicableType;
 }
+

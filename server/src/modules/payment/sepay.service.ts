@@ -2,10 +2,11 @@ import { Injectable, Logger, BadRequestException, UnauthorizedException, Inject,
 import { ConfigService } from '@nestjs/config';
 import { ISepayWebhookData, IPaymentResult, ICreatePaymentOptions } from './interfaces';
 import { PrismaService } from '../../prisma/prisma.service';
-import { PaymentStatus, PaymentType } from '@prisma/client';
+import { PaymentStatus, PaymentType, PaymentPurpose } from '@prisma/client';
 import { SystemLogService } from '../system-log/system-log.service';
 import { WebsocketGateway } from '../websocket/websocket.gateway';
 import { RentalContractService } from '../rental-contract/rental-contract.service';
+import { AccountBalanceService } from '../account-balance/account-balance.service';
 
 /**
  * Service xử lý tích hợp SePay payment gateway
@@ -33,6 +34,8 @@ export class SepayService {
         private readonly websocketGateway: WebsocketGateway,
         @Inject(forwardRef(() => RentalContractService))
         private readonly rentalContractService: RentalContractService,
+        @Inject(forwardRef(() => AccountBalanceService))
+        private readonly accountBalanceService: AccountBalanceService,
     ) {
         this.accountNumber = this.configService.get<string>('SEPAY_ACCOUNT_NUMBER') || '';
         this.bankName = this.configService.get<string>('SEPAY_BANK_NAME') || '';
@@ -110,6 +113,7 @@ export class SepayService {
                 amount: options.amount,
                 description: options.description,
                 type: options.type as PaymentType,
+                purpose: 'RENTAL_CONTRACT_NEW',
                 status: PaymentStatus.PENDING,
                 qr_code: qrCode,
                 expired_at: expiredAt,
@@ -147,6 +151,70 @@ export class SepayService {
             },
         };
     }
+
+    /**
+     * Tạo payment cho nạp tiền vào tài khoản
+     */
+    async createDepositPayment(options: {
+        userId: string;
+        amount: number;
+        notes?: string;
+    }): Promise<IPaymentResult> {
+        const paymentCode = this.generatePaymentCode();
+
+        // Lấy thời gian hết hạn từ env (mặc định 10 phút)
+        const expireMinutes = this.configService.get<number>('DEPOSIT_PAYMENT_EXPIRE_MINUTES') || 10;
+        const expiredAt = new Date();
+        expiredAt.setMinutes(expiredAt.getMinutes() + expireMinutes);
+
+        // Tạo QR URL
+        const qrCode = this.generateQRUrl(paymentCode, options.amount);
+
+        // Lưu payment vào database
+        const payment = await this.prisma.payment.create({
+            data: {
+                user_id: options.userId,
+                payment_code: paymentCode,
+                amount: options.amount,
+                description: options.notes || `Nạp tiền vào tài khoản - ${paymentCode}`,
+                type: PaymentType.ACCOUNT_DEPOSIT,
+                purpose: 'ACCOUNT_DEPOSIT',
+                status: PaymentStatus.PENDING,
+                qr_code: qrCode,
+                expired_at: expiredAt,
+                created_by: options.userId,
+            },
+        });
+
+        this.systemLogService.info('payment', 'create_deposit',
+            `Created deposit payment for user: ${options.userId}`,
+            { userId: options.userId, metaData: { paymentId: payment.id, paymentCode, amount: options.amount } });
+
+        // Emit socket event
+        this.websocketGateway.server.to(`user:${options.userId}`).emit('deposit:created', {
+            paymentId: payment.id,
+            paymentCode,
+            amount: options.amount,
+            qrCode,
+            expiredAt,
+        });
+
+        return {
+            paymentId: payment.id,
+            paymentCode,
+            amount: options.amount,
+            qrCode,
+            status: 'PENDING',
+            expiredAt,
+            bankInfo: {
+                accountNumber: this.accountNumber,
+                bankName: this.bankName,
+                accountHolder: this.accountHolder,
+                transferContent: paymentCode,
+            },
+        };
+    }
+
 
     /**
      * Xử lý webhook từ SePay
@@ -196,8 +264,20 @@ export class SepayService {
             },
         });
 
-        // Cập nhật rental contract status = ACTIVE (nếu là NEW_CONTRACT)
-        if (payment.type === PaymentType.NEW_CONTRACT) {
+        // Xử lý theo loại payment
+        if (payment.type === PaymentType.ACCOUNT_DEPOSIT) {
+            // Nạp tiền vào tài khoản
+            const userId = payment.user_id || payment.created_by;
+            if (userId) {
+                await this.accountBalanceService.processDepositSuccess(
+                    userId,
+                    payment.amount,
+                    payment.id,
+                    payment.payment_code,
+                );
+            }
+        } else if (payment.type === PaymentType.NEW_CONTRACT && payment.rental_contract_id) {
+            // Cập nhật rental contract status = ACTIVE
             await this.prisma.rentalContract.update({
                 where: { id: payment.rental_contract_id },
                 data: { status: 'ACTIVE' },

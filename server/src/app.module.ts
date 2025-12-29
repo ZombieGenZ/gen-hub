@@ -46,6 +46,8 @@ import { ResourcesModule } from './modules/resources/resources.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { BruteForceModule } from './modules/brute-force/brute-force.module';
 import { EmailInboundModule } from './modules/email-inbound/email-inbound.module';
+import { AccountBalanceModule } from './modules/account-balance/account-balance.module';
+import { DatabaseLogModule } from './modules/database-log/database-log.module';
 import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
 
 @Module({
@@ -122,6 +124,9 @@ import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
     // Payment
     PaymentModule,
 
+    // Account Balance
+    AccountBalanceModule,
+
     // Notifications
     GlobalNotificationModule,
     UserNotificationModule,
@@ -154,6 +159,9 @@ import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
 
     // Email Inbound Worker
     EmailInboundModule,
+
+    // Database Auto-logging
+    DatabaseLogModule,
   ],
   controllers: [AppController],
   providers: [

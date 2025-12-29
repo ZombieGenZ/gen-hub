@@ -37,12 +37,22 @@ export class EmailInboundProvider implements OnModuleInit, OnModuleDestroy {
     // Subject format: [UNLOCK] email@domain.com hoặc [UNLOCK] email@domain.com - UNLOCK 123456
     private readonly UNLOCK_SUBJECT_PATTERN = /^\[UNLOCK\]\s+([^\s-]+@[^\s-]+)/i;
 
+    // Configurable timeout and retry
+    private readonly FETCH_TIMEOUT: number;
+    private readonly FETCH_MAX_RETRIES: number;
+    private fetchRetryCount = 0;
+    private lastMailboxCount = 0; // Track mailbox count to detect new emails
+
     constructor(
         private readonly configService: ConfigService,
         private readonly redisService: RedisService,
         private readonly prismaService: PrismaService,
         private readonly emailService: EmailService,
-    ) { }
+    ) {
+        // Get configurable values from env
+        this.FETCH_TIMEOUT = this.configService.get<number>('IMAP_FETCH_TIMEOUT_MS') || 60000;
+        this.FETCH_MAX_RETRIES = this.configService.get<number>('IMAP_FETCH_MAX_RETRIES') || 3;
+    }
 
     async onModuleInit() {
         this.logger.log('📧 EmailInboundProvider initializing...');
@@ -327,17 +337,40 @@ export class EmailInboundProvider implements OnModuleInit, OnModuleDestroy {
     /**
      * Xử lý email mới
      * CHỈ xử lý 1 email MỚI NHẤT để tránh bị block bởi Gmail throttle
-     * Có timeout 30s để đảm bảo IDLE luôn được restart
+     * Có timeout configurable (default 60s) để đảm bảo IDLE luôn được restart
      */
     private async processNewEmails(): Promise<void> {
         if (!this.client || !this.isConnected) {
             return;
         }
 
-        // Timeout 30s cho toàn bộ quá trình fetch
-        const FETCH_TIMEOUT = 30000;
+        // Check if mailbox has new emails by comparing count
+        try {
+            const mailbox = this.client.mailbox;
+            if (mailbox && typeof mailbox.exists === 'number') {
+                if (this.lastMailboxCount === 0) {
+                    // First check, just record the count
+                    this.lastMailboxCount = mailbox.exists;
+                    this.logger.debug(`📬 Mailbox has ${mailbox.exists} emails, tracking for changes...`);
+                } else if (mailbox.exists <= this.lastMailboxCount) {
+                    // No new emails, skip processing
+                    this.logger.debug(`📭 No new emails (count: ${mailbox.exists}, last: ${this.lastMailboxCount})`);
+                    this.fetchRetryCount = 0; // Reset retry count on success
+                    return;
+                } else {
+                    this.logger.log(`📧 New email detected! Count: ${mailbox.exists}, was: ${this.lastMailboxCount}`);
+                    this.lastMailboxCount = mailbox.exists;
+                }
+            }
+        } catch {
+            // Ignore mailbox check errors, proceed with fetch
+        }
+
         const timeoutPromise = new Promise<void>((_, reject) =>
-            setTimeout(() => reject(new Error('Fetch timeout after 30s')), FETCH_TIMEOUT)
+            setTimeout(
+                () => reject(new Error(`Fetch timeout after ${this.FETCH_TIMEOUT / 1000}s`)),
+                this.FETCH_TIMEOUT
+            )
         );
 
         try {
@@ -345,11 +378,22 @@ export class EmailInboundProvider implements OnModuleInit, OnModuleDestroy {
                 this.doProcessNewEmails(),
                 timeoutPromise,
             ]);
+            // Success - reset retry count
+            this.fetchRetryCount = 0;
         } catch (error) {
-            // Log error nhưng KHÔNG throw - đảm bảo IDLE luôn restart
-            this.logger.warn('⚠️ Email processing error (IDLE will restart):', error);
+            this.fetchRetryCount++;
+
+            // Only log warning if we haven't exceeded max retries
+            if (this.fetchRetryCount <= this.FETCH_MAX_RETRIES) {
+                this.logger.debug(`⏳ Email processing attempt ${this.fetchRetryCount}/${this.FETCH_MAX_RETRIES} timed out (this is often normal)`);
+            } else {
+                // Log warning after max retries exceeded
+                this.logger.warn(`⚠️ Email processing failed after ${this.fetchRetryCount} attempts (IDLE will restart):`, error);
+                this.fetchRetryCount = 0; // Reset for next cycle
+            }
         }
     }
+
 
     /**
      * Thực hiện xử lý email
