@@ -27,7 +27,7 @@ import type { IAccountBalance, IBalanceTransaction, IPaginatedResponse } from '.
 /**
  * Controller Admin cho quản lý số dư
  */
-@ApiTags('Account Balance - Admin')
+@ApiTags('Admin - Account Balance')
 @Controller('admin/account-balances')
 @UseGuards(JwtAuthGuard, PermissionGuard)
 @ApiBearerAuth()

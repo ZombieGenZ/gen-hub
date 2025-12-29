@@ -212,20 +212,20 @@
 | 210 | Batches | PUT | /organizations/{orgId}/batches/{id} | ❎ | ❎ | ❎ |
 | 211 | Batches | DELETE | /organizations/{orgId}/batches/{id} | ❎ | ❎ | ❎ |
 | 212 | Batches | DELETE | /organizations/{orgId}/batches/delete/many | ❎ | ❎ | ❎ |
-| 213 | Database Admin | GET | /admin/tables | ❎ | ❎ | ❎ |
-| 214 | Database Admin | GET | /admin/statistics | ❎ | ❎ | ❎ |
-| 215 | Database Admin | GET | /admin/tables/{tableName}/schema | ❎ | ❎ | ❎ |
-| 216 | Database Admin | GET | /admin/tables/{tableName} | ❎ | ❎ | ❎ |
-| 217 | Database Admin | POST | /admin/tables/{tableName} | ❎ | ❎ | ❎ |
-| 218 | Database Admin | GET | /admin/tables/{tableName}/{id} | ❎ | ❎ | ❎ |
-| 219 | Database Admin | PUT | /admin/tables/{tableName}/{id} | ❎ | ❎ | ❎ |
-| 220 | Database Admin | DELETE | /admin/tables/{tableName}/{id} | ❎ | ❎ | ❎ |
-| 221 | Database Admin | POST | /admin/tables/{tableName}/batch | ❎ | ❎ | ❎ |
-| 222 | Database Admin | DELETE | /admin/tables/{tableName}/bulk | ❎ | ❎ | ❎ |
-| 223 | Database Admin | GET | /admin/diagram/schema | ❎ | ❎ | ❎ |
-| 224 | Database Admin | GET | /admin/diagram/config | ❎ | ❎ | ❎ |
-| 225 | Database Admin | PUT | /admin/diagram/config | ❎ | ❎ | ❎ |
-| 226 | Database Admin | POST | /admin/query/execute | ❎ | ❎ | ❎ |
+| 213 | Database Panel | GET | /admin/tables | ❎ | ❎ | ❎ |
+| 214 | Database Panel | GET | /admin/statistics | ❎ | ❎ | ❎ |
+| 215 | Database Panel | GET | /admin/tables/{tableName}/schema | ❎ | ❎ | ❎ |
+| 216 | Database Panel | GET | /admin/tables/{tableName} | ❎ | ❎ | ❎ |
+| 217 | Database Panel | POST | /admin/tables/{tableName} | ❎ | ❎ | ❎ |
+| 218 | Database Panel | GET | /admin/tables/{tableName}/{id} | ❎ | ❎ | ❎ |
+| 219 | Database Panel | PUT | /admin/tables/{tableName}/{id} | ❎ | ❎ | ❎ |
+| 220 | Database Panel | DELETE | /admin/tables/{tableName}/{id} | ❎ | ❎ | ❎ |
+| 221 | Database Panel | POST | /admin/tables/{tableName}/batch | ❎ | ❎ | ❎ |
+| 222 | Database Panel | DELETE | /admin/tables/{tableName}/bulk | ❎ | ❎ | ❎ |
+| 223 | Database Panel | GET | /admin/diagram/schema | ❎ | ❎ | ❎ |
+| 224 | Database Panel | GET | /admin/diagram/config | ❎ | ❎ | ❎ |
+| 225 | Database Panel | PUT | /admin/diagram/config | ❎ | ❎ | ❎ |
+| 226 | Database Panel | POST | /admin/query/execute | ❎ | ❎ | ❎ |
 | 227 | Feature Flags | GET | /admin/feature-flags | ❎ | ❎ | ❎ |
 | 228 | Feature Flags | GET | /admin/feature-flags/modules | ❎ | ❎ | ❎ |
 | 229 | Feature Flags | GET | /admin/feature-flags/stats | ❎ | ❎ | ❎ |

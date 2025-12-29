@@ -28,7 +28,7 @@ export interface BatchChanges {
     deleted: string[];
 }
 
-@ApiTags('Database Admin')
+@ApiTags('Database Panel')
 @ApiBearerAuth()
 @Controller('admin')
 @UseGuards(JwtAuthGuard, DatabaseAdminGuard)
