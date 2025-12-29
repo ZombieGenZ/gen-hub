@@ -5,20 +5,19 @@ import { motion } from "framer-motion";
 
 export function PrimeNestHero() {
     return (
-        <section className="relative pt-12 px-4 pb-12 w-full max-w-[1440px] mx-auto flex flex-col">
+        <section className="relative max-w-[1440px] pt-12 mx-auto w-full flex flex-col">
             {/* Main Content Wrapper */}
-            <div className="relative w-full rounded-[2.5rem] overflow-hidden min-h-[700px] flex flex-col md:block">
+            <div className="relative w-full overflow-hidden min-h-[700px] flex flex-col md:block rounded-xl  border-white">
 
-                {/* Background Image & Overlay */}
                 {/* Background Image & Overlay */}
                 <div className="absolute inset-0 z-0">
                     <img
                         src="./assets/hero.png"
-                        alt="Quiet residential street"
+                        alt="GenHub"
                         className="w-full h-full object-cover"
                     />
                     {/* Dark Gradient Overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/50 to-black/20" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-black/20" />
                 </div>
 
                 {/* Hero Text Content */}
@@ -100,7 +99,7 @@ export function PrimeNestHero() {
                             <h5 className="font-medium text-slate-600">Đối Tác Tin Cậy</h5>
                         </div>
                     </div>
-                    <div className="flex absolute inset-0 -left-[1rem] z-0 w-[110%] -skew-x-[10deg] rounded-tl-[1rem] bg-white sm:-right-[4rem] sm:left-[2rem] sm:w-auto sm:-skew-x-[20deg] md:-right-[20rem]"></div>
+                    <div className="flex absolute inset-[-1] -left-[1rem] z-0 w-[110%] -skew-x-[10deg] rounded-tl-[1rem] bg-white sm:-right-[4rem] sm:left-[2rem] sm:w-auto sm:-skew-x-[20deg] md:-right-[20rem]"></div>
                 </div>
             </div>
         </section>
