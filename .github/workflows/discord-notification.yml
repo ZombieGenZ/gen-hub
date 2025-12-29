@@ -1,0 +1,43 @@
+name: Discord Push Notification
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  discord-notification:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Discord Notification
+        run: |
+          curl -H "Content-Type: application/json" \
+          -X POST \
+          -d '{
+            "embeds": [{
+              "title": "🚀 Push mới tại ${{ github.repository }}",
+              "url": "${{ github.event.head_commit.url }}",
+              "color": 3447003,
+              "fields": [
+                {
+                  "name": "Nhánh",
+                  "value": "`${{ github.ref_name }}`",
+                  "inline": true
+                },
+                {
+                  "name": "Người thực hiện",
+                  "value": "`${{ github.actor }}`",
+                  "inline": true
+                },
+                {
+                  "name": "Nội dung commit",
+                  "value": "${{ github.event.head_commit.message }}"
+                }
+              ],
+              "footer": {
+                "text": "Hệ thống GEN-HUB"
+              },
+              "timestamp": "${{ github.event.head_commit.timestamp }}"
+            }]
+          }' \
+          ${{ secrets.DISCORD_WEBHOOK }}
