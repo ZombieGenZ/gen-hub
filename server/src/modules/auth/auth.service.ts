@@ -23,6 +23,7 @@ import { RedisService } from '../redis/redis.service';
 import { TurnstileService } from '../../common/services/turnstile.service';
 import { HunterService } from '../../common/services/hunter.service';
 import { BruteForceService } from '../brute-force/brute-force.service';
+import { PrismaService } from '../../prisma/prisma.service';
 import { normalizeLanguage } from '../../common/validators';
 import {
   RegisterDto,
@@ -91,6 +92,7 @@ export class AuthService {
     private readonly turnstileService: TurnstileService,
     private readonly hunterService: HunterService,
     private readonly bruteForceService: BruteForceService,
+    private readonly prismaService: PrismaService,
   ) { }
 
   /**
@@ -496,54 +498,50 @@ export class AuthService {
     if (!userWithPermissions) return false;
 
     // Get permissions from database via raw query (simpler approach)
-    const { PrismaClient } = await import('@prisma/client');
-    const prisma = new PrismaClient();
+    // Using injected PrismaService instead of manual instantiation to ensure correct configuration
+    const prisma = this.prismaService;
 
-    try {
-      // Check direct user permissions
-      const directPerms = await prisma.userPermission.findFirst({
-        where: {
-          user_id: userId,
+    // Check direct user permissions
+    const directPerms = await prisma.userPermission.findFirst({
+      where: {
+        user_id: userId,
+        is_active: true,
+        is_deleted: false,
+        permission: {
+          key: permissionKey,
           is_active: true,
           is_deleted: false,
-          permission: {
-            key: permissionKey,
-            is_active: true,
-            is_deleted: false,
-          },
         },
-      });
+      },
+    });
 
-      if (directPerms) return true;
+    if (directPerms) return true;
 
-      // Check role-based permissions
-      const rolePerms = await prisma.userRole.findFirst({
-        where: {
-          user_id: userId,
+    // Check role-based permissions
+    const rolePerms = await prisma.userRole.findFirst({
+      where: {
+        user_id: userId,
+        is_active: true,
+        is_deleted: false,
+        role: {
           is_active: true,
           is_deleted: false,
-          role: {
-            is_active: true,
-            is_deleted: false,
-            permissions: {
-              some: {
+          permissions: {
+            some: {
+              is_active: true,
+              is_deleted: false,
+              permission: {
+                key: permissionKey,
                 is_active: true,
                 is_deleted: false,
-                permission: {
-                  key: permissionKey,
-                  is_active: true,
-                  is_deleted: false,
-                },
               },
             },
           },
         },
-      });
+      },
+    });
 
-      return !!rolePerms;
-    } finally {
-      await prisma.$disconnect();
-    }
+    return !!rolePerms;
   }
 
 
