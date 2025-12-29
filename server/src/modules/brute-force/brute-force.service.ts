@@ -108,7 +108,7 @@ export class BruteForceService {
             await this.redisService.expire(key, 3600);
         }
 
-        this.logger.debug(`Failed attempt recorded for ${email} from ${ip}: ${attempts} attempts`);
+
 
         // Kiểm tra có cần áp dụng penalty không
         await this.applyPenaltyIfNeeded(email, ip, attempts);
@@ -139,7 +139,7 @@ export class BruteForceService {
      * Áp dụng khóa vĩnh viễn
      */
     private async applyPermanentBan(email: string): Promise<void> {
-        this.logger.warn(`Applying permanent ban for ${email}`);
+
 
         // Cập nhật database
         await this.prismaService.user.updateMany({
@@ -162,7 +162,7 @@ export class BruteForceService {
      * Áp dụng khóa tạm thời
      */
     private async applyTemporaryLock(email: string, ip: string, minutes: number, attempts: number): Promise<void> {
-        this.logger.warn(`Applying temporary lock for ${email}: ${minutes} minutes`);
+
 
         const lockKey = this.getLockStatusKey(email);
         const unlockAt = Date.now() + (minutes * 60 * 1000);
@@ -220,7 +220,7 @@ export class BruteForceService {
             );
         }
 
-        this.logger.log(`Unlock code generated for ${email}`);
+
         return code;
     }
 
@@ -280,7 +280,7 @@ export class BruteForceService {
     async verifyUnlockCode(email: string, code: string, fromEmail: string): Promise<boolean> {
         // Kiểm tra email khớp
         if (email.toLowerCase() !== fromEmail.toLowerCase()) {
-            this.logger.warn(`Unlock attempt from wrong email: expected ${email}, got ${fromEmail}`);
+
             return false;
         }
 
@@ -288,7 +288,7 @@ export class BruteForceService {
         const tokenData = await this.redisService.get(unlockKey);
 
         if (!tokenData) {
-            this.logger.warn(`No unlock token found for ${email}`);
+
             return false;
         }
 
@@ -296,13 +296,13 @@ export class BruteForceService {
             const parsed: IUnlockTokenData = JSON.parse(tokenData);
 
             if (parsed.code !== code) {
-                this.logger.warn(`Invalid unlock code for ${email}`);
+
                 return false;
             }
 
             // Mã đúng - mở khóa tài khoản
             await this.unlockAccount(email);
-            this.logger.log(`Account unlocked successfully for ${email}`);
+
             return true;
         } catch {
             this.logger.error(`Invalid unlock token format for ${email}`);
@@ -345,7 +345,7 @@ export class BruteForceService {
         // Xóa tất cả rate limit keys
         await this.redisService.delByPattern(`rate_limit:${normalizedEmail}:*`);
 
-        this.logger.log(`Cleared all brute force data for ${email}`);
+
     }
 
     /**
