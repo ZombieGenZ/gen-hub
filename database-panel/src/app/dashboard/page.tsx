@@ -50,18 +50,18 @@ export default function DashboardPage() {
 
             // Transform to expected format
             const totalRecords = rawData.reduce((sum: number, t: { rowCount: number }) => sum + t.rowCount, 0);
-            const tableStats: TableStats[] = rawData.map((t: { tableName: string; rowCount: number }) => ({
+            const tableStats: TableStats[] = rawData.map((t: { tableName: string; rowCount: number; columnCount?: number }) => ({
                 name: t.tableName,
                 displayName: toTitleCase(t.tableName),
                 recordCount: t.rowCount,
-                columnCount: 0, // Server doesn't provide this yet
+                columnCount: t.columnCount || 0,
             }));
 
             const transformedData: Statistics = {
                 summary: {
                     totalTables: rawData.length,
                     totalRecords: totalRecords,
-                    totalColumns: 0, // Not provided by server
+                    totalColumns: tableStats.reduce((sum, t) => sum + t.columnCount, 0),
                     avgRecordsPerTable: rawData.length > 0 ? Math.round(totalRecords / rawData.length) : 0,
                 },
                 tables: tableStats,

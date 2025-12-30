@@ -121,7 +121,8 @@
             "relations": "Relations (1:1, 1:N, N:N)"
         },
         "hideLegend": "Hide Legend",
-        "showLegend": "Show Legend"
+        "showLegend": "Show Legend",
+        "customColor": "Custom"
     },
     "query": {
         "title": "SQL Query",

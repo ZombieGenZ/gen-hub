@@ -669,18 +669,19 @@ export default function TablePage() {
         setTextModalCell(null);
     };
 
-    const saveTextModal = () => {
+    const saveTextModal = (valueOverride?: string | null) => {
         if (!textModalCell) return;
 
         const { id, column, isNewRow } = textModalCell;
+        const value = valueOverride !== undefined ? valueOverride : textModalValue;
 
-        let parsedValue: CellValue = textModalValue;
-        if (parsedValue === '') {
+        let parsedValue: CellValue = value;
+        if (value === '' || value === null) {
             parsedValue = isColumnNullable(column) ? null : '';
         } else if (isColumnJson(column)) {
             // Validate and parse JSON
             try {
-                parsedValue = JSON.parse(textModalValue);
+                parsedValue = JSON.parse(value);
             } catch {
                 toast.error(t('common.error'));
                 return;
@@ -1548,10 +1549,7 @@ export default function TablePage() {
                         <div className="flex items-center justify-end gap-2 px-4 py-3 border-t border-[var(--border-primary)]">
                             {isColumnNullable(textModalCell.column) && (
                                 <button
-                                    onClick={() => {
-                                        setTextModalValue('');
-                                        saveTextModal();
-                                    }}
+                                    onClick={() => saveTextModal(null)}
                                     className="btn btn-secondary text-sm py-1.5 px-2 sm:px-3"
                                     title={t('table.edit.setNull')}
                                 >
@@ -1568,7 +1566,7 @@ export default function TablePage() {
                                 <span className="hidden sm:inline">{t('table.actions.cancel')}</span>
                             </button>
                             <button
-                                onClick={saveTextModal}
+                                onClick={() => saveTextModal()}
                                 className="btn btn-primary text-sm py-1.5 px-2 sm:px-3"
                                 title={t('table.actions.save') + ' (Ctrl+Enter)'}
                             >

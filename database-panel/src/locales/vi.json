@@ -121,7 +121,8 @@
             "relations": "Quan hệ (1:1, 1:N, N:N)"
         },
         "hideLegend": "Ẩn chú thích",
-        "showLegend": "Hiện chú thích"
+        "showLegend": "Hiện chú thích",
+        "customColor": "Tùy chọn"
     },
     "query": {
         "title": "Truy vấn SQL",

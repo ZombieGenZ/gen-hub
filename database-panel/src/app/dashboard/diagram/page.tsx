@@ -67,7 +67,8 @@ interface TableNodeData {
     label: string;
     fields: TableField[];
     color: string;
-    onColorChange: (color: string) => void;
+    tableName: string;
+    onOpenColorModal: (tableName: string) => void;
     [key: string]: unknown;
 }
 
@@ -91,9 +92,8 @@ const AVAILABLE_COLORS = [
 ];
 
 // Custom Table Node Component - Memoized for performance
-const TableNodeComponent = ({ data }: { data: { label: string; fields: TableField[]; color: string; onColorChange: (color: string) => void } }) => {
+const TableNodeComponent = ({ data }: { data: { label: string; fields: TableField[]; color: string; tableName: string; onOpenColorModal: (tableName: string) => void } }) => {
     const { t } = useLanguage();
-    const [showColorPicker, setShowColorPicker] = useState(false);
 
     return (
         <div
@@ -125,7 +125,7 @@ const TableNodeComponent = ({ data }: { data: { label: string; fields: TableFiel
                     onPointerDown={(e) => {
                         e.stopPropagation();
                         e.preventDefault();
-                        setShowColorPicker(!showColorPicker);
+                        data.onOpenColorModal(data.tableName);
                     }}
                     className="p-1 rounded hover:bg-white/20 transition-colors nodrag nopan cursor-pointer export-hide"
                     title={t('diagram.changeColor')}
@@ -133,30 +133,6 @@ const TableNodeComponent = ({ data }: { data: { label: string; fields: TableFiel
                     <Palette className="w-3.5 h-3.5" />
                 </button>
             </div>
-
-            {/* Color Picker Popup */}
-            {showColorPicker && (
-                <div
-                    className="absolute top-full left-0 mt-1 p-2 bg-[#1a1a2e] rounded-lg shadow-xl border border-[#2a2a3e] z-50 flex gap-1 flex-wrap w-[140px] nodrag nopan"
-                    onClick={(e) => e.stopPropagation()}
-                    onMouseDown={(e) => e.stopPropagation()}
-                >
-                    {AVAILABLE_COLORS.map((color) => (
-                        <button
-                            key={color}
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                e.preventDefault();
-                                data.onColorChange(color);
-                                setShowColorPicker(false);
-                            }}
-                            onMouseDown={(e) => e.stopPropagation()}
-                            className="w-6 h-6 rounded-md border-2 border-transparent hover:border-white transition-all cursor-pointer"
-                            style={{ backgroundColor: color }}
-                        />
-                    ))}
-                </div>
-            )}
 
             {/* Fields */}
             <div className="divide-y divide-[var(--border-primary)]">
@@ -286,6 +262,9 @@ export default function DiagramPage() {
     const [schema, setSchema] = useState<{ tables: TableSchema[]; relations: Relation[] } | null>(null);
     const [hoveredNode, setHoveredNode] = useState<string | null>(null);
 
+    // Color picker modal state
+    const [colorModalOpen, setColorModalOpen] = useState(false);
+    const [colorModalTable, setColorModalTable] = useState<string | null>(null);
 
 
     // Memoize nodeTypes to prevent recreation on every render
@@ -327,9 +306,10 @@ export default function DiagramPage() {
                         label: table.displayName,
                         fields: table.fields,
                         color,
-                        onColorChange: (newColor: string) => {
-                            setTableColors((prev) => ({ ...prev, [table.name]: newColor }));
-                            setHasChanges(true);
+                        tableName: table.name,
+                        onOpenColorModal: (tableName: string) => {
+                            setColorModalTable(tableName);
+                            setColorModalOpen(true);
                         },
                     },
                     sourcePosition: Position.Right,
@@ -732,6 +712,66 @@ export default function DiagramPage() {
                     )}
                 </ReactFlow>
             </div>
+
+            {/* Color Picker Modal */}
+            {colorModalOpen && colorModalTable && (
+                <div
+                    className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 animate-fadeIn"
+                    onClick={() => setColorModalOpen(false)}
+                >
+                    <div
+                        className="bg-[var(--background-secondary)] border border-[var(--border-primary)] rounded-lg shadow-2xl p-6 animate-slideIn"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <h3 className="text-white font-semibold mb-4 text-center">
+                            {t('diagram.changeColor')}: <span className="text-[var(--accent-primary)]">{colorModalTable}</span>
+                        </h3>
+                        <div className="grid grid-cols-5 gap-3">
+                            {AVAILABLE_COLORS.map((color) => (
+                                <button
+                                    key={color}
+                                    onClick={() => {
+                                        setTableColors((prev) => ({ ...prev, [colorModalTable]: color }));
+                                        setHasChanges(true);
+                                        setColorModalOpen(false);
+                                    }}
+                                    className={`w-10 h-10 rounded-lg border-2 transition-all hover:scale-110 ${tableColors[colorModalTable] === color || (!tableColors[colorModalTable] && color === DEFAULT_COLOR)
+                                        ? 'border-white ring-2 ring-white/50'
+                                        : 'border-transparent hover:border-white/50'
+                                        }`}
+                                    style={{ backgroundColor: color }}
+                                />
+                            ))}
+                        </div>
+
+                        {/* Custom Color Picker */}
+                        <div className="flex items-center gap-3 mt-4 pt-4 border-t border-[var(--border-primary)]">
+                            <span className="text-sm text-[var(--text-secondary)]">{t('diagram.customColor') || 'Custom'}:</span>
+                            <input
+                                type="color"
+                                value={tableColors[colorModalTable] || DEFAULT_COLOR}
+                                onChange={(e) => {
+                                    setTableColors((prev) => ({ ...prev, [colorModalTable]: e.target.value }));
+                                    setHasChanges(true);
+                                }}
+                                className="w-10 h-10 rounded-lg cursor-pointer border-2 border-[var(--border-primary)] hover:border-[var(--accent-primary)]"
+                            />
+                            <span className="text-xs text-[var(--text-muted)] font-mono">
+                                {tableColors[colorModalTable] || DEFAULT_COLOR}
+                            </span>
+                        </div>
+
+                        <div className="flex justify-end mt-4">
+                            <button
+                                onClick={() => setColorModalOpen(false)}
+                                className="btn btn-secondary text-sm"
+                            >
+                                {t('common.close')}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
