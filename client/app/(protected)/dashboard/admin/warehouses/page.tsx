@@ -9,10 +9,11 @@ import Image from "next/image";
 import { WarehouseCard } from '@/components/dashboard/WarehouseCard'
 import { useRouter } from "next/navigation";
 import { authStorage } from "@/services/auth/auth-storage.service";
-import { AuthService } from "@/services/auth/auth.service";
+import { LocationService } from "@/services/location/location.service";
 
 // ... (other imports)
 const warehouseService = new WarehouseTemplateService();
+const locationService = new LocationService();
 
 export default function WarehouseTemplatePage() {
     const router = useRouter();
@@ -112,33 +113,23 @@ export default function WarehouseTemplatePage() {
         }
     };
 
-    const getWarehouseImage = async (warehouseId: string): Promise<string> => {
+    //fetch location data for filters
+    const fetchLocation = async () => {
         try {
-            const token = authStorage.getAccessToken();
-            if (!token) {
-                console.log("No token available");
-                return "/placeholder.png";
-            }
-
-            const response = await warehouseService.getWarehouseImage(warehouseId, token);
-            console.log("Image response:", response);
-            
-            // Return the image URL based on the response structure
-            if (response?.data?.url) {
-                return response.data.url;
-            } else if (response?.data?.thumbnail_url) {
-                return response.data.thumbnail_url;
-            }
-            
-            return "/placeholder.png";
-        } catch (error) {
-            console.error("Error fetching warehouse image:", error);
-            return "/placeholder.png";
+            const ward = await locationService.getWards();
+            console.log("Wards data:", ward);
+            // You can set the wards data to state here if needed
+            // setWards(ward);
+            const province = await locationService.getProvinces();
+            console.log("Provinces data:", province);
+        } catch (err) {
+            console.error("Failed to fetch locations", err);
         }
     };
 
     useEffect(() => {
         fetchWarehouses();
+        fetchLocation(); // test lấy danh sách tỉnh và phường
     }, [debouncedKeywords, filters.province_id, filters.status_label, pagination.page]);
 
     const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
