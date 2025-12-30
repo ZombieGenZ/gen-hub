@@ -73,6 +73,17 @@ export class CloudflareAnalyticsService {
             startDate = minStartDate;
         }
 
+        // Cloudflare API giới hạn chỉ cho phép truy vấn dữ liệu trong vòng 365 ngày
+        const endDateObj = new Date(endDate);
+        const startDateObj = new Date(startDate);
+        const maxDaysBack = 365;
+        const minAllowedDate = new Date(endDateObj);
+        minAllowedDate.setDate(minAllowedDate.getDate() - maxDaysBack);
+
+        if (startDateObj < minAllowedDate) {
+            startDate = minAllowedDate.toISOString().split('T')[0];
+        }
+
         const query = `
       query GetZoneAnalytics($zoneTag: String!, $since: String!, $until: String!) {
         viewer {
