@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { I18nService } from 'nestjs-i18n';
-import { BalanceTransactionType } from '@prisma/client';
+import { BalanceTransactionType, BalanceReferenceType } from '@prisma/client';
 
 import { AccountBalanceRepository } from './account-balance.repository';
 import { CreateDepositDto, AdjustBalanceDto, QueryBalanceTransactionDto } from './dto';
@@ -121,7 +121,7 @@ export class AccountBalanceService {
             amount,
             performedByUserId || null,
             {
-                referenceType: 'payment',
+                referenceType: BalanceReferenceType.PAYMENT,
                 referenceId: paymentId,
                 description: `Nạp tiền qua thanh toán ${paymentCode}`,
             },
@@ -170,7 +170,7 @@ export class AccountBalanceService {
     async processPayment(
         organizationId: string,
         amount: number,
-        referenceType: string,
+        referenceType: BalanceReferenceType,
         referenceId: string,
         description: string,
         performedByUserId?: string,

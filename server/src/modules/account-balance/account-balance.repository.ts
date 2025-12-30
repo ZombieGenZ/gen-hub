@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma, BalanceTransactionType } from '@prisma/client';
+import { Prisma, BalanceTransactionType, BalanceReferenceType } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { IOrganizationBalance, IOrganizationBalanceTransaction, IPaginatedResponse } from './interfaces';
 import { QueryBalanceTransactionDto } from './dto';
@@ -128,7 +128,7 @@ export class AccountBalanceRepository {
         amount: number,
         performedByUserId: string | null,
         options: {
-            referenceType?: string;
+            referenceType?: BalanceReferenceType;
             referenceId?: string;
             description?: string;
             notes?: string;
