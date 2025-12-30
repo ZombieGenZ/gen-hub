@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 
-export function PrimeNestHeader() {
+export function PrimeNestHeader({ isLogin }: { isLogin: boolean }) {
     return (
         <header className="sticky top-4 z-50 px-4 flex justify-center">
             <div className="w-full max-w-[1440px] bg-white rounded-full shadow-sm px-6 py-4 flex items-center justify-between">
@@ -22,17 +22,25 @@ export function PrimeNestHeader() {
                 </nav>
 
                 {/* Right Actions */}
-                <div className="hidden md:flex items-center gap-4">
-                    <Link href="/login" className="text-sm font-medium text-slate-600 hover:text-[#0F766E] transition-colors">
-                        Đăng Nhập
-                    </Link>
-                    <Link
-                        href="/register"
-                        className="px-6 py-2.5 text-sm font-semibold text-white bg-[#0F766E] rounded-full hover:bg-[#0D5A52] transition-colors"
-                    >
-                        Đăng Ký
-                    </Link>
-                </div>
+                {isLogin ? 
+                    <div className="hidden md:flex items-center gap-4">
+                        <Link href="/user/profile" className="text-sm font-medium text-slate-600 hover:text-[#0F766E] transition-colors">
+                            Tài khoản
+                        </Link>
+                    </div>
+                    : 
+                    <div className="hidden md:flex items-center gap-4">
+                        <Link href="/login" className="text-sm font-medium text-slate-600 hover:text-[#0F766E] transition-colors">
+                            Đăng Nhập
+                        </Link>
+                        <Link
+                            href="/register"
+                            className="px-6 py-2.5 text-sm font-semibold text-white bg-[#0F766E] rounded-full hover:bg-[#0D5A52] transition-colors"
+                        >
+                            Đăng Ký
+                        </Link>
+                    </div>
+                }
 
                 {/* Mobile Menu Button */}
                 <button className="md:hidden text-slate-900 p-2" aria-label="Open menu">

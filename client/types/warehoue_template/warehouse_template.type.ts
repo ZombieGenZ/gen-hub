@@ -1,114 +1,180 @@
-export interface Province {
+// Base entity fields that are common across many types
+interface BaseEntity {
     id: string;
-    name: string;
+    created_at: string;
+    created_by: string;
+    updated_at: string | null;
+    updated_by: string | null;
+    deleted_at: string | null;
+    deleted_by: string | null;
+    is_active: boolean;
+    is_deleted: boolean;
+}
+
+// Location related interfaces
+interface Province {
+    id: string;
     code: string;
+    name: string;
     type: string;
 }
 
-export interface Ward {
-    id: string;
-    name: string;
+interface Ward extends BaseEntity {
     code: string;
+    name: string;
     type: string;
     province: Province;
 }
 
-export interface WarehouseCount {
-    rows: number;
-    images: number;
+// Addon related interfaces
+interface Addon extends BaseEntity {
+    name: string;
+    description: string;
+    price: string;
+    is_monthly_payment: boolean;
 }
 
-export interface WarehousePrototype {
-    type: string;
+interface AddonGift extends BaseEntity {
+    addon: Addon;
+    addon_id: string;
+    gift_duration_unit: string;
+    gift_duration_value: number;
+    is_until_service_end: boolean;
+    warehouse_template_id: string;
 }
 
-export interface WarehouseImage {
+// Duration and discount related
+interface DurationTier extends BaseEntity {
+    name: string;
+    duration_value: number;
+    duration_unit: string;
+    description: string;
+    order: number;
+}
+
+interface DiscountConfig extends BaseEntity {
+    discount_percent: string;
+    duration_tier: DurationTier;
+    duration_tier_id: string;
+    warehouse_template_id?: string;
+    row_template_id?: string;
+}
+
+// Row and Rack related
+interface RowTemplate extends BaseEntity {
+    address: string;
+    code: string;
+    description: string;
+    is_rented: boolean;
+    latitude: string | null;
+    longitude: string | null;
+    name: string;
+    position_rotation: number | null;
+    position_x: number | null;
+    position_y: number | null;
+    price_per_month: string;
+    racks: any[]; // You might want to define a Rack type
+    total_weight_capacity: number | null;
+    warehouse_template_id: string;
+    discount_configs: DiscountConfig[];
+}
+
+// Image interface
+interface WarehouseImage {
     id: string;
+    file_id: string;
+    order: number;
+    original_name: string;
+    size: number;
+    thumbnail_url: string;
     url: string;
-    thumbnail_url?: string;
+    created_at: string;
 }
 
-export interface Warehouse {
-    // Thông tin cơ bản
-    id: string;
+// Main Warehouse interface
+export interface Warehouse extends BaseEntity {
+  // Basic info
     name: string;
     description: string;
     type?: string;
-
-    // Kích thước và đơn vị
-    unit: string;
+  
+  // Dimensions
     length: number;
     width: number;
-
-    // Thông tin khối (block)
+    ceiling_height: string;
     block_length: string;
     block_width: string;
-
-    // Trạng thái
-    is_active: boolean;
-    is_rented: boolean;
-    is_shared_warehouse: boolean;
-    is_deleted: boolean;
-    rental_status: string;
-
-    // Giá và giảm giá
-    price_per_month: string;
-    discount_1_month: string;
-    discount_1_year: string;
-    discount_2_years: string;
-    discount_3_months: string;
-    discount_3_years_plus: string;
-    discount_6_months: string;
-    whole_warehouse_discount: string;
-
-    // Địa chỉ và vị trí
+  
+  // Location
     address_detail: string;
-    ward_id: string;
-    ward: Ward;
     latitude: string;
     longitude: string;
-
-    // Audit fields (thông tin theo dõi)
-    created_at: string;
-    created_by: string;
-    updated_at: string;
-    updated_by: string;
-    deleted_at: string | null;
-    deleted_by: string | null;
-
-    // Media và count
+    ward: Ward;
+    ward_id: string;
+  
+  // Status and type flags
+    is_cold_storage: boolean;
+    is_rented: boolean;
+    is_shared_warehouse: boolean;
+    rental_status: string;
+  
+  // Environmental controls
+    max_humidity: string;
+    min_humidity: string;
+    max_temperature: string;
+    min_temperature: string;
+    max_load_capacity: number | null;
+    total_weight_capacity: number | null;
+  
+  // Pricing
+    price_per_month: string;
+  
+  // Manager info
+    manager_name: string;
+    manager_email: string;
+    manager_phone: string;
+  
+  // Relations
+    addon_gifts: AddonGift[];
+    discount_configs: DiscountConfig[];
     images: WarehouseImage[];
-    _count: WarehouseCount;
-
-    // Prototype (nếu có)
-    __prototype__?: WarehousePrototype[];
-
-    // Rows (nếu có)
-    rows?: any[];
+    rows: RowTemplate[];
 }
 
-// Interface cho response API
-export interface WarehouseListResponse {
-    items: Warehouse[];
-    total: number;
-    limit: number;
-    offset: number;
-    hasMore: boolean;
-}
-
-// Interface cho query parameters
-export interface WarehouseQueryParams {
-    keywords?: string;
-    is_rented?: boolean;
-    is_shared_warehouse?: boolean;
-    is_active?: boolean;
-    rental_status?: string;
-    ward_id?: string;
-    province_id?: string;
-    min_price?: number;
-    max_price?: number;
-    min_area?: number;
-    max_area?: number;
-    page?: number;
-    limit?: number;
+// Create warehouse template interface
+export interface WarehouseRequest {
+  name: string;
+  description: string;
+  length: number;
+  width: number;
+  price_per_month: number;
+  discount_configs: {
+    duration_tier_id: string;
+    discount_percent: number;
+  }[];
+  is_shared_warehouse: boolean;
+  address_detail: string;
+  ward_id: string;
+  latitude: number;
+  longitude: number;
+  block_length: number;
+  block_width: number;
+  manager_name: string;
+  manager_phone: string;
+  manager_email: string;
+  ceiling_height: number;
+  amenity_ids: string[];
+  is_cold_storage: boolean;
+  min_temperature: number;
+  max_temperature: number;
+  min_humidity: number;
+  max_humidity: number;
+  is_active: boolean;
+  addon_gifts: {
+    addon_id: string;
+    is_until_service_end: boolean;
+    gift_duration_value: number;
+    gift_duration_unit: string;
+    is_active: boolean;
+  }[];
 }

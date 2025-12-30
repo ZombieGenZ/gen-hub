@@ -47,6 +47,11 @@ export class AuthService {
                 data.authorization.refresh_token
             );
             await this.verify_password(data.authorization.access_token, input.password);
+        } else {
+            authStorage.setTokens(
+                data.authorization.access_token,
+                data.authorization.refresh_token
+            );
         }
 
         return data;

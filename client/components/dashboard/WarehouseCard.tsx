@@ -19,25 +19,23 @@ export function WarehouseCard({ warehouse }: WarehouseCardProps) {
     const warehouseService = new WarehouseTemplateService()
 
     useEffect(() => {
-        const fetchImage = async () => {
+    const fetchImage = async () => {
+        if (!warehouse.images) return;
+        
         try {
-            setIsLoading(true)
-            const token = authStorage.getAccessToken()
-            if (token) {
-            const response = await warehouseService.getWarehouseImage(warehouse.id, token)
-            if (response?.data?.url) {
-                setImageUrl(response.data.url)
+            const response = await fetch(warehouse.images[0].url);
+            if (response.ok) {
+                setImageUrl(warehouse.images[0].url);
             }
-            }
+            setIsLoading(false);
         } catch (error) {
-            console.error('Error loading warehouse image:', error)
-        } finally {
-            setIsLoading(false)
+            console.error('Error loading image:', error);
+            setIsLoading(false);
         }
-        }
+    }
 
-        fetchImage()
-    }, [warehouse.id])
+    fetchImage();
+    }, [warehouse.id, warehouse.images]);  // Thêm các dependencies cần thiết
 
     return (
         <div
@@ -49,12 +47,16 @@ export function WarehouseCard({ warehouse }: WarehouseCardProps) {
                 <div className="w-full h-full flex items-center justify-center bg-slate-200 animate-pulse" />
                 ) : (
                 <Image
-                    src={imageUrl}
-                    alt={warehouse.name}
+                    src={imageUrl || '/placeholder.png'}
+                    alt={warehouse.name || 'Warehouse image'}
                     fill
                     className="object-cover transform group-hover:scale-110 transition-transform duration-500"
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                    onError={() => setImageUrl('/placeholder.png')}
+                    onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.onerror = null; // Prevent infinite loop
+                        target.src = '/placeholder.png';
+                    }}
                 />
                 )}
                 <div className="absolute top-3 right-3 flex gap-2 z-10">

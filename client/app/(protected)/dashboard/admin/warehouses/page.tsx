@@ -12,8 +12,6 @@ import { authStorage } from "@/services/auth/auth-storage.service";
 import { AuthService } from "@/services/auth/auth.service";
 
 // ... (other imports)
-
-const authService = new AuthService();
 const warehouseService = new WarehouseTemplateService();
 
 export default function WarehouseTemplatePage() {
@@ -94,7 +92,6 @@ export default function WarehouseTemplatePage() {
                     items = data.items;
                     total = data.total || 0;
                 }
-
                 setWarehouses(items);
                 setPagination(prev => ({
                     ...prev,

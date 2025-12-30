@@ -41,7 +41,7 @@ export default function LoginPage() {
         ...formData,
         turnstileToken
       })
-      console.log(response)
+      console.log(authStorage.getAccessToken())
       if (response) {
         authStorage.setTokens(
           response.authorization.access_token,

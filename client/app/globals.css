@@ -113,6 +113,37 @@ p {
 .bg-brand { background-color: hsl(var(--brand)); }
 .border-brand { border-color: hsl(var(--brand)); }
 
+/* Add to your globals.css */
+.notification-dropdown {
+  width: 24rem;
+  max-height: 32rem;
+  overflow-y: auto;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Custom scrollbar for notification dropdown */
+.notification-dropdown::-webkit-scrollbar {
+  width: 6px;
+}
+
+.notification-dropdown::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.notification-dropdown::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.dark .notification-dropdown::-webkit-scrollbar-track {
+  background: #334155;
+}
+
+.dark .notification-dropdown::-webkit-scrollbar-thumb {
+  background: #475569;
+}
+
 /* Accessibility */
 :focus-visible {
   outline: 2px solid hsl(var(--brand));

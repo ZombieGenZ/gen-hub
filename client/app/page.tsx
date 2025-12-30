@@ -11,11 +11,14 @@ import { PrimeNestTestimonials } from "@/components/landing/homepage/Testimonial
 import { PrimeNestFAQ } from "@/components/landing/homepage/FAQ";
 import { PrimeNestContact } from "@/components/landing/homepage/Contact";
 import { PrimeNestFooter } from "@/components/landing/homepage/Footer";
+import { authStorage } from "@/services/auth/auth-storage.service";
 
 export default function Home() {
+    const isLogin = authStorage.getAccessToken() !== null;
+    console.log(authStorage.getAccessToken());
     return (
         <div className="min-h-screen bg-white text-slate-900">
-            <PrimeNestHeader />
+            <PrimeNestHeader isLogin={isLogin} />
             <main>
                 <PrimeNestHero />
                 <PrimeNestSearch />
