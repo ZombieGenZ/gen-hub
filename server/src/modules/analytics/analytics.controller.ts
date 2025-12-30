@@ -14,8 +14,9 @@ import {
     ApiQuery,
 } from '@nestjs/swagger';
 import { CloudflareAnalyticsService } from './cloudflare-analytics.service';
-import { JwtAuthGuard } from '../../common/guards';
+import { Public } from '../../common/decorators';
 import { OkResponse, ResponseCode } from '../../common/responses';
+import { ConfigService } from '@nestjs/config';
 
 /**
  * Analytics Controller
@@ -26,11 +27,11 @@ import { OkResponse, ResponseCode } from '../../common/responses';
 export class AnalyticsController {
     constructor(
         private readonly cloudflareAnalyticsService: CloudflareAnalyticsService,
+        private readonly configService: ConfigService,
     ) { }
 
     @Get('traffic')
-    @UseGuards(JwtAuthGuard)
-    @ApiBearerAuth()
+    @Public()
     @HttpCode(HttpStatus.OK)
     @ApiOperation({ summary: 'Lấy thống kê traffic từ Cloudflare' })
     @ApiQuery({
@@ -53,15 +54,17 @@ export class AnalyticsController {
         @Query('startDate') startDate?: string,
         @Query('endDate') endDate?: string,
     ) {
-        // Mặc định lấy 7 ngày gần nhất
+        // Mặc định endDate là hôm nay
         const today = new Date();
         const defaultEndDate = today.toISOString().split('T')[0];
-        const defaultStartDate = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000)
-            .toISOString()
-            .split('T')[0];
+
+        // Mặc định startDate từ env CLOUDFLARE_START_ANALYTICS_DATE
+        const defaultStartDate = this.configService.get<string>(
+            'CLOUDFLARE_START_ANALYTICS_DATE',
+        );
 
         const result = await this.cloudflareAnalyticsService.getTrafficAnalytics(
-            startDate || defaultStartDate,
+            startDate || defaultStartDate || '2024-01-01',
             endDate || defaultEndDate,
         );
 
