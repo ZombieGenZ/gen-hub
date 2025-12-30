@@ -22,30 +22,30 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { PermissionGuard } from '../../common/guards/permission.guard';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator';
 import { GetResponse, OkResponse } from '../../common/responses';
-import type { IAccountBalance, IBalanceTransaction, IPaginatedResponse } from './interfaces';
+import type { IOrganizationBalance, IOrganizationBalanceTransaction, IPaginatedResponse } from './interfaces';
 
 /**
- * Controller Admin cho quản lý số dư
+ * Controller Admin cho quản lý số dư tổ chức
  */
-@ApiTags('Admin - Account Balance')
-@Controller('admin/account-balances')
+@ApiTags('Admin - Organization Balance')
+@Controller('admin/organization-balances')
 @UseGuards(JwtAuthGuard, PermissionGuard)
 @ApiBearerAuth()
 export class AccountBalanceAdminController {
     constructor(private readonly service: AccountBalanceService) { }
 
     /**
-     * Xem danh sách tất cả số dư
+     * Xem danh sách tất cả số dư tổ chức
      */
     @Get()
-    @RequirePermission('account-balance.list.all')
-    @ApiOperation({ summary: 'Xem danh sách số dư tất cả users (Admin)' })
+    @RequirePermission('organization-balance.list.all')
+    @ApiOperation({ summary: 'Xem danh sách số dư tất cả tổ chức (Admin)' })
     async findAll(
         @Req() req: Request,
         @Query('limit') limit?: number,
         @Query('offset') offset?: number,
         @Query('keywords') keywords?: string,
-    ): Promise<GetResponse<IPaginatedResponse<IAccountBalance>>> {
+    ): Promise<GetResponse<IPaginatedResponse<IOrganizationBalance>>> {
         const adminId = (req.user as any).id;
         const lang = (req.user as any).language || 'vi';
         const data = await this.service.findAll({ limit, offset, keywords }, adminId, lang);
@@ -53,37 +53,37 @@ export class AccountBalanceAdminController {
     }
 
     /**
-     * Xem số dư của user cụ thể
+     * Xem số dư của tổ chức cụ thể
      */
-    @Get(':userId')
-    @RequirePermission('account-balance.list.all')
-    @ApiOperation({ summary: 'Xem số dư của user cụ thể (Admin)' })
-    @ApiParam({ name: 'userId', description: 'ID của user' })
-    async findByUserId(
-        @Param('userId') userId: string,
+    @Get(':organizationId')
+    @RequirePermission('organization-balance.list.all')
+    @ApiOperation({ summary: 'Xem số dư của tổ chức cụ thể (Admin)' })
+    @ApiParam({ name: 'organizationId', description: 'ID của tổ chức' })
+    async findByOrganizationId(
+        @Param('organizationId') organizationId: string,
         @Req() req: Request,
-    ): Promise<GetResponse<IAccountBalance>> {
+    ): Promise<GetResponse<IOrganizationBalance>> {
         const adminId = (req.user as any).id;
         const lang = (req.user as any).language || 'vi';
-        const data = await this.service.findByUserId(userId, adminId, lang);
+        const data = await this.service.findByOrganizationId(organizationId, adminId, lang);
         return new GetResponse('account-balance.get', data);
     }
 
     /**
-     * Điều chỉnh số dư (thưởng/phạt)
+     * Điều chỉnh số dư tổ chức (thưởng/phạt)
      */
-    @Post(':userId/adjust')
-    @RequirePermission('account-balance.adjust')
-    @ApiOperation({ summary: 'Điều chỉnh số dư user (Admin)' })
-    @ApiParam({ name: 'userId', description: 'ID của user' })
+    @Post(':organizationId/adjust')
+    @RequirePermission('organization-balance.adjust')
+    @ApiOperation({ summary: 'Điều chỉnh số dư tổ chức (Admin)' })
+    @ApiParam({ name: 'organizationId', description: 'ID của tổ chức' })
     async adjustBalance(
-        @Param('userId') userId: string,
+        @Param('organizationId') organizationId: string,
         @Body() dto: AdjustBalanceDto,
         @Req() req: Request,
-    ): Promise<OkResponse<{ balance: IAccountBalance; transaction: IBalanceTransaction }>> {
+    ): Promise<OkResponse<{ balance: IOrganizationBalance; transaction: IOrganizationBalanceTransaction }>> {
         const adminId = (req.user as any).id;
         const lang = (req.user as any).language || 'vi';
-        const data = await this.service.adjustBalance(userId, dto, adminId, lang);
+        const data = await this.service.adjustBalance(organizationId, dto, adminId, lang);
         return new OkResponse('account-balance.adjust', data);
     }
 }

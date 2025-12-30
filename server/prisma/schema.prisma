@@ -112,10 +112,6 @@ model User {
   coupon_targets          CouponTargetUser[]
   coupon_schedule_targets CouponScheduleTargetUser[]
 
-  // Số dư tài khoản
-  account_balance      AccountBalance?
-  balance_transactions BalanceTransaction[]
-  payments             Payment[]
 
   @@map("users")
 }
@@ -1156,7 +1152,7 @@ model RentalContractCoupon {
 
 model Payment {
   id                   String         @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
-  user_id              String?        @db.Uuid  // User thực hiện thanh toán (cho deposit)
+  organization_id      String?        @db.Uuid  // Tổ chức thực hiện thanh toán
   rental_contract_id   String?        @db.Uuid  // Optional: chỉ có khi thanh toán hợp đồng
   payment_code         String         @unique
   sepay_transaction_id BigInt?        @unique
@@ -1180,14 +1176,14 @@ model Payment {
   is_deleted Boolean?  @default(false)
   deleted_at DateTime?
 
-  created_by String?
+  created_by String?  // User ID who created the payment
   updated_by String?
 
-  user            User?               @relation(fields: [user_id], references: [id], onDelete: SetNull)
+  organization    Organization?       @relation(fields: [organization_id], references: [id], onDelete: SetNull)
   rental_contract RentalContract?     @relation(fields: [rental_contract_id], references: [id], onDelete: Cascade)
   duration_tier   RentalDurationTier? @relation(fields: [duration_tier_id], references: [id])
 
-  @@index([user_id])
+  @@index([organization_id])
   @@index([rental_contract_id])
   @@index([payment_code])
   @@index([status])
@@ -1199,11 +1195,18 @@ model Payment {
 
 
 model Organization {
-  id         String   @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
-  name       String
-  is_active  Boolean? @default(true)
-  is_deleted Boolean? @default(false)
-  owner_id   String   @db.Uuid
+  id                String   @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  name              String
+  international_name String?  // Tên quốc tế
+  is_active         Boolean? @default(true)
+  is_deleted        Boolean? @default(false)
+  owner_id          String   @db.Uuid
+
+  // Thông tin doanh nghiệp
+  tax_code             String?  // Mã số thuế
+  headquarters_address String?  // Địa chỉ trụ sở
+  representative_name  String?  // Tên người đại diện
+  representative_title String?  // Chức danh người đại diện
 
   google_client_id      String? @db.Text
   google_client_secret  String? @db.Text
@@ -1242,6 +1245,11 @@ model Organization {
   audit_logs             OrganizationAuditLog[]
   api_key_logs           ApiKeyLog[]
   notifications          OrganizationNotification[]
+  payments               Payment[]
+
+  // Số dư tài khoản tổ chức
+  account_balance      OrganizationBalance?
+  balance_transactions OrganizationBalanceTransaction[]
 
   @@map("organizations")
 }
@@ -2965,10 +2973,10 @@ model DiagramConfig {
   @@map("diagram_configs")
 }
 
-// Số dư tài khoản người dùng
-model AccountBalance {
-  id      String  @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
-  user_id String  @unique @db.Uuid
+// Số dư tài khoản tổ chức
+model OrganizationBalance {
+  id              String  @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  organization_id String  @unique @db.Uuid
   
   balance         Decimal @default(0) @db.Decimal(19, 4)
   total_deposited Decimal @default(0) @db.Decimal(19, 4)
@@ -2981,17 +2989,19 @@ model AccountBalance {
   is_deleted Boolean?  @default(false)
   deleted_at DateTime?
 
-  user         User                 @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  transactions BalanceTransaction[]
+  organization Organization                      @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  transactions OrganizationBalanceTransaction[]
 
-  @@map("account_balances")
+  @@map("organization_balances")
 }
 
-// Lịch sử biến động số dư
-model BalanceTransaction {
-  id                 String                 @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
-  account_balance_id String                 @db.Uuid
-  user_id            String                 @db.Uuid
+// Lịch sử biến động số dư tổ chức
+model OrganizationBalanceTransaction {
+  id                      String                 @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  organization_balance_id String                 @db.Uuid
+  organization_id         String                 @db.Uuid
+  
+  performed_by_user_id    String?                @db.Uuid  // User thực hiện giao dịch
   
   type               BalanceTransactionType
   amount             Decimal                @db.Decimal(19, 4)
@@ -3007,13 +3017,13 @@ model BalanceTransaction {
   
   created_at DateTime @default(now())
 
-  account_balance AccountBalance @relation(fields: [account_balance_id], references: [id], onDelete: Cascade)
-  user            User           @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  organization_balance OrganizationBalance @relation(fields: [organization_balance_id], references: [id], onDelete: Cascade)
+  organization         Organization        @relation(fields: [organization_id], references: [id], onDelete: Cascade)
 
-  @@index([account_balance_id])
-  @@index([user_id])
+  @@index([organization_balance_id])
+  @@index([organization_id])
   @@index([type])
   @@index([reference_type, reference_id])
   @@index([created_at])
-  @@map("balance_transactions")
+  @@map("organization_balance_transactions")
 }

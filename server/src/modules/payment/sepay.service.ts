@@ -153,9 +153,10 @@ export class SepayService {
     }
 
     /**
-     * Tạo payment cho nạp tiền vào tài khoản
+     * Tạo payment cho nạp tiền vào tài khoản tổ chức
      */
     async createDepositPayment(options: {
+        organizationId: string;
         userId: string;
         amount: number;
         notes?: string;
@@ -173,10 +174,10 @@ export class SepayService {
         // Lưu payment vào database
         const payment = await this.prisma.payment.create({
             data: {
-                user_id: options.userId,
+                organization_id: options.organizationId,
                 payment_code: paymentCode,
                 amount: options.amount,
-                description: options.notes || `Nạp tiền vào tài khoản - ${paymentCode}`,
+                description: options.notes || `Nạp tiền vào tài khoản tổ chức - ${paymentCode}`,
                 type: PaymentType.ACCOUNT_DEPOSIT,
                 purpose: 'ACCOUNT_DEPOSIT',
                 status: PaymentStatus.PENDING,
@@ -187,11 +188,11 @@ export class SepayService {
         });
 
         this.systemLogService.info('payment', 'create_deposit',
-            `Created deposit payment for user: ${options.userId}`,
-            { userId: options.userId, metaData: { paymentId: payment.id, paymentCode, amount: options.amount } });
+            `Created deposit payment for organization: ${options.organizationId}`,
+            { userId: options.userId, metaData: { paymentId: payment.id, paymentCode, amount: options.amount, organizationId: options.organizationId } });
 
         // Emit socket event
-        this.websocketGateway.server.to(`user:${options.userId}`).emit('deposit:created', {
+        this.websocketGateway.server.to(`organization:${options.organizationId}`).emit('deposit:created', {
             paymentId: payment.id,
             paymentCode,
             amount: options.amount,
@@ -266,14 +267,15 @@ export class SepayService {
 
         // Xử lý theo loại payment
         if (payment.type === PaymentType.ACCOUNT_DEPOSIT) {
-            // Nạp tiền vào tài khoản
-            const userId = payment.user_id || payment.created_by;
-            if (userId) {
+            // Nạp tiền vào tài khoản tổ chức
+            const organizationId = payment.organization_id;
+            if (organizationId) {
                 await this.accountBalanceService.processDepositSuccess(
-                    userId,
+                    organizationId,
                     payment.amount,
                     payment.id,
                     payment.payment_code,
+                    payment.created_by,
                 );
             }
         } else if (payment.type === PaymentType.NEW_CONTRACT && payment.rental_contract_id) {

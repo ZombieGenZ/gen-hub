@@ -101,6 +101,16 @@
         "rate_limit_max_min": "Số request tối đa phải lớn hơn 0",
         "org_id_uuid": "ID tổ chức phải là UUID hợp lệ",
         "google_fields_required": "Google Client ID, Secret, Refresh Token và Email chính là bắt buộc khi sử dụng Google Email",
-        "google_credentials_invalid": "Xác thực thông tin Google thất bại. Vui lòng kiểm tra lại thông tin."
+        "google_credentials_invalid": "Xác thực thông tin Google thất bại. Vui lòng kiểm tra lại thông tin.",
+        "international_name_string": "Tên quốc tế phải là chuỗi",
+        "international_name_max_length": "Tên quốc tế không được quá 255 ký tự",
+        "tax_code_string": "Mã số thuế phải là chuỗi",
+        "tax_code_max_length": "Mã số thuế không được quá 20 ký tự",
+        "headquarters_address_string": "Địa chỉ trụ sở phải là chuỗi",
+        "headquarters_address_max_length": "Địa chỉ trụ sở không được quá 500 ký tự",
+        "representative_name_string": "Tên người đại diện phải là chuỗi",
+        "representative_name_max_length": "Tên người đại diện không được quá 255 ký tự",
+        "representative_title_string": "Chức danh người đại diện phải là chuỗi",
+        "representative_title_max_length": "Chức danh người đại diện không được quá 100 ký tự"
     }
 }

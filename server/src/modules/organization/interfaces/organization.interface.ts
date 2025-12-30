@@ -4,9 +4,17 @@
 export interface IOrganizationWithRelations {
     id: string;
     name: string;
+    international_name?: string | null;
     is_active: boolean | null;
     is_deleted: boolean | null;
     owner_id: string;
+
+    // Thông tin doanh nghiệp
+    tax_code?: string | null;
+    headquarters_address?: string | null;
+    representative_name?: string | null;
+    representative_title?: string | null;
+
     created_at: Date;
     updated_at: Date | null;
     deleted_at: Date | null;

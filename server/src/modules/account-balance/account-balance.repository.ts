@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma, BalanceTransactionType } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
-import { IAccountBalance, IBalanceTransaction, IPaginatedResponse } from './interfaces';
+import { IOrganizationBalance, IOrganizationBalanceTransaction, IPaginatedResponse } from './interfaces';
 import { QueryBalanceTransactionDto } from './dto';
 
 @Injectable()
@@ -9,30 +9,30 @@ export class AccountBalanceRepository {
     constructor(private readonly prisma: PrismaService) { }
 
     /**
-     * Lấy hoặc tạo AccountBalance cho user
+     * Lấy hoặc tạo OrganizationBalance cho organization
      */
-    async getOrCreateByUserId(userId: string): Promise<IAccountBalance> {
-        let balance = await this.prisma.accountBalance.findUnique({
-            where: { user_id: userId },
+    async getOrCreateByOrganizationId(organizationId: string): Promise<IOrganizationBalance> {
+        let balance = await this.prisma.organizationBalance.findUnique({
+            where: { organization_id: organizationId },
             include: {
-                user: {
-                    select: { id: true, name: true, email: true },
+                organization: {
+                    select: { id: true, name: true },
                 },
             },
         });
 
         if (!balance) {
-            balance = await this.prisma.accountBalance.create({
+            balance = await this.prisma.organizationBalance.create({
                 data: {
-                    user_id: userId,
+                    organization_id: organizationId,
                     balance: 0,
                     total_deposited: 0,
                     total_spent: 0,
                     total_refunded: 0,
                 },
                 include: {
-                    user: {
-                        select: { id: true, name: true, email: true },
+                    organization: {
+                        select: { id: true, name: true },
                     },
                 },
             });
@@ -42,14 +42,14 @@ export class AccountBalanceRepository {
     }
 
     /**
-     * Lấy AccountBalance theo user ID
+     * Lấy OrganizationBalance theo organization ID
      */
-    async findByUserId(userId: string): Promise<IAccountBalance | null> {
-        const balance = await this.prisma.accountBalance.findUnique({
-            where: { user_id: userId },
+    async findByOrganizationId(organizationId: string): Promise<IOrganizationBalance | null> {
+        const balance = await this.prisma.organizationBalance.findUnique({
+            where: { organization_id: organizationId },
             include: {
-                user: {
-                    select: { id: true, name: true, email: true },
+                organization: {
+                    select: { id: true, name: true },
                 },
             },
         });
@@ -58,14 +58,14 @@ export class AccountBalanceRepository {
     }
 
     /**
-     * Lấy AccountBalance theo ID
+     * Lấy OrganizationBalance theo ID
      */
-    async findById(id: string): Promise<IAccountBalance | null> {
-        const balance = await this.prisma.accountBalance.findUnique({
+    async findById(id: string): Promise<IOrganizationBalance | null> {
+        const balance = await this.prisma.organizationBalance.findUnique({
             where: { id },
             include: {
-                user: {
-                    select: { id: true, name: true, email: true },
+                organization: {
+                    select: { id: true, name: true },
                 },
             },
         });
@@ -74,41 +74,40 @@ export class AccountBalanceRepository {
     }
 
     /**
-     * Lấy danh sách tất cả AccountBalances (Admin)
+     * Lấy danh sách tất cả OrganizationBalances (Admin)
      */
     async findAll(query: {
         limit?: number;
         offset?: number;
         keywords?: string;
-    }): Promise<IPaginatedResponse<IAccountBalance>> {
+    }): Promise<IPaginatedResponse<IOrganizationBalance>> {
         const { limit = 20, offset = 0, keywords } = query;
 
-        const where: Prisma.AccountBalanceWhereInput = {
+        const where: Prisma.OrganizationBalanceWhereInput = {
             is_deleted: false,
         };
 
         if (keywords) {
-            where.user = {
+            where.organization = {
                 OR: [
                     { name: { contains: keywords, mode: 'insensitive' } },
-                    { email: { contains: keywords, mode: 'insensitive' } },
                 ],
             };
         }
 
         const [items, total] = await Promise.all([
-            this.prisma.accountBalance.findMany({
+            this.prisma.organizationBalance.findMany({
                 where,
                 take: limit,
                 skip: offset,
                 orderBy: { created_at: 'desc' },
                 include: {
-                    user: {
-                        select: { id: true, name: true, email: true },
+                    organization: {
+                        select: { id: true, name: true },
                     },
                 },
             }),
-            this.prisma.accountBalance.count({ where }),
+            this.prisma.organizationBalance.count({ where }),
         ]);
 
         return {
@@ -124,9 +123,10 @@ export class AccountBalanceRepository {
      * Cập nhật số dư và tạo transaction
      */
     async updateBalance(
-        userId: string,
+        organizationId: string,
         type: BalanceTransactionType,
         amount: number,
+        performedByUserId: string | null,
         options: {
             referenceType?: string;
             referenceId?: string;
@@ -134,17 +134,17 @@ export class AccountBalanceRepository {
             notes?: string;
             metadata?: Record<string, unknown>;
         } = {},
-    ): Promise<{ balance: IAccountBalance; transaction: IBalanceTransaction }> {
+    ): Promise<{ balance: IOrganizationBalance; transaction: IOrganizationBalanceTransaction }> {
         return this.prisma.$transaction(async (tx) => {
             // Lấy hoặc tạo balance
-            let accountBalance = await tx.accountBalance.findUnique({
-                where: { user_id: userId },
+            let organizationBalance = await tx.organizationBalance.findUnique({
+                where: { organization_id: organizationId },
             });
 
-            if (!accountBalance) {
-                accountBalance = await tx.accountBalance.create({
+            if (!organizationBalance) {
+                organizationBalance = await tx.organizationBalance.create({
                     data: {
-                        user_id: userId,
+                        organization_id: organizationId,
                         balance: 0,
                         total_deposited: 0,
                         total_spent: 0,
@@ -153,11 +153,11 @@ export class AccountBalanceRepository {
                 });
             }
 
-            const balanceBefore = Number(accountBalance.balance);
+            const balanceBefore = Number(organizationBalance.balance);
             let balanceChange = amount;
-            let newTotalDeposited = Number(accountBalance.total_deposited);
-            let newTotalSpent = Number(accountBalance.total_spent);
-            let newTotalRefunded = Number(accountBalance.total_refunded);
+            let newTotalDeposited = Number(organizationBalance.total_deposited);
+            let newTotalSpent = Number(organizationBalance.total_spent);
+            let newTotalRefunded = Number(organizationBalance.total_refunded);
 
             // Tính toán thay đổi dựa trên loại giao dịch
             switch (type) {
@@ -186,8 +186,8 @@ export class AccountBalanceRepository {
             const balanceAfter = balanceBefore + balanceChange;
 
             // Cập nhật balance
-            const updatedBalance = await tx.accountBalance.update({
-                where: { id: accountBalance.id },
+            const updatedBalance = await tx.organizationBalance.update({
+                where: { id: organizationBalance.id },
                 data: {
                     balance: balanceAfter,
                     total_deposited: newTotalDeposited,
@@ -196,17 +196,18 @@ export class AccountBalanceRepository {
                     updated_at: new Date(),
                 },
                 include: {
-                    user: {
-                        select: { id: true, name: true, email: true },
+                    organization: {
+                        select: { id: true, name: true },
                     },
                 },
             });
 
             // Tạo transaction record
-            const transaction = await tx.balanceTransaction.create({
+            const transaction = await tx.organizationBalanceTransaction.create({
                 data: {
-                    account_balance_id: accountBalance.id,
-                    user_id: userId,
+                    organization_balance_id: organizationBalance.id,
+                    organization_id: organizationId,
+                    performed_by_user_id: performedByUserId,
                     type,
                     amount: Math.abs(amount),
                     balance_before: balanceBefore,
@@ -227,16 +228,16 @@ export class AccountBalanceRepository {
     }
 
     /**
-     * Lấy danh sách giao dịch của user
+     * Lấy danh sách giao dịch của organization
      */
-    async findTransactionsByUserId(
-        userId: string,
+    async findTransactionsByOrganizationId(
+        organizationId: string,
         query: QueryBalanceTransactionDto,
-    ): Promise<IPaginatedResponse<IBalanceTransaction>> {
+    ): Promise<IPaginatedResponse<IOrganizationBalanceTransaction>> {
         const { limit = 20, offset = 0, type, keywords } = query;
 
-        const where: Prisma.BalanceTransactionWhereInput = {
-            user_id: userId,
+        const where: Prisma.OrganizationBalanceTransactionWhereInput = {
+            organization_id: organizationId,
         };
 
         if (type) {
@@ -251,13 +252,13 @@ export class AccountBalanceRepository {
         }
 
         const [items, total] = await Promise.all([
-            this.prisma.balanceTransaction.findMany({
+            this.prisma.organizationBalanceTransaction.findMany({
                 where,
                 take: limit,
                 skip: offset,
                 orderBy: { created_at: 'desc' },
             }),
-            this.prisma.balanceTransaction.count({ where }),
+            this.prisma.organizationBalanceTransaction.count({ where }),
         ]);
 
         return {
@@ -269,10 +270,10 @@ export class AccountBalanceRepository {
         };
     }
 
-    private toInterface(data: any): IAccountBalance {
+    private toInterface(data: any): IOrganizationBalance {
         return {
             id: data.id,
-            user_id: data.user_id,
+            organization_id: data.organization_id,
             balance: Number(data.balance),
             total_deposited: Number(data.total_deposited),
             total_spent: Number(data.total_spent),
@@ -282,15 +283,16 @@ export class AccountBalanceRepository {
             updated_at: data.updated_at,
             is_deleted: data.is_deleted,
             deleted_at: data.deleted_at,
-            user: data.user,
+            organization: data.organization,
         };
     }
 
-    private toTransactionInterface(data: any): IBalanceTransaction {
+    private toTransactionInterface(data: any): IOrganizationBalanceTransaction {
         return {
             id: data.id,
-            account_balance_id: data.account_balance_id,
-            user_id: data.user_id,
+            organization_balance_id: data.organization_balance_id,
+            organization_id: data.organization_id,
+            performed_by_user_id: data.performed_by_user_id,
             type: data.type,
             amount: Number(data.amount),
             balance_before: Number(data.balance_before),
@@ -301,6 +303,7 @@ export class AccountBalanceRepository {
             notes: data.notes,
             metadata: data.metadata,
             created_at: data.created_at,
+            performed_by_user: data.performed_by_user,
         };
     }
 }

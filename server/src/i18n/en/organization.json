@@ -101,6 +101,16 @@
         "rate_limit_max_min": "Max requests must be greater than 0",
         "org_id_uuid": "Organization ID must be a valid UUID",
         "google_fields_required": "Google Client ID, Secret, Refresh Token and Primary Email are required when using Google Email",
-        "google_credentials_invalid": "Failed to verify Google credentials. Please check your credentials."
+        "google_credentials_invalid": "Failed to verify Google credentials. Please check your credentials.",
+        "international_name_string": "International name must be a string",
+        "international_name_max_length": "International name cannot exceed 255 characters",
+        "tax_code_string": "Tax code must be a string",
+        "tax_code_max_length": "Tax code cannot exceed 20 characters",
+        "headquarters_address_string": "Headquarters address must be a string",
+        "headquarters_address_max_length": "Headquarters address cannot exceed 500 characters",
+        "representative_name_string": "Representative name must be a string",
+        "representative_name_max_length": "Representative name cannot exceed 255 characters",
+        "representative_title_string": "Representative title must be a string",
+        "representative_title_max_length": "Representative title cannot exceed 100 characters"
     }
 }

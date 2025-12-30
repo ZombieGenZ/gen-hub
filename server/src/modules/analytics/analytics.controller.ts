@@ -40,9 +40,19 @@ export class AnalyticsController {
         const endDate = today.toISOString().split('T')[0];
 
         // startDate từ env CLOUDFLARE_START_ANALYTICS_DATE
-        const startDate = this.configService.get<string>(
+        const configuredStartDate = this.configService.get<string>(
             'CLOUDFLARE_START_ANALYTICS_DATE',
         ) || '2024-01-01';
+
+        // Cloudflare có giới hạn tối đa 365 ngày (~31539600 giây)
+        // Đảm bảo startDate không vượt quá 364 ngày từ hôm nay
+        const maxDaysBack = 364;
+        const maxStartDate = new Date(today);
+        maxStartDate.setDate(maxStartDate.getDate() - maxDaysBack);
+        const maxStartDateStr = maxStartDate.toISOString().split('T')[0];
+
+        // Sử dụng ngày gần hơn (configured hoặc max allowed)
+        const startDate = configuredStartDate > maxStartDateStr ? configuredStartDate : maxStartDateStr;
 
         const result = await this.cloudflareAnalyticsService.getTrafficAnalytics(
             startDate,

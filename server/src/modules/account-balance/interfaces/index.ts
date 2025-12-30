@@ -1,11 +1,11 @@
 import { BalanceTransactionType } from '@prisma/client';
 
 /**
- * Interface cho AccountBalance
+ * Interface cho OrganizationBalance (số dư tổ chức)
  */
-export interface IAccountBalance {
+export interface IOrganizationBalance {
     id: string;
-    user_id: string;
+    organization_id: string;
     balance: number;
     total_deposited: number;
     total_spent: number;
@@ -15,20 +15,20 @@ export interface IAccountBalance {
     updated_at: Date | null;
     is_deleted: boolean | null;
     deleted_at: Date | null;
-    user?: {
+    organization?: {
         id: string;
         name: string;
-        email: string | null;
     };
 }
 
 /**
- * Interface cho BalanceTransaction
+ * Interface cho OrganizationBalanceTransaction (giao dịch số dư tổ chức)
  */
-export interface IBalanceTransaction {
+export interface IOrganizationBalanceTransaction {
     id: string;
-    account_balance_id: string;
-    user_id: string;
+    organization_balance_id: string;
+    organization_id: string;
+    performed_by_user_id: string | null;
     type: BalanceTransactionType;
     amount: number;
     balance_before: number;
@@ -39,6 +39,10 @@ export interface IBalanceTransaction {
     notes: string | null;
     metadata: Record<string, unknown> | null;
     created_at: Date;
+    performed_by_user?: {
+        id: string;
+        name: string;
+    };
 }
 
 /**

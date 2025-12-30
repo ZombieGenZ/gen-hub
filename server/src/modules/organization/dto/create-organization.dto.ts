@@ -25,6 +25,56 @@ export class CreateOrganizationDto {
     })
     name: string;
 
+    @ApiPropertyOptional({ description: 'Tên quốc tế', example: 'ABC Company' })
+    @IsOptional()
+    @IsString({
+        message: i18nValidationMessage('organization.validation.international_name_string'),
+    })
+    @MaxLength(255, {
+        message: i18nValidationMessage('organization.validation.international_name_max_length'),
+    })
+    international_name?: string;
+
+    @ApiPropertyOptional({ description: 'Mã số thuế', example: '0123456789' })
+    @IsOptional()
+    @IsString({
+        message: i18nValidationMessage('organization.validation.tax_code_string'),
+    })
+    @MaxLength(20, {
+        message: i18nValidationMessage('organization.validation.tax_code_max_length'),
+    })
+    tax_code?: string;
+
+    @ApiPropertyOptional({ description: 'Địa chỉ trụ sở', example: '123 Nguyễn Văn A, Quận 1, TP.HCM' })
+    @IsOptional()
+    @IsString({
+        message: i18nValidationMessage('organization.validation.headquarters_address_string'),
+    })
+    @MaxLength(500, {
+        message: i18nValidationMessage('organization.validation.headquarters_address_max_length'),
+    })
+    headquarters_address?: string;
+
+    @ApiPropertyOptional({ description: 'Tên người đại diện', example: 'Nguyễn Văn A' })
+    @IsOptional()
+    @IsString({
+        message: i18nValidationMessage('organization.validation.representative_name_string'),
+    })
+    @MaxLength(255, {
+        message: i18nValidationMessage('organization.validation.representative_name_max_length'),
+    })
+    representative_name?: string;
+
+    @ApiPropertyOptional({ description: 'Chức danh người đại diện', example: 'Giám đốc' })
+    @IsOptional()
+    @IsString({
+        message: i18nValidationMessage('organization.validation.representative_title_string'),
+    })
+    @MaxLength(100, {
+        message: i18nValidationMessage('organization.validation.representative_title_max_length'),
+    })
+    representative_title?: string;
+
     @ApiPropertyOptional({ description: 'Trạng thái hoạt động', default: true })
     @IsOptional()
     @IsBoolean({
