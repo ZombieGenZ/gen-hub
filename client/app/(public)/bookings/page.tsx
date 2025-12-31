@@ -11,10 +11,12 @@ import { Warehouse } from "@/types/warehoue_template/warehouse_template.type";
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { Calendar, Info, Phone, Mail, User, MapPin, ArrowRight } from "lucide-react";
 import Image from "next/image";
+import { useToast } from "@/contexts/ToastContext";
 
 function RentalRequestContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const { showToast } = useToast();
     const preSelectedWarehouseId = searchParams.get("warehouse_id");
 
     const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
@@ -79,7 +81,7 @@ function RentalRequestContent() {
 
     const handleSubmit = async () => {
         // Mock submission
-        alert("Yêu cầu thuê kho đã được gửi thành công! (Demo)");
+        showToast("Yêu cầu thuê kho đã được gửi thành công! (Demo)", 'success');
         router.push("/dashboard/warehouse_template");
     };
 

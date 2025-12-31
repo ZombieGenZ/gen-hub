@@ -8,11 +8,13 @@ import { useRouter } from "next/navigation"
 import { useTheme } from '../ThemeContext'
 import { authStorage } from '@/services/auth/auth-storage.service'
 import TurnstileWidget from '@/components/TurnstileWidget'
+import { useToast } from "@/contexts/ToastContext"
 
 const authServices = new AuthService()
 
 export default function LoginPage() {
   const router = useRouter()
+  const { showToast } = useToast()
   const { darkMode, toggleDarkMode } = useTheme()
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -28,10 +30,10 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (authStorage.isAuthenticated()) {
-      alert('Bạn đã đăng nhập!')
+      showToast('Bạn đã đăng nhập!', 'info')
       router.push('/')
     }
-  }, [router])
+  }, [router, showToast])
 
   const handleLogin = async () => {
     setLoading(true)
@@ -47,14 +49,14 @@ export default function LoginPage() {
           response.authorization.access_token,
           response.authorization.refresh_token
         )
-        alert("Đăng nhập thành công!")
+        showToast("Đăng nhập thành công!", 'success')
         router.push("/")
       } else {
-        alert("Đăng nhập thất bại!")
+        showToast("Đăng nhập thất bại!", 'error')
       }
     } catch (error) {
       console.error("Login error:", error)
-      alert("Có lỗi xảy ra!")
+      showToast("Có lỗi xảy ra!", 'error')
     } finally {
       setLoading(false)
     }

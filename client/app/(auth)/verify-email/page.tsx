@@ -6,12 +6,14 @@ import Link from 'next/link'
 import { CheckCircle2, XCircle } from 'lucide-react'
 import { AuthService } from '@/services/auth/auth.service'
 import { authStorage } from '@/services/auth/auth-storage.service'
+import { useToast } from "@/contexts/ToastContext"
 
 const authServices = new AuthService()
 
 function VerifyEmailContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { showToast } = useToast()
 
   const [isChecking, setIsChecking] = useState(true)
   const [isSuccess, setIsSuccess] = useState<boolean | null>(null)
@@ -24,7 +26,7 @@ function VerifyEmailContent() {
       setIsChecking(false)
       setIsSuccess(false)
       setMessage('Liên kết xác minh không hợp lệ hoặc đã hết hạn.')
-      alert('Liên kết xác minh không hợp lệ hoặc đã hết hạn.')
+      showToast('Liên kết xác minh không hợp lệ hoặc đã hết hạn.', 'error')
       router.replace('/error')
       return
     }

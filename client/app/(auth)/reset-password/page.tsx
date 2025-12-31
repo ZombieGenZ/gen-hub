@@ -5,12 +5,14 @@ import { useState, useEffect, Suspense } from 'react'
 import { Lock, Eye, EyeOff } from 'lucide-react'
 import Link from 'next/link'
 import { AuthService } from '@/services/auth/auth.service'
+import { useToast } from "@/contexts/ToastContext"
 
 const authServices = new AuthService()
 
 function ResetPasswordContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { showToast } = useToast()
   const [isCheckingToken, setIsCheckingToken] = useState(true)
   const [token, setToken] = useState<string | null>(null)
   const [password, setPassword] = useState('')
@@ -24,7 +26,7 @@ function ResetPasswordContent() {
     if (!t) {
       // Không có token -> chuyển sang trang 404
       router.replace('/error')
-      alert('token không hợp lệ hoặc không có token!')
+      showToast('token không hợp lệ hoặc không có token!', 'error')
       return
     }
     try {
@@ -35,24 +37,24 @@ function ResetPasswordContent() {
       }
     } catch (error) {
       console.error(error)
-      alert('Có lỗi xảy ra, vui lòng thử lại sau!')
+      showToast('Có lỗi xảy ra, vui lòng thử lại sau!', 'error')
     }
-  }, [searchParams, router])
+  }, [searchParams, router, showToast])
 
   // Nếu BE yêu cầu token từ query (?token=...), bạn có thể lấy bằng useSearchParams ở đây
   const handleSubmit = async () => {
     if (!password || !confirmPassword) {
-      alert('Vui lòng nhập đầy đủ thông tin!')
+      showToast('Vui lòng nhập đầy đủ thông tin!', 'warning')
       return
     }
 
     if (password !== confirmPassword) {
-      alert('Mật khẩu xác nhận không khớp!')
+      showToast('Mật khẩu xác nhận không khớp!', 'warning')
       return
     }
 
     if (!token) {
-      alert('Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn!')
+      showToast('Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn!', 'error')
       router.replace('/error')
       return
     }
@@ -68,15 +70,15 @@ function ResetPasswordContent() {
       })
 
       if (res) {
-        alert(res?.message || 'Đổi mật khẩu thành công, hãy đăng nhập lại!')
+        showToast(res?.message || 'Đổi mật khẩu thành công, hãy đăng nhập lại!', 'success')
         // Ví dụ: chuyển về trang login
         router.push('/login')
       } else {
-        alert(res?.message || 'Đổi mật khẩu thất bại!')
+        showToast(res?.message || 'Đổi mật khẩu thất bại!', 'error')
       }
     } catch (error) {
       console.error(error)
-      alert('Có lỗi xảy ra, vui lòng thử lại sau!')
+      showToast('Có lỗi xảy ra, vui lòng thử lại sau!', 'error')
     } finally {
       setLoading(false)
     }

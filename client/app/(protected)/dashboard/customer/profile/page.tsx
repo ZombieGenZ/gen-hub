@@ -16,6 +16,7 @@ import { AuthService } from '@/services/auth/auth.service'
 import { Enable2FAResponse } from '@/types/user/2fa.type'
 import { getCookie, removeCookie } from '@/lib/cookies'
 import { authStorage } from '@/services/auth/auth-storage.service'
+import { useToast } from "@/contexts/ToastContext"
 
 import {
   Drawer,
@@ -38,6 +39,7 @@ export default function ProfilePage() {
   const [twoFactorCode, setTwoFactorCode] = useState<string>('')
   const [isSubmitting2FA, setIsSubmitting2FA] = useState(false)
   const router = useRouter()
+  const { showToast } = useToast()
 
   // Theme state
   const [darkMode, setDarkMode] = useState(true)
@@ -91,7 +93,7 @@ export default function ProfilePage() {
     try {
       const token = authStorage.getAccessToken()
       if (!token) {
-        alert('Vui lòng đăng nhập lại')
+        showToast('Vui lòng đăng nhập lại', 'error')
         router.push('/login')
         return
       }
@@ -99,10 +101,12 @@ export default function ProfilePage() {
       const updatedUser = await userService.updateUser(token, { name })
       if (updatedUser) {
         setSaveMessage('Cập nhật thông tin thành công')
+        showToast('Cập nhật thông tin thành công', 'success')
       }
     } catch (error) {
       console.error('Error updating profile:', error)
       setSaveMessage('Có lỗi xảy ra khi cập nhật thông tin')
+      showToast('Có lỗi xảy ra khi cập nhật thông tin', 'error')
     } finally {
       setSaving(false)
     }
@@ -117,18 +121,18 @@ export default function ProfilePage() {
       if (token && accessVerificationToken) {
         const res = await userService.enableTwoFactor(token, accessVerificationToken)
         if (res) {
-          alert("Đã yêu cầu bật 2FA (Cần implement flow QR code)")
+          showToast("Đã yêu cầu bật 2FA (Cần implement flow QR code)", 'info')
           setEnable2FAData(res)
         } else {
-          alert("Bật 2FA thất bại")
+          showToast("Bật 2FA thất bại", 'error')
         }
       } else {
-        alert('Vui lòng đăng nhập lại')
+        showToast('Vui lòng đăng nhập lại', 'error')
         router.push('/login')
       }
     } catch (e) {
       console.error(e)
-      alert('Có lỗi xảy ra khi bật 2FA')
+      showToast('Có lỗi xảy ra khi bật 2FA', 'error')
     } finally {
       setEnabling2FA(false)
     }
@@ -140,20 +144,20 @@ export default function ProfilePage() {
         const token = authStorage.getAccessToken()
         const accessVerificationToken = authStorage.getVerificationToken()
         if (!token || !accessVerificationToken) {
-          alert('Vui lòng đăng nhập lại')
+          showToast('Vui lòng đăng nhập lại', 'error')
           router.push('/login')
           return
         }
 
         const success = await userService.disableTwoFactor(token, accessVerificationToken)
         if (success) {
-          alert('Đã tắt xác thực 2 yếu tố thành công')
+          showToast('Đã tắt xác thực 2 yếu tố thành công', 'success')
         } else {
-          alert('Tắt xác thực 2 yếu tố thất bại')
+          showToast('Tắt xác thực 2 yếu tố thất bại', 'error')
         }
       } catch (error) {
         console.error('Error disabling 2FA:', error)
-        alert('Có lỗi xảy ra khi tắt xác thực 2 yếu tố')
+        showToast('Có lỗi xảy ra khi tắt xác thực 2 yếu tố', 'error')
       }
     }
   }

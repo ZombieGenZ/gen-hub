@@ -8,11 +8,13 @@ import { useRouter } from 'next/navigation'
 import { useTheme } from '../ThemeContext'
 import { authStorage } from '@/services/auth/auth-storage.service';
 import TurnstileWidget from '@/components/TurnstileWidget'
+import { useToast } from "@/contexts/ToastContext"
 
 const authServices = new AuthService();
 
 export default function RegisterPage() {
   const router = useRouter()
+  const { showToast } = useToast()
   const { darkMode, toggleDarkMode } = useTheme()
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -29,14 +31,14 @@ export default function RegisterPage() {
 
   useEffect(() => {
     if (authStorage.isAuthenticated()) {
-      alert('Bạn đã đăng nhập!')
+      showToast('Bạn đã đăng nhập!', 'info')
       router.push('/')
     }
   }, [])
 
   const handleRegister = async () => {
     if (!formData.name || !formData.email || !formData.password) {
-      alert('Vui lòng nhập đầy đủ thông tin!')
+      showToast('Vui lòng nhập đầy đủ thông tin!', 'warning')
       return
     }
 
@@ -48,14 +50,14 @@ export default function RegisterPage() {
       })
       console.log(response)
       if (response.success) {
-        alert('Đăng ký thành công!')
+        showToast('Đăng ký thành công!', 'success')
         router.push('/login')
       } else {
-        alert('Đăng ký thất bại!')
+        showToast('Đăng ký thất bại!', 'error')
       }
     } catch (error) {
       console.error('Register error:', error)
-      alert('Có lỗi xảy ra!')
+      showToast('Có lỗi xảy ra!', 'error')
     } finally {
       setLoading(false)
     }
