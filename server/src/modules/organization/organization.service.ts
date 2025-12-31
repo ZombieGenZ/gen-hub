@@ -117,6 +117,13 @@ export class OrganizationService {
     // Tạo organization
     const org = await this.repository.create({
       name: dto.name,
+      international_name: dto.international_name,
+      tax_code: dto.tax_code,
+      headquarters_address: dto.headquarters_address,
+      representative_name: dto.representative_name,
+      representative_title: dto.representative_title,
+      representative_phone: dto.representative_phone,
+      representative_email: dto.representative_email,
       is_active: dto.is_active ?? true,
       owner: { connect: { id: userId } },
       created_by: userId,

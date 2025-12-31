@@ -75,6 +75,32 @@ export class CreateOrganizationDto {
     })
     representative_title?: string;
 
+    @ApiPropertyOptional({ description: 'Số điện thoại người đại diện', example: '0901234567' })
+    @IsOptional()
+    @IsString({
+        message: i18nValidationMessage('organization.validation.representative_phone_string'),
+    })
+    @MaxLength(20, {
+        message: i18nValidationMessage('organization.validation.representative_phone_max_length'),
+    })
+    representative_phone?: string;
+
+    @ApiPropertyOptional({ description: 'Email người đại diện', example: 'representative@company.com' })
+    @IsOptional()
+    @IsString({
+        message: i18nValidationMessage('organization.validation.representative_email_string'),
+    })
+    @IsEmail(
+        {},
+        {
+            message: i18nValidationMessage('organization.validation.representative_email_invalid'),
+        },
+    )
+    @MaxLength(255, {
+        message: i18nValidationMessage('organization.validation.representative_email_max_length'),
+    })
+    representative_email?: string;
+
     @ApiPropertyOptional({ description: 'Trạng thái hoạt động', default: true })
     @IsOptional()
     @IsBoolean({

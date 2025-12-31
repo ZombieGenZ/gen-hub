@@ -14,6 +14,8 @@ export interface IOrganizationWithRelations {
     headquarters_address?: string | null;
     representative_name?: string | null;
     representative_title?: string | null;
+    representative_phone?: string | null;
+    representative_email?: string | null;
 
     created_at: Date;
     updated_at: Date | null;

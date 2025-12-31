@@ -108,14 +108,12 @@ model User {
   backupCodes             BackupCode[]
   notifications           UserNotification[]
   saved_coupons           UserSavedCoupon[]
-  
+
   coupon_targets          CouponTargetUser[]
   coupon_schedule_targets CouponScheduleTargetUser[]
 
-
   @@map("users")
 }
-
 
 model RefreshToken {
   id         String    @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
@@ -399,9 +397,9 @@ model WarehouseTemplate {
 
   is_shared_warehouse Boolean @default(false)
 
-  rental_status            TemplateRentalStatus @default(AVAILABLE)
-  is_rented                Boolean              @default(false)
-  price_per_month          Decimal              @db.Decimal(19, 4)
+  rental_status   TemplateRentalStatus @default(AVAILABLE)
+  is_rented       Boolean              @default(false)
+  price_per_month Decimal              @db.Decimal(19, 4)
 
   address_detail String?
   ward_id        String? @db.Uuid
@@ -445,7 +443,7 @@ model WarehouseTemplate {
   discount_configs        WarehouseDiscountConfig[]
   addon_gifts             WarehouseAddonGift[]
   insurance_gifts         WarehouseInsuranceGift[]
-  
+
   coupon_targets          CouponTargetWarehouse[]
   coupon_schedule_targets CouponScheduleTargetWarehouse[]
 
@@ -481,11 +479,11 @@ model RentalDurationTier {
 }
 
 model Addon {
-  id                 String        @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  id                 String  @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
   name               String
   description        String?
-  price              Decimal       @db.Decimal(19, 4)
-  is_monthly_payment Boolean       @default(false)
+  price              Decimal @db.Decimal(19, 4)
+  is_monthly_payment Boolean @default(false)
 
   is_active  Boolean   @default(true)
   created_at DateTime  @default(now())
@@ -501,10 +499,10 @@ model Addon {
   warehouse_gifts  WarehouseAddonGift[]
   row_gifts        RowAddonGift[]
   rental_contracts RentalContractAddon[]
-  
+
   coupon_targets          CouponTargetAddon[]
   coupon_schedule_targets CouponScheduleTargetAddon[]
-  
+
   coupon_gifts          CouponGiftAddon[]
   coupon_schedule_gifts CouponScheduleGiftAddon[]
 
@@ -732,7 +730,7 @@ model RowAddonGift {
 }
 
 model Coupon {
-  id          String             @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  id          String  @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
   name        String
   description String?
   code        String
@@ -768,17 +766,17 @@ model Coupon {
   is_public              Boolean @default(false)
   apply_for_first_rental Boolean @default(true)
   apply_for_renewal      Boolean @default(true)
-  
+
   apply_for_all_warehouses Boolean @default(true)
   apply_for_all_rows       Boolean @default(true)
   apply_for_all_addons     Boolean @default(true)
-  
+
   is_unlimited_stack Boolean @default(false)
   max_stack_count    Int?
-  
+
   has_gift_addons     Boolean @default(false)
   has_gift_insurances Boolean @default(false)
-  
+
   schedule_id String?         @db.Uuid
   schedule    CouponSchedule? @relation(fields: [schedule_id], references: [id])
 
@@ -792,14 +790,14 @@ model Coupon {
   updated_by String?
   deleted_by String?
 
-  saved_by_users    UserSavedCoupon[]
-  rental_contracts  RentalContractCoupon[]
-  
+  saved_by_users   UserSavedCoupon[]
+  rental_contracts RentalContractCoupon[]
+
   target_users      CouponTargetUser[]
   target_warehouses CouponTargetWarehouse[]
   target_rows       CouponTargetRow[]
   target_addons     CouponTargetAddon[]
-  
+
   gift_addons     CouponGiftAddon[]
   gift_insurances CouponGiftInsurance[]
 
@@ -812,12 +810,11 @@ model Coupon {
   @@map("coupons")
 }
 
-
 model CouponSchedule {
-  id          String  @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  id          String               @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
   name        String
   description String?
-  period CouponSchedulePeriod
+  period      CouponSchedulePeriod
 
   coupon_type CouponType @default(PUBLIC)
 
@@ -835,7 +832,7 @@ model CouponSchedule {
   use_prefix Boolean @default(false)
 
   is_permanent_coupon   Boolean             @default(false)
-  coupon_duration_value Int? 
+  coupon_duration_value Int?
   coupon_duration_unit  CouponDurationUnit?
 
   discount_value Decimal            @db.Decimal(19, 4)
@@ -861,14 +858,14 @@ model CouponSchedule {
   is_public              Boolean @default(false)
   apply_for_first_rental Boolean @default(true)
   apply_for_renewal      Boolean @default(true)
-  
+
   apply_for_all_warehouses Boolean @default(true)
   apply_for_all_rows       Boolean @default(true)
   apply_for_all_addons     Boolean @default(true)
-  
+
   is_unlimited_stack Boolean @default(false)
   max_stack_count    Int?
-  
+
   has_gift_addons     Boolean @default(false)
   has_gift_insurances Boolean @default(false)
 
@@ -886,19 +883,18 @@ model CouponSchedule {
   deleted_by String?
 
   created_coupons Coupon[]
-  
+
   target_users      CouponScheduleTargetUser[]
   target_warehouses CouponScheduleTargetWarehouse[]
   target_rows       CouponScheduleTargetRow[]
   target_addons     CouponScheduleTargetAddon[]
-  
+
   gift_addons     CouponScheduleGiftAddon[]
   gift_insurances CouponScheduleGiftInsurance[]
 
   @@index([coupon_type])
   @@map("coupon_schedules")
 }
-
 
 model UserSavedCoupon {
   id        String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
@@ -1034,7 +1030,7 @@ model RowTemplate {
   discount_configs   RowDiscountConfig[]
   addon_gifts        RowAddonGift[]
   insurance_gifts    RowInsuranceGift[]
-  
+
   coupon_targets          CouponTargetRow[]
   coupon_schedule_targets CouponScheduleTargetRow[]
 
@@ -1058,9 +1054,9 @@ model RackTemplate {
   dimensions_height Decimal? @db.Decimal(10, 4)
 
   default_block_max_weight_capacity Decimal? @db.Decimal(19, 4)
-  total_weight_capacity Decimal? @db.Decimal(19, 4)
-  total_height Decimal? @db.Decimal(10, 4)
-  overload_threshold_percent Decimal? @default(10) @db.Decimal(5, 2)
+  total_weight_capacity             Decimal? @db.Decimal(19, 4)
+  total_height                      Decimal? @db.Decimal(10, 4)
+  overload_threshold_percent        Decimal? @default(10) @db.Decimal(5, 2)
 
   is_active  Boolean   @default(true)
   created_at DateTime  @default(now())
@@ -1086,7 +1082,7 @@ model ShelfTemplate {
   code             String
   description      String?
 
-  height Decimal? @db.Decimal(10, 4)
+  height                Decimal? @db.Decimal(10, 4)
   total_weight_capacity Decimal? @db.Decimal(19, 4)
 
   is_active  Boolean   @default(true)
@@ -1120,7 +1116,7 @@ model BlockTemplate {
   dimensions_height Decimal? @db.Decimal(10, 4)
 
   max_weight_capacity Decimal? @db.Decimal(19, 4)
-  height Decimal? @db.Decimal(10, 4)
+  height              Decimal? @db.Decimal(10, 4)
 
   is_active  Boolean   @default(true)
   created_at DateTime  @default(now())
@@ -1230,11 +1226,11 @@ model RentalContractAddon {
   rental_contract_id String @db.Uuid
   addon_id           String @db.Uuid
 
-  price_at_purchase Decimal @db.Decimal(19, 4)
-  is_gift      Boolean   @default(false)
-  is_cancelled Boolean   @default(false)
-  cancelled_at DateTime?
-  cancel_reason String?
+  price_at_purchase Decimal   @db.Decimal(19, 4)
+  is_gift           Boolean   @default(false)
+  is_cancelled      Boolean   @default(false)
+  cancelled_at      DateTime?
+  cancel_reason     String?
 
   is_active  Boolean   @default(true)
   created_at DateTime  @default(now())
@@ -1344,20 +1340,20 @@ model Payment {
   @@map("payments")
 }
 
-
-
 model Organization {
-  id                String   @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
-  name              String
+  id                 String   @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  name               String
   international_name String?
-  is_active         Boolean? @default(true)
-  is_deleted        Boolean? @default(false)
-  owner_id          String   @db.Uuid
+  is_active          Boolean? @default(true)
+  is_deleted         Boolean? @default(false)
+  owner_id           String   @db.Uuid
 
   tax_code             String?
   headquarters_address String?
   representative_name  String?
   representative_title String?
+  representative_phone String?
+  representative_email String?
 
   google_client_id      String? @db.Text
   google_client_secret  String? @db.Text
@@ -1555,9 +1551,8 @@ model ApiKey {
   last_used_ip    String?
   allowed_origins String[]  @default([])
 
-  rate_limit_ttl  Int       @default(60)
-  rate_limit_max  Int       @default(100)
-
+  rate_limit_ttl Int @default(60)
+  rate_limit_max Int @default(100)
 
   organization_id String       @db.Uuid
   organization    Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
@@ -1859,9 +1854,9 @@ model Rack {
   dimensions_height Decimal? @db.Decimal(10, 4)
 
   default_block_max_weight_capacity Decimal? @db.Decimal(19, 4)
-  total_weight_capacity Decimal? @db.Decimal(19, 4)
-  total_height Decimal? @db.Decimal(10, 4)
-  overload_threshold_percent Decimal? @default(10) @db.Decimal(5, 2)
+  total_weight_capacity             Decimal? @db.Decimal(19, 4)
+  total_height                      Decimal? @db.Decimal(10, 4)
+  overload_threshold_percent        Decimal? @default(10) @db.Decimal(5, 2)
 
   row     Row     @relation(fields: [row_id], references: [id], onDelete: Cascade)
   shelves Shelf[]
@@ -1871,22 +1866,22 @@ model Rack {
 }
 
 model Shelf {
-  id                  String    @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
-  rack_id             String    @db.Uuid
+  id                  String   @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  rack_id             String   @db.Uuid
   name                String
   code                String
   description         String?
-  assigned_product_id String?   @db.Uuid
-  product             Product?  @relation(fields: [assigned_product_id], references: [id])
+  assigned_product_id String?  @db.Uuid
+  product             Product? @relation(fields: [assigned_product_id], references: [id])
 
-  height Decimal? @db.Decimal(10, 4)
+  height                Decimal? @db.Decimal(10, 4)
   total_weight_capacity Decimal? @db.Decimal(19, 4)
 
-  is_active           Boolean   @default(true)
-  created_at          DateTime  @default(now())
-  updated_at          DateTime  @updatedAt
-  is_deleted          Boolean?  @default(false)
-  deleted_at          DateTime?
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  is_deleted Boolean?  @default(false)
+  deleted_at DateTime?
 
   created_by String
   updated_by String?
@@ -1921,8 +1916,8 @@ model Block {
   dimensions_height Decimal? @db.Decimal(10, 4)
 
   max_weight_capacity Decimal? @db.Decimal(19, 4)
-  height Decimal? @db.Decimal(10, 4)
-  is_overloaded Boolean @default(false)
+  height              Decimal? @db.Decimal(10, 4)
+  is_overloaded       Boolean  @default(false)
 
   shelf              Shelf             @relation(fields: [shelf_id], references: [id], onDelete: Cascade)
   inventories        Inventory[]
@@ -2390,7 +2385,7 @@ model DatabaseLog {
   primary_key_column String?
   trigger_operation  String?
   query_type         String?
-  affected_rows      Int?      @default(1)
+  affected_rows      Int?    @default(1)
   execution_time_ms  Int?
 
   old_data Json?
@@ -3171,7 +3166,7 @@ model DiagramConfig {
   name    String @default("default")
 
   node_positions Json?
-  table_colors Json?
+  table_colors   Json?
 
   show_relations Boolean @default(true)
   dark_mode      Boolean @default(true)
@@ -3185,45 +3180,45 @@ model DiagramConfig {
 }
 
 model OrganizationBalance {
-  id              String  @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
-  organization_id String  @unique @db.Uuid
-  
+  id              String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  organization_id String @unique @db.Uuid
+
   balance         Decimal @default(0) @db.Decimal(19, 4)
   total_deposited Decimal @default(0) @db.Decimal(19, 4)
   total_spent     Decimal @default(0) @db.Decimal(19, 4)
   total_refunded  Decimal @default(0) @db.Decimal(19, 4)
-  
+
   is_active  Boolean   @default(true)
   created_at DateTime  @default(now())
   updated_at DateTime? @updatedAt
   is_deleted Boolean?  @default(false)
   deleted_at DateTime?
 
-  organization Organization                      @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  organization Organization                     @relation(fields: [organization_id], references: [id], onDelete: Cascade)
   transactions OrganizationBalanceTransaction[]
 
   @@map("organization_balances")
 }
 
 model OrganizationBalanceTransaction {
-  id                      String                 @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
-  organization_balance_id String                 @db.Uuid
-  organization_id         String                 @db.Uuid
-  
-  performed_by_user_id    String?                @db.Uuid
-  
-  type               BalanceTransactionType
-  amount             Decimal                @db.Decimal(19, 4)
-  balance_before     Decimal                @db.Decimal(19, 4)
-  balance_after      Decimal                @db.Decimal(19, 4)
-  
-  reference_type     BalanceReferenceType?
-  reference_id       String?  @db.Uuid
-  
-  description        String?
-  notes              String?  @db.Text
-  metadata           Json?
-  
+  id                      String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  organization_balance_id String @db.Uuid
+  organization_id         String @db.Uuid
+
+  performed_by_user_id String? @db.Uuid
+
+  type           BalanceTransactionType
+  amount         Decimal                @db.Decimal(19, 4)
+  balance_before Decimal                @db.Decimal(19, 4)
+  balance_after  Decimal                @db.Decimal(19, 4)
+
+  reference_type BalanceReferenceType?
+  reference_id   String?               @db.Uuid
+
+  description String?
+  notes       String? @db.Text
+  metadata    Json?
+
   created_at DateTime @default(now())
 
   organization_balance OrganizationBalance @relation(fields: [organization_balance_id], references: [id], onDelete: Cascade)
