@@ -2,8 +2,18 @@
 
 import React from "react";
 import Link from "next/link";
+import UserDropdown from "@/components/ui/UserDropdown";
 
-export function PrimeNestHeader({ isLogin }: { isLogin: boolean }) {
+interface HeaderProps {
+    isLogin: boolean;
+    user?: {
+        name?: string;
+        email?: string;
+        avatar?: string;
+    };
+}
+
+export function PrimeNestHeader({ isLogin, user }: HeaderProps) {
     return (
         <header className="sticky top-4 z-50 px-4 flex justify-center">
             <div className="w-full max-w-[1440px] bg-white rounded-full shadow-sm px-6 py-4 flex items-center justify-between">
@@ -24,9 +34,7 @@ export function PrimeNestHeader({ isLogin }: { isLogin: boolean }) {
                 {/* Right Actions */}
                 {isLogin ? 
                     <div className="hidden md:flex items-center gap-4">
-                        <Link href="/user/profile" className="text-sm font-medium text-slate-600 hover:text-[#0F766E] transition-colors">
-                            Tài khoản
-                        </Link>
+                        <UserDropdown user={user} />
                     </div>
                     : 
                     <div className="hidden md:flex items-center gap-4">
