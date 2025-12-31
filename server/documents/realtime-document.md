@@ -102,6 +102,8 @@ socket.on('pong', () => {
 | Global (All) | Template Image: `warehouseTemplateImage:created`, `warehouseTemplateImage:updated`, `warehouseTemplateImage:deleted`, `warehouseTemplateImage:deletedMany` |
 | Global (All) | Notification: `globalNotification:created`, `globalNotification:updated`, `globalNotification:deleted` |
 | Global (All) | Amenity: `amenity:created`, `amenity:updated`, `amenity:deleted`, `amenity:deletedMany` |
+| Global (All) | Addon: `addon:created`, `addon:updated`, `addon:deleted`, `addon:deletedMany` |
+| Global (All) | Insurance: `insurance:created`, `insurance:updated`, `insurance:deleted`, `insurance:deletedMany` |
 | Global (All) | CouponSchedule: `couponSchedule:created`, `couponSchedule:updated`, `couponSchedule:deleted`, `couponSchedule:deletedMany`, `couponSchedule:executed` |
 | Global (All) | Config: `config:updated` |
 | Global (All) | User: `user:onlineStatus` |
@@ -1377,5 +1379,83 @@ export default SocketManager;
   "lastOnline": null, // or ISO timestamp if offline
   "timestamp": "2024-03-20T10:00:00Z"
 }
+```
+
+---
+
+## 🛡️ Insurance Events (Global Broadcast)
+
+### `insurance:created`
+**Khi nào:** Khi admin tạo bảo hiểm mới
+**Room:** Global (All clients)
+
+```javascript
+socket.on('insurance:created', (data) => {
+  // {
+  //   "insuranceId": "550e8400-e29b-41d4-a716-446655440000",
+  //   "name": "Bảo hiểm hàng hóa cơ bản",
+  //   "createdBy": "admin-uuid",
+  //   "timestamp": "2025-12-17T10:00:00.000Z"
+  // }
+  
+  refreshInsuranceList();
+});
+```
+
+---
+
+### `insurance:updated`
+**Khi nào:** Khi admin cập nhật bảo hiểm
+**Room:** Global (All clients)
+
+```javascript
+socket.on('insurance:updated', (data) => {
+  // {
+  //   "insuranceId": "550e8400-e29b-41d4-a716-446655440000",
+  //   "name": "Bảo hiểm hàng hóa nâng cao",
+  //   "updatedFields": ["name", "price"],
+  //   "updatedBy": "admin-uuid",
+  //   "timestamp": "2025-12-17T10:00:00.000Z"
+  // }
+  
+  updateInsuranceInList(data);
+});
+```
+
+---
+
+### `insurance:deleted`
+**Khi nào:** Khi admin xóa bảo hiểm
+**Room:** Global (All clients)
+
+```javascript
+socket.on('insurance:deleted', (data) => {
+  // {
+  //   "insuranceId": "550e8400-e29b-41d4-a716-446655440000",
+  //   "name": "Bảo hiểm hàng hóa cơ bản",
+  //   "deletedBy": "admin-uuid",
+  //   "timestamp": "2025-12-17T10:00:00.000Z"
+  // }
+  
+  removeInsuranceFromList(data.insuranceId);
+});
+```
+
+---
+
+### `insurance:deletedMany`
+**Khi nào:** Khi admin xóa nhiều bảo hiểm
+**Room:** Global (All clients)
+
+```javascript
+socket.on('insurance:deletedMany', (data) => {
+  // {
+  //   "insuranceIds": ["id1", "id2", "id3"],
+  //   "deletedBy": "admin-uuid",
+  //   "timestamp": "2025-12-17T10:00:00.000Z"
+  // }
+  
+  data.insuranceIds.forEach(removeInsuranceFromList);
+});
 ```
 

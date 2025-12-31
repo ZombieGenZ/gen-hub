@@ -215,12 +215,14 @@ export class CouponScheduleService {
 
         const nextRunAt = this.calculateNextRunAt(dto);
 
-        // Tách các trường target_*_ids ra khỏi dto để xử lý riêng
+        // Tách các trường target_*_ids và gift_*_ids ra khỏi dto để xử lý riêng
         const {
             target_user_ids,
             target_warehouse_ids,
             target_row_ids,
             target_addon_ids,
+            gift_addon_ids,
+            gift_insurance_ids,
             ...restDto
         } = dto;
 
@@ -260,6 +262,16 @@ export class CouponScheduleService {
         }
 
         const schedule = await this.repository.create(createData);
+
+        // Handle gift addons
+        if (dto.has_gift_addons && gift_addon_ids?.length) {
+            await this.repository.createGiftAddons(schedule.id, gift_addon_ids);
+        }
+
+        // Handle gift insurances
+        if (dto.has_gift_insurances && gift_insurance_ids?.length) {
+            await this.repository.createGiftInsurances(schedule.id, gift_insurance_ids);
+        }
 
         await this.invalidateListCache();
 
@@ -380,11 +392,30 @@ export class CouponScheduleService {
             nextRunAt = this.calculateNextRunAt(mergedDto);
         }
 
+        // Tách gift fields ra khỏi dto
+        const { gift_addon_ids, gift_insurance_ids, ...updateDto } = dto;
+
         const updated = await this.repository.update(id, {
-            ...dto,
+            ...updateDto,
             next_run_at: nextRunAt,
             updated_by: userId,
         });
+
+        // Handle gift addons update
+        if (gift_addon_ids !== undefined) {
+            await this.repository.deleteGiftAddons(id);
+            if (dto.has_gift_addons && gift_addon_ids?.length) {
+                await this.repository.createGiftAddons(id, gift_addon_ids);
+            }
+        }
+
+        // Handle gift insurances update
+        if (gift_insurance_ids !== undefined) {
+            await this.repository.deleteGiftInsurances(id);
+            if (dto.has_gift_insurances && gift_insurance_ids?.length) {
+                await this.repository.createGiftInsurances(id, gift_insurance_ids);
+            }
+        }
 
         await this.invalidateCache(id);
         await this.invalidateListCache();

@@ -52,7 +52,7 @@ export class RentalDurationTierService {
             );
         }
 
-        const { addon_gifts, ...tierData } = dto;
+        const { addon_gifts, insurance_gifts, ...tierData } = dto;
         const tier = await this.repository.create({
             ...tierData,
             created_by: userId,
@@ -79,13 +79,34 @@ export class RentalDurationTierService {
             }
         }
 
+        // Tạo TierInsuranceGifts nếu có
+        if (insurance_gifts && insurance_gifts.length > 0) {
+            for (const gift of insurance_gifts) {
+                await this.repository.createInsuranceGift({
+                    duration_tier_id: tier.id,
+                    insurance_id: gift.insurance_id,
+                    require_min_order_amount: gift.require_min_order_amount,
+                    min_order_amount: gift.min_order_amount,
+                    require_min_warehouses: gift.require_min_warehouses,
+                    min_warehouses: gift.min_warehouses,
+                    require_min_rows: gift.require_min_rows,
+                    min_rows: gift.min_rows,
+                    is_until_service_end: gift.is_until_service_end,
+                    gift_duration_value: gift.gift_duration_value,
+                    gift_duration_unit: gift.gift_duration_unit,
+                    is_active: gift.is_active,
+                    created_by: userId,
+                });
+            }
+        }
+
         // Xóa cache list
         await this.invalidateListCache();
 
         // Ghi log
         this.systemLogService.info('RentalDurationTier', 'CREATE', `Tạo mốc thời gian thuê: ${tier.name}`, {
             userId,
-            metaData: { tierId: tier.id, name: tier.name, duration_value: tier.duration_value, addon_gifts_count: addon_gifts?.length || 0 },
+            metaData: { tierId: tier.id, name: tier.name, duration_value: tier.duration_value, addon_gifts_count: addon_gifts?.length || 0, insurance_gifts_count: insurance_gifts?.length || 0 },
         });
 
         // Emit socket event
@@ -98,7 +119,7 @@ export class RentalDurationTierService {
             timestamp: new Date().toISOString(),
         });
 
-        // Return với addon_gifts
+        // Return với addon_gifts và insurance_gifts
         return (await this.repository.findByIdWithGifts(tier.id))!;
     }
 
@@ -212,7 +233,7 @@ export class RentalDurationTierService {
             }
         }
 
-        const { addon_gifts, ...tierData } = dto;
+        const { addon_gifts, insurance_gifts, ...tierData } = dto;
         const updated = await this.repository.update(id, {
             ...tierData,
             updated_by: userId,
@@ -226,7 +247,7 @@ export class RentalDurationTierService {
             const incomingGiftIds = addon_gifts.filter(g => g.id).map(g => g.id!);
 
             // Xóa các gifts không còn trong danh sách mới
-            const toDelete = existingGiftIds.filter(id => !incomingGiftIds.includes(id));
+            const toDelete = existingGiftIds.filter(giftId => !incomingGiftIds.includes(giftId));
             for (const giftId of toDelete) {
                 await this.repository.softDeleteAddonGift(giftId, userId);
             }
@@ -269,6 +290,57 @@ export class RentalDurationTierService {
             }
         }
 
+        // Xử lý insurance_gifts nếu có
+        if (insurance_gifts !== undefined) {
+            // Lấy danh sách insurance_gifts hiện tại
+            const existingInsGifts = await this.repository.findInsuranceGiftsByTierId(id);
+            const existingInsGiftIds = existingInsGifts.map(g => g.id);
+            const incomingInsGiftIds = insurance_gifts.filter(g => g.id).map(g => g.id!);
+
+            // Xóa các gifts không còn trong danh sách mới
+            const toDeleteIns = existingInsGiftIds.filter(giftId => !incomingInsGiftIds.includes(giftId));
+            for (const giftId of toDeleteIns) {
+                await this.repository.softDeleteInsuranceGift(giftId, userId);
+            }
+
+            // Upsert các gifts
+            for (const gift of insurance_gifts) {
+                if (gift.id && existingInsGiftIds.includes(gift.id)) {
+                    // Update
+                    await this.repository.updateInsuranceGift(gift.id, {
+                        require_min_order_amount: gift.require_min_order_amount,
+                        min_order_amount: gift.min_order_amount,
+                        require_min_warehouses: gift.require_min_warehouses,
+                        min_warehouses: gift.min_warehouses,
+                        require_min_rows: gift.require_min_rows,
+                        min_rows: gift.min_rows,
+                        is_until_service_end: gift.is_until_service_end,
+                        gift_duration_value: gift.gift_duration_value,
+                        gift_duration_unit: gift.gift_duration_unit,
+                        is_active: gift.is_active,
+                        updated_by: userId,
+                    });
+                } else {
+                    // Create
+                    await this.repository.createInsuranceGift({
+                        duration_tier_id: id,
+                        insurance_id: gift.insurance_id,
+                        require_min_order_amount: gift.require_min_order_amount,
+                        min_order_amount: gift.min_order_amount,
+                        require_min_warehouses: gift.require_min_warehouses,
+                        min_warehouses: gift.min_warehouses,
+                        require_min_rows: gift.require_min_rows,
+                        min_rows: gift.min_rows,
+                        is_until_service_end: gift.is_until_service_end,
+                        gift_duration_value: gift.gift_duration_value,
+                        gift_duration_unit: gift.gift_duration_unit,
+                        is_active: gift.is_active,
+                        created_by: userId,
+                    });
+                }
+            }
+        }
+
         // Xóa cache
         await this.invalidateCache(id);
         await this.invalidateListCache();
@@ -276,7 +348,7 @@ export class RentalDurationTierService {
         // Ghi log
         this.systemLogService.info('RentalDurationTier', 'UPDATE', `Cập nhật mốc thời gian thuê: ${updated.name}`, {
             userId,
-            metaData: { tierId: id, updatedFields: Object.keys(dto), addon_gifts_count: addon_gifts?.length || 0 },
+            metaData: { tierId: id, updatedFields: Object.keys(dto), addon_gifts_count: addon_gifts?.length || 0, insurance_gifts_count: insurance_gifts?.length || 0 },
         });
 
         // Emit socket event
@@ -288,7 +360,7 @@ export class RentalDurationTierService {
             timestamp: new Date().toISOString(),
         });
 
-        // Return với addon_gifts
+        // Return với addon_gifts và insurance_gifts
         return (await this.repository.findByIdWithGifts(id))!;
     }
 

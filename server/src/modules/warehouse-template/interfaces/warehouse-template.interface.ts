@@ -28,6 +28,14 @@ export interface IWarehouseTemplateWithRelations extends WarehouseTemplate {
             name: string;
         }
     }[];
+    insurance_gifts?: {
+        id: string;
+        insurance_id: string;
+        insurance: {
+            id: string;
+            name: string;
+        }
+    }[];
     ward?: {
         id: string;
         name: string;

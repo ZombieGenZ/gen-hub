@@ -73,6 +73,7 @@ export class WarehouseTemplateService {
             // Nested create discount configs
             discount_configs: discountConfigsCreate,
             addon_gifts: this.prepareAddonGiftsCreate(dto.addon_gifts, userId),
+            insurance_gifts: this.prepareInsuranceGiftsCreate(dto.insurance_gifts, userId),
         });
 
         // Invalidate list cache
@@ -132,6 +133,31 @@ export class WarehouseTemplateService {
             create: uniqueGifts.map(gift => ({
                 addon: { connect: { id: gift.addon_id } },
                 // condition fields removed
+                is_until_service_end: gift.is_until_service_end ?? true,
+                gift_duration_value: gift.gift_duration_value,
+                gift_duration_unit: gift.gift_duration_unit,
+                is_active: gift.is_active ?? true,
+                created_by: userId,
+            })),
+        };
+    }
+
+    /**
+     * Prepare insurance gifts for creation
+     */
+    private prepareInsuranceGiftsCreate(gifts: CreateWarehouseTemplateDto['insurance_gifts'], userId: string) {
+        if (!gifts || gifts.length === 0) return undefined;
+
+        // De-dupe by insurance_id
+        const uniqueMap = new Map<string, typeof gifts[0]>();
+        for (const gift of gifts) {
+            uniqueMap.set(gift.insurance_id, gift);
+        }
+        const uniqueGifts = Array.from(uniqueMap.values());
+
+        return {
+            create: uniqueGifts.map(gift => ({
+                insurance: { connect: { id: gift.insurance_id } },
                 is_until_service_end: gift.is_until_service_end ?? true,
                 gift_duration_value: gift.gift_duration_value,
                 gift_duration_unit: gift.gift_duration_unit,
@@ -232,7 +258,7 @@ export class WarehouseTemplateService {
 
         // Destructure ward_id và discount_configs để xử lý riêng
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { ward_id, discount_configs, amenity_ids, addon_gifts, ...restDto } = dto;
+        const { ward_id, discount_configs, amenity_ids, addon_gifts, insurance_gifts, ...restDto } = dto;
 
         // Xử lý discount configs upsert nếu có (trước khi update template)
         if (discount_configs !== undefined) {
@@ -241,6 +267,10 @@ export class WarehouseTemplateService {
 
         if (dto.addon_gifts !== undefined) {
             await this.upsertAddonGifts(id, dto.addon_gifts, existing.addon_gifts || [], userId);
+        }
+
+        if (dto.insurance_gifts !== undefined) {
+            await this.upsertInsuranceGifts(id, dto.insurance_gifts, existing.insurance_gifts || [], userId);
         }
 
         // Update template với các trường cơ bản
@@ -417,6 +447,73 @@ export class WarehouseTemplateService {
             .map(g => g.id);
 
         await this.repository.upsertAddonGifts(
+            templateId,
+            giftsToCreate,
+            giftsToUpdate,
+            giftIdsToDelete,
+            userId,
+        );
+    }
+
+    /**
+     * Upsert insurance gifts for warehouse template
+     */
+    private async upsertInsuranceGifts(
+        templateId: string,
+        newGifts: UpdateWarehouseTemplateDto['insurance_gifts'],
+        existingGifts: Array<{ id: string; insurance_id: string }>,
+        userId: string,
+    ): Promise<void> {
+        if (!newGifts) return;
+
+        const existingGiftIds = new Set(existingGifts.map(g => g.id));
+        const requestGiftIds = new Set<string>();
+
+        const giftsToCreate: Prisma.WarehouseInsuranceGiftCreateManyInput[] = [];
+        const giftsToUpdate: Array<{ id: string; data: Prisma.WarehouseInsuranceGiftUpdateInput }> = [];
+
+        // De-dupe by insurance_id
+        const uniqueMap = new Map<string, typeof newGifts[0]>();
+        for (const gift of newGifts) {
+            uniqueMap.set(gift.insurance_id, gift);
+        }
+        const uniqueGifts = Array.from(uniqueMap.values());
+
+        for (const gift of uniqueGifts) {
+            if (gift.id && existingGiftIds.has(gift.id)) {
+                // Update
+                requestGiftIds.add(gift.id);
+                giftsToUpdate.push({
+                    id: gift.id,
+                    data: {
+                        insurance: { connect: { id: gift.insurance_id } },
+                        is_until_service_end: gift.is_until_service_end,
+                        gift_duration_value: gift.gift_duration_value,
+                        gift_duration_unit: gift.gift_duration_unit,
+                        is_active: gift.is_active,
+                        updated_by: userId,
+                    },
+                });
+            } else {
+                // Create
+                giftsToCreate.push({
+                    warehouse_template_id: templateId,
+                    insurance_id: gift.insurance_id,
+                    is_until_service_end: gift.is_until_service_end ?? true,
+                    gift_duration_value: gift.gift_duration_value,
+                    gift_duration_unit: gift.gift_duration_unit,
+                    is_active: gift.is_active ?? true,
+                    created_by: userId,
+                });
+            }
+        }
+
+        // Delete missing
+        const giftIdsToDelete = existingGifts
+            .filter(g => !requestGiftIds.has(g.id))
+            .map(g => g.id);
+
+        await this.repository.upsertInsuranceGifts(
             templateId,
             giftsToCreate,
             giftsToUpdate,

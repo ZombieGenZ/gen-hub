@@ -45,7 +45,14 @@
 | 43 | Addons | PUT | /addons/{id} | ❎ | ❎ | ❎ |
 | 44 | Addons | DELETE | /addons/{id} | ❎ | ❎ | ❎ |
 | 45 | Addons | DELETE | /addons/delete/many | ❎ | ❎ | ❎ |
-| 46 | Coupons | POST | /coupons | ❎ | ❎ | ❎ |
+| 46 | Insurances | POST | /insurances | ❎ | ❎ | ❎ |
+| 47 | Insurances | GET | /insurances | ❎ | ❎ | ❎ |
+| 48 | Insurances | GET | /insurances/active | ❎ | ❎ | ❎ |
+| 49 | Insurances | GET | /insurances/{id} | ❎ | ❎ | ❎ |
+| 50 | Insurances | PUT | /insurances/{id} | ❎ | ❎ | ❎ |
+| 51 | Insurances | DELETE | /insurances/{id} | ❎ | ❎ | ❎ |
+| 52 | Insurances | DELETE | /insurances/delete/many | ❎ | ❎ | ❎ |
+| 53 | Coupons | POST | /coupons | ❎ | ❎ | ❎ |
 | 47 | Coupons | GET | /coupons | ❎ | ❎ | ❎ |
 | 48 | Coupons | GET | /coupons/{id} | ❎ | ❎ | ❎ |
 | 49 | Coupons | PUT | /coupons/{id} | ❎ | ❎ | ❎ |

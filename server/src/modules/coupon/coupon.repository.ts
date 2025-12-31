@@ -288,4 +288,65 @@ export class CouponRepository {
             orderBy: { created_at: 'desc' },
         });
     }
+
+    // Gift Addon operations
+    async createGiftAddons(couponId: string, addonIds: string[]) {
+        const data = addonIds.map(addonId => ({
+            coupon_id: couponId,
+            addon_id: addonId,
+        }));
+        return this.prisma.couponGiftAddon.createMany({ data });
+    }
+
+    async deleteGiftAddons(couponId: string) {
+        return this.prisma.couponGiftAddon.deleteMany({
+            where: { coupon_id: couponId },
+        });
+    }
+
+    async getGiftAddons(couponId: string) {
+        return this.prisma.couponGiftAddon.findMany({
+            where: { coupon_id: couponId, is_active: true },
+            include: { addon: true },
+        });
+    }
+
+    // Gift Insurance operations
+    async createGiftInsurances(couponId: string, insuranceIds: string[]) {
+        const data = insuranceIds.map(insuranceId => ({
+            coupon_id: couponId,
+            insurance_id: insuranceId,
+        }));
+        return this.prisma.couponGiftInsurance.createMany({ data });
+    }
+
+    async deleteGiftInsurances(couponId: string) {
+        return this.prisma.couponGiftInsurance.deleteMany({
+            where: { coupon_id: couponId },
+        });
+    }
+
+    async getGiftInsurances(couponId: string) {
+        return this.prisma.couponGiftInsurance.findMany({
+            where: { coupon_id: couponId, is_active: true },
+            include: { insurance: true },
+        });
+    }
+
+    /**
+     * Lấy coupon kèm thông tin targets và gifts
+     */
+    async getCouponWithTargetsAndGifts(id: string) {
+        return this.prisma.coupon.findFirst({
+            where: { id, is_deleted: false },
+            include: {
+                target_users: { where: { is_active: true } },
+                target_warehouses: { where: { is_active: true } },
+                target_rows: { where: { is_active: true } },
+                target_addons: { where: { is_active: true } },
+                gift_addons: { where: { is_active: true }, include: { addon: true } },
+                gift_insurances: { where: { is_active: true }, include: { insurance: true } },
+            },
+        });
+    }
 }

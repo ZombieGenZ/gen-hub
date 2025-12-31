@@ -82,6 +82,12 @@
         "target_row_ids_array": "Danh sách ID row phải là mảng",
         "target_row_ids_required": "Phải có ít nhất 1 row được chỉ định khi không áp dụng cho tất cả row",
         "target_addon_ids_array": "Danh sách ID addon phải là mảng",
-        "target_addon_ids_required": "Phải có ít nhất 1 addon được chỉ định khi không áp dụng cho tất cả addon"
+        "target_addon_ids_required": "Phải có ít nhất 1 addon được chỉ định khi không áp dụng cho tất cả addon",
+        "has_gift_addons_boolean": "Trường 'có tặng kèm addon' phải là boolean",
+        "gift_addon_ids_array": "Danh sách ID addon tặng kèm phải là mảng",
+        "gift_addon_ids_required": "Phải có ít nhất 1 addon được tặng kèm khi bật tính năng tặng addon",
+        "has_gift_insurances_boolean": "Trường 'có tặng kèm bảo hiểm' phải là boolean",
+        "gift_insurance_ids_array": "Danh sách ID bảo hiểm tặng kèm phải là mảng",
+        "gift_insurance_ids_required": "Phải có ít nhất 1 bảo hiểm được tặng kèm khi bật tính năng tặng bảo hiểm"
     }
 }

@@ -328,4 +328,48 @@ export class CreateCouponDto {
         message: i18nValidationMessage('coupon.validation.max_stack_count_min'),
     })
     max_stack_count?: number;
+
+    // Gift Addons - Tặng kèm addon
+    @ApiPropertyOptional({ description: 'Có tặng kèm addon', default: false })
+    @IsOptional()
+    @IsBoolean({
+        message: i18nValidationMessage('coupon.validation.has_gift_addons_boolean'),
+    })
+    has_gift_addons?: boolean;
+
+    @ApiPropertyOptional({
+        description: 'Danh sách ID addon được tặng kèm',
+        type: [String]
+    })
+    @ValidateIf(o => o.has_gift_addons === true)
+    @IsArray({
+        message: i18nValidationMessage('coupon.validation.gift_addon_ids_array'),
+    })
+    @ArrayMinSize(1, {
+        message: i18nValidationMessage('coupon.validation.gift_addon_ids_required'),
+    })
+    @IsUUID('4', { each: true })
+    gift_addon_ids?: string[];
+
+    // Gift Insurances - Tặng kèm bảo hiểm
+    @ApiPropertyOptional({ description: 'Có tặng kèm bảo hiểm', default: false })
+    @IsOptional()
+    @IsBoolean({
+        message: i18nValidationMessage('coupon.validation.has_gift_insurances_boolean'),
+    })
+    has_gift_insurances?: boolean;
+
+    @ApiPropertyOptional({
+        description: 'Danh sách ID bảo hiểm được tặng kèm',
+        type: [String]
+    })
+    @ValidateIf(o => o.has_gift_insurances === true)
+    @IsArray({
+        message: i18nValidationMessage('coupon.validation.gift_insurance_ids_array'),
+    })
+    @ArrayMinSize(1, {
+        message: i18nValidationMessage('coupon.validation.gift_insurance_ids_required'),
+    })
+    @IsUUID('4', { each: true })
+    gift_insurance_ids?: string[];
 }

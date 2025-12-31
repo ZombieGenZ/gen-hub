@@ -90,6 +90,13 @@ export class WarehouseTemplateRepository {
                 addon: true,
             },
         },
+        insurance_gifts: {
+            where: { is_deleted: false },
+            orderBy: { created_at: 'asc' as const },
+            include: {
+                insurance: true,
+            },
+        },
     };
 
     /** Lightweight include for list queries - không load nested rows */
@@ -997,6 +1004,56 @@ export class WarehouseTemplateRepository {
                 await Promise.all(
                     updateData.map(item =>
                         tx.warehouseAddonGift.update({
+                            where: { id: item.id },
+                            data: item.data,
+                        }),
+                    ),
+                );
+            }
+        });
+    }
+
+    /**
+     * Upsert insurance gifts cho warehouse template
+     */
+    async upsertInsuranceGifts(
+        templateId: string,
+        createData: Prisma.WarehouseInsuranceGiftCreateManyInput[],
+        updateData: { id: string; data: Prisma.WarehouseInsuranceGiftUpdateInput }[],
+        deleteIds: string[],
+        userId: string,
+    ): Promise<void> {
+        const now = new Date();
+
+        await this.prisma.$transaction(async (tx) => {
+            // Delete gifts
+            if (deleteIds.length > 0) {
+                await tx.warehouseInsuranceGift.updateMany({
+                    where: { id: { in: deleteIds } },
+                    data: {
+                        is_deleted: true,
+                        deleted_at: now,
+                        deleted_by: userId,
+                    },
+                });
+            }
+
+            // Create gifts
+            if (createData.length > 0) {
+                const dataWithTemplateId = createData.map(d => ({
+                    ...d,
+                    warehouse_template_id: templateId,
+                }));
+                await tx.warehouseInsuranceGift.createMany({
+                    data: dataWithTemplateId,
+                });
+            }
+
+            // Update gifts (sequential)
+            if (updateData.length > 0) {
+                await Promise.all(
+                    updateData.map(item =>
+                        tx.warehouseInsuranceGift.update({
                             where: { id: item.id },
                             data: item.data,
                         }),

@@ -38,6 +38,7 @@ import { RackTemplateModule } from './modules/rack-template/rack-template.module
 import { ShelfTemplateModule } from './modules/shelf-template/shelf-template.module';
 import { BlockTemplateModule } from './modules/block-template/block-template.module';
 import { AddonModule } from './modules/addon/addon.module';
+import { InsuranceModule } from './modules/insurance/insurance.module';
 import { CouponModule } from './modules/coupon/coupon.module';
 import { CouponScheduleModule } from './modules/coupon-schedule/coupon-schedule.module';
 import { DatabaseAdminModule } from './modules/database-admin/database-admin.module';
@@ -95,6 +96,9 @@ import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
 
     // Addons
     AddonModule,
+
+    // Insurances
+    InsuranceModule,
 
     // Coupons
     CouponModule,

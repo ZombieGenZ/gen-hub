@@ -28,6 +28,11 @@
         "limit_positive": "Limit phải là số dương",
         "offset_min": "Offset phải >= 0",
         "keywords_string": "Từ khóa tìm kiếm phải là chuỗi",
-        "is_active_boolean": "Trạng thái phải là boolean"
+        "is_active_boolean": "Trạng thái phải là boolean",
+        "tier_gift_id_uuid": "ID của gift phải là UUID hợp lệ",
+        "addon_id_required": "ID của Addon không được để trống",
+        "addon_id_uuid": "ID của Addon phải là UUID hợp lệ",
+        "insurance_id_required": "ID của Bảo hiểm không được để trống",
+        "insurance_id_uuid": "ID của Bảo hiểm phải là UUID hợp lệ"
     }
 }

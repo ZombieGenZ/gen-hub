@@ -15,6 +15,7 @@ import { Type } from 'class-transformer';
 import { i18nValidationMessage } from 'nestjs-i18n';
 import { DurationUnit } from '@prisma/client';
 import { TierAddonGiftDto } from './tier-addon-gift.dto';
+import { TierInsuranceGiftDto } from './tier-insurance-gift.dto';
 
 /**
  * DTO tạo mới mốc thời gian thuê
@@ -83,4 +84,12 @@ export class CreateRentalDurationTierDto {
     @ValidateNested({ each: true })
     @Type(() => TierAddonGiftDto)
     addon_gifts?: TierAddonGiftDto[];
+
+    @ApiPropertyOptional({ description: 'Danh sách bảo hiểm tặng kèm', type: [TierInsuranceGiftDto] })
+    @IsOptional()
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => TierInsuranceGiftDto)
+    insurance_gifts?: TierInsuranceGiftDto[];
 }
+

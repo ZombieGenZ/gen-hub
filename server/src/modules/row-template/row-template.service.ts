@@ -102,6 +102,7 @@ export class RowTemplateService {
                 },
             }),
             addon_gifts: this.prepareAddonGiftsCreate(dto.addon_gifts, userId),
+            insurance_gifts: this.prepareInsuranceGiftsCreate(dto.insurance_gifts, userId),
         };
 
         const row = await this.repository.create(createData);
@@ -227,7 +228,7 @@ export class RowTemplateService {
             }
         }
 
-        const { discount_configs, addon_gifts, ...rowData } = dto;
+        const { discount_configs, addon_gifts, insurance_gifts, ...rowData } = dto;
 
         // Xử lý discount configs
         if (discount_configs !== undefined) {
@@ -236,6 +237,10 @@ export class RowTemplateService {
 
         if (addon_gifts !== undefined) {
             await this.upsertAddonGifts(id, addon_gifts, userId);
+        }
+
+        if (insurance_gifts !== undefined) {
+            await this.upsertInsuranceGifts(id, insurance_gifts, userId);
         }
 
         // Update row
@@ -499,6 +504,101 @@ export class RowTemplateService {
             .map(g => g.id);
 
         await this.repository.upsertAddonGifts(
+            rowId,
+            giftsToCreate,
+            giftsToUpdate,
+            giftIdsToDelete,
+            userId,
+        );
+    }
+
+    /**
+     * Prepare insurance gifts for creation
+     */
+    private prepareInsuranceGiftsCreate(gifts: CreateRowTemplateDto['insurance_gifts'], userId: string) {
+        if (!gifts || gifts.length === 0) return undefined;
+
+        // De-dupe by insurance_id
+        const uniqueMap = new Map<string, typeof gifts[0]>();
+        for (const gift of gifts) {
+            uniqueMap.set(gift.insurance_id, gift);
+        }
+        const uniqueGifts = Array.from(uniqueMap.values());
+
+        return {
+            create: uniqueGifts.map(gift => ({
+                insurance: { connect: { id: gift.insurance_id } },
+                is_until_service_end: gift.is_until_service_end ?? true,
+                gift_duration_value: gift.gift_duration_value,
+                gift_duration_unit: gift.gift_duration_unit,
+                is_active: gift.is_active ?? true,
+                created_by: userId,
+            })),
+        };
+    }
+
+    /**
+     * Upsert insurance gifts cho row
+     */
+    private async upsertInsuranceGifts(
+        rowId: string,
+        newGifts: UpdateRowTemplateDto['insurance_gifts'],
+        userId: string,
+    ) {
+        if (!newGifts) return;
+
+        const row = await this.repository.findById(rowId);
+        if (!row || !row.insurance_gifts) return;
+
+        const existingGifts = row.insurance_gifts;
+        const existingGiftIds = new Set(existingGifts.map(g => g.id));
+        const requestGiftIds = new Set<string>();
+
+        const giftsToCreate: Prisma.RowInsuranceGiftCreateManyInput[] = [];
+        const giftsToUpdate: Array<{ id: string; data: Prisma.RowInsuranceGiftUpdateInput }> = [];
+
+        // De-dupe by insurance_id
+        const uniqueMap = new Map<string, typeof newGifts[0]>();
+        for (const gift of newGifts) {
+            uniqueMap.set(gift.insurance_id, gift);
+        }
+        const uniqueGifts = Array.from(uniqueMap.values());
+
+        for (const gift of uniqueGifts) {
+            if (gift.id && existingGiftIds.has(gift.id)) {
+                // Update
+                requestGiftIds.add(gift.id);
+                giftsToUpdate.push({
+                    id: gift.id,
+                    data: {
+                        insurance: { connect: { id: gift.insurance_id } },
+                        is_until_service_end: gift.is_until_service_end,
+                        gift_duration_value: gift.gift_duration_value,
+                        gift_duration_unit: gift.gift_duration_unit,
+                        is_active: gift.is_active,
+                        updated_by: userId,
+                    },
+                });
+            } else {
+                // Create
+                giftsToCreate.push({
+                    row_template_id: rowId,
+                    insurance_id: gift.insurance_id,
+                    is_until_service_end: gift.is_until_service_end ?? true,
+                    gift_duration_value: gift.gift_duration_value,
+                    gift_duration_unit: gift.gift_duration_unit,
+                    is_active: gift.is_active ?? true,
+                    created_by: userId,
+                });
+            }
+        }
+
+        // Delete missing
+        const giftIdsToDelete = existingGifts
+            .filter(g => !requestGiftIds.has(g.id))
+            .map(g => g.id);
+
+        await this.repository.upsertInsuranceGifts(
             rowId,
             giftsToCreate,
             giftsToUpdate,

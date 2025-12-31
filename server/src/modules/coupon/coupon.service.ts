@@ -51,6 +51,8 @@ export class CouponService {
             target_warehouse_ids,
             target_row_ids,
             target_addon_ids,
+            gift_addon_ids,
+            gift_insurance_ids,
             ...couponData
         } = dto;
 
@@ -85,6 +87,16 @@ export class CouponService {
         }
 
         const coupon = await this.repository.create(data);
+
+        // Handle gift addons
+        if (dto.has_gift_addons && gift_addon_ids?.length) {
+            await this.repository.createGiftAddons(coupon.id, gift_addon_ids);
+        }
+
+        // Handle gift insurances
+        if (dto.has_gift_insurances && gift_insurance_ids?.length) {
+            await this.repository.createGiftInsurances(coupon.id, gift_insurance_ids);
+        }
 
         // Xóa cache list
         await this.invalidateListCache();
@@ -209,6 +221,8 @@ export class CouponService {
             target_warehouse_ids,
             target_row_ids,
             target_addon_ids,
+            gift_addon_ids,
+            gift_insurance_ids,
             ...updateData
         } = dto;
 
@@ -247,6 +261,22 @@ export class CouponService {
         }
 
         const updated = await this.repository.update(id, data);
+
+        // Handle gift addons update
+        if (gift_addon_ids !== undefined) {
+            await this.repository.deleteGiftAddons(id);
+            if (dto.has_gift_addons && gift_addon_ids?.length) {
+                await this.repository.createGiftAddons(id, gift_addon_ids);
+            }
+        }
+
+        // Handle gift insurances update
+        if (gift_insurance_ids !== undefined) {
+            await this.repository.deleteGiftInsurances(id);
+            if (dto.has_gift_insurances && gift_insurance_ids?.length) {
+                await this.repository.createGiftInsurances(id, gift_insurance_ids);
+            }
+        }
 
         // Xóa cache
         await this.invalidateCache(id);

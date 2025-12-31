@@ -444,6 +444,7 @@ model WarehouseTemplate {
   rental_contract_details RentalContractDetail[]
   discount_configs        WarehouseDiscountConfig[]
   addon_gifts             WarehouseAddonGift[]
+  insurance_gifts         WarehouseInsuranceGift[]
   
   coupon_targets          CouponTargetWarehouse[]
   coupon_schedule_targets CouponScheduleTargetWarehouse[]
@@ -473,6 +474,7 @@ model RentalDurationTier {
   row_discount_configs       RowDiscountConfig[]
   payments                   Payment[]
   tier_addon_gifts           TierAddonGift[]
+  tier_insurance_gifts       TierInsuranceGift[]
 
   @@unique([duration_value, duration_unit])
   @@map("rental_duration_tiers")
@@ -502,8 +504,138 @@ model Addon {
   
   coupon_targets          CouponTargetAddon[]
   coupon_schedule_targets CouponScheduleTargetAddon[]
+  
+  coupon_gifts          CouponGiftAddon[]
+  coupon_schedule_gifts CouponScheduleGiftAddon[]
 
   @@map("addons")
+}
+
+enum ManagementFeeType {
+  PERCENT
+  AMOUNT
+}
+
+model Insurance {
+  id                   String             @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  name                 String
+  description          String?
+  price                Decimal            @db.Decimal(19, 4)
+  use_management_fee   Boolean            @default(false)
+  management_fee_type  ManagementFeeType?
+  management_fee_value Decimal?           @db.Decimal(19, 4)
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean?  @default(false)
+  deleted_at DateTime?
+
+  created_by String
+  updated_by String?
+  deleted_by String?
+
+  tier_gifts      TierInsuranceGift[]
+  warehouse_gifts WarehouseInsuranceGift[]
+  row_gifts       RowInsuranceGift[]
+
+  coupon_gifts          CouponGiftInsurance[]
+  coupon_schedule_gifts CouponScheduleGiftInsurance[]
+
+  @@map("insurances")
+}
+
+model TierInsuranceGift {
+  id               String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  duration_tier_id String @db.Uuid
+  insurance_id     String @db.Uuid
+
+  require_min_order_amount Boolean  @default(false)
+  min_order_amount         Decimal? @db.Decimal(19, 4)
+
+  require_min_warehouses Boolean @default(false)
+  min_warehouses         Int?
+
+  require_min_rows Boolean @default(false)
+  min_rows         Int?
+
+  is_until_service_end Boolean       @default(true)
+  gift_duration_value  Int?
+  gift_duration_unit   DurationUnit?
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean?  @default(false)
+  deleted_at DateTime?
+
+  created_by String
+  updated_by String?
+  deleted_by String?
+
+  duration_tier RentalDurationTier @relation(fields: [duration_tier_id], references: [id], onDelete: Cascade)
+  insurance     Insurance          @relation(fields: [insurance_id], references: [id], onDelete: Cascade)
+
+  @@unique([duration_tier_id, insurance_id])
+  @@index([duration_tier_id])
+  @@index([insurance_id])
+  @@map("tier_insurance_gifts")
+}
+
+model WarehouseInsuranceGift {
+  id                    String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  warehouse_template_id String @db.Uuid
+  insurance_id          String @db.Uuid
+
+  is_until_service_end Boolean       @default(true)
+  gift_duration_value  Int?
+  gift_duration_unit   DurationUnit?
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean?  @default(false)
+  deleted_at DateTime?
+
+  created_by String
+  updated_by String?
+  deleted_by String?
+
+  warehouse_template WarehouseTemplate @relation(fields: [warehouse_template_id], references: [id], onDelete: Cascade)
+  insurance          Insurance         @relation(fields: [insurance_id], references: [id], onDelete: Cascade)
+
+  @@unique([warehouse_template_id, insurance_id])
+  @@index([warehouse_template_id])
+  @@index([insurance_id])
+  @@map("warehouse_insurance_gifts")
+}
+
+model RowInsuranceGift {
+  id              String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  row_template_id String @db.Uuid
+  insurance_id    String @db.Uuid
+
+  is_until_service_end Boolean       @default(true)
+  gift_duration_value  Int?
+  gift_duration_unit   DurationUnit?
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean?  @default(false)
+  deleted_at DateTime?
+
+  created_by String
+  updated_by String?
+  deleted_by String?
+
+  row_template RowTemplate @relation(fields: [row_template_id], references: [id], onDelete: Cascade)
+  insurance    Insurance   @relation(fields: [insurance_id], references: [id], onDelete: Cascade)
+
+  @@unique([row_template_id, insurance_id])
+  @@index([row_template_id])
+  @@index([insurance_id])
+  @@map("row_insurance_gifts")
 }
 
 model TierAddonGift {
@@ -644,6 +776,9 @@ model Coupon {
   is_unlimited_stack Boolean @default(false)
   max_stack_count    Int?
   
+  has_gift_addons     Boolean @default(false)
+  has_gift_insurances Boolean @default(false)
+  
   schedule_id String?         @db.Uuid
   schedule    CouponSchedule? @relation(fields: [schedule_id], references: [id])
 
@@ -664,6 +799,9 @@ model Coupon {
   target_warehouses CouponTargetWarehouse[]
   target_rows       CouponTargetRow[]
   target_addons     CouponTargetAddon[]
+  
+  gift_addons     CouponGiftAddon[]
+  gift_insurances CouponGiftInsurance[]
 
   @@index([code])
   @@index([starts_at])
@@ -730,6 +868,9 @@ model CouponSchedule {
   
   is_unlimited_stack Boolean @default(false)
   max_stack_count    Int?
+  
+  has_gift_addons     Boolean @default(false)
+  has_gift_insurances Boolean @default(false)
 
   last_run_at DateTime?
   next_run_at DateTime?
@@ -750,6 +891,9 @@ model CouponSchedule {
   target_warehouses CouponScheduleTargetWarehouse[]
   target_rows       CouponScheduleTargetRow[]
   target_addons     CouponScheduleTargetAddon[]
+  
+  gift_addons     CouponScheduleGiftAddon[]
+  gift_insurances CouponScheduleGiftInsurance[]
 
   @@index([coupon_type])
   @@map("coupon_schedules")
@@ -889,6 +1033,7 @@ model RowTemplate {
   racks              RackTemplate[]
   discount_configs   RowDiscountConfig[]
   addon_gifts        RowAddonGift[]
+  insurance_gifts    RowInsuranceGift[]
   
   coupon_targets          CouponTargetRow[]
   coupon_schedule_targets CouponScheduleTargetRow[]
@@ -2950,6 +3095,74 @@ model CouponScheduleTargetAddon {
   @@index([coupon_schedule_id])
   @@index([addon_id])
   @@map("coupon_schedule_target_addons")
+}
+
+model CouponGiftAddon {
+  id        String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  coupon_id String @db.Uuid
+  addon_id  String @db.Uuid
+
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now())
+
+  coupon Coupon @relation(fields: [coupon_id], references: [id], onDelete: Cascade)
+  addon  Addon  @relation(fields: [addon_id], references: [id], onDelete: Cascade)
+
+  @@unique([coupon_id, addon_id])
+  @@index([coupon_id])
+  @@index([addon_id])
+  @@map("coupon_gift_addons")
+}
+
+model CouponGiftInsurance {
+  id           String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  coupon_id    String @db.Uuid
+  insurance_id String @db.Uuid
+
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now())
+
+  coupon    Coupon    @relation(fields: [coupon_id], references: [id], onDelete: Cascade)
+  insurance Insurance @relation(fields: [insurance_id], references: [id], onDelete: Cascade)
+
+  @@unique([coupon_id, insurance_id])
+  @@index([coupon_id])
+  @@index([insurance_id])
+  @@map("coupon_gift_insurances")
+}
+
+model CouponScheduleGiftAddon {
+  id                 String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  coupon_schedule_id String @db.Uuid
+  addon_id           String @db.Uuid
+
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now())
+
+  coupon_schedule CouponSchedule @relation(fields: [coupon_schedule_id], references: [id], onDelete: Cascade)
+  addon           Addon          @relation(fields: [addon_id], references: [id], onDelete: Cascade)
+
+  @@unique([coupon_schedule_id, addon_id])
+  @@index([coupon_schedule_id])
+  @@index([addon_id])
+  @@map("coupon_schedule_gift_addons")
+}
+
+model CouponScheduleGiftInsurance {
+  id                 String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  coupon_schedule_id String @db.Uuid
+  insurance_id       String @db.Uuid
+
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now())
+
+  coupon_schedule CouponSchedule @relation(fields: [coupon_schedule_id], references: [id], onDelete: Cascade)
+  insurance       Insurance      @relation(fields: [insurance_id], references: [id], onDelete: Cascade)
+
+  @@unique([coupon_schedule_id, insurance_id])
+  @@index([coupon_schedule_id])
+  @@index([insurance_id])
+  @@map("coupon_schedule_gift_insurances")
 }
 
 model DiagramConfig {

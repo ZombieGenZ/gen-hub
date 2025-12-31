@@ -1,0 +1,35 @@
+{
+    "success": {
+        "created": "Insurance created successfully",
+        "updated": "Insurance updated successfully",
+        "deleted": "Insurance deleted successfully",
+        "fetched": "Insurance fetched successfully"
+    },
+    "errors": {
+        "not_found": "Insurance not found",
+        "name_exists": "Insurance name already exists",
+        "create_failed": "Failed to create insurance",
+        "update_failed": "Failed to update insurance",
+        "delete_failed": "Failed to delete insurance"
+    },
+    "validation": {
+        "name_required": "Insurance name is required",
+        "name_string": "Insurance name must be a string",
+        "name_max_length": "Insurance name must not exceed 255 characters",
+        "description_string": "Description must be a string",
+        "price_required": "Insurance price is required",
+        "price_number": "Insurance price must be a number",
+        "price_min": "Insurance price must be at least 0",
+        "use_management_fee_boolean": "Use management fee flag must be a boolean",
+        "management_fee_type_required": "Management fee type is required when management fee is enabled",
+        "management_fee_type_enum": "Management fee type must be PERCENT or AMOUNT",
+        "management_fee_value_required": "Management fee value is required when management fee is enabled",
+        "management_fee_value_number": "Management fee value must be a number",
+        "management_fee_value_min": "Management fee value must be at least 0",
+        "management_fee_value_max_percent": "Management fee percent value must not exceed 100",
+        "is_active_boolean": "Status must be a boolean",
+        "limit_positive": "Limit must be a positive number",
+        "offset_min": "Offset must be >= 0",
+        "keywords_string": "Keywords must be a string"
+    }
+}

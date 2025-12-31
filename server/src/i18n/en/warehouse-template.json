@@ -79,6 +79,13 @@
         "temperature_number": "Temperature must be a number",
         "temperature_range": "Temperature must be between -100 and 100°C",
         "humidity_number": "Humidity must be a number",
-        "humidity_range": "Humidity must be between 0 and 100%"
+        "humidity_range": "Humidity must be between 0 and 100%",
+        "addon_gifts_array": "Addon gifts list must be an array",
+        "addon_id_required": "Addon ID is required",
+        "addon_id_uuid": "Addon ID must be a valid UUID",
+        "gift_id_uuid": "Gift ID must be a valid UUID",
+        "insurance_gifts_array": "Insurance gifts list must be an array",
+        "insurance_id_required": "Insurance ID is required",
+        "insurance_id_uuid": "Insurance ID must be a valid UUID"
     }
 }

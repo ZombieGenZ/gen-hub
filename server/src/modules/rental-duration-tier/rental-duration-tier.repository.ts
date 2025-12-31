@@ -141,6 +141,10 @@ export class RentalDurationTierRepository {
                     where: { is_deleted: false },
                     include: { addon: true },
                 },
+                tier_insurance_gifts: {
+                    where: { is_deleted: false },
+                    include: { insurance: true },
+                },
             },
         });
     }
@@ -240,4 +244,102 @@ export class RentalDurationTierRepository {
             },
         });
     }
+
+    // Insurance Gift methods
+    async createInsuranceGift(data: {
+        duration_tier_id: string;
+        insurance_id: string;
+        require_min_order_amount?: boolean;
+        min_order_amount?: number;
+        require_min_warehouses?: boolean;
+        min_warehouses?: number;
+        require_min_rows?: boolean;
+        min_rows?: number;
+        is_until_service_end?: boolean;
+        gift_duration_value?: number;
+        gift_duration_unit?: string;
+        is_active?: boolean;
+        created_by: string;
+    }) {
+        return this.prisma.tierInsuranceGift.create({
+            data: {
+                duration_tier_id: data.duration_tier_id,
+                insurance_id: data.insurance_id,
+                require_min_order_amount: data.require_min_order_amount ?? false,
+                min_order_amount: data.min_order_amount,
+                require_min_warehouses: data.require_min_warehouses ?? false,
+                min_warehouses: data.min_warehouses,
+                require_min_rows: data.require_min_rows ?? false,
+                min_rows: data.min_rows,
+                is_until_service_end: data.is_until_service_end ?? true,
+                gift_duration_value: data.gift_duration_value,
+                gift_duration_unit: data.gift_duration_unit as any,
+                is_active: data.is_active ?? true,
+                created_by: data.created_by,
+            },
+        });
+    }
+
+    async updateInsuranceGift(id: string, data: {
+        require_min_order_amount?: boolean;
+        min_order_amount?: number;
+        require_min_warehouses?: boolean;
+        min_warehouses?: number;
+        require_min_rows?: boolean;
+        min_rows?: number;
+        is_until_service_end?: boolean;
+        gift_duration_value?: number;
+        gift_duration_unit?: string;
+        is_active?: boolean;
+        updated_by: string;
+    }) {
+        return this.prisma.tierInsuranceGift.update({
+            where: { id },
+            data: {
+                require_min_order_amount: data.require_min_order_amount,
+                min_order_amount: data.min_order_amount,
+                require_min_warehouses: data.require_min_warehouses,
+                min_warehouses: data.min_warehouses,
+                require_min_rows: data.require_min_rows,
+                min_rows: data.min_rows,
+                is_until_service_end: data.is_until_service_end,
+                gift_duration_value: data.gift_duration_value,
+                gift_duration_unit: data.gift_duration_unit as any,
+                is_active: data.is_active,
+                updated_by: data.updated_by,
+            },
+        });
+    }
+
+    async softDeleteInsuranceGift(id: string, deletedBy: string) {
+        return this.prisma.tierInsuranceGift.update({
+            where: { id },
+            data: {
+                is_deleted: true,
+                is_active: false,
+                deleted_at: new Date(),
+                deleted_by: deletedBy,
+            },
+        });
+    }
+
+    async findInsuranceGiftsByTierId(tierId: string) {
+        return this.prisma.tierInsuranceGift.findMany({
+            where: { duration_tier_id: tierId, is_deleted: false },
+            include: { insurance: true },
+        });
+    }
+
+    async softDeleteInsuranceGiftsByTierId(tierId: string, deletedBy: string) {
+        return this.prisma.tierInsuranceGift.updateMany({
+            where: { duration_tier_id: tierId },
+            data: {
+                is_deleted: true,
+                is_active: false,
+                deleted_at: new Date(),
+                deleted_by: deletedBy,
+            },
+        });
+    }
 }
+

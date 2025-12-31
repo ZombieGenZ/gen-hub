@@ -17,6 +17,7 @@ import { i18nValidationMessage } from 'nestjs-i18n';
 import { Type } from 'class-transformer';
 import { CreateDiscountConfigDto } from './discount-config.dto';
 import { WarehouseAddonGiftDto } from './warehouse-addon-gift.dto';
+import { WarehouseInsuranceGiftDto } from './warehouse-insurance-gift.dto';
 
 /**
  * DTO tạo mới WarehouseTemplate
@@ -291,4 +292,14 @@ export class CreateWarehouseTemplateDto {
     @ValidateNested({ each: true })
     @Type(() => WarehouseAddonGiftDto)
     addon_gifts?: WarehouseAddonGiftDto[];
+
+    @ApiPropertyOptional({ description: 'Danh sách bảo hiểm tặng kèm', type: [WarehouseInsuranceGiftDto] })
+    @IsOptional()
+    @IsArray({
+        message: i18nValidationMessage('warehouse-template.validation.insurance_gifts_array'),
+    })
+    @ValidateNested({ each: true })
+    @Type(() => WarehouseInsuranceGiftDto)
+    insurance_gifts?: WarehouseInsuranceGiftDto[];
 }
+

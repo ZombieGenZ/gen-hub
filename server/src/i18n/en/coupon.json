@@ -88,6 +88,12 @@
         "rental_duration_tier_id_required": "Rental duration tier ID is required",
         "rental_duration_tier_id_uuid": "Rental duration tier ID must be a valid UUID",
         "type_required": "Transaction type is required",
-        "type_enum": "Transaction type must be NEW_CONTRACT or RENEWAL"
+        "type_enum": "Transaction type must be NEW_CONTRACT or RENEWAL",
+        "has_gift_addons_boolean": "'Has gift addons' field must be a boolean",
+        "gift_addon_ids_array": "Gift addon IDs must be an array",
+        "gift_addon_ids_required": "At least 1 addon must be specified when gift addons is enabled",
+        "has_gift_insurances_boolean": "'Has gift insurances' field must be a boolean",
+        "gift_insurance_ids_array": "Gift insurance IDs must be an array",
+        "gift_insurance_ids_required": "At least 1 insurance must be specified when gift insurances is enabled"
     }
 }

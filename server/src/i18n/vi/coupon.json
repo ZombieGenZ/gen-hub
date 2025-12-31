@@ -88,6 +88,12 @@
         "rental_duration_tier_id_required": "ID gói thời gian thuê không được để trống",
         "rental_duration_tier_id_uuid": "ID gói thời gian thuê phải là UUID hợp lệ",
         "type_required": "Loại giao dịch không được để trống",
-        "type_enum": "Loại giao dịch phải là NEW_CONTRACT hoặc RENEWAL"
+        "type_enum": "Loại giao dịch phải là NEW_CONTRACT hoặc RENEWAL",
+        "has_gift_addons_boolean": "Trường 'có tặng kèm addon' phải là boolean",
+        "gift_addon_ids_array": "Danh sách ID addon tặng kèm phải là mảng",
+        "gift_addon_ids_required": "Phải có ít nhất 1 addon được tặng kèm khi bật tính năng tặng addon",
+        "has_gift_insurances_boolean": "Trường 'có tặng kèm bảo hiểm' phải là boolean",
+        "gift_insurance_ids_array": "Danh sách ID bảo hiểm tặng kèm phải là mảng",
+        "gift_insurance_ids_required": "Phải có ít nhất 1 bảo hiểm được tặng kèm khi bật tính năng tặng bảo hiểm"
     }
 }

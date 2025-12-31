@@ -28,6 +28,11 @@
         "limit_positive": "Limit must be a positive number",
         "offset_min": "Offset must be >= 0",
         "keywords_string": "Keywords must be a string",
-        "is_active_boolean": "Status must be a boolean"
+        "is_active_boolean": "Status must be a boolean",
+        "tier_gift_id_uuid": "Gift ID must be a valid UUID",
+        "addon_id_required": "Addon ID is required",
+        "addon_id_uuid": "Addon ID must be a valid UUID",
+        "insurance_id_required": "Insurance ID is required",
+        "insurance_id_uuid": "Insurance ID must be a valid UUID"
     }
 }

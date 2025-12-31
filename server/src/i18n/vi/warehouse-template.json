@@ -79,6 +79,13 @@
         "temperature_number": "Nhiệt độ phải là số",
         "temperature_range": "Nhiệt độ phải từ -100 đến 100°C",
         "humidity_number": "Độ ẩm phải là số",
-        "humidity_range": "Độ ẩm phải từ 0 đến 100%"
+        "humidity_range": "Độ ẩm phải từ 0 đến 100%",
+        "addon_gifts_array": "Danh sách addon tặng kèm phải là mảng",
+        "addon_id_required": "ID addon không được để trống",
+        "addon_id_uuid": "ID addon phải là UUID hợp lệ",
+        "gift_id_uuid": "ID gift phải là UUID hợp lệ",
+        "insurance_gifts_array": "Danh sách bảo hiểm tặng kèm phải là mảng",
+        "insurance_id_required": "ID bảo hiểm không được để trống",
+        "insurance_id_uuid": "ID bảo hiểm phải là UUID hợp lệ"
     }
 }

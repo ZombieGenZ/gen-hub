@@ -13,6 +13,8 @@ import { i18nValidationMessage } from 'nestjs-i18n';
 import { Type } from 'class-transformer';
 import { CreateRowTemplateDto, CreateRowDiscountConfigDto } from './create-row-template.dto';
 import { RowAddonGiftDto } from './row-addon-gift.dto';
+import { RowInsuranceGiftDto } from './row-insurance-gift.dto';
+
 
 /**
  * DTO cho discount config khi cập nhật row (có thêm id để update)
@@ -54,4 +56,17 @@ export class UpdateRowTemplateDto extends PartialType(CreateRowTemplateDto) {
     @ValidateNested({ each: true })
     @Type(() => RowAddonGiftDto)
     addon_gifts?: RowAddonGiftDto[];
+
+    @ApiPropertyOptional({
+        description: 'Danh sách bảo hiểm tặng kèm',
+        type: [RowInsuranceGiftDto],
+    })
+    @IsOptional()
+    @IsArray({
+        message: i18nValidationMessage('row-template.validation.insurance_gifts_array'),
+    })
+    @ValidateNested({ each: true })
+    @Type(() => RowInsuranceGiftDto)
+    insurance_gifts?: RowInsuranceGiftDto[];
 }
+

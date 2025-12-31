@@ -1,0 +1,35 @@
+{
+    "success": {
+        "created": "Đã tạo bảo hiểm thành công",
+        "updated": "Đã cập nhật bảo hiểm thành công",
+        "deleted": "Đã xóa bảo hiểm thành công",
+        "fetched": "Lấy dữ liệu bảo hiểm thành công"
+    },
+    "errors": {
+        "not_found": "Không tìm thấy bảo hiểm",
+        "name_exists": "Tên bảo hiểm đã tồn tại",
+        "create_failed": "Không thể tạo bảo hiểm",
+        "update_failed": "Không thể cập nhật bảo hiểm",
+        "delete_failed": "Không thể xóa bảo hiểm"
+    },
+    "validation": {
+        "name_required": "Tên bảo hiểm không được để trống",
+        "name_string": "Tên bảo hiểm phải là chuỗi",
+        "name_max_length": "Tên bảo hiểm không được quá 255 ký tự",
+        "description_string": "Mô tả phải là chuỗi",
+        "price_required": "Giá bảo hiểm không được để trống",
+        "price_number": "Giá bảo hiểm phải là số",
+        "price_min": "Giá bảo hiểm phải lớn hơn hoặc bằng 0",
+        "use_management_fee_boolean": "Trường sử dụng phí quản lý phải là boolean",
+        "management_fee_type_required": "Loại phí quản lý không được để trống khi bật phí quản lý",
+        "management_fee_type_enum": "Loại phí quản lý phải là PERCENT hoặc AMOUNT",
+        "management_fee_value_required": "Giá trị phí quản lý không được để trống khi bật phí quản lý",
+        "management_fee_value_number": "Giá trị phí quản lý phải là số",
+        "management_fee_value_min": "Giá trị phí quản lý phải lớn hơn hoặc bằng 0",
+        "management_fee_value_max_percent": "Giá trị phí quản lý theo phần trăm không được quá 100",
+        "is_active_boolean": "Trạng thái phải là boolean",
+        "limit_positive": "Limit phải là số dương",
+        "offset_min": "Offset phải >= 0",
+        "keywords_string": "Từ khóa tìm kiếm phải là chuỗi"
+    }
+}

@@ -65,6 +65,12 @@
         "target_row_ids_array": "Target row IDs must be an array",
         "target_row_ids_required": "At least 1 row must be specified when not applying to all rows",
         "target_addon_ids_array": "Target addon IDs must be an array",
-        "target_addon_ids_required": "At least 1 addon must be specified when not applying to all addons"
+        "target_addon_ids_required": "At least 1 addon must be specified when not applying to all addons",
+        "has_gift_addons_boolean": "'Has gift addons' field must be a boolean",
+        "gift_addon_ids_array": "Gift addon IDs must be an array",
+        "gift_addon_ids_required": "At least 1 addon must be specified when gift addons is enabled",
+        "has_gift_insurances_boolean": "'Has gift insurances' field must be a boolean",
+        "gift_insurance_ids_array": "Gift insurance IDs must be an array",
+        "gift_insurance_ids_required": "At least 1 insurance must be specified when gift insurances is enabled"
     }
 }

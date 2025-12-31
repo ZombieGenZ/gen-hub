@@ -306,6 +306,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         this.seedResourcesAdminPermission.bind(this),
         this.seedAmenityPermissions.bind(this),
         this.seedAddonPermissions.bind(this),
+        this.seedInsurancePermissions.bind(this),
         this.seedCouponPermissions.bind(this),
         this.seedCouponSchedulePermissions.bind(this),
         this.seedWarehouseTemplatePermissions.bind(this),
@@ -2707,6 +2708,104 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         error instanceof Error ? error.message : String(error);
       this.logger.error(
         `❌ Failed to seed account-balance permissions: ${errorMessage}`,
+      );
+    }
+  }
+
+  /**
+   * Seed các permissions cho Insurance (Bảo hiểm)
+   * - CRUD permissions: Chỉ Admin và Super Admin
+   */
+  private async seedInsurancePermissions() {
+    try {
+      const insurancePermissions = [
+        {
+          key: 'insurance.create',
+          name: 'Tạo bảo hiểm',
+          description: 'Quyền tạo mới bảo hiểm',
+        },
+        {
+          key: 'insurance.list',
+          name: 'Xem danh sách bảo hiểm',
+          description: 'Quyền xem danh sách bảo hiểm',
+        },
+        {
+          key: 'insurance.read',
+          name: 'Xem chi tiết bảo hiểm',
+          description: 'Quyền xem chi tiết bảo hiểm',
+        },
+        {
+          key: 'insurance.update',
+          name: 'Cập nhật bảo hiểm',
+          description: 'Quyền cập nhật thông tin bảo hiểm',
+        },
+        {
+          key: 'insurance.delete',
+          name: 'Xóa bảo hiểm',
+          description: 'Quyền xóa bảo hiểm',
+        },
+      ];
+
+      for (const perm of insurancePermissions) {
+        const existing = await this.permission.findFirst({
+          where: { key: perm.key },
+        });
+
+        if (!existing) {
+          await this.permission.create({
+            data: {
+              key: perm.key,
+              name: perm.name,
+              description: perm.description,
+              is_active: true,
+              is_deleted: false,
+            },
+          });
+        }
+      }
+
+      const adminRoles = await this.role.findMany({
+        where: {
+          name: { in: ['Admin', 'Super Admin'] },
+          is_deleted: false,
+        },
+      });
+
+      const permissions = await this.permission.findMany({
+        where: {
+          key: { in: insurancePermissions.map((p) => p.key) },
+          is_deleted: false,
+        },
+      });
+
+      for (const role of adminRoles) {
+        for (const permission of permissions) {
+          const existingAssignment = await this.rolePermission.findFirst({
+            where: {
+              role_id: role.id,
+              permission_id: permission.id,
+            },
+          });
+
+          if (!existingAssignment) {
+            await this.rolePermission.create({
+              data: {
+                role_id: role.id,
+                permission_id: permission.id,
+                is_active: true,
+                is_deleted: false,
+              },
+            });
+          }
+        }
+      }
+
+      this.logger.log('✅ Insurance permissions seeded');
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `❌ Failed to seed insurance permissions: ${errorMessage}`,
       );
     }
   }

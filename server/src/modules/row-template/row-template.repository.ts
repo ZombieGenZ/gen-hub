@@ -30,6 +30,13 @@ export class RowTemplateRepository {
                 addon: true,
             },
         },
+        insurance_gifts: {
+            where: { is_deleted: false },
+            orderBy: { created_at: 'asc' as const },
+            include: {
+                insurance: true,
+            },
+        },
         racks: {
             where: { is_deleted: false },
             orderBy: { created_at: 'asc' as const },
@@ -335,4 +342,45 @@ export class RowTemplateRepository {
             }
         });
     }
+
+    /** Upsert insurance gifts cho row */
+    async upsertInsuranceGifts(
+        rowId: string,
+        createData: Prisma.RowInsuranceGiftCreateManyInput[],
+        updateData: { id: string; data: Prisma.RowInsuranceGiftUpdateInput }[],
+        deleteIds: string[],
+        userId: string,
+    ) {
+        const now = new Date();
+
+        await this.prisma.$transaction(async (tx) => {
+            // Delete gifts
+            if (deleteIds.length > 0) {
+                await tx.rowInsuranceGift.updateMany({
+                    where: { id: { in: deleteIds } },
+                    data: { is_deleted: true, deleted_at: now, deleted_by: userId },
+                });
+            }
+
+            // Create gifts
+            if (createData.length > 0) {
+                const dataWithTemplateId = createData.map(d => ({
+                    ...d,
+                    row_template_id: rowId,
+                }));
+                await tx.rowInsuranceGift.createMany({
+                    data: dataWithTemplateId,
+                });
+            }
+
+            // Update gifts
+            for (const item of updateData) {
+                await tx.rowInsuranceGift.update({
+                    where: { id: item.id },
+                    data: item.data,
+                });
+            }
+        });
+    }
+
 }

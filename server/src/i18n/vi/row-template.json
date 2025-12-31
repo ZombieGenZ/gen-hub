@@ -33,6 +33,7 @@
         "discount_percent_min": "Phần trăm giảm giá phải >= 0",
         "discount_configs_array": "Danh sách config giảm giá phải là mảng",
         "addon_gifts_array": "Danh sách addon tặng kèm phải là mảng",
+        "insurance_gifts_array": "Danh sách bảo hiểm tặng kèm phải là mảng",
         "limit_number": "Limit phải là số",
         "limit_min": "Limit phải >= 1",
         "offset_number": "Offset phải là số",
