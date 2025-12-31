@@ -232,32 +232,65 @@ export class CouponService {
         };
 
         // Handle relations update
-        if (target_user_ids !== undefined) {
-            data.target_users = {
-                deleteMany: {},
-                create: target_user_ids?.map(id => ({ user_id: id })) || [],
-            };
+        // Handle relations update
+        // 1. Target Users
+        const isPrivate = (dto.coupon_type ?? coupon.coupon_type) === 'PRIVATE';
+        if (target_user_ids !== undefined || dto.coupon_type !== undefined) {
+            if (isPrivate) {
+                if (target_user_ids !== undefined) {
+                    data.target_users = {
+                        deleteMany: {},
+                        create: target_user_ids.map(id => ({ user_id: id })),
+                    };
+                }
+            } else {
+                data.target_users = { deleteMany: {} };
+            }
         }
 
-        if (target_warehouse_ids !== undefined) {
-            data.target_warehouses = {
-                deleteMany: {},
-                create: target_warehouse_ids?.map(id => ({ warehouse_template_id: id })) || [],
-            };
+        // 2. Target Warehouses
+        const applyAllWarehouses = dto.apply_for_all_warehouses ?? coupon.apply_for_all_warehouses;
+        if (target_warehouse_ids !== undefined || dto.apply_for_all_warehouses !== undefined) {
+            if (!applyAllWarehouses) {
+                if (target_warehouse_ids !== undefined) {
+                    data.target_warehouses = {
+                        deleteMany: {},
+                        create: target_warehouse_ids.map(id => ({ warehouse_template_id: id })),
+                    };
+                }
+            } else {
+                data.target_warehouses = { deleteMany: {} };
+            }
         }
 
-        if (target_row_ids !== undefined) {
-            data.target_rows = {
-                deleteMany: {},
-                create: target_row_ids?.map(id => ({ row_template_id: id })) || [],
-            };
+        // 3. Target Rows
+        const applyAllRows = dto.apply_for_all_rows ?? coupon.apply_for_all_rows;
+        if (target_row_ids !== undefined || dto.apply_for_all_rows !== undefined) {
+            if (!applyAllRows) {
+                if (target_row_ids !== undefined) {
+                    data.target_rows = {
+                        deleteMany: {},
+                        create: target_row_ids.map(id => ({ row_template_id: id })),
+                    };
+                }
+            } else {
+                data.target_rows = { deleteMany: {} };
+            }
         }
 
-        if (target_addon_ids !== undefined) {
-            data.target_addons = {
-                deleteMany: {},
-                create: target_addon_ids?.map(id => ({ addon_id: id })) || [],
-            };
+        // 4. Target Addons
+        const applyAllAddons = dto.apply_for_all_addons ?? coupon.apply_for_all_addons;
+        if (target_addon_ids !== undefined || dto.apply_for_all_addons !== undefined) {
+            if (!applyAllAddons) {
+                if (target_addon_ids !== undefined) {
+                    data.target_addons = {
+                        deleteMany: {},
+                        create: target_addon_ids.map(id => ({ addon_id: id })),
+                    };
+                }
+            } else {
+                data.target_addons = { deleteMany: {} };
+            }
         }
 
         const updated = await this.repository.update(id, data);
