@@ -112,6 +112,8 @@ model User {
   coupon_targets          CouponTargetUser[]
   coupon_schedule_targets CouponScheduleTargetUser[]
 
+  organization_update_requests OrganizationUpdateRequest[] @relation("RequestByRel")
+
   @@map("users")
 }
 
@@ -1389,6 +1391,7 @@ model Organization {
   rental_contracts       RentalContract[]
   inventory_transactions InventoryTransaction[]
   inventories            Inventory[]
+  update_requests        OrganizationUpdateRequest[]
   audit_logs             OrganizationAuditLog[]
   api_key_logs           ApiKeyLog[]
   notifications          OrganizationNotification[]
@@ -3230,4 +3233,42 @@ model OrganizationBalanceTransaction {
   @@index([reference_type, reference_id])
   @@index([created_at])
   @@map("organization_balance_transactions")
+}
+
+enum OrganizationUpdateRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model OrganizationUpdateRequest {
+  id              String                      @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  organization_id String                      @db.Uuid
+  requester_id    String                      @db.Uuid
+
+  tax_code             String?
+  representative_name  String?
+  representative_title String?
+  representative_phone String?
+  representative_email String?
+
+  status        OrganizationUpdateRequestStatus @default(PENDING)
+  reject_reason String?
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean   @default(false)
+  deleted_at DateTime?
+
+  created_by String
+  updated_by String?
+  deleted_by String?
+
+  organization Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  requester    User         @relation("RequestByRel", fields: [requester_id], references: [id], onDelete: Cascade)
+
+  @@index([organization_id])
+  @@index([requester_id])
+  @@map("organization_update_requests")
 }

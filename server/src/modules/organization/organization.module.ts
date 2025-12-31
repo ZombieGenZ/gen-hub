@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { SharedModule } from '../../common/shared.module';
 import { RedisModule } from '../redis/redis.module';
 import { WebsocketModule } from '../websocket/websocket.module';
@@ -14,6 +14,7 @@ import { OrganizationRepository } from './organization.repository';
 import { OrganizationAuditLogService } from './organization-audit-log.service';
 import { ApiKeyLogService } from './api-key-log.service';
 import { OrganizationEmailValidatorService } from './organization-email-validator.service';
+import { OrganizationUpdateRequestModule } from '../organization-update-request/organization-update-request.module';
 
 @Module({
     imports: [
@@ -22,6 +23,7 @@ import { OrganizationEmailValidatorService } from './organization-email-validato
         WebsocketModule,
         SystemLogModule,
         NotificationModule,
+        forwardRef(() => OrganizationUpdateRequestModule),
     ],
     controllers: [
         OrganizationController,

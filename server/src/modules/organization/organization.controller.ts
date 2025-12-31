@@ -14,6 +14,7 @@ import {
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { I18nLang } from 'nestjs-i18n';
 import { OrganizationService } from './organization.service';
+import { OrganizationUpdateRequestService } from '../organization-update-request/organization-update-request.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
     CreateOrganizationDto,
@@ -25,6 +26,7 @@ import {
     AssignMemberPermissionsDto,
     UpdateMemberDisplayNameDto,
 } from './dto';
+import { CreateOrganizationUpdateRequestDto } from '../organization-update-request/dto';
 import { DeleteManyDto } from '../../common/dto';
 import { CurrentUser, RequirePermission, Public } from '../../common/decorators';
 import { PermissionGuard } from '../../common/guards';
@@ -45,6 +47,7 @@ export class OrganizationController {
     constructor(
         private readonly service: OrganizationService,
         private readonly prisma: PrismaService,
+        private readonly updateRequestService: OrganizationUpdateRequestService,
     ) { }
 
     /**
@@ -139,6 +142,19 @@ export class OrganizationController {
             result,
             'Lấy thông tin tổ chức thành công',
         );
+    }
+
+    @Post(':id/update-request')
+    @RequirePermission('organization.update_request')
+    @ApiOperation({ summary: 'Gửi yêu cầu cập nhật thông tin tổ chức' })
+    async submitUpdateRequest(
+        @Param('id', ParseUUIDPipe) id: string,
+        @CurrentUser('userId') userId: string,
+        @Body() dto: CreateOrganizationUpdateRequestDto,
+        @I18nLang() lang: string,
+    ) {
+        const data = await this.updateRequestService.create(userId, id, dto, lang);
+        return new CreatedResponse(ResponseCode.ORGANIZATION_UPDATE_REQUEST_CREATE_SUCCESS, data);
     }
 
     @Put(':id')

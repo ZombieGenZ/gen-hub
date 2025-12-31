@@ -54,6 +54,13 @@ export enum ResponseCode {
     ORGANIZATION_DELETE_SUCCESS = 'organization.delete_success',
     ORGANIZATION_TRANSFER_OWNERSHIP_SUCCESS = 'organization.transfer_ownership_success',
 
+    // Organization Update Request
+    ORGANIZATION_UPDATE_REQUEST_CREATE_SUCCESS = 'organization_update_request.create_success',
+    ORGANIZATION_UPDATE_REQUEST_LIST_SUCCESS = 'organization_update_request.list_success',
+    ORGANIZATION_UPDATE_REQUEST_GET_SUCCESS = 'organization_update_request.get_success',
+    ORGANIZATION_UPDATE_REQUEST_APPROVE_SUCCESS = 'organization_update_request.approve_success',
+    ORGANIZATION_UPDATE_REQUEST_REJECT_SUCCESS = 'organization_update_request.reject_success',
+
     // Organization Member
     ORGANIZATION_MEMBER_INVITE_SUCCESS = 'organization.member.invite_success',
     ORGANIZATION_MEMBER_INVITE_REMOVE_SUCCESS = 'organization.member.invite_remove_success',

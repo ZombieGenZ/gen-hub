@@ -134,9 +134,10 @@
 | 125 | Organizations | DELETE | /organizations/{id}/members/{memberId} | ❎ | ❎ | ❎ |
 | 126 | Organizations | PATCH | /organizations/{id}/members/{memberId}/display-name | ❎ | ❎ | ❎ |
 | 127 | Organizations | PATCH | /organizations/{id}/me/display-name | ❎ | ❎ | ❎ |
-| 128 | Organizations | GET | /organizations/{id}/permissions | ❎ | ❎ | ❎ |
-| 129 | Organizations | GET | /organizations/permissions/api-key-enabled | ❎ | ❎ | ❎ |
-| 130 | Organization Roles | POST | /organizations/{orgId}/roles | ❎ | ❎ | ❎ |
+| 130 | Organizations | GET | /organizations/{id}/permissions | ❎ | ❎ | ❎ |
+| 131 | Organizations | GET | /organizations/permissions/api-key-enabled | ❎ | ❎ | ❎ |
+| 132 | Organizations | POST | /organizations/{id}/update-request | ❎ | ❎ | ❎ |
+| 133 | Organization Roles | POST | /organizations/{orgId}/roles | ❎ | ❎ | ❎ |
 | 131 | Organization Roles | GET | /organizations/{orgId}/roles | ❎ | ❎ | ❎ |
 | 132 | Organization Roles | GET | /organizations/{orgId}/roles/{roleId} | ❎ | ❎ | ❎ |
 | 133 | Organization Roles | PUT | /organizations/{orgId}/roles/{roleId} | ❎ | ❎ | ❎ |
@@ -244,3 +245,8 @@
 | 235 | Resources | GET | /admin/resources/stats | ❎ | ❎ | ❎ |
 | 236 | Resources | GET | /admin/resources/service/{serviceName} | ❎ | ❎ | ❎ |
 | 237 | Analytics | GET | /analytics/traffic | ❎ | ❎ | ❎ |
+| 238 | Organization Update Requests | POST | /organization-update-requests | ❎ | ❎ | ❎ |
+| 239 | Organization Update Requests | GET | /organization-update-requests | ❎ | ❎ | ❎ |
+| 240 | Organization Update Requests | GET | /organization-update-requests/{id} | ❎ | ❎ | ❎ |
+| 241 | Organization Update Requests | PATCH | /organization-update-requests/{id}/approve | ❎ | ❎ | ❎ |
+| 242 | Organization Update Requests | PATCH | /organization-update-requests/{id}/reject | ❎ | ❎ | ❎ |

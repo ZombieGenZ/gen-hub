@@ -51,6 +51,7 @@ const socket = io('http://localhost:4000', {
 | `public` | Events công khai | ❌ | ✅ Tất cả |
 | `notifications` | Thông báo cá nhân | ✅ | ❌ Subscribe |
 | `announcements` | Thông báo công cộng | ❌ | ❌ Subscribe |
+| `admin_room` | Events dành cho Admin | ✅ | ❌ Auto-Join (Admin only) |
 
 ### Subscribe vào Room
 ```javascript
@@ -1456,6 +1457,52 @@ socket.on('insurance:deletedMany', (data) => {
   // }
   
   data.insuranceIds.forEach(removeInsuranceFromList);
+});
+```
+
+---
+
+## 📝 Organization Update Request Events
+
+### `organization_update_request_created` (Room: `admin_room`)
+**Khi nào:** Có yêu cầu cập nhật thông tin tổ chức mới
+```javascript
+socket.on('organization_update_request_created', (data) => {
+  // {
+  //   "id": "request-uuid",
+  //   "organization": { "id": "org-uuid", "name": "Org Name", "tax_code": "..." },
+  //   "requester": { "id": "user-uuid", "name": "User Name", "email": "..." },
+  //   "status": "PENDING",
+  //   "created_at": "..."
+  // }
+});
+```
+
+### `organization_update_request_approved` (Room: `org_{orgId}`)
+**Khi nào:** Yêu cầu cập nhật được chấp thuận
+```javascript
+socket.on('organization_update_request_approved', (data) => {
+  // {
+  //   "id": "request-uuid",
+  //   "status": "APPROVED",
+  //   "organization": { ... },
+  //   "updated_by": "admin-uuid",
+  //   "updated_at": "..."
+  // }
+});
+```
+
+### `organization_update_request_rejected` (Room: `org_{orgId}`)
+**Khi nào:** Yêu cầu cập nhật bị từ chối
+```javascript
+socket.on('organization_update_request_rejected', (data) => {
+  // {
+  //   "id": "request-uuid",
+  //   "status": "REJECTED",
+  //   "reject_reason": "Reason...",
+  //   "updated_by": "admin-uuid",
+  //   "updated_at": "..."
+  // }
 });
 ```
 

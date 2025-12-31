@@ -325,6 +325,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         this.seedShelfTemplatePermissions.bind(this),
         this.seedBlockTemplatePermissions.bind(this),
         this.seedAccountBalancePermissions.bind(this),
+        this.seedOrganizationUpdateRequestPermissions.bind(this),
       ];
 
       const BATCH_SIZE = 3; // Chạy 3 seed functions cùng lúc
@@ -779,6 +780,26 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
           key: 'organization.delete.all',
           name: 'Xóa tất cả tổ chức',
           description: 'Quyền xóa bất kỳ tổ chức nào trên hệ thống',
+        },
+        {
+          key: 'organization.update_request.list',
+          name: 'Xem danh sách yêu cầu cập nhật',
+          description: 'Quyền xem danh sách yêu cầu cập nhật thông tin tổ chức',
+        },
+        {
+          key: 'organization.update_request.read',
+          name: 'Xem chi tiết yêu cầu cập nhật',
+          description: 'Quyền xem chi tiết yêu cầu cập nhật thông tin tổ chức',
+        },
+        {
+          key: 'organization.update_request.approve',
+          name: 'Duyệt yêu cầu cập nhật',
+          description: 'Quyền duyệt yêu cầu cập nhật thông tin tổ chức',
+        },
+        {
+          key: 'organization.update_request.reject',
+          name: 'Từ chối yêu cầu cập nhật',
+          description: 'Quyền từ chối yêu cầu cập nhật thông tin tổ chức',
         },
       ];
 
@@ -2127,6 +2148,47 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
     }
   }
 
+
+  /**
+   * Seed các permissions cho Organization Update Request (Organization-level)
+   */
+  private async seedOrganizationUpdateRequestPermissions() {
+    try {
+      const permissions = [
+        {
+          key: 'organization.update_request',
+          name: 'Yêu cầu cập nhật thông tin tổ chức',
+          description: 'Quyền yêu cầu cập nhật các thông tin quan trọng của tổ chức',
+        },
+      ];
+
+      for (const perm of permissions) {
+        const existing = await this.organizationPermission.findFirst({
+          where: { key: perm.key, is_deleted: false },
+        });
+
+        if (!existing) {
+          await this.organizationPermission.create({
+            data: {
+              key: perm.key,
+              name: perm.name,
+              description: perm.description,
+              allow_api_key: true,
+              is_active: true,
+              is_deleted: false,
+            },
+          });
+        }
+      }
+
+      this.logger.log('✅ Organization update request permissions seeded');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `❌ Failed to seed organization update request permissions: ${errorMessage}`,
+      );
+    }
+  }
 
   private mapProvinceType(type: string): 'CITY' | 'PROVINCE' {
     const typeMap: Record<string, 'CITY' | 'PROVINCE'> = {

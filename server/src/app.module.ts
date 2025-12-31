@@ -48,6 +48,7 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { BruteForceModule } from './modules/brute-force/brute-force.module';
 import { EmailInboundModule } from './modules/email-inbound/email-inbound.module';
 import { AccountBalanceModule } from './modules/account-balance/account-balance.module';
+import { OrganizationUpdateRequestModule } from './modules/organization-update-request/organization-update-request.module';
 import { DatabaseLogModule } from './modules/database-log/database-log.module';
 import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
 
@@ -118,6 +119,9 @@ import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
 
     // Organizations
     OrganizationModule,
+
+    // Organization Update Request
+    OrganizationUpdateRequestModule,
 
     // Rental Contracts
     RentalContractModule,

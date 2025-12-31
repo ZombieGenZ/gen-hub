@@ -352,7 +352,12 @@ export class OrganizationService {
       );
     }
 
-
+    // Chỉ có admin (người có quyền update.all) mới được cập nhật is_active
+    if (dto.is_active !== undefined && !hasUpdateAllPermission) {
+      throw new ForbiddenException(
+        await this.i18n.translate('organization.errors.update_active_forbidden', { lang }),
+      );
+    }
 
     const oldData = {
       name: org.name,
@@ -2545,7 +2550,7 @@ export class OrganizationService {
    * Kiểm tra quyền organization.
    * Owner luôn có full quyền, member cần có permission tương ứng.
    */
-  private async checkOrgPermission(
+  async checkOrgPermission(
     orgId: string,
     userId: string,
     permissionKey: string,
