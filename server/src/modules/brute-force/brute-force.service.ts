@@ -210,14 +210,16 @@ export class BruteForceService {
         });
 
         if (user) {
-            // Gửi email cảnh báo với mã unlock
-            await this.emailService.sendSecurityAlertEmail(
+            // Gửi email cảnh báo với mã unlock (Async - Fire and forget)
+            this.emailService.sendSecurityAlertEmail(
                 email,
                 user.name,
                 code,
                 ip,
                 user.language || 'vi',
-            );
+            ).catch(err => {
+                this.logger.error(`Failed to send security alert email to ${email}: ${err.message}`);
+            });
         }
 
 
