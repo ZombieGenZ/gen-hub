@@ -211,14 +211,17 @@ export class BruteForceService {
 
         if (user) {
             // Gửi email cảnh báo với mã unlock (Async - Fire and forget)
-            this.emailService.sendSecurityAlertEmail(
-                email,
-                user.name,
-                code,
-                ip,
-                user.language || 'vi',
-            ).catch(err => {
-                this.logger.error(`Failed to send security alert email to ${email}: ${err.message}`);
+            // Use setImmediate to ensure no blocking of the main thread
+            setImmediate(() => {
+                this.emailService.sendSecurityAlertEmail(
+                    email,
+                    user.name,
+                    code,
+                    ip,
+                    user.language || 'vi',
+                ).catch(err => {
+                    this.logger.error(`Failed to send security alert email to ${email}: ${err.message}`);
+                });
             });
         }
 

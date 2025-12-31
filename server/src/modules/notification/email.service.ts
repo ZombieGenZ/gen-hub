@@ -47,6 +47,9 @@ export class EmailService {
    */
 
 
+  private accessToken: string | null = null;
+  private tokenExpires: number = 0;
+
   /**
    * Khởi tạo OAuth2 client
    */
@@ -69,7 +72,7 @@ export class EmailService {
   }
 
   /**
-   * Tạo transporter với access token mới
+   * Tạo transporter với access token
    */
   private async createTransporter(): Promise<Transporter | null> {
     if (!this.oAuth2Client) {
@@ -78,16 +81,29 @@ export class EmailService {
     }
 
     try {
-      const { token } = await this.oAuth2Client.getAccessToken();
+      // Reuse cached token if valid (buffer 5 minutes)
+      const now = Date.now();
+      if (this.transporter && this.accessToken && this.tokenExpires > now + 300000) {
+        return this.transporter;
+      }
+
+      // Get new access token
+      const { token, res } = await this.oAuth2Client.getAccessToken();
 
       if (!token) {
         console.error('[EmailService] Không thể lấy access token');
         return null;
       }
 
+      // Cache token
+      this.accessToken = token;
+      // Default expiry 1 hour if not provided
+      const expiryDate = res?.data?.expiry_date;
+      this.tokenExpires = expiryDate ? expiryDate : now + 3600 * 1000;
+
       const primaryEmail = this.configService.get<string>('EMAIL_PRIMARY_ADDRESS');
 
-      return nodemailer.createTransport({
+      this.transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
           type: 'OAuth2',
@@ -98,6 +114,8 @@ export class EmailService {
           accessToken: token,
         },
       });
+
+      return this.transporter;
     } catch (error) {
       console.error('[EmailService] Lỗi khi tạo transporter:', error);
       return null;
