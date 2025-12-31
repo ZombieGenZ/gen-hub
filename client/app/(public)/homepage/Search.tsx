@@ -205,6 +205,7 @@ export function PrimeNestSearch() {
                             properties={filteredProperties}
                             onHover={setHighlightedPropertyId}
                             highlightedPropertyId={highlightedPropertyId}
+                            variant="vertical"
                         />
                     </div>
                 </div>

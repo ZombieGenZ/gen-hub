@@ -18,21 +18,16 @@ export default {
     },
     extend: {
       fontFamily: {
-        geist: ['Geist', 'system-ui', 'sans-serif'],
         sans: ['Geist', 'system-ui', 'sans-serif'],
-        mono: ['Geist Mono', 'ui-monospace', 'monospace'],
+        mono: ['var(--font-geist-mono)', 'ui-monospace', 'monospace'],
       },
       fontSize: {
-        // Display sizes
         'display-lg': ['3.75rem', { lineHeight: '1.1', letterSpacing: '-0.02em' }],  // 60px
         'display': ['3rem', { lineHeight: '1.1', letterSpacing: '-0.02em' }],        // 48px
         'display-sm': ['2.25rem', { lineHeight: '1.2', letterSpacing: '-0.01em' }],  // 36px
-        // Heading sizes
-        'heading-xl': ['1.875rem', { lineHeight: '1.2', letterSpacing: '-0.01em' }], // 30px
-        'heading-lg': ['1.5rem', { lineHeight: '1.3', letterSpacing: '-0.01em' }],   // 24px
-        'heading': ['1.25rem', { lineHeight: '1.4' }],                                // 20px
-        'heading-sm': ['1.125rem', { lineHeight: '1.4' }],                            // 18px
-        // Body sizes
+        'headline-lg': ['2rem', { lineHeight: '1.2', fontWeight: '700' }],      // 32px
+        'headline-md': ['1.5rem', { lineHeight: '1.3', fontWeight: '600' }],    // 24px
+        'headline-sm': ['1.25rem', { lineHeight: '1.4', fontWeight: '600' }],   // 20px
         'body-lg': ['1.125rem', { lineHeight: '1.6' }],   // 18px
         'body': ['1rem', { lineHeight: '1.6' }],          // 16px
         'body-sm': ['0.875rem', { lineHeight: '1.5' }],   // 14px
@@ -48,10 +43,10 @@ export default {
         background: "var(--background)",
         foreground: "var(--foreground)",
         primary: {
-          DEFAULT: "var(--primary)",
-          foreground: "var(--primary-foreground)",
-          light: "var(--primary-light)",
-          dark: "var(--primary-dark)",
+          DEFAULT: "#0F766E", // Explicitly set Primary Color
+          foreground: "#FFFFFF",
+          light: "#14b8a6", // teal-500 approx
+          dark: "#0d6e66",
         },
         secondary: {
           DEFAULT: "var(--secondary)",
@@ -104,12 +99,12 @@ export default {
         DEFAULT: "var(--border)",
       },
       borderRadius: {
-        lg: "var(--radius-lg)",    /* 24px - Cards, modals, large containers */
-        md: "var(--radius-md)",    /* 16px - Medium elements */
-        DEFAULT: "var(--radius)",  /* 12px - Default/buttons */
-        sm: "var(--radius-sm)",    /* 8px - Small elements, tags */
-        xl: "var(--radius-xl)",    /* 32px - Extra large */
-        full: "var(--radius-full)", /* Pill shape */
+        lg: "24px",     /* Large: 24px */
+        md: "16px",     /* Medium: 16px */
+        sm: "12px",     /* Smallest: 12px (Renamed from default/sm mapping) */
+        DEFAULT: "12px",
+        xl: "32px",
+        full: "9999px",
       },
       spacing: {
         'sidebar': 'var(--sidebar-width)',

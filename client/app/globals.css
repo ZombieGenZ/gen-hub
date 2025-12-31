@@ -38,6 +38,7 @@
   --radius-pill: 9999px;
 }
 
+
 .dark {
   /* Rule 3: 100-L variation for dark mode */
   --bg: 0 0% 4%;              /* 100 - 96 -> ~4 */
@@ -57,6 +58,22 @@
   
   --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.3), 0 2px 4px -1px rgba(0,0,0,0.2);
 }
+
+/* Custom Popup Styles to remove default Mapbox padding/bg */
+.custom-map-popup .mapboxgl-popup-content {
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+.custom-map-popup .mapboxgl-popup-tip {
+  /* Optional: keep tip but match card color, or hide it. 
+     Reference images usually have a small white tip. 
+     If we want the tip, we need to style it to match white card. */
+  border-top-color: white !important; 
+  /* If hiding: display: none !important; */
+}
+
 
 @theme inline {
   --color-bg: hsl(var(--bg));

@@ -1,16 +1,16 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { PrimeNestHeader } from "@/components/landing/homepage/Header";
-import { PrimeNestHero } from "@/components/landing/homepage/Hero";
-import { PrimeNestSearch } from "@/components/landing/homepage/Search";
-import { PrimeNestFeatures } from "@/components/landing/homepage/Features";
-import { PrimeNestAbout } from "@/components/landing/homepage/About";
-import { PrimeNestFeatured } from "@/components/landing/homepage/Featured";
-import { PrimeNestTestimonials } from "@/components/landing/homepage/Testimonials";
-import { PrimeNestFAQ } from "@/components/landing/homepage/FAQ";
-import { PrimeNestContact } from "@/components/landing/homepage/Contact";
-import { PrimeNestFooter } from "@/components/landing/homepage/Footer";
+import { PrimeNestHeader } from "@/app/(public)/homepage/Header";
+import { PrimeNestHero } from "@/app/(public)/homepage/Hero";
+import { PrimeNestSearch } from "@/app/(public)/homepage/Search";
+import { PrimeNestFeatures } from "@/app/(public)/homepage/Features";
+import { PrimeNestAbout } from "@/app/(public)/homepage/About";
+import { PrimeNestFeatured } from "@/app/(public)/homepage/Featured";
+import { PrimeNestTestimonials } from "@/app/(public)/homepage/Testimonials";
+import { PrimeNestFAQ } from "@/app/(public)/homepage/FAQ";
+import { PrimeNestContact } from "@/app/(public)/homepage/Contact";
+import { PrimeNestFooter } from "@/app/(public)/homepage/Footer";
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { UserService } from "@/services/user/user.service";
 
@@ -28,7 +28,7 @@ export default function Home() {
         const checkAuth = async () => {
             const accessToken = authStorage.getAccessToken();
             const refreshToken = authStorage.getRefreshToken();
-            
+
             if (accessToken && refreshToken) {
                 setIsLogin(true);
                 try {
@@ -44,7 +44,7 @@ export default function Home() {
                 }
             }
         };
-        
+
         checkAuth();
     }, []);
 

@@ -26,17 +26,17 @@ export function PrimeNestHeader({ isLogin, user }: HeaderProps) {
                 <nav className="hidden md:flex items-center gap-8 text-slate-900 text-sm font-medium">
                     <Link href="#" className="text-[#0F766E]">Trang Chủ</Link>
                     <Link href="#services" className="hover:text-[#0F766E] transition-colors">Dịch Vụ</Link>
-                    <Link href="#properties" className="hover:text-[#0F766E] transition-colors">Kho Bãi</Link>
+                    <Link href="/kho-bai" className="hover:text-[#0F766E] transition-colors">Kho Bãi</Link>
                     <Link href="/dev/routes" className="hover:text-[#0F766E] transition-colors">Routes</Link>
                     <Link href="#about" className="hover:text-[#0F766E] transition-colors">Về Chúng Tôi</Link>
                 </nav>
 
                 {/* Right Actions */}
-                {isLogin ? 
+                {isLogin ?
                     <div className="hidden md:flex items-center gap-4">
                         <UserDropdown user={user} />
                     </div>
-                    : 
+                    :
                     <div className="hidden md:flex items-center gap-4">
                         <Link href="/login" className="text-sm font-medium text-slate-600 hover:text-[#0F766E] transition-colors">
                             Đăng Nhập
