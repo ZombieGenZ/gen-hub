@@ -140,6 +140,7 @@ export class UserService {
       return response.json();
    }
 
+   // Xác minh xác thực 2fa
    async verifyTwoFactor(token: string, secret: string, twoFactorCode: string) {
       const response = await fetch(`${API}/2fa/verify`, {
          method: 'POST',
