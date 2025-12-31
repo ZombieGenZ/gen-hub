@@ -109,6 +109,17 @@ export class OrganizationRepository {
         return !!existing;
     }
 
+    async findByTaxCode(taxCode: string, excludeId?: string): Promise<boolean> {
+        const existing = await this.prisma.organization.findFirst({
+            where: {
+                tax_code: taxCode,
+                is_deleted: false,
+                ...(excludeId && { id: { not: excludeId } }),
+            },
+        });
+        return !!existing;
+    }
+
     async findMany(
         query: QueryOrganizationDto,
         userId?: string,

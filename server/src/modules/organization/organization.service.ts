@@ -77,6 +77,24 @@ export class OrganizationService {
     lang: string,
   ): Promise<IOrganizationWithRelations> {
 
+    // Check duplicate tax code
+    const isTaxCodeExist = await this.repository.findByTaxCode(dto.tax_code);
+    if (isTaxCodeExist) {
+      throw new ConflictException(
+        await this.i18n.translate('organization.validation.tax_code_exists', { lang }),
+      );
+    }
+
+    // Lookup tax code
+    const taxInfo = await this.lookupTaxCode(dto.tax_code);
+    if (!taxInfo) {
+      throw new BadRequestException(
+        await this.i18n.translate(
+          'organization.validation.tax_code_invalid',
+          { lang },
+        ),
+      );
+    }
 
     // Validate and check Google credentials if enabled
     if (dto.is_using_google_email) {
@@ -116,10 +134,10 @@ export class OrganizationService {
 
     // Tạo organization
     const org = await this.repository.create({
-      name: dto.name,
-      international_name: dto.international_name,
+      name: taxInfo.name,
+      international_name: taxInfo.internationalName,
       tax_code: dto.tax_code,
-      headquarters_address: dto.headquarters_address,
+      headquarters_address: taxInfo.address,
       representative_name: dto.representative_name,
       representative_title: dto.representative_title,
       representative_phone: dto.representative_phone,
@@ -153,6 +171,7 @@ export class OrganizationService {
       `Organization created: ${org.name}`,
       { userId },
     );
+
     this.auditLogService.logCreate(
       org.id,
       'Organization',
@@ -168,6 +187,28 @@ export class OrganizationService {
     this.websocketGateway.emitOrganizationCreated(userId, this.stripSensitiveFields(org));
 
     return this.stripSensitiveFields(org);
+  }
+
+  private async lookupTaxCode(taxCode: string): Promise<{ name: string; address: string; internationalName?: string } | null> {
+    try {
+      const response = await axios.get(`https://api.vietqr.io/v2/business/${taxCode}`);
+      if (response.data && response.data.code === '00' && response.data.data) {
+        return {
+          name: response.data.data.name,
+          address: response.data.data.address,
+          internationalName: response.data.data.internationalName,
+        };
+      }
+      return null;
+    } catch (error) {
+      this.systemLogService.error(
+        'organization',
+        'lookup_tax_code',
+        `Tax code lookup failed for ${taxCode}: ${error.message}`,
+        { metaData: { error: error?.response?.data || error } },
+      );
+      return null;
+    }
   }
 
   private async verifyGoogleCredentials(
