@@ -68,6 +68,15 @@ export class OrganizationService {
    */
   private stripSensitiveFields(org: IOrganizationWithRelations): IOrganizationWithRelations {
     const { google_client_id, google_client_secret, google_refresh_token, email_primary_address, ...safeOrg } = org as any;
+
+    // Convert BigInt fields to Number to avoid JSON serialization error
+    if (safeOrg.api_key_logs_retention_ms) {
+      safeOrg.api_key_logs_retention_ms = Number(safeOrg.api_key_logs_retention_ms);
+    }
+    if (safeOrg.org_audit_logs_retention_ms) {
+      safeOrg.org_audit_logs_retention_ms = Number(safeOrg.org_audit_logs_retention_ms);
+    }
+
     return safeOrg as IOrganizationWithRelations;
   }
 
@@ -627,14 +636,16 @@ export class OrganizationService {
       { userId, description: 'Ownership transferred' },
     );
 
+    const safeUpdated = this.stripSensitiveFields(updated);
+
     // Emit WebSocket to both old and new owner
     this.websocketGateway.emitOwnershipTransferred(
       oldOwnerId,
       newOwner.id,
-      updated,
+      safeUpdated,
     );
 
-    return updated;
+    return safeUpdated;
   }
 
   async inviteMember(

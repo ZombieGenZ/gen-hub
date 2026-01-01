@@ -33,6 +33,8 @@ export interface IOrganizationWithRelations {
     google_client_secret?: string | null;
     google_refresh_token?: string | null;
     is_using_google_email?: boolean | null;
+    api_key_logs_retention_ms?: number | null;
+    org_audit_logs_retention_ms?: number | null;
     _count?: {
         members: number;
         roles: number;
