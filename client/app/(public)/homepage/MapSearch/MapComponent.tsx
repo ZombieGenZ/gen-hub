@@ -205,13 +205,13 @@ export default function MapComponent({ properties, onBoundsChange, highlightedPr
                 scrollZoom={isCtrlPressed}
                 onMove={(evt: ViewStateChangeEvent) => setViewState(evt.viewState)}
                 onMoveEnd={handleMoveEnd}
-                onError={(e) => console.error("Mapbox Error:", e)}
+                onError={(e: mapboxgl.ErrorEvent) => console.error("Mapbox Error:", e)}
                 style={{ width: '100%', height: '100%' }}
                 mapStyle="mapbox://styles/mapbox/streets-v12"
                 mapboxAccessToken={MAPBOX_TOKEN}
                 interactiveLayerIds={[clusterLayer.id!, unclusteredPointLayer.id!]}
                 onClick={onClick}
-                onMouseEnter={(e) => {
+                onMouseEnter={(e: mapboxgl.MapLayerMouseEvent) => {
                     // Disable hover popup on touch devices/mobile checks usually done via width
                     if (window.innerWidth < 768) return;
 
