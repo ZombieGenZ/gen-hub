@@ -206,8 +206,6 @@ export class AccountBalanceService {
         return result;
     }
 
-    // ====== ADMIN FUNCTIONS ======
-
     /**
      * Lấy danh sách tất cả số dư (Admin)
      */

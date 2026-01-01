@@ -48,8 +48,6 @@ export class ContactService {
         this.TICKET_PREFIX = this.configService.get<string>('CONTACT_TICKET_PREFIX') || 'TICKET';
     }
 
-    // ===================== CACHE HELPERS =====================
-
     private getCacheKey(id: string): string {
         return `contact:detail:${id}`;
     }
@@ -70,8 +68,6 @@ export class ContactService {
     private async invalidateListCache(): Promise<void> {
         await this.redisService.delByPattern(this.getListCachePattern());
     }
-
-    // ===================== PUBLIC METHODS =====================
 
     /**
      * Tạo ticket từ form website (public)
@@ -145,8 +141,6 @@ export class ContactService {
         const message = await this.i18n.t('contact.success.created', { lang });
         return { code, message };
     }
-
-    // ===================== ADMIN METHODS =====================
 
     /**
      * Lấy danh sách tickets (admin)
@@ -464,8 +458,6 @@ export class ContactService {
 
         return { count };
     }
-
-    // ===================== INBOUND EMAIL PROCESSING =====================
 
     /**
      * Xử lý email inbound từ khách reply

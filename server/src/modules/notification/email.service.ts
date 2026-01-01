@@ -1105,8 +1105,6 @@ export class EmailService {
     });
   }
 
-  // ===================== CONTACT SUPPORT EMAILS =====================
-
   /**
    * Gửi email xác nhận đã nhận yêu cầu liên hệ
    * @param to - Email khách hàng

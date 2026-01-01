@@ -916,8 +916,6 @@ export class WebsocketGateway
     });
   }
 
-  // ===================== CONTACT EVENTS =====================
-
   /**
    * Emit event khi tạo mới ticket liên hệ - broadcast đến admin room
    */

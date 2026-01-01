@@ -21,6 +21,7 @@ import {
     UpdateContactDto,
     ReplyContactDto,
 } from './dto';
+import { Public } from '../../common/decorators/public.decorator';
 import {
     CreatedResponse,
     GetResponse,
@@ -42,12 +43,11 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 export class ContactController {
     constructor(private readonly contactService: ContactService) { }
 
-    // ===================== PUBLIC ENDPOINTS =====================
-
     /**
      * Tạo ticket từ form website (public - không cần auth)
      */
     @Post('contact')
+    @Public()
     @HttpCode(HttpStatus.CREATED)
     @ApiOperation({ summary: 'Gửi yêu cầu liên hệ từ form website (public)' })
     async createPublic(
@@ -57,8 +57,6 @@ export class ContactController {
         const result = await this.contactService.createFromWebForm(dto, lang);
         return new CreatedResponse('contact.created', result, result.message);
     }
-
-    // ===================== ADMIN ENDPOINTS =====================
 
     /**
      * Lấy danh sách tickets
