@@ -114,6 +114,8 @@ model User {
 
   organization_update_requests OrganizationUpdateRequest[] @relation("RequestByRel")
 
+  assigned_contact_conversations ContactConversation[] @relation("AssignedStaff")
+
   @@map("users")
 }
 
@@ -2927,9 +2929,9 @@ model ContactConversation {
   email_in_reply_to String?
   email_references  String[] @default([])
 
-  assigned_staff_id   String?   @db.Uuid
-  assigned_staff_name String?
-  assigned_at         DateTime?
+  assigned_staff_id String?   @db.Uuid
+  assigned_by       String?   @db.Uuid
+  assigned_at       DateTime?
 
   first_response_at DateTime?
   resolved_at       DateTime?
@@ -2951,7 +2953,10 @@ model ContactConversation {
   updated_by String?
   deleted_by String?
 
-  messages ContactMessage[]
+  assigned_staff User? @relation("AssignedStaff", fields: [assigned_staff_id], references: [id])
+
+  messages     ContactMessage[]
+  tag_mappings ContactTagOnConversation[]
 
   @@index([customer_email])
   @@index([status])
@@ -3336,4 +3341,48 @@ model FAQ {
 
   @@index([order])
   @@map("faqs")
+}
+
+model ContactTag {
+  id          String  @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  name        String  @unique
+  description String?
+  color       String?
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean   @default(false)
+  deleted_at DateTime?
+
+  created_by String
+  updated_by String?
+  deleted_by String?
+
+  conversations ContactTagOnConversation[]
+
+  @@map("contact_tags")
+}
+
+model ContactTagOnConversation {
+  id              String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  tag_id          String @db.Uuid
+  conversation_id String @db.Uuid
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean   @default(false)
+  deleted_at DateTime?
+
+  created_by String?
+  deleted_by String?
+
+  tag          ContactTag          @relation(fields: [tag_id], references: [id], onDelete: Cascade)
+  conversation ContactConversation @relation(fields: [conversation_id], references: [id], onDelete: Cascade)
+
+  @@unique([tag_id, conversation_id])
+  @@index([tag_id])
+  @@index([conversation_id])
+  @@map("contact_tags_conversations")
 }

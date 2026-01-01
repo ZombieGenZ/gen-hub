@@ -84,6 +84,15 @@ export class ContactRepository {
                     where: { is_deleted: false },
                     orderBy: { created_at: 'asc' },
                 },
+                assigned_staff: {
+                    select: { id: true, name: true, email: true },
+                },
+                tag_mappings: {
+                    where: { is_deleted: false },
+                    include: {
+                        tag: { select: { id: true, name: true, color: true } },
+                    },
+                },
             },
         });
     }

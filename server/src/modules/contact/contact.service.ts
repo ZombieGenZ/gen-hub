@@ -231,7 +231,7 @@ export class ContactService {
 
         if (dto.assigned_staff_id !== undefined) {
             updateData.assigned_staff_id = dto.assigned_staff_id;
-            updateData.assigned_staff_name = staffName;
+            updateData.assigned_by = userId;
             updateData.assigned_at = new Date();
         }
 

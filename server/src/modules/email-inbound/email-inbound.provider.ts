@@ -10,6 +10,7 @@ import { google } from 'googleapis';
 import { RedisService } from '../redis/redis.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EmailService } from '../notification/email.service';
+import { ContactService } from '../contact/contact.service';
 
 /**
  * Interface cho unlock token data từ Redis
@@ -36,6 +37,8 @@ export class EmailInboundProvider implements OnModuleInit, OnModuleDestroy {
     private readonly UNLOCK_CODE_PATTERN = /UNLOCK\s+(\d{6})/i;
     // Subject format: [UNLOCK] email@domain.com hoặc [UNLOCK] email@domain.com - UNLOCK 123456
     private readonly UNLOCK_SUBJECT_PATTERN = /^\[UNLOCK\]\s+([^\s-]+@[^\s-]+)/i;
+    // Subject format for contact tickets: [#TICKET-20260101-001] hoặc Re: [#TICKET-20260101-001]
+    private readonly TICKET_SUBJECT_PATTERN = /\[#([A-Z]+-\d{8}-\d{3})\]/i;
 
     // Configurable timeout and retry
     private readonly FETCH_TIMEOUT: number;
@@ -48,6 +51,7 @@ export class EmailInboundProvider implements OnModuleInit, OnModuleDestroy {
         private readonly redisService: RedisService,
         private readonly prismaService: PrismaService,
         private readonly emailService: EmailService,
+        private readonly contactService: ContactService,
     ) {
         // Get configurable values from env
         this.FETCH_TIMEOUT = this.configService.get<number>('IMAP_FETCH_TIMEOUT_MS') || 60000;
@@ -409,26 +413,30 @@ export class EmailInboundProvider implements OnModuleInit, OnModuleDestroy {
             return;
         }
 
-        // CHỈ lấy 1 email MỚI NHẤT (uid cao nhất = mới nhất)
-        // Để tránh bị block bởi Gmail throttle
+        // Sort UIDs giảm dần (mới nhất trước) và lấy tối đa 10 emails
         const sortedUids = [...allUnseenUids].sort((a, b) => b - a);
-        const latestUid = sortedUids[0];
+        const uidsToProcess = sortedUids.slice(0, 10);
 
-        this.logger.log(`📬 Found ${allUnseenUids.length} unseen email(s), fetching ONLY the most recent (UID: ${latestUid})...`);
+        this.logger.log(`📬 Found ${allUnseenUids.length} unseen email(s), processing up to 10 most recent...`);
 
-        // Fetch CHỈ 1 email mới nhất - chỉ cần envelope (không cần source để check pattern)
-        const messages = this.client!.fetch([latestUid], {
-            envelope: true,
-            source: true,
-            flags: true,
-        }, { uid: true });
-
+        // Xử lý TỪNG EMAIL MỘT theo thứ tự UID giảm dần (mới nhất trước!)
         let processed = 0;
-        for await (const message of messages) {
-            await this.processEmail(message);
-            processed++;
-            // Chỉ xử lý 1 email, break ngay
-            break;
+        for (const uid of uidsToProcess) {
+            try {
+                this.logger.debug(`Fetching UID: ${uid}...`);
+                const messages = this.client!.fetch([uid], {
+                    envelope: true,
+                    source: true,
+                    flags: true,
+                }, { uid: true });
+
+                for await (const message of messages) {
+                    await this.processEmail(message);
+                    processed++;
+                }
+            } catch (error) {
+                this.logger.warn(`Error processing UID ${uid}:`, error);
+            }
         }
 
         this.logger.log(`✅ Processed ${processed} email(s)`);
@@ -449,7 +457,27 @@ export class EmailInboundProvider implements OnModuleInit, OnModuleDestroy {
             const senderEmail = from.address.toLowerCase();
             const subject = envelope.subject || '';
 
-            // Parse body từ source
+            // Bỏ qua emails từ hệ thống (no-reply, noreply, support của chính mình)
+            const systemEmails = ['no-reply@', 'noreply@', 'support@gen-hub', 'mailer-daemon@'];
+            const isSystemEmail = systemEmails.some(se => senderEmail.includes(se));
+            if (isSystemEmail) {
+                this.logger.debug(`Skipping system email from ${senderEmail}: ${subject}`);
+                await this.markAsRead(message.uid);
+                return;
+            }
+
+            // Quick subject filter - skip emails không liên quan (spam, newsletters, etc.)
+            // Chỉ xử lý: [UNLOCK] emails hoặc [#TICKET-...] replies
+            const isUnlockEmail = this.UNLOCK_SUBJECT_PATTERN.test(subject);
+            const isTicketReply = this.TICKET_SUBJECT_PATTERN.test(subject);
+
+            if (!isUnlockEmail && !isTicketReply) {
+                this.logger.debug(`Skipping irrelevant email: ${subject.substring(0, 50)}...`);
+                await this.markAsRead(message.uid);
+                return;
+            }
+
+            // Parse body từ source (chỉ khi cần thiết)
             const source = message.source.toString();
             const bodyText = this.extractTextBody(source);
 
@@ -458,8 +486,40 @@ export class EmailInboundProvider implements OnModuleInit, OnModuleDestroy {
             // Kiểm tra subject pattern [UNLOCK] email
             const subjectMatch = subject.match(this.UNLOCK_SUBJECT_PATTERN);
             if (!subjectMatch) {
-                // Không phải unlock email (subject không đúng format), đánh dấu đã đọc
+                // Không phải unlock email, thử xử lý như contact ticket reply
                 this.logger.debug(`Subject doesn't match unlock pattern: ${subject}`);
+
+                // Kiểm tra có phải là reply cho contact ticket không
+                const ticketMatch = subject.match(this.TICKET_SUBJECT_PATTERN);
+                if (ticketMatch) {
+                    this.logger.log(`📩 Contact ticket reply detected! Subject: ${subject}`);
+
+                    // Parse email headers
+                    const inReplyTo = this.extractHeader(source, 'In-Reply-To');
+                    const references = this.extractHeader(source, 'References')?.split(/\s+/).filter(Boolean) || [];
+                    const msgId = this.extractHeader(source, 'Message-ID');
+
+                    try {
+                        const processed = await this.contactService.processInboundEmail(
+                            senderEmail,
+                            from.name || senderEmail,
+                            subject,
+                            bodyText,
+                            msgId || `inbound-${Date.now()}`,
+                            inReplyTo || undefined,
+                            references,
+                        );
+
+                        if (processed) {
+                            this.logger.log(`✅ Contact ticket reply processed: ${ticketMatch[1]}`);
+                        } else {
+                            this.logger.warn(`⚠️ Contact ticket not found for: ${ticketMatch[1]}`);
+                        }
+                    } catch (error) {
+                        this.logger.error(`Error processing contact ticket reply:`, error);
+                    }
+                }
+
                 await this.markAsRead(message.uid);
                 return;
             }
@@ -534,73 +594,119 @@ export class EmailInboundProvider implements OnModuleInit, OnModuleDestroy {
      * Gmail emails thường là multipart với text/plain và text/html
      */
     private extractTextBody(source: string): string {
-        // Phương pháp 1: Tìm phần text/plain trong multipart
-        const textPlainMatch = source.match(/Content-Type:\s*text\/plain[^\r\n]*\r?\n(?:Content-Transfer-Encoding:[^\r\n]*\r?\n)?(?:[^\r\n]*\r?\n)*?\r?\n([\s\S]*?)(?=\r?\n--|\r?\n\r?\n--)/i);
-        if (textPlainMatch && textPlainMatch[1]) {
-            const text = textPlainMatch[1].trim();
-            this.logger.debug(`Extracted text/plain: ${text.substring(0, 100)}...`);
-            return text;
-        }
+        // Bước 1: Tìm và decode phần text/plain (thường là base64 trong Gmail)
+        const textPlainMatch = source.match(
+            /Content-Type:\s*text\/plain[^\r\n]*\r?\n(?:Content-Transfer-Encoding:\s*(base64|quoted-printable|7bit|8bit)[^\r\n]*)?\r?\n\r?\n([\s\S]*?)(?=\r?\n--|\r?\n\r?\n--)/i
+        );
 
-        // Phương pháp 2: Tìm UNLOCK pattern trực tiếp trong source
-        const unlockMatch = source.match(/UNLOCK\s+\d{6}/i);
-        if (unlockMatch) {
-            this.logger.debug(`Found UNLOCK pattern directly in source: ${unlockMatch[0]}`);
-            return unlockMatch[0];
-        }
+        let textContent = '';
 
-        // Phương pháp 3: Parse đơn giản - tìm nội dung sau headers
-        const lines = source.split(/\r?\n/);
-        const bodyLines: string[] = [];
-        let inBody = false;
-        let skipUntilEmptyLine = false;
+        if (textPlainMatch) {
+            const encoding = textPlainMatch[1]?.toLowerCase();
+            const rawContent = textPlainMatch[2] || '';
 
-        for (const line of lines) {
-            // Bỏ qua header
-            if (!inBody) {
-                if (line.trim() === '') {
-                    inBody = true;
+            if (encoding === 'base64') {
+                // Decode base64
+                try {
+                    const cleanBase64 = rawContent.replace(/\s/g, '');
+                    textContent = Buffer.from(cleanBase64, 'base64').toString('utf-8');
+                    this.logger.debug(`Decoded base64 text/plain: ${textContent.substring(0, 100)}...`);
+                } catch (e) {
+                    this.logger.warn('Failed to decode base64:', e);
+                    textContent = rawContent;
                 }
-                continue;
-            }
-
-            // Bỏ qua MIME headers trong multipart
-            if (line.startsWith('Content-Type:') || line.startsWith('Content-Transfer-Encoding:')) {
-                skipUntilEmptyLine = true;
-                continue;
-            }
-
-            if (skipUntilEmptyLine) {
-                if (line.trim() === '') {
-                    skipUntilEmptyLine = false;
-                }
-                continue;
-            }
-
-            // Dừng khi gặp quote (nhưng không dừng ở boundary)
-            if (line.startsWith('>')) {
-                break;
-            }
-
-            // Bỏ qua boundary lines
-            if (line.startsWith('--') && line.length > 10) {
-                continue;
-            }
-
-            // Bỏ qua HTML
-            if (line.includes('<html') || line.includes('<body') || line.includes('<div')) {
-                continue;
-            }
-
-            const trimmed = line.trim();
-            if (trimmed) {
-                bodyLines.push(trimmed);
+            } else if (encoding === 'quoted-printable') {
+                // Decode quoted-printable
+                textContent = rawContent
+                    .replace(/=\r?\n/g, '')
+                    .replace(/=([0-9A-Fa-f]{2})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
+            } else {
+                textContent = rawContent;
             }
         }
 
-        const result = bodyLines.join(' ').trim();
-        this.logger.debug(`Fallback body extraction: ${result.substring(0, 100)}...`);
-        return result;
+        // Bước 2: Nếu không tìm thấy text/plain, thử fallback
+        if (!textContent) {
+            // Tìm UNLOCK pattern trực tiếp trong source (cho unlock emails)
+            const unlockMatch = source.match(/UNLOCK\s+\d{6}/i);
+            if (unlockMatch) {
+                return unlockMatch[0];
+            }
+
+            // Fallback: lấy raw body
+            const bodyMatch = source.match(/\r?\n\r?\n([\s\S]+)/);
+            if (bodyMatch) {
+                textContent = bodyMatch[1];
+            }
+        }
+
+        if (!textContent) {
+            return '';
+        }
+
+        // Bước 3: Loại bỏ quoted text (chỉ giữ phần reply mới của user)
+        const newReply = this.extractNewReplyOnly(textContent);
+
+        this.logger.debug(`Extracted new reply content: ${newReply.substring(0, 100)}...`);
+        return newReply;
+    }
+
+    /**
+     * Trích xuất chỉ nội dung reply mới, bỏ quoted text
+     * Gmail thường có format:
+     * - quoted lines bắt đầu bằng ">"
+     * - hoặc có dòng "On ... wrote:" trước các quote
+     * - hoặc có "Vào ... đã viết:" (Gmail Vietnamese)
+     */
+    private extractNewReplyOnly(fullContent: string): string {
+        // Phương pháp 1: Tìm và cắt tại các markers phổ biến
+        // Gmail Vietnamese: "Vào ... đã viết:"
+        // Gmail English: "On ... wrote:"
+        // Outlook: "From: ... Sent:"
+
+        let content = fullContent;
+
+        // Patterns để tìm điểm bắt đầu của quoted text
+        // Dùng [\s\S] thay vì . để match cả newlines
+        const quoteMarkers = [
+            /Vào[\s\S]+?đã viết:/i,            // Gmail Vietnamese (với line breaks)
+            /On[\s\S]+?wrote:/i,                // Gmail/Outlook English (với line breaks)  
+            /^>+\s*/m,                          // Classic quote marker
+            /-{5,}\s*(Forwarded|Original)\s+message/i,  // Forwarded messages
+            /From:\s*[\s\S]+?Sent:\s*/i,        // Outlook format
+            /^\s*_{5,}\s*$/m,                   // Underscore separator
+        ];
+
+        let cutIndex = content.length;
+
+        for (const marker of quoteMarkers) {
+            const match = content.match(marker);
+            if (match && match.index !== undefined && match.index < cutIndex) {
+                cutIndex = match.index;
+            }
+        }
+
+        // Cắt content tại điểm quote bắt đầu
+        content = content.substring(0, cutIndex);
+
+        // Cleanup: loại bỏ trailing whitespace và multiple newlines
+        return content
+            .trim()
+            .replace(/\n{3,}/g, '\n\n')
+            .replace(/\s+$/, '');
+    }
+
+    /**
+     * Extract header value từ email source
+     */
+    private extractHeader(source: string, headerName: string): string | null {
+        const regex = new RegExp(`^${headerName}:\\s*(.+)$`, 'im');
+        const match = source.match(regex);
+        if (match && match[1]) {
+            // Clean up angle brackets từ Message-ID và In-Reply-To
+            return match[1].trim().replace(/^<|>$/g, '');
+        }
+        return null;
     }
 
     /**

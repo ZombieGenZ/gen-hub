@@ -53,6 +53,7 @@ import { DatabaseLogModule } from './modules/database-log/database-log.module';
 import { AddonTypeModule } from './modules/addon-type/addon-type.module';
 import { FaqModule } from './modules/faq/faq.module';
 import { ContactModule } from './modules/contact/contact.module';
+import { ContactTagModule } from './modules/contact-tag/contact-tag.module';
 import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
 
 @Module({
@@ -179,6 +180,9 @@ import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
 
     // Database Auto-logging
     DatabaseLogModule,
+
+    // Contact Tags Module
+    ContactTagModule,
 
     // Contact Support Module
     ContactModule,

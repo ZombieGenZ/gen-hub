@@ -1589,4 +1589,62 @@ socket.on('contact:conversationDeleted', (data) => {
 });
 ```
 
+---
+
+## 🏷️ ContactTag Events (Room: `admin_room`)
+
+### `contactTag:created`
+**Khi nào:** Khi tạo tag phân loại contact mới
+```javascript
+socket.on('contactTag:created', (data) => {
+  // {
+  //   "tagId": "uuid",
+  //   "name": "Hỗ trợ kỹ thuật",
+  //   "color": "#3B82F6",
+  //   "createdBy": "admin-uuid",
+  //   "timestamp": "2026-01-01T10:00:00.000Z"
+  // }
+  
+  refreshTagList();
+});
+```
+
+### `contactTag:updated`
+**Khi nào:** Khi cập nhật tag
+```javascript
+socket.on('contactTag:updated', (data) => {
+  // {
+  //   "tagId": "uuid",
+  //   "name": "Hỗ trợ kỹ thuật",
+  //   "color": "#10B981",
+  //   "updatedFields": ["name", "color"],
+  //   "updatedBy": "admin-uuid",
+  //   "timestamp": "2026-01-01T10:00:00.000Z"
+  // }
+});
+```
+
+### `contactTag:deleted`
+**Khi nào:** Khi xóa tag
+```javascript
+socket.on('contactTag:deleted', (data) => {
+  // {
+  //   "tagId": "uuid",
+  //   "deletedBy": "admin-uuid",
+  //   "timestamp": "2026-01-01T10:00:00.000Z"
+  // }
+});
+```
+
+### `contactTag:deletedMany`
+**Khi nào:** Khi xóa nhiều tags
+```javascript
+socket.on('contactTag:deletedMany', (data) => {
+  // {
+  //   "tagIds": ["uuid-1", "uuid-2"],
+  //   "deletedBy": "admin-uuid",
+  //   "timestamp": "2026-01-01T10:00:00.000Z"
+  // }
+});
+```
 

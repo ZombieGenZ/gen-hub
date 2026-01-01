@@ -1,0 +1,27 @@
+{
+    "success": {
+        "created": "Tag has been created successfully",
+        "updated": "Tag has been updated successfully",
+        "deleted": "Tag has been deleted successfully",
+        "deleted_many": "Deleted {count} tags"
+    },
+    "errors": {
+        "not_found": "Tag not found",
+        "name_exists": "Tag name already exists",
+        "cannot_delete": "Cannot delete this tag"
+    },
+    "validation": {
+        "name_required": "Please enter tag name",
+        "name_string": "Tag name must be a string",
+        "name_min": "Tag name must have at least 1 character",
+        "name_max": "Tag name cannot exceed 50 characters",
+        "description_string": "Description must be a string",
+        "description_max": "Description cannot exceed 200 characters",
+        "color_string": "Color must be a string",
+        "color_hex": "Color must be a valid hex code (e.g., #3B82F6)",
+        "is_active_boolean": "Active status must be true or false",
+        "limit_positive": "Limit must be a positive integer",
+        "offset_min": "Offset must be a non-negative number",
+        "keywords_string": "Keywords must be a string"
+    }
+}

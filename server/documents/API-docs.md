@@ -271,5 +271,12 @@
 | 261 | Contact | PATCH | /admin/contacts/{id} | ❎ | ❎ | ❎ |
 | 262 | Contact | POST | /admin/contacts/{id}/reply | ❎ | ❎ | ❎ |
 | 263 | Contact | POST | /admin/contacts/{id}/close | ❎ | ❎ | ❎ |
-| 264 | Contact | DELETE | /admin/contacts/{id} | ❎ | ❎ | ❎ |
-| 265 | Contact | DELETE | /admin/contacts/delete/many | ❎ | ❎ | ❎ |
+| 274 | Contact | DELETE | /admin/contacts/{id} | ❎ | ❎ | ❎ |
+| 275 | Contact | DELETE | /admin/contacts/delete/many | ❎ | ❎ | ❎ |
+| 276 | Contact Tags | POST | /admin/contact-tags | ❎ | ❎ | ❎ |
+| 277 | Contact Tags | GET | /admin/contact-tags | ❎ | ❎ | ❎ |
+| 278 | Contact Tags | GET | /admin/contact-tags/active | ❎ | ❎ | ❎ |
+| 279 | Contact Tags | GET | /admin/contact-tags/{id} | ❎ | ❎ | ❎ |
+| 280 | Contact Tags | PUT | /admin/contact-tags/{id} | ❎ | ❎ | ❎ |
+| 281 | Contact Tags | DELETE | /admin/contact-tags/{id} | ❎ | ❎ | ❎ |
+| 282 | Contact Tags | DELETE | /admin/contact-tags/delete/many | ❎ | ❎ | ❎ |

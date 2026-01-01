@@ -328,6 +328,8 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         this.seedOrganizationUpdateRequestPermissions.bind(this),
         this.seedAddonTypePermissions.bind(this),
         this.seedFaqPermissions.bind(this),
+        this.seedContactPermissions.bind(this),
+        this.seedContactTagPermissions.bind(this),
       ];
 
       const BATCH_SIZE = 3; // Chạy 3 seed functions cùng lúc
@@ -3093,6 +3095,80 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       this.logger.error(`❌ Failed to seed contact permissions: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * Seed các permissions cho ContactTag
+   */
+  private async seedContactTagPermissions() {
+    try {
+      const contactTagPermissions = [
+        { key: 'contact-tag.create', name: 'Tạo contact tag', description: 'Quyền tạo tag phân loại liên hệ' },
+        { key: 'contact-tag.list', name: 'Xem danh sách contact tag', description: 'Quyền xem danh sách tag phân loại' },
+        { key: 'contact-tag.read', name: 'Xem chi tiết contact tag', description: 'Quyền xem chi tiết tag' },
+        { key: 'contact-tag.update', name: 'Cập nhật contact tag', description: 'Quyền cập nhật tag' },
+        { key: 'contact-tag.delete', name: 'Xóa contact tag', description: 'Quyền xóa tag' },
+      ];
+
+      for (const perm of contactTagPermissions) {
+        const existing = await this.permission.findFirst({
+          where: { key: perm.key },
+        });
+
+        if (!existing) {
+          await this.permission.create({
+            data: {
+              key: perm.key,
+              name: perm.name,
+              description: perm.description,
+              is_active: true,
+              is_deleted: false,
+            },
+          });
+        }
+      }
+
+      const adminRoles = await this.role.findMany({
+        where: {
+          name: { in: ['Admin', 'Super Admin'] },
+          is_deleted: false,
+        },
+      });
+
+      const permissions = await this.permission.findMany({
+        where: {
+          key: { in: contactTagPermissions.map((p) => p.key) },
+          is_deleted: false,
+        },
+      });
+
+      for (const role of adminRoles) {
+        for (const permission of permissions) {
+          const existingAssignment = await this.rolePermission.findFirst({
+            where: {
+              role_id: role.id,
+              permission_id: permission.id,
+            },
+          });
+
+          if (!existingAssignment) {
+            await this.rolePermission.create({
+              data: {
+                role_id: role.id,
+                permission_id: permission.id,
+                is_active: true,
+                is_deleted: false,
+              },
+            });
+          }
+        }
+      }
+
+      this.logger.log('✅ ContactTag permissions seeded');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error(`❌ Failed to seed contact-tag permissions: ${errorMessage}`);
     }
   }
 }

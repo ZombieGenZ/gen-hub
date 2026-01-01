@@ -1,0 +1,27 @@
+{
+    "success": {
+        "created": "Tag đã được tạo thành công",
+        "updated": "Tag đã được cập nhật thành công",
+        "deleted": "Tag đã được xóa thành công",
+        "deleted_many": "Đã xóa {count} tag"
+    },
+    "errors": {
+        "not_found": "Không tìm thấy tag",
+        "name_exists": "Tên tag đã tồn tại",
+        "cannot_delete": "Không thể xóa tag này"
+    },
+    "validation": {
+        "name_required": "Vui lòng nhập tên tag",
+        "name_string": "Tên tag phải là chuỗi ký tự",
+        "name_min": "Tên tag phải có ít nhất 1 ký tự",
+        "name_max": "Tên tag không được quá 50 ký tự",
+        "description_string": "Mô tả phải là chuỗi ký tự",
+        "description_max": "Mô tả không được quá 200 ký tự",
+        "color_string": "Màu sắc phải là chuỗi ký tự",
+        "color_hex": "Màu sắc phải là mã hex hợp lệ (ví dụ: #3B82F6)",
+        "is_active_boolean": "Trạng thái hoạt động phải là true hoặc false",
+        "limit_positive": "Số lượng phải là số nguyên dương",
+        "offset_min": "Vị trí bắt đầu phải là số không âm",
+        "keywords_string": "Từ khóa phải là chuỗi ký tự"
+    }
+}
