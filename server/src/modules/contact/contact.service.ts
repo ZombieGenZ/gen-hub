@@ -13,7 +13,6 @@ import {
     QueryContactDto,
     UpdateContactDto,
     ReplyContactDto,
-    AssignStaffDto,
 } from './dto';
 import {
     IContactConversationWithMessages,
@@ -475,99 +474,7 @@ export class ContactService {
         return { count };
     }
 
-    /**
-     * Assign staff vào conversation
-     */
-    async assignStaff(
-        conversationId: string,
-        dto: AssignStaffDto,
-        userId: string,
-        lang: string = 'vi',
-    ): Promise<{ message: string; assigned: IContactConversationStaff[] }> {
-        const conversation = await this.repository.findById(conversationId);
-        if (!conversation) {
-            throw new NotFoundException(
-                await this.i18n.t('contact.errors.not_found', { lang }),
-            );
-        }
 
-        // Loại bỏ duplicates
-        const uniqueStaffIds = [...new Set(dto.staff_ids)];
-        const assigned = await this.repository.assignStaff(conversationId, uniqueStaffIds, userId);
-
-        // Invalidate cache
-        await Promise.all([
-            this.invalidateCache(conversationId),
-            this.invalidateListCache(),
-        ]);
-
-        // Log
-        this.systemLogService.info('contact', 'assign_staff', `Assigned ${assigned.length} staff to ticket: ${conversation.code}`, {
-            userId,
-            metaData: { conversationId, staffIds: uniqueStaffIds },
-        });
-
-        // WebSocket
-        if (assigned.length > 0) {
-            this.websocketGateway.emitContactStaffAssigned(
-                conversationId,
-                conversation.code,
-                assigned.map(a => ({
-                    staffId: a.staff_id,
-                    staffName: a.staff?.name || '',
-                })),
-                userId,
-            );
-        }
-
-        return {
-            message: await this.i18n.t('contact.success.staff_assigned', { lang }),
-            assigned,
-        };
-    }
-
-    /**
-     * Unassign staff khỏi conversation
-     */
-    async unassignStaff(
-        conversationId: string,
-        staffId: string,
-        userId: string,
-        lang: string = 'vi',
-    ): Promise<{ message: string }> {
-        const conversation = await this.repository.findById(conversationId);
-        if (!conversation) {
-            throw new NotFoundException(
-                await this.i18n.t('contact.errors.not_found', { lang }),
-            );
-        }
-
-        const isAssigned = await this.repository.isStaffAssigned(conversationId, staffId);
-        if (!isAssigned) {
-            throw new BadRequestException(
-                await this.i18n.t('contact.errors.staff_not_assigned', { lang }),
-            );
-        }
-
-        await this.repository.unassignStaff(conversationId, staffId, userId);
-
-        // Invalidate cache
-        await Promise.all([
-            this.invalidateCache(conversationId),
-            this.invalidateListCache(),
-        ]);
-
-        // Log
-        this.systemLogService.info('contact', 'unassign_staff', `Unassigned staff from ticket: ${conversation.code}`, {
-            userId,
-            metaData: { conversationId, staffId },
-        });
-
-        // WebSocket
-        this.websocketGateway.emitContactStaffUnassigned(conversationId, conversation.code, staffId, userId);
-
-        return { message: await this.i18n.t('contact.success.staff_unassigned', { lang }) };
-    }
 
     /**
      * Lấy danh sách staff được assign

@@ -399,29 +399,7 @@ export class ContactRepository {
         });
     }
 
-    /**
-     * Unassign staff khỏi conversation
-     */
-    async unassignStaff(
-        conversationId: string,
-        staffId: string,
-        deletedBy: string,
-    ): Promise<boolean> {
-        const result = await this.prisma.contactConversationStaff.updateMany({
-            where: {
-                conversation_id: conversationId,
-                staff_id: staffId,
-                is_deleted: false,
-            },
-            data: {
-                is_deleted: true,
-                is_active: false,
-                deleted_at: new Date(),
-                deleted_by: deletedBy,
-            },
-        });
-        return result.count > 0;
-    }
+
 
     /**
      * Unassign nhiều staff khỏi conversation
@@ -572,20 +550,7 @@ export class ContactRepository {
         }
     }
 
-    /**
-     * Kiểm tra staff có được assign hay không
-     */
-    async isStaffAssigned(conversationId: string, staffId: string): Promise<boolean> {
-        const count = await this.prisma.contactConversationStaff.count({
-            where: {
-                conversation_id: conversationId,
-                staff_id: staffId,
-                is_deleted: false,
-                is_active: true,
-            },
-        });
-        return count > 0;
-    }
+
 
     /**
      * Cập nhật trạng thái assignment khi User bị thay đổi is_active/is_deleted
