@@ -9,6 +9,8 @@ class AuthStorageService {
   private readonly VERIFICATION_TOKEN_KEY = process.env.NEXT_PUBLIC_VERIFICATION_TOKEN_KEY;
   private readonly THEME_KEY = process.env.NEXT_PUBLIC_THEME_KEY;
   private readonly EMAIL_VERIFIED = process.env.NEXT_PUBLIC_EMAIL_VERIFIED
+  private readonly REQUIES_2FA = process.env.NEXT_PUBLIC_REQUIES_2FA
+  private readonly TEMP_TOKEN = process.env.NEXT_PUBLIC_TEMP_TOKEN
 
   private constructor() {}
 
@@ -17,6 +19,14 @@ class AuthStorageService {
       AuthStorageService.instance = new AuthStorageService();
     }
     return AuthStorageService.instance;
+  }
+
+  getTempToken(): string | null {
+    return getCookie(this.TEMP_TOKEN!);
+  }
+
+  getRequies2fa(): string | null {
+    return getCookie(this.REQUIES_2FA!);
   }
 
   getEmailVerified(): string | null {
@@ -36,6 +46,14 @@ class AuthStorageService {
     return getCookie(this.VERIFICATION_TOKEN_KEY!);
   }
 
+  setRequies2fa(is_2fa: string) {
+    setCookie(this.REQUIES_2FA!, is_2fa, 365)
+  }
+
+  setTempToken(temp_token: string) {
+    setCookie(this.TEMP_TOKEN!, temp_token, 365)
+  }
+
   setTokens(accessToken: string, refreshToken: string): void {
     setCookie(this.ACCESS_TOKEN_KEY!, accessToken, Number(process.env.NEXT_PUBLIC_JWT_ACCESS_EXPIRATION)!);
     setCookie(this.REFRESH_TOKEN_KEY!, refreshToken, Number(process.env.NEXT_PUBLIC_JWT_REFRESH_EXPIRATION)!);
@@ -49,12 +67,18 @@ class AuthStorageService {
     setCookie(this.EMAIL_VERIFIED!, is_verified, 365)
   }
 
+  clearRequies2fa(): void {
+    removeCookie(this.REQUIES_2FA!)
+    removeCookie(this.TEMP_TOKEN!)
+  }
+
   clearTokens(): void {
     removeCookie(this.EMAIL_VERIFIED!)
     removeCookie(this.ACCESS_TOKEN_KEY!);
     removeCookie(this.REFRESH_TOKEN_KEY!);
     removeCookie(this.THEME_KEY!);
     removeCookie(this.VERIFICATION_TOKEN_KEY!);
+    removeCookie(this.REQUIES_2FA!)
   }
 
   // Theme methods

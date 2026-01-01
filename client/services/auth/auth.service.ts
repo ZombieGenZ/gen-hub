@@ -49,18 +49,37 @@ export class AuthService {
             await this.verify_password(data.authorization.access_token, input.password);
             return data;
         } else {
+            authStorage.setRequies2fa(data.data.requires_2fa);
+            authStorage.setTempToken(data.data.temp_token);
+            return data;
+        }
+    }
+
+    async login2fa(temp_token: string, auth_code?: string, backup_code?: string) {
+        try {
+            const response = await fetch(`${API}/2fa/verify-login`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ 
+                    temp_token: temp_token,
+                    ...(auth_code && { two_factor_code: auth_code }),
+                    ...(backup_code && { backup_code: backup_code })
+                })
+            })
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Login failed');
+            }
+            authStorage.clearRequies2fa();
+            const data = await response.json();
             authStorage.setTokens(
                 data.authorization.access_token,
                 data.authorization.refresh_token
             );
-        }
-
-        return data;
-    }
-
-    async login2fa(temp_token: string, auth_code: string) {
-        try {
-            const response = await fetch(`${API}`)
+            return data;
         } catch (error) {
             console.log(error);
             throw error;

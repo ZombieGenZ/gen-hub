@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { User, Lock, Eye, EyeOff, Moon, Sun } from "lucide-react"
+import { User, Lock, Eye, EyeOff, Moon, Sun, Key } from "lucide-react"
 import Link from "next/link"
 import { AuthService } from '@/services/auth/auth.service'
 import { useRouter } from "next/navigation"
@@ -19,14 +19,19 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [rememberMe, setRememberMe] = useState(false)
+  const [requires_2fa, setRequires2FA] = useState<boolean>(authStorage.getRequies2fa() === "true" || false)
   const [formData, setFormData] = useState({
     email: "",
     password: "",
+    two_factor_code: "",
+    backup_code: ""
   })
   const [turnstileToken, setTurnstileToken] = useState<string>('')
 
   const [emailFocused, setEmailFocused] = useState(false)
   const [passwordFocused, setPasswordFocused] = useState(false)
+
+  const temp_token = authStorage.getTempToken()
 
   useEffect(() => {
     if (authStorage.isAuthenticated()) {
@@ -40,10 +45,21 @@ export default function LoginPage() {
     try {
       // Call API login
       const response = await authServices.login({
-        ...formData,
+        email: formData.email,
+        password: formData.password,
+        ...(requires_2fa && {
+          ...(formData.two_factor_code && { two_factor_code: formData.two_factor_code }),
+          ...(formData.backup_code && { backup_code: formData.backup_code })
+        }),
         turnstileToken
       })
       console.log(authStorage.getAccessToken())
+      if (response && response.data.requires_2fa) {
+        setRequires2FA(true)
+        showToast('Vui lòng nhập mã xác thực 2 yếu tố', 'info')
+        return
+      }
+      
       if (response) {
         authStorage.setTokens(
           response.authorization.access_token,
@@ -54,6 +70,18 @@ export default function LoginPage() {
       } else {
         showToast("Đăng nhập thất bại!", 'error')
       }
+    } catch (error) {
+      console.error("Login error:", error)
+      showToast("Có lỗi xảy ra!", 'error')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleLoginbyTwoFactorCode = () => {
+    setLoading(true)
+    try {
+      const response = authServices.login2fa(temp_token!, formData.two_factor_code, formData.backup_code)
     } catch (error) {
       console.error("Login error:", error)
       showToast("Có lỗi xảy ra!", 'error')
@@ -90,10 +118,8 @@ export default function LoginPage() {
           <div className="space-y-5">
             {/* Email/Username */}
             <div className="group">
-              <label
-                className={`block text-sm font-medium mb-2 transition-colors ${darkMode ? "text-slate-300" : "text-gray-700"}`}
-              >
-                Email hoặc Username
+              <label className={`block text-sm font-medium mb-2 transition-colors ${darkMode ? "text-slate-300" : "text-gray-700"}`}>
+                Email hoặc Username <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -123,10 +149,8 @@ export default function LoginPage() {
 
             {/* Password */}
             <div className="group">
-              <label
-                className={`block text-sm font-medium mb-2 transition-colors ${darkMode ? "text-slate-300" : "text-gray-700"}`}
-              >
-                Mật khẩu
+              <label className={`block text-sm font-medium mb-2 transition-colors ${darkMode ? "text-slate-300" : "text-gray-700"}`}>
+                Mật khẩu <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -163,6 +187,60 @@ export default function LoginPage() {
                 </button>
               </div>
             </div>
+
+            {/* 2FA Input Fields */}
+            {requires_2fa && (
+              <div className="space-y-5 mt-4">
+                <div className="group">
+                  <label className={`block text-sm font-medium mb-2 transition-colors ${darkMode ? "text-slate-300" : "text-gray-700"}`}>
+                    Mã xác thực 2 yếu tố <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Lock
+                        className={`h-5 w-5 transition-all duration-300 ${darkMode ? "text-slate-500" : "text-gray-400"}`}
+                      />
+                    </div>
+                    <input
+                      type="text"
+                      value={formData.two_factor_code}
+                      onChange={(e) => setFormData({...formData, two_factor_code: e.target.value})}
+                      onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+                      placeholder="Nhập mã xác thực 2FA"
+                      className={`w-full pl-10 pr-4 py-3 rounded-lg transition-all focus:outline-none focus:ring-2 ${
+                        darkMode
+                          ? "bg-slate-700/50 border border-slate-600 text-white placeholder-slate-400 focus:border-teal-600 focus:ring-teal-600/20"
+                          : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-500 focus:border-teal-600 focus:ring-teal-600/20"
+                      }`}
+                    />
+                  </div>
+                </div>
+                <div className="group">
+                  <label className={`block text-sm font-medium mb-2 transition-colors ${darkMode ? "text-slate-300" : "text-gray-700"}`}>
+                    Hoặc mã dự phòng
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Key
+                        className={`h-5 w-5 transition-all duration-300 ${darkMode ? "text-slate-500" : "text-gray-400"}`}
+                      />
+                    </div>
+                    <input
+                      type="text"
+                      value={formData.backup_code}
+                      onChange={(e) => setFormData({...formData, backup_code: e.target.value})}
+                      onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+                      placeholder="Nhập mã dự phòng"
+                      className={`w-full pl-10 pr-4 py-3 rounded-lg transition-all focus:outline-none focus:ring-2 ${
+                        darkMode
+                          ? "bg-slate-700/50 border border-slate-600 text-white placeholder-slate-400 focus:border-teal-600 focus:ring-teal-600/20"
+                          : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-500 focus:border-teal-600 focus:ring-teal-600/20"
+                      }`}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="flex items-center justify-between">
               <label className="flex items-center cursor-pointer group">
