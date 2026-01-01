@@ -985,7 +985,39 @@ export class WebsocketGateway
     });
   }
 
+  /**
+   * Emit event khi assign staff vào ticket
+   */
+  emitContactStaffAssigned(
+    conversationId: string,
+    code: string,
+    staff: Array<{ staffId: string; staffName: string }>,
+    assignedBy: string,
+  ) {
+    this.server.to('admin_room').emit('contact:staffAssigned', {
+      conversationId,
+      code,
+      staff,
+      assignedBy,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  /**
+   * Emit event khi unassign staff khỏi ticket
+   */
+  emitContactStaffUnassigned(conversationId: string, code: string, staffId: string, unassignedBy: string) {
+    this.server.to('admin_room').emit('contact:staffUnassigned', {
+      conversationId,
+      code,
+      staffId,
+      unassignedBy,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
   @SubscribeMessage('ping')
+
   handlePing(@ConnectedSocket() socket: Socket) {
     // Cập nhật heartbeat nếu user đã authenticated
     const userId = this.socketUsers.get(socket.id);

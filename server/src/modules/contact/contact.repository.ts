@@ -4,8 +4,6 @@ import {
     ContactConversation,
     ContactMessage,
     ContactStatus,
-    ContactChannel,
-    MessageSender,
     MessageType,
     Prisma,
 } from '@prisma/client';
@@ -13,11 +11,14 @@ import {
     IContactConversationWithMessages,
     IPaginatedContactResponse,
     ICreateMessageData,
+    IContactConversationListItem,
+    IContactConversationStaff,
 } from './interfaces';
 import { QueryContactDto } from './dto';
 
 /**
  * Repository xử lý database operations cho Contact
+ * Đã tối ưu hóa với select thay vì include và parallel queries
  */
 @Injectable()
 export class ContactRepository {
@@ -74,18 +75,45 @@ export class ContactRepository {
     }
 
     /**
-     * Tìm conversation theo ID
+     * Tìm conversation theo ID - OPTIMIZED với select cụ thể
      */
     async findById(id: string): Promise<IContactConversationWithMessages | null> {
-        return this.prisma.contactConversation.findFirst({
+        const result = await this.prisma.contactConversation.findFirst({
             where: { id, is_deleted: false },
             include: {
                 messages: {
                     where: { is_deleted: false },
                     orderBy: { created_at: 'asc' },
+                    select: {
+                        id: true,
+                        sender_type: true,
+                        sender_id: true,
+                        sender_name: true,
+                        sender_email: true,
+                        message_type: true,
+                        content: true,
+                        content_html: true,
+                        is_internal: true,
+                        is_read: true,
+                        read_at: true,
+                        created_at: true,
+                        attachments: true,
+                    },
                 },
                 assigned_staff: {
                     select: { id: true, name: true, email: true },
+                },
+                assigned_staff_list: {
+                    where: { is_deleted: false, is_active: true },
+                    select: {
+                        id: true,
+                        staff_id: true,
+                        assigned_by: true,
+                        assigned_at: true,
+                        staff: {
+                            select: { id: true, name: true, email: true },
+                        },
+                    },
                 },
                 tag_mappings: {
                     where: { is_deleted: false },
@@ -95,6 +123,8 @@ export class ContactRepository {
                 },
             },
         });
+
+        return result as unknown as IContactConversationWithMessages | null;
     }
 
     /**
@@ -139,11 +169,12 @@ export class ContactRepository {
     }
 
     /**
-     * Lấy danh sách conversations với phân trang và lọc
+     * Lấy danh sách conversations với phân trang và lọc - OPTIMIZED
+     * Sử dụng select thay vì include để giảm data transfer
      */
     async findMany(
         query: QueryContactDto,
-    ): Promise<IPaginatedContactResponse<ContactConversation>> {
+    ): Promise<IPaginatedContactResponse<IContactConversationListItem>> {
         const { limit = 10, offset = 0, keywords, status, priority, assigned_staff_id } = query;
 
         const where: Prisma.ContactConversationWhereInput = {
@@ -163,6 +194,7 @@ export class ContactRepository {
             ];
         }
 
+        // Parallel queries để tối ưu performance
         const [items, total] = await Promise.all([
             this.prisma.contactConversation.findMany({
                 where,
@@ -173,12 +205,60 @@ export class ContactRepository {
                 ],
                 skip: offset,
                 take: limit,
+                select: {
+                    id: true,
+                    code: true,
+                    customer_name: true,
+                    customer_email: true,
+                    customer_phone: true,
+                    customer_company: true,
+                    subject: true,
+                    status: true,
+                    priority: true,
+                    channel: true,
+                    assigned_staff_id: true,
+                    last_activity_at: true,
+                    created_at: true,
+                    assigned_staff: {
+                        select: { id: true, name: true, email: true },
+                    },
+                    _count: {
+                        select: {
+                            messages: { where: { is_deleted: false } },
+                            assigned_staff_list: { where: { is_deleted: false, is_active: true } },
+                        },
+                    },
+                },
             }),
             this.prisma.contactConversation.count({ where }),
         ]);
 
+        // Transform để match interface
+        const transformedItems: IContactConversationListItem[] = items.map(item => ({
+            id: item.id,
+            code: item.code,
+            customer_name: item.customer_name,
+            customer_email: item.customer_email,
+            customer_phone: item.customer_phone ?? undefined,
+            customer_company: item.customer_company ?? undefined,
+            subject: item.subject ?? undefined,
+            status: item.status,
+            priority: item.priority,
+            channel: item.channel,
+            assigned_staff_id: item.assigned_staff_id ?? undefined,
+            assigned_staff: item.assigned_staff ? {
+                id: item.assigned_staff.id,
+                name: item.assigned_staff.name,
+                email: item.assigned_staff.email ?? undefined,
+            } : undefined,
+            assigned_staff_count: item._count.assigned_staff_list,
+            messages_count: item._count.messages,
+            last_activity_at: item.last_activity_at ?? undefined,
+            created_at: item.created_at,
+        }));
+
         return {
-            items,
+            items: transformedItems,
             total,
             limit,
             offset,
@@ -267,5 +347,262 @@ export class ContactRepository {
             where: { id, first_response_at: null },
             data: { first_response_at: new Date() },
         });
+    }
+
+    /**
+     * Assign nhiều staff vào conversation
+     */
+    async assignStaff(
+        conversationId: string,
+        staffIds: string[],
+        assignedBy: string,
+    ): Promise<IContactConversationStaff[]> {
+        // Lọc bỏ những staff đã được assign
+        const existingAssignments = await this.prisma.contactConversationStaff.findMany({
+            where: {
+                conversation_id: conversationId,
+                staff_id: { in: staffIds },
+                is_deleted: false,
+            },
+            select: { staff_id: true },
+        });
+
+        const existingStaffIds = new Set(existingAssignments.map(a => a.staff_id));
+        const newStaffIds = staffIds.filter(id => !existingStaffIds.has(id));
+
+        if (newStaffIds.length === 0) {
+            return [];
+        }
+
+        // Tạo assignments mới
+        await this.prisma.contactConversationStaff.createMany({
+            data: newStaffIds.map(staffId => ({
+                conversation_id: conversationId,
+                staff_id: staffId,
+                assigned_by: assignedBy,
+                created_by: assignedBy,
+            })),
+        });
+
+        // Trả về danh sách đã tạo
+        return this.prisma.contactConversationStaff.findMany({
+            where: {
+                conversation_id: conversationId,
+                staff_id: { in: newStaffIds },
+                is_deleted: false,
+            },
+            include: {
+                staff: {
+                    select: { id: true, name: true, email: true },
+                },
+            },
+        });
+    }
+
+    /**
+     * Unassign staff khỏi conversation
+     */
+    async unassignStaff(
+        conversationId: string,
+        staffId: string,
+        deletedBy: string,
+    ): Promise<boolean> {
+        const result = await this.prisma.contactConversationStaff.updateMany({
+            where: {
+                conversation_id: conversationId,
+                staff_id: staffId,
+                is_deleted: false,
+            },
+            data: {
+                is_deleted: true,
+                is_active: false,
+                deleted_at: new Date(),
+                deleted_by: deletedBy,
+            },
+        });
+        return result.count > 0;
+    }
+
+    /**
+     * Unassign nhiều staff khỏi conversation
+     */
+    async unassignManyStaff(
+        conversationId: string,
+        staffIds: string[],
+        deletedBy: string,
+    ): Promise<number> {
+        const result = await this.prisma.contactConversationStaff.updateMany({
+            where: {
+                conversation_id: conversationId,
+                staff_id: { in: staffIds },
+                is_deleted: false,
+            },
+            data: {
+                is_deleted: true,
+                is_active: false,
+                deleted_at: new Date(),
+                deleted_by: deletedBy,
+            },
+        });
+        return result.count;
+    }
+
+    /**
+     * Lấy danh sách staff được assign vào conversation
+     */
+    async getAssignedStaff(conversationId: string): Promise<IContactConversationStaff[]> {
+        return this.prisma.contactConversationStaff.findMany({
+            where: {
+                conversation_id: conversationId,
+                is_deleted: false,
+                is_active: true,
+            },
+            include: {
+                staff: {
+                    select: { id: true, name: true, email: true },
+                },
+            },
+            orderBy: { assigned_at: 'asc' },
+        });
+    }
+
+    /**
+     * Đồng bộ danh sách staff (thêm mới hoặc xóa dựa trên danh sách input)
+     */
+    async syncStaff(
+        conversationId: string,
+        staffIds: string[],
+        updatedBy: string,
+    ): Promise<{ added: string[]; removed: string[] }> {
+        // Lấy danh sách đang active
+        const current = await this.prisma.contactConversationStaff.findMany({
+            where: {
+                conversation_id: conversationId,
+                is_deleted: false,
+                is_active: true,
+            },
+            select: { staff_id: true },
+        });
+        const currentIds = new Set(current.map((c) => c.staff_id));
+        const targetIds = new Set(staffIds);
+
+        const toAdd = staffIds.filter((id) => !currentIds.has(id));
+        const toRemove = Array.from(currentIds).filter((id) => !targetIds.has(id));
+
+        if (toAdd.length) {
+            await this.assignStaff(conversationId, toAdd, updatedBy);
+        }
+
+        if (toRemove.length) {
+            await this.unassignManyStaff(conversationId, toRemove, updatedBy);
+        }
+
+        return { added: toAdd, removed: toRemove };
+    }
+
+    /**
+     * Đồng bộ danh sách tags (thêm mới hoặc xóa dựa trên danh sách input)
+     */
+    async syncTags(
+        conversationId: string,
+        tagIds: string[],
+        updatedBy: string,
+    ): Promise<void> {
+        // Lấy tất cả mappings hiện có (kể cả deleted) để xử lý unique constraint
+        const currentAll = await this.prisma.contactTagOnConversation.findMany({
+            where: { conversation_id: conversationId },
+            select: { tag_id: true, id: true, is_deleted: true },
+        });
+
+        const currentMap = new Map(currentAll.map((t) => [t.tag_id, t]));
+        const ops: any[] = [];
+
+        // 1. Duyệt danh sách mới: thêm hoặc active lại
+        for (const tagId of tagIds) {
+            const existing = currentMap.get(tagId);
+            if (existing) {
+                if (existing.is_deleted) {
+                    // Restore
+                    ops.push(
+                        this.prisma.contactTagOnConversation.update({
+                            where: { id: existing.id },
+                            data: {
+                                is_deleted: false,
+                                is_active: true,
+                                updated_at: new Date(),
+                            },
+                        }),
+                    );
+                }
+                // Nếu đã active thì thôi
+            } else {
+                // Create new
+                ops.push(
+                    this.prisma.contactTagOnConversation.create({
+                        data: {
+                            conversation_id: conversationId,
+                            tag_id: tagId,
+                            created_by: updatedBy,
+                        },
+                    }),
+                );
+            }
+        }
+
+        // 2. Duyệt danh sách cũ: xóa nếu không có trong danh sách mới
+        for (const [tagId, existing] of currentMap) {
+            if (!tagIds.includes(tagId) && !existing.is_deleted) {
+                // Delete (soft)
+                ops.push(
+                    this.prisma.contactTagOnConversation.update({
+                        where: { id: existing.id },
+                        data: {
+                            is_deleted: true,
+                            is_active: false,
+                            deleted_by: updatedBy,
+                            deleted_at: new Date(),
+                        },
+                    }),
+                );
+            }
+        }
+
+        if (ops.length > 0) {
+            await this.prisma.$transaction(ops);
+        }
+    }
+
+    /**
+     * Kiểm tra staff có được assign hay không
+     */
+    async isStaffAssigned(conversationId: string, staffId: string): Promise<boolean> {
+        const count = await this.prisma.contactConversationStaff.count({
+            where: {
+                conversation_id: conversationId,
+                staff_id: staffId,
+                is_deleted: false,
+                is_active: true,
+            },
+        });
+        return count > 0;
+    }
+
+    /**
+     * Cập nhật trạng thái assignment khi User bị thay đổi is_active/is_deleted
+     */
+    async updateStaffAssignmentsOnUserChange(
+        userId: string,
+        isActive: boolean,
+    ): Promise<number> {
+        const result = await this.prisma.contactConversationStaff.updateMany({
+            where: {
+                staff_id: userId,
+                is_deleted: false,
+            },
+            data: {
+                is_active: isActive,
+            },
+        });
+        return result.count;
     }
 }

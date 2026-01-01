@@ -20,6 +20,7 @@ import {
     QueryContactDto,
     UpdateContactDto,
     ReplyContactDto,
+    AssignStaffDto,
 } from './dto';
 import { Public } from '../../common/decorators/public.decorator';
 import {
@@ -59,13 +60,13 @@ export class ContactController {
     }
 
     /**
-     * Lấy danh sách tickets
+     * Lấy danh sách tickets - OPTIMIZED
      */
     @Get('admin/contacts')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact.list')
     @ApiBearerAuth()
-    @ApiOperation({ summary: 'Lấy danh sách tickets liên hệ' })
+    @ApiOperation({ summary: 'Lấy danh sách tickets liên hệ (optimized)' })
     async findAll(
         @Query() query: QueryContactDto,
         @I18nLang() lang: string,
@@ -107,13 +108,29 @@ export class ContactController {
     }
 
     /**
+     * Lấy danh sách staff được assign vào ticket
+     */
+    @Get('admin/contacts/:id/staff')
+    @UseGuards(JwtAuthGuard, PermissionGuard)
+    @RequirePermission('contact.read')
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Lấy danh sách staff được assign vào ticket' })
+    async getAssignedStaff(
+        @Param('id') id: string,
+        @I18nLang() lang: string,
+    ) {
+        const result = await this.contactService.getAssignedStaff(id, lang);
+        return new GetResponse('contact.staff_list', result);
+    }
+
+    /**
      * Cập nhật ticket
      */
     @Patch('admin/contacts/:id')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact.update')
     @ApiBearerAuth()
-    @ApiOperation({ summary: 'Cập nhật ticket (status, priority, assign)' })
+    @ApiOperation({ summary: 'Cập nhật ticket (status, priority, assign, staff)' })
     async update(
         @Param('id') id: string,
         @Body() dto: UpdateContactDto,
@@ -122,6 +139,42 @@ export class ContactController {
     ) {
         const result = await this.contactService.update(id, dto, user.userId, user.name || 'Admin', lang);
         return new UpdatedResponse('contact.updated', result);
+    }
+
+    /**
+     * Assign staff vào ticket
+     */
+    @Post('admin/contacts/:id/assign-staff')
+    @UseGuards(JwtAuthGuard, PermissionGuard)
+    @RequirePermission('contact.assign')
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Assign staff vào ticket' })
+    async assignStaff(
+        @Param('id') id: string,
+        @Body() dto: AssignStaffDto,
+        @CurrentUser() user: { userId: string },
+        @I18nLang() lang: string,
+    ) {
+        const result = await this.contactService.assignStaff(id, dto, user.userId, lang);
+        return new OkResponse('contact.staff_assigned', result.assigned, result.message);
+    }
+
+    /**
+     * Unassign staff khỏi ticket
+     */
+    @Delete('admin/contacts/:id/staff/:staffId')
+    @UseGuards(JwtAuthGuard, PermissionGuard)
+    @RequirePermission('contact.assign')
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Unassign staff khỏi ticket' })
+    async unassignStaff(
+        @Param('id') id: string,
+        @Param('staffId') staffId: string,
+        @CurrentUser() user: { userId: string },
+        @I18nLang() lang: string,
+    ) {
+        const result = await this.contactService.unassignStaff(id, staffId, user.userId, lang);
+        return new OkResponse('contact.staff_unassigned', null, result.message);
     }
 
     /**

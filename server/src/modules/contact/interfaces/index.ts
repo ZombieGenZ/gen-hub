@@ -13,6 +13,7 @@ import {
  */
 export interface IContactConversationWithMessages extends ContactConversation {
     messages?: ContactMessage[];
+    assigned_staff_list?: IContactConversationStaff[];
 }
 
 /**
@@ -88,6 +89,49 @@ export interface IContactReplyEmailData {
     inReplyTo?: string;
     references?: string[];
     lang?: string;
+}
+
+/**
+ * Interface cho staff được assign vào conversation
+ */
+export interface IContactConversationStaff {
+    id: string;
+    conversation_id: string;
+    staff_id: string;
+    assigned_by?: string | null;
+    assigned_at: Date;
+    is_active: boolean;
+    staff?: {
+        id: string;
+        name: string;
+        email?: string | null;
+    };
+}
+
+/**
+ * Interface cho list item (optimized cho performance)
+ */
+export interface IContactConversationListItem {
+    id: string;
+    code: string;
+    customer_name: string;
+    customer_email: string;
+    customer_phone?: string;
+    customer_company?: string;
+    subject?: string;
+    status: ContactStatus;
+    priority: ContactPriority;
+    channel: ContactChannel;
+    assigned_staff_id?: string;
+    assigned_staff?: {
+        id: string;
+        name: string;
+        email?: string | null;
+    };
+    assigned_staff_count: number;
+    messages_count: number;
+    last_activity_at?: Date;
+    created_at: Date;
 }
 
 export {

@@ -1589,6 +1589,36 @@ socket.on('contact:conversationDeleted', (data) => {
 });
 ```
 
+### `contact:staffAssigned`
+**Khi nào:** Khi assign staff vào ticket
+```javascript
+socket.on('contact:staffAssigned', (data) => {
+  // {
+  //   "conversationId": "uuid",
+  //   "code": "TICKET-20250101-001",
+  //   "staff": [
+  //     { "staffId": "staff-uuid", "staffName": "Staff A" }
+  //   ],
+  //   "assignedBy": "admin-uuid",
+  //   "timestamp": "2025-01-01T10:00:00.000Z"
+  // }
+});
+```
+
+### `contact:staffUnassigned`
+**Khi nào:** Khi unassign staff khỏi ticket
+```javascript
+socket.on('contact:staffUnassigned', (data) => {
+  // {
+  //   "conversationId": "uuid",
+  //   "code": "TICKET-20250101-001",
+  //   "staffId": "staff-uuid",
+  //   "unassignedBy": "admin-uuid",
+  //   "timestamp": "2025-01-01T10:00:00.000Z"
+  // }
+});
+```
+
 ---
 
 ## 🏷️ ContactTag Events (Room: `admin_room`)

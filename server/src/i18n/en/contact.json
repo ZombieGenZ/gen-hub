@@ -5,13 +5,16 @@
         "replied": "Reply sent",
         "closed": "Ticket closed",
         "deleted": "Deleted successfully",
-        "deleted_many": "Deleted {count} tickets"
+        "deleted_many": "Deleted {count} tickets",
+        "staff_assigned": "Staff assigned successfully",
+        "staff_unassigned": "Staff unassigned successfully"
     },
     "errors": {
         "not_found": "Contact ticket not found",
         "already_closed": "This ticket is already closed",
         "cannot_delete": "Cannot delete this ticket",
-        "no_permission": "You do not have permission to perform this action"
+        "no_permission": "You do not have permission to perform this action",
+        "staff_not_assigned": "This staff is not assigned to the ticket"
     },
     "validation": {
         "name_required": "Please enter your name",

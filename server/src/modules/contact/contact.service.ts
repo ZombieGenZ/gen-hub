@@ -2,12 +2,10 @@ import {
     Injectable,
     NotFoundException,
     BadRequestException,
-    ForbiddenException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { I18nService } from 'nestjs-i18n';
 import { ContactStatus, ContactChannel, MessageSender, MessageType, ContactConversation } from '@prisma/client';
-import { v4 as uuidv4 } from 'uuid';
 
 import { ContactRepository } from './contact.repository';
 import {
@@ -15,10 +13,13 @@ import {
     QueryContactDto,
     UpdateContactDto,
     ReplyContactDto,
+    AssignStaffDto,
 } from './dto';
 import {
     IContactConversationWithMessages,
     IPaginatedContactResponse,
+    IContactConversationListItem,
+    IContactConversationStaff,
 } from './interfaces';
 import { RedisService } from '../redis/redis.service';
 import { WebsocketGateway } from '../websocket/websocket.gateway';
@@ -27,6 +28,7 @@ import { EmailService } from '../notification/email.service';
 
 /**
  * Service xử lý business logic cho Contact module
+ * Đã tối ưu hóa với caching và parallel queries
  */
 @Injectable()
 export class ContactService {
@@ -61,8 +63,15 @@ export class ContactService {
         return `contact:list:${hash}`;
     }
 
+    private getStaffCacheKey(id: string): string {
+        return `contact:staff:${id}`;
+    }
+
     private async invalidateCache(id: string): Promise<void> {
-        await this.redisService.del(this.getCacheKey(id));
+        await Promise.all([
+            this.redisService.del(this.getCacheKey(id)),
+            this.redisService.del(this.getStaffCacheKey(id)),
+        ]);
     }
 
     private async invalidateListCache(): Promise<void> {
@@ -143,12 +152,12 @@ export class ContactService {
     }
 
     /**
-     * Lấy danh sách tickets (admin)
+     * Lấy danh sách tickets (admin) - OPTIMIZED
      */
     async findMany(
         query: QueryContactDto,
         lang: string = 'vi',
-    ): Promise<IPaginatedContactResponse<IContactConversationWithMessages>> {
+    ): Promise<IPaginatedContactResponse<IContactConversationListItem>> {
         const cacheKey = this.getListCacheKey(query);
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
@@ -162,7 +171,7 @@ export class ContactService {
         const result = await this.repository.findMany(query);
 
         await this.redisService.set(cacheKey, JSON.stringify(result), this.LIST_CACHE_TTL);
-        return result as IPaginatedContactResponse<IContactConversationWithMessages>;
+        return result;
     }
 
     /**
@@ -207,7 +216,7 @@ export class ContactService {
     }
 
     /**
-     * Cập nhật ticket (status, priority, assign)
+     * Cập nhật ticket (status, priority, assign, staff)
      */
     async update(
         id: string,
@@ -227,15 +236,20 @@ export class ContactService {
 
         if (dto.status !== undefined) updateData.status = dto.status;
         if (dto.priority !== undefined) updateData.priority = dto.priority;
-        if (dto.tags !== undefined) updateData.tags = dto.tags;
-
-        if (dto.assigned_staff_id !== undefined) {
-            updateData.assigned_staff_id = dto.assigned_staff_id;
-            updateData.assigned_by = userId;
-            updateData.assigned_at = new Date();
-        }
+        // dto.tags handled via syncTags below, not scalar column
 
         const updated = await this.repository.update(id, updateData);
+
+        // Sync staff if provided
+        if (dto.staff_ids) {
+            const { added, removed } = await this.repository.syncStaff(id, dto.staff_ids, userId);
+            // Có thể emit events riêng cho added/removed nếu cần, hoặc dùng updated event chung
+        }
+
+        // Sync tags if provided
+        if (dto.tags) {
+            await this.repository.syncTags(id, dto.tags, userId);
+        }
 
         // Invalidate cache
         await Promise.all([
@@ -257,7 +271,9 @@ export class ContactService {
             userId,
         );
 
-        return { ...updated, messages: existing.messages };
+        // Re-fetch để có data mới nhất
+        const refreshed = await this.repository.findById(id);
+        return refreshed || { ...updated, messages: existing.messages };
     }
 
     /**
@@ -457,6 +473,130 @@ export class ContactService {
         });
 
         return { count };
+    }
+
+    /**
+     * Assign staff vào conversation
+     */
+    async assignStaff(
+        conversationId: string,
+        dto: AssignStaffDto,
+        userId: string,
+        lang: string = 'vi',
+    ): Promise<{ message: string; assigned: IContactConversationStaff[] }> {
+        const conversation = await this.repository.findById(conversationId);
+        if (!conversation) {
+            throw new NotFoundException(
+                await this.i18n.t('contact.errors.not_found', { lang }),
+            );
+        }
+
+        // Loại bỏ duplicates
+        const uniqueStaffIds = [...new Set(dto.staff_ids)];
+        const assigned = await this.repository.assignStaff(conversationId, uniqueStaffIds, userId);
+
+        // Invalidate cache
+        await Promise.all([
+            this.invalidateCache(conversationId),
+            this.invalidateListCache(),
+        ]);
+
+        // Log
+        this.systemLogService.info('contact', 'assign_staff', `Assigned ${assigned.length} staff to ticket: ${conversation.code}`, {
+            userId,
+            metaData: { conversationId, staffIds: uniqueStaffIds },
+        });
+
+        // WebSocket
+        if (assigned.length > 0) {
+            this.websocketGateway.emitContactStaffAssigned(
+                conversationId,
+                conversation.code,
+                assigned.map(a => ({
+                    staffId: a.staff_id,
+                    staffName: a.staff?.name || '',
+                })),
+                userId,
+            );
+        }
+
+        return {
+            message: await this.i18n.t('contact.success.staff_assigned', { lang }),
+            assigned,
+        };
+    }
+
+    /**
+     * Unassign staff khỏi conversation
+     */
+    async unassignStaff(
+        conversationId: string,
+        staffId: string,
+        userId: string,
+        lang: string = 'vi',
+    ): Promise<{ message: string }> {
+        const conversation = await this.repository.findById(conversationId);
+        if (!conversation) {
+            throw new NotFoundException(
+                await this.i18n.t('contact.errors.not_found', { lang }),
+            );
+        }
+
+        const isAssigned = await this.repository.isStaffAssigned(conversationId, staffId);
+        if (!isAssigned) {
+            throw new BadRequestException(
+                await this.i18n.t('contact.errors.staff_not_assigned', { lang }),
+            );
+        }
+
+        await this.repository.unassignStaff(conversationId, staffId, userId);
+
+        // Invalidate cache
+        await Promise.all([
+            this.invalidateCache(conversationId),
+            this.invalidateListCache(),
+        ]);
+
+        // Log
+        this.systemLogService.info('contact', 'unassign_staff', `Unassigned staff from ticket: ${conversation.code}`, {
+            userId,
+            metaData: { conversationId, staffId },
+        });
+
+        // WebSocket
+        this.websocketGateway.emitContactStaffUnassigned(conversationId, conversation.code, staffId, userId);
+
+        return { message: await this.i18n.t('contact.success.staff_unassigned', { lang }) };
+    }
+
+    /**
+     * Lấy danh sách staff được assign
+     */
+    async getAssignedStaff(
+        conversationId: string,
+        lang: string = 'vi',
+    ): Promise<IContactConversationStaff[]> {
+        const cacheKey = this.getStaffCacheKey(conversationId);
+        const cached = await this.redisService.get(cacheKey);
+        if (cached) {
+            try {
+                return JSON.parse(cached);
+            } catch {
+                // Cache invalid
+            }
+        }
+
+        const conversation = await this.repository.findById(conversationId);
+        if (!conversation) {
+            throw new NotFoundException(
+                await this.i18n.t('contact.errors.not_found', { lang }),
+            );
+        }
+
+        const staff = await this.repository.getAssignedStaff(conversationId);
+
+        await this.redisService.set(cacheKey, JSON.stringify(staff), this.CACHE_TTL);
+        return staff;
     }
 
     /**

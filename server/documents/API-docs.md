@@ -268,6 +268,9 @@
 | 258 | Contact | GET | /admin/contacts | ❎ | ❎ | ❎ |
 | 259 | Contact | GET | /admin/contacts/{id} | ❎ | ❎ | ❎ |
 | 260 | Contact | GET | /admin/contacts/{id}/messages | ❎ | ❎ | ❎ |
+| 261 | Contact | GET | /admin/contacts/{id}/staff | ❎ | ❎ | ❎ |
+| 262 | Contact | POST | /admin/contacts/{id}/assign-staff | ❎ | ❎ | ❎ |
+| 263 | Contact | DELETE | /admin/contacts/{id}/staff/{staffId} | ❎ | ❎ | ❎ |
 | 261 | Contact | PATCH | /admin/contacts/{id} | ❎ | ❎ | ❎ |
 | 262 | Contact | POST | /admin/contacts/{id}/reply | ❎ | ❎ | ❎ |
 | 263 | Contact | POST | /admin/contacts/{id}/close | ❎ | ❎ | ❎ |

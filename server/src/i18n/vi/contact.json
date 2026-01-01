@@ -5,13 +5,16 @@
         "replied": "Đã gửi phản hồi",
         "closed": "Đã đóng ticket",
         "deleted": "Đã xóa thành công",
-        "deleted_many": "Đã xóa {count} ticket"
+        "deleted_many": "Đã xóa {count} ticket",
+        "staff_assigned": "Đã phân công nhân viên thành công",
+        "staff_unassigned": "Đã hủy phân công nhân viên thành công"
     },
     "errors": {
         "not_found": "Không tìm thấy ticket liên hệ",
         "already_closed": "Ticket này đã được đóng",
         "cannot_delete": "Không thể xóa ticket này",
-        "no_permission": "Bạn không có quyền thực hiện thao tác này"
+        "no_permission": "Bạn không có quyền thực hiện thao tác này",
+        "staff_not_assigned": "Nhân viên này chưa được phân công vào ticket"
     },
     "validation": {
         "name_required": "Vui lòng nhập họ tên",

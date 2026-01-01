@@ -3034,6 +3034,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         { key: 'contact.read', name: 'Xem chi tiết ticket', description: 'Quyền xem chi tiết ticket liên hệ' },
         { key: 'contact.update', name: 'Cập nhật ticket', description: 'Quyền cập nhật ticket (status, priority, assign)' },
         { key: 'contact.reply', name: 'Trả lời ticket', description: 'Quyền trả lời ticket liên hệ' },
+        { key: 'contact.assign', name: 'Phân công ticket', description: 'Quyền phân công nhân viên xử lý ticket' },
         { key: 'contact.delete', name: 'Xóa ticket', description: 'Quyền xóa ticket liên hệ' },
       ];
 

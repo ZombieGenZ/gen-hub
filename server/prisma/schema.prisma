@@ -115,6 +115,7 @@ model User {
   organization_update_requests OrganizationUpdateRequest[] @relation("RequestByRel")
 
   assigned_contact_conversations ContactConversation[] @relation("AssignedStaff")
+  contact_staff_assignments      ContactConversationStaff[] @relation("ContactStaff")
 
   @@map("users")
 }
@@ -2955,8 +2956,9 @@ model ContactConversation {
 
   assigned_staff User? @relation("AssignedStaff", fields: [assigned_staff_id], references: [id])
 
-  messages     ContactMessage[]
-  tag_mappings ContactTagOnConversation[]
+  messages            ContactMessage[]
+  tag_mappings        ContactTagOnConversation[]
+  assigned_staff_list ContactConversationStaff[]
 
   @@index([customer_email])
   @@index([status])
@@ -3385,4 +3387,31 @@ model ContactTagOnConversation {
   @@index([tag_id])
   @@index([conversation_id])
   @@map("contact_tags_conversations")
+}
+
+// Bảng mapping nhiều-nhiều giữa ContactConversation và Staff (User)
+model ContactConversationStaff {
+  id              String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  conversation_id String @db.Uuid
+  staff_id        String @db.Uuid
+
+  assigned_by String?   @db.Uuid
+  assigned_at DateTime  @default(now())
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean   @default(false)
+  deleted_at DateTime?
+
+  created_by String?
+  deleted_by String?
+
+  conversation ContactConversation @relation(fields: [conversation_id], references: [id], onDelete: Cascade)
+  staff        User                @relation("ContactStaff", fields: [staff_id], references: [id], onDelete: Cascade)
+
+  @@unique([conversation_id, staff_id])
+  @@index([conversation_id])
+  @@index([staff_id])
+  @@map("contact_conversation_staff")
 }
