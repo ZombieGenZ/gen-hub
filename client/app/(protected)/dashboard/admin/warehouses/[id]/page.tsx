@@ -207,7 +207,7 @@ export default function WarehouseDetailPage() {
                                     <Ruler className="w-5 h-5" />
                                 </div>
                                 <p className="text-sm text-slate-500 mb-1">Diện tích</p>
-                                <p className="text-lg font-bold text-slate-900">{area.toLocaleString()} {warehouse.unit}²</p>
+                                <p className="text-lg font-bold text-slate-900">{area.toLocaleString()} m²</p>
                             </div>
                             <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
                                 <div className="w-10 h-10 rounded-full bg-teal-50 flex items-center justify-center text-primary mb-3">
