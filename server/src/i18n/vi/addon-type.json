@@ -1,0 +1,25 @@
+{
+    "success": {
+        "created": "Đã tạo loại addon thành công",
+        "updated": "Đã cập nhật loại addon thành công",
+        "deleted": "Đã xóa loại addon thành công",
+        "fetched": "Lấy dữ liệu loại addon thành công"
+    },
+    "errors": {
+        "not_found": "Không tìm thấy loại addon",
+        "name_exists": "Tên loại addon đã tồn tại",
+        "create_failed": "Không thể tạo loại addon",
+        "update_failed": "Không thể cập nhật loại addon",
+        "delete_failed": "Không thể xóa loại addon"
+    },
+    "validation": {
+        "name_required": "Tên loại addon không được để trống",
+        "name_string": "Tên loại addon phải là chuỗi",
+        "name_max_length": "Tên loại addon không được quá 255 ký tự",
+        "description_string": "Mô tả phải là chuỗi",
+        "is_active_boolean": "Trạng thái phải là boolean",
+        "limit_positive": "Limit phải là số dương",
+        "offset_min": "Offset phải >= 0",
+        "keywords_string": "Từ khóa tìm kiếm phải là chuỗi"
+    }
+}

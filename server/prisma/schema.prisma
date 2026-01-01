@@ -508,7 +508,52 @@ model Addon {
   coupon_gifts          CouponGiftAddon[]
   coupon_schedule_gifts CouponScheduleGiftAddon[]
 
+  addon_types AddonTypeOnAddon[]
+
   @@map("addons")
+}
+
+model AddonType {
+  id          String  @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  name        String
+  description String?
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean?  @default(false)
+  deleted_at DateTime?
+
+  created_by String
+  updated_by String?
+  deleted_by String?
+
+  addons AddonTypeOnAddon[]
+
+  @@map("addon_types")
+}
+
+model AddonTypeOnAddon {
+  id            String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  addon_type_id String @db.Uuid
+  addon_id      String @db.Uuid
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean?  @default(false)
+  deleted_at DateTime?
+
+  created_by String?
+  deleted_by String?
+
+  addon_type AddonType @relation(fields: [addon_type_id], references: [id], onDelete: Cascade)
+  addon      Addon     @relation(fields: [addon_id], references: [id], onDelete: Cascade)
+
+  @@unique([addon_type_id, addon_id])
+  @@index([addon_type_id])
+  @@index([addon_id])
+  @@map("addon_types_addons")
 }
 
 enum ManagementFeeType {
@@ -3271,4 +3316,24 @@ model OrganizationUpdateRequest {
   @@index([organization_id])
   @@index([requester_id])
   @@map("organization_update_requests")
+}
+
+model FAQ {
+  id       String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  question String
+  answer   String @db.Text
+  order    Int    @default(0)
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean?  @default(false)
+  deleted_at DateTime?
+
+  created_by String
+  updated_by String?
+  deleted_by String?
+
+  @@index([order])
+  @@map("faqs")
 }

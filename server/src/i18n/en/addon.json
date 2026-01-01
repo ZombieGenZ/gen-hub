@@ -27,6 +27,7 @@
         "is_active_boolean": "Status must be a boolean",
         "limit_positive": "Limit must be a positive number",
         "offset_min": "Offset must be >= 0",
-        "keywords_string": "Keywords must be a string"
+        "keywords_string": "Keywords must be a string",
+        "addon_type_id_uuid": "Addon type ID must be a valid UUID"
     }
 }

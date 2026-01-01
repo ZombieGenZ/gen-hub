@@ -1,0 +1,26 @@
+{
+    "success": {
+        "created": "Đã tạo FAQ thành công",
+        "updated": "Đã cập nhật FAQ thành công",
+        "deleted": "Đã xóa FAQ thành công",
+        "fetched": "Lấy dữ liệu FAQ thành công"
+    },
+    "errors": {
+        "not_found": "Không tìm thấy FAQ",
+        "create_failed": "Không thể tạo FAQ",
+        "update_failed": "Không thể cập nhật FAQ",
+        "delete_failed": "Không thể xóa FAQ"
+    },
+    "validation": {
+        "question_required": "Câu hỏi không được để trống",
+        "question_string": "Câu hỏi phải là chuỗi",
+        "answer_required": "Câu trả lời không được để trống",
+        "answer_string": "Câu trả lời phải là chuỗi",
+        "order_integer": "Thứ tự phải là số nguyên",
+        "order_min": "Thứ tự phải >= 0",
+        "is_active_boolean": "Trạng thái phải là boolean",
+        "limit_positive": "Limit phải là số dương",
+        "offset_min": "Offset phải >= 0",
+        "keywords_string": "Từ khóa tìm kiếm phải là chuỗi"
+    }
+}

@@ -1,0 +1,25 @@
+{
+    "success": {
+        "created": "Addon type created successfully",
+        "updated": "Addon type updated successfully",
+        "deleted": "Addon type deleted successfully",
+        "fetched": "Addon type data fetched successfully"
+    },
+    "errors": {
+        "not_found": "Addon type not found",
+        "name_exists": "Addon type name already exists",
+        "create_failed": "Failed to create addon type",
+        "update_failed": "Failed to update addon type",
+        "delete_failed": "Failed to delete addon type"
+    },
+    "validation": {
+        "name_required": "Addon type name is required",
+        "name_string": "Addon type name must be a string",
+        "name_max_length": "Addon type name must not exceed 255 characters",
+        "description_string": "Description must be a string",
+        "is_active_boolean": "Status must be a boolean",
+        "limit_positive": "Limit must be a positive number",
+        "offset_min": "Offset must be >= 0",
+        "keywords_string": "Search keywords must be a string"
+    }
+}

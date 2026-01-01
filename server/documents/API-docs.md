@@ -250,3 +250,17 @@
 | 240 | Organization Update Requests | GET | /organization-update-requests/{id} | ❎ | ❎ | ❎ |
 | 241 | Organization Update Requests | PATCH | /organization-update-requests/{id}/approve | ❎ | ❎ | ❎ |
 | 242 | Organization Update Requests | PATCH | /organization-update-requests/{id}/reject | ❎ | ❎ | ❎ |
+| 243 | Addon Types | POST | /addon-types | ❎ | ❎ | ❎ |
+| 244 | Addon Types | GET | /addon-types | ❎ | ❎ | ❎ |
+| 245 | Addon Types | GET | /addon-types/active | ❎ | ❎ | ❎ |
+| 246 | Addon Types | GET | /addon-types/{id} | ❎ | ❎ | ❎ |
+| 247 | Addon Types | PUT | /addon-types/{id} | ❎ | ❎ | ❎ |
+| 248 | Addon Types | DELETE | /addon-types/{id} | ❎ | ❎ | ❎ |
+| 249 | Addon Types | DELETE | /addon-types/delete/many | ❎ | ❎ | ❎ |
+| 250 | FAQs | POST | /faqs | ❎ | ❎ | ❎ |
+| 251 | FAQs | GET | /faqs | ❎ | ❎ | ❎ |
+| 252 | FAQs | GET | /faqs/public | ❎ | ❎ | ❎ |
+| 253 | FAQs | GET | /faqs/{id} | ❎ | ❎ | ❎ |
+| 254 | FAQs | PUT | /faqs/{id} | ❎ | ❎ | ❎ |
+| 255 | FAQs | DELETE | /faqs/{id} | ❎ | ❎ | ❎ |
+| 256 | FAQs | DELETE | /faqs/delete/many | ❎ | ❎ | ❎ |

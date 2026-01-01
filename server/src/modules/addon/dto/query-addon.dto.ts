@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, IsBoolean, IsInt, Min } from 'class-validator';
+import { IsOptional, IsString, IsBoolean, IsInt, Min, IsUUID } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 import { i18nValidationMessage } from 'nestjs-i18n';
 
@@ -47,4 +47,23 @@ export class QueryAddonDto {
         message: i18nValidationMessage('addon.validation.is_active_boolean'),
     })
     is_active?: boolean;
+
+    @ApiPropertyOptional({ description: 'ID loại addon để lọc' })
+    @IsOptional()
+    @IsUUID('4', {
+        message: i18nValidationMessage('addon.validation.addon_type_id_uuid'),
+    })
+    addon_type_id?: string;
+}
+
+/**
+ * DTO query danh sách Addon active (không phân trang)
+ */
+export class QueryActiveAddonDto {
+    @ApiPropertyOptional({ description: 'ID loại addon để lọc' })
+    @IsOptional()
+    @IsUUID('4', {
+        message: i18nValidationMessage('addon.validation.addon_type_id_uuid'),
+    })
+    addon_type_id?: string;
 }

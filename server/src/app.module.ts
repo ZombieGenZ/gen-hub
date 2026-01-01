@@ -50,6 +50,8 @@ import { EmailInboundModule } from './modules/email-inbound/email-inbound.module
 import { AccountBalanceModule } from './modules/account-balance/account-balance.module';
 import { OrganizationUpdateRequestModule } from './modules/organization-update-request/organization-update-request.module';
 import { DatabaseLogModule } from './modules/database-log/database-log.module';
+import { AddonTypeModule } from './modules/addon-type/addon-type.module';
+import { FaqModule } from './modules/faq/faq.module';
 import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
 
 @Module({
@@ -94,6 +96,9 @@ import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
 
     // Amenities
     AmenityModule,
+
+    // Addon Types
+    AddonTypeModule,
 
     // Addons
     AddonModule,
@@ -149,6 +154,9 @@ import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
     PartnerModule,
     ProductModule,
     BatchModule,
+
+    // FAQs
+    FaqModule,
 
     // Database Panel
     DatabaseAdminModule,

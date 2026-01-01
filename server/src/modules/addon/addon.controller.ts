@@ -21,7 +21,7 @@ import {
 import { I18nLang } from 'nestjs-i18n';
 
 import { AddonService } from './addon.service';
-import { CreateAddonDto, UpdateAddonDto, QueryAddonDto } from './dto';
+import { CreateAddonDto, UpdateAddonDto, QueryAddonDto, QueryActiveAddonDto } from './dto';
 import { DeleteManyDto } from '../../common/dto';
 import { JwtAuthGuard, PermissionGuard } from '../../common/guards';
 import { RequirePermission, CurrentUser } from '../../common/decorators';
@@ -76,8 +76,10 @@ export class AddonController {
     @ApiOperation({ summary: 'Lấy tất cả addon active' })
     @ApiResponse({ status: 200, description: 'Lấy danh sách thành công' })
     @ApiResponse({ status: 403, description: 'Không có quyền' })
-    async findAllActive(): Promise<GetResponse<IAddon[]>> {
-        const result = await this.addonService.findAllActive();
+    async findAllActive(
+        @Query() query: QueryActiveAddonDto,
+    ): Promise<GetResponse<IAddon[]>> {
+        const result = await this.addonService.findAllActive(query);
         return new GetResponse('addon.list.success', result, 'Lấy danh sách addon active thành công');
     }
 

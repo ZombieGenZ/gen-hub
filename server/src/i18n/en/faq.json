@@ -1,0 +1,26 @@
+{
+    "success": {
+        "created": "FAQ created successfully",
+        "updated": "FAQ updated successfully",
+        "deleted": "FAQ deleted successfully",
+        "fetched": "FAQ data fetched successfully"
+    },
+    "errors": {
+        "not_found": "FAQ not found",
+        "create_failed": "Failed to create FAQ",
+        "update_failed": "Failed to update FAQ",
+        "delete_failed": "Failed to delete FAQ"
+    },
+    "validation": {
+        "question_required": "Question is required",
+        "question_string": "Question must be a string",
+        "answer_required": "Answer is required",
+        "answer_string": "Answer must be a string",
+        "order_integer": "Order must be an integer",
+        "order_min": "Order must be >= 0",
+        "is_active_boolean": "Status must be a boolean",
+        "limit_positive": "Limit must be a positive number",
+        "offset_min": "Offset must be >= 0",
+        "keywords_string": "Search keywords must be a string"
+    }
+}

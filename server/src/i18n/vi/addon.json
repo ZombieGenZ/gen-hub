@@ -27,6 +27,7 @@
         "is_active_boolean": "Trạng thái phải là boolean",
         "limit_positive": "Limit phải là số dương",
         "offset_min": "Offset phải >= 0",
-        "keywords_string": "Từ khóa tìm kiếm phải là chuỗi"
+        "keywords_string": "Từ khóa tìm kiếm phải là chuỗi",
+        "addon_type_id_uuid": "ID loại addon phải là UUID hợp lệ"
     }
 }

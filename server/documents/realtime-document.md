@@ -108,6 +108,8 @@ socket.on('pong', () => {
 | Global (All) | CouponSchedule: `couponSchedule:created`, `couponSchedule:updated`, `couponSchedule:deleted`, `couponSchedule:deletedMany`, `couponSchedule:executed` |
 | Global (All) | Config: `config:updated` |
 | Global (All) | User: `user:onlineStatus` |
+| Global (All) | AddonType: `addonType:created`, `addonType:updated`, `addonType:deleted`, `addonType:deletedMany` |
+| Global (All) | FAQ: `faq:created`, `faq:updated`, `faq:deleted`, `faq:deletedMany` |
 | `notifications` | `userNotification:received`, `userNotification:read`, `userNotification:allRead` |
 
 ---

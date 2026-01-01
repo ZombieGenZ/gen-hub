@@ -51,9 +51,23 @@ export class AddonRepository {
         });
     }
 
-    async findAllActive() {
+    async findAllActive(addonTypeId?: string) {
+        const where: Prisma.AddonWhereInput = {
+            is_active: true,
+            is_deleted: false,
+        };
+
+        if (addonTypeId) {
+            where.addon_types = {
+                some: {
+                    addon_type_id: addonTypeId,
+                    is_deleted: false,
+                },
+            };
+        }
+
         return this.prisma.addon.findMany({
-            where: { is_active: true, is_deleted: false },
+            where,
             orderBy: { name: 'asc' },
         });
     }

@@ -326,6 +326,8 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         this.seedBlockTemplatePermissions.bind(this),
         this.seedAccountBalancePermissions.bind(this),
         this.seedOrganizationUpdateRequestPermissions.bind(this),
+        this.seedAddonTypePermissions.bind(this),
+        this.seedFaqPermissions.bind(this),
       ];
 
       const BATCH_SIZE = 3; // Chạy 3 seed functions cùng lúc
@@ -2869,6 +2871,154 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
       this.logger.error(
         `❌ Failed to seed insurance permissions: ${errorMessage}`,
       );
+    }
+  }
+
+  /**
+   * Seed các permissions cho AddonType (Loại addon)
+   */
+  private async seedAddonTypePermissions() {
+    try {
+      const addonTypePermissions = [
+        { key: 'addon-type.create', name: 'Tạo loại addon', description: 'Quyền tạo loại addon mới' },
+        { key: 'addon-type.list', name: 'Xem danh sách loại addon', description: 'Quyền xem danh sách loại addon' },
+        { key: 'addon-type.read', name: 'Xem chi tiết loại addon', description: 'Quyền xem chi tiết loại addon' },
+        { key: 'addon-type.update', name: 'Cập nhật loại addon', description: 'Quyền cập nhật loại addon' },
+        { key: 'addon-type.delete', name: 'Xóa loại addon', description: 'Quyền xóa loại addon' },
+      ];
+
+      for (const perm of addonTypePermissions) {
+        const existing = await this.permission.findFirst({
+          where: { key: perm.key },
+        });
+
+        if (!existing) {
+          await this.permission.create({
+            data: {
+              key: perm.key,
+              name: perm.name,
+              description: perm.description,
+              is_active: true,
+              is_deleted: false,
+            },
+          });
+        }
+      }
+
+      const adminRoles = await this.role.findMany({
+        where: {
+          name: { in: ['Admin', 'Super Admin'] },
+          is_deleted: false,
+        },
+      });
+
+      const permissions = await this.permission.findMany({
+        where: {
+          key: { in: addonTypePermissions.map((p) => p.key) },
+          is_deleted: false,
+        },
+      });
+
+      for (const role of adminRoles) {
+        for (const permission of permissions) {
+          const existingAssignment = await this.rolePermission.findFirst({
+            where: {
+              role_id: role.id,
+              permission_id: permission.id,
+            },
+          });
+
+          if (!existingAssignment) {
+            await this.rolePermission.create({
+              data: {
+                role_id: role.id,
+                permission_id: permission.id,
+                is_active: true,
+                is_deleted: false,
+              },
+            });
+          }
+        }
+      }
+
+      this.logger.log('✅ AddonType permissions seeded');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error(`❌ Failed to seed addon-type permissions: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * Seed các permissions cho FAQ
+   */
+  private async seedFaqPermissions() {
+    try {
+      const faqPermissions = [
+        { key: 'faq.create', name: 'Tạo FAQ', description: 'Quyền tạo câu hỏi thường gặp mới' },
+        { key: 'faq.list', name: 'Xem danh sách FAQ', description: 'Quyền xem danh sách FAQ' },
+        { key: 'faq.read', name: 'Xem chi tiết FAQ', description: 'Quyền xem chi tiết FAQ' },
+        { key: 'faq.update', name: 'Cập nhật FAQ', description: 'Quyền cập nhật FAQ' },
+        { key: 'faq.delete', name: 'Xóa FAQ', description: 'Quyền xóa FAQ' },
+      ];
+
+      for (const perm of faqPermissions) {
+        const existing = await this.permission.findFirst({
+          where: { key: perm.key },
+        });
+
+        if (!existing) {
+          await this.permission.create({
+            data: {
+              key: perm.key,
+              name: perm.name,
+              description: perm.description,
+              is_active: true,
+              is_deleted: false,
+            },
+          });
+        }
+      }
+
+      const adminRoles = await this.role.findMany({
+        where: {
+          name: { in: ['Admin', 'Super Admin'] },
+          is_deleted: false,
+        },
+      });
+
+      const permissions = await this.permission.findMany({
+        where: {
+          key: { in: faqPermissions.map((p) => p.key) },
+          is_deleted: false,
+        },
+      });
+
+      for (const role of adminRoles) {
+        for (const permission of permissions) {
+          const existingAssignment = await this.rolePermission.findFirst({
+            where: {
+              role_id: role.id,
+              permission_id: permission.id,
+            },
+          });
+
+          if (!existingAssignment) {
+            await this.rolePermission.create({
+              data: {
+                role_id: role.id,
+                permission_id: permission.id,
+                is_active: true,
+                is_deleted: false,
+              },
+            });
+          }
+        }
+      }
+
+      this.logger.log('✅ FAQ permissions seeded');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error(`❌ Failed to seed faq permissions: ${errorMessage}`);
     }
   }
 }

@@ -5,7 +5,7 @@ import { AddonRepository } from './addon.repository';
 import { RedisService } from '../redis/redis.service';
 import { WebsocketGateway } from '../websocket/websocket.gateway';
 import { SystemLogService } from '../system-log/system-log.service';
-import { CreateAddonDto, UpdateAddonDto, QueryAddonDto } from './dto';
+import { CreateAddonDto, UpdateAddonDto, QueryAddonDto, QueryActiveAddonDto } from './dto';
 
 @Injectable()
 export class AddonService {
@@ -67,7 +67,7 @@ export class AddonService {
     }
 
     async findAll(query: QueryAddonDto) {
-        const { limit = 10, offset = 0, keywords, is_active } = query;
+        const { limit = 10, offset = 0, keywords, is_active, addon_type_id } = query;
 
         // Check cache
         const cacheKey = this.getListCacheKey(query);
@@ -87,6 +87,16 @@ export class AddonService {
                 { name: { contains: keywords, mode: 'insensitive' } },
                 { description: { contains: keywords, mode: 'insensitive' } },
             ];
+        }
+
+        // Filter theo addon_type_id thông qua bảng trung gian addon_types
+        if (addon_type_id) {
+            where.addon_types = {
+                some: {
+                    addon_type_id: addon_type_id,
+                    is_deleted: false,
+                },
+            };
         }
 
         const [data, total] = await Promise.all([
@@ -130,14 +140,15 @@ export class AddonService {
     }
 
     // Lấy tất cả active addons (không phân trang, dùng cho dropdown)
-    async findAllActive() {
-        const cacheKey = 'addon:active';
+    async findAllActive(query?: QueryActiveAddonDto) {
+        const addonTypeId = query?.addon_type_id;
+        const cacheKey = addonTypeId ? `addon:active:type:${addonTypeId}` : 'addon:active';
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
             return JSON.parse(cached);
         }
 
-        const addons = await this.repository.findAllActive();
+        const addons = await this.repository.findAllActive(addonTypeId);
         await this.redisService.set(cacheKey, JSON.stringify(addons), this.listCacheTTL);
 
         return addons;
