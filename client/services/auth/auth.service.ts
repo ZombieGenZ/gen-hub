@@ -47,6 +47,7 @@ export class AuthService {
                 data.authorization.refresh_token
             );
             await this.verify_password(data.authorization.access_token, input.password);
+            return data;
         } else {
             authStorage.setTokens(
                 data.authorization.access_token,
@@ -55,6 +56,15 @@ export class AuthService {
         }
 
         return data;
+    }
+
+    async login2fa(temp_token: string, auth_code: string) {
+        try {
+            const response = await fetch(`${API}`)
+        } catch (error) {
+            console.log(error);
+            throw error;
+        }
     }
 
     //Xác minh bằng mật khẩu
