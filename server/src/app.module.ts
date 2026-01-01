@@ -52,6 +52,7 @@ import { OrganizationUpdateRequestModule } from './modules/organization-update-r
 import { DatabaseLogModule } from './modules/database-log/database-log.module';
 import { AddonTypeModule } from './modules/addon-type/addon-type.module';
 import { FaqModule } from './modules/faq/faq.module';
+import { ContactModule } from './modules/contact/contact.module';
 import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
 
 @Module({
@@ -178,6 +179,9 @@ import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
 
     // Database Auto-logging
     DatabaseLogModule,
+
+    // Contact Support Module
+    ContactModule,
   ],
   controllers: [AppController],
   providers: [

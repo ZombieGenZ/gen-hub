@@ -1,0 +1,74 @@
+{
+    "success": {
+        "created": "Yêu cầu liên hệ của bạn đã được gửi thành công",
+        "updated": "Cập nhật thành công",
+        "replied": "Đã gửi phản hồi",
+        "closed": "Đã đóng ticket",
+        "deleted": "Đã xóa thành công",
+        "deleted_many": "Đã xóa {count} ticket"
+    },
+    "errors": {
+        "not_found": "Không tìm thấy ticket liên hệ",
+        "already_closed": "Ticket này đã được đóng",
+        "cannot_delete": "Không thể xóa ticket này",
+        "no_permission": "Bạn không có quyền thực hiện thao tác này"
+    },
+    "validation": {
+        "name_required": "Vui lòng nhập họ tên",
+        "name_min": "Họ tên phải có ít nhất 2 ký tự",
+        "name_max": "Họ tên không được quá 100 ký tự",
+        "email_required": "Vui lòng nhập email",
+        "email_invalid": "Email không hợp lệ",
+        "phone_invalid": "Số điện thoại không hợp lệ",
+        "subject_max": "Tiêu đề không được quá 200 ký tự",
+        "message_required": "Vui lòng nhập nội dung",
+        "message_min": "Nội dung phải có ít nhất 10 ký tự",
+        "message_max": "Nội dung không được quá 5000 ký tự",
+        "content_required": "Vui lòng nhập nội dung phản hồi",
+        "status_invalid": "Trạng thái không hợp lệ",
+        "priority_invalid": "Mức độ ưu tiên không hợp lệ"
+    },
+    "email": {
+        "confirmation": {
+            "subject": "[#{code}] Chúng tôi đã nhận yêu cầu của bạn",
+            "greeting": "Xin chào",
+            "received": "Cảm ơn bạn đã liên hệ với chúng tôi!",
+            "ticketCode": "Mã ticket của bạn",
+            "yourRequest": "Thông tin yêu cầu của bạn",
+            "nameLabel": "Họ tên",
+            "emailLabel": "Email",
+            "phoneLabel": "Điện thoại",
+            "subjectLabel": "Tiêu đề",
+            "messageLabel": "Nội dung",
+            "responseNote": "Nhân viên của chúng tôi sẽ phản hồi sớm nhất có thể.",
+            "replyNote": "Bạn có thể trả lời email này để trao đổi thêm."
+        },
+        "reply": {
+            "subject": "Re: [#{code}] {originalSubject}",
+            "greeting": "Xin chào",
+            "staffReply": "Chúng tôi xin phản hồi yêu cầu của bạn",
+            "replyNote": "Bạn có thể trả lời email này để trao đổi thêm.",
+            "ticketCode": "Mã ticket"
+        }
+    },
+    "status": {
+        "OPEN": "Mở",
+        "PENDING": "Đang xử lý",
+        "RESOLVED": "Đã giải quyết",
+        "CLOSED": "Đã đóng",
+        "SPAM": "Spam"
+    },
+    "priority": {
+        "LOW": "Thấp",
+        "MEDIUM": "Trung bình",
+        "HIGH": "Cao",
+        "URGENT": "Khẩn cấp"
+    },
+    "channel": {
+        "EMAIL": "Email",
+        "WEBSITE_FORM": "Form website",
+        "PHONE": "Điện thoại",
+        "SOCIAL_MEDIA": "Mạng xã hội",
+        "OTHER": "Khác"
+    }
+}

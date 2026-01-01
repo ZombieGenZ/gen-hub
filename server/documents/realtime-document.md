@@ -1508,3 +1508,85 @@ socket.on('organization_update_request_rejected', (data) => {
 });
 ```
 
+---
+
+## 📞 Contact Events (Room: `admin_room`)
+
+### `contact:conversationCreated`
+**Khi nào:** Khi có khách gửi form liên hệ mới
+```javascript
+socket.on('contact:conversationCreated', (data) => {
+  // {
+  //   "conversationId": "uuid",
+  //   "code": "TICKET-20250101-001",
+  //   "customerEmail": "customer@example.com",
+  //   "timestamp": "2025-01-01T10:00:00.000Z"
+  // }
+  
+  playNotificationSound();
+  showToast(`New ticket: ${data.code}`);
+  refreshTicketList();
+});
+```
+
+### `contact:conversationUpdated`
+**Khi nào:** Khi ticket được cập nhật (status, priority, assign)
+```javascript
+socket.on('contact:conversationUpdated', (data) => {
+  // {
+  //   "conversationId": "uuid",
+  //   "code": "TICKET-20250101-001",
+  //   "updatedFields": ["status", "assigned_staff_id"],
+  //   "updatedBy": "admin-uuid",
+  //   "timestamp": "2025-01-01T10:00:00.000Z"
+  // }
+});
+```
+
+### `contact:messageCreated`
+**Khi nào:** Khi có tin nhắn mới (khách hoặc staff)
+```javascript
+socket.on('contact:messageCreated', (data) => {
+  // {
+  //   "conversationId": "uuid",
+  //   "message": {
+  //     "id": "msg-uuid",
+  //     "sender_type": "CUSTOMER", // or "STAFF"
+  //     "sender_name": "Nguyen Van A",
+  //     "content": "Help me please",
+  //     "is_internal": false,
+  //     "created_at": "2025-01-01T10:00:00.000Z"
+  //   },
+  //   "timestamp": "2025-01-01T10:00:00.000Z"
+  // }
+  
+  if (currentConversationId === data.conversationId) {
+    appendMessageToChat(data.message);
+  }
+});
+```
+
+### `contact:conversationClosed`
+```javascript
+socket.on('contact:conversationClosed', (data) => {
+  // {
+  //   "conversationId": "uuid",
+  //   "code": "TICKET-20250101-001",
+  //   "closedBy": "admin-uuid",
+  //   "timestamp": "2025-01-01T10:00:00.000Z"
+  // }
+});
+```
+
+### `contact:conversationDeleted`
+```javascript
+socket.on('contact:conversationDeleted', (data) => {
+  // {
+  //   "conversationId": "uuid",
+  //   "deletedBy": "admin-uuid",
+  //   "timestamp": "2025-01-01T10:00:00.000Z"
+  // }
+});
+```
+
+

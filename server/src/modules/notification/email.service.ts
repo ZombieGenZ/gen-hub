@@ -1104,5 +1104,233 @@ export class EmailService {
       html: await this.createEmailTemplate(content, appName, lang),
     });
   }
+
+  // ===================== CONTACT SUPPORT EMAILS =====================
+
+  /**
+   * Gửi email xác nhận đã nhận yêu cầu liên hệ
+   * @param to - Email khách hàng
+   * @param name - Tên khách hàng
+   * @param ticketCode - Mã ticket
+   * @param phone - Số điện thoại (optional)
+   * @param subject - Tiêu đề yêu cầu
+   * @param message - Nội dung yêu cầu
+   * @param emailMessageId - Message-ID cho email threading
+   * @param lang - Ngôn ngữ
+   */
+  async sendContactConfirmationEmail(
+    to: string,
+    name: string,
+    ticketCode: string,
+    phone: string | undefined,
+    subject: string | undefined,
+    message: string,
+    emailMessageId: string,
+    lang: string = 'vi',
+  ): Promise<boolean> {
+    const appName = this.appConfigService.get('brandName');
+    const colors = this.appConfigService.get('colors');
+
+    const greeting = await this.i18n.t('contact.email.confirmation.greeting', { lang });
+    const received = await this.i18n.t('contact.email.confirmation.received', { lang });
+    const ticketCodeLabel = await this.i18n.t('contact.email.confirmation.ticketCode', { lang });
+    const yourRequest = await this.i18n.t('contact.email.confirmation.yourRequest', { lang });
+    const nameLabel = await this.i18n.t('contact.email.confirmation.nameLabel', { lang });
+    const emailLabel = await this.i18n.t('contact.email.confirmation.emailLabel', { lang });
+    const phoneLabel = await this.i18n.t('contact.email.confirmation.phoneLabel', { lang });
+    const subjectLabel = await this.i18n.t('contact.email.confirmation.subjectLabel', { lang });
+    const messageLabel = await this.i18n.t('contact.email.confirmation.messageLabel', { lang });
+    const responseNote = await this.i18n.t('contact.email.confirmation.responseNote', { lang });
+    const replyNote = await this.i18n.t('contact.email.confirmation.replyNote', { lang });
+    const emailSubject = await this.i18n.t('contact.email.confirmation.subject', { lang, args: { code: ticketCode } });
+
+    const content = `
+      <h2 style="margin: 0 0 20px; font-size: 24px; font-weight: 600; color: ${colors.gray900}; text-align: center;">
+        ${greeting}, ${name}! 📬
+      </h2>
+
+      <p style="margin: 0 0 20px; font-size: 15px; color: ${colors.gray700}; line-height: 1.7; text-align: center;">
+        ${received}
+      </p>
+
+      <!-- Ticket Code -->
+      <div style="background: linear-gradient(135deg, ${colors.success} 0%, ${colors.primary} 100%); border-radius: 12px; padding: 25px; margin: 25px 0; text-align: center;">
+        <p style="margin: 0 0 8px; font-size: 14px; color: rgba(255, 255, 255, 0.9);">
+          ${ticketCodeLabel}
+        </p>
+        <p style="margin: 0; font-size: 28px; font-weight: 700; color: #ffffff; letter-spacing: 2px;">
+          #${ticketCode}
+        </p>
+      </div>
+
+      <!-- Thông tin yêu cầu -->
+      <div style="background: linear-gradient(135deg, ${colors.gray100} 0%, ${colors.background} 100%); border-left: 4px solid ${colors.info}; border-radius: 8px; padding: 20px; margin: 25px 0;">
+        <p style="margin: 0 0 15px; font-size: 14px; font-weight: 600; color: ${colors.gray900};">
+          ${yourRequest}:
+        </p>
+        <table role="presentation" style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="padding: 5px 0; font-size: 13px; color: ${colors.gray500};">${nameLabel}</td>
+            <td style="padding: 5px 0; text-align: right; font-size: 14px; color: ${colors.gray900};">${name}</td>
+          </tr>
+          <tr>
+            <td style="padding: 5px 0; font-size: 13px; color: ${colors.gray500};">${emailLabel}</td>
+            <td style="padding: 5px 0; text-align: right; font-size: 14px; color: ${colors.gray900};">${to}</td>
+          </tr>
+          ${phone ? `
+          <tr>
+            <td style="padding: 5px 0; font-size: 13px; color: ${colors.gray500};">${phoneLabel}</td>
+            <td style="padding: 5px 0; text-align: right; font-size: 14px; color: ${colors.gray900};">${phone}</td>
+          </tr>
+          ` : ''}
+          ${subject ? `
+          <tr>
+            <td style="padding: 5px 0; font-size: 13px; color: ${colors.gray500};">${subjectLabel}</td>
+            <td style="padding: 5px 0; text-align: right; font-size: 14px; color: ${colors.gray900};">${subject}</td>
+          </tr>
+          ` : ''}
+        </table>
+        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid ${colors.border};">
+          <p style="margin: 0 0 5px; font-size: 13px; color: ${colors.gray500};">${messageLabel}:</p>
+          <p style="margin: 0; font-size: 14px; color: ${colors.gray700}; line-height: 1.6; white-space: pre-wrap;">${message}</p>
+        </div>
+      </div>
+
+      <!-- Notes -->
+      <div style="background-color: ${colors.gray100}; border-radius: 8px; padding: 15px; margin: 25px 0;">
+        <p style="margin: 0 0 8px; font-size: 13px; color: ${colors.gray700}; text-align: center;">
+          ${responseNote}
+        </p>
+        <p style="margin: 0; font-size: 12px; color: ${colors.gray500}; text-align: center;">
+          💬 ${replyNote}
+        </p>
+      </div>
+    `;
+
+    const supportEmail = this.configService.get<string>('EMAIL_SUPPORT_ADDRESS');
+    const primaryEmail = this.configService.get<string>('EMAIL_PRIMARY_ADDRESS');
+
+    const transporter = await this.createTransporter();
+    if (!transporter) {
+      console.warn('[EmailService] Không thể gửi email - transporter chưa được cấu hình');
+      return false;
+    }
+
+    try {
+      await transporter.sendMail({
+        from: `"${appName} Support" <${supportEmail || primaryEmail}>`,
+        to,
+        subject: emailSubject,
+        html: await this.createEmailTemplate(content, appName, lang),
+        messageId: emailMessageId,
+        headers: {
+          'X-Ticket-Code': ticketCode,
+        },
+      });
+      return true;
+    } catch (error) {
+      console.error('[EmailService] Lỗi khi gửi email xác nhận liên hệ:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Gửi email reply từ staff
+   * @param to - Email khách hàng
+   * @param name - Tên khách hàng
+   * @param ticketCode - Mã ticket
+   * @param originalSubject - Tiêu đề ban đầu
+   * @param replyContent - Nội dung reply
+   * @param inReplyTo - Message-ID của email trước
+   * @param references - Chuỗi references
+   * @param emailMessageId - Message-ID cho email này
+   * @param lang - Ngôn ngữ
+   */
+  async sendContactReplyEmail(
+    to: string,
+    name: string,
+    ticketCode: string,
+    originalSubject: string,
+    replyContent: string,
+    inReplyTo: string | undefined,
+    references: string[],
+    emailMessageId: string,
+    lang: string = 'vi',
+  ): Promise<boolean> {
+    const appName = this.appConfigService.get('brandName');
+    const colors = this.appConfigService.get('colors');
+
+    const greeting = await this.i18n.t('contact.email.reply.greeting', { lang });
+    const staffReply = await this.i18n.t('contact.email.reply.staffReply', { lang });
+    const replyNote = await this.i18n.t('contact.email.reply.replyNote', { lang });
+    const ticketCodeLabel = await this.i18n.t('contact.email.reply.ticketCode', { lang });
+
+    const emailSubject = `Re: [#${ticketCode}] ${originalSubject}`;
+
+    const content = `
+      <h2 style="margin: 0 0 20px; font-size: 24px; font-weight: 600; color: ${colors.gray900}; text-align: center;">
+        ${greeting}, ${name}! 👋
+      </h2>
+
+      <p style="margin: 0 0 20px; font-size: 15px; color: ${colors.gray700}; line-height: 1.7; text-align: center;">
+        ${staffReply}
+      </p>
+
+      <!-- Ticket Code Badge -->
+      <div style="text-align: center; margin: 15px 0;">
+        <span style="display: inline-block; background-color: ${colors.gray100}; color: ${colors.gray700}; padding: 5px 12px; border-radius: 20px; font-size: 12px;">
+          ${ticketCodeLabel}: <strong>#${ticketCode}</strong>
+        </span>
+      </div>
+
+      <!-- Reply Content -->
+      <div style="background: linear-gradient(135deg, ${colors.gray100} 0%, ${colors.background} 100%); border-left: 4px solid ${colors.primary}; border-radius: 8px; padding: 20px; margin: 25px 0;">
+        <div style="font-size: 14px; color: ${colors.gray700}; line-height: 1.8; white-space: pre-wrap;">${replyContent}</div>
+      </div>
+
+      <!-- Reply Note -->
+      <div style="background-color: ${colors.gray100}; border-radius: 8px; padding: 15px; margin: 25px 0;">
+        <p style="margin: 0; font-size: 12px; color: ${colors.gray500}; text-align: center;">
+          💬 ${replyNote}
+        </p>
+      </div>
+    `;
+
+    const supportEmail = this.configService.get<string>('EMAIL_SUPPORT_ADDRESS');
+    const primaryEmail = this.configService.get<string>('EMAIL_PRIMARY_ADDRESS');
+
+    const transporter = await this.createTransporter();
+    if (!transporter) {
+      console.warn('[EmailService] Không thể gửi email - transporter chưa được cấu hình');
+      return false;
+    }
+
+    try {
+      const mailOptions: Record<string, unknown> = {
+        from: `"${appName} Support" <${supportEmail || primaryEmail}>`,
+        to,
+        subject: emailSubject,
+        html: await this.createEmailTemplate(content, appName, lang),
+        messageId: emailMessageId,
+        headers: {
+          'X-Ticket-Code': ticketCode,
+        },
+      };
+
+      // Add threading headers
+      if (inReplyTo) {
+        mailOptions['inReplyTo'] = inReplyTo;
+      }
+      if (references.length > 0) {
+        mailOptions['references'] = references.join(' ');
+      }
+
+      await transporter.sendMail(mailOptions);
+      return true;
+    } catch (error) {
+      console.error('[EmailService] Lỗi khi gửi email reply:', error);
+      return false;
+    }
+  }
 }
 

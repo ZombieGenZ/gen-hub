@@ -1,0 +1,74 @@
+{
+    "success": {
+        "created": "Your contact request has been submitted successfully",
+        "updated": "Updated successfully",
+        "replied": "Reply sent",
+        "closed": "Ticket closed",
+        "deleted": "Deleted successfully",
+        "deleted_many": "Deleted {count} tickets"
+    },
+    "errors": {
+        "not_found": "Contact ticket not found",
+        "already_closed": "This ticket is already closed",
+        "cannot_delete": "Cannot delete this ticket",
+        "no_permission": "You do not have permission to perform this action"
+    },
+    "validation": {
+        "name_required": "Please enter your name",
+        "name_min": "Name must be at least 2 characters",
+        "name_max": "Name must not exceed 100 characters",
+        "email_required": "Please enter your email",
+        "email_invalid": "Invalid email address",
+        "phone_invalid": "Invalid phone number",
+        "subject_max": "Subject must not exceed 200 characters",
+        "message_required": "Please enter your message",
+        "message_min": "Message must be at least 10 characters",
+        "message_max": "Message must not exceed 5000 characters",
+        "content_required": "Please enter reply content",
+        "status_invalid": "Invalid status",
+        "priority_invalid": "Invalid priority"
+    },
+    "email": {
+        "confirmation": {
+            "subject": "[#{code}] We have received your request",
+            "greeting": "Hello",
+            "received": "Thank you for contacting us!",
+            "ticketCode": "Your ticket code",
+            "yourRequest": "Your request information",
+            "nameLabel": "Name",
+            "emailLabel": "Email",
+            "phoneLabel": "Phone",
+            "subjectLabel": "Subject",
+            "messageLabel": "Message",
+            "responseNote": "Our team will respond as soon as possible.",
+            "replyNote": "You can reply to this email to continue the conversation."
+        },
+        "reply": {
+            "subject": "Re: [#{code}] {originalSubject}",
+            "greeting": "Hello",
+            "staffReply": "We are responding to your request",
+            "replyNote": "You can reply to this email to continue the conversation.",
+            "ticketCode": "Ticket code"
+        }
+    },
+    "status": {
+        "OPEN": "Open",
+        "PENDING": "Pending",
+        "RESOLVED": "Resolved",
+        "CLOSED": "Closed",
+        "SPAM": "Spam"
+    },
+    "priority": {
+        "LOW": "Low",
+        "MEDIUM": "Medium",
+        "HIGH": "High",
+        "URGENT": "Urgent"
+    },
+    "channel": {
+        "EMAIL": "Email",
+        "WEBSITE_FORM": "Website Form",
+        "PHONE": "Phone",
+        "SOCIAL_MEDIA": "Social Media",
+        "OTHER": "Other"
+    }
+}

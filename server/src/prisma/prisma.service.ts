@@ -3021,6 +3021,80 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
       this.logger.error(`❌ Failed to seed faq permissions: ${errorMessage}`);
     }
   }
+
+  /**
+   * Seed các permissions cho Contact Support
+   */
+  private async seedContactPermissions() {
+    try {
+      const contactPermissions = [
+        { key: 'contact.list', name: 'Xem danh sách tickets', description: 'Quyền xem danh sách tickets liên hệ' },
+        { key: 'contact.read', name: 'Xem chi tiết ticket', description: 'Quyền xem chi tiết ticket liên hệ' },
+        { key: 'contact.update', name: 'Cập nhật ticket', description: 'Quyền cập nhật ticket (status, priority, assign)' },
+        { key: 'contact.reply', name: 'Trả lời ticket', description: 'Quyền trả lời ticket liên hệ' },
+        { key: 'contact.delete', name: 'Xóa ticket', description: 'Quyền xóa ticket liên hệ' },
+      ];
+
+      for (const perm of contactPermissions) {
+        const existing = await this.permission.findFirst({
+          where: { key: perm.key },
+        });
+
+        if (!existing) {
+          await this.permission.create({
+            data: {
+              key: perm.key,
+              name: perm.name,
+              description: perm.description,
+              is_active: true,
+              is_deleted: false,
+            },
+          });
+        }
+      }
+
+      const adminRoles = await this.role.findMany({
+        where: {
+          name: { in: ['Admin', 'Super Admin'] },
+          is_deleted: false,
+        },
+      });
+
+      const permissions = await this.permission.findMany({
+        where: {
+          key: { in: contactPermissions.map((p) => p.key) },
+          is_deleted: false,
+        },
+      });
+
+      for (const role of adminRoles) {
+        for (const permission of permissions) {
+          const existingAssignment = await this.rolePermission.findFirst({
+            where: {
+              role_id: role.id,
+              permission_id: permission.id,
+            },
+          });
+
+          if (!existingAssignment) {
+            await this.rolePermission.create({
+              data: {
+                role_id: role.id,
+                permission_id: permission.id,
+                is_active: true,
+                is_deleted: false,
+              },
+            });
+          }
+        }
+      }
+
+      this.logger.log('✅ Contact permissions seeded');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error(`❌ Failed to seed contact permissions: ${errorMessage}`);
+    }
+  }
 }
 
 
