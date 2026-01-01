@@ -149,11 +149,12 @@ export class ContactRepository {
 
     /**
      * Tìm conversation theo email_message_id (In-Reply-To match)
+     * Cải thiện: tìm kiếm trong cả email_references để hỗ trợ reply chains
      */
     async findByEmailMessageId(
         messageId: string,
     ): Promise<ContactConversation | null> {
-        // Tìm trong messages trước
+        // 1. Tìm trong messages table theo email_message_id
         const message = await this.prisma.contactMessage.findFirst({
             where: { email_message_id: messageId, is_deleted: false },
             include: { conversation: true },
@@ -162,9 +163,20 @@ export class ContactRepository {
             return message.conversation;
         }
 
-        // Tìm trong conversation
-        return this.prisma.contactConversation.findFirst({
+        // 2. Tìm trong conversation theo email_message_id
+        const conversation = await this.prisma.contactConversation.findFirst({
             where: { email_message_id: messageId, is_deleted: false },
+        });
+        if (conversation) {
+            return conversation;
+        }
+
+        // 3. Tìm trong email_references array (hỗ trợ reply chains)
+        return this.prisma.contactConversation.findFirst({
+            where: {
+                email_references: { has: messageId },
+                is_deleted: false,
+            },
         });
     }
 

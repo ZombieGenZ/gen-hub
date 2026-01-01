@@ -283,3 +283,5 @@
 | 280 | Contact Tags | PUT | /admin/contact-tags/{id} | ❎ | ❎ | ❎ |
 | 281 | Contact Tags | DELETE | /admin/contact-tags/{id} | ❎ | ❎ | ❎ |
 | 282 | Contact Tags | DELETE | /admin/contact-tags/delete/many | ❎ | ❎ | ❎ |
+| 283 | Gmail Webhook | POST | /webhooks/gmail | ❎ | ❎ | ❎ |
+| 284 | Gmail Webhook | POST | /webhooks/gmail/health | ❎ | ❎ | ❎ |
