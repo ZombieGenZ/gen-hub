@@ -1512,14 +1512,14 @@ socket.on('organization_update_request_rejected', (data) => {
 
 ## 📞 Contact Events (Room: `admin_room`)
 
-### `contact:conversationCreated`
+### `contact:created`
 **Khi nào:** Khi có khách gửi form liên hệ mới
 ```javascript
-socket.on('contact:conversationCreated', (data) => {
+socket.on('contact:created', (data) => {
   // {
   //   "conversationId": "uuid",
   //   "code": "TICKET-20250101-001",
-  //   "customerEmail": "customer@example.com",
+  //   "email": "customer@example.com",
   //   "timestamp": "2025-01-01T10:00:00.000Z"
   // }
   
@@ -1529,10 +1529,10 @@ socket.on('contact:conversationCreated', (data) => {
 });
 ```
 
-### `contact:conversationUpdated`
+### `contact:updated`
 **Khi nào:** Khi ticket được cập nhật (status, priority, assign)
 ```javascript
-socket.on('contact:conversationUpdated', (data) => {
+socket.on('contact:updated', (data) => {
   // {
   //   "conversationId": "uuid",
   //   "code": "TICKET-20250101-001",
@@ -1566,9 +1566,9 @@ socket.on('contact:messageCreated', (data) => {
 });
 ```
 
-### `contact:conversationClosed`
+### `contact:closed`
 ```javascript
-socket.on('contact:conversationClosed', (data) => {
+socket.on('contact:closed', (data) => {
   // {
   //   "conversationId": "uuid",
   //   "code": "TICKET-20250101-001",
@@ -1578,9 +1578,21 @@ socket.on('contact:conversationClosed', (data) => {
 });
 ```
 
-### `contact:conversationDeleted`
+### `contact:reopened`
 ```javascript
-socket.on('contact:conversationDeleted', (data) => {
+socket.on('contact:reopened', (data) => {
+  // {
+  //   "conversationId": "uuid",
+  //   "code": "TICKET-20250101-001",
+  //   "reopenedBy": "admin-uuid",
+  //   "timestamp": "2025-01-01T10:00:00.000Z"
+  // }
+});
+```
+
+### `contact:deleted`
+```javascript
+socket.on('contact:deleted', (data) => {
   // {
   //   "conversationId": "uuid",
   //   "deletedBy": "admin-uuid",

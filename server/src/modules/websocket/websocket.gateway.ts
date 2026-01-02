@@ -916,74 +916,7 @@ export class WebsocketGateway
     });
   }
 
-  /**
-   * Emit event khi tạo mới ticket liên hệ - broadcast đến admin room
-   */
-  emitContactConversationCreated(conversationId: string, code: string, customerEmail: string) {
-    this.server.to('admin_room').emit('contact:conversationCreated', {
-      conversationId,
-      code,
-      customerEmail,
-      timestamp: new Date().toISOString(),
-    });
-  }
 
-  /**
-   * Emit event khi cập nhật ticket liên hệ
-   */
-  emitContactConversationUpdated(conversationId: string, code: string, updatedFields: string[], updatedBy: string) {
-    this.server.to('admin_room').emit('contact:conversationUpdated', {
-      conversationId,
-      code,
-      updatedFields,
-      updatedBy,
-      timestamp: new Date().toISOString(),
-    });
-  }
-
-  /**
-   * Emit event khi có message mới trong ticket
-   */
-  emitContactMessageCreated(conversationId: string, message: {
-    id: string;
-    sender_type: string;
-    sender_name: string;
-    content: string;
-    is_internal: boolean;
-    created_at: Date;
-  }) {
-    this.server.to('admin_room').emit('contact:messageCreated', {
-      conversationId,
-      message: {
-        ...message,
-        created_at: message.created_at.toISOString(),
-      },
-      timestamp: new Date().toISOString(),
-    });
-  }
-
-  /**
-   * Emit event khi đóng ticket
-   */
-  emitContactConversationClosed(conversationId: string, code: string, closedBy: string) {
-    this.server.to('admin_room').emit('contact:conversationClosed', {
-      conversationId,
-      code,
-      closedBy,
-      timestamp: new Date().toISOString(),
-    });
-  }
-
-  /**
-   * Emit event khi xóa ticket
-   */
-  emitContactConversationDeleted(conversationId: string, deletedBy: string) {
-    this.server.to('admin_room').emit('contact:conversationDeleted', {
-      conversationId,
-      deletedBy,
-      timestamp: new Date().toISOString(),
-    });
-  }
 
   /**
    * Emit event khi assign staff vào ticket
@@ -1227,5 +1160,76 @@ export class WebsocketGateway
    */
   updateUserHeartbeat(userId: string): void {
     this.userLastHeartbeat.set(userId, Date.now());
+  }
+  /**
+   * Emit event khi có conversation mới
+   */
+  emitContactConversationCreated(conversationId: string, code: string, email: string) {
+    this.server.to('admin_room').emit('contact:created', {
+      conversationId,
+      code,
+      email,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  /**
+   * Emit event khi conversation được cập nhật
+   */
+  emitContactConversationUpdated(conversationId: string, code: string, updatedFields: string[], updatedBy: string) {
+    this.server.to('admin_room').emit('contact:updated', {
+      conversationId,
+      code,
+      updatedFields,
+      updatedBy,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  /**
+   * Emit event khi xóa conversation
+   */
+  emitContactConversationDeleted(conversationId: string, deletedBy: string) {
+    this.server.to('admin_room').emit('contact:deleted', {
+      conversationId,
+      deletedBy,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  /**
+   * Emit event khi có message mới trong conversation
+   */
+  emitContactMessageCreated(conversationId: string, message: any) {
+    // Gửi cho tất cả clients (admin/staff)
+    this.server.to('admin_room').emit('contact:messageCreated', {
+      conversationId,
+      message,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  /**
+   * Emit event khi conversation bị đóng
+   */
+  emitContactConversationClosed(conversationId: string, code: string, closedBy: string) {
+    this.server.to('admin_room').emit('contact:closed', {
+      conversationId,
+      code,
+      closedBy,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  /**
+   * Emit event khi conversation được mở lại
+   */
+  emitContactConversationReopened(conversationId: string, code: string, reopenedBy: string) {
+    this.server.to('admin_room').emit('contact:reopened', {
+      conversationId,
+      code,
+      reopenedBy,
+      timestamp: new Date().toISOString(),
+    });
   }
 }

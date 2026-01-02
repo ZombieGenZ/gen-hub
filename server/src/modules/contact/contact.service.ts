@@ -94,7 +94,9 @@ export class ContactService implements OnModuleInit {
                         },
                         authorId,
                         authorName,
-                        'discord@genhub.dev'
+                        'discord@gen-hub.dev',
+                        'vi',
+                        { fromDiscord: true }
                     );
                 }
             }
@@ -352,6 +354,7 @@ export class ContactService implements OnModuleInit {
         staffName: string,
         staffEmail: string,
         lang: string = 'vi',
+        options: { fromDiscord?: boolean } = {},
     ): Promise<{ message: string }> {
         const conversation = await this.repository.findById(id);
         if (!conversation) {
@@ -377,7 +380,7 @@ export class ContactService implements OnModuleInit {
         const message = await this.repository.createMessage({
             conversation_id: id,
             sender_type: MessageSender.STAFF,
-            sender_id: validUserId, // Fix: sender_id MUST be UUID
+            sender_id: options.fromDiscord ? undefined : validUserId, // Fix: sender_id MUST be UUID or undefined if from Discord
             sender_name: staffName,
             sender_email: staffEmail,
             message_type: dto.is_internal ? MessageType.SYSTEM_NOTE : MessageType.EMAIL,
@@ -456,8 +459,8 @@ export class ContactService implements OnModuleInit {
             },
         );
 
-        // Sync to Discord
-        if (conversation.discord_channel_id && !dto.is_internal) {
+        // Sync to Discord (if NOT from Discord)
+        if (conversation.discord_channel_id && !dto.is_internal && !options.fromDiscord) {
             this.discordService.sendMessageToTicket(
                 conversation.discord_channel_id,
                 `**${staffName}**: ${dto.content}`,
@@ -629,6 +632,8 @@ export class ContactService implements OnModuleInit {
             userId,
             metaData: { conversationId: id },
         });
+
+        this.websocketGateway.emitContactConversationReopened(id, conversation.code, userId);
 
         return { message: await this.i18n.t('contact.success.reopened', { lang }) };
     }
