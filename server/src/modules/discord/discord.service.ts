@@ -292,7 +292,13 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
                     .setStyle(ButtonStyle.Success)
                     .setEmoji('🔓');
 
-                rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(reopenButton));
+                const deleteButton = new ButtonBuilder()
+                    .setCustomId('delete_ticket_channel')
+                    .setLabel('Delete Channel')
+                    .setStyle(ButtonStyle.Secondary)
+                    .setEmoji('🗑️');
+
+                rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(reopenButton, deleteButton));
             }
 
             await channel.send({
@@ -437,16 +443,14 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
                 await interaction.followUp({ content: 'Could not find linked ticket in database.', ephemeral: true });
             }
         } else if (customId === 'delete_ticket_channel') {
-            // Deprecated: User requested NOT to delete channel upon Close/Delete action from API
-            // But if this button exists (from old messages), we might still want to honor it or disable it.
-            // For now, let's keep it but remove it from future 'close' flows.
-            // The previous 'close' implementation added this button.
-            // The NEW 'close' implementation (above) does NOT add this button.
-
             await interaction.reply({
-                content: 'Channel deletion via button is disabled. Please contact admin if you need to delete this channel manually.',
-                ephemeral: true,
+                content: 'Channel will be deleted in 5 seconds...',
+                ephemeral: false,
             });
+
+            setTimeout(() => {
+                channel.delete().catch(err => this.logger.error('Failed to delete channel', err));
+            }, 5000);
         } else if (customId === 'reopen_ticket') {
             await interaction.reply({ content: 'Reopening ticket...', ephemeral: true });
 
