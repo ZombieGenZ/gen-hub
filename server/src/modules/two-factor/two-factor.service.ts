@@ -16,17 +16,9 @@ import { EmailService } from '../notification/email.service';
 import { AppConfigService } from '../../common/config/app-config.service';
 import { RefreshTokenRepository } from '../auth/repositories/refresh-token.repository';
 import { WebsocketGateway } from '../websocket/websocket.gateway';
+import { BruteForceService } from '../brute-force/brute-force.service';
 import { VerifyTwoFactorSetupDto, VerifyTwoFactorLoginDto } from '../auth/dto';
-
-/**
- * Interface cho device info từ request
- */
-interface IDeviceInfo {
-  ip?: string;
-  location?: string;
-  device?: string;
-  os?: string;
-}
+import { IDeviceInfo } from '../../common/interfaces';
 
 /**
  * Two-Factor Service
@@ -45,6 +37,7 @@ export class TwoFactorService {
     private readonly appConfigService: AppConfigService,
     private readonly refreshTokenRepository: RefreshTokenRepository,
     private readonly websocketGateway: WebsocketGateway,
+    private readonly bruteForceService: BruteForceService,
   ) { }
 
   /**
@@ -177,6 +170,7 @@ export class TwoFactorService {
 
   /**
    * Xác minh 2FA khi đăng nhập
+   * Bao gồm kiểm tra tài khoản bị khóa và ghi nhận failed attempts
    */
   async verifyTwoFactorLogin(
     dto: VerifyTwoFactorLoginDto,
@@ -197,6 +191,15 @@ export class TwoFactorService {
       throw new UnauthorizedException('User không tồn tại');
     }
 
+    // Kiểm tra tài khoản bị khóa (giống như login)
+    if (user.is_banned) {
+      if (!user.banned_end || new Date(user.banned_end) > new Date()) {
+        throw new UnauthorizedException(
+          await this.i18n.t('auth.login.account_banned', { lang }),
+        );
+      }
+    }
+
     let isValid = false;
 
     if (dto.two_factor_code) {
@@ -213,13 +216,38 @@ export class TwoFactorService {
     }
 
     if (!isValid) {
+      // Ghi nhận lần đăng nhập thất bại
+      if (user.email) {
+        await this.bruteForceService.recordFailedAttempt(
+          user.email,
+          deviceInfo?.ip || 'unknown',
+        );
+      }
+      this.systemLogService.warn(
+        'two-factor',
+        'verify_2fa_failed',
+        `2FA verification failed: ${user.email}`,
+        {
+          userId: user.id,
+          ipAddress: deviceInfo?.ip,
+          userAgent: deviceInfo?.device,
+          metaData: { email: user.email, reason: 'invalid_code' },
+        },
+      );
       throw new UnauthorizedException(
         await this.i18n.t('auth.two_factor.verify_failed', { lang }),
       );
     }
 
-    const tokens = await this.generateTokens(user.id, deviceInfo);
+    // Chạy song song: reset brute force + tạo tokens
+    const [, tokens] = await Promise.all([
+      user.email
+        ? this.bruteForceService.onSuccessfulLogin(user.email, deviceInfo?.ip || 'unknown')
+        : Promise.resolve(),
+      this.generateTokens(user.id, deviceInfo),
+    ]);
 
+    // Gửi email thông báo (fire-and-forget)
     if (user.email) {
       this.emailService
         .sendLoginNotificationEmail(

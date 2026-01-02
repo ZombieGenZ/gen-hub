@@ -35,16 +35,7 @@ import {
   VerifyForgotPasswordTokenDto,
   LogoutDto,
 } from './dto';
-
-/**
- * Interface cho device info từ request
- */
-interface IDeviceInfo {
-  ip?: string;
-  location?: string;
-  device?: string;
-  os?: string;
-}
+import { IDeviceInfo } from '../../common/interfaces';
 
 /**
  * Auth Service

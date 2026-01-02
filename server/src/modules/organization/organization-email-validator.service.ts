@@ -4,25 +4,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { CipherService } from '../../common/services/cipher.service';
 import { EmailService } from '../notification/email.service';
 import { SystemLogService } from '../system-log/system-log.service';
-
-/**
- * Interface cho thông tin Organization với Google Email
- */
-interface IOrganizationWithGoogleEmail {
-    id: string;
-    name: string;
-    google_client_id: string | null;
-    google_client_secret: string | null;
-    google_refresh_token: string | null;
-    email_primary_address: string | null;
-    is_using_google_email: boolean;
-    owner: {
-        id: string;
-        name: string;
-        email: string | null;
-        language: string;
-    };
-}
+import { IOrganizationWithGoogleEmail } from './interfaces';
 
 /**
  * Service kiểm tra Google Email credentials cho các Organizations

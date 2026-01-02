@@ -591,4 +591,93 @@ export class ContactService {
 
         return true;
     }
+
+    /**
+     * Tạo contact mới từ email đến (được gọi từ EmailInboundProvider)
+     * Sử dụng khi email được phân loại là contact từ người dùng qua Gemini AI
+     */
+    async createFromInboundEmail(
+        senderEmail: string,
+        senderName: string,
+        subject: string,
+        content: string,
+        gmailMessageId: string,
+        emailMessageId?: string,
+        emailInReplyTo?: string,
+        emailReferences?: string[],
+    ): Promise<{ id: string; code: string }> {
+        // Tạo mã ticket
+        const code = await this.repository.generateTicketCode(this.TICKET_PREFIX);
+
+        // Tạo email message ID nếu chưa có
+        const finalEmailMessageId = emailMessageId || `<${code}-${Date.now()}@gen-hub.dev>`;
+
+        // Tạo conversation
+        const conversation = await this.repository.createConversation({
+            code,
+            customer_name: senderName,
+            customer_email: senderEmail.toLowerCase(),
+            subject: subject || 'Liên hệ hỗ trợ',
+            status: ContactStatus.OPEN,
+            channel: ContactChannel.EMAIL,
+            email_thread_id: `thread-${code}`,
+            email_message_id: finalEmailMessageId,
+            email_in_reply_to: emailInReplyTo,
+            email_references: emailReferences || [],
+            last_activity_at: new Date(),
+        });
+
+        // Tạo message đầu tiên
+        await this.repository.createMessage({
+            conversation_id: conversation.id,
+            sender_type: MessageSender.CUSTOMER,
+            sender_name: senderName,
+            sender_email: senderEmail.toLowerCase(),
+            message_type: MessageType.EMAIL,
+            content,
+            email_subject: subject,
+            email_message_id: finalEmailMessageId,
+        });
+
+        // Gửi email xác nhận (fire-and-forget)
+        this.emailService.sendContactConfirmationEmail(
+            senderEmail,
+            senderName,
+            code,
+            undefined,
+            subject,
+            content,
+            finalEmailMessageId,
+            'vi',
+        ).catch((error) => {
+            this.systemLogService.error('contact', 'email', `Failed to send confirmation email: ${error}`, {
+                metaData: { conversationId: conversation.id, code },
+            });
+        });
+
+        // Log
+        this.systemLogService.info('contact', 'create_from_email', `Created contact ticket from inbound email: ${code}`, {
+            metaData: { conversationId: conversation.id, channel: 'EMAIL', customerEmail: senderEmail },
+        });
+
+        // Emit WebSocket
+        this.websocketGateway.emitContactConversationCreated(conversation.id, code, senderEmail);
+
+        // Invalidate cache
+        await this.invalidateListCache();
+
+        return { id: conversation.id, code };
+    }
+
+    /**
+     * Cập nhật discord_channel_id cho conversation
+     */
+    async updateDiscordChannelId(conversationId: string, discordChannelId: string): Promise<void> {
+        await this.repository.update(conversationId, {
+            discord_channel_id: discordChannelId,
+        });
+
+        // Invalidate cache
+        await this.invalidateCache(conversationId);
+    }
 }

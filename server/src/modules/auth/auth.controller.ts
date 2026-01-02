@@ -33,14 +33,7 @@ import { JwtAuthGuard } from '../../common/guards';
 import { Public, CurrentUser } from '../../common/decorators';
 import { BruteForceGuard } from '../brute-force/brute-force.guard';
 import { CreatedResponse, OkResponse, ResponseCode } from '../../common/responses';
-
-/**
- * Interface cho JWT Payload
- */
-interface IJwtPayload {
-  userId: string;
-  email?: string;
-}
+import type { IJwtPayload } from '../../common/interfaces';
 
 /**
  * Lấy thông tin device từ request

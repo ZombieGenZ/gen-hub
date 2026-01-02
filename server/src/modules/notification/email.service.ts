@@ -5,20 +5,7 @@ import { google } from 'googleapis';
 import { Transporter } from 'nodemailer';
 import { AppConfigService } from '../../common/config/app-config.service';
 import { I18nService } from 'nestjs-i18n';
-
-/**
- * Interface cho thông tin email
- */
-interface IEmailOptions {
-  /** Địa chỉ email người nhận */
-  to: string;
-  /** Tiêu đề email */
-  subject: string;
-  /** Nội dung text */
-  text?: string;
-  /** Nội dung HTML */
-  html?: string;
-}
+import { IEmailOptions } from './interfaces';
 
 /**
  * Service gửi email sử dụng Google OAuth2

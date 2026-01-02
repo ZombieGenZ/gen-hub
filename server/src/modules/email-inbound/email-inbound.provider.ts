@@ -11,16 +11,9 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { EmailService } from '../notification/email.service';
 import { ContactService } from '../contact/contact.service';
 import { GmailApiService } from './gmail-api.service';
-import { IGmailMessage, IGmailPubSubNotification } from './interfaces';
-
-/**
- * Interface cho unlock token data từ Redis
- */
-interface IUnlockTokenData {
-    code: string;
-    ip: string;
-    createdAt: number;
-}
+import { GeminiService } from '../../common/services/gemini.service';
+import { DiscordService } from '../discord/discord.service';
+import { IGmailMessage, IGmailPubSubNotification, IUnlockTokenData } from './interfaces';
 
 /**
  * Email Inbound Provider
@@ -46,6 +39,8 @@ export class EmailInboundProvider implements OnModuleInit, OnModuleDestroy {
         private readonly emailService: EmailService,
         private readonly contactService: ContactService,
         private readonly gmailApiService: GmailApiService,
+        private readonly geminiService: GeminiService,
+        private readonly discordService: DiscordService,
     ) { }
 
     async onModuleInit() {
@@ -191,9 +186,46 @@ export class EmailInboundProvider implements OnModuleInit, OnModuleDestroy {
             const isTicketReply = this.TICKET_SUBJECT_PATTERN.test(subject);
 
             if (!isUnlockEmail && !isTicketReply) {
-                this.logger.debug(`Skipping irrelevant email: ${subject.substring(0, 50)}...`);
-                await this.gmailApiService.markAsRead(message.id);
-                return;
+                // Sử dụng Gemini AI để phân loại email
+                const bodyText = this.extractNewReplyContent(message.body.text || message.body.html || '');
+
+                try {
+                    const classification = await this.geminiService.classifyEmail(
+                        senderEmail,
+                        senderName,
+                        subject,
+                        bodyText,
+                    );
+
+                    if (classification.isSpamOrAdvertising) {
+                        // Spam/quảng cáo → đánh dấu đã đọc
+                        this.logger.debug(`Spam/advertising email classified: ${subject.substring(0, 50)}... (confidence: ${classification.confidence})`);
+                        await this.gmailApiService.markAsRead(message.id);
+                        return;
+                    }
+
+                    if (classification.isUserContact) {
+                        // Email contact từ người dùng → tự động tạo contact
+                        this.logger.debug(`User contact email classified: ${subject.substring(0, 50)}... (confidence: ${classification.confidence})`);
+                        await this.createNewContact(
+                            message,
+                            senderEmail,
+                            senderName,
+                            subject,
+                            bodyText,
+                        );
+                        await this.gmailApiService.markAsRead(message.id);
+                        return;
+                    }
+
+                    // Không xác định → để nguyên (không đánh dấu đã đọc)
+                    this.logger.debug(`Unknown email type, leaving unread: ${subject.substring(0, 50)}... (category: ${classification.category})`);
+                    return;
+                } catch (error) {
+                    // Lỗi AI → để nguyên email (không đánh dấu đã đọc)
+                    this.logger.error(`Gemini AI classification failed: ${error.message}`);
+                    return;
+                }
             }
 
             // Lấy nội dung email
@@ -431,6 +463,53 @@ export class EmailInboundProvider implements OnModuleInit, OnModuleDestroy {
         } catch (error) {
             this.logger.error(`Error verifying unlock code for ${email}:`, error);
             return false;
+        }
+    }
+
+    /**
+     * Tạo contact mới từ email đến
+     * Được gọi khi Gemini AI phân loại email là contact từ người dùng
+     */
+    private async createNewContact(
+        message: IGmailMessage,
+        senderEmail: string,
+        senderName: string,
+        subject: string,
+        content: string,
+    ): Promise<void> {
+        try {
+            // Tạo contact conversation
+            const result = await this.contactService.createFromInboundEmail(
+                senderEmail,
+                senderName || senderEmail.split('@')[0],
+                subject || 'Liên hệ hỗ trợ',
+                content,
+                message.id,
+                message.headers.messageId,
+                message.headers.inReplyTo,
+                message.headers.references,
+            );
+
+            this.logger.log(`Created new contact ticket ${result.code} from email: ${senderEmail}`);
+
+            // Tạo Discord channel nếu được bật
+            if (this.discordService.enabled) {
+                const discordResult = await this.discordService.createContactChannel(
+                    result.code,
+                    senderName || senderEmail.split('@')[0],
+                    senderEmail,
+                    subject,
+                );
+
+                if (discordResult.success && discordResult.channelId) {
+                    // Cập nhật discord_channel_id cho conversation
+                    await this.contactService.updateDiscordChannelId(result.id, discordResult.channelId);
+                    this.logger.log(`Created Discord channel for ticket ${result.code}`);
+                }
+            }
+        } catch (error) {
+            this.logger.error(`Failed to create contact from email ${senderEmail}:`, error);
+            throw error;
         }
     }
 }

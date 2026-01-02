@@ -15,17 +15,7 @@ import { RedisService } from '../redis/redis.service';
 import { WebsocketGateway } from '../websocket/websocket.gateway';
 import { UpdateProfileDto, ChangePasswordDto } from '../auth/dto';
 import { normalizeLanguage } from '../../common/validators';
-
-
-/**
- * Interface cho device info từ request
- */
-interface IDeviceInfo {
-  ip?: string;
-  location?: string;
-  device?: string;
-  os?: string;
-}
+import { IDeviceInfo } from '../../common/interfaces';
 
 /**
  * Account Service

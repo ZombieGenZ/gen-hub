@@ -28,14 +28,7 @@ import {
   ResponseCode,
 } from '../../common/responses';
 import { AccountService } from './account.service';
-
-/**
- * Interface cho JWT Payload
- */
-interface IJwtPayload {
-  userId: string;
-  email?: string;
-}
+import type { IJwtPayload } from '../../common/interfaces';
 
 /**
  * Lấy thông tin device từ request

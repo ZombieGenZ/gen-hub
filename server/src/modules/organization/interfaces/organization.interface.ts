@@ -1,4 +1,23 @@
 /**
+ * Interface cho thông tin Organization với Google Email
+ */
+export interface IOrganizationWithGoogleEmail {
+    id: string;
+    name: string;
+    google_client_id: string | null;
+    google_client_secret: string | null;
+    google_refresh_token: string | null;
+    email_primary_address: string | null;
+    is_using_google_email: boolean;
+    owner: {
+        id: string;
+        name: string;
+        email: string | null;
+        language: string;
+    };
+}
+
+/**
  * Interface cho Organization với relations
  */
 export interface IOrganizationWithRelations {

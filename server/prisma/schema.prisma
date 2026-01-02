@@ -2954,6 +2954,9 @@ model ContactConversation {
   updated_by String?
   deleted_by String?
 
+  // Discord integration
+  discord_channel_id String? // ID của channel Discord liên kết với conversation
+
   assigned_staff User? @relation("AssignedStaff", fields: [assigned_staff_id], references: [id])
 
   messages            ContactMessage[]
@@ -3414,4 +3417,32 @@ model ContactConversationStaff {
   @@index([conversation_id])
   @@index([staff_id])
   @@map("contact_conversation_staff")
+}
+
+// Model để lưu log các cuộc gọi AI (Gemini, etc.)
+model AILog {
+  id            String  @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  model         String  // Model AI đã sử dụng (gemini-1.5-flash, etc.)
+  purpose       String  // Mục đích: email_classification, content_generation, etc.
+
+  input_text    String  @db.Text // Prompt gửi đến AI
+  output_text   String? @db.Text // Response từ AI
+
+  input_tokens  Int?    // Số token đầu vào
+  output_tokens Int?    // Số token đầu ra
+  total_tokens  Int?    // Tổng token đã sử dụng
+
+  duration_ms   Int?    // Thời gian xử lý (milliseconds)
+  is_success    Boolean @default(true)
+  error_message String? @db.Text // Lỗi nếu có
+
+  metadata      Json?   // Dữ liệu bổ sung (email_id, sender, subject, etc.)
+
+  created_at    DateTime @default(now())
+
+  @@index([purpose])
+  @@index([model])
+  @@index([created_at])
+  @@index([is_success])
+  @@map("ai_logs")
 }

@@ -12,19 +12,8 @@ import { ConfigService } from '@nestjs/config';
 import { ApiTags, ApiOperation, ApiExcludeEndpoint } from '@nestjs/swagger';
 import { EmailInboundProvider } from './email-inbound.provider';
 import { IGmailPubSubNotification } from './interfaces';
+import type { IPubSubMessage } from './interfaces';
 import { Public } from '../../common/decorators/public.decorator';
-
-/**
- * Pub/Sub message structure từ Google Cloud
- */
-interface IPubSubMessage {
-    message: {
-        data: string; // Base64 encoded
-        messageId: string;
-        publishTime: string;
-    };
-    subscription: string;
-}
 
 /**
  * Gmail Webhook Controller

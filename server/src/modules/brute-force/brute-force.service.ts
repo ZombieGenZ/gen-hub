@@ -9,22 +9,7 @@ import { I18nService } from 'nestjs-i18n';
 import { RedisService } from '../redis/redis.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EmailService } from '../notification/email.service';
-
-/**
- * Interface cho unlock token data
- */
-interface IUnlockTokenData {
-    code: string;
-    ip: string;
-    createdAt: number;
-}
-
-/**
- * Interface cho penalty rules
- */
-interface IPenaltyRules {
-    [attempts: string]: number;
-}
+import { IUnlockTokenData, IPenaltyRules } from './interfaces';
 
 /**
  * Brute Force Service

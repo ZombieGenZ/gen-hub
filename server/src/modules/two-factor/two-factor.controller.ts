@@ -23,14 +23,7 @@ import { JwtAuthGuard, AccessVerificationGuard } from '../../common/guards';
 import { Public, CurrentUser } from '../../common/decorators';
 import { OkResponse, GetResponse, ResponseCode } from '../../common/responses';
 import { TwoFactorService } from './two-factor.service';
-
-/**
- * Interface cho JWT Payload
- */
-interface IJwtPayload {
-  userId: string;
-  email?: string;
-}
+import type { IJwtPayload } from '../../common/interfaces';
 
 /**
  * Lấy thông tin device từ request

@@ -4,9 +4,11 @@ import { RedisModule } from '../redis/redis.module';
 import { PrismaModule } from '../../prisma/prisma.module';
 import { NotificationModule } from '../notification/notification.module';
 import { ContactModule } from '../contact/contact.module';
+import { DiscordModule } from '../discord/discord.module';
 import { EmailInboundProvider } from './email-inbound.provider';
 import { GmailApiService } from './gmail-api.service';
 import { GmailWebhookController } from './gmail-webhook.controller';
+import { GeminiService } from '../../common/services/gemini.service';
 
 /**
  * Email Inbound Module
@@ -20,9 +22,10 @@ import { GmailWebhookController } from './gmail-webhook.controller';
         PrismaModule,
         NotificationModule,
         forwardRef(() => ContactModule),
+        DiscordModule,
     ],
     controllers: [GmailWebhookController],
-    providers: [GmailApiService, EmailInboundProvider],
+    providers: [GmailApiService, EmailInboundProvider, GeminiService],
     exports: [GmailApiService, EmailInboundProvider],
 })
 export class EmailInboundModule { }
