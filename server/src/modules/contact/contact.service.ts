@@ -85,10 +85,22 @@ export class ContactService implements OnModuleInit {
                 }
             },
             onReply: async (ticketCode, content, authorName, authorId) => {
-                const conversation = await this.repository.findByCode(ticketCode);
+                let conversation = await this.repository.findByCode(ticketCode);
+
+                // If not found, try with TICKET prefix (Discord strips ticket-)
+                // Assuming format TICKET-YYYYMMDD-XXX
+                if (!conversation) {
+                    // Check common prefixes or try to reconstruct.
+                    // Discord replaces "ticket-", leaving "TICKET-..." or just suffix?
+                    // If channel is ticket-ticket-123 -> code is TICKET-123.
+                    // If channel is ticket-123 -> code is 123.
+                    // We try adding TICKET- prefix if missing.
+                    conversation = await this.repository.findByCode(`TICKET-${ticketCode}`);
+                }
+
                 if (conversation) {
                     await this.replyFromDiscord(
-                        ticketCode,
+                        conversation.code, // Use actual code from DB
                         content,
                         authorName,
                         authorId,

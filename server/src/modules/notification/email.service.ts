@@ -1351,7 +1351,8 @@ export class EmailService {
     const finalGreeting = greeting || `Hi ${name},`;
     const finalMessage = messageTemplate || `Your support ticket <strong>#${ticketCode}</strong> has been closed.`;
     const finalNote = note || 'If you need further assistance, please open a new ticket.';
-    const emailSubject = `Re: [#${ticketCode}] ${originalSubject}`;
+    const confirmationSubject = await this.i18n.t('contact.email.confirmation.subject', { lang, args: { code: ticketCode } });
+    const emailSubject = `Re: ${confirmationSubject}`;
 
     const content = `
       <h2 style="margin: 0 0 20px; font-size: 24px; font-weight: 600; color: ${colors.gray900}; text-align: center;">
@@ -1430,7 +1431,8 @@ export class EmailService {
     const finalTitle = title || 'Ticket Reopened';
     const finalGreeting = greeting || `Hi ${name},`;
     const finalMessage = messageTemplate || `Your support ticket <strong>#${ticketCode}</strong> has been reopened.`;
-    const emailSubject = `Re: [#${ticketCode}] ${originalSubject}`;
+    const confirmationSubject = await this.i18n.t('contact.email.confirmation.subject', { lang, args: { code: ticketCode } });
+    const emailSubject = `Re: ${confirmationSubject}`;
 
     const content = `
       <h2 style="margin: 0 0 20px; font-size: 24px; font-weight: 600; color: ${colors.gray900}; text-align: center;">
