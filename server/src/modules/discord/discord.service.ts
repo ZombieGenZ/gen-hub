@@ -429,6 +429,22 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
                 await message.react('✅');
                 return;
             }
+            if (content === '!help') {
+                const embed = new EmbedBuilder()
+                    .setTitle('🤖 Support Bot Commands')
+                    .setColor('#0099ff')
+                    .setDescription('Here are the available commands for managing tickets:')
+                    .addFields(
+                        { name: '🔒 !close', value: 'Close the current ticket' },
+                        { name: '🔓 !reopen', value: 'Reopen a closed ticket' },
+                        { name: '🗑️ !delete', value: 'Delete the ticket channel (Soft delete)' },
+                        { name: '❓ !help', value: 'Show this help message' }
+                    )
+                    .setFooter({ text: 'GenHub Support System' });
+
+                await channel.send({ embeds: [embed] });
+                return;
+            }
         }
 
         // Handle Reply (only in ticket channels)
