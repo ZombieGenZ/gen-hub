@@ -46,6 +46,21 @@ export class EmailInboundProvider implements OnModuleInit, OnModuleDestroy {
     async onModuleInit() {
         this.logger.log('📧 EmailInboundProvider initializing...');
 
+        // Đăng ký Discord callback cho staff reply
+        this.discordService.setReplyCallback(async (ticketCode, content, staffName, staffDiscordId) => {
+            const result = await this.contactService.replyFromDiscord(
+                ticketCode,
+                content,
+                staffName,
+                staffDiscordId,
+            );
+            if (result) {
+                this.logger.log(`📤 Discord reply processed for ticket: ${ticketCode}`);
+            } else {
+                this.logger.warn(`⚠️ Failed to process Discord reply for ticket: ${ticketCode}`);
+            }
+        });
+
         // Chờ Gmail API service sẵn sàng
         if (!this.gmailApiService.isReady()) {
             this.logger.warn('⚠️ Gmail API chưa sẵn sàng, email inbound sẽ không hoạt động');
@@ -342,7 +357,22 @@ export class EmailInboundProvider implements OnModuleInit, OnModuleDestroy {
 
             if (processed) {
                 const ticketMatch = subject.match(this.TICKET_SUBJECT_PATTERN);
-                this.logger.log(`✅ Contact ticket reply processed: ${ticketMatch?.[1]}`);
+                const ticketCode = ticketMatch?.[1];
+                this.logger.log(`✅ Contact ticket reply processed: ${ticketCode}`);
+
+                // Forward to Discord channel
+                if (ticketCode && this.discordService.enabled) {
+                    const conversation = await this.contactService.getByCode(ticketCode);
+                    if (conversation?.discord_channel_id) {
+                        await this.discordService.sendMessageToTicket(
+                            conversation.discord_channel_id,
+                            bodyText,
+                            true, // isFromCustomer
+                            senderName,
+                        );
+                        this.logger.log(`📤 Forwarded email reply to Discord channel for ${ticketCode}`);
+                    }
+                }
             } else {
                 this.logger.warn(`⚠️ Contact ticket not found for: ${subject}`);
             }

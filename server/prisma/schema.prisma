@@ -2909,6 +2909,7 @@ enum MessageType {
   EMAIL
   ATTACHMENT
   SYSTEM_NOTE
+  DISCORD
 }
 
 model ContactConversation {

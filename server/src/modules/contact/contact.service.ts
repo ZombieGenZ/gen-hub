@@ -680,4 +680,89 @@ export class ContactService {
         // Invalidate cache
         await this.invalidateCache(conversationId);
     }
+
+    /**
+     * Xử lý reply từ Discord (staff reply)
+     * Được gọi từ DiscordService callback
+     */
+    async replyFromDiscord(
+        ticketCode: string,
+        content: string,
+        staffName: string,
+        staffDiscordId: string,
+    ): Promise<boolean> {
+        // Tìm conversation theo code
+        const conversation = await this.repository.findByCode(ticketCode);
+        if (!conversation) {
+            return false;
+        }
+
+        // Tạo message mới - đây là staff reply
+        const message = await this.repository.createMessage({
+            conversation_id: conversation.id,
+            sender_type: MessageSender.STAFF,
+            sender_name: staffName,
+            message_type: MessageType.DISCORD,
+            content,
+        });
+
+        // Cập nhật status
+        await this.repository.update(conversation.id, {
+            status: ContactStatus.PENDING,
+        });
+
+        // Invalidate cache
+        await Promise.all([
+            this.invalidateCache(conversation.id),
+            this.invalidateListCache(),
+        ]);
+
+        // Log
+        this.systemLogService.info('contact', 'discord_reply', `Staff replied via Discord: ${ticketCode}`, {
+            metaData: { conversationId: conversation.id, messageId: message.id, staffDiscordId },
+        });
+
+        // WebSocket - thông báo có reply mới
+        this.websocketGateway.emitContactMessageCreated(
+            conversation.id,
+            {
+                id: message.id,
+                sender_type: MessageSender.STAFF,
+                sender_name: staffName,
+                content,
+                is_internal: false,
+                created_at: message.created_at,
+            },
+        );
+
+        // Gửi email cho khách hàng (fire-and-forget)
+        if (conversation.customer_email) {
+            const supportEmail = this.configService.get<string>('EMAIL_SUPPORT_ADDRESS');
+            const emailMessageId = `<${conversation.code.toLowerCase()}-reply-${Date.now()}@${supportEmail?.split('@')[1] || 'genhub.dev'}>`;
+
+            this.emailService.sendContactReplyEmail(
+                conversation.customer_email,
+                conversation.customer_name,
+                conversation.code,
+                staffName,
+                content,
+                emailMessageId,
+                conversation.email_message_id ? [conversation.email_message_id] : [],
+                'vi',
+            ).catch((error) => {
+                this.systemLogService.error('contact', 'email', `Failed to send reply email: ${error}`, {
+                    metaData: { conversationId: conversation.id },
+                });
+            });
+        }
+
+        return true;
+    }
+
+    /**
+     * Lấy conversation theo code (để lấy discord_channel_id)
+     */
+    async getByCode(code: string): Promise<ContactConversation | null> {
+        return this.repository.findByCode(code);
+    }
 }
