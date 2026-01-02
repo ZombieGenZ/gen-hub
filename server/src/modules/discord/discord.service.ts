@@ -148,16 +148,16 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
                 .setTitle('📩 Yêu cầu hổ trợ mới')
                 .addFields(
                     { name: 'Code', value: contactCode, inline: true },
-                    { name: 'Customer', value: customerName, inline: true },
+                    { name: 'Khách hàng', value: customerName, inline: true },
                     { name: 'Email', value: customerEmail, inline: true },
                 )
                 .setTimestamp();
 
             if (subject) {
-                embed.addFields({ name: 'Subject', value: subject });
+                embed.addFields({ name: 'Tiêu đề', value: subject });
             }
 
-            embed.setFooter({ text: 'Reply in this channel to respond to the customer' });
+            embed.setFooter({ text: 'Hãy trả lời trong kênh này để phản hồi khách hàng.' });
 
             await (channel as TextChannel).send({ embeds: [embed] });
 
