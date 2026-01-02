@@ -1252,7 +1252,9 @@ export class EmailService {
     const replyNote = await this.i18n.t('contact.email.reply.replyNote', { lang });
     const ticketCodeLabel = await this.i18n.t('contact.email.reply.ticketCode', { lang });
 
-    const emailSubject = `Re: [#${ticketCode}] ${originalSubject}`;
+    // Lấy subject của email xác nhận để reply đúng vào thread
+    const confirmationSubject = await this.i18n.t('contact.email.confirmation.subject', { lang, args: { code: ticketCode } });
+    const emailSubject = `Re: ${confirmationSubject}`;
 
     const content = `
       <h2 style="margin: 0 0 20px; font-size: 24px; font-weight: 600; color: ${colors.gray900}; text-align: center;">
