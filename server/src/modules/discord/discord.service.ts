@@ -145,7 +145,7 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
             // Gửi tin nhắn chào mừng với embed
             const embed = new EmbedBuilder()
                 .setColor(0x0099ff)
-                .setTitle('📩 New Support Ticket')
+                .setTitle('📩 Yêu cầu hổ trợ mới')
                 .addFields(
                     { name: 'Code', value: contactCode, inline: true },
                     { name: 'Customer', value: customerName, inline: true },
@@ -199,7 +199,7 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
             }
 
             if (isFromCustomer) {
-                embed.setTitle('📨 Customer Reply');
+                embed.setTitle('📨 Khách hàng phản hồi');
             }
 
             await channel.send({ embeds: [embed] });
