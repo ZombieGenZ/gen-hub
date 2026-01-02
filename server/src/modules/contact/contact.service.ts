@@ -219,6 +219,25 @@ export class ContactService implements OnModuleInit {
         // Emit WebSocket - thông báo admin có ticket mới
         this.websocketGateway.emitContactConversationCreated(conversation.id, code, dto.email);
 
+        // Tạo Discord channel (fire-and-forget)
+        try {
+            const discordResult = await this.discordService.createContactChannel(
+                code,
+                dto.name,
+                dto.email,
+                dto.subject,
+            );
+            if (discordResult.success && discordResult.channelId) {
+                await this.repository.update(conversation.id, {
+                    discord_channel_id: discordResult.channelId,
+                });
+            }
+        } catch (error) {
+            this.systemLogService.error('contact', 'discord', `Failed to create Discord channel: ${error}`, {
+                metaData: { conversationId: conversation.id, code },
+            });
+        }
+
         // Invalidate list cache
         await this.invalidateListCache();
 

@@ -1411,6 +1411,13 @@ model Organization {
   email_primary_address String?
   is_using_google_email Boolean @default(false)
 
+  // Gmail Pub/Sub configuration
+  gmail_pubsub_topic               String? @db.Text
+  gmail_pubsub_subscription        String? @db.Text
+  gmail_watch_label_ids            String? @default("INBOX")
+  gmail_watch_renew_interval_hours Int?    @default(24)
+  gmail_webhook_secret             String? @db.Text
+
   auto_delete_api_key_logs  Boolean? @default(true)
   api_key_logs_retention_ms BigInt?  @default(2592000000)
 

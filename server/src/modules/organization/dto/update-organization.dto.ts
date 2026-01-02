@@ -13,4 +13,7 @@ export class UpdateOrganizationDto extends PickType(CreateOrganizationDto, [
     'google_client_secret',
     'google_refresh_token',
     'email_primary_address',
+    'gmail_pubsub_topic',
+    'gmail_pubsub_subscription',
+    'gmail_webhook_secret',
 ] as const) { }

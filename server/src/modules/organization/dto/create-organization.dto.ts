@@ -126,4 +126,25 @@ export class CreateOrganizationDto {
         message: i18nValidationMessage('organization.validation.email_primary_max_length'),
     })
     email_primary_address?: string;
+
+    @ApiPropertyOptional({ description: 'Gmail Pub/Sub Topic' })
+    @IsOptional()
+    @IsString({
+        message: i18nValidationMessage('organization.validation.gmail_pubsub_topic_string'),
+    })
+    gmail_pubsub_topic?: string;
+
+    @ApiPropertyOptional({ description: 'Gmail Pub/Sub Subscription' })
+    @IsOptional()
+    @IsString({
+        message: i18nValidationMessage('organization.validation.gmail_pubsub_subscription_string'),
+    })
+    gmail_pubsub_subscription?: string;
+
+    @ApiPropertyOptional({ description: 'Gmail Webhook Secret' })
+    @IsOptional()
+    @IsString({
+        message: i18nValidationMessage('organization.validation.gmail_webhook_secret_string'),
+    })
+    gmail_webhook_secret?: string;
 }

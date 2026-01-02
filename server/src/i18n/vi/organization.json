@@ -111,6 +111,9 @@
         "representative_name_string": "Tên người đại diện phải là chuỗi",
         "representative_name_max_length": "Tên người đại diện không được quá 255 ký tự",
         "representative_title_string": "Chức danh người đại diện phải là chuỗi",
-        "representative_title_max_length": "Chức danh người đại diện không được quá 100 ký tự"
+        "representative_title_max_length": "Chức danh người đại diện không được quá 100 ký tự",
+        "gmail_pubsub_topic_string": "Gmail Pub/Sub Topic phải là chuỗi",
+        "gmail_pubsub_subscription_string": "Gmail Pub/Sub Subscription phải là chuỗi",
+        "gmail_webhook_secret_string": "Gmail Webhook Secret phải là chuỗi"
     }
 }

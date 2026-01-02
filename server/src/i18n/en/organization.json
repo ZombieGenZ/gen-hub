@@ -111,6 +111,9 @@
         "representative_name_string": "Representative name must be a string",
         "representative_name_max_length": "Representative name cannot exceed 255 characters",
         "representative_title_string": "Representative title must be a string",
-        "representative_title_max_length": "Representative title cannot exceed 100 characters"
+        "representative_title_max_length": "Representative title cannot exceed 100 characters",
+        "gmail_pubsub_topic_string": "Gmail Pub/Sub Topic must be a string",
+        "gmail_pubsub_subscription_string": "Gmail Pub/Sub Subscription must be a string",
+        "gmail_webhook_secret_string": "Gmail Webhook Secret must be a string"
     }
 }

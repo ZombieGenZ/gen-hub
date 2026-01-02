@@ -370,8 +370,8 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
 
             const embed = new EmbedBuilder()
                 .setColor(0x00ff00)
-                .setTitle('🔓 Ticket Reopened')
-                .setDescription('This support ticket has been reopened.')
+                .setTitle('Ticket Reopened')
+                .setDescription('🔓 This support ticket has been reopened.')
                 .setTimestamp();
 
             if (reopenedBy) {

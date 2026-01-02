@@ -64,10 +64,19 @@ export class OrganizationService {
   /**
    * Loại bỏ các trường nhạy cảm khỏi response
    * Các trường google_client_id, google_client_secret, google_refresh_token, email_primary_address
-   * chỉ được sử dụng nội bộ bởi hệ thống
+   * và các trường gmail_pubsub chỉ được sử dụng nội bộ bởi hệ thống
    */
   private stripSensitiveFields(org: IOrganizationWithRelations): IOrganizationWithRelations {
-    const { google_client_id, google_client_secret, google_refresh_token, email_primary_address, ...safeOrg } = org as any;
+    const {
+      google_client_id,
+      google_client_secret,
+      google_refresh_token,
+      email_primary_address,
+      gmail_pubsub_topic,
+      gmail_pubsub_subscription,
+      gmail_webhook_secret,
+      ...safeOrg
+    } = org as any;
 
     // Convert BigInt fields to Number to avoid JSON serialization error
     if (safeOrg.api_key_logs_retention_ms) {
@@ -141,6 +150,14 @@ export class OrganizationService {
       );
     }
 
+    // Mã hóa các trường Gmail Pub/Sub (luôn mã hóa nếu có)
+    if (dto.gmail_pubsub_topic)
+      dto.gmail_pubsub_topic = this.cipherService.encrypt(dto.gmail_pubsub_topic);
+    if (dto.gmail_pubsub_subscription)
+      dto.gmail_pubsub_subscription = this.cipherService.encrypt(dto.gmail_pubsub_subscription);
+    if (dto.gmail_webhook_secret)
+      dto.gmail_webhook_secret = this.cipherService.encrypt(dto.gmail_webhook_secret);
+
     // Tạo organization
     const org = await this.repository.create({
       name: taxInfo.name,
@@ -159,6 +176,9 @@ export class OrganizationService {
       google_client_secret: dto.google_client_secret,
       google_refresh_token: dto.google_refresh_token,
       email_primary_address: dto.email_primary_address,
+      gmail_pubsub_topic: dto.gmail_pubsub_topic,
+      gmail_pubsub_subscription: dto.gmail_pubsub_subscription,
+      gmail_webhook_secret: dto.gmail_webhook_secret,
     });
 
     // Thêm owner vào danh sách members với trạng thái đã chấp nhận
@@ -423,6 +443,14 @@ export class OrganizationService {
       dto.email_primary_address = this.cipherService.encrypt(
         dto.email_primary_address,
       );
+
+    // Mã hóa các trường Gmail Pub/Sub
+    if (dto.gmail_pubsub_topic)
+      dto.gmail_pubsub_topic = this.cipherService.encrypt(dto.gmail_pubsub_topic);
+    if (dto.gmail_pubsub_subscription)
+      dto.gmail_pubsub_subscription = this.cipherService.encrypt(dto.gmail_pubsub_subscription);
+    if (dto.gmail_webhook_secret)
+      dto.gmail_webhook_secret = this.cipherService.encrypt(dto.gmail_webhook_secret);
 
     const updated = await this.repository.update(id, {
       ...dto,
