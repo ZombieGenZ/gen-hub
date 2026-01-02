@@ -735,19 +735,32 @@ export class ContactService {
             },
         );
 
-        // Gửi email cho khách hàng (fire-and-forget)
+        // Gửi email cho khách hàng - nằm trong thread email cũ (fire-and-forget)
         if (conversation.customer_email) {
             const supportEmail = this.configService.get<string>('EMAIL_SUPPORT_ADDRESS');
             const emailMessageId = `<${conversation.code.toLowerCase()}-reply-${Date.now()}@${supportEmail?.split('@')[1] || 'genhub.dev'}>`;
+
+            // Build references chain for threading
+            const references = [...(conversation.email_references || [])];
+            if (conversation.email_message_id && !references.includes(conversation.email_message_id)) {
+                references.unshift(conversation.email_message_id);
+            }
+
+            // Get last email message ID for In-Reply-To header
+            const inReplyTo = references.length > 0 ? references[references.length - 1] : conversation.email_message_id;
+
+            // Subject dựa trên subject gốc của conversation (nếu có)
+            const originalSubject = conversation.subject || 'Hỗ trợ từ GEN-HUB';
 
             this.emailService.sendContactReplyEmail(
                 conversation.customer_email,
                 conversation.customer_name,
                 conversation.code,
-                staffName,
-                content,
+                originalSubject,
+                `Reply từ ${staffName}:\n\n${content}`,
+                inReplyTo || undefined,
+                references,
                 emailMessageId,
-                conversation.email_message_id ? [conversation.email_message_id] : [],
                 'vi',
             ).catch((error) => {
                 this.systemLogService.error('contact', 'email', `Failed to send reply email: ${error}`, {
