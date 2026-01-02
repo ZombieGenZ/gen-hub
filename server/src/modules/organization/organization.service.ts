@@ -347,13 +347,13 @@ export class OrganizationService {
 
     const result = await this.repository.findMany(query, effectiveUserId);
 
-    // Cache result
-    await this.redisService.setOrganizationListCache(cacheKey, result);
-
-    // Ẩn các trường nhạy cảm khỏi response
+    // Ẩn các trường nhạy cảm và convert BigInt TRƯỚC khi cache
     if (result.items) {
       result.items = result.items.map(org => this.stripSensitiveFields(org));
     }
+
+    // Cache result (sau khi đã strip và convert BigInt)
+    await this.redisService.setOrganizationListCache(cacheKey, result);
 
     return result;
   }
