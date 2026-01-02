@@ -63,7 +63,8 @@
         "reopened": {
             "title": "Ticket Đã Mở Lại",
             "message": "Ticket hỗ trợ <strong>#{ticketCode}</strong> của bạn đã được mở lại.",
-            "subject_prefix": "[#{code}] Ticket Đã Mở Lại"
+            "subject_prefix": "[#{code}] Ticket Đã Mở Lại",
+            "replyNote": "Bạn có thể trả lời email này để tiếp tục trao đổi."
         }
     },
     "status": {

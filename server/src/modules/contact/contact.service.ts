@@ -68,6 +68,7 @@ export class ContactService implements OnModuleInit {
             onClose: async (channelId, userId, userName) => {
                 const conversation = await this.repository.findByDiscordChannelId(channelId);
                 if (conversation) {
+                    // Discord users don't have UUIDs, so we pass undefined for userId and rely on metadata/log message
                     await this.close(conversation.id, `[Discord] ${userName}`);
                 }
             },
@@ -86,17 +87,11 @@ export class ContactService implements OnModuleInit {
             onReply: async (ticketCode, content, authorName, authorId) => {
                 const conversation = await this.repository.findByCode(ticketCode);
                 if (conversation) {
-                    await this.reply(
-                        conversation.id,
-                        {
-                            content,
-                            is_internal: false
-                        },
-                        authorId,
+                    await this.replyFromDiscord(
+                        ticketCode,
+                        content,
                         authorName,
-                        'discord@gen-hub.dev',
-                        'vi',
-                        { fromDiscord: true }
+                        authorId,
                     );
                 }
             }

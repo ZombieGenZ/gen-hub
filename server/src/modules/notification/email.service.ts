@@ -1427,6 +1427,7 @@ export class EmailService {
     const greeting = await this.i18n.t('contact.email.greeting', { lang, args: { name } });
     const messageTemplate = await this.i18n.t('contact.email.reopened.message', { lang, args: { ticketCode } });
     const subjectPrefix = await this.i18n.t('contact.email.reopened.subject_prefix', { lang, args: { code: ticketCode } });
+    const replyNote = await this.i18n.t('contact.email.reopened.replyNote', { lang });
 
     const finalTitle = title || 'Ticket Reopened';
     const finalGreeting = greeting || `Hi ${name},`;
@@ -1449,7 +1450,7 @@ export class EmailService {
 
       <div style="background-color: ${colors.gray100}; border-left: 4px solid ${colors.green500}; border-radius: 8px; padding: 20px; margin: 25px 0;">
         <p style="margin: 0; font-size: 14px; color: ${colors.gray700}; line-height: 1.6;">
-            You can now reply to this email to continue the conversation.
+            ${replyNote}
         </p>
       </div>
     `;
