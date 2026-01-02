@@ -1351,9 +1351,7 @@ export class EmailService {
     const finalGreeting = greeting || `Hi ${name},`;
     const finalMessage = messageTemplate || `Your support ticket <strong>#${ticketCode}</strong> has been closed.`;
     const finalNote = note || 'If you need further assistance, please open a new ticket.';
-    const finalSubjectPrefix = subjectPrefix || `[#${ticketCode}] Ticket Closed`;
-
-    const emailSubject = `${finalSubjectPrefix}: ${originalSubject}`;
+    const emailSubject = `Re: [#${ticketCode}] ${originalSubject}`;
 
     const content = `
       <h2 style="margin: 0 0 20px; font-size: 24px; font-weight: 600; color: ${colors.gray900}; text-align: center;">
@@ -1432,9 +1430,7 @@ export class EmailService {
     const finalTitle = title || 'Ticket Reopened';
     const finalGreeting = greeting || `Hi ${name},`;
     const finalMessage = messageTemplate || `Your support ticket <strong>#${ticketCode}</strong> has been reopened.`;
-    const finalSubjectPrefix = subjectPrefix || `[#${ticketCode}] Ticket Reopened`;
-
-    const emailSubject = `${finalSubjectPrefix}: ${originalSubject}`;
+    const emailSubject = `Re: [#${ticketCode}] ${originalSubject}`;
 
     const content = `
       <h2 style="margin: 0 0 20px; font-size: 24px; font-weight: 600; color: ${colors.gray900}; text-align: center;">

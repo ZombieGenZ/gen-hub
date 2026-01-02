@@ -15,6 +15,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { I18nLang } from 'nestjs-i18n';
 
 import { ContactService } from './contact.service';
+import { UserRepository } from '../user/user.repository';
 import {
     CreateContactDto,
     QueryContactDto,
@@ -41,7 +42,10 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 @ApiTags('Contact')
 @Controller()
 export class ContactController {
-    constructor(private readonly contactService: ContactService) { }
+    constructor(
+        private readonly contactService: ContactService,
+        private readonly userRepository: UserRepository,
+    ) { }
 
     /**
      * Tạo ticket từ form website (public - không cần auth)
@@ -142,11 +146,18 @@ export class ContactController {
         @CurrentUser() user: { userId: string; name?: string; email?: string },
         @I18nLang() lang: string,
     ) {
+        // Fetch real user name
+        let staffName = user.name || 'Staff';
+        const userDetails = await this.userRepository.findById(user.userId);
+        if (userDetails) {
+            staffName = userDetails.name;
+        }
+
         const result = await this.contactService.reply(
             id,
             dto,
             user.userId,
-            user.name || 'Staff',
+            staffName,
             user.email || '',
             lang,
         );

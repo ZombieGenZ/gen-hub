@@ -7,6 +7,7 @@ import { RedisModule } from '../redis/redis.module';
 import { WebsocketModule } from '../websocket/websocket.module';
 import { SystemLogModule } from '../system-log/system-log.module';
 import { NotificationModule } from '../notification/notification.module';
+import { UserModule } from '../user/user.module';
 
 @Module({
     imports: [
@@ -15,6 +16,7 @@ import { NotificationModule } from '../notification/notification.module';
         forwardRef(() => WebsocketModule),
         SystemLogModule,
         NotificationModule,
+        UserModule,
     ],
     controllers: [ContactController],
     providers: [ContactService, ContactRepository],
