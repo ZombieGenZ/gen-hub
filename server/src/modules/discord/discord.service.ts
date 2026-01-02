@@ -14,6 +14,7 @@ import {
     ButtonStyle,
     Interaction,
     CacheType,
+    ActivityType,
 } from 'discord.js';
 import { PrismaService } from '../../prisma/prisma.service';
 import { IDiscordChannelResult, DiscordReplyCallback } from './interfaces';
@@ -86,7 +87,11 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
 
             // Xử lý khi bot sẵn sàng
             this.client.once('ready', async () => {
-                this.logger.log(`Discord bot logged in as ${this.client?.user?.tag}`);
+                // Set Bot Status
+                const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'GenHub';
+                this.client?.user?.setActivity(frontendUrl, { type: ActivityType.Listening });
+
+                this.logger.log(`Discord bot logged in as ${this.client?.user?.tag} - Listening to ${frontendUrl}`);
 
                 // Lấy guild và category
                 this.guild = this.client?.guilds.cache.get(this.guildId) || null;
