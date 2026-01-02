@@ -106,21 +106,7 @@ export class ContactController {
         return new GetResponse('contact.messages', result);
     }
 
-    /**
-     * Lấy danh sách staff được assign vào ticket
-     */
-    @Get('admin/contacts/:id/staff')
-    @UseGuards(JwtAuthGuard, PermissionGuard)
-    @RequirePermission('contact.read')
-    @ApiBearerAuth()
-    @ApiOperation({ summary: 'Lấy danh sách staff được assign vào ticket' })
-    async getAssignedStaff(
-        @Param('id') id: string,
-        @I18nLang() lang: string,
-    ) {
-        const result = await this.contactService.getAssignedStaff(id, lang);
-        return new GetResponse('contact.staff_list', result);
-    }
+
 
     /**
      * Cập nhật ticket
@@ -183,6 +169,25 @@ export class ContactController {
         const result = await this.contactService.close(id, user.userId, lang);
         return new OkResponse('contact.closed', null, result.message);
     }
+
+    /**
+     * Mở lại ticket
+     */
+    @Post('admin/contacts/:id/reopen')
+    @UseGuards(JwtAuthGuard, PermissionGuard)
+    @RequirePermission('contact.update')
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Mở lại ticket' })
+    async reopen(
+        @Param('id') id: string,
+        @CurrentUser() user: { userId: string },
+        @I18nLang() lang: string,
+    ) {
+        const result = await this.contactService.reopen(id, user.userId, lang);
+        return new OkResponse('contact.reopened', null, result.message);
+    }
+
+
 
     /**
      * Xóa ticket

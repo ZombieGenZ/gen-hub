@@ -24,6 +24,7 @@ import { RedisService } from '../redis/redis.service';
 import { WebsocketGateway } from '../websocket/websocket.gateway';
 import { SystemLogService } from '../system-log/system-log.service';
 import { EmailService } from '../notification/email.service';
+import { DiscordService } from '../discord/discord.service';
 
 /**
  * Service xử lý business logic cho Contact module
@@ -43,6 +44,7 @@ export class ContactService {
         private readonly emailService: EmailService,
         private readonly configService: ConfigService,
         private readonly i18n: I18nService,
+        private readonly discordService: DiscordService,
     ) {
         this.CACHE_TTL = this.configService.get<number>('REDIS_CONTACT_CACHE_TTL') || 300;
         this.LIST_CACHE_TTL = this.configService.get<number>('REDIS_CONTACT_LIST_CACHE_TTL') || 60;
@@ -380,6 +382,15 @@ export class ContactService {
             },
         );
 
+        // Sync to Discord
+        if (conversation.discord_channel_id && !dto.is_internal) {
+            this.discordService.sendMessageToTicket(
+                conversation.discord_channel_id,
+                `**${staffName}**: ${dto.content}`,
+                false, // Is from staff (not customer)
+            );
+        }
+
         return { message: await this.i18n.t('contact.success.replied', { lang }) };
     }
 
@@ -406,6 +417,17 @@ export class ContactService {
 
         await this.repository.closeConversation(id, userId);
 
+        // Sync to Discord
+        if (conversation.discord_channel_id) {
+            // Lấy tên user đóng ticket (nếu cần thiết có thể query thêm từ userId)
+            // Hiện tại truyền userId hoặc "Admin"
+            await this.discordService.closeTicketChannel(
+                conversation.discord_channel_id,
+                false, // Just close, don't delete (embed shows Closed)
+                'Admin/Staff', // TODO: Get actual user name if needed
+            );
+        }
+
         // Invalidate cache
         await Promise.all([
             this.invalidateCache(id),
@@ -425,6 +447,57 @@ export class ContactService {
     }
 
     /**
+     * Mở lại ticket
+     */
+    async reopen(
+        id: string,
+        userId: string,
+        lang: string = 'vi',
+    ): Promise<{ message: string }> {
+        const conversation = await this.repository.findById(id);
+        if (!conversation) {
+            throw new NotFoundException(
+                await this.i18n.t('contact.errors.not_found', { lang }),
+            );
+        }
+
+        if (conversation.status !== ContactStatus.CLOSED) {
+            throw new BadRequestException(
+                await this.i18n.t('contact.errors.not_closed', { lang }),
+            );
+        }
+
+        // Update DB back to PENDING or IN_PROGRESS
+        await this.repository.update(id, {
+            status: ContactStatus.PENDING,
+            closed_at: null,
+            updated_by: userId,
+        });
+
+        // Sync to Discord
+        if (conversation.discord_channel_id) {
+            await this.discordService.reopenTicketChannel(
+                conversation.discord_channel_id,
+                'Admin/Staff',
+            );
+        }
+
+        // Invalidate cache
+        await Promise.all([
+            this.invalidateCache(id),
+            this.invalidateListCache(),
+        ]);
+
+        // Log
+        this.systemLogService.info('contact', 'reopen', `Reopened ticket: ${conversation.code}`, {
+            userId,
+            metaData: { conversationId: id },
+        });
+
+        return { message: await this.i18n.t('contact.success.reopened', { lang }) };
+    }
+
+    /**
      * Xóa ticket
      */
     async delete(id: string, userId: string, lang: string = 'vi'): Promise<void> {
@@ -436,6 +509,16 @@ export class ContactService {
         }
 
         await this.repository.softDelete(id, userId);
+
+        // Sync to Discord
+        if (conversation.discord_channel_id) {
+            // Close channel visually as Deleted
+            await this.discordService.closeTicketChannel(
+                conversation.discord_channel_id,
+                true, // Deleted context
+                'Admin/Staff',
+            );
+        }
 
         // Invalidate cache
         await Promise.all([
@@ -459,6 +542,9 @@ export class ContactService {
     async deleteMany(ids: string[], userId: string, lang: string = 'vi'): Promise<{ count: number }> {
         const count = await this.repository.softDeleteMany(ids, userId);
 
+        // TODO: Sync delete many to Discord if needed (might be heavy to loop all)
+        // For now skip sync for bulk delete or implement background job
+
         // Invalidate cache
         await Promise.all([
             ...ids.map(id => this.invalidateCache(id)),
@@ -476,35 +562,7 @@ export class ContactService {
 
 
 
-    /**
-     * Lấy danh sách staff được assign
-     */
-    async getAssignedStaff(
-        conversationId: string,
-        lang: string = 'vi',
-    ): Promise<IContactConversationStaff[]> {
-        const cacheKey = this.getStaffCacheKey(conversationId);
-        const cached = await this.redisService.get(cacheKey);
-        if (cached) {
-            try {
-                return JSON.parse(cached);
-            } catch {
-                // Cache invalid
-            }
-        }
 
-        const conversation = await this.repository.findById(conversationId);
-        if (!conversation) {
-            throw new NotFoundException(
-                await this.i18n.t('contact.errors.not_found', { lang }),
-            );
-        }
-
-        const staff = await this.repository.getAssignedStaff(conversationId);
-
-        await this.redisService.set(cacheKey, JSON.stringify(staff), this.CACHE_TTL);
-        return staff;
-    }
 
     /**
      * Xử lý email inbound từ khách reply

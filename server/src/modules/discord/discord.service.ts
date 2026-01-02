@@ -1,6 +1,20 @@
 import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Client, GatewayIntentBits, TextChannel, ChannelType, Message, EmbedBuilder, Guild, CategoryChannel } from 'discord.js';
+import {
+    Client,
+    GatewayIntentBits,
+    TextChannel,
+    ChannelType,
+    Message,
+    EmbedBuilder,
+    Guild,
+    CategoryChannel,
+    ButtonBuilder,
+    ActionRowBuilder,
+    ButtonStyle,
+    Interaction,
+    CacheType,
+} from 'discord.js';
 import { PrismaService } from '../../prisma/prisma.service';
 import { IDiscordChannelResult, DiscordReplyCallback } from './interfaces';
 
@@ -17,11 +31,13 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
     private client: Client | null = null;
     private guild: Guild | null = null;
     private category: CategoryChannel | null = null;
+    private closedCategory: CategoryChannel | null = null;
 
     private readonly isEnabled: boolean;
     private readonly botToken: string;
     private readonly guildId: string;
     private readonly categoryId: string;
+    private readonly closedCategoryId: string;
 
     // Callback để xử lý reply từ Discord
     private onReplyCallback: DiscordReplyCallback | null = null;
@@ -37,6 +53,7 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
         this.botToken = this.configService.get<string>('DISCORD_BOT_TOKEN') || '';
         this.guildId = this.configService.get<string>('DISCORD_GUILD_ID') || '';
         this.categoryId = this.configService.get<string>('DISCORD_SUPPORT_CATEGORY_ID') || '';
+        this.closedCategoryId = this.configService.get<string>('DISCORD_CLOSED_CATEGORY_ID') || '';
 
         if (this.isEnabled) {
             if (!this.botToken || !this.guildId || !this.categoryId) {
@@ -79,11 +96,22 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
                         this.category = channel as CategoryChannel;
                         this.logger.log(`Connected to category: ${this.category.name}`);
                     }
+
+                    if (this.closedCategoryId) {
+                        const closedChannel = this.guild.channels.cache.get(this.closedCategoryId);
+                        if (closedChannel?.type === ChannelType.GuildCategory) {
+                            this.closedCategory = closedChannel as CategoryChannel;
+                            this.logger.log(`Connected to closed category: ${this.closedCategory.name}`);
+                        }
+                    }
                 }
             });
 
             // Lắng nghe tin nhắn trong các channel
             this.client.on('messageCreate', (message) => this.handleMessage(message));
+
+            // Lắng nghe interaction (button click)
+            this.client.on('interactionCreate', (interaction) => this.handleInteraction(interaction));
 
             // Đăng nhập
             await this.client.login(this.botToken);
@@ -159,7 +187,20 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
 
             embed.setFooter({ text: 'Hãy trả lời trong kênh này để phản hồi khách hàng.' });
 
-            await (channel as TextChannel).send({ embeds: [embed] });
+            // Tạo buttons
+            const closeButton = new ButtonBuilder()
+                .setCustomId('close_ticket')
+                .setLabel('Close Ticket')
+                .setStyle(ButtonStyle.Danger)
+                .setEmoji('🔒');
+
+            const row = new ActionRowBuilder<ButtonBuilder>()
+                .addComponents(closeButton);
+
+            await (channel as TextChannel).send({
+                embeds: [embed],
+                components: [row],
+            });
 
             this.logger.log(`Created Discord channel: ${channelName} for ticket ${contactCode}`);
 
@@ -211,34 +252,121 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
     }
 
     /**
-     * Đóng channel khi ticket được đóng
+     * Đóng/Xóa channel khi ticket được đóng/xóa
      */
-    async closeTicketChannel(channelId: string, closedBy?: string): Promise<boolean> {
+    async closeTicketChannel(
+        channelId: string,
+        isDeleted: boolean = false,
+        closedBy?: string,
+    ): Promise<boolean> {
         if (!this.enabled || !this.guild) return false;
 
         try {
             const channel = this.guild.channels.cache.get(channelId) as TextChannel;
             if (!channel) return false;
 
-            // Gửi tin nhắn thông báo đóng
+            const title = isDeleted ? '🗑️ Ticket Deleted' : '🔒 Ticket Closed';
+            const description = isDeleted
+                ? 'This support ticket has been deleted.'
+                : 'This support ticket has been closed.';
+            const color = isDeleted ? 0xff0000 : 0x808080;
+
+            // Gửi tin nhắn thông báo
             const embed = new EmbedBuilder()
-                .setColor(0xff0000)
-                .setTitle('🔒 Ticket Closed')
-                .setDescription('This support ticket has been closed.')
+                .setColor(color)
+                .setTitle(title)
+                .setDescription(description)
                 .setTimestamp();
 
             if (closedBy) {
-                embed.addFields({ name: 'Closed by', value: closedBy });
+                embed.addFields({ name: isDeleted ? 'Deleted by' : 'Closed by', value: closedBy });
             }
 
-            await channel.send({ embeds: [embed] });
+            const rows: ActionRowBuilder<ButtonBuilder>[] = [];
 
-            // Đổi tên channel để đánh dấu đã đóng
-            await channel.setName(`closed-${channel.name.replace('ticket-', '')}`);
+            // Nếu chỉ đóng (không xóa) thì thêm nút Reopen
+            if (!isDeleted) {
+                const reopenButton = new ButtonBuilder()
+                    .setCustomId('reopen_ticket')
+                    .setLabel('Reopen Ticket')
+                    .setStyle(ButtonStyle.Success)
+                    .setEmoji('🔓');
+
+                rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(reopenButton));
+            }
+
+            await channel.send({
+                embeds: [embed],
+                components: rows,
+            });
+
+            // Di chuyển sang category Closed nếu có cấu hình
+            if (this.closedCategory) {
+                await channel.setParent(this.closedCategory);
+            }
+
+            // Đổi tên channel để đánh dấu đã đóng - chỉ đổi nếu chưa có prefix closed-
+            if (!channel.name.startsWith('closed-')) {
+                await channel.setName(`closed-${channel.name.replace('ticket-', '')}`);
+            }
+
+            // Sync permission nếu cần (tùy chọn: làm cho channel thành read-only)
+            // Hiện tại giữ nguyên permission
 
             return true;
         } catch (error) {
             this.logger.error(`Failed to close channel ${channelId}:`, error);
+            return false;
+        }
+    }
+
+    /**
+     * Mở lại channel
+     */
+    async reopenTicketChannel(channelId: string, reopenedBy?: string): Promise<boolean> {
+        if (!this.enabled || !this.guild) return false;
+
+        try {
+            const channel = this.guild.channels.cache.get(channelId) as TextChannel;
+            if (!channel) return false;
+
+            // Di chuyển về category support
+            if (this.category) {
+                await channel.setParent(this.category);
+            }
+
+            // Đổi lại tên (bỏ prefix closed-)
+            if (channel.name.startsWith('closed-')) {
+                await channel.setName(channel.name.replace('closed-', 'ticket-'));
+            }
+
+            const embed = new EmbedBuilder()
+                .setColor(0x00ff00)
+                .setTitle('🔓 Ticket Reopened')
+                .setDescription('This support ticket has been reopened.')
+                .setTimestamp();
+
+            if (reopenedBy) {
+                embed.addFields({ name: 'Reopened by', value: reopenedBy });
+            }
+
+            const closeButton = new ButtonBuilder()
+                .setCustomId('close_ticket')
+                .setLabel('Close Ticket')
+                .setStyle(ButtonStyle.Danger)
+                .setEmoji('🔒');
+
+            const row = new ActionRowBuilder<ButtonBuilder>()
+                .addComponents(closeButton);
+
+            await channel.send({
+                embeds: [embed],
+                components: [row],
+            });
+
+            return true;
+        } catch (error) {
+            this.logger.error(`Failed to reopen channel ${channelId}:`, error);
             return false;
         }
     }
@@ -252,6 +380,7 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
 
         // Chỉ xử lý tin nhắn trong các channel ticket
         const channelName = (message.channel as TextChannel).name;
+        // Chấp nhận cả ticket- (active) và closed- (nếu vẫn cho phép reply khi đóng, nhưng logic nghiệp vụ có thể chặn ở API)
         if (!channelName.startsWith('ticket-')) return;
 
         // Lấy ticket code từ tên channel
@@ -272,6 +401,72 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
             } catch (error) {
                 this.logger.error(`Failed to process Discord reply for ticket ${ticketCode}:`, error);
                 await message.react('❌');
+            }
+        }
+    }
+
+    /**
+     * Xử lý interaction (button click)
+     */
+    private async handleInteraction(interaction: Interaction<CacheType>): Promise<void> {
+        if (!interaction.isButton()) return;
+
+        const { customId } = interaction;
+        const channel = interaction.channel as TextChannel;
+        const user = interaction.user;
+
+        if (customId === 'close_ticket') {
+            await interaction.reply({ content: 'Closing ticket...', ephemeral: true });
+
+            const conversation = await this.prismaService.contactConversation.findFirst({
+                where: { discord_channel_id: channel.id },
+            });
+
+            if (conversation) {
+                await this.prismaService.contactConversation.update({
+                    where: { id: conversation.id },
+                    data: {
+                        status: 'CLOSED',
+                        closed_at: new Date(),
+                        updated_by: 'DiscordBot',
+                    },
+                });
+
+                await this.closeTicketChannel(channel.id, false, user.displayName || user.username);
+            } else {
+                await interaction.followUp({ content: 'Could not find linked ticket in database.', ephemeral: true });
+            }
+        } else if (customId === 'delete_ticket_channel') {
+            // Deprecated: User requested NOT to delete channel upon Close/Delete action from API
+            // But if this button exists (from old messages), we might still want to honor it or disable it.
+            // For now, let's keep it but remove it from future 'close' flows.
+            // The previous 'close' implementation added this button.
+            // The NEW 'close' implementation (above) does NOT add this button.
+
+            await interaction.reply({
+                content: 'Channel deletion via button is disabled. Please contact admin if you need to delete this channel manually.',
+                ephemeral: true,
+            });
+        } else if (customId === 'reopen_ticket') {
+            await interaction.reply({ content: 'Reopening ticket...', ephemeral: true });
+
+            const conversation = await this.prismaService.contactConversation.findFirst({
+                where: { discord_channel_id: channel.id },
+            });
+
+            if (conversation) {
+                await this.prismaService.contactConversation.update({
+                    where: { id: conversation.id },
+                    data: {
+                        status: 'PENDING', // Reopen as PENDING
+                        closed_at: null,
+                        updated_by: 'DiscordBot',
+                    },
+                });
+
+                await this.reopenTicketChannel(channel.id, user.displayName || user.username);
+            } else {
+                await interaction.followUp({ content: 'Could not find linked ticket in database.', ephemeral: true });
             }
         }
     }

@@ -128,6 +128,16 @@ export interface IContactConversationListItem {
         name: string;
         email?: string | null;
     };
+    assigned_staff_list: {
+        id: string;
+        name: string;
+        email?: string | null;
+    }[];
+    tags: {
+        id: string;
+        name: string;
+        color?: string | null;
+    }[];
     assigned_staff_count: number;
     messages_count: number;
     last_activity_at?: Date;

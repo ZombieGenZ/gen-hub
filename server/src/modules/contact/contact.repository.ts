@@ -234,6 +234,22 @@ export class ContactRepository {
                     assigned_staff: {
                         select: { id: true, name: true, email: true },
                     },
+                    assigned_staff_list: {
+                        where: { is_deleted: false, is_active: true },
+                        select: {
+                            id: true,
+                            staff_id: true,
+                            staff: {
+                                select: { id: true, name: true, email: true },
+                            },
+                        },
+                    },
+                    tag_mappings: {
+                        where: { is_deleted: false },
+                        select: {
+                            tag: { select: { id: true, name: true, color: true } },
+                        },
+                    },
                     _count: {
                         select: {
                             messages: { where: { is_deleted: false } },
@@ -263,6 +279,16 @@ export class ContactRepository {
                 name: item.assigned_staff.name,
                 email: item.assigned_staff.email ?? undefined,
             } : undefined,
+            assigned_staff_list: item.assigned_staff_list.map(s => ({
+                id: s.staff.id,
+                name: s.staff.name,
+                email: s.staff.email ?? undefined,
+            })),
+            tags: item.tag_mappings.map(t => ({
+                id: t.tag.id,
+                name: t.tag.name,
+                color: t.tag.color ?? undefined,
+            })),
             assigned_staff_count: item._count.assigned_staff_list,
             messages_count: item._count.messages,
             last_activity_at: item.last_activity_at ?? undefined,
