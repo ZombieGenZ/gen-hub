@@ -12,6 +12,7 @@
     "errors": {
         "not_found": "Contact ticket not found",
         "already_closed": "This ticket is already closed",
+        "not_closed": "Ticket is not closed",
         "cannot_delete": "Cannot delete this ticket",
         "no_permission": "You do not have permission to perform this action",
         "staff_not_assigned": "This staff is not assigned to the ticket"
@@ -52,6 +53,17 @@
             "staffReply": "We are responding to your request",
             "replyNote": "You can reply to this email to continue the conversation.",
             "ticketCode": "Ticket code"
+        },
+        "closed": {
+            "title": "Ticket Closed",
+            "message": "Your support ticket <strong>#{ticketCode}</strong> has been closed.",
+            "note": "If you need further assistance, please open a new ticket.",
+            "subject_prefix": "[#{code}] Ticket Closed"
+        },
+        "reopened": {
+            "title": "Ticket Reopened",
+            "message": "Your support ticket <strong>#{ticketCode}</strong> has been reopened.",
+            "subject_prefix": "[#{code}] Ticket Reopened"
         }
     },
     "status": {

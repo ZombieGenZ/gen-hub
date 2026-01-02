@@ -12,6 +12,7 @@
     "errors": {
         "not_found": "Không tìm thấy ticket liên hệ",
         "already_closed": "Ticket này đã được đóng",
+        "not_closed": "Ticket chưa được đóng",
         "cannot_delete": "Không thể xóa ticket này",
         "no_permission": "Bạn không có quyền thực hiện thao tác này",
         "staff_not_assigned": "Nhân viên này chưa được phân công vào ticket"
@@ -52,6 +53,17 @@
             "staffReply": "Chúng tôi xin phản hồi yêu cầu của bạn",
             "replyNote": "Bạn có thể trả lời email này để trao đổi thêm.",
             "ticketCode": "Mã ticket"
+        },
+        "closed": {
+            "title": "Ticket Đã Đóng",
+            "message": "Ticket hỗ trợ <strong>#{ticketCode}</strong> của bạn đã được đóng.",
+            "note": "Nếu bạn cần hỗ trợ thêm, vui lòng tạo ticket mới.",
+            "subject_prefix": "[#{code}] Ticket Đã Đóng"
+        },
+        "reopened": {
+            "title": "Ticket Đã Mở Lại",
+            "message": "Ticket hỗ trợ <strong>#{ticketCode}</strong> của bạn đã được mở lại.",
+            "subject_prefix": "[#{code}] Ticket Đã Mở Lại"
         }
     },
     "status": {
