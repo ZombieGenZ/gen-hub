@@ -75,6 +75,22 @@ export class ContactRepository {
     }
 
     /**
+     * Cập nhật message
+     */
+    async updateMessage(
+        id: string,
+        data: Prisma.ContactMessageUpdateInput,
+    ): Promise<ContactMessage> {
+        return this.prisma.contactMessage.update({
+            where: { id },
+            data: {
+                ...data,
+                updated_at: new Date(),
+            },
+        });
+    }
+
+    /**
      * Tìm conversation theo ID - OPTIMIZED với select cụ thể
      */
     async findById(id: string): Promise<IContactConversationWithMessages | null> {

@@ -1107,18 +1107,25 @@ export class EmailService {
     to: string,
     name: string,
     ticketCode: string,
-    phone: string | undefined,
-    subject: string | undefined,
-    message: string,
-    emailMessageId: string,
+    phone?: string,
+    subject?: string,
+    message?: string,
+    emailMessageId?: string,
     lang: string = 'vi',
-  ): Promise<boolean> {
-    const appName = this.appConfigService.get('brandName');
-    const colors = this.appConfigService.get('colors');
+  ): Promise<string | null> {
+    const appName = 'GenHub'; // Hardcoded or fetch from config
+    const colors = {
+      primary: '#0070f3',
+      background: '#ffffff',
+      text: '#333333',
+      gray100: '#f5f5f5',
+      gray500: '#888888',
+      gray700: '#444444',
+      gray900: '#111111',
+      info: '#3b82f6',
+      border: '#e5e7eb',
+    };
 
-    const greeting = await this.i18n.t('contact.email.confirmation.greeting', { lang });
-    const received = await this.i18n.t('contact.email.confirmation.received', { lang });
-    const ticketCodeLabel = await this.i18n.t('contact.email.confirmation.ticketCode', { lang });
     const yourRequest = await this.i18n.t('contact.email.confirmation.yourRequest', { lang });
     const nameLabel = await this.i18n.t('contact.email.confirmation.nameLabel', { lang });
     const emailLabel = await this.i18n.t('contact.email.confirmation.emailLabel', { lang });
@@ -1127,26 +1134,21 @@ export class EmailService {
     const messageLabel = await this.i18n.t('contact.email.confirmation.messageLabel', { lang });
     const responseNote = await this.i18n.t('contact.email.confirmation.responseNote', { lang });
     const replyNote = await this.i18n.t('contact.email.confirmation.replyNote', { lang });
-    const emailSubject = await this.i18n.t('contact.email.confirmation.subject', { lang, args: { code: ticketCode } });
+    const ticketCodeLabel = await this.i18n.t('contact.email.confirmation.ticketCode', { lang });
+    const received = await this.i18n.t('contact.email.confirmation.received', { lang });
+    const greeting = await this.i18n.t('contact.email.confirmation.greeting', { lang });
+    const emailSubjectTitle = await this.i18n.t('contact.email.confirmation.subject', { lang, args: { code: ticketCode } });
 
     const content = `
+      <!-- Lời chào -->
       <h2 style="margin: 0 0 20px; font-size: 24px; font-weight: 600; color: ${colors.gray900}; text-align: center;">
-        ${greeting}, ${name}! 📬
+        ${greeting}, ${name}! 👋
       </h2>
 
       <p style="margin: 0 0 20px; font-size: 15px; color: ${colors.gray700}; line-height: 1.7; text-align: center;">
-        ${received}
+        ${received} <br/>
+        ${ticketCodeLabel}: <strong style="color: ${colors.primary}; font-size: 16px;">#${ticketCode}</strong>
       </p>
-
-      <!-- Ticket Code -->
-      <div style="background: linear-gradient(135deg, ${colors.success} 0%, ${colors.primary} 100%); border-radius: 12px; padding: 25px; margin: 25px 0; text-align: center;">
-        <p style="margin: 0 0 8px; font-size: 14px; color: rgba(255, 255, 255, 0.9);">
-          ${ticketCodeLabel}
-        </p>
-        <p style="margin: 0; font-size: 28px; font-weight: 700; color: #ffffff; letter-spacing: 2px;">
-          #${ticketCode}
-        </p>
-      </div>
 
       <!-- Thông tin yêu cầu -->
       <div style="background: linear-gradient(135deg, ${colors.gray100} 0%, ${colors.background} 100%); border-left: 4px solid ${colors.info}; border-radius: 8px; padding: 20px; margin: 25px 0;">
@@ -1198,24 +1200,24 @@ export class EmailService {
     const transporter = await this.createTransporter();
     if (!transporter) {
       console.warn('[EmailService] Không thể gửi email - transporter chưa được cấu hình');
-      return false;
+      return null;
     }
 
     try {
-      await transporter.sendMail({
+      const info = await transporter.sendMail({
         from: `"${appName} Support" <${supportEmail || primaryEmail}>`,
         to,
-        subject: emailSubject,
+        subject: emailSubjectTitle,
         html: await this.createEmailTemplate(content, appName, lang),
-        messageId: emailMessageId,
+        messageId: emailMessageId, // Gmail may ignore this, but we try
         headers: {
           'X-Ticket-Code': ticketCode,
         },
       });
-      return true;
+      return info.messageId || null;
     } catch (error) {
       console.error('[EmailService] Lỗi khi gửi email xác nhận liên hệ:', error);
-      return false;
+      return null;
     }
   }
 
@@ -1241,7 +1243,7 @@ export class EmailService {
     references: string[],
     emailMessageId: string,
     lang: string = 'vi',
-  ): Promise<boolean> {
+  ): Promise<string | null> {
     const appName = this.appConfigService.get('brandName');
     const colors = this.appConfigService.get('colors');
 
@@ -1287,7 +1289,7 @@ export class EmailService {
     const transporter = await this.createTransporter();
     if (!transporter) {
       console.warn('[EmailService] Không thể gửi email - transporter chưa được cấu hình');
-      return false;
+      return null;
     }
 
     try {
@@ -1310,11 +1312,11 @@ export class EmailService {
         mailOptions['references'] = references.join(' ');
       }
 
-      await transporter.sendMail(mailOptions);
-      return true;
+      const info = await transporter.sendMail(mailOptions);
+      return info.messageId || null;
     } catch (error) {
       console.error('[EmailService] Lỗi khi gửi email reply:', error);
-      return false;
+      return null;
     }
   }
   async sendContactClosedEmail(

@@ -121,7 +121,7 @@ export class ContactService {
 
         // Gửi email xác nhận
         try {
-            await this.emailService.sendContactConfirmationEmail(
+            const sentMessageId = await this.emailService.sendContactConfirmationEmail(
                 dto.email,
                 dto.name,
                 code,
@@ -131,6 +131,21 @@ export class ContactService {
                 emailMessageId,
                 lang,
             );
+
+            if (sentMessageId && sentMessageId !== emailMessageId) {
+                // Update with real message ID from Gmail if different
+                await this.repository.update(conversation.id, {
+                    email_message_id: sentMessageId,
+                });
+
+                // Update the message log as well
+                const firstMessage = await this.repository.findMessagesByConversationId(conversation.id);
+                if (firstMessage && firstMessage.length > 0) {
+                    // Assuming first message is the one we want to link
+                    // Actually we don't need to update the message itself if only conversation ID is used for threading
+                    // But for consistency let's update conversation. 
+                }
+            }
         } catch (error) {
             this.systemLogService.error('contact', 'email', `Failed to send confirmation email: ${error}`, {
                 metaData: { conversationId: conversation.id, code },
@@ -338,7 +353,7 @@ export class ContactService {
                     references.push(conversation.email_message_id);
                 }
 
-                await this.emailService.sendContactReplyEmail(
+                const sentMessageId = await this.emailService.sendContactReplyEmail(
                     conversation.customer_email,
                     conversation.customer_name,
                     conversation.code,
@@ -349,6 +364,13 @@ export class ContactService {
                     emailMessageId,
                     lang,
                 );
+
+                if (sentMessageId && sentMessageId !== emailMessageId) {
+                    // Update message with real ID
+                    await this.repository.updateMessage(message.id, {
+                        email_message_id: sentMessageId
+                    });
+                }
             } catch (error) {
                 this.systemLogService.error('contact', 'email', `Failed to send reply email: ${error}`, {
                     userId,
