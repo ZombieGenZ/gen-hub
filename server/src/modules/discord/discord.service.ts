@@ -62,6 +62,11 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
                 ],
             });
 
+            // Xử lý lỗi client (ví dụ: intents không hợp lệ)
+            this.client.on('error', (error) => {
+                this.logger.error('Discord client error:', error.message);
+            });
+
             // Xử lý khi bot sẵn sàng
             this.client.once('ready', async () => {
                 this.logger.log(`Discord bot logged in as ${this.client?.user?.tag}`);
@@ -84,6 +89,10 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
             await this.client.login(this.botToken);
         } catch (error) {
             this.logger.error('Failed to initialize Discord client:', error);
+            this.logger.warn('Discord integration has been disabled due to initialization error.');
+            // Disable service thay vì crash app
+            (this as any).isEnabled = false;
+            this.client = null;
         }
     }
 
