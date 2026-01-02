@@ -366,6 +366,8 @@ export class ContactService implements OnModuleInit {
             );
         }
 
+        const { validUserId, logUserId, actorName } = this.processUserId(userId);
+
         // Generate email message ID cho reply
         const supportEmail = this.configService.get<string>('EMAIL_SUPPORT_ADDRESS');
         const emailDomain = supportEmail?.split('@')[1] || 'genhub.dev';
@@ -375,7 +377,7 @@ export class ContactService implements OnModuleInit {
         const message = await this.repository.createMessage({
             conversation_id: id,
             sender_type: MessageSender.STAFF,
-            sender_id: userId,
+            sender_id: validUserId, // Fix: sender_id MUST be UUID
             sender_name: staffName,
             sender_email: staffEmail,
             message_type: dto.is_internal ? MessageType.SYSTEM_NOTE : MessageType.EMAIL,
@@ -383,7 +385,7 @@ export class ContactService implements OnModuleInit {
             email_message_id: emailMessageId,
             email_in_reply_to: conversation.email_message_id || undefined,
             is_internal: dto.is_internal,
-            created_by: userId,
+            created_by: userId, // created_by is just String, can store Discord ID
         });
 
         // Cập nhật first_response_at nếu chưa có
@@ -423,8 +425,8 @@ export class ContactService implements OnModuleInit {
                 }
             } catch (error) {
                 this.systemLogService.error('contact', 'email', `Failed to send reply email: ${error}`, {
-                    userId,
-                    metaData: { conversationId: id, messageId: message.id },
+                    userId: logUserId,
+                    metaData: { conversationId: id, messageId: message.id, actor: actorName },
                 });
             }
         }
@@ -437,8 +439,8 @@ export class ContactService implements OnModuleInit {
 
         // Log
         this.systemLogService.info('contact', 'reply', `Staff replied to ticket: ${conversation.code}`, {
-            userId,
-            metaData: { conversationId: id, isInternal: dto.is_internal },
+            userId: logUserId,
+            metaData: { conversationId: id, isInternal: dto.is_internal, actor: actorName },
         });
 
         // WebSocket
