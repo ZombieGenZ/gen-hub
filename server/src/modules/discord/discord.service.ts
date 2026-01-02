@@ -277,6 +277,50 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
     }
 
     /**
+     * Disable tất cả các button cũ trong channel
+     * Để tránh user click vào button cũ gây lỗi
+     */
+    private async disableOldButtons(channel: TextChannel): Promise<void> {
+        try {
+            // Lấy 20 tin nhắn gần nhất từ bot
+            const messages = await channel.messages.fetch({ limit: 20 });
+            const botMessages = messages.filter(
+                msg => msg.author.id === this.client?.user?.id && msg.components.length > 0
+            );
+
+            // Disable tất cả button trong các message cũ
+            for (const [, message] of botMessages) {
+                const disabledRows: ActionRowBuilder<ButtonBuilder>[] = [];
+
+                for (const row of message.components) {
+                    // Kiểm tra xem row có phải ActionRow không (type = 1)
+                    if (row.type !== 1) continue;
+
+                    const newRow = new ActionRowBuilder<ButtonBuilder>();
+                    for (const component of (row as any).components) {
+                        if (component.type === 2) { // ComponentType.Button = 2
+                            const btn = ButtonBuilder.from(component);
+                            btn.setDisabled(true);
+                            newRow.addComponents(btn);
+                        }
+                    }
+                    if (newRow.components.length > 0) {
+                        disabledRows.push(newRow);
+                    }
+                }
+
+                if (disabledRows.length > 0) {
+                    await message.edit({ components: disabledRows }).catch(() => {
+                        // Ignore errors if message can't be edited
+                    });
+                }
+            }
+        } catch (error) {
+            this.logger.warn('Failed to disable old buttons:', error);
+        }
+    }
+
+    /**
      * Đóng/Xóa channel khi ticket được đóng/xóa
      */
     async closeTicketChannel(
@@ -289,6 +333,9 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
         try {
             const channel = this.guild.channels.cache.get(channelId) as TextChannel;
             if (!channel) return false;
+
+            // Disable các button cũ để tránh user click nhầm
+            await this.disableOldButtons(channel);
 
             const title = isDeleted ? '🗑️ Ticket Đã Xóa' : '🔒 Ticket Đã Đóng';
             const description = isDeleted
@@ -357,6 +404,9 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
         try {
             const channel = this.guild.channels.cache.get(channelId) as TextChannel;
             if (!channel) return false;
+
+            // Disable các button cũ để tránh user click nhầm
+            await this.disableOldButtons(channel);
 
             // Di chuyển về category support
             if (this.category) {
