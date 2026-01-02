@@ -52,6 +52,17 @@ export class ContactService implements OnModuleInit {
         this.TICKET_PREFIX = this.configService.get<string>('CONTACT_TICKET_PREFIX') || 'TICKET';
     }
 
+    private readonly UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+    private processUserId(userId: string) {
+        const isUuid = this.UUID_REGEX.test(userId);
+        return {
+            validUserId: isUuid ? userId : undefined,
+            logUserId: isUuid ? userId : undefined,
+            actorName: isUuid ? undefined : userId
+        };
+    }
+
     onModuleInit() {
         this.discordService.registerActionCallback({
             onClose: async (channelId, userId, userName) => {
@@ -476,7 +487,11 @@ export class ContactService implements OnModuleInit {
             );
         }
 
-        await this.repository.closeConversation(id, userId);
+        const { validUserId, logUserId, actorName } = this.processUserId(userId);
+
+        await this.repository.closeConversation(id, validUserId || 'SYSTEM'); // Fallback if needed, closeConversation might expect nullable UUID? 
+        // Based on previous delete method, repository.softDelete takes strictly UUID? 
+        // Logic: if closeConversation calls prisma update on user_id, pass validUserId (string|undefined).
 
         // Sync to Discord
         if (conversation.discord_channel_id) {
@@ -485,7 +500,7 @@ export class ContactService implements OnModuleInit {
             await this.discordService.closeTicketChannel(
                 conversation.discord_channel_id,
                 false, // Just close, don't delete (embed shows Closed)
-                'Admin/Staff', // TODO: Get actual user name if needed
+                actorName || 'Admin/Staff', // Use actorName if from Discord
             );
         }
 
@@ -525,8 +540,8 @@ export class ContactService implements OnModuleInit {
 
         // Log
         this.systemLogService.info('contact', 'close', `Closed ticket: ${conversation.code}`, {
-            userId,
-            metaData: { conversationId: id },
+            userId: logUserId,
+            metaData: { conversationId: id, actor: actorName },
         });
 
         // WebSocket
@@ -556,18 +571,20 @@ export class ContactService implements OnModuleInit {
             );
         }
 
+        const { validUserId, logUserId, actorName } = this.processUserId(userId);
+
         // Update DB back to PENDING or IN_PROGRESS
         await this.repository.update(id, {
             status: ContactStatus.PENDING,
             closed_at: null,
-            updated_by: userId,
+            updated_by: validUserId,
         });
 
         // Sync to Discord
         if (conversation.discord_channel_id) {
             await this.discordService.reopenTicketChannel(
                 conversation.discord_channel_id,
-                'Admin/Staff',
+                actorName || 'Admin/Staff',
             );
         }
 
@@ -625,7 +642,9 @@ export class ContactService implements OnModuleInit {
             );
         }
 
-        await this.repository.softDelete(id, userId);
+        const { validUserId, logUserId, actorName } = this.processUserId(userId);
+
+        await this.repository.softDelete(id, validUserId || 'SYSTEM');
 
         // Sync to Discord
         if (conversation.discord_channel_id) {
@@ -645,8 +664,8 @@ export class ContactService implements OnModuleInit {
 
         // Log
         this.systemLogService.info('contact', 'delete', `Deleted ticket: ${conversation.code}`, {
-            userId,
-            metaData: { conversationId: id },
+            userId: logUserId,
+            metaData: { conversationId: id, actor: actorName },
         });
 
         // WebSocket

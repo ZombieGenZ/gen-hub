@@ -427,6 +427,7 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
             if (content === '!delete') {
                 await this.actionCallback.onDelete(channel.id, userId, userName);
                 await message.react('✅');
+                setTimeout(() => channel.delete().catch(e => this.logger.error('Failed to delete channel', e)), 5000);
                 return;
             }
             if (content === '!help') {
@@ -487,6 +488,7 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
             } else if (customId === 'delete_ticket_channel') {
                 await interaction.reply({ content: 'Processing delete request...', ephemeral: true });
                 await this.actionCallback.onDelete(channel.id, user.id, userName);
+                setTimeout(() => channel.delete().catch(e => this.logger.error('Failed to delete channel', e)), 5000);
             } else if (customId === 'reopen_ticket') {
                 await interaction.reply({ content: 'Processing reopen request...', ephemeral: true });
                 await this.actionCallback.onReopen(channel.id, user.id, userName);
