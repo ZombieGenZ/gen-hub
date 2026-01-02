@@ -2,6 +2,7 @@ import {
     Injectable,
     NotFoundException,
     BadRequestException,
+    OnModuleInit,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { I18nService } from 'nestjs-i18n';
@@ -31,7 +32,7 @@ import { DiscordService } from '../discord/discord.service';
  * Đã tối ưu hóa với caching và parallel queries
  */
 @Injectable()
-export class ContactService {
+export class ContactService implements OnModuleInit {
     private readonly CACHE_TTL: number;
     private readonly LIST_CACHE_TTL: number;
     private readonly TICKET_PREFIX: string;
@@ -49,6 +50,44 @@ export class ContactService {
         this.CACHE_TTL = this.configService.get<number>('REDIS_CONTACT_CACHE_TTL') || 300;
         this.LIST_CACHE_TTL = this.configService.get<number>('REDIS_CONTACT_LIST_CACHE_TTL') || 60;
         this.TICKET_PREFIX = this.configService.get<string>('CONTACT_TICKET_PREFIX') || 'TICKET';
+    }
+
+    onModuleInit() {
+        this.discordService.registerActionCallback({
+            onClose: async (channelId, userId, userName) => {
+                const conversation = await this.repository.findByDiscordChannelId(channelId);
+                if (conversation) {
+                    await this.close(conversation.id, `[Discord] ${userName}`);
+                }
+            },
+            onReopen: async (channelId, userId, userName) => {
+                const conversation = await this.repository.findByDiscordChannelId(channelId);
+                if (conversation) {
+                    await this.reopen(conversation.id, `[Discord] ${userName}`);
+                }
+            },
+            onDelete: async (channelId, userId, userName) => {
+                const conversation = await this.repository.findByDiscordChannelId(channelId);
+                if (conversation) {
+                    await this.delete(conversation.id, `[Discord] ${userName}`);
+                }
+            },
+            onReply: async (ticketCode, content, authorName, authorId) => {
+                const conversation = await this.repository.findByCode(ticketCode);
+                if (conversation) {
+                    await this.reply(
+                        conversation.id,
+                        {
+                            content,
+                            is_internal: false
+                        },
+                        authorId,
+                        authorName,
+                        'discord@genhub.dev'
+                    );
+                }
+            }
+        });
     }
 
     private getCacheKey(id: string): string {

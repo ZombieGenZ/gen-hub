@@ -159,8 +159,9 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
         }
 
         try {
-            // Tạo tên channel từ contact code
-            const channelName = `ticket-${contactCode.toLowerCase()}`;
+            // Fix: Tránh double prefix ticket-ticket-
+            const lowerCode = contactCode.toLowerCase();
+            const channelName = lowerCode.startsWith('ticket-') ? lowerCode : `ticket-${lowerCode}`;
 
             // Tạo channel trong category support
             const channel = await this.guild.channels.create({
@@ -210,6 +211,25 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
             this.logger.error(`Failed to create Discord channel for ${contactCode}:`, error);
             return { success: false, error: errorMessage };
         }
+    }
+
+    /**
+     * Callback for actions (Close, Reopen, Delete, Reply)
+     */
+    private actionCallback: {
+        onClose: (channelId: string, userId: string, userName: string) => Promise<void>;
+        onReopen: (channelId: string, userId: string, userName: string) => Promise<void>;
+        onDelete: (channelId: string, userId: string, userName: string) => Promise<void>;
+        onReply: (ticketCode: string, content: string, authorName: string, authorId: string) => Promise<void>;
+    } | null = null;
+
+    registerActionCallback(callback: {
+        onClose: (channelId: string, userId: string, userName: string) => Promise<void>;
+        onReopen: (channelId: string, userId: string, userName: string) => Promise<void>;
+        onDelete: (channelId: string, userId: string, userName: string) => Promise<void>;
+        onReply: (ticketCode: string, content: string, authorName: string, authorId: string) => Promise<void>;
+    }) {
+        this.actionCallback = callback;
     }
 
     /**
@@ -316,9 +336,6 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
                 await channel.setName(`closed-${channel.name.replace('ticket-', '')}`);
             }
 
-            // Sync permission nếu cần (tùy chọn: làm cho channel thành read-only)
-            // Hiện tại giữ nguyên permission
-
             return true;
         } catch (error) {
             this.logger.error(`Failed to close channel ${channelId}:`, error);
@@ -381,28 +398,47 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
      * Xử lý tin nhắn từ Discord
      */
     private async handleMessage(message: Message): Promise<void> {
-        // Bỏ qua tin nhắn từ bot
         if (message.author.bot) return;
 
-        // Chỉ xử lý tin nhắn trong các channel ticket
-        const channelName = (message.channel as TextChannel).name;
-        // Chấp nhận cả ticket- (active) và closed- (nếu vẫn cho phép reply khi đóng, nhưng logic nghiệp vụ có thể chặn ở API)
+        const channel = message.channel as TextChannel;
+        const channelName = channel.name;
+
+        // Handle Commands
+        const content = message.content.trim().toLowerCase();
+        const userId = message.author.id;
+        const userName = message.author.displayName || message.author.username;
+
+        if (this.actionCallback) {
+            if (content === '!close') {
+                await this.actionCallback.onClose(channel.id, userId, userName);
+                await message.react('✅');
+                return;
+            }
+            if (content === '!reopen') {
+                await this.actionCallback.onReopen(channel.id, userId, userName);
+                await message.react('✅');
+                return;
+            }
+            if (content === '!delete') {
+                await this.actionCallback.onDelete(channel.id, userId, userName);
+                await message.react('✅');
+                return;
+            }
+        }
+
+        // Handle Reply (only in ticket channels)
         if (!channelName.startsWith('ticket-')) return;
 
-        // Lấy ticket code từ tên channel
         const ticketCode = channelName.replace('ticket-', '').toUpperCase();
 
-        // Gọi callback nếu có đăng ký
-        if (this.onReplyCallback) {
+        if (this.actionCallback) {
             try {
-                await this.onReplyCallback(
+                await this.actionCallback.onReply(
                     ticketCode,
                     message.content,
-                    message.author.displayName || message.author.username,
-                    message.author.id,
+                    userName,
+                    userId,
                 );
-
-                // React để xác nhận đã xử lý
                 await message.react('✅');
             } catch (error) {
                 this.logger.error(`Failed to process Discord reply for ticket ${ticketCode}:`, error);
@@ -416,62 +452,27 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
      */
     private async handleInteraction(interaction: Interaction<CacheType>): Promise<void> {
         if (!interaction.isButton()) return;
+        if (!this.actionCallback) return;
 
         const { customId } = interaction;
         const channel = interaction.channel as TextChannel;
         const user = interaction.user;
+        const userName = user.displayName || user.username;
 
-        if (customId === 'close_ticket') {
-            await interaction.reply({ content: 'Closing ticket...', ephemeral: true });
-
-            const conversation = await this.prismaService.contactConversation.findFirst({
-                where: { discord_channel_id: channel.id },
-            });
-
-            if (conversation) {
-                await this.prismaService.contactConversation.update({
-                    where: { id: conversation.id },
-                    data: {
-                        status: 'CLOSED',
-                        closed_at: new Date(),
-                        updated_by: 'DiscordBot',
-                    },
-                });
-
-                await this.closeTicketChannel(channel.id, false, user.displayName || user.username);
-            } else {
-                await interaction.followUp({ content: 'Could not find linked ticket in database.', ephemeral: true });
+        try {
+            if (customId === 'close_ticket') {
+                await interaction.reply({ content: 'Processing close request...', ephemeral: true });
+                await this.actionCallback.onClose(channel.id, user.id, userName);
+            } else if (customId === 'delete_ticket_channel') {
+                await interaction.reply({ content: 'Processing delete request...', ephemeral: true });
+                await this.actionCallback.onDelete(channel.id, user.id, userName);
+            } else if (customId === 'reopen_ticket') {
+                await interaction.reply({ content: 'Processing reopen request...', ephemeral: true });
+                await this.actionCallback.onReopen(channel.id, user.id, userName);
             }
-        } else if (customId === 'delete_ticket_channel') {
-            await interaction.reply({
-                content: 'Channel will be deleted in 5 seconds...',
-                ephemeral: false,
-            });
-
-            setTimeout(() => {
-                channel.delete().catch(err => this.logger.error('Failed to delete channel', err));
-            }, 5000);
-        } else if (customId === 'reopen_ticket') {
-            await interaction.reply({ content: 'Reopening ticket...', ephemeral: true });
-
-            const conversation = await this.prismaService.contactConversation.findFirst({
-                where: { discord_channel_id: channel.id },
-            });
-
-            if (conversation) {
-                await this.prismaService.contactConversation.update({
-                    where: { id: conversation.id },
-                    data: {
-                        status: 'PENDING', // Reopen as PENDING
-                        closed_at: null,
-                        updated_by: 'DiscordBot',
-                    },
-                });
-
-                await this.reopenTicketChannel(channel.id, user.displayName || user.username);
-            } else {
-                await interaction.followUp({ content: 'Could not find linked ticket in database.', ephemeral: true });
-            }
+        } catch (error) {
+            this.logger.error(`Error handling interaction ${customId}:`, error);
+            await interaction.followUp({ content: 'An error occurred while processing your request.', ephemeral: true });
         }
     }
 }

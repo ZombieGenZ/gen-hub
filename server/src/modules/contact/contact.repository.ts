@@ -164,6 +164,17 @@ export class ContactRepository {
     }
 
     /**
+     * Tìm conversation theo Discord Channel ID
+     */
+    async findByDiscordChannelId(
+        channelId: string,
+    ): Promise<ContactConversation | null> {
+        return this.prisma.contactConversation.findFirst({
+            where: { discord_channel_id: channelId, is_deleted: false },
+        });
+    }
+
+    /**
      * Tìm conversation theo email_message_id (In-Reply-To match)
      * Cải thiện: tìm kiếm trong cả email_references để hỗ trợ reply chains
      */
