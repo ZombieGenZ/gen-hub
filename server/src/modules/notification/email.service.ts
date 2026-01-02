@@ -1317,5 +1317,166 @@ export class EmailService {
       return false;
     }
   }
+  async sendContactClosedEmail(
+    to: string,
+    name: string,
+    ticketCode: string,
+    originalSubject: string,
+    inReplyTo?: string,
+    references: string[] = [],
+    emailMessageId?: string,
+    lang: string = 'vi',
+  ): Promise<boolean> {
+    const appName = 'GenHub'; // Fallback as property might be missing or private
+    const colors = {
+      primary: '#0070f3',
+      background: '#ffffff',
+      text: '#333333',
+      gray100: '#f5f5f5',
+      gray500: '#888888',
+      gray700: '#444444',
+      gray900: '#111111',
+      red500: '#ef4444',
+    };
+
+    const title = await this.i18n.t('contact.email.closed.title', { lang });
+    const greeting = await this.i18n.t('contact.email.greeting', { lang, args: { name } });
+    const messageTemplate = await this.i18n.t('contact.email.closed.message', { lang, args: { ticketCode } });
+    const note = await this.i18n.t('contact.email.closed.note', { lang });
+    const subjectPrefix = await this.i18n.t('contact.email.closed.subject_prefix', { lang, args: { code: ticketCode } });
+
+    const finalTitle = title || 'Ticket Closed';
+    const finalGreeting = greeting || `Hi ${name},`;
+    const finalMessage = messageTemplate || `Your support ticket <strong>#${ticketCode}</strong> has been closed.`;
+    const finalNote = note || 'If you need further assistance, please open a new ticket.';
+    const finalSubjectPrefix = subjectPrefix || `[#${ticketCode}] Ticket Closed`;
+
+    const emailSubject = `${finalSubjectPrefix}: ${originalSubject}`;
+
+    const content = `
+      <h2 style="margin: 0 0 20px; font-size: 24px; font-weight: 600; color: ${colors.gray900}; text-align: center;">
+        ${finalTitle} 🔒
+      </h2>
+
+      <div style="text-align: center; margin-bottom: 30px;">
+        <p style="font-size: 16px; color: ${colors.gray700}; line-height: 1.6;">
+          ${finalGreeting}<br/>
+          ${finalMessage}
+        </p>
+      </div>
+
+      <div style="background-color: ${colors.gray100}; border-left: 4px solid ${colors.red500}; border-radius: 8px; padding: 20px; margin: 25px 0;">
+        <p style="margin: 0; font-size: 14px; color: ${colors.gray700}; line-height: 1.6;">
+          ${finalNote}
+        </p>
+      </div>
+    `;
+
+    const supportEmail = this.configService.get<string>('EMAIL_SUPPORT_ADDRESS');
+    const primaryEmail = this.configService.get<string>('EMAIL_PRIMARY_ADDRESS');
+
+    const transporter = await this.createTransporter();
+    if (!transporter) return false;
+
+    try {
+      const mailOptions: Record<string, unknown> = {
+        from: `"${appName} Support" <${supportEmail || primaryEmail}>`,
+        to,
+        subject: emailSubject,
+        html: await this.createEmailTemplate(content, appName, lang),
+        messageId: emailMessageId,
+        headers: { 'X-Ticket-Code': ticketCode },
+      };
+
+      if (inReplyTo) mailOptions['inReplyTo'] = inReplyTo;
+      if (references.length > 0) mailOptions['references'] = references.join(' ');
+
+      await transporter.sendMail(mailOptions);
+      return true;
+    } catch (error) {
+      console.error('[EmailService] Failed to send closed ticket email:', error);
+      return false;
+    }
+  }
+
+  async sendContactReopenedEmail(
+    to: string,
+    name: string,
+    ticketCode: string,
+    originalSubject: string,
+    inReplyTo?: string,
+    references: string[] = [],
+    emailMessageId?: string,
+    lang: string = 'vi',
+  ): Promise<boolean> {
+    const appName = 'GenHub';
+    const colors = {
+      primary: '#0070f3',
+      background: '#ffffff',
+      text: '#333333',
+      gray100: '#f5f5f5',
+      gray500: '#888888',
+      gray700: '#444444',
+      gray900: '#111111',
+      green500: '#10b981',
+    };
+
+    const title = await this.i18n.t('contact.email.reopened.title', { lang });
+    const greeting = await this.i18n.t('contact.email.greeting', { lang, args: { name } });
+    const messageTemplate = await this.i18n.t('contact.email.reopened.message', { lang, args: { ticketCode } });
+    const subjectPrefix = await this.i18n.t('contact.email.reopened.subject_prefix', { lang, args: { code: ticketCode } });
+
+    const finalTitle = title || 'Ticket Reopened';
+    const finalGreeting = greeting || `Hi ${name},`;
+    const finalMessage = messageTemplate || `Your support ticket <strong>#${ticketCode}</strong> has been reopened.`;
+    const finalSubjectPrefix = subjectPrefix || `[#${ticketCode}] Ticket Reopened`;
+
+    const emailSubject = `${finalSubjectPrefix}: ${originalSubject}`;
+
+    const content = `
+      <h2 style="margin: 0 0 20px; font-size: 24px; font-weight: 600; color: ${colors.gray900}; text-align: center;">
+        ${finalTitle} 🔓
+      </h2>
+
+      <div style="text-align: center; margin-bottom: 30px;">
+        <p style="font-size: 16px; color: ${colors.gray700}; line-height: 1.6;">
+          ${finalGreeting}<br/>
+          ${finalMessage}
+        </p>
+      </div>
+
+      <div style="background-color: ${colors.gray100}; border-left: 4px solid ${colors.green500}; border-radius: 8px; padding: 20px; margin: 25px 0;">
+        <p style="margin: 0; font-size: 14px; color: ${colors.gray700}; line-height: 1.6;">
+            You can now reply to this email to continue the conversation.
+        </p>
+      </div>
+    `;
+
+    const supportEmail = this.configService.get<string>('EMAIL_SUPPORT_ADDRESS');
+    const primaryEmail = this.configService.get<string>('EMAIL_PRIMARY_ADDRESS');
+
+    const transporter = await this.createTransporter();
+    if (!transporter) return false;
+
+    try {
+      const mailOptions: Record<string, unknown> = {
+        from: `"${appName} Support" <${supportEmail || primaryEmail}>`,
+        to,
+        subject: emailSubject,
+        html: await this.createEmailTemplate(content, appName, lang),
+        messageId: emailMessageId,
+        headers: { 'X-Ticket-Code': ticketCode },
+      };
+
+      if (inReplyTo) mailOptions['inReplyTo'] = inReplyTo;
+      if (references.length > 0) mailOptions['references'] = references.join(' ');
+
+      await transporter.sendMail(mailOptions);
+      return true;
+    } catch (error) {
+      console.error('[EmailService] Failed to send reopened ticket email:', error);
+      return false;
+    }
+  }
 }
 

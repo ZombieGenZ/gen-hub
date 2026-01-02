@@ -434,6 +434,34 @@ export class ContactService {
             this.invalidateListCache(),
         ]);
 
+        // Send ticket closed email to customer
+        try {
+            const references = conversation.email_references || [];
+            if (conversation.email_message_id) {
+                references.push(conversation.email_message_id);
+            }
+
+            // Generate distinct message ID for the closing notification
+            const supportEmail = this.configService.get<string>('EMAIL_SUPPORT_ADDRESS');
+            const emailDomain = supportEmail?.split('@')[1] || 'gen-hub.dev';
+            const closingMessageId = `<${conversation.code.toLowerCase()}-close-${Date.now()}@${emailDomain}>`;
+
+            await this.emailService.sendContactClosedEmail(
+                conversation.customer_email,
+                conversation.customer_name,
+                conversation.code,
+                conversation.subject || 'Support Ticket',
+                conversation.email_message_id || undefined,
+                references,
+                closingMessageId,
+                lang
+            );
+        } catch (error) {
+            this.systemLogService.error('contact', 'email', `Failed to send closed ticket email: ${error}`, {
+                metaData: { conversationId: id }
+            });
+        }
+
         // Log
         this.systemLogService.info('contact', 'close', `Closed ticket: ${conversation.code}`, {
             userId,
@@ -487,6 +515,34 @@ export class ContactService {
             this.invalidateCache(id),
             this.invalidateListCache(),
         ]);
+
+        // Send ticket reopened email to customer
+        try {
+            const references = conversation.email_references || [];
+            if (conversation.email_message_id) {
+                references.push(conversation.email_message_id);
+            }
+
+            // Generate distinct message ID for the reopening notification
+            const supportEmail = this.configService.get<string>('EMAIL_SUPPORT_ADDRESS');
+            const emailDomain = supportEmail?.split('@')[1] || 'gen-hub.dev';
+            const reopeningMessageId = `<${conversation.code.toLowerCase()}-reopen-${Date.now()}@${emailDomain}>`;
+
+            await this.emailService.sendContactReopenedEmail(
+                conversation.customer_email,
+                conversation.customer_name,
+                conversation.code,
+                conversation.subject || 'Support Ticket',
+                conversation.email_message_id || undefined,
+                references,
+                reopeningMessageId,
+                lang
+            );
+        } catch (error) {
+            this.systemLogService.error('contact', 'email', `Failed to send reopened ticket email: ${error}`, {
+                metaData: { conversationId: id }
+            });
+        }
 
         // Log
         this.systemLogService.info('contact', 'reopen', `Reopened ticket: ${conversation.code}`, {
@@ -601,6 +657,14 @@ export class ContactService {
 
         if (!conversation) {
             // Không tìm thấy conversation - có thể tạo mới
+            return false;
+        }
+
+        // Nếu ticket đã đóng thì không xử lý reply
+        if (conversation.status === ContactStatus.CLOSED) {
+            this.systemLogService.warn('contact', 'inbound_email_ignored', `Ignored reply to closed ticket: ${conversation.code}`, {
+                metaData: { conversationId: conversation.id, senderEmail },
+            });
             return false;
         }
 
