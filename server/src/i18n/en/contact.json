@@ -4,6 +4,7 @@
         "updated": "Updated successfully",
         "replied": "Reply sent",
         "closed": "Ticket closed",
+        "reopened": "Ticket reopened",
         "deleted": "Deleted successfully",
         "deleted_many": "Deleted {count} tickets",
         "staff_assigned": "Staff assigned successfully",
@@ -63,7 +64,8 @@
         "reopened": {
             "title": "Ticket Reopened",
             "message": "Your support ticket <strong>#{ticketCode}</strong> has been reopened.",
-            "subject_prefix": "[#{code}] Ticket Reopened"
+            "subject_prefix": "[#{code}] Ticket Reopened",
+            "replyNote": "You can reply to this email to continue the conversation."
         }
     },
     "status": {

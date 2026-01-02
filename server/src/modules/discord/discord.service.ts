@@ -160,7 +160,7 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
         subject?: string,
     ): Promise<IDiscordChannelResult> {
         if (!this.enabled || !this.guild || !this.category) {
-            return { success: false, error: 'Discord integration is not available' };
+            return { success: false, error: 'Tích hợp Discord không khả dụng' };
         }
 
         try {
@@ -173,7 +173,7 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
                 name: channelName,
                 type: ChannelType.GuildText,
                 parent: this.category,
-                topic: `Support Ticket: ${contactCode} | Customer: ${customerEmail}`,
+                topic: `Ticket Hỗ Trợ: ${contactCode} | Khách hàng: ${customerEmail}`,
             });
 
             // Gửi tin nhắn chào mừng với embed
@@ -196,7 +196,7 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
             // Tạo buttons
             const closeButton = new ButtonBuilder()
                 .setCustomId('close_ticket')
-                .setLabel('Close Ticket')
+                .setLabel('Đóng Ticket')
                 .setStyle(ButtonStyle.Danger)
                 .setEmoji('🔒');
 
@@ -290,10 +290,10 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
             const channel = this.guild.channels.cache.get(channelId) as TextChannel;
             if (!channel) return false;
 
-            const title = isDeleted ? '🗑️ Ticket Deleted' : '🔒 Ticket Closed';
+            const title = isDeleted ? '🗑️ Ticket Đã Xóa' : '🔒 Ticket Đã Đóng';
             const description = isDeleted
-                ? 'This support ticket has been deleted.'
-                : 'This support ticket has been closed.';
+                ? 'Ticket hỗ trợ này đã được xóa.'
+                : 'Ticket hỗ trợ này đã được đóng.';
             const color = isDeleted ? 0xff0000 : 0x808080;
 
             // Gửi tin nhắn thông báo
@@ -304,7 +304,7 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
                 .setTimestamp();
 
             if (closedBy) {
-                embed.addFields({ name: isDeleted ? 'Deleted by' : 'Closed by', value: closedBy });
+                embed.addFields({ name: isDeleted ? 'Xóa bởi' : 'Đóng bởi', value: closedBy });
             }
 
             const rows: ActionRowBuilder<ButtonBuilder>[] = [];
@@ -313,13 +313,13 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
             if (!isDeleted) {
                 const reopenButton = new ButtonBuilder()
                     .setCustomId('reopen_ticket')
-                    .setLabel('Reopen Ticket')
+                    .setLabel('Mở Lại Ticket')
                     .setStyle(ButtonStyle.Success)
                     .setEmoji('🔓');
 
                 const deleteButton = new ButtonBuilder()
                     .setCustomId('delete_ticket_channel')
-                    .setLabel('Delete Channel')
+                    .setLabel('Xóa Kênh')
                     .setStyle(ButtonStyle.Secondary)
                     .setEmoji('🗑️');
 
@@ -370,17 +370,17 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
 
             const embed = new EmbedBuilder()
                 .setColor(0x00ff00)
-                .setTitle('Ticket Reopened')
-                .setDescription('🔓 This support ticket has been reopened.')
+                .setTitle('🔓 Ticket Đã Mở Lại')
+                .setDescription('Ticket hỗ trợ này đã được mở lại.')
                 .setTimestamp();
 
             if (reopenedBy) {
-                embed.addFields({ name: 'Reopened by', value: reopenedBy });
+                embed.addFields({ name: 'Mở lại bởi', value: reopenedBy });
             }
 
             const closeButton = new ButtonBuilder()
                 .setCustomId('close_ticket')
-                .setLabel('Close Ticket')
+                .setLabel('Đóng Ticket')
                 .setStyle(ButtonStyle.Danger)
                 .setEmoji('🔒');
 
@@ -483,19 +483,34 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
 
         try {
             if (customId === 'close_ticket') {
-                await interaction.reply({ content: 'Processing close request...', ephemeral: true });
+                await interaction.reply({ content: '🔄 Đang xử lý yêu cầu đóng...', ephemeral: true });
                 await this.actionCallback.onClose(channel.id, user.id, userName);
+                await interaction.editReply({ content: '✅ Ticket đã được đóng thành công!' });
             } else if (customId === 'delete_ticket_channel') {
-                await interaction.reply({ content: 'Processing delete request...', ephemeral: true });
+                await interaction.reply({ content: '🔄 Đang xử lý yêu cầu xóa...', ephemeral: true });
                 await this.actionCallback.onDelete(channel.id, user.id, userName);
+                await interaction.editReply({ content: '✅ Ticket đã được xóa. Kênh sẽ bị xóa sau 5 giây...' });
                 setTimeout(() => channel.delete().catch(e => this.logger.error('Failed to delete channel', e)), 5000);
             } else if (customId === 'reopen_ticket') {
-                await interaction.reply({ content: 'Processing reopen request...', ephemeral: true });
+                await interaction.reply({ content: '🔄 Đang xử lý yêu cầu mở lại...', ephemeral: true });
                 await this.actionCallback.onReopen(channel.id, user.id, userName);
+                await interaction.editReply({ content: '✅ Ticket đã được mở lại thành công!' });
             }
-        } catch (error) {
+        } catch (error: any) {
+            const errorMessage = error?.response?.message || error?.message || 'Đã xảy ra lỗi';
             this.logger.error(`Error handling interaction ${customId}:`, error);
-            await interaction.followUp({ content: 'An error occurred while processing your request.', ephemeral: true });
+
+            // Try to edit the reply with the error message
+            try {
+                await interaction.editReply({ content: `❌ ${errorMessage}` });
+            } catch {
+                // If editReply fails (interaction not replied yet), try followUp
+                try {
+                    await interaction.followUp({ content: `❌ ${errorMessage}`, ephemeral: true });
+                } catch {
+                    // Ignore if both fail
+                }
+            }
         }
     }
 }
