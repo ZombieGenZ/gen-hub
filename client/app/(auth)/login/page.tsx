@@ -53,7 +53,6 @@ export default function LoginPage() {
         }),
         turnstileToken
       })
-      console.log(authStorage.getAccessToken())
       if (response && response.data.requires_2fa) {
         setRequires2FA(true)
         showToast('Vui lòng nhập mã xác thực 2 yếu tố', 'info')
@@ -78,10 +77,16 @@ export default function LoginPage() {
     }
   }
 
-  const handleLoginbyTwoFactorCode = () => {
+  const handleLoginbyTwoFactorCode = async () => {
     setLoading(true)
     try {
-      const response = authServices.login2fa(temp_token!, formData.two_factor_code, formData.backup_code)
+      const response = await authServices.login2fa(temp_token!, formData.two_factor_code, formData.backup_code)
+      if (response) {
+        showToast("Đăng nhập thành công!", 'success')
+        router.push("/")
+      } else {
+        showToast("Đăng nhập thất bại!", 'error')
+      }
     } catch (error) {
       console.error("Login error:", error)
       showToast("Có lỗi xảy ra!", 'error')
@@ -297,7 +302,7 @@ export default function LoginPage() {
             />
 
             <button
-              onClick={handleLogin}
+              onClick={handleLoginbyTwoFactorCode}
               disabled={loading}
               className="w-full py-3 rounded-lg font-semibold transition-all shadow-lg transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-white relative overflow-hidden"
               style={{

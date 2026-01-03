@@ -95,7 +95,7 @@ export default function PropertySearch() {
 
                 {/* 2. Actual Filter Bar */}
                 <div className="bg-[#fafafa] max-w-[1440px] w-full mx-auto">
-                    <div className="max-w-[1440px] w-full mx-auto px-4 lg:px-6 h-16 flex items-center gap-4">
+                    <div className="max-w-360 w-full mx-auto px-4 lg:px-6 h-16 flex items-center gap-4">
                         <div className="flex-1 bg-slate-100 h-10 rounded-full px-4 flex items-center text-slate-500 text-sm gap-2">
                             <MagnifyingGlassIcon className="w-5 h-5 text-slate-400" />
                             <span>Tìm kiếm kho bãi, khu công nghiệp...</span>
@@ -110,7 +110,7 @@ export default function PropertySearch() {
             </div>
 
             {/* Main Content: List Left, Map Right */}
-            <div className={`flex-1 max-w-[1440px] w-full mx-auto p-4 lg:p-6 ${showMapMobile ? 'p-0 h-[calc(100vh-80px)]' : ''}`}>
+            <div className={`flex-1 max-w-360 w-full mx-auto p-4 lg:p-6 ${showMapMobile ? 'p-0 h-[calc(100vh-80px)]' : ''}`}>
                 <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 relative items-start h-full">
 
                     {/* List Area (3/5) - Hidden on Mobile if Map is shown */}
