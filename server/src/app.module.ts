@@ -125,6 +125,9 @@ import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
     ShelfTemplateModule,
     BlockTemplateModule,
 
+    // QC Management Module
+    QCManagementModule,
+
     // Organizations
     OrganizationModule,
 
@@ -187,9 +190,6 @@ import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
 
     // Contact Support Module
     ContactModule,
-
-    // QC Management Module
-    QCManagementModule,
   ],
   controllers: [AppController],
   providers: [
