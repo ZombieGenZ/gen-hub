@@ -14,11 +14,10 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam, ApiBody } from '@nestjs
 import { I18nLang } from 'nestjs-i18n';
 
 import { RentalContractService } from './rental-contract.service';
-import { RenewRentalContractDto, QueryRentalContractDto, AddAddonDto, RemoveAddonDto, CancelContractDto } from './dto';
-import { DeleteManyDto } from '../../common/dto';
+import { RenewRentalContractDto, QueryRentalContractDto, OrgCancelContractDto, OrgDeleteManyWithReasonDto } from './dto';
 import { JwtAuthGuard } from '../../common/guards';
 import { CurrentUser } from '../../common/decorators';
-import { GetResponse, UpdatedResponse, DeletedResponse, CreatedResponse, ResponseCode } from '../../common/responses';
+import { GetResponse, UpdatedResponse, DeletedResponse, ResponseCode } from '../../common/responses';
 
 /**
  * Controller xử lý các endpoints cấp tổ chức cho Rental Contract
@@ -139,43 +138,20 @@ export class OrgRentalContractController {
     }
 
     /**
-     * Thêm addon vào hợp đồng
+     * Lấy danh sách insurance của hợp đồng
      */
-    @Post(':id/addons')
-    @ApiOperation({ summary: 'Thêm addon vào hợp đồng' })
+    @Get(':id/insurances')
+    @ApiOperation({ summary: 'Lấy danh sách bảo hiểm của hợp đồng' })
     @ApiParam({ name: 'orgId', description: 'ID của tổ chức', type: 'string' })
     @ApiParam({ name: 'id', description: 'ID của hợp đồng', type: 'string' })
-    @ApiBody({ type: AddAddonDto })
-    async addAddon(
+    async getInsurances(
         @Param('orgId', ParseUUIDPipe) orgId: string,
         @Param('id', ParseUUIDPipe) id: string,
-        @Body() dto: AddAddonDto,
         @CurrentUser('userId') userId: string,
         @I18nLang() lang: string,
     ) {
-        const data = await this.rentalContractService.addAddon(id, dto.addon_id, userId, orgId, lang);
-        return new CreatedResponse(ResponseCode.RENTAL_CONTRACT_UPDATE_SUCCESS, data, 'Thêm addon thành công');
-    }
-
-    /**
-     * Hủy addon từ hợp đồng
-     */
-    @Delete(':id/addons/:addonId')
-    @ApiOperation({ summary: 'Hủy addon từ hợp đồng' })
-    @ApiParam({ name: 'orgId', description: 'ID của tổ chức', type: 'string' })
-    @ApiParam({ name: 'id', description: 'ID của hợp đồng', type: 'string' })
-    @ApiParam({ name: 'addonId', description: 'ID của contract addon', type: 'string' })
-    @ApiBody({ type: RemoveAddonDto })
-    async removeAddon(
-        @Param('orgId', ParseUUIDPipe) orgId: string,
-        @Param('id', ParseUUIDPipe) id: string,
-        @Param('addonId', ParseUUIDPipe) addonId: string,
-        @Body() dto: RemoveAddonDto,
-        @CurrentUser('userId') userId: string,
-        @I18nLang() lang: string,
-    ) {
-        const data = await this.rentalContractService.removeAddon(addonId, dto.cancel_reason || '', userId, orgId, lang);
-        return new UpdatedResponse(ResponseCode.RENTAL_CONTRACT_UPDATE_SUCCESS, data, 'Hủy addon thành công');
+        const data = await this.rentalContractService.getContractInsurances(id, userId, orgId, lang);
+        return new GetResponse(ResponseCode.RENTAL_CONTRACT_READ_SUCCESS, data, 'Lấy danh sách bảo hiểm thành công');
     }
 
     /**
@@ -196,53 +172,37 @@ export class OrgRentalContractController {
     }
 
     /**
-     * Hủy hợp đồng với lý do
-     */
-    @Post(':id/cancel')
-    @ApiOperation({ summary: 'Hủy hợp đồng với lý do' })
-    @ApiParam({ name: 'orgId', description: 'ID của tổ chức', type: 'string' })
-    @ApiParam({ name: 'id', description: 'ID của hợp đồng', type: 'string' })
-    @ApiBody({ type: CancelContractDto })
-    async cancel(
-        @Param('orgId', ParseUUIDPipe) orgId: string,
-        @Param('id', ParseUUIDPipe) id: string,
-        @Body() dto: CancelContractDto,
-        @CurrentUser('userId') userId: string,
-        @I18nLang() lang: string,
-    ) {
-        await this.rentalContractService.cancelContractWithReason(id, dto.cancel_reason, userId, orgId, lang);
-        return new DeletedResponse(ResponseCode.RENTAL_CONTRACT_DELETE_SUCCESS, null, 'Hủy hợp đồng thành công');
-    }
-
-    /**
      * Hủy hợp đồng của tổ chức
      * Chỉ owner/member của org mới được hủy
+     * Chỉ yêu cầu cancel_reason (cancel_type tự động là CLIENT_REQUEST)
      */
     @Delete(':id')
     @ApiOperation({ summary: 'Hủy hợp đồng của tổ chức' })
     @ApiParam({ name: 'orgId', description: 'ID của tổ chức', type: 'string' })
     @ApiParam({ name: 'id', description: 'ID của hợp đồng', type: 'string' })
+    @ApiBody({ type: OrgCancelContractDto })
     async delete(
         @Param('orgId', ParseUUIDPipe) orgId: string,
         @Param('id', ParseUUIDPipe) id: string,
+        @Body() dto: OrgCancelContractDto,
         @CurrentUser('userId') userId: string,
         @I18nLang() lang: string,
     ) {
-        await this.rentalContractService.deleteByOrg(id, userId, orgId, lang);
+        await this.rentalContractService.deleteByOrg(id, dto, userId, orgId, lang);
         return new DeletedResponse(ResponseCode.RENTAL_CONTRACT_DELETE_SUCCESS, null, 'Hủy hợp đồng thành công');
     }
 
     @Delete('delete/many')
     @ApiOperation({ summary: 'Hủy nhiều hợp đồng của tổ chức' })
     @ApiParam({ name: 'orgId', description: 'ID của tổ chức', type: 'string' })
-    @ApiBody({ type: DeleteManyDto })
+    @ApiBody({ type: OrgDeleteManyWithReasonDto })
     async deleteMany(
         @Param('orgId', ParseUUIDPipe) orgId: string,
-        @Body() dto: DeleteManyDto,
+        @Body() dto: OrgDeleteManyWithReasonDto,
         @CurrentUser('userId') userId: string,
         @I18nLang() lang: string,
     ) {
-        await this.rentalContractService.deleteManyByOrg(dto.ids, userId, orgId, lang);
+        await this.rentalContractService.deleteManyByOrg(dto.items, userId, orgId, lang);
         return new DeletedResponse(ResponseCode.RENTAL_CONTRACT_DELETE_SUCCESS, null, 'Hủy nhiều hợp đồng thành công');
     }
 }

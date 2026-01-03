@@ -91,7 +91,13 @@
         "coupon_code_string": "Mã coupon phải là chuỗi",
         "order_amount_required": "Giá trị đơn hàng không được để trống",
         "order_amount_int": "Giá trị đơn hàng phải là số nguyên",
-        "order_amount_min": "Giá trị đơn hàng phải >= 0"
+        "order_amount_min": "Giá trị đơn hàng phải >= 0",
+        "payment_method_invalid": "Phương thức thanh toán không hợp lệ",
+        "insurance_ids_array": "Danh sách ID bảo hiểm phải là mảng",
+        "insurance_id_uuid": "ID bảo hiểm phải là UUID hợp lệ",
+        "cancel_type_required": "Loại hủy hợp đồng không được để trống",
+        "cancel_type_invalid": "Loại hủy hợp đồng không hợp lệ",
+        "admin_payment_type_invalid": "Loại thanh toán admin không hợp lệ"
     },
     "notifications": {
         "expiry_warning_title": "Hợp đồng sắp hết hạn",
@@ -119,6 +125,46 @@
         "addon_cancelled_subject": "[GEN-HUB] Addon {addon} đã bị hủy",
         "addon_cancelled_body": "Addon {addon} đã bị hủy khỏi hợp đồng {code}. Lý do: {reason}",
         "contract_cancelled_subject": "[GEN-HUB] Hợp đồng {code} đã bị hủy",
-        "contract_cancelled_body": "Hợp đồng {code} đã bị hủy. Lý do: {reason}"
+        "contract_cancelled_body": "Hợp đồng {code} đã bị hủy. Lý do: {reason}",
+        "insurance_revoked_subject": "[GEN-HUB] Thông báo thu hồi bảo hiểm - {code}",
+        "insurance_revoked_body": "Bảo hiểm {insurance} đã bị thu hồi khỏi hợp đồng {code}. Lý do: {reason}"
+    },
+    "payment_method": {
+        "balance": "Số dư tổ chức",
+        "transfer": "Chuyển khoản ngân hàng",
+        "hybrid": "Kết hợp (số dư + chuyển khoản)"
+    },
+    "cancel_type": {
+        "client_request": "Khách hàng yêu cầu hủy",
+        "provider_request": "Công ty yêu cầu hủy",
+        "violation": "Vi phạm hợp đồng"
+    },
+    "insurance": {
+        "added": "Đã thêm bảo hiểm vào hợp đồng thành công",
+        "removed": "Đã hủy bảo hiểm khỏi hợp đồng thành công",
+        "not_found": "Không tìm thấy bảo hiểm",
+        "already_added": "Bảo hiểm đã được thêm vào hợp đồng",
+        "already_cancelled": "Bảo hiểm đã bị hủy trước đó"
+    },
+    "refund": {
+        "created": "Yêu cầu hoàn tiền đã được tạo",
+        "processing": "Yêu cầu hoàn tiền đang được xử lý",
+        "approved": "Yêu cầu hoàn tiền đã được duyệt",
+        "rejected": "Yêu cầu hoàn tiền đã bị từ chối",
+        "completed": "Hoàn tiền đã hoàn thành"
+    },
+    "signature": {
+        "required": "Chữ ký là bắt buộc",
+        "invalid_format": "Định dạng chữ ký không hợp lệ (chỉ chấp nhận PNG)",
+        "upload_failed": "Tải chữ ký lên thất bại",
+        "uploaded": "Chữ ký đã được tải lên thành công"
+    },
+    "warehouse_lock": {
+        "locked": "Kho/dãy đang bị khóa bởi giao dịch khác",
+        "conflict": "Hợp đồng bị xung đột do kho/dãy đã được thuê"
+    },
+    "admin": {
+        "contract_created_cash": "Hợp đồng đã được tạo và kích hoạt thành công (thanh toán tiền mặt)",
+        "contract_created_transfer": "Hợp đồng đã được tạo thành công (chờ thanh toán chuyển khoản)"
     }
 }

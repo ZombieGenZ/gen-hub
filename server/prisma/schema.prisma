@@ -114,7 +114,7 @@ model User {
 
   organization_update_requests OrganizationUpdateRequest[] @relation("RequestByRel")
 
-  assigned_contact_conversations ContactConversation[] @relation("AssignedStaff")
+  assigned_contact_conversations ContactConversation[]      @relation("AssignedStaff")
   contact_staff_assignments      ContactConversationStaff[] @relation("ContactStaff")
 
   @@map("users")
@@ -349,6 +349,28 @@ enum CouponType {
   PRIVATE
 }
 
+// Phương thức thanh toán hợp đồng
+enum PaymentMethod {
+  BALANCE // Thanh toán bằng số dư tổ chức
+  TRANSFER // Thanh toán chuyển khoản
+  HYBRID // Kết hợp số dư + chuyển khoản
+}
+
+// Loại hủy hợp đồng
+enum ContractCancelType {
+  CLIENT_REQUEST // Khách hàng (bên B) yêu cầu hủy -> hoàn tiền
+  PROVIDER_REQUEST // Công ty (bên A) yêu cầu hủy -> hoàn tiền
+  VIOLATION // Vi phạm hợp đồng -> không hoàn tiền
+}
+
+// Trạng thái yêu cầu hoàn tiền
+enum RefundStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+}
+
 model Amenity {
   id          String  @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
   name        String
@@ -451,6 +473,9 @@ model WarehouseTemplate {
 
   coupon_targets          CouponTargetWarehouse[]
   coupon_schedule_targets CouponScheduleTargetWarehouse[]
+
+  // QC quản lý
+  qc_warehouse QCWarehouse?
 
   @@map("warehouse_templates")
 }
@@ -589,6 +614,8 @@ model Insurance {
 
   coupon_gifts          CouponGiftInsurance[]
   coupon_schedule_gifts CouponScheduleGiftInsurance[]
+
+  rental_contract_insurances RentalContractInsurance[]
 
   @@map("insurances")
 }
@@ -1084,6 +1111,9 @@ model RowTemplate {
   coupon_targets          CouponTargetRow[]
   coupon_schedule_targets CouponScheduleTargetRow[]
 
+  // QC quản lý
+  qc_row QCRow?
+
   @@index([warehouse_template_id])
   @@map("row_templates")
 }
@@ -1201,11 +1231,19 @@ model RentalContract {
   is_sealed     Boolean @default(false)
   is_liquidated Boolean @default(false)
 
+  // Thông tin thanh toán
+  payment_method PaymentMethod @default(TRANSFER)
+  auto_renew     Boolean       @default(false)
+
   total_price             Decimal  @db.Decimal(19, 4)
   discount_rate           Decimal  @default(0) @db.Decimal(5, 2)
   final_price             Decimal  @db.Decimal(19, 4)
   overdue_penalty         Decimal? @default(0) @db.Decimal(19, 4)
   overdue_penalty_percent Decimal? @default(0) @db.Decimal(5, 2)
+
+  // Thông tin hủy hợp đồng
+  cancel_type   ContractCancelType?
+  cancel_reason String?
 
   notes String?
 
@@ -1219,12 +1257,15 @@ model RentalContract {
   updated_by String?
   deleted_by String?
 
-  organization Organization           @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-  details      RentalContractDetail[]
-  payments     Payment[]
-  addons       RentalContractAddon[]
-  logs         RentalContractLog[]
-  coupons      RentalContractCoupon[]
+  organization    Organization              @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  details         RentalContractDetail[]
+  payments        Payment[]
+  addons          RentalContractAddon[]
+  logs            RentalContractLog[]
+  coupons         RentalContractCoupon[]
+  signatures      ContractSignature[]
+  insurances      RentalContractInsurance[]
+  refund_requests RefundRequest[]
 
   @@index([organization_id])
   @@map("rental_contracts")
@@ -1348,6 +1389,96 @@ model RentalContractCoupon {
   @@map("rental_contract_coupons")
 }
 
+// Chữ ký hợp đồng (lưu trên ImageKit private mode)
+model ContractSignature {
+  id                 String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  rental_contract_id String @db.Uuid
+
+  imagekit_file_id String
+  imagekit_url     String   @db.Text
+  expires_at       DateTime
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  is_deleted Boolean   @default(false)
+  deleted_at DateTime?
+
+  created_by String
+  deleted_by String?
+
+  rental_contract RentalContract @relation(fields: [rental_contract_id], references: [id], onDelete: Cascade)
+
+  @@index([rental_contract_id])
+  @@map("contract_signatures")
+}
+
+// Bảo hiểm của hợp đồng
+model RentalContractInsurance {
+  id                 String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  rental_contract_id String @db.Uuid
+  insurance_id       String @db.Uuid
+
+  price_at_purchase Decimal  @db.Decimal(19, 4)
+  management_fee    Decimal? @db.Decimal(19, 4)
+  is_gift           Boolean  @default(false)
+  duration_months   Int? // Số tháng nếu là gift có thời hạn
+
+  is_cancelled  Boolean   @default(false)
+  cancelled_at  DateTime?
+  cancel_reason String?
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean   @default(false)
+  deleted_at DateTime?
+
+  created_by String
+  updated_by String?
+  deleted_by String?
+
+  rental_contract RentalContract @relation(fields: [rental_contract_id], references: [id], onDelete: Cascade)
+  insurance       Insurance      @relation(fields: [insurance_id], references: [id])
+
+  @@index([rental_contract_id])
+  @@index([insurance_id])
+  @@map("rental_contract_insurances")
+}
+
+// Yêu cầu hoàn tiền khi hủy hợp đồng
+model RefundRequest {
+  id                 String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  rental_contract_id String @db.Uuid
+  organization_id    String @db.Uuid
+
+  status RefundStatus @default(PENDING)
+
+  original_amount     Decimal @db.Decimal(19, 4)
+  fee_percent         Decimal @db.Decimal(5, 2)
+  fee_amount          Decimal @db.Decimal(19, 4)
+  final_refund_amount Decimal @db.Decimal(19, 4)
+
+  reason        String?
+  process_notes String?
+  processed_at  DateTime?
+  processed_by  String?   @db.Uuid
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean   @default(false)
+  deleted_at DateTime?
+
+  created_by String
+
+  rental_contract RentalContract @relation(fields: [rental_contract_id], references: [id], onDelete: Cascade)
+
+  @@index([rental_contract_id])
+  @@index([organization_id])
+  @@index([status])
+  @@map("refund_requests")
+}
+
 model Payment {
   id                   String         @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
   organization_id      String?        @db.Uuid
@@ -1422,6 +1553,10 @@ model Organization {
 
   auto_delete_org_audit_logs  Boolean? @default(true)
   org_audit_logs_retention_ms BigInt?  @default(2592000000)
+
+  // Cấu hình hao hụt cho phép (%)
+  min_loss_tolerance Decimal @default(1) @db.Decimal(5, 2)
+  max_loss_tolerance Decimal @default(3) @db.Decimal(5, 2)
 
   created_at DateTime  @default(now())
   updated_at DateTime? @updatedAt
@@ -1757,6 +1892,10 @@ model Warehouse {
 
   total_weight_capacity Decimal? @db.Decimal(19, 4)
 
+  // Liên kết với QC quản lý
+  qc_warehouse_id String?      @db.Uuid
+  qc_warehouse    QCWarehouse? @relation(fields: [qc_warehouse_id], references: [id])
+
   organization Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
 
   created_at DateTime  @default(now())
@@ -1783,6 +1922,7 @@ model Warehouse {
   rental_contract_details RentalContractDetail[]
   notifications           OrganizationNotification[]
 
+  @@index([qc_warehouse_id])
   @@map("warehouses")
 }
 
@@ -1800,6 +1940,10 @@ model Row {
 
   total_weight_capacity Decimal? @db.Decimal(19, 4)
 
+  // Liên kết với QC quản lý
+  qc_row_id String? @db.Uuid
+  qc_row    QCRow?  @relation(fields: [qc_row_id], references: [id])
+
   is_active  Boolean   @default(true)
   created_at DateTime  @default(now())
   updated_at DateTime? @updatedAt
@@ -1815,6 +1959,7 @@ model Row {
   rental_contract_details RentalContractDetail[]
 
   @@index([warehouse_id])
+  @@index([qc_row_id])
   @@map("rows")
 }
 
@@ -3303,9 +3448,9 @@ enum OrganizationUpdateRequestStatus {
 }
 
 model OrganizationUpdateRequest {
-  id              String                      @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
-  organization_id String                      @db.Uuid
-  requester_id    String                      @db.Uuid
+  id              String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  organization_id String @db.Uuid
+  requester_id    String @db.Uuid
 
   tax_code             String?
   representative_name  String?
@@ -3403,8 +3548,8 @@ model ContactConversationStaff {
   conversation_id String @db.Uuid
   staff_id        String @db.Uuid
 
-  assigned_by String?   @db.Uuid
-  assigned_at DateTime  @default(now())
+  assigned_by String?  @db.Uuid
+  assigned_at DateTime @default(now())
 
   is_active  Boolean   @default(true)
   created_at DateTime  @default(now())
@@ -3425,12 +3570,12 @@ model ContactConversationStaff {
 }
 
 model AILog {
-  id            String  @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  model         String
-  purpose       String
+  id      String @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  model   String
+  purpose String
 
-  input_text    String  @db.Text
-  output_text   String? @db.Text
+  input_text  String  @db.Text
+  output_text String? @db.Text
 
   input_tokens  Int?
   output_tokens Int?
@@ -3440,13 +3585,182 @@ model AILog {
   is_success    Boolean @default(true)
   error_message String? @db.Text
 
-  metadata      Json?
+  metadata Json?
 
-  created_at    DateTime @default(now())
+  created_at DateTime @default(now())
 
   @@index([purpose])
   @@index([model])
   @@index([created_at])
   @@index([is_success])
   @@map("ai_logs")
+}
+
+// ==================== QC MANAGEMENT MODELS ====================
+
+// QCWarehouse - Kho cho QC quản lý (được tạo tự động khi tạo WarehouseTemplate)
+// Thông tin name, description, length, width sẽ lấy từ warehouse_template
+model QCWarehouse {
+  id                    String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  warehouse_template_id String @unique @db.Uuid
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean   @default(false)
+  deleted_at DateTime?
+
+  created_by String
+  updated_by String?
+  deleted_by String?
+
+  warehouse_template WarehouseTemplate @relation(fields: [warehouse_template_id], references: [id])
+
+  rows        QCRow[]
+  assignments QCWarehouseAssignment[]
+
+  // Nhiều Warehouse copy từ template sẽ map vào cùng QCWarehouse này
+  warehouses Warehouse[]
+
+  @@index([warehouse_template_id])
+  @@map("qc_warehouses")
+}
+
+// QCRow - Dãy cho QC quản lý (được tạo tự động khi tạo RowTemplate)
+// Thông tin name, code, description sẽ lấy từ row_template
+model QCRow {
+  id              String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  qc_warehouse_id String @db.Uuid
+  row_template_id String @unique @db.Uuid
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean   @default(false)
+  deleted_at DateTime?
+
+  created_by String
+  updated_by String?
+  deleted_by String?
+
+  qc_warehouse QCWarehouse @relation(fields: [qc_warehouse_id], references: [id], onDelete: Cascade)
+  row_template RowTemplate @relation(fields: [row_template_id], references: [id])
+
+  assignments QCRowAssignment[]
+
+  // Nhiều Row copy từ template sẽ map vào cùng QCRow này
+  rows Row[]
+
+  @@index([qc_warehouse_id])
+  @@index([row_template_id])
+  @@map("qc_rows")
+}
+
+// QCPermission - Quyền của QC (tùy biến được)
+model QCPermission {
+  id          String  @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  name        String
+  key         String  @unique // Ví dụ: qc.import, qc.export, qc.view, qc.manage
+  description String?
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean   @default(false)
+  deleted_at DateTime?
+
+  created_by String
+  updated_by String?
+  deleted_by String?
+
+  warehouse_assignment_permissions QCWarehouseAssignmentPermission[]
+  row_assignment_permissions       QCRowAssignmentPermission[]
+
+  @@map("qc_permissions")
+}
+
+// QCWarehouseAssignment - Phân công QC quản lý kho
+model QCWarehouseAssignment {
+  id              String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  qc_warehouse_id String @db.Uuid
+  user_id         String @db.Uuid
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean   @default(false)
+  deleted_at DateTime?
+
+  created_by String
+  updated_by String?
+  deleted_by String?
+
+  qc_warehouse QCWarehouse @relation(fields: [qc_warehouse_id], references: [id], onDelete: Cascade)
+
+  permissions QCWarehouseAssignmentPermission[]
+
+  @@unique([qc_warehouse_id, user_id])
+  @@index([user_id])
+  @@map("qc_warehouse_assignments")
+}
+
+// QCWarehouseAssignmentPermission - Quyền cụ thể của assignment
+model QCWarehouseAssignmentPermission {
+  id            String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  assignment_id String @db.Uuid
+  permission_id String @db.Uuid
+
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now())
+
+  assignment QCWarehouseAssignment @relation(fields: [assignment_id], references: [id], onDelete: Cascade)
+  permission QCPermission          @relation(fields: [permission_id], references: [id], onDelete: Cascade)
+
+  @@unique([assignment_id, permission_id])
+  @@index([assignment_id])
+  @@index([permission_id])
+  @@map("qc_warehouse_assignment_permissions")
+}
+
+// QCRowAssignment - Phân công QC quản lý dãy
+model QCRowAssignment {
+  id        String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  qc_row_id String @db.Uuid
+  user_id   String @db.Uuid
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean   @default(false)
+  deleted_at DateTime?
+
+  created_by String
+  updated_by String?
+  deleted_by String?
+
+  qc_row QCRow @relation(fields: [qc_row_id], references: [id], onDelete: Cascade)
+
+  permissions QCRowAssignmentPermission[]
+
+  @@unique([qc_row_id, user_id])
+  @@index([user_id])
+  @@map("qc_row_assignments")
+}
+
+// QCRowAssignmentPermission - Quyền cụ thể của assignment
+model QCRowAssignmentPermission {
+  id            String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  assignment_id String @db.Uuid
+  permission_id String @db.Uuid
+
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now())
+
+  assignment QCRowAssignment @relation(fields: [assignment_id], references: [id], onDelete: Cascade)
+  permission QCPermission    @relation(fields: [permission_id], references: [id], onDelete: Cascade)
+
+  @@unique([assignment_id, permission_id])
+  @@index([assignment_id])
+  @@index([permission_id])
+  @@map("qc_row_assignment_permissions")
 }

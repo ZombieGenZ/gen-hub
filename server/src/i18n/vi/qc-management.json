@@ -1,0 +1,21 @@
+{
+    "errors": {
+        "warehouse_not_found": "Không tìm thấy QC Warehouse",
+        "row_not_found": "Không tìm thấy QC Row",
+        "assignment_not_found": "Không tìm thấy phân công",
+        "invalid_permissions": "Một hoặc nhiều permissions không hợp lệ",
+        "user_already_assigned": "User đã được phân công cho warehouse/row này"
+    },
+    "validation": {
+        "user_id_required": "ID user không được để trống",
+        "user_id_uuid": "ID user phải là UUID hợp lệ",
+        "permission_ids_array": "Danh sách permissions phải là mảng",
+        "permission_id_uuid": "ID permission phải là UUID hợp lệ"
+    },
+    "messages": {
+        "list_success": "Lấy danh sách thành công",
+        "read_success": "Lấy chi tiết thành công",
+        "assign_success": "Gán user thành công",
+        "remove_success": "Xóa phân công thành công"
+    }
+}

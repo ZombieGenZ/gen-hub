@@ -1,8 +1,8 @@
-import { IsOptional, IsString, IsInt, Min, IsUUID, IsArray, IsEnum, IsNotEmpty, ValidateNested, MaxLength } from 'class-validator';
+import { IsOptional, IsString, IsInt, Min, IsUUID, IsArray, IsEnum, IsNotEmpty, ValidateNested, MaxLength, IsBoolean } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { i18nValidationMessage } from 'nestjs-i18n';
-import { ContractStatus } from '@prisma/client';
+import { ContractStatus, PaymentMethod, ContractCancelType } from '@prisma/client';
 
 /**
  * DTO cho mỗi template trong hợp đồng
@@ -67,6 +67,23 @@ export class CreateRentalContractDto {
     duration_tier_id: string;
 
     @ApiPropertyOptional({
+        description: 'Phương thức thanh toán',
+        enum: PaymentMethod,
+        example: 'TRANSFER'
+    })
+    @IsOptional()
+    @IsEnum(PaymentMethod, { message: i18nValidationMessage('rental-contract.validation.payment_method_invalid') })
+    payment_method?: PaymentMethod;
+
+    @ApiPropertyOptional({
+        description: 'Tự động gia hạn bằng số dư tổ chức',
+        example: false
+    })
+    @IsOptional()
+    @IsBoolean()
+    auto_renew?: boolean;
+
+    @ApiPropertyOptional({
         description: 'Danh sách ID addon cần đăng ký cùng hợp đồng',
         type: [String],
         example: ['addon-uuid-1', 'addon-uuid-2']
@@ -75,6 +92,16 @@ export class CreateRentalContractDto {
     @IsArray({ message: i18nValidationMessage('rental-contract.validation.addon_ids_array') })
     @IsUUID('4', { each: true, message: i18nValidationMessage('rental-contract.validation.addon_id_uuid') })
     addon_ids?: string[];
+
+    @ApiPropertyOptional({
+        description: 'Danh sách ID bảo hiểm được ủy quyền mua',
+        type: [String],
+        example: ['insurance-uuid-1']
+    })
+    @IsOptional()
+    @IsArray({ message: i18nValidationMessage('rental-contract.validation.insurance_ids_array') })
+    @IsUUID('4', { each: true, message: i18nValidationMessage('rental-contract.validation.insurance_id_uuid') })
+    insurance_ids?: string[];
 
     @ApiPropertyOptional({
         description: 'Danh sách mã coupon cần áp dụng',
@@ -138,14 +165,14 @@ export class UpdateRentalContractDto {
     addon_ids?: string[];
 
     @ApiPropertyOptional({
-        description: 'Danh sách mã coupon cần áp dụng',
+        description: 'Danh sách ID bảo hiểm. Logic: ID mới → thêm, ID đang có → giữ, ID không có trong list → hủy',
         type: [String],
-        example: ['SUMMER2024', 'NEWUSER10']
+        example: ['insurance-uuid-1']
     })
     @IsOptional()
-    @IsArray({ message: i18nValidationMessage('rental-contract.validation.coupon_codes_array') })
-    @IsString({ each: true, message: i18nValidationMessage('rental-contract.validation.coupon_code_string') })
-    coupon_codes?: string[];
+    @IsArray({ message: i18nValidationMessage('rental-contract.validation.insurance_ids_array') })
+    @IsUUID('4', { each: true, message: i18nValidationMessage('rental-contract.validation.insurance_id_uuid') })
+    insurance_ids?: string[];
 }
 
 
@@ -182,6 +209,16 @@ export class RenewRentalContractDto {
     addon_ids?: string[];
 
     @ApiPropertyOptional({
+        description: 'Danh sách ID bảo hiểm được ủy quyền mua',
+        type: [String],
+        example: ['insurance-uuid-1']
+    })
+    @IsOptional()
+    @IsArray({ message: i18nValidationMessage('rental-contract.validation.insurance_ids_array') })
+    @IsUUID('4', { each: true, message: i18nValidationMessage('rental-contract.validation.insurance_id_uuid') })
+    insurance_ids?: string[];
+
+    @ApiPropertyOptional({
         description: 'Danh sách mã coupon cần áp dụng cho đợt gia hạn',
         type: [String],
         example: ['RENEW20', 'VIP10']
@@ -192,6 +229,28 @@ export class RenewRentalContractDto {
     coupon_codes?: string[];
 }
 
+/**
+ * Loại thanh toán cho admin create contract
+ */
+export enum AdminPaymentType {
+    TRANSFER = 'TRANSFER', // Quy trình bình thường - tạo link thanh toán
+    CASH = 'CASH',         // Kích hoạt ngay lập tức (đã thanh toán tiền mặt)
+}
+
+/**
+ * DTO để admin tạo hợp đồng
+ * POST /admin/rental-contracts
+ */
+export class AdminCreateRentalContractDto extends CreateRentalContractDto {
+    @ApiProperty({
+        description: 'Loại thanh toán khi admin tạo hợp đồng',
+        enum: AdminPaymentType,
+        example: 'TRANSFER'
+    })
+    @IsNotEmpty()
+    @IsEnum(AdminPaymentType, { message: i18nValidationMessage('rental-contract.validation.admin_payment_type_invalid') })
+    type: AdminPaymentType;
+}
 
 
 /**
@@ -273,6 +332,15 @@ export class RemoveAddonDto {
  * DTO để hủy hợp đồng
  */
 export class CancelContractDto {
+    @ApiProperty({
+        description: 'Loại hủy hợp đồng',
+        enum: ContractCancelType,
+        example: 'CLIENT_REQUEST'
+    })
+    @IsNotEmpty({ message: i18nValidationMessage('rental-contract.validation.cancel_type_required') })
+    @IsEnum(ContractCancelType, { message: i18nValidationMessage('rental-contract.validation.cancel_type_invalid') })
+    cancel_type: ContractCancelType;
+
     @ApiProperty({ description: 'Lý do hủy hợp đồng', example: 'Không còn nhu cầu sử dụng' })
     @IsNotEmpty({ message: i18nValidationMessage('rental-contract.validation.cancel_reason_required') })
     @IsString({ message: i18nValidationMessage('rental-contract.validation.cancel_reason_string') })
@@ -337,3 +405,95 @@ export class ValidateCouponsDto {
     @IsOptional()
     is_first_rental?: boolean;
 }
+
+/**
+ * DTO để hủy hợp đồng của tổ chức (chỉ có cancel_reason, không có cancel_type)
+ * cancel_type được tự động set là CLIENT_REQUEST
+ */
+export class OrgCancelContractDto {
+    @ApiProperty({ description: 'Lý do hủy hợp đồng', example: 'Không còn nhu cầu sử dụng' })
+    @IsNotEmpty({ message: i18nValidationMessage('rental-contract.validation.cancel_reason_required') })
+    @IsString({ message: i18nValidationMessage('rental-contract.validation.cancel_reason_string') })
+    @MaxLength(1000, { message: i18nValidationMessage('rental-contract.validation.cancel_reason_max_length_contract') })
+    cancel_reason: string;
+}
+
+/**
+ * DTO cho từng item trong delete/many
+ */
+export class DeleteManyItemDto {
+    @ApiProperty({ description: 'ID hợp đồng cần hủy', example: '550e8400-e29b-41d4-a716-446655440001' })
+    @IsNotEmpty({ message: i18nValidationMessage('rental-contract.validation.id_required') })
+    @IsUUID('4', { message: i18nValidationMessage('rental-contract.validation.id_uuid') })
+    id: string;
+
+    @ApiProperty({
+        description: 'Loại hủy hợp đồng',
+        enum: ContractCancelType,
+        example: 'CLIENT_REQUEST'
+    })
+    @IsNotEmpty({ message: i18nValidationMessage('rental-contract.validation.cancel_type_required') })
+    @IsEnum(ContractCancelType, { message: i18nValidationMessage('rental-contract.validation.cancel_type_invalid') })
+    cancel_type: ContractCancelType;
+
+    @ApiProperty({ description: 'Lý do hủy hợp đồng', example: 'Không còn nhu cầu sử dụng' })
+    @IsNotEmpty({ message: i18nValidationMessage('rental-contract.validation.cancel_reason_required') })
+    @IsString({ message: i18nValidationMessage('rental-contract.validation.cancel_reason_string') })
+    @MaxLength(1000, { message: i18nValidationMessage('rental-contract.validation.cancel_reason_max_length_contract') })
+    cancel_reason: string;
+}
+
+/**
+ * DTO để hủy nhiều hợp đồng (mỗi item có cancel_type và cancel_reason riêng)
+ */
+export class DeleteManyWithReasonDto {
+    @ApiProperty({
+        description: 'Danh sách hợp đồng cần hủy với thông tin cancel cho từng item',
+        type: [DeleteManyItemDto],
+        example: [
+            { id: 'uuid-1', cancel_type: 'CLIENT_REQUEST', cancel_reason: 'Không còn nhu cầu' },
+            { id: 'uuid-2', cancel_type: 'VIOLATION', cancel_reason: 'Vi phạm quy định' }
+        ]
+    })
+    @IsNotEmpty({ message: i18nValidationMessage('rental-contract.validation.items_required') })
+    @IsArray({ message: i18nValidationMessage('rental-contract.validation.items_array') })
+    @ValidateNested({ each: true })
+    @Type(() => DeleteManyItemDto)
+    items: DeleteManyItemDto[];
+}
+
+/**
+ * DTO cho từng item trong org delete/many (chỉ có cancel_reason)
+ */
+export class OrgDeleteManyItemDto {
+    @ApiProperty({ description: 'ID hợp đồng cần hủy', example: '550e8400-e29b-41d4-a716-446655440001' })
+    @IsNotEmpty({ message: i18nValidationMessage('rental-contract.validation.id_required') })
+    @IsUUID('4', { message: i18nValidationMessage('rental-contract.validation.id_uuid') })
+    id: string;
+
+    @ApiProperty({ description: 'Lý do hủy hợp đồng', example: 'Không còn nhu cầu sử dụng' })
+    @IsNotEmpty({ message: i18nValidationMessage('rental-contract.validation.cancel_reason_required') })
+    @IsString({ message: i18nValidationMessage('rental-contract.validation.cancel_reason_string') })
+    @MaxLength(1000, { message: i18nValidationMessage('rental-contract.validation.cancel_reason_max_length_contract') })
+    cancel_reason: string;
+}
+
+/**
+ * DTO để hủy nhiều hợp đồng của tổ chức (mỗi item chỉ có cancel_reason)
+ */
+export class OrgDeleteManyWithReasonDto {
+    @ApiProperty({
+        description: 'Danh sách hợp đồng cần hủy với lý do cho từng item',
+        type: [OrgDeleteManyItemDto],
+        example: [
+            { id: 'uuid-1', cancel_reason: 'Không còn nhu cầu' },
+            { id: 'uuid-2', cancel_reason: 'Hết hợp đồng' }
+        ]
+    })
+    @IsNotEmpty({ message: i18nValidationMessage('rental-contract.validation.items_required') })
+    @IsArray({ message: i18nValidationMessage('rental-contract.validation.items_array') })
+    @ValidateNested({ each: true })
+    @Type(() => OrgDeleteManyItemDto)
+    items: OrgDeleteManyItemDto[];
+}
+

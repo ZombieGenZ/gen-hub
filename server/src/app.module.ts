@@ -54,6 +54,7 @@ import { AddonTypeModule } from './modules/addon-type/addon-type.module';
 import { FaqModule } from './modules/faq/faq.module';
 import { ContactModule } from './modules/contact/contact.module';
 import { ContactTagModule } from './modules/contact-tag/contact-tag.module';
+import { QCManagementModule } from './modules/qc-management/qc-management.module';
 import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
 
 @Module({
@@ -186,6 +187,9 @@ import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
 
     // Contact Support Module
     ContactModule,
+
+    // QC Management Module
+    QCManagementModule,
   ],
   controllers: [AppController],
   providers: [

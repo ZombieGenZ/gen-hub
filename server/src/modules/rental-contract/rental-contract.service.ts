@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { I18nService } from 'nestjs-i18n';
 import { ConfigService } from '@nestjs/config';
-import { ContractStatus, Prisma, PaymentType } from '@prisma/client';
+import { ContractStatus, Prisma, PaymentType, ContractCancelType } from '@prisma/client';
 
 const Decimal = Prisma.Decimal;
 type Decimal = Prisma.Decimal;
@@ -21,6 +21,12 @@ import {
   QueryRentalContractDto,
   RentalTemplateItemDto,
   RenewRentalContractDto,
+  CancelContractDto,
+  OrgCancelContractDto,
+  OrgDeleteManyItemDto,
+  DeleteManyItemDto,
+  AdminCreateRentalContractDto,
+  AdminPaymentType,
 } from './dto';
 import {
   IRentalContractWithRelations,
@@ -293,6 +299,8 @@ export class RentalContractService {
         discount_rate: new Decimal(overallDiscountRate),
         final_price: new Decimal(totalPrice),
         notes: dto.notes,
+        payment_method: dto.payment_method,
+        auto_renew: dto.auto_renew ?? false,
         created_by: userId,
         organization: { connect: { id: dto.organization_id } },
       };
@@ -375,6 +383,185 @@ export class RentalContractService {
       await this.releaseLock(lockKeys);
       throw error;
     }
+  }
+
+  /**
+   * Admin tạo hợp đồng thuê
+   */
+  async createByAdmin(
+    dto: AdminCreateRentalContractDto,
+    userId: string,
+    lang: string,
+  ): Promise<ICreateContractResult> {
+    // Nếu chuyển khoản, flow giống user thường
+    if (dto.type === AdminPaymentType.TRANSFER) {
+      return this.create(dto, userId, lang);
+    }
+
+    // Nếu thanh toán tiền mặt (CASH), tạo hợp đồng ACTIVE ngay lập tức
+
+    // 1. Data Cleaning & Validation (giống create)
+    if (dto.addon_ids) dto.addon_ids = [...new Set(dto.addon_ids)];
+    if (dto.coupon_codes) dto.coupon_codes = [...new Set(dto.coupon_codes)];
+
+    const seenTemplateIds = new Set<string>();
+    dto.templates = dto.templates.filter(t => {
+      if (seenTemplateIds.has(t.template_id)) return false;
+      seenTemplateIds.add(t.template_id);
+      if (t.row_template_ids) t.row_template_ids = [...new Set(t.row_template_ids)];
+      return true;
+    });
+
+    // 2. Duration Tier validation
+    const tier = await this.repository['prisma'].rentalDurationTier.findFirst({
+      where: { id: dto.duration_tier_id, is_deleted: false, is_active: true },
+    });
+    if (!tier) {
+      throw new BadRequestException(
+        this.i18n.t('rental-contract.validation.duration_tier_not_found', { lang }),
+      );
+    }
+    const rentalMonths = this.convertDurationToMonths(tier.duration_value, tier.duration_unit);
+    if (!this.ALLOWED_MONTHS.includes(rentalMonths)) {
+      throw new BadRequestException(
+        this.i18n.t('rental-contract.validation.rental_months_invalid', {
+          lang, args: { allowed: this.ALLOWED_MONTHS.join(', ') },
+        }),
+      );
+    }
+
+    // 3. Pending Count Check (Bỏ qua cho Admin hoặc giữ lại tùy policy? Admin có thể bypass, nhưng cứ giữ để an toàn)
+    // Thực ra Admin tạo cho Org, nên check pending của User owner của Org đó? 
+    // Nhưng userId ở đây là Admin ID. Thôi bỏ qua check pending cho admin.
+
+    // 4. Calculate Price & Locks
+    const allPriceDetails: IRentalPriceCalculation[] = [];
+    const lockKeys: string[] = [];
+    let totalPrice = 0;
+
+    for (const templateItem of dto.templates) {
+      const template = await this.templateRepository.findById(templateItem.template_id);
+      if (!template) {
+        throw new NotFoundException(this.i18n.t('rental-contract.errors.template_not_found', { lang }));
+      }
+      const isWholeWarehouse = !templateItem.row_template_ids || templateItem.row_template_ids.length === 0;
+      if (!isWholeWarehouse && !template.is_shared_warehouse) {
+        throw new BadRequestException(this.i18n.t('warehouse.errors.not_shared_warehouse', { lang }));
+      }
+      if (isWholeWarehouse) {
+        lockKeys.push(`rental:lock:template:${templateItem.template_id}`);
+      } else {
+        templateItem.row_template_ids!.forEach((rowId) => lockKeys.push(`rental:lock:row:${rowId}`));
+      }
+      const priceDetail = await this.calculateRentalPriceForTemplate(
+        template, templateItem, rentalMonths, isWholeWarehouse,
+      );
+      allPriceDetails.push(priceDetail);
+      totalPrice += priceDetail.subtotal;
+    }
+    const overallDiscountRate = allPriceDetails.length > 0
+      ? allPriceDetails.reduce((sum, d) => sum + d.discountRate, 0) / allPriceDetails.length
+      : 0;
+
+    // 5. Acquire Locks
+    const lockResult = await this.acquireLock(lockKeys);
+    if (!lockResult.success) {
+      throw new ConflictException(this.i18n.t('warehouse.errors.template_locked', { lang }));
+    }
+
+    try {
+      const code = this.generateContractCode();
+      const rentalDays = rentalMonths * 30;
+      const startedAt = new Date();
+      const expiredAt = new Date(startedAt.getTime() + rentalDays * 24 * 60 * 60 * 1000);
+
+      // Contract Status là ACTIVE ngay lập tức
+      const contractData: Prisma.RentalContractCreateInput = {
+        code,
+        name: `Hợp đồng thuê ${dto.templates.length} kho (Admin tạo)`,
+        status: ContractStatus.ACTIVE, // ACTIVE ngay
+        started_at: startedAt,
+        expired_at: expiredAt,
+        // actual_started_at: startedAt, // Field không tồn tại trong schema
+        total_price: new Decimal(totalPrice),
+        discount_rate: new Decimal(overallDiscountRate),
+        final_price: new Decimal(totalPrice),
+        notes: dto.notes,
+        payment_method: dto.payment_method, // Vẫn lưu method user chọn (hoặc Admin chọn giúp)
+        auto_renew: dto.auto_renew ?? false,
+        created_by: userId,
+        organization: { connect: { id: dto.organization_id } },
+      };
+
+      const detailsData = allPriceDetails.map((d) => ({
+        rental_contract_id: '',
+        warehouse_template_id: d.templateId,
+        warehouse_name: d.warehouseName,
+        warehouse_description: d.warehouseDescription || null,
+        row_template_ids: d.rowTemplateIds,
+        is_whole_warehouse: d.isWholeWarehouse,
+        price_per_month: new Decimal(d.pricePerMonth),
+        discount_rate: new Decimal(d.discountRate),
+        rental_days: d.rentalDays,
+        subtotal: new Decimal(d.subtotal),
+        created_by: userId,
+      }));
+
+      // Tạo Contract
+      const contract = await this.repository.createWithDetails(contractData, detailsData);
+
+      // Xử lý Process Activation ngay lập tức
+      await this.activateContract(contract.id, userId, lang);
+
+      // Log & Audit
+      this.systemLogService.info('rental-contract', 'create_admin', `Admin created Active contract: ${code}`, { userId, metaData: { contractId: contract.id, code } });
+      this.auditLogService.logCreate(dto.organization_id, 'rental_contract', contract.id, { ...dto, code, admin_create: true } as unknown as Record<string, unknown>, { userId, description: `Admin created active contract: ${code}` });
+      this.websocketGateway.emitRentalContractCreated(dto.organization_id, contract.id, code, userId);
+      await this.invalidateContractListCache();
+
+      // Return result with mocked payment info
+      const createdContract = await this.repository.findById(contract.id);
+      if (!createdContract) {
+        throw new Error('Contract created but not found');
+      }
+
+      return {
+        contract: createdContract,
+        payment: {
+          paymentId: 'CASH-' + contract.id,
+          paymentCode: 'CASH',
+          amount: totalPrice,
+          qrCode: '',
+          status: 'PAID',
+          expiredAt: new Date(),
+        },
+      };
+
+    } catch (error) {
+      await this.releaseLock(lockKeys);
+      throw error;
+    }
+  }
+
+  /**
+   * Kích hoạt hợp đồng (tạo warehouse, row thật)
+   * Method này nên được tách ra để dùng chung với Webhook
+   */
+  async activateContract(contractId: string, userId: string, lang: string) {
+    const contract = await this.repository.findById(contractId);
+    if (!contract) return;
+
+    // Logic tạo kho từ template 
+    // TODO: Implement logic copy Warehouse/Row từ Template khi activate contract
+    // Hiện tại WarehouseTemplateRepository chưa hỗ trợ method copyToWarehouse trực tiếp
+    // Cần inject WarehouseTemplateService hoặc implement logic copy ở đây.
+
+    this.systemLogService.info(
+      'rental-contract',
+      'activate_todo',
+      `TODO: Copy warehouses for contract ${contract.code}`,
+      { userId, metaData: { contractId } }
+    );
   }
 
   /**
@@ -644,9 +831,14 @@ export class RentalContractService {
 
   /**
    * Hủy hợp đồng (soft delete)
+   * @param id ID hợp đồng
+   * @param dto DTO chứa cancel_type và cancel_reason
+   * @param userId ID người thực hiện
+   * @param lang Ngôn ngữ
    */
   async delete(
     id: string,
+    dto: CancelContractDto,
     userId: string,
     lang: string,
   ): Promise<void> {
@@ -679,8 +871,8 @@ export class RentalContractService {
       );
     }
 
-    // Set actual_ended_at và soft delete
-    await this.repository.cancelContract(id, userId);
+    // Set actual_ended_at, cancel_type, cancel_reason và soft delete
+    await this.repository.cancelContract(id, userId, dto.cancel_type, dto.cancel_reason);
 
     // Release lock nếu còn
     const lockKey = `rental:lock:contract:${id}`;
@@ -742,7 +934,8 @@ export class RentalContractService {
     this.websocketGateway.emitRentalContractDeleted(organizationId, id, userId);
   }
 
-  async deleteMany(ids: string[], userId: string, lang: string): Promise<void> {
+  async deleteMany(items: DeleteManyItemDto[], userId: string, lang: string): Promise<void> {
+    const ids = items.map(item => item.id);
     const contracts = await this.repository.findByIds(ids);
     if (contracts.length === 0) {
       throw new NotFoundException(
@@ -771,7 +964,15 @@ export class RentalContractService {
       await this.checkOrgPermission(orgId, userId, 'rental-contract.delete', lang);
     }
 
-    await this.repository.softDeleteMany(ids, userId);
+    // Cancel each contract individually with its own cancel_type and cancel_reason
+    for (const item of items) {
+      await this.repository.cancelContract(
+        item.id,
+        userId,
+        item.cancel_type,
+        item.cancel_reason,
+      );
+    }
 
     // Release locks
     const lockKeys = ids.map(id => `rental:lock:contract:${id}`);
@@ -839,11 +1040,12 @@ export class RentalContractService {
   }
 
   async deleteManyByOrg(
-    ids: string[],
+    items: OrgDeleteManyItemDto[],
     userId: string,
     organizationId: string,
     lang: string,
   ): Promise<void> {
+    const ids = items.map(item => item.id);
     const contracts = await this.repository.findByIds(ids);
     if (contracts.length === 0) {
       throw new NotFoundException(
@@ -869,7 +1071,15 @@ export class RentalContractService {
       );
     }
 
-    await this.repository.softDeleteMany(ids, userId);
+    // Cancel each contract individually with its own cancel_reason
+    for (const item of items) {
+      await this.repository.cancelContract(
+        item.id,
+        userId,
+        ContractCancelType.CLIENT_REQUEST,
+        item.cancel_reason,
+      );
+    }
 
     const lockKeys = ids.map(id => `rental:lock:contract:${id}`);
     await this.releaseLock(lockKeys);
@@ -1169,9 +1379,11 @@ export class RentalContractService {
   /**
    * Hủy hợp đồng của tổ chức
    * Chỉ owner/member của org mới được hủy
+   * OrgCancelContractDto chỉ có cancel_reason, cancel_type mặc định là CLIENT_REQUEST
    */
   async deleteByOrg(
     id: string,
+    dto: OrgCancelContractDto,
     userId: string,
     organizationId: string,
     lang: string,
@@ -1209,8 +1421,9 @@ export class RentalContractService {
       );
     }
 
-    // Set actual_ended_at và soft delete
-    await this.repository.cancelContract(id, userId);
+    // Set actual_ended_at, cancel_type, cancel_reason và soft delete
+    // Org cancel luôn là CLIENT_REQUEST
+    await this.repository.cancelContract(id, userId, ContractCancelType.CLIENT_REQUEST, dto.cancel_reason);
 
     // Release lock nếu còn
     const lockKey = `rental:lock:contract:${id}`;
@@ -1395,8 +1608,13 @@ export class RentalContractService {
     // Hủy từng contract xung đột
     for (const conflictContract of conflictingContracts) {
       try {
-        // Hủy contract
-        await this.repository.cancelContract(conflictContract.id, 'SYSTEM');
+        // Hủy contract do xung đột
+        await this.repository.cancelContract(
+          conflictContract.id,
+          'SYSTEM',
+          ContractCancelType.VIOLATION,
+          'Hủy tự động do xung đột với hợp đồng khác được thanh toán trước',
+        );
 
         // Hủy các scheduled payments/contracts
         const payments = await this.repository.findPaymentsByContract(conflictContract.id);
@@ -1739,8 +1957,13 @@ export class RentalContractService {
       created_by: userId,
     });
 
-    // Set actual_ended_at và soft delete
-    await this.repository.cancelContract(contractId, userId);
+    // Set actual_ended_at, cancel_type, cancel_reason và soft delete
+    await this.repository.cancelContract(
+      contractId,
+      userId,
+      ContractCancelType.CLIENT_REQUEST,
+      'Hủy hợp đồng theo yêu cầu user',
+    );
 
     // Release lock nếu còn
     const lockKey = `rental:lock:contract:${contractId}`;
@@ -1812,6 +2035,38 @@ export class RentalContractService {
     );
 
     return this.repository.findContractAddons(contractId);
+  }
+
+  /**
+   * Lấy insurances của hợp đồng
+   */
+  async getContractInsurances(
+    contractId: string,
+    userId: string,
+    organizationId: string,
+    lang: string,
+  ) {
+    const contract = await this.repository.findById(contractId);
+    if (!contract) {
+      throw new NotFoundException(
+        this.i18n.t('rental-contract.errors.not_found', { lang }),
+      );
+    }
+
+    if (contract.organization_id !== organizationId) {
+      throw new ForbiddenException(
+        this.i18n.t('rental-contract.errors.no_permission', { lang }),
+      );
+    }
+
+    await this.checkOrgPermission(
+      organizationId,
+      userId,
+      'rental-contract.read',
+      lang,
+    );
+
+    return this.repository.findContractInsurances(contractId);
   }
 
   /**

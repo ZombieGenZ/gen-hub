@@ -91,7 +91,13 @@
         "coupon_code_string": "Coupon code must be a string",
         "order_amount_required": "Order amount is required",
         "order_amount_int": "Order amount must be an integer",
-        "order_amount_min": "Order amount must be >= 0"
+        "order_amount_min": "Order amount must be >= 0",
+        "payment_method_invalid": "Invalid payment method",
+        "insurance_ids_array": "Insurance IDs must be an array",
+        "insurance_id_uuid": "Insurance ID must be a valid UUID",
+        "cancel_type_required": "Cancel type is required",
+        "cancel_type_invalid": "Invalid cancel type",
+        "admin_payment_type_invalid": "Invalid admin payment type"
     },
     "notifications": {
         "expiry_warning_title": "Contract Expiring Soon",
@@ -119,6 +125,46 @@
         "addon_cancelled_subject": "[GEN-HUB] Addon {addon} Cancelled",
         "addon_cancelled_body": "Addon {addon} has been cancelled from contract {code}. Reason: {reason}",
         "contract_cancelled_subject": "[GEN-HUB] Contract {code} Cancelled",
-        "contract_cancelled_body": "Contract {code} has been cancelled. Reason: {reason}"
+        "contract_cancelled_body": "Contract {code} has been cancelled. Reason: {reason}",
+        "insurance_revoked_subject": "[GEN-HUB] Insurance Revocation Notice - {code}",
+        "insurance_revoked_body": "Insurance {insurance} has been revoked from contract {code}. Reason: {reason}"
+    },
+    "payment_method": {
+        "balance": "Organization Balance",
+        "transfer": "Bank Transfer",
+        "hybrid": "Hybrid (Balance + Bank Transfer)"
+    },
+    "cancel_type": {
+        "client_request": "Client requested cancellation",
+        "provider_request": "Provider requested cancellation",
+        "violation": "Contract violation"
+    },
+    "insurance": {
+        "added": "Insurance added to contract successfully",
+        "removed": "Insurance removed from contract successfully",
+        "not_found": "Insurance not found",
+        "already_added": "Insurance is already added to the contract",
+        "already_cancelled": "Insurance was already cancelled"
+    },
+    "refund": {
+        "created": "Refund request created",
+        "processing": "Refund request is being processed",
+        "approved": "Refund request approved",
+        "rejected": "Refund request rejected",
+        "completed": "Refund completed"
+    },
+    "signature": {
+        "required": "Signature is required",
+        "invalid_format": "Invalid signature format (PNG only)",
+        "upload_failed": "Failed to upload signature",
+        "uploaded": "Signature uploaded successfully"
+    },
+    "warehouse_lock": {
+        "locked": "Warehouse/row is locked by another transaction",
+        "conflict": "Contract conflict due to warehouse/row already rented"
+    },
+    "admin": {
+        "contract_created_cash": "Contract created and activated successfully (cash payment)",
+        "contract_created_transfer": "Contract created successfully (pending bank transfer)"
     }
 }

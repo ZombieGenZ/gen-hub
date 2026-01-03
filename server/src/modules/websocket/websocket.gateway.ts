@@ -1232,4 +1232,76 @@ export class WebsocketGateway
       timestamp: new Date().toISOString(),
     });
   }
+
+  // ==================== QC MANAGEMENT EVENTS ====================
+
+  /**
+   * Emit event khi gán user vào QC Warehouse
+   */
+  emitQCWarehouseAssigned(qcWarehouseId: string, userId: string, assignedBy: string) {
+    this.server.emit('qc:warehouseAssigned', {
+      qcWarehouseId,
+      assignedUserId: userId,
+      assignedBy,
+      timestamp: new Date().toISOString(),
+    });
+    // Cũng emit cho user được gán
+    this.server.to(`user:${userId}`).emit('qc:youWereAssignedToWarehouse', {
+      qcWarehouseId,
+      assignedBy,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  /**
+   * Emit event khi xóa assignment của user khỏi QC Warehouse
+   */
+  emitQCWarehouseUnassigned(qcWarehouseId: string, userId: string, unassignedBy: string) {
+    this.server.emit('qc:warehouseUnassigned', {
+      qcWarehouseId,
+      unassignedUserId: userId,
+      unassignedBy,
+      timestamp: new Date().toISOString(),
+    });
+    // Cũng emit cho user bị xóa
+    this.server.to(`user:${userId}`).emit('qc:youWereUnassignedFromWarehouse', {
+      qcWarehouseId,
+      unassignedBy,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  /**
+   * Emit event khi gán user vào QC Row
+   */
+  emitQCRowAssigned(qcRowId: string, userId: string, assignedBy: string) {
+    this.server.emit('qc:rowAssigned', {
+      qcRowId,
+      assignedUserId: userId,
+      assignedBy,
+      timestamp: new Date().toISOString(),
+    });
+    this.server.to(`user:${userId}`).emit('qc:youWereAssignedToRow', {
+      qcRowId,
+      assignedBy,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  /**
+   * Emit event khi xóa assignment của user khỏi QC Row
+   */
+  emitQCRowUnassigned(qcRowId: string, userId: string, unassignedBy: string) {
+    this.server.emit('qc:rowUnassigned', {
+      qcRowId,
+      unassignedUserId: userId,
+      unassignedBy,
+      timestamp: new Date().toISOString(),
+    });
+    this.server.to(`user:${userId}`).emit('qc:youWereUnassignedFromRow', {
+      qcRowId,
+      unassignedBy,
+      timestamp: new Date().toISOString(),
+    });
+  }
 }

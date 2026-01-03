@@ -1,0 +1,21 @@
+{
+    "errors": {
+        "warehouse_not_found": "QC Warehouse not found",
+        "row_not_found": "QC Row not found",
+        "assignment_not_found": "Assignment not found",
+        "invalid_permissions": "One or more permissions are invalid",
+        "user_already_assigned": "User is already assigned to this warehouse/row"
+    },
+    "validation": {
+        "user_id_required": "User ID is required",
+        "user_id_uuid": "User ID must be a valid UUID",
+        "permission_ids_array": "Permissions must be an array",
+        "permission_id_uuid": "Permission ID must be a valid UUID"
+    },
+    "messages": {
+        "list_success": "List retrieved successfully",
+        "read_success": "Details retrieved successfully",
+        "assign_success": "User assigned successfully",
+        "remove_success": "Assignment removed successfully"
+    }
+}

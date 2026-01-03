@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma, ContractStatus } from '@prisma/client';
+import { Prisma, ContractStatus, ContractCancelType } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PaginationConfigService } from '../../common/config/pagination-config.service';
 import { QueryRentalContractDto } from './dto';
@@ -254,9 +254,14 @@ export class RentalContractRepository {
     }
 
     /**
-     * Hủy hợp đồng với actual_ended_at
+     * Hủy hợp đồng với actual_ended_at, cancel_type và cancel_reason
      */
-    async cancelContract(id: string, deletedBy: string): Promise<IRentalContractWithRelations> {
+    async cancelContract(
+        id: string,
+        deletedBy: string,
+        cancelType: ContractCancelType,
+        cancelReason: string,
+    ): Promise<IRentalContractWithRelations> {
         return this.prisma.rentalContract.update({
             where: { id },
             data: {
@@ -265,6 +270,8 @@ export class RentalContractRepository {
                 deleted_by: deletedBy,
                 status: ContractStatus.CANCELLED,
                 actual_ended_at: new Date(),
+                cancel_type: cancelType,
+                cancel_reason: cancelReason,
             },
             include: this.fullInclude,
         }) as unknown as IRentalContractWithRelations;
@@ -444,6 +451,22 @@ export class RentalContractRepository {
             },
             include: {
                 addon: true,
+            },
+            orderBy: { created_at: 'desc' },
+        });
+    }
+
+    /**
+     * Lấy danh sách insurances của hợp đồng
+     */
+    async findContractInsurances(contractId: string) {
+        return this.prisma.rentalContractInsurance.findMany({
+            where: {
+                rental_contract_id: contractId,
+                is_deleted: false,
+            },
+            include: {
+                insurance: true,
             },
             orderBy: { created_at: 'desc' },
         });

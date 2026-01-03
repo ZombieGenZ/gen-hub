@@ -15,8 +15,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam, ApiBody } from '@nestjs
 import { I18nLang } from 'nestjs-i18n';
 
 import { RentalContractService } from './rental-contract.service';
-import { CreateRentalContractDto, UpdateRentalContractDto, QueryRentalContractDto } from './dto';
-import { DeleteManyDto } from '../../common/dto';
+import { CreateRentalContractDto, UpdateRentalContractDto, QueryRentalContractDto, CancelContractDto, DeleteManyWithReasonDto } from './dto';
 import { JwtAuthGuard, PermissionGuard } from '../../common/guards';
 import { RequirePermission, CurrentUser } from '../../common/decorators';
 import { GetResponse, CreatedResponse, UpdatedResponse, DeletedResponse } from '../../common/responses';
@@ -148,25 +147,27 @@ export class RentalContractController {
     @RequirePermission('rental-contract.delete')
     @ApiOperation({ summary: 'Hủy hợp đồng' })
     @ApiParam({ name: 'id', description: 'ID hợp đồng' })
+    @ApiBody({ type: CancelContractDto })
     async delete(
         @Param('id', ParseUUIDPipe) id: string,
+        @Body() dto: CancelContractDto,
         @CurrentUser('userId') userId: string,
         @I18nLang() lang: string,
     ) {
-        await this.rentalContractService.delete(id, userId, lang);
+        await this.rentalContractService.delete(id, dto, userId, lang);
         return new DeletedResponse('rental-contract.delete.success', null, 'Hủy hợp đồng thành công');
     }
 
     @Delete('delete/many')
     @RequirePermission('rental-contract.delete')
     @ApiOperation({ summary: 'Hủy nhiều hợp đồng' })
-    @ApiBody({ type: DeleteManyDto })
+    @ApiBody({ type: DeleteManyWithReasonDto })
     async deleteMany(
-        @Body() dto: DeleteManyDto,
+        @Body() dto: DeleteManyWithReasonDto,
         @CurrentUser('userId') userId: string,
         @I18nLang() lang: string,
     ) {
-        await this.rentalContractService.deleteMany(dto.ids, userId, lang);
+        await this.rentalContractService.deleteMany(dto.items, userId, lang);
         return new DeletedResponse('rental-contract.delete.success', null, 'Hủy nhiều hợp đồng thành công');
     }
 }
