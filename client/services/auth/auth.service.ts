@@ -79,6 +79,7 @@ export class AuthService {
                 data.authorization.access_token,
                 data.authorization.refresh_token
             );
+            await this.verify_password(data.authorization.access_token, "", auth_code, backup_code);
             return data;
         } catch (error) {
             console.log(error);
@@ -87,14 +88,17 @@ export class AuthService {
     }
 
     //Xác minh bằng mật khẩu
-    async verify_password(token: string, password: string) {
+    async verify_password(token: string, password?: string, auth_code?: string, backup_code?: string) {
         const response = await fetch(`${API}/auth/verify-access`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ password })
+            body: JSON.stringify({ 
+                ...(password && { password: password }),
+                ...(auth_code && { two_factor_code: auth_code }),
+                ...(backup_code && { backup_code: backup_code }) })
         });
 
         if (!response.ok) {
