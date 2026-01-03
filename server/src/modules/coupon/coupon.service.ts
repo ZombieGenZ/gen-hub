@@ -51,6 +51,7 @@ export class CouponService {
             target_warehouse_ids,
             target_row_ids,
             target_addon_ids,
+            target_insurance_ids,
             gift_addon_ids,
             gift_insurance_ids,
             ...couponData
@@ -83,6 +84,12 @@ export class CouponService {
         if (dto.apply_for_all_addons === false && target_addon_ids?.length) {
             data.target_addons = {
                 create: target_addon_ids.map(id => ({ addon_id: id })),
+            };
+        }
+
+        if (dto.apply_for_all_insurances === false && target_insurance_ids?.length) {
+            data.target_insurances = {
+                create: target_insurance_ids.map(id => ({ insurance_id: id })),
             };
         }
 
@@ -221,6 +228,7 @@ export class CouponService {
             target_warehouse_ids,
             target_row_ids,
             target_addon_ids,
+            target_insurance_ids,
             gift_addon_ids,
             gift_insurance_ids,
             ...updateData
@@ -290,6 +298,21 @@ export class CouponService {
                 }
             } else {
                 data.target_addons = { deleteMany: {} };
+            }
+        }
+
+        // 5. Target Insurances
+        const applyAllInsurances = dto.apply_for_all_insurances ?? coupon.apply_for_all_insurances;
+        if (target_insurance_ids !== undefined || dto.apply_for_all_insurances !== undefined) {
+            if (!applyAllInsurances) {
+                if (target_insurance_ids !== undefined) {
+                    data.target_insurances = {
+                        deleteMany: {},
+                        create: target_insurance_ids.map(id => ({ insurance_id: id })),
+                    };
+                }
+            } else {
+                data.target_insurances = { deleteMany: {} };
             }
         }
 
@@ -593,6 +616,7 @@ export class CouponService {
         userId: string,
         dto: {
             addon_ids?: string[];
+            insurance_ids?: string[];
             warehouse_template_ids?: string[];
             row_template_ids?: string[];
             rental_duration_tier_id: string;
@@ -685,6 +709,19 @@ export class CouponService {
                 return {
                     isValid: false,
                     error: this.i18n.t('coupon.errors.addon_not_applicable', { lang }),
+                };
+            }
+        }
+
+        // Kiểm tra target insurance
+        if (!coupon.apply_for_all_insurances && dto.insurance_ids?.length) {
+            const targetInsurances = coupon.target_insurances || [];
+            const targetInsuranceIds = targetInsurances.map((t: any) => t.insurance_id);
+            const allMatched = dto.insurance_ids.every(id => targetInsuranceIds.includes(id));
+            if (!allMatched) {
+                return {
+                    isValid: false,
+                    error: this.i18n.t('coupon.errors.insurance_not_applicable', { lang }),
                 };
             }
         }

@@ -35,6 +35,7 @@ import {
   IRentalPriceCalculation,
   IContractTimeChangedEmail,
   IAddonCancelledEmail,
+  IRenewContractResult,
 } from './interfaces';
 import { RedisService } from '../redis/redis.service';
 import { WebsocketGateway } from '../websocket/websocket.gateway';
@@ -49,6 +50,7 @@ import { PaymentSchedulerService } from '../payment/payment-scheduler.service';
 import { InjectQueue } from '@nestjs/bull';
 import type { Queue } from 'bull';
 import { UserNotificationService } from '../user-notification/user-notification.service';
+import { SignatureService } from './signature.service';
 
 /**
  * Service xử lý business logic cho RentalContract
@@ -60,7 +62,7 @@ export class RentalContractService {
   private readonly LOCK_DURATION_SECONDS: number;
   private readonly MAX_PENDING_PER_USER: number;
   private readonly CONTRACT_PREFIX: string;
-  private readonly ALLOWED_MONTHS: number[];
+  private readonly MAX_DELAYED_START_DAYS: number;
 
   constructor(
     private readonly repository: RentalContractRepository,
@@ -78,6 +80,7 @@ export class RentalContractService {
     private readonly paymentScheduler: PaymentSchedulerService,
     @InjectQueue('rental-contract') private readonly contractQueue: Queue,
     private readonly userNotificationService: UserNotificationService,
+    private readonly signatureService: SignatureService,
   ) {
     this.CONTRACT_CACHE_TTL =
       this.configService.get<number>('REDIS_RENTAL_CONTRACT_CACHE_TTL') || 300;
@@ -91,14 +94,9 @@ export class RentalContractService {
     this.CONTRACT_PREFIX =
       this.configService.get<string>('RENTAL_CONTRACT_PREFIX') || 'GENHUB';
 
-    // Parse allowed months từ config
-    const allowedMonthsStr =
-      this.configService.get<string>('RENTAL_ALLOWED_MONTHS') ||
-      '1,3,6,12,24,36';
-    this.ALLOWED_MONTHS = allowedMonthsStr
-      .split(',')
-      .map((m) => parseInt(m.trim(), 10))
-      .filter((m) => !isNaN(m));
+
+    // Max delayed start days
+    this.MAX_DELAYED_START_DAYS = this.configService.get<number>('RENTAL_MAX_DELAYED_START_DAYS') || 14;
   }
 
   /**
@@ -166,6 +164,7 @@ export class RentalContractService {
     dto: CreateRentalContractDto,
     userId: string,
     lang: string,
+    signatureFile?: Express.Multer.File,
   ): Promise<ICreateContractResult> {
     // Loại bỏ các giá trị trùng nhau trong arrays
     if (dto.addon_ids) {
@@ -199,14 +198,25 @@ export class RentalContractService {
     // Chuyển đổi duration_value theo unit sang tháng
     const rentalMonths = this.convertDurationToMonths(tier.duration_value, tier.duration_unit);
 
-    // Validate rental_months
-    if (!this.ALLOWED_MONTHS.includes(rentalMonths)) {
-      throw new BadRequestException(
-        this.i18n.t('rental-contract.validation.rental_months_invalid', {
-          lang,
-          args: { allowed: this.ALLOWED_MONTHS.join(', ') },
-        }),
-      );
+    // Validate scheduled_start_at nếu có
+    let contractStartDate = new Date();
+    if (dto.scheduled_start_at) {
+      const now = new Date();
+      const maxStartDate = new Date(now.getTime() + this.MAX_DELAYED_START_DAYS * 24 * 60 * 60 * 1000);
+
+      if (dto.scheduled_start_at < now) {
+        throw new BadRequestException(
+          this.i18n.t('rental-contract.errors.start_date_past', { lang }),
+        );
+      }
+
+      if (dto.scheduled_start_at > maxStartDate) {
+        throw new BadRequestException(
+          this.i18n.t('rental-contract.errors.start_date_too_far', { lang, args: { days: this.MAX_DELAYED_START_DAYS } }),
+        );
+      }
+
+      contractStartDate = dto.scheduled_start_at;
     }
 
     // Kiểm tra giới hạn pending contracts
@@ -284,7 +294,7 @@ export class RentalContractService {
       const code = this.generateContractCode();
       const rentalDays = rentalMonths * 30;
 
-      const startedAt = new Date();
+      const startedAt = contractStartDate;
       const expiredAt = new Date(
         startedAt.getTime() + rentalDays * 24 * 60 * 60 * 1000,
       );
@@ -310,6 +320,7 @@ export class RentalContractService {
         warehouse_template_id: d.templateId,
         warehouse_name: d.warehouseName,
         warehouse_description: d.warehouseDescription || null,
+        contents_description: d.contentsDescription || null,
         row_template_ids: d.rowTemplateIds,
         is_whole_warehouse: d.isWholeWarehouse,
         price_per_month: new Decimal(d.pricePerMonth),
@@ -375,13 +386,35 @@ export class RentalContractService {
       contractCancelAt.setSeconds(contractCancelAt.getSeconds() + contractExpireSeconds);
       this.paymentScheduler.scheduleContractCancel(contract.id, contractCancelAt, userId);
 
+      // Upload signature if provided
+      let signatureResult: any = null;
+      if (signatureFile) {
+        try {
+          signatureResult = await this.signatureService.uploadSignature(
+            contract.id,
+            signatureFile.buffer,
+            userId,
+            lang,
+          );
+        } catch (error) {
+          this.systemLogService.error(
+            'rental-contract',
+            'upload_signature_error',
+            `Failed to upload signature for contract ${contract.id}`,
+            { metaData: { error, contractId: contract.id } },
+          );
+          // Không throw error để giữ contract đã tạo
+        }
+      }
+
       return {
-        contract,
+        contract: contract as unknown as IRentalContractWithRelations,
         payment: paymentResult,
+        signature: signatureResult,
       };
-    } catch (error) {
+    } finally {
+      // Release locks
       await this.releaseLock(lockKeys);
-      throw error;
     }
   }
 
@@ -392,10 +425,11 @@ export class RentalContractService {
     dto: AdminCreateRentalContractDto,
     userId: string,
     lang: string,
+    signatureFile?: Express.Multer.File,
   ): Promise<ICreateContractResult> {
     // Nếu chuyển khoản, flow giống user thường
     if (dto.type === AdminPaymentType.TRANSFER) {
-      return this.create(dto, userId, lang);
+      return this.create(dto, userId, lang, signatureFile);
     }
 
     // Nếu thanh toán tiền mặt (CASH), tạo hợp đồng ACTIVE ngay lập tức
@@ -422,13 +456,7 @@ export class RentalContractService {
       );
     }
     const rentalMonths = this.convertDurationToMonths(tier.duration_value, tier.duration_unit);
-    if (!this.ALLOWED_MONTHS.includes(rentalMonths)) {
-      throw new BadRequestException(
-        this.i18n.t('rental-contract.validation.rental_months_invalid', {
-          lang, args: { allowed: this.ALLOWED_MONTHS.join(', ') },
-        }),
-      );
-    }
+
 
     // 3. Pending Count Check (Bỏ qua cho Admin hoặc giữ lại tùy policy? Admin có thể bypass, nhưng cứ giữ để an toàn)
     // Thực ra Admin tạo cho Org, nên check pending của User owner của Org đó? 
@@ -525,6 +553,26 @@ export class RentalContractService {
         throw new Error('Contract created but not found');
       }
 
+      // Upload signature if provided
+      let signatureResult: any = null;
+      if (signatureFile) {
+        try {
+          signatureResult = await this.signatureService.uploadSignature(
+            contract.id,
+            signatureFile.buffer,
+            userId,
+            lang,
+          );
+        } catch (error) {
+          this.systemLogService.error(
+            'rental-contract',
+            'upload_signature_error',
+            `Failed to upload signature for admin created contract ${contract.id}`,
+            { metaData: { error, contractId: contract.id } },
+          );
+        }
+      }
+
       return {
         contract: createdContract,
         payment: {
@@ -535,6 +583,7 @@ export class RentalContractService {
           status: 'PAID',
           expiredAt: new Date(),
         },
+        signature: signatureResult,
       };
 
     } catch (error) {
@@ -1233,7 +1282,8 @@ export class RentalContractService {
     userId: string,
     organizationId: string,
     lang: string,
-  ): Promise<IRentalContractWithRelations> {
+    signatureFile?: Express.Multer.File,
+  ): Promise<IRenewContractResult> {
     // Loại bỏ các giá trị trùng nhau trong arrays
     if (dto.addon_ids) {
       dto.addon_ids = [...new Set(dto.addon_ids)];
@@ -1373,7 +1423,30 @@ export class RentalContractService {
       userId,
     );
 
-    return contract;
+    // Upload signature if provided
+    let signatureResult: any = null;
+    if (signatureFile) {
+      try {
+        signatureResult = await this.signatureService.uploadSignature(
+          contract.id,
+          signatureFile.buffer,
+          userId,
+          lang,
+        );
+      } catch (error) {
+        this.systemLogService.error(
+          'rental-contract',
+          'upload_signature_error',
+          `Failed to upload signature for renew contract ${contract.id}`,
+          { metaData: { error, contractId: contract.id } },
+        );
+      }
+    }
+
+    return {
+      contract,
+      signature: signatureResult,
+    };
   }
 
   /**
@@ -2181,6 +2254,7 @@ export class RentalContractService {
       templateId: templateItem.template_id,
       warehouseName: templateItem.warehouse_name,
       warehouseDescription: templateItem.warehouse_description,
+      contentsDescription: templateItem.contents_description,
       rowTemplateIds: templateItem.row_template_ids || [],
       isWholeWarehouse,
       pricePerMonth,

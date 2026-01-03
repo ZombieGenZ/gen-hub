@@ -42,6 +42,7 @@ export interface IRentalPriceCalculation {
     templateId: string;
     warehouseName: string;
     warehouseDescription?: string;
+    contentsDescription?: string;
     rowTemplateIds: string[];
     isWholeWarehouse: boolean;
     pricePerMonth: number;
@@ -51,11 +52,23 @@ export interface IRentalPriceCalculation {
 }
 
 /**
+ * Interface kết quả upload chữ ký
+ */
+export interface ISignatureUploadResult {
+    signatureId: string;
+    fileId: string;
+    filePath: string;
+    expiresAt: Date;
+    signedUrl: string;
+}
+
+/**
  * Interface kết quả tạo contract
  */
 export interface ICreateContractResult {
     contract: IRentalContractWithRelations;
     payment?: IPaymentInfo;
+    signature?: ISignatureUploadResult | null;
 }
 
 /**
@@ -64,6 +77,7 @@ export interface ICreateContractResult {
 export interface IRenewContractResult {
     contract: IRentalContractWithRelations;
     payment?: IPaymentInfo;
+    signature?: ISignatureUploadResult | null;
 }
 
 /**

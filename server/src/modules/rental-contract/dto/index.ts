@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsInt, Min, IsUUID, IsArray, IsEnum, IsNotEmpty, ValidateNested, MaxLength, IsBoolean } from 'class-validator';
+import { IsOptional, IsString, IsInt, Min, IsUUID, IsArray, IsEnum, IsNotEmpty, ValidateNested, MaxLength, IsBoolean, IsDate } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional, OmitType } from '@nestjs/swagger';
 import { i18nValidationMessage } from 'nestjs-i18n';
@@ -23,6 +23,12 @@ export class RentalTemplateItemDto {
     @IsOptional()
     @IsString({ message: i18nValidationMessage('rental-contract.validation.warehouse_description_string') })
     warehouse_description?: string;
+
+    @ApiPropertyOptional({ description: 'Mô tả nội dung chứa trong kho/row', example: 'Hàng điện tử, linh kiện máy tính' })
+    @IsOptional()
+    @IsString({ message: i18nValidationMessage('rental-contract.validation.contents_description_string') })
+    @MaxLength(1000, { message: i18nValidationMessage('rental-contract.validation.contents_description_max_length') })
+    contents_description?: string;
 
     @ApiPropertyOptional({
         description: 'Danh sách ID row templates (bỏ trống = thuê cả kho)',
@@ -117,6 +123,15 @@ export class CreateRentalContractDto {
     @IsOptional()
     @IsString({ message: i18nValidationMessage('rental-contract.validation.notes_string') })
     notes?: string;
+
+    @ApiPropertyOptional({
+        description: 'Ngày bắt đầu thuê (có thể khác ngày thanh toán, giới hạn trong RENTAL_MAX_DELAYED_START_DAYS)',
+        example: '2025-01-07T00:00:00.000Z'
+    })
+    @IsOptional()
+    @Type(() => Date)
+    @IsDate({ message: i18nValidationMessage('rental-contract.validation.scheduled_start_at_date') })
+    scheduled_start_at?: Date;
 }
 
 /**
@@ -501,5 +516,29 @@ export class OrgDeleteManyWithReasonDto {
     @ValidateNested({ each: true })
     @Type(() => OrgDeleteManyItemDto)
     items: OrgDeleteManyItemDto[];
+}
+
+/**
+ * DTO extension for Swagger File Upload (Org Create)
+ */
+export class OrgCreateRentalContractWithFileDto extends OrgCreateRentalContractDto {
+    @ApiPropertyOptional({ type: 'string', format: 'binary', description: 'File hình ảnh chữ ký' })
+    signature?: any;
+}
+
+/**
+ * DTO extension for Swagger File Upload (Admin Create)
+ */
+export class AdminCreateRentalContractWithFileDto extends AdminCreateRentalContractDto {
+    @ApiPropertyOptional({ type: 'string', format: 'binary', description: 'File hình ảnh chữ ký' })
+    signature?: any;
+}
+
+/**
+ * DTO extension for Swagger File Upload (Renew)
+ */
+export class RenewRentalContractWithFileDto extends RenewRentalContractDto {
+    @ApiPropertyOptional({ type: 'string', format: 'binary', description: 'File hình ảnh chữ ký' })
+    signature?: any;
 }
 

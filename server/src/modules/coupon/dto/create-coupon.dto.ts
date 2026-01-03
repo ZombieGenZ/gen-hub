@@ -246,6 +246,13 @@ export class CreateCouponDto {
     })
     apply_for_all_addons?: boolean;
 
+    @ApiPropertyOptional({ description: 'Áp dụng cho tất cả bảo hiểm', default: true })
+    @IsOptional()
+    @IsBoolean({
+        message: i18nValidationMessage('coupon.validation.apply_for_all_insurances_boolean'),
+    })
+    apply_for_all_insurances?: boolean;
+
     // Target arrays - chỉ yêu cầu khi apply_for_all tương ứng = false
     @ApiPropertyOptional({
         description: 'Danh sách ID user được áp dụng (chỉ dùng khi coupon_type = PRIVATE)',
@@ -302,6 +309,20 @@ export class CreateCouponDto {
     })
     @IsUUID('4', { each: true })
     target_addon_ids?: string[];
+
+    @ApiPropertyOptional({
+        description: 'Danh sách ID bảo hiểm được áp dụng',
+        type: [String]
+    })
+    @ValidateIf(o => o.apply_for_all_insurances === false)
+    @IsArray({
+        message: i18nValidationMessage('coupon.validation.target_insurance_ids_array'),
+    })
+    @ArrayMinSize(1, {
+        message: i18nValidationMessage('coupon.validation.target_insurance_ids_required'),
+    })
+    @IsUUID('4', { each: true })
+    target_insurance_ids?: string[];
 
     @ApiPropertyOptional({ description: 'Trạng thái hoạt động', default: true })
     @IsOptional()

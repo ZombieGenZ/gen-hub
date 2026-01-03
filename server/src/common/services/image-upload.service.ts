@@ -247,4 +247,59 @@ export class ImageUploadService {
 
         return results;
     }
+
+    /**
+     * Upload chữ ký (private mode - không compress, không watermark)
+     * @param file - Buffer của file chữ ký (PNG)
+     * @param originalName - Tên file gốc
+     * @param contractId - ID hợp đồng
+     */
+    async uploadSignature(
+        file: Buffer,
+        originalName: string,
+        contractId: string,
+    ): Promise<ImageUploadResult> {
+        const folder = `/signatures/${contractId}`;
+
+        const result = await this.imagekit.upload({
+            file: file,
+            fileName: originalName,
+            folder: folder,
+            useUniqueFileName: true,
+            isPrivateFile: true, // Upload ở chế độ private
+        });
+
+        return {
+            url: result.url,
+            thumbnailUrl: result.thumbnailUrl || result.url,
+            fileId: result.fileId,
+            name: result.name,
+            size: result.size,
+        };
+    }
+
+    /**
+     * Generate signed URL cho file private (có thời hạn)
+     * @param filePath - Path của file trong ImageKit
+     * @param expireSeconds - Thời gian hết hạn (giây)
+     */
+    getSignedUrl(filePath: string, expireSeconds: number = 3600): string {
+        return this.imagekit.url({
+            path: filePath,
+            signed: true,
+            expireSeconds: expireSeconds,
+        });
+    }
+
+    /**
+     * Xóa ảnh trên ImageKit theo file ID
+     */
+    async deleteSignature(fileId: string): Promise<void> {
+        try {
+            await this.imagekit.deleteFile(fileId);
+        } catch (error) {
+            this.logger.error(`Lỗi khi xóa chữ ký trên ImageKit: ${error}`);
+            throw error;
+        }
+    }
 }

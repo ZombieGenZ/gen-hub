@@ -10,12 +10,15 @@ import {
     UseGuards,
     Request,
     ParseUUIDPipe,
+    UseInterceptors,
+    UploadedFile,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam, ApiBody } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam, ApiBody, ApiConsumes } from '@nestjs/swagger';
 import { I18nLang } from 'nestjs-i18n';
 
 import { RentalContractService } from './rental-contract.service';
-import { UpdateRentalContractDto, QueryRentalContractDto, CancelContractDto, DeleteManyWithReasonDto, AdminCreateRentalContractDto } from './dto';
+import { UpdateRentalContractDto, QueryRentalContractDto, CancelContractDto, DeleteManyWithReasonDto, AdminCreateRentalContractDto, AdminCreateRentalContractWithFileDto } from './dto';
 import { JwtAuthGuard, PermissionGuard } from '../../common/guards';
 import { RequirePermission, CurrentUser } from '../../common/decorators';
 import { GetResponse, CreatedResponse, UpdatedResponse, DeletedResponse } from '../../common/responses';
@@ -81,13 +84,16 @@ export class RentalContractController {
     @Post()
     @RequirePermission('rental-contract.create')
     @ApiOperation({ summary: 'Admin tạo hợp đồng thuê mới (hỗ trợ CASH/TRANSFER)' })
-    @ApiBody({ type: AdminCreateRentalContractDto })
+    @ApiConsumes('multipart/form-data')
+    @UseInterceptors(FileInterceptor('signature'))
+    @ApiBody({ type: AdminCreateRentalContractWithFileDto })
     async create(
         @Body() dto: AdminCreateRentalContractDto,
         @CurrentUser('userId') userId: string,
         @I18nLang() lang: string,
+        @UploadedFile() signatureFile: Express.Multer.File,
     ) {
-        const data = await this.rentalContractService.createByAdmin(dto, userId, lang);
+        const data = await this.rentalContractService.createByAdmin(dto, userId, lang, signatureFile);
         return new CreatedResponse('rental-contract.create.success', data, 'Tạo hợp đồng thuê thành công');
     }
 

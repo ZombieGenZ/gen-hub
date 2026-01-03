@@ -33,6 +33,7 @@
         "warehouse_not_applicable": "Coupon không áp dụng cho kho đã chọn",
         "row_not_applicable": "Coupon không áp dụng cho row đã chọn",
         "addon_not_applicable": "Coupon không áp dụng cho addon đã chọn",
+        "insurance_not_applicable": "Coupon không áp dụng cho bảo hiểm đã chọn",
         "user_not_targeted": "Coupon không dành cho tài khoản của bạn",
         "rental_tier_not_found": "Không tìm thấy gói thời gian thuê"
     },
@@ -94,6 +95,9 @@
         "gift_addon_ids_required": "Phải có ít nhất 1 addon được tặng kèm khi bật tính năng tặng addon",
         "has_gift_insurances_boolean": "Trường 'có tặng kèm bảo hiểm' phải là boolean",
         "gift_insurance_ids_array": "Danh sách ID bảo hiểm tặng kèm phải là mảng",
-        "gift_insurance_ids_required": "Phải có ít nhất 1 bảo hiểm được tặng kèm khi bật tính năng tặng bảo hiểm"
+        "gift_insurance_ids_required": "Phải có ít nhất 1 bảo hiểm được tặng kèm khi bật tính năng tặng bảo hiểm",
+        "apply_for_all_insurances_boolean": "Trường 'áp dụng cho tất cả bảo hiểm' phải là boolean",
+        "target_insurance_ids_array": "Danh sách ID bảo hiểm phải là mảng",
+        "target_insurance_ids_required": "Phải có ít nhất 1 bảo hiểm được chỉ định khi không áp dụng cho tất cả bảo hiểm"
     }
 }

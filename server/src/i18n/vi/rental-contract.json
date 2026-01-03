@@ -35,7 +35,9 @@
         "coupon_usage_exceeded": "Coupon đã đạt giới hạn sử dụng",
         "coupon_conditions_not_met": "Đơn hàng không đáp ứng điều kiện của coupon",
         "coupon_stack_exceeded": "Số lượng coupon vượt quá giới hạn cho phép",
-        "coupon_already_applied": "Coupon đã được áp dụng cho hợp đồng này"
+        "coupon_already_applied": "Coupon đã được áp dụng cho hợp đồng này",
+        "start_date_past": "Ngày bắt đầu thuê không thể là ngày trong quá khứ",
+        "start_date_too_far": "Ngày bắt đầu thuê không được quá {days} ngày kể từ ngày thanh toán"
     },
     "validation": {
         "template_id_required": "ID template không được để trống",
@@ -97,7 +99,10 @@
         "insurance_id_uuid": "ID bảo hiểm phải là UUID hợp lệ",
         "cancel_type_required": "Loại hủy hợp đồng không được để trống",
         "cancel_type_invalid": "Loại hủy hợp đồng không hợp lệ",
-        "admin_payment_type_invalid": "Loại thanh toán admin không hợp lệ"
+        "admin_payment_type_invalid": "Loại thanh toán admin không hợp lệ",
+        "contents_description_string": "Mô tả nội dung phải là chuỗi ký tự",
+        "contents_description_max_length": "Mô tả nội dung không được quá 1000 ký tự",
+        "scheduled_start_at_date": "Ngày bắt đầu dự kiến phải là ngày hợp lệ"
     },
     "notifications": {
         "expiry_warning_title": "Hợp đồng sắp hết hạn",

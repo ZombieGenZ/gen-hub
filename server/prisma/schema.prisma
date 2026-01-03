@@ -615,6 +615,9 @@ model Insurance {
   coupon_gifts          CouponGiftInsurance[]
   coupon_schedule_gifts CouponScheduleGiftInsurance[]
 
+  coupon_targets          CouponTargetInsurance[]
+  coupon_schedule_targets CouponScheduleTargetInsurance[]
+
   rental_contract_insurances RentalContractInsurance[]
 
   @@map("insurances")
@@ -839,6 +842,7 @@ model Coupon {
 
   max_usage     Int @default(0)
   current_usage Int @default(0)
+  total_usage   Int @default(0)
 
   is_public              Boolean @default(false)
   apply_for_first_rental Boolean @default(true)
@@ -847,6 +851,7 @@ model Coupon {
   apply_for_all_warehouses Boolean @default(true)
   apply_for_all_rows       Boolean @default(true)
   apply_for_all_addons     Boolean @default(true)
+  apply_for_all_insurances Boolean @default(true)
 
   is_unlimited_stack Boolean @default(false)
   max_stack_count    Int?
@@ -874,6 +879,7 @@ model Coupon {
   target_warehouses CouponTargetWarehouse[]
   target_rows       CouponTargetRow[]
   target_addons     CouponTargetAddon[]
+  target_insurances CouponTargetInsurance[]
 
   gift_addons     CouponGiftAddon[]
   gift_insurances CouponGiftInsurance[]
@@ -932,6 +938,7 @@ model CouponSchedule {
   max_discount_amount   Decimal? @db.Decimal(19, 4)
 
   max_usage              Int     @default(0)
+  total_usage            Int     @default(0)
   is_public              Boolean @default(false)
   apply_for_first_rental Boolean @default(true)
   apply_for_renewal      Boolean @default(true)
@@ -939,6 +946,7 @@ model CouponSchedule {
   apply_for_all_warehouses Boolean @default(true)
   apply_for_all_rows       Boolean @default(true)
   apply_for_all_addons     Boolean @default(true)
+  apply_for_all_insurances Boolean @default(true)
 
   is_unlimited_stack Boolean @default(false)
   max_stack_count    Int?
@@ -965,6 +973,7 @@ model CouponSchedule {
   target_warehouses CouponScheduleTargetWarehouse[]
   target_rows       CouponScheduleTargetRow[]
   target_addons     CouponScheduleTargetAddon[]
+  target_insurances CouponScheduleTargetInsurance[]
 
   gift_addons     CouponScheduleGiftAddon[]
   gift_insurances CouponScheduleGiftInsurance[]
@@ -1288,7 +1297,8 @@ model RentalContractDetail {
   rental_days     Int
   subtotal        Decimal @db.Decimal(19, 4)
 
-  notes String?
+  notes                String?
+  contents_description String? @db.Text
 
   is_active  Boolean   @default(true)
   created_at DateTime  @default(now())
@@ -1409,6 +1419,7 @@ model ContractSignature {
   rental_contract RentalContract @relation(fields: [rental_contract_id], references: [id], onDelete: Cascade)
 
   @@index([rental_contract_id])
+  @@index([expires_at])
   @@map("contract_signatures")
 }
 
@@ -1444,6 +1455,8 @@ model RentalContractInsurance {
   @@index([insurance_id])
   @@map("rental_contract_insurances")
 }
+
+
 
 // Yêu cầu hoàn tiền khi hủy hợp đồng
 model RefundRequest {
@@ -3233,6 +3246,23 @@ model CouponTargetAddon {
   @@map("coupon_target_addons")
 }
 
+model CouponTargetInsurance {
+  id           String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  coupon_id    String @db.Uuid
+  insurance_id String @db.Uuid
+
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now())
+
+  coupon    Coupon    @relation(fields: [coupon_id], references: [id], onDelete: Cascade)
+  insurance Insurance @relation(fields: [insurance_id], references: [id], onDelete: Cascade)
+
+  @@unique([coupon_id, insurance_id])
+  @@index([coupon_id])
+  @@index([insurance_id])
+  @@map("coupon_target_insurances")
+}
+
 model CouponScheduleTargetUser {
   id                 String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
   coupon_schedule_id String @db.Uuid
@@ -3299,6 +3329,23 @@ model CouponScheduleTargetAddon {
   @@index([coupon_schedule_id])
   @@index([addon_id])
   @@map("coupon_schedule_target_addons")
+}
+
+model CouponScheduleTargetInsurance {
+  id                 String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  coupon_schedule_id String @db.Uuid
+  insurance_id       String @db.Uuid
+
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now())
+
+  coupon_schedule CouponSchedule @relation(fields: [coupon_schedule_id], references: [id], onDelete: Cascade)
+  insurance       Insurance      @relation(fields: [insurance_id], references: [id], onDelete: Cascade)
+
+  @@unique([coupon_schedule_id, insurance_id])
+  @@index([coupon_schedule_id])
+  @@index([insurance_id])
+  @@map("coupon_schedule_target_insurances")
 }
 
 model CouponGiftAddon {

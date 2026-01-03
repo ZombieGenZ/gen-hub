@@ -9,12 +9,15 @@ import {
     Query,
     ParseUUIDPipe,
     UseGuards,
+    UseInterceptors,
+    UploadedFile,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam, ApiBody } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam, ApiBody, ApiConsumes } from '@nestjs/swagger';
 import { I18nLang } from 'nestjs-i18n';
 
 import { RentalContractService } from './rental-contract.service';
-import { RenewRentalContractDto, QueryRentalContractDto, OrgCancelContractDto, OrgDeleteManyWithReasonDto, CreateRentalContractDto, OrgCreateRentalContractDto } from './dto';
+import { RenewRentalContractDto, QueryRentalContractDto, OrgCancelContractDto, OrgDeleteManyWithReasonDto, CreateRentalContractDto, OrgCreateRentalContractDto, OrgCreateRentalContractWithFileDto, RenewRentalContractWithFileDto } from './dto';
 import { JwtAuthGuard } from '../../common/guards';
 import { CurrentUser, RequirePermission } from '../../common/decorators';
 import { GetResponse, UpdatedResponse, DeletedResponse, ResponseCode, CreatedResponse } from '../../common/responses';
@@ -91,14 +94,18 @@ export class OrgRentalContractController {
     @ApiOperation({ summary: 'Gia hạn hợp đồng' })
     @ApiParam({ name: 'orgId', description: 'ID của tổ chức', type: 'string' })
     @ApiParam({ name: 'id', description: 'ID của hợp đồng', type: 'string' })
+    @UseInterceptors(FileInterceptor('signature'))
+    @ApiConsumes('multipart/form-data')
+    @ApiBody({ type: RenewRentalContractWithFileDto })
     async renew(
         @Param('orgId', ParseUUIDPipe) orgId: string,
         @Param('id', ParseUUIDPipe) id: string,
         @Body() dto: RenewRentalContractDto,
         @CurrentUser('userId') userId: string,
         @I18nLang() lang: string,
+        @UploadedFile() signatureFile: Express.Multer.File,
     ) {
-        const data = await this.rentalContractService.renewByOrg(id, dto, userId, orgId, lang);
+        const data = await this.rentalContractService.renewByOrg(id, dto, userId, orgId, lang, signatureFile);
         return new UpdatedResponse(ResponseCode.RENTAL_CONTRACT_UPDATE_SUCCESS, data, 'Gia hạn hợp đồng thành công');
     }
 
@@ -216,17 +223,21 @@ export class OrgRentalContractController {
     @RequirePermission('rental-contract.create')
     @ApiOperation({ summary: 'Tạo hợp đồng thuê mới cho tổ chức' })
     @ApiParam({ name: 'orgId', description: 'ID của tổ chức', type: 'string' })
+    @UseInterceptors(FileInterceptor('signature'))
+    @ApiConsumes('multipart/form-data')
+    @ApiBody({ type: OrgCreateRentalContractWithFileDto })
     async create(
         @Param('orgId', ParseUUIDPipe) orgId: string,
         @Body() dto: OrgCreateRentalContractDto,
         @CurrentUser('userId') userId: string,
         @I18nLang() lang: string,
+        @UploadedFile() signatureFile: Express.Multer.File,
     ) {
         const createDto: CreateRentalContractDto = {
             ...dto,
             organization_id: orgId,
         };
-        const data = await this.rentalContractService.create(createDto, userId, lang);
+        const data = await this.rentalContractService.create(createDto, userId, lang, signatureFile);
         return new CreatedResponse('rental-contract.create.success', data, 'Tạo hợp đồng thuê thành công');
     }
 }

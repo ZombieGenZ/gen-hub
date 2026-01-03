@@ -1,5 +1,6 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { BullModule } from '@nestjs/bull';
+import { ScheduleModule } from '@nestjs/schedule';
 import { SharedModule } from '../../common/shared.module';
 import { RedisModule } from '../redis/redis.module';
 import { WebsocketModule } from '../websocket/websocket.module';
@@ -15,6 +16,8 @@ import { OrgRentalContractController } from './org-rental-contract.controller';
 import { RentalContractService } from './rental-contract.service';
 import { RentalContractRepository } from './rental-contract.repository';
 import { RentalContractProcessor } from './rental-contract.processor';
+import { SignatureService } from './signature.service';
+import { SignatureCleanupScheduler } from './signature-cleanup.scheduler';
 
 @Module({
     imports: [
@@ -25,6 +28,7 @@ import { RentalContractProcessor } from './rental-contract.processor';
         OrganizationModule,
         NotificationModule,
         UserNotificationModule, // Added to resolve dependency
+        ScheduleModule.forRoot(),
         forwardRef(() => PaymentModule),
         forwardRef(() => WarehouseTemplateModule),
         BullModule.registerQueue({
@@ -32,7 +36,13 @@ import { RentalContractProcessor } from './rental-contract.processor';
         }),
     ],
     controllers: [RentalContractController, OrgRentalContractController],
-    providers: [RentalContractService, RentalContractRepository, RentalContractProcessor],
-    exports: [RentalContractService, RentalContractRepository],
+    providers: [
+        RentalContractService,
+        RentalContractRepository,
+        RentalContractProcessor,
+        SignatureService,
+        SignatureCleanupScheduler,
+    ],
+    exports: [RentalContractService, RentalContractRepository, SignatureService],
 })
 export class RentalContractModule { }
