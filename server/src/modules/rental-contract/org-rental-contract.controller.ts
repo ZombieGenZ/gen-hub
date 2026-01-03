@@ -14,10 +14,10 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam, ApiBody } from '@nestjs
 import { I18nLang } from 'nestjs-i18n';
 
 import { RentalContractService } from './rental-contract.service';
-import { RenewRentalContractDto, QueryRentalContractDto, OrgCancelContractDto, OrgDeleteManyWithReasonDto } from './dto';
+import { RenewRentalContractDto, QueryRentalContractDto, OrgCancelContractDto, OrgDeleteManyWithReasonDto, CreateRentalContractDto, OrgCreateRentalContractDto } from './dto';
 import { JwtAuthGuard } from '../../common/guards';
-import { CurrentUser } from '../../common/decorators';
-import { GetResponse, UpdatedResponse, DeletedResponse, ResponseCode } from '../../common/responses';
+import { CurrentUser, RequirePermission } from '../../common/decorators';
+import { GetResponse, UpdatedResponse, DeletedResponse, ResponseCode, CreatedResponse } from '../../common/responses';
 
 /**
  * Controller xử lý các endpoints cấp tổ chức cho Rental Contract
@@ -192,6 +192,9 @@ export class OrgRentalContractController {
         return new DeletedResponse(ResponseCode.RENTAL_CONTRACT_DELETE_SUCCESS, null, 'Hủy hợp đồng thành công');
     }
 
+    /**
+     * Hủy nhiều hợp đồng của tổ chức
+     */
     @Delete('delete/many')
     @ApiOperation({ summary: 'Hủy nhiều hợp đồng của tổ chức' })
     @ApiParam({ name: 'orgId', description: 'ID của tổ chức', type: 'string' })
@@ -204,5 +207,26 @@ export class OrgRentalContractController {
     ) {
         await this.rentalContractService.deleteManyByOrg(dto.items, userId, orgId, lang);
         return new DeletedResponse(ResponseCode.RENTAL_CONTRACT_DELETE_SUCCESS, null, 'Hủy nhiều hợp đồng thành công');
+    }
+
+    /**
+     * Tạo hợp đồng thuê mới (Cấp tổ chức)
+     */
+    @Post()
+    @RequirePermission('rental-contract.create')
+    @ApiOperation({ summary: 'Tạo hợp đồng thuê mới cho tổ chức' })
+    @ApiParam({ name: 'orgId', description: 'ID của tổ chức', type: 'string' })
+    async create(
+        @Param('orgId', ParseUUIDPipe) orgId: string,
+        @Body() dto: OrgCreateRentalContractDto,
+        @CurrentUser('userId') userId: string,
+        @I18nLang() lang: string,
+    ) {
+        const createDto: CreateRentalContractDto = {
+            ...dto,
+            organization_id: orgId,
+        };
+        const data = await this.rentalContractService.create(createDto, userId, lang);
+        return new CreatedResponse('rental-contract.create.success', data, 'Tạo hợp đồng thuê thành công');
     }
 }

@@ -1,6 +1,6 @@
 import { IsOptional, IsString, IsInt, Min, IsUUID, IsArray, IsEnum, IsNotEmpty, ValidateNested, MaxLength, IsBoolean } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional, OmitType } from '@nestjs/swagger';
 import { i18nValidationMessage } from 'nestjs-i18n';
 import { ContractStatus, PaymentMethod, ContractCancelType } from '@prisma/client';
 
@@ -118,6 +118,12 @@ export class CreateRentalContractDto {
     @IsString({ message: i18nValidationMessage('rental-contract.validation.notes_string') })
     notes?: string;
 }
+
+/**
+ * DTO để tổ chức tạo hợp đồng thuê (không cần truyền organization_id)
+ * POST /organizations/:orgId/rental-contracts
+ */
+export class OrgCreateRentalContractDto extends OmitType(CreateRentalContractDto, ['organization_id'] as const) { }
 
 
 

@@ -15,7 +15,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam, ApiBody } from '@nestjs
 import { I18nLang } from 'nestjs-i18n';
 
 import { RentalContractService } from './rental-contract.service';
-import { CreateRentalContractDto, UpdateRentalContractDto, QueryRentalContractDto, CancelContractDto, DeleteManyWithReasonDto } from './dto';
+import { UpdateRentalContractDto, QueryRentalContractDto, CancelContractDto, DeleteManyWithReasonDto, AdminCreateRentalContractDto } from './dto';
 import { JwtAuthGuard, PermissionGuard } from '../../common/guards';
 import { RequirePermission, CurrentUser } from '../../common/decorators';
 import { GetResponse, CreatedResponse, UpdatedResponse, DeletedResponse } from '../../common/responses';
@@ -74,17 +74,20 @@ export class RentalContractController {
     }
 
     /**
-     * Tạo hợp đồng thuê mới
+     * Admin tạo hợp đồng thuê mới
+     * - Hỗ trợ thanh toán tiền mặt (kích hoạt ngay)
+     * - Hoặc tạo link thanh toán chuyển khoản
      */
     @Post()
     @RequirePermission('rental-contract.create')
-    @ApiOperation({ summary: 'Tạo hợp đồng thuê mới' })
+    @ApiOperation({ summary: 'Admin tạo hợp đồng thuê mới (hỗ trợ CASH/TRANSFER)' })
+    @ApiBody({ type: AdminCreateRentalContractDto })
     async create(
-        @Body() dto: CreateRentalContractDto,
+        @Body() dto: AdminCreateRentalContractDto,
         @CurrentUser('userId') userId: string,
         @I18nLang() lang: string,
     ) {
-        const data = await this.rentalContractService.create(dto, userId, lang);
+        const data = await this.rentalContractService.createByAdmin(dto, userId, lang);
         return new CreatedResponse('rental-contract.create.success', data, 'Tạo hợp đồng thuê thành công');
     }
 

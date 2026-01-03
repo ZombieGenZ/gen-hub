@@ -12,7 +12,6 @@ import { UserNotificationModule } from '../user-notification/user-notification.m
 
 import { RentalContractController } from './rental-contract.controller';
 import { OrgRentalContractController } from './org-rental-contract.controller';
-import { AdminRentalContractController } from './admin-rental-contract.controller';
 import { RentalContractService } from './rental-contract.service';
 import { RentalContractRepository } from './rental-contract.repository';
 import { RentalContractProcessor } from './rental-contract.processor';
@@ -32,7 +31,7 @@ import { RentalContractProcessor } from './rental-contract.processor';
             name: 'rental-contract',
         }),
     ],
-    controllers: [RentalContractController, OrgRentalContractController, AdminRentalContractController],
+    controllers: [RentalContractController, OrgRentalContractController],
     providers: [RentalContractService, RentalContractRepository, RentalContractProcessor],
     exports: [RentalContractService, RentalContractRepository],
 })
