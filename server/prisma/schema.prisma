@@ -349,21 +349,18 @@ enum CouponType {
   PRIVATE
 }
 
-// Phương thức thanh toán hợp đồng
 enum PaymentMethod {
-  BALANCE // Thanh toán bằng số dư tổ chức
-  TRANSFER // Thanh toán chuyển khoản
-  HYBRID // Kết hợp số dư + chuyển khoản
+  BALANCE
+  TRANSFER
+  HYBRID
 }
 
-// Loại hủy hợp đồng
 enum ContractCancelType {
-  CLIENT_REQUEST // Khách hàng (bên B) yêu cầu hủy -> hoàn tiền
-  PROVIDER_REQUEST // Công ty (bên A) yêu cầu hủy -> hoàn tiền
-  VIOLATION // Vi phạm hợp đồng -> không hoàn tiền
+  CLIENT_REQUEST
+  PROVIDER_REQUEST
+  VIOLATION
 }
 
-// Trạng thái yêu cầu hoàn tiền
 enum RefundStatus {
   PENDING
   APPROVED
@@ -474,7 +471,6 @@ model WarehouseTemplate {
   coupon_targets          CouponTargetWarehouse[]
   coupon_schedule_targets CouponScheduleTargetWarehouse[]
 
-  // QC quản lý
   qc_warehouse QCWarehouse?
 
   @@map("warehouse_templates")
@@ -1120,7 +1116,6 @@ model RowTemplate {
   coupon_targets          CouponTargetRow[]
   coupon_schedule_targets CouponScheduleTargetRow[]
 
-  // QC quản lý
   qc_row QCRow?
 
   @@index([warehouse_template_id])
@@ -1240,7 +1235,6 @@ model RentalContract {
   is_sealed     Boolean @default(false)
   is_liquidated Boolean @default(false)
 
-  // Thông tin thanh toán
   payment_method PaymentMethod @default(TRANSFER)
   auto_renew     Boolean       @default(false)
 
@@ -1250,7 +1244,6 @@ model RentalContract {
   overdue_penalty         Decimal? @default(0) @db.Decimal(19, 4)
   overdue_penalty_percent Decimal? @default(0) @db.Decimal(5, 2)
 
-  // Thông tin hủy hợp đồng
   cancel_type   ContractCancelType?
   cancel_reason String?
 
@@ -1399,7 +1392,6 @@ model RentalContractCoupon {
   @@map("rental_contract_coupons")
 }
 
-// Chữ ký hợp đồng (lưu trên ImageKit private mode)
 model ContractSignature {
   id                 String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
   rental_contract_id String @db.Uuid
@@ -1423,7 +1415,6 @@ model ContractSignature {
   @@map("contract_signatures")
 }
 
-// Bảo hiểm của hợp đồng
 model RentalContractInsurance {
   id                 String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
   rental_contract_id String @db.Uuid
@@ -1432,7 +1423,7 @@ model RentalContractInsurance {
   price_at_purchase Decimal  @db.Decimal(19, 4)
   management_fee    Decimal? @db.Decimal(19, 4)
   is_gift           Boolean  @default(false)
-  duration_months   Int? // Số tháng nếu là gift có thời hạn
+  duration_months   Int?
 
   is_cancelled  Boolean   @default(false)
   cancelled_at  DateTime?
@@ -1456,9 +1447,6 @@ model RentalContractInsurance {
   @@map("rental_contract_insurances")
 }
 
-
-
-// Yêu cầu hoàn tiền khi hủy hợp đồng
 model RefundRequest {
   id                 String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
   rental_contract_id String @db.Uuid
@@ -1567,7 +1555,6 @@ model Organization {
   auto_delete_org_audit_logs  Boolean? @default(true)
   org_audit_logs_retention_ms BigInt?  @default(2592000000)
 
-  // Cấu hình hao hụt cho phép (%)
   min_loss_tolerance Decimal @default(1) @db.Decimal(5, 2)
   max_loss_tolerance Decimal @default(3) @db.Decimal(5, 2)
 
@@ -1905,7 +1892,6 @@ model Warehouse {
 
   total_weight_capacity Decimal? @db.Decimal(19, 4)
 
-  // Liên kết với QC quản lý
   qc_warehouse_id String?      @db.Uuid
   qc_warehouse    QCWarehouse? @relation(fields: [qc_warehouse_id], references: [id])
 
@@ -1953,7 +1939,6 @@ model Row {
 
   total_weight_capacity Decimal? @db.Decimal(19, 4)
 
-  // Liên kết với QC quản lý
   qc_row_id String? @db.Uuid
   qc_row    QCRow?  @relation(fields: [qc_row_id], references: [id])
 
@@ -3643,10 +3628,6 @@ model AILog {
   @@map("ai_logs")
 }
 
-// ==================== QC MANAGEMENT MODELS ====================
-
-// QCWarehouse - Kho cho QC quản lý (được tạo tự động khi tạo WarehouseTemplate)
-// Thông tin name, description, length, width sẽ lấy từ warehouse_template
 model QCWarehouse {
   id                    String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
   warehouse_template_id String @unique @db.Uuid
@@ -3666,15 +3647,12 @@ model QCWarehouse {
   rows        QCRow[]
   assignments QCWarehouseAssignment[]
 
-  // Nhiều Warehouse copy từ template sẽ map vào cùng QCWarehouse này
   warehouses Warehouse[]
 
   @@index([warehouse_template_id])
   @@map("qc_warehouses")
 }
 
-// QCRow - Dãy cho QC quản lý (được tạo tự động khi tạo RowTemplate)
-// Thông tin name, code, description sẽ lấy từ row_template
 model QCRow {
   id              String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
   qc_warehouse_id String @db.Uuid
@@ -3695,7 +3673,6 @@ model QCRow {
 
   assignments QCRowAssignment[]
 
-  // Nhiều Row copy từ template sẽ map vào cùng QCRow này
   rows Row[]
 
   @@index([qc_warehouse_id])
@@ -3703,11 +3680,10 @@ model QCRow {
   @@map("qc_rows")
 }
 
-// QCPermission - Quyền của QC (tùy biến được)
 model QCPermission {
   id          String  @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
   name        String
-  key         String  @unique // Ví dụ: qc.import, qc.export, qc.view, qc.manage
+  key         String  @unique
   description String?
 
   is_active  Boolean   @default(true)
@@ -3726,7 +3702,6 @@ model QCPermission {
   @@map("qc_permissions")
 }
 
-// QCWarehouseAssignment - Phân công QC quản lý kho
 model QCWarehouseAssignment {
   id              String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
   qc_warehouse_id String @db.Uuid
@@ -3751,7 +3726,6 @@ model QCWarehouseAssignment {
   @@map("qc_warehouse_assignments")
 }
 
-// QCWarehouseAssignmentPermission - Quyền cụ thể của assignment
 model QCWarehouseAssignmentPermission {
   id            String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
   assignment_id String @db.Uuid
@@ -3769,7 +3743,6 @@ model QCWarehouseAssignmentPermission {
   @@map("qc_warehouse_assignment_permissions")
 }
 
-// QCRowAssignment - Phân công QC quản lý dãy
 model QCRowAssignment {
   id        String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
   qc_row_id String @db.Uuid
@@ -3794,7 +3767,6 @@ model QCRowAssignment {
   @@map("qc_row_assignments")
 }
 
-// QCRowAssignmentPermission - Quyền cụ thể của assignment
 model QCRowAssignmentPermission {
   id            String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
   assignment_id String @db.Uuid
