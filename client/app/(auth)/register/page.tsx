@@ -72,7 +72,7 @@ export default function RegisterPage() {
         >
           <div
             className="transition-transform duration-500 ease-in-out"
-            style={{ transform: darkMode ? "rotate(0deg)" : "rotate(180deg)" }}
+            style={{ transform: darkMode ? "rotate(0deg)" : "rotate(240deg)" }}
           >
             {darkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           </div>
@@ -208,7 +208,7 @@ export default function RegisterPage() {
               disabled={loading}
               className="w-full py-3 rounded-lg font-semibold transition-all shadow-lg transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-white relative overflow-hidden"
               style={{
-                background: loading ? "#64748B" : "linear-gradient(135deg, #0F766E 0%, #14B8A6 100%)",
+                background: loading ? "#64748B" : "#0F766E",
                 boxShadow: "0 10px 25px rgba(15, 118, 110, 0.3)",
               }}
               onMouseOver={(e) => !loading && (e.currentTarget.style.boxShadow = "0 15px 35px rgba(15, 118, 110, 0.4)")}

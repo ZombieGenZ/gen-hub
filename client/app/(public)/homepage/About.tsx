@@ -10,7 +10,7 @@ export function PrimeNestAbout() {
                 <div className="grid lg:grid-cols-2 gap-12 items-center">
                     {/* Image Section */}
                     <div className="relative">
-                        <div className="relative rounded-3xl overflow-hidden bg-slate-100 border border-slate-200 h-90 min-h-[400px]">
+                        <div className="relative rounded-3xl overflow-hidden bg-slate-100 border border-slate-200 h-90 min-h-[500px]">
                             <img src="./assets/hero.png" alt="About GenHub" className="w-full h-full object-cover" />
                         </div>
                     </div>

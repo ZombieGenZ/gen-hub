@@ -90,11 +90,8 @@ export default function PropertySearch() {
             {/* Sticky Filter Bar Container */}
             <div className={`sticky top-0 z-30 flex flex-col shrink-0 ${showMapMobile ? 'hidden lg:flex' : 'flex'}`}>
 
-                {/* 1. Mask for Global Header (Matches page bg to hide scrolling content behind floating header) */}
-                <div className="h-[88px] bg-slate-50 w-full" />
-
                 {/* 2. Actual Filter Bar */}
-                <div className="bg-[#fafafa] max-w-[1440px] w-full mx-auto">
+                <div className="bg-[#F8FAFC] max-w-[1440px] w-full mx-auto">
                     <div className="max-w-[1440px] w-full mx-auto px-4 lg:px-6 h-16 flex items-center gap-4">
                         <div className="flex-1 bg-slate-100 h-10 rounded-full px-4 flex items-center text-slate-500 text-sm gap-2">
                             <MagnifyingGlassIcon className="w-5 h-5 text-slate-400" />
@@ -115,7 +112,7 @@ export default function PropertySearch() {
 
                     {/* List Area (3/5) - Hidden on Mobile if Map is shown */}
                     <div className={`lg:col-span-3 flex flex-col ${showMapMobile ? 'hidden lg:flex' : 'flex'}`}>
-                        <div className="sticky top-[152px] z-20 bg-[#fafafa] p-6 mb-4 flex items-baseline justify-between border-b border-slate-200/50 ">
+                        <div className="sticky top-[60px] z-20 bg-[#F8FAFC] p-4 mb-2 flex items-baseline justify-between transition-all">
                             <h2 className="font-bold text-xl text-slate-900">
                                 {filteredProperties.length} Kho bãi tại Hồ Chí Minh
                             </h2>
@@ -132,7 +129,7 @@ export default function PropertySearch() {
 
                     {/* Map Area (2/5) - Sticky on Desktop, Full on Mobile */}
                     <div className={`
-                        lg:block lg:col-span-2 lg:h-[calc(100vh-200px)] lg:sticky lg:top-[160px] lg:bg-slate-100 lg:rounded-2xl lg:overflow-hidden lg:border lg:border-slate-200 lg:shadow-md
+                        lg:block lg:col-span-2 lg:h-[calc(100vh-200px)] lg:sticky lg:top-[80px] lg: lg:rounded-2xl lg:overflow-hidden lg:border lg:border-slate-200 lg:shadow-md
                         ${showMapMobile ? 'fixed left-0 right-0 top-[88px] h-[calc(100vh-88px)] z-40 block w-full bg-slate-100' : 'hidden'}
                     `}>
                         <MapComponent

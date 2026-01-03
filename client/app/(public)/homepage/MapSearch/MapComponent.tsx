@@ -293,12 +293,12 @@ export default function MapComponent({ properties, onBoundsChange, highlightedPr
                             </button>
 
                             {/* Image Section */}
-                            <div className="w-full h-[140px] md:w-[140px] md:h-full relative bg-slate-100 shrink-0">
+                            <div className="w-full h-[160px] md:w-[160px] md:h-full relative bg-slate-100 shrink-0 p-2">
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img
                                     src={popupInfo.image}
                                     alt={popupInfo.title}
-                                    className="w-full h-full object-cover"
+                                    className="w-full h-full object-cover rounded"
                                 />
                                 {/* Mobile Badge Overlay */}
                                 <div className="absolute top-2 left-2 md:hidden">
@@ -357,10 +357,10 @@ export default function MapComponent({ properties, onBoundsChange, highlightedPr
                     </Popup>
                 )}
 
-                {/* Highlighted Marker (Bounce Effect for List Hover) using React Marker for animation */}
+                {/* Highlighted Marker */}
                 {highlightedPropertyId && (() => {
                     const p = properties.find(p => p.id === highlightedPropertyId);
-                    if (p && p.id !== popupInfo?.id) { // Don't show if popup is open for same item to avoid double rendering issues
+                    if (p && p.id !== popupInfo?.id) { 
                         return (
                             <Marker longitude={p.lng} latitude={p.lat} anchor="bottom">
                                 <span className="relative flex h-6 w-6">

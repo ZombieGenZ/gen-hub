@@ -4,7 +4,6 @@ import React, { useEffect, useState } from "react";
 import { PrimeNestHeader } from "@/app/(public)/homepage/Header";
 import { PrimeNestHero } from "@/app/(public)/homepage/Hero";
 import { PrimeNestSearch } from "@/app/(public)/homepage/Search";
-import { PrimeNestFeatures } from "@/app/(public)/homepage/Features";
 import { PrimeNestAbout } from "@/app/(public)/homepage/About";
 import { PrimeNestFeatured } from "@/app/(public)/homepage/Featured";
 import { PrimeNestTestimonials } from "@/app/(public)/homepage/Testimonials";
@@ -53,9 +52,8 @@ export default function Home() {
             <PrimeNestHeader isLogin={isLogin} user={user} />
             <main>
                 <PrimeNestHero />
-                <PrimeNestSearch />
-                <PrimeNestFeatures />
                 <PrimeNestAbout />
+                <PrimeNestSearch />
                 <PrimeNestFeatured />
                 <PrimeNestTestimonials />
                 <PrimeNestFAQ />

@@ -3,7 +3,7 @@
 @variant dark (&:where(.dark, .dark *));
 
 :root {
-  --bg: 0 0% 100%;           
+  --bg: 210 20% 98%;           
   --bg-subtle: 0 0% 97%;     
   --bg-elevated: 0 0% 100%; 
   
@@ -36,6 +36,28 @@
   --radius: 1.5rem;
   --radius-hero: 2.5rem;
   --radius-pill: 9999px;
+  /* Shadcn UI Mappings */
+  --background: var(--bg);
+  --foreground: var(--text);
+  --card: 0 0% 100%;
+  --card-foreground: var(--text);
+  --popover: 0 0% 100%;
+  --popover-foreground: var(--text);
+  --primary: var(--brand);
+  --primary-foreground: 0 0% 100%;
+  --secondary: var(--bg-subtle);
+  --secondary-foreground: var(--text);
+  --muted: var(--bg-subtle);
+  --muted-foreground: var(--text-muted);
+  --accent: var(--bg-subtle);
+  --accent-foreground: var(--text);
+  --destructive: var(--error);
+  --destructive-foreground: 0 0% 100%;
+  --border: 0 0% 90%; 
+  --input: 0 0% 90%;
+  --ring: var(--brand);
+  
+  --radius: 0.5rem;
 }
 
 
@@ -106,10 +128,14 @@
   --shadow-premium: var(--shadow-premium);
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   background-color: hsl(var(--bg));
   color: hsl(var(--text));
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -117,7 +143,7 @@ body {
 /* Rule 4: Visual Hierarchy */
 h1, h2, h3, h4, h5, h6 {
   color: hsl(var(--text));
-  font-weight: 900;
+  font-weight: 700;
   letter-spacing: -0.02em;
 }
 

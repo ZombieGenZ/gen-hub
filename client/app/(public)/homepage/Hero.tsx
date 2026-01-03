@@ -44,7 +44,7 @@ export function PrimeNestHero() {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.5, delay: 0.1 }}
-                        className="text-4xl md:text-6xl lg:text-7xl font-bold !text-white mb-6 leading-[1.1] tracking-tight drop-shadow-md"
+                        className="text-4xl md:text-6xl lg:text-7xl  !text-white mb-6 leading-[1.1] tracking-tight drop-shadow-md"
                     >
                         Nền Tảng Thuê Kho & Fulfillment Toàn Diện
                     </motion.h1>

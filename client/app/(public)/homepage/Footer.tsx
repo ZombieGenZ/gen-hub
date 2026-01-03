@@ -55,7 +55,7 @@ export function PrimeNestFooter() {
                         {/* Logo */}
                         <Link href="/" className="flex items-center gap-2 mb-4">
                             <img
-                                src="/assets/GenHub.svg"
+                                src="/assets/GenHubv2.svg"
                                 alt="GenHub"
                                 className="h-8 w-auto brightness-0 invert"
                             />
@@ -103,7 +103,7 @@ export function PrimeNestFooter() {
                 {/* Bottom Bar */}
                 <div className="mt-16 pt-8 border-t border-gray-800">
                     <p className="text-center text-gray-500 text-sm">
-                        © 2024 GenHub. All rights reserved.
+                        © 2026 GenHub. All rights reserved.
                     </p>
                 </div>
             </div>

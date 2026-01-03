@@ -200,13 +200,15 @@ export function PrimeNestSearch() {
                     </div>
 
                     {/* List Area (1/3) - Scrollable */}
-                    <div className="lg:col-span-1 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col p-4">
-                        <PropertyList
-                            properties={filteredProperties}
-                            onHover={setHighlightedPropertyId}
-                            highlightedPropertyId={highlightedPropertyId}
-                            variant="vertical"
-                        />
+                    <div className="lg:col-span-1 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-full">
+                        <div className="overflow-y-auto flex-1 p-4">
+                            <PropertyList
+                                properties={filteredProperties}
+                                onHover={setHighlightedPropertyId}
+                                highlightedPropertyId={highlightedPropertyId}
+                                variant="vertical"
+                            />
+                        </div>
                     </div>
                 </div>
 

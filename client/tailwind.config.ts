@@ -16,11 +16,12 @@ export default {
         "2xl": "1400px",
       },
     },
+    fontFamily: {
+      sans: ['var(--font-geist-sans)', 'system-ui', 'sans-serif'],
+      mono: ['var(--font-geist-mono)', 'ui-monospace', 'monospace'],
+    },
     extend: {
-      fontFamily: {
-        sans: ['Geist', 'system-ui', 'sans-serif'],
-        mono: ['var(--font-geist-mono)', 'ui-monospace', 'monospace'],
-      },
+
       fontSize: {
         'display-lg': ['3.75rem', { lineHeight: '1.1', letterSpacing: '-0.02em' }],  // 60px
         'display': ['3rem', { lineHeight: '1.1', letterSpacing: '-0.02em' }],        // 48px
