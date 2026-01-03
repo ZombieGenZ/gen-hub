@@ -1411,7 +1411,6 @@ model Organization {
   email_primary_address String?
   is_using_google_email Boolean @default(false)
 
-  // Gmail Pub/Sub configuration
   gmail_pubsub_topic               String? @db.Text
   gmail_pubsub_subscription        String? @db.Text
   gmail_watch_label_ids            String? @default("INBOX")
@@ -2962,8 +2961,7 @@ model ContactConversation {
   updated_by String?
   deleted_by String?
 
-  // Discord integration
-  discord_channel_id String? // ID của channel Discord liên kết với conversation
+  discord_channel_id String?
 
   assigned_staff User? @relation("AssignedStaff", fields: [assigned_staff_id], references: [id])
 
@@ -3400,7 +3398,6 @@ model ContactTagOnConversation {
   @@map("contact_tags_conversations")
 }
 
-// Bảng mapping nhiều-nhiều giữa ContactConversation và Staff (User)
 model ContactConversationStaff {
   id              String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
   conversation_id String @db.Uuid
@@ -3427,24 +3424,23 @@ model ContactConversationStaff {
   @@map("contact_conversation_staff")
 }
 
-// Model để lưu log các cuộc gọi AI (Gemini, etc.)
 model AILog {
   id            String  @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  model         String  // Model AI đã sử dụng (gemini-1.5-flash, etc.)
-  purpose       String  // Mục đích: email_classification, content_generation, etc.
+  model         String
+  purpose       String
 
-  input_text    String  @db.Text // Prompt gửi đến AI
-  output_text   String? @db.Text // Response từ AI
+  input_text    String  @db.Text
+  output_text   String? @db.Text
 
-  input_tokens  Int?    // Số token đầu vào
-  output_tokens Int?    // Số token đầu ra
-  total_tokens  Int?    // Tổng token đã sử dụng
+  input_tokens  Int?
+  output_tokens Int?
+  total_tokens  Int?
 
-  duration_ms   Int?    // Thời gian xử lý (milliseconds)
+  duration_ms   Int?
   is_success    Boolean @default(true)
-  error_message String? @db.Text // Lỗi nếu có
+  error_message String? @db.Text
 
-  metadata      Json?   // Dữ liệu bổ sung (email_id, sender, subject, etc.)
+  metadata      Json?
 
   created_at    DateTime @default(now())
 
