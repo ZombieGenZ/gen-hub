@@ -1,0 +1,40 @@
+{
+    "success": {
+        "list": "Lấy danh sách yêu cầu hoàn tiền thành công",
+        "read": "Lấy thông tin yêu cầu hoàn tiền thành công",
+        "accepted": "Duyệt yêu cầu hoàn tiền thành công",
+        "rejected": "Từ chối yêu cầu hoàn tiền thành công",
+        "changed": "Thay đổi trạng thái thành công",
+        "deleted": "Xóa yêu cầu hoàn tiền thành công"
+    },
+    "errors": {
+        "not_found": "Không tìm thấy yêu cầu hoàn tiền",
+        "no_permission": "Bạn không có quyền thực hiện thao tác này",
+        "invalid_status_for_accept": "Chỉ có thể duyệt yêu cầu đang ở trạng thái chờ xử lý",
+        "invalid_status_for_reject": "Chỉ có thể từ chối yêu cầu đang ở trạng thái chờ xử lý",
+        "cannot_change_completed": "Không thể thay đổi trạng thái yêu cầu đã hoàn thành",
+        "same_status": "Trạng thái mới phải khác trạng thái hiện tại"
+    },
+    "validation": {
+        "limit_positive": "Limit phải là số dương",
+        "offset_min": "Offset phải >= 0",
+        "keywords_string": "Từ khóa tìm kiếm phải là chuỗi",
+        "status_invalid": "Trạng thái không hợp lệ",
+        "organization_id_uuid": "ID tổ chức phải là UUID hợp lệ",
+        "process_notes_string": "Ghi chú xử lý phải là chuỗi",
+        "process_notes_max_length": "Ghi chú xử lý không được quá 1000 ký tự",
+        "reject_reason_required": "Lý do từ chối không được để trống",
+        "reject_reason_string": "Lý do từ chối phải là chuỗi",
+        "reject_reason_max_length": "Lý do từ chối không được quá 1000 ký tự",
+        "new_status_required": "Trạng thái mới không được để trống",
+        "new_status_invalid": "Trạng thái mới không hợp lệ",
+        "change_reason_string": "Lý do thay đổi phải là chuỗi",
+        "change_reason_max_length": "Lý do thay đổi không được quá 1000 ký tự"
+    },
+    "status": {
+        "PENDING": "Chờ xử lý",
+        "APPROVED": "Đã duyệt",
+        "REJECTED": "Đã từ chối",
+        "COMPLETED": "Hoàn thành"
+    }
+}

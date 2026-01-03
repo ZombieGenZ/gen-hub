@@ -1,0 +1,40 @@
+{
+    "success": {
+        "list": "Refund requests retrieved successfully",
+        "read": "Refund request details retrieved successfully",
+        "accepted": "Refund request approved successfully",
+        "rejected": "Refund request rejected successfully",
+        "changed": "Status changed successfully",
+        "deleted": "Refund request deleted successfully"
+    },
+    "errors": {
+        "not_found": "Refund request not found",
+        "no_permission": "You do not have permission to perform this action",
+        "invalid_status_for_accept": "Can only approve requests with pending status",
+        "invalid_status_for_reject": "Can only reject requests with pending status",
+        "cannot_change_completed": "Cannot change status of completed requests",
+        "same_status": "New status must be different from current status"
+    },
+    "validation": {
+        "limit_positive": "Limit must be a positive number",
+        "offset_min": "Offset must be >= 0",
+        "keywords_string": "Keywords must be a string",
+        "status_invalid": "Invalid status",
+        "organization_id_uuid": "Organization ID must be a valid UUID",
+        "process_notes_string": "Process notes must be a string",
+        "process_notes_max_length": "Process notes cannot exceed 1000 characters",
+        "reject_reason_required": "Rejection reason is required",
+        "reject_reason_string": "Rejection reason must be a string",
+        "reject_reason_max_length": "Rejection reason cannot exceed 1000 characters",
+        "new_status_required": "New status is required",
+        "new_status_invalid": "Invalid new status",
+        "change_reason_string": "Change reason must be a string",
+        "change_reason_max_length": "Change reason cannot exceed 1000 characters"
+    },
+    "status": {
+        "PENDING": "Pending",
+        "APPROVED": "Approved",
+        "REJECTED": "Rejected",
+        "COMPLETED": "Completed"
+    }
+}

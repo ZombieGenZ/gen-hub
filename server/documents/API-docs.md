@@ -285,3 +285,11 @@
 | 282 | Contact Tags | DELETE | /admin/contact-tags/delete/many | ❎ | ❎ | ❎ |
 | 283 | Gmail Webhook | POST | /webhooks/gmail | ❎ | ❎ | ❎ |
 | 284 | Gmail Webhook | POST | /webhooks/gmail/health | ❎ | ❎ | ❎ |
+| 285 | Refund Requests | GET | /refund-requests | ❎ | ❎ | ❎ |
+| 286 | Refund Requests | GET | /refund-requests/{id} | ❎ | ❎ | ❎ |
+| 287 | Refund Requests | PATCH | /refund-requests/{id}/accept | ❎ | ❎ | ❎ |
+| 288 | Refund Requests | PATCH | /refund-requests/{id}/reject | ❎ | ❎ | ❎ |
+| 289 | Refund Requests | PATCH | /refund-requests/{id}/status | ❎ | ❎ | ❎ |
+| 290 | Refund Requests | DELETE | /refund-requests/{id} | ❎ | ❎ | ❎ |
+| 291 | Refund Requests | GET | /organizations/{orgId}/refund-requests | ❎ | ❎ | ❎ |
+| 292 | Refund Requests | GET | /organizations/{orgId}/refund-requests/{id} | ❎ | ❎ | ❎ |

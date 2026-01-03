@@ -202,22 +202,13 @@ export class UpdateRentalContractDto {
  * Dành cho org-level endpoint - chỉ owner/member của org mới có thể gia hạn
  */
 export class RenewRentalContractDto {
-    @ApiPropertyOptional({
+    @ApiProperty({
         description: 'ID của gói thời hạn thuê để gia hạn (thêm thời gian)',
         example: '550e8400-e29b-41d4-a716-446655440005'
     })
-    @IsOptional()
+    @IsNotEmpty({ message: i18nValidationMessage('rental-contract.validation.duration_tier_id_required') })
     @IsUUID('4', { message: i18nValidationMessage('rental-contract.validation.duration_tier_id_uuid') })
-    extend_duration_tier_id?: string;
-
-    @ApiPropertyOptional({
-        description: 'Số tháng giảm thời gian (số dương = giảm số tháng đó)',
-        example: 2
-    })
-    @IsOptional()
-    @IsInt({ message: i18nValidationMessage('rental-contract.validation.reduce_months_int') })
-    @Min(1, { message: i18nValidationMessage('rental-contract.validation.reduce_months_min') })
-    reduce_months?: number;
+    duration_tier_id: string;
 
     @ApiPropertyOptional({
         description: 'Danh sách ID addon. Logic: ID mới → thêm, ID đang có → giữ, ID không có trong list → hủy',

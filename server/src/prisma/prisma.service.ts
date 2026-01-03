@@ -332,6 +332,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         this.seedContactTagPermissions.bind(this),
         this.seedQCManagementPermissions.bind(this),
         this.seedQCPermissions.bind(this),
+        this.seedRefundRequestPermissions.bind(this),
       ];
 
       const BATCH_SIZE = 3; // Chạy 3 seed functions cùng lúc
@@ -3287,6 +3288,144 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       this.logger.error(`❌ Failed to seed QC permissions: ${errorMessage}`);
+    }
+  }
+  /**
+   * Seed các permissions cho RefundRequest
+   */
+  private async seedRefundRequestPermissions() {
+    try {
+      // 1. System Permissions (System & Admin)
+      const systemPermissions = [
+        {
+          key: 'refund-request.list',
+          name: 'Xem danh sách yêu cầu hoàn tiền',
+          description: 'Quyền xem danh sách yêu cầu hoàn tiền',
+        },
+        {
+          key: 'refund-request.read',
+          name: 'Xem chi tiết yêu cầu hoàn tiền',
+          description: 'Quyền xem chi tiết yêu cầu hoàn tiền',
+        },
+        {
+          key: 'refund-request.accept',
+          name: 'Duyệt yêu cầu hoàn tiền',
+          description: 'Quyền duyệt yêu cầu hoàn tiền',
+        },
+        {
+          key: 'refund-request.reject',
+          name: 'Từ chối yêu cầu hoàn tiền',
+          description: 'Quyền từ chối yêu cầu hoàn tiền',
+        },
+        {
+          key: 'refund-request.change',
+          name: 'Thay đổi trạng thái yêu cầu hoàn tiền',
+          description: 'Quyền thay đổi trạng thái yêu cầu hoàn tiền',
+        },
+        {
+          key: 'refund-request.delete',
+          name: 'Xóa yêu cầu hoàn tiền',
+          description: 'Quyền xóa yêu cầu hoàn tiền',
+        },
+      ];
+
+      for (const perm of systemPermissions) {
+        const existing = await this.permission.findFirst({
+          where: { key: perm.key },
+        });
+
+        if (!existing) {
+          await this.permission.create({
+            data: {
+              key: perm.key,
+              name: perm.name,
+              description: perm.description,
+              is_active: true,
+              is_deleted: false,
+            },
+          });
+        }
+      }
+
+      // Assign to Admin/Super Admin
+      const adminRoles = await this.role.findMany({
+        where: {
+          name: { in: ['Admin', 'Super Admin'] },
+          is_deleted: false,
+        },
+      });
+
+      const permissionRecords = await this.permission.findMany({
+        where: {
+          key: { in: systemPermissions.map((p) => p.key) },
+          is_deleted: false,
+        },
+      });
+
+      for (const role of adminRoles) {
+        for (const permission of permissionRecords) {
+          const existingAssignment = await this.rolePermission.findFirst({
+            where: {
+              role_id: role.id,
+              permission_id: permission.id,
+            },
+          });
+
+          if (!existingAssignment) {
+            await this.rolePermission.create({
+              data: {
+                role_id: role.id,
+                permission_id: permission.id,
+                is_active: true,
+                is_deleted: false,
+              },
+            });
+          }
+        }
+      }
+
+      // 2. Organization Permissions
+      const orgPermissions = [
+        {
+          key: 'refund-request.list',
+          name: 'Xem danh sách yêu cầu hoàn tiền',
+          description: 'Quyền xem danh sách yêu cầu hoàn tiền của tổ chức',
+          allow_api_key: true,
+        },
+        {
+          key: 'refund-request.read',
+          name: 'Xem chi tiết yêu cầu hoàn tiền',
+          description: 'Quyền xem chi tiết yêu cầu hoàn tiền của tổ chức',
+          allow_api_key: true,
+        },
+      ];
+
+      for (const perm of orgPermissions) {
+        const existing = await this.organizationPermission.findFirst({
+          where: { key: perm.key },
+        });
+
+        if (!existing) {
+          await this.organizationPermission.create({
+            data: {
+              key: perm.key,
+              name: perm.name,
+              description: perm.description,
+              allow_api_key: perm.allow_api_key,
+              is_active: true,
+              is_deleted: false,
+            },
+          });
+        }
+      }
+
+      this.logger.log('✅ RefundRequest permissions seeded');
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `❌ Failed to seed refund-request permissions: ${errorMessage}`,
+      );
     }
   }
 }

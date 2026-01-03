@@ -55,6 +55,7 @@ import { FaqModule } from './modules/faq/faq.module';
 import { ContactModule } from './modules/contact/contact.module';
 import { ContactTagModule } from './modules/contact-tag/contact-tag.module';
 import { QCManagementModule } from './modules/qc-management/qc-management.module';
+import { RefundRequestModule } from './modules/refund-request/refund-request.module';
 import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
 
 @Module({
@@ -187,6 +188,9 @@ import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
 
     // Contact Tags Module
     ContactTagModule,
+
+    // Refund Request Module
+    RefundRequestModule,
 
     // Contact Support Module
     ContactModule,

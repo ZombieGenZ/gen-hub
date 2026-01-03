@@ -99,6 +99,7 @@ socket.on('pong', () => {
 | `organization:{orgId}` | Notification: `orgNotification:created`, `orgNotification:updated`, `orgNotification:deleted`, `orgNotification:deletedMany` |
 | `organization:{orgId}` | Contract: `rentalContract:created`, `rentalContract:updated`, `rentalContract:deleted`, `rentalContract:deletedMany`, `rentalContract:renewed` |
 | `organization:{orgId}` | Payment: `payment:created`, `payment:updated` |
+| `organization:{orgId}` | RefundRequest: `refundRequest:accepted`, `refundRequest:rejected`, `refundRequest:statusChanged`, `refundRequest:deleted` |
 | Global (All) | Template: `warehouseTemplate:created`, `warehouseTemplate:updated`, `warehouseTemplate:deleted`, `warehouseTemplate:deletedMany`, `warehouseTemplate:layoutUpdated` |
 | Global (All) | Template Image: `warehouseTemplateImage:created`, `warehouseTemplateImage:updated`, `warehouseTemplateImage:deleted`, `warehouseTemplateImage:deletedMany` |
 | Global (All) | Notification: `globalNotification:created`, `globalNotification:updated`, `globalNotification:deleted` |
@@ -1690,3 +1691,63 @@ socket.on('contactTag:deletedMany', (data) => {
 });
 ```
 
+
+---
+
+## 💸 Refund Request Events (Room: `organization:{orgId}`)
+
+### `refundRequest:accepted`
+**Khi nào:** Khi yêu cầu hoàn tiền được chấp thuận
+```javascript
+socket.on('refundRequest:accepted', (data) => {
+  // {
+  //   "organizationId": "org-uuid",
+  //   "refundRequestId": "uuid",
+  //   "finalRefundAmount": 1000000,
+  //   "acceptedBy": "admin-uuid",
+  //   "timestamp": "2025-01-01T10:00:00.000Z"
+  // }
+});
+```
+
+### `refundRequest:rejected`
+**Khi nào:** Khi yêu cầu hoàn tiền bị từ chối
+```javascript
+socket.on('refundRequest:rejected', (data) => {
+  // {
+  //   "organizationId": "org-uuid",
+  //   "refundRequestId": "uuid",
+  //   "reason": "Reason...",
+  //   "rejectedBy": "admin-uuid",
+  //   "timestamp": "2025-01-01T10:00:00.000Z"
+  // }
+});
+```
+
+### `refundRequest:statusChanged`
+**Khi nào:** Khi trạng thái yêu cầu hoàn tiền thay đổi
+```javascript
+socket.on('refundRequest:statusChanged', (data) => {
+  // {
+  //   "organizationId": "org-uuid",
+  //   "refundRequestId": "uuid",
+  //   "oldStatus": "PENDING",
+  //   "newStatus": "APPROVED",
+  //   "changedBy": "admin-uuid",
+  //   "timestamp": "2025-01-01T10:00:00.000Z"
+  // }
+});
+```
+
+### `refundRequest:deleted`
+**Khi nào:** Khi yêu cầu hoàn tiền bị xóa (soft delete)
+```javascript
+socket.on('refundRequest:deleted', (data) => {
+  // {
+  //   "organizationId": "org-uuid",
+  //   "refundRequestId": "uuid",
+  //   "deletedBy": "admin-uuid",
+  //   "timestamp": "2025-01-01T10:00:00.000Z"
+  // }
+});
+```

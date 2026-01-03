@@ -189,6 +189,14 @@ export enum ResponseCode {
     PAYMENT_LIST_SUCCESS = 'payment.list_success',
     PAYMENT_GET_SUCCESS = 'payment.get_success',
 
+    // Refund Request
+    REFUND_REQUEST_LIST_SUCCESS = 'refund_request.list_success',
+    REFUND_REQUEST_READ_SUCCESS = 'refund_request.read_success',
+    REFUND_REQUEST_ACCEPT_SUCCESS = 'refund_request.accept_success',
+    REFUND_REQUEST_REJECT_SUCCESS = 'refund_request.reject_success',
+    REFUND_REQUEST_CHANGE_SUCCESS = 'refund_request.change_success',
+    REFUND_REQUEST_DELETE_SUCCESS = 'refund_request.delete_success',
+
     // Client Errors (4xx)
     ERROR_VALIDATION = 'error.validation',
     ERROR_BAD_REQUEST = 'error.bad_request',

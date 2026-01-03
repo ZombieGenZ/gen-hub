@@ -1327,28 +1327,18 @@ export class RentalContractService {
       );
     }
 
-    // Xác định số tháng điều chỉnh từ extend_duration_tier_id hoặc reduce_months
+    // Xác định số tháng điều chỉnh từ duration_tier_id
     let adjustMonths: number;
 
-    if (dto.extend_duration_tier_id) {
-      // Gia hạn bằng duration tier
-      const tier = await this.repository['prisma'].rentalDurationTier.findFirst({
-        where: { id: dto.extend_duration_tier_id, is_deleted: false, is_active: true },
-      });
-      if (!tier) {
-        throw new BadRequestException(
-          this.i18n.t('rental-contract.validation.duration_tier_not_found', { lang }),
-        );
-      }
-      adjustMonths = this.convertDurationToMonths(tier.duration_value, tier.duration_unit);
-    } else if (dto.reduce_months) {
-      // Giảm thời gian
-      adjustMonths = -dto.reduce_months;
-    } else {
+    const tier = await this.repository['prisma'].rentalDurationTier.findFirst({
+      where: { id: dto.duration_tier_id, is_deleted: false, is_active: true },
+    });
+    if (!tier) {
       throw new BadRequestException(
-        this.i18n.t('rental-contract.validation.extend_or_reduce_required', { lang }),
+        this.i18n.t('rental-contract.validation.duration_tier_not_found', { lang }),
       );
     }
+    adjustMonths = this.convertDurationToMonths(tier.duration_value, tier.duration_unit);
 
     const newExpiredAt = new Date(existing.expired_at);
     newExpiredAt.setMonth(newExpiredAt.getMonth() + adjustMonths);
