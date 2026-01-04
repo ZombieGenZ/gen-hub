@@ -344,9 +344,9 @@ export class DatabaseAdminService implements OnModuleInit {
             prismaModel.count({ where: whereClause }),
         ]);
 
-        // Không ẩn các fields nhạy cảm - hiển thị đầy đủ
+        // Serialize BigInt values và trả về dữ liệu
         return {
-            data: records,
+            data: records.map((record: any) => this.serializeBigInt(record)),
             meta: {
                 total,
                 page,

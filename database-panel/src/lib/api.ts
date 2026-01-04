@@ -279,6 +279,29 @@ export const adminApi = {
         return data;
     },
 
+    // Lấy tất cả records để xuất (không phân trang)
+    exportRecords: async (
+        tableName: string,
+        options?: {
+            orderBy?: string;
+            orderDirection?: 'asc' | 'desc';
+            filters?: FilterCondition[];
+        }
+    ) => {
+        const params = new URLSearchParams();
+        // Lấy tối đa 10000 records
+        params.append('limit', '10000');
+        params.append('page', '1');
+        if (options?.orderBy) params.append('orderBy', options.orderBy);
+        if (options?.orderDirection) params.append('orderDirection', options.orderDirection);
+        if (options?.filters && options.filters.length > 0) {
+            params.append('filters', JSON.stringify(options.filters));
+        }
+
+        const { data } = await api.get(`/admin/tables/${tableName}?${params.toString()}`);
+        return data;
+    },
+
     // Diagram API
     getDiagramSchema: async () => {
         const { data } = await api.get('/admin/diagram/schema');
