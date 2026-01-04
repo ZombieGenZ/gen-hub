@@ -75,6 +75,24 @@
             "confirmTitle": "Confirm Delete",
             "confirmMessage": "Are you sure you want to delete these records?",
             "deleted": "Deleted"
+        },
+        "export": {
+            "title": "Export Data",
+            "csv": "Export CSV",
+            "excel": "Export Excel",
+            "exporting": "Exporting...",
+            "success": "Export successful",
+            "error": "Export error"
+        },
+        "sort": {
+            "clickToSort": "Click to sort",
+            "ascending": "Ascending",
+            "descending": "Descending",
+            "default": "Default"
+        },
+        "columnManagement": {
+            "resetOrder": "Reset column order",
+            "dragToReorder": "Drag to reorder columns"
         }
     },
     "common": {

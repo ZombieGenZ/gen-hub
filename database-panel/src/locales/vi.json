@@ -75,6 +75,24 @@
             "confirmTitle": "Xác nhận xóa",
             "confirmMessage": "Bạn có chắc chắn muốn xóa các bản ghi này?",
             "deleted": "Đã xóa"
+        },
+        "export": {
+            "title": "Xuất dữ liệu",
+            "csv": "Xuất CSV",
+            "excel": "Xuất Excel",
+            "exporting": "Đang xuất...",
+            "success": "Xuất thành công",
+            "error": "Lỗi khi xuất"
+        },
+        "sort": {
+            "clickToSort": "Nhấn để sắp xếp",
+            "ascending": "Tăng dần",
+            "descending": "Giảm dần",
+            "default": "Mặc định"
+        },
+        "columnManagement": {
+            "resetOrder": "Đặt lại thứ tự cột",
+            "dragToReorder": "Kéo để sắp xếp lại cột"
         }
     },
     "common": {

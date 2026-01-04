@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { adminApi, FilterCondition } from '@/lib/api';
 import { toast } from 'sonner';
+import * as XLSX from 'xlsx';
 import {
     ChevronLeft,
     ChevronRight,
@@ -20,6 +21,11 @@ import {
     Maximize2,
     Copy,
     AlertCircle,
+    Download,
+    ArrowUp,
+    ArrowDown,
+    GripVertical,
+    RotateCcw,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -63,6 +69,8 @@ interface PendingChange {
     modifiedColumns?: Set<string>;
 }
 
+type SortDirection = 'asc' | 'desc' | null;
+
 const OPERATORS = [
     { value: 'equals', label: 'equals', symbol: '=' },
     { value: 'not', label: 'not equals', symbol: '<>' },
@@ -83,6 +91,10 @@ const DATETIME_TYPES = ['DateTime', 'Date', 'Timestamp'];
 const READONLY_COLUMNS = ['id'];
 const PAGE_SIZE_OPTIONS = [25, 50, 75, 100];
 const LOCALSTORAGE_PAGE_SIZE_KEY = 'database-panel-page-size';
+const LOCALSTORAGE_COLUMN_ORDER_KEY = 'database-panel-column-order';
+const LOCALSTORAGE_COLUMN_WIDTHS_KEY = 'database-panel-column-widths';
+const MIN_COLUMN_WIDTH = 80;
+const MAX_COLUMN_WIDTH = 500;
 
 export default function TablePage() {
     const params = useParams();
@@ -146,6 +158,31 @@ export default function TablePage() {
     // Ref for table container (Alt+scroll horizontal scrolling)
     const tableContainerRef = useRef<HTMLDivElement>(null);
 
+    // Sorting state
+    const [sortColumn, setSortColumn] = useState<string | null>(null);
+    const [sortDirection, setSortDirection] = useState<SortDirection>(null);
+
+    // Column order state (saved to localStorage per table)
+    const [columnOrder, setColumnOrder] = useState<string[]>([]);
+    const [originalColumns, setOriginalColumns] = useState<string[]>([]);
+
+    // Column widths state (saved to localStorage per table)
+    const [columnWidths, setColumnWidths] = useState<Record<string, number>>({});
+
+    // Drag state for column reordering
+    const [draggedColumn, setDraggedColumn] = useState<string | null>(null);
+    const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
+
+    // Resize state for column resizing
+    const [isResizing, setIsResizing] = useState(false);
+    const [resizingColumn, setResizingColumn] = useState<string | null>(null);
+    const resizeStartX = useRef<number>(0);
+    const resizeStartWidth = useRef<number>(0);
+
+    // Export dropdown state
+    const [showExportDropdown, setShowExportDropdown] = useState(false);
+    const [isExporting, setIsExporting] = useState(false);
+
     const hasPendingChanges = pendingChanges.size > 0 || newRows.length > 0;
 
     // Get field info from schema
@@ -201,6 +238,8 @@ export default function TablePage() {
                 page,
                 limit: meta.limit,
                 filters: appliedFilters.length > 0 ? appliedFilters : undefined,
+                orderBy: sortColumn || undefined,
+                orderDirection: sortDirection || undefined,
             });
             setRecords(data.data);
             setMeta(data.meta);
@@ -209,6 +248,32 @@ export default function TablePage() {
             if (data.data.length > 0) {
                 const allColumns = Object.keys(data.data[0]);
                 setColumns(allColumns);
+                setOriginalColumns(allColumns);
+                // Load saved column order from localStorage
+                const savedOrder = localStorage.getItem(`${LOCALSTORAGE_COLUMN_ORDER_KEY}-${tableName}`);
+                if (savedOrder) {
+                    try {
+                        const parsedOrder = JSON.parse(savedOrder) as string[];
+                        // Filter to only include columns that still exist
+                        const validOrder = parsedOrder.filter(c => allColumns.includes(c));
+                        // Add any new columns not in the saved order
+                        const newColumns = allColumns.filter(c => !parsedOrder.includes(c));
+                        setColumnOrder([...validOrder, ...newColumns]);
+                    } catch {
+                        setColumnOrder(allColumns);
+                    }
+                } else {
+                    setColumnOrder(allColumns);
+                }
+                // Load saved column widths
+                const savedWidths = localStorage.getItem(`${LOCALSTORAGE_COLUMN_WIDTHS_KEY}-${tableName}`);
+                if (savedWidths) {
+                    try {
+                        setColumnWidths(JSON.parse(savedWidths));
+                    } catch {
+                        setColumnWidths({});
+                    }
+                }
                 if (!newFilter.column && allColumns.length > 0) {
                     setNewFilter((prev) => ({ ...prev, column: allColumns[0] }));
                 }
@@ -218,6 +283,8 @@ export default function TablePage() {
                     .filter((f: SchemaField) => !f.isRelation)
                     .map((f: SchemaField) => f.name);
                 setColumns(schemaColumns);
+                setOriginalColumns(schemaColumns);
+                setColumnOrder(schemaColumns);
                 if (!newFilter.column && schemaColumns.length > 0) {
                     setNewFilter((prev) => ({ ...prev, column: schemaColumns[0] }));
                 }
@@ -229,7 +296,7 @@ export default function TablePage() {
             setIsLoading(false);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [tableName, meta.limit, appliedFilters, schema]);
+    }, [tableName, meta.limit, appliedFilters, sortColumn, sortDirection, schema]);
 
     useEffect(() => {
         // Reset state when table changes
@@ -241,6 +308,11 @@ export default function TablePage() {
         setEditingCell(null);
         setSchema(null);
         setColumns([]);
+        setSortColumn(null);
+        setSortDirection(null);
+        setColumnOrder([]);
+        setOriginalColumns([]);
+        setColumnWidths({});
 
         // Fetch schema first
         const init = async () => {
@@ -273,6 +345,158 @@ export default function TablePage() {
         }
     };
 
+    // Sorting functions
+    const handleSort = (column: string) => {
+        if (sortColumn === column) {
+            // Toggle direction: asc -> desc -> null
+            if (sortDirection === 'asc') {
+                setSortDirection('desc');
+            } else if (sortDirection === 'desc') {
+                setSortColumn(null);
+                setSortDirection(null);
+            } else {
+                setSortDirection('asc');
+            }
+        } else {
+            setSortColumn(column);
+            setSortDirection('asc');
+        }
+    };
+
+    // Column reordering functions
+    const handleDragStart = (column: string) => {
+        setDraggedColumn(column);
+    };
+
+    const handleDragOver = (e: React.DragEvent, column: string) => {
+        e.preventDefault();
+        if (draggedColumn && column !== draggedColumn) {
+            setDragOverColumn(column);
+        }
+    };
+
+    const handleDrop = (e: React.DragEvent, targetColumn: string) => {
+        e.preventDefault();
+        if (draggedColumn && draggedColumn !== targetColumn) {
+            const newOrder = [...columnOrder];
+            const dragIndex = newOrder.indexOf(draggedColumn);
+            const dropIndex = newOrder.indexOf(targetColumn);
+            newOrder.splice(dragIndex, 1);
+            newOrder.splice(dropIndex, 0, draggedColumn);
+            setColumnOrder(newOrder);
+            // Save to localStorage
+            localStorage.setItem(`${LOCALSTORAGE_COLUMN_ORDER_KEY}-${tableName}`, JSON.stringify(newOrder));
+        }
+        setDraggedColumn(null);
+        setDragOverColumn(null);
+    };
+
+    const handleDragEnd = () => {
+        setDraggedColumn(null);
+        setDragOverColumn(null);
+    };
+
+    const resetColumnOrder = () => {
+        setColumnOrder(originalColumns);
+        localStorage.removeItem(`${LOCALSTORAGE_COLUMN_ORDER_KEY}-${tableName}`);
+        toast.success(t('common.success'));
+    };
+
+    // Column resizing functions
+    const handleResizeStart = (e: React.MouseEvent, column: string) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsResizing(true);
+        setResizingColumn(column);
+        resizeStartX.current = e.clientX;
+        resizeStartWidth.current = columnWidths[column] || 150;
+    };
+
+    useEffect(() => {
+        if (!isResizing) return;
+
+        const handleMouseMove = (e: MouseEvent) => {
+            if (resizingColumn) {
+                const diff = e.clientX - resizeStartX.current;
+                const newWidth = Math.max(MIN_COLUMN_WIDTH, Math.min(MAX_COLUMN_WIDTH, resizeStartWidth.current + diff));
+                setColumnWidths(prev => ({
+                    ...prev,
+                    [resizingColumn]: newWidth,
+                }));
+            }
+        };
+
+        const handleMouseUp = () => {
+            if (resizingColumn) {
+                // Save to localStorage
+                const newWidths = { ...columnWidths };
+                localStorage.setItem(`${LOCALSTORAGE_COLUMN_WIDTHS_KEY}-${tableName}`, JSON.stringify(newWidths));
+            }
+            setIsResizing(false);
+            setResizingColumn(null);
+        };
+
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+        return () => {
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+        };
+    }, [isResizing, resizingColumn, columnWidths, tableName]);
+
+    // Export functions
+    const exportData = async (format: 'csv' | 'xlsx') => {
+        setIsExporting(true);
+        setShowExportDropdown(false);
+        try {
+            // Fetch all data with current filters and sorting
+            const data = await adminApi.exportRecords(tableName, {
+                orderBy: sortColumn || undefined,
+                orderDirection: sortDirection || undefined,
+                filters: appliedFilters.length > 0 ? appliedFilters : undefined,
+            });
+
+            if (!data.data || data.data.length === 0) {
+                toast.error(t('table.noData'));
+                return;
+            }
+
+            // Use column order for export
+            const orderedColumns = columnOrder.length > 0 ? columnOrder : columns;
+            const exportData = data.data.map((record: RecordData) => {
+                const row: Record<string, CellValue> = {};
+                orderedColumns.forEach(col => {
+                    row[col] = record[col];
+                });
+                return row;
+            });
+
+            const worksheet = XLSX.utils.json_to_sheet(exportData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, tableName);
+
+            // Generate filename: gen-hub-{tableName}_{date}
+            const date = format === 'csv' ? new Date().toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10);
+            const filename = `gen-hub-${tableName}_${date}.${format}`;
+
+            if (format === 'csv') {
+                XLSX.writeFile(workbook, filename, { bookType: 'csv' });
+            } else {
+                XLSX.writeFile(workbook, filename, { bookType: 'xlsx' });
+            }
+
+            toast.success(t('table.export.success'));
+        } catch (err) {
+            const error = err as { message?: string };
+            toast.error(t('table.export.error') + ': ' + (error.message || 'Unknown error'));
+        } finally {
+            setIsExporting(false);
+        }
+    };
+
+    // Get display columns (respects column order)
+    const displayColumns = columnOrder.length > 0 ? columnOrder : columns;
+
     // Alt + scroll to scroll horizontally in the table
     useEffect(() => {
         const container = tableContainerRef.current;
@@ -297,6 +521,20 @@ export default function TablePage() {
             fetchRecords(1);
         }
     }, [fetchRecords, tableName]);
+
+    // Close export dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (showExportDropdown) {
+                const target = e.target as HTMLElement;
+                if (!target.closest('.relative')) {
+                    setShowExportDropdown(false);
+                }
+            }
+        };
+        document.addEventListener('click', handleClickOutside);
+        return () => document.removeEventListener('click', handleClickOutside);
+    }, [showExportDropdown]);
 
     const addFilter = () => {
         // Use first column if newFilter.column is empty
@@ -1202,6 +1440,47 @@ export default function TablePage() {
                         <span className="hidden sm:inline">{t('table.filter.title')}</span>
                         {appliedFilters.length > 0 && <span>({appliedFilters.length})</span>}
                     </button>
+                    {/* Export Dropdown */}
+                    <div className="relative">
+                        <button
+                            onClick={() => setShowExportDropdown(!showExportDropdown)}
+                            className="btn btn-secondary text-xs sm:text-sm"
+                            disabled={isExporting || records.length === 0}
+                        >
+                            {isExporting ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                                <Download className="w-4 h-4" />
+                            )}
+                            <span className="hidden sm:inline">{t('table.export.title')}</span>
+                        </button>
+                        {showExportDropdown && (
+                            <div className="absolute right-0 mt-1 w-36 bg-[var(--background-secondary)] border border-[var(--border-primary)] rounded-lg shadow-xl z-20 overflow-hidden">
+                                <button
+                                    onClick={() => exportData('csv')}
+                                    className="w-full px-3 py-2 text-left text-sm text-white hover:bg-[var(--background-tertiary)] transition-colors"
+                                >
+                                    {t('table.export.csv')}
+                                </button>
+                                <button
+                                    onClick={() => exportData('xlsx')}
+                                    className="w-full px-3 py-2 text-left text-sm text-white hover:bg-[var(--background-tertiary)] transition-colors border-t border-[var(--border-primary)]"
+                                >
+                                    {t('table.export.excel')}
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                    {/* Reset Column Order Button */}
+                    {columnOrder.length > 0 && JSON.stringify(columnOrder) !== JSON.stringify(originalColumns) && (
+                        <button
+                            onClick={resetColumnOrder}
+                            className="btn btn-secondary text-xs sm:text-sm"
+                            title={t('table.columnManagement.resetOrder')}
+                        >
+                            <RotateCcw className="w-4 h-4" />
+                        </button>
+                    )}
                     <button
                         onClick={() => fetchRecords(meta.page)}
                         className="btn btn-secondary"
@@ -1329,11 +1608,41 @@ export default function TablePage() {
                                     className="custom-checkbox"
                                 />
                             </th>
-                            {columns.map((col) => (
-                                <th key={col}>
-                                    <span className="text-xs">{col}</span>
-                                    {isColumnBoolean(col) && <span className="text-[var(--text-muted)] ml-1 text-xs">(bool)</span>}
-                                    {isColumnDateTime(col) && <span className="text-[var(--text-muted)] ml-1 text-xs">(datetime)</span>}
+                            {displayColumns.map((col) => (
+                                <th
+                                    key={col}
+                                    draggable
+                                    onDragStart={() => handleDragStart(col)}
+                                    onDragOver={(e) => handleDragOver(e, col)}
+                                    onDrop={(e) => handleDrop(e, col)}
+                                    onDragEnd={handleDragEnd}
+                                    style={{ width: columnWidths[col] ? `${columnWidths[col]}px` : 'auto', minWidth: MIN_COLUMN_WIDTH }}
+                                    className={`relative select-none ${dragOverColumn === col ? 'bg-[var(--accent-primary)]/20' : ''} ${draggedColumn === col ? 'opacity-50' : ''}`}
+                                >
+                                    <div className="flex items-center gap-1">
+                                        <GripVertical className="w-3 h-3 text-[var(--text-muted)] cursor-grab flex-shrink-0" />
+                                        <button
+                                            onClick={() => handleSort(col)}
+                                            className="flex items-center gap-1 hover:text-[var(--accent-primary)] transition-colors"
+                                            title={t('table.sort.clickToSort')}
+                                        >
+                                            <span className="text-xs">{col}</span>
+                                            {isColumnBoolean(col) && <span className="text-[var(--text-muted)] text-xs">(bool)</span>}
+                                            {isColumnDateTime(col) && <span className="text-[var(--text-muted)] text-xs">(datetime)</span>}
+                                            {sortColumn === col && sortDirection === 'asc' && (
+                                                <ArrowUp className="w-3 h-3 text-[var(--accent-primary)]" />
+                                            )}
+                                            {sortColumn === col && sortDirection === 'desc' && (
+                                                <ArrowDown className="w-3 h-3 text-[var(--accent-primary)]" />
+                                            )}
+                                        </button>
+                                    </div>
+                                    {/* Resize Handle */}
+                                    <div
+                                        onMouseDown={(e) => handleResizeStart(e, col)}
+                                        className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-[var(--accent-primary)] transition-colors"
+                                        style={{ transform: 'translateX(50%)' }}
+                                    />
                                 </th>
                             ))}
                         </tr>
@@ -1341,7 +1650,7 @@ export default function TablePage() {
                     <tbody>
                         {isLoading ? (
                             <tr>
-                                <td colSpan={columns.length + 1} className="text-center py-8">
+                                <td colSpan={displayColumns.length + 1} className="text-center py-8">
                                     <Loader2 className="w-6 h-6 animate-spin mx-auto text-[var(--accent-primary)]" />
                                 </td>
                             </tr>
@@ -1358,7 +1667,7 @@ export default function TablePage() {
                                                 <X className="w-4 h-4" />
                                             </button>
                                         </td>
-                                        {columns.map((col) => (
+                                        {displayColumns.map((col) => (
                                             <td key={col}>
                                                 {READONLY_COLUMNS.includes(col) ? (
                                                     <span className="text-[var(--text-muted)]">—</span>
@@ -1382,7 +1691,7 @@ export default function TablePage() {
                                                 disabled={isRowDeleted(record.id)}
                                             />
                                         </td>
-                                        {columns.map((col) => (
+                                        {displayColumns.map((col) => (
                                             <td
                                                 key={col}
                                                 onClick={() => {
@@ -1443,7 +1752,7 @@ export default function TablePage() {
 
                                 {records.length === 0 && newRows.length === 0 && (
                                     <tr>
-                                        <td colSpan={columns.length + 1} className="text-center py-8 text-[var(--text-muted)]">
+                                        <td colSpan={displayColumns.length + 1} className="text-center py-8 text-[var(--text-muted)]">
                                             {t('table.noData')}
                                         </td>
                                     </tr>
