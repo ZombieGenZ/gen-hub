@@ -19,7 +19,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [rememberMe, setRememberMe] = useState(false)
-  const [requires_2fa, setRequires2FA] = useState<boolean>(authStorage.getRequies2fa() === "true" || false)
+  const [requires_2fa, setRequires2FA] = useState<boolean>(authStorage.getRequies2fa() == 'true' || false)
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -302,7 +302,7 @@ export default function LoginPage() {
             />
 
             <button
-              onClick={handleLoginbyTwoFactorCode}
+              onClick={requires_2fa ? handleLoginbyTwoFactorCode : handleLogin}
               disabled={loading}
               className="w-full py-3 rounded-lg font-semibold transition-all shadow-lg transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-white relative overflow-hidden"
               style={{

@@ -121,6 +121,26 @@ export class UserService {
       return response.json();
    }
 
+   //Xác minh secret code verify set up
+   async verifySetUp(access_token: string, access_verification_token: string, twoFactorCode: string) {
+      const response = await fetch(`${API}/2fa/verify-setup`, {
+         method: 'POST',
+         headers: {
+            'Authorization': `Bearer ${access_token}`,
+            'Content-Type': 'application/json',
+            'x-access-verification-token': access_verification_token
+         },
+         body: JSON.stringify({ two_factor_code: twoFactorCode }),
+      })
+
+      if (!response.ok) {
+         const errorData = await response.json().catch(() => ({}));
+         throw new Error(errorData.message || 'Failed to verify 2FA');
+      }
+      
+      return response.json();
+   }
+
    // Tắt xác thực 2fa
    async disableTwoFactor(token: string, access_verification_token: string) {
       const response = await fetch(`${API}/2fa/disable`, {
@@ -135,25 +155,6 @@ export class UserService {
       if (!response.ok) {
          const errorData = await response.json().catch(() => ({}));
          throw new Error(errorData.message || 'Failed to disable 2FA');
-      }
-      
-      return response.json();
-   }
-
-   // Xác minh xác thực 2fa
-   async verifyTwoFactor(token: string, secret: string, twoFactorCode: string) {
-      const response = await fetch(`${API}/2fa/verify`, {
-         method: 'POST',
-         headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-         },
-         body: JSON.stringify({ secret, code: twoFactorCode }),
-      });
-
-      if (!response.ok) {
-         const errorData = await response.json().catch(() => ({}));
-         throw new Error(errorData.message || 'Two-factor authentication failed');
       }
       
       return response.json();

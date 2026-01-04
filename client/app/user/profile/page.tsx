@@ -6,15 +6,12 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { UserService } from '@/services/user/user.service'
 import type { UserData } from '@/types/user/user.type'
-import { User, Shield, Bell, Pencil, ExternalLink, Loader2, Check, Smartphone, Plus, Upload, Menu, Sun, Moon } from 'lucide-react'
-import Link from 'next/link'
+import { User, Shield, Lock, Bell, Pencil, Loader2, Check, Smartphone, Upload, Menu, Sun, Moon } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { AvatarUploader } from "@/components/ui/avatar-uploader"
 import { useRouter } from 'next/navigation'
-import { redirect } from 'next/navigation'
 import { AuthService } from '@/services/auth/auth.service'
 import { Enable2FAResponse } from '@/types/user/2fa.type'
-import { getCookie, removeCookie } from '@/lib/cookies'
 import { authStorage } from '@/services/auth/auth-storage.service'
 import { useToast } from "@/contexts/ToastContext"
 
@@ -63,6 +60,19 @@ export default function ProfilePage() {
 
   // Avatar state
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
+
+  // Add these states at the top of your component
+  const [showChangePassword, setShowChangePassword] = useState(false)
+  const [changePasswordData, setChangePasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  })
+  const [passwordErrors, setPasswordErrors] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  })
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -127,6 +137,83 @@ export default function ProfilePage() {
     }
   }
 
+  // Add this handler function
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
+    setChangePasswordData(prev => ({
+      ...prev,
+      [name]: value
+    }))
+    // Clear error when user types
+    setPasswordErrors(prev => ({
+      ...prev,
+      [name]: ''
+    }))
+  }
+  const validatePasswordChange = () => {
+    let isValid = true
+    const newErrors = {
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: ''
+    }
+    if (!changePasswordData.currentPassword) {
+      newErrors.currentPassword = 'Vui lòng nhập mật khẩu hiện tại'
+      isValid = false
+    }
+    if (!changePasswordData.newPassword) {
+      newErrors.newPassword = 'Vui lòng nhập mật khẩu mới'
+      isValid = false
+    } else if (changePasswordData.newPassword.length < 6) {
+      newErrors.newPassword = 'Mật khẩu phải có ít nhất 6 ký tự'
+      isValid = false
+    }
+    if (changePasswordData.newPassword !== changePasswordData.confirmPassword) {
+      newErrors.confirmPassword = 'Mật khẩu xác nhận không khớp'
+      isValid = false
+    }
+    setPasswordErrors(newErrors)
+    return isValid
+  }
+
+  const handleSubmitPasswordChange = async () => {
+    if (!validatePasswordChange()) return
+    try {
+      setLoading(true)
+      const token = authStorage.getAccessToken()
+      if (!token) {
+        showToast('Vui lòng đăng nhập lại', 'error')
+        router.push('/login')
+        return
+      }
+      const response = await userService.change_password(
+        token,
+        {
+          current_password: changePasswordData.currentPassword,
+          new_password: changePasswordData.newPassword,
+          confirm_password: changePasswordData.confirmPassword,
+          logout_all_devices: true
+        }
+      )
+      if (response.success) {
+        showToast('Đổi mật khẩu thành công', 'success')
+        setShowChangePassword(false)
+        setChangePasswordData({
+          currentPassword: '',
+          newPassword: '',
+          confirmPassword: ''
+        })
+      } else {
+        showToast(response.message || 'Đổi mật khẩu thất bại', 'error')
+      }
+    } catch (error) {
+      console.error('Error changing password:', error)
+      showToast('Có lỗi xảy ra khi đổi mật khẩu', 'error')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const handleEnable2FA = async () => {
     setEnabling2FA(true)
     try {
@@ -164,9 +251,13 @@ export default function ProfilePage() {
           return
         }
 
-        const success = await userService.disableTwoFactor(token, accessVerificationToken)
-        if (success) {
+        const response = await userService.disableTwoFactor(token, accessVerificationToken)
+        if (response.success) {
+          authStorage.clearTokens()
+          handleLogout()
           showToast('Đã tắt xác thực 2 yếu tố thành công', 'success')
+          showToast('Vui lòng đăng nhập lại', 'info')
+          router.push('/login')
         } else {
           showToast('Tắt xác thực 2 yếu tố thất bại', 'error')
         }
@@ -194,14 +285,12 @@ export default function ProfilePage() {
   }
 
   const handleLogout = async () => {
-    const token = getCookie('access_token');
-    const refresh_token = getCookie('refresh_token');
+    const token = authStorage.getAccessToken();
+    const refresh_token = authStorage.getRefreshToken();
     if (token && refresh_token) {
       const response = await authService.logout(token, refresh_token);
       if (response) {
-        removeCookie('access_token');
-        removeCookie('refresh_token');
-        removeCookie('access_verification_token');
+        authStorage.clearTokens()
         showToast(response.message, 'success');
         router.push('/');
       } else {
@@ -287,14 +376,11 @@ export default function ProfilePage() {
                           <div className="flex-1 max-w-[240px]">
                             <Input
                               type="text"
-                              inputMode="numeric"
-                              pattern="[0-9]*"
                               placeholder="Mã xác thực"
                               maxLength={6}
                               value={twoFactorCode}
                               onChange={(e) => {
-                                const value = e.target.value.replace(/\D/g, '')
-                                setTwoFactorCode(value)
+                                setTwoFactorCode(e.target.value)
                               }}
                               className="text-center text-lg font-mono tracking-widest h-12"
                             />
@@ -394,32 +480,25 @@ export default function ProfilePage() {
     setIsSubmitting2FA(true)
     try {
       const token = authStorage.getAccessToken()
-      if (!token || !enable2FAData?.data.secret) {
+      const access_verification_token = authStorage.getVerificationToken() 
+      if (!token || !access_verification_token) {
         router.push('/login')
         return
       }
 
-      const response = await userService.verifyTwoFactor(
-        token,
-        enable2FAData.data.secret,
-        twoFactorCode
-      )
+      const response = await userService.verifySetUp(token, access_verification_token, twoFactorCode)
 
-      // if (response) {
-      //   // Handle successful verification
-      //   setUserData(prev => prev ? {
-      //     ...prev,
-      //     user: {
-      //       ...prev.user,
-      //       two_factor_enabled: true
-      //     }
-      //   } : null)
-      //   setEnable2FAData(null)
-      //   setTwoFactorCode('')
-      //   // Show success message
-      // } else {
-      //   // Show error message
-      // }
+      if (response.success) {
+        setEnable2FAData(null)
+        setTwoFactorCode('')
+        showToast(response.message, 'success')
+        authStorage.clearTokens()
+        handleLogout()
+        showToast('Đăng nhập lại để hoàn tất quá trình xác nhận 2FA', 'info')
+        router.push('/login')
+      } else {
+        showToast(response.message, 'error')
+      }
     } catch (error) {
       console.error('2FA verification failed:', error)
       // Show error message
@@ -648,6 +727,144 @@ export default function ProfilePage() {
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                             </div>
                           </div>
+                        </div>
+
+                        <div className="mt-8 border-t pt-8">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h3 className="text-lg font-medium text-gray-900">Đổi mật khẩu</h3>
+                              <p className="mt-1 text-sm text-gray-500">
+                                Cập nhật mật khẩu tài khoản của bạn
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setShowChangePassword(!showChangePassword)}
+                              className="text-sm cursor-pointer font-medium text-teal-600 hover:text-teal-500"
+                            >
+                              {showChangePassword ? 'Hủy' : 'Đổi mật khẩu'}
+                            </button>
+                          </div>
+
+                          {showChangePassword && (
+                            <div className="mt-6 space-y-5">
+                              <div className="group">
+                                <label className={`block text-sm font-medium mb-2 transition-colors ${darkMode ? 'text-slate-300' : 'text-gray-700'}`}>
+                                  Mật khẩu hiện tại <span className="text-red-500">*</span>
+                                </label>
+                                <div className="relative">
+                                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <Lock className={`h-5 w-5 transition-all duration-300 ${darkMode ? 'text-slate-500' : 'text-gray-400'}`} />
+                                  </div>
+                                  <input
+                                    type="password"
+                                    name="currentPassword"
+                                    value={changePasswordData.currentPassword}
+                                    onChange={handlePasswordChange}
+                                    onKeyDown={(e) => e.key === 'Enter' && handleSubmitPasswordChange()}
+                                    placeholder="Nhập mật khẩu hiện tại"
+                                    className={`w-full pl-10 pr-4 py-3 rounded-lg transition-all focus:outline-none focus:ring-2 ${darkMode
+                                      ? 'bg-slate-700/50 border border-slate-600 text-white placeholder-slate-400 focus:border-teal-600 focus:ring-teal-600/20'
+                                      : 'bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-500 focus:border-teal-600 focus:ring-teal-600/20'}`}
+                                  />
+                                </div>
+                                {passwordErrors.currentPassword && (
+                                  <p className="mt-1 text-sm text-red-500">{passwordErrors.currentPassword}</p>
+                                )}
+                              </div>
+
+                              <div className="group">
+                                <label className={`block text-sm font-medium mb-2 transition-colors ${darkMode ? 'text-slate-300' : 'text-gray-700'}`}>
+                                  Mật khẩu mới <span className="text-red-500">*</span>
+                                </label>
+                                <div className="relative">
+                                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <Lock className={`h-5 w-5 transition-all duration-300 ${darkMode ? 'text-slate-500' : 'text-gray-400'}`} />
+                                  </div>
+                                  <input
+                                    type="password"
+                                    name="newPassword"
+                                    value={changePasswordData.newPassword}
+                                    onChange={handlePasswordChange}
+                                    onKeyDown={(e) => e.key === 'Enter' && handleSubmitPasswordChange()}
+                                    placeholder="Nhập mật khẩu mới"
+                                    className={`w-full pl-10 pr-4 py-3 rounded-lg transition-all focus:outline-none focus:ring-2 ${darkMode
+                                      ? 'bg-slate-700/50 border border-slate-600 text-white placeholder-slate-400 focus:border-teal-600 focus:ring-teal-600/20'
+                                      : 'bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-500 focus:border-teal-600 focus:ring-teal-600/20'}`}
+                                  />
+                                </div>
+                                {passwordErrors.newPassword && (
+                                  <p className="mt-1 text-sm text-red-500">{passwordErrors.newPassword}</p>
+                                )}
+                              </div>
+
+                              <div className="group">
+                                <label className={`block text-sm font-medium mb-2 transition-colors ${darkMode ? 'text-slate-300' : 'text-gray-700'}`}>
+                                  Xác nhận mật khẩu mới <span className="text-red-500">*</span>
+                                </label>
+                                <div className="relative">
+                                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <Lock className={`h-5 w-5 transition-all duration-300 ${darkMode ? 'text-slate-500' : 'text-gray-400'}`} />
+                                  </div>
+                                  <input
+                                    type="password"
+                                    name="confirmPassword"
+                                    value={changePasswordData.confirmPassword}
+                                    onChange={handlePasswordChange}
+                                    onKeyDown={(e) => e.key === 'Enter' && handleSubmitPasswordChange()}
+                                    placeholder="Nhập lại mật khẩu mới"
+                                    className={`w-full pl-10 pr-4 py-3 rounded-lg transition-all focus:outline-none focus:ring-2 ${darkMode
+                                      ? 'bg-slate-700/50 border border-slate-600 text-white placeholder-slate-400 focus:border-teal-600 focus:ring-teal-600/20'
+                                      : 'bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-500 focus:border-teal-600 focus:ring-teal-600/20'}`}
+                                  />
+                                </div>
+                                {passwordErrors.confirmPassword && (
+                                  <p className="mt-1 text-sm text-red-500">{passwordErrors.confirmPassword}</p>
+                                )}
+                              </div>
+
+                              <div className="flex justify-end">
+                                <button
+                                  type="button"
+                                  onClick={handleSubmitPasswordChange}
+                                  disabled={loading}
+                                  className="w-full py-3 rounded-lg font-semibold transition-all shadow-lg transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-white relative overflow-hidden"
+                                  style={{
+                                    background: loading ? "#64748B" : "linear-gradient(135deg, #0F766E 0%, #14B8A6 100%)",
+                                    boxShadow: "0 10px 25px rgba(15, 118, 110, 0.3)",
+                                  }}
+                                  onMouseOver={(e) => !loading && (e.currentTarget.style.boxShadow = "0 15px 35px rgba(15, 118, 110, 0.4)")}
+                                  onMouseOut={(e) => !loading && (e.currentTarget.style.boxShadow = "0 10px 25px rgba(15, 118, 110, 0.3)")}
+                                >
+                                  {loading ? (
+                                    <span className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
+                                      <svg
+                                        className="animate-spin h-5 w-5 text-white"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                      >
+                                        <circle
+                                          className="opacity-25"
+                                          cx="12"
+                                          cy="12"
+                                          r="10"
+                                          stroke="currentColor"
+                                          strokeWidth="4"
+                                        ></circle>
+                                        <path
+                                          className="opacity-75"
+                                          fill="currentColor"
+                                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                        ></path>
+                                      </svg>
+                                    </span>
+                                  ) : null}
+                                  <span className={loading ? 'opacity-0' : ''}>{loading ? 'Đang xử lý...' : 'Lưu thay đổi'}</span>
+                                </button>
+                              </div>
+                            </div>
+                          )}
                         </div>
 
                         {/* Actions */}
