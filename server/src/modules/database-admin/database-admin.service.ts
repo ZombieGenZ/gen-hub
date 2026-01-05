@@ -1103,6 +1103,11 @@ export class DatabaseAdminService implements OnModuleInit {
             return data.toString();
         }
 
+        // Keep Date objects as-is (will be serialized to ISO string by JSON.stringify)
+        if (data instanceof Date) {
+            return data;
+        }
+
         if (Array.isArray(data)) {
             return data.map((item) => this.serializeBigInt(item));
         }
