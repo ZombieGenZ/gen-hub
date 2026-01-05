@@ -24,36 +24,35 @@ export const MenuItem = ({
     item: string;
     children?: React.ReactNode;
 }) => {
+    const isActive = active === item;
     return (
-        <div onMouseEnter={() => setActive(item)} className="relative ">
+        <div onMouseEnter={() => setActive(item)} className="relative">
             <motion.p
-                transition={{ duration: 0.3 }}
-                className="cursor-pointer text-black hover:opacity-[0.9] dark:text-white"
+                transition={{ duration: 0.2 }}
+                className={`cursor-pointer text-sm font-medium transition-colors duration-200 relative group ${
+                    isActive 
+                        ? 'text-teal-600' 
+                        : 'text-gray-700 hover:text-teal-600 dark:text-gray-300 dark:hover:text-teal-400'
+                }`}
             >
                 {item}
+                <span className={`absolute -bottom-1 left-0 h-0.5 bg-teal-500 transition-all duration-200 ${
+                    isActive ? 'w-full' : 'w-0 group-hover:w-full'
+                }`} />
             </motion.p>
-            {active !== null && (
+            {active !== null && active === item && children && (
                 <motion.div
-                    initial={{ opacity: 0, scale: 0.85, y: 10 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    transition={transition}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    transition={{ duration: 0.2, ease: "easeOut" }}
+                    className="absolute top-full left-1/2 transform -translate-x-1/2 pt-4"
                 >
-                    {active === item && (
-                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 pt-4">
-                            <motion.div
-                                transition={transition}
-                                layoutId="active" // layoutId ensures smooth animation
-                                className="bg-white dark:bg-black backdrop-blur-sm rounded-2xl overflow-hidden border border-black/[0.2] dark:border-white/[0.2] shadow-xl"
-                            >
-                                <motion.div
-                                    layout // layout ensures smooth animation
-                                    className="w-max h-full p-4"
-                                >
-                                    {children}
-                                </motion.div>
-                            </motion.div>
+                    <div className="bg-white dark:bg-gray-900 rounded-lg overflow-hidden shadow-lg shadow-gray-200/80 dark:shadow-gray-900/50 border border-gray-100 dark:border-gray-800">
+                        <div className="w-max h-full p-6">
+                            {children}
                         </div>
-                    )}
+                    </div>
                 </motion.div>
             )}
         </div>
@@ -69,8 +68,8 @@ export const Menu = ({
 }) => {
     return (
         <nav
-            onMouseLeave={() => setActive(null)} // resets the state
-            className="relative rounded-full border border-transparent dark:bg-black dark:border-white/[0.2] bg-transparent shadow-none flex justify-center space-x-6 px-4 py-2 "
+            onMouseLeave={() => setActive(null)}
+            className="relative flex items-center justify-center gap-8"
         >
             {children}
         </nav>
@@ -113,7 +112,7 @@ export const HoveredLink = ({ children, ...rest }: any) => {
     return (
         <Link
             {...rest}
-            className="text-neutral-700 dark:text-neutral-200 hover:text-black "
+            className="text-gray-700 dark:text-gray-300 hover:text-teal-600 dark:hover:text-teal-400 transition-colors duration-200 py-2 block font-normal"
         >
             {children}
         </Link>

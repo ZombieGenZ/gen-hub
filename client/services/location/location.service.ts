@@ -1,6 +1,11 @@
+import { Province } from "@/types/location/provinces.type";
+import { Ward } from "@/types/location/wards.type";
+
 const API = process.env.NEXT_PUBLIC_API_URL
 
 export class LocationService {
+
+    //Lấy danh sách tỉnh/thành phố
     async getProvinces(params: {
         keywords?: string;
         is_active?: boolean;
@@ -9,7 +14,7 @@ export class LocationService {
         page?: number;
         limit?: number;
         type?: string;
-    } = {}) {
+    } = {}): Promise<Province[]> {
         
         const query = new URLSearchParams();
         
@@ -38,7 +43,8 @@ export class LocationService {
         }
     }
 
-    async getProvincesById(province_id: string) {
+    //Lấy thông tin tỉnh theo ID
+    async getProvincesById(province_id: string): Promise<Province> {
         try {
             const response = await fetch(`${API}/provinces/${province_id}`);
             if (!response.ok) {
@@ -52,6 +58,7 @@ export class LocationService {
         }
     }
 
+    //Lấy danh sách phường/xã
     async getWards(params: {
         keywords?: string;
         is_active?: boolean;
@@ -60,7 +67,7 @@ export class LocationService {
         page?: number;
         limit?: number;
         type?: string;
-    } = {}) {
+    } = {}): Promise<Ward> {
         const query = new URLSearchParams();
         
         if (params.keywords) query.append('keywords', params.keywords);
@@ -87,7 +94,8 @@ export class LocationService {
         }
     }
 
-    async getWardById(ward_id: string) {
+    //Lấy thông tin phường/xã theo ID
+    async getWardById(ward_id: string): Promise<Ward> {
         try {
             const response = await fetch(`${API}/wards/${ward_id}`);
             if (!response.ok) {
