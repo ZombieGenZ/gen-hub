@@ -842,7 +842,8 @@ export default function TablePage() {
     const formatValue = (value: CellValue, column: string): string => {
         if (value === null || value === undefined) return '—';
         if (typeof value === 'boolean') return value ? 'TRUE' : 'FALSE';
-        if (isColumnDateTime(column) || (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}T/))) {
+        // Check for Date objects or date-like strings
+        if (value instanceof Date || isColumnDateTime(column) || (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}T/))) {
             try {
                 return format(new Date(value), 'dd/MM/yyyy HH:mm');
             } catch {
