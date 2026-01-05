@@ -1,0 +1,34 @@
+{
+    "success": {
+        "created": "Đã tạo chủ đề thành công",
+        "updated": "Đã cập nhật chủ đề thành công",
+        "deleted": "Đã xóa chủ đề thành công",
+        "fetched": "Lấy dữ liệu chủ đề thành công"
+    },
+    "errors": {
+        "not_found": "Không tìm thấy chủ đề",
+        "slug_exists": "Slug này đã được sử dụng",
+        "create_failed": "Không thể tạo chủ đề",
+        "update_failed": "Không thể cập nhật chủ đề",
+        "delete_failed": "Không thể xóa chủ đề"
+    },
+    "validation": {
+        "name_required": "Tên chủ đề không được để trống",
+        "name_string": "Tên chủ đề phải là chuỗi",
+        "slug_required": "Slug không được để trống",
+        "slug_string": "Slug phải là chuỗi",
+        "slug_format": "Slug chỉ chứa chữ thường và dấu gạch ngang (ví dụ: chu-de-cua-toi)",
+        "description_string": "Mô tả phải là chuỗi",
+        "parent_id_uuid": "ID chủ đề cha phải là UUID hợp lệ",
+        "order_integer": "Thứ tự phải là số nguyên",
+        "order_min": "Thứ tự phải >= 0",
+        "status_enum": "Giá trị trạng thái không hợp lệ",
+        "is_featured_boolean": "Nổi bật phải là boolean",
+        "is_active_boolean": "Trạng thái hoạt động phải là boolean",
+        "limit_integer": "Limit phải là số nguyên",
+        "limit_min": "Limit phải >= 1",
+        "offset_integer": "Offset phải là số nguyên",
+        "offset_min": "Offset phải >= 0",
+        "keywords_string": "Từ khóa tìm kiếm phải là chuỗi"
+    }
+}

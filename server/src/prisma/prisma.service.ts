@@ -333,6 +333,8 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         this.seedQCManagementPermissions.bind(this),
         this.seedQCPermissions.bind(this),
         this.seedRefundRequestPermissions.bind(this),
+        this.seedCategoryPermissions.bind(this),
+        this.seedArticlePermissions.bind(this),
       ];
 
       const BATCH_SIZE = 3; // Chạy 3 seed functions cùng lúc
@@ -3426,6 +3428,249 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
       this.logger.error(
         `❌ Failed to seed refund-request permissions: ${errorMessage}`,
       );
+    }
+  }
+
+  /**
+   * Seed các permissions cho Category
+   */
+  private async seedCategoryPermissions() {
+    try {
+      const categoryPermissions = [
+        {
+          key: 'category.create',
+          name: 'Tạo chủ đề',
+          description: 'Quyền tạo chủ đề bài viết',
+        },
+        {
+          key: 'category.list',
+          name: 'Xem danh sách chủ đề',
+          description: 'Quyền xem danh sách chủ đề',
+        },
+        {
+          key: 'category.read',
+          name: 'Xem chi tiết chủ đề',
+          description: 'Quyền xem chi tiết chủ đề',
+        },
+        {
+          key: 'category.update',
+          name: 'Cập nhật chủ đề',
+          description: 'Quyền cập nhật chủ đề',
+        },
+        {
+          key: 'category.delete',
+          name: 'Xóa chủ đề',
+          description: 'Quyền xóa chủ đề',
+        },
+      ];
+
+      for (const perm of categoryPermissions) {
+        const existing = await this.permission.findFirst({
+          where: { key: perm.key },
+        });
+
+        if (!existing) {
+          await this.permission.create({
+            data: {
+              key: perm.key,
+              name: perm.name,
+              description: perm.description,
+              is_active: true,
+              is_deleted: false,
+            },
+          });
+        }
+      }
+
+      // Gán permissions cho Admin và Super Admin roles
+      const roles = await this.role.findMany({
+        where: {
+          name: { in: ['Admin', 'Super Admin'] },
+          is_deleted: false,
+        },
+      });
+
+      const permissions = await this.permission.findMany({
+        where: {
+          key: { in: categoryPermissions.map((p) => p.key) },
+          is_deleted: false,
+        },
+      });
+
+      for (const role of roles) {
+        for (const permission of permissions) {
+          const existingAssignment = await this.rolePermission.findFirst({
+            where: {
+              role_id: role.id,
+              permission_id: permission.id,
+            },
+          });
+
+          if (!existingAssignment) {
+            await this.rolePermission.create({
+              data: {
+                role_id: role.id,
+                permission_id: permission.id,
+                is_active: true,
+                is_deleted: false,
+              },
+            });
+          }
+        }
+      }
+
+      this.logger.log('✅ Category permissions seeded');
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `❌ Failed to seed category permissions: ${errorMessage}`,
+      );
+    }
+  }
+
+  /**
+   * Seed các permissions cho Article
+   */
+  private async seedArticlePermissions() {
+    try {
+      const articlePermissions = [
+        {
+          key: 'article.create',
+          name: 'Tạo bài viết',
+          description: 'Quyền tạo bài viết',
+        },
+        {
+          key: 'article.list',
+          name: 'Xem danh sách bài viết',
+          description: 'Quyền xem danh sách bài viết',
+        },
+        {
+          key: 'article.read',
+          name: 'Xem chi tiết bài viết',
+          description: 'Quyền xem chi tiết bài viết',
+        },
+        {
+          key: 'article.update',
+          name: 'Cập nhật bài viết',
+          description: 'Quyền cập nhật bài viết',
+        },
+        {
+          key: 'article.delete',
+          name: 'Xóa bài viết',
+          description: 'Quyền xóa bài viết',
+        },
+        {
+          key: 'article.admin',
+          name: 'Quản trị bài viết',
+          description: 'Quyền quản trị bài viết, bình luận, reactions',
+        },
+      ];
+
+      for (const perm of articlePermissions) {
+        const existing = await this.permission.findFirst({
+          where: { key: perm.key },
+        });
+
+        if (!existing) {
+          await this.permission.create({
+            data: {
+              key: perm.key,
+              name: perm.name,
+              description: perm.description,
+              is_active: true,
+              is_deleted: false,
+            },
+          });
+        }
+      }
+
+      // Gán permissions cho Admin và Super Admin roles
+      const roles = await this.role.findMany({
+        where: {
+          name: { in: ['Admin', 'Super Admin'] },
+          is_deleted: false,
+        },
+      });
+
+      const permissions = await this.permission.findMany({
+        where: {
+          key: { in: articlePermissions.map((p) => p.key) },
+          is_deleted: false,
+        },
+      });
+
+      for (const role of roles) {
+        for (const permission of permissions) {
+          const existingAssignment = await this.rolePermission.findFirst({
+            where: {
+              role_id: role.id,
+              permission_id: permission.id,
+            },
+          });
+
+          if (!existingAssignment) {
+            await this.rolePermission.create({
+              data: {
+                role_id: role.id,
+                permission_id: permission.id,
+                is_active: true,
+                is_deleted: false,
+              },
+            });
+          }
+        }
+      }
+
+      // Seed default emojis
+      await this.seedDefaultEmojis();
+
+      this.logger.log('✅ Article permissions seeded');
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `❌ Failed to seed article permissions: ${errorMessage}`,
+      );
+    }
+  }
+
+  /**
+   * Seed default emojis cho Article reactions
+   */
+  private async seedDefaultEmojis() {
+    try {
+      const defaultEmojis = [
+        { emoji: '👍', name: 'like', order: 0 },
+        { emoji: '❤️', name: 'love', order: 1 },
+        { emoji: '😂', name: 'haha', order: 2 },
+        { emoji: '😮', name: 'wow', order: 3 },
+        { emoji: '😢', name: 'sad', order: 4 },
+        { emoji: '😡', name: 'angry', order: 5 },
+      ];
+
+      for (const emojiData of defaultEmojis) {
+        const existing = await this.articleEmoji.findFirst({
+          where: { name: emojiData.name },
+        });
+
+        if (!existing) {
+          await this.articleEmoji.create({
+            data: {
+              emoji: emojiData.emoji,
+              name: emojiData.name,
+              order: emojiData.order,
+              is_active: true,
+            },
+          });
+        }
+      }
+
+      this.logger.log('✅ Default emojis seeded');
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error(`❌ Failed to seed default emojis: ${errorMessage}`);
     }
   }
 }

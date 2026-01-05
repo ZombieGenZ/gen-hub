@@ -56,6 +56,8 @@ import { ContactModule } from './modules/contact/contact.module';
 import { ContactTagModule } from './modules/contact-tag/contact-tag.module';
 import { QCManagementModule } from './modules/qc-management/qc-management.module';
 import { RefundRequestModule } from './modules/refund-request/refund-request.module';
+import { CategoryModule } from './modules/category/category.module';
+import { ArticleModule } from './modules/article/article.module';
 import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
 
 @Module({
@@ -191,6 +193,12 @@ import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
 
     // Refund Request Module
     RefundRequestModule,
+
+    // Category Module
+    CategoryModule,
+
+    // Article Module
+    ArticleModule,
 
     // Contact Support Module
     ContactModule,

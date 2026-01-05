@@ -2895,7 +2895,10 @@ model Article {
   updated_by String?
   deleted_by String?
 
-  categories ArticleCategory[]
+  categories   ArticleCategory[]
+  reactions    ArticleReaction[]
+  comments     ArticleComment[]
+  edit_history ArticleEditHistory[]
 
   @@index([author_id])
   @@index([slug])
@@ -2927,6 +2930,131 @@ model ArticleCategory {
   @@index([article_id])
   @@index([category_id])
   @@map("articles_categories")
+}
+
+// Hệ thống emoji riêng cho bài viết
+model ArticleEmoji {
+  id    String @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  emoji String // 😀, 👍, ❤️, etc.
+  name  String // Tên mô tả: happy, like, love
+  order Int    @default(0)
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+
+  reactions ArticleReaction[]
+
+  @@index([order])
+  @@map("article_emojis")
+}
+
+// Mapping user thả emoji vào bài viết
+model ArticleReaction {
+  id         String  @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  article_id String  @db.Uuid
+  emoji_id   String  @db.Uuid
+  user_id    String? @db.Uuid // null nếu guest
+
+  guest_identifier String? // fingerprint hoặc session cho guest
+
+  created_at DateTime @default(now())
+
+  article Article      @relation(fields: [article_id], references: [id], onDelete: Cascade)
+  emoji   ArticleEmoji @relation(fields: [emoji_id], references: [id], onDelete: Cascade)
+
+  @@unique([article_id, user_id, emoji_id])
+  @@index([article_id])
+  @@index([emoji_id])
+  @@index([user_id])
+  @@map("article_reactions")
+}
+
+enum ArticleCommentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// Hệ thống comment
+model ArticleComment {
+  id         String @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  article_id String @db.Uuid
+  parent_id  String? @db.Uuid // reply comment
+
+  // Nếu đăng nhập
+  user_id String? @db.Uuid
+
+  // Nếu không đăng nhập (guest)
+  guest_name  String?
+  guest_email String?
+
+  content String @db.Text
+
+  status ArticleCommentStatus @default(APPROVED)
+
+  is_active   Boolean   @default(true)
+  created_at  DateTime  @default(now())
+  updated_at  DateTime? @updatedAt
+  is_deleted  Boolean   @default(false)
+  deleted_at  DateTime?
+
+  deleted_by String?
+
+  article      Article                     @relation(fields: [article_id], references: [id], onDelete: Cascade)
+  parent       ArticleComment?             @relation("CommentReplies", fields: [parent_id], references: [id])
+  replies      ArticleComment[]            @relation("CommentReplies")
+  edit_history ArticleCommentEditHistory[]
+
+  @@index([article_id])
+  @@index([parent_id])
+  @@index([user_id])
+  @@index([status])
+  @@map("article_comments")
+}
+
+// Lịch sử chỉnh sửa bài viết
+model ArticleEditHistory {
+  id         String @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  article_id String @db.Uuid
+  edited_by  String @db.Uuid
+
+  old_title   String?
+  new_title   String?
+  old_content String? @db.Text
+  new_content String? @db.Text
+  old_excerpt String? @db.Text
+  new_excerpt String? @db.Text
+
+  edit_reason String?
+  created_at  DateTime @default(now())
+
+  article Article @relation(fields: [article_id], references: [id], onDelete: Cascade)
+
+  @@index([article_id])
+  @@index([edited_by])
+  @@index([created_at])
+  @@map("article_edit_history")
+}
+
+// Lịch sử chỉnh sửa comment
+model ArticleCommentEditHistory {
+  id         String @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  comment_id String @db.Uuid
+  edited_by  String @db.Uuid
+
+  old_content String @db.Text
+  new_content String @db.Text
+  edit_reason String?
+
+  created_at DateTime @default(now())
+
+  comment ArticleComment @relation(fields: [comment_id], references: [id], onDelete: Cascade)
+
+  @@index([comment_id])
+  @@index([edited_by])
+  @@index([created_at])
+  @@map("article_comment_edit_history")
 }
 
 enum ReviewStatus {
