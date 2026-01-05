@@ -14,6 +14,7 @@ import { AuthService } from '@/services/auth/auth.service'
 import { Enable2FAResponse } from '@/types/user/2fa.type'
 import { authStorage } from '@/services/auth/auth-storage.service'
 import { useToast } from "@/contexts/ToastContext"
+import Link from 'next/link'
 
 import {
   Drawer,
@@ -546,7 +547,7 @@ export default function ProfilePage() {
 
         {/* Mobile Header */}
         <div className="md:hidden bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 p-4 flex items-center justify-between sticky top-0 z-30 shadow-sm transition-colors duration-300">
-          <div className="font-semibold text-lg text-brand ml-2">GenHub</div>
+          <Link href="/" className="font-semibold text-lg text-brand ml-2">GenHub</Link>
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-2">
               {/* Notification Bell */}
