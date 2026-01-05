@@ -380,9 +380,11 @@ export default function ProfilePage() {
                               maxLength={6}
                               value={twoFactorCode}
                               onChange={(e) => {
-                                setTwoFactorCode(e.target.value)
+                                const value = e.target.value.replace(/[^0-9]/g, '');
+                                setTwoFactorCode(value);
                               }}
                               className="text-center text-lg font-mono tracking-widest h-12"
+                              autoFocus
                             />
                           </div>
 
