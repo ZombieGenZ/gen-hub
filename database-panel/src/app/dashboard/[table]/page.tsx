@@ -24,8 +24,6 @@ import {
     Download,
     ArrowUp,
     ArrowDown,
-    GripVertical,
-    RotateCcw,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -92,9 +90,6 @@ const READONLY_COLUMNS = ['id'];
 const PAGE_SIZE_OPTIONS = [25, 50, 75, 100];
 const LOCALSTORAGE_PAGE_SIZE_KEY = 'database-panel-page-size';
 const LOCALSTORAGE_COLUMN_ORDER_KEY = 'database-panel-column-order';
-const LOCALSTORAGE_COLUMN_WIDTHS_KEY = 'database-panel-column-widths';
-const MIN_COLUMN_WIDTH = 80;
-const MAX_COLUMN_WIDTH = 500;
 
 export default function TablePage() {
     const params = useParams();
@@ -165,19 +160,6 @@ export default function TablePage() {
     // Column order state (saved to localStorage per table)
     const [columnOrder, setColumnOrder] = useState<string[]>([]);
     const [originalColumns, setOriginalColumns] = useState<string[]>([]);
-
-    // Column widths state (saved to localStorage per table)
-    const [columnWidths, setColumnWidths] = useState<Record<string, number>>({});
-
-    // Drag state for column reordering
-    const [draggedColumn, setDraggedColumn] = useState<string | null>(null);
-    const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
-
-    // Resize state for column resizing
-    const [isResizing, setIsResizing] = useState(false);
-    const [resizingColumn, setResizingColumn] = useState<string | null>(null);
-    const resizeStartX = useRef<number>(0);
-    const resizeStartWidth = useRef<number>(0);
 
     // Export dropdown state
     const [showExportDropdown, setShowExportDropdown] = useState(false);
@@ -265,15 +247,7 @@ export default function TablePage() {
                 } else {
                     setColumnOrder(allColumns);
                 }
-                // Load saved column widths
-                const savedWidths = localStorage.getItem(`${LOCALSTORAGE_COLUMN_WIDTHS_KEY}-${tableName}`);
-                if (savedWidths) {
-                    try {
-                        setColumnWidths(JSON.parse(savedWidths));
-                    } catch {
-                        setColumnWidths({});
-                    }
-                }
+
                 if (!newFilter.column && allColumns.length > 0) {
                     setNewFilter((prev) => ({ ...prev, column: allColumns[0] }));
                 }
@@ -312,7 +286,6 @@ export default function TablePage() {
         setSortDirection(null);
         setColumnOrder([]);
         setOriginalColumns([]);
-        setColumnWidths({});
 
         // Fetch schema first
         const init = async () => {
@@ -363,86 +336,7 @@ export default function TablePage() {
         }
     };
 
-    // Column reordering functions
-    const handleDragStart = (column: string) => {
-        setDraggedColumn(column);
-    };
 
-    const handleDragOver = (e: React.DragEvent, column: string) => {
-        e.preventDefault();
-        if (draggedColumn && column !== draggedColumn) {
-            setDragOverColumn(column);
-        }
-    };
-
-    const handleDrop = (e: React.DragEvent, targetColumn: string) => {
-        e.preventDefault();
-        if (draggedColumn && draggedColumn !== targetColumn) {
-            const newOrder = [...columnOrder];
-            const dragIndex = newOrder.indexOf(draggedColumn);
-            const dropIndex = newOrder.indexOf(targetColumn);
-            newOrder.splice(dragIndex, 1);
-            newOrder.splice(dropIndex, 0, draggedColumn);
-            setColumnOrder(newOrder);
-            // Save to localStorage
-            localStorage.setItem(`${LOCALSTORAGE_COLUMN_ORDER_KEY}-${tableName}`, JSON.stringify(newOrder));
-        }
-        setDraggedColumn(null);
-        setDragOverColumn(null);
-    };
-
-    const handleDragEnd = () => {
-        setDraggedColumn(null);
-        setDragOverColumn(null);
-    };
-
-    const resetColumnOrder = () => {
-        setColumnOrder(originalColumns);
-        localStorage.removeItem(`${LOCALSTORAGE_COLUMN_ORDER_KEY}-${tableName}`);
-        toast.success(t('common.success'));
-    };
-
-    // Column resizing functions
-    const handleResizeStart = (e: React.MouseEvent, column: string) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setIsResizing(true);
-        setResizingColumn(column);
-        resizeStartX.current = e.clientX;
-        resizeStartWidth.current = columnWidths[column] || 150;
-    };
-
-    useEffect(() => {
-        if (!isResizing) return;
-
-        const handleMouseMove = (e: MouseEvent) => {
-            if (resizingColumn) {
-                const diff = e.clientX - resizeStartX.current;
-                const newWidth = Math.max(MIN_COLUMN_WIDTH, Math.min(MAX_COLUMN_WIDTH, resizeStartWidth.current + diff));
-                setColumnWidths(prev => ({
-                    ...prev,
-                    [resizingColumn]: newWidth,
-                }));
-            }
-        };
-
-        const handleMouseUp = () => {
-            if (resizingColumn) {
-                // Save to localStorage
-                const newWidths = { ...columnWidths };
-                localStorage.setItem(`${LOCALSTORAGE_COLUMN_WIDTHS_KEY}-${tableName}`, JSON.stringify(newWidths));
-            }
-            setIsResizing(false);
-            setResizingColumn(null);
-        };
-
-        document.addEventListener('mousemove', handleMouseMove);
-        document.addEventListener('mouseup', handleMouseUp);
-        return () => {
-            document.removeEventListener('mousemove', handleMouseMove);
-            document.removeEventListener('mouseup', handleMouseUp);
-        };
-    }, [isResizing, resizingColumn, columnWidths, tableName]);
 
     // Export functions
     const exportData = async (format: 'csv' | 'xlsx') => {
@@ -1472,16 +1366,6 @@ export default function TablePage() {
                             </div>
                         )}
                     </div>
-                    {/* Reset Column Order Button */}
-                    {columnOrder.length > 0 && JSON.stringify(columnOrder) !== JSON.stringify(originalColumns) && (
-                        <button
-                            onClick={resetColumnOrder}
-                            className="btn btn-secondary text-xs sm:text-sm"
-                            title={t('table.columnManagement.resetOrder')}
-                        >
-                            <RotateCcw className="w-4 h-4" />
-                        </button>
-                    )}
                     <button
                         onClick={() => fetchRecords(meta.page)}
                         className="btn btn-secondary"
@@ -1612,24 +1496,20 @@ export default function TablePage() {
                             {displayColumns.map((col) => (
                                 <th
                                     key={col}
-                                    draggable
-                                    onDragStart={() => handleDragStart(col)}
-                                    onDragOver={(e) => handleDragOver(e, col)}
-                                    onDrop={(e) => handleDrop(e, col)}
-                                    onDragEnd={handleDragEnd}
-                                    style={{ width: columnWidths[col] ? `${columnWidths[col]}px` : 'auto', minWidth: MIN_COLUMN_WIDTH }}
-                                    className={`relative select-none ${dragOverColumn === col ? 'bg-[var(--accent-primary)]/20' : ''} ${draggedColumn === col ? 'opacity-50' : ''}`}
+                                    className="relative select-none"
                                 >
                                     <div className="flex items-center gap-1">
-                                        <GripVertical className="w-3 h-3 text-[var(--text-muted)] cursor-grab flex-shrink-0" />
                                         <button
                                             onClick={() => handleSort(col)}
                                             className="flex items-center gap-1 hover:text-[var(--accent-primary)] transition-colors"
                                             title={t('table.sort.clickToSort')}
                                         >
                                             <span className="text-xs">{col}</span>
-                                            {isColumnBoolean(col) && <span className="text-[var(--text-muted)] text-xs">(bool)</span>}
-                                            {isColumnDateTime(col) && <span className="text-[var(--text-muted)] text-xs">(datetime)</span>}
+                                            {getFieldInfo(col)?.type && (
+                                                <span className="text-[var(--text-muted)] text-xs">
+                                                    ({getFieldInfo(col)?.type.toLowerCase()})
+                                                </span>
+                                            )}
                                             {sortColumn === col && sortDirection === 'asc' && (
                                                 <ArrowUp className="w-3 h-3 text-[var(--accent-primary)]" />
                                             )}
@@ -1638,12 +1518,6 @@ export default function TablePage() {
                                             )}
                                         </button>
                                     </div>
-                                    {/* Resize Handle */}
-                                    <div
-                                        onMouseDown={(e) => handleResizeStart(e, col)}
-                                        className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-[var(--accent-primary)] transition-colors"
-                                        style={{ transform: 'translateX(50%)' }}
-                                    />
                                 </th>
                             ))}
                         </tr>
