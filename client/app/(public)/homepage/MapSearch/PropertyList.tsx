@@ -1,4 +1,5 @@
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import { Property } from '@/data/mockProperties';
 import { CameraIcon, MapPinIcon } from '@heroicons/react/20/solid';
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
@@ -11,6 +12,7 @@ interface PropertyListProps {
 }
 
 export default function PropertyList({ properties, onHover, highlightedPropertyId, variant = 'grid' }: PropertyListProps) {
+    const router = useRouter();
     // Layout classes based on variant
     let containerClasses = "grid grid-cols-1 gap-6";
     if (variant === 'grid') containerClasses = "grid grid-cols-1 sm:grid-cols-2 gap-6";
@@ -37,6 +39,7 @@ export default function PropertyList({ properties, onHover, highlightedPropertyI
                         }`}
                     onMouseEnter={() => onHover(property.id)}
                     onMouseLeave={() => onHover(null)}
+                    onClick={() => router.push(`/kho-bai/${property.id}`)}
                 >
                     {/* Image Section */}
                     <div className={`${imageContainerClasses} relative bg-slate-100 overflow-hidden shrink-0`}>
@@ -77,7 +80,7 @@ export default function PropertyList({ properties, onHover, highlightedPropertyI
                             {property.address}
                         </p>
 
-                        <div className="mt-auto border-t border-slate-50 pt-4 flex items-end justify-between">
+                        <div className="mt-auto border-t border-slate-50 pt-4 flex items-center justify-between">
                             <div>
                                 <div className="text-[#0F766E] font-bold text-xl leading-none">
                                     {property.price >= 1000000000
@@ -89,26 +92,10 @@ export default function PropertyList({ properties, onHover, highlightedPropertyI
 
                             <div className="flex gap-2 shrink-0">
                                 {/* Area */}
-                                <div className="flex flex-col items-center justify-center bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-100 min-w-[60px]">
-                                    <ArrowsPointingOutIcon className="w-4 h-4 text-slate-400 mb-0.5" />
+                                <div className="flex col-2 gap-1 items-center justify-center bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-100 min-w-[60px]">
+                                    <ArrowsPointingOutIcon className="w-5 h-5 text-slate-400" />
                                     <span className="text-xs font-semibold text-slate-700">{property.area} m²</span>
                                 </div>
-
-                                {/* Height (Optional) */}
-                                {property.ceiling_height && (
-                                    <div className="flex flex-col items-center justify-center bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-100 min-w-[60px]">
-                                        <ArrowUpIcon className="w-4 h-4 text-slate-400 mb-0.5" />
-                                        <span className="text-xs font-semibold text-slate-700">{property.ceiling_height}m</span>
-                                    </div>
-                                )}
-
-                                {/* Electricity (Optional) */}
-                                {property.electricity && (
-                                    <div className="flex flex-col items-center justify-center bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-100 min-w-[60px]" title={property.electricity}>
-                                        <BoltIcon className="w-4 h-4 text-slate-400 mb-0.5" />
-                                        <span className="text-xs font-semibold text-slate-700">3 Pha</span>
-                                    </div>
-                                )}
                             </div>
                         </div>
                     </div>

@@ -2,14 +2,12 @@ import React, { useState, useMemo, useEffect } from "react";
 import { Snowflake, Truck, Package, RotateCcw, MapPin } from "lucide-react";
 import MapComponent from "./MapSearch/MapComponent";
 import PropertyList from "./MapSearch/PropertyList";
-import { Property } from "@/data/mockProperties";
+import { Property, mockProperties } from "@/data/mockProperties";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { ChevronDownIcon, FunnelIcon } from "@heroicons/react/20/solid";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
-import { WarehouseTemplateService } from "@/services/warehouse_template/warehouse_template.service";
-import { Warehouse } from "@/types/warehoue_template/warehouse_template.type";
 import { Breadcrumb as FilterChips } from "@/components/filter-chips-breadcrumb";
 import {
     Dialog,
@@ -25,48 +23,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-const warehouseService = new WarehouseTemplateService();
 
-// Helper function to map Warehouse to Property
-function mapWarehouseToProperty(warehouse: Warehouse): Property {
-    const area = warehouse.length * warehouse.width;
-    const price = parseFloat(warehouse.price_per_month);
-
-    // Determine type based on warehouse characteristics
-    let type: Property['type'] = 'Kho Thường';
-    if (warehouse.is_cold_storage) {
-        type = 'Kho Mát';
-    } else if (warehouse.is_shared_warehouse) {
-        type = 'Fulfillment';
-    }
-
-    return {
-        id: warehouse.id,
-        title: warehouse.name,
-        price: price,
-        currency: "VND",
-        area: area,
-        type: type,
-        address: `${warehouse.address_detail}, ${warehouse.ward?.name || ''}`,
-        image: warehouse.images?.[0]?.url || "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
-        lat: parseFloat(warehouse.latitude),
-        lng: parseFloat(warehouse.longitude),
-        length: warehouse.length,
-        width: warehouse.width,
-        ceiling_height: parseFloat(warehouse.ceiling_height),
-        max_load_capacity: warehouse.max_load_capacity || undefined,
-
-        // Filter Fields
-        is_cold_storage: warehouse.is_cold_storage,
-        is_shared_warehouse: warehouse.is_shared_warehouse,
-        province_name: warehouse.ward?.province?.name || "",
-        electricity: "3 Pha" // Default, could be mapped from warehouse data if available
-    };
-}
 
 export function PrimeNestSearch() {
-    const [properties, setProperties] = useState<Property[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [properties, setProperties] = useState<Property[]>(mockProperties);
+    const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [bounds, setBounds] = useState<{ north: number; south: number; east: number; west: number } | null>(null);
     const [highlightedPropertyId, setHighlightedPropertyId] = useState<number | string | null>(null);
@@ -121,60 +82,21 @@ export function PrimeNestSearch() {
     };
 
     // Fetch warehouses from API (Public - No Auth Required)
+    // Live API fetch disabled - Using mockProperties by default
+    /*
     useEffect(() => {
         const fetchWarehouses = async () => {
-            try {
-                setLoading(true);
-                setError(null);
-
-                // Direct API call without authentication for public access
-                const API_URL = process.env.NEXT_PUBLIC_API_URL;
-                console.log('🔍 Fetching from:', `${API_URL}/warehouse-templates`);
-                const query = new URLSearchParams({
-                    limit: '100',
-                    is_active: 'true'
-                });
-
-                const response = await fetch(`${API_URL}/warehouse-templates?${query.toString()}`, {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    // No Authorization header for public endpoint
-                });
-
-                console.log('📡 Response status:', response.status);
-
-                if (response.ok) {
-                    const result = await response.json();
-                    console.log('✅ API Response:', result);
-                    const data = result.data;
-
-                    if (data && Array.isArray(data)) {
-                        console.log(`📦 Found ${data.length} warehouses`);
-                        const mappedProperties = data.map(mapWarehouseToProperty);
-                        setProperties(mappedProperties);
-                    } else {
-                        console.warn('⚠️ No data in response');
-                        setError('Database chưa có dữ liệu kho');
-                    }
-                } else {
-                    const errorText = await response.text();
-                    console.error('❌ API Error:', response.status, errorText);
-                    setError(`Lỗi API: ${response.status}`);
-                    setProperties([]);
-                }
-            } catch (err) {
-                console.error("💥 Fetch error:", err);
-                setError(err instanceof Error ? err.message : 'Không thể kết nối server');
-                setProperties([]);
-            } finally {
+             // ... API Logic (Commented Out)
+             // To restore: Uncomment and call fetchWarehouses();
+             try {
+                // ...
+             } finally {
                 setLoading(false);
-            }
+             }
         };
-
         fetchWarehouses();
     }, []);
+    */
 
     // Filter properties based on map bounds AND search/filters
     const filteredProperties = useMemo(() => {
