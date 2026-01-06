@@ -18,6 +18,11 @@ export interface Property {
     ceiling_height?: number;
     max_load_capacity?: number; // Ton/m2
     electricity?: string; // 3 Phase etc
+    
+    // Filters
+    is_cold_storage?: boolean;
+    is_shared_warehouse?: boolean;
+    province_name?: string;
 }
 
 export const mockProperties: Property[] = [

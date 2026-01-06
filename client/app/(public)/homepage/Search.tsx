@@ -1,6 +1,5 @@
-"use client";
-
 import React, { useState, useMemo, useEffect } from "react";
+import { Snowflake, Truck, Package, RotateCcw, MapPin } from "lucide-react";
 import MapComponent from "./MapSearch/MapComponent";
 import PropertyList from "./MapSearch/PropertyList";
 import { Property } from "@/data/mockProperties";
@@ -11,6 +10,20 @@ import { ChevronDownIcon, FunnelIcon } from "@heroicons/react/20/solid";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import { WarehouseTemplateService } from "@/services/warehouse_template/warehouse_template.service";
 import { Warehouse } from "@/types/warehoue_template/warehouse_template.type";
+import { Breadcrumb as FilterChips } from "@/components/filter-chips-breadcrumb";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+    DialogFooter,
+    DialogClose,
+} from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const warehouseService = new WarehouseTemplateService();
 
@@ -42,6 +55,11 @@ function mapWarehouseToProperty(warehouse: Warehouse): Property {
         width: warehouse.width,
         ceiling_height: parseFloat(warehouse.ceiling_height),
         max_load_capacity: warehouse.max_load_capacity || undefined,
+
+        // Filter Fields
+        is_cold_storage: warehouse.is_cold_storage,
+        is_shared_warehouse: warehouse.is_shared_warehouse,
+        province_name: warehouse.ward?.province?.name || "",
         electricity: "3 Pha" // Default, could be mapped from warehouse data if available
     };
 }
@@ -55,8 +73,52 @@ export function PrimeNestSearch() {
 
     // Filter State
     const [searchText, setSearchText] = useState("");
-    const [priceRange, setPriceRange] = useState([0, 500]); // 0 - 500 Million
-    const [areaRange, setAreaRange] = useState([0, 5000]); // 0 - 5000 m2
+    const [priceRange, setPriceRange] = useState([0, 500]);
+    const [areaRange, setAreaRange] = useState([0, 5000]);
+
+    // Advanced Filters State
+    const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
+    const [selectedCities, setSelectedCities] = useState<string[]>([]);
+
+    // Active Filters Calculation
+    const activeFilters = useMemo(() => {
+        const filters = [];
+        if (priceRange[0] > 0 || priceRange[1] < 500) {
+            filters.push({ id: 'price', name: 'Giá', value: `${priceRange[0]} - ${priceRange[1]} Triệu` });
+        }
+        if (areaRange[0] > 0 || areaRange[1] < 5000) {
+            filters.push({ id: 'area', name: 'Diện tích', value: `${areaRange[0]} - ${areaRange[1]} m²` });
+        }
+        selectedTypes.forEach(type => {
+            const label = type === 'cold' ? 'Kho Mát' : type === 'shared' ? 'Fulfillment' : 'Kho Thường';
+            filters.push({ id: `type-${type}`, name: 'Loại', value: label });
+        });
+        selectedCities.forEach(city => {
+            filters.push({ id: `city-${city}`, name: 'Khu vực', value: city });
+        });
+        return filters;
+    }, [priceRange, areaRange, selectedTypes, selectedCities]);
+
+    const handleRemoveFilter = (id: string) => {
+        if (id === 'price') setPriceRange([0, 500]);
+        if (id === 'area') setAreaRange([0, 5000]);
+        if (id.startsWith('type-')) {
+            const type = id.replace('type-', '');
+            setSelectedTypes(prev => prev.filter(t => t !== type));
+        }
+        if (id.startsWith('city-')) {
+            const city = id.replace('city-', '');
+            setSelectedCities(prev => prev.filter(c => c !== city));
+        }
+    };
+
+    const handleClearAll = () => {
+        setSearchText("");
+        setPriceRange([0, 500]);
+        setAreaRange([0, 5000]);
+        setSelectedTypes([]);
+        setSelectedCities([]);
+    };
 
     // Fetch warehouses from API (Public - No Auth Required)
     useEffect(() => {
@@ -136,6 +198,34 @@ export function PrimeNestSearch() {
         // 3. Area Filter (Range)
         result = result.filter((p: Property) => p.area >= areaRange[0] && p.area <= areaRange[1]);
 
+        // 4. Advanced Filters (Type & City)
+        if (selectedTypes.length > 0) {
+            result = result.filter(p => {
+                const isCold = selectedTypes.includes('cold') && p.is_cold_storage;
+                const isShared = selectedTypes.includes('shared') && p.is_shared_warehouse;
+                const isStandard = selectedTypes.includes('standard') && !p.is_cold_storage && !p.is_shared_warehouse;
+                return isCold || isShared || isStandard;
+            });
+        }
+
+        if (selectedCities.length > 0) {
+            result = result.filter(p => selectedCities.some(city => p.province_name?.includes(city)));
+        }
+
+        // 4. Advanced Filters (Type & City)
+        if (selectedTypes.length > 0) {
+            result = result.filter(p => {
+                const isCold = selectedTypes.includes('cold') && p.is_cold_storage;
+                const isShared = selectedTypes.includes('shared') && p.is_shared_warehouse;
+                const isStandard = selectedTypes.includes('standard') && !p.is_cold_storage && !p.is_shared_warehouse;
+                return isCold || isShared || isStandard;
+            });
+        }
+
+        if (selectedCities.length > 0) {
+            result = result.filter(p => selectedCities.some(city => p.province_name?.includes(city)));
+        }
+
         // 4. Map Bounds Filter (Final Step)
         if (!bounds) return result;
         return result.filter((p: Property) =>
@@ -144,7 +234,7 @@ export function PrimeNestSearch() {
             p.lng <= bounds.east &&
             p.lng >= bounds.west
         );
-    }, [properties, bounds, searchText, priceRange, areaRange]);
+    }, [properties, bounds, searchText, priceRange, areaRange, selectedTypes, selectedCities]);
 
     // Properties for the map (Ignore Bounds, respect other filters)
     const mapProperties = useMemo(() => {
@@ -167,8 +257,21 @@ export function PrimeNestSearch() {
         // Area Filter (Range)
         result = result.filter((p: Property) => p.area >= areaRange[0] && p.area <= areaRange[1]);
 
+        // Advanced Filters (Type & City) - Apply to Map too
+        if (selectedTypes.length > 0) {
+            result = result.filter(p => {
+                const isCold = selectedTypes.includes('cold') && p.is_cold_storage;
+                const isShared = selectedTypes.includes('shared') && p.is_shared_warehouse;
+                const isStandard = selectedTypes.includes('standard') && !p.is_cold_storage && !p.is_shared_warehouse;
+                return isCold || isShared || isStandard;
+            });
+        }
+        if (selectedCities.length > 0) {
+            result = result.filter(p => selectedCities.some(city => p.province_name?.includes(city)));
+        }
+
         return result;
-    }, [properties, searchText, priceRange, areaRange]);
+    }, [properties, searchText, priceRange, areaRange, selectedTypes, selectedCities]);
 
     if (loading) {
         return (
@@ -199,18 +302,18 @@ export function PrimeNestSearch() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[700px] mb-12">
 
                     {/* Map Area (2/3) */}
-                    <div className="lg:col-span-2 bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm relative z-0 h-full flex flex-col">
+                    <div className="lg:col-span-2 bg-white rounded-3xl overflow-hidden border border-slate-200 shadow-sm relative z-0 h-full flex flex-col">
 
                         {/* Search & Filter Bar Floating on Map */}
                         <div className="absolute top-4 left-4 right-4 z-10 flex flex-col pointer-events-none">
                             <div className="flex flex-col md:flex-row gap-3 pointer-events-auto w-full max-w-5xl mx-auto">
 
                                 {/* 1. Search Input - Wide */}
-                                <div className="flex-1 relative shadow-lg rounded-full">
+                                <div className="flex-1 relative shadow-lg rounded-xl">
                                     <input
                                         type="text"
                                         placeholder="Tìm kiếm kho bãi, khu công nghiệp..."
-                                        className="w-full pl-12 pr-4 py-3 bg-white rounded-full border border-slate-200 focus:ring-2 focus:ring-[#0F766E] outline-none text-slate-700 shadow-sm"
+                                        className="w-full pl-12 pr-4 py-3 bg-white rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#0F766E] outline-none text-slate-700 shadow-sm"
                                         value={searchText}
                                         onChange={(e) => setSearchText(e.target.value)}
                                     />
@@ -223,11 +326,11 @@ export function PrimeNestSearch() {
                                     {/* Price Filter */}
                                     <Popover>
                                         <PopoverTrigger asChild>
-                                            <Button variant="outline" className="rounded-full bg-white border-slate-200 shadow-sm hover:bg-slate-50 min-w-[100px] justify-between h-12 px-4 whitespace-nowrap">
+                                            <Button variant="outline" className="rounded-xl bg-white border-slate-200 shadow-sm hover:bg-slate-50 min-w-[100px] justify-between h-12 px-4 whitespace-nowrap">
                                                 <span className="truncate">
                                                     {priceRange[0] === 0 && priceRange[1] === 500
                                                         ? "Giá"
-                                                        : `${priceRange[0]} - ${priceRange[1]} Tỷ`
+                                                        : `${priceRange[0]} - ${priceRange[1]} Triệu`
                                                     }
                                                 </span>
                                                 <ChevronDownIcon className="w-4 h-4 ml-1 opacity-50 shrink-0" />
@@ -246,6 +349,7 @@ export function PrimeNestSearch() {
                                                     value={priceRange}
                                                     onValueChange={setPriceRange}
                                                     className="mt-2"
+                                                    showTooltip={true}
                                                 />
                                                 <div className="flex justify-between mt-2 text-xs text-slate-400">
                                                     <span>0</span>
@@ -258,7 +362,7 @@ export function PrimeNestSearch() {
                                     {/* Area Filter */}
                                     <Popover>
                                         <PopoverTrigger asChild>
-                                            <Button variant="outline" className="rounded-full bg-white border-slate-200 shadow-sm hover:bg-slate-50 min-w-[120px] justify-between h-12 px-4 whitespace-nowrap">
+                                            <Button variant="outline" className="rounded-xl bg-white border-slate-200 shadow-sm hover:bg-slate-50 min-w-[120px] justify-between h-12 px-4 whitespace-nowrap">
                                                 <span className="truncate">
                                                     {areaRange[0] === 0 && areaRange[1] === 5000
                                                         ? "Diện tích"
@@ -281,6 +385,7 @@ export function PrimeNestSearch() {
                                                     value={areaRange}
                                                     onValueChange={setAreaRange}
                                                     className="mt-2"
+                                                    showTooltip={true}
                                                 />
                                                 <div className="flex justify-between mt-2 text-xs text-slate-400">
                                                     <span>0</span>
@@ -290,14 +395,131 @@ export function PrimeNestSearch() {
                                         </PopoverContent>
                                     </Popover>
 
-                                    {/* Main Filter Button (Black) */}
-                                    <Button className="rounded-full bg-slate-900 text-white hover:bg-slate-800 shadow-md h-12 px-6 gap-2 shrink-0">
-                                        <FunnelIcon className="w-4 h-4" />
-                                        <span>Lọc</span>
-                                    </Button>
+                                    {/* Advanced Filter Sheet */}
+                                    <Dialog>
+                                        <DialogTrigger asChild>
+                                            <Button className="rounded-xl bg-slate-900 text-white hover:bg-slate-800 shadow-md h-12 px-6 gap-2 shrink-0">
+                                                <FunnelIcon className="w-4 h-4" />
+                                                <span>Lọc</span>
+                                            </Button>
+                                        </DialogTrigger>
+                                        <DialogContent className="max-w-[600px] p-0 overflow-hidden bg-white gap-0 rounded-3xl border-none shadow-2xl">
+                                            <DialogHeader className="px-6 py-5 border-b border-slate-100 bg-slate-50/50">
+                                                <DialogTitle className="text-xl font-bold text-slate-900">Bộ Lọc Nâng Cao</DialogTitle>
+                                                <DialogDescription className="text-slate-500">
+                                                    Tùy chỉnh tìm kiếm kho bãi theo nhu cầu của bạn
+                                                </DialogDescription>
+                                            </DialogHeader>
+
+                                            <div className="p-6 space-y-8 overflow-y-auto max-h-[70vh]">
+                                                {/* 1. Warehouse Types as Cards */}
+                                                <div className="space-y-4">
+                                                    <h4 className="flex items-center gap-2 text-sm font-semibold text-slate-900 uppercase tracking-wider">
+                                                        <Package className="w-4 h-4 text-[#0F766E]" />
+                                                        Loại Hình Kho
+                                                    </h4>
+                                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                                        {[
+                                                            { id: 'standard', label: 'Kho Thường', icon: Package },
+                                                            { id: 'cold', label: 'Kho Mát / Lạnh', icon: Snowflake },
+                                                            { id: 'shared', label: 'Fulfillment', icon: Truck },
+                                                        ].map((type) => {
+                                                            const isSelected = selectedTypes.includes(type.id);
+                                                            const Icon = type.icon;
+                                                            return (
+                                                                <div
+                                                                    key={type.id}
+                                                                    onClick={() => {
+                                                                        if (isSelected) setSelectedTypes(selectedTypes.filter(t => t !== type.id));
+                                                                        else setSelectedTypes([...selectedTypes, type.id]);
+                                                                    }}
+                                                                    className={`
+                                                                        relative cursor-pointer group flex flex-col items-center justify-center gap-3 p-4 rounded-2xl border-2 transition-all duration-200
+                                                                        ${isSelected
+                                                                            ? 'border-[#0F766E] bg-[#0F766E]/5'
+                                                                            : 'border-slate-100 bg-white hover:border-[#0F766E]/30 hover:shadow-md'
+                                                                        }
+                                                                    `}
+                                                                >
+                                                                    <div className={`p-3 rounded-full transition-colors ${isSelected ? 'bg-[#0F766E] text-white' : 'bg-slate-100 text-slate-500 group-hover:bg-[#0F766E]/10 group-hover:text-[#0F766E]'}`}>
+                                                                        <Icon className="w-6 h-6" />
+                                                                    </div>
+                                                                    <span className={`font-medium text-sm text-center ${isSelected ? 'text-[#0F766E]' : 'text-slate-600'}`}>
+                                                                        {type.label}
+                                                                    </span>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+
+                                                {/* 2. Locations as Tags */}
+                                                <div className="space-y-4">
+                                                    <h4 className="flex items-center gap-2 text-sm font-semibold text-slate-900 uppercase tracking-wider">
+                                                        <MapPin className="w-4 h-4 text-[#0F766E]" />
+                                                        Khu Vực Phổ Biến
+                                                    </h4>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {['Hồ Chí Minh', 'Hà Nội', 'Bình Dương', 'Đồng Nai', 'Long An', 'Bắc Ninh', 'Hải Phòng', 'Đà Nẵng'].map((city) => {
+                                                            const isSelected = selectedCities.includes(city);
+                                                            return (
+                                                                <div
+                                                                    key={city}
+                                                                    onClick={() => {
+                                                                        if (isSelected) setSelectedCities(selectedCities.filter(c => c !== city));
+                                                                        else setSelectedCities([...selectedCities, city]);
+                                                                    }}
+                                                                    className={`
+                                                                        cursor-pointer px-4 py-2.5 rounded-xl text-sm font-medium border transition-all duration-200 select-none
+                                                                        ${isSelected
+                                                                            ? 'border-[#0F766E] bg-[#0F766E] text-white shadow-md shadow-[#0F766E]/20'
+                                                                            : 'border-slate-200 bg-white text-slate-600 hover:border-[#0F766E] hover:text-[#0F766E]'
+                                                                        }
+                                                                    `}
+                                                                >
+                                                                    {city}
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <DialogFooter className="p-6 border-t border-slate-100 bg-slate-50/50 flex flex-row gap-3 items-center justify-between sm:justify-between w-full">
+                                                <Button
+                                                    variant="ghost"
+                                                    onClick={() => {
+                                                        setSelectedTypes([]);
+                                                        setSelectedCities([]);
+                                                    }}
+                                                    className="text-slate-500 hover:text-red-600 hover:bg-red-50 gap-2 h-11 px-4"
+                                                >
+                                                    <RotateCcw className="w-4 h-4" />
+                                                    <span className="hidden sm:inline">Đặt lại</span>
+                                                </Button>
+                                                <DialogClose asChild>
+                                                    <Button className="flex-1 sm:flex-none shadow-lg shadow-[#0F766E]/20 bg-[#0F766E] hover:bg-[#0D655D] text-white rounded-xl px-8 h-11 font-medium transition-all hover:scale-105 active:scale-95">
+                                                        Áp dụng {selectedTypes.length + selectedCities.length > 0 ? `(${selectedTypes.length + selectedCities.length})` : ''}
+                                                    </Button>
+                                                </DialogClose>
+                                            </DialogFooter>
+                                        </DialogContent>
+                                    </Dialog>
 
                                 </div>
                             </div>
+
+                            {/* Active Filter Chips Row - Integrated inside Search Bar */}
+                            {activeFilters.length > 0 && (
+                                <div className="mt-3 pointer-events-auto flex justify-center md:justify-start w-full max-w-5xl mx-auto">
+                                    <FilterChips
+                                        filters={activeFilters}
+                                        onRemove={handleRemoveFilter}
+                                        onClear={handleClearAll}
+                                        className="bg-white/95 backdrop-blur-sm border border-slate-200 shadow-sm"
+                                    />
+                                </div>
+                            )}
                         </div>
 
                         <MapComponent
@@ -310,10 +532,13 @@ export function PrimeNestSearch() {
                                 element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                             }}
                         />
+                        {/* Filter Chips Overlay */}
+
                     </div>
 
                     {/* List Area (1/3) - Scrollable */}
-                    <div className="lg:col-span-1 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-full">
+                    {/* List Area (1/3) - Scrollable */}
+                    <div className="lg:col-span-1 bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-full">
                         <div className="overflow-y-auto flex-1 p-4">
                             <PropertyList
                                 properties={filteredProperties}
@@ -325,6 +550,6 @@ export function PrimeNestSearch() {
                     </div>
                 </div>
             </div>
-        </section>
+        </section >
     );
 }
