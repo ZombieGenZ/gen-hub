@@ -2,11 +2,11 @@ import React from 'react';
 import { Property } from '@/data/mockProperties';
 import { CameraIcon, MapPinIcon } from '@heroicons/react/20/solid';
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
-
+import { ArrowsPointingOutIcon, ArrowUpIcon, BoltIcon } from '@heroicons/react/24/solid';
 interface PropertyListProps {
     properties: Property[];
-    onHover: (id: number | null) => void;
-    highlightedPropertyId: number | null;
+    onHover: (id: number | string | null) => void;
+    highlightedPropertyId: number | string | null;
     variant?: 'vertical' | 'horizontal' | 'grid';
 }
 
@@ -86,8 +86,29 @@ export default function PropertyList({ properties, onHover, highlightedPropertyI
                                     <span className="text-sm font-normal text-slate-400 ml-1">/tháng</span>
                                 </div>
                             </div>
-                            <div className="text-slate-600 font-semibold text-sm bg-slate-100 px-3 py-1.5 rounded-lg">
-                                {property.area} m²
+
+                            <div className="flex gap-2 shrink-0">
+                                {/* Area */}
+                                <div className="flex flex-col items-center justify-center bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-100 min-w-[60px]">
+                                    <ArrowsPointingOutIcon className="w-4 h-4 text-slate-400 mb-0.5" />
+                                    <span className="text-xs font-semibold text-slate-700">{property.area} m²</span>
+                                </div>
+
+                                {/* Height (Optional) */}
+                                {property.ceiling_height && (
+                                    <div className="flex flex-col items-center justify-center bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-100 min-w-[60px]">
+                                        <ArrowUpIcon className="w-4 h-4 text-slate-400 mb-0.5" />
+                                        <span className="text-xs font-semibold text-slate-700">{property.ceiling_height}m</span>
+                                    </div>
+                                )}
+
+                                {/* Electricity (Optional) */}
+                                {property.electricity && (
+                                    <div className="flex flex-col items-center justify-center bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-100 min-w-[60px]" title={property.electricity}>
+                                        <BoltIcon className="w-4 h-4 text-slate-400 mb-0.5" />
+                                        <span className="text-xs font-semibold text-slate-700">3 Pha</span>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>

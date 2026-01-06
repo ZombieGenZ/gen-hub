@@ -15,6 +15,7 @@ import { Enable2FAResponse } from '@/types/user/2fa.type'
 import { authStorage } from '@/services/auth/auth-storage.service'
 import { useToast } from "@/contexts/ToastContext"
 import Link from 'next/link'
+import Image from 'next/image'
 
 import {
   Drawer,
@@ -43,7 +44,7 @@ export default function ProfilePage() {
 
   // Theme state
   const [darkMode, setDarkMode] = useState(true)
-  
+
   // Mock notifications data
   const [notifications] = useState([
     { id: 1, title: 'Thông báo mới', message: 'Bạn có 1 đơn hàng mới', time: '5 phút trước', read: false },
@@ -312,22 +313,22 @@ export default function ProfilePage() {
             <div>
               <h3 className="font-medium">Xác thực 2 yếu tố (2FA)</h3>
               <p className="text-sm text-slate-500 dark:text-slate-400">
-                {userData?.user?.two_factor_enabled 
-                  ? 'Đã bật xác thực 2 yếu tố' 
+                {userData?.user?.two_factor_enabled
+                  ? 'Đã bật xác thực 2 yếu tố'
                   : 'Thêm một lớp bảo mật bổ sung cho tài khoản của bạn'}
               </p>
             </div>
             {userData?.user?.two_factor_enabled ? (
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={handleDisable2FA}
                 className="border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
               >
                 Tắt 2FA
               </Button>
             ) : (
-              <Button 
-                onClick={handleEnable2FA} 
+              <Button
+                onClick={handleEnable2FA}
                 disabled={enabling2FA}
                 className="bg-brand hover:bg-brand/90"
               >
@@ -338,78 +339,78 @@ export default function ProfilePage() {
         </div>
       </div>
       {enable2FAData?.data && (
-                  <div className="mt-6 space-y-6">
-                    <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-slate-700">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                        <Smartphone className="w-5 h-5" />
-                        Quét mã QR
-                      </h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                        Quét mã QR bằng ứng dụng xác thực của bạn để thêm tài khoản
-                      </p>
-                      <div className="flex justify-center p-4 bg-white rounded-lg border border-gray-200 dark:bg-slate-700 dark:border-slate-600">
-                        <img
-                          src={enable2FAData.data.qr_code_url}
-                          alt="2FA QR Code"
-                          className="w-48 h-48"
-                        />
-                      </div>
-                      <p className="mt-3 text-xs text-gray-500 dark:text-gray-400 text-center">
-                        Hoặc nhập mã thủ công: <span className="font-mono font-bold text-gray-900 dark:text-white">{enable2FAData.data.secret}</span>
-                      </p>
+        <div className="mt-6 space-y-6">
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-slate-700">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+              <Smartphone className="w-5 h-5" />
+              Quét mã QR
+            </h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+              Quét mã QR bằng ứng dụng xác thực của bạn để thêm tài khoản
+            </p>
+            <div className="flex justify-center p-4 bg-white rounded-lg border border-gray-200 dark:bg-slate-700 dark:border-slate-600">
+              <img
+                src={enable2FAData.data.qr_code_url}
+                alt="2FA QR Code"
+                className="w-48 h-48"
+              />
+            </div>
+            <p className="mt-3 text-xs text-gray-500 dark:text-gray-400 text-center">
+              Hoặc nhập mã thủ công: <span className="font-mono font-bold text-gray-900 dark:text-white">{enable2FAData.data.secret}</span>
+            </p>
+          </div>
+        </div>
+      )}
+      {enable2FAData && (
+        <div className="mt-6 p-6 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700">
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-blue-500" />
+              Xác nhận mã 2FA
+            </h3>
+
+            <div className="space-y-3">
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                Nhập mã xác thực 6 số từ ứng dụng xác thực của bạn
+              </p>
+
+              <div className="flex items-start gap-3">
+                <div className="flex-1 max-w-[240px]">
+                  <Input
+                    type="text"
+                    placeholder="Mã xác thực"
+                    maxLength={6}
+                    value={twoFactorCode}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/[^0-9]/g, '');
+                      setTwoFactorCode(value);
+                    }}
+                    className="text-center text-lg font-mono tracking-widest h-12"
+                    autoFocus
+                  />
+                </div>
+
+                <Button
+                  onClick={handleVerify2FACode}
+                  disabled={twoFactorCode.length !== 6 || isSubmitting2FA}
+                  className="h-12 px-6"
+                >
+                  {isSubmitting2FA ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Đang xác thực...
                     </div>
-                  </div>
-                )}
-                {enable2FAData && (
-                  <div className="mt-6 p-6 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700">
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                        <ShieldCheck className="w-5 h-5 text-blue-500" />
-                        Xác nhận mã 2FA
-                      </h3>
+                  ) : 'Xác nhận'}
+                </Button>
+              </div>
 
-                      <div className="space-y-3">
-                        <p className="text-sm text-gray-600 dark:text-gray-300">
-                          Nhập mã xác thực 6 số từ ứng dụng xác thực của bạn
-                        </p>
-
-                        <div className="flex items-start gap-3">
-                          <div className="flex-1 max-w-[240px]">
-                            <Input
-                              type="text"
-                              placeholder="Mã xác thực"
-                              maxLength={6}
-                              value={twoFactorCode}
-                              onChange={(e) => {
-                                const value = e.target.value.replace(/[^0-9]/g, '');
-                                setTwoFactorCode(value);
-                              }}
-                              className="text-center text-lg font-mono tracking-widest h-12"
-                              autoFocus
-                            />
-                          </div>
-
-                          <Button
-                            onClick={handleVerify2FACode}
-                            disabled={twoFactorCode.length !== 6 || isSubmitting2FA}
-                            className="h-12 px-6"
-                          >
-                            {isSubmitting2FA ? (
-                              <div className="flex items-center gap-2">
-                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                Đang xác thực...
-                              </div>
-                            ) : 'Xác nhận'}
-                          </Button>
-                        </div>
-
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          Mã xác thực sẽ hết hạn sau 30 giây
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Mã xác thực sẽ hết hạn sau 30 giây
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 
@@ -422,23 +423,21 @@ export default function ProfilePage() {
             Đánh dấu tất cả đã đọc
           </Button>
         </div>
-        
+
         <div className="space-y-4">
           {notifications.length > 0 ? (
             notifications.map((notification) => (
-              <div 
-                key={notification.id} 
-                className={`p-4 rounded-lg border ${
-                  notification.read 
-                    ? 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700' 
+              <div
+                key={notification.id}
+                className={`p-4 rounded-lg border ${notification.read
+                    ? 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'
                     : 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
-                }`}
+                  }`}
               >
                 <div className="flex items-start gap-3">
                   <div className="mt-0.5">
-                    <div className={`w-2.5 h-2.5 rounded-full ${
-                      notification.read ? 'bg-slate-300 dark:bg-slate-600' : 'bg-brand'
-                    }`}></div>
+                    <div className={`w-2.5 h-2.5 rounded-full ${notification.read ? 'bg-slate-300 dark:bg-slate-600' : 'bg-brand'
+                      }`}></div>
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-slate-900 dark:text-white">{notification.title}</p>
@@ -483,7 +482,7 @@ export default function ProfilePage() {
     setIsSubmitting2FA(true)
     try {
       const token = authStorage.getAccessToken()
-      const access_verification_token = authStorage.getVerificationToken() 
+      const access_verification_token = authStorage.getVerificationToken()
       if (!token || !access_verification_token) {
         router.push('/login')
         return
@@ -549,7 +548,15 @@ export default function ProfilePage() {
 
         {/* Mobile Header */}
         <div className="md:hidden bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 p-4 flex items-center justify-between sticky top-0 z-30 shadow-sm transition-colors duration-300">
-          <Link href="/" className="font-semibold text-lg text-brand ml-2">GenHub</Link>
+          <Link href="/" className="ml-2">
+            <Image
+              src="/assets/Genhubv2.svg"
+              alt="GenHub Logo"
+              width={120}
+              height={40}
+              className="h-8 w-auto"
+            />
+          </Link>
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-2">
               {/* Notification Bell */}
@@ -563,7 +570,7 @@ export default function ProfilePage() {
                     <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
                   )}
                 </button>
-                
+
                 {/* Notification Dropdown */}
                 {showNotifications && (
                   <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 z-50 overflow-hidden">
@@ -576,8 +583,8 @@ export default function ProfilePage() {
                     <div className="max-h-96 overflow-y-auto notification-dropdown">
                       {notifications.length > 0 ? (
                         notifications.map(notification => (
-                          <div 
-                            key={notification.id} 
+                          <div
+                            key={notification.id}
                             className={`p-3 border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer ${!notification.read ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}
                             onClick={() => setShowNotifications(false)}
                           >
@@ -605,7 +612,7 @@ export default function ProfilePage() {
                   </div>
                 )}
               </div>
-              
+
               {/* Theme Toggle */}
               <button
                 onClick={toggleTheme}
@@ -622,7 +629,15 @@ export default function ProfilePage() {
               </DrawerTrigger>
               <DrawerContent className="h-full w-[80%] max-w-sm rounded-r-2xl outline-none bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
                 <DrawerHeader className="border-b border-slate-200 dark:border-slate-800 pb-4 mb-4">
-                  <DrawerTitle className="text-xl font-bold text-brand text-left px-2">GenHub</DrawerTitle>
+                  <DrawerTitle className="text-xl font-bold text-brand text-left px-2">
+                    <Image
+                      src="/assets/Genhubv2.svg"
+                      alt="GenHub Logo"
+                      width={120}
+                      height={40}
+                      className="h-8 w-auto"
+                    />
+                  </DrawerTitle>
                   <DrawerDescription className="sr-only">Menu nav</DrawerDescription>
                 </DrawerHeader>
                 <div className="px-4">
@@ -641,7 +656,13 @@ export default function ProfilePage() {
         {/* Desktop Sidebar Navigation */}
         <aside className="hidden md:block w-64 flex-shrink-0 p-8 pt-12 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 sticky top-0 h-screen overflow-y-auto z-20 transition-colors duration-300">
           <div className="mb-10 px-4 font-bold text-2xl text-brand flex items-center justify-between">
-            <span>GenHub</span>
+            <Image
+              src="/assets/Genhubv2.svg"
+              alt="GenHub Logo"
+              width={140}
+              height={50}
+              className="h-10 w-auto"
+            />
             <button
               onClick={toggleTheme}
               className="p-2 text-slate-400 hover:text-brand transition-colors rounded-full hover:bg-bg-subtle"
@@ -655,7 +676,7 @@ export default function ProfilePage() {
 
         {/* Main Content */}
         <main className="flex-1 p-4 md:p-8 pt-6 md:pt-12 max-w-5xl mx-auto w-full">
-          {activeTab === 'profile' && 
+          {activeTab === 'profile' &&
             <div>
               <h1 className="text-2xl md:text-3xl text-slate-800 dark:text-white mb-6 md:mb-8 font-bold flex items-center gap-3">
                 <User className="w-8 h-8 text-brand md:hidden" />
@@ -954,14 +975,14 @@ export default function ProfilePage() {
               </div>
             </div>}
           {activeTab === 'security' && (
-            <SecurityTab 
+            <SecurityTab
               userData={userData}
               enabling2FA={enabling2FA}
               handleEnable2FA={handleEnable2FA}
               handleDisable2FA={handleDisable2FA}
             />
           )}
-          
+
           {activeTab === 'notifications' && (
             <NotificationsTab notifications={notifications} />
           )}

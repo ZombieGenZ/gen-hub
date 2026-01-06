@@ -159,9 +159,11 @@ export function DashboardSidebarNav() {
                         </div>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" side="top" className="w-56 mb-2">
-                        <DropdownMenuItem className="cursor-pointer">
-                            <User className="mr-2 h-4 w-4" />
-                            <span>Hồ sơ cá nhân</span>
+                        <DropdownMenuItem className="cursor-pointer" asChild>
+                            <Link href="/user/profile" className="flex items-center w-full">
+                                <User className="mr-2 h-4 w-4" />
+                                <span>Hồ sơ cá nhân</span>
+                            </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem className="cursor-pointer">
                             <Settings className="mr-2 h-4 w-4" />

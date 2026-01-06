@@ -94,7 +94,7 @@ export function PrimeNestHero() {
                         <div className="flex w-auto flex-col gap-[0.5rem]">
                             <div className="flex w-auto items-baseline gap-2">
                                 <span className="text-slate-900 text-lg font-bold">Hơn</span>
-                                <h3 className="text-3xl md:text-4xl font-bold"><span className="text-[#0F766E]">1,000+</span></h3>
+                                <h3 className="text-3xl md:text-4xl font-bold"><span className="text-[#0F766E]">500+</span></h3>
                             </div>
                             <h5 className="font-medium text-slate-600">Đối Tác Tin Cậy</h5>
                         </div>

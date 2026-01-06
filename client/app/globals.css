@@ -89,11 +89,7 @@
 }
 
 .custom-map-popup .mapboxgl-popup-tip {
-  /* Optional: keep tip but match card color, or hide it. 
-     Reference images usually have a small white tip. 
-     If we want the tip, we need to style it to match white card. */
-  border-top-color: white !important; 
-  /* If hiding: display: none !important; */
+  display: none !important; 
 }
 
 

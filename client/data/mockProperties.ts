@@ -1,5 +1,5 @@
 export interface Property {
-    id: number;
+    id: number | string;
     title: string;
     price: number;
     currency: string;
@@ -9,6 +9,15 @@ export interface Property {
     image: string;
     lat: number;
     lng: number;
+    rooms?: number; // Legacy?
+    bathrooms?: number; // Legacy?
+    
+    // New Schema Fields
+    length?: number;
+    width?: number;
+    ceiling_height?: number;
+    max_load_capacity?: number; // Ton/m2
+    electricity?: string; // 3 Phase etc
 }
 
 export const mockProperties: Property[] = [
@@ -23,6 +32,11 @@ export const mockProperties: Property[] = [
         image: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
         lat: 10.849409,
         lng: 106.753705,
+        length: 20,
+        width: 15,
+        ceiling_height: 12,
+        max_load_capacity: 3,
+        electricity: "3 Pha"
     },
     {
         id: 2,
