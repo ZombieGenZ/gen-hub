@@ -14,6 +14,8 @@ import {
     QueryContactDto,
     UpdateContactDto,
     ReplyContactDto,
+    StartChatDto,
+    SendMessageDto,
 } from './dto';
 import {
     IContactConversationWithMessages,
@@ -26,6 +28,8 @@ import { WebsocketGateway } from '../websocket/websocket.gateway';
 import { SystemLogService } from '../system-log/system-log.service';
 import { EmailService } from '../notification/email.service';
 import { DiscordService } from '../discord/discord.service';
+import { AppConfigService } from '../../common/config/app-config.service';
+import { CozeService } from '../coze/coze.service';
 
 /**
  * Service xử lý business logic cho Contact module
@@ -46,6 +50,8 @@ export class ContactService implements OnModuleInit {
         private readonly configService: ConfigService,
         private readonly i18n: I18nService,
         private readonly discordService: DiscordService,
+        private readonly appConfigService: AppConfigService,
+        private readonly cozeService: CozeService,
     ) {
         this.CACHE_TTL = this.configService.get<number>('REDIS_CONTACT_CACHE_TTL') || 300;
         this.LIST_CACHE_TTL = this.configService.get<number>('REDIS_CONTACT_LIST_CACHE_TTL') || 60;
@@ -1009,5 +1015,169 @@ export class ContactService implements OnModuleInit {
      */
     async getByCode(code: string): Promise<ContactConversation | null> {
         return this.repository.findByCode(code);
+    }
+
+    // ==================== LIVE CHAT METHODS ====================
+
+    /**
+     * Khởi tạo phiên live chat (Guest)
+     */
+    async startChatSession(
+        dto: StartChatDto,
+        lang: string = 'vi',
+    ): Promise<{ sessionId: string; code: string; welcomeMessage?: string }> {
+        // Tạo session_id unique
+        const sessionId = require('crypto').randomUUID();
+
+        // Lấy giá trị mặc định enable_ai_reply từ config
+        const enableAiReply = this.appConfigService.get('enableAiAutoReply');
+
+        // Tạo conversation với channel LIVE_CHAT
+        const code = await this.repository.generateTicketCode(this.TICKET_PREFIX);
+        const conversation = await this.repository.createConversation({
+            code,
+            session_id: sessionId,
+            customer_name: dto.name,
+            customer_email: dto.email,
+            customer_phone: dto.phone,
+            customer_company: dto.company,
+            channel: ContactChannel.LIVE_CHAT,
+            enable_ai_reply: enableAiReply,
+        });
+
+        // Tạo welcome message từ AI nếu enabled
+        let welcomeMessage: string | undefined;
+        if (enableAiReply && this.cozeService.isEnabled()) {
+            const aiResult = await this.cozeService.chat(
+                dto.initialMessage || 'Xin chào',
+                conversation.id,
+                sessionId,
+            );
+            if (aiResult.success) {
+                welcomeMessage = aiResult.content;
+                // Lưu AI message vào database
+                await this.repository.createMessage({
+                    conversation_id: conversation.id,
+                    sender_type: MessageSender.AI,
+                    sender_name: 'GEN-HUB AI',
+                    content: welcomeMessage,
+                    message_type: MessageType.TEXT,
+                    is_ai_response: true,
+                    ai_model: aiResult.model,
+                    ai_confidence: aiResult.confidence,
+                });
+            }
+        }
+
+        // Nếu có initialMessage, lưu vào database
+        if (dto.initialMessage) {
+            await this.repository.createMessage({
+                conversation_id: conversation.id,
+                sender_type: MessageSender.CUSTOMER,
+                sender_name: dto.name,
+                sender_email: dto.email,
+                content: dto.initialMessage,
+                message_type: MessageType.TEXT,
+            });
+        }
+
+        // Log
+        this.systemLogService.info('contact', 'live_chat_start', `Session ${sessionId} started`, {
+            metaData: { sessionId, code: conversation.code },
+        });
+
+        return {
+            sessionId,
+            code: conversation.code,
+            welcomeMessage,
+        };
+    }
+
+    /**
+     * Gửi tin nhắn trong live chat (Guest)
+     */
+    async sendGuestMessage(
+        sessionId: string,
+        dto: SendMessageDto,
+        lang: string = 'vi',
+    ): Promise<{ message: any; aiResponse?: any }> {
+        // Tìm conversation theo session_id
+        const conversation = await this.repository.findBySessionId(sessionId);
+        if (!conversation) {
+            throw new NotFoundException(
+                this.i18n.t('contact.live_chat.session_not_found', { lang }),
+            );
+        }
+
+        // Lưu message của guest
+        const message = await this.repository.createMessage({
+            conversation_id: conversation.id,
+            sender_type: MessageSender.CUSTOMER,
+            sender_name: conversation.customer_name,
+            sender_email: conversation.customer_email,
+            content: dto.content,
+            message_type: MessageType.TEXT,
+        });
+
+        // Cập nhật last_activity_at
+        await this.repository.update(conversation.id, {
+            last_activity_at: new Date(),
+        });
+
+        // Kiểm tra AI auto-reply
+        let aiResponse: any = undefined;
+        const shouldAiReply = conversation.enable_ai_reply ?? this.appConfigService.get('enableAiAutoReply');
+
+        if (shouldAiReply && this.cozeService.isEnabled()) {
+            const aiResult = await this.cozeService.chat(
+                dto.content,
+                conversation.id,
+                sessionId,
+            );
+
+            if (aiResult.success) {
+                // Lưu AI message
+                aiResponse = await this.repository.createMessage({
+                    conversation_id: conversation.id,
+                    sender_type: MessageSender.AI,
+                    sender_name: 'GEN-HUB AI',
+                    content: aiResult.content,
+                    message_type: MessageType.TEXT,
+                    is_ai_response: true,
+                    ai_model: aiResult.model,
+                    ai_confidence: aiResult.confidence,
+                });
+
+                // Emit realtime event cho AI response
+            }
+        }
+
+        // Invalidate cache
+        await this.invalidateCache(conversation.id);
+
+        return { message, aiResponse };
+    }
+
+    /**
+     * Lấy conversation của session (Guest)
+     */
+    async getChatSession(
+        sessionId: string,
+        lang: string = 'vi',
+    ): Promise<IContactConversationWithMessages> {
+        const conversation = await this.repository.findBySessionId(sessionId);
+        if (!conversation) {
+            throw new NotFoundException(
+                this.i18n.t('contact.live_chat.session_not_found', { lang }),
+            );
+        }
+
+        // Lấy messages
+        const messages = await this.repository.getMessages(conversation.id);
+
+        return {
+            ...conversation,
+            messages,
+        } as IContactConversationWithMessages;
     }
 }

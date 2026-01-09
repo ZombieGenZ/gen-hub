@@ -153,6 +153,25 @@ export class ContactRepository {
     }
 
     /**
+     * Tìm conversation theo session_id (Live Chat)
+     */
+    async findBySessionId(sessionId: string): Promise<ContactConversation | null> {
+        return this.prisma.contactConversation.findFirst({
+            where: { session_id: sessionId, is_deleted: false },
+        });
+    }
+
+    /**
+     * Lấy tất cả messages của conversation
+     */
+    async getMessages(conversationId: string): Promise<ContactMessage[]> {
+        return this.prisma.contactMessage.findMany({
+            where: { conversation_id: conversationId, is_deleted: false },
+            orderBy: { created_at: 'asc' },
+        });
+    }
+
+    /**
      * Tìm conversation by email thread ID
      */
     async findByEmailThreadId(

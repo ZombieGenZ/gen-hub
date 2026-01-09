@@ -86,6 +86,14 @@
         "WEBSITE_FORM": "Form website",
         "PHONE": "Điện thoại",
         "SOCIAL_MEDIA": "Mạng xã hội",
+        "LIVE_CHAT": "Live Chat",
         "OTHER": "Khác"
+    },
+    "live_chat": {
+        "session_created": "Phiên chat đã được khởi tạo",
+        "session_not_found": "Không tìm thấy phiên chat",
+        "message_sent": "Tin nhắn đã được gửi",
+        "ai_welcome": "Xin chào! Tôi là trợ lý AI của GEN-HUB. Tôi có thể giúp gì cho bạn?",
+        "ai_unavailable": "Xin lỗi, hệ thống AI đang bận. Vui lòng chờ nhân viên hỗ trợ."
     }
 }

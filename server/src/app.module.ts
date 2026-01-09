@@ -59,6 +59,7 @@ import { RefundRequestModule } from './modules/refund-request/refund-request.mod
 import { CategoryModule } from './modules/category/category.module';
 import { ArticleModule } from './modules/article/article.module';
 import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
+import { CozeModule } from './modules/coze/coze.module';
 
 @Module({
   imports: [
@@ -202,6 +203,9 @@ import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
 
     // Contact Support Module
     ContactModule,
+
+    // Coze AI Module
+    CozeModule,
   ],
   controllers: [AppController],
   providers: [

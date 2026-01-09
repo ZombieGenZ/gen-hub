@@ -1589,6 +1589,8 @@ model Organization {
   account_balance      OrganizationBalance?
   balance_transactions OrganizationBalanceTransaction[]
 
+  contact_conversations ContactConversation[] @relation("ContactConversations")
+
   @@map("organizations")
 }
 
@@ -3170,6 +3172,7 @@ enum ContactPriority {
 enum ContactChannel {
   EMAIL
   WEBSITE_FORM
+  LIVE_CHAT
   PHONE
   SOCIAL_MEDIA
   OTHER
@@ -3179,6 +3182,7 @@ enum MessageSender {
   CUSTOMER
   STAFF
   SYSTEM
+  AI
 }
 
 enum MessageType {
@@ -3189,9 +3193,35 @@ enum MessageType {
   DISCORD
 }
 
+// Nguồn xác định khách hàng ưu tiên
+enum PriorityCustomerSource {
+  LOGGED_IN_OWNER
+  EMAIL_MATCH_OWNER
+  EMAIL_MATCH_REPRESENTATIVE
+  ACTIVE_CONTRACT
+  PREVIOUS_CONTRACT
+}
+
 model ContactConversation {
   id   String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
   code String @unique
+
+  // Live chat session (cho guest không cần đăng nhập)
+  session_id String? @unique
+
+  // Liên kết với tổ chức (nếu là khách hàng đã đăng ký)
+  organization_id String? @db.Uuid
+
+  // Khách hàng ưu tiên (owner tổ chức, người đại diện, có hợp đồng đang sử dụng)
+  is_priority_customer Boolean @default(false)
+  priority_source      PriorityCustomerSource?
+
+  // Bật/tắt AI auto-reply cho conversation này (override config mặc định)
+  enable_ai_reply Boolean?
+
+  // Tóm tắt đoạn chat bằng AI (tự động generate)
+  ai_summary    String?   @db.Text
+  ai_summary_at DateTime?
 
   customer_name    String
   customer_email   String
@@ -3235,6 +3265,7 @@ model ContactConversation {
   discord_channel_id String?
 
   assigned_staff User? @relation("AssignedStaff", fields: [assigned_staff_id], references: [id])
+  organization  Organization? @relation("ContactConversations", fields: [organization_id], references: [id])
 
   messages            ContactMessage[]
   tag_mappings        ContactTagOnConversation[]
@@ -3246,6 +3277,9 @@ model ContactConversation {
   @@index([assigned_staff_id])
   @@index([email_thread_id])
   @@index([created_at])
+  @@index([session_id])
+  @@index([organization_id])
+  @@index([is_priority_customer])
   @@map("contact_conversations")
 }
 
@@ -3272,6 +3306,11 @@ model ContactMessage {
   is_read     Boolean   @default(false)
   read_at     DateTime?
   is_internal Boolean   @default(false)
+
+  // AI auto-reply metadata
+  is_ai_response Boolean  @default(false)
+  ai_model       String?
+  ai_confidence  Float?   @db.DoublePrecision
 
   is_active  Boolean   @default(true)
   created_at DateTime  @default(now())
