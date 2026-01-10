@@ -154,8 +154,9 @@ export class CozePluginService {
         let currentContent: string[] = [];
 
         for (const line of lines) {
-            // Detect heading (### ĐIỀU X:...)
-            const headingMatch = line.match(/^#{2,3}\s+\*{0,2}(ĐIỀU\s+\d+:.+?)\*{0,2}$/);
+            // Detect heading (### **ĐIỀU X:...**)
+            // Matches patterns like: "### **ĐIỀU 1: PHẠM VI DỊCH VỤ**"
+            const headingMatch = line.match(/^#{1,3}\s+\*{0,2}(ĐIỀU\s+\d+:.+?)\*{0,2}\s*$/);
 
             if (headingMatch) {
                 // Lưu section trước đó
