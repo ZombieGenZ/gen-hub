@@ -604,7 +604,7 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
                 const embed = new EmbedBuilder()
                     .setColor(0x0099ff)
                     .setDescription(result.content)
-                    .setFooter({ text: '🤖 Powered by Coze AI' })
+                    .setFooter({ text: '🤖 Powered by GEN HUB' })
                     .setTimestamp();
 
                 await message.reply({ embeds: [embed] });
