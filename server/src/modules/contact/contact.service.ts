@@ -30,10 +30,11 @@ import { EmailService } from '../notification/email.service';
 import { DiscordService } from '../discord/discord.service';
 import { AppConfigService } from '../../common/config/app-config.service';
 import { CozeService } from '../coze/coze.service';
+import { GeminiService } from '../../common/services/gemini.service';
 
 /**
  * Service xử lý business logic cho Contact module
- * Đã tối ưu hóa với caching và parallel queries
+ * Tích hợp Gemini AI (phân loại) và Coze AI (tư vấn)
  */
 @Injectable()
 export class ContactService implements OnModuleInit {
@@ -52,6 +53,7 @@ export class ContactService implements OnModuleInit {
         private readonly discordService: DiscordService,
         private readonly appConfigService: AppConfigService,
         private readonly cozeService: CozeService,
+        private readonly geminiService: GeminiService,
     ) {
         this.CACHE_TTL = this.configService.get<number>('REDIS_CONTACT_CACHE_TTL') || 300;
         this.LIST_CACHE_TTL = this.configService.get<number>('REDIS_CONTACT_LIST_CACHE_TTL') || 60;
@@ -146,17 +148,21 @@ export class ContactService implements OnModuleInit {
 
     /**
      * Tạo ticket từ form website (public)
+     * Tích hợp Gemini AI (phân loại) và Coze AI (tư vấn tự động)
      */
     async createFromWebForm(
         dto: CreateContactDto,
         lang: string = 'vi',
-    ): Promise<{ code: string; message: string }> {
+    ): Promise<{ code: string; message: string; aiResponse?: string }> {
         // Generate ticket code
         const code = await this.repository.generateTicketCode(this.TICKET_PREFIX);
 
         // Generate email thread ID
         const supportEmail = this.configService.get<string>('EMAIL_SUPPORT_ADDRESS');
         const emailMessageId = `<${code.toLowerCase()}-${Date.now()}@${supportEmail?.split('@')[1] || 'genhub.dev'}>`;
+
+        // Lấy config AI auto-reply
+        const enableAiReply = this.appConfigService.get('enableAiAutoReply');
 
         // Tạo conversation
         const conversation = await this.repository.createConversation({
@@ -171,6 +177,7 @@ export class ContactService implements OnModuleInit {
             email_thread_id: `thread-${code}`,
             email_message_id: emailMessageId,
             last_activity_at: new Date(),
+            enable_ai_reply: enableAiReply,
         });
 
         // Tạo message đầu tiên
@@ -183,6 +190,71 @@ export class ContactService implements OnModuleInit {
             content: dto.message,
             email_subject: dto.subject,
         });
+
+        // AI Processing: Gemini phân loại + Coze tư vấn
+        let aiResponseContent: string | undefined;
+        if (enableAiReply && this.geminiService.enabled) {
+            try {
+                // 1. Dùng Gemini để phân loại spam vs contact
+                const classification = await this.geminiService.classifyEmail(
+                    dto.email,
+                    dto.name,
+                    dto.subject || '',
+                    dto.message,
+                );
+
+                if (classification.isSpamOrAdvertising) {
+                    // Đánh dấu là spam
+                    await this.repository.update(conversation.id, { status: ContactStatus.SPAM });
+                    this.systemLogService.info('contact', 'ai_spam_detected', `AI detected spam: ${code}`, {
+                        metaData: { conversationId: conversation.id, confidence: classification.confidence },
+                    });
+                } else if (classification.isUserContact && this.cozeService.isEnabled()) {
+                    // 2. Dùng Coze để tư vấn tự động
+                    const aiResult = await this.cozeService.chat(
+                        dto.message,
+                        conversation.id,
+                        dto.email,
+                    );
+
+                    if (aiResult.success && aiResult.content) {
+                        aiResponseContent = aiResult.content;
+                        // Lưu AI response message
+                        await this.repository.createMessage({
+                            conversation_id: conversation.id,
+                            sender_type: MessageSender.AI,
+                            sender_name: 'GEN-HUB AI',
+                            content: aiResult.content,
+                            message_type: MessageType.TEXT,
+                            is_ai_response: true,
+                            ai_model: aiResult.model,
+                            ai_confidence: aiResult.confidence,
+                        });
+
+                        this.systemLogService.info('contact', 'ai_reply', `AI replied to contact: ${code}`, {
+                            metaData: { conversationId: conversation.id, model: aiResult.model },
+                        });
+
+                        // Emit WebSocket cho AI message
+                        this.websocketGateway.emitContactMessageCreated(
+                            conversation.id,
+                            {
+                                id: `ai-${Date.now()}`,
+                                sender_type: MessageSender.AI,
+                                sender_name: 'GEN-HUB AI',
+                                content: aiResult.content,
+                                is_internal: false,
+                                created_at: new Date(),
+                            },
+                        );
+                    }
+                }
+            } catch (error) {
+                this.systemLogService.error('contact', 'ai_processing', `AI processing failed: ${error}`, {
+                    metaData: { conversationId: conversation.id, code },
+                });
+            }
+        }
 
         // Gửi email xác nhận
         try {
@@ -198,18 +270,9 @@ export class ContactService implements OnModuleInit {
             );
 
             if (sentMessageId && sentMessageId !== emailMessageId) {
-                // Update with real message ID from Gmail if different
                 await this.repository.update(conversation.id, {
                     email_message_id: sentMessageId,
                 });
-
-                // Update the message log as well
-                const firstMessage = await this.repository.findMessagesByConversationId(conversation.id);
-                if (firstMessage && firstMessage.length > 0) {
-                    // Assuming first message is the one we want to link
-                    // Actually we don't need to update the message itself if only conversation ID is used for threading
-                    // But for consistency let's update conversation. 
-                }
             }
         } catch (error) {
             this.systemLogService.error('contact', 'email', `Failed to send confirmation email: ${error}`, {
@@ -248,7 +311,7 @@ export class ContactService implements OnModuleInit {
         await this.invalidateListCache();
 
         const message = await this.i18n.t('contact.success.created', { lang });
-        return { code, message };
+        return { code, message, aiResponse: aiResponseContent };
     }
 
     /**
@@ -336,6 +399,7 @@ export class ContactService implements OnModuleInit {
 
         if (dto.status !== undefined) updateData.status = dto.status;
         if (dto.priority !== undefined) updateData.priority = dto.priority;
+        if (dto.enable_ai_reply !== undefined) updateData.enable_ai_reply = dto.enable_ai_reply;
         // dto.tags handled via syncTags below, not scalar column
 
         const updated = await this.repository.update(id, updateData);
@@ -829,6 +893,53 @@ export class ContactService implements OnModuleInit {
                 created_at: message.created_at,
             },
         );
+
+        // AI Auto-Reply cho customer (chỉ customer, không reply cho staff)
+        const shouldAiReply = conversation.enable_ai_reply ?? this.appConfigService.get('enableAiAutoReply');
+        if (shouldAiReply && this.cozeService.isEnabled()) {
+            try {
+                const aiResult = await this.cozeService.chat(
+                    content,
+                    conversation.id,
+                    senderEmail,
+                );
+
+                if (aiResult.success && aiResult.content) {
+                    // Lưu AI response message
+                    const aiMessage = await this.repository.createMessage({
+                        conversation_id: conversation.id,
+                        sender_type: MessageSender.AI,
+                        sender_name: 'GEN-HUB AI',
+                        content: aiResult.content,
+                        message_type: MessageType.TEXT,
+                        is_ai_response: true,
+                        ai_model: aiResult.model,
+                        ai_confidence: aiResult.confidence,
+                    });
+
+                    this.systemLogService.info('contact', 'ai_reply', `AI replied to customer email: ${conversation.code}`, {
+                        metaData: { conversationId: conversation.id, model: aiResult.model },
+                    });
+
+                    // Emit WebSocket cho AI message
+                    this.websocketGateway.emitContactMessageCreated(
+                        conversation.id,
+                        {
+                            id: aiMessage.id,
+                            sender_type: MessageSender.AI,
+                            sender_name: 'GEN-HUB AI',
+                            content: aiResult.content,
+                            is_internal: false,
+                            created_at: aiMessage.created_at,
+                        },
+                    );
+                }
+            } catch (error) {
+                this.systemLogService.error('contact', 'ai_reply_failed', `AI reply failed: ${error}`, {
+                    metaData: { conversationId: conversation.id },
+                });
+            }
+        }
 
         return true;
     }

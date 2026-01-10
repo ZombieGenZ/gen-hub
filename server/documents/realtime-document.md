@@ -1751,3 +1751,113 @@ socket.on('refundRequest:deleted', (data) => {
   // }
 });
 ```
+
+---
+
+## 📧 Contact AI Events (Room: `admin_room`)
+
+### Mô tả
+
+Contact module tích hợp AI với hai thành phần:
+- **Gemini AI**: Phân loại message (spam vs contact hợp lệ)
+- **Coze AI**: Tư vấn tự động cho customer
+
+AI chỉ reply cho **CUSTOMER** messages, không reply cho staff messages.
+
+### Join Room
+```javascript
+// Admin tự động join admin_room khi authenticated
+// Không cần subscribe thủ công
+```
+
+### `contact:conversation:created`
+**Khi nào:** Khi có ticket mới được tạo (từ form hoặc email)
+```javascript
+socket.on('contact:conversation:created', (data) => {
+  // {
+  //   "conversationId": "uuid",
+  //   "code": "TICKET-20260110-001",
+  //   "customerEmail": "customer@example.com",
+  //   "timestamp": "2026-01-10T10:00:00.000Z"
+  // }
+});
+```
+
+### `contact:message:created`
+**Khi nào:** Khi có message mới trong conversation (từ customer, staff hoặc AI)
+```javascript
+socket.on('contact:message:created', (data) => {
+  // {
+  //   "conversationId": "uuid",
+  //   "message": {
+  //     "id": "message-uuid",
+  //     "sender_type": "CUSTOMER" | "STAFF" | "AI",
+  //     "sender_name": "Nguyen Van A" | "Staff Name" | "GEN-HUB AI",
+  //     "content": "Nội dung tin nhắn...",
+  //     "is_internal": false,
+  //     "created_at": "2026-01-10T10:00:00.000Z"
+  //   }
+  // }
+  
+  // Xử lý AI response
+  if (data.message.sender_type === 'AI') {
+    showAiResponse(data.message);
+  }
+});
+```
+
+**Data mẫu khi AI reply:**
+```json
+{
+  "conversationId": "550e8400-e29b-41d4-a716-446655440000",
+  "message": {
+    "id": "ai-1704877200000",
+    "sender_type": "AI",
+    "sender_name": "GEN-HUB AI",
+    "content": "Xin chào! Cảm ơn bạn đã liên hệ. Tôi có thể giúp bạn tìm hiểu về dịch vụ cho thuê kho...",
+    "is_internal": false,
+    "created_at": "2026-01-10T10:00:00.000Z"
+  }
+}
+```
+
+### `contact:conversation:updated`
+**Khi nào:** Khi ticket được cập nhật (status, priority, AI settings, etc.)
+```javascript
+socket.on('contact:conversation:updated', (data) => {
+  // {
+  //   "conversationId": "uuid",
+  //   "code": "TICKET-20260110-001",
+  //   "updatedFields": ["status", "enable_ai_reply"],
+  //   "updatedBy": "admin-uuid",
+  //   "timestamp": "2026-01-10T10:00:00.000Z"
+  // }
+});
+```
+
+### `contact:conversation:closed`
+**Khi nào:** Khi ticket được đóng
+```javascript
+socket.on('contact:conversation:closed', (data) => {
+  // {
+  //   "conversationId": "uuid",
+  //   "code": "TICKET-20260110-001",
+  //   "closedBy": "admin-uuid",
+  //   "timestamp": "2026-01-10T10:00:00.000Z"
+  // }
+});
+```
+
+### `contact:conversation:reopened`
+**Khi nào:** Khi ticket được mở lại
+```javascript
+socket.on('contact:conversation:reopened', (data) => {
+  // {
+  //   "conversationId": "uuid",
+  //   "code": "TICKET-20260110-001",
+  //   "reopenedBy": "admin-uuid",
+  //   "timestamp": "2026-01-10T10:00:00.000Z"
+  // }
+});
+```
+

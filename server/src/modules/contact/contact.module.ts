@@ -10,6 +10,7 @@ import { NotificationModule } from '../notification/notification.module';
 import { UserModule } from '../user/user.module';
 import { SharedModule } from '../../common/shared.module';
 import { CozeModule } from '../coze/coze.module';
+import { GeminiService } from '../../common/services/gemini.service';
 
 @Module({
     imports: [
@@ -23,7 +24,8 @@ import { CozeModule } from '../coze/coze.module';
         CozeModule,
     ],
     controllers: [ContactController],
-    providers: [ContactService, ContactRepository],
+    providers: [ContactService, ContactRepository, GeminiService],
     exports: [ContactService, ContactRepository],
 })
 export class ContactModule { }
+

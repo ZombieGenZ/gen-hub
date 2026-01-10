@@ -1,4 +1,11 @@
 {
+    "ai": {
+        "enabled": "AI auto-reply đã được bật",
+        "disabled": "AI auto-reply đã được tắt",
+        "processing": "Đang xử lý bằng AI...",
+        "spam_detected": "Tin nhắn được phát hiện là spam",
+        "reply_sent": "AI đã gửi phản hồi tự động"
+    },
     "success": {
         "created": "Yêu cầu liên hệ của bạn đã được gửi thành công",
         "updated": "Cập nhật thành công",
@@ -31,7 +38,8 @@
         "message_max": "Nội dung không được quá 5000 ký tự",
         "content_required": "Vui lòng nhập nội dung phản hồi",
         "status_invalid": "Trạng thái không hợp lệ",
-        "priority_invalid": "Mức độ ưu tiên không hợp lệ"
+        "priority_invalid": "Mức độ ưu tiên không hợp lệ",
+        "enable_ai_reply_invalid": "Giá trị bật/tắt AI auto-reply không hợp lệ"
     },
     "email": {
         "confirmation": {
