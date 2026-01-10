@@ -148,3 +148,11 @@ export interface IAiContext {
     addons: IAddonSummary[];
     insurances: IInsuranceSummary[];
 }
+
+/**
+ * Options cho việc ghi log AI interaction
+ */
+export interface ICozeLogOptions {
+    discordChannelId?: string;
+    discordUserId?: string;
+}

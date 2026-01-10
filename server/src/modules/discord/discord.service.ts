@@ -17,6 +17,7 @@ import {
     ActivityType,
 } from 'discord.js';
 import { PrismaService } from '../../prisma/prisma.service';
+import { CozeService } from '../coze/coze.service';
 import { IDiscordChannelResult, DiscordReplyCallback } from './interfaces';
 
 /**
@@ -39,6 +40,7 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
     private readonly guildId: string;
     private readonly categoryId: string;
     private readonly closedCategoryId: string;
+    private readonly autoSupportChannelIds: string[];
 
     // Callback để xử lý reply từ Discord
     private onReplyCallback: DiscordReplyCallback | null = null;
@@ -46,6 +48,7 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
     constructor(
         private readonly configService: ConfigService,
         private readonly prismaService: PrismaService,
+        private readonly cozeService: CozeService,
     ) {
         // Kiểm tra xem Discord integration có được bật không
         const enabledValue = this.configService.get<string>('DISCORD_ENABLED');
@@ -55,6 +58,10 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
         this.guildId = this.configService.get<string>('DISCORD_GUILD_ID') || '';
         this.categoryId = this.configService.get<string>('DISCORD_SUPPORT_CATEGORY_ID') || '';
         this.closedCategoryId = this.configService.get<string>('DISCORD_CLOSED_CATEGORY_ID') || '';
+
+        // Lấy danh sách channel IDs cho auto-support với Coze AI
+        const autoSupportIds = this.configService.get<string>('DISCORD_AUTO_SUPPORT_CHANNEL_IDS') || '';
+        this.autoSupportChannelIds = autoSupportIds.split(',').map(id => id.trim()).filter(id => id);
 
         if (this.isEnabled) {
             if (!this.botToken || !this.guildId || !this.categoryId) {
@@ -498,6 +505,12 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
             }
         }
 
+        // Xử lý Auto-Support với Coze AI (nếu channel nằm trong danh sách)
+        if (this.autoSupportChannelIds.includes(channel.id)) {
+            await this.handleAutoSupport(message);
+            return;
+        }
+
         // Handle Reply (only in ticket channels)
         if (!channelName.startsWith('ticket-')) return;
 
@@ -561,6 +574,53 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
                     // Ignore if both fail
                 }
             }
+        }
+    }
+
+    /**
+     * Xử lý auto-support với Coze AI
+     * Khi user gửi tin nhắn trong channel được chỉ định, bot sẽ tự động reply với AI
+     */
+    private async handleAutoSupport(message: Message): Promise<void> {
+        const channel = message.channel as TextChannel;
+
+        try {
+            // Hiển thị typing indicator
+            await channel.sendTyping();
+
+            // Gọi Coze AI để lấy response
+            const result = await this.cozeService.chat(
+                message.content,
+                `discord-${channel.id}`, // sessionId theo channel
+                `discord-${message.author.id}`, // userId
+                {
+                    discordChannelId: channel.id,
+                    discordUserId: message.author.id,
+                },
+            );
+
+            if (result.success) {
+                // Gửi response như embed
+                const embed = new EmbedBuilder()
+                    .setColor(0x0099ff)
+                    .setDescription(result.content)
+                    .setFooter({ text: '🤖 Powered by Coze AI' })
+                    .setTimestamp();
+
+                await message.reply({ embeds: [embed] });
+            } else {
+                // Gửi thông báo lỗi
+                const errorEmbed = new EmbedBuilder()
+                    .setColor(0xff0000)
+                    .setDescription('❌ Xin lỗi, tôi không thể xử lý yêu cầu của bạn lúc này. Vui lòng thử lại sau.')
+                    .setFooter({ text: result.error || 'Unknown error' })
+                    .setTimestamp();
+
+                await message.reply({ embeds: [errorEmbed] });
+            }
+        } catch (error) {
+            this.logger.error(`Auto-support error in channel ${channel.id}:`, error);
+            await message.react('❌').catch(() => { });
         }
     }
 }

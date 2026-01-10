@@ -1,5 +1,6 @@
 import { Module, Global } from '@nestjs/common';
 import { DiscordService } from './discord.service';
+import { CozeModule } from '../coze/coze.module';
 
 /**
  * Discord Module
@@ -8,6 +9,7 @@ import { DiscordService } from './discord.service';
  */
 @Global()
 @Module({
+    imports: [CozeModule],
     providers: [DiscordService],
     exports: [DiscordService],
 })

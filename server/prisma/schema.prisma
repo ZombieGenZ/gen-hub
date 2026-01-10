@@ -2934,11 +2934,10 @@ model ArticleCategory {
   @@map("articles_categories")
 }
 
-// Hệ thống emoji riêng cho bài viết
 model ArticleEmoji {
   id    String @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  emoji String // 😀, 👍, ❤️, etc.
-  name  String // Tên mô tả: happy, like, love
+  emoji String
+  name  String
   order Int    @default(0)
 
   is_active  Boolean   @default(true)
@@ -2951,14 +2950,13 @@ model ArticleEmoji {
   @@map("article_emojis")
 }
 
-// Mapping user thả emoji vào bài viết
 model ArticleReaction {
   id         String  @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   article_id String  @db.Uuid
   emoji_id   String  @db.Uuid
-  user_id    String? @db.Uuid // null nếu guest
+  user_id    String? @db.Uuid
 
-  guest_identifier String? // fingerprint hoặc session cho guest
+  guest_identifier String?
 
   created_at DateTime @default(now())
 
@@ -2978,16 +2976,13 @@ enum ArticleCommentStatus {
   REJECTED
 }
 
-// Hệ thống comment
 model ArticleComment {
   id         String @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   article_id String @db.Uuid
-  parent_id  String? @db.Uuid // reply comment
+  parent_id  String? @db.Uuid
 
-  // Nếu đăng nhập
   user_id String? @db.Uuid
 
-  // Nếu không đăng nhập (guest)
   guest_name  String?
   guest_email String?
 
@@ -3015,7 +3010,6 @@ model ArticleComment {
   @@map("article_comments")
 }
 
-// Lịch sử chỉnh sửa bài viết
 model ArticleEditHistory {
   id         String @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   article_id String @db.Uuid
@@ -3039,7 +3033,6 @@ model ArticleEditHistory {
   @@map("article_edit_history")
 }
 
-// Lịch sử chỉnh sửa comment
 model ArticleCommentEditHistory {
   id         String @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   comment_id String @db.Uuid
@@ -3193,7 +3186,6 @@ enum MessageType {
   DISCORD
 }
 
-// Nguồn xác định khách hàng ưu tiên
 enum PriorityCustomerSource {
   LOGGED_IN_OWNER
   EMAIL_MATCH_OWNER
@@ -3206,20 +3198,15 @@ model ContactConversation {
   id   String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
   code String @unique
 
-  // Live chat session (cho guest không cần đăng nhập)
   session_id String? @unique
 
-  // Liên kết với tổ chức (nếu là khách hàng đã đăng ký)
   organization_id String? @db.Uuid
 
-  // Khách hàng ưu tiên (owner tổ chức, người đại diện, có hợp đồng đang sử dụng)
   is_priority_customer Boolean @default(false)
   priority_source      PriorityCustomerSource?
 
-  // Bật/tắt AI auto-reply cho conversation này (override config mặc định)
   enable_ai_reply Boolean?
 
-  // Tóm tắt đoạn chat bằng AI (tự động generate)
   ai_summary    String?   @db.Text
   ai_summary_at DateTime?
 
@@ -3307,7 +3294,6 @@ model ContactMessage {
   read_at     DateTime?
   is_internal Boolean   @default(false)
 
-  // AI auto-reply metadata
   is_ai_response Boolean  @default(false)
   ai_model       String?
   ai_confidence  Float?   @db.DoublePrecision
@@ -3949,4 +3935,22 @@ model QCRowAssignmentPermission {
   @@index([assignment_id])
   @@index([permission_id])
   @@map("qc_row_assignment_permissions")
+}
+
+model CozeConversation {
+  id         String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  session_id String
+
+  user_input   String @db.Text
+  bot_response String @db.Text
+
+  discord_channel_id String?
+  discord_user_id    String?
+
+  created_at DateTime @default(now())
+
+  @@index([session_id])
+  @@index([discord_channel_id])
+  @@index([created_at])
+  @@map("coze_conversations")
 }

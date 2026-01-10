@@ -1,10 +1,12 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { PrismaService } from '../../prisma/prisma.service';
 import { CozeRepository } from './coze.repository';
 import {
     ICozeConfig,
     IAiChatResult,
     IAiContext,
+    ICozeLogOptions,
 } from './interfaces/coze.interface';
 
 /**
@@ -22,6 +24,7 @@ export class CozeService implements OnModuleInit {
     constructor(
         private readonly configService: ConfigService,
         private readonly cozeRepository: CozeRepository,
+        private readonly prisma: PrismaService,
     ) {
         this.config = {
             enabled: this.configService.get<boolean>('COZE_ENABLED') ?? false,
@@ -129,12 +132,19 @@ ${insuranceInfo || 'Chưa có gói bảo hiểm.'}
 
     /**
      * Gửi tin nhắn đến Coze AI và nhận phản hồi
+     * @param userMessage - Tin nhắn từ người dùng
+     * @param conversationId - ID session để nhóm conversation
+     * @param userId - ID user (optional)
+     * @param options - Options cho Discord logging
      */
     async chat(
         userMessage: string,
         conversationId?: string,
         userId?: string,
+        options?: ICozeLogOptions,
     ): Promise<IAiChatResult> {
+        const startTime = Date.now();
+
         if (!this.isEnabled()) {
             return {
                 success: false,
@@ -169,14 +179,26 @@ ${insuranceInfo || 'Chưa có gói bảo hiểm.'}
                 }),
             });
 
+            const responseTime = Date.now() - startTime;
+
             if (!response.ok) {
                 const errorText = await response.text();
-                this.logger.error(`Coze API error: ${response.status} - ${errorText}`);
+                const errorMsg = `API error: ${response.status}`;
+
+                // Ghi log lỗi vào AILog
+                this.logAiMetadata({
+                    purpose: options?.discordChannelId ? 'COZE_DISCORD' : 'COZE_API',
+                    inputText: userMessage,
+                    durationMs: responseTime,
+                    isSuccess: false,
+                    errorMessage: errorMsg,
+                });
+
                 return {
                     success: false,
                     content: '',
                     model: 'coze',
-                    error: `API error: ${response.status}`,
+                    error: errorMsg,
                 };
             }
 
@@ -188,12 +210,23 @@ ${insuranceInfo || 'Chưa có gói bảo hiểm.'}
             );
 
             if (assistantMessage) {
-                // Ghi log vào AILog
-                await this.logAiInteraction(
-                    userMessage,
-                    assistantMessage.content,
-                    conversationId,
-                );
+                // Ghi log metadata vào AILog
+                this.logAiMetadata({
+                    purpose: options?.discordChannelId ? 'COZE_DISCORD' : 'COZE_API',
+                    inputText: userMessage,
+                    outputText: assistantMessage.content,
+                    durationMs: responseTime,
+                    isSuccess: true,
+                });
+
+                // Ghi conversation vào CozeConversation
+                this.logConversation({
+                    sessionId: conversationId || `session-${Date.now()}`,
+                    userInput: userMessage,
+                    botResponse: assistantMessage.content,
+                    discordChannelId: options?.discordChannelId,
+                    discordUserId: options?.discordUserId,
+                });
 
                 return {
                     success: true,
@@ -210,31 +243,73 @@ ${insuranceInfo || 'Chưa có gói bảo hiểm.'}
                 error: 'No assistant message in response',
             };
         } catch (error) {
-            this.logger.error(`Coze chat error: ${error}`);
+            const responseTime = Date.now() - startTime;
+            const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+
+            // Ghi log lỗi vào AILog
+            this.logAiMetadata({
+                purpose: options?.discordChannelId ? 'COZE_DISCORD' : 'COZE_API',
+                inputText: userMessage,
+                durationMs: responseTime,
+                isSuccess: false,
+                errorMessage: errorMsg,
+            });
+
             return {
                 success: false,
                 content: '',
                 model: 'coze',
-                error: error instanceof Error ? error.message : 'Unknown error',
+                error: errorMsg,
             };
         }
     }
 
     /**
-     * Ghi log tương tác AI (sử dụng Logger)
+     * Ghi log metadata AI request vào bảng AILog (async, không block)
      */
-    private logAiInteraction(
-        input: string,
-        output: string,
-        conversationId?: string,
-    ): void {
-        this.logger.log({
-            message: 'AI Chat Interaction',
-            action: 'CONTACT_AUTO_REPLY',
-            model: 'coze-gpt-4o-mini',
-            conversationId,
-            inputLength: input.length,
-            outputLength: output.length,
+    private logAiMetadata(data: {
+        purpose: string;
+        inputText: string;
+        outputText?: string;
+        durationMs: number;
+        isSuccess: boolean;
+        errorMessage?: string;
+    }): void {
+        this.prisma.aILog.create({
+            data: {
+                model: 'coze-gpt-4o-mini',
+                purpose: data.purpose,
+                input_text: data.inputText,
+                output_text: data.outputText,
+                duration_ms: data.durationMs,
+                is_success: data.isSuccess,
+                error_message: data.errorMessage,
+            },
+        }).catch(err => {
+            this.logger.error(`Failed to log AI metadata: ${err.message}`);
+        });
+    }
+
+    /**
+     * Ghi nội dung conversation vào bảng CozeConversation (async, không block)
+     */
+    private logConversation(data: {
+        sessionId: string;
+        userInput: string;
+        botResponse: string;
+        discordChannelId?: string;
+        discordUserId?: string;
+    }): void {
+        this.prisma.cozeConversation.create({
+            data: {
+                session_id: data.sessionId,
+                user_input: data.userInput,
+                bot_response: data.botResponse,
+                discord_channel_id: data.discordChannelId,
+                discord_user_id: data.discordUserId,
+            },
+        }).catch(err => {
+            this.logger.error(`Failed to log conversation: ${err.message}`);
         });
     }
 }
