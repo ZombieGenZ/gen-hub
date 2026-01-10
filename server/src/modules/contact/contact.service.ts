@@ -161,8 +161,9 @@ export class ContactService implements OnModuleInit {
         const supportEmail = this.configService.get<string>('EMAIL_SUPPORT_ADDRESS');
         const emailMessageId = `<${code.toLowerCase()}-${Date.now()}@${supportEmail?.split('@')[1] || 'genhub.dev'}>`;
 
-        // Lấy config AI auto-reply
-        const enableAiReply = this.appConfigService.get('enableAiAutoReply');
+        // Lấy config AI auto-reply (có thể là boolean hoặc string từ JSON file)
+        const enableAiReplyConfig = this.appConfigService.get('enableAiAutoReply') as unknown;
+        const enableAiReply = enableAiReplyConfig === true || enableAiReplyConfig === 'true';
 
         // Tạo conversation
         const conversation = await this.repository.createConversation({
@@ -895,7 +896,9 @@ export class ContactService implements OnModuleInit {
         );
 
         // AI Auto-Reply cho customer (chỉ customer, không reply cho staff)
-        const shouldAiReply = conversation.enable_ai_reply ?? this.appConfigService.get('enableAiAutoReply');
+        const enableAiReplyConfigRaw = this.appConfigService.get('enableAiAutoReply') as unknown;
+        const defaultAiReply = enableAiReplyConfigRaw === true || enableAiReplyConfigRaw === 'true';
+        const shouldAiReply = conversation.enable_ai_reply ?? defaultAiReply;
         if (shouldAiReply && this.cozeService.isEnabled()) {
             try {
                 const aiResult = await this.cozeService.chat(
