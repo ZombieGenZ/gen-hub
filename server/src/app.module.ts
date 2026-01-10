@@ -60,6 +60,7 @@ import { CategoryModule } from './modules/category/category.module';
 import { ArticleModule } from './modules/article/article.module';
 import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
 import { CozeModule } from './modules/coze/coze.module';
+import { CozePluginModule } from './modules/coze-plugin/coze-plugin.module';
 
 @Module({
   imports: [
@@ -206,6 +207,9 @@ import { CozeModule } from './modules/coze/coze.module';
 
     // Coze AI Module
     CozeModule,
+
+    // Coze AI Plugin APIs (Public)
+    CozePluginModule,
   ],
   controllers: [AppController],
   providers: [

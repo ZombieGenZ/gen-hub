@@ -293,3 +293,7 @@
 | 290 | Refund Requests | DELETE | /refund-requests/{id} | ❎ | ❎ | ❎ |
 | 291 | Refund Requests | GET | /organizations/{orgId}/refund-requests | ❎ | ❎ | ❎ |
 | 292 | Refund Requests | GET | /organizations/{orgId}/refund-requests/{id} | ❎ | ❎ | ❎ |
+| 293 | Coze Plugin (Public) | GET | /public/coze-plugin/warehouse-pricing | ❎ | ❎ | ❎ |
+| 294 | Coze Plugin (Public) | GET | /public/coze-plugin/check-availability | ❎ | ❎ | ❎ |
+| 295 | Coze Plugin (Public) | GET | /public/coze-plugin/rental-contract-terms | ❎ | ❎ | ❎ |
+| 296 | Coze Plugin (Public) | GET | /public/coze-plugin/faq | ❎ | ❎ | ❎ |

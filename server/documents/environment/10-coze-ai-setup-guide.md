@@ -120,161 +120,300 @@ Click vào **Model Settings** để mở panel cấu hình:
 ## 5. Bước 4: Thiết Lập API Plugins
 
 > [!IMPORTANT]
-> **API Plugins** cho phép bot gọi trực tiếp API của bạn để lấy thông tin realtime (giá kho, tình trạng khả dụng, thông tin đơn hàng, v.v.)
+> **API Plugins** cho phép bot gọi trực tiếp API của bạn để lấy thông tin realtime. GEN-HUB cung cấp 4 API public cho Coze bot.
 
-### 5.1. Tạo Plugin Mới
+### 5.1. Tổng Quan Các Plugin API
 
-1. Trong panel bên trái, chọn **"Plugins"** hoặc **"Tools"**
-2. Click **"+ Add plugin"** hoặc **"Create plugin"**
-3. Chọn **"Create from OpenAPI schema"** hoặc **"Custom API"**
+GEN-HUB cung cấp 4 API endpoints public cho Coze bot:
 
-### 5.2. Cấu Hình API Plugin
+| Plugin | Endpoint | Mô tả |
+|--------|----------|-------|
+| `get_warehouse_pricing` | `GET /coze-plugin/warehouse-pricing` | Tìm kho và lấy giá chi tiết |
+| `check_availability` | `GET /coze-plugin/check-availability` | Kiểm tra tình trạng kho |
+| `get_rental_contract_terms` | `GET /coze-plugin/rental-contract-terms` | Lấy điều khoản hợp đồng |
+| `get_faq` | `GET /coze-plugin/faq` | Lấy FAQ cho AI tư vấn |
 
-#### Bước 1: Định nghĩa API Endpoint
+### 5.2. Tạo Plugin Trong Coze (Giao Diện Mới)
 
-Ví dụ tạo plugin lấy thông tin kho:
+1. Trong trang **Edit Bot**, nhấp vào **"Plugins"** ở sidebar trái
+2. Click **"+ Add"** → **"Create plugin"**
+3. Chọn **"Import from URL"** hoặc **"Define from scratch"**
+4. Điền thông tin plugin theo hướng dẫn bên dưới
 
-**Plugin Name**: `get_warehouse_info`
+---
 
-**Description** (quan trọng - bot dùng description để quyết định khi nào gọi API):
-```
-Lấy thông tin chi tiết về kho bãi theo ID hoặc tên. 
-Sử dụng khi khách hàng hỏi về: giá thuê, diện tích, vị trí, tiện ích của một kho cụ thể.
-```
+### 5.3. Plugin 1: `get_warehouse_pricing`
 
-#### Bước 2: Cấu hình HTTP Request
+**Mục đích**: Tìm kiếm kho với advanced search và lấy giá chi tiết theo từng mốc thời gian. Nếu là kho chung sẽ bao gồm đầy đủ thông tin từng row.
 
-```yaml
-Method: GET
-URL: https://api.gen-hub.dev/api/v1/public/warehouses/{warehouse_id}
-
-Headers:
-  Content-Type: application/json
-  X-API-Key: {{API_KEY}}  # Sử dụng variable
-
-Parameters:
-  - name: warehouse_id
-    type: string
-    required: true
-    description: ID của kho cần lấy thông tin
-```
-
-#### Bước 3: Thêm các API khác
-
-Tạo thêm các plugins cho các use case phổ biến:
-
-| Plugin Name | Endpoint | Mô tả |
-|-------------|----------|-------|
-| `search_warehouses` | `GET /warehouses/search` | Tìm kho theo điều kiện |
-| `get_warehouse_pricing` | `GET /warehouses/{id}/pricing` | Lấy bảng giá kho |
-| `check_availability` | `GET /warehouses/{id}/availability` | Kiểm tra kho còn trống không |
-| `get_rental_contract` | `GET /contracts/{id}` | Lấy thông tin hợp đồng |
-| `get_faq` | `GET /faqs` | Lấy danh sách FAQ |
-
-### 5.3. Ví dụ OpenAPI Schema
-
-Nếu bạn có OpenAPI/Swagger spec, có thể import trực tiếp:
+**OpenAPI Schema**:
 
 ```json
 {
   "openapi": "3.0.0",
   "info": {
-    "title": "GEN-HUB Public API",
+    "title": "GEN-HUB Warehouse Pricing API",
     "version": "1.0.0"
   },
   "servers": [
-    {
-      "url": "https://api.gen-hub.dev/api/v1/public"
-    }
+    { "url": "https://api.gen-hub.dev" }
   ],
   "paths": {
-    "/warehouses/{id}": {
+    "/coze-plugin/warehouse-pricing": {
       "get": {
-        "operationId": "getWarehouseById",
-        "summary": "Lấy thông tin kho theo ID",
-        "description": "Trả về chi tiết kho bao gồm giá, diện tích, vị trí, tiện ích",
+        "operationId": "getWarehousePricing",
+        "summary": "Tìm kiếm kho và lấy thông tin giá chi tiết",
+        "description": "Lấy danh sách kho với advanced search, pricing tiers, addon/insurance gifts, structure. Cho kho chung sẽ có đầy đủ info của từng row. Mặc định trả về 3 kết quả.",
         "parameters": [
           {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "ID của kho"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Thông tin kho",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": {"type": "string"},
-                    "name": {"type": "string"},
-                    "address": {"type": "string"},
-                    "area": {"type": "number"},
-                    "pricePerMonth": {"type": "number"},
-                    "status": {"type": "string"},
-                    "amenities": {"type": "array", "items": {"type": "string"}}
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/warehouses/search": {
-      "get": {
-        "operationId": "searchWarehouses",
-        "summary": "Tìm kiếm kho theo điều kiện",
-        "description": "Tìm kho theo vị trí, diện tích, giá. Sử dụng khi khách hỏi tìm kho phù hợp.",
-        "parameters": [
-          {
-            "name": "city",
+            "name": "keywords",
             "in": "query",
             "schema": {"type": "string"},
-            "description": "Tên thành phố (VD: Hồ Chí Minh, Hà Nội)"
+            "description": "Tìm theo tên hoặc địa chỉ kho"
           },
           {
-            "name": "minArea",
+            "name": "province_name",
+            "in": "query",
+            "schema": {"type": "string"},
+            "description": "Tên tỉnh/thành phố (VD: Hồ Chí Minh, Hà Nội)"
+          },
+          {
+            "name": "min_price",
+            "in": "query",
+            "schema": {"type": "number"},
+            "description": "Giá tối thiểu (VNĐ/tháng)"
+          },
+          {
+            "name": "max_price",
+            "in": "query",
+            "schema": {"type": "number"},
+            "description": "Giá tối đa (VNĐ/tháng)"
+          },
+          {
+            "name": "min_area",
             "in": "query",
             "schema": {"type": "number"},
             "description": "Diện tích tối thiểu (m²)"
           },
           {
-            "name": "maxPrice",
+            "name": "max_area",
             "in": "query",
             "schema": {"type": "number"},
-            "description": "Giá tối đa (VNĐ/tháng)"
+            "description": "Diện tích tối đa (m²)"
+          },
+          {
+            "name": "is_cold_storage",
+            "in": "query",
+            "schema": {"type": "boolean"},
+            "description": "Lọc kho lạnh"
+          },
+          {
+            "name": "is_shared_warehouse",
+            "in": "query",
+            "schema": {"type": "boolean"},
+            "description": "Lọc kho chia sẻ (cho thuê theo row)"
+          },
+          {
+            "name": "warehouse_id",
+            "in": "query",
+            "schema": {"type": "string"},
+            "description": "ID kho cụ thể (nếu cần lấy chi tiết 1 kho)"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {"type": "integer", "default": 3},
+            "description": "Số lượng kết quả tối đa (default: 3)"
           }
-        ]
+        ],
+        "responses": {
+          "200": {
+            "description": "Danh sách kho với thông tin giá"
+          }
+        }
       }
     }
   }
 }
 ```
 
-### 5.4. Cấu hình Authentication cho API
+**Ví dụ Response**:
 
-Trong phần **Plugin Settings** → **Authentication**:
+```json
+{
+  "code": "coze-plugin.warehouse_pricing_fetched",
+  "success": true,
+  "data": {
+    "items": [
+      {
+        "id": "uuid",
+        "name": "Kho ABC Quận 7",
+        "area": 500,
+        "address": "123 Đường ABC, Quận 7",
+        "province": {"name": "TP Hồ Chí Minh"},
+        "base_price_per_month": 30000000,
+        "pricing_tiers": [
+          {"tier_name": "3 tháng", "discount_percent": 0, "price_per_month": 30000000},
+          {"tier_name": "6 tháng", "discount_percent": 5, "price_per_month": 28500000},
+          {"tier_name": "12 tháng", "discount_percent": 10, "price_per_month": 27000000}
+        ],
+        "structure": {"total_rows": 5, "total_racks": 20, "total_blocks": 400},
+        "is_shared_warehouse": true,
+        "rows": [
+          {
+            "name": "Dãy A",
+            "code": "A",
+            "base_price_per_month": 5000000,
+            "is_rented": false,
+            "pricing_tiers": [...],
+            "addon_gifts": [...]
+          }
+        ],
+        "addon_gifts": [
+          {"name": "Bảo vệ 24/7", "gift_duration": "Suốt thời gian thuê"}
+        ],
+        "insurance_gifts": [...]
+      }
+    ],
+    "total": 1,
+    "limit": 3
+  }
+}
+```
 
-1. **Type**: `API Key` hoặc `Bearer Token`
-2. **Header Name**: `X-API-Key` hoặc `Authorization`
-3. **Value**: API key của hệ thống bạn
+---
 
-> [!CAUTION]
-> Tạo một API key riêng cho Coze bot với quyền **read-only** để bảo mật.
+### 5.4. Plugin 2: `check_availability`
 
-### 5.5. Test Plugin
+**Mục đích**: Kiểm tra tình trạng có sẵn của kho hoặc row cụ thể.
 
-1. Sau khi tạo plugin, click **"Test"**
-2. Nhập các parameters test
-3. Verify response trả về đúng format
-4. Click **"Save"**
+**OpenAPI Schema**:
+
+```json
+{
+  "openapi": "3.0.0",
+  "info": {"title": "GEN-HUB Check Availability API", "version": "1.0.0"},
+  "servers": [{"url": "https://api.gen-hub.dev"}],
+  "paths": {
+    "/coze-plugin/check-availability": {
+      "get": {
+        "operationId": "checkAvailability",
+        "summary": "Kiểm tra tình trạng kho còn trống không",
+        "description": "Kiểm tra kho còn trống không, số hợp đồng đang active, và rows available (cho kho chia sẻ)",
+        "parameters": [
+          {
+            "name": "warehouse_id",
+            "in": "query",
+            "required": true,
+            "schema": {"type": "string"},
+            "description": "ID kho cần kiểm tra"
+          },
+          {
+            "name": "row_id",
+            "in": "query",
+            "schema": {"type": "string"},
+            "description": "ID row cụ thể (optional, cho kho chung)"
+          }
+        ],
+        "responses": {
+          "200": {"description": "Thông tin tình trạng kho"},
+          "404": {"description": "Không tìm thấy kho"}
+        }
+      }
+    }
+  }
+}
+```
+
+---
+
+### 5.5. Plugin 3: `get_rental_contract_terms`
+
+**Mục đích**: Lấy điều khoản chung của hợp đồng thuê kho.
+
+**OpenAPI Schema**:
+
+```json
+{
+  "openapi": "3.0.0",
+  "info": {"title": "GEN-HUB Contract Terms API", "version": "1.0.0"},
+  "servers": [{"url": "https://api.gen-hub.dev"}],
+  "paths": {
+    "/coze-plugin/rental-contract-terms": {
+      "get": {
+        "operationId": "getRentalContractTerms",
+        "summary": "Lấy điều khoản hợp đồng",
+        "description": "Lấy nội dung điều khoản chung của hợp đồng dịch vụ kho bãi, bao gồm các điều khoản về phạm vi dịch vụ, thanh toán, quyền và nghĩa vụ các bên.",
+        "responses": {
+          "200": {"description": "Điều khoản hợp đồng"}
+        }
+      }
+    }
+  }
+}
+```
+
+---
+
+### 5.6. Plugin 4: `get_faq`
+
+**Mục đích**: Lấy danh sách FAQ để AI tư vấn.
+
+**OpenAPI Schema**:
+
+```json
+{
+  "openapi": "3.0.0",
+  "info": {"title": "GEN-HUB FAQ API", "version": "1.0.0"},
+  "servers": [{"url": "https://api.gen-hub.dev"}],
+  "paths": {
+    "/coze-plugin/faq": {
+      "get": {
+        "operationId": "getFaq",
+        "summary": "Lấy danh sách FAQ",
+        "description": "Lấy danh sách câu hỏi thường gặp để AI tư vấn khách hàng. Sử dụng khi khách hỏi câu hỏi chung về dịch vụ.",
+        "responses": {
+          "200": {"description": "Danh sách FAQ"}
+        }
+      }
+    }
+  }
+}
+```
+
+---
+
+### 5.7. Cấu Hình Authentication
+
+> [!IMPORTANT]
+> Các API `/coze-plugin/*` yêu cầu API Key trong header `X-API-Key`.
+
+#### Bước 1: Tạo API Key trong GEN-HUB server
+
+Thêm vào file `.env`:
+
+```env
+# Generate a secure random string: openssl rand -hex 32
+COZE_PLUGIN_API_KEY=your_secure_random_api_key_here
+```
+
+#### Bước 2: Cấu hình trong Coze Plugin
+
+Trong Coze plugin editor, vào phần **Authentication**:
+
+1. **Authentication Type**: `API Key`
+2. **Key Location**: `Header`
+3. **Header Name**: `X-API-Key`
+4. **API Key Value**: Giá trị `COZE_PLUGIN_API_KEY` từ file `.env`
+
+### 5.8. Test Plugins
+
+Sau khi tạo plugin:
+
+1. Click **"Test"** trong plugin editor
+2. Nhập parameters test (VD: `province_name = "Hồ Chí Minh"`)
+3. Verify response trả về thành công
+4. Click **"Save"** để lưu plugin
 
 ---
 
@@ -359,23 +498,24 @@ Bạn là **GEN-HUB Assistant** - trợ lý AI thông minh và chuyên nghiệp 
 
 # 🔧 HƯỚNG DẪN SỬ DỤNG API PLUGINS
 
-## Plugin: `get_warehouse_info`
-**Khi nào dùng**: Khách hỏi về một kho cụ thể (theo tên hoặc ID)
-**Cách dùng**: Trích xuất tên/ID kho từ câu hỏi → Gọi API → Trình bày kết quả
-
-**Ví dụ câu hỏi kích hoạt**:
-- "Cho tôi xem thông tin kho ABC"
-- "Kho ở Bình Dương có gì?"
-- "Diện tích kho XYZ là bao nhiêu?"
-
-## Plugin: `search_warehouses`
-**Khi nào dùng**: Khách muốn tìm kho theo điều kiện
-**Cách dùng**: Thu thập yêu cầu → Gọi API với filters → Gợi ý 2-3 kho phù hợp nhất
+## Plugin: `get_warehouse_pricing`
+**Khi nào dùng**: Khách muốn tìm kho hoặc hỏi về giá kho
+**Cách dùng**: Thu thập yêu cầu → Gọi API với filters → Trình bày 2-3 kho phù hợp nhất
 
 **Ví dụ câu hỏi kích hoạt**:
 - "Tôi cần thuê kho 500m² ở Hồ Chí Minh"
 - "Có kho nào giá dưới 50 triệu/tháng không?"
 - "Tìm kho lạnh ở Hà Nội"
+- "Cho tôi xem thông tin kho ABC"
+- "Giá kho XYZ là bao nhiêu?"
+
+**Parameters có thể dùng**:
+- `keywords`: Tìm theo tên hoặc địa chỉ
+- `province_name`: Tên tỉnh/thành (VD: "Hồ Chí Minh")
+- `min_price`, `max_price`: Khoảng giá
+- `min_area`, `max_area`: Khoảng diện tích
+- `is_cold_storage`: Lọc kho lạnh
+- `is_shared_warehouse`: Lọc kho chia sẻ
 
 **Thông tin cần hỏi thêm nếu thiếu**:
 - Vị trí mong muốn (tỉnh/thành phố)
@@ -383,21 +523,33 @@ Bạn là **GEN-HUB Assistant** - trợ lý AI thông minh và chuyên nghiệp 
 - Ngân sách dự kiến (VNĐ/tháng)
 - Loại hàng hóa lưu trữ (để gợi ý loại kho phù hợp)
 
-## Plugin: `get_warehouse_pricing`
-**Khi nào dùng**: Khách hỏi cụ thể về giá một kho
-**Cách dùng**: Lấy bảng giá → Trình bày các gói (tháng/quý/năm) → Giải thích ưu đãi
+**Lưu ý về kho chia sẻ**: Nếu kho có `is_shared_warehouse = true`, response sẽ có field `rows` với đầy đủ thông tin từng row (tên, code, giá, tình trạng). Hãy giới thiệu các row còn trống cho khách.
 
 ## Plugin: `check_availability`
 **Khi nào dùng**: Khách hỏi kho còn trống không, có thể thuê ngay không
-**Cách dùng**: Kiểm tra tình trạng → Thông báo kết quả → Hướng dẫn đặt kho nếu còn
+**Cách dùng**: Truyền `warehouse_id` → Kiểm tra tình trạng → Thông báo kết quả
 
-## Plugin: `get_rental_contract`
-**Khi nào dùng**: Khách hỏi về hợp đồng đã ký (cần có mã hợp đồng)
-**Cách dùng**: Yêu cầu mã hợp đồng → Gọi API → Tóm tắt thông tin chính
+**Ví dụ câu hỏi kích hoạt**:
+- "Kho ABC còn trống không?"
+- "Có thể thuê kho XYZ ngay không?"
+
+## Plugin: `get_rental_contract_terms`
+**Khi nào dùng**: Khách hỏi về điều khoản hợp đồng, chính sách thuê
+**Cách dùng**: Gọi API → Trình bày các điều khoản liên quan đến câu hỏi
+
+**Ví dụ câu hỏi kích hoạt**:
+- "Điều khoản hợp đồng thế nào?"
+- "Quyền và nghĩa vụ của tôi khi thuê?"
+- "Nếu muốn hủy hợp đồng thì sao?"
 
 ## Plugin: `get_faq`
 **Khi nào dùng**: Câu hỏi chung về dịch vụ, chính sách
-**Cách dùng**: Tìm FAQ liên quan → Trả lời dựa trên nội dung FAQ
+**Cách dùng**: Gọi API → Tìm FAQ liên quan → Trả lời dựa trên nội dung FAQ
+
+**Ví dụ câu hỏi kích hoạt**:
+- "Làm sao để thuê kho?"
+- "Thanh toán như thế nào?"
+- "Có hỗ trợ gì khi thuê không?"
 
 ---
 
