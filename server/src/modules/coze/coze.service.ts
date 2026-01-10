@@ -137,6 +137,65 @@ ${insuranceInfo || 'Chưa có gói bảo hiểm.'}
      * @param userId - ID user (optional)
      * @param options - Options cho Discord logging
      */
+    /**
+     * Parse SSE stream response từ Coze API
+     * SSE format: event: xxx\ndata: {...}\n\n
+     */
+    private async parseSSEStream(response: Response): Promise<string> {
+        const reader = response.body?.getReader();
+        if (!reader) {
+            throw new Error('Response body is not readable');
+        }
+
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let finalContent = '';
+
+        try {
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+
+                // Parse các SSE events trong buffer
+                const lines = buffer.split('\n');
+                buffer = lines.pop() || ''; // Giữ lại dòng chưa hoàn chỉnh
+
+                let currentEvent = '';
+                for (const line of lines) {
+                    if (line.startsWith('event:')) {
+                        currentEvent = line.slice(6).trim();
+                    } else if (line.startsWith('data:')) {
+                        const dataStr = line.slice(5).trim();
+                        if (dataStr === '[DONE]') continue;
+
+                        try {
+                            const data = JSON.parse(dataStr);
+
+                            // Coze trả về nhiều loại event, ta quan tâm đến message với type = 'answer'
+                            if (currentEvent === 'conversation.message.completed') {
+                                if (data.type === 'answer' && data.role === 'assistant') {
+                                    finalContent = data.content || '';
+                                }
+                            }
+                            // Fallback: check trong data trực tiếp
+                            else if (data.type === 'answer' && data.role === 'assistant' && data.content) {
+                                finalContent = data.content;
+                            }
+                        } catch {
+                            // Ignore JSON parse errors for incomplete data
+                        }
+                    }
+                }
+            }
+        } finally {
+            reader.releaseLock();
+        }
+
+        return finalContent;
+    }
+
     async chat(
         userMessage: string,
         conversationId?: string,
@@ -155,19 +214,18 @@ ${insuranceInfo || 'Chưa có gói bảo hiểm.'}
         }
 
         try {
-            const systemPrompt = await this.buildSystemPrompt();
-
-            // Gọi Coze API
+            // Gọi Coze API với stream: true
             const response = await fetch(`${this.config.apiBaseUrl}/v3/chat`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${this.config.apiKey}`,
+                    Accept: 'text/event-stream',
                 },
                 body: JSON.stringify({
                     bot_id: this.config.botId,
                     user_id: userId || 'anonymous',
-                    stream: false,
+                    stream: true,
                     auto_save_history: true,
                     additional_messages: [
                         {
@@ -183,7 +241,7 @@ ${insuranceInfo || 'Chưa có gói bảo hiểm.'}
 
             if (!response.ok) {
                 const errorText = await response.text();
-                const errorMsg = `API error: ${response.status}`;
+                const errorMsg = `API error: ${response.status} - ${errorText}`;
 
                 // Ghi log lỗi vào AILog
                 this.logAiMetadata({
@@ -202,20 +260,17 @@ ${insuranceInfo || 'Chưa có gói bảo hiểm.'}
                 };
             }
 
-            const data = await response.json();
+            // Parse SSE stream để lấy response
+            const assistantContent = await this.parseSSEStream(response);
+            const totalTime = Date.now() - startTime;
 
-            // Lấy message từ response
-            const assistantMessage = data.messages?.find(
-                (m: { role: string }) => m.role === 'assistant',
-            );
-
-            if (assistantMessage) {
+            if (assistantContent) {
                 // Ghi log metadata vào AILog
                 this.logAiMetadata({
                     purpose: options?.discordChannelId ? 'COZE_DISCORD' : 'COZE_API',
                     inputText: userMessage,
-                    outputText: assistantMessage.content,
-                    durationMs: responseTime,
+                    outputText: assistantContent,
+                    durationMs: totalTime,
                     isSuccess: true,
                 });
 
@@ -223,24 +278,33 @@ ${insuranceInfo || 'Chưa có gói bảo hiểm.'}
                 this.logConversation({
                     sessionId: conversationId || `session-${Date.now()}`,
                     userInput: userMessage,
-                    botResponse: assistantMessage.content,
+                    botResponse: assistantContent,
                     discordChannelId: options?.discordChannelId,
                     discordUserId: options?.discordUserId,
                 });
 
                 return {
                     success: true,
-                    content: assistantMessage.content,
+                    content: assistantContent,
                     model: 'coze-gpt-4o-mini',
                     confidence: 1.0,
                 };
             }
 
+            // Ghi log khi không có response
+            this.logAiMetadata({
+                purpose: options?.discordChannelId ? 'COZE_DISCORD' : 'COZE_API',
+                inputText: userMessage,
+                durationMs: totalTime,
+                isSuccess: false,
+                errorMessage: 'No assistant message in stream response',
+            });
+
             return {
                 success: false,
                 content: '',
                 model: 'coze',
-                error: 'No assistant message in response',
+                error: 'No assistant message in stream response',
             };
         } catch (error) {
             const responseTime = Date.now() - startTime;
