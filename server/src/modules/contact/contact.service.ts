@@ -192,11 +192,13 @@ export class ContactService implements OnModuleInit {
             email_subject: dto.subject,
         });
 
-        // AI Processing: Gemini phân loại + Coze tư vấn
+        // AI Processing: Gemini phân loại (nếu có) + Coze tư vấn
         let aiResponseContent: string | undefined;
+        let isSpam = false;
+
+        // Bước 1: Phân loại spam bằng Gemini (nếu Gemini được bật)
         if (enableAiReply && this.geminiService.enabled) {
             try {
-                // 1. Dùng Gemini để phân loại spam vs contact
                 const classification = await this.geminiService.classifyEmail(
                     dto.email,
                     dto.name,
@@ -205,53 +207,62 @@ export class ContactService implements OnModuleInit {
                 );
 
                 if (classification.isSpamOrAdvertising) {
-                    // Đánh dấu là spam
+                    isSpam = true;
                     await this.repository.update(conversation.id, { status: ContactStatus.SPAM });
                     this.systemLogService.info('contact', 'ai_spam_detected', `AI detected spam: ${code}`, {
                         metaData: { conversationId: conversation.id, confidence: classification.confidence },
                     });
-                } else if (classification.isUserContact && this.cozeService.isEnabled()) {
-                    // 2. Dùng Coze để tư vấn tự động
-                    const aiResult = await this.cozeService.chat(
-                        dto.message,
-                        conversation.id,
-                        dto.email,
-                    );
+                }
+            } catch (error) {
+                this.systemLogService.error('contact', 'gemini_classification', `Gemini classification failed: ${error}`, {
+                    metaData: { conversationId: conversation.id, code },
+                });
+                // Không đánh dấu spam nếu lỗi, tiếp tục xử lý Coze
+            }
+        }
 
-                    if (aiResult.success && aiResult.content) {
-                        aiResponseContent = aiResult.content;
-                        // Lưu AI response message
-                        await this.repository.createMessage({
-                            conversation_id: conversation.id,
+        // Bước 2: Gọi Coze AI để tư vấn tự động (nếu không phải spam và Coze được bật)
+        if (enableAiReply && !isSpam && this.cozeService.isEnabled()) {
+            try {
+                const aiResult = await this.cozeService.chat(
+                    dto.message,
+                    conversation.id,
+                    dto.email,
+                );
+
+                if (aiResult.success && aiResult.content) {
+                    aiResponseContent = aiResult.content;
+                    // Lưu AI response message
+                    await this.repository.createMessage({
+                        conversation_id: conversation.id,
+                        sender_type: MessageSender.AI,
+                        sender_name: 'GEN-HUB AI',
+                        content: aiResult.content,
+                        message_type: MessageType.TEXT,
+                        is_ai_response: true,
+                        ai_model: aiResult.model,
+                        ai_confidence: aiResult.confidence,
+                    });
+
+                    this.systemLogService.info('contact', 'ai_reply', `AI replied to contact: ${code}`, {
+                        metaData: { conversationId: conversation.id, model: aiResult.model },
+                    });
+
+                    // Emit WebSocket cho AI message
+                    this.websocketGateway.emitContactMessageCreated(
+                        conversation.id,
+                        {
+                            id: `ai-${Date.now()}`,
                             sender_type: MessageSender.AI,
                             sender_name: 'GEN-HUB AI',
                             content: aiResult.content,
-                            message_type: MessageType.TEXT,
-                            is_ai_response: true,
-                            ai_model: aiResult.model,
-                            ai_confidence: aiResult.confidence,
-                        });
-
-                        this.systemLogService.info('contact', 'ai_reply', `AI replied to contact: ${code}`, {
-                            metaData: { conversationId: conversation.id, model: aiResult.model },
-                        });
-
-                        // Emit WebSocket cho AI message
-                        this.websocketGateway.emitContactMessageCreated(
-                            conversation.id,
-                            {
-                                id: `ai-${Date.now()}`,
-                                sender_type: MessageSender.AI,
-                                sender_name: 'GEN-HUB AI',
-                                content: aiResult.content,
-                                is_internal: false,
-                                created_at: new Date(),
-                            },
-                        );
-                    }
+                            is_internal: false,
+                            created_at: new Date(),
+                        },
+                    );
                 }
             } catch (error) {
-                this.systemLogService.error('contact', 'ai_processing', `AI processing failed: ${error}`, {
+                this.systemLogService.error('contact', 'coze_reply', `Coze AI reply failed: ${error}`, {
                     metaData: { conversationId: conversation.id, code },
                 });
             }
@@ -967,6 +978,10 @@ export class ContactService implements OnModuleInit {
         // Tạo email message ID nếu chưa có
         const finalEmailMessageId = emailMessageId || `<${code}-${Date.now()}@gen-hub.dev>`;
 
+        // Lấy config AI auto-reply
+        const enableAiReplyConfig = this.appConfigService.get('enableAiAutoReply') as unknown;
+        const enableAiReply = enableAiReplyConfig === true || enableAiReplyConfig === 'true';
+
         // Tạo conversation
         const conversation = await this.repository.createConversation({
             code,
@@ -980,6 +995,7 @@ export class ContactService implements OnModuleInit {
             email_in_reply_to: emailInReplyTo,
             email_references: emailReferences || [],
             last_activity_at: new Date(),
+            enable_ai_reply: enableAiReply,
         });
 
         // Tạo message đầu tiên
@@ -993,6 +1009,52 @@ export class ContactService implements OnModuleInit {
             email_subject: subject,
             email_message_id: finalEmailMessageId,
         });
+
+        // Coze AI auto-reply cho inbound email
+        if (enableAiReply && this.cozeService.isEnabled()) {
+            try {
+                const aiResult = await this.cozeService.chat(
+                    content,
+                    conversation.id,
+                    senderEmail,
+                );
+
+                if (aiResult.success && aiResult.content) {
+                    // Lưu AI response message
+                    const aiMessage = await this.repository.createMessage({
+                        conversation_id: conversation.id,
+                        sender_type: MessageSender.AI,
+                        sender_name: 'GEN-HUB AI',
+                        content: aiResult.content,
+                        message_type: MessageType.TEXT,
+                        is_ai_response: true,
+                        ai_model: aiResult.model,
+                        ai_confidence: aiResult.confidence,
+                    });
+
+                    this.systemLogService.info('contact', 'ai_reply', `AI replied to inbound email: ${code}`, {
+                        metaData: { conversationId: conversation.id, model: aiResult.model },
+                    });
+
+                    // Emit WebSocket cho AI message
+                    this.websocketGateway.emitContactMessageCreated(
+                        conversation.id,
+                        {
+                            id: aiMessage.id,
+                            sender_type: MessageSender.AI,
+                            sender_name: 'GEN-HUB AI',
+                            content: aiResult.content,
+                            is_internal: false,
+                            created_at: aiMessage.created_at,
+                        },
+                    );
+                }
+            } catch (error) {
+                this.systemLogService.error('contact', 'coze_reply', `Coze AI reply failed for inbound email: ${error}`, {
+                    metaData: { conversationId: conversation.id, code },
+                });
+            }
+        }
 
         // Gửi email xác nhận (fire-and-forget)
         this.emailService.sendContactConfirmationEmail(
