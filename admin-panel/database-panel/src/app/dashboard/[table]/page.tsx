@@ -159,6 +159,7 @@ export default function TablePage() {
 
     // Column order state (saved to localStorage per table)
     const [columnOrder, setColumnOrder] = useState<string[]>([]);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [originalColumns, setOriginalColumns] = useState<string[]>([]);
 
     // Export dropdown state
