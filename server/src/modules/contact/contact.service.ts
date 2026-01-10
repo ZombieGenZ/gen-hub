@@ -328,6 +328,7 @@ export class ContactService implements OnModuleInit {
         this.websocketGateway.emitContactConversationCreated(conversation.id, code, dto.email);
 
         // Tạo Discord channel (fire-and-forget)
+        let discordChannelId: string | undefined;
         try {
             const discordResult = await this.discordService.createContactChannel(
                 code,
@@ -336,9 +337,19 @@ export class ContactService implements OnModuleInit {
                 dto.subject,
             );
             if (discordResult.success && discordResult.channelId) {
+                discordChannelId = discordResult.channelId;
                 await this.repository.update(conversation.id, {
                     discord_channel_id: discordResult.channelId,
                 });
+
+                // Nếu có AI response, gửi vào Discord channel
+                if (aiResponseContent) {
+                    this.discordService.sendMessageToTicket(
+                        discordResult.channelId,
+                        `**🤖 GEN-HUB AI**: ${aiResponseContent}`,
+                        false,
+                    );
+                }
             }
         } catch (error) {
             this.systemLogService.error('contact', 'discord', `Failed to create Discord channel: ${error}`, {
@@ -1007,6 +1018,15 @@ export class ContactService implements OnModuleInit {
                         this.systemLogService.error('contact', 'ai_email', `Failed to send AI reply email: ${emailError}`, {
                             metaData: { conversationId: conversation.id, code: conversation.code },
                         });
+                    }
+
+                    // Gửi AI reply vào Discord channel (nếu có)
+                    if (conversation.discord_channel_id) {
+                        this.discordService.sendMessageToTicket(
+                            conversation.discord_channel_id,
+                            `**🤖 GEN-HUB AI**: ${aiResult.content}`,
+                            false,
+                        );
                     }
                 }
             } catch (error) {
