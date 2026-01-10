@@ -232,16 +232,24 @@ export class ContactService implements OnModuleInit {
 
                 if (aiResult.success && aiResult.content) {
                     aiResponseContent = aiResult.content;
+
+                    // Generate email message ID cho AI reply
+                    const supportEmail = this.configService.get<string>('EMAIL_SUPPORT_ADDRESS');
+                    const emailDomain = supportEmail?.split('@')[1] || 'genhub.dev';
+                    const aiEmailMessageId = `<${code.toLowerCase()}-ai-${Date.now()}@${emailDomain}>`;
+
                     // Lưu AI response message
-                    await this.repository.createMessage({
+                    const aiMessage = await this.repository.createMessage({
                         conversation_id: conversation.id,
                         sender_type: MessageSender.AI,
                         sender_name: 'GEN-HUB AI',
                         content: aiResult.content,
-                        message_type: MessageType.TEXT,
+                        message_type: MessageType.EMAIL,
                         is_ai_response: true,
                         ai_model: aiResult.model,
                         ai_confidence: aiResult.confidence,
+                        email_message_id: aiEmailMessageId,
+                        email_in_reply_to: emailMessageId,
                     });
 
                     this.systemLogService.info('contact', 'ai_reply', `AI replied to contact: ${code}`, {
@@ -252,14 +260,33 @@ export class ContactService implements OnModuleInit {
                     this.websocketGateway.emitContactMessageCreated(
                         conversation.id,
                         {
-                            id: `ai-${Date.now()}`,
+                            id: aiMessage.id,
                             sender_type: MessageSender.AI,
                             sender_name: 'GEN-HUB AI',
                             content: aiResult.content,
                             is_internal: false,
-                            created_at: new Date(),
+                            created_at: aiMessage.created_at,
                         },
                     );
+
+                    // Gửi email phản hồi từ AI cho khách hàng (giống staff reply)
+                    try {
+                        await this.emailService.sendContactReplyEmail(
+                            dto.email,
+                            dto.name,
+                            code,
+                            dto.subject || 'Phản hồi yêu cầu hỗ trợ',
+                            aiResult.content,
+                            emailMessageId,
+                            [emailMessageId],
+                            aiEmailMessageId,
+                            'vi',
+                        );
+                    } catch (emailError) {
+                        this.systemLogService.error('contact', 'ai_email', `Failed to send AI reply email: ${emailError}`, {
+                            metaData: { conversationId: conversation.id, code },
+                        });
+                    }
                 }
             } catch (error) {
                 this.systemLogService.error('contact', 'coze_reply', `Coze AI reply failed: ${error}`, {
@@ -919,16 +946,23 @@ export class ContactService implements OnModuleInit {
                 );
 
                 if (aiResult.success && aiResult.content) {
+                    // Generate email message ID cho AI reply
+                    const supportEmail = this.configService.get<string>('EMAIL_SUPPORT_ADDRESS');
+                    const emailDomain = supportEmail?.split('@')[1] || 'genhub.dev';
+                    const aiEmailMessageId = `<${conversation.code.toLowerCase()}-ai-${Date.now()}@${emailDomain}>`;
+
                     // Lưu AI response message
                     const aiMessage = await this.repository.createMessage({
                         conversation_id: conversation.id,
                         sender_type: MessageSender.AI,
                         sender_name: 'GEN-HUB AI',
                         content: aiResult.content,
-                        message_type: MessageType.TEXT,
+                        message_type: MessageType.EMAIL,
                         is_ai_response: true,
                         ai_model: aiResult.model,
                         ai_confidence: aiResult.confidence,
+                        email_message_id: aiEmailMessageId,
+                        email_in_reply_to: messageId,
                     });
 
                     this.systemLogService.info('contact', 'ai_reply', `AI replied to customer email: ${conversation.code}`, {
@@ -947,6 +981,33 @@ export class ContactService implements OnModuleInit {
                             created_at: aiMessage.created_at,
                         },
                     );
+
+                    // Gửi email phản hồi từ AI cho khách hàng
+                    try {
+                        const emailReferences = conversation.email_references || [];
+                        if (conversation.email_message_id) {
+                            emailReferences.push(conversation.email_message_id);
+                        }
+                        if (messageId) {
+                            emailReferences.push(messageId);
+                        }
+
+                        await this.emailService.sendContactReplyEmail(
+                            senderEmail,
+                            senderName,
+                            conversation.code,
+                            conversation.subject || 'Phản hồi yêu cầu hỗ trợ',
+                            aiResult.content,
+                            messageId || conversation.email_message_id || undefined,
+                            emailReferences,
+                            aiEmailMessageId,
+                            'vi',
+                        );
+                    } catch (emailError) {
+                        this.systemLogService.error('contact', 'ai_email', `Failed to send AI reply email: ${emailError}`, {
+                            metaData: { conversationId: conversation.id, code: conversation.code },
+                        });
+                    }
                 }
             } catch (error) {
                 this.systemLogService.error('contact', 'ai_reply_failed', `AI reply failed: ${error}`, {
@@ -1020,16 +1081,23 @@ export class ContactService implements OnModuleInit {
                 );
 
                 if (aiResult.success && aiResult.content) {
+                    // Generate email message ID cho AI reply
+                    const supportEmail = this.configService.get<string>('EMAIL_SUPPORT_ADDRESS');
+                    const emailDomain = supportEmail?.split('@')[1] || 'genhub.dev';
+                    const aiEmailMessageId = `<${code.toLowerCase()}-ai-${Date.now()}@${emailDomain}>`;
+
                     // Lưu AI response message
                     const aiMessage = await this.repository.createMessage({
                         conversation_id: conversation.id,
                         sender_type: MessageSender.AI,
                         sender_name: 'GEN-HUB AI',
                         content: aiResult.content,
-                        message_type: MessageType.TEXT,
+                        message_type: MessageType.EMAIL,
                         is_ai_response: true,
                         ai_model: aiResult.model,
                         ai_confidence: aiResult.confidence,
+                        email_message_id: aiEmailMessageId,
+                        email_in_reply_to: finalEmailMessageId,
                     });
 
                     this.systemLogService.info('contact', 'ai_reply', `AI replied to inbound email: ${code}`, {
@@ -1048,6 +1116,25 @@ export class ContactService implements OnModuleInit {
                             created_at: aiMessage.created_at,
                         },
                     );
+
+                    // Gửi email phản hồi từ AI cho khách hàng
+                    try {
+                        await this.emailService.sendContactReplyEmail(
+                            senderEmail,
+                            senderName,
+                            code,
+                            subject || 'Phản hồi yêu cầu hỗ trợ',
+                            aiResult.content,
+                            finalEmailMessageId,
+                            [finalEmailMessageId],
+                            aiEmailMessageId,
+                            'vi',
+                        );
+                    } catch (emailError) {
+                        this.systemLogService.error('contact', 'ai_email', `Failed to send AI reply email: ${emailError}`, {
+                            metaData: { conversationId: conversation.id, code },
+                        });
+                    }
                 }
             } catch (error) {
                 this.systemLogService.error('contact', 'coze_reply', `Coze AI reply failed for inbound email: ${error}`, {
