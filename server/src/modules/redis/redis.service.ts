@@ -491,4 +491,34 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   async invalidateOrgNotificationListCache(orgId: string): Promise<void> {
     await this.delByPattern(`org-notification:list:${orgId}:*`);
   }
+
+  // ========== Organization Chat Cache ==========
+  private readonly ORG_CHAT_MESSAGE_LIST_CACHE_TTL: number = 60;
+
+  getOrgChatMessageListCacheKey(orgId: string, query: Record<string, unknown>): string {
+    const sortedParams = Object.keys(query)
+      .sort()
+      .map((key) => `${key}=${query[key]}`)
+      .join('&');
+    return `org-chat:messages:${orgId}:${sortedParams}`;
+  }
+
+  async getOrgChatMessageListCache<T>(cacheKey: string): Promise<T | null> {
+    const data = await this.get(cacheKey);
+    if (!data) return null;
+    try {
+      return JSON.parse(data) as T;
+    } catch {
+      return null;
+    }
+  }
+
+  async setOrgChatMessageListCache<T>(cacheKey: string, data: T, ttlSeconds?: number): Promise<void> {
+    const ttl = ttlSeconds || this.ORG_CHAT_MESSAGE_LIST_CACHE_TTL;
+    await this.set(cacheKey, JSON.stringify(data), ttl);
+  }
+
+  async invalidateOrgChatMessageListCache(orgId: string): Promise<void> {
+    await this.delByPattern(`org-chat:messages:${orgId}:*`);
+  }
 }

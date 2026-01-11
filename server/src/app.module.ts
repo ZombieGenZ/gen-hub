@@ -62,6 +62,7 @@ import { ArticleModule } from './modules/article/article.module';
 import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
 import { CozeModule } from './modules/coze/coze.module';
 import { CozePluginModule } from './modules/coze-plugin/coze-plugin.module';
+import { OrgChatModule } from './modules/org-chat/org-chat.module';
 
 @Module({
   imports: [
@@ -214,6 +215,9 @@ import { CozePluginModule } from './modules/coze-plugin/coze-plugin.module';
 
     // Coze AI Plugin APIs (Public)
     CozePluginModule,
+
+    // Organization Chat with Agora
+    OrgChatModule,
   ],
   controllers: [AppController],
   providers: [

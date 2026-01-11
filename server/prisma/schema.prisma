@@ -1591,6 +1591,9 @@ model Organization {
 
   contact_conversations ContactConversation[] @relation("ContactConversations")
 
+  chat_messages OrganizationChatMessage[]
+  chat_calls    OrganizationChatCall[]
+
   @@map("organizations")
 }
 
@@ -4053,4 +4056,91 @@ model ContactActionLog {
   @@index([action_type])
   @@index([created_at])
   @@map("contact_action_logs")
+}
+
+enum ChatCallType {
+  VOICE
+  VIDEO
+}
+
+enum ChatCallStatus {
+  WAITING
+  ONGOING
+  ENDED
+}
+
+model OrganizationChatMessage {
+  id              String   @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  organization_id String   @db.Uuid
+  content         String   @db.Text
+
+  agora_message_id String?
+
+  call_id String? @db.Uuid
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean   @default(false)
+  deleted_at DateTime?
+
+  created_by String  @db.Uuid
+  deleted_by String? @db.Uuid
+
+  organization Organization          @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  call         OrganizationChatCall? @relation(fields: [call_id], references: [id])
+
+  @@unique([organization_id, agora_message_id])
+  @@index([organization_id])
+  @@index([created_at])
+  @@map("organization_chat_messages")
+}
+
+model OrganizationChatCall {
+  id              String         @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  organization_id String         @db.Uuid
+  call_type       ChatCallType
+  status          ChatCallStatus @default(WAITING)
+
+  agora_channel_name String
+
+  started_at DateTime?
+  ended_at   DateTime?
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean   @default(false)
+  deleted_at DateTime?
+
+  created_by String  @db.Uuid
+  ended_by   String? @db.Uuid
+
+  organization Organization                      @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  participants OrganizationChatCallParticipant[]
+  messages     OrganizationChatMessage[]
+
+  @@index([organization_id])
+  @@index([status])
+  @@map("organization_chat_calls")
+}
+
+model OrganizationChatCallParticipant {
+  id      String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  call_id String @db.Uuid
+  user_id String @db.Uuid
+
+  agora_uid Int
+
+  joined_at DateTime  @default(now())
+  left_at   DateTime?
+
+  is_active Boolean @default(true)
+
+  call OrganizationChatCall @relation(fields: [call_id], references: [id], onDelete: Cascade)
+
+  @@unique([call_id, user_id])
+  @@index([call_id])
+  @@index([user_id])
+  @@map("organization_chat_call_participants")
 }

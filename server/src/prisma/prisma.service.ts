@@ -930,6 +930,13 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         { key: 'organization.notification.read', name: 'Xem chi tiết thông báo', description: 'Quyền xem chi tiết thông báo tổ chức' },
         { key: 'organization.notification.update', name: 'Cập nhật thông báo', description: 'Quyền cập nhật thông báo tổ chức' },
         { key: 'organization.notification.delete', name: 'Xóa thông báo', description: 'Quyền xóa thông báo tổ chức' },
+        // Chat management (Agora RTM + RTC)
+        { key: 'chat.view', name: 'Xem tin nhắn chat', description: 'Quyền xem tin nhắn trong chat tổ chức', allow_api_key: true },
+        { key: 'chat.send', name: 'Gửi tin nhắn chat', description: 'Quyền gửi tin nhắn trong chat tổ chức', allow_api_key: true },
+        { key: 'chat.delete', name: 'Xóa tin nhắn chat', description: 'Quyền xóa tin nhắn trong chat tổ chức', allow_api_key: true },
+        { key: 'chat.call.view', name: 'Xem cuộc gọi', description: 'Quyền xem thông tin cuộc gọi', allow_api_key: true },
+        { key: 'chat.call.start', name: 'Bắt đầu cuộc gọi', description: 'Quyền bắt đầu cuộc gọi voice/video', allow_api_key: false },
+        { key: 'chat.call.join', name: 'Tham gia cuộc gọi', description: 'Quyền tham gia cuộc gọi đang diễn ra', allow_api_key: false },
       ];
 
       for (const perm of orgLevelPermissions) {
@@ -943,6 +950,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
               key: perm.key,
               name: perm.name,
               description: perm.description,
+              allow_api_key: (perm as { allow_api_key?: boolean }).allow_api_key ?? true,
               is_active: true,
               is_deleted: false,
             },

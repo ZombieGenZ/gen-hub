@@ -197,6 +197,18 @@ export enum ResponseCode {
     REFUND_REQUEST_CHANGE_SUCCESS = 'refund_request.change_success',
     REFUND_REQUEST_DELETE_SUCCESS = 'refund_request.delete_success',
 
+    // Organization Chat
+    ORG_CHAT_TOKEN_SUCCESS = 'org_chat.token_success',
+    ORG_CHAT_MESSAGES_SUCCESS = 'org_chat.messages_success',
+    ORG_CHAT_SYNC_SUCCESS = 'org_chat.sync_success',
+    ORG_CHAT_DELETE_SUCCESS = 'org_chat.delete_success',
+    ORG_CHAT_CALLS_SUCCESS = 'org_chat.calls_success',
+    ORG_CHAT_CALL_SUCCESS = 'org_chat.call_success',
+    ORG_CHAT_CALL_STARTED = 'org_chat.call_started',
+    ORG_CHAT_CALL_JOINED = 'org_chat.call_joined',
+    ORG_CHAT_CALL_LEFT = 'org_chat.call_left',
+    ORG_CHAT_CALL_ENDED = 'org_chat.call_ended',
+
     // Client Errors (4xx)
     ERROR_VALIDATION = 'error.validation',
     ERROR_BAD_REQUEST = 'error.bad_request',
