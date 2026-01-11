@@ -21,6 +21,11 @@ import {
     ModalActionRowComponentBuilder,
     StringSelectMenuBuilder,
     StringSelectMenuOptionBuilder,
+    SlashCommandBuilder,
+    REST,
+    Routes,
+    ChatInputCommandInteraction,
+    ModalSubmitInteraction,
 } from 'discord.js';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CozeService } from '../coze/coze.service';
@@ -142,6 +147,9 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
                             this.logger.log(`Connected to priority category: ${this.priorityCategory.name}`);
                         }
                     }
+
+                    // Đăng ký Slash Commands
+                    await this.registerSlashCommands();
                 }
             });
 
@@ -181,6 +189,176 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
      */
     setReplyCallback(callback: DiscordReplyCallback) {
         this.onReplyCallback = callback;
+    }
+
+    /**
+     * Đăng ký Slash Commands với Discord API
+     * Các commands sẽ hiện gợi ý khi user gõ /
+     */
+    private async registerSlashCommands(): Promise<void> {
+        if (!this.client?.user) return;
+
+        const commands = [
+            // Commands có reason (optional - mở modal nếu trống)
+            new SlashCommandBuilder()
+                .setName('close')
+                .setDescription('Đóng ticket hỗ trợ')
+                .addStringOption(option =>
+                    option.setName('reason')
+                        .setDescription('Lý do đóng ticket')
+                        .setRequired(false)),
+
+            new SlashCommandBuilder()
+                .setName('reopen')
+                .setDescription('Mở lại ticket đã đóng')
+                .addStringOption(option =>
+                    option.setName('reason')
+                        .setDescription('Lý do mở lại ticket')
+                        .setRequired(false)),
+
+            new SlashCommandBuilder()
+                .setName('delete')
+                .setDescription('Xóa ticket hỗ trợ')
+                .addStringOption(option =>
+                    option.setName('reason')
+                        .setDescription('Lý do xóa ticket')
+                        .setRequired(false)),
+
+            new SlashCommandBuilder()
+                .setName('skip')
+                .setDescription('Bỏ qua ticket này')
+                .addStringOption(option =>
+                    option.setName('reason')
+                        .setDescription('Lý do bỏ qua ticket')
+                        .setRequired(false)),
+
+            new SlashCommandBuilder()
+                .setName('unskip')
+                .setDescription('Hủy bỏ qua ticket'),
+
+            // Priority với choices
+            new SlashCommandBuilder()
+                .setName('priority')
+                .setDescription('Đặt độ ưu tiên cho ticket')
+                .addStringOption(option =>
+                    option.setName('level')
+                        .setDescription('Mức độ ưu tiên')
+                        .setRequired(false)
+                        .addChoices(
+                            { name: '🟢 Thấp (LOW)', value: 'LOW' },
+                            { name: '🟡 Trung bình (MEDIUM)', value: 'MEDIUM' },
+                            { name: '🟠 Cao (HIGH)', value: 'HIGH' },
+                            { name: '🔴 Khẩn cấp (URGENT)', value: 'URGENT' },
+                        )),
+
+            // Whitelist/Blacklist commands
+            new SlashCommandBuilder()
+                .setName('whitelist')
+                .setDescription('Thêm vào whitelist')
+                .addStringOption(option =>
+                    option.setName('type')
+                        .setDescription('Loại whitelist')
+                        .setRequired(false)
+                        .addChoices(
+                            { name: 'Email', value: 'EMAIL' },
+                            { name: 'Email Domain', value: 'EMAIL_DOMAIN' },
+                            { name: 'IPv4', value: 'IP_V4' },
+                            { name: 'IPv6', value: 'IP_V6' },
+                            { name: 'Quốc gia', value: 'REGION_COUNTRY' },
+                            { name: 'Thành phố', value: 'REGION_CITY' },
+                        ))
+                .addStringOption(option =>
+                    option.setName('value')
+                        .setDescription('Giá trị (email, domain, IP, tên quốc gia/thành phố)')
+                        .setRequired(false))
+                .addStringOption(option =>
+                    option.setName('reason')
+                        .setDescription('Lý do thêm whitelist')
+                        .setRequired(false)),
+
+            new SlashCommandBuilder()
+                .setName('blacklist')
+                .setDescription('Thêm vào blacklist')
+                .addStringOption(option =>
+                    option.setName('type')
+                        .setDescription('Loại blacklist')
+                        .setRequired(false)
+                        .addChoices(
+                            { name: 'Email', value: 'EMAIL' },
+                            { name: 'Email Domain', value: 'EMAIL_DOMAIN' },
+                            { name: 'IPv4', value: 'IP_V4' },
+                            { name: 'IPv6', value: 'IP_V6' },
+                            { name: 'Quốc gia', value: 'REGION_COUNTRY' },
+                            { name: 'Thành phố', value: 'REGION_CITY' },
+                        ))
+                .addStringOption(option =>
+                    option.setName('value')
+                        .setDescription('Giá trị (email, domain, IP, tên quốc gia/thành phố)')
+                        .setRequired(false))
+                .addStringOption(option =>
+                    option.setName('reason')
+                        .setDescription('Lý do thêm blacklist')
+                        .setRequired(false)),
+
+            new SlashCommandBuilder()
+                .setName('remove-whitelist')
+                .setDescription('Xóa khỏi whitelist')
+                .addStringOption(option =>
+                    option.setName('type')
+                        .setDescription('Loại whitelist')
+                        .setRequired(false)
+                        .addChoices(
+                            { name: 'Email', value: 'EMAIL' },
+                            { name: 'Email Domain', value: 'EMAIL_DOMAIN' },
+                            { name: 'IPv4', value: 'IP_V4' },
+                            { name: 'IPv6', value: 'IP_V6' },
+                            { name: 'Quốc gia', value: 'REGION_COUNTRY' },
+                            { name: 'Thành phố', value: 'REGION_CITY' },
+                        ))
+                .addStringOption(option =>
+                    option.setName('value')
+                        .setDescription('Giá trị cần xóa')
+                        .setRequired(false)),
+
+            new SlashCommandBuilder()
+                .setName('remove-blacklist')
+                .setDescription('Xóa khỏi blacklist')
+                .addStringOption(option =>
+                    option.setName('type')
+                        .setDescription('Loại blacklist')
+                        .setRequired(false)
+                        .addChoices(
+                            { name: 'Email', value: 'EMAIL' },
+                            { name: 'Email Domain', value: 'EMAIL_DOMAIN' },
+                            { name: 'IPv4', value: 'IP_V4' },
+                            { name: 'IPv6', value: 'IP_V6' },
+                            { name: 'Quốc gia', value: 'REGION_COUNTRY' },
+                            { name: 'Thành phố', value: 'REGION_CITY' },
+                        ))
+                .addStringOption(option =>
+                    option.setName('value')
+                        .setDescription('Giá trị cần xóa')
+                        .setRequired(false)),
+
+            new SlashCommandBuilder()
+                .setName('help')
+                .setDescription('Hiển thị danh sách các lệnh hỗ trợ'),
+        ];
+
+        const rest = new REST({ version: '10' }).setToken(this.botToken);
+
+        try {
+            this.logger.log('Đang đăng ký Slash Commands...');
+
+            await rest.put(
+                Routes.applicationGuildCommands(this.client.user.id, this.guildId),
+                { body: commands.map(cmd => cmd.toJSON()) },
+            );
+
+            this.logger.log(`Đã đăng ký ${commands.length} Slash Commands thành công!`);
+        } catch (error) {
+            this.logger.error('Lỗi khi đăng ký Slash Commands:', error);
+        }
     }
 
     /**
@@ -688,46 +866,433 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
     }
 
     /**
-     * Xử lý interaction (button click)
+     * Xử lý interaction (Slash Commands, Modal Submit, Button Click)
      */
     private async handleInteraction(interaction: Interaction<CacheType>): Promise<void> {
-        if (!interaction.isButton()) return;
         if (!this.actionCallback) return;
 
-        const { customId } = interaction;
         const channel = interaction.channel as TextChannel;
         const user = interaction.user;
         const userName = user.displayName || user.username;
 
         try {
-            if (customId === 'close_ticket') {
-                await interaction.reply({ content: '🔄 Đang xử lý yêu cầu đóng...', ephemeral: true });
-                await this.actionCallback.onClose(channel.id, user.id, userName, 'Button click');
-                await interaction.editReply({ content: '✅ Ticket đã được đóng thành công!' });
-            } else if (customId === 'delete_ticket_channel') {
-                await interaction.reply({ content: '🔄 Đang xử lý yêu cầu xóa...', ephemeral: true });
-                await this.actionCallback.onDelete(channel.id, user.id, userName, 'Button click');
-                await interaction.editReply({ content: '✅ Ticket đã được xóa. Kênh sẽ bị xóa sau 5 giây...' });
-                setTimeout(() => channel.delete().catch(e => this.logger.error('Failed to delete channel', e)), 5000);
-            } else if (customId === 'reopen_ticket') {
-                await interaction.reply({ content: '🔄 Đang xử lý yêu cầu mở lại...', ephemeral: true });
-                await this.actionCallback.onReopen(channel.id, user.id, userName, 'Button click');
-                await interaction.editReply({ content: '✅ Ticket đã được mở lại thành công!' });
+            // Xử lý Slash Commands
+            if (interaction.isChatInputCommand()) {
+                await this.handleSlashCommand(interaction, channel, user.id, userName);
+                return;
+            }
+
+            // Xử lý Modal Submit
+            if (interaction.isModalSubmit()) {
+                await this.handleModalSubmit(interaction, channel, user.id, userName);
+                return;
+            }
+
+            // Xử lý Button Click
+            if (interaction.isButton()) {
+                await this.handleButtonClick(interaction, channel, user.id, userName);
+                return;
             }
         } catch (error: any) {
             const errorMessage = error?.response?.message || error?.message || 'Đã xảy ra lỗi';
-            this.logger.error(`Error handling interaction ${customId}:`, error);
+            this.logger.error(`Error handling interaction:`, error);
 
-            // Try to edit the reply with the error message
             try {
-                await interaction.editReply({ content: `❌ ${errorMessage}` });
-            } catch {
-                // If editReply fails (interaction not replied yet), try followUp
-                try {
-                    await interaction.followUp({ content: `❌ ${errorMessage}`, ephemeral: true });
-                } catch {
-                    // Ignore if both fail
+                if (interaction.isRepliable()) {
+                    if (interaction.replied || interaction.deferred) {
+                        await interaction.editReply({ content: `❌ ${errorMessage}` });
+                    } else {
+                        await interaction.reply({ content: `❌ ${errorMessage}`, ephemeral: true });
+                    }
                 }
+            } catch {
+                // Ignore if reply fails
+            }
+        }
+    }
+
+    /**
+     * Xử lý Slash Commands
+     */
+    private async handleSlashCommand(
+        interaction: ChatInputCommandInteraction,
+        channel: TextChannel,
+        userId: string,
+        userName: string,
+    ): Promise<void> {
+        const { commandName } = interaction;
+
+        switch (commandName) {
+            case 'close': {
+                const reason = interaction.options.getString('reason');
+                if (!reason) {
+                    await this.showReasonModal(interaction, 'close', 'Đóng Ticket', 'Nhập lý do đóng ticket');
+                } else {
+                    await interaction.reply({ content: '🔄 Đang xử lý...', ephemeral: true });
+                    await this.actionCallback!.onClose(channel.id, userId, userName, reason);
+                    await interaction.editReply({ content: '✅ Ticket đã được đóng!' });
+                }
+                break;
+            }
+            case 'reopen': {
+                const reason = interaction.options.getString('reason');
+                if (!reason) {
+                    await this.showReasonModal(interaction, 'reopen', 'Mở Lại Ticket', 'Nhập lý do mở lại ticket');
+                } else {
+                    await interaction.reply({ content: '🔄 Đang xử lý...', ephemeral: true });
+                    await this.actionCallback!.onReopen(channel.id, userId, userName, reason);
+                    await interaction.editReply({ content: '✅ Ticket đã được mở lại!' });
+                }
+                break;
+            }
+            case 'delete': {
+                const reason = interaction.options.getString('reason');
+                if (!reason) {
+                    await this.showReasonModal(interaction, 'delete', 'Xóa Ticket', 'Nhập lý do xóa ticket');
+                } else {
+                    await interaction.reply({ content: '🔄 Đang xử lý...', ephemeral: true });
+                    await this.actionCallback!.onDelete(channel.id, userId, userName, reason);
+                    await interaction.editReply({ content: '✅ Ticket đã được xóa. Kênh sẽ bị xóa sau 5 giây...' });
+                    setTimeout(() => channel.delete().catch(e => this.logger.error('Failed to delete channel', e)), 5000);
+                }
+                break;
+            }
+            case 'skip': {
+                const reason = interaction.options.getString('reason');
+                if (!reason) {
+                    await this.showReasonModal(interaction, 'skip', 'Bỏ Qua Ticket', 'Nhập lý do bỏ qua ticket');
+                } else {
+                    await interaction.reply({ content: '🔄 Đang xử lý...', ephemeral: true });
+                    await this.actionCallback!.onSkip(channel.id, userId, userName, reason);
+                    await interaction.editReply({ content: '✅ Ticket đã được bỏ qua!' });
+                }
+                break;
+            }
+            case 'unskip': {
+                await interaction.reply({ content: '🔄 Đang xử lý...', ephemeral: true });
+                await this.actionCallback!.onUnsetSkip(channel.id, userId, userName);
+                await interaction.editReply({ content: '✅ Đã hủy bỏ qua ticket!' });
+                break;
+            }
+            case 'priority': {
+                const level = interaction.options.getString('level');
+                if (!level) {
+                    await this.showPriorityModal(interaction);
+                } else {
+                    await interaction.reply({ content: '🔄 Đang xử lý...', ephemeral: true });
+                    await this.actionCallback!.onSetPriority(channel.id, userId, userName, level);
+                    await interaction.editReply({ content: `✅ Đã đặt độ ưu tiên: ${level}` });
+                }
+                break;
+            }
+            case 'whitelist': {
+                const type = interaction.options.getString('type');
+                const value = interaction.options.getString('value');
+                const reason = interaction.options.getString('reason');
+                if (!type || !value || !reason) {
+                    await this.showListModal(interaction, 'whitelist', 'Thêm Whitelist');
+                } else {
+                    await interaction.reply({ content: '🔄 Đang xử lý...', ephemeral: true });
+                    await this.actionCallback!.onWhitelist(channel.id, userId, userName, type, value, reason);
+                    await interaction.editReply({ content: `✅ Đã thêm vào whitelist: ${type} - ${value}` });
+                }
+                break;
+            }
+            case 'blacklist': {
+                const type = interaction.options.getString('type');
+                const value = interaction.options.getString('value');
+                const reason = interaction.options.getString('reason');
+                if (!type || !value || !reason) {
+                    await this.showListModal(interaction, 'blacklist', 'Thêm Blacklist');
+                } else {
+                    await interaction.reply({ content: '🔄 Đang xử lý...', ephemeral: true });
+                    await this.actionCallback!.onBlacklist(channel.id, userId, userName, type, value, reason);
+                    await interaction.editReply({ content: `✅ Đã thêm vào blacklist: ${type} - ${value}` });
+                }
+                break;
+            }
+            case 'remove-whitelist': {
+                const type = interaction.options.getString('type');
+                const value = interaction.options.getString('value');
+                if (!type || !value) {
+                    await this.showRemoveListModal(interaction, 'whitelist', 'Xóa Whitelist');
+                } else {
+                    await interaction.reply({ content: '🔄 Đang xử lý...', ephemeral: true });
+                    await this.actionCallback!.onRemoveWhitelist(channel.id, userId, userName, type, value);
+                    await interaction.editReply({ content: `✅ Đã xóa khỏi whitelist: ${type} - ${value}` });
+                }
+                break;
+            }
+            case 'remove-blacklist': {
+                const type = interaction.options.getString('type');
+                const value = interaction.options.getString('value');
+                if (!type || !value) {
+                    await this.showRemoveListModal(interaction, 'blacklist', 'Xóa Blacklist');
+                } else {
+                    await interaction.reply({ content: '🔄 Đang xử lý...', ephemeral: true });
+                    await this.actionCallback!.onRemoveBlacklist(channel.id, userId, userName, type, value);
+                    await interaction.editReply({ content: `✅ Đã xóa khỏi blacklist: ${type} - ${value}` });
+                }
+                break;
+            }
+            case 'help': {
+                const embed = new EmbedBuilder()
+                    .setTitle('🤖 Support Bot Commands')
+                    .setColor('#0099ff')
+                    .setDescription('Danh sách các lệnh quản lý ticket:')
+                    .addFields(
+                        { name: '🔒 /close [lý do]', value: 'Đóng ticket' },
+                        { name: '🔓 /reopen [lý do]', value: 'Mở lại ticket' },
+                        { name: '🗑️ /delete [lý do]', value: 'Xóa ticket' },
+                        { name: '⭐ /priority [level]', value: 'Đặt độ ưu tiên' },
+                        { name: '⏭️ /skip [lý do]', value: 'Bỏ qua ticket' },
+                        { name: '↩️ /unskip', value: 'Hủy bỏ qua' },
+                        { name: '✅ /whitelist', value: 'Thêm vào whitelist' },
+                        { name: '🚫 /blacklist', value: 'Thêm vào blacklist' },
+                        { name: '❎ /remove-whitelist', value: 'Xóa khỏi whitelist' },
+                        { name: '❎ /remove-blacklist', value: 'Xóa khỏi blacklist' },
+                    )
+                    .setFooter({ text: '💡 Nếu không nhập tham số, hệ thống sẽ mở form nhập liệu' });
+                await interaction.reply({ embeds: [embed], ephemeral: true });
+                break;
+            }
+        }
+    }
+
+    /**
+     * Xử lý Button Click
+     */
+    private async handleButtonClick(
+        interaction: Interaction<CacheType> & { customId: string },
+        channel: TextChannel,
+        userId: string,
+        userName: string,
+    ): Promise<void> {
+        if (!interaction.isButton()) return;
+
+        const { customId } = interaction;
+
+        if (customId === 'close_ticket') {
+            await interaction.reply({ content: '🔄 Đang xử lý yêu cầu đóng...', ephemeral: true });
+            await this.actionCallback!.onClose(channel.id, userId, userName, 'Button click');
+            await interaction.editReply({ content: '✅ Ticket đã được đóng thành công!' });
+        } else if (customId === 'delete_ticket_channel') {
+            await interaction.reply({ content: '🔄 Đang xử lý yêu cầu xóa...', ephemeral: true });
+            await this.actionCallback!.onDelete(channel.id, userId, userName, 'Button click');
+            await interaction.editReply({ content: '✅ Ticket đã được xóa. Kênh sẽ bị xóa sau 5 giây...' });
+            setTimeout(() => channel.delete().catch(e => this.logger.error('Failed to delete channel', e)), 5000);
+        } else if (customId === 'reopen_ticket') {
+            await interaction.reply({ content: '🔄 Đang xử lý yêu cầu mở lại...', ephemeral: true });
+            await this.actionCallback!.onReopen(channel.id, userId, userName, 'Button click');
+            await interaction.editReply({ content: '✅ Ticket đã được mở lại thành công!' });
+        }
+    }
+
+    /**
+     * Hiện Modal nhập lý do
+     */
+    private async showReasonModal(
+        interaction: ChatInputCommandInteraction,
+        action: string,
+        title: string,
+        placeholder: string,
+    ): Promise<void> {
+        const modal = new ModalBuilder()
+            .setCustomId(`modal_${action}`)
+            .setTitle(title);
+
+        const reasonInput = new TextInputBuilder()
+            .setCustomId('reason')
+            .setLabel('Lý do')
+            .setPlaceholder(placeholder)
+            .setStyle(TextInputStyle.Paragraph)
+            .setRequired(true)
+            .setMinLength(1)
+            .setMaxLength(500);
+
+        const row = new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(reasonInput);
+        modal.addComponents(row);
+
+        await interaction.showModal(modal);
+    }
+
+    /**
+     * Hiện Modal chọn Priority
+     */
+    private async showPriorityModal(interaction: ChatInputCommandInteraction): Promise<void> {
+        const modal = new ModalBuilder()
+            .setCustomId('modal_priority')
+            .setTitle('Đặt Độ Ưu Tiên');
+
+        const levelInput = new TextInputBuilder()
+            .setCustomId('level')
+            .setLabel('Mức độ (LOW, MEDIUM, HIGH, URGENT)')
+            .setPlaceholder('Nhập: LOW, MEDIUM, HIGH hoặc URGENT')
+            .setStyle(TextInputStyle.Short)
+            .setRequired(true)
+            .setMinLength(3)
+            .setMaxLength(6);
+
+        const row = new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(levelInput);
+        modal.addComponents(row);
+
+        await interaction.showModal(modal);
+    }
+
+    /**
+     * Hiện Modal thêm Whitelist/Blacklist
+     */
+    private async showListModal(
+        interaction: ChatInputCommandInteraction,
+        listType: 'whitelist' | 'blacklist',
+        title: string,
+    ): Promise<void> {
+        const modal = new ModalBuilder()
+            .setCustomId(`modal_${listType}`)
+            .setTitle(title);
+
+        const typeInput = new TextInputBuilder()
+            .setCustomId('type')
+            .setLabel('Loại (EMAIL, EMAIL_DOMAIN, IP_V4, IP_V6, REGION_COUNTRY, REGION_CITY)')
+            .setPlaceholder('EMAIL, EMAIL_DOMAIN, IP_V4, IP_V6, REGION_COUNTRY, REGION_CITY')
+            .setStyle(TextInputStyle.Short)
+            .setRequired(true);
+
+        const valueInput = new TextInputBuilder()
+            .setCustomId('value')
+            .setLabel('Giá trị')
+            .setPlaceholder('Email, domain, IP hoặc tên quốc gia/thành phố')
+            .setStyle(TextInputStyle.Short)
+            .setRequired(true);
+
+        const reasonInput = new TextInputBuilder()
+            .setCustomId('reason')
+            .setLabel('Lý do')
+            .setPlaceholder('Lý do thêm vào danh sách')
+            .setStyle(TextInputStyle.Paragraph)
+            .setRequired(true);
+
+        modal.addComponents(
+            new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(typeInput),
+            new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(valueInput),
+            new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(reasonInput),
+        );
+
+        await interaction.showModal(modal);
+    }
+
+    /**
+     * Hiện Modal xóa Whitelist/Blacklist
+     */
+    private async showRemoveListModal(
+        interaction: ChatInputCommandInteraction,
+        listType: 'whitelist' | 'blacklist',
+        title: string,
+    ): Promise<void> {
+        const modal = new ModalBuilder()
+            .setCustomId(`modal_remove_${listType}`)
+            .setTitle(title);
+
+        const typeInput = new TextInputBuilder()
+            .setCustomId('type')
+            .setLabel('Loại (EMAIL, EMAIL_DOMAIN, IP_V4, IP_V6, REGION_COUNTRY, REGION_CITY)')
+            .setPlaceholder('EMAIL, EMAIL_DOMAIN, IP_V4, IP_V6, REGION_COUNTRY, REGION_CITY')
+            .setStyle(TextInputStyle.Short)
+            .setRequired(true);
+
+        const valueInput = new TextInputBuilder()
+            .setCustomId('value')
+            .setLabel('Giá trị cần xóa')
+            .setPlaceholder('Email, domain, IP hoặc tên quốc gia/thành phố')
+            .setStyle(TextInputStyle.Short)
+            .setRequired(true);
+
+        modal.addComponents(
+            new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(typeInput),
+            new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(valueInput),
+        );
+
+        await interaction.showModal(modal);
+    }
+
+    /**
+     * Xử lý Modal Submit
+     */
+    private async handleModalSubmit(
+        interaction: ModalSubmitInteraction,
+        channel: TextChannel,
+        userId: string,
+        userName: string,
+    ): Promise<void> {
+        const { customId } = interaction;
+
+        await interaction.reply({ content: '🔄 Đang xử lý...', ephemeral: true });
+
+        switch (customId) {
+            case 'modal_close': {
+                const reason = interaction.fields.getTextInputValue('reason');
+                await this.actionCallback!.onClose(channel.id, userId, userName, reason);
+                await interaction.editReply({ content: '✅ Ticket đã được đóng!' });
+                break;
+            }
+            case 'modal_reopen': {
+                const reason = interaction.fields.getTextInputValue('reason');
+                await this.actionCallback!.onReopen(channel.id, userId, userName, reason);
+                await interaction.editReply({ content: '✅ Ticket đã được mở lại!' });
+                break;
+            }
+            case 'modal_delete': {
+                const reason = interaction.fields.getTextInputValue('reason');
+                await this.actionCallback!.onDelete(channel.id, userId, userName, reason);
+                await interaction.editReply({ content: '✅ Ticket đã được xóa. Kênh sẽ bị xóa sau 5 giây...' });
+                setTimeout(() => channel.delete().catch(e => this.logger.error('Failed to delete channel', e)), 5000);
+                break;
+            }
+            case 'modal_skip': {
+                const reason = interaction.fields.getTextInputValue('reason');
+                await this.actionCallback!.onSkip(channel.id, userId, userName, reason);
+                await interaction.editReply({ content: '✅ Ticket đã được bỏ qua!' });
+                break;
+            }
+            case 'modal_priority': {
+                const level = interaction.fields.getTextInputValue('level').toUpperCase();
+                if (!['LOW', 'MEDIUM', 'HIGH', 'URGENT'].includes(level)) {
+                    await interaction.editReply({ content: '❌ Level không hợp lệ. Vui lòng nhập: LOW, MEDIUM, HIGH hoặc URGENT' });
+                    return;
+                }
+                await this.actionCallback!.onSetPriority(channel.id, userId, userName, level);
+                await interaction.editReply({ content: `✅ Đã đặt độ ưu tiên: ${level}` });
+                break;
+            }
+            case 'modal_whitelist': {
+                const type = interaction.fields.getTextInputValue('type').toUpperCase();
+                const value = interaction.fields.getTextInputValue('value');
+                const reason = interaction.fields.getTextInputValue('reason');
+                await this.actionCallback!.onWhitelist(channel.id, userId, userName, type, value, reason);
+                await interaction.editReply({ content: `✅ Đã thêm vào whitelist: ${type} - ${value}` });
+                break;
+            }
+            case 'modal_blacklist': {
+                const type = interaction.fields.getTextInputValue('type').toUpperCase();
+                const value = interaction.fields.getTextInputValue('value');
+                const reason = interaction.fields.getTextInputValue('reason');
+                await this.actionCallback!.onBlacklist(channel.id, userId, userName, type, value, reason);
+                await interaction.editReply({ content: `✅ Đã thêm vào blacklist: ${type} - ${value}` });
+                break;
+            }
+            case 'modal_remove_whitelist': {
+                const type = interaction.fields.getTextInputValue('type').toUpperCase();
+                const value = interaction.fields.getTextInputValue('value');
+                await this.actionCallback!.onRemoveWhitelist(channel.id, userId, userName, type, value);
+                await interaction.editReply({ content: `✅ Đã xóa khỏi whitelist: ${type} - ${value}` });
+                break;
+            }
+            case 'modal_remove_blacklist': {
+                const type = interaction.fields.getTextInputValue('type').toUpperCase();
+                const value = interaction.fields.getTextInputValue('value');
+                await this.actionCallback!.onRemoveBlacklist(channel.id, userId, userName, type, value);
+                await interaction.editReply({ content: `✅ Đã xóa khỏi blacklist: ${type} - ${value}` });
+                break;
             }
         }
     }
