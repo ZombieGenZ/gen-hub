@@ -44,17 +44,46 @@ Mở file JSON, sao chép các giá trị sau:
 }
 ```
 
-## 6. Tạo Folder trên Google Drive
+## 6. Tạo Folder và Cấp Quyền cho Service Account
+
+### 6.1. Tạo Folder trên Google Drive
 
 1. Truy cập [Google Drive](https://drive.google.com/)
 2. Tạo folder mới để lưu backups (ví dụ: "Database Backups")
-3. Right-click folder → **Share**
-4. Thêm email của Service Account (`backup-service@project-id.iam.gserviceaccount.com`)
-5. Đặt quyền **Editor**
-6. Lấy Folder ID từ URL:
-   ```
-   https://drive.google.com/drive/folders/FOLDER_ID_HERE
-   ```
+
+### 6.2. Cấp Quyền cho Service Account
+
+> **⚠️ QUAN TRỌNG**: Service Account cần được cấp quyền **Editor** (hoặc cao hơn) trên folder để có thể upload, sửa, xóa file.
+
+1. Right-click vào folder vừa tạo → **Share** (hoặc **Chia sẻ**)
+2. Trong ô "Add people and groups", nhập **email của Service Account**:
+   - Email có dạng: `backup-service@project-id.iam.gserviceaccount.com`
+   - Lấy email này từ file JSON key đã download (trường `client_email`)
+3. **Chọn quyền truy cập**:
+   | Quyền | Mô tả | Có thể dùng? |
+   |-------|-------|--------------|
+   | **Viewer** (Người xem) | Chỉ xem file | ❌ Không đủ quyền |
+   | **Commenter** (Người nhận xét) | Xem và bình luận | ❌ Không đủ quyền |
+   | **Editor** (Người chỉnh sửa) | Xem, upload, sửa, xóa file | ✅ **Cần thiết** |
+
+4. Click **Send** (hoặc **Gửi**) để hoàn tất việc chia sẻ
+
+> **💡 Lưu ý**: 
+> - Service Account là một "tài khoản ảo", không có inbox email nên không nhận được thông báo chia sẻ
+> - Sau khi share, Service Account có thể truy cập folder ngay lập tức
+> - Nếu bạn muốn Service Account có toàn quyền quản lý (bao gồm thay đổi quyền), hãy tick vào "Make owner" - nhưng **Editor** là đủ cho backup
+
+### 6.3. Lấy Folder ID
+
+Lấy Folder ID từ URL của folder:
+```
+https://drive.google.com/drive/folders/FOLDER_ID_HERE
+                                        ^^^^^^^^^^^^^^
+                                        Đây là Folder ID
+```
+
+Ví dụ: URL là `https://drive.google.com/drive/folders/1ABc_dEfGhIjKlMnOpQrStUvWxYz`
+→ Folder ID là: `1ABc_dEfGhIjKlMnOpQrStUvWxYz`
 
 ## 7. Cấu hình .env
 
