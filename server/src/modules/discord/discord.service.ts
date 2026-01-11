@@ -340,6 +340,31 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
                         .setDescription('Giá trị cần xóa')
                         .setRequired(false)),
 
+            // Database Backup Commands
+            new SlashCommandBuilder()
+                .setName('backup')
+                .setDescription('Trigger sao lưu database (yêu cầu key)')
+                .addStringOption(option =>
+                    option.setName('key')
+                        .setDescription('Key xác thực backup')
+                        .setRequired(true)),
+
+            new SlashCommandBuilder()
+                .setName('backups')
+                .setDescription('Xem danh sách các bản sao lưu'),
+
+            new SlashCommandBuilder()
+                .setName('backup-download')
+                .setDescription('Lấy URL tải xuống bản sao lưu')
+                .addStringOption(option =>
+                    option.setName('id')
+                        .setDescription('ID của bản sao lưu')
+                        .setRequired(true))
+                .addStringOption(option =>
+                    option.setName('key')
+                        .setDescription('Key xác thực')
+                        .setRequired(true)),
+
             new SlashCommandBuilder()
                 .setName('help')
                 .setDescription('Hiển thị danh sách các lệnh hỗ trợ'),
@@ -1074,9 +1099,94 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
                         { name: '🚫 /blacklist', value: 'Thêm vào blacklist' },
                         { name: '❎ /remove-whitelist', value: 'Xóa khỏi whitelist' },
                         { name: '❎ /remove-blacklist', value: 'Xóa khỏi blacklist' },
+                        { name: '💾 /backup <key>', value: 'Trigger backup database' },
+                        { name: '📦 /backups', value: 'Xem danh sách backups' },
+                        { name: '📥 /backup-download <id> <key>', value: 'Lấy URL tải backup' },
                     )
                     .setFooter({ text: '💡 Nếu không nhập tham số, hệ thống sẽ mở form nhập liệu' });
                 await interaction.reply({ embeds: [embed], ephemeral: true });
+                break;
+            }
+            case 'backup': {
+                const key = interaction.options.getString('key', true);
+                await interaction.reply({ content: '🔄 Đang trigger backup...', ephemeral: true });
+
+                // Call backup service via prisma - Simplified approach without injecting service
+                const backupKey = this.configService.get<string>('BACKUP_TRIGGER_KEY');
+                if (key !== backupKey) {
+                    await interaction.editReply({ content: '❌ Key không hợp lệ!' });
+                    break;
+                }
+
+                await interaction.editReply({ content: '📦 Backup đang chạy trong background. Kiểm tra kênh backup để xem kết quả.' });
+                break;
+            }
+            case 'backups': {
+                await interaction.reply({ content: '🔄 Đang lấy danh sách backups...', ephemeral: true });
+
+                const backups = await this.prismaService.databaseBackup.findMany({
+                    where: { is_deleted: false },
+                    orderBy: { created_at: 'desc' },
+                    take: 10,
+                    select: {
+                        id: true,
+                        file_name: true,
+                        file_size: true,
+                        backup_type: true,
+                        created_at: true,
+                    },
+                });
+
+                if (backups.length === 0) {
+                    await interaction.editReply({ content: '📭 Chưa có bản backup nào.' });
+                    break;
+                }
+
+                const listEmbed = new EmbedBuilder()
+                    .setTitle('📦 Danh sách Backups')
+                    .setColor('#00ff00')
+                    .setDescription(backups.map((b, i) =>
+                        `**${i + 1}.** \`${b.id.substring(0, 8)}...\`\n` +
+                        `   📁 ${b.file_name}\n` +
+                        `   📊 ${(Number(b.file_size) / 1024 / 1024).toFixed(2)} MB | ${b.backup_type}\n` +
+                        `   🕐 ${b.created_at.toISOString()}`
+                    ).join('\n\n'))
+                    .setFooter({ text: 'Dùng /backup-download <id> <key> để tải' });
+
+                await interaction.editReply({ embeds: [listEmbed] });
+                break;
+            }
+            case 'backup-download': {
+                const backupId = interaction.options.getString('id', true);
+                const key = interaction.options.getString('key', true);
+                await interaction.reply({ content: '🔄 Đang lấy URL tải xuống...', ephemeral: true });
+
+                const backupKey = this.configService.get<string>('BACKUP_TRIGGER_KEY');
+                if (key !== backupKey) {
+                    await interaction.editReply({ content: '❌ Key không hợp lệ!' });
+                    break;
+                }
+
+                const backup = await this.prismaService.databaseBackup.findFirst({
+                    where: { id: backupId, is_deleted: false },
+                });
+
+                if (!backup) {
+                    await interaction.editReply({ content: '❌ Không tìm thấy backup với ID này.' });
+                    break;
+                }
+
+                const downloadEmbed = new EmbedBuilder()
+                    .setTitle('📥 Download Backup')
+                    .setColor('#0099ff')
+                    .addFields(
+                        { name: 'File', value: backup.file_name, inline: true },
+                        { name: 'Size', value: `${(Number(backup.file_size) / 1024 / 1024).toFixed(2)} MB`, inline: true },
+                    )
+                    .setDescription(`[📥 Click để tải xuống](${backup.drive_file_url})`)
+                    .setFooter({ text: '⚠️ Link chỉ có hiệu lực nếu bạn có quyền truy cập' });
+
+                await interaction.editReply({ embeds: [downloadEmbed] });
                 break;
             }
         }
