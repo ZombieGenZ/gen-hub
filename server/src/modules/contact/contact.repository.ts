@@ -6,6 +6,9 @@ import {
     ContactStatus,
     MessageType,
     Prisma,
+    ContactActionType,
+    ContactActionPerformedByType,
+    ContactActionLog,
 } from '@prisma/client';
 import {
     IContactConversationWithMessages,
@@ -655,5 +658,51 @@ export class ContactRepository {
             },
         });
         return result.count;
+    }
+
+    /**
+     * Tạo action log cho conversation
+     * Ghi lại lịch sử các hành động: close, reopen, delete, whitelist, blacklist, priority, skip
+     */
+    async createActionLog(data: {
+        conversationId: string;
+        actionType: ContactActionType;
+        reason?: string;
+        listType?: string;
+        matchType?: string;
+        matchValue?: string;
+        priority?: string;
+        oldStatus?: string;
+        newStatus?: string;
+        performedById?: string;
+        performedByName?: string;
+        performedByType?: ContactActionPerformedByType;
+    }): Promise<ContactActionLog> {
+        return this.prisma.contactActionLog.create({
+            data: {
+                conversation_id: data.conversationId,
+                action_type: data.actionType,
+                reason: data.reason,
+                list_type: data.listType,
+                match_type: data.matchType,
+                match_value: data.matchValue,
+                priority: data.priority,
+                old_status: data.oldStatus,
+                new_status: data.newStatus,
+                performed_by_id: data.performedById,
+                performed_by_name: data.performedByName,
+                performed_by_type: data.performedByType || ContactActionPerformedByType.SYSTEM,
+            },
+        });
+    }
+
+    /**
+     * Lấy danh sách action logs của conversation
+     */
+    async findActionLogsByConversationId(conversationId: string): Promise<ContactActionLog[]> {
+        return this.prisma.contactActionLog.findMany({
+            where: { conversation_id: conversationId },
+            orderBy: { created_at: 'desc' },
+        });
     }
 }

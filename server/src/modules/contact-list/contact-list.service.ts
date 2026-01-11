@@ -428,7 +428,11 @@ export class ContactListService {
         return entry;
     }
 
-    private async removeQuickEntry(
+    /**
+     * Xóa nhanh entry từ whitelist/blacklist dựa trên value
+     * Được sử dụng từ Discord commands
+     */
+    async removeQuickEntry(
         listType: ContactListType,
         matchType: ContactListMatchType,
         value: string,

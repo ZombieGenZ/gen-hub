@@ -3262,6 +3262,7 @@ model ContactConversation {
   messages            ContactMessage[]
   tag_mappings        ContactTagOnConversation[]
   assigned_staff_list ContactConversationStaff[]
+  action_logs         ContactActionLog[]
 
   @@index([customer_email])
   @@index([status])
@@ -4004,4 +4005,52 @@ model ContactListEntry {
   @@index([value])
   @@index([is_active])
   @@map("contact_list_entries")
+}
+
+enum ContactActionType {
+  CLOSE
+  REOPEN
+  DELETE
+  ADD_WHITELIST
+  REMOVE_WHITELIST
+  ADD_BLACKLIST
+  REMOVE_BLACKLIST
+  SET_PRIORITY
+  SET_SKIP
+  UNSET_SKIP
+}
+
+enum ContactActionPerformedByType {
+  SYSTEM
+  ADMIN
+  STAFF
+  DISCORD
+}
+
+model ContactActionLog {
+  id              String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  conversation_id String @db.Uuid
+
+  action_type ContactActionType
+  reason      String?           @db.Text
+
+  list_type    String?
+  match_type   String?
+  match_value  String?
+  priority     String?
+  old_status   String?
+  new_status   String?
+
+  performed_by_id   String?                      @db.Uuid
+  performed_by_name String?
+  performed_by_type ContactActionPerformedByType @default(SYSTEM)
+
+  created_at DateTime @default(now())
+
+  conversation ContactConversation @relation(fields: [conversation_id], references: [id], onDelete: Cascade)
+
+  @@index([conversation_id])
+  @@index([action_type])
+  @@index([created_at])
+  @@map("contact_action_logs")
 }

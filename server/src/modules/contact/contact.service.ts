@@ -6,7 +6,19 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { I18nService } from 'nestjs-i18n';
-import { ContactStatus, ContactChannel, MessageSender, MessageType, ContactConversation, PriorityCustomerSource } from '@prisma/client';
+import {
+    ContactStatus,
+    ContactChannel,
+    MessageSender,
+    MessageType,
+    ContactConversation,
+    PriorityCustomerSource,
+    ContactActionType,
+    ContactActionPerformedByType,
+    ContactPriority,
+    ContactListType,
+    ContactListMatchType,
+} from '@prisma/client';
 
 import { ContactRepository } from './contact.repository';
 import {
@@ -75,48 +87,83 @@ export class ContactService implements OnModuleInit {
 
     onModuleInit() {
         this.discordService.registerActionCallback({
-            onClose: async (channelId, userId, userName) => {
+            onClose: async (channelId, userId, userName, reason) => {
                 const conversation = await this.repository.findByDiscordChannelId(channelId);
                 if (conversation) {
-                    // Discord users don't have UUIDs, so we pass undefined for userId and rely on metadata/log message
-                    await this.close(conversation.id, `[Discord] ${userName}`);
+                    await this.closeWithReason(conversation.id, `[Discord] ${userName}`, reason, userName);
                 }
             },
-            onReopen: async (channelId, userId, userName) => {
+            onReopen: async (channelId, userId, userName, reason) => {
                 const conversation = await this.repository.findByDiscordChannelId(channelId);
                 if (conversation) {
-                    await this.reopen(conversation.id, `[Discord] ${userName}`);
+                    await this.reopenWithReason(conversation.id, `[Discord] ${userName}`, reason, userName);
                 }
             },
-            onDelete: async (channelId, userId, userName) => {
+            onDelete: async (channelId, userId, userName, reason) => {
                 const conversation = await this.repository.findByDiscordChannelId(channelId);
                 if (conversation) {
-                    await this.delete(conversation.id, `[Discord] ${userName}`);
+                    await this.deleteWithReason(conversation.id, `[Discord] ${userName}`, reason, userName);
                 }
             },
             onReply: async (ticketCode, content, authorName, authorId) => {
                 let conversation = await this.repository.findByCode(ticketCode);
-
-                // If not found, try with TICKET prefix (Discord strips ticket-)
-                // Assuming format TICKET-YYYYMMDD-XXX
                 if (!conversation) {
-                    // Check common prefixes or try to reconstruct.
-                    // Discord replaces "ticket-", leaving "TICKET-..." or just suffix?
-                    // If channel is ticket-ticket-123 -> code is TICKET-123.
-                    // If channel is ticket-123 -> code is 123.
-                    // We try adding TICKET- prefix if missing.
                     conversation = await this.repository.findByCode(`TICKET-${ticketCode}`);
                 }
-
                 if (conversation) {
-                    await this.replyFromDiscord(
-                        conversation.code, // Use actual code from DB
-                        content,
-                        authorName,
-                        authorId,
+                    await this.replyFromDiscord(conversation.code, content, authorName, authorId);
+                }
+            },
+            onWhitelist: async (channelId, userId, userName, matchType, value, reason) => {
+                const conversation = await this.repository.findByDiscordChannelId(channelId);
+                if (conversation) {
+                    await this.addToListFromDiscord(
+                        conversation, 'WHITELIST', matchType, value, reason, userName
                     );
                 }
-            }
+            },
+            onBlacklist: async (channelId, userId, userName, matchType, value, reason) => {
+                const conversation = await this.repository.findByDiscordChannelId(channelId);
+                if (conversation) {
+                    await this.addToListFromDiscord(
+                        conversation, 'BLACKLIST', matchType, value, reason, userName
+                    );
+                }
+            },
+            onRemoveWhitelist: async (channelId, userId, userName, matchType, value) => {
+                const conversation = await this.repository.findByDiscordChannelId(channelId);
+                if (conversation) {
+                    await this.removeFromListFromDiscord(
+                        conversation, 'WHITELIST', matchType, value, userName
+                    );
+                }
+            },
+            onRemoveBlacklist: async (channelId, userId, userName, matchType, value) => {
+                const conversation = await this.repository.findByDiscordChannelId(channelId);
+                if (conversation) {
+                    await this.removeFromListFromDiscord(
+                        conversation, 'BLACKLIST', matchType, value, userName
+                    );
+                }
+            },
+            onSetPriority: async (channelId, userId, userName, priority) => {
+                const conversation = await this.repository.findByDiscordChannelId(channelId);
+                if (conversation) {
+                    await this.setPriorityFromDiscord(conversation, priority, userName);
+                }
+            },
+            onSkip: async (channelId, userId, userName, reason) => {
+                const conversation = await this.repository.findByDiscordChannelId(channelId);
+                if (conversation) {
+                    await this.setSkippedFromDiscord(conversation, reason, userName);
+                }
+            },
+            onUnsetSkip: async (channelId, userId, userName) => {
+                const conversation = await this.repository.findByDiscordChannelId(channelId);
+                if (conversation) {
+                    await this.unsetSkippedFromDiscord(conversation, userName);
+                }
+            },
         });
     }
 
@@ -167,7 +214,6 @@ export class ContactService implements OnModuleInit {
         const enableAiReplyConfig = this.appConfigService.get('enableAiAutoReply') as unknown;
         const enableAiReply = enableAiReplyConfig === true || enableAiReplyConfig === 'true';
 
-        // ========== KIỂM TRA BLACKLIST/WHITELIST ==========
         let isSkippedByBlacklist = false;
         let isWhitelisted = false;
         let skipReason: string | undefined;
@@ -1581,5 +1627,243 @@ export class ContactService implements OnModuleInit {
             ...conversation,
             messages,
         } as IContactConversationWithMessages;
+    }
+
+    // ========================================
+    // Discord callback methods with action logging
+    // ========================================
+
+    /**
+     * Đóng conversation với lý do (từ Discord)
+     */
+    async closeWithReason(id: string, userId: string, reason: string, performerName: string): Promise<void> {
+        const conversation = await this.repository.findById(id);
+        if (!conversation) {
+            throw new NotFoundException('Conversation not found');
+        }
+
+        const oldStatus = conversation.status;
+        await this.close(id, userId);
+
+        // Ghi action log
+        await this.repository.createActionLog({
+            conversationId: id,
+            actionType: ContactActionType.CLOSE,
+            reason,
+            oldStatus,
+            newStatus: ContactStatus.CLOSED,
+            performedByName: performerName,
+            performedByType: ContactActionPerformedByType.DISCORD,
+        });
+    }
+
+    /**
+     * Mở lại conversation với lý do (từ Discord)
+     */
+    async reopenWithReason(id: string, userId: string, reason: string, performerName: string): Promise<void> {
+        const conversation = await this.repository.findById(id);
+        if (!conversation) {
+            throw new NotFoundException('Conversation not found');
+        }
+
+        const oldStatus = conversation.status;
+        await this.reopen(id, userId);
+
+        // Ghi action log
+        await this.repository.createActionLog({
+            conversationId: id,
+            actionType: ContactActionType.REOPEN,
+            reason,
+            oldStatus,
+            newStatus: ContactStatus.OPEN,
+            performedByName: performerName,
+            performedByType: ContactActionPerformedByType.DISCORD,
+        });
+    }
+
+    /**
+     * Xóa conversation với lý do (từ Discord)
+     */
+    async deleteWithReason(id: string, userId: string, reason: string, performerName: string): Promise<void> {
+        const conversation = await this.repository.findById(id);
+        if (!conversation) {
+            throw new NotFoundException('Conversation not found');
+        }
+
+        // Ghi action log trước khi xóa
+        await this.repository.createActionLog({
+            conversationId: id,
+            actionType: ContactActionType.DELETE,
+            reason,
+            performedByName: performerName,
+            performedByType: ContactActionPerformedByType.DISCORD,
+        });
+
+        await this.delete(id, userId);
+    }
+
+    /**
+     * Thêm vào whitelist/blacklist từ Discord
+     */
+    async addToListFromDiscord(
+        conversation: ContactConversation,
+        listType: 'WHITELIST' | 'BLACKLIST',
+        matchType: string,
+        value: string,
+        reason: string,
+        performerName: string,
+    ): Promise<void> {
+        const matchTypeEnum = matchType as keyof typeof ContactListMatchType;
+        const contactListType = listType === 'WHITELIST' ? ContactListType.WHITELIST : ContactListType.BLACKLIST;
+
+        // Thêm vào contact list
+        await this.contactListService.create({
+            list_type: contactListType,
+            match_type: ContactListMatchType[matchTypeEnum] || ContactListMatchType.EMAIL,
+            value,
+            reason,
+        }, `[Discord] ${performerName}`, 'vi');
+
+        // Ghi action log
+        const actionType = listType === 'WHITELIST'
+            ? ContactActionType.ADD_WHITELIST
+            : ContactActionType.ADD_BLACKLIST;
+
+        await this.repository.createActionLog({
+            conversationId: conversation.id,
+            actionType,
+            reason,
+            listType,
+            matchType,
+            matchValue: value,
+            performedByName: performerName,
+            performedByType: ContactActionPerformedByType.DISCORD,
+        });
+    }
+
+    /**
+     * Xóa khỏi whitelist/blacklist từ Discord
+     */
+    async removeFromListFromDiscord(
+        conversation: ContactConversation,
+        listType: 'WHITELIST' | 'BLACKLIST',
+        matchType: string,
+        value: string,
+        performerName: string,
+    ): Promise<void> {
+        // Gọi service để xóa
+        const contactListType = listType === 'WHITELIST'
+            ? ContactListType.WHITELIST
+            : ContactListType.BLACKLIST;
+
+        const matchTypeEnum = matchType as keyof typeof ContactListMatchType;
+
+        await this.contactListService.removeQuickEntry(
+            contactListType,
+            ContactListMatchType[matchTypeEnum] || ContactListMatchType.EMAIL,
+            value,
+            `[Discord] ${performerName}`,
+        );
+
+        // Ghi action log
+        const actionType = listType === 'WHITELIST'
+            ? ContactActionType.REMOVE_WHITELIST
+            : ContactActionType.REMOVE_BLACKLIST;
+
+        await this.repository.createActionLog({
+            conversationId: conversation.id,
+            actionType,
+            listType,
+            matchType,
+            matchValue: value,
+            performedByName: performerName,
+            performedByType: ContactActionPerformedByType.DISCORD,
+        });
+    }
+
+    /**
+     * Đặt độ ưu tiên từ Discord
+     */
+    async setPriorityFromDiscord(
+        conversation: ContactConversation,
+        priority: string,
+        performerName: string,
+    ): Promise<void> {
+        const oldPriority = conversation.priority;
+        const newPriority = ContactPriority[priority as keyof typeof ContactPriority];
+
+        // Cập nhật priority
+        await this.repository.update(conversation.id, {
+            priority: newPriority,
+            updated_by: `[Discord] ${performerName}`,
+        });
+
+        // Ghi action log
+        await this.repository.createActionLog({
+            conversationId: conversation.id,
+            actionType: ContactActionType.SET_PRIORITY,
+            priority: newPriority,
+            oldStatus: oldPriority,
+            newStatus: newPriority,
+            performedByName: performerName,
+            performedByType: ContactActionPerformedByType.DISCORD,
+        });
+
+        // Invalidate cache
+        await this.invalidateCache(conversation.id);
+    }
+
+    /**
+     * Bỏ qua ticket từ Discord
+     */
+    async setSkippedFromDiscord(
+        conversation: ContactConversation,
+        reason: string,
+        performerName: string,
+    ): Promise<void> {
+        // Cập nhật is_skipped
+        await this.repository.update(conversation.id, {
+            is_skipped: true,
+            skip_reason: reason,
+            updated_by: `[Discord] ${performerName}`,
+        });
+
+        // Ghi action log
+        await this.repository.createActionLog({
+            conversationId: conversation.id,
+            actionType: ContactActionType.SET_SKIP,
+            reason,
+            performedByName: performerName,
+            performedByType: ContactActionPerformedByType.DISCORD,
+        });
+
+        // Invalidate cache
+        await this.invalidateCache(conversation.id);
+    }
+
+    /**
+     * Hủy bỏ qua ticket từ Discord
+     */
+    async unsetSkippedFromDiscord(
+        conversation: ContactConversation,
+        performerName: string,
+    ): Promise<void> {
+        // Cập nhật is_skipped
+        await this.repository.update(conversation.id, {
+            is_skipped: false,
+            skip_reason: null,
+            updated_by: `[Discord] ${performerName}`,
+        });
+
+        // Ghi action log
+        await this.repository.createActionLog({
+            conversationId: conversation.id,
+            actionType: ContactActionType.UNSET_SKIP,
+            performedByName: performerName,
+            performedByType: ContactActionPerformedByType.DISCORD,
+        });
+
+        // Invalidate cache
+        await this.invalidateCache(conversation.id);
     }
 }

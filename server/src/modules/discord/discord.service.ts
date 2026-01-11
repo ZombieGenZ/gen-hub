@@ -15,10 +15,16 @@ import {
     Interaction,
     CacheType,
     ActivityType,
+    ModalBuilder,
+    TextInputBuilder,
+    TextInputStyle,
+    ModalActionRowComponentBuilder,
+    StringSelectMenuBuilder,
+    StringSelectMenuOptionBuilder,
 } from 'discord.js';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CozeService } from '../coze/coze.service';
-import { IDiscordChannelResult, DiscordReplyCallback } from './interfaces';
+import { IDiscordChannelResult, DiscordReplyCallback, IDiscordActionCallback } from './interfaces';
 
 /**
  * DiscordService
@@ -264,21 +270,12 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
     }
 
     /**
-     * Callback for actions (Close, Reopen, Delete, Reply)
+     * Callback for actions (Close, Reopen, Delete, Reply, etc.)
+     * Sử dụng IDiscordActionCallback interface
      */
-    private actionCallback: {
-        onClose: (channelId: string, userId: string, userName: string) => Promise<void>;
-        onReopen: (channelId: string, userId: string, userName: string) => Promise<void>;
-        onDelete: (channelId: string, userId: string, userName: string) => Promise<void>;
-        onReply: (ticketCode: string, content: string, authorName: string, authorId: string) => Promise<void>;
-    } | null = null;
+    private actionCallback: IDiscordActionCallback | null = null;
 
-    registerActionCallback(callback: {
-        onClose: (channelId: string, userId: string, userName: string) => Promise<void>;
-        onReopen: (channelId: string, userId: string, userName: string) => Promise<void>;
-        onDelete: (channelId: string, userId: string, userName: string) => Promise<void>;
-        onReply: (ticketCode: string, content: string, authorName: string, authorId: string) => Promise<void>;
-    }) {
+    registerActionCallback(callback: IDiscordActionCallback) {
         this.actionCallback = callback;
     }
 
@@ -508,38 +505,153 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
             return;
         }
 
-        // Handle Commands
-        const content = message.content.trim().toLowerCase();
+        // Handle Commands (đổi từ ! sang /)
+        const content = message.content.trim();
+        const contentLower = content.toLowerCase();
         const userId = message.author.id;
         const userName = message.author.displayName || message.author.username;
 
         if (this.actionCallback) {
-            if (content === '!close') {
-                await this.actionCallback.onClose(channel.id, userId, userName);
+            // /close [reason] - Nếu không có reason thì yêu cầu nhập
+            if (contentLower.startsWith('/close')) {
+                const reason = content.substring(6).trim();
+                if (!reason) {
+                    await this.showReasonRequiredMessage(message, 'close');
+                    return;
+                }
+                await this.actionCallback.onClose(channel.id, userId, userName, reason);
                 await message.react('✅');
                 return;
             }
-            if (content === '!reopen') {
-                await this.actionCallback.onReopen(channel.id, userId, userName);
+
+            // /reopen [reason]
+            if (contentLower.startsWith('/reopen')) {
+                const reason = content.substring(7).trim();
+                if (!reason) {
+                    await this.showReasonRequiredMessage(message, 'reopen');
+                    return;
+                }
+                await this.actionCallback.onReopen(channel.id, userId, userName, reason);
                 await message.react('✅');
                 return;
             }
-            if (content === '!delete') {
-                await this.actionCallback.onDelete(channel.id, userId, userName);
+
+            // /delete [reason]
+            if (contentLower.startsWith('/delete')) {
+                const reason = content.substring(7).trim();
+                if (!reason) {
+                    await this.showReasonRequiredMessage(message, 'delete');
+                    return;
+                }
+                await this.actionCallback.onDelete(channel.id, userId, userName, reason);
                 await message.react('✅');
                 setTimeout(() => channel.delete().catch(e => this.logger.error('Failed to delete channel', e)), 5000);
                 return;
             }
-            if (content === '!help') {
+
+            // /whitelist <type> <value> <reason>
+            if (contentLower.startsWith('/whitelist')) {
+                const args = content.substring(10).trim().split(/\s+/);
+                if (args.length < 3) {
+                    await this.showWhitelistBlacklistHelp(message, 'whitelist');
+                    return;
+                }
+                const [matchType, value, ...reasonParts] = args;
+                const reason = reasonParts.join(' ');
+                await this.actionCallback.onWhitelist(channel.id, userId, userName, matchType.toUpperCase(), value, reason);
+                await message.react('✅');
+                return;
+            }
+
+            // /blacklist <type> <value> <reason>
+            if (contentLower.startsWith('/blacklist')) {
+                const args = content.substring(10).trim().split(/\s+/);
+                if (args.length < 3) {
+                    await this.showWhitelistBlacklistHelp(message, 'blacklist');
+                    return;
+                }
+                const [matchType, value, ...reasonParts] = args;
+                const reason = reasonParts.join(' ');
+                await this.actionCallback.onBlacklist(channel.id, userId, userName, matchType.toUpperCase(), value, reason);
+                await message.react('✅');
+                return;
+            }
+
+            // /remove-whitelist <type> <value>
+            if (contentLower.startsWith('/remove-whitelist')) {
+                const args = content.substring(17).trim().split(/\s+/);
+                if (args.length < 2) {
+                    await this.showRemoveListHelp(message, 'whitelist');
+                    return;
+                }
+                const [matchType, value] = args;
+                await this.actionCallback.onRemoveWhitelist(channel.id, userId, userName, matchType.toUpperCase(), value);
+                await message.react('✅');
+                return;
+            }
+
+            // /remove-blacklist <type> <value>
+            if (contentLower.startsWith('/remove-blacklist')) {
+                const args = content.substring(17).trim().split(/\s+/);
+                if (args.length < 2) {
+                    await this.showRemoveListHelp(message, 'blacklist');
+                    return;
+                }
+                const [matchType, value] = args;
+                await this.actionCallback.onRemoveBlacklist(channel.id, userId, userName, matchType.toUpperCase(), value);
+                await message.react('✅');
+                return;
+            }
+
+            // /priority <level>
+            if (contentLower.startsWith('/priority')) {
+                const level = content.substring(9).trim().toUpperCase();
+                if (!['LOW', 'MEDIUM', 'HIGH', 'URGENT'].includes(level)) {
+                    await this.showPriorityHelp(message);
+                    return;
+                }
+                await this.actionCallback.onSetPriority(channel.id, userId, userName, level);
+                await message.react('✅');
+                return;
+            }
+
+            // /skip [reason]
+            if (contentLower.startsWith('/skip')) {
+                const reason = content.substring(5).trim();
+                if (!reason) {
+                    await this.showReasonRequiredMessage(message, 'skip');
+                    return;
+                }
+                await this.actionCallback.onSkip(channel.id, userId, userName, reason);
+                await message.react('✅');
+                return;
+            }
+
+            // /unskip
+            if (contentLower === '/unskip') {
+                await this.actionCallback.onUnsetSkip(channel.id, userId, userName);
+                await message.react('✅');
+                return;
+            }
+
+            // /help
+            if (contentLower === '/help') {
                 const embed = new EmbedBuilder()
                     .setTitle('🤖 Support Bot Commands')
                     .setColor('#0099ff')
-                    .setDescription('Here are the available commands for managing tickets:')
+                    .setDescription('Danh sách các lệnh quản lý ticket:')
                     .addFields(
-                        { name: '🔒 !close', value: 'Close the current ticket' },
-                        { name: '🔓 !reopen', value: 'Reopen a closed ticket' },
-                        { name: '🗑️ !delete', value: 'Delete the ticket channel (Soft delete)' },
-                        { name: '❓ !help', value: 'Show this help message' }
+                        { name: '🔒 /close <lý do>', value: 'Đóng ticket với lý do' },
+                        { name: '🔓 /reopen <lý do>', value: 'Mở lại ticket đã đóng' },
+                        { name: '🗑️ /delete <lý do>', value: 'Xóa ticket (soft delete)' },
+                        { name: '⭐ /priority <level>', value: 'Đặt độ ưu tiên: LOW, MEDIUM, HIGH, URGENT' },
+                        { name: '⏭️ /skip <lý do>', value: 'Bỏ qua ticket với lý do' },
+                        { name: '↩️ /unskip', value: 'Hủy bỏ qua ticket' },
+                        { name: '✅ /whitelist <type> <value> <reason>', value: 'Thêm vào whitelist\nTypes: EMAIL, EMAIL_DOMAIN, IP_V4, IP_V6, REGION_COUNTRY, REGION_CITY' },
+                        { name: '🚫 /blacklist <type> <value> <reason>', value: 'Thêm vào blacklist' },
+                        { name: '❎ /remove-whitelist <type> <value>', value: 'Xóa khỏi whitelist' },
+                        { name: '❎ /remove-blacklist <type> <value>', value: 'Xóa khỏi blacklist' },
+                        { name: '❓ /help', value: 'Hiển thị hướng dẫn này' }
                     )
                     .setFooter({ text: 'GenHub Support System' });
 
@@ -590,16 +702,16 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
         try {
             if (customId === 'close_ticket') {
                 await interaction.reply({ content: '🔄 Đang xử lý yêu cầu đóng...', ephemeral: true });
-                await this.actionCallback.onClose(channel.id, user.id, userName);
+                await this.actionCallback.onClose(channel.id, user.id, userName, 'Button click');
                 await interaction.editReply({ content: '✅ Ticket đã được đóng thành công!' });
             } else if (customId === 'delete_ticket_channel') {
                 await interaction.reply({ content: '🔄 Đang xử lý yêu cầu xóa...', ephemeral: true });
-                await this.actionCallback.onDelete(channel.id, user.id, userName);
+                await this.actionCallback.onDelete(channel.id, user.id, userName, 'Button click');
                 await interaction.editReply({ content: '✅ Ticket đã được xóa. Kênh sẽ bị xóa sau 5 giây...' });
                 setTimeout(() => channel.delete().catch(e => this.logger.error('Failed to delete channel', e)), 5000);
             } else if (customId === 'reopen_ticket') {
                 await interaction.reply({ content: '🔄 Đang xử lý yêu cầu mở lại...', ephemeral: true });
-                await this.actionCallback.onReopen(channel.id, user.id, userName);
+                await this.actionCallback.onReopen(channel.id, user.id, userName, 'Button click');
                 await interaction.editReply({ content: '✅ Ticket đã được mở lại thành công!' });
             }
         } catch (error: any) {
@@ -618,6 +730,82 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
                 }
             }
         }
+    }
+
+    /**
+     * Hiển thị thông báo yêu cầu nhập lý do
+     */
+    private async showReasonRequiredMessage(message: Message, action: string): Promise<void> {
+        const actionNames: Record<string, string> = {
+            close: 'đóng ticket',
+            reopen: 'mở lại ticket',
+            delete: 'xóa ticket',
+            skip: 'bỏ qua ticket',
+        };
+        const embed = new EmbedBuilder()
+            .setColor(0xffcc00)
+            .setTitle('⚠️ Yêu cầu lý do')
+            .setDescription(`Vui lòng nhập lý do để **${actionNames[action] || action}**.`)
+            .addFields(
+                { name: 'Cú pháp', value: `\`/${action} <lý do>\`` },
+                { name: 'Ví dụ', value: `\`/${action} Đã giải quyết xong\`` }
+            )
+            .setFooter({ text: 'Hãy thử lại với lý do cụ thể.' });
+
+        await message.reply({ embeds: [embed] });
+    }
+
+    /**
+     * Hiển thị hướng dẫn whitelist/blacklist
+     */
+    private async showWhitelistBlacklistHelp(message: Message, listType: string): Promise<void> {
+        const embed = new EmbedBuilder()
+            .setColor(0xffcc00)
+            .setTitle(`⚠️ Cú pháp /${listType}`)
+            .setDescription(`Thêm vào **${listType}** cần có đủ thông tin.`)
+            .addFields(
+                { name: 'Cú pháp', value: `\`/${listType} <type> <value> <reason>\`` },
+                { name: 'Types có sẵn', value: '`EMAIL`, `EMAIL_DOMAIN`, `IP_V4`, `IP_V6`, `REGION_COUNTRY`, `REGION_CITY`' },
+                { name: 'Ví dụ', value: `\`/${listType} EMAIL spam@example.com Spam nhiều lần\`\n\`/${listType} EMAIL_DOMAIN spam.com Known spammer domain\`` }
+            )
+            .setFooter({ text: 'Hãy thử lại với đầy đủ thông tin.' });
+
+        await message.reply({ embeds: [embed] });
+    }
+
+    /**
+     * Hiển thị hướng dẫn remove whitelist/blacklist
+     */
+    private async showRemoveListHelp(message: Message, listType: string): Promise<void> {
+        const embed = new EmbedBuilder()
+            .setColor(0xffcc00)
+            .setTitle(`⚠️ Cú pháp /remove-${listType}`)
+            .setDescription(`Xóa khỏi **${listType}** cần có đủ thông tin.`)
+            .addFields(
+                { name: 'Cú pháp', value: `\`/remove-${listType} <type> <value>\`` },
+                { name: 'Ví dụ', value: `\`/remove-${listType} EMAIL user@example.com\`` }
+            )
+            .setFooter({ text: 'Hãy thử lại với đầy đủ thông tin.' });
+
+        await message.reply({ embeds: [embed] });
+    }
+
+    /**
+     * Hiển thị hướng dẫn priority
+     */
+    private async showPriorityHelp(message: Message): Promise<void> {
+        const embed = new EmbedBuilder()
+            .setColor(0xffcc00)
+            .setTitle('⚠️ Cú pháp /priority')
+            .setDescription('Đặt độ ưu tiên cho ticket.')
+            .addFields(
+                { name: 'Cú pháp', value: '`/priority <level>`' },
+                { name: 'Levels có sẵn', value: '`LOW` - Thấp\n`MEDIUM` - Trung bình\n`HIGH` - Cao\n`URGENT` - Khẩn cấp' },
+                { name: 'Ví dụ', value: '`/priority HIGH`' }
+            )
+            .setFooter({ text: 'Hãy thử lại với level hợp lệ.' });
+
+        await message.reply({ embeds: [embed] });
     }
 
     /**
@@ -676,3 +864,4 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
         }
     }
 }
+
