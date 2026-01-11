@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 
 export function PrimeNestHero() {
     return (
-        <section className="relative max-w-[1440px] pt-12 mx-auto w-full flex flex-col">
+        <section className="relative max-w-[1440px] pt-12 mx-auto w-full flex flex-col px-8">
             {/* Main Content Wrapper */}
             <div className="relative w-full overflow-hidden min-h-[700px] flex flex-col md:block rounded-xl  border-white">
 
