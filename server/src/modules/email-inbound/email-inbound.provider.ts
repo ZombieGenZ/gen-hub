@@ -529,12 +529,23 @@ export class EmailInboundProvider implements OnModuleInit, OnModuleDestroy {
                     senderName || senderEmail.split('@')[0],
                     senderEmail,
                     subject,
+                    false, // isPriority
+                    content, // Pass email content to be displayed in Embed
                 );
 
                 if (discordResult.success && discordResult.channelId) {
                     // Cập nhật discord_channel_id cho conversation
                     await this.contactService.updateDiscordChannelId(result.id, discordResult.channelId);
                     this.logger.log(`Created Discord channel for ticket ${result.code}`);
+
+                    // Send AI reply to Discord if available
+                    if (result.aiResponse) {
+                        await this.discordService.sendMessageToTicket(
+                            discordResult.channelId,
+                            `**🤖 GEN-HUB AI**: ${result.aiResponse}`,
+                            false,
+                        );
+                    }
                 }
             }
         } catch (error) {

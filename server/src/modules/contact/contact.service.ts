@@ -1219,7 +1219,7 @@ export class ContactService implements OnModuleInit {
         emailMessageId?: string,
         emailInReplyTo?: string,
         emailReferences?: string[],
-    ): Promise<{ id: string; code: string }> {
+    ): Promise<{ id: string; code: string; aiResponse?: string }> {
         // Tạo mã ticket
         const code = await this.repository.generateTicketCode(this.TICKET_PREFIX);
 
@@ -1359,7 +1359,7 @@ export class ContactService implements OnModuleInit {
         // Invalidate cache
         await this.invalidateListCache();
 
-        return { id: conversation.id, code };
+        return { id: conversation.id, code, aiResponse: aiReplyContent };
     }
 
     /**
