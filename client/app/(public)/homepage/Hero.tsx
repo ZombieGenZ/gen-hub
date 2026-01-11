@@ -12,12 +12,12 @@ export function PrimeNestHero() {
                 {/* Background Image & Overlay */}
                 <div className="absolute inset-0 z-0">
                     <img
-                        src="./assets/hero.png"
+                        src="./assets/unnamed.jpg"
                         alt="GenHub"
                         className="w-full h-full object-cover"
                     />
                     {/* Dark Gradient Overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-black/20" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/25 to-black/20" />
                 </div>
 
                 {/* Hero Text Content */}

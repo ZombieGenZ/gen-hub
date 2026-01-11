@@ -38,10 +38,10 @@ function Testimonials() {
                         Được tin cậy bởi hàng ngàn doanh nghiệp
                     </h2>
                     <Carousel setApi={setApi} className="w-full">
-                        <CarouselContent>
+                        <CarouselContent className="py-6">
                             {Array.from({ length: 15 }).map((_, index) => (
                                 <CarouselItem className="md:basis-1/2 lg:basis-1/3" key={index}>
-                                    <div className="bg-white border rounded-3xl h-full p-6 flex justify-between flex-col shadow-sm hover:shadow-md transition-all duration-300">
+                                    <div className="bg-white rounded-3xl h-full p-6 flex justify-between flex-col shadow-lg hover:shadow-xl transition-all duration-300 border-t-4 border-[#0F766E]">
                                         <User className="w-8 h-8 stroke-1 text-[#0F766E] mb-4" />
                                         <div className="flex flex-col gap-4">
                                             <div className="flex flex-col gap-2">
