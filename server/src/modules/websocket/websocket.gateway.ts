@@ -1233,8 +1233,6 @@ export class WebsocketGateway
     });
   }
 
-  // ==================== QC MANAGEMENT EVENTS ====================
-
   /**
    * Emit event khi gán user vào QC Warehouse
    */

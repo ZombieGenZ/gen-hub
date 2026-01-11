@@ -233,7 +233,7 @@ export class ContactRepository {
     async findMany(
         query: QueryContactDto,
     ): Promise<IPaginatedContactResponse<IContactConversationListItem>> {
-        const { limit = 10, offset = 0, keywords, status, priority, assigned_staff_id } = query;
+        const { limit = 10, offset = 0, keywords, status, priority, assigned_staff_id, is_priority_customer, is_skipped } = query;
 
         const where: Prisma.ContactConversationWhereInput = {
             is_deleted: false,
@@ -242,6 +242,8 @@ export class ContactRepository {
         if (status) where.status = status;
         if (priority) where.priority = priority;
         if (assigned_staff_id) where.assigned_staff_id = assigned_staff_id;
+        if (is_priority_customer !== undefined) where.is_priority_customer = is_priority_customer;
+        if (is_skipped !== undefined) where.is_skipped = is_skipped;
 
         if (keywords) {
             where.OR = [

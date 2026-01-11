@@ -54,6 +54,7 @@ import { AddonTypeModule } from './modules/addon-type/addon-type.module';
 import { FaqModule } from './modules/faq/faq.module';
 import { ContactModule } from './modules/contact/contact.module';
 import { ContactTagModule } from './modules/contact-tag/contact-tag.module';
+import { ContactListModule } from './modules/contact-list/contact-list.module';
 import { QCManagementModule } from './modules/qc-management/qc-management.module';
 import { RefundRequestModule } from './modules/refund-request/refund-request.module';
 import { CategoryModule } from './modules/category/category.module';
@@ -192,6 +193,9 @@ import { CozePluginModule } from './modules/coze-plugin/coze-plugin.module';
 
     // Contact Tags Module
     ContactTagModule,
+
+    // Contact List (Blacklist/Whitelist)
+    ContactListModule,
 
     // Refund Request Module
     RefundRequestModule,

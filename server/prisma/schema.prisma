@@ -3192,6 +3192,7 @@ enum PriorityCustomerSource {
   EMAIL_MATCH_REPRESENTATIVE
   ACTIVE_CONTRACT
   PREVIOUS_CONTRACT
+  WHITELIST
 }
 
 model ContactConversation {
@@ -3251,6 +3252,9 @@ model ContactConversation {
 
   discord_channel_id String?
 
+  is_skipped   Boolean @default(false)
+  skip_reason  String?
+
   assigned_staff User? @relation("AssignedStaff", fields: [assigned_staff_id], references: [id])
   organization  Organization? @relation("ContactConversations", fields: [organization_id], references: [id])
 
@@ -3267,6 +3271,7 @@ model ContactConversation {
   @@index([session_id])
   @@index([organization_id])
   @@index([is_priority_customer])
+  @@index([is_skipped])
   @@map("contact_conversations")
 }
 
@@ -3953,4 +3958,49 @@ model CozeConversation {
   @@index([discord_channel_id])
   @@index([created_at])
   @@map("coze_conversations")
+}
+
+enum ContactListType {
+  BLACKLIST
+  WHITELIST
+}
+
+enum ContactListMatchType {
+  EMAIL
+  EMAIL_DOMAIN
+  IP_V4
+  IP_V6
+  REGION_COUNTRY
+  REGION_CITY
+}
+
+model ContactListEntry {
+  id String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+
+  list_type  ContactListType
+  match_type ContactListMatchType
+  value      String
+
+  country_code String?
+  city_code    String?
+
+  reason String?
+  notes  String? @db.Text
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean   @default(false)
+  deleted_at DateTime?
+
+  created_by String
+  updated_by String?
+  deleted_by String?
+
+  @@unique([list_type, match_type, value])
+  @@index([list_type])
+  @@index([match_type])
+  @@index([value])
+  @@index([is_active])
+  @@map("contact_list_entries")
 }

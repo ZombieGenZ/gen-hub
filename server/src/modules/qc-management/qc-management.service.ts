@@ -28,8 +28,6 @@ export class QCManagementService {
         this.QC_PERMISSION_CACHE_TTL = this.configService.get<number>('REDIS_QC_PERMISSION_CACHE_TTL', 300);
     }
 
-    // ============ QC WAREHOUSE ============
-
     /**
      * Tạo QCWarehouse khi tạo WarehouseTemplate
      * Được gọi từ warehouse-template.service.ts
@@ -83,8 +81,6 @@ export class QCManagementService {
         return qcWarehouse;
     }
 
-    // ============ QC ROW ============
-
     /**
      * Tạo QCRow khi tạo RowTemplate
      * Được gọi từ row-template.service.ts
@@ -123,8 +119,6 @@ export class QCManagementService {
         return result;
     }
 
-    // ============ QC PERMISSION ============
-
     /**
      * Lấy tất cả QC permissions
      */
@@ -139,8 +133,6 @@ export class QCManagementService {
         await this.redisService.set(cacheKey, JSON.stringify(permissions), this.QC_PERMISSION_CACHE_TTL);
         return permissions;
     }
-
-    // ============ WAREHOUSE ASSIGNMENT ============
 
     /**
      * Gán user vào QCWarehouse với permissions
@@ -214,8 +206,6 @@ export class QCManagementService {
         );
     }
 
-    // ============ ROW ASSIGNMENT ============
-
     /**
      * Gán user vào QCRow với permissions
      */
@@ -273,8 +263,6 @@ export class QCManagementService {
             { userId: currentUserId, metaData: { assignmentId } },
         );
     }
-
-    // ============ CACHE HELPERS ============
 
     private async invalidateWarehouseCache(qcWarehouseId: string) {
         const patterns = [

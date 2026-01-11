@@ -10,8 +10,6 @@ import { Prisma } from '@prisma/client';
 export class QCManagementRepository {
     constructor(private readonly prisma: PrismaService) { }
 
-    // ============ QC WAREHOUSE ============
-
     /**
      * Tạo QCWarehouse mới (khi tạo WarehouseTemplate)
      */
@@ -80,8 +78,6 @@ export class QCManagementRepository {
         });
     }
 
-    // ============ QC ROW ============
-
     /**
      * Tạo QCRow mới (khi tạo RowTemplate)
      */
@@ -131,8 +127,6 @@ export class QCManagementRepository {
         return { items, total, limit, offset, hasMore: offset + items.length < total };
     }
 
-    // ============ QC PERMISSION ============
-
     /**
      * Lấy tất cả QC permissions
      */
@@ -160,8 +154,6 @@ export class QCManagementRepository {
             where: { id: { in: ids }, is_deleted: false },
         });
     }
-
-    // ============ QC WAREHOUSE ASSIGNMENT ============
 
     /**
      * Gán user vào QCWarehouse với permissions
@@ -227,8 +219,6 @@ export class QCManagementRepository {
             },
         });
     }
-
-    // ============ QC ROW ASSIGNMENT ============
 
     /**
      * Gán user vào QCRow với permissions

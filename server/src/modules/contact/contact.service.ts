@@ -388,6 +388,78 @@ export class ContactService implements OnModuleInit {
     }
 
     /**
+     * Lấy danh sách tickets ưu tiên (is_priority_customer = true)
+     */
+    async findManyPriority(
+        query: QueryContactDto,
+        lang: string = 'vi',
+    ): Promise<IPaginatedContactResponse<IContactConversationListItem>> {
+        const priorityQuery = { ...query, is_priority_customer: true };
+        const cacheKey = `contact:list:priority:${JSON.stringify(priorityQuery)}`;
+        const cached = await this.redisService.get(cacheKey);
+        if (cached) {
+            try {
+                return JSON.parse(cached);
+            } catch {
+                // Cache invalid
+            }
+        }
+
+        const result = await this.repository.findMany(priorityQuery);
+
+        await this.redisService.set(cacheKey, JSON.stringify(result), this.LIST_CACHE_TTL);
+        return result;
+    }
+
+    /**
+     * Lấy danh sách tickets bình thường (is_priority_customer = false, is_skipped = false)
+     */
+    async findManyNormal(
+        query: QueryContactDto,
+        lang: string = 'vi',
+    ): Promise<IPaginatedContactResponse<IContactConversationListItem>> {
+        const normalQuery = { ...query, is_priority_customer: false, is_skipped: false };
+        const cacheKey = `contact:list:normal:${JSON.stringify(normalQuery)}`;
+        const cached = await this.redisService.get(cacheKey);
+        if (cached) {
+            try {
+                return JSON.parse(cached);
+            } catch {
+                // Cache invalid
+            }
+        }
+
+        const result = await this.repository.findMany(normalQuery);
+
+        await this.redisService.set(cacheKey, JSON.stringify(result), this.LIST_CACHE_TTL);
+        return result;
+    }
+
+    /**
+     * Lấy danh sách tickets bị bỏ qua (is_skipped = true)
+     */
+    async findManySkipped(
+        query: QueryContactDto,
+        lang: string = 'vi',
+    ): Promise<IPaginatedContactResponse<IContactConversationListItem>> {
+        const skippedQuery = { ...query, is_skipped: true };
+        const cacheKey = `contact:list:skipped:${JSON.stringify(skippedQuery)}`;
+        const cached = await this.redisService.get(cacheKey);
+        if (cached) {
+            try {
+                return JSON.parse(cached);
+            } catch {
+                // Cache invalid
+            }
+        }
+
+        const result = await this.repository.findMany(skippedQuery);
+
+        await this.redisService.set(cacheKey, JSON.stringify(result), this.LIST_CACHE_TTL);
+        return result;
+    }
+
+    /**
      * Lấy chi tiết ticket
      */
     async findById(
@@ -1299,8 +1371,6 @@ export class ContactService implements OnModuleInit {
     async getByCode(code: string): Promise<ContactConversation | null> {
         return this.repository.findByCode(code);
     }
-
-    // ==================== LIVE CHAT METHODS ====================
 
     /**
      * Khởi tạo phiên live chat (Guest)

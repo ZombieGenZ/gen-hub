@@ -25,8 +25,6 @@ import { GetResponse, CreatedResponse, DeletedResponse } from '../../common/resp
 export class QCManagementController {
     constructor(private readonly qcManagementService: QCManagementService) { }
 
-    // ============ QC WAREHOUSES ============
-
     @Get('warehouses')
     @RequirePermission('qc-management.list')
     @ApiOperation({ summary: 'Lấy danh sách QC Warehouses' })
@@ -69,8 +67,6 @@ export class QCManagementController {
         return new GetResponse('qc-management.list.success', data, 'Lấy danh sách QC Rows thành công');
     }
 
-    // ============ PERMISSIONS ============
-
     @Get('permissions')
     @RequirePermission('qc-management.list')
     @ApiOperation({ summary: 'Lấy danh sách QC Permissions' })
@@ -78,8 +74,6 @@ export class QCManagementController {
         const data = await this.qcManagementService.getAllPermissions();
         return new GetResponse('qc-management.permissions.success', data, 'Lấy danh sách QC Permissions thành công');
     }
-
-    // ============ WAREHOUSE ASSIGNMENTS ============
 
     @Post('warehouses/:id/assignments')
     @RequirePermission('qc-management.assign')
@@ -114,8 +108,6 @@ export class QCManagementController {
         await this.qcManagementService.removeWarehouseAssignment(assignmentId, currentUserId, lang);
         return new DeletedResponse('qc-management.remove.success', null, 'Xóa phân công thành công');
     }
-
-    // ============ ROW ASSIGNMENTS ============
 
     @Post('rows/:id/assignments')
     @RequirePermission('qc-management.assign')

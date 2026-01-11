@@ -64,8 +64,6 @@ export class ContactController {
         return new CreatedResponse('contact.created', result, result.message);
     }
 
-    // ==================== LIVE CHAT ENDPOINTS (PUBLIC) ====================
-
     /**
      * Khởi tạo phiên live chat (Guest không cần đăng nhập)
      */
@@ -111,8 +109,6 @@ export class ContactController {
         return new GetResponse('contact.live_chat.session', result);
     }
 
-    // ==================== ADMIN ENDPOINTS ====================
-
     /**
      * Lấy danh sách tickets - OPTIMIZED
      */
@@ -127,6 +123,54 @@ export class ContactController {
     ) {
         const result = await this.contactService.findMany(query, lang);
         return new GetResponse('contact.list', result);
+    }
+
+    /**
+     * Lấy danh sách tickets ưu tiên (is_priority_customer = true)
+     */
+    @Get('admin/contacts/priority')
+    @UseGuards(JwtAuthGuard, PermissionGuard)
+    @RequirePermission('contact.list')
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Lấy danh sách tickets ưu tiên (is_priority_customer = true)' })
+    async findPriority(
+        @Query() query: QueryContactDto,
+        @I18nLang() lang: string,
+    ) {
+        const result = await this.contactService.findManyPriority(query, lang);
+        return new GetResponse('contact.list_priority', result);
+    }
+
+    /**
+     * Lấy danh sách tickets bình thường (is_priority_customer = false, is_skipped = false)
+     */
+    @Get('admin/contacts/normal')
+    @UseGuards(JwtAuthGuard, PermissionGuard)
+    @RequirePermission('contact.list')
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Lấy danh sách tickets bình thường' })
+    async findNormal(
+        @Query() query: QueryContactDto,
+        @I18nLang() lang: string,
+    ) {
+        const result = await this.contactService.findManyNormal(query, lang);
+        return new GetResponse('contact.list_normal', result);
+    }
+
+    /**
+     * Lấy danh sách tickets bị bỏ qua (is_skipped = true)
+     */
+    @Get('admin/contacts/skipped')
+    @UseGuards(JwtAuthGuard, PermissionGuard)
+    @RequirePermission('contact.list')
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Lấy danh sách tickets bị bỏ qua (blacklisted)' })
+    async findSkipped(
+        @Query() query: QueryContactDto,
+        @I18nLang() lang: string,
+    ) {
+        const result = await this.contactService.findManySkipped(query, lang);
+        return new GetResponse('contact.list_skipped', result);
     }
 
     /**
