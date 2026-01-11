@@ -297,3 +297,22 @@
 | 294 | Coze Plugin (Public) | GET | /public/coze-plugin/check-availability | ❎ | ❎ | ❎ |
 | 295 | Coze Plugin (Public) | GET | /public/coze-plugin/rental-contract-terms | ❎ | ❎ | ❎ |
 | 296 | Coze Plugin (Public) | GET | /public/coze-plugin/faq | ❎ | ❎ | ❎ |
+| 297 | Contact Priority | GET | /admin/contacts/priority | ❎ | ❎ | ❎ |
+| 298 | Contact Normal | GET | /admin/contacts/normal | ❎ | ❎ | ❎ |
+| 299 | Contact Skipped | GET | /admin/contacts/skipped | ❎ | ❎ | ❎ |
+| 300 | Contact List | POST | /admin/contact-lists | ❎ | ❎ | ❎ |
+| 301 | Contact List | GET | /admin/contact-lists | ❎ | ❎ | ❎ |
+| 302 | Contact List | GET | /admin/contact-lists/{id} | ❎ | ❎ | ❎ |
+| 303 | Contact List | PUT | /admin/contact-lists/{id} | ❎ | ❎ | ❎ |
+| 304 | Contact List | DELETE | /admin/contact-lists/{id} | ❎ | ❎ | ❎ |
+| 305 | Contact List | POST | /admin/contact-lists/quick-add/email | ❎ | ❎ | ❎ |
+| 306 | Contact List | POST | /admin/contact-lists/quick-remove/email | ❎ | ❎ | ❎ |
+| 307 | Contact List | POST | /admin/contact-lists/quick-add/domain | ❎ | ❎ | ❎ |
+| 308 | Contact List | POST | /admin/contact-lists/quick-remove/domain | ❎ | ❎ | ❎ |
+| 309 | Contact List | POST | /admin/contact-lists/quick-add/ip | ❎ | ❎ | ❎ |
+| 310 | Contact List | POST | /admin/contact-lists/quick-remove/ip | ❎ | ❎ | ❎ |
+| 311 | Contact List | POST | /admin/contact-lists/quick-add/region | ❎ | ❎ | ❎ |
+| 312 | Contact List | POST | /admin/contact-lists/quick-remove/region | ❎ | ❎ | ❎ |
+| 313 | Contact List | GET | /admin/contact-lists/check/email | ❎ | ❎ | ❎ |
+| 314 | Contact List | GET | /admin/contact-lists/check/ip | ❎ | ❎ | ❎ |
+| 315 | Contact List | GET | /admin/contact-lists/check/region | ❎ | ❎ | ❎ |

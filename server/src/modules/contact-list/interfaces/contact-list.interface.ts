@@ -24,4 +24,6 @@ export interface IContactListCheckResult {
     isWhitelisted: boolean;
     blacklistEntry?: IContactListEntryWithRelations;
     whitelistEntry?: IContactListEntryWithRelations;
+    reason?: string;        // Lý do nếu match (từ blacklistEntry hoặc whitelistEntry)
+    matchType?: string;     // Loại match: EMAIL, EMAIL_DOMAIN, IP_V4, etc.
 }

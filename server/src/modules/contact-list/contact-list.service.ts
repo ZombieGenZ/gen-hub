@@ -323,11 +323,17 @@ export class ContactListService {
 
     async checkEmail(email: string): Promise<IContactListCheckResult> {
         const { blacklist, whitelist } = await this.repository.findByEmail(email);
+
+        // Xác định reason và matchType từ entry đầu tiên được match
+        const matchedEntry = blacklist || whitelist;
+
         return {
             isBlacklisted: !!blacklist,
             isWhitelisted: !!whitelist,
             blacklistEntry: blacklist || undefined,
             whitelistEntry: whitelist || undefined,
+            reason: matchedEntry?.reason || undefined,
+            matchType: matchedEntry?.match_type || undefined,
         };
     }
 

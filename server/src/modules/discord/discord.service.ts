@@ -34,13 +34,17 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
     private guild: Guild | null = null;
     private category: CategoryChannel | null = null;
     private closedCategory: CategoryChannel | null = null;
+    private priorityCategory: CategoryChannel | null = null;
 
     private readonly isEnabled: boolean;
     private readonly botToken: string;
     private readonly guildId: string;
     private readonly categoryId: string;
     private readonly closedCategoryId: string;
+    private readonly priorityCategoryId: string;
     private readonly autoSupportChannelIds: string[];
+    private readonly ignoredCategoryId: string;
+    private readonly staffRoleIds: string[];
 
     // Callback để xử lý reply từ Discord
     private onReplyCallback: DiscordReplyCallback | null = null;
@@ -58,10 +62,18 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
         this.guildId = this.configService.get<string>('DISCORD_GUILD_ID') || '';
         this.categoryId = this.configService.get<string>('DISCORD_SUPPORT_CATEGORY_ID') || '';
         this.closedCategoryId = this.configService.get<string>('DISCORD_CLOSED_CATEGORY_ID') || '';
+        this.priorityCategoryId = this.configService.get<string>('DISCORD_PRIORITY_CATEGORY_ID') || '';
 
         // Lấy danh sách channel IDs cho auto-support với Coze AI
         const autoSupportIds = this.configService.get<string>('DISCORD_AUTO_SUPPORT_CHANNEL_IDS') || '';
         this.autoSupportChannelIds = autoSupportIds.split(',').map(id => id.trim()).filter(id => id);
+
+        // ID của category Discord để bỏ qua (không xử lý tin nhắn)
+        this.ignoredCategoryId = this.configService.get<string>('CONTACT_IGNORED_CATEGORY_ID') || '';
+
+        // Danh sách role IDs của staff (bypass AI auto-reply)
+        const staffRoleIdsStr = this.configService.get<string>('DISCORD_STAFF_REPLY_ROLE_IDS') || '';
+        this.staffRoleIds = staffRoleIdsStr.split(',').map(id => id.trim()).filter(id => id);
 
         if (this.isEnabled) {
             if (!this.botToken || !this.guildId || !this.categoryId) {
@@ -116,6 +128,14 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
                             this.logger.log(`Connected to closed category: ${this.closedCategory.name}`);
                         }
                     }
+
+                    if (this.priorityCategoryId) {
+                        const priorityChannel = this.guild.channels.cache.get(this.priorityCategoryId);
+                        if (priorityChannel?.type === ChannelType.GuildCategory) {
+                            this.priorityCategory = priorityChannel as CategoryChannel;
+                            this.logger.log(`Connected to priority category: ${this.priorityCategory.name}`);
+                        }
+                    }
                 }
             });
 
@@ -159,12 +179,16 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
 
     /**
      * Tạo channel mới cho contact ticket
+     * @param isPriority - Nếu true, channel sẽ được tạo trong priority category
+     * @param message - Nội dung tin nhắn đầu tiên của khách hàng
      */
     async createContactChannel(
         contactCode: string,
         customerName: string,
         customerEmail: string,
         subject?: string,
+        isPriority: boolean = false,
+        message?: string,
     ): Promise<IDiscordChannelResult> {
         if (!this.enabled || !this.guild || !this.category) {
             return { success: false, error: 'Tích hợp Discord không khả dụng' };
@@ -175,18 +199,23 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
             const lowerCode = contactCode.toLowerCase();
             const channelName = lowerCode.startsWith('ticket-') ? lowerCode : `ticket-${lowerCode}`;
 
-            // Tạo channel trong category support
+            // Chọn category dựa trên priority
+            // Nếu là priority và có priority category -> dùng priority category
+            // Nếu không -> dùng support category thông thường
+            const targetCategory = (isPriority && this.priorityCategory) ? this.priorityCategory : this.category;
+
+            // Tạo channel trong category tương ứng
             const channel = await this.guild.channels.create({
                 name: channelName,
                 type: ChannelType.GuildText,
-                parent: this.category,
-                topic: `Ticket Hỗ Trợ: ${contactCode} | Khách hàng: ${customerEmail}`,
+                parent: targetCategory,
+                topic: `${isPriority ? '⭐ VIP ' : ''}Ticket Hỗ Trợ: ${contactCode} | Khách hàng: ${customerEmail}`,
             });
 
             // Gửi tin nhắn chào mừng với embed
             const embed = new EmbedBuilder()
-                .setColor(0x0099ff)
-                .setTitle('📩 Yêu cầu hổ trợ mới')
+                .setColor(isPriority ? 0xffd700 : 0x0099ff) // Gold cho VIP, Blue cho thường
+                .setTitle(isPriority ? '⭐ Yêu cầu hỗ trợ VIP mới' : '📩 Yêu cầu hỗ trợ mới')
                 .addFields(
                     { name: 'Code', value: contactCode, inline: true },
                     { name: 'Khách hàng', value: customerName, inline: true },
@@ -196,6 +225,15 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
 
             if (subject) {
                 embed.addFields({ name: 'Tiêu đề', value: subject });
+            }
+
+            // Thêm nội dung tin nhắn nếu có
+            if (message) {
+                // Giới hạn 1024 ký tự theo Discord embed limit
+                const truncatedMessage = message.length > 1000
+                    ? message.substring(0, 1000) + '...'
+                    : message;
+                embed.addFields({ name: '📝 Nội dung', value: truncatedMessage });
             }
 
             embed.setFooter({ text: 'Hãy trả lời trong kênh này để phản hồi khách hàng.' });
@@ -465,6 +503,11 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
         const channel = message.channel as TextChannel;
         const channelName = channel.name;
 
+        // Bỏ qua tin nhắn từ category được chỉ định trong CONTACT_IGNORED_CATEGORY_ID
+        if (this.ignoredCategoryId && channel.parentId === this.ignoredCategoryId) {
+            return;
+        }
+
         // Handle Commands
         const content = message.content.trim().toLowerCase();
         const userId = message.author.id;
@@ -583,6 +626,15 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
      */
     private async handleAutoSupport(message: Message): Promise<void> {
         const channel = message.channel as TextChannel;
+
+        // Bypass AI auto-reply nếu user có staff role
+        if (this.staffRoleIds.length > 0 && message.member) {
+            const hasStaffRole = message.member.roles.cache.some(role => this.staffRoleIds.includes(role.id));
+            if (hasStaffRole) {
+                this.logger.debug(`Bypassing AI auto-reply for staff member: ${message.author.username}`);
+                return;
+            }
+        }
 
         try {
             // Hiển thị typing indicator

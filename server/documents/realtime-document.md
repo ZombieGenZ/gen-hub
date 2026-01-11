@@ -1861,3 +1861,62 @@ socket.on('contact:conversation:reopened', (data) => {
 });
 ```
 
+## 📋 Contact List Events (Danh sách liên hệ Blacklist/Whitelist)
+
+### `contactList:created`
+Được phát khi một mục mới được thêm vào danh sách.
+
+**Payload:**
+```json
+{
+  "entryId": "uuid",
+  "listType": "BLACKLIST", // hoặc "WHITELIST"
+  "matchType": "EMAIL", // hoặc "EMAIL_DOMAIN", "IP_V4", "IP_V6", "REGION_COUNTRY", "REGION_CITY"
+  "value": "example@domain.com",
+  "createdBy": "userId",
+  "timestamp": "ISO Date"
+}
+```
+
+### `contactList:updated`
+Được phát khi một mục trong danh sách được cập nhật.
+
+**Payload:**
+```json
+{
+  "entryId": "uuid",
+  "listType": "BLACKLIST",
+  "matchType": "EMAIL",
+  "value": "new@domain.com",
+  "updatedFields": ["value", "reason"],
+  "updatedBy": "userId",
+  "timestamp": "ISO Date"
+}
+```
+
+### `contactList:deleted`
+Được phát khi một mục bị xóa khỏi danh sách.
+
+**Payload:**
+```json
+{
+  "entryId": "uuid", // Có thể null nếu xóa nhanh (quick remove) từ service method
+  "listType": "BLACKLIST", // Nếu xóa nhanh
+  "matchType": "EMAIL", // Nếu xóa nhanh
+  "value": "example@domain.com", // Nếu xóa nhanh
+  "deletedBy": "userId",
+  "timestamp": "ISO Date"
+}
+```
+
+### `contactList:deletedMany`
+Được phát khi nhiều mục bị xóa cùng lúc.
+
+**Payload:**
+```json
+{
+  "entryIds": ["uuid1", "uuid2"],
+  "deletedBy": "userId",
+  "timestamp": "ISO Date"
+}
+```

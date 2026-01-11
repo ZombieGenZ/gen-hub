@@ -11,6 +11,7 @@ import { UserModule } from '../user/user.module';
 import { SharedModule } from '../../common/shared.module';
 import { CozeModule } from '../coze/coze.module';
 import { GeminiService } from '../../common/services/gemini.service';
+import { ContactListModule } from '../contact-list/contact-list.module';
 
 @Module({
     imports: [
@@ -22,6 +23,7 @@ import { GeminiService } from '../../common/services/gemini.service';
         UserModule,
         SharedModule,
         CozeModule,
+        ContactListModule,
     ],
     controllers: [ContactController],
     providers: [ContactService, ContactRepository, GeminiService],

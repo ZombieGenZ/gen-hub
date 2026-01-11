@@ -31,6 +31,7 @@ import { DiscordService } from '../discord/discord.service';
 import { AppConfigService } from '../../common/config/app-config.service';
 import { CozeService } from '../coze/coze.service';
 import { GeminiService } from '../../common/services/gemini.service';
+import { ContactListService } from '../contact-list/contact-list.service';
 
 /**
  * Service xử lý business logic cho Contact module
@@ -54,6 +55,7 @@ export class ContactService implements OnModuleInit {
         private readonly appConfigService: AppConfigService,
         private readonly cozeService: CozeService,
         private readonly geminiService: GeminiService,
+        private readonly contactListService: ContactListService,
     ) {
         this.CACHE_TTL = this.configService.get<number>('REDIS_CONTACT_CACHE_TTL') || 300;
         this.LIST_CACHE_TTL = this.configService.get<number>('REDIS_CONTACT_LIST_CACHE_TTL') || 60;
@@ -165,7 +167,36 @@ export class ContactService implements OnModuleInit {
         const enableAiReplyConfig = this.appConfigService.get('enableAiAutoReply') as unknown;
         const enableAiReply = enableAiReplyConfig === true || enableAiReplyConfig === 'true';
 
-        // Tạo conversation
+        // ========== KIỂM TRA BLACKLIST/WHITELIST ==========
+        let isSkippedByBlacklist = false;
+        let isWhitelisted = false;
+        let skipReason: string | undefined;
+
+        try {
+            const listCheckResult = await this.contactListService.checkEmail(dto.email.toLowerCase());
+
+            if (listCheckResult.isBlacklisted) {
+                isSkippedByBlacklist = true;
+                skipReason = listCheckResult.reason || 'Email is blacklisted';
+                this.systemLogService.info('contact', 'blacklist_matched', `Email ${dto.email} matched blacklist`, {
+                    metaData: { code, email: dto.email, matchType: listCheckResult.matchType },
+                });
+            }
+
+            if (listCheckResult.isWhitelisted) {
+                isWhitelisted = true;
+                this.systemLogService.info('contact', 'whitelist_matched', `Email ${dto.email} matched whitelist`, {
+                    metaData: { code, email: dto.email, matchType: listCheckResult.matchType },
+                });
+            }
+        } catch (error) {
+            // Không block nếu check list fail
+            this.systemLogService.error('contact', 'list_check_failed', `Failed to check email list: ${error}`, {
+                metaData: { code, email: dto.email },
+            });
+        }
+
+        // Tạo conversation với các flag từ blacklist/whitelist check
         const conversation = await this.repository.createConversation({
             code,
             customer_name: dto.name,
@@ -173,12 +204,16 @@ export class ContactService implements OnModuleInit {
             customer_phone: dto.phone,
             customer_company: dto.company,
             subject: dto.subject,
-            status: ContactStatus.OPEN,
+            status: isSkippedByBlacklist ? ContactStatus.SPAM : ContactStatus.OPEN,
             channel: ContactChannel.WEBSITE_FORM,
             email_thread_id: `thread-${code}`,
             email_message_id: emailMessageId,
             last_activity_at: new Date(),
-            enable_ai_reply: enableAiReply,
+            enable_ai_reply: isSkippedByBlacklist ? false : enableAiReply, // Không AI reply nếu blacklisted
+            is_skipped: isSkippedByBlacklist,
+            skip_reason: skipReason,
+            is_priority_customer: isWhitelisted,
+            priority_source: isWhitelisted ? PriorityCustomerSource.WHITELIST : undefined,
         });
 
         // Tạo message đầu tiên
@@ -194,12 +229,13 @@ export class ContactService implements OnModuleInit {
 
         // AI Processing: Gemini phân loại (nếu có) + Coze tư vấn
         let aiResponseContent: string | undefined;
-        let isSpam = false;
-        let isPotentialCustomer = false;
+        let isSpam = isSkippedByBlacklist; // Mặc định là spam nếu blacklisted
+        let isPotentialCustomer = isWhitelisted; // Mặc định là potential nếu whitelisted
 
-        // Bước 1: Phân loại spam bằng Gemini (nếu Gemini được bật)
-        // Sử dụng prompt riêng cho webform
-        if (enableAiReply && this.geminiService.enabled) {
+        // Bước 1: Phân loại spam bằng Gemini (nếu Gemini được bật và QUAN TRỌNG: không nằm trong whitelist)
+        // Nếu đã blacklist -> skip AI
+        // Nếu đã whitelist -> skip spam check (nhưng vẫn có thể chạy để analyze nếu cần, ở đây ta skip spam check cho whitelist để tối ưu)
+        if (enableAiReply && this.geminiService.enabled && !isSkippedByBlacklist) {
             try {
                 const classification = await this.geminiService.classifyWebform(
                     dto.email,
@@ -210,7 +246,8 @@ export class ContactService implements OnModuleInit {
                     dto.message,
                 );
 
-                if (classification.isSpamOrAdvertising) {
+                // Chỉ đánh dấu spam nếu KHÔNG nằm trong whitelist
+                if (classification.isSpamOrAdvertising && !isWhitelisted) {
                     isSpam = true;
                     await this.repository.update(conversation.id, { status: ContactStatus.SPAM });
                     this.systemLogService.info('contact', 'ai_spam_detected', `AI detected spam: ${code}`, {
@@ -218,8 +255,8 @@ export class ContactService implements OnModuleInit {
                     });
                 }
 
-                // Lưu thông tin khách hàng tiềm năng
-                if (classification.isPotentialCustomer) {
+                // Lưu thông tin khách hàng tiềm năng (nếu chưa phải là whitelisted)
+                if (classification.isPotentialCustomer && !isWhitelisted) {
                     isPotentialCustomer = true;
                     await this.repository.update(conversation.id, { is_priority_customer: true, priority_source: PriorityCustomerSource.AI_POTENTIAL });
                 }
@@ -345,6 +382,8 @@ export class ContactService implements OnModuleInit {
                 dto.name,
                 dto.email,
                 dto.subject,
+                isPotentialCustomer, // Tạo trong priority category nếu là khách hàng tiềm năng
+                dto.message, // Nội dung tin nhắn để hiển thị trong Discord embed
             );
             if (discordResult.success && discordResult.channelId) {
                 discordChannelId = discordResult.channelId;
