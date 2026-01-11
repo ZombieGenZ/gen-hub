@@ -1259,6 +1259,7 @@ export class ContactService implements OnModuleInit {
         });
 
         // Coze AI auto-reply cho inbound email
+        let aiReplyContent: string | undefined;
         if (enableAiReply && this.cozeService.isEnabled()) {
             try {
                 const aiResult = await this.cozeService.chat(
@@ -1268,6 +1269,7 @@ export class ContactService implements OnModuleInit {
                 );
 
                 if (aiResult.success && aiResult.content) {
+                    aiReplyContent = aiResult.content;
                     // Generate email message ID cho AI reply
                     const supportEmail = this.configService.get<string>('EMAIL_SUPPORT_ADDRESS');
                     const emailDomain = supportEmail?.split('@')[1] || 'genhub.dev';
