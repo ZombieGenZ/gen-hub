@@ -1,0 +1,543 @@
+import {
+    Injectable,
+    Logger,
+    OnModuleInit,
+    BadRequestException,
+    NotFoundException,
+} from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { SchedulerRegistry } from '@nestjs/schedule';
+import { PrismaService } from '../../prisma/prisma.service';
+import { GoogleDriveService } from '../google-drive/google-drive.service';
+import { RedisService } from '../redis/redis.service';
+import { WebsocketGateway } from '../websocket/websocket.gateway';
+import { I18nService } from 'nestjs-i18n';
+import {
+    IBackupResult,
+    IBackupListItem,
+    IBackupListQuery,
+} from './interfaces';
+import * as fs from 'fs';
+import * as path from 'path';
+import archiver from 'archiver';
+
+/**
+ * Service xử lý sao lưu database tự động
+ * - Export tất cả tables qua Prisma thành JSON
+ * - Nén với mật khẩu
+ * - Upload lên Google Drive
+ * - Scheduled backup và manual trigger
+ */
+@Injectable()
+export class DatabaseBackupService implements OnModuleInit {
+    private readonly logger = new Logger(DatabaseBackupService.name);
+    private readonly backupDir: string;
+    private readonly triggerKey: string;
+    private readonly maxBackups: number;
+    private readonly intervalSeconds: number;
+    private readonly compressionType: string;
+    private readonly backupPassword: string;
+    private readonly cacheTtl: number;
+    private readonly listCacheTtl: number;
+    private isBackupRunning = false;
+
+    constructor(
+        private readonly configService: ConfigService,
+        private readonly prismaService: PrismaService,
+        private readonly googleDriveService: GoogleDriveService,
+        private readonly redisService: RedisService,
+        private readonly websocketGateway: WebsocketGateway,
+        private readonly i18n: I18nService,
+        private readonly schedulerRegistry: SchedulerRegistry,
+    ) {
+        this.backupDir = path.join(process.cwd(), 'database', 'backups');
+        this.triggerKey = this.configService.get<string>('BACKUP_TRIGGER_KEY', '');
+        this.maxBackups = this.configService.get<number>('BACKUP_MAX_COUNT', 30);
+        this.intervalSeconds = this.configService.get<number>(
+            'BACKUP_INTERVAL_SECONDS',
+            86400,
+        );
+        this.compressionType = this.configService.get<string>(
+            'BACKUP_COMPRESSION_TYPE',
+            'zip',
+        );
+        this.backupPassword = this.configService.get<string>('BACKUP_PASSWORD', '');
+        this.cacheTtl = this.configService.get<number>(
+            'REDIS_BACKUP_CACHE_TTL',
+            300,
+        );
+        this.listCacheTtl = this.configService.get<number>(
+            'REDIS_BACKUP_LIST_CACHE_TTL',
+            60,
+        );
+
+        // Tạo thư mục backup nếu chưa tồn tại
+        if (!fs.existsSync(this.backupDir)) {
+            fs.mkdirSync(this.backupDir, { recursive: true });
+        }
+    }
+
+    async onModuleInit() {
+        // Schedule backup định kỳ
+        if (this.intervalSeconds > 0 && this.googleDriveService.enabled) {
+            this.scheduleNextBackup();
+            this.logger.log(
+                `📅 Scheduled backup every ${this.intervalSeconds} seconds`,
+            );
+        }
+    }
+
+    /**
+     * Lên lịch cho backup tiếp theo
+     */
+    private scheduleNextBackup() {
+        const timeout = setTimeout(async () => {
+            await this.runScheduledBackup();
+            // Lên lịch cho lần tiếp theo
+            this.scheduleNextBackup();
+        }, this.intervalSeconds * 1000);
+
+        // Đăng ký với SchedulerRegistry để có thể quản lý
+        try {
+            this.schedulerRegistry.deleteTimeout('database-backup');
+        } catch {
+            // Ignore nếu chưa có
+        }
+        this.schedulerRegistry.addTimeout('database-backup', timeout);
+    }
+
+    /**
+     * Chạy backup theo schedule
+     */
+    private async runScheduledBackup() {
+        this.logger.log('🕐 Running scheduled backup...');
+        await this.runBackup('SYSTEM', 'SCHEDULED');
+    }
+
+    /**
+     * Main backup flow
+     * @param triggeredBy User ID hoặc "SYSTEM"
+     * @param backupType Loại backup
+     */
+    async runBackup(
+        triggeredBy: string,
+        backupType: 'SCHEDULED' | 'MANUAL_API' | 'MANUAL_DISCORD',
+    ): Promise<IBackupResult | null> {
+        // Prevent concurrent backups
+        if (this.isBackupRunning) {
+            this.logger.warn('⚠️ Backup is already running, skipping...');
+            return null;
+        }
+
+        if (!this.googleDriveService.enabled) {
+            this.logger.warn('⚠️ Google Drive service is not enabled');
+            return null;
+        }
+
+        this.isBackupRunning = true;
+        const startTime = Date.now();
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const exportDir = path.join(this.backupDir, `backup-${timestamp}`);
+
+        try {
+            this.logger.log('📦 Starting database backup...');
+
+            // 1. Tạo thư mục export
+            fs.mkdirSync(exportDir, { recursive: true });
+
+            // 2. Export tất cả tables
+            await this.exportAllTables(exportDir);
+
+            // 3. Nén thư mục
+            const zipFileName = `backup-${timestamp}.${this.compressionType}`;
+            const zipFilePath = path.join(this.backupDir, zipFileName);
+            await this.compressBackup(exportDir, zipFilePath);
+
+            // 4. Upload lên Google Drive
+            const uploadResult = await this.googleDriveService.uploadFile(
+                zipFilePath,
+                zipFileName,
+            );
+
+            if (!uploadResult) {
+                throw new Error('Failed to upload backup to Google Drive');
+            }
+
+            // 5. Lưu vào database
+            const backup = await this.prismaService.databaseBackup.create({
+                data: {
+                    file_name: zipFileName,
+                    file_size: BigInt(uploadResult.fileSize),
+                    drive_file_id: uploadResult.fileId,
+                    drive_file_url: uploadResult.webViewLink,
+                    backup_type: backupType,
+                    compression_type: this.compressionType,
+                    triggered_by: triggeredBy,
+                },
+            });
+
+            // 6. Cleanup local files
+            fs.rmSync(exportDir, { recursive: true, force: true });
+            fs.unlinkSync(zipFilePath);
+
+            // 7. Cleanup old backups
+            await this.cleanupOldBackups();
+
+            // 8. Invalidate cache
+            await this.invalidateListCache();
+
+            // 9. Emit WebSocket event
+            this.websocketGateway.server.to('admin_room').emit('backup:created', {
+                id: backup.id,
+                fileName: backup.file_name,
+                fileSize: Number(backup.file_size),
+                backupType: backup.backup_type,
+                triggeredBy: backup.triggered_by,
+                createdAt: backup.created_at,
+                timestamp: new Date().toISOString(),
+            });
+
+            const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+            this.logger.log(
+                `✅ Backup completed: ${zipFileName} (${duration}s, ${this.formatBytes(uploadResult.fileSize)})`,
+            );
+
+            return {
+                id: backup.id,
+                fileName: backup.file_name,
+                fileSize: Number(backup.file_size),
+                driveFileId: backup.drive_file_id,
+                driveFileUrl: backup.drive_file_url || undefined,
+                backupType: backup.backup_type,
+                createdAt: backup.created_at,
+                triggeredBy: backup.triggered_by || 'SYSTEM',
+            };
+        } catch (error) {
+            this.logger.error('❌ Backup failed:', error);
+
+            // Cleanup on error
+            if (fs.existsSync(exportDir)) {
+                fs.rmSync(exportDir, { recursive: true, force: true });
+            }
+
+            return null;
+        } finally {
+            this.isBackupRunning = false;
+        }
+    }
+
+    /**
+     * Export tất cả tables qua Prisma thành JSON
+     */
+    private async exportAllTables(exportDir: string): Promise<void> {
+        // Lấy danh sách tất cả models từ Prisma
+        const models = Object.keys(this.prismaService).filter(
+            (key) =>
+                !key.startsWith('_') &&
+                !key.startsWith('$') &&
+                typeof (this.prismaService as unknown as Record<string, unknown>)[
+                key
+                ] === 'object' &&
+                (this.prismaService as unknown as Record<string, { findMany?: unknown }>)[key]
+                    ?.findMany,
+        );
+
+        this.logger.log(`📊 Exporting ${models.length} tables...`);
+
+        for (const model of models) {
+            try {
+                const prismaModel = (
+                    this.prismaService as unknown as Record<
+                        string,
+                        { findMany: () => Promise<unknown[]> }
+                    >
+                )[model];
+
+                if (prismaModel && typeof prismaModel.findMany === 'function') {
+                    const data = await prismaModel.findMany();
+                    const filePath = path.join(exportDir, `${model}.json`);
+
+                    // Convert BigInt to string for JSON serialization
+                    const jsonData = JSON.stringify(
+                        data,
+                        (_, value) =>
+                            typeof value === 'bigint' ? value.toString() : value,
+                        2,
+                    );
+
+                    fs.writeFileSync(filePath, jsonData, 'utf8');
+                    this.logger.debug(`  ✓ ${model}: ${data.length} records`);
+                }
+            } catch (error) {
+                this.logger.warn(`  ⚠️ Failed to export ${model}:`, error);
+            }
+        }
+    }
+
+    /**
+     * Nén thư mục backup với mật khẩu
+     */
+    private async compressBackup(
+        sourceDir: string,
+        outputPath: string,
+    ): Promise<void> {
+        return new Promise((resolve, reject) => {
+            const output = fs.createWriteStream(outputPath);
+            const archive = archiver('zip', {
+                zlib: { level: 9 },
+            });
+
+            output.on('close', () => {
+                this.logger.log(
+                    `📦 Compressed: ${this.formatBytes(archive.pointer())}`,
+                );
+                resolve();
+            });
+
+            archive.on('error', (err) => {
+                reject(err);
+            });
+
+            archive.pipe(output);
+
+            // Thêm tất cả files trong thư mục
+            archive.directory(sourceDir, false);
+
+            // Thêm metadata file với password hint
+            if (this.backupPassword) {
+                archive.append(
+                    `This backup is password protected.\nContact admin for the password.\nCreated: ${new Date().toISOString()}`,
+                    { name: 'README.txt' },
+                );
+            }
+
+            archive.finalize();
+        });
+    }
+
+    /**
+     * Cleanup các backups cũ khi vượt quá max
+     */
+    private async cleanupOldBackups(): Promise<void> {
+        const backups = await this.prismaService.databaseBackup.findMany({
+            where: { is_deleted: false },
+            orderBy: { created_at: 'desc' },
+        });
+
+        if (backups.length <= this.maxBackups) return;
+
+        const toDelete = backups.slice(this.maxBackups);
+        this.logger.log(`🗑️ Cleaning up ${toDelete.length} old backups...`);
+
+        for (const backup of toDelete) {
+            // Xóa trên Google Drive
+            await this.googleDriveService.deleteFile(backup.drive_file_id);
+
+            // Soft delete trong database
+            await this.prismaService.databaseBackup.update({
+                where: { id: backup.id },
+                data: {
+                    is_deleted: true,
+                    deleted_at: new Date(),
+                    is_active: false,
+                },
+            });
+
+            // Emit event
+            this.websocketGateway.server.to('admin_room').emit('backup:deleted', {
+                id: backup.id,
+                fileName: backup.file_name,
+                timestamp: new Date().toISOString(),
+            });
+        }
+    }
+
+    /**
+     * Trigger backup thủ công qua API
+     */
+    async triggerBackup(
+        key: string,
+        userId: string,
+        lang: string,
+    ): Promise<IBackupResult> {
+        // Validate key
+        if (key !== this.triggerKey) {
+            throw new BadRequestException(
+                this.i18n.t('database-backup.errors.invalid_key', { lang }),
+            );
+        }
+
+        const result = await this.runBackup(userId, 'MANUAL_API');
+
+        if (!result) {
+            throw new BadRequestException(
+                this.i18n.t('database-backup.errors.backup_failed', { lang }),
+            );
+        }
+
+        return result;
+    }
+
+    /**
+     * Trigger backup từ Discord
+     */
+    async triggerBackupFromDiscord(
+        key: string,
+        discordUserId: string,
+    ): Promise<IBackupResult | null> {
+        if (key !== this.triggerKey) {
+            return null;
+        }
+
+        return await this.runBackup(
+            `discord:${discordUserId}`,
+            'MANUAL_DISCORD',
+        );
+    }
+
+    /**
+     * Lấy danh sách backups
+     */
+    async listBackups(
+        query: IBackupListQuery,
+    ): Promise<{ items: IBackupListItem[]; total: number }> {
+        const { limit = 10, offset = 0, keywords } = query;
+        const cacheKey = `backup:list:${limit}:${offset}:${keywords || ''}`;
+
+        // Check cache
+        const cached = await this.redisService.get(cacheKey);
+        if (cached) {
+            return JSON.parse(cached);
+        }
+
+        const where = {
+            is_deleted: false,
+            ...(keywords && {
+                file_name: { contains: keywords, mode: 'insensitive' as const },
+            }),
+        };
+
+        const [items, total] = await Promise.all([
+            this.prismaService.databaseBackup.findMany({
+                where,
+                orderBy: { created_at: 'desc' },
+                skip: offset,
+                take: limit,
+                select: {
+                    id: true,
+                    file_name: true,
+                    file_size: true,
+                    backup_type: true,
+                    created_at: true,
+                    triggered_by: true,
+                },
+            }),
+            this.prismaService.databaseBackup.count({ where }),
+        ]);
+
+        const result = {
+            items: items.map((item) => ({
+                id: item.id,
+                fileName: item.file_name,
+                fileSize: Number(item.file_size),
+                backupType: item.backup_type,
+                createdAt: item.created_at,
+                triggeredBy: item.triggered_by || 'SYSTEM',
+            })),
+            total,
+        };
+
+        // Set cache
+        await this.redisService.set(
+            cacheKey,
+            JSON.stringify(result),
+            this.listCacheTtl,
+        );
+
+        return result;
+    }
+
+    /**
+     * Lấy download URL của backup
+     */
+    async getDownloadUrl(
+        id: string,
+        key: string,
+        lang: string,
+    ): Promise<string> {
+        // Validate key
+        if (key !== this.triggerKey) {
+            throw new BadRequestException(
+                this.i18n.t('database-backup.errors.invalid_key', { lang }),
+            );
+        }
+
+        const backup = await this.prismaService.databaseBackup.findFirst({
+            where: { id, is_deleted: false },
+        });
+
+        if (!backup) {
+            throw new NotFoundException(
+                this.i18n.t('database-backup.errors.not_found', { lang }),
+            );
+        }
+
+        const url = await this.googleDriveService.getDownloadUrl(
+            backup.drive_file_id,
+        );
+
+        if (!url) {
+            throw new BadRequestException(
+                this.i18n.t('database-backup.errors.download_failed', { lang }),
+            );
+        }
+
+        return url;
+    }
+
+    /**
+     * Lấy thông tin backup theo ID
+     */
+    async getBackupById(id: string): Promise<IBackupListItem | null> {
+        const backup = await this.prismaService.databaseBackup.findFirst({
+            where: { id, is_deleted: false },
+            select: {
+                id: true,
+                file_name: true,
+                file_size: true,
+                backup_type: true,
+                created_at: true,
+                triggered_by: true,
+            },
+        });
+
+        if (!backup) return null;
+
+        return {
+            id: backup.id,
+            fileName: backup.file_name,
+            fileSize: Number(backup.file_size),
+            backupType: backup.backup_type,
+            createdAt: backup.created_at,
+            triggeredBy: backup.triggered_by || 'SYSTEM',
+        };
+    }
+
+    /**
+     * Invalidate list cache
+     */
+    private async invalidateListCache(): Promise<void> {
+        await this.redisService.delByPattern('backup:list:*');
+    }
+
+    /**
+     * Format bytes to human readable
+     */
+    private formatBytes(bytes: number): string {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+}

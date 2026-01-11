@@ -1920,3 +1920,35 @@ socket.on('contact:conversation:reopened', (data) => {
   "timestamp": "ISO Date"
 }
 ```
+
+---
+
+## 📦 Database Backup Events (Room: `admin_room`)
+
+### `backup:created`
+Được phát khi backup hoàn thành thành công.
+
+**Payload:**
+```json
+{
+  "id": "uuid",
+  "fileName": "backup-2025-01-11T10-30-00.zip",
+  "fileSize": 1048576,
+  "backupType": "SCHEDULED", // SCHEDULED | MANUAL_API | MANUAL_DISCORD
+  "triggeredBy": "SYSTEM", // hoặc userId
+  "createdAt": "2025-01-11T10:30:00.000Z",
+  "timestamp": "ISO Date"
+}
+```
+
+### `backup:deleted`
+Được phát khi backup bị xóa (do vượt max count).
+
+**Payload:**
+```json
+{
+  "id": "uuid",
+  "fileName": "backup-old.zip",
+  "timestamp": "ISO Date"
+}
+```

@@ -1,0 +1,31 @@
+{
+    "success": {
+        "triggered": "Backup triggered successfully",
+        "list": "Backup list retrieved successfully",
+        "download_url": "Download URL retrieved successfully",
+        "completed": "Backup completed"
+    },
+    "errors": {
+        "invalid_key": "Invalid authentication key",
+        "backup_failed": "Backup failed, please try again",
+        "not_found": "Backup not found",
+        "download_failed": "Failed to get download URL",
+        "already_running": "Another backup process is already running"
+    },
+    "validation": {
+        "key_required": "Please enter authentication key",
+        "key_string": "Key must be a string",
+        "id_uuid": "Invalid backup ID"
+    },
+    "discord": {
+        "backup_started": "🔄 Backing up database...",
+        "backup_success": "✅ Backup completed!",
+        "backup_failed": "❌ Backup failed",
+        "invalid_key": "❌ Invalid key",
+        "no_backups": "📭 No backups found",
+        "backup_list_title": "📦 Backup List",
+        "enter_key": "Enter authentication key",
+        "enter_backup_id": "Enter backup ID",
+        "download_url_title": "📥 Download URL"
+    }
+}

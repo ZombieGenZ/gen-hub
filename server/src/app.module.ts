@@ -63,6 +63,9 @@ import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
 import { CozeModule } from './modules/coze/coze.module';
 import { CozePluginModule } from './modules/coze-plugin/coze-plugin.module';
 import { OrgChatModule } from './modules/org-chat/org-chat.module';
+import { GoogleDriveModule } from './modules/google-drive/google-drive.module';
+import { DatabaseBackupModule } from './modules/database-backup/database-backup.module';
+
 
 @Module({
   imports: [
@@ -137,6 +140,9 @@ import { OrgChatModule } from './modules/org-chat/org-chat.module';
 
     // Organizations
     OrganizationModule,
+
+    // Organization Chat with Agora
+    OrgChatModule,
 
     // Organization Update Request
     OrganizationUpdateRequestModule,
@@ -216,8 +222,11 @@ import { OrgChatModule } from './modules/org-chat/org-chat.module';
     // Coze AI Plugin APIs (Public)
     CozePluginModule,
 
-    // Organization Chat with Agora
-    OrgChatModule,
+    // Google Drive Integration
+    GoogleDriveModule,
+
+    // Database Backup
+    DatabaseBackupModule,
   ],
   controllers: [AppController],
   providers: [

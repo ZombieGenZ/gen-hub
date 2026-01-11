@@ -316,3 +316,6 @@
 | 313 | Contact List | GET | /admin/contact-lists/check/email | ❎ | ❎ | ❎ |
 | 314 | Contact List | GET | /admin/contact-lists/check/ip | ❎ | ❎ | ❎ |
 | 315 | Contact List | GET | /admin/contact-lists/check/region | ❎ | ❎ | ❎ |
+| 316 | Database Backup | POST | /admin/backups/trigger | ❎ | ❎ | ❎ |
+| 317 | Database Backup | GET | /admin/backups | ❎ | ❎ | ❎ |
+| 318 | Database Backup | POST | /admin/backups/{id}/download-url | ❎ | ❎ | ❎ |

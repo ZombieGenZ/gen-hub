@@ -4144,3 +4144,30 @@ model OrganizationChatCallParticipant {
   @@index([user_id])
   @@map("organization_chat_call_participants")
 }
+
+enum BackupType {
+  SCHEDULED
+  MANUAL_API
+  MANUAL_DISCORD
+}
+
+model DatabaseBackup {
+  id               String     @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  file_name        String
+  file_size        BigInt
+  drive_file_id    String
+  drive_file_url   String?    @db.Text
+  backup_type      BackupType @default(SCHEDULED)
+  compression_type String     @default("zip")
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  is_deleted Boolean   @default(false)
+  deleted_at DateTime?
+
+  triggered_by String?
+
+  @@index([created_at])
+  @@index([backup_type])
+  @@map("database_backups")
+}
