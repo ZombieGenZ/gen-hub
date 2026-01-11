@@ -128,7 +128,7 @@ export class AppConfigService implements OnModuleInit {
         minLimit: this.configService.get<number>('MIN_LIMIT') || 1,
       },
       enableAiAutoReply:
-        this.configService.get<boolean>('ENABLE_AI_AUTO_REPLY') ?? false,
+        this.configService.get<boolean>('ENABLE_AI_AUTO_REPLY') ?? true,
     };
   }
 
