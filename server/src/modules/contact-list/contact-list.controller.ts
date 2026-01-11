@@ -35,7 +35,7 @@ import {
     DeletedResponse,
 } from '../../common/responses/success.response';
 
-@ApiTags('Contact List (Blacklist/Whitelist)')
+@ApiTags('Contact List')
 @Controller('admin/contact-list')
 export class ContactListController {
     constructor(private readonly contactListService: ContactListService) { }
