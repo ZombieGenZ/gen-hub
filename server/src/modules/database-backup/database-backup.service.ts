@@ -169,7 +169,7 @@ export class DatabaseBackupService implements OnModuleInit {
                     file_name: zipFileName,
                     file_size: BigInt(uploadResult.fileSize),
                     drive_file_id: uploadResult.key,
-                    drive_file_url: uploadResult.url,
+                    drive_file_url: null,
                     backup_type: backupType,
                     compression_type: this.compressionType,
                     triggered_by: triggeredBy,
