@@ -3193,6 +3193,7 @@ enum PriorityCustomerSource {
   ACTIVE_CONTRACT
   PREVIOUS_CONTRACT
   WHITELIST
+  AI_POTENTIAL
 }
 
 model ContactConversation {

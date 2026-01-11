@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { I18nService } from 'nestjs-i18n';
-import { ContactStatus, ContactChannel, MessageSender, MessageType, ContactConversation } from '@prisma/client';
+import { ContactStatus, ContactChannel, MessageSender, MessageType, ContactConversation, PriorityCustomerSource } from '@prisma/client';
 
 import { ContactRepository } from './contact.repository';
 import {
@@ -195,13 +195,17 @@ export class ContactService implements OnModuleInit {
         // AI Processing: Gemini phân loại (nếu có) + Coze tư vấn
         let aiResponseContent: string | undefined;
         let isSpam = false;
+        let isPotentialCustomer = false;
 
         // Bước 1: Phân loại spam bằng Gemini (nếu Gemini được bật)
+        // Sử dụng prompt riêng cho webform
         if (enableAiReply && this.geminiService.enabled) {
             try {
-                const classification = await this.geminiService.classifyEmail(
+                const classification = await this.geminiService.classifyWebform(
                     dto.email,
                     dto.name,
+                    dto.company,
+                    dto.phone,
                     dto.subject || '',
                     dto.message,
                 );
@@ -210,11 +214,17 @@ export class ContactService implements OnModuleInit {
                     isSpam = true;
                     await this.repository.update(conversation.id, { status: ContactStatus.SPAM });
                     this.systemLogService.info('contact', 'ai_spam_detected', `AI detected spam: ${code}`, {
-                        metaData: { conversationId: conversation.id, confidence: classification.confidence },
+                        metaData: { conversationId: conversation.id, confidence: classification.confidence, category: classification.category },
                     });
                 }
+
+                // Lưu thông tin khách hàng tiềm năng
+                if (classification.isPotentialCustomer) {
+                    isPotentialCustomer = true;
+                    await this.repository.update(conversation.id, { is_priority_customer: true, priority_source: PriorityCustomerSource.AI_POTENTIAL });
+                }
             } catch (error) {
-                this.systemLogService.error('contact', 'gemini_classification', `Gemini classification failed: ${error}`, {
+                this.systemLogService.error('contact', 'gemini_classification', `Gemini webform classification failed: ${error}`, {
                     metaData: { conversationId: conversation.id, code },
                 });
                 // Không đánh dấu spam nếu lỗi, tiếp tục xử lý Coze

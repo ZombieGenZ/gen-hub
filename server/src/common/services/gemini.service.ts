@@ -2,8 +2,8 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { GoogleGenerativeAI, GenerativeModel, GenerateContentResult } from '@google/generative-ai';
 import { PrismaService } from '../../prisma/prisma.service';
-import { IEmailClassification, IAILogData } from '../interfaces';
-import { buildEmailClassificationPrompt } from '../prompts';
+import { IEmailClassification, IAILogData, IWebformClassification } from '../interfaces';
+import { buildEmailClassificationPrompt, buildWebformClassificationPrompt } from '../prompts';
 
 /**
  * GeminiService
@@ -188,6 +188,132 @@ export class GeminiService implements OnModuleInit {
                 category: 'unknown',
                 confidence: 0.3,
                 reason: 'Failed to parse AI response',
+            };
+        }
+    }
+
+    /**
+     * Phân loại form liên hệ từ website sử dụng Gemini AI
+     * Prompt riêng biệt cho webform, khác với email
+     */
+    async classifyWebform(
+        senderEmail: string,
+        senderName: string,
+        company: string | undefined,
+        phone: string | undefined,
+        subject: string,
+        message: string,
+    ): Promise<IWebformClassification> {
+        if (!this.isEnabled) {
+            this.logger.warn('Gemini AI is disabled, returning default classification');
+            return {
+                isUserContact: true,
+                isSpamOrAdvertising: false,
+                category: 'inquiry',
+                confidence: 0.5,
+                reason: 'AI classification disabled',
+                isPotentialCustomer: Boolean(company || phone),
+            };
+        }
+
+        const startTime = Date.now();
+        const prompt = buildWebformClassificationPrompt(senderEmail, senderName, company, phone, subject, message);
+
+        // Thử với các API keys khác nhau nếu có lỗi quota
+        let lastError: Error | null = null;
+        for (let attempt = 0; attempt < this.apiKeys.length; attempt++) {
+            try {
+                const model = this.getCurrentModel();
+                if (!model) {
+                    throw new Error('No valid Gemini model available');
+                }
+
+                const response = await model.generateContent(prompt);
+                const result = this.parseWebformClassificationResponse(response);
+                const durationMs = Date.now() - startTime;
+
+                // Async logging - không block response
+                setImmediate(() => {
+                    this.logAICall({
+                        model: this.modelName,
+                        purpose: 'webform_classification',
+                        inputText: prompt,
+                        outputText: response.response.text(),
+                        inputTokens: response.response.usageMetadata?.promptTokenCount,
+                        outputTokens: response.response.usageMetadata?.candidatesTokenCount,
+                        totalTokens: response.response.usageMetadata?.totalTokenCount,
+                        durationMs,
+                        isSuccess: true,
+                        metadata: { senderEmail, senderName, company, phone, subject: subject?.substring(0, 100) },
+                    });
+                });
+
+                return result;
+            } catch (error) {
+                lastError = error as Error;
+                const errorMessage = lastError.message.toLowerCase();
+
+                // Kiểm tra các lỗi liên quan đến quota/rate limit
+                if (
+                    errorMessage.includes('quota') ||
+                    errorMessage.includes('rate') ||
+                    errorMessage.includes('exceeded') ||
+                    errorMessage.includes('429')
+                ) {
+                    this.logger.warn(`API key ${this.currentKeyIndex + 1} quota exceeded, rotating...`);
+                    this.rotateToNextKey();
+                    continue;
+                }
+
+                // Lỗi khác - log và throw
+                setImmediate(() => {
+                    this.logAICall({
+                        model: this.modelName,
+                        purpose: 'webform_classification',
+                        inputText: prompt,
+                        durationMs: Date.now() - startTime,
+                        isSuccess: false,
+                        errorMessage: lastError?.message,
+                        metadata: { senderEmail, subject: subject?.substring(0, 100) },
+                    });
+                });
+                throw error;
+            }
+        }
+
+        // Tất cả API keys đều bị exhausted
+        this.logger.error('All Gemini API keys exhausted');
+        throw lastError || new Error('All Gemini API keys exhausted');
+    }
+
+    /**
+     * Parse response từ Gemini API cho phân loại webform
+     */
+    private parseWebformClassificationResponse(response: GenerateContentResult): IWebformClassification {
+        try {
+            const text = response.response.text();
+            // Xử lý trường hợp response có markdown code block
+            let jsonText = text.replace(/```json?\n?/g, '').replace(/```\n?/g, '').trim();
+
+            const parsed = JSON.parse(jsonText);
+
+            return {
+                isUserContact: Boolean(parsed.isUserContact),
+                isSpamOrAdvertising: Boolean(parsed.isSpamOrAdvertising),
+                category: parsed.category || 'unknown',
+                confidence: Number(parsed.confidence) || 0.5,
+                reason: parsed.reason || undefined,
+                isPotentialCustomer: Boolean(parsed.isPotentialCustomer),
+            };
+        } catch (error) {
+            this.logger.warn('Failed to parse Gemini webform response, using default classification');
+            return {
+                isUserContact: true,
+                isSpamOrAdvertising: false,
+                category: 'unknown',
+                confidence: 0.3,
+                reason: 'Failed to parse AI response',
+                isPotentialCustomer: false,
             };
         }
     }
