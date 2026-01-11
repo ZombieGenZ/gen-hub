@@ -1153,7 +1153,7 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
 
         const typeInput = new TextInputBuilder()
             .setCustomId('type')
-            .setLabel('Loại (EMAIL, EMAIL_DOMAIN, IP_V4, IP_V6, REGION_COUNTRY, REGION_CITY)')
+            .setLabel('Loại')
             .setPlaceholder('EMAIL, EMAIL_DOMAIN, IP_V4, IP_V6, REGION_COUNTRY, REGION_CITY')
             .setStyle(TextInputStyle.Short)
             .setRequired(true);
@@ -1195,7 +1195,7 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
 
         const typeInput = new TextInputBuilder()
             .setCustomId('type')
-            .setLabel('Loại (EMAIL, EMAIL_DOMAIN, IP_V4, IP_V6, REGION_COUNTRY, REGION_CITY)')
+            .setLabel('Loại')
             .setPlaceholder('EMAIL, EMAIL_DOMAIN, IP_V4, IP_V6, REGION_COUNTRY, REGION_CITY')
             .setStyle(TextInputStyle.Short)
             .setRequired(true);
