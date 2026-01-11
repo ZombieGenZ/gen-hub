@@ -174,7 +174,14 @@
 | 164 | Organization Rental Contracts | GET | /organizations/{orgId}/rental-contracts/{id}/logs | ❎ | ❎ | ❎ |
 | 165 | Organization Rental Contracts | POST | /organizations/{orgId}/rental-contracts/{id}/cancel | ❎ | ❎ | ❎ |
 | 166 | Organization Rental Contracts | DELETE | /organizations/{orgId}/rental-contracts/delete/many | ❎ | ❎ | ❎ |
-| 167 | User Notifications | GET | /user-notifications | ❎ | ❎ | ❎ |
+| 167 | Organization Warehouses | GET | /organizations/{orgId}/warehouses | ❎ | ❎ | ❎ |
+| 168 | Organization Warehouses | GET | /organizations/{orgId}/warehouses/{id} | ❎ | ❎ | ❎ |
+| 169 | Organization Warehouses | GET | /organizations/{orgId}/warehouses/{id}/layout | ❎ | ❎ | ❎ |
+| 170 | Organization Warehouses | PUT | /organizations/{orgId}/warehouses/{id} | ❎ | ❎ | ❎ |
+| 171 | Organization Warehouses | GET | /organizations/{orgId}/warehouses/{id}/racks | ❎ | ❎ | ❎ |
+| 172 | Organization Warehouses | GET | /organizations/{orgId}/warehouses/{id}/racks/{rackId}/shelves | ❎ | ❎ | ❎ |
+| 173 | Organization Warehouses | GET | /organizations/{orgId}/warehouses/{id}/racks/{rackId}/shelves/{shelfId}/blocks | ❎ | ❎ | ❎ |
+| 174 | User Notifications | GET | /user-notifications | ❎ | ❎ | ❎ |
 | 168 | User Notifications | GET | /user-notifications/unread-count | ❎ | ❎ | ❎ |
 | 169 | User Notifications | GET | /user-notifications/user/{userId} | ❎ | ❎ | ❎ |
 | 170 | User Notifications | POST | /user-notifications/send | ❎ | ❎ | ❎ |

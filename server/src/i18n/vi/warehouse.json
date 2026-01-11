@@ -18,7 +18,9 @@
         "template_locked": "Template kho đang được giữ chỗ bởi người khác",
         "not_shared_warehouse": "Kho này không cho phép thuê theo dãy",
         "no_permission": "Bạn không có quyền thực hiện thao tác này",
-        "organization_not_found": "Không tìm thấy tổ chức"
+        "organization_not_found": "Không tìm thấy tổ chức",
+        "rack_not_found": "Không tìm thấy kệ trong kho này",
+        "shelf_not_found": "Không tìm thấy tầng trong kho này"
     },
     "validation": {
         "name_required": "Tên kho không được để trống",

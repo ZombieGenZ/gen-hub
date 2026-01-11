@@ -63,7 +63,7 @@ import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
 import { CozeModule } from './modules/coze/coze.module';
 import { CozePluginModule } from './modules/coze-plugin/coze-plugin.module';
 import { OrgChatModule } from './modules/org-chat/org-chat.module';
-import { GoogleDriveModule } from './modules/google-drive/google-drive.module';
+import { BackblazeB2Module } from './modules/backblaze-b2/backblaze-b2.module';
 import { DatabaseBackupModule } from './modules/database-backup/database-backup.module';
 
 
@@ -222,8 +222,8 @@ import { DatabaseBackupModule } from './modules/database-backup/database-backup.
     // Coze AI Plugin APIs (Public)
     CozePluginModule,
 
-    // Google Drive Integration
-    GoogleDriveModule,
+    // Backblaze B2 + Cloudflare CDN Integration
+    BackblazeB2Module,
 
     // Database Backup
     DatabaseBackupModule,

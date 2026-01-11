@@ -8,7 +8,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { SchedulerRegistry } from '@nestjs/schedule';
 import { PrismaService } from '../../prisma/prisma.service';
-import { GoogleDriveService } from '../google-drive/google-drive.service';
+import { BackblazeB2Service } from '../backblaze-b2/backblaze-b2.service';
 import { RedisService } from '../redis/redis.service';
 import { WebsocketGateway } from '../websocket/websocket.gateway';
 import { I18nService } from 'nestjs-i18n';
@@ -24,8 +24,8 @@ import archiver from 'archiver';
 /**
  * Service xử lý sao lưu database tự động
  * - Export tất cả tables qua Prisma thành JSON
- * - Nén với mật khẩu
- * - Upload lên Google Drive
+ * - Nén thành file zip
+ * - Upload lên Backblaze B2 + Cloudflare CDN
  * - Scheduled backup và manual trigger
  */
 @Injectable()
@@ -44,7 +44,7 @@ export class DatabaseBackupService implements OnModuleInit {
     constructor(
         private readonly configService: ConfigService,
         private readonly prismaService: PrismaService,
-        private readonly googleDriveService: GoogleDriveService,
+        private readonly backblazeB2Service: BackblazeB2Service,
         private readonly redisService: RedisService,
         private readonly websocketGateway: WebsocketGateway,
         private readonly i18n: I18nService,
@@ -79,7 +79,7 @@ export class DatabaseBackupService implements OnModuleInit {
 
     async onModuleInit() {
         // Schedule backup định kỳ
-        if (this.intervalSeconds > 0 && this.googleDriveService.enabled) {
+        if (this.intervalSeconds > 0 && this.backblazeB2Service.enabled) {
             this.scheduleNextBackup();
             this.logger.log(
                 `📅 Scheduled backup every ${this.intervalSeconds} seconds`,
@@ -129,8 +129,8 @@ export class DatabaseBackupService implements OnModuleInit {
             return null;
         }
 
-        if (!this.googleDriveService.enabled) {
-            this.logger.warn('⚠️ Google Drive service is not enabled');
+        if (!this.backblazeB2Service.enabled) {
+            this.logger.warn('⚠️ Backblaze B2 service is not enabled');
             return null;
         }
 
@@ -153,14 +153,14 @@ export class DatabaseBackupService implements OnModuleInit {
             const zipFilePath = path.join(this.backupDir, zipFileName);
             await this.compressBackup(exportDir, zipFilePath);
 
-            // 4. Upload lên Google Drive
-            const uploadResult = await this.googleDriveService.uploadFile(
+            // 4. Upload lên Backblaze B2
+            const uploadResult = await this.backblazeB2Service.uploadFile(
                 zipFilePath,
                 zipFileName,
             );
 
             if (!uploadResult) {
-                throw new Error('Failed to upload backup to Google Drive');
+                throw new Error('Failed to upload backup to Backblaze B2');
             }
 
             // 5. Lưu vào database
@@ -168,8 +168,8 @@ export class DatabaseBackupService implements OnModuleInit {
                 data: {
                     file_name: zipFileName,
                     file_size: BigInt(uploadResult.fileSize),
-                    drive_file_id: uploadResult.fileId,
-                    drive_file_url: uploadResult.webViewLink,
+                    drive_file_id: uploadResult.key,
+                    drive_file_url: uploadResult.url,
                     backup_type: backupType,
                     compression_type: this.compressionType,
                     triggered_by: triggeredBy,
@@ -330,8 +330,8 @@ export class DatabaseBackupService implements OnModuleInit {
         this.logger.log(`🗑️ Cleaning up ${toDelete.length} old backups...`);
 
         for (const backup of toDelete) {
-            // Xóa trên Google Drive
-            await this.googleDriveService.deleteFile(backup.drive_file_id);
+            // Xóa trên Backblaze B2
+            await this.backblazeB2Service.deleteFile(backup.drive_file_id);
 
             // Soft delete trong database
             await this.prismaService.databaseBackup.update({
@@ -482,7 +482,7 @@ export class DatabaseBackupService implements OnModuleInit {
             );
         }
 
-        const url = await this.googleDriveService.getDownloadUrl(
+        const url = await this.backblazeB2Service.getDownloadUrl(
             backup.drive_file_id,
         );
 

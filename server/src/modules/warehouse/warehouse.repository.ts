@@ -256,4 +256,113 @@ export class WarehouseRepository {
     async transaction<T>(fn: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
         return this.prisma.$transaction(fn);
     }
+
+    /**
+     * Lấy danh sách racks của warehouse
+     */
+    async findRacksByWarehouseId(warehouseId: string) {
+        const rows = await this.prisma.row.findMany({
+            where: { warehouse_id: warehouseId, is_deleted: false },
+            include: {
+                racks: {
+                    where: { is_deleted: false },
+                    orderBy: { created_at: 'asc' },
+                },
+            },
+        });
+
+        // Flatten racks từ tất cả rows
+        return rows.flatMap((row) =>
+            row.racks.map((rack) => ({
+                ...rack,
+                row_id: row.id,
+                row_name: row.name,
+                row_code: row.code,
+            })),
+        );
+    }
+
+    /**
+     * Lấy danh sách shelves của rack
+     */
+    async findShelvesByRackId(rackId: string) {
+        const rack = await this.prisma.rack.findFirst({
+            where: { id: rackId, is_deleted: false },
+            include: {
+                shelves: {
+                    where: { is_deleted: false },
+                    orderBy: { created_at: 'asc' },
+                },
+            },
+        });
+
+        if (!rack) return null;
+
+        return rack.shelves.map((shelf) => ({
+            ...shelf,
+            rack_id: rack.id,
+            rack_name: rack.name,
+            rack_code: rack.code,
+        }));
+    }
+
+    /**
+     * Lấy danh sách blocks của shelf
+     */
+    async findBlocksByShelfId(shelfId: string) {
+        const shelf = await this.prisma.shelf.findFirst({
+            where: { id: shelfId, is_deleted: false },
+            include: {
+                blocks: {
+                    where: { is_deleted: false },
+                    orderBy: { created_at: 'asc' },
+                },
+            },
+        });
+
+        if (!shelf) return null;
+
+        return shelf.blocks.map((block) => ({
+            ...block,
+            shelf_id: shelf.id,
+            shelf_name: shelf.name,
+            shelf_code: shelf.code,
+        }));
+    }
+
+    /**
+     * Kiểm tra rack thuộc warehouse
+     */
+    async isRackInWarehouse(rackId: string, warehouseId: string): Promise<boolean> {
+        const rack = await this.prisma.rack.findFirst({
+            where: { id: rackId, is_deleted: false },
+            include: {
+                row: {
+                    select: { warehouse_id: true },
+                },
+            },
+        });
+
+        return rack?.row?.warehouse_id === warehouseId;
+    }
+
+    /**
+     * Kiểm tra shelf thuộc warehouse
+     */
+    async isShelfInWarehouse(shelfId: string, warehouseId: string): Promise<boolean> {
+        const shelf = await this.prisma.shelf.findFirst({
+            where: { id: shelfId, is_deleted: false },
+            include: {
+                rack: {
+                    include: {
+                        row: {
+                            select: { warehouse_id: true },
+                        },
+                    },
+                },
+            },
+        });
+
+        return shelf?.rack?.row?.warehouse_id === warehouseId;
+    }
 }

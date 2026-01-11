@@ -3,7 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { DatabaseBackupService } from './database-backup.service';
 import { DatabaseBackupController } from './database-backup.controller';
-import { GoogleDriveModule } from '../google-drive/google-drive.module';
+import { BackblazeB2Module } from '../backblaze-b2/backblaze-b2.module';
 import { RedisModule } from '../redis/redis.module';
 import { WebsocketModule } from '../websocket/websocket.module';
 import { PrismaModule } from '../../prisma/prisma.module';
@@ -12,7 +12,7 @@ import { PrismaModule } from '../../prisma/prisma.module';
     imports: [
         ConfigModule,
         ScheduleModule.forRoot(),
-        GoogleDriveModule,
+        BackblazeB2Module,
         RedisModule,
         WebsocketModule,
         PrismaModule,
