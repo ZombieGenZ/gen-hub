@@ -94,6 +94,7 @@ export class GoogleDriveService implements OnModuleInit {
                 await this.drive.files.get({
                     fileId: this.backupFolderId,
                     fields: 'id, name',
+                    supportsAllDrives: true,
                 });
                 this.logger.log(`✅ Backup folder verified: ${this.backupFolderId}`);
             } catch (folderError: unknown) {
@@ -160,6 +161,7 @@ export class GoogleDriveService implements OnModuleInit {
                 requestBody: fileMetadata,
                 media,
                 fields: 'id, name, size, webViewLink, webContentLink',
+                supportsAllDrives: true,
             });
 
             const file = response.data;
@@ -195,6 +197,8 @@ export class GoogleDriveService implements OnModuleInit {
                 q: `'${this.backupFolderId}' in parents and trashed = false`,
                 fields: 'files(id, name, size, createdTime, webViewLink, webContentLink)',
                 orderBy: 'createdTime desc',
+                supportsAllDrives: true,
+                includeItemsFromAllDrives: true,
             });
 
             return (response.data.files || []).map((file) => ({
@@ -219,7 +223,7 @@ export class GoogleDriveService implements OnModuleInit {
         if (!this.isEnabled) return false;
 
         try {
-            await this.drive.files.delete({ fileId });
+            await this.drive.files.delete({ fileId, supportsAllDrives: true });
             this.logger.log(`✅ Deleted file: ${fileId}`);
             return true;
         } catch (error) {
@@ -243,6 +247,7 @@ export class GoogleDriveService implements OnModuleInit {
                     emailAddress: email,
                 },
                 sendNotificationEmail: false,
+                supportsAllDrives: true,
             });
             this.logger.log(`✅ Shared file ${fileId} with ${email}`);
             return true;
@@ -273,6 +278,7 @@ export class GoogleDriveService implements OnModuleInit {
             const response = await this.drive.permissions.list({
                 fileId,
                 fields: 'permissions(id, type, emailAddress, role)',
+                supportsAllDrives: true,
             });
             return response.data.permissions || [];
         } catch (error) {
@@ -288,7 +294,7 @@ export class GoogleDriveService implements OnModuleInit {
         if (!this.isEnabled) return false;
 
         try {
-            await this.drive.permissions.delete({ fileId, permissionId });
+            await this.drive.permissions.delete({ fileId, permissionId, supportsAllDrives: true });
             return true;
         } catch (error) {
             this.logger.error(
@@ -310,6 +316,7 @@ export class GoogleDriveService implements OnModuleInit {
             const response = await this.drive.files.get({
                 fileId,
                 fields: 'webContentLink',
+                supportsAllDrives: true,
             });
             return response.data.webContentLink || null;
         } catch (error) {

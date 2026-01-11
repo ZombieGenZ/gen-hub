@@ -132,3 +132,26 @@ Khởi động server, nếu thấy log sau là thành công:
 ### Error: "Failed to upload backup"
 - Kiểm tra service account đã được share folder với quyền Editor chưa
 - Kiểm tra `GOOGLE_DRIVE_BACKUP_FOLDER_ID` chính xác
+
+### Error: "Service Accounts do not have storage quota"
+
+> **⚠️ QUAN TRỌNG**: Service Accounts không có storage quota riêng. Khi upload file, file sẽ được tạo với owner là Service Account - mà Service Account không có quota!
+
+**Giải pháp: Sử dụng Shared Drive (Team Drive)**
+
+1. Truy cập [Google Drive](https://drive.google.com/)
+2. Ở sidebar bên trái, click vào **Shared drives** (hoặc **Drive của nhóm**)
+3. Click **New** → Tạo Shared Drive mới (ví dụ: "Database Backups")
+4. Sau khi tạo xong, click vào biểu tượng **Manage members** (quản lý thành viên)
+5. Thêm **email của Service Account** với role **Content Manager** hoặc **Contributor**
+6. Copy **Folder ID** của Shared Drive từ URL:
+   ```
+   https://drive.google.com/drive/u/0/folders/SHARED_DRIVE_ID
+                                              ^^^^^^^^^^^^^^^
+                                              Đây là Shared Drive ID
+   ```
+7. Cập nhật `GOOGLE_DRIVE_BACKUP_FOLDER_ID` trong `.env` với Shared Drive ID này
+
+> **💡 Lưu ý**: 
+> - Shared Drive (Team Drive) chỉ có trong Google Workspace (không có trong tài khoản Google cá nhân miễn phí)
+> - Nếu bạn dùng tài khoản cá nhân, bạn cần tạo folder trong Drive của bạn và share với Service Account - file sẽ được tính vào quota của bạn
