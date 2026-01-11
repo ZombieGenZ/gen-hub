@@ -88,6 +88,28 @@ export class GoogleDriveService implements OnModuleInit {
             });
 
             this.drive = google.drive({ version: 'v3', auth });
+
+            // Kiểm tra folder có tồn tại và có quyền truy cập không
+            try {
+                await this.drive.files.get({
+                    fileId: this.backupFolderId,
+                    fields: 'id, name',
+                });
+                this.logger.log(`✅ Backup folder verified: ${this.backupFolderId}`);
+            } catch (folderError: unknown) {
+                const error = folderError as { code?: number };
+                if (error.code === 404) {
+                    this.logger.error(
+                        `❌ Backup folder not found or not accessible: ${this.backupFolderId}`,
+                    );
+                    this.logger.error(
+                        '   → Make sure you shared the folder with the Service Account email',
+                    );
+                    return;
+                }
+                throw folderError;
+            }
+
             this.isEnabled = true;
 
             this.logger.log('✅ Google Drive service initialized successfully');
