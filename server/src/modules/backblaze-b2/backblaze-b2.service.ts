@@ -18,6 +18,7 @@ export interface IB2UploadResult {
     key: string;
     fileName: string;
     fileSize: number;
+    friendlyUrl: string;
 }
 
 /**
@@ -135,12 +136,19 @@ export class BackblazeB2Service implements OnModuleInit {
                 }),
             );
 
+            // Build friendly URL từ B2_FRIENDLY_URL hoặc endpoint mặc định
+            const friendlyUrlBase = this.configService.get<string>('B2_FRIENDLY_URL', '');
+            const friendlyUrl = friendlyUrlBase
+                ? `${friendlyUrlBase}/${key}`
+                : '';
+
             this.logger.log(`✅ Uploaded file: ${name} (Key: ${key})`);
 
             return {
                 key,
                 fileName: name,
                 fileSize: fileStats.size,
+                friendlyUrl,
             };
         } catch (error) {
             this.logger.error(`❌ Failed to upload file ${filePath}:`, error);
