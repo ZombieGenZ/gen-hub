@@ -361,7 +361,11 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
 
             new SlashCommandBuilder()
                 .setName('backups')
-                .setDescription('Xem danh sách các bản sao lưu'),
+                .setDescription('Xem danh sách các bản sao lưu (yêu cầu key)')
+                .addStringOption(option =>
+                    option.setName('key')
+                        .setDescription('Key xác thực')
+                        .setRequired(false)),
 
             new SlashCommandBuilder()
                 .setName('backup-download')
@@ -1152,7 +1156,21 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
                 break;
             }
             case 'backups': {
+                const key = interaction.options.getString('key');
+
+                // Nếu không có key, hiển thị modal
+                if (!key) {
+                    await this.showBackupsKeyModal(interaction);
+                    break;
+                }
+
                 await interaction.reply({ content: '🔄 Đang lấy danh sách backups...', ephemeral: true });
+
+                const backupKey = this.configService.get<string>('BACKUP_TRIGGER_KEY');
+                if (key !== backupKey) {
+                    await interaction.editReply({ content: '❌ Key không hợp lệ!' });
+                    break;
+                }
 
                 const backups = await this.prismaService.databaseBackup.findMany({
                     where: { is_deleted: false },
@@ -1176,7 +1194,7 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
                     .setTitle('📦 Danh sách Backups')
                     .setColor('#00ff00')
                     .setDescription(backups.map((b, i) =>
-                        `**${i + 1}.** \`${b.id.substring(0, 8)}...\`\n` +
+                        `**${i + 1}.** \`${b.id}\`\n` +
                         `   📁 ${b.file_name}\n` +
                         `   📊 ${(Number(b.file_size) / 1024 / 1024).toFixed(2)} MB | ${b.backup_type}\n` +
                         `   🕐 ${b.created_at.toISOString()}`
@@ -1411,6 +1429,31 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
             .setCustomId('key')
             .setLabel('Backup Key')
             .setPlaceholder('Nhập key xác thực để trigger backup')
+            .setStyle(TextInputStyle.Short)
+            .setRequired(true)
+            .setMinLength(1)
+            .setMaxLength(100);
+
+        const row = new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(keyInput);
+        modal.addComponents(row);
+
+        await interaction.showModal(modal);
+    }
+
+    /**
+     * Hiện Modal nhập Key để xem danh sách Backups
+     */
+    private async showBackupsKeyModal(
+        interaction: ChatInputCommandInteraction,
+    ): Promise<void> {
+        const modal = new ModalBuilder()
+            .setCustomId('modal_backups')
+            .setTitle('🔐 Xác thực để xem Backups');
+
+        const keyInput = new TextInputBuilder()
+            .setCustomId('key')
+            .setLabel('Backup Key')
+            .setPlaceholder('Nhập key xác thực để xem danh sách backups')
             .setStyle(TextInputStyle.Short)
             .setRequired(true)
             .setMinLength(1)
@@ -1660,6 +1703,47 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
                 });
 
                 await interaction.editReply({ content: '📦 Backup đang chạy trong background. Kiểm tra kênh backup để xem kết quả.' });
+                return;
+            }
+            case 'modal_backups': {
+                const key = interaction.fields.getTextInputValue('key');
+                const backupKey = this.configService.get<string>('BACKUP_TRIGGER_KEY');
+
+                if (key !== backupKey) {
+                    await interaction.editReply({ content: '❌ Key không hợp lệ!' });
+                    return;
+                }
+
+                const backups = await this.prismaService.databaseBackup.findMany({
+                    where: { is_deleted: false },
+                    orderBy: { created_at: 'desc' },
+                    take: 10,
+                    select: {
+                        id: true,
+                        file_name: true,
+                        file_size: true,
+                        backup_type: true,
+                        created_at: true,
+                    },
+                });
+
+                if (backups.length === 0) {
+                    await interaction.editReply({ content: '📭 Chưa có bản backup nào.' });
+                    return;
+                }
+
+                const listEmbed = new EmbedBuilder()
+                    .setTitle('📦 Danh sách Backups')
+                    .setColor('#00ff00')
+                    .setDescription(backups.map((b, i) =>
+                        `**${i + 1}.** \`${b.id}\`\n` +
+                        `   📁 ${b.file_name}\n` +
+                        `   📊 ${(Number(b.file_size) / 1024 / 1024).toFixed(2)} MB | ${b.backup_type}\n` +
+                        `   🕐 ${b.created_at.toISOString()}`
+                    ).join('\n\n'))
+                    .setFooter({ text: 'Dùng /backup-download <id> <key> để tải' });
+
+                await interaction.editReply({ embeds: [listEmbed] });
                 return;
             }
             case 'modal_backup_download': {
