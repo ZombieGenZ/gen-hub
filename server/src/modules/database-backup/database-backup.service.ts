@@ -21,12 +21,8 @@ import {
 } from './interfaces';
 import * as fs from 'fs';
 import * as path from 'path';
-import archiver from 'archiver';
-import { ZipEncryptable } from 'archiver-zip-encryptable';
+import archiver from 'archiver-zip-encryptable';
 import { DiscordService } from '../discord/discord.service';
-
-// Đăng ký format zip-encryptable với archiver
-archiver.registerFormat('zip-encryptable', ZipEncryptable);
 
 /**
  * Service xử lý sao lưu database tự động
@@ -322,7 +318,7 @@ export class DatabaseBackupService implements OnModuleInit {
                 (archiveOptions as { password?: string }).password = this.backupPassword;
             }
 
-            const archive = archiver.create('zip-encryptable', archiveOptions);
+            const archive = archiver('zip-encryptable', archiveOptions);
 
             output.on('close', () => {
                 this.logger.log(
