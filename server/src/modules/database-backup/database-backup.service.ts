@@ -22,7 +22,11 @@ import {
 import * as fs from 'fs';
 import * as path from 'path';
 import archiver from 'archiver';
+import archiverZipEncrypted from 'archiver-zip-encrypted';
 import { DiscordService } from '../discord/discord.service';
+
+// Đăng ký format zip-encrypted cho mã hóa AES-256
+archiver.registerFormat('zip-encrypted', archiverZipEncrypted);
 
 /**
  * Service xử lý sao lưu database tự động
@@ -297,8 +301,7 @@ export class DatabaseBackupService implements OnModuleInit {
     }
 
     /**
-     * Nén thư mục backup với metadata comment
-     * Note: Password encryption tạm thời disabled do archiver-zip-encryptable có vấn đề tương thích
+     * Nén thư mục backup với mã hóa AES-256 và archive comment
      */
     private async compressBackup(
         sourceDir: string,
@@ -309,14 +312,23 @@ export class DatabaseBackupService implements OnModuleInit {
         return new Promise((resolve, reject) => {
             const output = fs.createWriteStream(outputPath);
 
-            // Sử dụng archiver tiêu chuẩn
-            const archive = archiver('zip', {
-                zlib: { level: 9 },
-            });
+            const appVersion = this.configService.get<string>('npm_package_version', '0.0.1');
+            const brandName = this.configService.get<string>('BRAND_NAME', 'GEN-HUB');
+            const createdAt = new Date().toISOString();
+
+            // Tạo archive với mã hóa AES-256 nếu có password
+            const archive = this.backupPassword
+                ? archiver.create('zip-encrypted', {
+                    zlib: { level: 9 },
+                    encryptionMethod: 'aes256',
+                    password: this.backupPassword,
+                } as archiver.ArchiverOptions)
+                : archiver('zip', { zlib: { level: 9 } });
 
             output.on('close', () => {
+                const encryptionStatus = this.backupPassword ? '🔐 Encrypted (AES-256)' : '⚠️ Not encrypted';
                 this.logger.log(
-                    `📦 Compressed: ${this.formatBytes(archive.pointer())}`,
+                    `📦 Compressed: ${this.formatBytes(archive.pointer())} | ${encryptionStatus}`,
                 );
                 resolve();
             });
@@ -330,17 +342,16 @@ export class DatabaseBackupService implements OnModuleInit {
             // Thêm tất cả files trong thư mục
             archive.directory(sourceDir, false);
 
-            // Thêm file metadata vào backup
-            const appVersion = this.configService.get<string>('npm_package_version', '0.0.1');
-            const brandName = this.configService.get<string>('BRAND_NAME', 'GEN-HUB');
+            // Tạo nội dung metadata
             const metadataContent = [
                 `========================================`,
                 `${brandName} - Database Backup`,
                 `========================================`,
-                `Created: ${new Date().toISOString()}`,
+                `Created: ${createdAt}`,
                 `Backup Type: ${backupType}`,
                 `App Version: ${appVersion}`,
                 `Triggered By: ${triggeredBy}`,
+                `Encryption: ${this.backupPassword ? 'AES-256' : 'None'}`,
                 `----------------------------------------`,
                 `© ${new Date().getFullYear()} ${brandName}. All rights reserved.`,
                 `This backup contains confidential data.`,
@@ -350,6 +361,21 @@ export class DatabaseBackupService implements OnModuleInit {
 
             // Thêm file BACKUP_INFO.txt vào archive
             archive.append(metadataContent, { name: 'BACKUP_INFO.txt' });
+
+            // Thêm ZIP archive comment (hiển thị khi xem properties của file zip)
+            const archiveComment = [
+                `${brandName} Database Backup`,
+                `Created: ${createdAt}`,
+                `Type: ${backupType}`,
+                `Version: ${appVersion}`,
+                `By: ${triggeredBy}`,
+                `© ${new Date().getFullYear()} ${brandName}`,
+            ].join(' | ');
+
+            // Đặt comment cho archive (không phải tất cả archiver đều hỗ trợ, nhưng thử)
+            if (typeof (archive as unknown as { setComment?: (c: string) => void }).setComment === 'function') {
+                (archive as unknown as { setComment: (c: string) => void }).setComment(archiveComment);
+            }
 
             archive.finalize();
         });
