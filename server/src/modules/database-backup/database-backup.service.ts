@@ -21,7 +21,7 @@ import {
 } from './interfaces';
 import * as fs from 'fs';
 import * as path from 'path';
-import archiver from 'archiver-zip-encryptable';
+import archiver from 'archiver';
 import { DiscordService } from '../discord/discord.service';
 
 /**
@@ -297,7 +297,8 @@ export class DatabaseBackupService implements OnModuleInit {
     }
 
     /**
-     * Nén thư mục backup với mật khẩu sử dụng archiver-zip-encryptable
+     * Nén thư mục backup với metadata comment
+     * Note: Password encryption tạm thời disabled do archiver-zip-encryptable có vấn đề tương thích
      */
     private async compressBackup(
         sourceDir: string,
@@ -308,21 +309,14 @@ export class DatabaseBackupService implements OnModuleInit {
         return new Promise((resolve, reject) => {
             const output = fs.createWriteStream(outputPath);
 
-            // Sử dụng archiver-zip-encryptable với mật khẩu
-            const archiveOptions: archiver.ArchiverOptions = {
+            // Sử dụng archiver tiêu chuẩn
+            const archive = archiver('zip', {
                 zlib: { level: 9 },
-            };
-
-            // Thêm mật khẩu nếu có cấu hình
-            if (this.backupPassword) {
-                (archiveOptions as { password?: string }).password = this.backupPassword;
-            }
-
-            const archive = archiver('zip-encryptable', archiveOptions);
+            });
 
             output.on('close', () => {
                 this.logger.log(
-                    `📦 Compressed${this.backupPassword ? ' (encrypted)' : ''}: ${this.formatBytes(archive.pointer())}`,
+                    `📦 Compressed: ${this.formatBytes(archive.pointer())}`,
                 );
                 resolve();
             });
@@ -336,10 +330,10 @@ export class DatabaseBackupService implements OnModuleInit {
             // Thêm tất cả files trong thư mục
             archive.directory(sourceDir, false);
 
-            // Thêm comment metadata vào file zip
+            // Thêm file metadata vào backup
             const appVersion = this.configService.get<string>('npm_package_version', '0.0.1');
             const brandName = this.configService.get<string>('BRAND_NAME', 'GEN-HUB');
-            const zipComment = [
+            const metadataContent = [
                 `========================================`,
                 `${brandName} - Database Backup`,
                 `========================================`,
@@ -347,7 +341,6 @@ export class DatabaseBackupService implements OnModuleInit {
                 `Backup Type: ${backupType}`,
                 `App Version: ${appVersion}`,
                 `Triggered By: ${triggeredBy}`,
-                `Encrypted: ${this.backupPassword ? 'Yes' : 'No'}`,
                 `----------------------------------------`,
                 `© ${new Date().getFullYear()} ${brandName}. All rights reserved.`,
                 `This backup contains confidential data.`,
@@ -355,8 +348,8 @@ export class DatabaseBackupService implements OnModuleInit {
                 `========================================`,
             ].join('\n');
 
-            // Ghi comment vào archive
-            (archive as { _archive?: { setComment?: (comment: string) => void } })._archive?.setComment?.(zipComment);
+            // Thêm file BACKUP_INFO.txt vào archive
+            archive.append(metadataContent, { name: 'BACKUP_INFO.txt' });
 
             archive.finalize();
         });
