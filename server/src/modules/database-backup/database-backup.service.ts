@@ -316,14 +316,28 @@ export class DatabaseBackupService implements OnModuleInit {
             const brandName = this.configService.get<string>('BRAND_NAME', 'GEN-HUB');
             const createdAt = new Date().toISOString();
 
+            // Tạo ZIP archive comment (hiển thị khi xem properties của file zip)
+            const archiveComment = [
+                `${brandName} Database Backup`,
+                `Created: ${createdAt}`,
+                `Type: ${backupType}`,
+                `Version: ${appVersion}`,
+                `By: ${triggeredBy}`,
+                `© ${new Date().getFullYear()} ${brandName}`,
+            ].join(' | ');
+
             // Tạo archive với mã hóa AES-256 nếu có password
+            // Lưu ý: zip-encrypted không hỗ trợ archive comment
             const archive = this.backupPassword
                 ? archiver.create('zip-encrypted', {
                     zlib: { level: 9 },
                     encryptionMethod: 'aes256',
                     password: this.backupPassword,
                 } as archiver.ArchiverOptions)
-                : archiver('zip', { zlib: { level: 9 } });
+                : archiver('zip', {
+                    zlib: { level: 9 },
+                    comment: archiveComment,
+                });
 
             output.on('close', () => {
                 const encryptionStatus = this.backupPassword ? '🔐 Encrypted (AES-256)' : '⚠️ Not encrypted';
@@ -361,21 +375,6 @@ export class DatabaseBackupService implements OnModuleInit {
 
             // Thêm file BACKUP_INFO.txt vào archive
             archive.append(metadataContent, { name: 'BACKUP_INFO.txt' });
-
-            // Thêm ZIP archive comment (hiển thị khi xem properties của file zip)
-            const archiveComment = [
-                `${brandName} Database Backup`,
-                `Created: ${createdAt}`,
-                `Type: ${backupType}`,
-                `Version: ${appVersion}`,
-                `By: ${triggeredBy}`,
-                `© ${new Date().getFullYear()} ${brandName}`,
-            ].join(' | ');
-
-            // Đặt comment cho archive (không phải tất cả archiver đều hỗ trợ, nhưng thử)
-            if (typeof (archive as unknown as { setComment?: (c: string) => void }).setComment === 'function') {
-                (archive as unknown as { setComment: (c: string) => void }).setComment(archiveComment);
-            }
 
             archive.finalize();
         });
