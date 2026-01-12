@@ -6,12 +6,12 @@ import { ArchiveBoxIcon, CurrencyDollarIcon, UserGroupIcon, ArrowRightIcon } fro
 export function PrimeNestAbout() {
     return (
         <section id="about" className="py-20 bg-white text-slate-900">
-            <div className="max-w-7xl mx-auto px-6">
+            <div className="max-w-[1440px] mx-auto px-6">
                 <div className="grid lg:grid-cols-2 gap-12 items-center">
                     {/* Image Section */}
                     <div className="relative">
                         <div className="relative rounded-3xl overflow-hidden bg-slate-100 border border-slate-200 h-90 min-h-[500px]">
-                            <img src="./assets/hero.png" alt="About GenHub" className="w-full h-full object-cover" />
+                            <img src="./assets/unnamed.jpg  " alt="About GenHub" className="w-full h-full object-cover" />
                         </div>
                     </div>
 

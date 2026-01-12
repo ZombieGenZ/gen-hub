@@ -19,7 +19,7 @@ export function PrimeNestHeader({ isLogin, user }: HeaderProps) {
 
     return (
         <header className="sticky top-0 w-full z-50 bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800">
-            <div className="w-full max-w-[1440px] mx-auto px-8 h-[72px] flex items-center justify-between">
+            <div className="w-full max-w-[1440px] mx-auto px-8 lg:px-0 h-[80px] flex items-center justify-between">
                 {/* Logo */}
                 <Link href="/" className="flex items-center gap-3 relative z-50 shrink-0">
                     <img src="/assets/GenHubv2.svg" alt="GenHub" className="h-9 w-auto" />

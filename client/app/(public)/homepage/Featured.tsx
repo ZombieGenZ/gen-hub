@@ -20,7 +20,7 @@ export function PrimeNestFeatured() {
 
     return (
         <section id="properties" className="py-24 bg-white text-slate-900">
-            <div className="max-w-7xl mx-auto px-6">
+            <div className="max-w-[1440px] mx-auto px-6">
                 {/* Header */}
                 <div className="text-center mb-10">
                     <h2 className="text-3xl md:text-4xl font-bold mb-3">Kho Nổi Bật</h2>
