@@ -1952,3 +1952,30 @@ socket.on('contact:conversation:reopened', (data) => {
   "timestamp": "ISO Date"
 }
 ```
+
+---
+
+## 📱 Discord Integration
+
+### Discord Backup Notifications
+
+Khi backup hoàn thành hoặc thất bại, hệ thống sẽ gửi notification vào channel Discord được cấu hình trong `DISCORD_BACKUP_CHANNEL_ID`.
+
+**Notification thành công:**
+- Màu: Xanh lá (#00ff00)
+- Thông tin: File name, size, duration, backup type, triggered by
+
+**Notification thất bại:**
+- Màu: Đỏ (#ff0000)
+- Thông tin: Backup type, triggered by, error message
+
+### Discord Commands cho Backup
+
+| Command | Mô tả | Yêu cầu Role |
+|---------|-------|--------------|
+| `/backup <key>` | Trigger backup database | DISCORD_BACKUP_ROLE_IDS |
+| `/backups` | Xem danh sách backups | DISCORD_BACKUP_ROLE_IDS |
+| `/backup-download <id> <key>` | Lấy URL tải backup | DISCORD_BACKUP_ROLE_IDS |
+
+> [!NOTE]
+> Các commands chỉ hiển thị với users có role trong `DISCORD_BACKUP_ROLE_IDS`

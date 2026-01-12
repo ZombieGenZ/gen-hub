@@ -49,6 +49,7 @@
     "@types/pg": "^8.16.0",
     "agora-access-token": "^2.0.4",
     "archiver": "^7.0.1",
+    "archiver-zip-encryptable": "^1.0.10",
     "bull": "^4.16.5",
     "bullmq": "^5.66.0",
     "class-transformer": "^0.5.1",

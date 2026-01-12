@@ -56,6 +56,8 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
     private readonly autoSupportChannelIds: string[];
     private readonly ignoredCategoryId: string;
     private readonly staffRoleIds: string[];
+    private readonly backupChannelId: string;
+    private readonly backupRoleIds: string[];
 
     // Callback để xử lý reply từ Discord
     private onReplyCallback: DiscordReplyCallback | null = null;
@@ -85,6 +87,11 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
         // Danh sách role IDs của staff (bypass AI auto-reply)
         const staffRoleIdsStr = this.configService.get<string>('DISCORD_STAFF_REPLY_ROLE_IDS') || '';
         this.staffRoleIds = staffRoleIdsStr.split(',').map(id => id.trim()).filter(id => id);
+
+        // Cấu hình cho backup notifications
+        this.backupChannelId = this.configService.get<string>('DISCORD_BACKUP_CHANNEL_ID') || '';
+        const backupRoleIdsStr = this.configService.get<string>('DISCORD_BACKUP_ROLE_IDS') || '';
+        this.backupRoleIds = backupRoleIdsStr.split(',').map(id => id.trim()).filter(id => id);
 
         if (this.isEnabled) {
             if (!this.botToken || !this.guildId || !this.categoryId) {
@@ -1713,6 +1720,111 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
             this.logger.error(`Auto-support error in channel ${channel.id}:`, error);
             await message.react('❌').catch(() => { });
         }
+    }
+
+    /**
+     * Gửi notification backup đến Discord channel
+     * @param success Backup thành công hay thất bại
+     * @param data Thông tin backup
+     */
+    async sendBackupNotification(
+        success: boolean,
+        data: {
+            id?: string;
+            fileName?: string;
+            fileSize?: number;
+            backupType?: string;
+            triggeredBy?: string;
+            duration?: string;
+            error?: string;
+        },
+    ): Promise<boolean> {
+        if (!this.enabled || !this.backupChannelId || !this.guild) {
+            return false;
+        }
+
+        try {
+            const channel = this.guild.channels.cache.get(this.backupChannelId) as TextChannel;
+            if (!channel) {
+                this.logger.warn(`Backup notification channel ${this.backupChannelId} not found`);
+                return false;
+            }
+
+            const brandName = this.configService.get<string>('BRAND_NAME', 'GEN-HUB');
+
+            if (success) {
+                const embed = new EmbedBuilder()
+                    .setColor(0x00ff00)
+                    .setTitle('✅ Database Backup Hoàn Thành')
+                    .setDescription(`Backup database đã được tạo thành công!`)
+                    .addFields(
+                        { name: '📁 File', value: data.fileName || 'N/A', inline: true },
+                        { name: '📊 Kích thước', value: this.formatBytes(data.fileSize || 0), inline: true },
+                        { name: '⏱️ Thời gian', value: `${data.duration || '0'}s`, inline: true },
+                        { name: '📌 Loại', value: data.backupType || 'N/A', inline: true },
+                        { name: '👤 Triggered By', value: data.triggeredBy || 'SYSTEM', inline: true },
+                        { name: '🔐 Mã hóa', value: 'Có', inline: true },
+                    )
+                    .setFooter({ text: `${brandName} - Backup System` })
+                    .setTimestamp();
+
+                if (data.id) {
+                    embed.addFields({ name: '🆔 Backup ID', value: `\`${data.id}\`` });
+                }
+
+                await channel.send({ embeds: [embed] });
+            } else {
+                const embed = new EmbedBuilder()
+                    .setColor(0xff0000)
+                    .setTitle('❌ Database Backup Thất Bại')
+                    .setDescription(`Backup database đã thất bại!`)
+                    .addFields(
+                        { name: '📌 Loại', value: data.backupType || 'N/A', inline: true },
+                        { name: '👤 Triggered By', value: data.triggeredBy || 'SYSTEM', inline: true },
+                        { name: '❗ Lỗi', value: data.error || 'Unknown error' },
+                    )
+                    .setFooter({ text: `${brandName} - Backup System` })
+                    .setTimestamp();
+
+                await channel.send({ embeds: [embed] });
+            }
+
+            return true;
+        } catch (error) {
+            this.logger.error('Failed to send backup notification:', error);
+            return false;
+        }
+    }
+
+    /**
+     * Kiểm tra user có role được phép thực hiện backup commands
+     * @param member Discord member
+     */
+    hasBackupRole(member: { roles: { cache: Map<string, { id: string }> } } | null): boolean {
+        if (!member) return false;
+        if (this.backupRoleIds.length === 0) return true; // Không có role nào = cho phép tất cả
+
+        return this.backupRoleIds.some(roleId =>
+            member.roles.cache.has(roleId)
+        );
+    }
+
+    /**
+     * Format bytes sang human readable
+     */
+    private formatBytes(bytes: number): string {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    /**
+     * Getter cho backup role IDs (để sử dụng trong slash command permissions)
+     */
+    get getBackupRoleIds(): string[] {
+        return this.backupRoleIds;
     }
 }
 

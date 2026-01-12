@@ -4,6 +4,8 @@ import {
     OnModuleInit,
     BadRequestException,
     NotFoundException,
+    Inject,
+    forwardRef,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SchedulerRegistry } from '@nestjs/schedule';
@@ -19,7 +21,8 @@ import {
 } from './interfaces';
 import * as fs from 'fs';
 import * as path from 'path';
-import archiver from 'archiver';
+import archiver from 'archiver-zip-encryptable';
+import { DiscordService } from '../discord/discord.service';
 
 /**
  * Service xử lý sao lưu database tự động
@@ -49,6 +52,8 @@ export class DatabaseBackupService implements OnModuleInit {
         private readonly websocketGateway: WebsocketGateway,
         private readonly i18n: I18nService,
         private readonly schedulerRegistry: SchedulerRegistry,
+        @Inject(forwardRef(() => DiscordService))
+        private readonly discordService: DiscordService,
     ) {
         this.backupDir = path.join(process.cwd(), 'database', 'backups');
         this.triggerKey = this.configService.get<string>('BACKUP_TRIGGER_KEY', '');
@@ -151,7 +156,7 @@ export class DatabaseBackupService implements OnModuleInit {
             // 3. Nén thư mục
             const zipFileName = `backup-${timestamp}.${this.compressionType}`;
             const zipFilePath = path.join(this.backupDir, zipFileName);
-            await this.compressBackup(exportDir, zipFilePath);
+            await this.compressBackup(exportDir, zipFilePath, backupType, triggeredBy);
 
             // 4. Upload lên Backblaze B2
             const uploadResult = await this.backblazeB2Service.uploadFile(
@@ -202,6 +207,16 @@ export class DatabaseBackupService implements OnModuleInit {
                 `✅ Backup completed: ${zipFileName} (${duration}s, ${this.formatBytes(uploadResult.fileSize)})`,
             );
 
+            // 10. Gửi Discord notification
+            await this.discordService.sendBackupNotification(true, {
+                id: backup.id,
+                fileName: backup.file_name,
+                fileSize: Number(backup.file_size),
+                backupType: backup.backup_type,
+                triggeredBy: backup.triggered_by || 'SYSTEM',
+                duration,
+            });
+
             return {
                 id: backup.id,
                 fileName: backup.file_name,
@@ -219,6 +234,13 @@ export class DatabaseBackupService implements OnModuleInit {
             if (fs.existsSync(exportDir)) {
                 fs.rmSync(exportDir, { recursive: true, force: true });
             }
+
+            // Gửi Discord notification về lỗi
+            await this.discordService.sendBackupNotification(false, {
+                backupType,
+                triggeredBy,
+                error: error instanceof Error ? error.message : 'Unknown error',
+            });
 
             return null;
         } finally {
@@ -275,21 +297,32 @@ export class DatabaseBackupService implements OnModuleInit {
     }
 
     /**
-     * Nén thư mục backup với mật khẩu
+     * Nén thư mục backup với mật khẩu sử dụng archiver-zip-encryptable
      */
     private async compressBackup(
         sourceDir: string,
         outputPath: string,
+        backupType: 'SCHEDULED' | 'MANUAL_API' | 'MANUAL_DISCORD',
+        triggeredBy: string,
     ): Promise<void> {
         return new Promise((resolve, reject) => {
             const output = fs.createWriteStream(outputPath);
-            const archive = archiver('zip', {
+
+            // Sử dụng archiver-zip-encryptable với mật khẩu
+            const archiveOptions: archiver.ArchiverOptions = {
                 zlib: { level: 9 },
-            });
+            };
+
+            // Thêm mật khẩu nếu có cấu hình
+            if (this.backupPassword) {
+                (archiveOptions as { password?: string }).password = this.backupPassword;
+            }
+
+            const archive = archiver.create('zip-encryptable', archiveOptions);
 
             output.on('close', () => {
                 this.logger.log(
-                    `📦 Compressed: ${this.formatBytes(archive.pointer())}`,
+                    `📦 Compressed${this.backupPassword ? ' (encrypted)' : ''}: ${this.formatBytes(archive.pointer())}`,
                 );
                 resolve();
             });
@@ -303,13 +336,27 @@ export class DatabaseBackupService implements OnModuleInit {
             // Thêm tất cả files trong thư mục
             archive.directory(sourceDir, false);
 
-            // Thêm metadata file với password hint
-            if (this.backupPassword) {
-                archive.append(
-                    `This backup is password protected.\nContact admin for the password.\nCreated: ${new Date().toISOString()}`,
-                    { name: 'README.txt' },
-                );
-            }
+            // Thêm comment metadata vào file zip
+            const appVersion = this.configService.get<string>('npm_package_version', '0.0.1');
+            const brandName = this.configService.get<string>('BRAND_NAME', 'GEN-HUB');
+            const zipComment = [
+                `========================================`,
+                `${brandName} - Database Backup`,
+                `========================================`,
+                `Created: ${new Date().toISOString()}`,
+                `Backup Type: ${backupType}`,
+                `App Version: ${appVersion}`,
+                `Triggered By: ${triggeredBy}`,
+                `Encrypted: ${this.backupPassword ? 'Yes' : 'No'}`,
+                `----------------------------------------`,
+                `© ${new Date().getFullYear()} ${brandName}. All rights reserved.`,
+                `This backup contains confidential data.`,
+                `Unauthorized access is strictly prohibited.`,
+                `========================================`,
+            ].join('\n');
+
+            // Ghi comment vào archive
+            (archive as { _archive?: { setComment?: (comment: string) => void } })._archive?.setComment?.(zipComment);
 
             archive.finalize();
         });
@@ -319,36 +366,52 @@ export class DatabaseBackupService implements OnModuleInit {
      * Cleanup các backups cũ khi vượt quá max
      */
     private async cleanupOldBackups(): Promise<void> {
-        const backups = await this.prismaService.databaseBackup.findMany({
-            where: { is_deleted: false },
-            orderBy: { created_at: 'desc' },
-        });
-
-        if (backups.length <= this.maxBackups) return;
-
-        const toDelete = backups.slice(this.maxBackups);
-        this.logger.log(`🗑️ Cleaning up ${toDelete.length} old backups...`);
-
-        for (const backup of toDelete) {
-            // Xóa trên Backblaze B2
-            await this.backblazeB2Service.deleteFile(backup.drive_file_id);
-
-            // Soft delete trong database
-            await this.prismaService.databaseBackup.update({
-                where: { id: backup.id },
-                data: {
-                    is_deleted: true,
-                    deleted_at: new Date(),
-                    is_active: false,
-                },
+        try {
+            const backups = await this.prismaService.databaseBackup.findMany({
+                where: { is_deleted: false },
+                orderBy: { created_at: 'desc' },
             });
 
-            // Emit event
-            this.websocketGateway.server.to('admin_room').emit('backup:deleted', {
-                id: backup.id,
-                fileName: backup.file_name,
-                timestamp: new Date().toISOString(),
-            });
+            if (backups.length <= this.maxBackups) return;
+
+            const toDelete = backups.slice(this.maxBackups);
+            this.logger.log(`🗑️ Cleaning up ${toDelete.length} old backups...`);
+
+            for (const backup of toDelete) {
+                try {
+                    // Xóa trên Backblaze B2
+                    const deleteResult = await this.backblazeB2Service.deleteFile(backup.drive_file_id);
+
+                    if (!deleteResult) {
+                        this.logger.warn(`⚠️ Failed to delete file ${backup.drive_file_id} from B2, but will mark as deleted in DB`);
+                    }
+
+                    // Soft delete trong database
+                    await this.prismaService.databaseBackup.update({
+                        where: { id: backup.id },
+                        data: {
+                            is_deleted: true,
+                            deleted_at: new Date(),
+                            is_active: false,
+                        },
+                    });
+
+                    // Emit event
+                    this.websocketGateway.server.to('admin_room').emit('backup:deleted', {
+                        id: backup.id,
+                        fileName: backup.file_name,
+                        timestamp: new Date().toISOString(),
+                    });
+
+                    this.logger.log(`🗑️ Deleted old backup: ${backup.file_name}`);
+                } catch (deleteError) {
+                    this.logger.error(`❌ Failed to cleanup backup ${backup.id}:`, deleteError);
+                    // Tiếp tục xử lý các file khác
+                    continue;
+                }
+            }
+        } catch (error) {
+            this.logger.error('❌ Failed to cleanup old backups:', error);
         }
     }
 
