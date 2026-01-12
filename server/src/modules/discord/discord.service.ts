@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, OnModuleDestroy, Inject, forwardRef } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
     Client,
@@ -30,6 +30,7 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import { CozeService } from '../coze/coze.service';
 import { IDiscordChannelResult, DiscordReplyCallback, IDiscordActionCallback } from './interfaces';
+import { DatabaseBackupService } from '../database-backup/database-backup.service';
 
 /**
  * DiscordService
@@ -66,6 +67,8 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
         private readonly configService: ConfigService,
         private readonly prismaService: PrismaService,
         private readonly cozeService: CozeService,
+        @Inject(forwardRef(() => DatabaseBackupService))
+        private readonly databaseBackupService: DatabaseBackupService,
     ) {
         // Kiểm tra xem Discord integration có được bật không
         const enabledValue = this.configService.get<string>('DISCORD_ENABLED');
@@ -1131,6 +1134,20 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
                     break;
                 }
 
+                // Trigger backup trong background
+                this.databaseBackupService.runBackup(
+                    interaction.user.id,
+                    'MANUAL_DISCORD',
+                ).then(result => {
+                    if (result) {
+                        this.logger.log(`Discord backup triggered by ${interaction.user.tag}: ${result.fileName}`);
+                    } else {
+                        this.logger.warn(`Discord backup triggered by ${interaction.user.tag} failed or was skipped`);
+                    }
+                }).catch(err => {
+                    this.logger.error(`Discord backup error:`, err);
+                });
+
                 await interaction.editReply({ content: '📦 Backup đang chạy trong background. Kiểm tra kênh backup để xem kết quả.' });
                 break;
             }
@@ -1627,6 +1644,20 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
                     await interaction.editReply({ content: '❌ Key không hợp lệ!' });
                     return;
                 }
+
+                // Trigger backup trong background
+                this.databaseBackupService.runBackup(
+                    interaction.user.id,
+                    'MANUAL_DISCORD',
+                ).then(result => {
+                    if (result) {
+                        this.logger.log(`Discord backup triggered via modal by ${interaction.user.tag}: ${result.fileName}`);
+                    } else {
+                        this.logger.warn(`Discord backup triggered via modal by ${interaction.user.tag} failed or was skipped`);
+                    }
+                }).catch(err => {
+                    this.logger.error(`Discord backup error (modal):`, err);
+                });
 
                 await interaction.editReply({ content: '📦 Backup đang chạy trong background. Kiểm tra kênh backup để xem kết quả.' });
                 return;
