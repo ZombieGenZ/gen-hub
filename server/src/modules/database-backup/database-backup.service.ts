@@ -39,11 +39,13 @@ archiver.registerFormat('zip-encrypted', archiverZipEncrypted);
 export class DatabaseBackupService implements OnModuleInit {
     private readonly logger = new Logger(DatabaseBackupService.name);
     private readonly backupDir: string;
-    private readonly triggerKey: string;
+    private readonly secretKey: string;
     private readonly maxBackups: number;
     private readonly intervalSeconds: number;
     private readonly compressionType: string;
     private readonly backupPassword: string;
+    private readonly backupFolderName: string;
+    private readonly downloadUrlTtlSeconds: number;
     private readonly cacheTtl: number;
     private readonly listCacheTtl: number;
     private isBackupRunning = false;
@@ -60,7 +62,7 @@ export class DatabaseBackupService implements OnModuleInit {
         private readonly discordService: DiscordService,
     ) {
         this.backupDir = path.join(process.cwd(), 'database', 'backups');
-        this.triggerKey = this.configService.get<string>('BACKUP_TRIGGER_KEY', '');
+        this.secretKey = this.configService.get<string>('BACKUP_SECRET_KEY', '');
         this.maxBackups = this.configService.get<number>('BACKUP_MAX_COUNT', 30);
         this.intervalSeconds = this.configService.get<number>(
             'BACKUP_INTERVAL_SECONDS',
@@ -71,6 +73,10 @@ export class DatabaseBackupService implements OnModuleInit {
             'zip',
         );
         this.backupPassword = this.configService.get<string>('BACKUP_PASSWORD', '');
+        this.backupFolderName = this.configService.get<string>('BACKUP_FOLDER_NAME', 'backups');
+        // Chuyển TTL từ ms sang giây
+        const downloadUrlTtlMs = this.configService.get<number>('BACKUP_DOWNLOAD_URL_TTL_MS', 600000);
+        this.downloadUrlTtlSeconds = Math.floor(downloadUrlTtlMs / 1000);
         this.cacheTtl = this.configService.get<number>(
             'REDIS_BACKUP_CACHE_TTL',
             300,
@@ -162,10 +168,11 @@ export class DatabaseBackupService implements OnModuleInit {
             const zipFilePath = path.join(this.backupDir, zipFileName);
             await this.compressBackup(exportDir, zipFilePath, backupType, triggeredBy);
 
-            // 4. Upload lên Backblaze B2
+            // 4. Upload lên Backblaze B2 (sử dụng folder name từ config)
             const uploadResult = await this.backblazeB2Service.uploadFile(
                 zipFilePath,
                 zipFileName,
+                this.backupFolderName,
             );
 
             if (!uploadResult) {
@@ -301,7 +308,8 @@ export class DatabaseBackupService implements OnModuleInit {
     }
 
     /**
-     * Nén thư mục backup với mã hóa AES-256 và archive comment
+     * Nén thư mục backup với mã hóa AES-256
+     * Thông tin metadata được lưu trong file BACKUP_INFO.txt thay vì archive comment
      */
     private async compressBackup(
         sourceDir: string,
@@ -316,18 +324,7 @@ export class DatabaseBackupService implements OnModuleInit {
             const brandName = this.configService.get<string>('BRAND_NAME', 'GEN-HUB');
             const createdAt = new Date().toISOString();
 
-            // Tạo ZIP archive comment (hiển thị khi xem properties của file zip)
-            const archiveComment = [
-                `${brandName} Database Backup`,
-                `Created: ${createdAt}`,
-                `Type: ${backupType}`,
-                `Version: ${appVersion}`,
-                `By: ${triggeredBy}`,
-                `© ${new Date().getFullYear()} ${brandName}`,
-            ].join(' | ');
-
             // Tạo archive với mã hóa AES-256 nếu có password
-            // Lưu ý: zip-encrypted không hỗ trợ archive comment
             const archive = this.backupPassword
                 ? archiver.create('zip-encrypted', {
                     zlib: { level: 9 },
@@ -336,7 +333,6 @@ export class DatabaseBackupService implements OnModuleInit {
                 } as archiver.ArchiverOptions)
                 : archiver('zip', {
                     zlib: { level: 9 },
-                    comment: archiveComment,
                 });
 
             output.on('close', () => {
@@ -442,7 +438,7 @@ export class DatabaseBackupService implements OnModuleInit {
         lang: string,
     ): Promise<IBackupResult> {
         // Validate key
-        if (key !== this.triggerKey) {
+        if (key !== this.secretKey) {
             throw new BadRequestException(
                 this.i18n.t('database-backup.errors.invalid_key', { lang }),
             );
@@ -466,7 +462,7 @@ export class DatabaseBackupService implements OnModuleInit {
         key: string,
         discordUserId: string,
     ): Promise<IBackupResult | null> {
-        if (key !== this.triggerKey) {
+        if (key !== this.secretKey) {
             return null;
         }
 
@@ -481,9 +477,19 @@ export class DatabaseBackupService implements OnModuleInit {
      */
     async listBackups(
         query: IBackupListQuery,
+        lang: string,
     ): Promise<{ items: IBackupListItem[]; total: number }> {
-        const { limit = 10, offset = 0, keywords } = query;
+        const { key, limit = 10, offset = 0, keywords } = query;
+
+        // Validate key
+        if (key !== this.secretKey) {
+            throw new BadRequestException(
+                this.i18n.t('database-backup.errors.invalid_key', { lang }),
+            );
+        }
+
         const cacheKey = `backup:list:${limit}:${offset}:${keywords || ''}`;
+
 
         // Check cache
         const cached = await this.redisService.get(cacheKey);
@@ -547,7 +553,7 @@ export class DatabaseBackupService implements OnModuleInit {
         lang: string,
     ): Promise<string> {
         // Validate key
-        if (key !== this.triggerKey) {
+        if (key !== this.secretKey) {
             throw new BadRequestException(
                 this.i18n.t('database-backup.errors.invalid_key', { lang }),
             );
@@ -563,8 +569,10 @@ export class DatabaseBackupService implements OnModuleInit {
             );
         }
 
+        // Tạo pre-signed URL với TTL từ config
         const url = await this.backblazeB2Service.getDownloadUrl(
             backup.drive_file_id,
+            this.downloadUrlTtlSeconds,
         );
 
         if (!url) {

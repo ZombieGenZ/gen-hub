@@ -31,6 +31,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { CozeService } from '../coze/coze.service';
 import { IDiscordChannelResult, DiscordReplyCallback, IDiscordActionCallback } from './interfaces';
 import { DatabaseBackupService } from '../database-backup/database-backup.service';
+import { BackblazeB2Service } from '../backblaze-b2/backblaze-b2.service';
 
 /**
  * DiscordService
@@ -59,6 +60,7 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
     private readonly staffRoleIds: string[];
     private readonly backupChannelId: string;
     private readonly backupRoleIds: string[];
+    private readonly downloadUrlTtlSeconds: number;
 
     // Callback để xử lý reply từ Discord
     private onReplyCallback: DiscordReplyCallback | null = null;
@@ -69,6 +71,7 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
         private readonly cozeService: CozeService,
         @Inject(forwardRef(() => DatabaseBackupService))
         private readonly databaseBackupService: DatabaseBackupService,
+        private readonly backblazeB2Service: BackblazeB2Service,
     ) {
         // Kiểm tra xem Discord integration có được bật không
         const enabledValue = this.configService.get<string>('DISCORD_ENABLED');
@@ -95,6 +98,10 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
         this.backupChannelId = this.configService.get<string>('DISCORD_BACKUP_CHANNEL_ID') || '';
         const backupRoleIdsStr = this.configService.get<string>('DISCORD_BACKUP_ROLE_IDS') || '';
         this.backupRoleIds = backupRoleIdsStr.split(',').map(id => id.trim()).filter(id => id);
+
+        // TTL cho pre-signed URL backup download (chuyển từ ms sang giây)
+        const downloadUrlTtlMs = this.configService.get<number>('BACKUP_DOWNLOAD_URL_TTL_MS', 600000);
+        this.downloadUrlTtlSeconds = Math.floor(downloadUrlTtlMs / 1000);
 
         if (this.isEnabled) {
             if (!this.botToken || !this.guildId || !this.categoryId) {
@@ -1132,7 +1139,7 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
 
                 await interaction.reply({ content: '🔄 Đang trigger backup...', ephemeral: true });
 
-                const backupKey = this.configService.get<string>('BACKUP_TRIGGER_KEY');
+                const backupKey = this.configService.get<string>('BACKUP_SECRET_KEY');
                 if (key !== backupKey) {
                     await interaction.editReply({ content: '❌ Key không hợp lệ!' });
                     break;
@@ -1166,7 +1173,7 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
 
                 await interaction.reply({ content: '🔄 Đang lấy danh sách backups...', ephemeral: true });
 
-                const backupKey = this.configService.get<string>('BACKUP_TRIGGER_KEY');
+                const backupKey = this.configService.get<string>('BACKUP_SECRET_KEY');
                 if (key !== backupKey) {
                     await interaction.editReply({ content: '❌ Key không hợp lệ!' });
                     break;
@@ -1216,7 +1223,7 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
 
                 await interaction.reply({ content: '🔄 Đang lấy URL tải xuống...', ephemeral: true });
 
-                const backupKey = this.configService.get<string>('BACKUP_TRIGGER_KEY');
+                const backupKey = this.configService.get<string>('BACKUP_SECRET_KEY');
                 if (key !== backupKey) {
                     await interaction.editReply({ content: '❌ Key không hợp lệ!' });
                     break;
@@ -1231,15 +1238,30 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
                     break;
                 }
 
+                // Tạo pre-signed URL với TTL từ config
+                const presignedUrl = await this.backblazeB2Service.getDownloadUrl(
+                    backup.drive_file_id,
+                    this.downloadUrlTtlSeconds,
+                );
+
+                if (!presignedUrl) {
+                    await interaction.editReply({ content: '❌ Không thể tạo URL tải xuống.' });
+                    break;
+                }
+
+                // Tính thời gian hết hạn
+                const expiresInMinutes = Math.round(this.downloadUrlTtlSeconds / 60);
+
                 const downloadEmbed = new EmbedBuilder()
                     .setTitle('📥 Download Backup')
                     .setColor('#0099ff')
                     .addFields(
                         { name: 'File', value: backup.file_name, inline: true },
                         { name: 'Size', value: `${(Number(backup.file_size) / 1024 / 1024).toFixed(2)} MB`, inline: true },
+                        { name: '⏰ Hết hạn sau', value: `${expiresInMinutes} phút`, inline: true },
                     )
-                    .setDescription(`[📥 Click để tải xuống](${backup.drive_file_url})`)
-                    .setFooter({ text: '⚠️ Link chỉ có hiệu lực nếu bạn có quyền truy cập' });
+                    .setDescription(`[📥 Click để tải xuống](${presignedUrl})`)
+                    .setFooter({ text: '⚠️ URL có thời hạn, tải ngay nếu cần!' });
 
                 await interaction.editReply({ embeds: [downloadEmbed] });
                 break;
@@ -1681,7 +1703,7 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
             }
             case 'modal_backup': {
                 const key = interaction.fields.getTextInputValue('key');
-                const backupKey = this.configService.get<string>('BACKUP_TRIGGER_KEY');
+                const backupKey = this.configService.get<string>('BACKUP_SECRET_KEY');
 
                 if (key !== backupKey) {
                     await interaction.editReply({ content: '❌ Key không hợp lệ!' });
@@ -1707,7 +1729,7 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
             }
             case 'modal_backups': {
                 const key = interaction.fields.getTextInputValue('key');
-                const backupKey = this.configService.get<string>('BACKUP_TRIGGER_KEY');
+                const backupKey = this.configService.get<string>('BACKUP_SECRET_KEY');
 
                 if (key !== backupKey) {
                     await interaction.editReply({ content: '❌ Key không hợp lệ!' });
@@ -1749,7 +1771,7 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
             case 'modal_backup_download': {
                 const backupId = interaction.fields.getTextInputValue('id');
                 const key = interaction.fields.getTextInputValue('key');
-                const backupKey = this.configService.get<string>('BACKUP_TRIGGER_KEY');
+                const backupKey = this.configService.get<string>('BACKUP_SECRET_KEY');
 
                 if (key !== backupKey) {
                     await interaction.editReply({ content: '❌ Key không hợp lệ!' });

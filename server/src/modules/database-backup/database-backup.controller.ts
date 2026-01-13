@@ -66,8 +66,9 @@ export class DatabaseBackupController {
     @RequirePermission('backup.list')
     @ApiOperation({ summary: 'Lấy danh sách backups' })
     @ApiResponse({ status: 200, description: 'Danh sách backups' })
+    @ApiResponse({ status: 400, description: 'Key không hợp lệ' })
     async listBackups(@Query() query: GetBackupsQueryDto, @Req() req: Request & { i18nLang: string }) {
-        const result = await this.databaseBackupService.listBackups(query);
+        const result = await this.databaseBackupService.listBackups(query, req.i18nLang);
 
         return new GetResponse(
             'backup.list.success',
