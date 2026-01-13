@@ -40,8 +40,6 @@ import {
 export class OrgChatController {
     constructor(private readonly service: OrgChatService) { }
 
-    // ========== Token Endpoints ==========
-
     /**
      * Lấy RTM token cho chat messaging (Agora RTM)
      */
@@ -83,8 +81,6 @@ export class OrgChatController {
             'Lấy RTC token thành công',
         );
     }
-
-    // ========== Messages ==========
 
     /**
      * Lấy danh sách tin nhắn (phân trang, mặc định 25/trang)
@@ -149,8 +145,6 @@ export class OrgChatController {
             'Xóa tin nhắn thành công',
         );
     }
-
-    // ========== Calls ==========
 
     /**
      * Lấy danh sách cuộc gọi

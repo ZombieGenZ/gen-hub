@@ -9,8 +9,6 @@ import { ChatCallStatus, ChatCallType, Prisma } from '@prisma/client';
 export class OrgChatRepository {
     constructor(private readonly prisma: PrismaService) { }
 
-    // ========== Messages ==========
-
     async findMessages(
         organizationId: string,
         options: {
@@ -94,8 +92,6 @@ export class OrgChatRepository {
             },
         });
     }
-
-    // ========== Calls ==========
 
     async findCalls(
         organizationId: string,
@@ -187,8 +183,6 @@ export class OrgChatRepository {
             include: { participants: true },
         });
     }
-
-    // ========== Participants ==========
 
     async addParticipant(data: {
         call_id: string;

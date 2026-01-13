@@ -30,8 +30,6 @@ export class OrgChatService {
         private readonly i18n: I18nService,
     ) { }
 
-    // ========== Token Endpoints ==========
-
     /**
      * Lấy RTM token cho chat messaging
      */
@@ -80,8 +78,6 @@ export class OrgChatService {
             uid: agoraUid,
         };
     }
-
-    // ========== Messages ==========
 
     /**
      * Lấy danh sách tin nhắn
@@ -176,8 +172,6 @@ export class OrgChatService {
         // Log to SystemLog
         await this.logToSystemLog(orgId, 'chat.delete', userId, { messageId });
     }
-
-    // ========== Calls ==========
 
     /**
      * Lấy danh sách cuộc gọi
@@ -372,8 +366,6 @@ export class OrgChatService {
         // Log to SystemLog
         await this.logToSystemLog(orgId, 'chat.call.end', userId, { callId });
     }
-
-    // ========== Helpers ==========
 
     /**
      * Verify user là member của organization
