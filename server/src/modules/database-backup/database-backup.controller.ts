@@ -89,7 +89,7 @@ export class DatabaseBackupController {
         @Body() dto: GetDownloadUrlDto,
         @Req() req: Request & { i18nLang: string },
     ) {
-        const url = await this.databaseBackupService.getDownloadUrl(
+        const result = await this.databaseBackupService.getDownloadUrl(
             param.id,
             dto.key,
             req.i18nLang,
@@ -97,7 +97,7 @@ export class DatabaseBackupController {
 
         return new OkResponse(
             'backup.download.success',
-            { downloadUrl: url },
+            result,
             this.i18n.t('database-backup.success.download_url', { lang: req.i18nLang }),
         );
     }

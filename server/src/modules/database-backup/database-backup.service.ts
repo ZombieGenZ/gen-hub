@@ -352,21 +352,38 @@ export class DatabaseBackupService implements OnModuleInit {
             // Thêm tất cả files trong thư mục
             archive.directory(sourceDir, false);
 
-            // Tạo nội dung metadata
+            // Tạo nội dung metadata với format đẹp hơn
+            const year = new Date().getFullYear();
+            const encryptionStatus = this.backupPassword ? '🔐 AES-256 Encrypted' : '⚠️  Not Encrypted';
+
             const metadataContent = [
-                `========================================`,
-                `${brandName} - Database Backup`,
-                `========================================`,
-                `Created: ${createdAt}`,
-                `Backup Type: ${backupType}`,
-                `App Version: ${appVersion}`,
-                `Triggered By: ${triggeredBy}`,
-                `Encryption: ${this.backupPassword ? 'AES-256' : 'None'}`,
-                `----------------------------------------`,
-                `© ${new Date().getFullYear()} ${brandName}. All rights reserved.`,
-                `This backup contains confidential data.`,
-                `Unauthorized access is strictly prohibited.`,
-                `========================================`,
+                `╔══════════════════════════════════════════════════════════════╗`,
+                `║                                                              ║`,
+                `║              ${brandName.padStart(10).padEnd(20)} DATABASE BACKUP              ║`,
+                `║                                                              ║`,
+                `╠══════════════════════════════════════════════════════════════╣`,
+                `║                                                              ║`,
+                `║  📅 Created At    : ${createdAt.padEnd(40)}║`,
+                `║  📁 Backup Type   : ${backupType.padEnd(40)}║`,
+                `║  🏷️  App Version   : ${appVersion.padEnd(40)}║`,
+                `║  👤 Triggered By  : ${triggeredBy.padEnd(40)}║`,
+                `║  🔒 Encryption    : ${(this.backupPassword ? 'AES-256' : 'None').padEnd(40)}║`,
+                `║                                                              ║`,
+                `╠══════════════════════════════════════════════════════════════╣`,
+                `║                                                              ║`,
+                `║  ⚠️  SECURITY NOTICE                                          ║`,
+                `║  ─────────────────────────────────────────────────────────── ║`,
+                `║  This backup file contains sensitive and confidential data.  ║`,
+                `║  Unauthorized access, distribution, or modification of this  ║`,
+                `║  file is strictly prohibited and may result in legal action. ║`,
+                `║                                                              ║`,
+                `║  Handle this file with care and store it securely.           ║`,
+                `║                                                              ║`,
+                `╠══════════════════════════════════════════════════════════════╣`,
+                `║                                                              ║`,
+                `║  © ${year} ${brandName}. All rights reserved.                       ║`,
+                `║                                                              ║`,
+                `╚══════════════════════════════════════════════════════════════╝`,
             ].join('\n');
 
             // Thêm file BACKUP_INFO.txt vào archive
@@ -551,7 +568,7 @@ export class DatabaseBackupService implements OnModuleInit {
         id: string,
         key: string,
         lang: string,
-    ): Promise<string> {
+    ): Promise<{ downloadUrl: string; expiresIn: number; expiresAt: string }> {
         // Validate key
         if (key !== this.secretKey) {
             throw new BadRequestException(
@@ -581,7 +598,14 @@ export class DatabaseBackupService implements OnModuleInit {
             );
         }
 
-        return url;
+        // Tính thời gian hết hạn
+        const expiresAt = new Date(Date.now() + this.downloadUrlTtlSeconds * 1000);
+
+        return {
+            downloadUrl: url,
+            expiresIn: this.downloadUrlTtlSeconds,
+            expiresAt: expiresAt.toISOString(),
+        };
     }
 
     /**
