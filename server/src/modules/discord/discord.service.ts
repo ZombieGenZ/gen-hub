@@ -1249,16 +1249,16 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
                     break;
                 }
 
-                // Tính thời gian hết hạn
-                const expiresInMinutes = Math.round(this.downloadUrlTtlSeconds / 60);
+                // Tính thời gian hết hạn dạng Discord relative timestamp
+                const expiresAt = Math.floor(Date.now() / 1000) + this.downloadUrlTtlSeconds;
 
                 const downloadEmbed = new EmbedBuilder()
                     .setTitle('📥 Download Backup')
                     .setColor('#0099ff')
                     .addFields(
-                        { name: 'File', value: backup.file_name, inline: true },
-                        { name: 'Size', value: `${(Number(backup.file_size) / 1024 / 1024).toFixed(2)} MB`, inline: true },
-                        { name: '⏰ Hết hạn sau', value: `${expiresInMinutes} phút`, inline: true },
+                        { name: '📁 File', value: backup.file_name, inline: true },
+                        { name: '📊 Size', value: `${(Number(backup.file_size) / 1024 / 1024).toFixed(2)} MB`, inline: true },
+                        { name: '⏰ Hết hạn', value: `<t:${expiresAt}:R>`, inline: true },
                     )
                     .setDescription(`[📥 Click để tải xuống](${presignedUrl})`)
                     .setFooter({ text: '⚠️ URL có thời hạn, tải ngay nếu cần!' });
@@ -1788,12 +1788,32 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
                     return;
                 }
 
-                const cdnUrl = this.configService.get<string>('CLOUDFLARE_R2_CDN_URL');
-                const downloadUrl = `${cdnUrl}/${backup.drive_file_id}`;
+                // Tạo pre-signed URL với TTL từ config
+                const presignedUrl = await this.backblazeB2Service.getDownloadUrl(
+                    backup.drive_file_id,
+                    this.downloadUrlTtlSeconds,
+                );
 
-                await interaction.editReply({
-                    content: `📥 **Download Backup**\n\n📁 File: \`${backup.file_name}\`\n🔗 URL: ${downloadUrl}\n\n⚠️ URL có thể hết hạn sau 24h.`,
-                });
+                if (!presignedUrl) {
+                    await interaction.editReply({ content: '❌ Không thể tạo URL tải xuống.' });
+                    return;
+                }
+
+                // Tính thời gian hết hạn dạng Discord relative timestamp
+                const expiresAt = Math.floor(Date.now() / 1000) + this.downloadUrlTtlSeconds;
+
+                const downloadEmbed = new EmbedBuilder()
+                    .setTitle('📥 Download Backup')
+                    .setColor('#0099ff')
+                    .addFields(
+                        { name: '📁 File', value: backup.file_name, inline: true },
+                        { name: '📊 Size', value: `${(Number(backup.file_size) / 1024 / 1024).toFixed(2)} MB`, inline: true },
+                        { name: '⏰ Hết hạn', value: `<t:${expiresAt}:R>`, inline: true },
+                    )
+                    .setDescription(`[📥 Click để tải xuống](${presignedUrl})`)
+                    .setFooter({ text: '⚠️ URL có thời hạn, tải ngay nếu cần!' });
+
+                await interaction.editReply({ embeds: [downloadEmbed] });
                 return;
             }
         }
