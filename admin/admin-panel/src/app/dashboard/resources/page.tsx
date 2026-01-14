@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { resourcesApi, resourcesSocket, ResourcesData, ServiceMetrics } from '@/lib/api';
+import { resourcesApi, resourcesSocket, ResourcesData } from '@/lib/api';
 import { useLanguage } from '@/contexts/LanguageContext';
 import {
     Activity,

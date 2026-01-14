@@ -12,7 +12,6 @@ import {
     Loader2,
     ToggleLeft,
     ToggleRight,
-    Filter,
     ChevronLeft,
     ChevronRight,
     CheckCircle2,
