@@ -76,7 +76,7 @@ export function PrimeNestHeader({ isLogin, user }: HeaderProps) {
                             </Link>
                             <Link
                                 href="/register"
-                                className="px-5 py-2.5 text-sm font-semibold text-white bg-teal-600 rounded-lg hover:bg-teal-700 transition-all duration-200 shadow-sm hover:shadow-md"
+                                className="px-6 py-3 text-sm font-semibold text-white bg-teal-600 rounded-3xl hover:bg-teal-700 transition-all duration-200 shadow-sm hover:shadow-md"
                             >
                                 Đăng Ký
                             </Link>
@@ -84,7 +84,7 @@ export function PrimeNestHeader({ isLogin, user }: HeaderProps) {
                     }
 
                     {/* Mobile Menu Button - Kept for mobile */}
-                    <button className="lg:hidden text-gray-700 dark:text-gray-300 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors" aria-label="Open menu">
+                    <button className="lg:hidden text-gray-700 dark:text-gray-300 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-3xl transition-colors" aria-label="Open menu">
                         <svg
                             className="w-6 h-6"
                             fill="none"

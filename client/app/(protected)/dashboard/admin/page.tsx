@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { AdminHeader } from "@/components/layouts/AdminHeader";
+
 import { StatCard } from "@/components/dashboard/StatCard";
 import {
     Users,
@@ -13,14 +13,12 @@ import {
     ArrowRight
 } from "lucide-react";
 import Link from "next/link";
-// ... (rest of file)
 
 export default function DashboardPage() {
     return (
         <div className="flex-1 overflow-auto bg-slate-50/50">
-            <AdminHeader />
 
-            <main className="p-4 md:p-8 space-y-8">
+            <main className="pt-0 py-4 px-4 space-y-8">
                 {/* Welcome Section */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
