@@ -1,5 +1,6 @@
 import { Global, Module } from '@nestjs/common';
 import { SystemLogService } from './system-log.service';
+import { SystemLogController } from './system-log.controller';
 
 /**
  * System Log Module
@@ -8,7 +9,9 @@ import { SystemLogService } from './system-log.service';
  */
 @Global()
 @Module({
+  controllers: [SystemLogController],
   providers: [SystemLogService],
   exports: [SystemLogService],
 })
-export class SystemLogModule {}
+export class SystemLogModule { }
+

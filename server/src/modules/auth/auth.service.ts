@@ -342,13 +342,13 @@ export class AuthService {
   }
 
   /**
-   * Đăng nhập cho Admin Panel - yêu cầu 1 trong 3 quyền: database.admin, featureflag.admin, resources.admin
+   * Đăng nhập cho Admin Panel - yêu cầu 1 trong các quyền: database.admin, featureflag.admin, resources.admin, systemlogs.admin
    */
   async loginAdminPanel(dto: LoginDto, deviceInfo?: IDeviceInfo, lang = 'vi') {
     const result = await this.loginWithAnyPermissionCheck(
       dto,
       deviceInfo,
-      ['database.admin', 'featureflag.admin', 'resources.admin'],
+      ['database.admin', 'featureflag.admin', 'resources.admin', 'systemlogs.admin'],
       'auth.panel_login.admin_permission_denied',
       'auth.panel_login.admin_success',
       lang,

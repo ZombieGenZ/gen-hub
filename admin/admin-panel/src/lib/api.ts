@@ -512,4 +512,107 @@ export const resourcesSocket = {
     getSocket: () => socket,
 };
 
+export interface SystemLog {
+    id: string;
+    level: 'INFO' | 'WARN' | 'ERROR' | 'DEBUG';
+    module: string;
+    action: string;
+    message: string;
+    meta_data?: Record<string, unknown>;
+    user_id?: string;
+    user?: { id: string; name: string; email: string } | null;
+    ip_address?: string;
+    user_agent?: string;
+    created_at: string;
+}
+
+export interface SystemLogsStats {
+    total: number;
+    recentCount: number;
+    byLevel: Record<string, number>;
+}
+
+export const systemLogsApi = {
+    getAll: async (options?: {
+        page?: number;
+        limit?: number;
+        level?: 'INFO' | 'WARN' | 'ERROR' | 'DEBUG';
+        module?: string;
+        search?: string;
+        startDate?: string;
+        endDate?: string;
+    }): Promise<{ data: SystemLog[]; meta: { total: number; page: number; limit: number; totalPages: number } }> => {
+        const params = new URLSearchParams();
+        if (options?.page) params.append('page', String(options.page));
+        if (options?.limit) params.append('limit', String(options.limit));
+        if (options?.level) params.append('level', options.level);
+        if (options?.module) params.append('module', options.module);
+        if (options?.search) params.append('search', options.search);
+        if (options?.startDate) params.append('startDate', options.startDate);
+        if (options?.endDate) params.append('endDate', options.endDate);
+
+        const { data } = await api.get(`/admin/system-logs?${params.toString()}`);
+        return data;
+    },
+
+    getStats: async (): Promise<SystemLogsStats> => {
+        const { data } = await api.get('/admin/system-logs/stats');
+        return data;
+    },
+
+    getModules: async (): Promise<string[]> => {
+        const { data } = await api.get('/admin/system-logs/modules');
+        return data;
+    },
+
+    getLevels: async (): Promise<string[]> => {
+        const { data } = await api.get('/admin/system-logs/levels');
+        return data;
+    },
+};
+
+// Socket.io connection for system logs realtime updates
+let systemLogsSocketInstance: Socket | null = null;
+
+export const systemLogsSocket = {
+    connect: (): Socket => {
+        if (systemLogsSocketInstance?.connected) return systemLogsSocketInstance;
+
+        const token = auth.getToken();
+
+        systemLogsSocketInstance = io(API_URL, {
+            transports: ['websocket', 'polling'],
+            auth: { token },
+        });
+
+        return systemLogsSocketInstance;
+    },
+
+    disconnect: () => {
+        if (systemLogsSocketInstance) {
+            systemLogsSocketInstance.emit('systemLog:unsubscribe');
+            systemLogsSocketInstance.disconnect();
+            systemLogsSocketInstance = null;
+        }
+    },
+
+    subscribe: (callback: (log: SystemLog) => void) => {
+        if (!systemLogsSocketInstance) return;
+
+        systemLogsSocketInstance.emit('systemLog:subscribe');
+        systemLogsSocketInstance.on('systemLog:new', (log: SystemLog) => {
+            callback(log);
+        });
+    },
+
+    unsubscribe: () => {
+        if (!systemLogsSocketInstance) return;
+        systemLogsSocketInstance.emit('systemLog:unsubscribe');
+        systemLogsSocketInstance.off('systemLog:new');
+    },
+
+    getSocket: () => systemLogsSocketInstance,
+};
+
 export default api;
+

@@ -257,6 +257,28 @@ export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
                             </Link>
                         </>
                     )}
+
+                    {/* System Logs Section - only show if has systemlogs.admin permission */}
+                    {hasPermission('systemlogs.admin') && (
+                        <>
+                            <div className="mt-4 mb-2 px-4 py-2">
+                                <span className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
+                                    System Logs
+                                </span>
+                            </div>
+                            <Link
+                                href="/dashboard/system-logs"
+                                onClick={handleLinkClick}
+                                className={`flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-all ${pathname === '/dashboard/system-logs' || pathname.startsWith('/dashboard/system-logs/')
+                                    ? 'bg-[var(--accent-primary-muted)] text-[var(--accent-primary)]'
+                                    : 'text-[var(--text-secondary)] hover:bg-[var(--background-tertiary)] hover:text-white'
+                                    }`}
+                            >
+                                <Terminal className="w-5 h-5" />
+                                <span className="font-medium">{t('sidebar.systemLogs') || 'System Logs'}</span>
+                            </Link>
+                        </>
+                    )}
                 </nav>
 
                 {/* User Info & Language Switcher */}

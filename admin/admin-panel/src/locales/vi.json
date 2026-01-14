@@ -107,7 +107,13 @@
         "error": "Lỗi",
         "success": "Thành công",
         "close": "Đóng",
-        "refresh": "Làm mới"
+        "refresh": "Làm mới",
+        "back": "Quay lại",
+        "previous": "Trước",
+        "next": "Sau",
+        "cancel": "Hủy",
+        "export": "Xuất",
+        "all": "Tất cả"
     },
     "sidebar": {
         "title": "Admin Panel",
@@ -117,7 +123,8 @@
         "logout": "Đăng xuất",
         "admin": "Admin Panel",
         "featureFlags": "Feature Flags",
-        "resources": "Resources"
+        "resources": "Resources",
+        "systemLogs": "System Logs"
     },
     "diagram": {
         "title": "Sơ đồ",
@@ -215,6 +222,49 @@
             "avgCpu": "CPU TB",
             "avgMemory": "Memory TB",
             "avgDisk": "Disk TB"
+        }
+    },
+    "systemLogs": {
+        "title": "System Console",
+        "subtitle": "Hoạt động server thời gian thực",
+        "tableTitle": "Bảng System Logs",
+        "tableSubtitle": "Duyệt và tìm kiếm log lịch sử",
+        "consoleView": "Giao diện Console",
+        "viewTable": "Giao diện Bảng",
+        "searchPlaceholder": "Tìm kiếm message...",
+        "noLogs": "Không tìm thấy log",
+        "metadata": "Metadata",
+        "userId": "Mã người dùng",
+        "ipAddress": "Địa chỉ IP",
+        "showing": "Hiển thị",
+        "of": "của",
+        "logs": "logs",
+        "page": "Trang",
+        "stats": {
+            "total": "Tổng số",
+            "last24h": "24 giờ qua"
+        },
+        "filters": {
+            "allLevels": "Tất cả Level",
+            "allModules": "Tất cả Module"
+        },
+        "table": {
+            "level": "Level",
+            "module": "Module",
+            "action": "Action",
+            "message": "Message",
+            "time": "Thời gian"
+        },
+        "export": {
+            "title": "Xuất Logs",
+            "dateRange": "Khoảng thời gian",
+            "startDate": "Ngày bắt đầu",
+            "endDate": "Ngày kết thúc",
+            "level": "Mức Log",
+            "module": "Module",
+            "exporting": "Đang xuất...",
+            "success": "Xuất thành công",
+            "noData": "Không tìm thấy log với bộ lọc đã chọn"
         }
     }
 }

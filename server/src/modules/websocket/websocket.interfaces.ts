@@ -363,3 +363,20 @@ export interface ApiKeyDeletedEvent {
   deletedBy: string;
   timestamp: string;
 }
+
+/**
+ * Event khi có system log mới (realtime)
+ */
+export interface SystemLogEvent {
+  id: string;
+  level: 'INFO' | 'WARN' | 'ERROR' | 'DEBUG';
+  module: string;
+  action: string;
+  message: string;
+  meta_data?: Record<string, unknown>;
+  user_id?: string;
+  ip_address?: string;
+  user_agent?: string;
+  created_at: string;
+}
+
