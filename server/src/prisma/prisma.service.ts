@@ -304,6 +304,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         this.seedDatabaseAdminPermission.bind(this),
         this.seedFeatureFlagPermission.bind(this),
         this.seedResourcesAdminPermission.bind(this),
+        this.seedSystemLogsAdminPermission.bind(this),
         this.seedAmenityPermissions.bind(this),
         this.seedAddonPermissions.bind(this),
         this.seedInsurancePermissions.bind(this),
@@ -537,6 +538,69 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         error instanceof Error ? error.message : String(error);
       this.logger.error(
         `❌ Failed to seed resources admin permission: ${errorMessage}`,
+      );
+    }
+  }
+
+  /**
+   * Seed permission systemlogs.admin cho System Logs Panel
+   */
+  private async seedSystemLogsAdminPermission() {
+    try {
+      const existing = await this.permission.findFirst({
+        where: { key: 'systemlogs.admin' },
+      });
+
+      let permissionId = existing?.id;
+
+      if (!existing) {
+        const newPermission = await this.permission.create({
+          data: {
+            key: 'systemlogs.admin',
+            name: 'System Logs Admin',
+            description: 'Quyền truy cập vào System Logs để xem log hệ thống',
+            is_active: true,
+            is_deleted: false,
+          },
+        });
+        permissionId = newPermission.id;
+        this.logger.log('✅ System logs admin permission seeded');
+      }
+
+      // Assign to Super Admin
+      if (permissionId) {
+        const superAdminRole = await this.role.findFirst({
+          where: { name: 'Super Admin', is_deleted: false },
+        });
+
+        if (superAdminRole) {
+          const existingAssignment = await this.rolePermission.findFirst({
+            where: {
+              role_id: superAdminRole.id,
+              permission_id: permissionId,
+            },
+          });
+
+          if (!existingAssignment) {
+            await this.rolePermission.create({
+              data: {
+                role_id: superAdminRole.id,
+                permission_id: permissionId,
+                is_active: true,
+                is_deleted: false,
+              },
+            });
+            this.logger.log(
+              '✅ System logs admin permission assigned to Super Admin',
+            );
+          }
+        }
+      }
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `❌ Failed to seed system logs admin permission: ${errorMessage}`,
       );
     }
   }

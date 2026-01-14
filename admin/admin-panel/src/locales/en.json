@@ -107,7 +107,13 @@
         "error": "Error",
         "success": "Success",
         "close": "Close",
-        "refresh": "Refresh"
+        "refresh": "Refresh",
+        "back": "Back",
+        "previous": "Previous",
+        "next": "Next",
+        "cancel": "Cancel",
+        "export": "Export",
+        "all": "All"
     },
     "sidebar": {
         "title": "Admin Panel",
@@ -117,7 +123,8 @@
         "logout": "Logout",
         "admin": "Admin Panel",
         "featureFlags": "Feature Flags",
-        "resources": "Resources"
+        "resources": "Resources",
+        "systemLogs": "System Logs"
     },
     "diagram": {
         "title": "Diagram",
@@ -215,6 +222,49 @@
             "avgCpu": "Avg CPU",
             "avgMemory": "Avg Memory",
             "avgDisk": "Avg Disk"
+        }
+    },
+    "systemLogs": {
+        "title": "System Console",
+        "subtitle": "Real-time server activity",
+        "tableTitle": "System Logs Table",
+        "tableSubtitle": "Browse and search historical logs",
+        "consoleView": "Console View",
+        "viewTable": "Table View",
+        "searchPlaceholder": "Search messages...",
+        "noLogs": "No logs found",
+        "metadata": "Metadata",
+        "userId": "User ID",
+        "ipAddress": "IP Address",
+        "showing": "Showing",
+        "of": "of",
+        "logs": "logs",
+        "page": "Page",
+        "stats": {
+            "total": "Total",
+            "last24h": "Last 24h"
+        },
+        "filters": {
+            "allLevels": "All Levels",
+            "allModules": "All Modules"
+        },
+        "table": {
+            "level": "Level",
+            "module": "Module",
+            "action": "Action",
+            "message": "Message",
+            "time": "Time"
+        },
+        "export": {
+            "title": "Export Logs",
+            "dateRange": "Date Range",
+            "startDate": "Start Date",
+            "endDate": "End Date",
+            "level": "Log Level",
+            "module": "Module",
+            "exporting": "Exporting...",
+            "success": "Export successful",
+            "noData": "No logs found with selected filters"
         }
     }
 }

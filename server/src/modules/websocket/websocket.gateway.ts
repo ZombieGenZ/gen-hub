@@ -30,6 +30,7 @@ import {
   MemberRemovedEvent,
   OwnershipTransferredEvent,
   UserOnlineStatusEvent,
+  SystemLogEvent,
 } from './websocket.interfaces';
 import { UserRepository } from '../user/user.repository';
 
@@ -1302,4 +1303,32 @@ export class WebsocketGateway
       timestamp: new Date().toISOString(),
     });
   }
+
+  /**
+   * Emit system log event to subscribed admin clients
+   */
+  emitSystemLog(log: SystemLogEvent) {
+    this.server.to('systemLogs').emit('systemLog:new', log);
+  }
+
+  /**
+   * Subscribe to realtime system logs (admin only)
+   */
+  @SubscribeMessage('systemLog:subscribe')
+  handleSystemLogSubscribe(@ConnectedSocket() socket: Socket) {
+    socket.join('systemLogs');
+    this.logger.log(`📋 Socket ${socket.id} subscribed to system logs`);
+    socket.emit('systemLog:subscribed', { success: true });
+  }
+
+  /**
+   * Unsubscribe from realtime system logs
+   */
+  @SubscribeMessage('systemLog:unsubscribe')
+  handleSystemLogUnsubscribe(@ConnectedSocket() socket: Socket) {
+    socket.leave('systemLogs');
+    this.logger.log(`📋 Socket ${socket.id} unsubscribed from system logs`);
+    socket.emit('systemLog:unsubscribed', { success: true });
+  }
 }
+

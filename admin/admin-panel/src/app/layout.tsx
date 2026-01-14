@@ -8,8 +8,8 @@ import { Toaster } from 'sonner';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Database Panel',
-  description: 'Database Panel for GEN-HUB',
+  title: 'Admin Panel',
+  description: 'Admin Panel for GEN-HUB',
 };
 
 export default function RootLayout({
