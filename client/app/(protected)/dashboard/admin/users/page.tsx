@@ -1,6 +1,6 @@
 "use client";
 
-import { DashboardHeader } from "@/components/layouts/DashboardHeader";
+import { DashboardHeader } from "@/components/layouts/AdminHeader";
 import {
     Table,
     TableBody,

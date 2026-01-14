@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { WarehouseTemplateService } from "@/services/warehouse_template/warehouse_template.service";
 import { Warehouse } from "@/types/warehoue_template/warehouse_template.type";
 import { useDebounce } from "@/hooks/use-debounce";
-import { DashboardHeader } from "@/components/layouts/DashboardHeader";
+import { AdminHeader } from "@/components/layouts/AdminHeader";
 import Image from "next/image";
 import { WarehouseCard } from '@/components/dashboard/WarehouseCard'
 import { useRouter } from "next/navigation";
@@ -160,7 +160,7 @@ export default function WarehouseTemplatePage() {
 
     return (
         <>
-            <DashboardHeader>
+            <AdminHeader>
                 <div className="flex items-center gap-4 bg-slate-50 px-4 py-2 rounded-xl border border-slate-200 focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all w-full md:w-96">
                     <i className="fas fa-search text-slate-400"></i>
                     <input
@@ -171,7 +171,7 @@ export default function WarehouseTemplatePage() {
                         onChange={handleSearchChange}
                     />
                 </div>
-            </DashboardHeader>
+            </AdminHeader>
 
             <div className="p-4 md:p-8">
                 {/* Breadcrumbs */}

@@ -1,6 +1,6 @@
 "use client";
 
-import { DashboardHeader } from "@/components/layouts/DashboardHeader";
+import { AdminHeader } from "@/components/layouts/AdminHeader";
 import { Button } from "@/components/ui/button";
 import {
     Download,
@@ -15,14 +15,14 @@ import { StatCard } from "@/components/dashboard/StatCard";
 export default function RevenuePage() {
     return (
         <div className="flex flex-col flex-1 h-full bg-slate-50/50">
-            <DashboardHeader>
+            <AdminHeader>
                 <div className="flex items-center gap-2">
                     <Button variant="outline" size="sm" className="h-9 gap-2 text-slate-600 border-slate-200">
                         <Calendar className="w-4 h-4" />
                         Tháng này
                     </Button>
                 </div>
-            </DashboardHeader>
+            </AdminHeader>
 
             <main className="flex-1 p-4 md:p-8">
                 <div className="flex items-center justify-between mb-8">

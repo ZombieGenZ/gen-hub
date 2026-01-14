@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { DashboardHeader } from "@/components/layouts/DashboardHeader";
+import { AdminHeader } from "@/components/layouts/AdminHeader";
 import { StatCard } from "@/components/dashboard/StatCard";
 import {
     Users,
@@ -18,7 +18,7 @@ import Link from "next/link";
 export default function DashboardPage() {
     return (
         <div className="flex-1 overflow-auto bg-slate-50/50">
-            <DashboardHeader />
+            <AdminHeader />
 
             <main className="p-4 md:p-8 space-y-8">
                 {/* Welcome Section */}

@@ -1,5 +1,5 @@
 import React from "react";
-import { DashboardSidebar } from "@/components/layouts/DashboardSidebar";
+import { AdminSidebar } from "@/components/layouts/AdminSidebar";
 
 export default function DashboardLayout({
     children,
@@ -8,7 +8,7 @@ export default function DashboardLayout({
 }) {
     return (
         <div className="flex min-h-screen bg-slate-50 font-sans text-slate-900">
-            <DashboardSidebar />
+            <AdminSidebar />
 
             <main className="ml-0 md:ml-72 flex-1 flex flex-col min-h-screen transition-all duration-300">
                 {children}

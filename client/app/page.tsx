@@ -17,6 +17,7 @@ interface UserInfo {
     name?: string;
     email?: string;
     avatar?: string;
+    roles?: string[];
 }
 
 export default function Home() {
@@ -37,6 +38,7 @@ export default function Home() {
                         name: userData.user.name,
                         email: userData.user.email,
                         avatar: undefined, // Will use default avatar
+                        roles: userData.roles.map(r => r.name),
                     });
                 } catch (error) {
                     console.error("Failed to fetch user data:", error);

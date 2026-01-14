@@ -1,6 +1,6 @@
 "use client";
 
-import { DashboardHeader } from "@/components/layouts/DashboardHeader";
+import { DashboardHeader } from "@/components/layouts/AdminHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

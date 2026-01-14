@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Settings, User, LogOut, ChevronDown } from "lucide-react";
+import { Settings, User, LogOut, ChevronDown, LayoutDashboard } from "lucide-react";
 import { authStorage } from "@/services/auth/auth-storage.service";
 
 interface UserDropdownProps {
@@ -11,6 +11,7 @@ interface UserDropdownProps {
     name?: string;
     email?: string;
     avatar?: string;
+    roles?: string[];
   };
   onLogout?: () => void;
 }
@@ -75,7 +76,7 @@ const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout }) => {
 
   const handleLogout = async () => {
     setIsOpen(false);
-    
+
     // Clear auth tokens using authStorage service
     authStorage.clearTokens();
 
@@ -91,8 +92,22 @@ const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout }) => {
 
   const menuItems = [
     {
+      icon: LayoutDashboard,
+      label: "Dashboard",
+      onClick: () => {
+        setIsOpen(false);
+        const roles = user?.roles || [];
+        // Check for ADMIN role (case-insensitive)
+        if (roles.some(role => role.toUpperCase() === 'ADMIN' || role.toUpperCase() === 'ADMINISTRATOR')) {
+          router.push("/dashboard/admin");
+        } else {
+          router.push("/dashboard/customer");
+        }
+      },
+    },
+    {
       icon: User,
-      label: "Hồ sơ",
+      label: "Profile",
       onClick: handleProfile,
     },
     {

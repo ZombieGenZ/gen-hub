@@ -1,6 +1,6 @@
 "use client";
 
-import { DashboardHeader } from "@/components/layouts/DashboardHeader";
+import { AdminHeader } from "@/components/layouts/AdminHeader";
 import {
     Table,
     TableBody,
@@ -41,7 +41,7 @@ export default function CustomersPage() {
 
     return (
         <div className="flex flex-col flex-1 h-full bg-slate-50/50">
-            <DashboardHeader>
+            <AdminHeader>
                 <div className="relative w-full max-w-xl hidden md:block">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                     <Input
@@ -51,7 +51,7 @@ export default function CustomersPage() {
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
-            </DashboardHeader>
+            </AdminHeader>
 
             <main className="flex-1 p-4 md:p-8">
                 <div className="flex items-center justify-between mb-6">
