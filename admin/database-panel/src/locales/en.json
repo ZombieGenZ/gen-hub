@@ -1,0 +1,166 @@
+{
+    "dashboard": {
+        "title": "Dashboard",
+        "welcome": "Welcome to GEN-HUB Database Panel",
+        "stats": {
+            "totalTables": "Total Tables",
+            "totalRecords": "Total Records",
+            "totalColumns": "Total Columns",
+            "avgRecords": "Avg Records/Table",
+            "loadStats": "Load Statistics",
+            "refresh": "Refresh Statistics"
+        },
+        "email": "Email",
+        "quickAccess": {
+            "title": "Quick Access - Tables",
+            "tables": "tables",
+            "loading": "Loading data...",
+            "records": "Records",
+            "columns": "Columns"
+        },
+        "auditNote": {
+            "title": "Note about Audit Logging",
+            "description": "All Create, Update, Delete operations on this panel are logged to"
+        },
+        "tables": {
+            "refresh": "Refresh Tables"
+        }
+    },
+    "table": {
+        "title": "Table",
+        "records": "records",
+        "columns": "columns",
+        "noData": "No data",
+        "loading": "Loading...",
+        "actions": {
+            "addRecord": "Add record",
+            "deleteSelected": "Delete",
+            "save": "Save",
+            "cancel": "Cancel",
+            "saveChanges": "Save Changes",
+            "discardChanges": "Discard"
+        },
+        "filter": {
+            "title": "Filters",
+            "where": "where",
+            "and": "and",
+            "addFilter": "Add filter",
+            "clearFilters": "Clear filters",
+            "apply": "Apply",
+            "notApplied": "filter(s) not applied",
+            "enterValue": "Enter a value"
+        },
+        "edit": {
+            "editColumn": "Edit",
+            "setNull": "Set NULL",
+            "save": "Save",
+            "cancel": "Cancel",
+            "pressToSave": "Press to save",
+            "pressToCancel": "to cancel",
+            "pressToSaveCombined": "Press Ctrl+Enter to save, Esc to cancel",
+            "pressEnterToSaveCombined": "Press Enter to save, Esc to cancel",
+            "selectDate": "Select date"
+        },
+        "pagination": {
+            "page": "Page",
+            "of": "of",
+            "previous": "Previous",
+            "next": "Next"
+        },
+        "newRow": {
+            "title": "New Row",
+            "placeholder": "Enter value..."
+        },
+        "delete": {
+            "confirmTitle": "Confirm Delete",
+            "confirmMessage": "Are you sure you want to delete these records?",
+            "deleted": "Deleted"
+        },
+        "export": {
+            "title": "Export Data",
+            "csv": "Export CSV",
+            "excel": "Export Excel",
+            "exporting": "Exporting...",
+            "success": "Export successful",
+            "error": "Export error"
+        },
+        "sort": {
+            "clickToSort": "Click to sort",
+            "ascending": "Ascending",
+            "descending": "Descending",
+            "default": "Default"
+        },
+        "columnManagement": {
+            "resetOrder": "Reset column order",
+            "dragToReorder": "Drag to reorder columns"
+        }
+    },
+    "common": {
+        "language": "Language",
+        "english": "English",
+        "vietnamese": "Vietnamese",
+        "yes": "Yes",
+        "no": "No",
+        "true": "TRUE",
+        "false": "FALSE",
+        "null": "NULL",
+        "error": "Error",
+        "success": "Success",
+        "close": "Close"
+    },
+    "sidebar": {
+        "title": "Database Panel",
+        "dashboard": "Dashboard",
+        "erDiagram": "Diagram",
+        "tables": "Tables",
+        "logout": "Logout",
+        "admin": "Database Panel"
+    },
+    "diagram": {
+        "title": "Diagram",
+        "tables": "tables",
+        "relations": "relations",
+        "loading": "Loading diagram...",
+        "hideLines": "Hide Lines",
+        "showLines": "Show Lines",
+        "refresh": "Refresh",
+        "exportPng": "PNG",
+        "exportPdf": "PDF",
+        "changeColor": "Change color",
+        "save": "Save",
+        "saving": "Saving...",
+        "saved": "Saved!",
+        "legend": {
+            "title": "Legend",
+            "primaryKey": "Primary Key (PK)",
+            "foreignKey": "Foreign Key (FK)",
+            "notNull": "NOT NULL",
+            "unique": "UNIQUE",
+            "relations": "Relations (1:1, 1:N, N:N)"
+        },
+        "hideLegend": "Hide Legend",
+        "showLegend": "Show Legend",
+        "customColor": "Custom"
+    },
+    "query": {
+        "title": "SQL Query",
+        "execute": "Execute",
+        "clear": "Clear",
+        "templates": "Templates",
+        "history": "History",
+        "results": "Results",
+        "noResults": "No results",
+        "error": "Query Error",
+        "success": "Query executed successfully",
+        "rowsAffected": "rows affected",
+        "executionTime": "Execution time",
+        "placeholder": "Enter your SQL query here...",
+        "selectTemplate": "Select a template...",
+        "select": "SELECT",
+        "insert": "INSERT",
+        "update": "UPDATE",
+        "delete": "DELETE",
+        "createTable": "CREATE TABLE",
+        "alterTable": "ALTER TABLE"
+    }
+}
