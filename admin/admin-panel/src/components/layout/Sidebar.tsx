@@ -14,6 +14,9 @@ import {
     RefreshCw,
     Network,
     Terminal,
+    Flag,
+    Activity,
+    ChevronDown,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage, LanguageSwitcher } from '@/contexts/LanguageContext';
@@ -26,10 +29,11 @@ interface SidebarProps {
 
 export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
     const pathname = usePathname();
-    const { user, logout } = useAuth();
+    const { user, logout, hasPermission } = useAuth();
     const { t } = useLanguage();
     const { tables, isLoading, refreshTables } = useTables();
     const [searchQuery, setSearchQuery] = useState('');
+    const [isTablesExpanded, setIsTablesExpanded] = useState(true);
 
     // Close sidebar when navigating on mobile
     useEffect(() => {
@@ -98,97 +102,160 @@ export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
 
                 {/* Navigation */}
                 <nav className="flex-1 overflow-y-auto p-4">
-                    <Link
-                        href="/dashboard"
-                        onClick={handleLinkClick}
-                        className={`flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-all ${pathname === '/dashboard'
-                            ? 'bg-[var(--accent-primary-muted)] text-[var(--accent-primary)]'
-                            : 'text-[var(--text-secondary)] hover:bg-[var(--background-tertiary)] hover:text-white'
-                            }`}
-                    >
-                        <Database className="w-5 h-5" />
-                        <span className="font-medium">{t('sidebar.dashboard')}</span>
-                    </Link>
+                    {/* Database Panel Section - only show if has database.admin permission */}
+                    {hasPermission('database.admin') && (
+                        <>
+                            <div className="mb-2 px-4 py-2">
+                                <span className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
+                                    Database
+                                </span>
+                            </div>
+                            <Link
+                                href="/dashboard"
+                                onClick={handleLinkClick}
+                                className={`flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-all ${pathname === '/dashboard'
+                                    ? 'bg-[var(--accent-primary-muted)] text-[var(--accent-primary)]'
+                                    : 'text-[var(--text-secondary)] hover:bg-[var(--background-tertiary)] hover:text-white'
+                                    }`}
+                            >
+                                <Database className="w-5 h-5" />
+                                <span className="font-medium">{t('sidebar.dashboard')}</span>
+                            </Link>
 
-                    {/* Diagram Link */}
-                    <Link
-                        href="/dashboard/diagram"
-                        onClick={handleLinkClick}
-                        className={`flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-all ${pathname === '/dashboard/diagram'
-                            ? 'bg-[var(--accent-primary-muted)] text-[var(--accent-primary)]'
-                            : 'text-[var(--text-secondary)] hover:bg-[var(--background-tertiary)] hover:text-white'
-                            }`}
-                    >
-                        <Network className="w-5 h-5" />
-                        <span className="font-medium">{t('sidebar.erDiagram')}</span>
-                    </Link>
+                            {/* Diagram Link */}
+                            <Link
+                                href="/dashboard/diagram"
+                                onClick={handleLinkClick}
+                                className={`flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-all ${pathname === '/dashboard/diagram'
+                                    ? 'bg-[var(--accent-primary-muted)] text-[var(--accent-primary)]'
+                                    : 'text-[var(--text-secondary)] hover:bg-[var(--background-tertiary)] hover:text-white'
+                                    }`}
+                            >
+                                <Network className="w-5 h-5" />
+                                <span className="font-medium">{t('sidebar.erDiagram')}</span>
+                            </Link>
 
-                    {/* SQL Query Link */}
-                    <Link
-                        href="/dashboard/query"
-                        onClick={handleLinkClick}
-                        className={`flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-all ${pathname === '/dashboard/query'
-                            ? 'bg-[var(--accent-primary-muted)] text-[var(--accent-primary)]'
-                            : 'text-[var(--text-secondary)] hover:bg-[var(--background-tertiary)] hover:text-white'
-                            }`}
-                    >
-                        <Terminal className="w-5 h-5" />
-                        <span className="font-medium">{t('query.title')}</span>
-                    </Link>
+                            {/* SQL Query Link */}
+                            <Link
+                                href="/dashboard/query"
+                                onClick={handleLinkClick}
+                                className={`flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-all ${pathname === '/dashboard/query'
+                                    ? 'bg-[var(--accent-primary-muted)] text-[var(--accent-primary)]'
+                                    : 'text-[var(--text-secondary)] hover:bg-[var(--background-tertiary)] hover:text-white'
+                                    }`}
+                            >
+                                <Terminal className="w-5 h-5" />
+                                <span className="font-medium">{t('query.title')}</span>
+                            </Link>
 
-                    {/* Search Tables */}
-                    <div className="relative mb-4 mt-4">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
-                        <input
-                            type="text"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder={t('table.filter.enterValue') + '...'}
-                            className="w-full pl-9 pr-3 py-2 bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded-lg text-sm text-white placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-primary)] transition-colors"
-                        />
-                    </div>
-
-                    {/* Tables Label */}
-                    <div className="px-4 py-2 flex items-center justify-between">
-                        <span className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
-                            {t('sidebar.tables')} ({filteredTables.length})
-                        </span>
-                        <button
-                            onClick={refreshTables}
-                            disabled={isLoading}
-                            className="p-1 text-[var(--text-muted)] hover:text-[var(--accent-primary)] hover:bg-[var(--background-tertiary)] rounded transition-all"
-                            title={t('dashboard.tables.refresh')}
-                        >
-                            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
-                        </button>
-                    </div>
-
-                    {isLoading ? (
-                        <div className="flex items-center justify-center py-8">
-                            <Loader2 className="w-5 h-5 animate-spin text-[var(--accent-primary)]" />
-                        </div>
-                    ) : (
-                        <div className="space-y-1">
-                            {filteredTables.map((table) => (
-                                <Link
-                                    key={table.name}
-                                    href={`/dashboard/${table.name}`}
-                                    onClick={handleLinkClick}
-                                    prefetch={true}
-                                    className={`block px-4 py-2 rounded-lg text-sm transition-all ${isTableActive(table.name)
-                                        ? 'bg-[var(--accent-primary-muted)] text-[var(--accent-primary)]'
-                                        : 'text-[var(--text-muted)] hover:bg-[var(--background-tertiary)] hover:text-white'
-                                        }`}
+                            {/* Tables Header with Toggle */}
+                            <div className="px-4 py-2 flex items-center justify-between mt-4">
+                                <button
+                                    onClick={() => setIsTablesExpanded(!isTablesExpanded)}
+                                    className="flex items-center gap-2 text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider hover:text-white transition-colors"
                                 >
-                                    {table.displayName}
-                                </Link>
-                            ))}
-                            {filteredTables.length === 0 && (
-                                <p className="px-4 py-2 text-sm text-[var(--text-muted)]">
-                                    {t('table.noData')}
-                                </p>
+                                    <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isTablesExpanded ? '' : '-rotate-90'}`} />
+                                    {t('sidebar.tables')} ({filteredTables.length})
+                                </button>
+                                <button
+                                    onClick={refreshTables}
+                                    disabled={isLoading}
+                                    className="p-1 text-[var(--text-muted)] hover:text-[var(--accent-primary)] hover:bg-[var(--background-tertiary)] rounded transition-all"
+                                    title={t('dashboard.tables.refresh')}
+                                >
+                                    <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+                                </button>
+                            </div>
+
+                            {/* Collapsible Tables List */}
+                            {isTablesExpanded && (
+                                <>
+                                    {/* Search Tables */}
+                                    <div className="relative mb-4 px-4">
+                                        <Search className="absolute left-7 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
+                                        <input
+                                            type="text"
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            placeholder={t('table.filter.enterValue') + '...'}
+                                            className="w-full pl-9 pr-3 py-2 bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded-lg text-sm text-white placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-primary)] transition-colors"
+                                        />
+                                    </div>
+
+                                    {isLoading ? (
+                                        <div className="flex items-center justify-center py-8">
+                                            <Loader2 className="w-5 h-5 animate-spin text-[var(--accent-primary)]" />
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-1">
+                                            {filteredTables.map((table) => (
+                                                <Link
+                                                    key={table.name}
+                                                    href={`/dashboard/${table.name}`}
+                                                    onClick={handleLinkClick}
+                                                    prefetch={true}
+                                                    className={`block px-4 py-2 rounded-lg text-sm transition-all ${isTableActive(table.name)
+                                                        ? 'bg-[var(--accent-primary-muted)] text-[var(--accent-primary)]'
+                                                        : 'text-[var(--text-muted)] hover:bg-[var(--background-tertiary)] hover:text-white'
+                                                        }`}
+                                                >
+                                                    {table.displayName}
+                                                </Link>
+                                            ))}
+                                            {filteredTables.length === 0 && (
+                                                <p className="px-4 py-2 text-sm text-[var(--text-muted)]">
+                                                    {t('table.noData')}
+                                                </p>
+                                            )}
+                                        </div>
+                                    )}
+                                </>
                             )}
-                        </div>
+                        </>
+                    )}
+
+                    {/* Feature Flags Section - only show if has featureflag.admin permission */}
+                    {hasPermission('featureflag.admin') && (
+                        <>
+                            <div className="mt-4 mb-2 px-4 py-2">
+                                <span className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
+                                    Feature Flags
+                                </span>
+                            </div>
+                            <Link
+                                href="/dashboard/feature-flags"
+                                onClick={handleLinkClick}
+                                className={`flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-all ${pathname === '/dashboard/feature-flags' || pathname.startsWith('/dashboard/feature-flags/')
+                                    ? 'bg-[var(--accent-primary-muted)] text-[var(--accent-primary)]'
+                                    : 'text-[var(--text-secondary)] hover:bg-[var(--background-tertiary)] hover:text-white'
+                                    }`}
+                            >
+                                <Flag className="w-5 h-5" />
+                                <span className="font-medium">{t('sidebar.featureFlags') || 'Feature Flags'}</span>
+                            </Link>
+                        </>
+                    )}
+
+                    {/* Resources Section - only show if has resources.admin permission */}
+                    {hasPermission('resources.admin') && (
+                        <>
+                            <div className="mt-4 mb-2 px-4 py-2">
+                                <span className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
+                                    Resources
+                                </span>
+                            </div>
+                            <Link
+                                href="/dashboard/resources"
+                                onClick={handleLinkClick}
+                                className={`flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-all ${pathname === '/dashboard/resources' || pathname.startsWith('/dashboard/resources/')
+                                    ? 'bg-[var(--accent-primary-muted)] text-[var(--accent-primary)]'
+                                    : 'text-[var(--text-secondary)] hover:bg-[var(--background-tertiary)] hover:text-white'
+                                    }`}
+                            >
+                                <Activity className="w-5 h-5" />
+                                <span className="font-medium">{t('sidebar.resources') || 'Resources'}</span>
+                            </Link>
+                        </>
                     )}
                 </nav>
 

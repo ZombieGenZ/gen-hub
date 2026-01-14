@@ -36,6 +36,7 @@ export class ResourcesService {
         this.serviceUrls = {
             'server': this.configService.get<string>('RESOURCES_SERVER_URL', 'http://localhost:4000/health'),
             'client': this.configService.get<string>('RESOURCES_CLIENT_URL', 'http://localhost:3000/api/metrics'),
+            'admin-panel': this.configService.get<string>('RESOURCES_ADMIN_PANEL_URL', 'http://localhost:3600/api/metrics'),
             'database-panel': this.configService.get<string>('RESOURCES_DATABASE_PANEL_URL', 'http://localhost:3600/api/metrics'),
             'feature-flag-panel': this.configService.get<string>('RESOURCES_FEATURE_FLAG_PANEL_URL', 'http://localhost:3700/api/metrics'),
             'status': this.configService.get<string>('RESOURCES_STATUS_URL', 'http://localhost:3500/api/metrics'),
@@ -46,6 +47,7 @@ export class ResourcesService {
         this.serviceApiKeys = {
             'server': this.configService.get<string>('RESOURCES_API_KEY_SERVER', ''),
             'client': this.configService.get<string>('RESOURCES_API_KEY_CLIENT', ''),
+            'admin-panel': this.configService.get<string>('RESOURCES_API_KEY_ADMIN_PANEL', ''),
             'database-panel': this.configService.get<string>('RESOURCES_API_KEY_DATABASE_PANEL', ''),
             'feature-flag-panel': this.configService.get<string>('RESOURCES_API_KEY_FEATURE_FLAG_PANEL', ''),
             'status': this.configService.get<string>('RESOURCES_API_KEY_STATUS', ''),

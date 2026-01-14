@@ -651,7 +651,7 @@ export default function QueryPage() {
             <div className="mb-4 flex-shrink-0">
                 <h1 className="text-3xl font-bold text-white mb-2">{t('query.title')}</h1>
                 <p className="text-[var(--text-secondary)]">
-                    Execute raw SQL queries directly on your database
+                    {t('query.subtitle')}
                 </p>
             </div>
 

@@ -1,12 +1,16 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
-
 import Cookies from 'js-cookie';
+import { io, Socket } from 'socket.io-client';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
-// Token storage keys
-const ACCESS_TOKEN_KEY = 'access_token';
-const REFRESH_TOKEN_KEY = 'refresh_token';
+// Token storage keys from env
+const ACCESS_TOKEN_KEY = process.env.NEXT_PUBLIC_ACCESS_TOKEN_KEY || 'access_token';
+const REFRESH_TOKEN_KEY = process.env.NEXT_PUBLIC_REFRESH_TOKEN_KEY || 'refresh_token';
+
+// Cookie expiration from env (in days)
+const JWT_ACCESS_EXPIRATION = parseFloat(process.env.NEXT_PUBLIC_JWT_ACCESS_EXPIRATION || '0.0104'); // ~15 mins
+const JWT_REFRESH_EXPIRATION = parseFloat(process.env.NEXT_PUBLIC_JWT_REFRESH_EXPIRATION || '7');
 
 // Create axios instance
 const api: AxiosInstance = axios.create({
@@ -78,7 +82,7 @@ api.interceptors.response.use(
                     if (authorization?.access_token) {
                         // Update token in cookies
                         Cookies.set(ACCESS_TOKEN_KEY, authorization.access_token, {
-                            expires: 1 / 96, // ~15 mins
+                            expires: JWT_ACCESS_EXPIRATION,
                             secure: process.env.NODE_ENV === 'production',
                             sameSite: 'strict',
                         });
@@ -118,18 +122,16 @@ api.interceptors.response.use(
 // Auth functions
 export const auth = {
     login: async (email: string, password: string, turnstileToken?: string) => {
-        const { data } = await api.post('/auth/login/database-panel', { email, password, turnstileToken });
+        const { data } = await api.post('/auth/login/admin-panel', { email, password, turnstileToken });
         if (data.authorization) {
-            // Store tokens in cookies
-            // Access token expires in 15 minutes (or match server config)
-            // Refresh token expires in 7 days
+            // Store tokens in cookies using env config
             Cookies.set(ACCESS_TOKEN_KEY, data.authorization.access_token, {
-                expires: 1 / 96, // ~15 mins
+                expires: JWT_ACCESS_EXPIRATION,
                 secure: process.env.NODE_ENV === 'production',
                 sameSite: 'strict',
             });
             Cookies.set(REFRESH_TOKEN_KEY, data.authorization.refresh_token, {
-                expires: 7, // 7 days
+                expires: JWT_REFRESH_EXPIRATION,
                 secure: process.env.NODE_ENV === 'production',
                 sameSite: 'strict',
             });
@@ -146,12 +148,12 @@ export const auth = {
 
         if (data.authorization) {
             Cookies.set(ACCESS_TOKEN_KEY, data.authorization.access_token, {
-                expires: 1 / 96,
+                expires: JWT_ACCESS_EXPIRATION,
                 secure: process.env.NODE_ENV === 'production',
                 sameSite: 'strict',
             });
             Cookies.set(REFRESH_TOKEN_KEY, data.authorization.refresh_token, {
-                expires: 7,
+                expires: JWT_REFRESH_EXPIRATION,
                 secure: process.env.NODE_ENV === 'production',
                 sameSite: 'strict',
             });
@@ -186,7 +188,20 @@ export const auth = {
         return null;
     },
 
+    getRefreshToken: () => {
+        if (typeof window !== 'undefined') {
+            return Cookies.get(REFRESH_TOKEN_KEY) || null;
+        }
+        return null;
+    },
+
+    // Check if user has either access token or refresh token (can potentially be authenticated)
     isAuthenticated: () => {
+        return !!auth.getToken() || !!auth.getRefreshToken();
+    },
+
+    // Check if has valid access token (no refresh needed)
+    hasValidAccessToken: () => {
         return !!auth.getToken();
     },
 };
@@ -330,6 +345,171 @@ export const adminApi = {
         const { data } = await api.post('/admin/query/execute', { query });
         return data;
     },
+};
+
+// Feature Flag types
+export interface FeatureFlag {
+    id: string;
+    module: string;
+    method: string;
+    path: string;
+    is_active: boolean;
+    is_deleted: boolean;
+    created_at: string;
+    updated_at: string;
+    deleted_at: string | null;
+}
+
+export interface FeatureFlagLog {
+    id: string;
+    feature_flag_id: string;
+    action: 'ENABLED' | 'DISABLED' | 'CREATED' | 'DELETED';
+    previous_state: boolean;
+    new_state: boolean;
+    user_id: string | null;
+    ip_address: string | null;
+    user_agent: string | null;
+    description: string | null;
+    created_at: string;
+}
+
+// Feature Flag API functions
+export const featureFlagApi = {
+    getAll: async (options?: {
+        page?: number;
+        limit?: number;
+        module?: string;
+        isActive?: boolean;
+        includeDeleted?: boolean;
+        search?: string;
+    }): Promise<{ data: FeatureFlag[]; total: number }> => {
+        const params = new URLSearchParams();
+        if (options?.page) params.append('page', String(options.page));
+        if (options?.limit) params.append('limit', String(options.limit));
+        if (options?.module) params.append('module', options.module);
+        if (options?.isActive !== undefined) params.append('isActive', String(options.isActive));
+        if (options?.includeDeleted) params.append('includeDeleted', 'true');
+        if (options?.search) params.append('search', options.search);
+
+        const { data } = await api.get(`/admin/feature-flags?${params.toString()}`);
+        return data;
+    },
+
+    getById: async (id: string): Promise<FeatureFlag & { logs?: FeatureFlagLog[] }> => {
+        const { data } = await api.get(`/admin/feature-flags/${id}`);
+        return data;
+    },
+
+    getModules: async (): Promise<string[]> => {
+        const { data } = await api.get('/admin/feature-flags/modules');
+        return data;
+    },
+
+    toggle: async (id: string, isActive: boolean): Promise<FeatureFlag> => {
+        const { data } = await api.put(`/admin/feature-flags/${id}`, { is_active: isActive });
+        return data;
+    },
+
+    bulkToggle: async (ids: string[], isActive: boolean): Promise<{ updated: number }> => {
+        const { data } = await api.put('/admin/feature-flags/bulk/toggle', { ids, is_active: isActive });
+        return data;
+    },
+
+    getLogs: async (id: string, options?: { page?: number; limit?: number }): Promise<{ data: FeatureFlagLog[]; total: number }> => {
+        const params = new URLSearchParams();
+        if (options?.page) params.append('page', String(options.page));
+        if (options?.limit) params.append('limit', String(options.limit));
+
+        const { data } = await api.get(`/admin/feature-flags/${id}/logs?${params.toString()}`);
+        return data;
+    },
+
+    getStats: async (): Promise<{ total: number; active: number; inactive: number }> => {
+        const { data } = await api.get('/admin/feature-flags/stats');
+        return data;
+    },
+};
+
+// Resources API types
+export interface ServiceMetrics {
+    service: string;
+    status: 'online' | 'offline' | 'unknown';
+    cpu: { usage: number; cores: number };
+    memory: { used: number; total: number; percentage: number };
+    disk: { used: number; total: number; percentage: number };
+    network: { bytesIn: number; bytesOut: number; bytesInPerSec: number; bytesOutPerSec: number };
+    uptime: number;
+    lastUpdated: string;
+    responseTime?: number;
+}
+
+export interface ResourcesOverview {
+    totalServices: number;
+    onlineServices: number;
+    offlineServices: number;
+    averageCpu: number;
+    averageMemory: number;
+    averageDisk: number;
+    timestamp: string;
+}
+
+export interface ResourcesData {
+    services: ServiceMetrics[];
+    overview: ResourcesOverview;
+}
+
+export const resourcesApi = {
+    getStats: async (): Promise<ResourcesData> => {
+        const { data } = await api.get('/admin/resources/stats');
+        return data.data;
+    },
+
+    getOverview: async (): Promise<ResourcesOverview> => {
+        const { data } = await api.get('/admin/resources/overview');
+        return data.data;
+    },
+};
+
+// Socket.io connection for resources realtime updates
+let socket: Socket | null = null;
+
+export const resourcesSocket = {
+    connect: (): Socket => {
+        if (socket?.connected) return socket;
+
+        const token = auth.getToken();
+
+        socket = io(`${API_URL}/resources`, {
+            transports: ['websocket', 'polling'],
+            auth: { token },
+        });
+
+        return socket;
+    },
+
+    disconnect: () => {
+        if (socket) {
+            socket.disconnect();
+            socket = null;
+        }
+    },
+
+    subscribe: (callback: (data: ResourcesData) => void) => {
+        if (!socket) return;
+
+        socket.emit('resources:subscribe', {});
+        socket.on('resources:update', (event: { data: ResourcesData }) => {
+            callback(event.data);
+        });
+    },
+
+    unsubscribe: () => {
+        if (!socket) return;
+        socket.emit('resources:unsubscribe');
+        socket.off('resources:update');
+    },
+
+    getSocket: () => socket,
 };
 
 export default api;

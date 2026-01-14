@@ -243,6 +243,47 @@ export class AuthController {
     });
   }
 
+  @ApiOperation({ summary: 'Đăng nhập Admin Panel - yêu cầu 1 trong 3 quyền: database.admin, featureflag.admin, resources.admin' })
+  @ApiResponse({
+    status: 200,
+    description: 'Đăng nhập thành công hoặc yêu cầu 2FA',
+  })
+  @ApiResponse({ status: 401, description: 'Thông tin đăng nhập không hợp lệ' })
+  @ApiResponse({ status: 403, description: 'Không có quyền truy cập Admin Panel' })
+  @Public()
+  @UseGuards(BruteForceGuard)
+  @Post('login/admin-panel')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  async loginAdminPanel(
+    @Body() dto: LoginDto,
+    @Req() req: Request,
+    @Headers('accept-language') lang?: string,
+  ) {
+    const deviceInfo = getDeviceInfo(req);
+    const result = await this.authService.loginAdminPanel(dto, deviceInfo, lang || 'vi');
+
+    if ('requires_2fa' in result && result.requires_2fa) {
+      return new OkResponse(
+        ResponseCode.AUTH_LOGIN_2FA_REQUIRED,
+        { requires_2fa: true, temp_token: result.temp_token },
+        result.message,
+      );
+    }
+
+    const successResult = result as {
+      message: string;
+      user: object;
+      access_token: string;
+      refresh_token: string;
+    };
+
+    return new OkResponse(ResponseCode.AUTH_LOGIN_ADMIN_PANEL_SUCCESS, successResult.user, successResult.message, {
+      access_token: successResult.access_token,
+      refresh_token: successResult.refresh_token,
+    });
+  }
+
   @ApiOperation({ summary: 'Làm mới access token từ refresh token' })
   @ApiResponse({ status: 200, description: 'Làm mới token thành công' })
   @ApiResponse({

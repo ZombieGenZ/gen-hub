@@ -106,15 +106,18 @@
         "null": "NULL",
         "error": "Error",
         "success": "Success",
-        "close": "Close"
+        "close": "Close",
+        "refresh": "Refresh"
     },
     "sidebar": {
-        "title": "Database Panel",
+        "title": "Admin Panel",
         "dashboard": "Dashboard",
         "erDiagram": "Diagram",
         "tables": "Tables",
         "logout": "Logout",
-        "admin": "Database Panel"
+        "admin": "Admin Panel",
+        "featureFlags": "Feature Flags",
+        "resources": "Resources"
     },
     "diagram": {
         "title": "Diagram",
@@ -144,6 +147,7 @@
     },
     "query": {
         "title": "SQL Query",
+        "subtitle": "Execute raw SQL queries directly on your database",
         "execute": "Execute",
         "clear": "Clear",
         "templates": "Templates",
@@ -162,5 +166,55 @@
         "delete": "DELETE",
         "createTable": "CREATE TABLE",
         "alterTable": "ALTER TABLE"
+    },
+    "featureFlags": {
+        "title": "Feature Flags",
+        "subtitle": "Manage API feature flags",
+        "searchPlaceholder": "Search by path or module...",
+        "allModules": "All Modules",
+        "allStatus": "All Status",
+        "active": "Active",
+        "inactive": "Inactive",
+        "selected": "selected",
+        "enableAll": "Enable All",
+        "disableAll": "Disable All",
+        "noFlags": "No feature flags found",
+        "toggleSuccess": "Flag status changed",
+        "toggleError": "Failed to toggle flag",
+        "bulkSuccess": "Flags updated",
+        "bulkError": "Failed to update flags",
+        "stats": {
+            "total": "Total",
+            "active": "Active",
+            "inactive": "Inactive"
+        },
+        "table": {
+            "module": "Module",
+            "method": "Method",
+            "path": "Path",
+            "status": "Status",
+            "actions": "Actions"
+        },
+        "pagination": {
+            "showing": "Showing",
+            "of": "of"
+        }
+    },
+    "resources": {
+        "title": "Resources Monitor",
+        "subtitle": "Real-time service monitoring",
+        "lastUpdated": "Updated",
+        "noData": "No data available",
+        "services": "Services",
+        "live": "Live",
+        "disconnected": "Disconnected",
+        "overview": {
+            "total": "Total Services",
+            "online": "Online",
+            "offline": "Offline",
+            "avgCpu": "Avg CPU",
+            "avgMemory": "Avg Memory",
+            "avgDisk": "Avg Disk"
+        }
     }
 }

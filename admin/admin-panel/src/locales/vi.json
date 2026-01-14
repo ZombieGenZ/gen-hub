@@ -106,15 +106,18 @@
         "null": "NULL",
         "error": "Lỗi",
         "success": "Thành công",
-        "close": "Đóng"
+        "close": "Đóng",
+        "refresh": "Làm mới"
     },
     "sidebar": {
-        "title": "Database Panel",
+        "title": "Admin Panel",
         "dashboard": "Bảng điều khiển",
         "erDiagram": "Sơ đồ",
         "tables": "Các bảng",
         "logout": "Đăng xuất",
-        "admin": "Database Panel"
+        "admin": "Admin Panel",
+        "featureFlags": "Feature Flags",
+        "resources": "Resources"
     },
     "diagram": {
         "title": "Sơ đồ",
@@ -144,6 +147,7 @@
     },
     "query": {
         "title": "Truy vấn SQL",
+        "subtitle": "Thực thi truy vấn SQL trực tiếp trên cơ sở dữ liệu",
         "execute": "Thực thi",
         "clear": "Xóa",
         "templates": "Mẫu",
@@ -162,5 +166,55 @@
         "delete": "DELETE",
         "createTable": "CREATE TABLE",
         "alterTable": "ALTER TABLE"
+    },
+    "featureFlags": {
+        "title": "Feature Flags",
+        "subtitle": "Quản lý các cờ tính năng API",
+        "searchPlaceholder": "Tìm theo path hoặc module...",
+        "allModules": "Tất cả module",
+        "allStatus": "Tất cả trạng thái",
+        "active": "Hoạt động",
+        "inactive": "Không hoạt động",
+        "selected": "đã chọn",
+        "enableAll": "Bật tất cả",
+        "disableAll": "Tắt tất cả",
+        "noFlags": "Không tìm thấy feature flags",
+        "toggleSuccess": "Đã thay đổi trạng thái flag",
+        "toggleError": "Lỗi khi thay đổi trạng thái",
+        "bulkSuccess": "Đã cập nhật flags",
+        "bulkError": "Lỗi khi cập nhật flags",
+        "stats": {
+            "total": "Tổng số",
+            "active": "Hoạt động",
+            "inactive": "Không hoạt động"
+        },
+        "table": {
+            "module": "Module",
+            "method": "Method",
+            "path": "Path",
+            "status": "Trạng thái",
+            "actions": "Hành động"
+        },
+        "pagination": {
+            "showing": "Hiển thị",
+            "of": "của"
+        }
+    },
+    "resources": {
+        "title": "Resources Monitor",
+        "subtitle": "Giám sát dịch vụ thời gian thực",
+        "lastUpdated": "Cập nhật lúc",
+        "noData": "Không có dữ liệu",
+        "services": "Dịch vụ",
+        "live": "Trực tiếp",
+        "disconnected": "Mất kết nối",
+        "overview": {
+            "total": "Tổng dịch vụ",
+            "online": "Trực tuyến",
+            "offline": "Ngoại tuyến",
+            "avgCpu": "CPU TB",
+            "avgMemory": "Memory TB",
+            "avgDisk": "Disk TB"
+        }
     }
 }

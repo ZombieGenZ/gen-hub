@@ -22,6 +22,7 @@ export enum ResponseCode {
     AUTH_LOGIN_DATABASE_PANEL_SUCCESS = 'auth.login_database_panel_success',
     AUTH_LOGIN_FEATURE_FLAG_PANEL_SUCCESS = 'auth.login_feature_flag_panel_success',
     AUTH_LOGIN_RESOURCES_PANEL_SUCCESS = 'auth.login_resources_panel_success',
+    AUTH_LOGIN_ADMIN_PANEL_SUCCESS = 'auth.login_admin_panel_success',
 
     // Analytics
     ANALYTICS_TRAFFIC_SUCCESS = 'analytics.traffic_success',

@@ -1,11 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { adminApi } from '@/lib/api';
 import { Database, Table, List, LayoutGrid, HardDrive, Activity, Loader2, BarChart3, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTables } from '@/contexts/TablesContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface TableStats {
     name: string;
@@ -27,9 +29,24 @@ interface Statistics {
 export default function DashboardPage() {
     const { t } = useLanguage();
     const { tables, isLoading, refreshTables } = useTables();
+    const { hasPermission, isLoading: isAuthLoading } = useAuth();
+    const router = useRouter();
     const [statistics, setStatistics] = useState<Statistics | null>(null);
     const [isLoadingStats, setIsLoadingStats] = useState(false);
     const [statsLoaded, setStatsLoaded] = useState(false);
+
+    // Redirect based on permission priority: database.admin > featureflag.admin > resources.admin
+    useEffect(() => {
+        if (isAuthLoading) return;
+
+        if (!hasPermission('database.admin')) {
+            if (hasPermission('featureflag.admin')) {
+                router.replace('/dashboard/feature-flags');
+            } else if (hasPermission('resources.admin')) {
+                router.replace('/dashboard/resources');
+            }
+        }
+    }, [hasPermission, isAuthLoading, router]);
 
     // Helper function to format table name (handles both snake_case and camelCase)
     const toTitleCase = (str: string): string => {
