@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { featureFlagApi, FeatureFlag } from '@/lib/api';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from 'sonner';
-import Link from 'next/link';
 import {
     Flag,
     Search,
@@ -15,7 +15,6 @@ import {
     Filter,
     ChevronLeft,
     ChevronRight,
-    History,
     CheckCircle2,
     XCircle,
 } from 'lucide-react';
@@ -34,6 +33,7 @@ const getInitialPageSize = (): number => {
 };
 
 export default function FeatureFlagsPage() {
+    const router = useRouter();
     const { t } = useLanguage();
     const [flags, setFlags] = useState<FeatureFlag[]>([]);
     const [modules, setModules] = useState<string[]>([]);
@@ -341,8 +341,12 @@ export default function FeatureFlagsPage() {
                             </thead>
                             <tbody>
                                 {flags.map((flag) => (
-                                    <tr key={flag.id} className="border-b border-[var(--border-primary)] hover:bg-[var(--background-tertiary)]">
-                                        <td className="px-4 py-3">
+                                    <tr
+                                        key={flag.id}
+                                        className="border-b border-[var(--border-primary)] hover:bg-[var(--background-tertiary)] cursor-pointer transition-colors"
+                                        onClick={() => router.push(`/dashboard/feature-flags/${flag.id}`)}
+                                    >
+                                        <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                                             <input
                                                 type="checkbox"
                                                 checked={selectedIds.has(flag.id)}
@@ -372,30 +376,21 @@ export default function FeatureFlagsPage() {
                                                 </span>
                                             )}
                                         </td>
-                                        <td className="px-4 py-3">
-                                            <div className="flex items-center gap-2">
-                                                <button
-                                                    onClick={() => handleToggle(flag.id, flag.is_active)}
-                                                    disabled={isTogglingId === flag.id}
-                                                    className="p-2 rounded-lg hover:bg-[var(--background-tertiary)] transition-colors disabled:opacity-50"
-                                                    title={flag.is_active ? 'Disable' : 'Enable'}
-                                                >
-                                                    {isTogglingId === flag.id ? (
-                                                        <Loader2 className="w-5 h-5 animate-spin text-[var(--text-muted)]" />
-                                                    ) : flag.is_active ? (
-                                                        <ToggleRight className="w-5 h-5 text-green-400" />
-                                                    ) : (
-                                                        <ToggleLeft className="w-5 h-5 text-[var(--text-muted)]" />
-                                                    )}
-                                                </button>
-                                                <Link
-                                                    href={`/dashboard/feature-flags/${flag.id}`}
-                                                    className="p-2 rounded-lg hover:bg-[var(--background-tertiary)] transition-colors text-[var(--text-muted)] hover:text-[var(--accent-primary)]"
-                                                    title={t('featureFlags.viewHistory') || 'View History'}
-                                                >
-                                                    <History className="w-5 h-5" />
-                                                </Link>
-                                            </div>
+                                        <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                                            <button
+                                                onClick={() => handleToggle(flag.id, flag.is_active)}
+                                                disabled={isTogglingId === flag.id}
+                                                className="p-2 rounded-lg hover:bg-[var(--background-tertiary)] transition-colors disabled:opacity-50"
+                                                title={flag.is_active ? 'Disable' : 'Enable'}
+                                            >
+                                                {isTogglingId === flag.id ? (
+                                                    <Loader2 className="w-5 h-5 animate-spin text-[var(--text-muted)]" />
+                                                ) : flag.is_active ? (
+                                                    <ToggleRight className="w-5 h-5 text-green-400" />
+                                                ) : (
+                                                    <ToggleLeft className="w-5 h-5 text-[var(--text-muted)]" />
+                                                )}
+                                            </button>
                                         </td>
                                     </tr>
                                 ))}
