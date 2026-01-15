@@ -308,18 +308,25 @@ export default function FeatureFlagsPage() {
                             <thead>
                                 <tr className="border-b border-[var(--border-primary)] bg-[var(--background-tertiary)]">
                                     <th className="px-4 py-3 text-left">
-                                        <input
-                                            type="checkbox"
-                                            checked={selectedIds.size === flags.length && flags.length > 0}
-                                            onChange={() => {
-                                                if (selectedIds.size === flags.length) {
-                                                    setSelectedIds(new Set());
-                                                } else {
-                                                    setSelectedIds(new Set(flags.map(f => f.id)));
-                                                }
-                                            }}
-                                            className="rounded border-[var(--border-primary)]"
-                                        />
+                                        <label className="relative inline-flex items-center cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedIds.size === flags.length && flags.length > 0}
+                                                onChange={() => {
+                                                    if (selectedIds.size === flags.length) {
+                                                        setSelectedIds(new Set());
+                                                    } else {
+                                                        setSelectedIds(new Set(flags.map(f => f.id)));
+                                                    }
+                                                }}
+                                                className="sr-only peer"
+                                            />
+                                            <div className="w-5 h-5 rounded border-2 border-[var(--border-primary)] bg-[var(--background-tertiary)] peer-checked:bg-[var(--accent-primary)] peer-checked:border-[var(--accent-primary)] transition-all duration-200 flex items-center justify-center">
+                                                <svg className="w-3 h-3 text-white opacity-0 peer-checked:opacity-100" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                                </svg>
+                                            </div>
+                                        </label>
                                     </th>
                                     <th className="px-4 py-3 text-left text-xs font-medium text-[var(--text-muted)] uppercase">
                                         {t('featureFlags.table.module') || 'Module'}
@@ -346,12 +353,22 @@ export default function FeatureFlagsPage() {
                                         onClick={() => router.push(`/dashboard/feature-flags/${flag.id}`)}
                                     >
                                         <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                                            <input
-                                                type="checkbox"
-                                                checked={selectedIds.has(flag.id)}
-                                                onChange={() => toggleSelect(flag.id)}
-                                                className="rounded border-[var(--border-primary)]"
-                                            />
+                                            <label className="relative inline-flex items-center cursor-pointer">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedIds.has(flag.id)}
+                                                    onChange={() => toggleSelect(flag.id)}
+                                                    className="sr-only peer"
+                                                />
+                                                <div className={`w-5 h-5 rounded border-2 transition-all duration-200 flex items-center justify-center ${selectedIds.has(flag.id)
+                                                        ? 'bg-[var(--accent-primary)] border-[var(--accent-primary)]'
+                                                        : 'border-[var(--border-primary)] bg-[var(--background-tertiary)] hover:border-[var(--accent-primary)]/50'
+                                                    }`}>
+                                                    <svg className={`w-3 h-3 text-white transition-opacity duration-200 ${selectedIds.has(flag.id) ? 'opacity-100' : 'opacity-0'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                                    </svg>
+                                                </div>
+                                            </label>
                                         </td>
                                         <td className="px-4 py-3">
                                             <span className="text-[var(--text-secondary)]">{flag.module}</span>

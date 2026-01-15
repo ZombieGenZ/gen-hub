@@ -280,13 +280,13 @@ export default function FlagDetailPage() {
                                     {log.user_id && (
                                         <div className="flex items-center gap-1">
                                             <User className="w-3 h-3" />
-                                            User: {log.user_id.substring(0, 8)}...
+                                            {t('featureFlags.detail.user') || 'User'}: {log.user_id.substring(0, 8)}...
                                         </div>
                                     )}
                                     {log.ip_address && (
                                         <div className="flex items-center gap-1">
                                             <Globe className="w-3 h-3" />
-                                            IP: {log.ip_address}
+                                            {t('featureFlags.detail.ip') || 'IP'}: {log.ip_address}
                                         </div>
                                     )}
                                     {log.user_agent && (
@@ -305,7 +305,7 @@ export default function FlagDetailPage() {
                 {totalLogsPages > 1 && (
                     <div className="flex items-center justify-between mt-6 pt-6 border-t border-[var(--border-primary)]">
                         <p className="text-sm text-[var(--text-secondary)]">
-                            Page {logsPage} / {totalLogsPages}
+                            {t('featureFlags.detail.page') || 'Page'} {logsPage} / {totalLogsPages}
                         </p>
                         <div className="flex items-center gap-2">
                             <button

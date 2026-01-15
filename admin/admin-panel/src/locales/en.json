@@ -205,6 +205,25 @@
         "pagination": {
             "showing": "Showing",
             "of": "of"
+        },
+        "detail": {
+            "backToList": "Back to Feature Flags",
+            "title": "Feature Flag Details",
+            "refreshLogs": "Refresh Logs",
+            "infoTitle": "Flag Information",
+            "historyTitle": "Change History",
+            "noLogs": "No history logs found",
+            "createdAt": "Created",
+            "updatedAt": "Updated",
+            "enabled": "Enabled",
+            "disabled": "Disabled",
+            "created": "Created",
+            "deleted": "Deleted",
+            "fetchError": "Failed to fetch flag details",
+            "fetchLogsError": "Failed to fetch history logs",
+            "user": "User",
+            "ip": "IP",
+            "page": "Page"
         }
     },
     "resources": {

@@ -205,6 +205,25 @@
         "pagination": {
             "showing": "Hiển thị",
             "of": "của"
+        },
+        "detail": {
+            "backToList": "Quay lại Feature Flags",
+            "title": "Chi tiết Feature Flag",
+            "refreshLogs": "Làm mới lịch sử",
+            "infoTitle": "Thông tin Flag",
+            "historyTitle": "Lịch sử thay đổi",
+            "noLogs": "Không có lịch sử thay đổi",
+            "createdAt": "Ngày tạo",
+            "updatedAt": "Cập nhật",
+            "enabled": "Đã bật",
+            "disabled": "Đã tắt",
+            "created": "Đã tạo",
+            "deleted": "Đã xóa",
+            "fetchError": "Lỗi khi tải thông tin flag",
+            "fetchLogsError": "Lỗi khi tải lịch sử",
+            "user": "Người dùng",
+            "ip": "IP",
+            "page": "Trang"
         }
     },
     "resources": {
