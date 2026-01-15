@@ -276,11 +276,15 @@
         },
         "export": {
             "title": "Xuất Logs",
+            "subtitle": "Cấu hình tùy chọn xuất",
+            "optional": "Tùy chọn",
             "dateRange": "Khoảng thời gian",
             "startDate": "Ngày bắt đầu",
             "endDate": "Ngày kết thúc",
             "level": "Mức Log",
             "module": "Module",
+            "maxLogs": "Số log tối đa",
+            "maxLogsPlaceholder": "Nhập số log tối đa",
             "exporting": "Đang xuất...",
             "success": "Xuất thành công",
             "noData": "Không tìm thấy log với bộ lọc đã chọn"

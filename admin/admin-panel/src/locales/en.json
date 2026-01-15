@@ -276,11 +276,15 @@
         },
         "export": {
             "title": "Export Logs",
+            "subtitle": "Configure export options",
+            "optional": "Optional",
             "dateRange": "Date Range",
             "startDate": "Start Date",
             "endDate": "End Date",
             "level": "Log Level",
             "module": "Module",
+            "maxLogs": "Max Logs",
+            "maxLogsPlaceholder": "Enter max number of logs",
             "exporting": "Exporting...",
             "success": "Export successful",
             "noData": "No logs found with selected filters"

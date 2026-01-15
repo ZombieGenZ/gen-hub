@@ -47,6 +47,7 @@ export default function SystemLogsTablePage() {
     const [exportEndDate, setExportEndDate] = useState('');
     const [exportLevel, setExportLevel] = useState<LogLevel | ''>('');
     const [exportModule, setExportModule] = useState('');
+    const [exportMaxLogs, setExportMaxLogs] = useState<number | ''>('');
     const [isExporting, setIsExporting] = useState(false);
 
     const fetchLogs = useCallback(async () => {
@@ -159,7 +160,7 @@ export default function SystemLogsTablePage() {
         try {
             const response = await systemLogsApi.getAll({
                 page: 1,
-                limit: 10000000,
+                limit: exportMaxLogs || 10000000,
                 level: exportLevel || undefined,
                 module: exportModule || undefined,
                 startDate: exportStartDate || undefined,
@@ -191,6 +192,7 @@ export default function SystemLogsTablePage() {
             setExportEndDate('');
             setExportLevel('');
             setExportModule('');
+            setExportMaxLogs('');
         } catch (error) {
             console.error('Failed to export logs:', error);
         } finally {
@@ -436,7 +438,7 @@ export default function SystemLogsTablePage() {
                                 </div>
                                 <div>
                                     <h2 className="text-lg font-bold text-white">{t('systemLogs.export.title') || 'Export Logs'}</h2>
-                                    <p className="text-xs text-[var(--text-muted)]">Configure export options</p>
+                                    <p className="text-xs text-[var(--text-muted)]">{t('systemLogs.export.subtitle') || 'Configure export options'}</p>
                                 </div>
                             </div>
                             <button
@@ -458,7 +460,7 @@ export default function SystemLogsTablePage() {
                                     <span className="text-sm font-medium text-white">
                                         {t('systemLogs.export.dateRange') || 'Date Range'}
                                     </span>
-                                    <span className="text-xs text-[var(--text-muted)] ml-auto">Optional</span>
+                                    <span className="text-xs text-[var(--text-muted)] ml-auto">{t('systemLogs.export.optional') || 'Optional'}</span>
                                 </div>
                                 <div className="grid grid-cols-2 gap-3">
                                     <div>
@@ -549,7 +551,6 @@ export default function SystemLogsTablePage() {
                                     value={exportModule}
                                     onChange={(e) => setExportModule(e.target.value)}
                                     className="w-full px-3 py-2.5 bg-[#161b22] border border-[#30363d] rounded-lg text-white text-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500/20 transition-all appearance-none cursor-pointer"
-                                    style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236e7681'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center', backgroundSize: '16px' }}
                                 >
                                     <option value="">{t('common.all') || 'All Modules'}</option>
                                     {modules
@@ -559,6 +560,27 @@ export default function SystemLogsTablePage() {
                                             <option key={m} value={m}>{m}</option>
                                         ))}
                                 </select>
+                            </div>
+
+                            {/* Max Logs */}
+                            <div className="bg-[#0d1117] rounded-xl p-4 border border-[#21262d]">
+                                <div className="flex items-center gap-2 mb-3">
+                                    <svg className="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
+                                    </svg>
+                                    <span className="text-sm font-medium text-white">
+                                        {t('systemLogs.export.maxLogs') || 'Max Logs'}
+                                    </span>
+                                    <span className="text-xs text-[var(--text-muted)] ml-auto">{t('systemLogs.export.optional') || 'Optional'}</span>
+                                </div>
+                                <input
+                                    type="number"
+                                    value={exportMaxLogs}
+                                    onChange={(e) => setExportMaxLogs(e.target.value ? parseInt(e.target.value, 10) : '')}
+                                    placeholder={t('systemLogs.export.maxLogsPlaceholder') || 'Enter max number of logs'}
+                                    min={1}
+                                    className="w-full px-3 py-2.5 bg-[#161b22] border border-[#30363d] rounded-lg text-white text-sm focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/20 transition-all placeholder-[#6e7681]"
+                                />
                             </div>
                         </div>
 
