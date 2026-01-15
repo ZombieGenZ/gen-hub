@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 import { systemLogsApi, SystemLog } from '@/lib/api';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -30,6 +30,9 @@ export default function SystemLogsTablePage() {
     const [modules, setModules] = useState<string[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [expandedLogs, setExpandedLogs] = useState<Set<string>>(new Set());
+
+    // Ref for table container (Alt+scroll horizontal scrolling)
+    const tableContainerRef = useRef<HTMLDivElement>(null);
 
     // Filters
     const [levelFilter, setLevelFilter] = useState<LogLevel | ''>('');
@@ -97,6 +100,23 @@ export default function SystemLogsTablePage() {
     useEffect(() => {
         fetchLogs();
     }, [page, levelFilter, moduleFilter, searchQuery, fetchLogs]);
+
+    // Alt + scroll to scroll horizontally in the table
+    useEffect(() => {
+        const container = tableContainerRef.current;
+        if (!container) return;
+
+        const handleWheel = (e: WheelEvent) => {
+            // Check if Alt key is pressed
+            if (e.altKey && e.deltaY !== 0) {
+                e.preventDefault();
+                container.scrollLeft += e.deltaY;
+            }
+        };
+
+        container.addEventListener('wheel', handleWheel, { passive: false });
+        return () => container.removeEventListener('wheel', handleWheel);
+    }, []);
 
     const toggleLogExpanded = (logId: string) => {
         setExpandedLogs((prev) => {
@@ -329,7 +349,7 @@ export default function SystemLogsTablePage() {
                         <p>{t('systemLogs.noLogs') || 'No logs found'}</p>
                     </div>
                 ) : (
-                    <div className="max-h-[600px] overflow-y-auto">
+                    <div ref={tableContainerRef} className="max-h-[600px] overflow-auto">
                         <table className="w-full">
                             <thead className="sticky top-0 bg-[var(--background-tertiary)]">
                                 <tr className="text-left text-sm text-[var(--text-muted)]">

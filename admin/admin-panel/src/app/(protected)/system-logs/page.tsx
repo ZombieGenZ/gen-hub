@@ -123,6 +123,23 @@ export default function SystemLogsPage() {
         }
     }, [logs, autoScroll, isPaused]);
 
+    // Alt + scroll to scroll horizontally in the console
+    useEffect(() => {
+        const container = consoleRef.current;
+        if (!container) return;
+
+        const handleWheel = (e: WheelEvent) => {
+            // Check if Alt key is pressed
+            if (e.altKey && e.deltaY !== 0) {
+                e.preventDefault();
+                container.scrollLeft += e.deltaY;
+            }
+        };
+
+        container.addEventListener('wheel', handleWheel, { passive: false });
+        return () => container.removeEventListener('wheel', handleWheel);
+    }, []);
+
     const clearLogs = () => {
         setLogs([]);
     };
@@ -325,7 +342,7 @@ export default function SystemLogsPage() {
                 {/* Console Output */}
                 <div
                     ref={consoleRef}
-                    className="flex-1 overflow-y-auto p-4 font-mono text-sm leading-relaxed"
+                    className="flex-1 overflow-auto p-4 font-mono text-sm leading-relaxed"
                     style={{ backgroundColor: '#0d1117' }}
                 >
                     {isLoading ? (
