@@ -249,7 +249,12 @@ export class DatabaseAdminService implements OnModuleInit {
 
             switch (operator) {
                 case 'equals':
-                    condition[column] = { equals: value };
+                    // Case-insensitive equals for string values
+                    if (typeof value === 'string') {
+                        condition[column] = { equals: value, mode: 'insensitive' };
+                    } else {
+                        condition[column] = { equals: value };
+                    }
                     break;
                 case 'not':
                     condition[column] = { not: value };
