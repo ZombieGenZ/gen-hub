@@ -33,7 +33,18 @@ export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
     const { t } = useLanguage();
     const { tables, isLoading, refreshTables } = useTables();
     const [searchQuery, setSearchQuery] = useState('');
-    const [isTablesExpanded, setIsTablesExpanded] = useState(true);
+
+    // Load tables expanded state from localStorage (default: true = open)
+    const [isTablesExpanded, setIsTablesExpanded] = useState(() => {
+        if (typeof window === 'undefined') return true;
+        const saved = localStorage.getItem('sidebar-tables-expanded');
+        return saved === null ? true : saved === 'true';
+    });
+
+    // Save tables expanded state to localStorage when it changes
+    useEffect(() => {
+        localStorage.setItem('sidebar-tables-expanded', String(isTablesExpanded));
+    }, [isTablesExpanded]);
 
     // Close sidebar when navigating on mobile
     useEffect(() => {
