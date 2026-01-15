@@ -65,6 +65,8 @@ import { CozePluginModule } from './modules/coze-plugin/coze-plugin.module';
 import { OrgChatModule } from './modules/org-chat/org-chat.module';
 import { BackblazeB2Module } from './modules/backblaze-b2/backblaze-b2.module';
 import { DatabaseBackupModule } from './modules/database-backup/database-backup.module';
+import { WarningCategoryModule } from './modules/warning-category/warning-category.module';
+import { UserManagementModule } from './modules/user-management/user-management.module';
 
 
 @Module({
@@ -227,6 +229,10 @@ import { DatabaseBackupModule } from './modules/database-backup/database-backup.
 
     // Database Backup
     DatabaseBackupModule,
+
+    // User Warning & Account Management
+    WarningCategoryModule,
+    UserManagementModule,
   ],
   controllers: [AppController],
   providers: [

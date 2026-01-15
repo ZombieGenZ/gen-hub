@@ -25,7 +25,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { NavItem } from "@/components/ui/nav-item";
-import { Tooltip } from '@base-ui/react/tooltip';
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 // --- Types ---
 export interface SidebarLinkItem {
@@ -85,7 +85,7 @@ export function AppSidebarContent({
     };
 
     return (
-        <Tooltip.Provider>
+        <TooltipProvider>
             <div className="flex flex-col h-full bg-sidebar text-sidebar-foreground transition-all duration-300">
                 {/* Logo Section */}
                 <div className={cn("h-16 flex items-center py-2.5 transition-all", isCollapsed ? "justify-center px-2" : "px-2.5")}>
@@ -254,7 +254,7 @@ export function AppSidebarContent({
                     document.body
                 )}
             </div>
-        </Tooltip.Provider>
+        </TooltipProvider>
     );
 }
 

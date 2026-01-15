@@ -117,6 +117,8 @@ model User {
   assigned_contact_conversations ContactConversation[]      @relation("AssignedStaff")
   contact_staff_assignments      ContactConversationStaff[] @relation("ContactStaff")
 
+  warnings UserWarning[]
+
   @@map("users")
 }
 
@@ -4170,4 +4172,52 @@ model DatabaseBackup {
   @@index([created_at])
   @@index([backup_type])
   @@map("database_backups")
+}
+
+model WarningCategory {
+  id          String  @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  name        String
+  description String?
+  severity    Int     @default(1)
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean   @default(false)
+  deleted_at DateTime?
+
+  created_by String
+  updated_by String?
+  deleted_by String?
+
+  warnings UserWarning[]
+
+  @@map("warning_categories")
+}
+
+model UserWarning {
+  id          String  @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  user_id     String  @db.Uuid
+  category_id String  @db.Uuid
+  reason      String  @db.Text
+
+  is_permanent Boolean   @default(false)
+  expires_at   DateTime?
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean   @default(false)
+  deleted_at DateTime?
+
+  warned_by  String    @db.Uuid
+  removed_by String?   @db.Uuid
+  removed_at DateTime?
+
+  user     User            @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  category WarningCategory @relation(fields: [category_id], references: [id])
+
+  @@index([user_id])
+  @@index([category_id])
+  @@map("user_warnings")
 }

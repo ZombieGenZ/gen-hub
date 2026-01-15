@@ -380,3 +380,104 @@ export interface SystemLogEvent {
   created_at: string;
 }
 
+/**
+ * Event khi user bị ban
+ */
+export interface UserBannedEvent {
+  userId: string;
+  reason: string;
+  isPermanent: boolean;
+  bannedEnd: string | null;
+  bannedBy: string;
+  timestamp: string;
+}
+
+/**
+ * Event khi user được unban
+ */
+export interface UserUnbannedEvent {
+  userId: string;
+  unbannedBy: string;
+  timestamp: string;
+}
+
+/**
+ * Event khi user bị warn
+ */
+export interface UserWarnedEvent {
+  userId: string;
+  warningId: string;
+  reason: string;
+  expiresAt: string | null;
+  warnedBy: string;
+  timestamp: string;
+}
+
+/**
+ * Event khi user được unwarn
+ */
+export interface UserUnwarnedEvent {
+  userId: string;
+  warningId: string;
+  unwarnedBy: string;
+  timestamp: string;
+}
+
+/**
+ * Event khi session bị revoke
+ */
+export interface UserSessionRevokedEvent {
+  userId: string;
+  sessionId: string;
+  revokedBy: string;
+  timestamp: string;
+}
+
+/**
+ * Event khi tất cả sessions bị revoke
+ */
+export interface UserAllSessionsRevokedEvent {
+  userId: string;
+  revokedBy: string;
+  timestamp: string;
+}
+
+/**
+ * Event khi Warning Category được tạo
+ */
+export interface WarningCategoryCreatedEvent {
+  id: string;
+  name: string;
+  severity: string;
+  createdBy: string;
+  timestamp: string;
+}
+
+/**
+ * Event khi Warning Category được update
+ */
+export interface WarningCategoryUpdatedEvent {
+  id: string;
+  name: string;
+  updatedBy: string;
+  timestamp: string;
+}
+
+/**
+ * Event khi Warning Category bị xóa
+ */
+export interface WarningCategoryDeletedEvent {
+  id: string;
+  deletedBy: string;
+  timestamp: string;
+}
+
+/**
+ * Event khi xóa nhiều Warning Category
+ */
+export interface WarningCategoryDeletedManyEvent {
+  ids: string[];
+  deletedBy: string;
+  timestamp: string;
+}
+

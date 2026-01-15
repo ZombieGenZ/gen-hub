@@ -1330,5 +1330,146 @@ export class WebsocketGateway
     this.logger.log(`📋 Socket ${socket.id} unsubscribed from system logs`);
     socket.emit('systemLog:unsubscribed', { success: true });
   }
+
+  // --- User Management Events ---
+
+  /**
+   * Emit event khi user bị ban
+   */
+  emitUserBanned(userId: string, reason: string, isPermanent: boolean, bannedEnd: string | null, bannedBy: string) {
+    const event = {
+      userId,
+      reason,
+      isPermanent,
+      bannedEnd,
+      bannedBy,
+      timestamp: new Date().toISOString(),
+    };
+    this.server.to(`user:${userId}`).emit('user:banned', event);
+    this.server.to('admin_room').emit('user:banned', event);
+  }
+
+  /**
+   * Emit event khi user được unban
+   */
+  emitUserUnbanned(userId: string, unbannedBy: string) {
+    const event = {
+      userId,
+      unbannedBy,
+      timestamp: new Date().toISOString(),
+    };
+    this.server.to(`user:${userId}`).emit('user:unbanned', event);
+    this.server.to('admin_room').emit('user:unbanned', event);
+  }
+
+  /**
+   * Emit event khi user bị warn
+   */
+  emitUserWarned(userId: string, warningId: string, reason: string, expiresAt: string | null, warnedBy: string) {
+    const event = {
+      userId,
+      warningId,
+      reason,
+      expiresAt,
+      warnedBy,
+      timestamp: new Date().toISOString(),
+    };
+    this.server.to(`user:${userId}`).emit('user:warned', event);
+    this.server.to('admin_room').emit('user:warned', event);
+  }
+
+  /**
+   * Emit event khi user được unwarn
+   */
+  emitUserUnwarned(userId: string, warningId: string, unwarnedBy: string) {
+    const event = {
+      userId,
+      warningId,
+      unwarnedBy,
+      timestamp: new Date().toISOString(),
+    };
+    this.server.to(`user:${userId}`).emit('user:unwarned', event);
+    this.server.to('admin_room').emit('user:unwarned', event);
+  }
+
+  /**
+   * Emit event khi session bị revoke
+   */
+  emitUserSessionRevoked(userId: string, sessionId: string, revokedBy: string) {
+    const event = {
+      userId,
+      sessionId,
+      revokedBy,
+      timestamp: new Date().toISOString(),
+    };
+    this.server.to(`user:${userId}`).emit('user:sessionRevoked', event);
+    this.server.to('admin_room').emit('user:sessionRevoked', event);
+  }
+
+  /**
+   * Emit event khi tất cả sessions bị revoke
+   */
+  emitAllUserSessionsRevoked(userId: string, revokedBy: string) {
+    const event = {
+      userId,
+      revokedBy,
+      timestamp: new Date().toISOString(),
+    };
+    this.server.to(`user:${userId}`).emit('user:allSessionsRevoked', event);
+    this.server.to('admin_room').emit('user:allSessionsRevoked', event);
+  }
+
+  // --- Warning Category Events ---
+
+  /**
+   * Emit event khi Warning Category được tạo
+   */
+  emitWarningCategoryCreated(id: string, name: string, severity: string, createdBy: string) {
+    const event = {
+      id,
+      name,
+      severity,
+      createdBy,
+      timestamp: new Date().toISOString(),
+    };
+    this.server.emit('warningCategory:created', event);
+  }
+
+  /**
+   * Emit event khi Warning Category được update
+   */
+  emitWarningCategoryUpdated(id: string, name: string, updatedBy: string) {
+    const event = {
+      id,
+      name,
+      updatedBy,
+      timestamp: new Date().toISOString(),
+    };
+    this.server.emit('warningCategory:updated', event);
+  }
+
+  /**
+   * Emit event khi Warning Category bị xóa
+   */
+  emitWarningCategoryDeleted(id: string, deletedBy: string) {
+    const event = {
+      id,
+      deletedBy,
+      timestamp: new Date().toISOString(),
+    };
+    this.server.emit('warningCategory:deleted', event);
+  }
+
+  /**
+   * Emit event khi xóa nhiều Warning Category
+   */
+  emitWarningCategoryDeletedMany(ids: string[], deletedBy: string) {
+    const event = {
+      ids,
+      deletedBy,
+      timestamp: new Date().toISOString(),
+    };
+    this.server.emit('warningCategory:deletedMany', event);
+  }
 }
 

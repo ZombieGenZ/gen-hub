@@ -112,6 +112,9 @@ socket.on('pong', () => {
 | Global (All) | AddonType: `addonType:created`, `addonType:updated`, `addonType:deleted`, `addonType:deletedMany` |
 | Global (All) | FAQ: `faq:created`, `faq:updated`, `faq:deleted`, `faq:deletedMany` |
 | `notifications` | `userNotification:received`, `userNotification:read`, `userNotification:allRead` |
+| Global (All) | Warning Category: `warningCategory:created`, `warningCategory:updated`, `warningCategory:deleted`, `warningCategory:deletedMany` |
+| `user:{userId}` | User Management: `user:banned`, `user:unbanned`, `user:warned`, `user:unwarned`, `user:sessionRevoked`, `user:allSessionsRevoked` |
+| `admin_room` | User Management: `user:banned`, `user:unbanned`, `user:warned`, `user:unwarned`, `user:sessionRevoked`, `user:allSessionsRevoked` |
 
 ---
 
