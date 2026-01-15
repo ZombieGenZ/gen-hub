@@ -17,6 +17,7 @@ import {
     Flag,
     Activity,
     ChevronDown,
+    Table,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage, LanguageSwitcher } from '@/contexts/LanguageContext';
@@ -280,13 +281,24 @@ export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
                             <Link
                                 href="/dashboard/system-logs"
                                 onClick={handleLinkClick}
-                                className={`flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-all ${pathname === '/dashboard/system-logs' || pathname.startsWith('/dashboard/system-logs/')
+                                className={`flex items-center gap-3 px-4 py-3 rounded-lg mb-1 transition-all ${pathname === '/dashboard/system-logs'
                                     ? 'bg-[var(--accent-primary-muted)] text-[var(--accent-primary)]'
                                     : 'text-[var(--text-secondary)] hover:bg-[var(--background-tertiary)] hover:text-white'
                                     }`}
                             >
                                 <Terminal className="w-5 h-5" />
-                                <span className="font-medium">{t('sidebar.systemLogs') || 'System Logs'}</span>
+                                <span className="font-medium">{t('systemLogs.consoleView') || 'Console View'}</span>
+                            </Link>
+                            <Link
+                                href="/dashboard/system-logs/table"
+                                onClick={handleLinkClick}
+                                className={`flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-all ${pathname === '/dashboard/system-logs/table'
+                                    ? 'bg-[var(--accent-primary-muted)] text-[var(--accent-primary)]'
+                                    : 'text-[var(--text-secondary)] hover:bg-[var(--background-tertiary)] hover:text-white'
+                                    }`}
+                            >
+                                <Table className="w-5 h-5" />
+                                <span className="font-medium">{t('systemLogs.viewTable') || 'Table View'}</span>
                             </Link>
                         </>
                     )}

@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import Link from 'next/link';
 import { systemLogsApi, systemLogsSocket, SystemLog } from '@/lib/api';
 import { useLanguage } from '@/contexts/LanguageContext';
 import {
@@ -13,7 +12,6 @@ import {
     Trash2,
     Download,
     ChevronDown,
-    Table,
     ArrowDown,
     X,
     FileDown,
@@ -87,6 +85,21 @@ export default function SystemLogsPage() {
                 if (!isPaused) {
                     // Add new logs to bottom (oldest first, newest last like terminal)
                     setLogs((prev) => [...prev, newLog].slice(-200)); // Keep max 200 logs
+
+                    // Update stats in real-time
+                    setStats((prev) => {
+                        if (!prev) return prev;
+                        const level = newLog.level as string;
+                        return {
+                            ...prev,
+                            total: prev.total + 1,
+                            recentCount: prev.recentCount + 1,
+                            byLevel: {
+                                ...prev.byLevel,
+                                [level]: (prev.byLevel[level] || 0) + 1,
+                            },
+                        };
+                    });
                 }
             });
         });
@@ -132,7 +145,7 @@ export default function SystemLogsPage() {
             // Fetch all logs with filters (up to 10000)
             const response = await systemLogsApi.getAll({
                 page: 1,
-                limit: 10000,
+                limit: 10000000,
                 level: exportLevel || undefined,
                 module: exportModule || undefined,
                 startDate: exportStartDate || undefined,
@@ -189,7 +202,13 @@ export default function SystemLogsPage() {
 
     const formatTime = (dateString: string) => {
         const date = new Date(dateString);
-        return date.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        const seconds = String(date.getSeconds()).padStart(2, '0');
+        return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
     };
 
     return (
@@ -276,16 +295,6 @@ export default function SystemLogsPage() {
                         <FileDown className="w-3.5 h-3.5" />
                         {t('common.export') || 'Export'}
                     </button>
-
-                    {/* View Table */}
-                    <Link
-                        href="/dashboard/system-logs/table"
-                        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-[var(--accent-primary)] hover:bg-[var(--accent-primary-hover)] text-white transition-colors"
-                        title="View as table"
-                    >
-                        <Table className="w-3.5 h-3.5" />
-                        {t('systemLogs.viewTable') || 'Table View'}
-                    </Link>
                 </div>
             </div>
 
@@ -329,7 +338,7 @@ export default function SystemLogsPage() {
                             {logs.map((log, index) => (
                                 <div key={log.id || index} className="flex items-start hover:bg-[#161b22] px-2 py-0.5 rounded group">
                                     {/* Timestamp */}
-                                    <span className="text-[#6e7681] w-20 flex-shrink-0">{formatTime(log.created_at)}</span>
+                                    <span className="text-[#6e7681] w-44 flex-shrink-0">{formatTime(log.created_at)}</span>
 
                                     {/* Level Badge */}
                                     <span className={`w-14 flex-shrink-0 font-semibold ${getLevelColor(log.level as LogLevel)}`}>
@@ -488,9 +497,12 @@ export default function SystemLogsPage() {
                                     style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236e7681'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center', backgroundSize: '16px' }}
                                 >
                                     <option value="">{t('common.all') || 'All Modules'}</option>
-                                    {modules.map((m) => (
-                                        <option key={m} value={m}>{m}</option>
-                                    ))}
+                                    {modules
+                                        .map((m) => m.charAt(0).toUpperCase() + m.slice(1))
+                                        .sort((a, b) => a.localeCompare(b))
+                                        .map((m) => (
+                                            <option key={m} value={m}>{m}</option>
+                                        ))}
                                 </select>
                             </div>
                         </div>
