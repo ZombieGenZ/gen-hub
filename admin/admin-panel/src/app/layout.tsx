@@ -26,6 +26,8 @@ export default function RootLayout({
             <Toaster
               position="top-right"
               theme="dark"
+              closeButton
+              richColors
               toastOptions={{
                 style: {
                   background: 'var(--background-tertiary)',

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { toast } from 'sonner';
 import { systemLogsApi, systemLogsSocket, SystemLog } from '@/lib/api';
 import { useLanguage } from '@/contexts/LanguageContext';
 import {
@@ -153,7 +154,7 @@ export default function SystemLogsPage() {
             });
 
             if (response.data.length === 0) {
-                alert(t('systemLogs.export.noData') || 'No logs found with selected filters');
+                toast.warning(t('systemLogs.export.noData') || 'No logs found with selected filters');
                 return;
             }
 
