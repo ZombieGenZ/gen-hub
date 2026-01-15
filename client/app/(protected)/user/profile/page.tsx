@@ -698,8 +698,7 @@ export default function ProfilePage() {
 
                       <form onSubmit={handleUpdateProfile} className="space-y-6">
                         {/* Email & Password Row */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          <div className="space-y-2">
+                        <div className="space-y-2">
                             <label className="text-sm font-semibold text-slate-600 dark:text-slate-400">Địa chỉ email</label>
                             <div className="relative group">
                               <input
@@ -708,22 +707,8 @@ export default function ProfilePage() {
                                 disabled
                                 className="w-full bg-slate-50 dark:bg-slate-950 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2.5 focus:outline-none cursor-not-allowed text-ellipsis font-mono text-sm"
                               />
-                              <Pencil className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-3.5 opacity-50" />
                             </div>
                           </div>
-                          <div className="space-y-2">
-                            <label className="text-sm font-semibold text-slate-600 dark:text-slate-400">Mật khẩu</label>
-                            <div className="relative">
-                              <input
-                                type="password"
-                                value="............."
-                                disabled
-                                className="w-full bg-slate-50 dark:bg-slate-950 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2.5 focus:outline-none cursor-not-allowed font-mono text-sm tracking-widest"
-                              />
-                              <Pencil className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-3.5" />
-                            </div>
-                          </div>
-                        </div>
 
                         {/* Name Row */}
                         <div className="grid grid-cols-1 gap-6">
