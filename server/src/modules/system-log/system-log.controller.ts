@@ -56,7 +56,8 @@ export class SystemLogController {
         }
 
         if (module) {
-            where.module = module;
+            // Case-insensitive module filter
+            where.module = { equals: module, mode: 'insensitive' };
         }
 
         if (search) {
