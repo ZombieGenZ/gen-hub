@@ -113,7 +113,9 @@
         "next": "Sau",
         "cancel": "Hủy",
         "export": "Xuất",
-        "all": "Tất cả"
+        "all": "Tất cả",
+        "confirm": "Xác nhận",
+        "loading": "Đang tải..."
     },
     "sidebar": {
         "title": "Admin Panel",
@@ -124,7 +126,8 @@
         "admin": "Admin Panel",
         "featureFlags": "Feature Flags",
         "resources": "Resources",
-        "systemLogs": "System Logs"
+        "systemLogs": "System Logs",
+        "backup": "Quản lý Backup"
     },
     "diagram": {
         "title": "Sơ đồ",
@@ -288,6 +291,37 @@
             "exporting": "Đang xuất...",
             "success": "Xuất thành công",
             "noData": "Không tìm thấy log với bộ lọc đã chọn"
+        }
+    },
+    "backup": {
+        "title": "Quản lý Backup",
+        "subtitle": "Quản lý sao lưu cơ sở dữ liệu",
+        "secretKey": "Mã bảo mật",
+        "triggerBackup": "Tạo Backup",
+        "download": "Tải xuống",
+        "totalBackups": "Tổng số backups",
+        "noBackups": "Không tìm thấy backup",
+        "needAuthentication": "Cần xác thực để xem danh sách backups",
+        "authenticate": "Xác thực",
+        "type": {
+            "scheduled": "Tự động",
+            "manualApi": "Thủ công (API)",
+            "manualDiscord": "Thủ công (Discord)"
+        },
+        "modal": {
+            "listTitle": "Xác thực để xem Backups",
+            "listDesc": "Nhập mã bảo mật backup để xem danh sách các bản sao lưu.",
+            "triggerTitle": "Xác thực để tạo Backup",
+            "triggerDesc": "Nhập mã bảo mật backup để tạo một bản sao lưu mới.",
+            "downloadTitle": "Xác thực để tải xuống",
+            "downloadDesc": "Nhập mã bảo mật backup để tải xuống file sao lưu này."
+        },
+        "error": {
+            "invalidKey": "Mã không hợp lệ"
+        },
+        "triggerOnly": {
+            "title": "Tạo Backup",
+            "desc": "Bạn có quyền tạo backup. Nhấn nút ở trên để tạo một bản sao lưu mới."
         }
     }
 }

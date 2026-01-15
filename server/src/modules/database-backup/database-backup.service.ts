@@ -539,15 +539,63 @@ export class DatabaseBackupService implements OnModuleInit {
             this.prismaService.databaseBackup.count({ where }),
         ]);
 
+        // Lấy danh sách user IDs (UUID format) từ triggered_by
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        const discordIdRegex = /^\d{17,20}$/; // Discord snowflake IDs are 17-20 digits
+
+        const userIds = items
+            .map((item) => item.triggered_by)
+            .filter((id): id is string => id !== null && uuidRegex.test(id));
+
+        const discordIds = items
+            .map((item) => item.triggered_by)
+            .filter((id): id is string => id !== null && discordIdRegex.test(id));
+
+        // Fetch user names từ database
+        const users = userIds.length > 0
+            ? await this.prismaService.user.findMany({
+                where: { id: { in: userIds } },
+                select: { id: true, name: true },
+            })
+            : [];
+        const userMap = new Map(users.map((u) => [u.id, u.name]));
+
+        // Fetch Discord usernames
+        const discordUserMap = new Map<string, string>();
+        if (discordIds.length > 0 && this.discordService.enabled) {
+            await Promise.all(
+                discordIds.map(async (discordId) => {
+                    const username = await this.discordService.getDiscordUsername(discordId);
+                    if (username) {
+                        discordUserMap.set(discordId, username);
+                    }
+                }),
+            );
+        }
+
         const result = {
-            items: items.map((item) => ({
-                id: item.id,
-                fileName: item.file_name,
-                fileSize: Number(item.file_size),
-                backupType: item.backup_type,
-                createdAt: item.created_at,
-                triggeredBy: item.triggered_by || 'SYSTEM',
-            })),
+            items: items.map((item) => {
+                const triggeredBy = item.triggered_by || 'SYSTEM';
+                let triggeredByDisplay = triggeredBy;
+
+                // Nếu là UUID và tìm thấy user, hiển thị tên user
+                if (uuidRegex.test(triggeredBy)) {
+                    triggeredByDisplay = userMap.get(triggeredBy) || triggeredBy;
+                }
+                // Nếu là Discord ID và tìm thấy username, hiển thị Discord username
+                else if (discordIdRegex.test(triggeredBy)) {
+                    triggeredByDisplay = discordUserMap.get(triggeredBy) || triggeredBy;
+                }
+
+                return {
+                    id: item.id,
+                    fileName: item.file_name,
+                    fileSize: Number(item.file_size),
+                    backupType: item.backup_type,
+                    createdAt: item.created_at,
+                    triggeredBy: triggeredByDisplay,
+                };
+            }),
             total,
         };
 

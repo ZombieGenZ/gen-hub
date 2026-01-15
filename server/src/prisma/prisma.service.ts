@@ -305,6 +305,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         this.seedFeatureFlagPermission.bind(this),
         this.seedResourcesAdminPermission.bind(this),
         this.seedSystemLogsAdminPermission.bind(this),
+        this.seedBackupAdminPermission.bind(this),
         this.seedAmenityPermissions.bind(this),
         this.seedAddonPermissions.bind(this),
         this.seedInsurancePermissions.bind(this),
@@ -601,6 +602,69 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         error instanceof Error ? error.message : String(error);
       this.logger.error(
         `❌ Failed to seed system logs admin permission: ${errorMessage}`,
+      );
+    }
+  }
+
+  /**
+   * Seed permission backup.admin cho Backup Management
+   */
+  private async seedBackupAdminPermission() {
+    try {
+      const existing = await this.permission.findFirst({
+        where: { key: 'backup.admin' },
+      });
+
+      let permissionId = existing?.id;
+
+      if (!existing) {
+        const newPermission = await this.permission.create({
+          data: {
+            key: 'backup.admin',
+            name: 'Backup Admin',
+            description: 'Quyền quản lý backup database (list, trigger, download)',
+            is_active: true,
+            is_deleted: false,
+          },
+        });
+        permissionId = newPermission.id;
+        this.logger.log('✅ Backup admin permission seeded');
+      }
+
+      // Assign to Super Admin
+      if (permissionId) {
+        const superAdminRole = await this.role.findFirst({
+          where: { name: 'Super Admin', is_deleted: false },
+        });
+
+        if (superAdminRole) {
+          const existingAssignment = await this.rolePermission.findFirst({
+            where: {
+              role_id: superAdminRole.id,
+              permission_id: permissionId,
+            },
+          });
+
+          if (!existingAssignment) {
+            await this.rolePermission.create({
+              data: {
+                role_id: superAdminRole.id,
+                permission_id: permissionId,
+                is_active: true,
+                is_deleted: false,
+              },
+            });
+            this.logger.log(
+              '✅ Backup admin permission assigned to Super Admin',
+            );
+          }
+        }
+      }
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `❌ Failed to seed backup admin permission: ${errorMessage}`,
       );
     }
   }

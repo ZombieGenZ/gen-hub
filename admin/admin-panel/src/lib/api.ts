@@ -614,5 +614,65 @@ export const systemLogsSocket = {
     getSocket: () => systemLogsSocketInstance,
 };
 
+// Backup API types
+export interface BackupItem {
+    id: string;
+    fileName: string;
+    fileSize: number;
+    backupType: 'SCHEDULED' | 'MANUAL_API' | 'MANUAL_DISCORD';
+    createdAt: string;
+    triggeredBy: string;
+}
+
+export interface BackupListResponse {
+    items: BackupItem[];
+    total: number;
+}
+
+export interface TriggerBackupResponse {
+    id: string;
+    fileName: string;
+    fileSize: number;
+    driveFileId: string;
+    driveFileUrl?: string;
+    backupType: string;
+    createdAt: string;
+    triggeredBy: string;
+}
+
+export interface DownloadUrlResponse {
+    downloadUrl: string;
+    expiresIn: number;
+    expiresAt: string;
+}
+
+// Backup API functions
+export const backupApi = {
+    listBackups: async (key: string, options?: {
+        limit?: number;
+        offset?: number;
+        keywords?: string;
+    }): Promise<BackupListResponse> => {
+        const params = new URLSearchParams();
+        params.append('key', key);
+        if (options?.limit) params.append('limit', String(options.limit));
+        if (options?.offset) params.append('offset', String(options.offset));
+        if (options?.keywords) params.append('keywords', options.keywords);
+
+        const { data } = await api.get(`/admin/backups?${params.toString()}`);
+        return data.data;
+    },
+
+    triggerBackup: async (key: string): Promise<TriggerBackupResponse> => {
+        const { data } = await api.post('/admin/backups/trigger', { key });
+        return data.data;
+    },
+
+    getDownloadUrl: async (id: string, key: string): Promise<DownloadUrlResponse> => {
+        const { data } = await api.post(`/admin/backups/${id}/download-url`, { key });
+        return data.data;
+    },
+};
+
 export default api;
 

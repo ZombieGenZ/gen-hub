@@ -8,6 +8,7 @@ import { Reflector } from '@nestjs/core';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../../modules/redis/redis.service';
 import { PERMISSIONS_KEY } from '../decorators/require-permission.decorator';
+import { PERMISSIONS_ANY_KEY } from '../decorators/require-any-permission.decorator';
 
 @Injectable()
 export class PermissionGuard implements CanActivate {
@@ -23,7 +24,14 @@ export class PermissionGuard implements CanActivate {
       [context.getHandler(), context.getClass()],
     );
 
-    if (!requiredPermissions || requiredPermissions.length === 0) {
+    const requiredAnyPermissions = this.reflector.getAllAndOverride<string[]>(
+      PERMISSIONS_ANY_KEY,
+      [context.getHandler(), context.getClass()],
+    );
+
+    // Nếu không có permission nào được yêu cầu, cho phép truy cập
+    if ((!requiredPermissions || requiredPermissions.length === 0) &&
+      (!requiredAnyPermissions || requiredAnyPermissions.length === 0)) {
       return true;
     }
 
@@ -54,12 +62,26 @@ export class PermissionGuard implements CanActivate {
 
     const userPermissions = await this.getUserPermissions(user.userId);
 
-    const hasPermission = requiredPermissions.every((permission) =>
-      userPermissions.includes(permission),
-    );
+    // Kiểm tra RequirePermission (AND logic - phải có TẤT CẢ)
+    if (requiredPermissions && requiredPermissions.length > 0) {
+      const hasAllPermissions = requiredPermissions.every((permission) =>
+        userPermissions.includes(permission),
+      );
 
-    if (!hasPermission) {
-      throw new ForbiddenException('Không có quyền thực hiện thao tác này');
+      if (!hasAllPermissions) {
+        throw new ForbiddenException('Không có quyền thực hiện thao tác này');
+      }
+    }
+
+    // Kiểm tra RequireAnyPermission (OR logic - chỉ cần có MỘT)
+    if (requiredAnyPermissions && requiredAnyPermissions.length > 0) {
+      const hasAnyPermission = requiredAnyPermissions.some((permission) =>
+        userPermissions.includes(permission),
+      );
+
+      if (!hasAnyPermission) {
+        throw new ForbiddenException('Không có quyền thực hiện thao tác này');
+      }
     }
 
     return true;

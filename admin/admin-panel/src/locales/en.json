@@ -113,7 +113,9 @@
         "next": "Next",
         "cancel": "Cancel",
         "export": "Export",
-        "all": "All"
+        "all": "All",
+        "confirm": "Confirm",
+        "loading": "Loading..."
     },
     "sidebar": {
         "title": "Admin Panel",
@@ -124,7 +126,8 @@
         "admin": "Admin Panel",
         "featureFlags": "Feature Flags",
         "resources": "Resources",
-        "systemLogs": "System Logs"
+        "systemLogs": "System Logs",
+        "backup": "Backup Manager"
     },
     "diagram": {
         "title": "Diagram",
@@ -288,6 +291,37 @@
             "exporting": "Exporting...",
             "success": "Export successful",
             "noData": "No logs found with selected filters"
+        }
+    },
+    "backup": {
+        "title": "Backup Manager",
+        "subtitle": "Manage database backups",
+        "secretKey": "Secret Key",
+        "triggerBackup": "Trigger Backup",
+        "download": "Download",
+        "totalBackups": "Total backups",
+        "noBackups": "No backups found",
+        "needAuthentication": "Authentication required to view backups",
+        "authenticate": "Authenticate",
+        "type": {
+            "scheduled": "Scheduled",
+            "manualApi": "Manual (API)",
+            "manualDiscord": "Manual (Discord)"
+        },
+        "modal": {
+            "listTitle": "Authenticate to View Backups",
+            "listDesc": "Enter the backup secret key to view the list of backups.",
+            "triggerTitle": "Authenticate to Trigger Backup",
+            "triggerDesc": "Enter the backup secret key to create a new backup.",
+            "downloadTitle": "Authenticate to Download",
+            "downloadDesc": "Enter the backup secret key to download this backup file."
+        },
+        "error": {
+            "invalidKey": "Invalid key"
+        },
+        "triggerOnly": {
+            "title": "Trigger Backup",
+            "desc": "You have permission to trigger backups. Click the button above to create a new backup."
         }
     }
 }

@@ -202,6 +202,30 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
     }
 
     /**
+     * Lấy username của Discord user theo ID
+     * @param userId Discord user ID (snowflake)
+     * @returns Username có dạng "DisplayName (@username)" hoặc null nếu không tìm thấy
+     */
+    async getDiscordUsername(userId: string): Promise<string | null> {
+        if (!this.client) return null;
+
+        try {
+            const user = await this.client.users.fetch(userId);
+            if (user) {
+                // Trả về display name với @ username nếu có
+                const displayName = user.displayName || user.username;
+                return displayName !== user.username
+                    ? `${displayName} (@${user.username})`
+                    : `@${user.username}`;
+            }
+            return null;
+        } catch (error) {
+            this.logger.warn(`Failed to fetch Discord user ${userId}:`, error);
+            return null;
+        }
+    }
+
+    /**
      * Đăng ký callback để xử lý reply từ Discord
      */
     setReplyCallback(callback: DiscordReplyCallback) {
@@ -982,6 +1006,44 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
         userName: string,
     ): Promise<void> {
         const { commandName } = interaction;
+
+        // Danh sách các lệnh backup - chỉ dùng trong BACKUP_CHANNEL
+        const backupCommands = ['backup', 'backups', 'backup-download'];
+
+        // Danh sách các lệnh ticket - chỉ dùng trong support categories
+        const ticketCommands = ['close', 'reopen', 'delete', 'skip', 'unskip', 'priority',
+            'whitelist', 'blacklist', 'remove-whitelist', 'remove-blacklist'];
+
+        // Các category IDs cho ticket
+        const ticketCategoryIds = [
+            this.categoryId,           // DISCORD_SUPPORT_CATEGORY_ID
+            this.closedCategoryId,     // DISCORD_CLOSED_CATEGORY_ID
+            this.priorityCategoryId,   // DISCORD_PRIORITY_CATEGORY_ID
+            this.ignoredCategoryId,    // CONTACT_IGNORED_CATEGORY_ID
+        ].filter(Boolean);
+
+        // Kiểm tra backup commands
+        if (backupCommands.includes(commandName)) {
+            if (channel.id !== this.backupChannelId) {
+                await interaction.reply({
+                    content: `❌ Lệnh \`/${commandName}\` chỉ có thể sử dụng trong kênh backup (<#${this.backupChannelId}>).`,
+                    ephemeral: true,
+                });
+                return;
+            }
+        }
+
+        // Kiểm tra ticket commands
+        if (ticketCommands.includes(commandName)) {
+            const parentId = channel.parentId;
+            if (!parentId || !ticketCategoryIds.includes(parentId)) {
+                await interaction.reply({
+                    content: `❌ Lệnh \`/${commandName}\` chỉ có thể sử dụng trong các kênh ticket hỗ trợ.`,
+                    ephemeral: true,
+                });
+                return;
+            }
+        }
 
         switch (commandName) {
             case 'close': {

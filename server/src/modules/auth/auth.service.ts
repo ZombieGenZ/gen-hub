@@ -348,7 +348,7 @@ export class AuthService {
     const result = await this.loginWithAnyPermissionCheck(
       dto,
       deviceInfo,
-      ['database.admin', 'featureflag.admin', 'resources.admin', 'systemlogs.admin'],
+      ['database.admin', 'featureflag.admin', 'resources.admin', 'systemlogs.admin', 'backup.admin', 'backup.list', 'backup.trigger'],
       'auth.panel_login.admin_permission_denied',
       'auth.panel_login.admin_success',
       lang,

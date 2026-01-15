@@ -18,6 +18,7 @@ import {
     Activity,
     ChevronDown,
     Table,
+    DatabaseBackup,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage, LanguageSwitcher } from '@/contexts/LanguageContext';
@@ -299,6 +300,28 @@ export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
                             >
                                 <Table className="w-5 h-5" />
                                 <span className="font-medium">{t('systemLogs.viewTable') || 'Table View'}</span>
+                            </Link>
+                        </>
+                    )}
+
+                    {/* Backup Section - show if has any backup permission */}
+                    {(hasPermission('backup.admin') || hasPermission('backup.list') || hasPermission('backup.trigger')) && (
+                        <>
+                            <div className="mt-4 mb-2 px-4 py-2">
+                                <span className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
+                                    Backup
+                                </span>
+                            </div>
+                            <Link
+                                href="/backups"
+                                onClick={handleLinkClick}
+                                className={`flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-all ${pathname === '/backups' || pathname.startsWith('/backups/')
+                                    ? 'bg-[var(--accent-primary-muted)] text-[var(--accent-primary)]'
+                                    : 'text-[var(--text-secondary)] hover:bg-[var(--background-tertiary)] hover:text-white'
+                                    }`}
+                            >
+                                <DatabaseBackup className="w-5 h-5" />
+                                <span className="font-medium">{t('sidebar.backup') || 'Backup Manager'}</span>
                             </Link>
                         </>
                     )}

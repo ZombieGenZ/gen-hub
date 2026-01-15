@@ -35,12 +35,14 @@ export default function DashboardPage() {
     const [isLoadingStats, setIsLoadingStats] = useState(false);
     const [statsLoaded, setStatsLoaded] = useState(false);
 
-    // Redirect based on permission priority: database.admin > featureflag.admin > resources.admin
+    // Redirect based on permission priority: database.admin > backup > featureflag.admin > resources.admin
     useEffect(() => {
         if (isAuthLoading) return;
 
         if (!hasPermission('database.admin')) {
-            if (hasPermission('featureflag.admin')) {
+            if (hasPermission('backup.admin') || hasPermission('backup.list') || hasPermission('backup.trigger')) {
+                router.replace('/backups');
+            } else if (hasPermission('featureflag.admin')) {
                 router.replace('/feature-flags');
             } else if (hasPermission('resources.admin')) {
                 router.replace('/resources');
