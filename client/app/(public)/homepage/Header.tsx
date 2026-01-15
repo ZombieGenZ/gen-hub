@@ -19,8 +19,8 @@ export function PrimeNestHeader({ isLogin, user }: HeaderProps) {
     const [active, setActive] = useState<string | null>(null);
 
     return (
-        <header className="sticky top-0 w-full z-50 bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800">
-            <div className="w-full max-w-[1440px] mx-auto px-8 lg:px-0 h-[80px] flex items-center justify-between">
+        <header className="sticky top-0 w-full z-50 bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/95 border-b border-border shadow-sm">
+            <div className="w-full max-w-[1440px] mx-auto px-4 lg:px-4 h-[80px] flex items-center justify-between">
                 {/* Logo */}
                 <Link href="/" className="flex items-center gap-3 relative z-50 shrink-0">
                     <img src="/assets/GenHubv2.svg" alt="GenHub" className="h-9 w-auto" />
@@ -29,9 +29,9 @@ export function PrimeNestHeader({ isLogin, user }: HeaderProps) {
                 {/* Navigation - Centered */}
                 <div className="hidden lg:flex items-center justify-center flex-1 mx-8">
                     <Menu setActive={setActive}>
-                        <Link href="/" className="text-sm font-medium text-gray-700 hover:text-teal-600 dark:text-gray-300 dark:hover:text-teal-400 transition-colors duration-200 relative group">
+                        <Link href="/" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors duration-200 relative group">
                             Trang Chủ
-                            <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-teal-500 transition-all duration-200 group-hover:w-full" />
+                            <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all duration-200 group-hover:w-full" />
                         </Link>
 
                         <MenuItem setActive={setActive} active={active} item="Dịch Vụ">
@@ -52,13 +52,13 @@ export function PrimeNestHeader({ isLogin, user }: HeaderProps) {
                             </div>
                         </MenuItem>
 
-                        <Link href="/dev/routes" className="text-sm font-medium text-gray-700 hover:text-teal-600 dark:text-gray-300 dark:hover:text-teal-400 transition-colors duration-200 relative group">
+                        <Link href="/dev/routes" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors duration-200 relative group">
                             Routes
-                            <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-teal-500 transition-all duration-200 group-hover:w-full" />
+                            <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all duration-200 group-hover:w-full" />
                         </Link>
-                        <Link href="#about" className="text-sm font-medium text-gray-700 hover:text-teal-600 dark:text-gray-300 dark:hover:text-teal-400 transition-colors duration-200 relative group">
+                        <Link href="#about" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors duration-200 relative group">
                             Về Chúng Tôi
-                            <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-teal-500 transition-all duration-200 group-hover:w-full" />
+                            <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all duration-200 group-hover:w-full" />
                         </Link>
                     </Menu>
                 </div>
@@ -71,12 +71,12 @@ export function PrimeNestHeader({ isLogin, user }: HeaderProps) {
                         </div>
                         :
                         <div className="hidden md:flex items-center gap-5">
-                            <Link href="/login" className="text-sm font-medium text-gray-700 hover:text-teal-600 transition-colors duration-200">
+                            <Link href="/login" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors duration-200">
                                 Đăng Nhập
                             </Link>
                             <Link
                                 href="/register"
-                                className="px-6 py-3 text-sm font-semibold text-white bg-teal-600 rounded-3xl hover:bg-teal-700 transition-all duration-200 shadow-sm hover:shadow-md"
+                                className="px-6 py-3 text-sm font-semibold text-primary-foreground bg-primary rounded-3xl hover:bg-primary/90 transition-all duration-200 shadow-sm hover:shadow-md"
                             >
                                 Đăng Ký
                             </Link>
@@ -84,7 +84,7 @@ export function PrimeNestHeader({ isLogin, user }: HeaderProps) {
                     }
 
                     {/* Mobile Menu Button - Kept for mobile */}
-                    <button className="lg:hidden text-gray-700 dark:text-gray-300 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-3xl transition-colors" aria-label="Open menu">
+                    <button className="lg:hidden text-muted-foreground p-2 hover:bg-accent hover:text-accent-foreground rounded-3xl transition-colors" aria-label="Open menu">
                         <svg
                             className="w-6 h-6"
                             fill="none"

@@ -1,6 +1,6 @@
 "use client";
 
-import { AdminHeader } from "@/components/layouts/AdminHeader";
+
 import {
     Table,
     TableBody,
@@ -41,8 +41,8 @@ export default function CustomersPage() {
 
     return (
         <div className="flex flex-col flex-1 h-full bg-slate-50/50">
-            <AdminHeader>
-                <div className="relative w-full max-w-xl hidden md:block">
+            <main className="flex-1 p-4 md:p-8">
+                <div className="relative w-full max-w-xl hidden md:block mb-6">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                     <Input
                         placeholder="Tìm kiếm khách hàng..."
@@ -51,9 +51,6 @@ export default function CustomersPage() {
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
-            </AdminHeader>
-
-            <main className="flex-1 p-4 md:p-8">
                 <div className="flex items-center justify-between mb-6">
                     <div>
                         <h1 className="text-2xl font-bold text-slate-900">Khách hàng</h1>

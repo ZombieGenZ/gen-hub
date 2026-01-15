@@ -7,6 +7,7 @@ import { PanelLeft } from "lucide-react";
 import { AdminSidebarNav } from "./AdminSidebar";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/components/providers/sidebar-provider";
 
@@ -31,33 +32,33 @@ export function AdminHeader({ children }: AdminHeaderProps) {
 
     return (
         <header className="p-4 bg-background sticky top-0 z-20 h-16 flex items-center">
-                    <div className="flex items-center w-full py-0 px-4 gap-2">
-                        {/* Mobile Menu Toggle */}
+            <div className="flex items-center w-full py-0 px-4 gap-2">
+                {/* Mobile Menu Toggle */}
                         <div className="lg:hidden">
-                            <Sheet>
-                                <SheetTrigger asChild>
-                                    <button className="p-2 -ml-2 text-muted-foreground hover:bg-secondary rounded-md outline-none">
-                                        <PanelLeft className="w-5 h-5" />
-                                    </button>
-                                </SheetTrigger>
-                                <SheetContent side="left" className="p-0 w-72">
-                                    <AdminSidebarNav />
-                                </SheetContent>
-                            </Sheet>
-                        </div>
-        
-                        {/* Desktop Toggle */}
-                        <div className="hidden lg:flex items-center text-muted-foreground">
-                            <button
-                                onClick={toggle}
-                                className="p-2 -ml-2 hover:bg-secondary hover:text-foreground rounded-md outline-none cursor-pointer transition-colors"
-                                aria-label="Toggle Sidebar"
-                            >
+                    <Sheet>
+                        <SheetTrigger asChild>
+                            <button className="p-2 -ml-2 text-muted-foreground hover:bg-secondary rounded-md outline-none">
                                 <PanelLeft className="w-5 h-5" />
                             </button>
-                            <div className="h-4 w-px bg-border mx-2" />
-                        </div>
-        
+                        </SheetTrigger>
+                        <SheetContent side="left" className="p-0 w-72">
+                            <AdminSidebarNav />
+                        </SheetContent>
+                    </Sheet>
+                </div>
+
+                {/* Desktop Toggle */}
+                <div className="hidden lg:flex items-center text-muted-foreground">
+                    <button
+                        onClick={toggle}
+                        className="p-2 -ml-2 hover:bg-secondary hover:text-foreground rounded-md outline-none cursor-pointer transition-colors"
+                        aria-label="Toggle Sidebar"
+                    >
+                        <PanelLeft className="w-5 h-5" />
+                    </button>
+                    <div className="h-4 w-px bg-border mx-2" />
+                </div>
+
                 {/* Breadcrumbs */}
                 <nav aria-label="Breadcrumb" className="flex-1 overflow-hidden">
                     {children ? children : (

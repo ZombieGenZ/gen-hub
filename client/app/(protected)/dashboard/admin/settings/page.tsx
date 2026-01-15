@@ -1,6 +1,5 @@
 "use client";
 
-import { DashboardHeader } from "@/components/layouts/AdminHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,10 +15,10 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 
+
 export default function SettingsPage() {
     return (
         <div className="flex flex-col flex-1 h-full bg-muted/40">
-            <DashboardHeader />
 
             <main className="flex-1 p-4 md:p-8 max-w-5xl mx-auto w-full">
                 <div className="flex items-center justify-between mb-8">

@@ -1,6 +1,6 @@
 "use client";
 
-import { AdminHeader } from "@/components/layouts/AdminHeader";
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -168,7 +168,7 @@ const ContractsPage = () => {
 
     return (
         <div className="flex flex-col flex-1 h-full bg-muted/40">
-            <AdminHeader />
+
 
             <main className="flex-1 p-4 md:p-8 w-full space-y-6">
                 {/* Header Section */}

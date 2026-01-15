@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { WarehouseTemplateService } from "@/services/warehouse_template/warehouse_template.service";
 import { Warehouse } from "@/types/warehoue_template/warehouse_template.type";
 import { authStorage } from "@/services/auth/auth-storage.service";
-import { DashboardHeader } from "@/components/layouts/AdminHeader";
+
 import { Button } from "@/components/ui/button";
 import {
     MapPin,
@@ -76,7 +76,6 @@ export default function WarehouseDetailPage() {
         return (
             <div className="flex min-h-screen bg-slate-50">
                 <div className="flex-1 flex flex-col">
-                    <DashboardHeader />
                     <div className="flex-1 flex items-center justify-center">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
                     </div>
@@ -89,7 +88,6 @@ export default function WarehouseDetailPage() {
         return (
             <div className="flex min-h-screen bg-slate-50">
                 <div className="flex-1 flex flex-col">
-                    <DashboardHeader />
                     <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
                         <div className="text-red-500 text-xl mb-4">⚠️ {error || "Warehouse not found"}</div>
                         <Button
@@ -120,19 +118,7 @@ export default function WarehouseDetailPage() {
 
     return (
         <div className="flex flex-col min-h-screen bg-slate-50">
-            <DashboardHeader>
-                <div className="flex items-center text-sm text-slate-500">
-                    <Link href="/dashboard" className="hover:text-primary flex items-center gap-1">
-                        <Home className="w-4 h-4" /> Trang chủ
-                    </Link>
-                    <ChevronRight className="w-4 h-4 mx-2" />
-                    <Link href="/dashboard/warehouse_template" className="hover:text-primary">
-                        Danh sách kho
-                    </Link>
-                    <ChevronRight className="w-4 h-4 mx-2" />
-                    <span className="text-slate-900 font-medium truncate max-w-[200px]">{warehouse.name}</span>
-                </div>
-            </DashboardHeader>
+
 
             <div className="flex-1 p-4 md:p-8 max-w-7xl mx-auto w-full">
                 {/* Header Section */}
@@ -146,8 +132,8 @@ export default function WarehouseDetailPage() {
                             </div>
                             <div className="flex flex-wrap gap-2">
                                 <span className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${warehouse.is_active
-                                        ? "bg-green-100 text-green-700"
-                                        : "bg-red-100 text-red-700"
+                                    ? "bg-green-100 text-green-700"
+                                    : "bg-red-100 text-red-700"
                                     }`}>
                                     <div className={`w-2 h-2 rounded-full ${warehouse.is_active ? "bg-green-500" : "bg-red-500"}`}></div>
                                     {warehouse.is_active ? "ĐANG HOẠT ĐỘNG" : "NGỪNG HOẠT ĐỘNG"}

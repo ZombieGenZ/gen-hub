@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { WarehouseTemplateService } from "@/services/warehouse_template/warehouse_template.service";
 import { Warehouse } from "@/types/warehoue_template/warehouse_template.type";
 import { useDebounce } from "@/hooks/use-debounce";
-import { AdminHeader } from "@/components/layouts/AdminHeader";
+
 import Image from "next/image";
 import { WarehouseCard } from '@/components/dashboard/WarehouseCard'
 import { useRouter } from "next/navigation";
@@ -160,27 +160,7 @@ export default function WarehouseTemplatePage() {
 
     return (
         <>
-            <AdminHeader>
-                <div className="flex items-center gap-4 bg-slate-50 px-4 py-2 rounded-xl border border-slate-200 focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all w-full md:w-96">
-                    <i className="fas fa-search text-slate-400"></i>
-                    <input
-                        type="text"
-                        placeholder="Tìm kiếm kho..."
-                        className="bg-transparent border-none outline-none text-sm w-full placeholder-slate-400 text-slate-700"
-                        value={filters.keywords}
-                        onChange={handleSearchChange}
-                    />
-                </div>
-            </AdminHeader>
-
-            <div className="p-4 md:p-8">
-                {/* Breadcrumbs */}
-                <div className="flex items-center gap-2 text-sm text-slate-500 mb-6">
-                    <a href="#" className="hover:text-primary transition-colors">Trang chủ</a>
-                    <i className="fas fa-chevron-right text-xs"></i>
-                    <span className="text-slate-900 font-medium">Danh sách kho</span>
-                </div>
-
+            <div className="p-4 py-0">
                 {/* Page Header */}
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
                     <div>
@@ -200,7 +180,16 @@ export default function WarehouseTemplatePage() {
                         </button>
                     </div>
                 </div>
-
+                <div className="flex items-center gap-4 bg-slate-50 px-4 py-2 rounded-xl border border-slate-200 focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all w-full md:w-96 mb-6">
+                    <i className="fas fa-search text-slate-400"></i>
+                    <input
+                        type="text"
+                        placeholder="Tìm kiếm kho..."
+                        className="bg-transparent border-none outline-none text-sm w-full placeholder-slate-400 text-slate-700"
+                        value={filters.keywords}
+                        onChange={handleSearchChange}
+                    />
+                </div>
                 {/* Filters */}
                 <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-6 flex flex-col sm:flex-row items-start sm:items-center gap-4 flex-wrap">
                     <div className="flex items-center gap-2 text-slate-700 font-medium min-w-[80px]">
