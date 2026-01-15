@@ -1,0 +1,32 @@
+{
+    "success": {
+        "created": "Warn penalty rule created successfully",
+        "updated": "Warn penalty rule updated successfully",
+        "deleted": "Warn penalty rule deleted successfully",
+        "deleted_many": "Successfully deleted {count} warn penalty rules",
+        "list": "Retrieved warn penalty rules list successfully",
+        "detail": "Retrieved warn penalty rule details successfully"
+    },
+    "error": {
+        "not_found": "Warn penalty rule not found",
+        "overlapping_range": "Warn count range overlaps with another rule. Please check again",
+        "max_less_than_min": "Maximum warn count must be greater than or equal to minimum warn count",
+        "duration_required": "Ban duration is required when not permanent ban"
+    },
+    "validation": {
+        "min_warn_count_required": "Minimum warn count is required",
+        "min_warn_count_must_be_integer": "Minimum warn count must be an integer",
+        "min_warn_count_min": "Minimum warn count must be at least 1",
+        "max_warn_count_must_be_integer": "Maximum warn count must be an integer",
+        "max_warn_count_min": "Maximum warn count must be at least 1",
+        "is_permanent_ban_must_be_boolean": "Permanent ban must be a boolean",
+        "duration_value_required": "Ban duration value is required",
+        "duration_value_must_be_integer": "Ban duration value must be an integer",
+        "duration_value_min": "Ban duration value must be at least 1",
+        "duration_unit_required": "Ban duration unit is required",
+        "duration_unit_invalid": "Invalid ban duration unit. Valid values: SECOND, MINUTE, HOUR, DAY, WEEK, MONTH, QUARTER, YEAR",
+        "description_must_be_string": "Description must be a string",
+        "description_max_length": "Description must not exceed 500 characters",
+        "is_active_must_be_boolean": "Active status must be a boolean"
+    }
+}

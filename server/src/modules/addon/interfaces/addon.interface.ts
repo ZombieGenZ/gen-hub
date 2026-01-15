@@ -16,7 +16,7 @@ export interface IAddon {
     updated_at: Date | null;
     is_deleted: boolean | null;
     deleted_at: Date | null;
-    created_by: string;
+    created_by: string | null;
     updated_by: string | null;
     deleted_by: string | null;
 }

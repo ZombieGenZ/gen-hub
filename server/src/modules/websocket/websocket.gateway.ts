@@ -1471,5 +1471,59 @@ export class WebsocketGateway
     };
     this.server.emit('warningCategory:deletedMany', event);
   }
+
+  // --- Warn Penalty Events ---
+
+  /**
+   * Emit event khi Warn Penalty được tạo
+   */
+  emitWarnPenaltyCreated(id: string, minWarnCount: number, maxWarnCount: number | null, createdBy: string) {
+    const event = {
+      id,
+      minWarnCount,
+      maxWarnCount,
+      createdBy,
+      timestamp: new Date().toISOString(),
+    };
+    this.server.emit('warnPenalty:created', event);
+  }
+
+  /**
+   * Emit event khi Warn Penalty được cập nhật
+   */
+  emitWarnPenaltyUpdated(id: string, minWarnCount: number, maxWarnCount: number | null, updatedBy: string) {
+    const event = {
+      id,
+      minWarnCount,
+      maxWarnCount,
+      updatedBy,
+      timestamp: new Date().toISOString(),
+    };
+    this.server.emit('warnPenalty:updated', event);
+  }
+
+  /**
+   * Emit event khi Warn Penalty bị xóa
+   */
+  emitWarnPenaltyDeleted(id: string, deletedBy: string) {
+    const event = {
+      id,
+      deletedBy,
+      timestamp: new Date().toISOString(),
+    };
+    this.server.emit('warnPenalty:deleted', event);
+  }
+
+  /**
+   * Emit event khi xóa nhiều Warn Penalty
+   */
+  emitWarnPenaltyDeletedMany(ids: string[], deletedBy: string) {
+    const event = {
+      ids,
+      deletedBy,
+      timestamp: new Date().toISOString(),
+    };
+    this.server.emit('warnPenalty:deletedMany', event);
+  }
 }
 

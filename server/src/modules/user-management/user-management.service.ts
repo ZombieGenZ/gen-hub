@@ -3,6 +3,7 @@ import { I18nService } from 'nestjs-i18n';
 import { UserManagementRepository } from './user-management.repository';
 import { WarningCategoryRepository } from '../warning-category/warning-category.repository';
 import { BanSchedulerService } from '../ban-scheduler/ban-scheduler.service';
+import { WarnSchedulerService } from '../warn-scheduler/warn-scheduler.service';
 import { RedisService } from '../redis/redis.service';
 import { SystemLogService } from '../system-log/system-log.service';
 import { WebsocketGateway } from '../websocket/websocket.gateway';
@@ -31,6 +32,7 @@ export class UserManagementService {
         private readonly repository: UserManagementRepository,
         private readonly warningCategoryRepo: WarningCategoryRepository,
         private readonly banSchedulerService: BanSchedulerService,
+        private readonly warnSchedulerService: WarnSchedulerService,
         private readonly redisService: RedisService,
         private readonly systemLogService: SystemLogService,
         private readonly websocketGateway: WebsocketGateway,
@@ -295,7 +297,6 @@ export class UserManagementService {
         });
 
         // Emit realtime events
-        // Emit realtime events
         this.websocketGateway.emitUserWarned(
             userId,
             warning.id,
@@ -303,6 +304,29 @@ export class UserManagementService {
             expiresAt?.toISOString() || null,
             adminId,
         );
+
+        // Lên lịch gỡ warn nếu có thời hạn
+        if (expiresAt && !dto.is_permanent) {
+            this.warnSchedulerService.scheduleRemoveWarning(warning.id, expiresAt, user.email || user.name);
+        }
+
+        // Kiểm tra và áp dụng ban nếu đạt ngưỡng warn
+        const penaltyResult = await this.warnSchedulerService.checkAndApplyPenalty(userId);
+        if (penaltyResult.banned) {
+            // Log thêm về việc user bị ban tự động
+            this.systemLogService.logAsync({
+                level: 'WARN',
+                module: 'user-management',
+                action: 'auto_ban_from_warn',
+                message: `User ${user.email || user.name} bị ban tự động do đạt ngưỡng cảnh báo`,
+                userId: 'system',
+                metaData: {
+                    targetUserId: userId,
+                    isPermanent: penaltyResult.isPermanent,
+                    bannedEnd: penaltyResult.bannedEnd?.toISOString(),
+                },
+            });
+        }
 
         return warning;
     }

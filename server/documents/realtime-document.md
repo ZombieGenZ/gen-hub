@@ -113,6 +113,7 @@ socket.on('pong', () => {
 | Global (All) | FAQ: `faq:created`, `faq:updated`, `faq:deleted`, `faq:deletedMany` |
 | `notifications` | `userNotification:received`, `userNotification:read`, `userNotification:allRead` |
 | Global (All) | Warning Category: `warningCategory:created`, `warningCategory:updated`, `warningCategory:deleted`, `warningCategory:deletedMany` |
+| Global (All) | Warn Penalty: `warnPenalty:created`, `warnPenalty:updated`, `warnPenalty:deleted`, `warnPenalty:deletedMany` |
 | `user:{userId}` | User Management: `user:banned`, `user:unbanned`, `user:warned`, `user:unwarned`, `user:sessionRevoked`, `user:allSessionsRevoked` |
 | `admin_room` | User Management: `user:banned`, `user:unbanned`, `user:warned`, `user:unwarned`, `user:sessionRevoked`, `user:allSessionsRevoked` |
 
@@ -1952,6 +1953,62 @@ socket.on('contact:conversation:reopened', (data) => {
 {
   "id": "uuid",
   "fileName": "backup-old.zip",
+  "timestamp": "ISO Date"
+}
+```
+
+---
+
+## ⚠️ Warn Penalty Events (Global Broadcast)
+
+### `warnPenalty:created`
+Được phát khi quy tắc phạt warn được tạo mới.
+
+**Payload:**
+```json
+{
+  "id": "uuid",
+  "minWarnCount": 4,
+  "maxWarnCount": 7,
+  "createdBy": "adminUserId",
+  "timestamp": "ISO Date"
+}
+```
+
+### `warnPenalty:updated`
+Được phát khi quy tắc phạt warn được cập nhật.
+
+**Payload:**
+```json
+{
+  "id": "uuid",
+  "minWarnCount": 4,
+  "maxWarnCount": 8,
+  "updatedBy": "adminUserId",
+  "timestamp": "ISO Date"
+}
+```
+
+### `warnPenalty:deleted`
+Được phát khi quy tắc phạt warn bị xóa.
+
+**Payload:**
+```json
+{
+  "id": "uuid",
+  "deletedBy": "adminUserId",
+  "timestamp": "ISO Date"
+}
+```
+
+### `warnPenalty:deletedMany`
+Được phát khi xóa nhiều quy tắc phạt warn.
+
+**Payload:**
+```json
+{
+  "ids": ["uuid1", "uuid2"],
+  "deletedBy": "adminUserId",
   "timestamp": "ISO Date"
 }
 ```

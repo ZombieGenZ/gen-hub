@@ -8,6 +8,7 @@ import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { execSync } from 'child_process';
 import { Client, Pool } from 'pg';
+import * as argon2 from '@node-rs/argon2';
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit {
@@ -28,6 +29,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
   }
 
   private isSeedingInProgress = false;
+  private seedAdminId: string | null = null;
 
   async onModuleInit() {
     await this.initializeDatabase();
@@ -298,6 +300,9 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         this.logger.log('✅ Default roles seeded');
       }
 
+      // Seed admin account (cần chạy trước các seed data khác)
+      await this.seedAdminAccount();
+
       // Chạy các hàm seed theo batch để tránh lỗi too many connections
       const seedFunctions = [
         this.seedConfigPermissions.bind(this),
@@ -339,6 +344,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         this.seedArticlePermissions.bind(this),
         this.seedUserManagementPermissions.bind(this),
         this.seedWarningCategoryPermissions.bind(this),
+        this.seedWarnPenaltyPermissions.bind(this),
       ];
 
       const BATCH_SIZE = 3; // Chạy 3 seed functions cùng lúc
@@ -347,12 +353,107 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         await Promise.all(batch.map(fn => fn()));
       }
 
+      // Seed data mẫu (chạy riêng sau permissions, kiểm soát bởi ENV)
+      const seedDataFunctions = [
+        this.seedWarningCategories.bind(this),
+        this.seedWarnPenalties.bind(this),
+        this.seedAmenities.bind(this),
+        this.seedAddonTypes.bind(this),
+        this.seedAddons.bind(this),
+        this.seedInsurances.bind(this),
+        this.seedRentalDurationTiers.bind(this),
+        this.seedContactTags.bind(this),
+        this.seedCategories.bind(this),
+      ];
+
+      for (const fn of seedDataFunctions) {
+        await fn();
+      }
+
       // Seed Vietnam administrative (có thể mất nhiều thời gian nên chạy riêng sau)
       await this.seedVietnamAdministrative();
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
       this.logger.error(`❌ Failed to seed default roles: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * Lấy admin ID cho seed data
+   */
+  private getAdminId(): string | undefined {
+    return this.seedAdminId || undefined;
+  }
+
+  /**
+   * Seed tài khoản admin mặc định
+   * Thông tin từ ENV: SEED_ADMIN_EMAIL, SEED_ADMIN_PASSWORD
+   * Mặc định: administrator@gen-hub.dev | Admin@123
+   */
+  private async seedAdminAccount() {
+    try {
+      const email = process.env.SEED_ADMIN_EMAIL || 'administrator@gen-hub.dev';
+      const password = process.env.SEED_ADMIN_PASSWORD || 'Admin@123';
+
+      // Kiểm tra xem admin đã tồn tại chưa
+      let admin = await this.user.findFirst({
+        where: { email },
+      });
+
+      if (!admin) {
+        // Hash password
+        const hashedPassword = await argon2.hash(password, {
+          memoryCost: 4096,
+          timeCost: 3,
+          outputLen: 32,
+          parallelism: 1,
+        });
+
+        // Tạo admin user
+        admin = await this.user.create({
+          data: {
+            name: 'Administrator',
+            email,
+            password: hashedPassword,
+            email_confirmed: true,
+            is_verified: true,
+            is_banned: false,
+            language: 'vi',
+          },
+        });
+
+        this.logger.log(`✅ Admin account seeded: ${email}`);
+      }
+
+      // Lưu admin ID để dùng cho các seed khác
+      this.seedAdminId = admin.id;
+
+      // Gán role Super Admin cho admin
+      const superAdminRole = await this.role.findFirst({
+        where: { name: 'Super Admin', is_deleted: false },
+      });
+
+      if (superAdminRole) {
+        const existingUserRole = await this.userRole.findFirst({
+          where: { user_id: admin.id, role_id: superAdminRole.id },
+        });
+
+        if (!existingUserRole) {
+          await this.userRole.create({
+            data: {
+              user_id: admin.id,
+              role_id: superAdminRole.id,
+              is_active: true,
+              is_deleted: false,
+            },
+          });
+          this.logger.log('✅ Super Admin role assigned to admin account');
+        }
+      }
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error(`❌ Failed to seed admin account: ${errorMessage}`);
     }
   }
 
@@ -4012,6 +4113,463 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
       this.logger.error(
         `❌ Failed to seed warning category permissions: ${errorMessage}`,
       );
+    }
+  }
+
+  /**
+   * Seed các permissions cho Warn Penalty
+   */
+  private async seedWarnPenaltyPermissions() {
+    try {
+      const warnPenaltyPermissions = [
+        {
+          key: 'warn-penalty.create',
+          name: 'Tạo quy tắc phạt warn',
+          description: 'Quyền tạo mới quy tắc phạt khi bị warn',
+        },
+        {
+          key: 'warn-penalty.list',
+          name: 'Xem quy tắc phạt warn',
+          description: 'Quyền xem danh sách và chi tiết quy tắc phạt warn',
+        },
+        {
+          key: 'warn-penalty.read',
+          name: 'Xem chi tiết quy tắc phạt warn',
+          description: 'Quyền xem chi tiết quy tắc phạt warn',
+        },
+        {
+          key: 'warn-penalty.update',
+          name: 'Cập nhật quy tắc phạt warn',
+          description: 'Quyền cập nhật quy tắc phạt warn',
+        },
+        {
+          key: 'warn-penalty.delete',
+          name: 'Xóa quy tắc phạt warn',
+          description: 'Quyền xóa quy tắc phạt warn',
+        },
+      ];
+
+      for (const perm of warnPenaltyPermissions) {
+        const existing = await this.permission.findFirst({
+          where: { key: perm.key },
+        });
+
+        if (!existing) {
+          await this.permission.create({
+            data: {
+              key: perm.key,
+              name: perm.name,
+              description: perm.description,
+              is_active: true,
+              is_deleted: false,
+            },
+          });
+        }
+      }
+
+      // Gán permissions cho Admin và Super Admin
+      const adminRoles = await this.role.findMany({
+        where: {
+          name: { in: ['Admin', 'Super Admin'] },
+          is_deleted: false,
+        },
+      });
+
+      const permissions = await this.permission.findMany({
+        where: {
+          key: { in: warnPenaltyPermissions.map((p) => p.key) },
+          is_deleted: false,
+        },
+      });
+
+      for (const role of adminRoles) {
+        for (const permission of permissions) {
+          const existingAssignment = await this.rolePermission.findFirst({
+            where: {
+              role_id: role.id,
+              permission_id: permission.id,
+            },
+          });
+
+          if (!existingAssignment) {
+            await this.rolePermission.create({
+              data: {
+                role_id: role.id,
+                permission_id: permission.id,
+                is_active: true,
+                is_deleted: false,
+              },
+            });
+          }
+        }
+      }
+
+      this.logger.log('✅ Warn penalty permissions seeded');
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `❌ Failed to seed warn penalty permissions: ${errorMessage}`,
+      );
+    }
+  }
+
+  /**
+   * Seed Warning Categories mẫu
+   */
+  private async seedWarningCategories() {
+    if (process.env.SEED_WARNING_CATEGORIES !== 'true') return;
+
+    try {
+      const existingCount = await this.warningCategory.count({
+        where: { is_deleted: false },
+      });
+
+      if (existingCount > 0) return;
+
+      const categories = [
+        { name: 'Vi phạm điều khoản sử dụng', description: 'User vi phạm các điều khoản sử dụng dịch vụ', severity: 3 },
+        { name: 'Spam/Quấy rối', description: 'Hành vi spam hoặc quấy rối người dùng khác', severity: 2 },
+        { name: 'Thông tin giả mạo', description: 'Cung cấp thông tin giả mạo, sai sự thật', severity: 4 },
+        { name: 'Thanh toán gian lận', description: 'Các hành vi gian lận trong thanh toán', severity: 5 },
+        { name: 'Hành vi không đúng mực', description: 'Hành vi thiếu tôn trọng, không phù hợp', severity: 2 },
+      ];
+
+      await this.warningCategory.createMany({
+        data: categories.map(cat => ({
+          ...cat,
+          created_by: this.getAdminId(),
+          is_active: true,
+          is_deleted: false,
+        })),
+      });
+
+      this.logger.log('✅ Warning categories seeded');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error(`❌ Failed to seed warning categories: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * Seed Warn Penalties mẫu
+   */
+  private async seedWarnPenalties() {
+    if (process.env.SEED_WARN_PENALTIES !== 'true') return;
+
+    try {
+      const existingCount = await this.warnPenalty.count({
+        where: { is_deleted: false },
+      });
+
+      if (existingCount > 0) return;
+
+      const penalties = [
+        { min_warn_count: 3, max_warn_count: 3, is_permanent_ban: false, duration_value: 24, duration_unit: 'HOUR' as const, description: 'Ban 24 giờ sau 3 lần warn' },
+        { min_warn_count: 4, max_warn_count: 5, is_permanent_ban: false, duration_value: 3, duration_unit: 'DAY' as const, description: 'Ban 3 ngày sau 4-5 lần warn' },
+        { min_warn_count: 6, max_warn_count: 9, is_permanent_ban: false, duration_value: 1, duration_unit: 'WEEK' as const, description: 'Ban 1 tuần sau 6-9 lần warn' },
+        { min_warn_count: 10, max_warn_count: null, is_permanent_ban: true, duration_value: null, duration_unit: null, description: 'Ban vĩnh viễn sau 10+ lần warn' },
+      ];
+
+      for (const penalty of penalties) {
+        await this.warnPenalty.create({
+          data: {
+            min_warn_count: penalty.min_warn_count,
+            max_warn_count: penalty.max_warn_count,
+            is_permanent_ban: penalty.is_permanent_ban,
+            duration_value: penalty.duration_value,
+            duration_unit: penalty.duration_unit,
+            description: penalty.description,
+            created_by: this.getAdminId(),
+            is_active: true,
+            is_deleted: false,
+          },
+        });
+      }
+
+      this.logger.log('✅ Warn penalties seeded');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error(`❌ Failed to seed warn penalties: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * Seed Amenities mẫu (Tiện ích kho hàng)
+   */
+  private async seedAmenities() {
+    if (process.env.SEED_AMENITIES !== 'true') return;
+
+    try {
+      const existingCount = await this.amenity.count({
+        where: { is_deleted: false },
+      });
+
+      if (existingCount > 0) return;
+
+      const amenities = [
+        { name: 'Camera an ninh 24/7', description: 'Hệ thống camera giám sát hoạt động suốt ngày đêm', icon: 'camera' },
+        { name: 'Hệ thống báo cháy', description: 'Hệ thống cảnh báo và chữa cháy tự động', icon: 'fire-extinguisher' },
+        { name: 'Điều hòa nhiệt độ', description: 'Kiểm soát nhiệt độ phù hợp cho hàng hóa', icon: 'thermometer' },
+        { name: 'Bãi đậu xe', description: 'Bãi xe rộng rãi cho xe tải ra vào', icon: 'truck' },
+        { name: 'Máy bốc xếp', description: 'Forklift và các thiết bị bốc xếp hàng hóa', icon: 'forklift' },
+        { name: 'Bảo vệ 24/7', description: 'Nhân viên bảo vệ túc trực suốt ngày đêm', icon: 'shield' },
+        { name: 'Kho lạnh', description: 'Kho bảo quản hàng hóa ở nhiệt độ thấp', icon: 'snowflake' },
+        { name: 'Wifi tốc độ cao', description: 'Kết nối internet tốc độ cao', icon: 'wifi' },
+      ];
+
+      await this.amenity.createMany({
+        data: amenities.map(a => ({
+          ...a,
+          created_by: this.getAdminId(),
+          is_active: true,
+          is_deleted: false,
+        })),
+      });
+
+      this.logger.log('✅ Amenities seeded');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error(`❌ Failed to seed amenities: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * Seed Addon Types mẫu
+   */
+  private async seedAddonTypes() {
+    if (process.env.SEED_ADDON_TYPES !== 'true') return;
+
+    try {
+      const existingCount = await this.addonType.count({
+        where: { is_deleted: false },
+      });
+
+      if (existingCount > 0) return;
+
+      const addonTypes = [
+        { name: 'Dịch vụ vận hành', description: 'Các dịch vụ liên quan đến vận hành kho' },
+        { name: 'Bảo mật & An ninh', description: 'Các dịch vụ nâng cao bảo mật' },
+        { name: 'Tiện ích bổ sung', description: 'Các tiện ích bổ sung cho kho hàng' },
+      ];
+
+      await this.addonType.createMany({
+        data: addonTypes.map(t => ({
+          ...t,
+          created_by: this.getAdminId(),
+          is_active: true,
+          is_deleted: false,
+        })),
+      });
+
+      this.logger.log('✅ Addon types seeded');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error(`❌ Failed to seed addon types: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * Seed Addons mẫu
+   */
+  private async seedAddons() {
+    if (process.env.SEED_ADDONS !== 'true') return;
+
+    try {
+      const existingCount = await this.addon.count({
+        where: { is_deleted: false },
+      });
+
+      if (existingCount > 0) return;
+
+      // Lấy addon types đã seed
+      const operationType = await this.addonType.findFirst({
+        where: { name: 'Dịch vụ vận hành', is_deleted: false },
+      });
+      const securityType = await this.addonType.findFirst({
+        where: { name: 'Bảo mật & An ninh', is_deleted: false },
+      });
+      const utilityType = await this.addonType.findFirst({
+        where: { name: 'Tiện ích bổ sung', is_deleted: false },
+      });
+
+      if (!operationType || !securityType || !utilityType) {
+        this.logger.warn('⚠️ Addon types not found, skipping addon seeding');
+        return;
+      }
+
+      const addons = [
+        { name: 'Dịch vụ bốc xếp hàng hóa', description: 'Nhân công bốc xếp hàng hóa', price: 500000, price_unit: 'VND', addon_type_id: operationType.id },
+        { name: 'Xe nâng hàng (Forklift)', description: 'Thuê xe nâng hàng theo giờ', price: 300000, price_unit: 'VND', addon_type_id: operationType.id },
+        { name: 'Quản lý hàng tồn kho', description: 'Phần mềm quản lý hàng tồn kho', price: 1000000, price_unit: 'VND', addon_type_id: operationType.id },
+        { name: 'Camera giám sát riêng', description: 'Lắp đặt camera riêng cho kho', price: 500000, price_unit: 'VND', addon_type_id: securityType.id },
+        { name: 'Kiểm soát ra vào', description: 'Hệ thống kiểm soát ra vào bằng thẻ', price: 300000, price_unit: 'VND', addon_type_id: securityType.id },
+        { name: 'Wifi tốc độ cao', description: 'Cung cấp wifi tốc độ cao', price: 200000, price_unit: 'VND', addon_type_id: utilityType.id },
+        { name: 'Phòng họp', description: 'Thuê phòng họp theo giờ', price: 150000, price_unit: 'VND', addon_type_id: utilityType.id },
+      ];
+
+      for (const addon of addons) {
+        await this.addon.create({
+          data: {
+            ...addon,
+            created_by: this.getAdminId(),
+            is_active: true,
+            is_deleted: false,
+          },
+        });
+      }
+
+      this.logger.log('✅ Addons seeded');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error(`❌ Failed to seed addons: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * Seed Insurances mẫu
+   */
+  private async seedInsurances() {
+    if (process.env.SEED_INSURANCES !== 'true') return;
+
+    try {
+      const existingCount = await this.insurance.count({
+        where: { is_deleted: false },
+      });
+
+      if (existingCount > 0) return;
+
+      const insurances = [
+        { name: 'Bảo hiểm cháy nổ', description: 'Bồi thường thiệt hại do cháy nổ', price: 500000, coverage_amount: 500000000, premium_rate: 0.1 },
+        { name: 'Bảo hiểm thiên tai', description: 'Bồi thường thiệt hại do thiên tai', price: 400000, coverage_amount: 300000000, premium_rate: 0.08 },
+        { name: 'Bảo hiểm trộm cắp', description: 'Bồi thường khi hàng hóa bị trộm cắp', price: 300000, coverage_amount: 200000000, premium_rate: 0.12 },
+        { name: 'Bảo hiểm toàn diện', description: 'Bảo hiểm tất cả rủi ro', price: 1000000, coverage_amount: 1000000000, premium_rate: 0.25 },
+      ];
+
+      await this.insurance.createMany({
+        data: insurances.map(i => ({
+          ...i,
+          created_by: this.getAdminId(),
+          is_active: true,
+          is_deleted: false,
+        })),
+      });
+
+      this.logger.log('✅ Insurances seeded');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error(`❌ Failed to seed insurances: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * Seed Rental Duration Tiers mẫu
+   */
+  private async seedRentalDurationTiers() {
+    if (process.env.SEED_RENTAL_DURATION_TIERS !== 'true') return;
+
+    try {
+      const existingCount = await this.rentalDurationTier.count({
+        where: { is_deleted: false },
+      });
+
+      if (existingCount > 0) return;
+
+      const tiers = [
+        { name: '1 tháng', duration_value: 1, duration_unit: 'MONTH' as const, discount_percent: 0, description: 'Thuê ngắn hạn 1 tháng' },
+        { name: '3 tháng', duration_value: 3, duration_unit: 'MONTH' as const, discount_percent: 5, description: 'Giảm 5% khi thuê 3 tháng' },
+        { name: '6 tháng', duration_value: 6, duration_unit: 'MONTH' as const, discount_percent: 10, description: 'Giảm 10% khi thuê 6 tháng' },
+        { name: '1 năm', duration_value: 1, duration_unit: 'YEAR' as const, discount_percent: 15, description: 'Giảm 15% khi thuê 1 năm' },
+        { name: '2 năm', duration_value: 2, duration_unit: 'YEAR' as const, discount_percent: 20, description: 'Giảm 20% khi thuê 2 năm' },
+      ];
+
+      await this.rentalDurationTier.createMany({
+        data: tiers.map(t => ({
+          ...t,
+          created_by: this.getAdminId(),
+          is_active: true,
+          is_deleted: false,
+        })),
+      });
+
+      this.logger.log('✅ Rental duration tiers seeded');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error(`❌ Failed to seed rental duration tiers: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * Seed Contact Tags mẫu
+   */
+  private async seedContactTags() {
+    if (process.env.SEED_CONTACT_TAGS !== 'true') return;
+
+    try {
+      const existingCount = await this.contactTag.count({
+        where: { is_deleted: false },
+      });
+
+      if (existingCount > 0) return;
+
+      const tags = [
+        { name: 'Hỏi giá', description: 'Khách hàng hỏi về giá cả dịch vụ', color: '#3B82F6' },
+        { name: 'Khiếu nại', description: 'Phản ánh, khiếu nại về dịch vụ', color: '#EF4444' },
+        { name: 'Hỗ trợ kỹ thuật', description: 'Yêu cầu hỗ trợ kỹ thuật', color: '#8B5CF6' },
+        { name: 'Tư vấn thuê kho', description: 'Tư vấn về dịch vụ thuê kho', color: '#10B981' },
+        { name: 'Hợp tác kinh doanh', description: 'Đề xuất hợp tác kinh doanh', color: '#F59E0B' },
+      ];
+
+      await this.contactTag.createMany({
+        data: tags.map(t => ({
+          ...t,
+          created_by: this.getAdminId(),
+          is_active: true,
+          is_deleted: false,
+        })),
+      });
+
+      this.logger.log('✅ Contact tags seeded');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error(`❌ Failed to seed contact tags: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * Seed Categories mẫu (Danh mục bài viết)
+   */
+  private async seedCategories() {
+    if (process.env.SEED_CATEGORIES !== 'true') return;
+
+    try {
+      const existingCount = await this.category.count({
+        where: { is_deleted: false },
+      });
+
+      if (existingCount > 0) return;
+
+      const categories = [
+        { name: 'Tin tức', description: 'Tin tức về công ty và ngành logistics', slug: 'tin-tuc' },
+        { name: 'Hướng dẫn sử dụng', description: 'Hướng dẫn sử dụng hệ thống', slug: 'huong-dan-su-dung' },
+        { name: 'Mẹo vặt lưu kho', description: 'Các mẹo hay về lưu trữ hàng hóa', slug: 'meo-vat-luu-kho' },
+        { name: 'Chính sách & Quy định', description: 'Các chính sách và quy định của dịch vụ', slug: 'chinh-sach-quy-dinh' },
+        { name: 'Khuyến mãi', description: 'Các chương trình khuyến mãi', slug: 'khuyen-mai' },
+      ];
+
+      await this.category.createMany({
+        data: categories.map(c => ({
+          ...c,
+          created_by: this.getAdminId(),
+          is_active: true,
+          is_deleted: false,
+        })),
+      });
+
+      this.logger.log('✅ Categories seeded');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error(`❌ Failed to seed categories: ${errorMessage}`);
     }
   }
 }

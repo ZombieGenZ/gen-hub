@@ -67,6 +67,8 @@ import { BackblazeB2Module } from './modules/backblaze-b2/backblaze-b2.module';
 import { DatabaseBackupModule } from './modules/database-backup/database-backup.module';
 import { WarningCategoryModule } from './modules/warning-category/warning-category.module';
 import { UserManagementModule } from './modules/user-management/user-management.module';
+import { WarnPenaltyModule } from './modules/warn-penalty/warn-penalty.module';
+import { WarnSchedulerModule } from './modules/warn-scheduler/warn-scheduler.module';
 
 
 @Module({
@@ -175,6 +177,7 @@ import { UserManagementModule } from './modules/user-management/user-management.
     BanSchedulerModule,
     ApiKeySchedulerModule,
     RentalSchedulerModule,
+    WarnSchedulerModule,
 
     // FAQs
     FaqModule,
@@ -203,6 +206,11 @@ import { UserManagementModule } from './modules/user-management/user-management.
     // Coze AI Plugin APIs (Public)
     CozePluginModule,
 
+    // User Warning & Account Management
+    WarningCategoryModule,
+    WarnPenaltyModule,
+    UserManagementModule,
+
     // Database Panel
     DatabaseAdminModule,
 
@@ -229,10 +237,6 @@ import { UserManagementModule } from './modules/user-management/user-management.
 
     // Database Backup
     DatabaseBackupModule,
-
-    // User Warning & Account Management
-    WarningCategoryModule,
-    UserManagementModule,
   ],
   controllers: [AppController],
   providers: [

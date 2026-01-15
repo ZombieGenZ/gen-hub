@@ -79,6 +79,7 @@ model User {
   is_verified             Boolean?  @default(false)
   is_banned               Boolean?  @default(false)
   is_brute_force_banned   Boolean   @default(false)
+  is_ban_from_warn        Boolean   @default(false)
   banned_end              DateTime?
   two_factor_enabled      Boolean   @default(false)
   two_factor_token        String?
@@ -296,6 +297,17 @@ enum DurationUnit {
   YEAR
 }
 
+enum BanDurationUnit {
+  SECOND
+  MINUTE
+  HOUR
+  DAY
+  WEEK
+  MONTH
+  QUARTER
+  YEAR
+}
+
 enum HttpMethod {
   GET
   POST
@@ -381,7 +393,7 @@ model Amenity {
   is_deleted Boolean?  @default(false)
   deleted_at DateTime?
 
-  created_by String
+  created_by String?
   updated_by String?
   deleted_by String?
 
@@ -458,7 +470,7 @@ model WarehouseTemplate {
   is_deleted Boolean?  @default(false)
   deleted_at DateTime?
 
-  created_by String
+  created_by String?
   updated_by String?
   deleted_by String?
 
@@ -492,7 +504,7 @@ model RentalDurationTier {
   is_deleted Boolean?  @default(false)
   deleted_at DateTime?
 
-  created_by String
+  created_by String?
   updated_by String?
   deleted_by String?
 
@@ -519,7 +531,7 @@ model Addon {
   is_deleted Boolean?  @default(false)
   deleted_at DateTime?
 
-  created_by String
+  created_by String?
   updated_by String?
   deleted_by String?
 
@@ -550,7 +562,7 @@ model AddonType {
   is_deleted Boolean?  @default(false)
   deleted_at DateTime?
 
-  created_by String
+  created_by String?
   updated_by String?
   deleted_by String?
 
@@ -602,7 +614,7 @@ model Insurance {
   is_deleted Boolean?  @default(false)
   deleted_at DateTime?
 
-  created_by String
+  created_by String?
   updated_by String?
   deleted_by String?
 
@@ -645,7 +657,7 @@ model TierInsuranceGift {
   is_deleted Boolean?  @default(false)
   deleted_at DateTime?
 
-  created_by String
+  created_by String?
   updated_by String?
   deleted_by String?
 
@@ -673,7 +685,7 @@ model WarehouseInsuranceGift {
   is_deleted Boolean?  @default(false)
   deleted_at DateTime?
 
-  created_by String
+  created_by String?
   updated_by String?
   deleted_by String?
 
@@ -701,7 +713,7 @@ model RowInsuranceGift {
   is_deleted Boolean?  @default(false)
   deleted_at DateTime?
 
-  created_by String
+  created_by String?
   updated_by String?
   deleted_by String?
 
@@ -738,7 +750,7 @@ model TierAddonGift {
   is_deleted Boolean?  @default(false)
   deleted_at DateTime?
 
-  created_by String
+  created_by String?
   updated_by String?
   deleted_by String?
 
@@ -766,7 +778,7 @@ model WarehouseAddonGift {
   is_deleted Boolean?  @default(false)
   deleted_at DateTime?
 
-  created_by String
+  created_by String?
   updated_by String?
   deleted_by String?
 
@@ -794,7 +806,7 @@ model RowAddonGift {
   is_deleted Boolean?  @default(false)
   deleted_at DateTime?
 
-  created_by String
+  created_by String?
   updated_by String?
   deleted_by String?
 
@@ -866,7 +878,7 @@ model Coupon {
   is_deleted Boolean?  @default(false)
   deleted_at DateTime?
 
-  created_by String
+  created_by String?
   updated_by String?
   deleted_by String?
 
@@ -961,7 +973,7 @@ model CouponSchedule {
   is_deleted Boolean?  @default(false)
   deleted_at DateTime?
 
-  created_by String
+  created_by String?
   updated_by String?
   deleted_by String?
 
@@ -991,7 +1003,7 @@ model UserSavedCoupon {
   is_deleted Boolean?  @default(false)
   deleted_at DateTime?
 
-  created_by String
+  created_by String?
   updated_by String?
   deleted_by String?
 
@@ -1016,7 +1028,7 @@ model WarehouseDiscountConfig {
   is_deleted Boolean?  @default(false)
   deleted_at DateTime?
 
-  created_by String
+  created_by String?
   updated_by String?
   deleted_by String?
 
@@ -1041,7 +1053,7 @@ model RowDiscountConfig {
   is_deleted Boolean?  @default(false)
   deleted_at DateTime?
 
-  created_by String
+  created_by String?
   updated_by String?
   deleted_by String?
 
@@ -1070,7 +1082,7 @@ model WarehouseTemplateImage {
   is_deleted Boolean?  @default(false)
   deleted_at DateTime?
 
-  created_by String
+  created_by String?
   deleted_by String?
 
   warehouse_template WarehouseTemplate @relation(fields: [warehouse_template_id], references: [id], onDelete: Cascade)
@@ -1105,7 +1117,7 @@ model RowTemplate {
   is_deleted Boolean?  @default(false)
   deleted_at DateTime?
 
-  created_by String
+  created_by String?
   updated_by String?
   deleted_by String?
 
@@ -1150,7 +1162,7 @@ model RackTemplate {
   is_deleted Boolean?  @default(false)
   deleted_at DateTime?
 
-  created_by String
+  created_by String?
   updated_by String?
   deleted_by String?
 
@@ -1177,7 +1189,7 @@ model ShelfTemplate {
   is_deleted Boolean?  @default(false)
   deleted_at DateTime?
 
-  created_by String
+  created_by String?
   updated_by String?
   deleted_by String?
 
@@ -1210,7 +1222,7 @@ model BlockTemplate {
   is_deleted Boolean?  @default(false)
   deleted_at DateTime?
 
-  created_by String
+  created_by String?
   updated_by String?
   deleted_by String?
 
@@ -1257,7 +1269,7 @@ model RentalContract {
   is_deleted Boolean?  @default(false)
   deleted_at DateTime?
 
-  created_by String
+  created_by String?
   updated_by String?
   deleted_by String?
 
@@ -1334,7 +1346,7 @@ model RentalContractAddon {
   is_deleted Boolean?  @default(false)
   deleted_at DateTime?
 
-  created_by String
+  created_by String?
   updated_by String?
   deleted_by String?
 
@@ -1365,7 +1377,7 @@ model RentalContractLog {
   metadata           Json?
 
   created_at DateTime @default(now())
-  created_by String
+  created_by String?
 
   rental_contract RentalContract @relation(fields: [rental_contract_id], references: [id], onDelete: Cascade)
 
@@ -1383,7 +1395,7 @@ model RentalContractCoupon {
   discount_amount Decimal @db.Decimal(19, 4)
 
   created_at DateTime @default(now())
-  created_by String
+  created_by String?
 
   rental_contract RentalContract @relation(fields: [rental_contract_id], references: [id], onDelete: Cascade)
   coupon          Coupon         @relation(fields: [coupon_id], references: [id])
@@ -1407,7 +1419,7 @@ model ContractSignature {
   is_deleted Boolean   @default(false)
   deleted_at DateTime?
 
-  created_by String
+  created_by String?
   deleted_by String?
 
   rental_contract RentalContract @relation(fields: [rental_contract_id], references: [id], onDelete: Cascade)
@@ -1437,7 +1449,7 @@ model RentalContractInsurance {
   is_deleted Boolean   @default(false)
   deleted_at DateTime?
 
-  created_by String
+  created_by String?
   updated_by String?
   deleted_by String?
 
@@ -1472,7 +1484,7 @@ model RefundRequest {
   is_deleted Boolean   @default(false)
   deleted_at DateTime?
 
-  created_by String
+  created_by String?
 
   rental_contract RentalContract @relation(fields: [rental_contract_id], references: [id], onDelete: Cascade)
 
@@ -1564,7 +1576,7 @@ model Organization {
   updated_at DateTime? @updatedAt
   deleted_at DateTime?
 
-  created_by String
+  created_by String?
   updated_by String?
   deleted_by String?
 
@@ -1615,7 +1627,7 @@ model OrganizationMember {
   updated_at DateTime? @updatedAt
   deleted_at DateTime?
 
-  created_by String
+  created_by String?
   updated_by String?
   deleted_by String?
 
@@ -1859,7 +1871,7 @@ model Unit {
   is_deleted                 Boolean?  @default(false)
   deleted_at                 DateTime?
 
-  created_by String
+  created_by String?
   updated_by String?
   deleted_by String?
 
@@ -1908,7 +1920,7 @@ model Warehouse {
   updated_at DateTime? @updatedAt
   deleted_at DateTime?
 
-  created_by String
+  created_by String?
   updated_by String?
   deleted_by String?
 
@@ -1955,7 +1967,7 @@ model Row {
   is_deleted Boolean?  @default(false)
   deleted_at DateTime?
 
-  created_by String
+  created_by String?
   updated_by String?
   deleted_by String?
 
@@ -1994,7 +2006,7 @@ model Product {
   is_deleted Boolean?  @default(false)
   deleted_at DateTime?
 
-  created_by String
+  created_by String?
   updated_by String?
   deleted_by String?
 
@@ -2026,7 +2038,7 @@ model ProductUnit {
   is_deleted Boolean?  @default(false)
   deleted_at DateTime?
 
-  created_by String
+  created_by String?
   updated_by String?
   deleted_by String?
 
@@ -2048,7 +2060,7 @@ model Rack {
   is_deleted  Boolean?  @default(false)
   deleted_at  DateTime?
 
-  created_by String
+  created_by String?
   updated_by String?
   deleted_by String?
 
@@ -2090,7 +2102,7 @@ model Shelf {
   is_deleted Boolean?  @default(false)
   deleted_at DateTime?
 
-  created_by String
+  created_by String?
   updated_by String?
   deleted_by String?
 
@@ -2112,7 +2124,7 @@ model Block {
   is_deleted  Boolean?  @default(false)
   deleted_at  DateTime?
 
-  created_by String
+  created_by String?
   updated_by String?
   deleted_by String?
 
@@ -2148,7 +2160,7 @@ model Batch {
   is_deleted Boolean?  @default(false)
   deleted_at DateTime?
 
-  created_by String
+  created_by String?
   updated_by String?
   deleted_by String?
 
@@ -2180,7 +2192,7 @@ model Inventory {
   is_deleted Boolean?  @default(false)
   deleted_at DateTime?
 
-  created_by String
+  created_by String?
   updated_by String?
   deleted_by String?
 
@@ -2226,7 +2238,7 @@ model InventoryTransaction {
   is_deleted Boolean?  @default(false)
   deleted_at DateTime?
 
-  created_by String
+  created_by String?
   updated_by String?
   deleted_by String?
 
@@ -2258,7 +2270,7 @@ model Receipt {
   is_deleted          Boolean?      @default(false)
   deleted_at          DateTime?
 
-  created_by String
+  created_by String?
   updated_by String?
   deleted_by String?
 
@@ -2319,7 +2331,7 @@ model Export {
   is_deleted       Boolean?     @default(false)
   deleted_at       DateTime?
 
-  created_by String
+  created_by String?
   updated_by String?
   deleted_by String?
 
@@ -2385,7 +2397,7 @@ model ExportPickList {
   is_deleted Boolean?  @default(false)
   deleted_at DateTime?
 
-  created_by String
+  created_by String?
   updated_by String?
   deleted_by String?
 
@@ -2462,7 +2474,7 @@ model Package {
   is_deleted Boolean?  @default(false)
   deleted_at DateTime?
 
-  created_by String
+  created_by String?
   updated_by String?
   deleted_by String?
 
@@ -2521,7 +2533,7 @@ model StockTake {
   is_deleted Boolean?  @default(false)
   deleted_at DateTime?
 
-  created_by String
+  created_by String?
   updated_by String?
   deleted_by String?
 
@@ -2748,7 +2760,7 @@ model GlobalNotification {
   is_deleted Boolean?  @default(false)
   deleted_at DateTime?
 
-  created_by String
+  created_by String?
   updated_by String?
   deleted_by String?
 
@@ -2831,7 +2843,7 @@ model Category {
   is_deleted  Boolean   @default(false)
   deleted_at  DateTime?
 
-  created_by String
+  created_by String?
   updated_by String?
   deleted_by String?
 
@@ -2898,7 +2910,7 @@ model Article {
   is_deleted Boolean   @default(false)
   deleted_at DateTime?
 
-  created_by String
+  created_by String?
   updated_by String?
   deleted_by String?
 
@@ -3142,7 +3154,7 @@ model MajorPartner {
   is_deleted Boolean   @default(false)
   deleted_at DateTime?
 
-  created_by String
+  created_by String?
   updated_by String?
   deleted_by String?
 
@@ -3664,7 +3676,7 @@ model OrganizationUpdateRequest {
   is_deleted Boolean   @default(false)
   deleted_at DateTime?
 
-  created_by String
+  created_by String?
   updated_by String?
   deleted_by String?
 
@@ -3688,7 +3700,7 @@ model FAQ {
   is_deleted Boolean?  @default(false)
   deleted_at DateTime?
 
-  created_by String
+  created_by String?
   updated_by String?
   deleted_by String?
 
@@ -3708,7 +3720,7 @@ model ContactTag {
   is_deleted Boolean   @default(false)
   deleted_at DateTime?
 
-  created_by String
+  created_by String?
   updated_by String?
   deleted_by String?
 
@@ -3803,7 +3815,7 @@ model QCWarehouse {
   is_deleted Boolean   @default(false)
   deleted_at DateTime?
 
-  created_by String
+  created_by String?
   updated_by String?
   deleted_by String?
 
@@ -3829,7 +3841,7 @@ model QCRow {
   is_deleted Boolean   @default(false)
   deleted_at DateTime?
 
-  created_by String
+  created_by String?
   updated_by String?
   deleted_by String?
 
@@ -3857,7 +3869,7 @@ model QCPermission {
   is_deleted Boolean   @default(false)
   deleted_at DateTime?
 
-  created_by String
+  created_by String?
   updated_by String?
   deleted_by String?
 
@@ -3878,7 +3890,7 @@ model QCWarehouseAssignment {
   is_deleted Boolean   @default(false)
   deleted_at DateTime?
 
-  created_by String
+  created_by String?
   updated_by String?
   deleted_by String?
 
@@ -3919,7 +3931,7 @@ model QCRowAssignment {
   is_deleted Boolean   @default(false)
   deleted_at DateTime?
 
-  created_by String
+  created_by String?
   updated_by String?
   deleted_by String?
 
@@ -4000,7 +4012,7 @@ model ContactListEntry {
   is_deleted Boolean   @default(false)
   deleted_at DateTime?
 
-  created_by String
+  created_by String?
   updated_by String?
   deleted_by String?
 
@@ -4086,7 +4098,7 @@ model OrganizationChatMessage {
   is_deleted Boolean   @default(false)
   deleted_at DateTime?
 
-  created_by String  @db.Uuid
+  created_by String?  @db.Uuid
   deleted_by String? @db.Uuid
 
   organization Organization          @relation(fields: [organization_id], references: [id], onDelete: Cascade)
@@ -4115,7 +4127,7 @@ model OrganizationChatCall {
   is_deleted Boolean   @default(false)
   deleted_at DateTime?
 
-  created_by String  @db.Uuid
+  created_by String?  @db.Uuid
   ended_by   String? @db.Uuid
 
   organization Organization                      @relation(fields: [organization_id], references: [id], onDelete: Cascade)
@@ -4186,7 +4198,7 @@ model WarningCategory {
   is_deleted Boolean   @default(false)
   deleted_at DateTime?
 
-  created_by String
+  created_by String?
   updated_by String?
   deleted_by String?
 
@@ -4220,4 +4232,28 @@ model UserWarning {
   @@index([user_id])
   @@index([category_id])
   @@map("user_warnings")
+}
+
+model WarnPenalty {
+  id              String           @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  min_warn_count  Int
+  max_warn_count  Int?
+  
+  is_permanent_ban Boolean         @default(false)
+  duration_value   Int?
+  duration_unit    BanDurationUnit?
+  
+  description     String?
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean   @default(false)
+  deleted_at DateTime?
+
+  created_by String?
+  updated_by String?
+  deleted_by String?
+
+  @@map("warn_penalties")
 }
