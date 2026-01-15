@@ -4308,13 +4308,13 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
       if (existingCount > 0) return;
 
       const amenities = [
-        { name: 'Camera an ninh 24/7', description: 'Hệ thống camera giám sát hoạt động suốt ngày đêm', icon: 'camera' },
-        { name: 'Hệ thống báo cháy', description: 'Hệ thống cảnh báo và chữa cháy tự động', icon: 'fire-extinguisher' },
-        { name: 'Điều hòa nhiệt độ', description: 'Kiểm soát nhiệt độ phù hợp cho hàng hóa', icon: 'thermometer' },
-        { name: 'Bãi đậu xe', description: 'Bãi xe rộng rãi cho xe tải ra vào', icon: 'truck' },
-        { name: 'Máy bốc xếp', description: 'Forklift và các thiết bị bốc xếp hàng hóa', icon: 'forklift' },
-        { name: 'Bảo vệ 24/7', description: 'Nhân viên bảo vệ túc trực suốt ngày đêm', icon: 'shield' },
-        { name: 'Kho lạnh', description: 'Kho bảo quản hàng hóa ở nhiệt độ thấp', icon: 'snowflake' },
+        { name: 'Camera an ninh 24/7', description: 'Hệ thống camera giám sát hoạt động suốt ngày đêm' },
+        { name: 'Hệ thống báo cháy', description: 'Hệ thống cảnh báo và chữa cháy tự động' },
+        { name: 'Điều hòa nhiệt độ', description: 'Kiểm soát nhiệt độ phù hợp cho hàng hóa' },
+        { name: 'Bãi đậu xe', description: 'Bãi xe rộng rãi cho xe tải ra vào' },
+        { name: 'Máy bốc xếp', description: 'Forklift và các thiết bị bốc xếp hàng hóa' },
+        { name: 'Bảo vệ 24/7', description: 'Nhân viên bảo vệ túc trực suốt ngày đêm' },
+        { name: 'Kho lạnh', description: 'Kho bảo quản hàng hóa ở nhiệt độ thấp' },
         { name: 'Wifi tốc độ cao', description: 'Kết nối internet tốc độ cao', icon: 'wifi' },
       ];
 
