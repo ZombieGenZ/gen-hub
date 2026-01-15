@@ -1,7 +1,13 @@
 {
     "errors": {
         "warehouse_not_found": "Không tìm thấy QC Warehouse",
+        "qc_warehouse_not_found": "Không tìm thấy QC Warehouse",
+        "warehouse_detail_not_found": "Không tìm thấy Warehouse",
         "row_not_found": "Không tìm thấy QC Row",
+        "row_detail_not_found": "Không tìm thấy Row",
+        "rack_not_found": "Không tìm thấy Rack",
+        "shelf_not_found": "Không tìm thấy Shelf",
+        "block_not_found": "Không tìm thấy Block",
         "assignment_not_found": "Không tìm thấy phân công",
         "invalid_permissions": "Một hoặc nhiều permissions không hợp lệ",
         "user_already_assigned": "User đã được phân công cho warehouse/row này"

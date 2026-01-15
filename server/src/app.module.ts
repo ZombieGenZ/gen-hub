@@ -54,11 +54,18 @@ import { AddonTypeModule } from './modules/addon-type/addon-type.module';
 import { FaqModule } from './modules/faq/faq.module';
 import { ContactModule } from './modules/contact/contact.module';
 import { ContactTagModule } from './modules/contact-tag/contact-tag.module';
+import { ContactListModule } from './modules/contact-list/contact-list.module';
 import { QCManagementModule } from './modules/qc-management/qc-management.module';
 import { RefundRequestModule } from './modules/refund-request/refund-request.module';
 import { CategoryModule } from './modules/category/category.module';
 import { ArticleModule } from './modules/article/article.module';
 import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
+import { CozeModule } from './modules/coze/coze.module';
+import { CozePluginModule } from './modules/coze-plugin/coze-plugin.module';
+import { OrgChatModule } from './modules/org-chat/org-chat.module';
+import { BackblazeB2Module } from './modules/backblaze-b2/backblaze-b2.module';
+import { DatabaseBackupModule } from './modules/database-backup/database-backup.module';
+
 
 @Module({
   imports: [
@@ -134,6 +141,14 @@ import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
     // Organizations
     OrganizationModule,
 
+    // Organization Chat with Agora
+    OrgChatModule,
+
+    // Organization-level modules
+    PartnerModule,
+    ProductModule,
+    BatchModule,
+
     // Organization Update Request
     OrganizationUpdateRequestModule,
 
@@ -150,8 +165,8 @@ import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
     AccountBalanceModule,
 
     // Notifications
-    GlobalNotificationModule,
     UserNotificationModule,
+    GlobalNotificationModule,
     OrgNotificationModule,
 
     // Schedulers
@@ -159,13 +174,32 @@ import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
     ApiKeySchedulerModule,
     RentalSchedulerModule,
 
-    // Organization-level modules
-    PartnerModule,
-    ProductModule,
-    BatchModule,
-
     // FAQs
     FaqModule,
+
+    // Refund Request Module
+    RefundRequestModule,
+
+    // Contact Tags Module
+    ContactTagModule,
+
+    // Contact List (Blacklist/Whitelist)
+    ContactListModule,
+
+    // Contact Support Module
+    ContactModule,
+
+    // Category Module
+    CategoryModule,
+
+    // Article Module
+    ArticleModule,
+
+    // Coze AI Module
+    CozeModule,
+
+    // Coze AI Plugin APIs (Public)
+    CozePluginModule,
 
     // Database Panel
     DatabaseAdminModule,
@@ -188,20 +222,11 @@ import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
     // Database Auto-logging
     DatabaseLogModule,
 
-    // Contact Tags Module
-    ContactTagModule,
+    // Backblaze B2 + Cloudflare CDN Integration
+    BackblazeB2Module,
 
-    // Refund Request Module
-    RefundRequestModule,
-
-    // Category Module
-    CategoryModule,
-
-    // Article Module
-    ArticleModule,
-
-    // Contact Support Module
-    ContactModule,
+    // Database Backup
+    DatabaseBackupModule,
   ],
   controllers: [AppController],
   providers: [

@@ -1751,3 +1751,231 @@ socket.on('refundRequest:deleted', (data) => {
   // }
 });
 ```
+
+---
+
+## 📧 Contact AI Events (Room: `admin_room`)
+
+### Mô tả
+
+Contact module tích hợp AI với hai thành phần:
+- **Gemini AI**: Phân loại message (spam vs contact hợp lệ)
+- **Coze AI**: Tư vấn tự động cho customer
+
+AI chỉ reply cho **CUSTOMER** messages, không reply cho staff messages.
+
+### Join Room
+```javascript
+// Admin tự động join admin_room khi authenticated
+// Không cần subscribe thủ công
+```
+
+### `contact:conversation:created`
+**Khi nào:** Khi có ticket mới được tạo (từ form hoặc email)
+```javascript
+socket.on('contact:conversation:created', (data) => {
+  // {
+  //   "conversationId": "uuid",
+  //   "code": "TICKET-20260110-001",
+  //   "customerEmail": "customer@example.com",
+  //   "timestamp": "2026-01-10T10:00:00.000Z"
+  // }
+});
+```
+
+### `contact:message:created`
+**Khi nào:** Khi có message mới trong conversation (từ customer, staff hoặc AI)
+```javascript
+socket.on('contact:message:created', (data) => {
+  // {
+  //   "conversationId": "uuid",
+  //   "message": {
+  //     "id": "message-uuid",
+  //     "sender_type": "CUSTOMER" | "STAFF" | "AI",
+  //     "sender_name": "Nguyen Van A" | "Staff Name" | "GEN-HUB AI",
+  //     "content": "Nội dung tin nhắn...",
+  //     "is_internal": false,
+  //     "created_at": "2026-01-10T10:00:00.000Z"
+  //   }
+  // }
+  
+  // Xử lý AI response
+  if (data.message.sender_type === 'AI') {
+    showAiResponse(data.message);
+  }
+});
+```
+
+**Data mẫu khi AI reply:**
+```json
+{
+  "conversationId": "550e8400-e29b-41d4-a716-446655440000",
+  "message": {
+    "id": "ai-1704877200000",
+    "sender_type": "AI",
+    "sender_name": "GEN-HUB AI",
+    "content": "Xin chào! Cảm ơn bạn đã liên hệ. Tôi có thể giúp bạn tìm hiểu về dịch vụ cho thuê kho...",
+    "is_internal": false,
+    "created_at": "2026-01-10T10:00:00.000Z"
+  }
+}
+```
+
+### `contact:conversation:updated`
+**Khi nào:** Khi ticket được cập nhật (status, priority, AI settings, etc.)
+```javascript
+socket.on('contact:conversation:updated', (data) => {
+  // {
+  //   "conversationId": "uuid",
+  //   "code": "TICKET-20260110-001",
+  //   "updatedFields": ["status", "enable_ai_reply"],
+  //   "updatedBy": "admin-uuid",
+  //   "timestamp": "2026-01-10T10:00:00.000Z"
+  // }
+});
+```
+
+### `contact:conversation:closed`
+**Khi nào:** Khi ticket được đóng
+```javascript
+socket.on('contact:conversation:closed', (data) => {
+  // {
+  //   "conversationId": "uuid",
+  //   "code": "TICKET-20260110-001",
+  //   "closedBy": "admin-uuid",
+  //   "timestamp": "2026-01-10T10:00:00.000Z"
+  // }
+});
+```
+
+### `contact:conversation:reopened`
+**Khi nào:** Khi ticket được mở lại
+```javascript
+socket.on('contact:conversation:reopened', (data) => {
+  // {
+  //   "conversationId": "uuid",
+  //   "code": "TICKET-20260110-001",
+  //   "reopenedBy": "admin-uuid",
+  //   "timestamp": "2026-01-10T10:00:00.000Z"
+  // }
+});
+```
+
+## 📋 Contact List Events (Danh sách liên hệ Blacklist/Whitelist)
+
+### `contactList:created`
+Được phát khi một mục mới được thêm vào danh sách.
+
+**Payload:**
+```json
+{
+  "entryId": "uuid",
+  "listType": "BLACKLIST", // hoặc "WHITELIST"
+  "matchType": "EMAIL", // hoặc "EMAIL_DOMAIN", "IP_V4", "IP_V6", "REGION_COUNTRY", "REGION_CITY"
+  "value": "example@domain.com",
+  "createdBy": "userId",
+  "timestamp": "ISO Date"
+}
+```
+
+### `contactList:updated`
+Được phát khi một mục trong danh sách được cập nhật.
+
+**Payload:**
+```json
+{
+  "entryId": "uuid",
+  "listType": "BLACKLIST",
+  "matchType": "EMAIL",
+  "value": "new@domain.com",
+  "updatedFields": ["value", "reason"],
+  "updatedBy": "userId",
+  "timestamp": "ISO Date"
+}
+```
+
+### `contactList:deleted`
+Được phát khi một mục bị xóa khỏi danh sách.
+
+**Payload:**
+```json
+{
+  "entryId": "uuid", // Có thể null nếu xóa nhanh (quick remove) từ service method
+  "listType": "BLACKLIST", // Nếu xóa nhanh
+  "matchType": "EMAIL", // Nếu xóa nhanh
+  "value": "example@domain.com", // Nếu xóa nhanh
+  "deletedBy": "userId",
+  "timestamp": "ISO Date"
+}
+```
+
+### `contactList:deletedMany`
+Được phát khi nhiều mục bị xóa cùng lúc.
+
+**Payload:**
+```json
+{
+  "entryIds": ["uuid1", "uuid2"],
+  "deletedBy": "userId",
+  "timestamp": "ISO Date"
+}
+```
+
+---
+
+## 📦 Database Backup Events (Room: `admin_room`)
+
+### `backup:created`
+Được phát khi backup hoàn thành thành công.
+
+**Payload:**
+```json
+{
+  "id": "uuid",
+  "fileName": "backup-2025-01-11T10-30-00.zip",
+  "fileSize": 1048576,
+  "backupType": "SCHEDULED", // SCHEDULED | MANUAL_API | MANUAL_DISCORD
+  "triggeredBy": "SYSTEM", // hoặc userId
+  "createdAt": "2025-01-11T10:30:00.000Z",
+  "timestamp": "ISO Date"
+}
+```
+
+### `backup:deleted`
+Được phát khi backup bị xóa (do vượt max count).
+
+**Payload:**
+```json
+{
+  "id": "uuid",
+  "fileName": "backup-old.zip",
+  "timestamp": "ISO Date"
+}
+```
+
+---
+
+## 📱 Discord Integration
+
+### Discord Backup Notifications
+
+Khi backup hoàn thành hoặc thất bại, hệ thống sẽ gửi notification vào channel Discord được cấu hình trong `DISCORD_BACKUP_CHANNEL_ID`.
+
+**Notification thành công:**
+- Màu: Xanh lá (#00ff00)
+- Thông tin: File name, size, duration, backup type, triggered by
+
+**Notification thất bại:**
+- Màu: Đỏ (#ff0000)
+- Thông tin: Backup type, triggered by, error message
+
+### Discord Commands cho Backup
+
+| Command | Mô tả | Yêu cầu Role |
+|---------|-------|--------------|
+| `/backup <key>` | Trigger backup database | DISCORD_BACKUP_ROLE_IDS |
+| `/backups` | Xem danh sách backups | DISCORD_BACKUP_ROLE_IDS |
+| `/backup-download <id> <key>` | Lấy URL tải backup | DISCORD_BACKUP_ROLE_IDS |
+
+> [!NOTE]
+> Các commands chỉ hiển thị với users có role trong `DISCORD_BACKUP_ROLE_IDS`

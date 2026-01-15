@@ -63,6 +63,10 @@ export interface ICreateMessageData {
     email_subject?: string;
     is_internal?: boolean;
     created_by?: string;
+    // AI response fields
+    is_ai_response?: boolean;
+    ai_model?: string;
+    ai_confidence?: number;
 }
 
 /**

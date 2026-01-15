@@ -22,6 +22,7 @@ export enum ResponseCode {
     AUTH_LOGIN_DATABASE_PANEL_SUCCESS = 'auth.login_database_panel_success',
     AUTH_LOGIN_FEATURE_FLAG_PANEL_SUCCESS = 'auth.login_feature_flag_panel_success',
     AUTH_LOGIN_RESOURCES_PANEL_SUCCESS = 'auth.login_resources_panel_success',
+    AUTH_LOGIN_ADMIN_PANEL_SUCCESS = 'auth.login_admin_panel_success',
 
     // Analytics
     ANALYTICS_TRAFFIC_SUCCESS = 'analytics.traffic_success',
@@ -113,6 +114,9 @@ export enum ResponseCode {
     WAREHOUSE_LAYOUT_SUCCESS = 'warehouse.layout_success',
     WAREHOUSE_UPDATE_SUCCESS = 'warehouse.update_success',
     WAREHOUSE_DELETE_SUCCESS = 'warehouse.delete_success',
+    WAREHOUSE_RACKS_SUCCESS = 'warehouse.racks_success',
+    WAREHOUSE_SHELVES_SUCCESS = 'warehouse.shelves_success',
+    WAREHOUSE_BLOCKS_SUCCESS = 'warehouse.blocks_success',
 
     // Rental Contract
     RENTAL_CONTRACT_CREATE_SUCCESS = 'rental_contract.create_success',
@@ -196,6 +200,18 @@ export enum ResponseCode {
     REFUND_REQUEST_REJECT_SUCCESS = 'refund_request.reject_success',
     REFUND_REQUEST_CHANGE_SUCCESS = 'refund_request.change_success',
     REFUND_REQUEST_DELETE_SUCCESS = 'refund_request.delete_success',
+
+    // Organization Chat
+    ORG_CHAT_TOKEN_SUCCESS = 'org_chat.token_success',
+    ORG_CHAT_MESSAGES_SUCCESS = 'org_chat.messages_success',
+    ORG_CHAT_SYNC_SUCCESS = 'org_chat.sync_success',
+    ORG_CHAT_DELETE_SUCCESS = 'org_chat.delete_success',
+    ORG_CHAT_CALLS_SUCCESS = 'org_chat.calls_success',
+    ORG_CHAT_CALL_SUCCESS = 'org_chat.call_success',
+    ORG_CHAT_CALL_STARTED = 'org_chat.call_started',
+    ORG_CHAT_CALL_JOINED = 'org_chat.call_joined',
+    ORG_CHAT_CALL_LEFT = 'org_chat.call_left',
+    ORG_CHAT_CALL_ENDED = 'org_chat.call_ended',
 
     // Client Errors (4xx)
     ERROR_VALIDATION = 'error.validation',

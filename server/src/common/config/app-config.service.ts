@@ -49,6 +49,8 @@ export interface IAppConfig {
   supportPhone: string;
   colors: IAppColors;
   pagination: IPaginationConfig;
+  /** Bật/tắt tự động phản hồi bằng AI cho contact (giá trị mặc định) */
+  enableAiAutoReply: boolean;
 }
 
 /**
@@ -125,6 +127,8 @@ export class AppConfigService implements OnModuleInit {
         maxLimit: this.configService.get<number>('MAX_LIMIT') || 100,
         minLimit: this.configService.get<number>('MIN_LIMIT') || 1,
       },
+      enableAiAutoReply:
+        this.configService.get<boolean>('ENABLE_AI_AUTO_REPLY') ?? true,
     };
   }
 

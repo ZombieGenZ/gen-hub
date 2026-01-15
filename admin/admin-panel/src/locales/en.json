@@ -1,0 +1,293 @@
+{
+    "dashboard": {
+        "title": "Dashboard",
+        "welcome": "Welcome to GEN-HUB Database Panel",
+        "stats": {
+            "totalTables": "Total Tables",
+            "totalRecords": "Total Records",
+            "totalColumns": "Total Columns",
+            "avgRecords": "Avg Records/Table",
+            "loadStats": "Load Statistics",
+            "refresh": "Refresh Statistics"
+        },
+        "email": "Email",
+        "quickAccess": {
+            "title": "Quick Access - Tables",
+            "tables": "tables",
+            "loading": "Loading data...",
+            "records": "Records",
+            "columns": "Columns"
+        },
+        "auditNote": {
+            "title": "Note about Audit Logging",
+            "description": "All Create, Update, Delete operations on this panel are logged to"
+        },
+        "tables": {
+            "refresh": "Refresh Tables"
+        }
+    },
+    "table": {
+        "title": "Table",
+        "records": "records",
+        "columns": "columns",
+        "noData": "No data",
+        "loading": "Loading...",
+        "actions": {
+            "addRecord": "Add record",
+            "deleteSelected": "Delete",
+            "save": "Save",
+            "cancel": "Cancel",
+            "saveChanges": "Save Changes",
+            "discardChanges": "Discard"
+        },
+        "filter": {
+            "title": "Filters",
+            "where": "where",
+            "and": "and",
+            "addFilter": "Add filter",
+            "clearFilters": "Clear filters",
+            "apply": "Apply",
+            "notApplied": "filter(s) not applied",
+            "enterValue": "Enter a value"
+        },
+        "edit": {
+            "editColumn": "Edit",
+            "setNull": "Set NULL",
+            "save": "Save",
+            "cancel": "Cancel",
+            "pressToSave": "Press to save",
+            "pressToCancel": "to cancel",
+            "pressToSaveCombined": "Press Ctrl+Enter to save, Esc to cancel",
+            "pressEnterToSaveCombined": "Press Enter to save, Esc to cancel",
+            "selectDate": "Select date"
+        },
+        "pagination": {
+            "page": "Page",
+            "of": "of",
+            "previous": "Previous",
+            "next": "Next"
+        },
+        "newRow": {
+            "title": "New Row",
+            "placeholder": "Enter value..."
+        },
+        "delete": {
+            "confirmTitle": "Confirm Delete",
+            "confirmMessage": "Are you sure you want to delete these records?",
+            "deleted": "Deleted"
+        },
+        "export": {
+            "title": "Export Data",
+            "csv": "Export CSV",
+            "excel": "Export Excel",
+            "exporting": "Exporting...",
+            "success": "Export successful",
+            "error": "Export error"
+        },
+        "sort": {
+            "clickToSort": "Click to sort",
+            "ascending": "Ascending",
+            "descending": "Descending",
+            "default": "Default"
+        },
+        "columnManagement": {
+            "resetOrder": "Reset column order",
+            "dragToReorder": "Drag to reorder columns"
+        }
+    },
+    "common": {
+        "language": "Language",
+        "english": "English",
+        "vietnamese": "Vietnamese",
+        "yes": "Yes",
+        "no": "No",
+        "true": "TRUE",
+        "false": "FALSE",
+        "null": "NULL",
+        "error": "Error",
+        "success": "Success",
+        "close": "Close",
+        "refresh": "Refresh",
+        "back": "Back",
+        "previous": "Previous",
+        "next": "Next",
+        "cancel": "Cancel",
+        "export": "Export",
+        "all": "All"
+    },
+    "sidebar": {
+        "title": "Admin Panel",
+        "dashboard": "Dashboard",
+        "erDiagram": "Diagram",
+        "tables": "Tables",
+        "logout": "Logout",
+        "admin": "Admin Panel",
+        "featureFlags": "Feature Flags",
+        "resources": "Resources",
+        "systemLogs": "System Logs"
+    },
+    "diagram": {
+        "title": "Diagram",
+        "tables": "tables",
+        "relations": "relations",
+        "loading": "Loading diagram...",
+        "hideLines": "Hide Lines",
+        "showLines": "Show Lines",
+        "refresh": "Refresh",
+        "exportPng": "PNG",
+        "exportPdf": "PDF",
+        "changeColor": "Change color",
+        "save": "Save",
+        "saving": "Saving...",
+        "saved": "Saved!",
+        "legend": {
+            "title": "Legend",
+            "primaryKey": "Primary Key (PK)",
+            "foreignKey": "Foreign Key (FK)",
+            "notNull": "NOT NULL",
+            "unique": "UNIQUE",
+            "relations": "Relations (1:1, 1:N, N:N)"
+        },
+        "hideLegend": "Hide Legend",
+        "showLegend": "Show Legend",
+        "customColor": "Custom"
+    },
+    "query": {
+        "title": "SQL Query",
+        "subtitle": "Execute raw SQL queries directly on your database",
+        "execute": "Execute",
+        "clear": "Clear",
+        "templates": "Templates",
+        "history": "History",
+        "results": "Results",
+        "noResults": "No results",
+        "error": "Query Error",
+        "success": "Query executed successfully",
+        "rowsAffected": "rows affected",
+        "executionTime": "Execution time",
+        "placeholder": "Enter your SQL query here...",
+        "selectTemplate": "Select a template...",
+        "select": "SELECT",
+        "insert": "INSERT",
+        "update": "UPDATE",
+        "delete": "DELETE",
+        "createTable": "CREATE TABLE",
+        "alterTable": "ALTER TABLE"
+    },
+    "featureFlags": {
+        "title": "Feature Flags",
+        "subtitle": "Manage API feature flags",
+        "searchPlaceholder": "Search by path or module...",
+        "allModules": "All Modules",
+        "allStatus": "All Status",
+        "active": "Active",
+        "inactive": "Inactive",
+        "selected": "selected",
+        "enableAll": "Enable All",
+        "disableAll": "Disable All",
+        "noFlags": "No feature flags found",
+        "toggleSuccess": "Flag status changed",
+        "toggleError": "Failed to toggle flag",
+        "bulkSuccess": "Flags updated",
+        "bulkError": "Failed to update flags",
+        "stats": {
+            "total": "Total",
+            "active": "Active",
+            "inactive": "Inactive"
+        },
+        "table": {
+            "module": "Module",
+            "method": "Method",
+            "path": "Path",
+            "status": "Status",
+            "actions": "Actions"
+        },
+        "pagination": {
+            "showing": "Showing",
+            "of": "of"
+        },
+        "detail": {
+            "backToList": "Back to Feature Flags",
+            "title": "Feature Flag Details",
+            "refreshLogs": "Refresh Logs",
+            "infoTitle": "Flag Information",
+            "historyTitle": "Change History",
+            "noLogs": "No history logs found",
+            "createdAt": "Created",
+            "updatedAt": "Updated",
+            "enabled": "Enabled",
+            "disabled": "Disabled",
+            "created": "Created",
+            "deleted": "Deleted",
+            "fetchError": "Failed to fetch flag details",
+            "fetchLogsError": "Failed to fetch history logs",
+            "user": "User",
+            "ip": "IP",
+            "page": "Page"
+        }
+    },
+    "resources": {
+        "title": "Resources Monitor",
+        "subtitle": "Real-time service monitoring",
+        "lastUpdated": "Updated",
+        "noData": "No data available",
+        "services": "Services",
+        "live": "Live",
+        "disconnected": "Disconnected",
+        "overview": {
+            "total": "Total Services",
+            "online": "Online",
+            "offline": "Offline",
+            "avgCpu": "Avg CPU",
+            "avgMemory": "Avg Memory",
+            "avgDisk": "Avg Disk"
+        }
+    },
+    "systemLogs": {
+        "title": "System Console",
+        "subtitle": "Real-time server activity",
+        "tableTitle": "System Logs Table",
+        "tableSubtitle": "Browse and search historical logs",
+        "consoleView": "Console View",
+        "viewTable": "Table View",
+        "searchPlaceholder": "Search messages...",
+        "noLogs": "No logs found",
+        "metadata": "Metadata",
+        "userId": "User ID",
+        "ipAddress": "IP Address",
+        "showing": "Showing",
+        "of": "of",
+        "logs": "logs",
+        "page": "Page",
+        "stats": {
+            "total": "Total",
+            "last24h": "Last 24h"
+        },
+        "filters": {
+            "allLevels": "All Levels",
+            "allModules": "All Modules"
+        },
+        "table": {
+            "level": "Level",
+            "module": "Module",
+            "action": "Action",
+            "message": "Message",
+            "time": "Time"
+        },
+        "export": {
+            "title": "Export Logs",
+            "subtitle": "Configure export options",
+            "optional": "Optional",
+            "dateRange": "Date Range",
+            "startDate": "Start Date",
+            "endDate": "End Date",
+            "level": "Log Level",
+            "module": "Module",
+            "maxLogs": "Max Logs",
+            "maxLogsPlaceholder": "Enter max number of logs",
+            "exporting": "Exporting...",
+            "success": "Export successful",
+            "noData": "No logs found with selected filters"
+        }
+    }
+}

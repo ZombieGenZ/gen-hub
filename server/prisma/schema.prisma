@@ -1589,6 +1589,11 @@ model Organization {
   account_balance      OrganizationBalance?
   balance_transactions OrganizationBalanceTransaction[]
 
+  contact_conversations ContactConversation[] @relation("ContactConversations")
+
+  chat_messages OrganizationChatMessage[]
+  chat_calls    OrganizationChatCall[]
+
   @@map("organizations")
 }
 
@@ -2932,11 +2937,10 @@ model ArticleCategory {
   @@map("articles_categories")
 }
 
-// Hệ thống emoji riêng cho bài viết
 model ArticleEmoji {
   id    String @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  emoji String // 😀, 👍, ❤️, etc.
-  name  String // Tên mô tả: happy, like, love
+  emoji String
+  name  String
   order Int    @default(0)
 
   is_active  Boolean   @default(true)
@@ -2949,14 +2953,13 @@ model ArticleEmoji {
   @@map("article_emojis")
 }
 
-// Mapping user thả emoji vào bài viết
 model ArticleReaction {
   id         String  @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   article_id String  @db.Uuid
   emoji_id   String  @db.Uuid
-  user_id    String? @db.Uuid // null nếu guest
+  user_id    String? @db.Uuid
 
-  guest_identifier String? // fingerprint hoặc session cho guest
+  guest_identifier String?
 
   created_at DateTime @default(now())
 
@@ -2976,16 +2979,13 @@ enum ArticleCommentStatus {
   REJECTED
 }
 
-// Hệ thống comment
 model ArticleComment {
   id         String @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   article_id String @db.Uuid
-  parent_id  String? @db.Uuid // reply comment
+  parent_id  String? @db.Uuid
 
-  // Nếu đăng nhập
   user_id String? @db.Uuid
 
-  // Nếu không đăng nhập (guest)
   guest_name  String?
   guest_email String?
 
@@ -3013,7 +3013,6 @@ model ArticleComment {
   @@map("article_comments")
 }
 
-// Lịch sử chỉnh sửa bài viết
 model ArticleEditHistory {
   id         String @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   article_id String @db.Uuid
@@ -3037,7 +3036,6 @@ model ArticleEditHistory {
   @@map("article_edit_history")
 }
 
-// Lịch sử chỉnh sửa comment
 model ArticleCommentEditHistory {
   id         String @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   comment_id String @db.Uuid
@@ -3170,6 +3168,7 @@ enum ContactPriority {
 enum ContactChannel {
   EMAIL
   WEBSITE_FORM
+  LIVE_CHAT
   PHONE
   SOCIAL_MEDIA
   OTHER
@@ -3179,6 +3178,7 @@ enum MessageSender {
   CUSTOMER
   STAFF
   SYSTEM
+  AI
 }
 
 enum MessageType {
@@ -3189,9 +3189,31 @@ enum MessageType {
   DISCORD
 }
 
+enum PriorityCustomerSource {
+  LOGGED_IN_OWNER
+  EMAIL_MATCH_OWNER
+  EMAIL_MATCH_REPRESENTATIVE
+  ACTIVE_CONTRACT
+  PREVIOUS_CONTRACT
+  WHITELIST
+  AI_POTENTIAL
+}
+
 model ContactConversation {
   id   String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
   code String @unique
+
+  session_id String? @unique
+
+  organization_id String? @db.Uuid
+
+  is_priority_customer Boolean @default(false)
+  priority_source      PriorityCustomerSource?
+
+  enable_ai_reply Boolean?
+
+  ai_summary    String?   @db.Text
+  ai_summary_at DateTime?
 
   customer_name    String
   customer_email   String
@@ -3234,11 +3256,16 @@ model ContactConversation {
 
   discord_channel_id String?
 
+  is_skipped   Boolean @default(false)
+  skip_reason  String?
+
   assigned_staff User? @relation("AssignedStaff", fields: [assigned_staff_id], references: [id])
+  organization  Organization? @relation("ContactConversations", fields: [organization_id], references: [id])
 
   messages            ContactMessage[]
   tag_mappings        ContactTagOnConversation[]
   assigned_staff_list ContactConversationStaff[]
+  action_logs         ContactActionLog[]
 
   @@index([customer_email])
   @@index([status])
@@ -3246,6 +3273,10 @@ model ContactConversation {
   @@index([assigned_staff_id])
   @@index([email_thread_id])
   @@index([created_at])
+  @@index([session_id])
+  @@index([organization_id])
+  @@index([is_priority_customer])
+  @@index([is_skipped])
   @@map("contact_conversations")
 }
 
@@ -3272,6 +3303,10 @@ model ContactMessage {
   is_read     Boolean   @default(false)
   read_at     DateTime?
   is_internal Boolean   @default(false)
+
+  is_ai_response Boolean  @default(false)
+  ai_model       String?
+  ai_confidence  Float?   @db.DoublePrecision
 
   is_active  Boolean   @default(true)
   created_at DateTime  @default(now())
@@ -3910,4 +3945,229 @@ model QCRowAssignmentPermission {
   @@index([assignment_id])
   @@index([permission_id])
   @@map("qc_row_assignment_permissions")
+}
+
+model CozeConversation {
+  id         String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  session_id String
+
+  user_input   String @db.Text
+  bot_response String @db.Text
+
+  discord_channel_id String?
+  discord_user_id    String?
+
+  created_at DateTime @default(now())
+
+  @@index([session_id])
+  @@index([discord_channel_id])
+  @@index([created_at])
+  @@map("coze_conversations")
+}
+
+enum ContactListType {
+  BLACKLIST
+  WHITELIST
+}
+
+enum ContactListMatchType {
+  EMAIL
+  EMAIL_DOMAIN
+  IP_V4
+  IP_V6
+  REGION_COUNTRY
+  REGION_CITY
+}
+
+model ContactListEntry {
+  id String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+
+  list_type  ContactListType
+  match_type ContactListMatchType
+  value      String
+
+  country_code String?
+  city_code    String?
+
+  reason String?
+  notes  String? @db.Text
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean   @default(false)
+  deleted_at DateTime?
+
+  created_by String
+  updated_by String?
+  deleted_by String?
+
+  @@unique([list_type, match_type, value])
+  @@index([list_type])
+  @@index([match_type])
+  @@index([value])
+  @@index([is_active])
+  @@map("contact_list_entries")
+}
+
+enum ContactActionType {
+  CLOSE
+  REOPEN
+  DELETE
+  ADD_WHITELIST
+  REMOVE_WHITELIST
+  ADD_BLACKLIST
+  REMOVE_BLACKLIST
+  SET_PRIORITY
+  SET_SKIP
+  UNSET_SKIP
+}
+
+enum ContactActionPerformedByType {
+  SYSTEM
+  ADMIN
+  STAFF
+  DISCORD
+}
+
+model ContactActionLog {
+  id              String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  conversation_id String @db.Uuid
+
+  action_type ContactActionType
+  reason      String?           @db.Text
+
+  list_type    String?
+  match_type   String?
+  match_value  String?
+  priority     String?
+  old_status   String?
+  new_status   String?
+
+  performed_by_id   String?                      @db.Uuid
+  performed_by_name String?
+  performed_by_type ContactActionPerformedByType @default(SYSTEM)
+
+  created_at DateTime @default(now())
+
+  conversation ContactConversation @relation(fields: [conversation_id], references: [id], onDelete: Cascade)
+
+  @@index([conversation_id])
+  @@index([action_type])
+  @@index([created_at])
+  @@map("contact_action_logs")
+}
+
+enum ChatCallType {
+  VOICE
+  VIDEO
+}
+
+enum ChatCallStatus {
+  WAITING
+  ONGOING
+  ENDED
+}
+
+model OrganizationChatMessage {
+  id              String   @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  organization_id String   @db.Uuid
+  content         String   @db.Text
+
+  agora_message_id String?
+
+  call_id String? @db.Uuid
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean   @default(false)
+  deleted_at DateTime?
+
+  created_by String  @db.Uuid
+  deleted_by String? @db.Uuid
+
+  organization Organization          @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  call         OrganizationChatCall? @relation(fields: [call_id], references: [id])
+
+  @@unique([organization_id, agora_message_id])
+  @@index([organization_id])
+  @@index([created_at])
+  @@map("organization_chat_messages")
+}
+
+model OrganizationChatCall {
+  id              String         @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  organization_id String         @db.Uuid
+  call_type       ChatCallType
+  status          ChatCallStatus @default(WAITING)
+
+  agora_channel_name String
+
+  started_at DateTime?
+  ended_at   DateTime?
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean   @default(false)
+  deleted_at DateTime?
+
+  created_by String  @db.Uuid
+  ended_by   String? @db.Uuid
+
+  organization Organization                      @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  participants OrganizationChatCallParticipant[]
+  messages     OrganizationChatMessage[]
+
+  @@index([organization_id])
+  @@index([status])
+  @@map("organization_chat_calls")
+}
+
+model OrganizationChatCallParticipant {
+  id      String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  call_id String @db.Uuid
+  user_id String @db.Uuid
+
+  agora_uid Int
+
+  joined_at DateTime  @default(now())
+  left_at   DateTime?
+
+  is_active Boolean @default(true)
+
+  call OrganizationChatCall @relation(fields: [call_id], references: [id], onDelete: Cascade)
+
+  @@unique([call_id, user_id])
+  @@index([call_id])
+  @@index([user_id])
+  @@map("organization_chat_call_participants")
+}
+
+enum BackupType {
+  SCHEDULED
+  MANUAL_API
+  MANUAL_DISCORD
+}
+
+model DatabaseBackup {
+  id               String     @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  file_name        String
+  file_size        BigInt
+  drive_file_id    String
+  drive_file_url   String?    @db.Text
+  backup_type      BackupType @default(SCHEDULED)
+  compression_type String     @default("zip")
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  is_deleted Boolean   @default(false)
+  deleted_at DateTime?
+
+  triggered_by String?
+
+  @@index([created_at])
+  @@index([backup_type])
+  @@map("database_backups")
 }

@@ -6,6 +6,9 @@ import {
     ContactStatus,
     MessageType,
     Prisma,
+    ContactActionType,
+    ContactActionPerformedByType,
+    ContactActionLog,
 } from '@prisma/client';
 import {
     IContactConversationWithMessages,
@@ -153,6 +156,25 @@ export class ContactRepository {
     }
 
     /**
+     * Tìm conversation theo session_id (Live Chat)
+     */
+    async findBySessionId(sessionId: string): Promise<ContactConversation | null> {
+        return this.prisma.contactConversation.findFirst({
+            where: { session_id: sessionId, is_deleted: false },
+        });
+    }
+
+    /**
+     * Lấy tất cả messages của conversation
+     */
+    async getMessages(conversationId: string): Promise<ContactMessage[]> {
+        return this.prisma.contactMessage.findMany({
+            where: { conversation_id: conversationId, is_deleted: false },
+            orderBy: { created_at: 'asc' },
+        });
+    }
+
+    /**
      * Tìm conversation by email thread ID
      */
     async findByEmailThreadId(
@@ -214,7 +236,7 @@ export class ContactRepository {
     async findMany(
         query: QueryContactDto,
     ): Promise<IPaginatedContactResponse<IContactConversationListItem>> {
-        const { limit = 10, offset = 0, keywords, status, priority, assigned_staff_id } = query;
+        const { limit = 10, offset = 0, keywords, status, priority, assigned_staff_id, is_priority_customer, is_skipped } = query;
 
         const where: Prisma.ContactConversationWhereInput = {
             is_deleted: false,
@@ -223,6 +245,8 @@ export class ContactRepository {
         if (status) where.status = status;
         if (priority) where.priority = priority;
         if (assigned_staff_id) where.assigned_staff_id = assigned_staff_id;
+        if (is_priority_customer !== undefined) where.is_priority_customer = is_priority_customer;
+        if (is_skipped !== undefined) where.is_skipped = is_skipped;
 
         if (keywords) {
             where.OR = [
@@ -634,5 +658,51 @@ export class ContactRepository {
             },
         });
         return result.count;
+    }
+
+    /**
+     * Tạo action log cho conversation
+     * Ghi lại lịch sử các hành động: close, reopen, delete, whitelist, blacklist, priority, skip
+     */
+    async createActionLog(data: {
+        conversationId: string;
+        actionType: ContactActionType;
+        reason?: string;
+        listType?: string;
+        matchType?: string;
+        matchValue?: string;
+        priority?: string;
+        oldStatus?: string;
+        newStatus?: string;
+        performedById?: string;
+        performedByName?: string;
+        performedByType?: ContactActionPerformedByType;
+    }): Promise<ContactActionLog> {
+        return this.prisma.contactActionLog.create({
+            data: {
+                conversation_id: data.conversationId,
+                action_type: data.actionType,
+                reason: data.reason,
+                list_type: data.listType,
+                match_type: data.matchType,
+                match_value: data.matchValue,
+                priority: data.priority,
+                old_status: data.oldStatus,
+                new_status: data.newStatus,
+                performed_by_id: data.performedById,
+                performed_by_name: data.performedByName,
+                performed_by_type: data.performedByType || ContactActionPerformedByType.SYSTEM,
+            },
+        });
+    }
+
+    /**
+     * Lấy danh sách action logs của conversation
+     */
+    async findActionLogsByConversationId(conversationId: string): Promise<ContactActionLog[]> {
+        return this.prisma.contactActionLog.findMany({
+            where: { conversation_id: conversationId },
+            orderBy: { created_at: 'desc' },
+        });
     }
 }

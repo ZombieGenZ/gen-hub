@@ -1,7 +1,13 @@
 {
     "errors": {
         "warehouse_not_found": "QC Warehouse not found",
+        "qc_warehouse_not_found": "QC Warehouse not found",
+        "warehouse_detail_not_found": "Warehouse not found",
         "row_not_found": "QC Row not found",
+        "row_detail_not_found": "Row not found",
+        "rack_not_found": "Rack not found",
+        "shelf_not_found": "Shelf not found",
+        "block_not_found": "Block not found",
         "assignment_not_found": "Assignment not found",
         "invalid_permissions": "One or more permissions are invalid",
         "user_already_assigned": "User is already assigned to this warehouse/row"

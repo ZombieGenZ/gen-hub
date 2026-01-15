@@ -1,6 +1,5 @@
 "use client";
 
-import { DashboardHeader } from "@/components/layouts/DashboardHeader";
 import {
     Table,
     TableBody,
@@ -35,19 +34,19 @@ export default function StaffPage() {
 
     return (
         <div className="flex flex-col flex-1 h-full bg-slate-50/50">
-            <DashboardHeader>
-                <div className="relative w-full max-w-xl hidden md:block">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                    <Input
-                        placeholder="Tìm kiếm nhân viên..."
-                        className="pl-9 h-9 bg-slate-50 border-slate-200 focus:bg-white focus:ring-brand/20 transition-all rounded-lg text-sm"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                </div>
-            </DashboardHeader>
-
             <main className="flex-1 p-4 md:p-8">
+                <div className="mb-6">
+                    <div className="relative w-full max-w-xl hidden md:block">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                        <Input
+                            placeholder="Tìm kiếm nhân viên..."
+                            className="pl-9 h-9 bg-slate-50 border-slate-200 focus:bg-white focus:ring-brand/20 transition-all rounded-lg text-sm"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+                </div>
+
                 <div className="flex items-center justify-between mb-6">
                     <div>
                         <h1 className="text-2xl font-bold text-slate-900">Nhân viên</h1>

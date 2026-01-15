@@ -35,3 +35,16 @@ export interface IEmailClassificationRequest {
     subject: string;
     content: string;
 }
+
+/**
+ * Interface cho kết quả phân loại webform
+ */
+export interface IWebformClassification {
+    isUserContact: boolean;         // True nếu là yêu cầu liên hệ từ người dùng thực
+    isSpamOrAdvertising: boolean;   // True nếu là spam hoặc quảng cáo
+    category: 'inquiry' | 'support' | 'spam' | 'advertising' | 'unknown';
+    confidence: number;             // Độ tin cậy 0-1
+    reason?: string;                // Lý do phân loại
+    isPotentialCustomer?: boolean;  // True nếu có tiềm năng là khách hàng
+}
+

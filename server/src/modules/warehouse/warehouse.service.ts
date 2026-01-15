@@ -362,4 +362,112 @@ export class WarehouseService {
   private async invalidateWarehouseListCache(): Promise<void> {
     await this.redisService.delByPattern('warehouse:list:*');
   }
+
+  /**
+   * Lấy danh sách racks của warehouse
+   */
+  async getRacks(
+    warehouseId: string,
+    userId: string,
+    organizationId: string,
+    lang: string,
+  ) {
+    // Kiểm tra quyền
+    if (organizationId) {
+      await this.checkOrgPermission(
+        organizationId,
+        userId,
+        'warehouse.view',
+        lang,
+      );
+    }
+
+    // Kiểm tra warehouse tồn tại
+    const warehouse = await this.repository.findById(warehouseId);
+    if (!warehouse || (organizationId && warehouse.organization_id !== organizationId)) {
+      throw new NotFoundException(
+        this.i18n.t('warehouse.errors.not_found', { lang }),
+      );
+    }
+
+    return this.repository.findRacksByWarehouseId(warehouseId);
+  }
+
+  /**
+   * Lấy danh sách shelves của rack
+   */
+  async getShelves(
+    warehouseId: string,
+    rackId: string,
+    userId: string,
+    organizationId: string,
+    lang: string,
+  ) {
+    // Kiểm tra quyền
+    if (organizationId) {
+      await this.checkOrgPermission(
+        organizationId,
+        userId,
+        'warehouse.view',
+        lang,
+      );
+    }
+
+    // Kiểm tra warehouse tồn tại
+    const warehouse = await this.repository.findById(warehouseId);
+    if (!warehouse || (organizationId && warehouse.organization_id !== organizationId)) {
+      throw new NotFoundException(
+        this.i18n.t('warehouse.errors.not_found', { lang }),
+      );
+    }
+
+    // Kiểm tra rack thuộc warehouse
+    const isRackInWarehouse = await this.repository.isRackInWarehouse(rackId, warehouseId);
+    if (!isRackInWarehouse) {
+      throw new NotFoundException(
+        this.i18n.t('warehouse.errors.rack_not_found', { lang }),
+      );
+    }
+
+    return this.repository.findShelvesByRackId(rackId);
+  }
+
+  /**
+   * Lấy danh sách blocks của shelf
+   */
+  async getBlocks(
+    warehouseId: string,
+    shelfId: string,
+    userId: string,
+    organizationId: string,
+    lang: string,
+  ) {
+    // Kiểm tra quyền
+    if (organizationId) {
+      await this.checkOrgPermission(
+        organizationId,
+        userId,
+        'warehouse.view',
+        lang,
+      );
+    }
+
+    // Kiểm tra warehouse tồn tại
+    const warehouse = await this.repository.findById(warehouseId);
+    if (!warehouse || (organizationId && warehouse.organization_id !== organizationId)) {
+      throw new NotFoundException(
+        this.i18n.t('warehouse.errors.not_found', { lang }),
+      );
+    }
+
+    // Kiểm tra shelf thuộc warehouse
+    const isShelfInWarehouse = await this.repository.isShelfInWarehouse(shelfId, warehouseId);
+    if (!isShelfInWarehouse) {
+      throw new NotFoundException(
+        this.i18n.t('warehouse.errors.shelf_not_found', { lang }),
+      );
+    }
+
+    return this.repository.findBlocksByShelfId(shelfId);
+  }
 }

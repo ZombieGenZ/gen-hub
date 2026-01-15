@@ -61,13 +61,13 @@ const routeGroups: RouteGroup[] = [
         color: "text-teal-600",
         routes: [
             { path: "/dashboard/admin", label: "Overview", description: "Main admin dashboard" },
+            { path: "/dashboard/admin/warehouses", label: "Warehouses", description: "Manage warehouse locations" },
             { path: "/dashboard/admin/contracts", label: "Contracts", description: "Manage all contracts" },
             { path: "/dashboard/admin/customers", label: "Customers", description: "Customer management" },
             { path: "/dashboard/admin/organization", label: "Organization", description: "Company structure" },
+            { path: "/dashboard/admin/users", label: "Users", description: "User accounts & roles" },
             { path: "/dashboard/admin/revenue", label: "Revenue", description: "Financial reports" },
             { path: "/dashboard/admin/settings", label: "Settings", description: "System configuration" },
-            { path: "/dashboard/admin/users", label: "Users", description: "User accounts & roles" },
-            { path: "/dashboard/admin/warehouses", label: "Warehouses", description: "Warehouse locations" },
         ]
     },
     {
@@ -75,8 +75,12 @@ const routeGroups: RouteGroup[] = [
         icon: <LayoutDashboard className="w-5 h-5" />,
         color: "text-indigo-500",
         routes: [
-            { path: "/dashboard/customer/profile", label: "Profile", description: "Customer account details" },
-            { path: "/dashboard/Contracts", label: "Legacy Contracts", description: "Older contract view" },
+            { path: "/dashboard/customer", label: "Overview", description: "Customer dashboard home" },
+            { path: "/dashboard/customer/warehouses", label: "Find & Book", description: "Search and book warehouses" },
+            { path: "/dashboard/customer/contracts", label: "Contracts", description: "My contracts" },
+            { path: "/dashboard/customer/bookings", label: "Bookings", description: "Booking requests status" },
+            { path: "/dashboard/customer/payment", label: "Payment", description: "Billing and payments" },
+            { path: "/user/profile", label: "Profile", description: "Account settings & profile" },
         ]
     },
     {
@@ -86,9 +90,8 @@ const routeGroups: RouteGroup[] = [
         routes: [
             { path: "/", label: "Landing Page", description: "Main entry point" },
             { path: "/about", label: "About", description: "Company information" },
-            { path: "/contact", label: "Contact", description: "Get in touch" },
-            { path: "/bookings", label: "Bookings", description: "Service reservations" },
-            { path: "/warehouses", label: "Warehouse List", description: "Browse available locations" },
+            { path: "/kho-bai", label: "Warehouse Search", description: "Public warehouse listing" },
+            { path: "/bookings", label: "Public Bookings", description: "Service reservations" },
         ]
     },
     {
@@ -96,10 +99,8 @@ const routeGroups: RouteGroup[] = [
         icon: <Settings className="w-5 h-5" />,
         color: "text-rose-500",
         routes: [
-            { path: "/acme-demo", label: "ACME Demo", description: "Concept demonstration" },
-            { path: "/demo/table", label: "Table Demo", description: "UI component testing" },
-            { path: "/user/profile", label: "User Profile", description: "Profile management" },
             { path: "/error", label: "Error 404", description: "Not found page" },
+            { path: "/dev/routes", label: "Route Explorer", description: "You are here" },
         ]
     }
 ];

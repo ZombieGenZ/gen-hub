@@ -10,8 +10,6 @@ import { Prisma } from '@prisma/client';
 export class QCManagementRepository {
     constructor(private readonly prisma: PrismaService) { }
 
-    // ============ QC WAREHOUSE ============
-
     /**
      * Tạo QCWarehouse mới (khi tạo WarehouseTemplate)
      */
@@ -80,8 +78,6 @@ export class QCManagementRepository {
         });
     }
 
-    // ============ QC ROW ============
-
     /**
      * Tạo QCRow mới (khi tạo RowTemplate)
      */
@@ -131,8 +127,6 @@ export class QCManagementRepository {
         return { items, total, limit, offset, hasMore: offset + items.length < total };
     }
 
-    // ============ QC PERMISSION ============
-
     /**
      * Lấy tất cả QC permissions
      */
@@ -160,8 +154,6 @@ export class QCManagementRepository {
             where: { id: { in: ids }, is_deleted: false },
         });
     }
-
-    // ============ QC WAREHOUSE ASSIGNMENT ============
 
     /**
      * Gán user vào QCWarehouse với permissions
@@ -228,8 +220,6 @@ export class QCManagementRepository {
         });
     }
 
-    // ============ QC ROW ASSIGNMENT ============
-
     /**
      * Gán user vào QCRow với permissions
      */
@@ -289,6 +279,225 @@ export class QCManagementRepository {
                 is_deleted: true,
                 deleted_at: new Date(),
                 deleted_by: deletedBy,
+            },
+        });
+    }
+
+    /**
+     * Lấy danh sách Warehouses của QCWarehouse
+     */
+    async findWarehousesByQCWarehouseId(qcWarehouseId: string, limit: number = 50, offset: number = 0) {
+        const [items, total] = await Promise.all([
+            this.prisma.warehouse.findMany({
+                where: { qc_warehouse_id: qcWarehouseId, is_deleted: false },
+                include: {
+                    organization: { select: { id: true, name: true } },
+                    ward: {
+                        select: {
+                            id: true, name: true, code: true,
+                            province: { select: { id: true, name: true, code: true } },
+                        },
+                    },
+                    _count: { select: { rows: { where: { is_deleted: false } } } },
+                },
+                orderBy: { created_at: 'desc' },
+                take: limit,
+                skip: offset,
+            }),
+            this.prisma.warehouse.count({ where: { qc_warehouse_id: qcWarehouseId, is_deleted: false } }),
+        ]);
+        return { items, total, limit, offset, hasMore: offset + items.length < total };
+    }
+
+    /**
+     * Lấy chi tiết Warehouse
+     */
+    async findWarehouseById(warehouseId: string) {
+        return this.prisma.warehouse.findFirst({
+            where: { id: warehouseId, is_deleted: false },
+            include: {
+                organization: { select: { id: true, name: true } },
+                ward: {
+                    select: {
+                        id: true, name: true, code: true, type: true,
+                        province: { select: { id: true, name: true, code: true, type: true } },
+                    },
+                },
+                _count: { select: { rows: { where: { is_deleted: false } } } },
+            },
+        });
+    }
+
+    /**
+     * Lấy chi tiết QCRow (với thêm thông tin)
+     */
+    async findQCRowById(qcRowId: string) {
+        return this.prisma.qCRow.findFirst({
+            where: { id: qcRowId, is_deleted: false },
+            include: {
+                row_template: { select: { id: true, name: true, code: true } },
+                qc_warehouse: {
+                    select: {
+                        id: true,
+                        warehouse_template: { select: { id: true, name: true } },
+                    },
+                },
+                assignments: {
+                    where: { is_deleted: false },
+                    include: { permissions: { include: { permission: true } } },
+                },
+                _count: { select: { rows: { where: { is_deleted: false } } } },
+            },
+        });
+    }
+
+    /**
+     * Lấy danh sách Rows của QCRow
+     */
+    async findRowsByQCRowId(qcRowId: string, limit: number = 50, offset: number = 0) {
+        const [items, total] = await Promise.all([
+            this.prisma.row.findMany({
+                where: { qc_row_id: qcRowId, is_deleted: false },
+                include: {
+                    warehouse: { select: { id: true, name: true } },
+                    _count: { select: { racks: { where: { is_deleted: false } } } },
+                },
+                orderBy: { created_at: 'asc' },
+                take: limit,
+                skip: offset,
+            }),
+            this.prisma.row.count({ where: { qc_row_id: qcRowId, is_deleted: false } }),
+        ]);
+        return { items, total, limit, offset, hasMore: offset + items.length < total };
+    }
+
+    /**
+     * Lấy chi tiết Row
+     */
+    async findRowById(rowId: string) {
+        return this.prisma.row.findFirst({
+            where: { id: rowId, is_deleted: false },
+            include: {
+                warehouse: { select: { id: true, name: true } },
+                qc_row: { select: { id: true, qc_warehouse_id: true } },
+                _count: { select: { racks: { where: { is_deleted: false } } } },
+            },
+        });
+    }
+
+    /**
+     * Lấy danh sách Racks của Row
+     */
+    async findRacksByRowId(rowId: string, limit: number = 50, offset: number = 0) {
+        const [items, total] = await Promise.all([
+            this.prisma.rack.findMany({
+                where: { row_id: rowId, is_deleted: false },
+                include: {
+                    row: { select: { id: true, name: true, code: true } },
+                    _count: { select: { shelves: { where: { is_deleted: false } } } },
+                },
+                orderBy: { created_at: 'asc' },
+                take: limit,
+                skip: offset,
+            }),
+            this.prisma.rack.count({ where: { row_id: rowId, is_deleted: false } }),
+        ]);
+        return { items, total, limit, offset, hasMore: offset + items.length < total };
+    }
+
+    /**
+     * Lấy chi tiết Rack
+     */
+    async findRackById(rackId: string) {
+        return this.prisma.rack.findFirst({
+            where: { id: rackId, is_deleted: false },
+            include: {
+                row: {
+                    select: {
+                        id: true, name: true, code: true,
+                        warehouse: { select: { id: true, name: true } },
+                    },
+                },
+                _count: { select: { shelves: { where: { is_deleted: false } } } },
+            },
+        });
+    }
+
+    /**
+     * Lấy danh sách Shelves của Rack
+     */
+    async findShelvesByRackId(rackId: string, limit: number = 50, offset: number = 0) {
+        const [items, total] = await Promise.all([
+            this.prisma.shelf.findMany({
+                where: { rack_id: rackId, is_deleted: false },
+                include: {
+                    rack: { select: { id: true, name: true, code: true } },
+                    _count: { select: { blocks: { where: { is_deleted: false } } } },
+                },
+                orderBy: { created_at: 'asc' },
+                take: limit,
+                skip: offset,
+            }),
+            this.prisma.shelf.count({ where: { rack_id: rackId, is_deleted: false } }),
+        ]);
+        return { items, total, limit, offset, hasMore: offset + items.length < total };
+    }
+
+    /**
+     * Lấy chi tiết Shelf
+     */
+    async findShelfById(shelfId: string) {
+        return this.prisma.shelf.findFirst({
+            where: { id: shelfId, is_deleted: false },
+            include: {
+                rack: {
+                    select: {
+                        id: true, name: true, code: true,
+                        row: { select: { id: true, name: true, code: true } },
+                    },
+                },
+                _count: { select: { blocks: { where: { is_deleted: false } } } },
+            },
+        });
+    }
+
+    /**
+     * Lấy danh sách Blocks của Shelf
+     */
+    async findBlocksByShelfId(shelfId: string, limit: number = 50, offset: number = 0) {
+        const [items, total] = await Promise.all([
+            this.prisma.block.findMany({
+                where: { shelf_id: shelfId, is_deleted: false },
+                include: {
+                    shelf: { select: { id: true, name: true, code: true } },
+                },
+                orderBy: { created_at: 'asc' },
+                take: limit,
+                skip: offset,
+            }),
+            this.prisma.block.count({ where: { shelf_id: shelfId, is_deleted: false } }),
+        ]);
+        return { items, total, limit, offset, hasMore: offset + items.length < total };
+    }
+
+    /**
+     * Lấy chi tiết Block
+     */
+    async findBlockById(blockId: string) {
+        return this.prisma.block.findFirst({
+            where: { id: blockId, is_deleted: false },
+            include: {
+                shelf: {
+                    select: {
+                        id: true, name: true, code: true,
+                        rack: {
+                            select: {
+                                id: true, name: true, code: true,
+                                row: { select: { id: true, name: true, code: true } },
+                            },
+                        },
+                    },
+                },
             },
         });
     }

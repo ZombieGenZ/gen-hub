@@ -208,7 +208,7 @@ export function PrimeNestSearch() {
     }
 
     return (
-        <section className="py-12  text-slate-900 border-b border-gray-200">
+        <section className="py-12 text-foreground border-b border-border">
             <div className="max-w-[1440px] mx-auto px-4 md:px-6">
 
                 <div className="mb-8 text-center">
@@ -224,7 +224,7 @@ export function PrimeNestSearch() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[700px] mb-12">
 
                     {/* Map Area (2/3) */}
-                    <div className="lg:col-span-2 bg-white rounded-3xl overflow-hidden border border-slate-200 shadow-sm relative z-0 h-full flex flex-col">
+                    <div className="lg:col-span-2 bg-card rounded-3xl overflow-hidden border border-border shadow-sm relative z-0 h-full flex flex-col">
 
                         {/* Search & Filter Bar Floating on Map */}
                         <div className="absolute top-4 left-4 right-4 z-10 flex flex-col pointer-events-none">
@@ -460,7 +460,7 @@ export function PrimeNestSearch() {
 
                     {/* List Area (1/3) - Scrollable */}
                     {/* List Area (1/3) - Scrollable */}
-                    <div className="lg:col-span-1 bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-full">
+                    <div className="lg:col-span-1 bg-card rounded-3xl border border-border shadow-sm overflow-hidden flex flex-col h-full">
                         <div className="overflow-y-auto flex-1 p-4">
                             <PropertyList
                                 properties={filteredProperties}

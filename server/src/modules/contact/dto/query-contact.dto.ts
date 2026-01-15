@@ -5,8 +5,9 @@ import {
     Max,
     IsString,
     IsEnum,
+    IsBoolean,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 import { ContactStatus, ContactPriority } from '@prisma/client';
 
 /**
@@ -41,4 +42,14 @@ export class QueryContactDto {
     @IsOptional()
     @IsString()
     assigned_staff_id?: string;
+
+    @IsOptional()
+    @Transform(({ value }) => value === 'true' || value === true)
+    @IsBoolean()
+    is_priority_customer?: boolean;
+
+    @IsOptional()
+    @Transform(({ value }) => value === 'true' || value === true)
+    @IsBoolean()
+    is_skipped?: boolean;
 }

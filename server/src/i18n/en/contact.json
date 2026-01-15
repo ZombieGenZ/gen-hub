@@ -1,4 +1,11 @@
 {
+    "ai": {
+        "enabled": "AI auto-reply has been enabled",
+        "disabled": "AI auto-reply has been disabled",
+        "processing": "Processing with AI...",
+        "spam_detected": "Message detected as spam",
+        "reply_sent": "AI has sent an automated reply"
+    },
     "success": {
         "created": "Your contact request has been submitted successfully",
         "updated": "Updated successfully",
@@ -31,7 +38,8 @@
         "message_max": "Message must not exceed 5000 characters",
         "content_required": "Please enter reply content",
         "status_invalid": "Invalid status",
-        "priority_invalid": "Invalid priority"
+        "priority_invalid": "Invalid priority",
+        "enable_ai_reply_invalid": "Enable AI auto-reply value is invalid"
     },
     "email": {
         "confirmation": {
@@ -86,6 +94,14 @@
         "WEBSITE_FORM": "Website Form",
         "PHONE": "Phone",
         "SOCIAL_MEDIA": "Social Media",
+        "LIVE_CHAT": "Live Chat",
         "OTHER": "Other"
+    },
+    "live_chat": {
+        "session_created": "Chat session has been created",
+        "session_not_found": "Chat session not found",
+        "message_sent": "Message has been sent",
+        "ai_welcome": "Hello! I am GEN-HUB AI assistant. How can I help you?",
+        "ai_unavailable": "Sorry, AI is currently unavailable. Please wait for staff support."
     }
 }

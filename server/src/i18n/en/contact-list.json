@@ -1,0 +1,27 @@
+{
+    "errors": {
+        "not_found": "Contact list entry not found.",
+        "duplicate": "Entry already exists in the list.",
+        "invalid_type": "Invalid list type or match type."
+    },
+    "success": {
+        "created": "Entry added successfully.",
+        "updated": "Entry updated successfully.",
+        "deleted": "Entry removed successfully.",
+        "deleted_many": "Removed {count} entries from the list."
+    },
+    "enums": {
+        "type": {
+            "BLACKLIST": "Blacklist",
+            "WHITELIST": "Whitelist"
+        },
+        "match": {
+            "EMAIL": "Specific Email",
+            "EMAIL_DOMAIN": "Email Domain",
+            "IP_V4": "IPv4 Address",
+            "IP_V6": "IPv6 Address",
+            "REGION_COUNTRY": "Country",
+            "REGION_CITY": "City"
+        }
+    }
+}

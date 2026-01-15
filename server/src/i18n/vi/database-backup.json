@@ -1,0 +1,31 @@
+{
+    "success": {
+        "triggered": "Đã kích hoạt sao lưu thành công",
+        "list": "Lấy danh sách sao lưu thành công",
+        "download_url": "Lấy URL tải xuống thành công",
+        "completed": "Sao lưu hoàn tất"
+    },
+    "errors": {
+        "invalid_key": "Key xác thực không hợp lệ",
+        "backup_failed": "Sao lưu thất bại, vui lòng thử lại",
+        "not_found": "Không tìm thấy bản sao lưu",
+        "download_failed": "Không thể lấy URL tải xuống",
+        "already_running": "Đang có tiến trình sao lưu khác đang chạy"
+    },
+    "validation": {
+        "key_required": "Vui lòng nhập key xác thực",
+        "key_string": "Key phải là chuỗi ký tự",
+        "id_uuid": "ID sao lưu không hợp lệ"
+    },
+    "discord": {
+        "backup_started": "🔄 Đang sao lưu database...",
+        "backup_success": "✅ Sao lưu thành công!",
+        "backup_failed": "❌ Sao lưu thất bại",
+        "invalid_key": "❌ Key không hợp lệ",
+        "no_backups": "📭 Chưa có bản sao lưu nào",
+        "backup_list_title": "📦 Danh sách sao lưu",
+        "enter_key": "Nhập key xác thực",
+        "enter_backup_id": "Nhập ID bản sao lưu",
+        "download_url_title": "📥 URL tải xuống"
+    }
+}

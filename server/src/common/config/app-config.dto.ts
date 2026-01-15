@@ -1,4 +1,4 @@
-import { IsOptional, IsString, MaxLength, ValidateNested, IsHexColor, IsNumber, Min, Max } from 'class-validator';
+import { IsOptional, IsString, MaxLength, ValidateNested, IsHexColor, IsNumber, Min, Max, IsBoolean } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 
@@ -181,5 +181,13 @@ export class UpdateAppConfigDto {
   @ValidateNested()
   @Type(() => UpdatePaginationConfigDto)
   pagination?: UpdatePaginationConfigDto;
+
+  @ApiPropertyOptional({
+    description: 'Bật/tắt tự động phản hồi bằng AI cho contact (giá trị mặc định)',
+    example: false,
+  })
+  @IsOptional()
+  @IsBoolean({ message: 'common.validation.boolean' })
+  enableAiAutoReply?: boolean;
 }
 

@@ -79,4 +79,98 @@ export class WarehouseTemplateService {
         const data = await response.json();
         return data;
     }
+
+    // Lấy row kho
+    async getWarehouseRow(warehouse_id: string, access_token: string) {
+        try {
+            const response = await fetch(`${API}/warehouse-templates/${warehouse_id}/rows`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${access_token}`,
+                    'Content-Type': 'application/json',
+                },
+            })
+            if(!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Failed to fetch warehouse template details');
+            }
+            const data = await response.json();
+            return data;
+        }
+        catch (err) {
+            console.error("Failed to fetch warehouse row", err);
+        }
+    }
+
+    // Lấy rack warehouse
+    async getWarehouseRack(row_id: string, warehouse_id: string, access_token: string) {
+        try {
+            const response = await fetch(`${API}/warehouse-templates/${warehouse_id}/rows/${row_id}/rack`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${access_token}`,
+                    'Content-Type': 'application/json',
+                },
+            })
+
+            if(!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Failed to fetch warehouse template details');
+            }
+            const data = await response.json();
+            return data;
+        }
+        catch (err) {
+            console.error("Failed to fetch warehouse rack", err);
+        }
+    }
+
+    // Lấy shelf warehouse
+    async getWarehouseShelf(rack_id: string, row_id: string, warehouse_id: string, access_token: string) {
+        try {
+            const response = await fetch(`${API}/warehouse-templates/${warehouse_id}/rows/${row_id}/rack/${rack_id}/shelves`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${access_token}`,
+                    'Content-Type': 'application/json',
+                },
+            })
+
+            if(!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Failed to fetch warehouse template details');
+            }
+            const data = await response.json();
+            return data;
+        }
+        catch (err) {
+            console.error("Failed to fetch warehouse shelf", err);
+        }
+    }
+
+    // Lấy block warehouse
+    async getWarehouseBlock(shelves_id: string, rack_id: string, row_id: string, warehouse_id: string, access_token: string) {
+        try {
+            const response = await fetch(`${API}/warehouse-templates/${warehouse_id}/rows/${row_id}/rack/${rack_id}/shelves/${shelves_id}/blocks`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${access_token}`,
+                    'Content-Type': 'application/json',
+                },
+            })
+
+            if(!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Failed to fetch warehouse template details');
+            }
+
+            const data = await response.json();
+            return data;
+        }
+        catch (err) {
+            console.error("Failed to fetch warehouse block", err);
+        }
+    }
 }
+
+export const warehouseTemplateService = new WarehouseTemplateService();

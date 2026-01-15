@@ -8,9 +8,10 @@ on:
       - 'client/**'
       - 'server/**'
       - 'status/**'
-      - 'database-panel/**'
-      - 'feature-flag-panel/**'
-      - 'resources-panel/**'
+      - 'admin/database-panel/**'
+      - 'admin/feature-flag-panel/**'
+      - 'admin/resources-panel/**'
+      - 'admin/admin-panel/**'
 
   workflow_dispatch:
 
@@ -80,7 +81,7 @@ jobs:
         env:
           API_TOKEN_GITHUB: ${{ secrets.API_TOKEN_GITHUB }}
         with:
-          source-directory: 'database-panel'
+          source-directory: 'admin/database-panel'
           destination-github-username: ${{ secrets.GH_USERNAME }}
           destination-repository-name: ${{ secrets.REPO_DATABASE_PANEL }}
           user-email: ${{ secrets.GH_EMAIL }}
@@ -98,7 +99,7 @@ jobs:
         env:
           API_TOKEN_GITHUB: ${{ secrets.API_TOKEN_GITHUB }}
         with:
-          source-directory: 'feature-flag-panel'
+          source-directory: 'admin/feature-flag-panel'
           destination-github-username: ${{ secrets.GH_USERNAME }}
           destination-repository-name: ${{ secrets.REPO_FEATURE_FLAG_PANEL }}
           user-email: ${{ secrets.GH_EMAIL }}
@@ -116,9 +117,27 @@ jobs:
         env:
           API_TOKEN_GITHUB: ${{ secrets.API_TOKEN_GITHUB }}
         with:
-          source-directory: 'resources-panel'
+          source-directory: 'admin/resources-panel'
           destination-github-username: ${{ secrets.GH_USERNAME }}
           destination-repository-name: ${{ secrets.REPO_RESOURCES_PANEL }}
           user-email: ${{ secrets.GH_EMAIL }}
           target-branch: master
           commit-message: "Sync resources-panel: ${{ github.event.head_commit.message }}"
+
+  sync-admin-panel:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Push admin-panel folder
+        uses: cpina/github-action-push-to-another-repository@main
+        env:
+          API_TOKEN_GITHUB: ${{ secrets.API_TOKEN_GITHUB }}
+        with:
+          source-directory: 'admin/admin-panel'
+          destination-github-username: ${{ secrets.GH_USERNAME }}
+          destination-repository-name: ${{ secrets.REPO_ADMIN_PANEL }}
+          user-email: ${{ secrets.GH_EMAIL }}
+          target-branch: master
+          commit-message: "Sync admin-panel: ${{ github.event.head_commit.message }}"

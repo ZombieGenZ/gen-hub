@@ -64,7 +64,8 @@ export interface ResourcesSubscribePayload {
 
 export const SERVICES = [
   'server',
-  'client', 
+  'client',
+  'admin-panel',
   'database-panel',
   'feature-flag-panel',
   'status',

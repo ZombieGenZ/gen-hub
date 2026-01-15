@@ -1,0 +1,27 @@
+{
+    "errors": {
+        "not_found": "Không tìm thấy mục trong danh sách liên hệ.",
+        "duplicate": "Mục này đã tồn tại trong danh sách.",
+        "invalid_type": "Loại danh sách hoặc loại khớp lệnh không hợp lệ."
+    },
+    "success": {
+        "created": "Thêm vào danh sách thành công.",
+        "updated": "Cập nhật danh sách thành công.",
+        "deleted": "Xóa khỏi danh sách thành công.",
+        "deleted_many": "Đã xóa {count} mục khỏi danh sách."
+    },
+    "enums": {
+        "type": {
+            "BLACKLIST": "Danh sách đen",
+            "WHITELIST": "Danh sách trắng"
+        },
+        "match": {
+            "EMAIL": "Email cụ thể",
+            "EMAIL_DOMAIN": "Tên miền Email",
+            "IP_V4": "Địa chỉ IPv4",
+            "IP_V6": "Địa chỉ IPv6",
+            "REGION_COUNTRY": "Quốc gia",
+            "REGION_CITY": "Thành phố"
+        }
+    }
+}

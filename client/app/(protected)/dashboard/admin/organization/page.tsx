@@ -5,7 +5,7 @@ import { OrganizationService } from "@/services/organization/organization.servic
 import { Organization } from "@/types/organization/organization.type";
 import { authStorage } from '@/services/auth/auth-storage.service';
 import { useDebounce } from "@/hooks/use-debounce";
-import { DashboardHeader } from "@/components/layouts/DashboardHeader";
+
 import { useRouter } from "next/navigation";
 import { Plus, Users, Search, MoreVertical, Building2, Filter, ArrowUpDown } from "lucide-react";
 
@@ -43,9 +43,7 @@ export default function OrganizationPage() {
 
     return (
         <div className="flex-1 bg-slate-50/50">
-            <DashboardHeader>
-                <h2 className="text-lg font-bold text-slate-900 md:hidden">Tổ chức</h2>
-            </DashboardHeader>
+
 
             <main className="p-4 md:p-8 space-y-6">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">

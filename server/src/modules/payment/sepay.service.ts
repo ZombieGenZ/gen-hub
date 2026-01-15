@@ -7,6 +7,7 @@ import { SystemLogService } from '../system-log/system-log.service';
 import { WebsocketGateway } from '../websocket/websocket.gateway';
 import { RentalContractService } from '../rental-contract/rental-contract.service';
 import { AccountBalanceService } from '../account-balance/account-balance.service';
+import { ContactListService } from '../contact-list/contact-list.service';
 
 /**
  * Service xử lý tích hợp SePay payment gateway
@@ -36,6 +37,7 @@ export class SepayService {
         private readonly rentalContractService: RentalContractService,
         @Inject(forwardRef(() => AccountBalanceService))
         private readonly accountBalanceService: AccountBalanceService,
+        private readonly contactListService: ContactListService,
     ) {
         this.accountNumber = this.configService.get<string>('SEPAY_ACCOUNT_NUMBER') || '';
         this.bankName = this.configService.get<string>('SEPAY_BANK_NAME') || '';
@@ -310,6 +312,26 @@ export class SepayService {
         this.systemLogService.info('payment', 'webhook',
             `Payment completed: ${payment.payment_code}`,
             { metaData: { paymentId: payment.id, sepayTransactionId: webhookData.id } });
+
+        // Tự động thêm user vào whitelist sau khi thanh toán thành công
+        try {
+            const user = await this.prisma.user.findUnique({
+                where: { id: payment.created_by },
+                select: { email: true }
+            });
+
+            if (user?.email) {
+                await this.contactListService.addToWhitelist(
+                    user.email,
+                    `Auto whitelist after successful payment: ${payment.payment_code}`,
+                    'SYSTEM_PAYMENT'
+                );
+            }
+        } catch (error) {
+            this.systemLogService.error('payment', 'auto_whitelist',
+                `Failed to auto whitelist user ${payment.created_by}: ${error.message}`,
+                { metaData: { paymentId: payment.id } });
+        }
 
         return { success: true, message: 'Payment processed successfully' };
     }

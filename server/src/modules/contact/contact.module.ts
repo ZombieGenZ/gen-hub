@@ -8,6 +8,10 @@ import { WebsocketModule } from '../websocket/websocket.module';
 import { SystemLogModule } from '../system-log/system-log.module';
 import { NotificationModule } from '../notification/notification.module';
 import { UserModule } from '../user/user.module';
+import { SharedModule } from '../../common/shared.module';
+import { CozeModule } from '../coze/coze.module';
+import { GeminiService } from '../../common/services/gemini.service';
+import { ContactListModule } from '../contact-list/contact-list.module';
 
 @Module({
     imports: [
@@ -17,9 +21,13 @@ import { UserModule } from '../user/user.module';
         SystemLogModule,
         NotificationModule,
         UserModule,
+        SharedModule,
+        CozeModule,
+        ContactListModule,
     ],
     controllers: [ContactController],
-    providers: [ContactService, ContactRepository],
+    providers: [ContactService, ContactRepository, GeminiService],
     exports: [ContactService, ContactRepository],
 })
 export class ContactModule { }
+

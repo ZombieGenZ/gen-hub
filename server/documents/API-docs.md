@@ -174,7 +174,14 @@
 | 164 | Organization Rental Contracts | GET | /organizations/{orgId}/rental-contracts/{id}/logs | ❎ | ❎ | ❎ |
 | 165 | Organization Rental Contracts | POST | /organizations/{orgId}/rental-contracts/{id}/cancel | ❎ | ❎ | ❎ |
 | 166 | Organization Rental Contracts | DELETE | /organizations/{orgId}/rental-contracts/delete/many | ❎ | ❎ | ❎ |
-| 167 | User Notifications | GET | /user-notifications | ❎ | ❎ | ❎ |
+| 167 | Organization Warehouses | GET | /organizations/{orgId}/warehouses | ❎ | ❎ | ❎ |
+| 168 | Organization Warehouses | GET | /organizations/{orgId}/warehouses/{id} | ❎ | ❎ | ❎ |
+| 169 | Organization Warehouses | GET | /organizations/{orgId}/warehouses/{id}/layout | ❎ | ❎ | ❎ |
+| 170 | Organization Warehouses | PUT | /organizations/{orgId}/warehouses/{id} | ❎ | ❎ | ❎ |
+| 171 | Organization Warehouses | GET | /organizations/{orgId}/warehouses/{id}/racks | ❎ | ❎ | ❎ |
+| 172 | Organization Warehouses | GET | /organizations/{orgId}/warehouses/{id}/racks/{rackId}/shelves | ❎ | ❎ | ❎ |
+| 173 | Organization Warehouses | GET | /organizations/{orgId}/warehouses/{id}/racks/{rackId}/shelves/{shelfId}/blocks | ❎ | ❎ | ❎ |
+| 174 | User Notifications | GET | /user-notifications | ❎ | ❎ | ❎ |
 | 168 | User Notifications | GET | /user-notifications/unread-count | ❎ | ❎ | ❎ |
 | 169 | User Notifications | GET | /user-notifications/user/{userId} | ❎ | ❎ | ❎ |
 | 170 | User Notifications | POST | /user-notifications/send | ❎ | ❎ | ❎ |
@@ -293,3 +300,47 @@
 | 290 | Refund Requests | DELETE | /refund-requests/{id} | ❎ | ❎ | ❎ |
 | 291 | Refund Requests | GET | /organizations/{orgId}/refund-requests | ❎ | ❎ | ❎ |
 | 292 | Refund Requests | GET | /organizations/{orgId}/refund-requests/{id} | ❎ | ❎ | ❎ |
+| 293 | Coze Plugin (Public) | GET | /public/coze-plugin/warehouse-pricing | ❎ | ❎ | ❎ |
+| 294 | Coze Plugin (Public) | GET | /public/coze-plugin/check-availability | ❎ | ❎ | ❎ |
+| 295 | Coze Plugin (Public) | GET | /public/coze-plugin/rental-contract-terms | ❎ | ❎ | ❎ |
+| 296 | Coze Plugin (Public) | GET | /public/coze-plugin/faq | ❎ | ❎ | ❎ |
+| 297 | Contact Priority | GET | /admin/contacts/priority | ❎ | ❎ | ❎ |
+| 298 | Contact Normal | GET | /admin/contacts/normal | ❎ | ❎ | ❎ |
+| 299 | Contact Skipped | GET | /admin/contacts/skipped | ❎ | ❎ | ❎ |
+| 300 | Contact List | POST | /admin/contact-lists | ❎ | ❎ | ❎ |
+| 301 | Contact List | GET | /admin/contact-lists | ❎ | ❎ | ❎ |
+| 302 | Contact List | GET | /admin/contact-lists/{id} | ❎ | ❎ | ❎ |
+| 303 | Contact List | PUT | /admin/contact-lists/{id} | ❎ | ❎ | ❎ |
+| 304 | Contact List | DELETE | /admin/contact-lists/{id} | ❎ | ❎ | ❎ |
+| 305 | Contact List | POST | /admin/contact-lists/quick-add/email | ❎ | ❎ | ❎ |
+| 306 | Contact List | POST | /admin/contact-lists/quick-remove/email | ❎ | ❎ | ❎ |
+| 307 | Contact List | POST | /admin/contact-lists/quick-add/domain | ❎ | ❎ | ❎ |
+| 308 | Contact List | POST | /admin/contact-lists/quick-remove/domain | ❎ | ❎ | ❎ |
+| 309 | Contact List | POST | /admin/contact-lists/quick-add/ip | ❎ | ❎ | ❎ |
+| 310 | Contact List | POST | /admin/contact-lists/quick-remove/ip | ❎ | ❎ | ❎ |
+| 311 | Contact List | POST | /admin/contact-lists/quick-add/region | ❎ | ❎ | ❎ |
+| 312 | Contact List | POST | /admin/contact-lists/quick-remove/region | ❎ | ❎ | ❎ |
+| 313 | Contact List | GET | /admin/contact-lists/check/email | ❎ | ❎ | ❎ |
+| 314 | Contact List | GET | /admin/contact-lists/check/ip | ❎ | ❎ | ❎ |
+| 315 | Contact List | GET | /admin/contact-lists/check/region | ❎ | ❎ | ❎ |
+| 316 | Database Backup | POST | /admin/backups/trigger | ❎ | ❎ | ❎ |
+| 317 | Database Backup | GET | /admin/backups | ❎ | ❎ | ❎ |
+| 318 | Database Backup | POST | /admin/backups/{id}/download-url | ❎ | ❎ | ❎ |
+| 319 | QC Management | GET | /qc-management/warehouses | ❎ | ❎ | ❎ |
+| 320 | QC Management | GET | /qc-management/warehouses/{qcWarehouseId} | ❎ | ❎ | ❎ |
+| 321 | QC Management | GET | /qc-management/warehouses/{qcWarehouseId}/warehouses | ❎ | ❎ | ❎ |
+| 322 | QC Management | GET | /qc-management/warehouses/{qcWarehouseId}/warehouses/{warehouseId} | ❎ | ❎ | ❎ |
+| 323 | QC Management | GET | /qc-management/warehouses/{qcWarehouseId}/rows | ❎ | ❎ | ❎ |
+| 324 | QC Management | GET | /qc-management/warehouses/{qcWarehouseId}/rows/{qcRowId}/rows | ❎ | ❎ | ❎ |
+| 325 | QC Management | GET | /qc-management/warehouses/{qcWarehouseId}/rows/{qcRowId}/rows/{rowId} | ❎ | ❎ | ❎ |
+| 326 | QC Management | GET | /qc-management/warehouses/{qcWarehouseId}/rows/{qcRowId}/rows/{rowId}/racks | ❎ | ❎ | ❎ |
+| 327 | QC Management | GET | /qc-management/warehouses/{qcWarehouseId}/rows/{qcRowId}/rows/{rowId}/racks/{rackId} | ❎ | ❎ | ❎ |
+| 328 | QC Management | GET | /qc-management/warehouses/.../racks/{rackId}/shelves | ❎ | ❎ | ❎ |
+| 329 | QC Management | GET | /qc-management/warehouses/.../racks/{rackId}/shelves/{shelfId} | ❎ | ❎ | ❎ |
+| 330 | QC Management | GET | /qc-management/warehouses/.../shelves/{shelfId}/blocks | ❎ | ❎ | ❎ |
+| 331 | QC Management | GET | /qc-management/warehouses/.../shelves/{shelfId}/blocks/{blockId} | ❎ | ❎ | ❎ |
+| 332 | QC Management | GET | /qc-management/permissions | ❎ | ❎ | ❎ |
+| 333 | QC Management | POST | /qc-management/warehouses/{id}/assignments | ❎ | ❎ | ❎ |
+| 334 | QC Management | DELETE | /qc-management/warehouses/assignments/{assignmentId} | ❎ | ❎ | ❎ |
+| 335 | QC Management | POST | /qc-management/rows/{id}/assignments | ❎ | ❎ | ❎ |
+| 336 | QC Management | DELETE | /qc-management/rows/assignments/{assignmentId} | ❎ | ❎ | ❎ |

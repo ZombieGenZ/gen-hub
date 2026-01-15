@@ -17,6 +17,7 @@ interface UserInfo {
     name?: string;
     email?: string;
     avatar?: string;
+    roles?: string[];
 }
 
 interface SectionProps {
@@ -125,7 +126,8 @@ export default function Home() {
                     setUser({
                         name: userData.user.name,
                         email: userData.user.email,
-                        avatar: undefined,
+                        avatar: undefined, // Will use default avatar
+                        roles: userData.roles.map(r => r.name),
                     });
                 } catch (error) {
                     console.error("Failed to fetch user data:", error);

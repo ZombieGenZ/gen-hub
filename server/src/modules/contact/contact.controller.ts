@@ -21,6 +21,8 @@ import {
     QueryContactDto,
     UpdateContactDto,
     ReplyContactDto,
+    StartChatDto,
+    SendMessageDto,
 } from './dto';
 import { Public } from '../../common/decorators/public.decorator';
 import {
@@ -63,6 +65,51 @@ export class ContactController {
     }
 
     /**
+     * Khởi tạo phiên live chat (Guest không cần đăng nhập)
+     */
+    @Post('contact/chat/start')
+    @Public()
+    @HttpCode(HttpStatus.CREATED)
+    @ApiOperation({ summary: 'Khởi tạo phiên live chat (public)' })
+    async startChatSession(
+        @Body() dto: StartChatDto,
+        @I18nLang() lang: string,
+    ) {
+        const result = await this.contactService.startChatSession(dto, lang);
+        return new CreatedResponse('contact.live_chat.session_created', result);
+    }
+
+    /**
+     * Gửi tin nhắn trong live chat (Guest)
+     */
+    @Post('contact/chat/:sessionId/message')
+    @Public()
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Gửi tin nhắn trong live chat (public)' })
+    async sendGuestMessage(
+        @Param('sessionId') sessionId: string,
+        @Body() dto: SendMessageDto,
+        @I18nLang() lang: string,
+    ) {
+        const result = await this.contactService.sendGuestMessage(sessionId, dto, lang);
+        return new OkResponse('contact.live_chat.message_sent', result);
+    }
+
+    /**
+     * Lấy conversation của session (Guest)
+     */
+    @Get('contact/chat/:sessionId')
+    @Public()
+    @ApiOperation({ summary: 'Lấy conversation của session (public)' })
+    async getChatSession(
+        @Param('sessionId') sessionId: string,
+        @I18nLang() lang: string,
+    ) {
+        const result = await this.contactService.getChatSession(sessionId, lang);
+        return new GetResponse('contact.live_chat.session', result);
+    }
+
+    /**
      * Lấy danh sách tickets - OPTIMIZED
      */
     @Get('admin/contacts')
@@ -76,6 +123,54 @@ export class ContactController {
     ) {
         const result = await this.contactService.findMany(query, lang);
         return new GetResponse('contact.list', result);
+    }
+
+    /**
+     * Lấy danh sách tickets ưu tiên (is_priority_customer = true)
+     */
+    @Get('admin/contacts/priority')
+    @UseGuards(JwtAuthGuard, PermissionGuard)
+    @RequirePermission('contact.list')
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Lấy danh sách tickets ưu tiên (is_priority_customer = true)' })
+    async findPriority(
+        @Query() query: QueryContactDto,
+        @I18nLang() lang: string,
+    ) {
+        const result = await this.contactService.findManyPriority(query, lang);
+        return new GetResponse('contact.list_priority', result);
+    }
+
+    /**
+     * Lấy danh sách tickets bình thường (is_priority_customer = false, is_skipped = false)
+     */
+    @Get('admin/contacts/normal')
+    @UseGuards(JwtAuthGuard, PermissionGuard)
+    @RequirePermission('contact.list')
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Lấy danh sách tickets bình thường' })
+    async findNormal(
+        @Query() query: QueryContactDto,
+        @I18nLang() lang: string,
+    ) {
+        const result = await this.contactService.findManyNormal(query, lang);
+        return new GetResponse('contact.list_normal', result);
+    }
+
+    /**
+     * Lấy danh sách tickets bị bỏ qua (is_skipped = true)
+     */
+    @Get('admin/contacts/skipped')
+    @UseGuards(JwtAuthGuard, PermissionGuard)
+    @RequirePermission('contact.list')
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Lấy danh sách tickets bị bỏ qua (blacklisted)' })
+    async findSkipped(
+        @Query() query: QueryContactDto,
+        @I18nLang() lang: string,
+    ) {
+        const result = await this.contactService.findManySkipped(query, lang);
+        return new GetResponse('contact.list_skipped', result);
     }
 
     /**

@@ -18,7 +18,9 @@
         "template_locked": "Warehouse template is being held by another user",
         "not_shared_warehouse": "This warehouse does not allow row-based rental",
         "no_permission": "You do not have permission to perform this action",
-        "organization_not_found": "Organization not found"
+        "organization_not_found": "Organization not found",
+        "rack_not_found": "Rack not found in this warehouse",
+        "shelf_not_found": "Shelf not found in this warehouse"
     },
     "validation": {
         "name_required": "Warehouse name is required",

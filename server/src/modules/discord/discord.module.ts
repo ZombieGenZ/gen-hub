@@ -1,5 +1,8 @@
-import { Module, Global } from '@nestjs/common';
+import { Module, Global, forwardRef } from '@nestjs/common';
 import { DiscordService } from './discord.service';
+import { CozeModule } from '../coze/coze.module';
+import { DatabaseBackupModule } from '../database-backup/database-backup.module';
+import { BackblazeB2Module } from '../backblaze-b2/backblaze-b2.module';
 
 /**
  * Discord Module
@@ -8,6 +11,11 @@ import { DiscordService } from './discord.service';
  */
 @Global()
 @Module({
+    imports: [
+        CozeModule,
+        forwardRef(() => DatabaseBackupModule),
+        BackblazeB2Module,
+    ],
     providers: [DiscordService],
     exports: [DiscordService],
 })
