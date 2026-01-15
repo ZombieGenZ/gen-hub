@@ -1,7 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject, forwardRef, Optional } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateLogDto, LogBuilder } from './dto';
+import { WebsocketGateway } from '../websocket/websocket.gateway';
 
 /**
  * System Log Service
@@ -12,7 +13,11 @@ import { CreateLogDto, LogBuilder } from './dto';
 export class SystemLogService {
   private readonly logger = new Logger('SystemLog');
 
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() @Inject(forwardRef(() => WebsocketGateway))
+    private readonly websocketGateway?: WebsocketGateway,
+  ) { }
 
   /**
    * Log async - fire-and-forget, không await
@@ -44,10 +49,10 @@ export class SystemLogService {
   }
 
   /**
-   * Tạo log entry trong database
+   * Tạo log entry trong database và emit realtime event
    */
   private async createLog(params: CreateLogDto): Promise<void> {
-    await this.prisma.systemLog.create({
+    const logEntry = await this.prisma.systemLog.create({
       data: {
         level: params.level || 'INFO',
         module: params.module,
@@ -61,6 +66,26 @@ export class SystemLogService {
         user_agent: params.userAgent || null,
       },
     });
+
+    // Emit realtime event để admin panel nhận log mới
+    if (this.websocketGateway) {
+      try {
+        this.websocketGateway.emitSystemLog({
+          id: logEntry.id,
+          level: logEntry.level,
+          module: logEntry.module,
+          action: logEntry.action,
+          message: logEntry.message,
+          meta_data: logEntry.meta_data as Record<string, unknown> | undefined,
+          user_id: logEntry.user_id || undefined,
+          ip_address: logEntry.ip_address || undefined,
+          user_agent: logEntry.user_agent || undefined,
+          created_at: logEntry.created_at.toISOString(),
+        });
+      } catch (error) {
+        // Ignore WebSocket errors - không làm ảnh hưởng logging
+      }
+    }
   }
 
   /**

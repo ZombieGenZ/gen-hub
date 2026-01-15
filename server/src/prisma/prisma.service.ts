@@ -304,6 +304,8 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         this.seedDatabaseAdminPermission.bind(this),
         this.seedFeatureFlagPermission.bind(this),
         this.seedResourcesAdminPermission.bind(this),
+        this.seedSystemLogsAdminPermission.bind(this),
+        this.seedBackupAdminPermission.bind(this),
         this.seedAmenityPermissions.bind(this),
         this.seedAddonPermissions.bind(this),
         this.seedInsurancePermissions.bind(this),
@@ -335,6 +337,8 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         this.seedRefundRequestPermissions.bind(this),
         this.seedCategoryPermissions.bind(this),
         this.seedArticlePermissions.bind(this),
+        this.seedUserManagementPermissions.bind(this),
+        this.seedWarningCategoryPermissions.bind(this),
       ];
 
       const BATCH_SIZE = 3; // Chạy 3 seed functions cùng lúc
@@ -537,6 +541,132 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         error instanceof Error ? error.message : String(error);
       this.logger.error(
         `❌ Failed to seed resources admin permission: ${errorMessage}`,
+      );
+    }
+  }
+
+  /**
+   * Seed permission systemlogs.admin cho System Logs Panel
+   */
+  private async seedSystemLogsAdminPermission() {
+    try {
+      const existing = await this.permission.findFirst({
+        where: { key: 'systemlogs.admin' },
+      });
+
+      let permissionId = existing?.id;
+
+      if (!existing) {
+        const newPermission = await this.permission.create({
+          data: {
+            key: 'systemlogs.admin',
+            name: 'System Logs Admin',
+            description: 'Quyền truy cập vào System Logs để xem log hệ thống',
+            is_active: true,
+            is_deleted: false,
+          },
+        });
+        permissionId = newPermission.id;
+        this.logger.log('✅ System logs admin permission seeded');
+      }
+
+      // Assign to Super Admin
+      if (permissionId) {
+        const superAdminRole = await this.role.findFirst({
+          where: { name: 'Super Admin', is_deleted: false },
+        });
+
+        if (superAdminRole) {
+          const existingAssignment = await this.rolePermission.findFirst({
+            where: {
+              role_id: superAdminRole.id,
+              permission_id: permissionId,
+            },
+          });
+
+          if (!existingAssignment) {
+            await this.rolePermission.create({
+              data: {
+                role_id: superAdminRole.id,
+                permission_id: permissionId,
+                is_active: true,
+                is_deleted: false,
+              },
+            });
+            this.logger.log(
+              '✅ System logs admin permission assigned to Super Admin',
+            );
+          }
+        }
+      }
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `❌ Failed to seed system logs admin permission: ${errorMessage}`,
+      );
+    }
+  }
+
+  /**
+   * Seed permission backup.admin cho Backup Management
+   */
+  private async seedBackupAdminPermission() {
+    try {
+      const existing = await this.permission.findFirst({
+        where: { key: 'backup.admin' },
+      });
+
+      let permissionId = existing?.id;
+
+      if (!existing) {
+        const newPermission = await this.permission.create({
+          data: {
+            key: 'backup.admin',
+            name: 'Backup Admin',
+            description: 'Quyền quản lý backup database (list, trigger, download)',
+            is_active: true,
+            is_deleted: false,
+          },
+        });
+        permissionId = newPermission.id;
+        this.logger.log('✅ Backup admin permission seeded');
+      }
+
+      // Assign to Super Admin
+      if (permissionId) {
+        const superAdminRole = await this.role.findFirst({
+          where: { name: 'Super Admin', is_deleted: false },
+        });
+
+        if (superAdminRole) {
+          const existingAssignment = await this.rolePermission.findFirst({
+            where: {
+              role_id: superAdminRole.id,
+              permission_id: permissionId,
+            },
+          });
+
+          if (!existingAssignment) {
+            await this.rolePermission.create({
+              data: {
+                role_id: superAdminRole.id,
+                permission_id: permissionId,
+                is_active: true,
+                is_deleted: false,
+              },
+            });
+            this.logger.log(
+              '✅ Backup admin permission assigned to Super Admin',
+            );
+          }
+        }
+      }
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `❌ Failed to seed backup admin permission: ${errorMessage}`,
       );
     }
   }
@@ -3679,6 +3809,209 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
       this.logger.error(`❌ Failed to seed default emojis: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * Seed các permissions cho User Management
+   */
+  private async seedUserManagementPermissions() {
+    try {
+      const userManagementPermissions = [
+        {
+          key: 'user-management.list',
+          name: 'Xem danh sách người dùng',
+          description: 'Quyền xem danh sách tất cả người dùng',
+        },
+        {
+          key: 'user-management.read',
+          name: 'Xem chi tiết người dùng',
+          description: 'Quyền xem thông tin chi tiết của người dùng',
+        },
+        {
+          key: 'user-management.ban',
+          name: 'Cấm người dùng',
+          description: 'Quyền cấm (ban) người dùng',
+        },
+        {
+          key: 'user-management.unban',
+          name: 'Gỡ cấm người dùng',
+          description: 'Quyền gỡ lệnh cấm (unban) người dùng',
+        },
+        {
+          key: 'user-management.warn',
+          name: 'Cảnh báo người dùng',
+          description: 'Quyền cảnh báo (warn) người dùng',
+        },
+        {
+          key: 'user-management.unwarn',
+          name: 'Gỡ cảnh báo người dùng',
+          description: 'Quyền gỡ cảnh báo (unwarn) người dùng',
+        },
+        {
+          key: 'user-management.sessions',
+          name: 'Quản lý phiên đăng nhập',
+          description: 'Quyền xem và quản lý phiên đăng nhập của người dùng',
+        },
+      ];
+
+      for (const perm of userManagementPermissions) {
+        const existing = await this.permission.findFirst({
+          where: { key: perm.key },
+        });
+
+        if (!existing) {
+          await this.permission.create({
+            data: {
+              key: perm.key,
+              name: perm.name,
+              description: perm.description,
+              is_active: true,
+              is_deleted: false,
+            },
+          });
+        }
+      }
+
+      // Gán permissions cho Admin và Super Admin
+      const adminRole = await this.role.findFirst({
+        where: { name: 'Admin', is_deleted: false },
+      });
+      const superAdminRole = await this.role.findFirst({
+        where: { name: 'Super Admin', is_deleted: false },
+      });
+
+      const permissions = await this.permission.findMany({
+        where: {
+          key: { in: userManagementPermissions.map((p) => p.key) },
+          is_deleted: false,
+        },
+      });
+
+      for (const permission of permissions) {
+        for (const role of [adminRole, superAdminRole]) {
+          if (!role) continue;
+          const existingAssignment = await this.rolePermission.findFirst({
+            where: {
+              role_id: role.id,
+              permission_id: permission.id,
+            },
+          });
+
+          if (!existingAssignment) {
+            await this.rolePermission.create({
+              data: {
+                role_id: role.id,
+                permission_id: permission.id,
+                is_active: true,
+                is_deleted: false,
+              },
+            });
+          }
+        }
+      }
+
+      this.logger.log('✅ User management permissions seeded');
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `❌ Failed to seed user management permissions: ${errorMessage}`,
+      );
+    }
+  }
+
+  /**
+   * Seed các permissions cho Warning Category
+   */
+  private async seedWarningCategoryPermissions() {
+    try {
+      const warningCategoryPermissions = [
+        {
+          key: 'warning-category.create',
+          name: 'Tạo danh mục cảnh báo',
+          description: 'Quyền tạo mới danh mục cảnh báo',
+        },
+        {
+          key: 'warning-category.list',
+          name: 'Xem danh mục cảnh báo',
+          description: 'Quyền xem danh sách và chi tiết danh mục cảnh báo',
+        },
+        {
+          key: 'warning-category.update',
+          name: 'Cập nhật danh mục cảnh báo',
+          description: 'Quyền cập nhật danh mục cảnh báo',
+        },
+        {
+          key: 'warning-category.delete',
+          name: 'Xóa danh mục cảnh báo',
+          description: 'Quyền xóa danh mục cảnh báo',
+        },
+      ];
+
+      for (const perm of warningCategoryPermissions) {
+        const existing = await this.permission.findFirst({
+          where: { key: perm.key },
+        });
+
+        if (!existing) {
+          await this.permission.create({
+            data: {
+              key: perm.key,
+              name: perm.name,
+              description: perm.description,
+              is_active: true,
+              is_deleted: false,
+            },
+          });
+        }
+      }
+
+      // Gán permissions cho Admin và Super Admin
+      const adminRole = await this.role.findFirst({
+        where: { name: 'Admin', is_deleted: false },
+      });
+      const superAdminRole = await this.role.findFirst({
+        where: { name: 'Super Admin', is_deleted: false },
+      });
+
+      const permissions = await this.permission.findMany({
+        where: {
+          key: { in: warningCategoryPermissions.map((p) => p.key) },
+          is_deleted: false,
+        },
+      });
+
+      for (const permission of permissions) {
+        for (const role of [adminRole, superAdminRole]) {
+          if (!role) continue;
+          const existingAssignment = await this.rolePermission.findFirst({
+            where: {
+              role_id: role.id,
+              permission_id: permission.id,
+            },
+          });
+
+          if (!existingAssignment) {
+            await this.rolePermission.create({
+              data: {
+                role_id: role.id,
+                permission_id: permission.id,
+                is_active: true,
+                is_deleted: false,
+              },
+            });
+          }
+        }
+      }
+
+      this.logger.log('✅ Warning category permissions seeded');
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `❌ Failed to seed warning category permissions: ${errorMessage}`,
+      );
     }
   }
 }

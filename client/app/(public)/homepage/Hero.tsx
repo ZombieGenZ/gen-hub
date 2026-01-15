@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 
 export function PrimeNestHero() {
     return (
-        <section className="relative max-w-[1440px] pt-12 mx-auto w-full flex flex-col px-8">
+        <section className="relative max-w-[1440px] pt-12 mx-auto w-full flex flex-col px-4">
             {/* Main Content Wrapper */}
             <div className="relative w-full overflow-hidden min-h-[700px] flex flex-col md:block rounded-xl  border-white">
 
@@ -67,7 +67,7 @@ export function PrimeNestHero() {
                         transition={{ duration: 0.5, delay: 0.3 }}
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
-                        className="w-fit px-8 py-4 bg-[#0F766E] hover:bg-[#0D5A52] text-white font-bold text-lg rounded-full shadow-lg transition-colors flex items-center gap-2"
+                        className="w-fit px-8 py-4 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-lg rounded-full shadow-lg transition-colors flex items-center gap-2"
                     >
                         Nhận Tư Vấn Ngay
                     </motion.button>
@@ -80,26 +80,26 @@ export function PrimeNestHero() {
                     <div className="flex z-10 w-full flex-col gap-[2rem] px-[3rem] py-[2rem] sm:flex-row lg:gap-[4rem] lg:px-[5rem]">
                         <div className="flex w-auto flex-col gap-[0.5rem]">
                             <div className="flex w-auto">
-                                <h3 className="text-3xl md:text-4xl font-bold"><span className="text-[#0F766E]">100,000+</span></h3>
+                                <h3 className="text-3xl md:text-4xl font-bold"><span className="text-primary">100,000+</span></h3>
                             </div>
-                            <h5 className="font-medium text-slate-600">m² Kho Bãi</h5>
+                            <h5 className="font-medium text-muted-foreground">m² Kho Bãi</h5>
                         </div>
                         <div className="flex w-auto flex-col gap-[0.5rem]">
                             <div className="flex w-auto items-baseline gap-2">
-                                <span className="text-slate-900 text-lg font-bold">Hơn</span>
-                                <h3 className="text-3xl md:text-4xl font-bold"><span className="text-[#EF4444]">50K+</span></h3>
+                                <span className="text-foreground text-lg font-bold">Hơn</span>
+                                <h3 className="text-3xl md:text-4xl font-bold"><span className="text-destructive-foreground">50K+</span></h3>
                             </div>
-                            <h5 className="font-medium text-slate-600">Đơn Hàng/Tháng</h5>
+                            <h5 className="font-medium text-muted-foreground">Đơn Hàng/Tháng</h5>
                         </div>
                         <div className="flex w-auto flex-col gap-[0.5rem]">
                             <div className="flex w-auto items-baseline gap-2">
-                                <span className="text-slate-900 text-lg font-bold">Hơn</span>
-                                <h3 className="text-3xl md:text-4xl font-bold"><span className="text-[#0F766E]">500+</span></h3>
+                                <span className="text-foreground text-lg font-bold">Hơn</span>
+                                <h3 className="text-3xl md:text-4xl font-bold"><span className="text-primary">500+</span></h3>
                             </div>
-                            <h5 className="font-medium text-slate-600">Đối Tác Tin Cậy</h5>
+                            <h5 className="font-medium text-muted-foreground">Đối Tác Tin Cậy</h5>
                         </div>
                     </div>
-                    <div className="flex absolute inset-[-1] -left-[1rem] z-0 w-[110%] -skew-x-[10deg] rounded-tl-[1rem] bg-white sm:-right-[4rem] sm:left-[2rem] sm:w-auto sm:-skew-x-[20deg] md:-right-[20rem]"></div>
+                    <div className="flex absolute inset-[-1] -left-[1rem] z-0 w-[110%] -skew-x-[10deg] rounded-tl-[1rem] bg-background sm:-right-[4rem] sm:left-[2rem] sm:w-auto sm:-skew-x-[20deg] md:-right-[20rem]"></div>
                 </div>
             </div>
         </section>

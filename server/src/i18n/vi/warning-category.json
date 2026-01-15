@@ -1,0 +1,24 @@
+{
+    "success": {
+        "create": "Tạo danh mục cảnh báo thành công",
+        "update": "Cập nhật danh mục cảnh báo thành công",
+        "delete": "Xóa danh mục cảnh báo thành công",
+        "delete_many": "Xóa {count} danh mục cảnh báo thành công",
+        "list": "Lấy danh sách danh mục cảnh báo thành công",
+        "read": "Lấy thông tin danh mục cảnh báo thành công"
+    },
+    "error": {
+        "not_found": "Không tìm thấy danh mục cảnh báo",
+        "in_use": "Không thể xóa danh mục đang được sử dụng",
+        "in_use_item": "Không thể xóa danh mục '{name}' đang được sử dụng"
+    },
+    "validation": {
+        "name_required": "Tên danh mục là bắt buộc",
+        "name_string": "Tên danh mục phải là chuỗi",
+        "description_string": "Mô tả phải là chuỗi",
+        "severity_int": "Mức độ nghiêm trọng phải là số nguyên",
+        "severity_min": "Mức độ nghiêm trọng tối thiểu là 1",
+        "severity_max": "Mức độ nghiêm trọng tối đa là 5",
+        "is_active_boolean": "Trạng thái kích hoạt phải là boolean"
+    }
+}

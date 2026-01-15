@@ -342,6 +342,21 @@ export class AuthService {
   }
 
   /**
+   * Đăng nhập cho Admin Panel - yêu cầu 1 trong các quyền: database.admin, featureflag.admin, resources.admin, systemlogs.admin
+   */
+  async loginAdminPanel(dto: LoginDto, deviceInfo?: IDeviceInfo, lang = 'vi') {
+    const result = await this.loginWithAnyPermissionCheck(
+      dto,
+      deviceInfo,
+      ['database.admin', 'featureflag.admin', 'resources.admin', 'systemlogs.admin', 'backup.admin', 'backup.list', 'backup.trigger'],
+      'auth.panel_login.admin_permission_denied',
+      'auth.panel_login.admin_success',
+      lang,
+    );
+    return result;
+  }
+
+  /**
    * Login với kiểm tra permission - Helper method
    */
   private async loginWithPermissionCheck(
@@ -533,6 +548,142 @@ export class AuthService {
     });
 
     return !!rolePerms;
+  }
+
+  /**
+   * Login với kiểm tra ANY permission - Helper method cho Admin Panel
+   */
+  private async loginWithAnyPermissionCheck(
+    dto: LoginDto,
+    deviceInfo: IDeviceInfo | undefined,
+    requiredPermissions: string[],
+    permissionDeniedKey: string,
+    successMessageKey: string,
+    lang: string,
+  ) {
+    // Verify captcha token
+    await this.turnstileService.verifyToken(dto.turnstileToken, deviceInfo?.ip, lang);
+
+    const user = await this.userRepository.findByEmail(dto.email);
+
+    if (!user || !user.password) {
+      await this.bruteForceService.recordFailedAttempt(dto.email, deviceInfo?.ip || 'unknown');
+      this.systemLogService.warn(
+        'auth',
+        'panel_login_failed',
+        `Admin panel login failed: user not found - ${dto.email}`,
+        {
+          ipAddress: deviceInfo?.ip,
+          userAgent: deviceInfo?.device,
+          metaData: { email: dto.email, reason: 'user_not_found' },
+        },
+      );
+      throw new UnauthorizedException(
+        await this.i18n.t('auth.login.invalid_credentials', { lang }),
+      );
+    }
+
+    let isPasswordValid = false;
+    try {
+      isPasswordValid = await argon2.verify(user.password, dto.password);
+    } catch {
+      await this.bruteForceService.recordFailedAttempt(dto.email, deviceInfo?.ip || 'unknown');
+      throw new UnauthorizedException(
+        await this.i18n.t('auth.login.invalid_credentials', { lang }),
+      );
+    }
+    if (!isPasswordValid) {
+      await this.bruteForceService.recordFailedAttempt(dto.email, deviceInfo?.ip || 'unknown');
+      throw new UnauthorizedException(
+        await this.i18n.t('auth.login.invalid_credentials', { lang }),
+      );
+    }
+
+    if (user.is_banned) {
+      if (!user.banned_end || new Date(user.banned_end) > new Date()) {
+        throw new UnauthorizedException(
+          await this.i18n.t('auth.login.account_banned', { lang }),
+        );
+      }
+    }
+
+    // Kiểm tra có BẤT KỲ permission nào
+    let hasAnyPermission = false;
+    for (const permission of requiredPermissions) {
+      if (await this.checkUserPermission(user.id, permission)) {
+        hasAnyPermission = true;
+        break;
+      }
+    }
+
+    if (!hasAnyPermission) {
+      this.systemLogService.warn(
+        'auth',
+        'admin_panel_login_permission_denied',
+        `Admin panel login denied: missing all required permissions - ${user.email}`,
+        {
+          userId: user.id,
+          ipAddress: deviceInfo?.ip,
+          userAgent: deviceInfo?.device,
+          metaData: { email: user.email, requiredPermissions },
+        },
+      );
+      throw new ForbiddenException(
+        await this.i18n.t(permissionDeniedKey, { lang }),
+      );
+    }
+
+    if (user.two_factor_enabled) {
+      const tempToken = await this.generateTempToken(user.id);
+      return {
+        message: await this.i18n.t('auth.login.two_factor_required', { lang }),
+        requires_2fa: true,
+        temp_token: tempToken,
+      };
+    }
+
+    const tokens = await this.generateTokens(user.id, deviceInfo);
+
+    await this.bruteForceService.onSuccessfulLogin(dto.email, deviceInfo?.ip || 'unknown');
+
+    if (user.email) {
+      this.emailService
+        .sendLoginNotificationEmail(
+          user.email,
+          user.name,
+          { device: deviceInfo?.device, ip: deviceInfo?.ip },
+          user.language,
+        )
+        .catch((error) => {
+          this.systemLogService.error(
+            'auth',
+            'send_email_failed',
+            `Failed to send login notification email: ${user.email}`,
+            {
+              userId: user.id,
+              metaData: { error: error.message },
+            },
+          );
+        });
+    }
+
+    this.systemLogService.info(
+      'auth',
+      'admin_panel_login',
+      `User logged in to admin panel: ${user.email}`,
+      {
+        userId: user.id,
+        ipAddress: deviceInfo?.ip,
+        userAgent: deviceInfo?.device,
+        metaData: { email: user.email },
+      },
+    );
+
+    return {
+      message: await this.i18n.t(successMessageKey, { lang }),
+      user: this.sanitizeUser(user),
+      ...tokens,
+    };
   }
 
 

@@ -1,0 +1,327 @@
+{
+    "dashboard": {
+        "title": "Bảng điều khiển",
+        "welcome": "Chào mừng bạn đến với GEN-HUB Database Panel",
+        "stats": {
+            "totalTables": "Tổng số Tables",
+            "totalRecords": "Tổng số Records",
+            "totalColumns": "Tổng số Columns",
+            "avgRecords": "TB Records/Table",
+            "loadStats": "Tải thống kê",
+            "refresh": "Làm mới thống kê"
+        },
+        "email": "Email",
+        "quickAccess": {
+            "title": "Truy cập nhanh - Tables",
+            "tables": "tables",
+            "loading": "Đang tải dữ liệu...",
+            "records": "Records",
+            "columns": "Columns"
+        },
+        "auditNote": {
+            "title": "Lưu ý về Audit Logging",
+            "description": "Mọi thao tác Create, Update, Delete trên panel này đều được ghi log vào"
+        },
+        "tables": {
+            "refresh": "Làm mới bảng"
+        }
+    },
+    "table": {
+        "title": "Bảng",
+        "records": "bản ghi",
+        "columns": "cột",
+        "noData": "Không có dữ liệu",
+        "loading": "Đang tải...",
+        "actions": {
+            "addRecord": "Thêm bản ghi",
+            "deleteSelected": "Xóa",
+            "save": "Lưu",
+            "cancel": "Hủy",
+            "saveChanges": "Lưu thay đổi",
+            "discardChanges": "Hủy bỏ"
+        },
+        "filter": {
+            "title": "Bộ lọc",
+            "where": "where",
+            "and": "and",
+            "addFilter": "Thêm bộ lọc",
+            "clearFilters": "Xóa bộ lọc",
+            "apply": "Áp dụng",
+            "notApplied": "bộ lọc chưa được áp dụng",
+            "enterValue": "Nhập giá trị"
+        },
+        "edit": {
+            "editColumn": "Chỉnh sửa",
+            "setNull": "Set NULL",
+            "save": "Lưu",
+            "cancel": "Hủy",
+            "pressToSave": "Nhấn để lưu",
+            "pressToCancel": "để hủy",
+            "pressToSaveCombined": "Nhấn Ctrl+Enter để lưu, Esc để hủy",
+            "pressEnterToSaveCombined": "Nhấn Enter để lưu, Esc để hủy",
+            "selectDate": "Chọn ngày"
+        },
+        "pagination": {
+            "page": "Trang",
+            "of": "của",
+            "previous": "Trước",
+            "next": "Sau"
+        },
+        "newRow": {
+            "title": "Hàng mới",
+            "placeholder": "Nhập giá trị..."
+        },
+        "delete": {
+            "confirmTitle": "Xác nhận xóa",
+            "confirmMessage": "Bạn có chắc chắn muốn xóa các bản ghi này?",
+            "deleted": "Đã xóa"
+        },
+        "export": {
+            "title": "Xuất dữ liệu",
+            "csv": "Xuất CSV",
+            "excel": "Xuất Excel",
+            "exporting": "Đang xuất...",
+            "success": "Xuất thành công",
+            "error": "Lỗi khi xuất"
+        },
+        "sort": {
+            "clickToSort": "Nhấn để sắp xếp",
+            "ascending": "Tăng dần",
+            "descending": "Giảm dần",
+            "default": "Mặc định"
+        },
+        "columnManagement": {
+            "resetOrder": "Đặt lại thứ tự cột",
+            "dragToReorder": "Kéo để sắp xếp lại cột"
+        }
+    },
+    "common": {
+        "language": "Ngôn ngữ",
+        "english": "Tiếng Anh",
+        "vietnamese": "Tiếng Việt",
+        "yes": "Có",
+        "no": "Không",
+        "true": "TRUE",
+        "false": "FALSE",
+        "null": "NULL",
+        "error": "Lỗi",
+        "success": "Thành công",
+        "close": "Đóng",
+        "refresh": "Làm mới",
+        "back": "Quay lại",
+        "previous": "Trước",
+        "next": "Sau",
+        "cancel": "Hủy",
+        "export": "Xuất",
+        "all": "Tất cả",
+        "confirm": "Xác nhận",
+        "loading": "Đang tải..."
+    },
+    "sidebar": {
+        "title": "Admin Panel",
+        "dashboard": "Bảng điều khiển",
+        "erDiagram": "Sơ đồ",
+        "tables": "Các bảng",
+        "logout": "Đăng xuất",
+        "admin": "Admin Panel",
+        "featureFlags": "Feature Flags",
+        "resources": "Resources",
+        "systemLogs": "System Logs",
+        "backup": "Quản lý Backup"
+    },
+    "diagram": {
+        "title": "Sơ đồ",
+        "tables": "bảng",
+        "relations": "quan hệ",
+        "loading": "Đang tải sơ đồ...",
+        "hideLines": "Ẩn đường nối",
+        "showLines": "Hiện đường nối",
+        "refresh": "Làm mới",
+        "exportPng": "PNG",
+        "exportPdf": "PDF",
+        "changeColor": "Đổi màu",
+        "save": "Lưu",
+        "saving": "Đang lưu...",
+        "saved": "Đã lưu!",
+        "legend": {
+            "title": "Chú thích",
+            "primaryKey": "Khóa chính (PK)",
+            "foreignKey": "Khóa ngoại (FK)",
+            "notNull": "NOT NULL",
+            "unique": "UNIQUE",
+            "relations": "Quan hệ (1:1, 1:N, N:N)"
+        },
+        "hideLegend": "Ẩn chú thích",
+        "showLegend": "Hiện chú thích",
+        "customColor": "Tùy chọn"
+    },
+    "query": {
+        "title": "Truy vấn SQL",
+        "subtitle": "Thực thi truy vấn SQL trực tiếp trên cơ sở dữ liệu",
+        "execute": "Thực thi",
+        "clear": "Xóa",
+        "templates": "Mẫu",
+        "history": "Lịch sử",
+        "results": "Kết quả",
+        "noResults": "Không có kết quả",
+        "error": "Lỗi truy vấn",
+        "success": "Truy vấn thực thi thành công",
+        "rowsAffected": "hàng bị ảnh hưởng",
+        "executionTime": "Thời gian thực thi",
+        "placeholder": "Nhập truy vấn SQL của bạn tại đây...",
+        "selectTemplate": "Chọn một mẫu...",
+        "select": "SELECT",
+        "insert": "INSERT",
+        "update": "UPDATE",
+        "delete": "DELETE",
+        "createTable": "CREATE TABLE",
+        "alterTable": "ALTER TABLE"
+    },
+    "featureFlags": {
+        "title": "Feature Flags",
+        "subtitle": "Quản lý các cờ tính năng API",
+        "searchPlaceholder": "Tìm theo path hoặc module...",
+        "allModules": "Tất cả module",
+        "allStatus": "Tất cả trạng thái",
+        "active": "Hoạt động",
+        "inactive": "Không hoạt động",
+        "selected": "đã chọn",
+        "enableAll": "Bật tất cả",
+        "disableAll": "Tắt tất cả",
+        "noFlags": "Không tìm thấy feature flags",
+        "toggleSuccess": "Đã thay đổi trạng thái flag",
+        "toggleError": "Lỗi khi thay đổi trạng thái",
+        "bulkSuccess": "Đã cập nhật flags",
+        "bulkError": "Lỗi khi cập nhật flags",
+        "stats": {
+            "total": "Tổng số",
+            "active": "Hoạt động",
+            "inactive": "Không hoạt động"
+        },
+        "table": {
+            "module": "Module",
+            "method": "Method",
+            "path": "Path",
+            "status": "Trạng thái",
+            "actions": "Hành động"
+        },
+        "pagination": {
+            "showing": "Hiển thị",
+            "of": "của"
+        },
+        "detail": {
+            "backToList": "Quay lại Feature Flags",
+            "title": "Chi tiết Feature Flag",
+            "refreshLogs": "Làm mới lịch sử",
+            "infoTitle": "Thông tin Flag",
+            "historyTitle": "Lịch sử thay đổi",
+            "noLogs": "Không có lịch sử thay đổi",
+            "createdAt": "Ngày tạo",
+            "updatedAt": "Cập nhật",
+            "enabled": "Đã bật",
+            "disabled": "Đã tắt",
+            "created": "Đã tạo",
+            "deleted": "Đã xóa",
+            "fetchError": "Lỗi khi tải thông tin flag",
+            "fetchLogsError": "Lỗi khi tải lịch sử",
+            "user": "Người dùng",
+            "ip": "IP",
+            "page": "Trang"
+        }
+    },
+    "resources": {
+        "title": "Resources Monitor",
+        "subtitle": "Giám sát dịch vụ thời gian thực",
+        "lastUpdated": "Cập nhật lúc",
+        "noData": "Không có dữ liệu",
+        "services": "Dịch vụ",
+        "live": "Trực tiếp",
+        "disconnected": "Mất kết nối",
+        "overview": {
+            "total": "Tổng dịch vụ",
+            "online": "Trực tuyến",
+            "offline": "Ngoại tuyến",
+            "avgCpu": "CPU TB",
+            "avgMemory": "Memory TB",
+            "avgDisk": "Disk TB"
+        }
+    },
+    "systemLogs": {
+        "title": "System Console",
+        "subtitle": "Hoạt động server thời gian thực",
+        "tableTitle": "Bảng System Logs",
+        "tableSubtitle": "Duyệt và tìm kiếm log lịch sử",
+        "consoleView": "Giao diện Console",
+        "viewTable": "Giao diện Bảng",
+        "searchPlaceholder": "Tìm kiếm message...",
+        "noLogs": "Không tìm thấy log",
+        "metadata": "Metadata",
+        "userId": "Mã người dùng",
+        "ipAddress": "Địa chỉ IP",
+        "showing": "Hiển thị",
+        "of": "của",
+        "logs": "logs",
+        "page": "Trang",
+        "stats": {
+            "total": "Tổng số",
+            "last24h": "24 giờ qua"
+        },
+        "filters": {
+            "allLevels": "Tất cả Level",
+            "allModules": "Tất cả Module"
+        },
+        "table": {
+            "level": "Level",
+            "module": "Module",
+            "action": "Action",
+            "message": "Message",
+            "time": "Thời gian"
+        },
+        "export": {
+            "title": "Xuất Logs",
+            "subtitle": "Cấu hình tùy chọn xuất",
+            "optional": "Tùy chọn",
+            "dateRange": "Khoảng thời gian",
+            "startDate": "Ngày bắt đầu",
+            "endDate": "Ngày kết thúc",
+            "level": "Mức Log",
+            "module": "Module",
+            "maxLogs": "Số log tối đa",
+            "maxLogsPlaceholder": "Nhập số log tối đa",
+            "exporting": "Đang xuất...",
+            "success": "Xuất thành công",
+            "noData": "Không tìm thấy log với bộ lọc đã chọn"
+        }
+    },
+    "backup": {
+        "title": "Quản lý Backup",
+        "subtitle": "Quản lý sao lưu cơ sở dữ liệu",
+        "secretKey": "Mã bảo mật",
+        "triggerBackup": "Tạo Backup",
+        "download": "Tải xuống",
+        "totalBackups": "Tổng số backups",
+        "noBackups": "Không tìm thấy backup",
+        "needAuthentication": "Cần xác thực để xem danh sách backups",
+        "authenticate": "Xác thực",
+        "type": {
+            "scheduled": "Tự động",
+            "manualApi": "Thủ công (API)",
+            "manualDiscord": "Thủ công (Discord)"
+        },
+        "modal": {
+            "listTitle": "Xác thực để xem Backups",
+            "listDesc": "Nhập mã bảo mật backup để xem danh sách các bản sao lưu.",
+            "triggerTitle": "Xác thực để tạo Backup",
+            "triggerDesc": "Nhập mã bảo mật backup để tạo một bản sao lưu mới.",
+            "downloadTitle": "Xác thực để tải xuống",
+            "downloadDesc": "Nhập mã bảo mật backup để tải xuống file sao lưu này."
+        },
+        "error": {
+            "invalidKey": "Mã không hợp lệ"
+        },
+        "triggerOnly": {
+            "title": "Tạo Backup",
+            "desc": "Bạn có quyền tạo backup. Nhấn nút ở trên để tạo một bản sao lưu mới."
+        }
+    }
+}

@@ -1,12 +1,24 @@
-import { IsOptional, IsString, IsInt, Min, Max } from 'class-validator';
+import { IsOptional, IsString, IsInt, Min, Max, IsNotEmpty } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 import { i18nValidationMessage } from 'nestjs-i18n';
-import { ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 /**
  * DTO cho query lấy danh sách backups
  */
 export class GetBackupsQueryDto {
+    @ApiProperty({
+        description: 'Secret key để xác thực',
+        example: 'your_backup_secret_key',
+    })
+    @IsString({
+        message: i18nValidationMessage('common.validation.key_string'),
+    })
+    @IsNotEmpty({
+        message: i18nValidationMessage('common.validation.key_required'),
+    })
+    key: string;
+
     @ApiPropertyOptional({
         description: 'Số lượng bản ghi tối đa',
         default: 10,

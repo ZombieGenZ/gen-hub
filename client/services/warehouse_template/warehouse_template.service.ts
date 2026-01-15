@@ -172,3 +172,5 @@ export class WarehouseTemplateService {
         }
     }
 }
+
+export const warehouseTemplateService = new WarehouseTemplateService();

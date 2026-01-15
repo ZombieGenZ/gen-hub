@@ -492,7 +492,6 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     await this.delByPattern(`org-notification:list:${orgId}:*`);
   }
 
-  // ========== Organization Chat Cache ==========
   private readonly ORG_CHAT_MESSAGE_LIST_CACHE_TTL: number = 60;
 
   getOrgChatMessageListCacheKey(orgId: string, query: Record<string, unknown>): string {

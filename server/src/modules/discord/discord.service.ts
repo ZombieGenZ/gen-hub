@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, OnModuleDestroy, Inject, forwardRef } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
     Client,
@@ -30,6 +30,8 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import { CozeService } from '../coze/coze.service';
 import { IDiscordChannelResult, DiscordReplyCallback, IDiscordActionCallback } from './interfaces';
+import { DatabaseBackupService } from '../database-backup/database-backup.service';
+import { BackblazeB2Service } from '../backblaze-b2/backblaze-b2.service';
 
 /**
  * DiscordService
@@ -56,6 +58,9 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
     private readonly autoSupportChannelIds: string[];
     private readonly ignoredCategoryId: string;
     private readonly staffRoleIds: string[];
+    private readonly backupChannelId: string;
+    private readonly backupRoleIds: string[];
+    private readonly downloadUrlTtlSeconds: number;
 
     // Callback để xử lý reply từ Discord
     private onReplyCallback: DiscordReplyCallback | null = null;
@@ -64,6 +69,9 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
         private readonly configService: ConfigService,
         private readonly prismaService: PrismaService,
         private readonly cozeService: CozeService,
+        @Inject(forwardRef(() => DatabaseBackupService))
+        private readonly databaseBackupService: DatabaseBackupService,
+        private readonly backblazeB2Service: BackblazeB2Service,
     ) {
         // Kiểm tra xem Discord integration có được bật không
         const enabledValue = this.configService.get<string>('DISCORD_ENABLED');
@@ -85,6 +93,15 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
         // Danh sách role IDs của staff (bypass AI auto-reply)
         const staffRoleIdsStr = this.configService.get<string>('DISCORD_STAFF_REPLY_ROLE_IDS') || '';
         this.staffRoleIds = staffRoleIdsStr.split(',').map(id => id.trim()).filter(id => id);
+
+        // Cấu hình cho backup notifications
+        this.backupChannelId = this.configService.get<string>('DISCORD_BACKUP_CHANNEL_ID') || '';
+        const backupRoleIdsStr = this.configService.get<string>('DISCORD_BACKUP_ROLE_IDS') || '';
+        this.backupRoleIds = backupRoleIdsStr.split(',').map(id => id.trim()).filter(id => id);
+
+        // TTL cho pre-signed URL backup download (chuyển từ ms sang giây)
+        const downloadUrlTtlMs = this.configService.get<number>('BACKUP_DOWNLOAD_URL_TTL_MS', 600000);
+        this.downloadUrlTtlSeconds = Math.floor(downloadUrlTtlMs / 1000);
 
         if (this.isEnabled) {
             if (!this.botToken || !this.guildId || !this.categoryId) {
@@ -182,6 +199,30 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
      */
     get enabled(): boolean {
         return this.isEnabled && this.client !== null && this.guild !== null;
+    }
+
+    /**
+     * Lấy username của Discord user theo ID
+     * @param userId Discord user ID (snowflake)
+     * @returns Username có dạng "DisplayName (@username)" hoặc null nếu không tìm thấy
+     */
+    async getDiscordUsername(userId: string): Promise<string | null> {
+        if (!this.client) return null;
+
+        try {
+            const user = await this.client.users.fetch(userId);
+            if (user) {
+                // Trả về display name với @ username nếu có
+                const displayName = user.displayName || user.username;
+                return displayName !== user.username
+                    ? `${displayName} (@${user.username})`
+                    : `@${user.username}`;
+            }
+            return null;
+        } catch (error) {
+            this.logger.warn(`Failed to fetch Discord user ${userId}:`, error);
+            return null;
+        }
     }
 
     /**
@@ -347,11 +388,15 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
                 .addStringOption(option =>
                     option.setName('key')
                         .setDescription('Key xác thực backup')
-                        .setRequired(true)),
+                        .setRequired(false)),
 
             new SlashCommandBuilder()
                 .setName('backups')
-                .setDescription('Xem danh sách các bản sao lưu'),
+                .setDescription('Xem danh sách các bản sao lưu (yêu cầu key)')
+                .addStringOption(option =>
+                    option.setName('key')
+                        .setDescription('Key xác thực')
+                        .setRequired(false)),
 
             new SlashCommandBuilder()
                 .setName('backup-download')
@@ -359,11 +404,11 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
                 .addStringOption(option =>
                     option.setName('id')
                         .setDescription('ID của bản sao lưu')
-                        .setRequired(true))
+                        .setRequired(false))
                 .addStringOption(option =>
                     option.setName('key')
                         .setDescription('Key xác thực')
-                        .setRequired(true)),
+                        .setRequired(false)),
 
             new SlashCommandBuilder()
                 .setName('help')
@@ -962,6 +1007,44 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
     ): Promise<void> {
         const { commandName } = interaction;
 
+        // Danh sách các lệnh backup - chỉ dùng trong BACKUP_CHANNEL
+        const backupCommands = ['backup', 'backups', 'backup-download'];
+
+        // Danh sách các lệnh ticket - chỉ dùng trong support categories
+        const ticketCommands = ['close', 'reopen', 'delete', 'skip', 'unskip', 'priority',
+            'whitelist', 'blacklist', 'remove-whitelist', 'remove-blacklist'];
+
+        // Các category IDs cho ticket
+        const ticketCategoryIds = [
+            this.categoryId,           // DISCORD_SUPPORT_CATEGORY_ID
+            this.closedCategoryId,     // DISCORD_CLOSED_CATEGORY_ID
+            this.priorityCategoryId,   // DISCORD_PRIORITY_CATEGORY_ID
+            this.ignoredCategoryId,    // CONTACT_IGNORED_CATEGORY_ID
+        ].filter(Boolean);
+
+        // Kiểm tra backup commands
+        if (backupCommands.includes(commandName)) {
+            if (channel.id !== this.backupChannelId) {
+                await interaction.reply({
+                    content: `❌ Lệnh \`/${commandName}\` chỉ có thể sử dụng trong kênh backup (<#${this.backupChannelId}>).`,
+                    ephemeral: true,
+                });
+                return;
+            }
+        }
+
+        // Kiểm tra ticket commands
+        if (ticketCommands.includes(commandName)) {
+            const parentId = channel.parentId;
+            if (!parentId || !ticketCategoryIds.includes(parentId)) {
+                await interaction.reply({
+                    content: `❌ Lệnh \`/${commandName}\` chỉ có thể sử dụng trong các kênh ticket hỗ trợ.`,
+                    ephemeral: true,
+                });
+                return;
+            }
+        }
+
         switch (commandName) {
             case 'close': {
                 const reason = interaction.options.getString('reason');
@@ -1108,21 +1191,55 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
                 break;
             }
             case 'backup': {
-                const key = interaction.options.getString('key', true);
+                const key = interaction.options.getString('key');
+
+                // Nếu không có key, hiển thị modal
+                if (!key) {
+                    await this.showBackupKeyModal(interaction);
+                    break;
+                }
+
                 await interaction.reply({ content: '🔄 Đang trigger backup...', ephemeral: true });
 
-                // Call backup service via prisma - Simplified approach without injecting service
-                const backupKey = this.configService.get<string>('BACKUP_TRIGGER_KEY');
+                const backupKey = this.configService.get<string>('BACKUP_SECRET_KEY');
                 if (key !== backupKey) {
                     await interaction.editReply({ content: '❌ Key không hợp lệ!' });
                     break;
                 }
 
+                // Trigger backup trong background
+                this.databaseBackupService.runBackup(
+                    interaction.user.id,
+                    'MANUAL_DISCORD',
+                ).then(result => {
+                    if (result) {
+                        this.logger.log(`Discord backup triggered by ${interaction.user.tag}: ${result.fileName}`);
+                    } else {
+                        this.logger.warn(`Discord backup triggered by ${interaction.user.tag} failed or was skipped`);
+                    }
+                }).catch(err => {
+                    this.logger.error(`Discord backup error:`, err);
+                });
+
                 await interaction.editReply({ content: '📦 Backup đang chạy trong background. Kiểm tra kênh backup để xem kết quả.' });
                 break;
             }
             case 'backups': {
+                const key = interaction.options.getString('key');
+
+                // Nếu không có key, hiển thị modal
+                if (!key) {
+                    await this.showBackupsKeyModal(interaction);
+                    break;
+                }
+
                 await interaction.reply({ content: '🔄 Đang lấy danh sách backups...', ephemeral: true });
+
+                const backupKey = this.configService.get<string>('BACKUP_SECRET_KEY');
+                if (key !== backupKey) {
+                    await interaction.editReply({ content: '❌ Key không hợp lệ!' });
+                    break;
+                }
 
                 const backups = await this.prismaService.databaseBackup.findMany({
                     where: { is_deleted: false },
@@ -1146,7 +1263,7 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
                     .setTitle('📦 Danh sách Backups')
                     .setColor('#00ff00')
                     .setDescription(backups.map((b, i) =>
-                        `**${i + 1}.** \`${b.id.substring(0, 8)}...\`\n` +
+                        `**${i + 1}.** \`${b.id}\`\n` +
                         `   📁 ${b.file_name}\n` +
                         `   📊 ${(Number(b.file_size) / 1024 / 1024).toFixed(2)} MB | ${b.backup_type}\n` +
                         `   🕐 ${b.created_at.toISOString()}`
@@ -1157,11 +1274,18 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
                 break;
             }
             case 'backup-download': {
-                const backupId = interaction.options.getString('id', true);
-                const key = interaction.options.getString('key', true);
+                const backupId = interaction.options.getString('id');
+                const key = interaction.options.getString('key');
+
+                // Nếu không có id hoặc key, hiển thị modal
+                if (!backupId || !key) {
+                    await this.showBackupDownloadModal(interaction);
+                    break;
+                }
+
                 await interaction.reply({ content: '🔄 Đang lấy URL tải xuống...', ephemeral: true });
 
-                const backupKey = this.configService.get<string>('BACKUP_TRIGGER_KEY');
+                const backupKey = this.configService.get<string>('BACKUP_SECRET_KEY');
                 if (key !== backupKey) {
                     await interaction.editReply({ content: '❌ Key không hợp lệ!' });
                     break;
@@ -1176,15 +1300,30 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
                     break;
                 }
 
+                // Tạo pre-signed URL với TTL từ config
+                const presignedUrl = await this.backblazeB2Service.getDownloadUrl(
+                    backup.drive_file_id,
+                    this.downloadUrlTtlSeconds,
+                );
+
+                if (!presignedUrl) {
+                    await interaction.editReply({ content: '❌ Không thể tạo URL tải xuống.' });
+                    break;
+                }
+
+                // Tính thời gian hết hạn dạng Discord relative timestamp
+                const expiresAt = Math.floor(Date.now() / 1000) + this.downloadUrlTtlSeconds;
+
                 const downloadEmbed = new EmbedBuilder()
                     .setTitle('📥 Download Backup')
                     .setColor('#0099ff')
                     .addFields(
-                        { name: 'File', value: backup.file_name, inline: true },
-                        { name: 'Size', value: `${(Number(backup.file_size) / 1024 / 1024).toFixed(2)} MB`, inline: true },
+                        { name: '📁 File', value: backup.file_name, inline: true },
+                        { name: '📊 Size', value: `${(Number(backup.file_size) / 1024 / 1024).toFixed(2)} MB`, inline: true },
+                        { name: '⏰ Hết hạn', value: `<t:${expiresAt}:R>`, inline: true },
                     )
-                    .setDescription(`[📥 Click để tải xuống](${backup.drive_file_url})`)
-                    .setFooter({ text: '⚠️ Link chỉ có hiệu lực nếu bạn có quyền truy cập' });
+                    .setDescription(`[📥 Click để tải xuống](${presignedUrl})`)
+                    .setFooter({ text: '⚠️ URL có thời hạn, tải ngay nếu cần!' });
 
                 await interaction.editReply({ embeds: [downloadEmbed] });
                 break;
@@ -1356,6 +1495,88 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
 
         const row = new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(reasonInput);
         modal.addComponents(row);
+
+        await interaction.showModal(modal);
+    }
+
+    /**
+     * Hiện Modal nhập Backup Key
+     */
+    private async showBackupKeyModal(
+        interaction: ChatInputCommandInteraction,
+    ): Promise<void> {
+        const modal = new ModalBuilder()
+            .setCustomId('modal_backup')
+            .setTitle('🔐 Xác thực Backup');
+
+        const keyInput = new TextInputBuilder()
+            .setCustomId('key')
+            .setLabel('Backup Key')
+            .setPlaceholder('Nhập key xác thực để trigger backup')
+            .setStyle(TextInputStyle.Short)
+            .setRequired(true)
+            .setMinLength(1)
+            .setMaxLength(100);
+
+        const row = new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(keyInput);
+        modal.addComponents(row);
+
+        await interaction.showModal(modal);
+    }
+
+    /**
+     * Hiện Modal nhập Key để xem danh sách Backups
+     */
+    private async showBackupsKeyModal(
+        interaction: ChatInputCommandInteraction,
+    ): Promise<void> {
+        const modal = new ModalBuilder()
+            .setCustomId('modal_backups')
+            .setTitle('🔐 Xác thực để xem Backups');
+
+        const keyInput = new TextInputBuilder()
+            .setCustomId('key')
+            .setLabel('Backup Key')
+            .setPlaceholder('Nhập key xác thực để xem danh sách backups')
+            .setStyle(TextInputStyle.Short)
+            .setRequired(true)
+            .setMinLength(1)
+            .setMaxLength(100);
+
+        const row = new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(keyInput);
+        modal.addComponents(row);
+
+        await interaction.showModal(modal);
+    }
+
+    /**
+     * Hiện Modal nhập thông tin Backup Download
+     */
+    private async showBackupDownloadModal(
+        interaction: ChatInputCommandInteraction,
+    ): Promise<void> {
+        const modal = new ModalBuilder()
+            .setCustomId('modal_backup_download')
+            .setTitle('📥 Tải Backup');
+
+        const idInput = new TextInputBuilder()
+            .setCustomId('id')
+            .setLabel('Backup ID')
+            .setPlaceholder('Nhập ID của bản sao lưu')
+            .setStyle(TextInputStyle.Short)
+            .setRequired(true);
+
+        const keyInput = new TextInputBuilder()
+            .setCustomId('key')
+            .setLabel('Backup Key')
+            .setPlaceholder('Nhập key xác thực')
+            .setStyle(TextInputStyle.Short)
+            .setRequired(true);
+
+        modal.addComponents(
+            new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(idInput),
+            new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(keyInput),
+        );
 
         await interaction.showModal(modal);
     }
@@ -1542,6 +1763,121 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
                 await interaction.editReply({ content: '✅ Ticket đã được bỏ qua!' });
                 return;
             }
+            case 'modal_backup': {
+                const key = interaction.fields.getTextInputValue('key');
+                const backupKey = this.configService.get<string>('BACKUP_SECRET_KEY');
+
+                if (key !== backupKey) {
+                    await interaction.editReply({ content: '❌ Key không hợp lệ!' });
+                    return;
+                }
+
+                // Trigger backup trong background
+                this.databaseBackupService.runBackup(
+                    interaction.user.id,
+                    'MANUAL_DISCORD',
+                ).then(result => {
+                    if (result) {
+                        this.logger.log(`Discord backup triggered via modal by ${interaction.user.tag}: ${result.fileName}`);
+                    } else {
+                        this.logger.warn(`Discord backup triggered via modal by ${interaction.user.tag} failed or was skipped`);
+                    }
+                }).catch(err => {
+                    this.logger.error(`Discord backup error (modal):`, err);
+                });
+
+                await interaction.editReply({ content: '📦 Backup đang chạy trong background. Kiểm tra kênh backup để xem kết quả.' });
+                return;
+            }
+            case 'modal_backups': {
+                const key = interaction.fields.getTextInputValue('key');
+                const backupKey = this.configService.get<string>('BACKUP_SECRET_KEY');
+
+                if (key !== backupKey) {
+                    await interaction.editReply({ content: '❌ Key không hợp lệ!' });
+                    return;
+                }
+
+                const backups = await this.prismaService.databaseBackup.findMany({
+                    where: { is_deleted: false },
+                    orderBy: { created_at: 'desc' },
+                    take: 10,
+                    select: {
+                        id: true,
+                        file_name: true,
+                        file_size: true,
+                        backup_type: true,
+                        created_at: true,
+                    },
+                });
+
+                if (backups.length === 0) {
+                    await interaction.editReply({ content: '📭 Chưa có bản backup nào.' });
+                    return;
+                }
+
+                const listEmbed = new EmbedBuilder()
+                    .setTitle('📦 Danh sách Backups')
+                    .setColor('#00ff00')
+                    .setDescription(backups.map((b, i) =>
+                        `**${i + 1}.** \`${b.id}\`\n` +
+                        `   📁 ${b.file_name}\n` +
+                        `   📊 ${(Number(b.file_size) / 1024 / 1024).toFixed(2)} MB | ${b.backup_type}\n` +
+                        `   🕐 ${b.created_at.toISOString()}`
+                    ).join('\n\n'))
+                    .setFooter({ text: 'Dùng /backup-download <id> <key> để tải' });
+
+                await interaction.editReply({ embeds: [listEmbed] });
+                return;
+            }
+            case 'modal_backup_download': {
+                const backupId = interaction.fields.getTextInputValue('id');
+                const key = interaction.fields.getTextInputValue('key');
+                const backupKey = this.configService.get<string>('BACKUP_SECRET_KEY');
+
+                if (key !== backupKey) {
+                    await interaction.editReply({ content: '❌ Key không hợp lệ!' });
+                    return;
+                }
+
+                // Tìm backup
+                const backup = await this.prismaService.databaseBackup.findFirst({
+                    where: { id: backupId, is_deleted: false },
+                });
+
+                if (!backup) {
+                    await interaction.editReply({ content: '❌ Không tìm thấy bản sao lưu!' });
+                    return;
+                }
+
+                // Tạo pre-signed URL với TTL từ config
+                const presignedUrl = await this.backblazeB2Service.getDownloadUrl(
+                    backup.drive_file_id,
+                    this.downloadUrlTtlSeconds,
+                );
+
+                if (!presignedUrl) {
+                    await interaction.editReply({ content: '❌ Không thể tạo URL tải xuống.' });
+                    return;
+                }
+
+                // Tính thời gian hết hạn dạng Discord relative timestamp
+                const expiresAt = Math.floor(Date.now() / 1000) + this.downloadUrlTtlSeconds;
+
+                const downloadEmbed = new EmbedBuilder()
+                    .setTitle('📥 Download Backup')
+                    .setColor('#0099ff')
+                    .addFields(
+                        { name: '📁 File', value: backup.file_name, inline: true },
+                        { name: '📊 Size', value: `${(Number(backup.file_size) / 1024 / 1024).toFixed(2)} MB`, inline: true },
+                        { name: '⏰ Hết hạn', value: `<t:${expiresAt}:R>`, inline: true },
+                    )
+                    .setDescription(`[📥 Click để tải xuống](${presignedUrl})`)
+                    .setFooter({ text: '⚠️ URL có thời hạn, tải ngay nếu cần!' });
+
+                await interaction.editReply({ embeds: [downloadEmbed] });
+                return;
+            }
         }
 
         // Xử lý modal whitelist với type động: modal_whitelist_EMAIL, modal_whitelist_IP_V4, ...
@@ -1713,6 +2049,111 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
             this.logger.error(`Auto-support error in channel ${channel.id}:`, error);
             await message.react('❌').catch(() => { });
         }
+    }
+
+    /**
+     * Gửi notification backup đến Discord channel
+     * @param success Backup thành công hay thất bại
+     * @param data Thông tin backup
+     */
+    async sendBackupNotification(
+        success: boolean,
+        data: {
+            id?: string;
+            fileName?: string;
+            fileSize?: number;
+            backupType?: string;
+            triggeredBy?: string;
+            duration?: string;
+            error?: string;
+        },
+    ): Promise<boolean> {
+        if (!this.enabled || !this.backupChannelId || !this.guild) {
+            return false;
+        }
+
+        try {
+            const channel = this.guild.channels.cache.get(this.backupChannelId) as TextChannel;
+            if (!channel) {
+                this.logger.warn(`Backup notification channel ${this.backupChannelId} not found`);
+                return false;
+            }
+
+            const brandName = this.configService.get<string>('BRAND_NAME', 'GEN-HUB');
+
+            if (success) {
+                const embed = new EmbedBuilder()
+                    .setColor(0x00ff00)
+                    .setTitle('✅ Database Backup Hoàn Thành')
+                    .setDescription(`Backup database đã được tạo thành công!`)
+                    .addFields(
+                        { name: '📁 File', value: data.fileName || 'N/A', inline: true },
+                        { name: '📊 Kích thước', value: this.formatBytes(data.fileSize || 0), inline: true },
+                        { name: '⏱️ Thời gian', value: `${data.duration || '0'}s`, inline: true },
+                        { name: '📌 Loại', value: data.backupType || 'N/A', inline: true },
+                        { name: '👤 Triggered By', value: data.triggeredBy || 'SYSTEM', inline: true },
+                        { name: '🔐 Mã hóa', value: 'Có', inline: true },
+                    )
+                    .setFooter({ text: `${brandName} - Backup System` })
+                    .setTimestamp();
+
+                if (data.id) {
+                    embed.addFields({ name: '🆔 Backup ID', value: `\`${data.id}\`` });
+                }
+
+                await channel.send({ embeds: [embed] });
+            } else {
+                const embed = new EmbedBuilder()
+                    .setColor(0xff0000)
+                    .setTitle('❌ Database Backup Thất Bại')
+                    .setDescription(`Backup database đã thất bại!`)
+                    .addFields(
+                        { name: '📌 Loại', value: data.backupType || 'N/A', inline: true },
+                        { name: '👤 Triggered By', value: data.triggeredBy || 'SYSTEM', inline: true },
+                        { name: '❗ Lỗi', value: data.error || 'Unknown error' },
+                    )
+                    .setFooter({ text: `${brandName} - Backup System` })
+                    .setTimestamp();
+
+                await channel.send({ embeds: [embed] });
+            }
+
+            return true;
+        } catch (error) {
+            this.logger.error('Failed to send backup notification:', error);
+            return false;
+        }
+    }
+
+    /**
+     * Kiểm tra user có role được phép thực hiện backup commands
+     * @param member Discord member
+     */
+    hasBackupRole(member: { roles: { cache: Map<string, { id: string }> } } | null): boolean {
+        if (!member) return false;
+        if (this.backupRoleIds.length === 0) return true; // Không có role nào = cho phép tất cả
+
+        return this.backupRoleIds.some(roleId =>
+            member.roles.cache.has(roleId)
+        );
+    }
+
+    /**
+     * Format bytes sang human readable
+     */
+    private formatBytes(bytes: number): string {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    /**
+     * Getter cho backup role IDs (để sử dụng trong slash command permissions)
+     */
+    get getBackupRoleIds(): string[] {
+        return this.backupRoleIds;
     }
 }
 

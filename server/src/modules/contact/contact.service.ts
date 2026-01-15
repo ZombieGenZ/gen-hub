@@ -1631,10 +1631,6 @@ export class ContactService implements OnModuleInit {
         } as IContactConversationWithMessages;
     }
 
-    // ========================================
-    // Discord callback methods with action logging
-    // ========================================
-
     /**
      * Đóng conversation với lý do (từ Discord)
      */

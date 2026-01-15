@@ -1,0 +1,30 @@
+{
+    "success": {
+        "list": "Lấy danh sách người dùng thành công",
+        "read": "Lấy thông tin người dùng thành công",
+        "ban": "Cấm người dùng thành công",
+        "unban": "Gỡ lệnh cấm người dùng thành công",
+        "warn": "Cảnh báo người dùng thành công",
+        "unwarn": "Gỡ cảnh báo người dùng thành công",
+        "session_revoke": "Đăng xuất phiên thành công",
+        "sessions_revoke_all": "Đăng xuất tất cả phiên thành công"
+    },
+    "error": {
+        "user_not_found": "Không tìm thấy người dùng",
+        "already_banned": "Người dùng đã bị cấm",
+        "not_banned": "Người dùng chưa bị cấm",
+        "warning_not_found": "Không tìm thấy cảnh báo",
+        "warning_already_removed": "Cảnh báo đã được gỡ",
+        "session_not_found": "Không tìm thấy phiên đăng nhập"
+    },
+    "validation": {
+        "reason_required": "Lý do là bắt buộc",
+        "reason_string": "Lý do phải là chuỗi",
+        "is_permanent_boolean": "Vĩnh viễn phải là boolean",
+        "banned_end_date": "Thời điểm hết ban phải là ngày hợp lệ",
+        "note_string": "Ghi chú phải là chuỗi",
+        "category_id_required": "ID danh mục là bắt buộc",
+        "category_id_uuid": "ID danh mục phải là UUID hợp lệ",
+        "expires_at_date": "Thời điểm hết hiệu lực phải là ngày hợp lệ"
+    }
+}

@@ -28,6 +28,7 @@ export interface IBackupListItem {
  * Interface cho query lấy danh sách backups
  */
 export interface IBackupListQuery {
+    key: string;
     limit?: number;
     offset?: number;
     keywords?: string;

@@ -47,8 +47,8 @@ const socialIcons = [
 
 export function PrimeNestFooter() {
     return (
-        <footer className="bg-[#1a1a1a] border-t border-gray-800">
-            <div className="max-w-7xl mx-auto px-6 py-16">
+        <footer className=" max-w-7xl mx-auto px-6 py-6 rounded-lg bg-muted border-t border-border">
+            <div className="max-w-7xl mx-auto px-6 py-6">
                 <div className="grid grid-cols-2 md:grid-cols-6 gap-8">
                     {/* Brand Column */}
                     <div className="col-span-2">
@@ -57,11 +57,11 @@ export function PrimeNestFooter() {
                             <img
                                 src="/assets/GenHubv2.svg"
                                 alt="GenHub"
-                                className="h-8 w-auto brightness-0 invert"
+                                className="h-8 w-auto"
                             />
                         </Link>
 
-                        <p className="text-gray-400 text-sm leading-relaxed mb-6 max-w-xs">
+                        <p className="text-muted-foreground text-sm leading-relaxed mb-6 max-w-xs">
                             Nền tảng kết nối kho bãi và dịch vụ logistics hàng đầu Việt Nam.
                         </p>
 
@@ -71,7 +71,7 @@ export function PrimeNestFooter() {
                                 <a
                                     key={social.name}
                                     href="#"
-                                    className="w-10 h-10 bg-[#252525] rounded-full flex items-center justify-center text-gray-400 hover:text-[#0F766E] hover:bg-[#2a2a2a] transition-all"
+                                    className="w-10 h-10 bg-background border border-border rounded-full flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary transition-all"
                                     aria-label={social.name}
                                 >
                                     {social.icon}
@@ -83,13 +83,13 @@ export function PrimeNestFooter() {
                     {/* Link Columns */}
                     {Object.entries(footerLinks).map(([title, links]) => (
                         <div key={title}>
-                            <h4 className="text-white font-semibold mb-4">{title.replace('_', ' ')}</h4>
+                            <h4 className="text-foreground font-semibold mb-4">{title.replace('_', ' ')}</h4>
                             <ul className="space-y-3">
                                 {links.map((link) => (
                                     <li key={link}>
                                         <a
                                             href="#"
-                                            className="text-gray-400 text-sm hover:text-[#0F766E] transition-colors"
+                                            className="text-muted-foreground text-sm hover:text-primary transition-colors"
                                         >
                                             {link}
                                         </a>
@@ -101,8 +101,8 @@ export function PrimeNestFooter() {
                 </div>
 
                 {/* Bottom Bar */}
-                <div className="mt-16 pt-8 border-t border-gray-800">
-                    <p className="text-center text-gray-500 text-sm">
+                <div className="mt-16 pt-8 border-t border-border">
+                    <p className="text-center text-muted-foreground text-sm">
                         © 2026 GenHub. All rights reserved.
                     </p>
                 </div>

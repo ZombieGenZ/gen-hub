@@ -65,6 +65,8 @@ import { CozePluginModule } from './modules/coze-plugin/coze-plugin.module';
 import { OrgChatModule } from './modules/org-chat/org-chat.module';
 import { BackblazeB2Module } from './modules/backblaze-b2/backblaze-b2.module';
 import { DatabaseBackupModule } from './modules/database-backup/database-backup.module';
+import { WarningCategoryModule } from './modules/warning-category/warning-category.module';
+import { UserManagementModule } from './modules/user-management/user-management.module';
 
 
 @Module({
@@ -144,6 +146,11 @@ import { DatabaseBackupModule } from './modules/database-backup/database-backup.
     // Organization Chat with Agora
     OrgChatModule,
 
+    // Organization-level modules
+    PartnerModule,
+    ProductModule,
+    BatchModule,
+
     // Organization Update Request
     OrganizationUpdateRequestModule,
 
@@ -160,8 +167,8 @@ import { DatabaseBackupModule } from './modules/database-backup/database-backup.
     AccountBalanceModule,
 
     // Notifications
-    GlobalNotificationModule,
     UserNotificationModule,
+    GlobalNotificationModule,
     OrgNotificationModule,
 
     // Schedulers
@@ -169,13 +176,32 @@ import { DatabaseBackupModule } from './modules/database-backup/database-backup.
     ApiKeySchedulerModule,
     RentalSchedulerModule,
 
-    // Organization-level modules
-    PartnerModule,
-    ProductModule,
-    BatchModule,
-
     // FAQs
     FaqModule,
+
+    // Refund Request Module
+    RefundRequestModule,
+
+    // Contact Tags Module
+    ContactTagModule,
+
+    // Contact List (Blacklist/Whitelist)
+    ContactListModule,
+
+    // Contact Support Module
+    ContactModule,
+
+    // Category Module
+    CategoryModule,
+
+    // Article Module
+    ArticleModule,
+
+    // Coze AI Module
+    CozeModule,
+
+    // Coze AI Plugin APIs (Public)
+    CozePluginModule,
 
     // Database Panel
     DatabaseAdminModule,
@@ -198,35 +224,15 @@ import { DatabaseBackupModule } from './modules/database-backup/database-backup.
     // Database Auto-logging
     DatabaseLogModule,
 
-    // Contact Tags Module
-    ContactTagModule,
-
-    // Contact List (Blacklist/Whitelist)
-    ContactListModule,
-
-    // Refund Request Module
-    RefundRequestModule,
-
-    // Category Module
-    CategoryModule,
-
-    // Article Module
-    ArticleModule,
-
-    // Contact Support Module
-    ContactModule,
-
-    // Coze AI Module
-    CozeModule,
-
-    // Coze AI Plugin APIs (Public)
-    CozePluginModule,
-
     // Backblaze B2 + Cloudflare CDN Integration
     BackblazeB2Module,
 
     // Database Backup
     DatabaseBackupModule,
+
+    // User Warning & Account Management
+    WarningCategoryModule,
+    UserManagementModule,
   ],
   controllers: [AppController],
   providers: [

@@ -1,12 +1,13 @@
 {
   "name": "gen-hub",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "",
   "author": "",
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
     "postinstall": "prisma generate",
+    "heroku-postbuild": "npm run build",
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start -p $PORT",
@@ -49,6 +50,7 @@
     "@types/pg": "^8.16.0",
     "agora-access-token": "^2.0.4",
     "archiver": "^7.0.1",
+    "archiver-zip-encrypted": "^1.0.11",
     "bull": "^4.16.5",
     "bullmq": "^5.66.0",
     "class-transformer": "^0.5.1",

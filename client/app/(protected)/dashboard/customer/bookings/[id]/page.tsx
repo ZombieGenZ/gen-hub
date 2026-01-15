@@ -1,15 +1,15 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '../../../../../../components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { 
-  ArrowLeft, 
-  MapPin, 
-  Calendar, 
-  FileText, 
-  Download, 
-  Printer, 
+import {
+  ArrowLeft,
+  MapPin,
+  Calendar,
+  FileText,
+  Download,
+  Printer,
   Share2,
   CheckCircle2,
   Clock,
@@ -30,7 +30,7 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
     statusLabel: "Đang hoạt động",
     statusColor: "bg-emerald-100 text-emerald-700 border-emerald-200",
     createdDate: "28/12/2022",
-    
+
     warehouse: {
       name: "Kho Tân Bình - Khu A",
       address: "123 Đường Cộng Hòa, Phường 12, Quận Tân Bình, TP. Hồ Chí Minh",
@@ -39,7 +39,7 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
       email: "quanly.tanbinh@genhub.vn",
       image: "/placeholder-warehouse-1.jpg"
     },
-    
+
     contract: {
       startDate: "01/01/2023",
       endDate: "31/12/2023",
@@ -49,7 +49,7 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
       paymentCycle: "Hàng tháng",
       deposit: "30.000.000 đ"
     },
-    
+
     financial: {
       pricePerSqm: "240.000 đ",
       monthlyRent: "120.000.000 đ",
@@ -141,10 +141,10 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
             <CardContent>
               <div className="flex flex-col md:flex-row gap-6">
                 <div className="w-full md:w-1/3 aspect-video bg-muted rounded-lg overflow-hidden border">
-                   {/* Placeholder Image */}
-                   <div className="w-full h-full bg-slate-200 flex items-center justify-center text-slate-400">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
-                    </div>
+                  {/* Placeholder Image */}
+                  <div className="w-full h-full bg-slate-200 flex items-center justify-center text-slate-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2" /><circle cx="9" cy="9" r="2" /><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" /></svg>
+                  </div>
                 </div>
                 <div className="flex-1 space-y-4">
                   <div>

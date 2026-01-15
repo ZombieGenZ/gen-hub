@@ -1,0 +1,24 @@
+{
+    "success": {
+        "create": "Warning category created successfully",
+        "update": "Warning category updated successfully",
+        "delete": "Warning category deleted successfully",
+        "delete_many": "{count} warning categories deleted successfully",
+        "list": "Warning categories retrieved successfully",
+        "read": "Warning category retrieved successfully"
+    },
+    "error": {
+        "not_found": "Warning category not found",
+        "in_use": "Cannot delete warning category that is in use",
+        "in_use_item": "Cannot delete category '{name}' that is in use"
+    },
+    "validation": {
+        "name_required": "Category name is required",
+        "name_string": "Category name must be a string",
+        "description_string": "Description must be a string",
+        "severity_int": "Severity must be an integer",
+        "severity_min": "Severity must be at least 1",
+        "severity_max": "Severity must be at most 5",
+        "is_active_boolean": "is_active must be a boolean"
+    }
+}

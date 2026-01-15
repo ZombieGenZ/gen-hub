@@ -24,7 +24,7 @@ import {
     BackupIdParamDto,
 } from './dto';
 import { JwtAuthGuard, PermissionGuard } from '../../common/guards';
-import { RequirePermission } from '../../common/decorators';
+import { RequireAnyPermission } from '../../common/decorators';
 import {
     CreatedResponse,
     GetResponse,
@@ -44,14 +44,14 @@ export class DatabaseBackupController {
 
     @Post('trigger')
     @HttpCode(HttpStatus.CREATED)
-    @RequirePermission('backup.trigger')
+    @RequireAnyPermission('backup.admin', 'backup.trigger')
     @ApiOperation({ summary: 'Trigger backup thủ công' })
     @ApiResponse({ status: 201, description: 'Backup đã được tạo thành công' })
     @ApiResponse({ status: 400, description: 'Key không hợp lệ hoặc backup thất bại' })
-    async triggerBackup(@Body() dto: TriggerBackupDto, @Req() req: Request & { user: { id: string }; i18nLang: string }) {
+    async triggerBackup(@Body() dto: TriggerBackupDto, @Req() req: Request & { user: { userId: string }; i18nLang: string }) {
         const result = await this.databaseBackupService.triggerBackup(
             dto.key,
-            req.user.id,
+            req.user.userId,
             req.i18nLang,
         );
 
@@ -63,11 +63,12 @@ export class DatabaseBackupController {
     }
 
     @Get()
-    @RequirePermission('backup.list')
+    @RequireAnyPermission('backup.admin', 'backup.list')
     @ApiOperation({ summary: 'Lấy danh sách backups' })
     @ApiResponse({ status: 200, description: 'Danh sách backups' })
+    @ApiResponse({ status: 400, description: 'Key không hợp lệ' })
     async listBackups(@Query() query: GetBackupsQueryDto, @Req() req: Request & { i18nLang: string }) {
-        const result = await this.databaseBackupService.listBackups(query);
+        const result = await this.databaseBackupService.listBackups(query, req.i18nLang);
 
         return new GetResponse(
             'backup.list.success',
@@ -78,7 +79,7 @@ export class DatabaseBackupController {
 
     @Post(':id/download-url')
     @HttpCode(HttpStatus.OK)
-    @RequirePermission('backup.download')
+    @RequireAnyPermission('backup.admin', 'backup.download')
     @ApiOperation({ summary: 'Lấy URL tải xuống backup' })
     @ApiResponse({ status: 200, description: 'URL tải xuống' })
     @ApiResponse({ status: 400, description: 'Key không hợp lệ' })
@@ -88,7 +89,7 @@ export class DatabaseBackupController {
         @Body() dto: GetDownloadUrlDto,
         @Req() req: Request & { i18nLang: string },
     ) {
-        const url = await this.databaseBackupService.getDownloadUrl(
+        const result = await this.databaseBackupService.getDownloadUrl(
             param.id,
             dto.key,
             req.i18nLang,
@@ -96,7 +97,7 @@ export class DatabaseBackupController {
 
         return new OkResponse(
             'backup.download.success',
-            { downloadUrl: url },
+            result,
             this.i18n.t('database-backup.success.download_url', { lang: req.i18nLang }),
         );
     }

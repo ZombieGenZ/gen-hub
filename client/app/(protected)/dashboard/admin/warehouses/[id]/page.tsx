@@ -5,23 +5,23 @@ import { useParams, useRouter } from "next/navigation";
 import { WarehouseTemplateService } from "@/services/warehouse_template/warehouse_template.service";
 import { Warehouse } from "@/types/warehoue_template/warehouse_template.type";
 import { authStorage } from "@/services/auth/auth-storage.service";
-import { DashboardHeader } from "@/components/layouts/DashboardHeader";
+
 import { Button } from "@/components/ui/button";
-import { 
-    MapPin, 
-    CheckCircle, 
-    ShieldCheck, 
-    Ruler, 
-    ArrowUpFromLine, 
-    Weight, 
-    Thermometer, 
-    Droplets, 
-    Wifi, 
-    Video, 
-    Truck, 
-    Car, 
-    FileText, 
-    Phone, 
+import {
+    MapPin,
+    CheckCircle,
+    ShieldCheck,
+    Ruler,
+    ArrowUpFromLine,
+    Weight,
+    Thermometer,
+    Droplets,
+    Wifi,
+    Video,
+    Truck,
+    Car,
+    FileText,
+    Phone,
     Mail,
     ChevronRight,
     Home,
@@ -54,7 +54,7 @@ export default function WarehouseDetailPage() {
                 setLoading(true);
                 const warehouseService = new WarehouseTemplateService();
                 const data: any = await warehouseService.getWarehouseTemplateById(token, id);
-                
+
                 setWarehouse(data);
                 // Set initial active image if available, otherwise use placeholder
                 if (data.images && data.images.length > 0) {
@@ -76,7 +76,6 @@ export default function WarehouseDetailPage() {
         return (
             <div className="flex min-h-screen bg-slate-50">
                 <div className="flex-1 flex flex-col">
-                    <DashboardHeader />
                     <div className="flex-1 flex items-center justify-center">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
                     </div>
@@ -89,10 +88,9 @@ export default function WarehouseDetailPage() {
         return (
             <div className="flex min-h-screen bg-slate-50">
                 <div className="flex-1 flex flex-col">
-                    <DashboardHeader />
                     <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
                         <div className="text-red-500 text-xl mb-4">⚠️ {error || "Warehouse not found"}</div>
-                        <Button 
+                        <Button
                             onClick={() => router.push("/dashboard/warehouse_template")}
                             className="bg-primary hover:bg-teal-700"
                         >
@@ -112,27 +110,15 @@ export default function WarehouseDetailPage() {
         "https://placehold.co/800x600?text=3D+Model"
     ];
 
-    const displayImages = warehouse.images && warehouse.images.length > 0 
-        ? warehouse.images.map(img => img.url) 
+    const displayImages = warehouse.images && warehouse.images.length > 0
+        ? warehouse.images.map(img => img.url)
         : mockImages;
 
     const area = warehouse.length * warehouse.width;
 
     return (
         <div className="flex flex-col min-h-screen bg-slate-50">
-            <DashboardHeader>
-                <div className="flex items-center text-sm text-slate-500">
-                    <Link href="/dashboard" className="hover:text-primary flex items-center gap-1">
-                        <Home className="w-4 h-4" /> Trang chủ
-                    </Link>
-                    <ChevronRight className="w-4 h-4 mx-2" />
-                    <Link href="/dashboard/warehouse_template" className="hover:text-primary">
-                        Danh sách kho
-                    </Link>
-                    <ChevronRight className="w-4 h-4 mx-2" />
-                    <span className="text-slate-900 font-medium truncate max-w-[200px]">{warehouse.name}</span>
-                </div>
-            </DashboardHeader>
+
 
             <div className="flex-1 p-4 md:p-8 max-w-7xl mx-auto w-full">
                 {/* Header Section */}
@@ -145,11 +131,10 @@ export default function WarehouseDetailPage() {
                                 <span>{warehouse.address_detail}, {warehouse.ward?.name}, {warehouse.ward?.province?.name}</span>
                             </div>
                             <div className="flex flex-wrap gap-2">
-                                <span className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${
-                                    warehouse.is_active 
-                                        ? "bg-green-100 text-green-700" 
-                                        : "bg-red-100 text-red-700"
-                                }`}>
+                                <span className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${warehouse.is_active
+                                    ? "bg-green-100 text-green-700"
+                                    : "bg-red-100 text-red-700"
+                                    }`}>
                                     <div className={`w-2 h-2 rounded-full ${warehouse.is_active ? "bg-green-500" : "bg-red-500"}`}></div>
                                     {warehouse.is_active ? "ĐANG HOẠT ĐỘNG" : "NGỪNG HOẠT ĐỘNG"}
                                 </span>
@@ -167,9 +152,9 @@ export default function WarehouseDetailPage() {
                         {/* Image Gallery */}
                         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden p-4">
                             <div className="aspect-video w-full bg-slate-100 rounded-lg overflow-hidden mb-4 relative group">
-                                <Image 
-                                    src={activeImage || displayImages[0]} 
-                                    alt={warehouse.name} 
+                                <Image
+                                    src={activeImage || displayImages[0]}
+                                    alt={warehouse.name}
                                     fill
                                     className="object-cover"
                                     priority
@@ -181,16 +166,15 @@ export default function WarehouseDetailPage() {
                             </div>
                             <div className="grid grid-cols-4 gap-4">
                                 {displayImages.slice(0, 4).map((img, idx) => (
-                                    <button 
+                                    <button
                                         key={idx}
                                         onClick={() => setActiveImage(img)}
-                                        className={`aspect-video rounded-lg overflow-hidden border-2 transition-all relative ${
-                                            activeImage === img ? "border-primary ring-2 ring-teal-100" : "border-transparent hover:border-slate-300"
-                                        }`}
+                                        className={`aspect-video rounded-lg overflow-hidden border-2 transition-all relative ${activeImage === img ? "border-primary ring-2 ring-teal-100" : "border-transparent hover:border-slate-300"
+                                            }`}
                                     >
-                                        <Image 
-                                            src={img} 
-                                            alt={`View ${idx + 1}`} 
+                                        <Image
+                                            src={img}
+                                            alt={`View ${idx + 1}`}
                                             fill
                                             className="object-cover"
                                             sizes="(max-width: 768px) 25vw, 15vw"
@@ -238,8 +222,8 @@ export default function WarehouseDetailPage() {
                             <div className="prose prose-slate max-w-none text-slate-600">
                                 <p>{warehouse.description || "Chưa có mô tả chi tiết cho kho này."}</p>
                                 <p className="mt-4">
-                                    Hệ thống quản lý tòa nhà thông minh (BMS) tích hợp giúp duy trì điều kiện môi trường lý tưởng 
-                                    cho linh kiện điện tử, dược phẩm hoặc hàng hóa giá trị cao. Sàn bê tông cốt thép được xử lý 
+                                    Hệ thống quản lý tòa nhà thông minh (BMS) tích hợp giúp duy trì điều kiện môi trường lý tưởng
+                                    cho linh kiện điện tử, dược phẩm hoặc hàng hóa giá trị cao. Sàn bê tông cốt thép được xử lý
                                     tăng cứng bề mặt, chống bụi, đáp ứng tiêu chuẩn phòng sạch cơ bản.
                                 </p>
                             </div>
@@ -318,9 +302,9 @@ export default function WarehouseDetailPage() {
                         {/* Map Section */}
                         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                             <div className="h-64 bg-slate-100 relative">
-                                <Image 
-                                    src="https://placehold.co/1200x400?text=Map+View" 
-                                    alt="Map" 
+                                <Image
+                                    src="https://placehold.co/1200x400?text=Map+View"
+                                    alt="Map"
                                     fill
                                     className="object-cover opacity-80"
                                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 75vw, 66vw"
@@ -346,16 +330,16 @@ export default function WarehouseDetailPage() {
                                 <p className="text-sm text-slate-500 mb-1">Giá thuê đề xuất</p>
                                 <div className="flex items-baseline gap-1 mb-2">
                                     <span className="text-3xl font-bold text-primary">
-                                        {warehouse.price_per_month 
+                                        {warehouse.price_per_month
                                             ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(Number(warehouse.price_per_month))
                                             : "Liên hệ"}
                                     </span>
                                     <span className="text-slate-600">/ tháng</span>
                                 </div>
                                 <p className="text-xs text-slate-400 mb-6">+Giá chưa bao gồm VAT và phí dịch vụ</p>
-                                
+
                                 <div className="space-y-3">
-                                    <Button 
+                                    <Button
                                         className="w-full bg-primary hover:bg-teal-700 text-white h-12 text-base font-medium shadow-lg shadow-primary/30"
                                         onClick={() => router.push(`/dashboard/rental_request?warehouse_id=${warehouse.id}`)}
                                     >

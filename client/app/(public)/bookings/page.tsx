@@ -2,7 +2,7 @@
 
 import React, { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { DashboardHeader } from "@/components/layouts/DashboardHeader";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -87,11 +87,13 @@ function RentalRequestContent() {
 
     return (
         <div className="flex flex-col min-h-screen bg-slate-50">
-            <DashboardHeader>
-                <div className="flex items-center text-sm text-slate-500">
-                    <span className="font-medium text-slate-900">Yêu cầu thuê kho</span>
+            <header className="bg-white border-b border-slate-200 lg:hidden p-4">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center text-sm text-slate-500">
+                        <span className="font-medium text-slate-900">Yêu cầu thuê kho</span>
+                    </div>
                 </div>
-            </DashboardHeader>
+            </header>
 
             <div className="flex-1 p-4 md:p-8 max-w-7xl mx-auto w-full">
                 <div className="mb-8">

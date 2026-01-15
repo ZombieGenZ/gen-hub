@@ -1,0 +1,30 @@
+{
+    "success": {
+        "list": "Users retrieved successfully",
+        "read": "User retrieved successfully",
+        "ban": "User banned successfully",
+        "unban": "User unbanned successfully",
+        "warn": "User warned successfully",
+        "unwarn": "User warning removed successfully",
+        "session_revoke": "Session revoked successfully",
+        "sessions_revoke_all": "All sessions revoked successfully"
+    },
+    "error": {
+        "user_not_found": "User not found",
+        "already_banned": "User is already banned",
+        "not_banned": "User is not banned",
+        "warning_not_found": "Warning not found",
+        "warning_already_removed": "Warning has already been removed",
+        "session_not_found": "Session not found"
+    },
+    "validation": {
+        "reason_required": "Reason is required",
+        "reason_string": "Reason must be a string",
+        "is_permanent_boolean": "is_permanent must be a boolean",
+        "banned_end_date": "banned_end must be a valid date",
+        "note_string": "Note must be a string",
+        "category_id_required": "Category ID is required",
+        "category_id_uuid": "Category ID must be a valid UUID",
+        "expires_at_date": "expires_at must be a valid date"
+    }
+}

@@ -103,7 +103,17 @@ class AuthStorageService {
     } catch {
         return false;
     }
-  }  
+  }
+
+  getUser(): any | null {
+    const token = this.getAccessToken();
+    if (!token) return null;
+    try {
+        return JSON.parse(atob(token.split('.')[1]));
+    } catch {
+        return null;
+    }
+  }
 }
 
 export const authStorage = AuthStorageService.getInstance();
