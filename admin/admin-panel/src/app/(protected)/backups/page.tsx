@@ -167,13 +167,6 @@ export default function BackupsPage() {
         }
     }, [canViewList, canTrigger, isAuthLoading, router]);
 
-    // Show initial key modal for list
-    useEffect(() => {
-        if (!isAuthLoading && canViewList && !isAuthenticated) {
-            openKeyModal('list');
-        }
-    }, [isAuthLoading, canViewList, isAuthenticated]);
-
     const formatBytes = (bytes: number): string => {
         if (bytes >= 1073741824) return `${(bytes / 1073741824).toFixed(2)} GB`;
         if (bytes >= 1048576) return `${(bytes / 1048576).toFixed(2)} MB`;
@@ -194,7 +187,7 @@ export default function BackupsPage() {
         }
     };
 
-    const openKeyModal = (action: 'list' | 'trigger' | 'download', backupId?: string) => {
+    const openKeyModal = useCallback((action: 'list' | 'trigger' | 'download', backupId?: string) => {
         const titles = {
             list: t('backup.modal.listTitle') || 'Authenticate to View Backups',
             trigger: t('backup.modal.triggerTitle') || 'Authenticate to Trigger Backup',
@@ -214,7 +207,14 @@ export default function BackupsPage() {
         });
         setModalError('');
         setShowKeyModal(true);
-    };
+    }, [t]);
+
+    // Show initial key modal for list
+    useEffect(() => {
+        if (!isAuthLoading && canViewList && !isAuthenticated) {
+            openKeyModal('list');
+        }
+    }, [isAuthLoading, canViewList, isAuthenticated, openKeyModal]);
 
     const handleKeySubmit = async (key: string) => {
         setModalLoading(true);
@@ -373,8 +373,8 @@ export default function BackupsPage() {
                                                             {backup.triggeredBy}
                                                         </span>
                                                         <span className={`px-2 py-0.5 rounded text-xs ${backup.backupType === 'SCHEDULED'
-                                                                ? 'bg-blue-500/20 text-blue-400'
-                                                                : 'bg-green-500/20 text-green-400'
+                                                            ? 'bg-blue-500/20 text-blue-400'
+                                                            : 'bg-green-500/20 text-green-400'
                                                             }`}>
                                                             {getBackupTypeLabel(backup.backupType)}
                                                         </span>
