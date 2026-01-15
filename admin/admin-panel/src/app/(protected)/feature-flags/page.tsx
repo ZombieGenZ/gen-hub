@@ -350,7 +350,7 @@ export default function FeatureFlagsPage() {
                                     <tr
                                         key={flag.id}
                                         className="border-b border-[var(--border-primary)] hover:bg-[var(--background-tertiary)] cursor-pointer transition-colors"
-                                        onClick={() => router.push(`/dashboard/feature-flags/${flag.id}`)}
+                                        onClick={() => router.push(`/feature-flags/${flag.id}`)}
                                     >
                                         <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                                             <label className="relative inline-flex items-center cursor-pointer">
@@ -361,8 +361,8 @@ export default function FeatureFlagsPage() {
                                                     className="sr-only peer"
                                                 />
                                                 <div className={`w-5 h-5 rounded border-2 transition-all duration-200 flex items-center justify-center ${selectedIds.has(flag.id)
-                                                        ? 'bg-[var(--accent-primary)] border-[var(--accent-primary)]'
-                                                        : 'border-[var(--border-primary)] bg-[var(--background-tertiary)] hover:border-[var(--accent-primary)]/50'
+                                                    ? 'bg-[var(--accent-primary)] border-[var(--accent-primary)]'
+                                                    : 'border-[var(--border-primary)] bg-[var(--background-tertiary)] hover:border-[var(--accent-primary)]/50'
                                                     }`}>
                                                     <svg className={`w-3 h-3 text-white transition-opacity duration-200 ${selectedIds.has(flag.id) ? 'opacity-100' : 'opacity-0'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
                                                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />

@@ -43,7 +43,7 @@ export default function FlagDetailPage() {
         } catch (error) {
             console.error('Failed to fetch flag:', error);
             toast.error(t('featureFlags.detail.fetchError') || 'Failed to fetch flag');
-            router.push('/dashboard/feature-flags');
+            router.push('/feature-flags');
         } finally {
             setIsLoading(false);
         }
@@ -148,7 +148,7 @@ export default function FlagDetailPage() {
             {/* Header */}
             <div className="mb-8">
                 <button
-                    onClick={() => router.push('/dashboard/feature-flags')}
+                    onClick={() => router.push('/feature-flags')}
                     className="flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--accent-primary)] mb-4 transition-colors"
                 >
                     <ArrowLeft className="w-4 h-4" />

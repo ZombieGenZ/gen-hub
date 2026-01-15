@@ -41,9 +41,9 @@ export default function DashboardPage() {
 
         if (!hasPermission('database.admin')) {
             if (hasPermission('featureflag.admin')) {
-                router.replace('/dashboard/feature-flags');
+                router.replace('/feature-flags');
             } else if (hasPermission('resources.admin')) {
-                router.replace('/dashboard/resources');
+                router.replace('/resources');
             }
         }
     }, [hasPermission, isAuthLoading, router]);

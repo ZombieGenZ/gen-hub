@@ -70,7 +70,7 @@ export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
     }, [tables, searchQuery]);
 
     const isTableActive = (tableName: string) => {
-        return pathname === `/dashboard/${tableName}`;
+        return pathname === `/database/${tableName}`;
     };
 
     const handleLinkClick = () => {
@@ -136,9 +136,9 @@ export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
 
                             {/* Diagram Link */}
                             <Link
-                                href="/dashboard/diagram"
+                                href="/diagram"
                                 onClick={handleLinkClick}
-                                className={`flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-all ${pathname === '/dashboard/diagram'
+                                className={`flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-all ${pathname === '/diagram'
                                     ? 'bg-[var(--accent-primary-muted)] text-[var(--accent-primary)]'
                                     : 'text-[var(--text-secondary)] hover:bg-[var(--background-tertiary)] hover:text-white'
                                     }`}
@@ -149,9 +149,9 @@ export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
 
                             {/* SQL Query Link */}
                             <Link
-                                href="/dashboard/query"
+                                href="/query"
                                 onClick={handleLinkClick}
-                                className={`flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-all ${pathname === '/dashboard/query'
+                                className={`flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-all ${pathname === '/query'
                                     ? 'bg-[var(--accent-primary-muted)] text-[var(--accent-primary)]'
                                     : 'text-[var(--text-secondary)] hover:bg-[var(--background-tertiary)] hover:text-white'
                                     }`}
@@ -203,7 +203,7 @@ export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
                                             {filteredTables.map((table) => (
                                                 <Link
                                                     key={table.name}
-                                                    href={`/dashboard/${table.name}`}
+                                                    href={`/database/${table.name}`}
                                                     onClick={handleLinkClick}
                                                     prefetch={true}
                                                     className={`block px-4 py-2 rounded-lg text-sm transition-all ${isTableActive(table.name)
@@ -235,9 +235,9 @@ export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
                                 </span>
                             </div>
                             <Link
-                                href="/dashboard/feature-flags"
+                                href="/feature-flags"
                                 onClick={handleLinkClick}
-                                className={`flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-all ${pathname === '/dashboard/feature-flags' || pathname.startsWith('/dashboard/feature-flags/')
+                                className={`flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-all ${pathname === '/feature-flags' || pathname.startsWith('/feature-flags/')
                                     ? 'bg-[var(--accent-primary-muted)] text-[var(--accent-primary)]'
                                     : 'text-[var(--text-secondary)] hover:bg-[var(--background-tertiary)] hover:text-white'
                                     }`}
@@ -257,9 +257,9 @@ export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
                                 </span>
                             </div>
                             <Link
-                                href="/dashboard/resources"
+                                href="/resources"
                                 onClick={handleLinkClick}
-                                className={`flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-all ${pathname === '/dashboard/resources' || pathname.startsWith('/dashboard/resources/')
+                                className={`flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-all ${pathname === '/resources' || pathname.startsWith('/resources/')
                                     ? 'bg-[var(--accent-primary-muted)] text-[var(--accent-primary)]'
                                     : 'text-[var(--text-secondary)] hover:bg-[var(--background-tertiary)] hover:text-white'
                                     }`}
@@ -279,9 +279,9 @@ export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
                                 </span>
                             </div>
                             <Link
-                                href="/dashboard/system-logs"
+                                href="/system-logs"
                                 onClick={handleLinkClick}
-                                className={`flex items-center gap-3 px-4 py-3 rounded-lg mb-1 transition-all ${pathname === '/dashboard/system-logs'
+                                className={`flex items-center gap-3 px-4 py-3 rounded-lg mb-1 transition-all ${pathname === '/system-logs'
                                     ? 'bg-[var(--accent-primary-muted)] text-[var(--accent-primary)]'
                                     : 'text-[var(--text-secondary)] hover:bg-[var(--background-tertiary)] hover:text-white'
                                     }`}
@@ -290,9 +290,9 @@ export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
                                 <span className="font-medium">{t('systemLogs.consoleView') || 'Console View'}</span>
                             </Link>
                             <Link
-                                href="/dashboard/system-logs/table"
+                                href="/system-logs/table"
                                 onClick={handleLinkClick}
-                                className={`flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-all ${pathname === '/dashboard/system-logs/table'
+                                className={`flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-all ${pathname === '/system-logs/table'
                                     ? 'bg-[var(--accent-primary-muted)] text-[var(--accent-primary)]'
                                     : 'text-[var(--text-secondary)] hover:bg-[var(--background-tertiary)] hover:text-white'
                                     }`}
