@@ -1,0 +1,15 @@
+{
+    "success": {
+        "create": "Role created successfully",
+        "list": "Get roles list successfully",
+        "get": "Get role successfully",
+        "update": "Role updated successfully",
+        "delete": "Role deleted successfully",
+        "assign_user_roles": "User roles assigned successfully",
+        "assign_user_permissions": "User permissions assigned successfully"
+    },
+    "error": {
+        "not_found": "Role not found",
+        "cannot_delete_system_role": "Cannot delete system role"
+    }
+}

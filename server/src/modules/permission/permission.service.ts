@@ -1,0 +1,117 @@
+import { Injectable } from '@nestjs/common';
+import { I18nService } from 'nestjs-i18n';
+import { PermissionRepository } from './permission.repository';
+import { QueryPermissionDto, PermissionQueryType, StatusFilter } from './dto';
+import {
+    IPermissionListResult,
+    IPermissionWithAssignmentListResult,
+    IPermissionWithAssignment,
+} from './interfaces';
+import { RedisService } from '../redis/redis.service';
+
+const CACHE_KEY_PREFIX = 'permission';
+const CACHE_LIST_KEY = `${CACHE_KEY_PREFIX}:list`;
+
+@Injectable()
+export class PermissionService {
+    constructor(
+        private readonly repository: PermissionRepository,
+        private readonly redisService: RedisService,
+        private readonly i18n: I18nService,
+    ) { }
+
+    /**
+     * Lấy TTL từ env hoặc dùng mặc định
+     */
+    private getCacheTtl(): number {
+        return parseInt(process.env.REDIS_PERMISSION_CACHE_TTL || '300', 10);
+    }
+
+    private getListCacheTtl(): number {
+        return parseInt(process.env.REDIS_PERMISSION_LIST_CACHE_TTL || '60', 10);
+    }
+
+    /**
+     * Lấy danh sách permissions
+     * Nếu có type và id: trả về permissions với is_assigned
+     * Nếu không: trả về danh sách permissions thuần
+     */
+    async findMany(
+        query: QueryPermissionDto,
+        lang: string,
+    ): Promise<IPermissionListResult | IPermissionWithAssignmentListResult> {
+        const limit = query.limit ? Number(query.limit) : 10;
+        const offset = query.offset ? Number(query.offset) : 0;
+        const status = query.status || StatusFilter.ACTIVE;
+
+        // Nếu có type và id, trả về permissions với trạng thái gán
+        if (query.type && query.id) {
+            return this.findManyWithAssignment(
+                { limit, offset, keywords: query.keywords, status },
+                query.type,
+                query.id,
+            );
+        }
+
+        // Trả về danh sách permissions thuần (có cache)
+        const cacheKey = `${CACHE_LIST_KEY}:${JSON.stringify({ limit, offset, keywords: query.keywords, status })}`;
+
+        const cached = await this.redisService.get(cacheKey);
+        if (cached) {
+            return JSON.parse(cached);
+        }
+
+        const result = await this.repository.findMany({
+            limit,
+            offset,
+            keywords: query.keywords,
+            status,
+        });
+
+        await this.redisService.set(cacheKey, JSON.stringify(result), this.getListCacheTtl());
+
+        return result;
+    }
+
+    /**
+     * Lấy danh sách permissions với trạng thái gán cho role/user
+     */
+    private async findManyWithAssignment(
+        params: { limit: number; offset: number; keywords?: string; status?: StatusFilter },
+        type: PermissionQueryType,
+        id: string,
+    ): Promise<IPermissionWithAssignmentListResult> {
+        // Lấy permissions theo filter
+        const result = await this.repository.findMany(params);
+
+        // Lấy danh sách permission IDs đã được gán
+        let assignedPermissionIds: string[] = [];
+
+        if (type === PermissionQueryType.ROLE) {
+            assignedPermissionIds = await this.repository.getPermissionIdsByRoleId(id);
+        } else if (type === PermissionQueryType.USER) {
+            // Lấy cả permissions trực tiếp và qua roles
+            assignedPermissionIds = await this.repository.getAllPermissionIdsByUserId(id);
+        }
+
+        // Map permissions với is_assigned
+        const dataWithAssignment: IPermissionWithAssignment[] = result.data.map((permission) => ({
+            ...permission,
+            is_assigned: assignedPermissionIds.includes(permission.id),
+        }));
+
+        return {
+            data: dataWithAssignment,
+            total: result.total,
+            limit: result.limit,
+            offset: result.offset,
+        };
+    }
+
+    /**
+     * Invalidate cache list
+     */
+    async invalidateListCache(): Promise<void> {
+        await this.redisService.delByPattern(`${CACHE_LIST_KEY}:*`);
+    }
+}

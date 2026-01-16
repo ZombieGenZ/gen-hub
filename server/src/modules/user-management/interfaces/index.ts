@@ -88,3 +88,22 @@ export interface IUserSessionsResult {
     limit: number;
     offset: number;
 }
+
+/**
+ * Interface cho kết quả roles/permissions của user
+ */
+export interface IUserRolesAndPermissions {
+    roles: {
+        id: string;
+        name: string;
+        description: string | null;
+        is_active: boolean | null;
+    }[];
+    permissions: {
+        id: string;
+        key: string;
+        name: string;
+        description: string | null;
+        source: 'direct' | 'role';
+    }[];
+}

@@ -345,6 +345,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         this.seedUserManagementPermissions.bind(this),
         this.seedWarningCategoryPermissions.bind(this),
         this.seedWarnPenaltyPermissions.bind(this),
+        this.seedRolePermissions.bind(this),
       ];
 
       const BATCH_SIZE = 3; // Chạy 3 seed functions cùng lúc
@@ -4570,6 +4571,117 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       this.logger.error(`❌ Failed to seed categories: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * Seed các permissions cho Role và Permission modules
+   * - permission.read: Quyền xem danh sách permissions (Admin, Super Admin)
+   * - role.create/read/update/delete: Quyền CRUD roles (Admin, Super Admin)
+   */
+  private async seedRolePermissions() {
+    try {
+      const permissions = [
+        {
+          key: 'permission.read',
+          name: 'Permission Read',
+          description: 'Quyền xem danh sách permissions của hệ thống',
+        },
+        {
+          key: 'role.create',
+          name: 'Role Create',
+          description: 'Quyền tạo role mới',
+        },
+        {
+          key: 'role.read',
+          name: 'Role Read',
+          description: 'Quyền xem danh sách và chi tiết roles',
+        },
+        {
+          key: 'role.update',
+          name: 'Role Update',
+          description: 'Quyền cập nhật role và gán roles/permissions cho user',
+        },
+        {
+          key: 'role.delete',
+          name: 'Role Delete',
+          description: 'Quyền xóa role',
+        },
+      ];
+
+      // Lấy Super Admin và Admin roles
+      const superAdminRole = await this.role.findFirst({
+        where: { name: 'Super Admin', is_deleted: false },
+      });
+      const adminRole = await this.role.findFirst({
+        where: { name: 'Admin', is_deleted: false },
+      });
+
+      for (const perm of permissions) {
+        let permission = await this.permission.findFirst({
+          where: { key: perm.key },
+        });
+
+        if (!permission) {
+          permission = await this.permission.create({
+            data: {
+              key: perm.key,
+              name: perm.name,
+              description: perm.description,
+              is_active: true,
+              is_deleted: false,
+            },
+          });
+          this.logger.log(`✅ Permission ${perm.key} created`);
+        }
+
+        // Gán permission cho Super Admin
+        if (superAdminRole && permission) {
+          const existing = await this.rolePermission.findFirst({
+            where: {
+              role_id: superAdminRole.id,
+              permission_id: permission.id,
+            },
+          });
+
+          if (!existing) {
+            await this.rolePermission.create({
+              data: {
+                role_id: superAdminRole.id,
+                permission_id: permission.id,
+                is_active: true,
+                is_deleted: false,
+              },
+            });
+          }
+        }
+
+        // Gán permission cho Admin
+        if (adminRole && permission) {
+          const existing = await this.rolePermission.findFirst({
+            where: {
+              role_id: adminRole.id,
+              permission_id: permission.id,
+            },
+          });
+
+          if (!existing) {
+            await this.rolePermission.create({
+              data: {
+                role_id: adminRole.id,
+                permission_id: permission.id,
+                is_active: true,
+                is_deleted: false,
+              },
+            });
+          }
+        }
+      }
+
+      this.logger.log('✅ Role permissions seeded and assigned to Admin & Super Admin');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error(`❌ Failed to seed role permissions: ${errorMessage}`);
     }
   }
 }

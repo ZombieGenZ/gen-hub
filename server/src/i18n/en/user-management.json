@@ -7,7 +7,9 @@
         "warn": "User warned successfully",
         "unwarn": "User warning removed successfully",
         "session_revoke": "Session revoked successfully",
-        "sessions_revoke_all": "All sessions revoked successfully"
+        "sessions_revoke_all": "All sessions revoked successfully",
+        "roles_permissions_get": "User roles and permissions retrieved successfully",
+        "roles_permissions_assign": "User roles and permissions assigned successfully"
     },
     "error": {
         "user_not_found": "User not found",

@@ -69,6 +69,8 @@ import { WarningCategoryModule } from './modules/warning-category/warning-catego
 import { UserManagementModule } from './modules/user-management/user-management.module';
 import { WarnPenaltyModule } from './modules/warn-penalty/warn-penalty.module';
 import { WarnSchedulerModule } from './modules/warn-scheduler/warn-scheduler.module';
+import { PermissionModule } from './modules/permission/permission.module';
+import { RoleModule } from './modules/role/role.module';
 
 
 @Module({
@@ -210,6 +212,10 @@ import { WarnSchedulerModule } from './modules/warn-scheduler/warn-scheduler.mod
     WarningCategoryModule,
     WarnPenaltyModule,
     UserManagementModule,
+
+    // System Permissions & Roles
+    PermissionModule,
+    RoleModule,
 
     // Database Panel
     DatabaseAdminModule,

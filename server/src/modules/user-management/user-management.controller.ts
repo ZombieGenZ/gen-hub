@@ -2,6 +2,7 @@ import {
     Controller,
     Get,
     Post,
+    Put,
     Delete,
     Body,
     Param,
@@ -26,6 +27,7 @@ import {
     UnwarnUserDto,
     QueryUserWarningsDto,
     QuerySessionsDto,
+    AssignUserRolesPermissionsDto,
 } from './dto';
 import {
     GetResponse,
@@ -200,5 +202,37 @@ export class UserManagementController {
             userAgent: req.headers['user-agent'],
         });
         return new DeletedResponse('user-management.sessions.revoke_all', result);
+    }
+
+    // ==================== User Roles/Permissions ====================
+
+    @Get(':id/roles-permissions')
+    @RequirePermission('user-management.read')
+    @ApiOperation({ summary: 'Lấy roles và permissions của user' })
+    @ApiResponse({ status: 200, description: 'Lấy thành công' })
+    async getUserRolesAndPermissions(
+        @Param('id', ParseUUIDPipe) id: string,
+        @I18nLang() lang: string,
+    ) {
+        const result = await this.service.getUserRolesAndPermissions(id, lang);
+        return new GetResponse('user-management.roles_permissions.get', result);
+    }
+
+    @Put(':id/roles-permissions')
+    @RequirePermission('user-management.update')
+    @ApiOperation({ summary: 'Gán roles và permissions cho user' })
+    @ApiResponse({ status: 200, description: 'Gán thành công' })
+    async assignUserRolesPermissions(
+        @Param('id', ParseUUIDPipe) id: string,
+        @Body() dto: AssignUserRolesPermissionsDto,
+        @CurrentUser('userId') adminId: string,
+        @I18nLang() lang: string,
+        @Req() req: Request,
+    ) {
+        const result = await this.service.assignUserRolesPermissions(id, dto, adminId, lang, {
+            ip: req.ip,
+            userAgent: req.headers['user-agent'],
+        });
+        return new UpdatedResponse('user-management.roles_permissions.assign', result);
     }
 }

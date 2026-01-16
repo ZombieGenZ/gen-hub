@@ -1,0 +1,15 @@
+{
+    "success": {
+        "create": "Tạo vai trò thành công",
+        "list": "Lấy danh sách vai trò thành công",
+        "get": "Lấy thông tin vai trò thành công",
+        "update": "Cập nhật vai trò thành công",
+        "delete": "Xóa vai trò thành công",
+        "assign_user_roles": "Gán vai trò cho người dùng thành công",
+        "assign_user_permissions": "Gán quyền cho người dùng thành công"
+    },
+    "error": {
+        "not_found": "Không tìm thấy vai trò",
+        "cannot_delete_system_role": "Không thể xóa vai trò hệ thống"
+    }
+}

@@ -7,6 +7,7 @@ import { WarnSchedulerService } from '../warn-scheduler/warn-scheduler.service';
 import { RedisService } from '../redis/redis.service';
 import { SystemLogService } from '../system-log/system-log.service';
 import { WebsocketGateway } from '../websocket/websocket.gateway';
+import { RoleRepository } from '../role/role.repository';
 import {
     QueryUsersDto,
     BanUserDto,
@@ -15,12 +16,14 @@ import {
     UnwarnUserDto,
     QueryUserWarningsDto,
     QuerySessionsDto,
+    AssignUserRolesPermissionsDto,
 } from './dto';
 import {
     IUserListResult,
     IUserDetail,
     IUserWarningsResult,
     IUserSessionsResult,
+    IUserRolesAndPermissions,
 } from './interfaces';
 
 const CACHE_KEY_PREFIX = 'user_management';
@@ -33,6 +36,7 @@ export class UserManagementService {
         private readonly warningCategoryRepo: WarningCategoryRepository,
         private readonly banSchedulerService: BanSchedulerService,
         private readonly warnSchedulerService: WarnSchedulerService,
+        private readonly roleRepository: RoleRepository,
         private readonly redisService: RedisService,
         private readonly systemLogService: SystemLogService,
         private readonly websocketGateway: WebsocketGateway,
@@ -515,5 +519,85 @@ export class UserManagementService {
 
     private async invalidateUserSessionsCache(userId: string): Promise<void> {
         await this.redisService.delByPattern(`${CACHE_KEY_PREFIX}:${userId}:sessions:*`);
+    }
+
+    // ==================== User Roles/Permissions ====================
+
+    /**
+     * Lấy roles và permissions của user
+     */
+    async getUserRolesAndPermissions(
+        userId: string,
+        lang: string,
+    ): Promise<IUserRolesAndPermissions> {
+        const user = await this.repository.findById(userId);
+        if (!user) {
+            throw new NotFoundException(this.i18n.t('user-management.error.user_not_found', { lang }));
+        }
+
+        const [roles, permissions] = await Promise.all([
+            this.roleRepository.getUserRoles(userId),
+            this.roleRepository.getUserAllPermissions(userId),
+        ]);
+
+        return { roles, permissions };
+    }
+
+    /**
+     * Gán roles và permissions cho user (gộp 2 operations vào 1)
+     */
+    async assignUserRolesPermissions(
+        userId: string,
+        dto: AssignUserRolesPermissionsDto,
+        adminId: string,
+        lang: string,
+        requestInfo?: { ip?: string; userAgent?: string },
+    ): Promise<IUserRolesAndPermissions> {
+        const user = await this.repository.findById(userId);
+        if (!user) {
+            throw new NotFoundException(this.i18n.t('user-management.error.user_not_found', { lang }));
+        }
+
+        // Sync roles nếu có
+        if (dto.role_ids !== undefined) {
+            await this.roleRepository.syncUserRoles(userId, dto.role_ids);
+        }
+
+        // Sync permissions trực tiếp nếu có
+        if (dto.permission_ids !== undefined) {
+            await this.roleRepository.syncUserPermissions(userId, dto.permission_ids);
+        }
+
+        // Invalidate user caches
+        await this.invalidateUserCache(userId);
+        await this.redisService.invalidateUserCache(userId);
+        await this.redisService.invalidateUserPermissionsCache(userId);
+
+        // Log
+        this.systemLogService.logAsync({
+            level: 'INFO',
+            module: 'user-management',
+            action: 'assign_roles_permissions',
+            message: `Gán roles/permissions cho user: ${user.email || user.name}`,
+            userId: adminId,
+            ipAddress: requestInfo?.ip,
+            userAgent: requestInfo?.userAgent,
+            metaData: {
+                targetUserId: userId,
+                roleIds: dto.role_ids,
+                permissionIds: dto.permission_ids,
+            },
+        });
+
+        // Emit socket events
+        if (dto.role_ids !== undefined) {
+            this.websocketGateway.emitUserRolesUpdated(userId, dto.role_ids, adminId);
+        }
+        if (dto.permission_ids !== undefined) {
+            this.websocketGateway.emitUserPermissionsUpdated(userId, dto.permission_ids, adminId);
+        }
+
+        // Trả về kết quả mới
+        return this.getUserRolesAndPermissions(userId, lang);
     }
 }

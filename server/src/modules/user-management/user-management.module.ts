@@ -9,6 +9,7 @@ import { WebsocketModule } from '../websocket/websocket.module';
 import { WarningCategoryModule } from '../warning-category/warning-category.module';
 import { BanSchedulerModule } from '../ban-scheduler/ban-scheduler.module';
 import { WarnSchedulerModule } from '../warn-scheduler/warn-scheduler.module';
+import { RoleModule } from '../role/role.module';
 
 @Module({
     imports: [
@@ -19,6 +20,7 @@ import { WarnSchedulerModule } from '../warn-scheduler/warn-scheduler.module';
         WarningCategoryModule,
         BanSchedulerModule,
         forwardRef(() => WarnSchedulerModule),
+        RoleModule,
     ],
     controllers: [UserManagementController],
     providers: [UserManagementService, UserManagementRepository],

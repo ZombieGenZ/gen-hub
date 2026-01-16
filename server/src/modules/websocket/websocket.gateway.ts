@@ -1525,5 +1525,85 @@ export class WebsocketGateway
     };
     this.server.emit('warnPenalty:deletedMany', event);
   }
+
+  // --- System Role Events ---
+
+  /**
+   * Emit event khi Role hệ thống được tạo
+   */
+  emitRoleCreated(roleId: string, name: string, createdBy: string) {
+    const event = {
+      roleId,
+      name,
+      createdBy,
+      timestamp: new Date().toISOString(),
+    };
+    this.server.to('admin_room').emit('role:created', event);
+  }
+
+  /**
+   * Emit event khi Role hệ thống được cập nhật
+   */
+  emitRoleUpdated(roleId: string, name: string, updatedBy: string) {
+    const event = {
+      roleId,
+      name,
+      updatedBy,
+      timestamp: new Date().toISOString(),
+    };
+    this.server.to('admin_room').emit('role:updated', event);
+  }
+
+  /**
+   * Emit event khi Role hệ thống bị xóa
+   */
+  emitRoleDeleted(roleId: string, deletedBy: string) {
+    const event = {
+      roleId,
+      deletedBy,
+      timestamp: new Date().toISOString(),
+    };
+    this.server.to('admin_room').emit('role:deleted', event);
+  }
+
+  /**
+   * Emit event khi xóa nhiều Role hệ thống
+   */
+  emitRoleDeletedMany(roleIds: string[], deletedBy: string) {
+    const event = {
+      roleIds,
+      deletedBy,
+      timestamp: new Date().toISOString(),
+    };
+    this.server.to('admin_room').emit('role:deletedMany', event);
+  }
+
+  /**
+   * Emit event khi roles của user được cập nhật
+   */
+  emitUserRolesUpdated(userId: string, roleIds: string[], updatedBy: string) {
+    const event = {
+      userId,
+      roleIds,
+      updatedBy,
+      timestamp: new Date().toISOString(),
+    };
+    this.server.to(`user:${userId}`).emit('user:rolesUpdated', event);
+    this.server.to('admin_room').emit('user:rolesUpdated', event);
+  }
+
+  /**
+   * Emit event khi permissions của user được cập nhật
+   */
+  emitUserPermissionsUpdated(userId: string, permissionIds: string[], updatedBy: string) {
+    const event = {
+      userId,
+      permissionIds,
+      updatedBy,
+      timestamp: new Date().toISOString(),
+    };
+    this.server.to(`user:${userId}`).emit('user:permissionsUpdated', event);
+    this.server.to('admin_room').emit('user:permissionsUpdated', event);
+  }
 }
 

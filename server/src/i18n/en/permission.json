@@ -1,0 +1,8 @@
+{
+    "success": {
+        "list": "Get permissions list successfully"
+    },
+    "error": {
+        "not_found": "Permission not found"
+    }
+}

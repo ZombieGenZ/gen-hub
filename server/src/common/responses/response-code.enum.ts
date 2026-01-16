@@ -213,6 +213,16 @@ export enum ResponseCode {
     ORG_CHAT_CALL_LEFT = 'org_chat.call_left',
     ORG_CHAT_CALL_ENDED = 'org_chat.call_ended',
 
+    // Permission
+    PERMISSION_LIST_SUCCESS = 'permission.list_success',
+
+    // Role
+    ROLE_CREATE_SUCCESS = 'role.create_success',
+    ROLE_LIST_SUCCESS = 'role.list_success',
+    ROLE_GET_SUCCESS = 'role.get_success',
+    ROLE_UPDATE_SUCCESS = 'role.update_success',
+    ROLE_DELETE_SUCCESS = 'role.delete_success',
+
     // Client Errors (4xx)
     ERROR_VALIDATION = 'error.validation',
     ERROR_BAD_REQUEST = 'error.bad_request',

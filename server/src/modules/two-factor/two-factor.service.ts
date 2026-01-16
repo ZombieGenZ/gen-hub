@@ -17,6 +17,7 @@ import { AppConfigService } from '../../common/config/app-config.service';
 import { RefreshTokenRepository } from '../auth/repositories/refresh-token.repository';
 import { WebsocketGateway } from '../websocket/websocket.gateway';
 import { BruteForceService } from '../brute-force/brute-force.service';
+import { RedisService } from '../redis/redis.service';
 import { VerifyTwoFactorSetupDto, VerifyTwoFactorLoginDto } from '../auth/dto';
 import { IDeviceInfo } from '../../common/interfaces';
 
@@ -38,6 +39,7 @@ export class TwoFactorService {
     private readonly refreshTokenRepository: RefreshTokenRepository,
     private readonly websocketGateway: WebsocketGateway,
     private readonly bruteForceService: BruteForceService,
+    private readonly redisService: RedisService,
   ) { }
 
   /**
@@ -115,6 +117,9 @@ export class TwoFactorService {
 
     const message = await this.i18n.t('auth.two_factor.setup_success', { lang });
 
+    // Clear cache profile của user
+    await this.redisService.invalidateUserCache(userId);
+
     // Emit socket event
     this.websocketGateway.emit2FAStatusChanged(userId, true, message);
 
@@ -151,6 +156,9 @@ export class TwoFactorService {
     await this.backupCodeService.deleteAllBackupCodes(userId);
 
     const message = await this.i18n.t('auth.two_factor.disabled_success', { lang });
+
+    // Clear cache profile của user
+    await this.redisService.invalidateUserCache(userId);
 
     // Emit socket event
     this.websocketGateway.emit2FAStatusChanged(userId, false, message);

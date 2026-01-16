@@ -132,3 +132,5 @@ export class QuerySessionsDto {
     @IsOptional()
     offset?: number;
 }
+
+export * from './assign-user-roles-permissions.dto';

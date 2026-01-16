@@ -1,0 +1,8 @@
+{
+    "success": {
+        "list": "Lấy danh sách quyền thành công"
+    },
+    "error": {
+        "not_found": "Không tìm thấy quyền"
+    }
+}
