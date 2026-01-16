@@ -1062,7 +1062,7 @@ export default function TablePage() {
                             cancelEdit();
                         }
                     }}
-                    className="w-full bg-[var(--background-tertiary)] border border-[var(--accent-primary)] rounded px-2 py-0.5 text-sm outline-none"
+                    className="w-full bg-[var(--background-tertiary)] border border-[var(--accent-primary)] rounded px-2 py-0.5 text-sm outline-none appearance-none cursor-pointer"
                     autoFocus={!isNewRow}
                 >
                     {nullable && <option value="__NULL__">NULL</option>}
@@ -1093,7 +1093,7 @@ export default function TablePage() {
                             cancelEdit();
                         }
                     }}
-                    className="w-full min-w-[100px] bg-[var(--background-tertiary)] border border-[var(--accent-primary)] rounded px-2 py-1 text-sm outline-none cursor-pointer"
+                    className="w-full min-w-[100px] bg-[var(--background-tertiary)] border border-[var(--accent-primary)] rounded px-2 py-1 text-sm outline-none cursor-pointer appearance-none"
                     autoFocus={!isNewRow}
                 >
                     {nullable && <option value="__NULL__">NULL</option>}
@@ -1406,7 +1406,7 @@ export default function TablePage() {
                                 <select
                                     value={filter.column}
                                     onChange={(e) => updateFilter(index, 'column', e.target.value)}
-                                    className="bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded px-2 py-1.5 text-xs sm:text-sm text-white flex-1 min-w-[80px] max-w-[120px]"
+                                    className="bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded px-2 py-1.5 text-xs sm:text-sm text-white flex-1 min-w-[80px] max-w-[120px] appearance-none cursor-pointer"
                                 >
                                     {columns.map((col) => (
                                         <option key={col} value={col}>{col}</option>
@@ -1417,7 +1417,7 @@ export default function TablePage() {
                                 <select
                                     value={filter.operator}
                                     onChange={(e) => updateFilter(index, 'operator', e.target.value)}
-                                    className="bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded px-2 py-1.5 text-xs sm:text-sm text-white min-w-[80px]"
+                                    className="bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded px-2 py-1.5 text-xs sm:text-sm text-white min-w-[80px] appearance-none cursor-pointer"
                                 >
                                     {OPERATORS.map((op) => (
                                         <option key={op.value} value={op.value}>{op.label}</option>
@@ -1647,7 +1647,7 @@ export default function TablePage() {
                     <select
                         value={meta.limit}
                         onChange={(e) => handlePageSizeChange(parseInt(e.target.value, 10))}
-                        className="bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded px-2 py-1 text-xs text-white cursor-pointer focus:outline-none focus:border-[var(--accent-primary)]"
+                        className="bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded px-2 py-1 text-xs text-white cursor-pointer focus:outline-none focus:border-[var(--accent-primary)] appearance-none"
                     >
                         {PAGE_SIZE_OPTIONS.map((size) => (
                             <option key={size} value={size}>{size}</option>

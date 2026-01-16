@@ -247,7 +247,7 @@ export default function FeatureFlagsPage() {
                     <select
                         value={selectedModule}
                         onChange={(e) => setSelectedModule(e.target.value)}
-                        className="px-4 py-2 bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded-lg text-white focus:outline-none focus:border-[var(--accent-primary)]"
+                        className="px-4 py-2 bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded-lg text-white focus:outline-none focus:border-[var(--accent-primary)] appearance-none cursor-pointer"
                     >
                         <option value="">{t('featureFlags.allModules') || 'All Modules'}</option>
                         {modules.map(m => (
@@ -259,7 +259,7 @@ export default function FeatureFlagsPage() {
                     <select
                         value={activeFilter}
                         onChange={(e) => setActiveFilter(e.target.value)}
-                        className="px-4 py-2 bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded-lg text-white focus:outline-none focus:border-[var(--accent-primary)]"
+                        className="px-4 py-2 bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded-lg text-white focus:outline-none focus:border-[var(--accent-primary)] appearance-none cursor-pointer"
                     >
                         <option value="">{t('featureFlags.allStatus') || 'All Status'}</option>
                         <option value="true">{t('featureFlags.active') || 'Active'}</option>
@@ -430,7 +430,7 @@ export default function FeatureFlagsPage() {
                                     localStorage.setItem(LOCALSTORAGE_PAGE_SIZE_KEY, String(newLimit));
                                     setPage(1);
                                 }}
-                                className="px-2 py-1 bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded text-sm text-white"
+                                className="px-2 py-1 bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded text-sm text-white appearance-none cursor-pointer"
                             >
                                 {PAGE_SIZE_OPTIONS.map(opt => (
                                     <option key={opt} value={opt}>{opt}</option>

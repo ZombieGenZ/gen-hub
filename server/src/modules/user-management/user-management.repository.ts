@@ -364,4 +364,45 @@ export class UserManagementRepository {
             },
         });
     }
+
+    /**
+     * Lấy thống kê users
+     */
+    async getStats(): Promise<{
+        total: number;
+        online: number;
+        active: number;
+        warned: number;
+        banned: number;
+    }> {
+        const [total, online, banned, warnedUsers] = await Promise.all([
+            // Total users
+            this.prisma.user.count(),
+            // Online users
+            this.prisma.user.count({ where: { is_online: true } }),
+            // Banned users
+            this.prisma.user.count({ where: { is_banned: true } }),
+            // Users with active warnings (need to count distinct users)
+            this.prisma.userWarning.groupBy({
+                by: ['user_id'],
+                where: {
+                    is_active: true,
+                    is_deleted: false,
+                    OR: [
+                        { is_permanent: true },
+                        { expires_at: { gt: new Date() } },
+                    ],
+                },
+            }),
+        ]);
+
+        return {
+            total,
+            online,
+            active: total - banned, // Active = not banned
+            warned: warnedUsers.length, // Count of distinct users with warnings
+            banned,
+        };
+    }
 }
+

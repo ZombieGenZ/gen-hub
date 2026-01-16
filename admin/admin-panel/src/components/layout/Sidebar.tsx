@@ -19,6 +19,8 @@ import {
     ChevronDown,
     Table,
     DatabaseBackup,
+    Shield,
+    Key,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage, LanguageSwitcher } from '@/contexts/LanguageContext';
@@ -223,6 +225,56 @@ export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
                                         </div>
                                     )}
                                 </>
+                            )}
+                        </>
+                    )}
+
+                    {/* User Management Section */}
+                    {(hasPermission('user-management.list') || hasPermission('role.read') || hasPermission('permission.read')) && (
+                        <>
+                            <div className="mt-4 mb-2 px-4 py-2">
+                                <span className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
+                                    {t('sidebar.userManagement') || 'User Management'}
+                                </span>
+                            </div>
+                            {hasPermission('user-management.list') && (
+                                <Link
+                                    href="/users"
+                                    onClick={handleLinkClick}
+                                    className={`flex items-center gap-3 px-4 py-3 rounded-lg mb-1 transition-all ${pathname === '/users' || pathname.startsWith('/users/')
+                                        ? 'bg-[var(--accent-primary-muted)] text-[var(--accent-primary)]'
+                                        : 'text-[var(--text-secondary)] hover:bg-[var(--background-tertiary)] hover:text-white'
+                                        }`}
+                                >
+                                    <Users className="w-5 h-5" />
+                                    <span className="font-medium">{t('sidebar.users') || 'Users'}</span>
+                                </Link>
+                            )}
+                            {hasPermission('role.read') && (
+                                <Link
+                                    href="/roles"
+                                    onClick={handleLinkClick}
+                                    className={`flex items-center gap-3 px-4 py-3 rounded-lg mb-1 transition-all ${pathname === '/roles' || pathname.startsWith('/roles/')
+                                        ? 'bg-[var(--accent-primary-muted)] text-[var(--accent-primary)]'
+                                        : 'text-[var(--text-secondary)] hover:bg-[var(--background-tertiary)] hover:text-white'
+                                        }`}
+                                >
+                                    <Shield className="w-5 h-5" />
+                                    <span className="font-medium">{t('sidebar.roles') || 'Roles'}</span>
+                                </Link>
+                            )}
+                            {hasPermission('permission.read') && (
+                                <Link
+                                    href="/permissions"
+                                    onClick={handleLinkClick}
+                                    className={`flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-all ${pathname === '/permissions'
+                                        ? 'bg-[var(--accent-primary-muted)] text-[var(--accent-primary)]'
+                                        : 'text-[var(--text-secondary)] hover:bg-[var(--background-tertiary)] hover:text-white'
+                                        }`}
+                                >
+                                    <Key className="w-5 h-5" />
+                                    <span className="font-medium">{t('sidebar.permissions') || 'Permissions'}</span>
+                                </Link>
                             )}
                         </>
                     )}

@@ -55,6 +55,16 @@ export class UserManagementController {
         return new GetResponse('user-management.list', result);
     }
 
+    @Get('stats')
+    @RequirePermission('user-management.list')
+    @ApiOperation({ summary: 'Lấy thống kê users' })
+    @ApiResponse({ status: 200, description: 'Lấy thống kê thành công' })
+    async getStats() {
+        const stats = await this.service.getStats();
+        return new GetResponse('user-management.stats', stats);
+    }
+
+
     @Get(':id')
     @RequirePermission('user-management.read')
     @ApiOperation({ summary: 'Lấy chi tiết user' })

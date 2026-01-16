@@ -674,5 +674,355 @@ export const backupApi = {
     },
 };
 
+// ==================== User Management API ====================
+
+export interface UserListItem {
+    id: string;
+    name: string;
+    email: string | null;
+    email_confirmed: boolean;
+    is_verified: boolean | null;
+    is_banned: boolean | null;
+    banned_end: string | null;
+    is_online: boolean;
+    last_online: string | null;
+    created_at: string;
+    warning_count?: number;
+}
+
+export interface UserWarningCategory {
+    id: string;
+    name: string;
+    severity: number;
+}
+
+export interface UserWarningItem {
+    id: string;
+    reason: string;
+    is_permanent: boolean;
+    expires_at: string | null;
+    is_active: boolean;
+    created_at: string;
+    removed_at: string | null;
+    warned_by: string;
+    removed_by: string | null;
+    category: UserWarningCategory;
+}
+
+export interface UserDetail extends UserListItem {
+    banned_start?: string | null;
+    banned_reason?: string | null;
+    banned_by?: string | null;
+    active_warnings?: UserWarningItem[];
+    roles?: { id: string; name: string }[];
+}
+
+export interface UserSession {
+    id: string;
+    ip: string | null;
+    location: string | null;
+    device: string | null;
+    os: string | null;
+    created_at: string;
+    updated_at: string | null;
+}
+
+export interface UserRolesAndPermissions {
+    roles: {
+        id: string;
+        name: string;
+        description: string | null;
+        is_active: boolean | null;
+    }[];
+    permissions: {
+        id: string;
+        key: string;
+        name: string;
+        description: string | null;
+        source: 'direct' | 'role';
+    }[];
+}
+
+export interface UserListResponse {
+    items: UserListItem[];
+    total: number;
+    limit: number;
+    offset: number;
+}
+
+export interface UserWarningsResponse {
+    items: UserWarningItem[];
+    total: number;
+    limit: number;
+    offset: number;
+}
+
+export interface UserSessionsResponse {
+    items: UserSession[];
+    total: number;
+    limit: number;
+    offset: number;
+}
+
+export const userManagementApi = {
+    getUsers: async (options?: {
+        limit?: number;
+        offset?: number;
+        keywords?: string;
+        status?: 'active' | 'banned' | 'verified' | 'unverified';
+    }): Promise<UserListResponse> => {
+        const params = new URLSearchParams();
+        if (options?.limit) params.append('limit', String(options.limit));
+        if (options?.offset) params.append('offset', String(options.offset));
+        if (options?.keywords) params.append('keywords', options.keywords);
+        if (options?.status) params.append('status', options.status);
+
+        const { data } = await api.get(`/admin/users?${params.toString()}`);
+        return data.data;
+    },
+
+    getStats: async (): Promise<{
+        total: number;
+        online: number;
+        active: number;
+        warned: number;
+        banned: number;
+    }> => {
+        const { data } = await api.get('/admin/users/stats');
+        return data.data;
+    },
+
+    getUserById: async (id: string): Promise<UserDetail> => {
+        const { data } = await api.get(`/admin/users/${id}`);
+        return data.data;
+    },
+
+    banUser: async (id: string, dto: {
+        reason: string;
+        is_permanent?: boolean;
+        banned_end?: string;
+    }): Promise<UserDetail> => {
+        const { data } = await api.post(`/admin/users/${id}/ban`, dto);
+        return data.data;
+    },
+
+    unbanUser: async (id: string, dto?: { note?: string }): Promise<UserDetail> => {
+        const { data } = await api.post(`/admin/users/${id}/unban`, dto || {});
+        return data.data;
+    },
+
+    getUserWarnings: async (id: string, options?: {
+        limit?: number;
+        offset?: number;
+        status?: 'active' | 'removed' | 'expired';
+    }): Promise<UserWarningsResponse> => {
+        const params = new URLSearchParams();
+        if (options?.limit) params.append('limit', String(options.limit));
+        if (options?.offset) params.append('offset', String(options.offset));
+        if (options?.status) params.append('status', options.status);
+
+        const { data } = await api.get(`/admin/users/${id}/warnings?${params.toString()}`);
+        return data.data;
+    },
+
+    warnUser: async (id: string, dto: {
+        category_id: string;
+        reason: string;
+        is_permanent?: boolean;
+        expires_at?: string;
+    }): Promise<UserWarningItem> => {
+        const { data } = await api.post(`/admin/users/${id}/warn`, dto);
+        return data.data;
+    },
+
+    unwarnUser: async (id: string, warningId: string, dto?: { note?: string }): Promise<void> => {
+        await api.post(`/admin/users/${id}/unwarn/${warningId}`, dto || {});
+    },
+
+    getUserSessions: async (id: string, options?: {
+        limit?: number;
+        offset?: number;
+    }): Promise<UserSessionsResponse> => {
+        const params = new URLSearchParams();
+        if (options?.limit) params.append('limit', String(options.limit));
+        if (options?.offset) params.append('offset', String(options.offset));
+
+        const { data } = await api.get(`/admin/users/${id}/sessions?${params.toString()}`);
+        return data.data;
+    },
+
+    revokeSession: async (id: string, sessionId: string): Promise<void> => {
+        await api.delete(`/admin/users/${id}/sessions/${sessionId}`);
+    },
+
+    revokeAllSessions: async (id: string): Promise<void> => {
+        await api.delete(`/admin/users/${id}/sessions`);
+    },
+
+    getUserRolesAndPermissions: async (id: string): Promise<UserRolesAndPermissions> => {
+        const { data } = await api.get(`/admin/users/${id}/roles-permissions`);
+        return data.data;
+    },
+
+    assignUserRolesPermissions: async (id: string, dto: {
+        role_ids?: string[];
+        permission_ids?: string[];
+    }): Promise<UserRolesAndPermissions> => {
+        const { data } = await api.put(`/admin/users/${id}/roles-permissions`, dto);
+        return data.data;
+    },
+};
+
+// ==================== Roles API ====================
+
+export interface Role {
+    id: string;
+    name: string;
+    description: string | null;
+    is_active: boolean | null;
+    is_default: boolean;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface RolePermission {
+    id: string;
+    key: string;
+    name: string;
+    description: string | null;
+}
+
+export interface RoleWithPermissions extends Role {
+    permissions: RolePermission[];
+}
+
+export interface RolesListResponse {
+    data: Role[];
+    total: number;
+    limit: number;
+    offset: number;
+}
+
+export const rolesApi = {
+    getRoles: async (options?: {
+        limit?: string;
+        offset?: string;
+        keywords?: string;
+        status?: 'ACTIVE' | 'INACTIVE' | 'ALL';
+    }): Promise<RolesListResponse> => {
+        const params = new URLSearchParams();
+        if (options?.limit) params.append('limit', options.limit);
+        if (options?.offset) params.append('offset', options.offset);
+        if (options?.keywords) params.append('keywords', options.keywords);
+        if (options?.status) params.append('status', options.status);
+
+        const { data } = await api.get(`/roles?${params.toString()}`);
+        return data.data;
+    },
+
+    getRoleById: async (id: string): Promise<RoleWithPermissions> => {
+        const { data } = await api.get(`/roles/${id}`);
+        return data.data;
+    },
+
+    createRole: async (dto: {
+        name: string;
+        description?: string;
+        is_default?: boolean;
+        permission_ids?: string[];
+    }): Promise<Role> => {
+        const { data } = await api.post('/roles', dto);
+        return data.data;
+    },
+
+    updateRole: async (id: string, dto: {
+        name?: string;
+        description?: string;
+        is_default?: boolean;
+        is_active?: boolean;
+        permission_ids?: string[];
+    }): Promise<Role> => {
+        const { data } = await api.put(`/roles/${id}`, dto);
+        return data.data;
+    },
+
+    deleteRole: async (id: string): Promise<void> => {
+        await api.delete(`/roles/${id}`);
+    },
+
+    deleteRoles: async (ids: string[]): Promise<void> => {
+        await api.delete('/roles/delete/many', { data: { ids } });
+    },
+};
+
+// ==================== Permissions API ====================
+
+export interface Permission {
+    id: string;
+    key: string;
+    name: string;
+    description: string | null;
+    is_active: boolean | null;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface PermissionWithAssignment extends Permission {
+    is_assigned: boolean;
+}
+
+export interface PermissionsListResponse {
+    data: Permission[];
+    total: number;
+    limit: number;
+    offset: number;
+}
+
+export interface PermissionsWithAssignmentListResponse {
+    data: PermissionWithAssignment[];
+    total: number;
+    limit: number;
+    offset: number;
+}
+
+export const permissionsApi = {
+    getPermissions: async (options?: {
+        limit?: string;
+        offset?: string;
+        keywords?: string;
+        status?: 'ACTIVE' | 'INACTIVE' | 'ALL';
+        type?: 'role' | 'user';
+        id?: string;
+    }): Promise<PermissionsListResponse | PermissionsWithAssignmentListResponse> => {
+        const params = new URLSearchParams();
+        if (options?.limit) params.append('limit', options.limit);
+        if (options?.offset) params.append('offset', options.offset);
+        if (options?.keywords) params.append('keywords', options.keywords);
+        if (options?.status) params.append('status', options.status);
+        if (options?.type) params.append('type', options.type);
+        if (options?.id) params.append('id', options.id);
+
+        const { data } = await api.get(`/permissions?${params.toString()}`);
+        return data.data;
+    },
+};
+
+// ==================== Warning Categories API ====================
+
+export interface WarningCategory {
+    id: string;
+    name: string;
+    description: string | null;
+    severity: number;
+    is_active: boolean;
+}
+
+export const warningCategoriesApi = {
+    getCategories: async (): Promise<WarningCategory[]> => {
+        const { data } = await api.get('/admin/warning-categories');
+        return data.data || [];
+    },
+};
+
 export default api;
 

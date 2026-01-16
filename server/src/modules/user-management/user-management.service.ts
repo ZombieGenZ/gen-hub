@@ -600,4 +600,27 @@ export class UserManagementService {
         // Trả về kết quả mới
         return this.getUserRolesAndPermissions(userId, lang);
     }
+
+    /**
+     * Lấy thống kê users
+     */
+    async getStats(): Promise<{
+        total: number;
+        online: number;
+        active: number;
+        warned: number;
+        banned: number;
+    }> {
+        const cacheKey = `${CACHE_KEY_PREFIX}:stats`;
+
+        const cached = await this.redisService.get(cacheKey);
+        if (cached) return JSON.parse(cached);
+
+        const stats = await this.repository.getStats();
+
+        // Cache for 30 seconds
+        await this.redisService.set(cacheKey, JSON.stringify(stats), 30);
+        return stats;
+    }
 }
+
