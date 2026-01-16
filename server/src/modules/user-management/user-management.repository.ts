@@ -157,6 +157,7 @@ export class UserManagementRepository {
             where: { id },
             data: {
                 is_banned: true,
+                banned_start: new Date(),
                 banned_end: bannedEnd,
             },
         });
@@ -170,6 +171,7 @@ export class UserManagementRepository {
             where: { id },
             data: {
                 is_banned: false,
+                banned_start: null,
                 banned_end: null,
             },
         });

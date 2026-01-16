@@ -80,6 +80,7 @@ model User {
   is_banned               Boolean?  @default(false)
   is_brute_force_banned   Boolean   @default(false)
   is_ban_from_warn        Boolean   @default(false)
+  banned_start            DateTime?
   banned_end              DateTime?
   two_factor_enabled      Boolean   @default(false)
   two_factor_token        String?
