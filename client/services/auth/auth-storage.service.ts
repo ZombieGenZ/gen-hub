@@ -1,4 +1,5 @@
 import { getCookie, removeCookie, setCookie } from '@/lib/cookies';
+import { UserData } from '@/types/user/user.type';
 
 class AuthStorageService {
   private static instance: AuthStorageService;
@@ -105,7 +106,7 @@ class AuthStorageService {
     }
   }
 
-  getUser(): any | null {
+  getUser(): UserData | null {
     const token = this.getAccessToken();
     if (!token) return null;
     try {

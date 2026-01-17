@@ -40,7 +40,7 @@ export function WarehouseCard({ warehouse }: WarehouseCardProps) {
     return (
         <div
             className="bg-white rounded-xl shadow-sm border border-slate-200 hover:shadow-lg transition-all duration-300 hover:-translate-y-1 group flex flex-col h-full cursor-pointer"
-            onClick={() => router.push(`/dashboard/warehouse_template/${warehouse.id}`)}
+            onClick={() => router.push(`/dashboard/admin/warehouses/${warehouse.id}`)}
             >
             <div className="relative h-64 overflow-hidden rounded-t-xl bg-slate-100">
                 {isLoading ? (

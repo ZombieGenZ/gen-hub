@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { UserService } from '@/services/user/user.service'
 import type { UserData } from '@/types/user/user.type'
-import { User, Shield, Lock, Bell, Pencil, Loader2, Check, Smartphone, Upload, Menu, Sun, Moon } from 'lucide-react'
+import { User, Shield, Lock, Bell, Loader2, Check, Smartphone, Upload, Menu, Sun, Moon, AlertTriangle } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { AvatarUploader } from "@/components/ui/avatar-uploader"
 import { useRouter } from 'next/navigation'
@@ -16,6 +16,8 @@ import { authStorage } from '@/services/auth/auth-storage.service'
 import { useToast } from "@/contexts/ToastContext"
 import Link from 'next/link'
 import Image from 'next/image'
+import { NotificationService } from "@/services/notification/notification.service";
+import type { Notification } from "@/types/notification/notification.type";
 
 import {
   Drawer,
@@ -28,8 +30,17 @@ import {
   DrawerTrigger,
 } from "@/components/ui/drawer"
 
+// Type definitions
+interface SecurityTabProps {
+  userData: UserData | null;
+  enabling2FA: boolean;
+  handleEnable2FA: () => Promise<void>;
+  handleDisable2FA: () => Promise<void>;
+}
+
 const userService = new UserService()
 const authService = new AuthService()
+const notificationService = new NotificationService();
 
 export default function ProfilePage() {
   const [userData, setUserData] = useState<UserData | null>(null)
@@ -46,10 +57,7 @@ export default function ProfilePage() {
   const [darkMode, setDarkMode] = useState(true)
 
   // Mock notifications data
-  const [notifications] = useState([
-    { id: 1, title: 'Thông báo mới', message: 'Bạn có 1 đơn hàng mới', time: '5 phút trước', read: false },
-    { id: 2, title: 'Cập nhật hệ thống', message: 'Hệ thống sẽ bảo trì vào lúc 2h sáng', time: '2 giờ trước', read: true },
-  ])
+  const [notifications, setNotifications] = useState<Notification[]>([])
 
   // Form states
   const [name, setName] = useState('')
@@ -97,6 +105,10 @@ export default function ProfilePage() {
           setName(data.user?.name || '')
         }
 
+        const getUserNotifications = await notificationService.getNotifications(token);
+        const getGlobalNotifications = await notificationService.globalNotification(token);
+        setNotifications([...getGlobalNotifications, ...getUserNotifications]);
+
         // if (data && !data.success) {
         //   alert(data.message)
         // } else {
@@ -112,7 +124,7 @@ export default function ProfilePage() {
     }
 
     fetchUser()
-  }, [])
+  }, [router])
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -304,7 +316,7 @@ export default function ProfilePage() {
     }
   };
 
-  const SecurityTab = ({ userData, enabling2FA, handleEnable2FA, handleDisable2FA }: any) => (
+  const SecurityTab = ({ userData, enabling2FA, handleEnable2FA, handleDisable2FA }: SecurityTabProps) => (
     <div className="space-y-6">
       <div className="bg-white dark:bg-slate-900 rounded-xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-slate-200 dark:border-slate-800 p-5 md:p-8">
         <h2 className="text-xl font-semibold mb-6">Bảo mật</h2>
@@ -349,7 +361,7 @@ export default function ProfilePage() {
               Quét mã QR bằng ứng dụng xác thực của bạn để thêm tài khoản
             </p>
             <div className="flex justify-center p-4 bg-white rounded-lg border border-gray-200 dark:bg-slate-700 dark:border-slate-600">
-              <img
+              <Image
                 src={enable2FAData.data.qr_code_url}
                 alt="2FA QR Code"
                 className="w-48 h-48"
@@ -375,7 +387,7 @@ export default function ProfilePage() {
               </p>
 
               <div className="flex items-start gap-3">
-                <div className="flex-1 max-w-[240px]">
+                <div className="flex-1 max-w-60">
                   <Input
                     type="text"
                     placeholder="Mã xác thực"
@@ -414,48 +426,111 @@ export default function ProfilePage() {
     </div>
   );
 
-  const NotificationsTab = ({ notifications }: { notifications: any[] }) => (
-    <div className="space-y-6">
-      <div className="bg-white dark:bg-slate-900 rounded-xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-slate-200 dark:border-slate-800 p-5 md:p-8">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-semibold">Thông báo</h2>
-          <Button variant="outline" size="sm">
-            Đánh dấu tất cả đã đọc
-          </Button>
-        </div>
+  const NotificationsTab = ({ notifications }: { notifications: Notification[] }) => {
+    const [selectedType, setSelectedType] = useState<string>('all')
 
-        <div className="space-y-4">
-          {notifications.length > 0 ? (
-            notifications.map((notification) => (
-              <div
-                key={notification.id}
-                className={`p-4 rounded-lg border ${notification.read
-                    ? 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'
-                    : 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
-                  }`}
+    const notificationTypes = [
+      { value: 'all', label: 'Tất cả' },
+      { value: 'INFO', label: 'Thông tin' },
+      { value: 'SUCCESS', label: 'Thành công' },
+      { value: 'WARNING', label: 'Cảnh báo' },
+      { value: 'ERROR', label: 'Lỗi' }
+    ]
+
+    const filteredNotifications = selectedType === 'all' 
+      ? notifications 
+      : notifications.filter(n => n.type === selectedType)
+
+    const getTypeColor = (type: string) => {
+      switch (type) {
+        case 'SUCCESS':
+          return 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
+        case 'ERROR':
+          return 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+        case 'WARNING':
+          return 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800'
+        case 'INFO':
+        default:
+          return 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
+      }
+    }
+
+    const getTypeIcon = (type: string) => {
+      switch (type) {
+        case 'SUCCESS':
+          return <Check className="w-4 h-4 text-green-600" />
+        case 'ERROR':
+          return <AlertTriangle className="w-4 h-4 text-red-600" />
+        case 'WARNING':
+          return <AlertTriangle className="w-4 h-4 text-yellow-600" />
+        case 'INFO':
+        default:
+          return <Bell className="w-4 h-4 text-blue-600" />
+      }
+    }
+
+    return (
+      <div className="space-y-6">
+        <div className="bg-white dark:bg-slate-900 rounded-xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-slate-200 dark:border-slate-800 p-5 md:p-8">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-semibold">Thông báo</h2>
+            <Button variant="outline" size="sm">
+              Đánh dấu tất cả đã đọc
+            </Button>
+          </div>
+
+          {/* Type Filter Tabs */}
+          <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+            {notificationTypes.map((type) => (
+              <button
+                key={type.value}
+                onClick={() => setSelectedType(type.value)}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                  selectedType === type.value
+                    ? 'bg-brand text-white'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                }`}
               >
-                <div className="flex items-start gap-3">
-                  <div className="mt-0.5">
-                    <div className={`w-2.5 h-2.5 rounded-full ${notification.read ? 'bg-slate-300 dark:bg-slate-600' : 'bg-brand'
-                      }`}></div>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-slate-900 dark:text-white">{notification.title}</p>
-                    <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">{notification.message}</p>
-                    <p className="text-xs text-slate-400 dark:text-slate-500 mt-2">{notification.time}</p>
+                {type.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="space-y-3">
+            {filteredNotifications.length > 0 ? (
+              filteredNotifications.map((notification) => (
+                <div
+                  key={notification.id}
+                  className={`p-4 rounded-lg border transition-colors ${
+                    getTypeColor(notification.type)
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="mt-0.5 shrink-0">
+                      {getTypeIcon(notification.type)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-slate-900 dark:text-white">{notification.title}</p>
+                      <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">{notification.content}</p>
+                      {notification.created_at && (
+                        <p className="text-xs text-slate-400 dark:text-slate-500 mt-2">
+                          {new Date(notification.created_at).toLocaleString('vi-VN')}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
+              ))
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-slate-500 dark:text-slate-400">Không có thông báo nào</p>
               </div>
-            ))
-          ) : (
-            <div className="text-center py-8">
-              <p className="text-slate-500 dark:text-slate-400">Không có thông báo nào</p>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
-    </div>
-  );
+    )
+  };
 
   if (loading) {
     return (
@@ -533,7 +608,7 @@ export default function ProfilePage() {
       >
         <Bell className="w-4 h-4" />
         Thông báo
-        {notifications.some(n => !n.read) && (
+        {notifications.some(n => !n.is_read) && (
           <span className="ml-auto w-2 h-2 bg-red-500 rounded-full"></span>
         )}
       </button>
@@ -566,7 +641,7 @@ export default function ProfilePage() {
                   className="p-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors relative"
                 >
                   <Bell className="w-5 h-5" />
-                  {notifications.some(n => !n.read) && (
+                  {notifications.some(n => !n.is_read) && (
                     <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
                   )}
                 </button>
@@ -585,17 +660,19 @@ export default function ProfilePage() {
                         notifications.map(notification => (
                           <div
                             key={notification.id}
-                            className={`p-3 border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer ${!notification.read ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}
+                            className={`p-3 border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer ${!notification.is_read ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}
                             onClick={() => setShowNotifications(false)}
                           >
                             <div className="flex items-start gap-3">
-                              <div className="mt-0.5 flex-shrink-0">
+                              <div className="mt-0.5 shrink-0">
                                 <div className="w-2 h-2 rounded-full bg-brand"></div>
                               </div>
                               <div className="flex-1 min-w-0">
                                 <p className="text-sm font-medium text-slate-900 dark:text-white">{notification.title}</p>
-                                <p className="text-sm text-slate-500 dark:text-slate-400">{notification.message}</p>
-                                <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">{notification.time}</p>
+                                <p className="text-sm text-slate-500 dark:text-slate-400">{notification.content}</p>
+                                {notification.created_at && (
+                                  <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">{new Date(notification.created_at).toLocaleString('vi-VN')}</p>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -654,7 +731,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Desktop Sidebar Navigation */}
-        <aside className="hidden md:block w-64 flex-shrink-0 p-8 pt-12 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 sticky top-0 h-screen overflow-y-auto z-20 transition-colors duration-300">
+        <aside className="hidden md:block w-64 shrink-0 p-8 pt-12 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 sticky top-0 h-screen overflow-y-auto z-20 transition-colors duration-300">
           <div className="mb-10 px-4 font-bold text-2xl text-brand flex items-center justify-between">
             <Image
               src="/assets/Genhubv2.svg"
@@ -898,10 +975,10 @@ export default function ProfilePage() {
                     </div>
 
                     {/* Right Column: Avatar */}
-                    <div className="w-full lg:w-80 flex-shrink-0 flex flex-col order-1 lg:order-2">
+                    <div className="w-full lg:w-80 shrink-0 flex flex-col order-1 lg:order-2">
                       <div className="space-y-2 flex-1 flex flex-col">
                         <h3 className="text-sm font-semibold text-slate-600 dark:text-slate-400 mb-4 hidden lg:block">Ảnh đại diện</h3>
-                        <div className="border border-slate-200 dark:border-slate-800 rounded-2xl p-8 flex flex-col items-center text-center bg-gradient-to-b from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 flex-1 w-full justify-center min-h-[300px] relative overflow-hidden shadow-sm transition-colors duration-300">
+                        <div className="border border-slate-200 dark:border-slate-800 rounded-2xl p-8 flex flex-col items-center text-center bg-linear-to-b from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 flex-1 w-full justify-center min-h-75 relative overflow-hidden shadow-sm transition-colors duration-300">
                           {/* Background decorative blob */}
                           <div className="absolute -top-10 -right-10 w-40 h-40 bg-brand-subtle rounded-full blur-2xl opacity-60" />
                           <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-slate-100 dark:bg-slate-800/50 rounded-full blur-2xl opacity-60" />
@@ -910,7 +987,7 @@ export default function ProfilePage() {
                           <div className="relative mb-6 z-10 group cursor-pointer transition-transform hover:scale-105 duration-300">
                             <Avatar className="h-32 w-32 border-[6px] border-bg shadow-2xl ring-1 ring-black/5 dark:ring-white/10 object-cover bg-bg">
                               <AvatarImage className="object-cover" src={avatarPreview || `https://www.gravatar.com/avatar/${userData.user.email ? userData.user.email : 'default'}?d=mp`} alt={userData.user.name} />
-                              <AvatarFallback className="text-4xl font-bold bg-gradient-to-br from-brand-subtle to-brand/10 text-brand">
+                              <AvatarFallback className="text-4xl font-bold bg-linear-to-br from-brand-subtle to-brand/10 text-brand">
                                 {userData.user.name ? userData.user.name.charAt(0).toUpperCase() : 'U'}
                               </AvatarFallback>
                             </Avatar>
@@ -949,7 +1026,7 @@ export default function ProfilePage() {
                             </button>
                           </AvatarUploader>
 
-                          <p className="text-xs text-slate-400 dark:text-slate-500 mt-4 max-w-[200px] leading-relaxed">
+                          <p className="text-xs text-slate-400 dark:text-slate-500 mt-4 max-w-50 leading-relaxed">
                             Định dạng: .jpg, .png. Kích thước tối đa 5MB.
                           </p>
                         </div>
