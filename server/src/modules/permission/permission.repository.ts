@@ -9,6 +9,7 @@ interface FindManyParams {
     offset: number;
     keywords?: string;
     status?: StatusFilter;
+    module?: string;
 }
 
 @Injectable()
@@ -19,7 +20,7 @@ export class PermissionRepository {
      * Lấy danh sách permissions với phân trang
      */
     async findMany(params: FindManyParams): Promise<IPermissionListResult> {
-        const { limit, offset, keywords, status } = params;
+        const { limit, offset, keywords, status, module } = params;
 
         const where: Prisma.PermissionWhereInput = {
             is_deleted: false,
@@ -30,6 +31,11 @@ export class PermissionRepository {
             where.is_active = true;
         } else if (status === StatusFilter.INACTIVE) {
             where.is_active = false;
+        }
+
+        // Lọc theo module (prefix của key)
+        if (module) {
+            where.key = { startsWith: `${module}.` };
         }
 
         // Tìm kiếm theo keywords
@@ -170,5 +176,23 @@ export class PermissionRepository {
         });
 
         return [...new Set(rolePermissions.map((rp) => rp.permission_id))];
+    }
+
+    /**
+     * Lấy danh sách modules (prefix) duy nhất từ permission keys
+     */
+    async getDistinctModules(): Promise<string[]> {
+        const permissions = await this.prisma.permission.findMany({
+            where: { is_deleted: false },
+            select: { key: true },
+        });
+
+        const modules = new Set<string>();
+        permissions.forEach((p) => {
+            const prefix = p.key.split('.')[0];
+            if (prefix) modules.add(prefix);
+        });
+
+        return Array.from(modules).sort();
     }
 }

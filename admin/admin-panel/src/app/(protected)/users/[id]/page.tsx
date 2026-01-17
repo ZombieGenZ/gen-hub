@@ -80,7 +80,8 @@ export default function UserDetailPage() {
     const [showBanModal, setShowBanModal] = useState(false);
     const [banReason, setBanReason] = useState('');
     const [banIsPermanent, setBanIsPermanent] = useState(false);
-    const [banEndDate, setBanEndDate] = useState('');
+    const [banDurationValue, setBanDurationValue] = useState<number>(1);
+    const [banDurationType, setBanDurationType] = useState<string>('days');
     const [isBanning, setIsBanning] = useState(false);
 
     // Unban modal state
@@ -94,7 +95,8 @@ export default function UserDetailPage() {
     const [warnCategoryId, setWarnCategoryId] = useState('');
     const [warnReason, setWarnReason] = useState('');
     const [warnIsPermanent, setWarnIsPermanent] = useState(false);
-    const [warnExpiresAt, setWarnExpiresAt] = useState('');
+    const [warnDurationValue, setWarnDurationValue] = useState<number>(1);
+    const [warnDurationType, setWarnDurationType] = useState<string>('months');
     const [isWarning, setIsWarning] = useState(false);
 
     // Notifications state
@@ -315,13 +317,15 @@ export default function UserDetailPage() {
             const result = await userManagementApi.banUser(id as string, {
                 reason: banReason,
                 is_permanent: banIsPermanent,
-                banned_end: banIsPermanent ? undefined : banEndDate || undefined,
+                duration_value: banIsPermanent ? undefined : banDurationValue,
+                duration_type: banIsPermanent ? undefined : (banDurationType as any),
             });
             setUser(result);
             setShowBanModal(false);
             setBanReason('');
             setBanIsPermanent(false);
-            setBanEndDate('');
+            setBanDurationValue(1);
+            setBanDurationType('days');
             toast.success(t('userManagement.banSuccess') || 'User banned successfully');
         } catch (error) {
             console.error('Failed to ban user:', error);
@@ -356,13 +360,15 @@ export default function UserDetailPage() {
                 category_id: warnCategoryId,
                 reason: warnReason,
                 is_permanent: warnIsPermanent,
-                expires_at: warnIsPermanent ? undefined : warnExpiresAt || undefined,
+                duration_value: warnIsPermanent ? undefined : warnDurationValue,
+                duration_type: warnIsPermanent ? undefined : (warnDurationType as any),
             });
             setShowWarnModal(false);
             setWarnCategoryId('');
             setWarnReason('');
             setWarnIsPermanent(false);
-            setWarnExpiresAt('');
+            setWarnDurationValue(1);
+            setWarnDurationType('months');
             toast.success(t('userManagement.warnSuccess') || 'User warned successfully');
             fetchUser();
             fetchWarnings();
@@ -1247,8 +1253,8 @@ export default function UserDetailPage() {
 
             {/* Ban Modal */}
             {showBanModal && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-[var(--background-secondary)] rounded-xl p-6 w-full max-w-md border border-[var(--border-primary)]">
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fadeIn">
+                    <div className="bg-[var(--background-secondary)] rounded-xl p-6 w-full max-w-md border border-[var(--border-primary)] shadow-2xl">
                         <h2 className="text-xl font-bold text-white mb-4">{t('userManagement.banUser') || 'Ban User'}</h2>
                         <div className="space-y-4">
                             <div>
@@ -1261,29 +1267,48 @@ export default function UserDetailPage() {
                                     placeholder={t('userManagement.banReasonPlaceholder') || 'Enter reason for ban...'}
                                 />
                             </div>
-                            <label htmlFor="isPermanent" className="flex items-center gap-3 cursor-pointer group">
-                                <div className="relative">
-                                    <input
-                                        type="checkbox"
-                                        id="isPermanent"
-                                        checked={banIsPermanent}
-                                        onChange={(e) => setBanIsPermanent(e.target.checked)}
-                                        className="sr-only peer"
-                                    />
-                                    <div className="w-11 h-6 bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded-full peer peer-checked:bg-red-500 peer-checked:border-red-500 transition-colors"></div>
-                                    <div className="absolute left-0.5 top-0.5 w-5 h-5 bg-[var(--text-muted)] rounded-full transition-all peer-checked:translate-x-5 peer-checked:bg-white"></div>
-                                </div>
-                                <span className="text-white group-hover:text-red-400 transition-colors">{t('userManagement.permanentBan') || 'Cấm vĩnh viễn'}</span>
-                            </label>
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="checkbox"
+                                    id="banPermanent"
+                                    checked={banIsPermanent}
+                                    onChange={(e) => setBanIsPermanent(e.target.checked)}
+                                    className="rounded border-[var(--border-primary)] bg-[var(--background-tertiary)]"
+                                />
+                                <label htmlFor="banPermanent" className="text-white text-sm cursor-pointer select-none">
+                                    {t('userManagement.permanentBan') || 'Permanent Ban'}
+                                </label>
+                            </div>
                             {!banIsPermanent && (
-                                <div>
-                                    <label className="block text-sm text-[var(--text-muted)] mb-1">{t('userManagement.banUntil') || 'Ban until'}</label>
-                                    <input
-                                        type="datetime-local"
-                                        value={banEndDate}
-                                        onChange={(e) => setBanEndDate(e.target.value)}
-                                        className="w-full px-3 py-2 bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded-lg text-white focus:outline-none focus:border-[var(--accent-primary)]"
-                                    />
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm text-[var(--text-muted)] mb-1">
+                                            {t('userManagement.duration') || 'Duration'}
+                                        </label>
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            value={banDurationValue}
+                                            onChange={(e) => setBanDurationValue(parseInt(e.target.value) || 1)}
+                                            className="w-full px-3 py-2 bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded-lg text-white focus:outline-none focus:border-[var(--accent-primary)]"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm text-[var(--text-muted)] mb-1">
+                                            {t('userManagement.unit') || 'Unit'}
+                                        </label>
+                                        <select
+                                            value={banDurationType}
+                                            onChange={(e) => setBanDurationType(e.target.value)}
+                                            className="w-full px-3 py-2 bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded-lg text-white focus:outline-none focus:border-[var(--accent-primary)] appearance-none cursor-pointer"
+                                        >
+                                            <option value="minutes">{t('common.minutes') || 'Minutes'}</option>
+                                            <option value="hours">{t('common.hours') || 'Hours'}</option>
+                                            <option value="days">{t('common.days') || 'Days'}</option>
+                                            <option value="weeks">{t('common.weeks') || 'Weeks'}</option>
+                                            <option value="months">{t('common.months') || 'Months'}</option>
+                                        </select>
+                                    </div>
                                 </div>
                             )}
                         </div>
@@ -1346,8 +1371,8 @@ export default function UserDetailPage() {
 
             {/* Warn Modal */}
             {showWarnModal && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-[var(--background-secondary)] rounded-xl p-6 w-full max-w-md border border-[var(--border-primary)]">
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fadeIn">
+                    <div className="bg-[var(--background-secondary)] rounded-xl p-6 w-full max-w-md border border-[var(--border-primary)] shadow-2xl">
                         <h2 className="text-xl font-bold text-white mb-4">{t('userManagement.warnUser') || 'Warn User'}</h2>
                         <div className="space-y-4">
                             <div>
@@ -1373,29 +1398,48 @@ export default function UserDetailPage() {
                                     placeholder={t('userManagement.warnReasonPlaceholder') || 'Enter reason for warning...'}
                                 />
                             </div>
-                            <label htmlFor="warnPermanent" className="flex items-center gap-3 cursor-pointer group">
-                                <div className="relative">
-                                    <input
-                                        type="checkbox"
-                                        id="warnPermanent"
-                                        checked={warnIsPermanent}
-                                        onChange={(e) => setWarnIsPermanent(e.target.checked)}
-                                        className="sr-only peer"
-                                    />
-                                    <div className="w-11 h-6 bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded-full peer peer-checked:bg-yellow-500 peer-checked:border-yellow-500 transition-colors"></div>
-                                    <div className="absolute left-0.5 top-0.5 w-5 h-5 bg-[var(--text-muted)] rounded-full transition-all peer-checked:translate-x-5 peer-checked:bg-white"></div>
-                                </div>
-                                <span className="text-white group-hover:text-yellow-400 transition-colors">{t('userManagement.isPermanent') || 'Cảnh cáo vĩnh viễn'}</span>
-                            </label>
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="checkbox"
+                                    id="warnPermanent"
+                                    checked={warnIsPermanent}
+                                    onChange={(e) => setWarnIsPermanent(e.target.checked)}
+                                    className="rounded border-[var(--border-primary)] bg-[var(--background-tertiary)]"
+                                />
+                                <label htmlFor="warnPermanent" className="text-white text-sm cursor-pointer select-none">
+                                    {t('userManagement.isPermanent') || 'Permanent Warning'}
+                                </label>
+                            </div>
                             {!warnIsPermanent && (
-                                <div>
-                                    <label className="block text-sm text-[var(--text-muted)] mb-1">{t('userManagement.expiresAt') || 'Expires at'}</label>
-                                    <input
-                                        type="datetime-local"
-                                        value={warnExpiresAt}
-                                        onChange={(e) => setWarnExpiresAt(e.target.value)}
-                                        className="w-full px-3 py-2 bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded-lg text-white focus:outline-none focus:border-[var(--accent-primary)]"
-                                    />
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm text-[var(--text-muted)] mb-1">
+                                            {t('userManagement.duration') || 'Duration'}
+                                        </label>
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            value={warnDurationValue}
+                                            onChange={(e) => setWarnDurationValue(parseInt(e.target.value) || 1)}
+                                            className="w-full px-3 py-2 bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded-lg text-white focus:outline-none focus:border-[var(--accent-primary)]"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm text-[var(--text-muted)] mb-1">
+                                            {t('userManagement.unit') || 'Unit'}
+                                        </label>
+                                        <select
+                                            value={warnDurationType}
+                                            onChange={(e) => setWarnDurationType(e.target.value)}
+                                            className="w-full px-3 py-2 bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded-lg text-white focus:outline-none focus:border-[var(--accent-primary)] appearance-none cursor-pointer"
+                                        >
+                                            <option value="minutes">{t('common.minutes') || 'Minutes'}</option>
+                                            <option value="hours">{t('common.hours') || 'Hours'}</option>
+                                            <option value="days">{t('common.days') || 'Days'}</option>
+                                            <option value="weeks">{t('common.weeks') || 'Weeks'}</option>
+                                            <option value="months">{t('common.months') || 'Months'}</option>
+                                        </select>
+                                    </div>
                                 </div>
                             )}
                         </div>
@@ -1408,7 +1452,7 @@ export default function UserDetailPage() {
                             </button>
                             <button
                                 onClick={handleWarnUser}
-                                disabled={isWarning || !warnCategoryId || !warnReason.trim()}
+                                disabled={!warnCategoryId || !warnReason.trim() || isWarning}
                                 className="flex items-center gap-2 px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg transition-colors disabled:opacity-50"
                             >
                                 {isWarning && <Loader2 className="w-4 h-4 animate-spin" />}

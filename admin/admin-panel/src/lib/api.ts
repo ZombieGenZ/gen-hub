@@ -799,7 +799,8 @@ export const userManagementApi = {
     banUser: async (id: string, dto: {
         reason: string;
         is_permanent?: boolean;
-        banned_end?: string;
+        duration_value?: number;
+        duration_type?: 'minutes' | 'hours' | 'days' | 'weeks' | 'months';
     }): Promise<UserDetail> => {
         const { data } = await api.post(`/admin/users/${id}/ban`, dto);
         return data.data;
@@ -828,7 +829,8 @@ export const userManagementApi = {
         category_id: string;
         reason: string;
         is_permanent?: boolean;
-        expires_at?: string;
+        duration_value?: number;
+        duration_type?: 'minutes' | 'hours' | 'days' | 'weeks' | 'months';
     }): Promise<UserWarningItem> => {
         const { data } = await api.post(`/admin/users/${id}/warn`, dto);
         return data.data;
@@ -877,7 +879,8 @@ export const userManagementApi = {
         user_ids: string[];
         reason: string;
         is_permanent?: boolean;
-        banned_end?: string;
+        duration_value?: number;
+        duration_type?: 'minutes' | 'hours' | 'days' | 'weeks' | 'months';
     }): Promise<{ count: number }> => {
         const { data } = await api.post('/admin/users/bulk/ban', dto);
         return data.data;
@@ -896,7 +899,8 @@ export const userManagementApi = {
         category_id: string;
         reason: string;
         is_permanent?: boolean;
-        expires_at?: string;
+        duration_value?: number;
+        duration_type?: 'minutes' | 'hours' | 'days' | 'weeks' | 'months';
     }): Promise<{ count: number }> => {
         const { data } = await api.post('/admin/users/bulk/warn', dto);
         return data.data;
@@ -936,6 +940,16 @@ export const userManagementApi = {
         url?: string;
     }): Promise<UserNotification> => {
         const { data } = await api.post('/user-notifications/send', dto);
+        return data.data;
+    },
+
+    bulkSendNotification: async (dto: {
+        user_ids: string[];
+        title: string;
+        content: string;
+        type?: string;
+    }): Promise<{ count: number }> => {
+        const { data } = await api.post('/user-notifications/send-bulk', dto);
         return data.data;
     },
 };
@@ -1068,6 +1082,7 @@ export const permissionsApi = {
         status?: 'ACTIVE' | 'INACTIVE' | 'ALL';
         type?: 'role' | 'user';
         id?: string;
+        module?: string;
     }): Promise<PermissionsListResponse | PermissionsWithAssignmentListResponse> => {
         const params = new URLSearchParams();
         if (options?.limit) params.append('limit', options.limit);
@@ -1076,9 +1091,15 @@ export const permissionsApi = {
         if (options?.status) params.append('status', options.status);
         if (options?.type) params.append('type', options.type);
         if (options?.id) params.append('id', options.id);
+        if (options?.module) params.append('module', options.module);
 
         const { data } = await api.get(`/permissions?${params.toString()}`);
         return data.data;
+    },
+
+    getModules: async (): Promise<string[]> => {
+        const { data } = await api.get('/permissions/modules');
+        return data.data || [];
     },
 
     getByRoleIds: async (roleIds: string[]): Promise<string[]> => {

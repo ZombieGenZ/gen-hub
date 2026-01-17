@@ -5,9 +5,23 @@ import {
     IsUUID,
     IsBoolean,
     IsDateString,
+    IsNumber,
+    IsEnum,
+    Min,
 } from 'class-validator';
 import { i18nValidationMessage } from 'nestjs-i18n';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+
+/**
+ * Enum loại thời hạn
+ */
+export enum DurationType {
+    MINUTES = 'minutes',
+    HOURS = 'hours',
+    DAYS = 'days',
+    WEEKS = 'weeks',
+    MONTHS = 'months',
+}
 
 /**
  * DTO query danh sách users
@@ -48,10 +62,20 @@ export class BanUserDto {
     @IsOptional()
     is_permanent?: boolean;
 
-    @ApiPropertyOptional({ description: 'Thời điểm hết ban (nếu không vĩnh viễn)', example: '2025-12-31T23:59:59.000Z' })
-    @IsDateString({}, { message: i18nValidationMessage('user-management.validation.banned_end_date') })
+    @ApiPropertyOptional({ description: 'Giá trị thời hạn (dùng kết hợp với duration_type)', example: 10 })
+    @IsNumber({}, { message: i18nValidationMessage('user-management.validation.duration_value_number') })
+    @Min(1, { message: i18nValidationMessage('user-management.validation.duration_value_min') })
     @IsOptional()
-    banned_end?: string;
+    duration_value?: number;
+
+    @ApiPropertyOptional({
+        description: 'Loại thời hạn (dùng kết hợp với duration_value)',
+        enum: DurationType,
+        example: 'days',
+    })
+    @IsEnum(DurationType, { message: i18nValidationMessage('user-management.validation.duration_type_enum') })
+    @IsOptional()
+    duration_type?: DurationType;
 }
 
 /**
@@ -83,10 +107,20 @@ export class WarnUserDto {
     @IsOptional()
     is_permanent?: boolean;
 
-    @ApiPropertyOptional({ description: 'Thời điểm hết hiệu lực cảnh báo', example: '2025-12-31T23:59:59.000Z' })
-    @IsDateString({}, { message: i18nValidationMessage('user-management.validation.expires_at_date') })
+    @ApiPropertyOptional({ description: 'Giá trị thời hạn (dùng kết hợp với duration_type)', example: 10 })
+    @IsNumber({}, { message: i18nValidationMessage('user-management.validation.duration_value_number') })
+    @Min(1, { message: i18nValidationMessage('user-management.validation.duration_value_min') })
     @IsOptional()
-    expires_at?: string;
+    duration_value?: number;
+
+    @ApiPropertyOptional({
+        description: 'Loại thời hạn (dùng kết hợp với duration_value)',
+        enum: DurationType,
+        example: 'days',
+    })
+    @IsEnum(DurationType, { message: i18nValidationMessage('user-management.validation.duration_type_enum') })
+    @IsOptional()
+    duration_type?: DurationType;
 }
 
 /**
@@ -152,10 +186,20 @@ export class BulkBanUsersDto {
     @IsOptional()
     is_permanent?: boolean;
 
-    @ApiPropertyOptional({ description: 'Thời điểm hết ban (nếu không vĩnh viễn)', example: '2025-12-31T23:59:59.000Z' })
-    @IsDateString({}, { message: i18nValidationMessage('user-management.validation.banned_end_date') })
+    @ApiPropertyOptional({ description: 'Giá trị thời hạn (dùng kết hợp với duration_type)', example: 10 })
+    @IsNumber({}, { message: i18nValidationMessage('user-management.validation.duration_value_number') })
+    @Min(1, { message: i18nValidationMessage('user-management.validation.duration_value_min') })
     @IsOptional()
-    banned_end?: string;
+    duration_value?: number;
+
+    @ApiPropertyOptional({
+        description: 'Loại thời hạn (dùng kết hợp với duration_value)',
+        enum: DurationType,
+        example: 'days',
+    })
+    @IsEnum(DurationType, { message: i18nValidationMessage('user-management.validation.duration_type_enum') })
+    @IsOptional()
+    duration_type?: DurationType;
 }
 
 /**
@@ -197,10 +241,20 @@ export class BulkWarnUsersDto {
     @IsOptional()
     is_permanent?: boolean;
 
-    @ApiPropertyOptional({ description: 'Thời điểm hết hiệu lực cảnh báo', example: '2025-12-31T23:59:59.000Z' })
-    @IsDateString({}, { message: i18nValidationMessage('user-management.validation.expires_at_date') })
+    @ApiPropertyOptional({ description: 'Giá trị thời hạn (dùng kết hợp với duration_type)', example: 10 })
+    @IsNumber({}, { message: i18nValidationMessage('user-management.validation.duration_value_number') })
+    @Min(1, { message: i18nValidationMessage('user-management.validation.duration_value_min') })
     @IsOptional()
-    expires_at?: string;
+    duration_value?: number;
+
+    @ApiPropertyOptional({
+        description: 'Loại thời hạn (dùng kết hợp với duration_value)',
+        enum: DurationType,
+        example: 'days',
+    })
+    @IsEnum(DurationType, { message: i18nValidationMessage('user-management.validation.duration_type_enum') })
+    @IsOptional()
+    duration_type?: DurationType;
 }
 
 /**

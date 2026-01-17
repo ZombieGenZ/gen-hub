@@ -27,6 +27,23 @@ export class PermissionController {
     constructor(private readonly service: PermissionService) { }
 
     /**
+     * Lấy danh sách modules (prefix) duy nhất từ permission keys
+     */
+    @Get('modules')
+    @ApiBearerAuth('JWT-auth')
+    @UseGuards(JwtAuthGuard, PermissionGuard)
+    @RequirePermission('permission.read')
+    @ApiOperation({
+        summary: 'Lấy danh sách modules',
+        description: 'Trả về danh sách các module (prefix của permission key) duy nhất.',
+    })
+    @ApiResponse({ status: 200, description: 'Lấy danh sách thành công' })
+    async getModules(): Promise<GetResponse<string[]>> {
+        const result = await this.service.getModules();
+        return new GetResponse(ResponseCode.PERMISSION_LIST_SUCCESS, result);
+    }
+
+    /**
      * Lấy danh sách permissions trong hệ thống
      * Có thể truyền type (role/user) và id để so sánh với permissions đã gán
      */

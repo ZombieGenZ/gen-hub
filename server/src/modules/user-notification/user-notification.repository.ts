@@ -119,4 +119,26 @@ export class UserNotificationRepository {
         });
         return !!user;
     }
+
+    // Lấy danh sách user IDs tồn tại từ danh sách đầu vào
+    async getExistingUserIds(userIds: string[]): Promise<string[]> {
+        const users = await this.prisma.user.findMany({
+            where: { id: { in: userIds } },
+            select: { id: true },
+        });
+        return users.map((u) => u.id);
+    }
+
+    // Tạo nhiều notifications
+    async createMany(
+        dataList: Prisma.UserNotificationCreateInput[],
+    ): Promise<IUserNotification[]> {
+        // Prisma không hỗ trợ createMany với return data, phải dùng transaction
+        const notifications = await this.prisma.$transaction(
+            dataList.map((data) =>
+                this.prisma.userNotification.create({ data }),
+            ),
+        );
+        return notifications;
+    }
 }

@@ -17,6 +17,7 @@ import {
     QueryUserWarningsDto,
     QuerySessionsDto,
     AssignUserRolesPermissionsDto,
+    DurationType,
 } from './dto';
 import {
     IUserListResult,
@@ -57,6 +58,29 @@ export class UserManagementService {
 
     private getSessionsCacheTtl(): number {
         return parseInt(process.env.REDIS_USER_SESSIONS_TTL || '120', 10);
+    }
+
+    /**
+     * Tính toán thời điểm kết thúc từ duration_value và duration_type
+     */
+    private calculateEndDate(durationValue: number, durationType: DurationType): Date {
+        const now = new Date();
+        switch (durationType) {
+            case DurationType.MINUTES:
+                return new Date(now.getTime() + durationValue * 60 * 1000);
+            case DurationType.HOURS:
+                return new Date(now.getTime() + durationValue * 60 * 60 * 1000);
+            case DurationType.DAYS:
+                return new Date(now.getTime() + durationValue * 24 * 60 * 60 * 1000);
+            case DurationType.WEEKS:
+                return new Date(now.getTime() + durationValue * 7 * 24 * 60 * 60 * 1000);
+            case DurationType.MONTHS:
+                const result = new Date(now);
+                result.setMonth(result.getMonth() + durationValue);
+                return result;
+            default:
+                throw new BadRequestException('Invalid duration type');
+        }
     }
 
     /**
@@ -146,8 +170,8 @@ export class UserManagementService {
         }
 
         let bannedEnd: Date | null = null;
-        if (!dto.is_permanent && dto.banned_end) {
-            bannedEnd = new Date(dto.banned_end);
+        if (!dto.is_permanent && dto.duration_value && dto.duration_type) {
+            bannedEnd = this.calculateEndDate(dto.duration_value, dto.duration_type);
         }
 
         await this.repository.banUser(userId, bannedEnd);
@@ -297,8 +321,8 @@ export class UserManagementService {
         }
 
         let expiresAt: Date | undefined;
-        if (!dto.is_permanent && dto.expires_at) {
-            expiresAt = new Date(dto.expires_at);
+        if (!dto.is_permanent && dto.duration_value && dto.duration_type) {
+            expiresAt = this.calculateEndDate(dto.duration_value, dto.duration_type);
         }
 
         const warning = await this.repository.createWarning({
@@ -686,13 +710,19 @@ export class UserManagementService {
         userIds: string[],
         reason: string,
         isPermanent: boolean,
-        bannedEnd: Date | null,
+        durationValue: number | undefined,
+        durationType: DurationType | undefined,
         adminId: string,
         lang: string,
         requestInfo?: { ip?: string; userAgent?: string },
     ): Promise<{ count: number }> {
         if (userIds.length === 0) {
             throw new BadRequestException(this.i18n.t('user-management.error.no_users_selected', { lang }));
+        }
+
+        let bannedEnd: Date | null = null;
+        if (!isPermanent && durationValue && durationType) {
+            bannedEnd = this.calculateEndDate(durationValue, durationType);
         }
 
         const result = await this.repository.banManyUsers(userIds, bannedEnd);
@@ -724,6 +754,8 @@ export class UserManagementService {
                 targetUserIds: userIds,
                 reason,
                 is_permanent: isPermanent,
+                duration_value: durationValue,
+                duration_type: durationType,
                 banned_end: bannedEnd?.toISOString(),
             },
         });
@@ -801,7 +833,8 @@ export class UserManagementService {
         categoryId: string,
         reason: string,
         isPermanent: boolean,
-        expiresAt: Date | undefined,
+        durationValue: number | undefined,
+        durationType: DurationType | undefined,
         adminId: string,
         lang: string,
         requestInfo?: { ip?: string; userAgent?: string },
@@ -813,6 +846,11 @@ export class UserManagementService {
         const category = await this.warningCategoryRepo.findById(categoryId);
         if (!category) {
             throw new NotFoundException(this.i18n.t('warning-category.error.not_found', { lang }));
+        }
+
+        let expiresAt: Date | undefined;
+        if (!isPermanent && durationValue && durationType) {
+            expiresAt = this.calculateEndDate(durationValue, durationType);
         }
 
         const result = await this.repository.createWarningsForMany({
@@ -846,6 +884,8 @@ export class UserManagementService {
                 categoryName: category.name,
                 reason,
                 is_permanent: isPermanent,
+                duration_value: durationValue,
+                duration_type: durationType,
                 expires_at: expiresAt?.toISOString(),
             },
         });

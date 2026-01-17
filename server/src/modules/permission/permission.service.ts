@@ -51,14 +51,14 @@ export class PermissionService {
         // Nếu có type và id, trả về permissions với trạng thái gán
         if (query.type && query.id) {
             return this.findManyWithAssignment(
-                { limit, offset, keywords: query.keywords, status },
+                { limit, offset, keywords: query.keywords, status, module: query.module },
                 query.type,
                 query.id,
             );
         }
 
         // Trả về danh sách permissions thuần (có cache)
-        const cacheKey = `${CACHE_LIST_KEY}:${JSON.stringify({ limit, offset, keywords: query.keywords, status })}`;
+        const cacheKey = `${CACHE_LIST_KEY}:${JSON.stringify({ limit, offset, keywords: query.keywords, status, module: query.module })}`;
 
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
@@ -70,6 +70,7 @@ export class PermissionService {
             offset,
             keywords: query.keywords,
             status,
+            module: query.module,
         });
 
         await this.redisService.set(cacheKey, JSON.stringify(result), this.getListCacheTtl());
@@ -81,7 +82,7 @@ export class PermissionService {
      * Lấy danh sách permissions với trạng thái gán cho role/user
      */
     private async findManyWithAssignment(
-        params: { limit: number; offset: number; keywords?: string; status?: StatusFilter },
+        params: { limit: number; offset: number; keywords?: string; status?: StatusFilter; module?: string },
         type: PermissionQueryType,
         id: string,
     ): Promise<IPermissionWithAssignmentListResult> {
@@ -155,6 +156,24 @@ export class PermissionService {
         }
 
         const result = await this.repository.getPermissionIdsByRoleIds(roleIds);
+
+        // Cache for 5 minutes
+        await this.redisService.set(cacheKey, JSON.stringify(result), 300);
+        return result;
+    }
+
+    /**
+     * Lấy danh sách modules (prefix) duy nhất từ permission keys
+     */
+    async getModules(): Promise<string[]> {
+        const cacheKey = `${CACHE_KEY_PREFIX}:modules`;
+
+        const cached = await this.redisService.get(cacheKey);
+        if (cached) {
+            return JSON.parse(cached);
+        }
+
+        const result = await this.repository.getDistinctModules();
 
         // Cache for 5 minutes
         await this.redisService.set(cacheKey, JSON.stringify(result), 300);

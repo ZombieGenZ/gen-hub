@@ -23,6 +23,8 @@ import {
     Ban,
     MoreHorizontal,
     Trash2,
+    Bell,
+    Mail,
 } from 'lucide-react';
 
 const PAGE_SIZE_OPTIONS = [25, 50, 75, 100];
@@ -61,11 +63,37 @@ export default function UsersPage() {
     const [searchQuery, setSearchQuery] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
 
-    // Selection state
+    // Bulk Selection & Action state
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+    // Bulk Ban Modal
     const [showBulkBanModal, setShowBulkBanModal] = useState(false);
     const [bulkBanReason, setBulkBanReason] = useState('');
+    const [bulkBanDurationValue, setBulkBanDurationValue] = useState<number>(1);
+    const [bulkBanDurationType, setBulkBanDurationType] = useState<string>('days');
+    const [isBulkBanPermanent, setIsBulkBanPermanent] = useState(false);
     const [isBulkBanning, setIsBulkBanning] = useState(false);
+
+    // Single Ban Modal
+    const [showBanModal, setShowBanModal] = useState(false);
+    const [selectedUser, setSelectedUser] = useState<UserListItem | null>(null);
+    const [banReason, setBanReason] = useState('');
+    const [banDurationValue, setBanDurationValue] = useState<number>(1);
+    const [banDurationType, setBanDurationType] = useState<string>('days');
+    const [isBanPermanent, setIsBanPermanent] = useState(false);
+    const [isBanning, setIsBanning] = useState(false);
+
+    // Unban Modal (Single)
+    const [showUnbanModal, setShowUnbanModal] = useState(false);
+    const [unbanNote, setUnbanNote] = useState('');
+    const [isUnbanning, setIsUnbanning] = useState(false);
+
+    // Bulk Notification Modal
+    const [showBulkNotifyModal, setShowBulkNotifyModal] = useState(false);
+    const [notifyTitle, setNotifyTitle] = useState('');
+    const [notifyContent, setNotifyContent] = useState('');
+    const [notifyType, setNotifyType] = useState('INFO');
+    const [isSendingNotify, setIsSendingNotify] = useState(false);
 
     // Debounce search
     useEffect(() => {
@@ -175,18 +203,21 @@ export default function UsersPage() {
         setSelectedIds(newSet);
     };
 
-    const handleBulkBan = async () => {
+    const submitBulkBan = async () => {
         if (selectedIds.size === 0 || !bulkBanReason.trim()) return;
         setIsBulkBanning(true);
         try {
             await userManagementApi.bulkBanUsers({
                 user_ids: Array.from(selectedIds),
                 reason: bulkBanReason,
-                is_permanent: true,
+                is_permanent: isBulkBanPermanent,
+                duration_value: isBulkBanPermanent ? undefined : bulkBanDurationValue,
+                duration_type: isBulkBanPermanent ? undefined : (bulkBanDurationType as any),
             });
             toast.success(t('userManagement.bulkBanSuccess') || `Banned ${selectedIds.size} users`);
             setShowBulkBanModal(false);
             setBulkBanReason('');
+            setIsBulkBanPermanent(false);
             setSelectedIds(new Set());
             fetchUsers();
             fetchStats();
@@ -213,31 +244,87 @@ export default function UsersPage() {
         }
     };
 
-    const handleQuickBan = async (userId: string, e: React.MouseEvent) => {
+    const openBanModal = (user: UserListItem, e: React.MouseEvent) => {
         e.stopPropagation();
-        const reason = prompt(t('userManagement.enterBanReason') || 'Enter ban reason:');
-        if (!reason) return;
+        setSelectedUser(user);
+        setBanReason('');
+        setBanDurationValue(1);
+        setBanDurationType('days');
+        setIsBanPermanent(false);
+        setShowBanModal(true);
+    };
+
+    const submitBanUser = async () => {
+        if (!selectedUser || !banReason.trim()) return;
+        setIsBanning(true);
         try {
-            await userManagementApi.banUser(userId, { reason, is_permanent: true });
+            await userManagementApi.banUser(selectedUser.id, {
+                reason: banReason,
+                is_permanent: isBanPermanent,
+                duration_value: isBanPermanent ? undefined : banDurationValue,
+                duration_type: isBanPermanent ? undefined : (banDurationType as any),
+            });
             toast.success(t('userManagement.banSuccess') || 'User banned');
             fetchUsers();
             fetchStats();
+            setShowBanModal(false);
         } catch (error) {
             console.error('Failed to ban:', error);
             toast.error(t('common.error') || 'Failed to ban user');
+        } finally {
+            setIsBanning(false);
         }
     };
 
-    const handleQuickUnban = async (userId: string, e: React.MouseEvent) => {
+    const openUnbanModal = (user: UserListItem, e: React.MouseEvent) => {
         e.stopPropagation();
+        setSelectedUser(user);
+        setUnbanNote('');
+        setShowUnbanModal(true);
+    };
+
+    const submitUnbanUser = async () => {
+        if (!selectedUser) return;
+        setIsUnbanning(true);
         try {
-            await userManagementApi.unbanUser(userId, {});
+            await userManagementApi.unbanUser(selectedUser.id, { note: unbanNote });
             toast.success(t('userManagement.unbanSuccess') || 'User unbanned');
             fetchUsers();
             fetchStats();
+            setShowUnbanModal(false);
         } catch (error) {
             console.error('Failed to unban:', error);
             toast.error(t('common.error') || 'Failed to unban user');
+        } finally {
+            setIsUnbanning(false);
+        }
+    };
+
+    const openBulkNotifyModal = () => {
+        setNotifyTitle('');
+        setNotifyContent('');
+        setNotifyType('INFO');
+        setShowBulkNotifyModal(true);
+    };
+
+    const submitBulkNotify = async () => {
+        if (selectedIds.size === 0 || !notifyTitle.trim() || !notifyContent.trim()) return;
+        setIsSendingNotify(true);
+        try {
+            await userManagementApi.bulkSendNotification({
+                user_ids: Array.from(selectedIds),
+                title: notifyTitle,
+                content: notifyContent,
+                type: notifyType,
+            });
+            toast.success(t('userManagement.bulkNotifySuccess') || `Sent notification to ${selectedIds.size} users`);
+            setShowBulkNotifyModal(false);
+            setSelectedIds(new Set());
+        } catch (error) {
+            console.error('Failed to send bulk notification:', error);
+            toast.error(t('common.error') || 'Failed to send notifications');
+        } finally {
+            setIsSendingNotify(false);
         }
     };
 
@@ -367,7 +454,20 @@ export default function UsersPage() {
                     </span>
                     <div className="flex gap-2">
                         <button
-                            onClick={() => setShowBulkBanModal(true)}
+                            onClick={openBulkNotifyModal}
+                            className="flex items-center gap-2 px-3 py-1.5 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-lg transition-colors text-sm"
+                        >
+                            <Bell className="w-4 h-4" />
+                            <span className="hidden sm:inline">{t('userManagement.bulkNotify') || 'Send Notification'}</span>
+                        </button>
+                        <button
+                            onClick={() => {
+                                setBulkBanReason('');
+                                setBulkBanDurationValue(1);
+                                setBulkBanDurationType('days');
+                                setIsBulkBanPermanent(false);
+                                setShowBulkBanModal(true);
+                            }}
                             className="flex items-center gap-2 px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg transition-colors text-sm"
                         >
                             <Ban className="w-4 h-4" />
@@ -408,12 +508,22 @@ export default function UsersPage() {
                             <thead>
                                 <tr className="border-b border-[var(--border-primary)] bg-[var(--background-tertiary)]">
                                     <th className="px-4 py-3 w-10">
-                                        <input
-                                            type="checkbox"
-                                            checked={selectedIds.size === users.length && users.length > 0}
-                                            onChange={toggleSelectAll}
-                                            className="rounded border-[var(--border-primary)]"
-                                        />
+                                        <label className="relative inline-flex items-center cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedIds.size === users.length && users.length > 0}
+                                                onChange={toggleSelectAll}
+                                                className="sr-only peer"
+                                            />
+                                            <div className={`w-5 h-5 rounded border-2 transition-all duration-200 flex items-center justify-center ${selectedIds.size === users.length && users.length > 0
+                                                ? 'bg-[var(--accent-primary)] border-[var(--accent-primary)]'
+                                                : 'border-[var(--border-primary)] bg-[var(--background-tertiary)]'
+                                                }`}>
+                                                {selectedIds.size === users.length && users.length > 0 && (
+                                                    <CheckCircle2 className="w-3 h-3 text-white" />
+                                                )}
+                                            </div>
+                                        </label>
                                     </th>
                                     <th className="px-4 py-3 text-left text-xs font-medium text-[var(--text-muted)] uppercase">
                                         {t('userManagement.table.name') || 'Name'}
@@ -446,12 +556,22 @@ export default function UsersPage() {
                                         onClick={() => router.push(`/users/${user.id}`)}
                                     >
                                         <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                                            <input
-                                                type="checkbox"
-                                                checked={selectedIds.has(user.id)}
-                                                onChange={() => toggleSelect(user.id)}
-                                                className="rounded border-[var(--border-primary)]"
-                                            />
+                                            <label className="relative inline-flex items-center cursor-pointer">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedIds.has(user.id)}
+                                                    onChange={() => toggleSelect(user.id)}
+                                                    className="sr-only peer"
+                                                />
+                                                <div className={`w-5 h-5 rounded border-2 transition-all duration-200 flex items-center justify-center ${selectedIds.has(user.id)
+                                                    ? 'bg-[var(--accent-primary)] border-[var(--accent-primary)]'
+                                                    : 'border-[var(--border-primary)] bg-[var(--background-tertiary)] hover:border-[var(--accent-primary)]/50'
+                                                    }`}>
+                                                    {selectedIds.has(user.id) && (
+                                                        <CheckCircle2 className="w-3 h-3 text-white" />
+                                                    )}
+                                                </div>
+                                            </label>
                                         </td>
                                         <td className="px-4 py-3">
                                             <span className="text-white font-medium">{user.name}</span>
@@ -496,7 +616,7 @@ export default function UsersPage() {
                                             <div className="flex items-center justify-end gap-1">
                                                 {user.is_banned ? (
                                                     <button
-                                                        onClick={(e) => handleQuickUnban(user.id, e)}
+                                                        onClick={(e) => openUnbanModal(user, e)}
                                                         className="p-1.5 rounded hover:bg-green-500/20 text-green-400 transition-colors"
                                                         title={t('userManagement.unban') || 'Unban'}
                                                     >
@@ -504,7 +624,7 @@ export default function UsersPage() {
                                                     </button>
                                                 ) : (
                                                     <button
-                                                        onClick={(e) => handleQuickBan(user.id, e)}
+                                                        onClick={(e) => openBanModal(user, e)}
                                                         className="p-1.5 rounded hover:bg-red-500/20 text-red-400 transition-colors"
                                                         title={t('userManagement.ban') || 'Ban'}
                                                     >
@@ -574,8 +694,8 @@ export default function UsersPage() {
 
             {/* Bulk Ban Modal */}
             {showBulkBanModal && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-[var(--background-secondary)] rounded-xl p-6 w-full max-w-md border border-[var(--border-primary)]">
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fadeIn">
+                    <div className="bg-[var(--background-secondary)] rounded-xl p-6 w-full max-w-md border border-[var(--border-primary)] shadow-2xl">
                         <h2 className="text-xl font-bold text-white mb-4">
                             {t('userManagement.bulkBanTitle') || `Ban ${selectedIds.size} Users`}
                         </h2>
@@ -592,6 +712,52 @@ export default function UsersPage() {
                                     placeholder={t('userManagement.banReasonPlaceholder') || 'Enter ban reason...'}
                                 />
                             </div>
+
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="checkbox"
+                                    id="bulkBanPermanent"
+                                    checked={isBulkBanPermanent}
+                                    onChange={(e) => setIsBulkBanPermanent(e.target.checked)}
+                                    className="rounded border-[var(--border-primary)] bg-[var(--background-tertiary)]"
+                                />
+                                <label htmlFor="bulkBanPermanent" className="text-white text-sm cursor-pointer select-none">
+                                    {t('userManagement.permanentBan') || 'Permanent Ban'}
+                                </label>
+                            </div>
+
+                            {!isBulkBanPermanent && (
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm text-[var(--text-muted)] mb-1">
+                                            {t('userManagement.duration') || 'Duration'}
+                                        </label>
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            value={bulkBanDurationValue}
+                                            onChange={(e) => setBulkBanDurationValue(parseInt(e.target.value) || 1)}
+                                            className="w-full px-3 py-2 bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded-lg text-white focus:outline-none focus:border-[var(--accent-primary)]"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm text-[var(--text-muted)] mb-1">
+                                            {t('userManagement.unit') || 'Unit'}
+                                        </label>
+                                        <select
+                                            value={bulkBanDurationType}
+                                            onChange={(e) => setBulkBanDurationType(e.target.value)}
+                                            className="w-full px-3 py-2 bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded-lg text-white focus:outline-none focus:border-[var(--accent-primary)] appearance-none cursor-pointer"
+                                        >
+                                            <option value="minutes">{t('common.minutes') || 'Minutes'}</option>
+                                            <option value="hours">{t('common.hours') || 'Hours'}</option>
+                                            <option value="days">{t('common.days') || 'Days'}</option>
+                                            <option value="weeks">{t('common.weeks') || 'Weeks'}</option>
+                                            <option value="months">{t('common.months') || 'Months'}</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                         <div className="flex justify-end gap-2 mt-6">
                             <button
@@ -604,12 +770,222 @@ export default function UsersPage() {
                                 {t('common.cancel') || 'Cancel'}
                             </button>
                             <button
-                                onClick={handleBulkBan}
+                                onClick={submitBulkBan}
                                 disabled={isBulkBanning || !bulkBanReason.trim()}
                                 className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors disabled:opacity-50"
                             >
                                 {isBulkBanning && <Loader2 className="w-4 h-4 animate-spin" />}
                                 {t('userManagement.confirmBulkBan') || 'Ban Users'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Single Ban Modal */}
+            {showBanModal && selectedUser && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fadeIn">
+                    <div className="bg-[var(--background-secondary)] rounded-xl p-6 w-full max-w-md border border-[var(--border-primary)] shadow-2xl">
+                        <h2 className="text-xl font-bold text-white mb-4">
+                            {t('userManagement.banUserTitle') || 'Ban User'}: {selectedUser.name}
+                        </h2>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm text-[var(--text-muted)] mb-1">
+                                    {t('userManagement.reason') || 'Reason'} *
+                                </label>
+                                <textarea
+                                    value={banReason}
+                                    onChange={(e) => setBanReason(e.target.value)}
+                                    className="w-full px-3 py-2 bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded-lg text-white placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-primary)]"
+                                    rows={3}
+                                    placeholder={t('userManagement.banReasonPlaceholder') || 'Enter ban reason...'}
+                                />
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="checkbox"
+                                    id="banPermanent"
+                                    checked={isBanPermanent}
+                                    onChange={(e) => setIsBanPermanent(e.target.checked)}
+                                    className="rounded border-[var(--border-primary)] bg-[var(--background-tertiary)]"
+                                />
+                                <label htmlFor="banPermanent" className="text-white text-sm cursor-pointer select-none">
+                                    {t('userManagement.permanentBan') || 'Permanent Ban'}
+                                </label>
+                            </div>
+
+                            {!isBanPermanent && (
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm text-[var(--text-muted)] mb-1">
+                                            {t('userManagement.duration') || 'Duration'}
+                                        </label>
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            value={banDurationValue}
+                                            onChange={(e) => setBanDurationValue(parseInt(e.target.value) || 1)}
+                                            className="w-full px-3 py-2 bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded-lg text-white focus:outline-none focus:border-[var(--accent-primary)]"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm text-[var(--text-muted)] mb-1">
+                                            {t('userManagement.unit') || 'Unit'}
+                                        </label>
+                                        <select
+                                            value={banDurationType}
+                                            onChange={(e) => setBanDurationType(e.target.value)}
+                                            className="w-full px-3 py-2 bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded-lg text-white focus:outline-none focus:border-[var(--accent-primary)] appearance-none cursor-pointer"
+                                        >
+                                            <option value="minutes">{t('common.minutes') || 'Minutes'}</option>
+                                            <option value="hours">{t('common.hours') || 'Hours'}</option>
+                                            <option value="days">{t('common.days') || 'Days'}</option>
+                                            <option value="weeks">{t('common.weeks') || 'Weeks'}</option>
+                                            <option value="months">{t('common.months') || 'Months'}</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                        <div className="flex justify-end gap-2 mt-6">
+                            <button
+                                onClick={() => setShowBanModal(false)}
+                                className="px-4 py-2 text-[var(--text-muted)] hover:text-white transition-colors"
+                            >
+                                {t('common.cancel') || 'Cancel'}
+                            </button>
+                            <button
+                                onClick={submitBanUser}
+                                disabled={isBanning || !banReason.trim()}
+                                className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors disabled:opacity-50"
+                            >
+                                {isBanning && <Loader2 className="w-4 h-4 animate-spin" />}
+                                {t('userManagement.ban') || 'Ban'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Unban Modal */}
+            {showUnbanModal && selectedUser && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fadeIn">
+                    <div className="bg-[var(--background-secondary)] rounded-xl p-6 w-full max-w-md border border-[var(--border-primary)] shadow-2xl">
+                        <h2 className="text-xl font-bold text-white mb-4">
+                            {t('userManagement.unbanUserTitle') || 'Unban User'}: {selectedUser.name}
+                        </h2>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm text-[var(--text-muted)] mb-1">
+                                    {t('userManagement.note') || 'Note'} ({t('common.optional') || 'Optional'})
+                                </label>
+                                <textarea
+                                    value={unbanNote}
+                                    onChange={(e) => setUnbanNote(e.target.value)}
+                                    className="w-full px-3 py-2 bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded-lg text-white placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-primary)]"
+                                    rows={3}
+                                    placeholder={t('userManagement.unbanNotePlaceholder') || 'Enter note...'}
+                                />
+                            </div>
+                        </div>
+                        <div className="flex justify-end gap-2 mt-6">
+                            <button
+                                onClick={() => setShowUnbanModal(false)}
+                                className="px-4 py-2 text-[var(--text-muted)] hover:text-white transition-colors"
+                            >
+                                {t('common.cancel') || 'Cancel'}
+                            </button>
+                            <button
+                                onClick={submitUnbanUser}
+                                disabled={isUnbanning}
+                                className="flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors disabled:opacity-50"
+                            >
+                                {isUnbanning && <Loader2 className="w-4 h-4 animate-spin" />}
+                                {t('userManagement.unban') || 'Unban'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Bulk Notification Modal */}
+            {showBulkNotifyModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fadeIn">
+                    <div className="bg-[var(--background-secondary)] rounded-xl p-6 w-full max-w-md border border-[var(--border-primary)] shadow-2xl">
+                        <div className="flex items-center gap-4 mb-4">
+                            <div className="p-3 rounded-full bg-blue-500/20 text-blue-400">
+                                <Bell className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <h2 className="text-xl font-bold text-white">
+                                    {t('userManagement.bulkNotifyTitle') || 'Send Notification'}
+                                </h2>
+                                <p className="text-sm text-[var(--text-muted)]">
+                                    {t('userManagement.toUsers').replace('{count}', String(selectedIds.size)) || `To ${selectedIds.size} selected users`}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm text-[var(--text-muted)] mb-1">
+                                    {t('userManagement.notifyTitle') || 'Title'} *
+                                </label>
+                                <input
+                                    type="text"
+                                    value={notifyTitle}
+                                    onChange={(e) => setNotifyTitle(e.target.value)}
+                                    className="w-full px-3 py-2 bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded-lg text-white placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-primary)]"
+                                    placeholder={t('userManagement.notifyTitlePlaceholder') || 'Notification title'}
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm text-[var(--text-muted)] mb-1">
+                                    {t('userManagement.notifyType') || 'Type'}
+                                </label>
+                                <select
+                                    value={notifyType}
+                                    onChange={(e) => setNotifyType(e.target.value)}
+                                    className="w-full px-3 py-2 bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded-lg text-white focus:outline-none focus:border-[var(--accent-primary)] appearance-none cursor-pointer"
+                                >
+                                    <option value="INFO">Info</option>
+                                    <option value="SUCCESS">Success</option>
+                                    <option value="WARNING">Warning</option>
+                                    <option value="ERROR">Error</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm text-[var(--text-muted)] mb-1">
+                                    {t('userManagement.notifyContent') || 'Content'} *
+                                </label>
+                                <textarea
+                                    value={notifyContent}
+                                    onChange={(e) => setNotifyContent(e.target.value)}
+                                    className="w-full px-3 py-2 bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded-lg text-white placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-primary)]"
+                                    rows={4}
+                                    placeholder={t('userManagement.notifyContentPlaceholder') || 'Notification content...'}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end gap-2 mt-6">
+                            <button
+                                onClick={() => setShowBulkNotifyModal(false)}
+                                className="px-4 py-2 text-[var(--text-muted)] hover:text-white transition-colors"
+                            >
+                                {t('common.cancel') || 'Cancel'}
+                            </button>
+                            <button
+                                onClick={submitBulkNotify}
+                                disabled={isSendingNotify || !notifyTitle.trim() || !notifyContent.trim()}
+                                className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors disabled:opacity-50"
+                            >
+                                {isSendingNotify && <Loader2 className="w-4 h-4 animate-spin" />}
+                                {t('common.send') || 'Send'}
                             </button>
                         </div>
                     </div>

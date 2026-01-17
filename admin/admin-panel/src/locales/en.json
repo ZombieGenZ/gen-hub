@@ -126,7 +126,12 @@
         "search": "Search",
         "noResults": "No results found",
         "searchRoles": "Search roles...",
-        "searchPermissions": "Search permissions..."
+        "searchPermissions": "Search permissions...",
+        "minutes": "Minutes",
+        "hours": "Hours",
+        "days": "Days",
+        "weeks": "Weeks",
+        "months": "Months"
     },
     "sidebar": {
         "title": "Admin Panel",
@@ -447,6 +452,16 @@
         "unread": "Unread",
         "bulkBan": "Ban Selected",
         "bulkUnban": "Unban Selected",
+        "bulkNotify": "Send Notification",
+        "bulkNotifyTitle": "Send Notification",
+        "toUsers": "To {count} selected users",
+        "notifyTitle": "Title",
+        "notifyType": "Type",
+        "notifyContent": "Content",
+        "notifyTitlePlaceholder": "Notification title",
+        "notifyContentPlaceholder": "Notification content...",
+        "duration": "Duration",
+        "unit": "Unit",
         "bulkBanTitle": "Ban Users",
         "confirmBulkBan": "Confirm Ban",
         "bulkBanSuccess": "Users banned",
@@ -537,6 +552,9 @@
             "createdAt": "Created At"
         },
         "active": "Active",
-        "inactive": "Inactive"
+        "inactive": "Inactive",
+        "filterByModule": "Filter by Module",
+        "allModules": "All Modules",
+        "module": "Module"
     }
 }

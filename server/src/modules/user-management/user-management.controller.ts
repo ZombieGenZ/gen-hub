@@ -33,6 +33,7 @@ import {
     BulkWarnUsersDto,
     ClearAllWarningsDto,
     BulkClearAllWarningsDto,
+    DurationType,
 } from './dto';
 import {
     GetResponse,
@@ -259,16 +260,12 @@ export class UserManagementController {
         @I18nLang() lang: string,
         @Req() req: Request,
     ) {
-        let bannedEnd: Date | null = null;
-        if (!dto.is_permanent && dto.banned_end) {
-            bannedEnd = new Date(dto.banned_end);
-        }
-
         const result = await this.service.bulkBanUsers(
             dto.user_ids,
             dto.reason,
             dto.is_permanent || false,
-            bannedEnd,
+            dto.duration_value,
+            dto.duration_type,
             adminId,
             lang,
             {
@@ -312,17 +309,13 @@ export class UserManagementController {
         @I18nLang() lang: string,
         @Req() req: Request,
     ) {
-        let expiresAt: Date | undefined;
-        if (!dto.is_permanent && dto.expires_at) {
-            expiresAt = new Date(dto.expires_at);
-        }
-
         const result = await this.service.bulkWarnUsers(
             dto.user_ids,
             dto.category_id,
             dto.reason,
             dto.is_permanent || false,
-            expiresAt,
+            dto.duration_value,
+            dto.duration_type,
             adminId,
             lang,
             {

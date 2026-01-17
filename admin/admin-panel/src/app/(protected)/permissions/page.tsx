@@ -40,6 +40,8 @@ export default function PermissionsPage() {
     const [statusFilter, setStatusFilter] = useState<string>('ACTIVE');
     const [searchQuery, setSearchQuery] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
+    const [moduleFilter, setModuleFilter] = useState<string>('');
+    const [modules, setModules] = useState<string[]>([]);
 
     // Debounce search
     useEffect(() => {
@@ -51,7 +53,20 @@ export default function PermissionsPage() {
 
     useEffect(() => {
         setPage(1);
-    }, [debouncedSearch, statusFilter]);
+    }, [debouncedSearch, statusFilter, moduleFilter]);
+
+    // Fetch modules list
+    useEffect(() => {
+        const fetchModules = async () => {
+            try {
+                const data = await permissionsApi.getModules();
+                setModules(data);
+            } catch (error) {
+                console.error('Failed to fetch modules:', error);
+            }
+        };
+        fetchModules();
+    }, []);
 
     const fetchPermissions = useCallback(async () => {
         setIsLoading(true);
@@ -61,6 +76,7 @@ export default function PermissionsPage() {
                 offset: String((page - 1) * limit),
                 keywords: debouncedSearch || undefined,
                 status: statusFilter as 'ACTIVE' | 'INACTIVE' | 'ALL' || undefined,
+                module: moduleFilter || undefined,
             });
             setPermissions((response as { data: Permission[]; total: number }).data);
             setTotal((response as { data: Permission[]; total: number }).total);
@@ -70,7 +86,7 @@ export default function PermissionsPage() {
         } finally {
             setIsLoading(false);
         }
-    }, [page, limit, debouncedSearch, statusFilter, t]);
+    }, [page, limit, debouncedSearch, statusFilter, moduleFilter, t]);
 
     useEffect(() => {
         fetchPermissions();
@@ -175,11 +191,25 @@ export default function PermissionsPage() {
                     <select
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value)}
-                        className="px-4 py-2 bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded-lg text-white focus:outline-none focus:border-[var(--accent-primary)] appearance-none cursor-pointer"
+                        className="px-4 py-2 bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded-lg text-white focus:outline-none focus:border-[var(--accent-primary)] appearance-none cursor-pointer min-w-[140px]"
                     >
                         <option value="ALL">{t('permissions.allStatus') || 'All Status'}</option>
                         <option value="ACTIVE">{t('permissions.active') || 'Active'}</option>
                         <option value="INACTIVE">{t('permissions.inactive') || 'Inactive'}</option>
+                    </select>
+
+                    {/* Module Filter */}
+                    <select
+                        value={moduleFilter}
+                        onChange={(e) => setModuleFilter(e.target.value)}
+                        className="px-4 py-2 bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded-lg text-white focus:outline-none focus:border-[var(--accent-primary)] appearance-none cursor-pointer min-w-[160px]"
+                    >
+                        <option value="">{t('permissions.allModules') || 'All Modules'}</option>
+                        {modules.map((mod) => (
+                            <option key={mod} value={mod}>
+                                {mod}
+                            </option>
+                        ))}
                     </select>
                 </div>
             </div>
