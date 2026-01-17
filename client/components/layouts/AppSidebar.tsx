@@ -10,6 +10,8 @@ import {
     BellIcon,
     Cog6ToothIcon,
     ArrowLeftOnRectangleIcon,
+    WalletIcon,
+    PlusIcon,
 } from "@heroicons/react/24/outline";
 import { useSidebar } from "@/components/providers/sidebar-provider";
 import { cn } from "@/lib/utils";
@@ -188,14 +190,22 @@ export function AppSidebarContent({
 
                                 <div className={cn(
                                     "flex-1 min-w-0 transition-opacity duration-300",
-                                    isCollapsed ? "hidden opacity-0 w-0" : "flex flex-col"
+                                    isCollapsed ? "hidden opacity-0 w-0" : "flex flex-col gap-0.5"
                                 )}>
                                     <p className="text-sm font-medium text-sidebar-foreground truncate">
                                         {user?.name || defaultUserName}
                                     </p>
-                                    <p className="text-xs text-sidebar-foreground/70 truncate">
-                                        {user?.email || defaultUserEmail}
-                                    </p>
+                                    <div className="flex flex-col gap-1">
+                                        <p className="text-xs text-sidebar-foreground/70 truncate">
+                                            {user?.email || defaultUserEmail}
+                                        </p>
+                                        <div className="flex items-center gap-1.5 ">
+                                            <WalletIcon className="w-3.5 h-3.5 text-primary/80" />
+                                            <span className="text-xs font-semibold text-primary/90">
+                                                {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(user?.balance || 0)}
+                                            </span>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 {!isCollapsed && (
@@ -204,6 +214,20 @@ export function AppSidebarContent({
                             </div>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align={isCollapsed ? "start" : "end"} side="right" className="w-56 mb-2 p-2 bg-sidebar border-sidebar-border shadow-md rounded-xl">
+                            <DropdownMenuItem className="group flex flex-col items-start gap-1 p-2.5 focus:bg-sidebar-accent focus:text-sidebar-accent-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus:shadow-none focus:outline-none focus:ring-0 my-1 border-none cursor-pointer">
+                                <div className="flex items-center justify-between w-full">
+                                    <p className="text-[10px] uppercase tracking-wider font-semibold text-sidebar-foreground/60 ml-0.5">Số dư khả dụng</p>
+                                    <div className="opacity-0 group-hover:opacity-100 transition-all duration-200 bg-primary/10 hover:bg-primary/20 text-primary rounded-full p-1" title="Nạp tiền">
+                                        <PlusIcon className="w-3 h-3" />
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <WalletIcon className="w-4 h-4 text-primary" />
+                                    <span className="font-bold text-sm text-primary">
+                                        {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(user?.balance || 0)}
+                                    </span>
+                                </div>
+                            </DropdownMenuItem>
                             <DropdownMenuItem className="cursor-pointer rounded-lg p-2.5 focus:bg-sidebar-accent focus:text-sidebar-accent-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus:shadow-none focus:outline-none focus:ring-0 my-1 border-none group" asChild>
                                 <Link href="/user/profile" className="flex items-center w-full">
                                     <UserIcon className="mr-3 h-4 w-4 text-sidebar-foreground/70 group-hover:text-sidebar-accent-foreground" />

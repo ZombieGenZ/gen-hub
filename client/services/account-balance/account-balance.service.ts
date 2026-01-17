@@ -50,6 +50,8 @@ export class AccountBalanceService {
         type?: string;
         from_date?: string;
         to_date?: string;
+        description?: string;
+        status?: string;
     } = {}) {
         const query = new URLSearchParams();
         if (params.page) query.append('page', String(params.page));
@@ -57,6 +59,8 @@ export class AccountBalanceService {
         if (params.type) query.append('type', params.type);
         if (params.from_date) query.append('from_date', params.from_date);
         if (params.to_date) query.append('to_date', params.to_date);
+        if (params.description) query.append('description', params.description);
+        if (params.status) query.append('status', params.status);
 
         const response = await fetch(`${API}/organizations/${orgId}/balance/transactions?${query.toString()}`, {
             method: 'GET',

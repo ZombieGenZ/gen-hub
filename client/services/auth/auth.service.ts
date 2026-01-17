@@ -307,4 +307,6 @@ export class AuthService {
 
         return response.json();
     }
+
 }
+export const authService = new AuthService();
