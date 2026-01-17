@@ -21,6 +21,8 @@ import {
     Wifi,
     UserCheck,
     Ban,
+    MoreHorizontal,
+    Trash2,
 } from 'lucide-react';
 
 const PAGE_SIZE_OPTIONS = [25, 50, 75, 100];
@@ -58,6 +60,12 @@ export default function UsersPage() {
     const [statusFilter, setStatusFilter] = useState<string>('');
     const [searchQuery, setSearchQuery] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
+
+    // Selection state
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [showBulkBanModal, setShowBulkBanModal] = useState(false);
+    const [bulkBanReason, setBulkBanReason] = useState('');
+    const [isBulkBanning, setIsBulkBanning] = useState(false);
 
     // Debounce search
     useEffect(() => {
@@ -146,6 +154,91 @@ export default function UsersPage() {
     const handleRefresh = () => {
         fetchUsers();
         fetchStats();
+        setSelectedIds(new Set());
+    };
+
+    const toggleSelectAll = () => {
+        if (selectedIds.size === users.length) {
+            setSelectedIds(new Set());
+        } else {
+            setSelectedIds(new Set(users.map(u => u.id)));
+        }
+    };
+
+    const toggleSelect = (id: string) => {
+        const newSet = new Set(selectedIds);
+        if (newSet.has(id)) {
+            newSet.delete(id);
+        } else {
+            newSet.add(id);
+        }
+        setSelectedIds(newSet);
+    };
+
+    const handleBulkBan = async () => {
+        if (selectedIds.size === 0 || !bulkBanReason.trim()) return;
+        setIsBulkBanning(true);
+        try {
+            await userManagementApi.bulkBanUsers({
+                user_ids: Array.from(selectedIds),
+                reason: bulkBanReason,
+                is_permanent: true,
+            });
+            toast.success(t('userManagement.bulkBanSuccess') || `Banned ${selectedIds.size} users`);
+            setShowBulkBanModal(false);
+            setBulkBanReason('');
+            setSelectedIds(new Set());
+            fetchUsers();
+            fetchStats();
+        } catch (error) {
+            console.error('Failed to bulk ban:', error);
+            toast.error(t('common.error') || 'Failed to ban users');
+        } finally {
+            setIsBulkBanning(false);
+        }
+    };
+
+    const handleBulkUnban = async () => {
+        if (selectedIds.size === 0) return;
+        if (!confirm(t('userManagement.confirmBulkUnban') || 'Unban selected users?')) return;
+        try {
+            await userManagementApi.bulkUnbanUsers({ user_ids: Array.from(selectedIds) });
+            toast.success(t('userManagement.bulkUnbanSuccess') || `Unbanned ${selectedIds.size} users`);
+            setSelectedIds(new Set());
+            fetchUsers();
+            fetchStats();
+        } catch (error) {
+            console.error('Failed to bulk unban:', error);
+            toast.error(t('common.error') || 'Failed to unban users');
+        }
+    };
+
+    const handleQuickBan = async (userId: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        const reason = prompt(t('userManagement.enterBanReason') || 'Enter ban reason:');
+        if (!reason) return;
+        try {
+            await userManagementApi.banUser(userId, { reason, is_permanent: true });
+            toast.success(t('userManagement.banSuccess') || 'User banned');
+            fetchUsers();
+            fetchStats();
+        } catch (error) {
+            console.error('Failed to ban:', error);
+            toast.error(t('common.error') || 'Failed to ban user');
+        }
+    };
+
+    const handleQuickUnban = async (userId: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        try {
+            await userManagementApi.unbanUser(userId, {});
+            toast.success(t('userManagement.unbanSuccess') || 'User unbanned');
+            fetchUsers();
+            fetchStats();
+        } catch (error) {
+            console.error('Failed to unban:', error);
+            toast.error(t('common.error') || 'Failed to unban user');
+        }
     };
 
     return (
@@ -266,6 +359,38 @@ export default function UsersPage() {
                 </div>
             </div>
 
+            {/* Bulk Action Toolbar */}
+            {selectedIds.size > 0 && (
+                <div className="bg-[var(--accent-primary-muted)] border border-[var(--accent-primary)] rounded-xl p-4 mb-4 flex flex-wrap items-center justify-between gap-4">
+                    <span className="text-[var(--accent-primary)] font-medium">
+                        {selectedIds.size} {t('common.selected') || 'selected'}
+                    </span>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => setShowBulkBanModal(true)}
+                            className="flex items-center gap-2 px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg transition-colors text-sm"
+                        >
+                            <Ban className="w-4 h-4" />
+                            <span className="hidden sm:inline">{t('userManagement.bulkBan') || 'Ban Selected'}</span>
+                        </button>
+                        <button
+                            onClick={handleBulkUnban}
+                            className="flex items-center gap-2 px-3 py-1.5 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-lg transition-colors text-sm"
+                        >
+                            <CheckCircle2 className="w-4 h-4" />
+                            <span className="hidden sm:inline">{t('userManagement.bulkUnban') || 'Unban Selected'}</span>
+                        </button>
+                        <button
+                            onClick={() => setSelectedIds(new Set())}
+                            className="flex items-center gap-2 px-3 py-1.5 bg-[var(--background-tertiary)] hover:bg-[var(--border-primary)] text-[var(--text-muted)] rounded-lg transition-colors text-sm"
+                        >
+                            <XCircle className="w-4 h-4" />
+                            <span className="hidden sm:inline">{t('common.cancel') || 'Cancel'}</span>
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* Users Table */}
             <div className="bg-[var(--background-secondary)] rounded-xl border border-[var(--border-primary)] overflow-hidden">
                 {isLoading ? (
@@ -282,6 +407,14 @@ export default function UsersPage() {
                         <table className="w-full">
                             <thead>
                                 <tr className="border-b border-[var(--border-primary)] bg-[var(--background-tertiary)]">
+                                    <th className="px-4 py-3 w-10">
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedIds.size === users.length && users.length > 0}
+                                            onChange={toggleSelectAll}
+                                            className="rounded border-[var(--border-primary)]"
+                                        />
+                                    </th>
                                     <th className="px-4 py-3 text-left text-xs font-medium text-[var(--text-muted)] uppercase">
                                         {t('userManagement.table.name') || 'Name'}
                                     </th>
@@ -300,15 +433,26 @@ export default function UsersPage() {
                                     <th className="px-4 py-3 text-left text-xs font-medium text-[var(--text-muted)] uppercase">
                                         {t('userManagement.table.createdAt') || 'Created At'}
                                     </th>
+                                    <th className="px-4 py-3 text-right text-xs font-medium text-[var(--text-muted)] uppercase">
+                                        {t('userManagement.table.actions') || 'Actions'}
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {users.map((user) => (
                                     <tr
                                         key={user.id}
-                                        className="border-b border-[var(--border-primary)] hover:bg-[var(--background-tertiary)] cursor-pointer transition-colors"
+                                        className={`border-b border-[var(--border-primary)] hover:bg-[var(--background-tertiary)] cursor-pointer transition-colors ${selectedIds.has(user.id) ? 'bg-[var(--accent-primary-muted)]' : ''}`}
                                         onClick={() => router.push(`/users/${user.id}`)}
                                     >
+                                        <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedIds.has(user.id)}
+                                                onChange={() => toggleSelect(user.id)}
+                                                className="rounded border-[var(--border-primary)]"
+                                            />
+                                        </td>
                                         <td className="px-4 py-3">
                                             <span className="text-white font-medium">{user.name}</span>
                                         </td>
@@ -347,6 +491,34 @@ export default function UsersPage() {
                                             <span className="text-[var(--text-muted)] text-sm">
                                                 {formatDate(user.created_at)}
                                             </span>
+                                        </td>
+                                        <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
+                                            <div className="flex items-center justify-end gap-1">
+                                                {user.is_banned ? (
+                                                    <button
+                                                        onClick={(e) => handleQuickUnban(user.id, e)}
+                                                        className="p-1.5 rounded hover:bg-green-500/20 text-green-400 transition-colors"
+                                                        title={t('userManagement.unban') || 'Unban'}
+                                                    >
+                                                        <CheckCircle2 className="w-4 h-4" />
+                                                    </button>
+                                                ) : (
+                                                    <button
+                                                        onClick={(e) => handleQuickBan(user.id, e)}
+                                                        className="p-1.5 rounded hover:bg-red-500/20 text-red-400 transition-colors"
+                                                        title={t('userManagement.ban') || 'Ban'}
+                                                    >
+                                                        <Ban className="w-4 h-4" />
+                                                    </button>
+                                                )}
+                                                <button
+                                                    onClick={() => router.push(`/users/${user.id}`)}
+                                                    className="p-1.5 rounded hover:bg-[var(--background-tertiary)] text-[var(--text-muted)] transition-colors"
+                                                    title={t('common.view') || 'View'}
+                                                >
+                                                    <MoreHorizontal className="w-4 h-4" />
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}
@@ -399,6 +571,50 @@ export default function UsersPage() {
                     </div>
                 )}
             </div>
+
+            {/* Bulk Ban Modal */}
+            {showBulkBanModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-[var(--background-secondary)] rounded-xl p-6 w-full max-w-md border border-[var(--border-primary)]">
+                        <h2 className="text-xl font-bold text-white mb-4">
+                            {t('userManagement.bulkBanTitle') || `Ban ${selectedIds.size} Users`}
+                        </h2>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm text-[var(--text-muted)] mb-1">
+                                    {t('userManagement.reason') || 'Reason'} *
+                                </label>
+                                <textarea
+                                    value={bulkBanReason}
+                                    onChange={(e) => setBulkBanReason(e.target.value)}
+                                    className="w-full px-3 py-2 bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded-lg text-white placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-primary)]"
+                                    rows={3}
+                                    placeholder={t('userManagement.banReasonPlaceholder') || 'Enter ban reason...'}
+                                />
+                            </div>
+                        </div>
+                        <div className="flex justify-end gap-2 mt-6">
+                            <button
+                                onClick={() => {
+                                    setShowBulkBanModal(false);
+                                    setBulkBanReason('');
+                                }}
+                                className="px-4 py-2 text-[var(--text-muted)] hover:text-white transition-colors"
+                            >
+                                {t('common.cancel') || 'Cancel'}
+                            </button>
+                            <button
+                                onClick={handleBulkBan}
+                                disabled={isBulkBanning || !bulkBanReason.trim()}
+                                className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors disabled:opacity-50"
+                            >
+                                {isBulkBanning && <Loader2 className="w-4 h-4 animate-spin" />}
+                                {t('userManagement.confirmBulkBan') || 'Ban Users'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

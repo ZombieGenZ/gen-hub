@@ -674,8 +674,6 @@ export const backupApi = {
     },
 };
 
-// ==================== User Management API ====================
-
 export interface UserListItem {
     id: string;
     name: string;
@@ -740,6 +738,7 @@ export interface UserRolesAndPermissions {
         name: string;
         description: string | null;
         source: 'direct' | 'role';
+        is_denied?: boolean;
     }[];
 }
 
@@ -867,13 +866,91 @@ export const userManagementApi = {
     assignUserRolesPermissions: async (id: string, dto: {
         role_ids?: string[];
         permission_ids?: string[];
+        denied_permission_ids?: string[];
     }): Promise<UserRolesAndPermissions> => {
         const { data } = await api.put(`/admin/users/${id}/roles-permissions`, dto);
         return data.data;
     },
+
+    // Bulk operations
+    bulkBanUsers: async (dto: {
+        user_ids: string[];
+        reason: string;
+        is_permanent?: boolean;
+        banned_end?: string;
+    }): Promise<{ count: number }> => {
+        const { data } = await api.post('/admin/users/bulk/ban', dto);
+        return data.data;
+    },
+
+    bulkUnbanUsers: async (dto: {
+        user_ids: string[];
+        note?: string;
+    }): Promise<{ count: number }> => {
+        const { data } = await api.post('/admin/users/bulk/unban', dto);
+        return data.data;
+    },
+
+    bulkWarnUsers: async (dto: {
+        user_ids: string[];
+        category_id: string;
+        reason: string;
+        is_permanent?: boolean;
+        expires_at?: string;
+    }): Promise<{ count: number }> => {
+        const { data } = await api.post('/admin/users/bulk/warn', dto);
+        return data.data;
+    },
+
+    clearAllWarnings: async (id: string, dto?: { note?: string }): Promise<{ count: number }> => {
+        const { data } = await api.delete(`/admin/users/${id}/warnings`, { data: dto || {} });
+        return data.data;
+    },
+
+    bulkClearAllWarnings: async (dto: {
+        user_ids: string[];
+        note?: string;
+    }): Promise<{ count: number }> => {
+        const { data } = await api.delete('/admin/users/bulk/warnings', { data: dto });
+        return data.data;
+    },
+
+    // User notifications (admin view)
+    getUserNotifications: async (userId: string, options?: {
+        limit?: number;
+        offset?: number;
+    }): Promise<{ items: UserNotification[]; total: number }> => {
+        const params = new URLSearchParams();
+        if (options?.limit) params.append('limit', String(options.limit));
+        if (options?.offset) params.append('offset', String(options.offset));
+
+        const { data } = await api.get(`/user-notifications/user/${userId}?${params.toString()}`);
+        return data.data;
+    },
+
+    sendNotification: async (dto: {
+        user_id: string;
+        title: string;
+        content: string;
+        type?: string;
+        url?: string;
+    }): Promise<UserNotification> => {
+        const { data } = await api.post('/user-notifications/send', dto);
+        return data.data;
+    },
 };
 
-// ==================== Roles API ====================
+// User Notification type
+export interface UserNotification {
+    id: string;
+    user_id: string;
+    title: string;
+    content: string;
+    type: string;
+    url: string | null;
+    is_read: boolean;
+    created_at: string;
+}
 
 export interface Role {
     id: string;
@@ -955,8 +1032,6 @@ export const rolesApi = {
     },
 };
 
-// ==================== Permissions API ====================
-
 export interface Permission {
     id: string;
     key: string;
@@ -1006,8 +1081,6 @@ export const permissionsApi = {
         return data.data;
     },
 };
-
-// ==================== Warning Categories API ====================
 
 export interface WarningCategory {
     id: string;

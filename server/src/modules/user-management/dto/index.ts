@@ -133,4 +133,99 @@ export class QuerySessionsDto {
     offset?: number;
 }
 
+/**
+ * DTO bulk ban users
+ */
+export class BulkBanUsersDto {
+    @ApiProperty({ description: 'Danh sách ID users cần ban', example: ['uuid1', 'uuid2'] })
+    @IsUUID('4', { each: true, message: i18nValidationMessage('user-management.validation.user_ids_uuid') })
+    @IsNotEmpty({ message: i18nValidationMessage('user-management.validation.user_ids_required') })
+    user_ids: string[];
+
+    @ApiProperty({ description: 'Lý do ban', example: 'Vi phạm điều khoản sử dụng' })
+    @IsString({ message: i18nValidationMessage('user-management.validation.reason_string') })
+    @IsNotEmpty({ message: i18nValidationMessage('user-management.validation.reason_required') })
+    reason: string;
+
+    @ApiPropertyOptional({ description: 'Ban vĩnh viễn', example: false })
+    @IsBoolean({ message: i18nValidationMessage('user-management.validation.is_permanent_boolean') })
+    @IsOptional()
+    is_permanent?: boolean;
+
+    @ApiPropertyOptional({ description: 'Thời điểm hết ban (nếu không vĩnh viễn)', example: '2025-12-31T23:59:59.000Z' })
+    @IsDateString({}, { message: i18nValidationMessage('user-management.validation.banned_end_date') })
+    @IsOptional()
+    banned_end?: string;
+}
+
+/**
+ * DTO bulk unban users
+ */
+export class BulkUnbanUsersDto {
+    @ApiProperty({ description: 'Danh sách ID users cần unban', example: ['uuid1', 'uuid2'] })
+    @IsUUID('4', { each: true, message: i18nValidationMessage('user-management.validation.user_ids_uuid') })
+    @IsNotEmpty({ message: i18nValidationMessage('user-management.validation.user_ids_required') })
+    user_ids: string[];
+
+    @ApiPropertyOptional({ description: 'Ghi chú khi unban', example: 'Xác nhận đã xử lý vi phạm' })
+    @IsString({ message: i18nValidationMessage('user-management.validation.note_string') })
+    @IsOptional()
+    note?: string;
+}
+
+/**
+ * DTO bulk warn users
+ */
+export class BulkWarnUsersDto {
+    @ApiProperty({ description: 'Danh sách ID users cần cảnh cáo', example: ['uuid1', 'uuid2'] })
+    @IsUUID('4', { each: true, message: i18nValidationMessage('user-management.validation.user_ids_uuid') })
+    @IsNotEmpty({ message: i18nValidationMessage('user-management.validation.user_ids_required') })
+    user_ids: string[];
+
+    @ApiProperty({ description: 'ID danh mục cảnh báo', example: '550e8400-e29b-41d4-a716-446655440000' })
+    @IsUUID('4', { message: i18nValidationMessage('user-management.validation.category_id_uuid') })
+    @IsNotEmpty({ message: i18nValidationMessage('user-management.validation.category_id_required') })
+    category_id: string;
+
+    @ApiProperty({ description: 'Lý do cảnh báo chi tiết', example: 'Vi phạm quy định cộng đồng' })
+    @IsString({ message: i18nValidationMessage('user-management.validation.reason_string') })
+    @IsNotEmpty({ message: i18nValidationMessage('user-management.validation.reason_required') })
+    reason: string;
+
+    @ApiPropertyOptional({ description: 'Cảnh báo vĩnh viễn', example: false })
+    @IsBoolean({ message: i18nValidationMessage('user-management.validation.is_permanent_boolean') })
+    @IsOptional()
+    is_permanent?: boolean;
+
+    @ApiPropertyOptional({ description: 'Thời điểm hết hiệu lực cảnh báo', example: '2025-12-31T23:59:59.000Z' })
+    @IsDateString({}, { message: i18nValidationMessage('user-management.validation.expires_at_date') })
+    @IsOptional()
+    expires_at?: string;
+}
+
+/**
+ * DTO clear all warnings
+ */
+export class ClearAllWarningsDto {
+    @ApiPropertyOptional({ description: 'Ghi chú khi xóa tất cả cảnh cáo', example: 'Xóa cảnh cáo theo yêu cầu' })
+    @IsString({ message: i18nValidationMessage('user-management.validation.note_string') })
+    @IsOptional()
+    note?: string;
+}
+
+/**
+ * DTO bulk clear all warnings
+ */
+export class BulkClearAllWarningsDto {
+    @ApiProperty({ description: 'Danh sách ID users cần xóa cảnh cáo', example: ['uuid1', 'uuid2'] })
+    @IsUUID('4', { each: true, message: i18nValidationMessage('user-management.validation.user_ids_uuid') })
+    @IsNotEmpty({ message: i18nValidationMessage('user-management.validation.user_ids_required') })
+    user_ids: string[];
+
+    @ApiPropertyOptional({ description: 'Ghi chú khi xóa cảnh cáo', example: 'Xóa cảnh cáo theo yêu cầu' })
+    @IsString({ message: i18nValidationMessage('user-management.validation.note_string') })
+    @IsOptional()
+    note?: string;
+}
+
 export * from './assign-user-roles-permissions.dto';

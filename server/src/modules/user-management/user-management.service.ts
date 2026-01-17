@@ -521,8 +521,6 @@ export class UserManagementService {
         await this.redisService.delByPattern(`${CACHE_KEY_PREFIX}:${userId}:sessions:*`);
     }
 
-    // ==================== User Roles/Permissions ====================
-
     /**
      * Lấy roles và permissions của user
      */
@@ -622,5 +620,283 @@ export class UserManagementService {
         await this.redisService.set(cacheKey, JSON.stringify(stats), 30);
         return stats;
     }
-}
 
+    /**
+     * Bulk ban users
+     */
+    async bulkBanUsers(
+        userIds: string[],
+        reason: string,
+        isPermanent: boolean,
+        bannedEnd: Date | null,
+        adminId: string,
+        lang: string,
+        requestInfo?: { ip?: string; userAgent?: string },
+    ): Promise<{ count: number }> {
+        if (userIds.length === 0) {
+            throw new BadRequestException(this.i18n.t('user-management.error.no_users_selected', { lang }));
+        }
+
+        const result = await this.repository.banManyUsers(userIds, bannedEnd);
+
+        // Schedule unbans if not permanent
+        if (bannedEnd) {
+            const users = await this.repository.findManyByIds(userIds);
+            for (const user of users) {
+                this.banSchedulerService.scheduleUnban(user.id, bannedEnd, user.email || user.name);
+            }
+        }
+
+        // Invalidate caches
+        await this.invalidateListCache();
+        for (const userId of userIds) {
+            await this.invalidateUserCache(userId);
+        }
+
+        // Log
+        this.systemLogService.logAsync({
+            level: 'WARN',
+            module: 'user-management',
+            action: 'bulk_ban',
+            message: `Bulk ban ${result.count} users`,
+            userId: adminId,
+            ipAddress: requestInfo?.ip,
+            userAgent: requestInfo?.userAgent,
+            metaData: {
+                targetUserIds: userIds,
+                reason,
+                is_permanent: isPermanent,
+                banned_end: bannedEnd?.toISOString(),
+            },
+        });
+
+        // Emit realtime events
+        for (const userId of userIds) {
+            this.websocketGateway.emitUserBanned(
+                userId,
+                reason,
+                isPermanent,
+                bannedEnd?.toISOString() || null,
+                adminId,
+            );
+        }
+
+        return result;
+    }
+
+    /**
+     * Bulk unban users
+     */
+    async bulkUnbanUsers(
+        userIds: string[],
+        note: string | undefined,
+        adminId: string,
+        lang: string,
+        requestInfo?: { ip?: string; userAgent?: string },
+    ): Promise<{ count: number }> {
+        if (userIds.length === 0) {
+            throw new BadRequestException(this.i18n.t('user-management.error.no_users_selected', { lang }));
+        }
+
+        const result = await this.repository.unbanManyUsers(userIds);
+
+        // Cancel scheduled unbans
+        for (const userId of userIds) {
+            this.banSchedulerService.cancelScheduledUnban(userId);
+        }
+
+        // Invalidate caches
+        await this.invalidateListCache();
+        for (const userId of userIds) {
+            await this.invalidateUserCache(userId);
+            await this.redisService.invalidateUserCache(userId);
+        }
+
+        // Log
+        this.systemLogService.logAsync({
+            level: 'INFO',
+            module: 'user-management',
+            action: 'bulk_unban',
+            message: `Bulk unban ${result.count} users`,
+            userId: adminId,
+            ipAddress: requestInfo?.ip,
+            userAgent: requestInfo?.userAgent,
+            metaData: {
+                targetUserIds: userIds,
+                note,
+            },
+        });
+
+        // Emit realtime events
+        for (const userId of userIds) {
+            this.websocketGateway.emitUserUnbanned(userId, adminId);
+        }
+
+        return result;
+    }
+
+    /**
+     * Bulk warn users
+     */
+    async bulkWarnUsers(
+        userIds: string[],
+        categoryId: string,
+        reason: string,
+        isPermanent: boolean,
+        expiresAt: Date | undefined,
+        adminId: string,
+        lang: string,
+        requestInfo?: { ip?: string; userAgent?: string },
+    ): Promise<{ count: number }> {
+        if (userIds.length === 0) {
+            throw new BadRequestException(this.i18n.t('user-management.error.no_users_selected', { lang }));
+        }
+
+        const category = await this.warningCategoryRepo.findById(categoryId);
+        if (!category) {
+            throw new NotFoundException(this.i18n.t('warning-category.error.not_found', { lang }));
+        }
+
+        const result = await this.repository.createWarningsForMany({
+            userIds,
+            category_id: categoryId,
+            reason,
+            is_permanent: isPermanent,
+            expires_at: expiresAt,
+            warned_by: adminId,
+        });
+
+        // Invalidate caches
+        await this.invalidateListCache();
+        for (const userId of userIds) {
+            await this.invalidateUserWarningsCache(userId);
+            await this.invalidateUserCache(userId);
+        }
+
+        // Log
+        this.systemLogService.logAsync({
+            level: 'WARN',
+            module: 'user-management',
+            action: 'bulk_warn',
+            message: `Bulk warn ${result.count} users`,
+            userId: adminId,
+            ipAddress: requestInfo?.ip,
+            userAgent: requestInfo?.userAgent,
+            metaData: {
+                targetUserIds: userIds,
+                categoryId,
+                categoryName: category.name,
+                reason,
+                is_permanent: isPermanent,
+                expires_at: expiresAt?.toISOString(),
+            },
+        });
+
+        // Check and apply penalty for each user
+        for (const userId of userIds) {
+            const penaltyResult = await this.warnSchedulerService.checkAndApplyPenalty(userId);
+            if (penaltyResult.banned) {
+                const users = await this.repository.findManyByIds([userId]);
+                if (users.length > 0) {
+                    this.systemLogService.logAsync({
+                        level: 'WARN',
+                        module: 'user-management',
+                        action: 'auto_ban_from_warn',
+                        message: `User ${users[0].email || users[0].name} bị ban tự động do đạt ngưỡng cảnh báo`,
+                        userId: 'system',
+                        metaData: {
+                            targetUserId: userId,
+                            isPermanent: penaltyResult.isPermanent,
+                            bannedEnd: penaltyResult.bannedEnd?.toISOString(),
+                        },
+                    });
+                }
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * Clear all warnings for a user
+     */
+    async clearAllWarnings(
+        userId: string,
+        note: string | undefined,
+        adminId: string,
+        lang: string,
+        requestInfo?: { ip?: string; userAgent?: string },
+    ): Promise<{ count: number }> {
+        const user = await this.repository.findById(userId);
+        if (!user) {
+            throw new NotFoundException(this.i18n.t('user-management.error.user_not_found', { lang }));
+        }
+
+        const result = await this.repository.clearAllWarnings(userId, adminId);
+
+        // Invalidate caches
+        await this.invalidateUserWarningsCache(userId);
+        await this.invalidateUserCache(userId);
+        await this.invalidateListCache();
+
+        // Log
+        this.systemLogService.logAsync({
+            level: 'INFO',
+            module: 'user-management',
+            action: 'clear_all_warnings',
+            message: `Xóa tất cả cảnh cáo của user: ${user.email || user.name}`,
+            userId: adminId,
+            ipAddress: requestInfo?.ip,
+            userAgent: requestInfo?.userAgent,
+            metaData: {
+                targetUserId: userId,
+                warningsRemoved: result.count,
+                note,
+            },
+        });
+
+        return result;
+    }
+
+    /**
+     * Bulk clear all warnings for multiple users
+     */
+    async bulkClearAllWarnings(
+        userIds: string[],
+        note: string | undefined,
+        adminId: string,
+        lang: string,
+        requestInfo?: { ip?: string; userAgent?: string },
+    ): Promise<{ count: number }> {
+        if (userIds.length === 0) {
+            throw new BadRequestException(this.i18n.t('user-management.error.no_users_selected', { lang }));
+        }
+
+        const result = await this.repository.clearAllWarningsForMany(userIds, adminId);
+
+        // Invalidate caches
+        await this.invalidateListCache();
+        for (const userId of userIds) {
+            await this.invalidateUserWarningsCache(userId);
+            await this.invalidateUserCache(userId);
+        }
+
+        // Log
+        this.systemLogService.logAsync({
+            level: 'INFO',
+            module: 'user-management',
+            action: 'bulk_clear_all_warnings',
+            message: `Xóa tất cả cảnh cáo của ${userIds.length} users`,
+            userId: adminId,
+            ipAddress: requestInfo?.ip,
+            userAgent: requestInfo?.userAgent,
+            metaData: {
+                targetUserIds: userIds,
+                warningsRemoved: result.count,
+                note,
+            },
+        });
+
+        return result;
+    }
+}

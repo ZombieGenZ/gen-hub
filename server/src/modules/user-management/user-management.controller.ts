@@ -28,6 +28,11 @@ import {
     QueryUserWarningsDto,
     QuerySessionsDto,
     AssignUserRolesPermissionsDto,
+    BulkBanUsersDto,
+    BulkUnbanUsersDto,
+    BulkWarnUsersDto,
+    ClearAllWarningsDto,
+    BulkClearAllWarningsDto,
 } from './dto';
 import {
     GetResponse,
@@ -214,8 +219,6 @@ export class UserManagementController {
         return new DeletedResponse('user-management.sessions.revoke_all', result);
     }
 
-    // ==================== User Roles/Permissions ====================
-
     @Get(':id/roles-permissions')
     @RequirePermission('user-management.read')
     @ApiOperation({ summary: 'Lấy roles và permissions của user' })
@@ -244,5 +247,126 @@ export class UserManagementController {
             userAgent: req.headers['user-agent'],
         });
         return new UpdatedResponse('user-management.roles_permissions.assign', result);
+    }
+
+    @Post('bulk/ban')
+    @RequirePermission('user-management.ban')
+    @ApiOperation({ summary: 'Ban nhiều users cùng lúc' })
+    @ApiResponse({ status: 200, description: 'Ban thành công' })
+    async bulkBanUsers(
+        @Body() dto: BulkBanUsersDto,
+        @CurrentUser('userId') adminId: string,
+        @I18nLang() lang: string,
+        @Req() req: Request,
+    ) {
+        let bannedEnd: Date | null = null;
+        if (!dto.is_permanent && dto.banned_end) {
+            bannedEnd = new Date(dto.banned_end);
+        }
+
+        const result = await this.service.bulkBanUsers(
+            dto.user_ids,
+            dto.reason,
+            dto.is_permanent || false,
+            bannedEnd,
+            adminId,
+            lang,
+            {
+                ip: req.ip,
+                userAgent: req.headers['user-agent'],
+            },
+        );
+        return new UpdatedResponse('user-management.bulk_ban', result);
+    }
+
+    @Post('bulk/unban')
+    @RequirePermission('user-management.unban')
+    @ApiOperation({ summary: 'Unban nhiều users cùng lúc' })
+    @ApiResponse({ status: 200, description: 'Unban thành công' })
+    async bulkUnbanUsers(
+        @Body() dto: BulkUnbanUsersDto,
+        @CurrentUser('userId') adminId: string,
+        @I18nLang() lang: string,
+        @Req() req: Request,
+    ) {
+        const result = await this.service.bulkUnbanUsers(
+            dto.user_ids,
+            dto.note,
+            adminId,
+            lang,
+            {
+                ip: req.ip,
+                userAgent: req.headers['user-agent'],
+            },
+        );
+        return new UpdatedResponse('user-management.bulk_unban', result);
+    }
+
+    @Post('bulk/warn')
+    @RequirePermission('user-management.warn')
+    @ApiOperation({ summary: 'Cảnh cáo nhiều users cùng lúc' })
+    @ApiResponse({ status: 201, description: 'Cảnh cáo thành công' })
+    async bulkWarnUsers(
+        @Body() dto: BulkWarnUsersDto,
+        @CurrentUser('userId') adminId: string,
+        @I18nLang() lang: string,
+        @Req() req: Request,
+    ) {
+        let expiresAt: Date | undefined;
+        if (!dto.is_permanent && dto.expires_at) {
+            expiresAt = new Date(dto.expires_at);
+        }
+
+        const result = await this.service.bulkWarnUsers(
+            dto.user_ids,
+            dto.category_id,
+            dto.reason,
+            dto.is_permanent || false,
+            expiresAt,
+            adminId,
+            lang,
+            {
+                ip: req.ip,
+                userAgent: req.headers['user-agent'],
+            },
+        );
+        return new CreatedResponse('user-management.bulk_warn', result);
+    }
+
+    @Delete(':id/warnings')
+    @RequirePermission('user-management.unwarn')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Xóa tất cả cảnh cáo của user' })
+    @ApiResponse({ status: 200, description: 'Xóa thành công' })
+    async clearAllWarnings(
+        @Param('id', ParseUUIDPipe) id: string,
+        @Body() dto: ClearAllWarningsDto,
+        @CurrentUser('userId') adminId: string,
+        @I18nLang() lang: string,
+        @Req() req: Request,
+    ) {
+        const result = await this.service.clearAllWarnings(id, dto.note, adminId, lang, {
+            ip: req.ip,
+            userAgent: req.headers['user-agent'],
+        });
+        return new DeletedResponse('user-management.clear_all_warnings', result);
+    }
+
+    @Delete('bulk/warnings')
+    @RequirePermission('user-management.unwarn')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Xóa tất cả cảnh cáo của nhiều users' })
+    @ApiResponse({ status: 200, description: 'Xóa thành công' })
+    async bulkClearAllWarnings(
+        @Body() dto: BulkClearAllWarningsDto,
+        @CurrentUser('userId') adminId: string,
+        @I18nLang() lang: string,
+        @Req() req: Request,
+    ) {
+        const result = await this.service.bulkClearAllWarnings(dto.user_ids, dto.note, adminId, lang, {
+            ip: req.ip,
+            userAgent: req.headers['user-agent'],
+        });
+        return new DeletedResponse('user-management.bulk_clear_all_warnings', result);
     }
 }

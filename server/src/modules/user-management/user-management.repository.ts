@@ -406,5 +406,121 @@ export class UserManagementRepository {
             banned,
         };
     }
-}
 
+    /**
+     * Ban nhiều users cùng lúc
+     */
+    async banManyUsers(
+        userIds: string[],
+        bannedEnd: Date | null,
+    ): Promise<{ count: number }> {
+        const result = await this.prisma.user.updateMany({
+            where: {
+                id: { in: userIds },
+                is_banned: false, // Chỉ ban những user chưa bị ban
+            },
+            data: {
+                is_banned: true,
+                banned_start: new Date(),
+                banned_end: bannedEnd,
+            },
+        });
+        return { count: result.count };
+    }
+
+    /**
+     * Unban nhiều users cùng lúc
+     */
+    async unbanManyUsers(userIds: string[]): Promise<{ count: number }> {
+        const result = await this.prisma.user.updateMany({
+            where: {
+                id: { in: userIds },
+                is_banned: true, // Chỉ unban những user đang bị ban
+            },
+            data: {
+                is_banned: false,
+                banned_start: null,
+                banned_end: null,
+            },
+        });
+        return { count: result.count };
+    }
+
+    /**
+     * Xóa tất cả warnings active của một user
+     */
+    async clearAllWarnings(userId: string, removedBy: string): Promise<{ count: number }> {
+        const result = await this.prisma.userWarning.updateMany({
+            where: {
+                user_id: userId,
+                is_active: true,
+                is_deleted: false,
+            },
+            data: {
+                is_active: false,
+                removed_by: removedBy,
+                removed_at: new Date(),
+            },
+        });
+        return { count: result.count };
+    }
+
+    /**
+     * Xóa tất cả warnings của nhiều users
+     */
+    async clearAllWarningsForMany(
+        userIds: string[],
+        removedBy: string,
+    ): Promise<{ count: number }> {
+        const result = await this.prisma.userWarning.updateMany({
+            where: {
+                user_id: { in: userIds },
+                is_active: true,
+                is_deleted: false,
+            },
+            data: {
+                is_active: false,
+                removed_by: removedBy,
+                removed_at: new Date(),
+            },
+        });
+        return { count: result.count };
+    }
+
+    /**
+     * Tạo warning cho nhiều users cùng lúc
+     */
+    async createWarningsForMany(data: {
+        userIds: string[];
+        category_id: string;
+        reason: string;
+        is_permanent?: boolean;
+        expires_at?: Date;
+        warned_by: string;
+    }): Promise<{ count: number }> {
+        const warningsData = data.userIds.map((userId) => ({
+            user_id: userId,
+            category_id: data.category_id,
+            reason: data.reason,
+            is_permanent: data.is_permanent ?? false,
+            expires_at: data.expires_at,
+            warned_by: data.warned_by,
+        }));
+
+        const result = await this.prisma.userWarning.createMany({
+            data: warningsData,
+        });
+
+        return { count: result.count };
+    }
+
+    /**
+     * Lấy danh sách users theo IDs
+     */
+    async findManyByIds(ids: string[]): Promise<{ id: string; name: string; email: string | null }[]> {
+        return this.prisma.user.findMany({
+            where: { id: { in: ids } },
+            select: { id: true, name: true, email: true },
+        });
+    }
+}
