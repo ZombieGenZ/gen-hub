@@ -113,34 +113,34 @@ export class PermissionRepository {
      * Lấy tất cả permission IDs của user (qua roles + trực tiếp)
      */
     async getAllPermissionIdsByUserId(userId: string): Promise<string[]> {
-        // Lấy permissions trực tiếp
-        const directPermissions = await this.getPermissionIdsByUserId(userId);
-
-        // Lấy permissions qua roles
-        const userRoles = await this.prisma.userRole.findMany({
-            where: {
-                user_id: userId,
-                is_active: true,
-                is_deleted: false,
-                role: {
+        // Run both queries in parallel for better performance
+        const [directPermissions, userRoles] = await Promise.all([
+            this.getPermissionIdsByUserId(userId),
+            this.prisma.userRole.findMany({
+                where: {
+                    user_id: userId,
                     is_active: true,
                     is_deleted: false,
+                    role: {
+                        is_active: true,
+                        is_deleted: false,
+                    },
                 },
-            },
-            include: {
-                role: {
-                    include: {
-                        permissions: {
-                            where: {
-                                is_active: true,
-                                is_deleted: false,
+                select: {
+                    role: {
+                        select: {
+                            permissions: {
+                                where: {
+                                    is_active: true,
+                                    is_deleted: false,
+                                },
+                                select: { permission_id: true },
                             },
-                            select: { permission_id: true },
                         },
                     },
                 },
-            },
-        });
+            }),
+        ]);
 
         const rolePermissionIds = userRoles.flatMap((ur) =>
             ur.role.permissions.map((rp) => rp.permission_id),
@@ -148,5 +148,27 @@ export class PermissionRepository {
 
         // Merge và loại bỏ trùng lặp
         return [...new Set([...directPermissions, ...rolePermissionIds])];
+    }
+
+    /**
+     * Lấy danh sách permission IDs từ nhiều roles
+     */
+    async getPermissionIdsByRoleIds(roleIds: string[]): Promise<string[]> {
+        if (!roleIds.length) return [];
+
+        const rolePermissions = await this.prisma.rolePermission.findMany({
+            where: {
+                role_id: { in: roleIds },
+                is_active: true,
+                is_deleted: false,
+                role: {
+                    is_active: true,
+                    is_deleted: false,
+                },
+            },
+            select: { permission_id: true },
+        });
+
+        return [...new Set(rolePermissions.map((rp) => rp.permission_id))];
     }
 }

@@ -1,6 +1,8 @@
 import {
     Controller,
     Get,
+    Post,
+    Body,
     Query,
     UseGuards,
 } from '@nestjs/common';
@@ -43,6 +45,26 @@ export class PermissionController {
         @I18nLang() lang: string,
     ): Promise<GetResponse<IPermissionListResult | IPermissionWithAssignmentListResult>> {
         const result = await this.service.findMany(query, lang);
+        return new GetResponse(ResponseCode.PERMISSION_LIST_SUCCESS, result);
+    }
+
+    /**
+     * Lấy danh sách permission IDs theo role IDs
+     * Dùng cho frontend để tính toán permissions kế thừa từ roles
+     */
+    @Post('by-roles')
+    @ApiBearerAuth('JWT-auth')
+    @UseGuards(JwtAuthGuard, PermissionGuard)
+    @RequirePermission('permission.read')
+    @ApiOperation({
+        summary: 'Lấy permission IDs theo role IDs',
+        description: 'Trả về danh sách permission IDs được gán cho các roles được chỉ định.',
+    })
+    @ApiResponse({ status: 200, description: 'Lấy danh sách thành công' })
+    async getPermissionIdsByRoleIds(
+        @Body() dto: { role_ids: string[] },
+    ): Promise<GetResponse<string[]>> {
+        const result = await this.service.getPermissionIdsByRoleIds(dto.role_ids);
         return new GetResponse(ResponseCode.PERMISSION_LIST_SUCCESS, result);
     }
 }

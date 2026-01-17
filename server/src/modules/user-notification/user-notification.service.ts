@@ -55,7 +55,19 @@ export class UserNotificationService {
             );
         }
 
-        return this.repository.findByUserId(targetUserId, query);
+        // Check cache (sử dụng cùng cache key pattern như getMyNotifications)
+        const cacheKey = this.redisService.getUserNotificationListCacheKey(targetUserId, query as Record<string, unknown>);
+        const cached = await this.redisService.getUserNotificationListCache<IPaginatedResponse<IUserNotification>>(cacheKey);
+        if (cached) {
+            return cached;
+        }
+
+        const result = await this.repository.findByUserId(targetUserId, query);
+
+        // Set cache
+        await this.redisService.setUserNotificationListCache(cacheKey, result);
+
+        return result;
     }
 
     // Gửi thông báo cho user

@@ -118,16 +118,25 @@ export default function UserDetailPage() {
     const [roleSearch, setRoleSearch] = useState('');
     const [permissionSearch, setPermissionSearch] = useState('');
 
-    // Compute which permissions are inherited from roles using userRolesPermissions
-    const rolePermissionSet = useMemo(() => {
-        const set = new Set<string>();
-        if (userRolesPermissions) {
-            userRolesPermissions.permissions
-                .filter(p => p.source === 'role')
-                .forEach(p => set.add(p.id));
-        }
-        return set;
-    }, [userRolesPermissions]);
+    // Dynamic role permission set - updates when selectedRoleIds changes
+    const [rolePermissionSet, setRolePermissionSet] = useState<Set<string>>(new Set());
+
+    // Fetch role permissions when selectedRoleIds changes
+    useEffect(() => {
+        const fetchRolePermissions = async () => {
+            if (selectedRoleIds.size === 0) {
+                setRolePermissionSet(new Set());
+                return;
+            }
+            try {
+                const permissionIds = await permissionsApi.getByRoleIds(Array.from(selectedRoleIds));
+                setRolePermissionSet(new Set(permissionIds));
+            } catch (error) {
+                console.error('Failed to fetch role permissions:', error);
+            }
+        };
+        fetchRolePermissions();
+    }, [selectedRoleIds]);
 
     // Filtered roles based on search
     const filteredRoles = useMemo(() => {
@@ -1252,16 +1261,20 @@ export default function UserDetailPage() {
                                     placeholder={t('userManagement.banReasonPlaceholder') || 'Enter reason for ban...'}
                                 />
                             </div>
-                            <div className="flex items-center gap-2">
-                                <input
-                                    type="checkbox"
-                                    id="isPermanent"
-                                    checked={banIsPermanent}
-                                    onChange={(e) => setBanIsPermanent(e.target.checked)}
-                                    className="w-4 h-4"
-                                />
-                                <label htmlFor="isPermanent" className="text-white">{t('userManagement.permanentBan') || 'Permanent ban'}</label>
-                            </div>
+                            <label htmlFor="isPermanent" className="flex items-center gap-3 cursor-pointer group">
+                                <div className="relative">
+                                    <input
+                                        type="checkbox"
+                                        id="isPermanent"
+                                        checked={banIsPermanent}
+                                        onChange={(e) => setBanIsPermanent(e.target.checked)}
+                                        className="sr-only peer"
+                                    />
+                                    <div className="w-11 h-6 bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded-full peer peer-checked:bg-red-500 peer-checked:border-red-500 transition-colors"></div>
+                                    <div className="absolute left-0.5 top-0.5 w-5 h-5 bg-[var(--text-muted)] rounded-full transition-all peer-checked:translate-x-5 peer-checked:bg-white"></div>
+                                </div>
+                                <span className="text-white group-hover:text-red-400 transition-colors">{t('userManagement.permanentBan') || 'Cấm vĩnh viễn'}</span>
+                            </label>
                             {!banIsPermanent && (
                                 <div>
                                     <label className="block text-sm text-[var(--text-muted)] mb-1">{t('userManagement.banUntil') || 'Ban until'}</label>
@@ -1360,18 +1373,20 @@ export default function UserDetailPage() {
                                     placeholder={t('userManagement.warnReasonPlaceholder') || 'Enter reason for warning...'}
                                 />
                             </div>
-                            <div className="flex items-center gap-2">
-                                <input
-                                    type="checkbox"
-                                    id="warnPermanent"
-                                    checked={warnIsPermanent}
-                                    onChange={(e) => setWarnIsPermanent(e.target.checked)}
-                                    className="rounded"
-                                />
-                                <label htmlFor="warnPermanent" className="text-sm text-[var(--text-muted)]">
-                                    {t('userManagement.isPermanent') || 'Permanent warning'}
-                                </label>
-                            </div>
+                            <label htmlFor="warnPermanent" className="flex items-center gap-3 cursor-pointer group">
+                                <div className="relative">
+                                    <input
+                                        type="checkbox"
+                                        id="warnPermanent"
+                                        checked={warnIsPermanent}
+                                        onChange={(e) => setWarnIsPermanent(e.target.checked)}
+                                        className="sr-only peer"
+                                    />
+                                    <div className="w-11 h-6 bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded-full peer peer-checked:bg-yellow-500 peer-checked:border-yellow-500 transition-colors"></div>
+                                    <div className="absolute left-0.5 top-0.5 w-5 h-5 bg-[var(--text-muted)] rounded-full transition-all peer-checked:translate-x-5 peer-checked:bg-white"></div>
+                                </div>
+                                <span className="text-white group-hover:text-yellow-400 transition-colors">{t('userManagement.isPermanent') || 'Cảnh cáo vĩnh viễn'}</span>
+                            </label>
                             {!warnIsPermanent && (
                                 <div>
                                     <label className="block text-sm text-[var(--text-muted)] mb-1">{t('userManagement.expiresAt') || 'Expires at'}</label>

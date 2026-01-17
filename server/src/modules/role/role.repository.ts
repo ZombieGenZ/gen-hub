@@ -494,43 +494,64 @@ export class RoleRepository {
         description: string | null;
         source: 'direct' | 'role';
     }[]> {
-        // Permissions trực tiếp
-        const directPermissions = await this.getUserDirectPermissions(userId);
-
-        // Permissions từ roles
-        const userRoles = await this.prisma.userRole.findMany({
-            where: {
-                user_id: userId,
-                is_active: true,
-                is_deleted: false,
-                role: {
+        // Run both queries in parallel for better performance
+        const [directPermissionsRaw, userRoles] = await Promise.all([
+            this.prisma.userPermission.findMany({
+                where: {
+                    user_id: userId,
                     is_active: true,
                     is_deleted: false,
                 },
-            },
-            include: {
-                role: {
-                    include: {
-                        permissions: {
-                            where: {
-                                is_active: true,
-                                is_deleted: false,
-                            },
-                            include: {
-                                permission: {
-                                    select: {
-                                        id: true,
-                                        key: true,
-                                        name: true,
-                                        description: true,
+                select: {
+                    permission: {
+                        select: {
+                            id: true,
+                            key: true,
+                            name: true,
+                            description: true,
+                        },
+                    },
+                },
+            }),
+            this.prisma.userRole.findMany({
+                where: {
+                    user_id: userId,
+                    is_active: true,
+                    is_deleted: false,
+                    role: {
+                        is_active: true,
+                        is_deleted: false,
+                    },
+                },
+                select: {
+                    role: {
+                        select: {
+                            permissions: {
+                                where: {
+                                    is_active: true,
+                                    is_deleted: false,
+                                },
+                                select: {
+                                    permission: {
+                                        select: {
+                                            id: true,
+                                            key: true,
+                                            name: true,
+                                            description: true,
+                                        },
                                     },
                                 },
                             },
                         },
                     },
                 },
-            },
-        });
+            }),
+        ]);
+
+        const directPermissions = directPermissionsRaw.map((up) => ({
+            ...up.permission,
+            source: 'direct' as const,
+        }));
 
         const rolePermissions = userRoles.flatMap((ur) =>
             ur.role.permissions.map((rp) => ({

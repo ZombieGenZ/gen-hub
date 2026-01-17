@@ -1080,6 +1080,11 @@ export const permissionsApi = {
         const { data } = await api.get(`/permissions?${params.toString()}`);
         return data.data;
     },
+
+    getByRoleIds: async (roleIds: string[]): Promise<string[]> => {
+        const { data } = await api.post('/permissions/by-roles', { role_ids: roleIds });
+        return data.data || [];
+    },
 };
 
 export interface WarningCategory {

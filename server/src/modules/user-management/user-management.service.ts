@@ -559,6 +559,10 @@ export class UserManagementService {
         await this.redisService.delByPattern(`${CACHE_KEY_PREFIX}:${userId}:sessions:*`);
     }
 
+    private async invalidateUserRolesPermissionsCache(userId: string): Promise<void> {
+        await this.redisService.del(`${CACHE_KEY_PREFIX}:${userId}:roles-permissions`);
+    }
+
     /**
      * Lấy roles và permissions của user
      */
@@ -566,6 +570,14 @@ export class UserManagementService {
         userId: string,
         lang: string,
     ): Promise<IUserRolesAndPermissions> {
+        const cacheKey = `${CACHE_KEY_PREFIX}:${userId}:roles-permissions`;
+
+        // Check cache first
+        const cached = await this.redisService.get(cacheKey);
+        if (cached) {
+            return JSON.parse(cached);
+        }
+
         const user = await this.repository.findById(userId);
         if (!user) {
             throw new NotFoundException(this.i18n.t('user-management.error.user_not_found', { lang }));
@@ -576,7 +588,11 @@ export class UserManagementService {
             this.roleRepository.getUserAllPermissions(userId),
         ]);
 
-        return { roles, permissions };
+        const result = { roles, permissions };
+
+        // Cache for 2 minutes
+        await this.redisService.set(cacheKey, JSON.stringify(result), 120);
+        return result;
     }
 
     /**
@@ -609,6 +625,7 @@ export class UserManagementService {
 
         // Invalidate user caches
         await this.invalidateUserCache(userId);
+        await this.invalidateUserRolesPermissionsCache(userId);
         await this.redisService.invalidateUserCache(userId);
         await this.redisService.invalidateUserPermissionsCache(userId);
 
