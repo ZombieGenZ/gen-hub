@@ -25,4 +25,4 @@ import { UserModule } from '../user/user.module';
   providers: [WebsocketGateway],
   exports: [WebsocketGateway],
 })
-export class WebsocketModule { }
+export class WebsocketModule {}

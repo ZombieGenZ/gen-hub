@@ -73,7 +73,7 @@ interface RowTemplate extends BaseEntity {
     position_x: number | null;
     position_y: number | null;
     price_per_month: string;
-    racks: any[]; // You might want to define a Rack type
+    racks: []; // You might want to define a Rack type
     total_weight_capacity: number | null;
     warehouse_template_id: string;
     discount_configs: DiscountConfig[];

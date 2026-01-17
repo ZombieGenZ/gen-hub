@@ -12,6 +12,9 @@ import { PrimeNestContact } from "@/app/(public)/homepage/Contact";
 import { PrimeNestFooter } from "@/app/(public)/homepage/Footer";
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { UserService } from "@/services/user/user.service";
+import { NotificationService } from "@/services/notification/notification.service";
+import type { Notification } from "@/types/notification/notification.type";
+import { useToast } from "@/contexts/ToastContext";
 
 interface UserInfo {
     name?: string;
@@ -28,6 +31,15 @@ interface SectionProps {
 }
 
 const Section = ({ children, index, activeSection, mousePos }: SectionProps) => {
+    const [particles] = useState(() => 
+        [...Array(20)].map(() => ({
+            left: Math.random() * 100,
+            top: Math.random() * 100,
+            duration: 5 + Math.random() * 10,
+            delay: Math.random() * 5,
+        }))
+    );
+    
     const isActive = index === activeSection;
     const isPast = index < activeSection;
     const isFuture = index > activeSection;
@@ -67,15 +79,15 @@ const Section = ({ children, index, activeSection, mousePos }: SectionProps) => 
 
             {/* Floating Particles */}
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                {[...Array(20)].map((_, i) => (
+                {particles.map((particle, i) => (
                     <div
                         key={i}
                         className="absolute w-2 h-2 bg-slate-400/20 rounded-full"
                         style={{
-                            left: `${Math.random() * 100}%`,
-                            top: `${Math.random() * 100}%`,
-                            animation: `float ${5 + Math.random() * 10}s ease-in-out infinite`,
-                            animationDelay: `${Math.random() * 5}s`,
+                            left: `${particle.left}%`,
+                            top: `${particle.top}%`,
+                            animation: `float ${particle.duration}s ease-in-out infinite`,
+                            animationDelay: `${particle.delay}s`,
                         }}
                     />
                 ))}
@@ -108,6 +120,8 @@ const Section = ({ children, index, activeSection, mousePos }: SectionProps) => 
 export default function Home() {
     const [isLogin, setIsLogin] = useState(false);
     const [user, setUser] = useState<UserInfo | undefined>(undefined);
+    const { showToast } = useToast()
+    const [notifications, setNotifications] = useState<Notification[]>([]);
 
     // Scroll Tracking State
     const [scrollProgress, setScrollProgress] = useState(0);
@@ -122,6 +136,7 @@ export default function Home() {
                 setIsLogin(true);
                 try {
                     const userService = new UserService();
+                    const notificationService = new NotificationService();
                     const userData = await userService.getUser(accessToken, refreshToken);
                     setUser({
                         name: userData.user.name,
@@ -129,13 +144,19 @@ export default function Home() {
                         avatar: undefined, // Will use default avatar
                         roles: userData.roles.map(r => r.name),
                     });
+
+                    const getUserNotifications = await notificationService.getNotifications(accessToken);
+                    const getGlobalNotifications = await notificationService.globalNotification(accessToken);
+                    setNotifications([...getGlobalNotifications, ...getUserNotifications]);
+                    showToast("You have new notifications!", "info");
+                    showToast(`You have ${getUserNotifications.length} new personal notifications and ${getGlobalNotifications.length} global notifications.`, "info");
                 } catch (error) {
                     console.error("Failed to fetch user data:", error);
                 }
             }
         };
         checkAuth();
-    }, []);
+    }, [showToast]);
 
     useEffect(() => {
         const handleScroll = () => {
@@ -178,7 +199,7 @@ export default function Home() {
             {/* Progress Bar */}
             <div className="fixed top-0 left-0 w-full h-1 bg-white/5 z-50">
                 <div
-                    className="h-full bg-gradient-to-r from-teal-500 via-emerald-500 to-green-500"
+                    className="h-full bg-linear-to-r from-teal-500 via-emerald-500 to-green-500"
                     style={{ width: `${scrollProgress * 100}%` }}
                 />
             </div>
