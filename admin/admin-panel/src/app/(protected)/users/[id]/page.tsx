@@ -10,7 +10,6 @@ import {
     UserDetail,
     UserWarningItem,
     UserSession,
-    UserRolesAndPermissions,
     Role,
     PermissionWithAssignment,
     WarningCategory,
@@ -41,8 +40,9 @@ import {
     Bell,
     Send,
     Search,
-    Smartphone,
 } from 'lucide-react';
+
+type DurationUnit = 'minutes' | 'hours' | 'days' | 'weeks' | 'months';
 
 type TabType = 'info' | 'warnings' | 'sessions' | 'roles' | 'notifications';
 
@@ -67,7 +67,7 @@ export default function UserDetailPage() {
     const sessionsPerPage = 10;
 
     // Roles & Permissions state
-    const [userRolesPermissions, setUserRolesPermissions] = useState<UserRolesAndPermissions | null>(null);
+
     const [allRoles, setAllRoles] = useState<Role[]>([]);
     const [allPermissions, setAllPermissions] = useState<PermissionWithAssignment[]>([]);
     const [rolesPermissionsLoading, setRolesPermissionsLoading] = useState(false);
@@ -81,7 +81,7 @@ export default function UserDetailPage() {
     const [banReason, setBanReason] = useState('');
     const [banIsPermanent, setBanIsPermanent] = useState(false);
     const [banDurationValue, setBanDurationValue] = useState<number>(1);
-    const [banDurationType, setBanDurationType] = useState<string>('days');
+    const [banDurationType, setBanDurationType] = useState<DurationUnit>('days');
     const [isBanning, setIsBanning] = useState(false);
 
     // Unban modal state
@@ -96,7 +96,7 @@ export default function UserDetailPage() {
     const [warnReason, setWarnReason] = useState('');
     const [warnIsPermanent, setWarnIsPermanent] = useState(false);
     const [warnDurationValue, setWarnDurationValue] = useState<number>(1);
-    const [warnDurationType, setWarnDurationType] = useState<string>('months');
+    const [warnDurationType, setWarnDurationType] = useState<DurationUnit>('months');
     const [isWarning, setIsWarning] = useState(false);
 
     // Notifications state
@@ -241,7 +241,7 @@ export default function UserDetailPage() {
                 })
             ]);
 
-            setUserRolesPermissions(userRolesPerms);
+
             setAllRoles(rolesData.data);
             setAllPermissions((permsData as { data: PermissionWithAssignment[] }).data);
 
@@ -318,7 +318,7 @@ export default function UserDetailPage() {
                 reason: banReason,
                 is_permanent: banIsPermanent,
                 duration_value: banIsPermanent ? undefined : banDurationValue,
-                duration_type: banIsPermanent ? undefined : (banDurationType as any),
+                duration_type: banIsPermanent ? undefined : banDurationType,
             });
             setUser(result);
             setShowBanModal(false);
@@ -361,7 +361,7 @@ export default function UserDetailPage() {
                 reason: warnReason,
                 is_permanent: warnIsPermanent,
                 duration_value: warnIsPermanent ? undefined : warnDurationValue,
-                duration_type: warnIsPermanent ? undefined : (warnDurationType as any),
+                duration_type: warnIsPermanent ? undefined : warnDurationType,
             });
             setShowWarnModal(false);
             setWarnCategoryId('');
@@ -470,12 +470,12 @@ export default function UserDetailPage() {
                 permId => !rolePermissionSet.has(permId)
             );
 
-            const result = await userManagementApi.assignUserRolesPermissions(id as string, {
+            await userManagementApi.assignUserRolesPermissions(id as string, {
                 role_ids: Array.from(selectedRoleIds),
                 permission_ids: directPermissionIds,
                 denied_permission_ids: Array.from(deniedPermissionIds),
             });
-            setUserRolesPermissions(result);
+            // setUserRolesPermissions(result);
             toast.success(t('userManagement.rolesPermissionsSaved') || 'Vai trò & Quyền hạn đã lưu');
         } catch (error) {
             console.error('Failed to save roles/permissions:', error);
@@ -1299,7 +1299,7 @@ export default function UserDetailPage() {
                                         </label>
                                         <select
                                             value={banDurationType}
-                                            onChange={(e) => setBanDurationType(e.target.value)}
+                                            onChange={(e) => setBanDurationType(e.target.value as DurationUnit)}
                                             className="w-full px-3 py-2 bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded-lg text-white focus:outline-none focus:border-[var(--accent-primary)] appearance-none cursor-pointer"
                                         >
                                             <option value="minutes">{t('common.minutes') || 'Minutes'}</option>
@@ -1430,7 +1430,7 @@ export default function UserDetailPage() {
                                         </label>
                                         <select
                                             value={warnDurationType}
-                                            onChange={(e) => setWarnDurationType(e.target.value)}
+                                            onChange={(e) => setWarnDurationType(e.target.value as DurationUnit)}
                                             className="w-full px-3 py-2 bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded-lg text-white focus:outline-none focus:border-[var(--accent-primary)] appearance-none cursor-pointer"
                                         >
                                             <option value="minutes">{t('common.minutes') || 'Minutes'}</option>

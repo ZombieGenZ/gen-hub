@@ -94,14 +94,7 @@ export default function PermissionsPage() {
 
     const totalPages = Math.ceil(total / limit);
 
-    // Group permissions by prefix for better visualization
-    const groupedPermissions = permissions.reduce((acc, perm) => {
-        const parts = perm.key.split('.');
-        const group = parts[0] || 'other';
-        if (!acc[group]) acc[group] = [];
-        acc[group].push(perm);
-        return acc;
-    }, {} as Record<string, Permission[]>);
+
 
     const formatDate = (dateString: string) => {
         return new Date(dateString).toLocaleDateString('vi-VN', {

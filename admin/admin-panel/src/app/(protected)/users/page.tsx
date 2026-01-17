@@ -22,10 +22,10 @@ import {
     UserCheck,
     Ban,
     MoreHorizontal,
-    Trash2,
     Bell,
-    Mail,
 } from 'lucide-react';
+
+type DurationUnit = 'minutes' | 'hours' | 'days' | 'weeks' | 'months';
 
 const PAGE_SIZE_OPTIONS = [25, 50, 75, 100];
 const LOCALSTORAGE_PAGE_SIZE_KEY = 'admin-panel-users-page-size';
@@ -70,7 +70,7 @@ export default function UsersPage() {
     const [showBulkBanModal, setShowBulkBanModal] = useState(false);
     const [bulkBanReason, setBulkBanReason] = useState('');
     const [bulkBanDurationValue, setBulkBanDurationValue] = useState<number>(1);
-    const [bulkBanDurationType, setBulkBanDurationType] = useState<string>('days');
+    const [bulkBanDurationType, setBulkBanDurationType] = useState<DurationUnit>('days');
     const [isBulkBanPermanent, setIsBulkBanPermanent] = useState(false);
     const [isBulkBanning, setIsBulkBanning] = useState(false);
 
@@ -79,7 +79,7 @@ export default function UsersPage() {
     const [selectedUser, setSelectedUser] = useState<UserListItem | null>(null);
     const [banReason, setBanReason] = useState('');
     const [banDurationValue, setBanDurationValue] = useState<number>(1);
-    const [banDurationType, setBanDurationType] = useState<string>('days');
+    const [banDurationType, setBanDurationType] = useState<DurationUnit>('days');
     const [isBanPermanent, setIsBanPermanent] = useState(false);
     const [isBanning, setIsBanning] = useState(false);
 
@@ -212,7 +212,7 @@ export default function UsersPage() {
                 reason: bulkBanReason,
                 is_permanent: isBulkBanPermanent,
                 duration_value: isBulkBanPermanent ? undefined : bulkBanDurationValue,
-                duration_type: isBulkBanPermanent ? undefined : (bulkBanDurationType as any),
+                duration_type: isBulkBanPermanent ? undefined : bulkBanDurationType,
             });
             toast.success(t('userManagement.bulkBanSuccess') || `Banned ${selectedIds.size} users`);
             setShowBulkBanModal(false);
@@ -262,7 +262,7 @@ export default function UsersPage() {
                 reason: banReason,
                 is_permanent: isBanPermanent,
                 duration_value: isBanPermanent ? undefined : banDurationValue,
-                duration_type: isBanPermanent ? undefined : (banDurationType as any),
+                duration_type: isBanPermanent ? undefined : banDurationType,
             });
             toast.success(t('userManagement.banSuccess') || 'User banned');
             fetchUsers();
@@ -746,7 +746,7 @@ export default function UsersPage() {
                                         </label>
                                         <select
                                             value={bulkBanDurationType}
-                                            onChange={(e) => setBulkBanDurationType(e.target.value)}
+                                            onChange={(e) => setBulkBanDurationType(e.target.value as DurationUnit)}
                                             className="w-full px-3 py-2 bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded-lg text-white focus:outline-none focus:border-[var(--accent-primary)] appearance-none cursor-pointer"
                                         >
                                             <option value="minutes">{t('common.minutes') || 'Minutes'}</option>
@@ -836,7 +836,7 @@ export default function UsersPage() {
                                         </label>
                                         <select
                                             value={banDurationType}
-                                            onChange={(e) => setBanDurationType(e.target.value)}
+                                            onChange={(e) => setBanDurationType(e.target.value as DurationUnit)}
                                             className="w-full px-3 py-2 bg-[var(--background-tertiary)] border border-[var(--border-primary)] rounded-lg text-white focus:outline-none focus:border-[var(--accent-primary)] appearance-none cursor-pointer"
                                         >
                                             <option value="minutes">{t('common.minutes') || 'Minutes'}</option>
