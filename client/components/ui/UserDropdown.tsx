@@ -1,10 +1,16 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Settings, User, LogOut, ChevronDown, LayoutDashboard } from "lucide-react";
 import { authStorage } from "@/services/auth/auth-storage.service";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+} from "@/components/ui/dropdown-menu";
 
 interface UserDropdownProps {
   user?: {
@@ -18,8 +24,12 @@ interface UserDropdownProps {
 
 const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Default user data if not provided
   const defaultName = user?.name || "Người dùng";
@@ -27,41 +37,6 @@ const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout }) => {
     name: defaultName,
     email: user?.email || "user@example.com",
     avatar: user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(defaultName)}&background=6366f1&color=fff`,
-  };
-
-  // Click outside to close dropdown
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
-        setIsOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
-
-  // Close dropdown on escape key
-  useEffect(() => {
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setIsOpen(false);
-      }
-    };
-
-    document.addEventListener("keydown", handleEscape);
-    return () => {
-      document.removeEventListener("keydown", handleEscape);
-    };
-  }, []);
-
-  const toggleDropdown = () => {
-    setIsOpen(!isOpen);
   };
 
   const handleProfile = () => {
@@ -125,77 +100,77 @@ const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout }) => {
 
   return (
     <>
-      {/* Backdrop blur overlay */}
-      {isOpen && (
+      {/* Visual Backdrop Portal - to cover whole screen but under menu */}
+      {mounted && isOpen && createPortal(
         <div
-          className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm transition-opacity duration-300"
+          className="fixed inset-0 z-[60] bg-black/20 backdrop-blur-sm transition-opacity duration-300"
           onClick={() => setIsOpen(false)}
-        />
+        />,
+        document.body
       )}
 
-      <div ref={dropdownRef} className="relative z-50">
-        {/* Dropdown Trigger */}
-        <button
-          onClick={toggleDropdown}
-          className="flex items-center gap-2 rounded-full p-1 transition-all duration-300 hover:bg-gray-100 hover:px-4 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-primary/50"
-          aria-expanded={isOpen}
-          aria-haspopup="true"
-        >
-          {/* Avatar */}
-          <div className="relative group">
-            <div
-              className={`
-                relative h-10 w-10 overflow-hidden rounded-full border-2 border-transparent
-                transition-all duration-300 ease-out
-                group-hover:scale-110 group-hover:border-primary group-hover:shadow-lg group-hover:shadow-primary/25
-                ${isOpen ? "scale-110 border-primary shadow-lg shadow-primary/25" : ""}
-              `}
+      {/* Dropdown Menu - Radix UI handles portaling content automatically (usually z-50) */}
+      {/* We need Content to be > z-[60]. Default z-50 is too low. We'll override. */}
+      {/* Also modal={false} so our manual backdrop handles interaction/visuals */}
+      <DropdownMenu open={isOpen} onOpenChange={setIsOpen} modal={false}>
+        <DropdownMenuTrigger asChild>
+            <button
+            className="group flex items-center gap-2 rounded-full p-1 transition-all duration-300 hover:bg-gray-100 hover:px-4 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-primary/50"
+            aria-expanded={isOpen}
+            aria-haspopup="true"
             >
-              <Image
-                src={userData.avatar}
-                alt={userData.name}
-                fill
-                className="object-cover"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(userData.name)}&background=6366f1&color=fff`;
-                }}
-              />
+            {/* Avatar */}
+            <div className="relative group/avatar">
+                <div
+                className={`
+                    relative h-10 w-10 overflow-hidden rounded-full border-2 border-transparent
+                    transition-all duration-300 ease-out
+                    group-hover:scale-110 group-hover:border-primary group-hover:shadow-lg group-hover:shadow-primary/25
+                    ${isOpen ? "scale-110 border-primary shadow-lg shadow-primary/25" : ""}
+                `}
+                >
+                <Image
+                    src={userData.avatar}
+                    alt={userData.name}
+                    fill
+                    className="object-cover"
+                    onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(userData.name)}&background=6366f1&color=fff`;
+                    }}
+                />
+                </div>
+                {/* Online status indicator */}
+                <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white bg-green-500 dark:border-gray-900" />
             </div>
-            {/* Online status indicator */}
-            <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white bg-green-500 dark:border-gray-900" />
-          </div>
 
-          {/* Settings gear icon */}
-          <Settings
-            className={`
-              h-5 w-5 text-gray-500 transition-all duration-300
-              hover:text-primary hover:rotate-90
-              ${isOpen ? "text-primary rotate-90" : ""}
-            `}
-          />
+            {/* Settings gear icon */}
+            <Settings
+                className={`
+                h-5 w-5 text-gray-500 transition-all duration-300
+                hover:text-primary hover:rotate-90
+                ${isOpen ? "text-primary rotate-90" : ""}
+                `}
+            />
 
-          {/* Chevron indicator */}
-          <ChevronDown
-            className={`
-              h-4 w-4 text-gray-400 transition-transform duration-300
-              ${isOpen ? "rotate-180" : ""}
-            `}
-          />
-        </button>
+            {/* Chevron indicator */}
+            <ChevronDown
+                className={`
+                h-4 w-4 text-gray-400 transition-transform duration-300
+                ${isOpen ? "rotate-180" : ""}
+                `}
+            />
+            </button>
+        </DropdownMenuTrigger>
 
-        {/* Dropdown Menu */}
-        <div
-          className={`
-            absolute right-0 mt-3 w-64 origin-top-right
-            transition-all duration-300 ease-out
-            ${isOpen
-              ? "opacity-100 translate-y-0 scale-100 pointer-events-auto"
-              : "opacity-0 -translate-y-2 scale-95 pointer-events-none"
-            }
-          `}
+        {/* Override content z-index to be higher than our manual backdrop (z-60) */}
+        <DropdownMenuContent 
+            className="z-[70] w-64 p-0 rounded-xl overflow-visible border-none bg-transparent shadow-none" 
+            align="end" 
+            sideOffset={8}
+            onCloseAutoFocus={(e) => e.preventDefault()} // Prevent focus jump to body
         >
-          <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-900">
+          <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-900 pointer-events-auto">
             {/* User info header */}
             <div className="border-b border-gray-100 bg-gray-50 px-4 py-3 dark:border-gray-800 dark:bg-gray-800/50">
               <div className="flex items-center gap-3">
@@ -262,8 +237,8 @@ const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout }) => {
               </p>
             </div>
           </div>
-        </div>
-      </div>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </>
   );
 };

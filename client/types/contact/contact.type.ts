@@ -10,7 +10,7 @@ export interface Contact {
     priority: string,
     channel: string,
     assigned_staff_list: [],
-    tags: ContactTag[],
+    tags?: ContactTag[],
     assigned_staff_count: number,
     messages_count: number,
     last_activity_at: string,

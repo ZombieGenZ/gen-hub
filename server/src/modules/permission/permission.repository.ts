@@ -9,6 +9,7 @@ interface FindManyParams {
     offset: number;
     keywords?: string;
     status?: StatusFilter;
+    module?: string;
 }
 
 @Injectable()
@@ -19,7 +20,7 @@ export class PermissionRepository {
      * Lấy danh sách permissions với phân trang
      */
     async findMany(params: FindManyParams): Promise<IPermissionListResult> {
-        const { limit, offset, keywords, status } = params;
+        const { limit, offset, keywords, status, module } = params;
 
         const where: Prisma.PermissionWhereInput = {
             is_deleted: false,
@@ -30,6 +31,11 @@ export class PermissionRepository {
             where.is_active = true;
         } else if (status === StatusFilter.INACTIVE) {
             where.is_active = false;
+        }
+
+        // Lọc theo module (prefix của key)
+        if (module) {
+            where.key = { startsWith: `${module}.` };
         }
 
         // Tìm kiếm theo keywords
@@ -113,34 +119,34 @@ export class PermissionRepository {
      * Lấy tất cả permission IDs của user (qua roles + trực tiếp)
      */
     async getAllPermissionIdsByUserId(userId: string): Promise<string[]> {
-        // Lấy permissions trực tiếp
-        const directPermissions = await this.getPermissionIdsByUserId(userId);
-
-        // Lấy permissions qua roles
-        const userRoles = await this.prisma.userRole.findMany({
-            where: {
-                user_id: userId,
-                is_active: true,
-                is_deleted: false,
-                role: {
+        // Run both queries in parallel for better performance
+        const [directPermissions, userRoles] = await Promise.all([
+            this.getPermissionIdsByUserId(userId),
+            this.prisma.userRole.findMany({
+                where: {
+                    user_id: userId,
                     is_active: true,
                     is_deleted: false,
+                    role: {
+                        is_active: true,
+                        is_deleted: false,
+                    },
                 },
-            },
-            include: {
-                role: {
-                    include: {
-                        permissions: {
-                            where: {
-                                is_active: true,
-                                is_deleted: false,
+                select: {
+                    role: {
+                        select: {
+                            permissions: {
+                                where: {
+                                    is_active: true,
+                                    is_deleted: false,
+                                },
+                                select: { permission_id: true },
                             },
-                            select: { permission_id: true },
                         },
                     },
                 },
-            },
-        });
+            }),
+        ]);
 
         const rolePermissionIds = userRoles.flatMap((ur) =>
             ur.role.permissions.map((rp) => rp.permission_id),
@@ -148,5 +154,45 @@ export class PermissionRepository {
 
         // Merge và loại bỏ trùng lặp
         return [...new Set([...directPermissions, ...rolePermissionIds])];
+    }
+
+    /**
+     * Lấy danh sách permission IDs từ nhiều roles
+     */
+    async getPermissionIdsByRoleIds(roleIds: string[]): Promise<string[]> {
+        if (!roleIds.length) return [];
+
+        const rolePermissions = await this.prisma.rolePermission.findMany({
+            where: {
+                role_id: { in: roleIds },
+                is_active: true,
+                is_deleted: false,
+                role: {
+                    is_active: true,
+                    is_deleted: false,
+                },
+            },
+            select: { permission_id: true },
+        });
+
+        return [...new Set(rolePermissions.map((rp) => rp.permission_id))];
+    }
+
+    /**
+     * Lấy danh sách modules (prefix) duy nhất từ permission keys
+     */
+    async getDistinctModules(): Promise<string[]> {
+        const permissions = await this.prisma.permission.findMany({
+            where: { is_deleted: false },
+            select: { key: true },
+        });
+
+        const modules = new Set<string>();
+        permissions.forEach((p) => {
+            const prefix = p.key.split('.')[0];
+            if (prefix) modules.add(prefix);
+        });
+
+        return Array.from(modules).sort();
     }
 }

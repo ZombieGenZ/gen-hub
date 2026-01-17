@@ -10,8 +10,18 @@ import { WarehouseCard } from '@/components/dashboard/WarehouseCard'
 import { useRouter } from "next/navigation";
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { LocationService } from "@/services/location/location.service";
-
 // ... (other imports)
+
+// Type definitions
+interface GetWarehouseParams {
+    keywords: string;
+    page: number;
+    limit: number;
+    province_id?: string;
+    is_active?: boolean;
+    rental_status?: string;
+}
+
 const warehouseService = new WarehouseTemplateService();
 const locationService = new LocationService();
 
@@ -58,7 +68,7 @@ export default function WarehouseTemplatePage() {
             // ... (rest of the logic)
 
             // Map UI filters to API params
-            const apiParams: any = {
+            const apiParams: GetWarehouseParams = {
                 keywords: debouncedKeywords,
                 page: pagination.page,
                 limit: pagination.limit,
@@ -79,7 +89,7 @@ export default function WarehouseTemplatePage() {
             }
 
             // Note: 'Type' filter is not yet supported by backend API, skipping mapping.
-            const data: any = await warehouseService.getWarehouseTemplates(token, apiParams);
+            const data = await warehouseService.getWarehouseTemplates(token, apiParams);
 
             if (data) {
                 // Handle different response structures (array vs paginated object)
@@ -100,9 +110,10 @@ export default function WarehouseTemplatePage() {
                     totalPages: Math.ceil(total / prev.limit)
                 }));
             }
-        } catch (err: any) {
-            console.error("Failed to fetch warehouses", err);
-            if (err.message === "Unauthorized") {
+        } catch (err) {
+            const error = err instanceof Error ? err : new Error(String(err));
+            console.error("Failed to fetch warehouses", error);
+            if (error.message === "Unauthorized") {
                 router.push("/login");
                 return;
             }

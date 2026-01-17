@@ -55,7 +55,19 @@ export class UserNotificationService {
             );
         }
 
-        return this.repository.findByUserId(targetUserId, query);
+        // Check cache (sử dụng cùng cache key pattern như getMyNotifications)
+        const cacheKey = this.redisService.getUserNotificationListCacheKey(targetUserId, query as Record<string, unknown>);
+        const cached = await this.redisService.getUserNotificationListCache<IPaginatedResponse<IUserNotification>>(cacheKey);
+        if (cached) {
+            return cached;
+        }
+
+        const result = await this.repository.findByUserId(targetUserId, query);
+
+        // Set cache
+        await this.redisService.setUserNotificationListCache(cacheKey, result);
+
+        return result;
     }
 
     // Gửi thông báo cho user
@@ -145,5 +157,62 @@ export class UserNotificationService {
     // Đếm số thông báo chưa đọc
     async countUnread(userId: string): Promise<number> {
         return this.repository.countUnread(userId);
+    }
+
+    // Gửi thông báo cho nhiều users
+    async sendBulkNotification(
+        dto: { user_ids: string[]; title: string; content: string; type?: string },
+        senderId: string,
+        lang: string,
+    ): Promise<{ count: number }> {
+        // Kiểm tra users tồn tại
+        const existingUserIds = await this.repository.getExistingUserIds(dto.user_ids);
+        const notFoundCount = dto.user_ids.length - existingUserIds.length;
+
+        if (notFoundCount > 0) {
+            throw new NotFoundException(
+                this.i18n.t('user-notification.errors.some_users_not_found', {
+                    lang,
+                    args: { count: notFoundCount }
+                }),
+            );
+        }
+
+        // Tạo notifications
+        const createDataList = dto.user_ids.map((userId) => ({
+            title: dto.title,
+            content: dto.content,
+            type: (dto.type as 'INFO' | 'SUCCESS' | 'WARNING' | 'ERROR') || 'INFO',
+            user: { connect: { id: userId } },
+        }));
+
+        const notifications = await this.repository.createMany(createDataList);
+
+        // Invalidate cache cho tất cả users
+        await Promise.all(
+            dto.user_ids.map((userId) =>
+                this.redisService.invalidateUserNotificationListCache(userId),
+            ),
+        );
+
+        // Emit realtime events
+        notifications.forEach((notification) => {
+            this.websocketGateway.emitUserNotificationReceived(
+                notification.user_id,
+                notification,
+            );
+        });
+
+        // Log
+        await this.systemLogService.log({
+            level: 'INFO',
+            module: 'UserNotification',
+            action: 'SEND_BULK',
+            message: `Sent bulk notification to ${dto.user_ids.length} users`,
+            userId: senderId,
+            metaData: { userCount: dto.user_ids.length },
+        });
+
+        return { count: notifications.length };
     }
 }

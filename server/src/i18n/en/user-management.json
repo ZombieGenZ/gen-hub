@@ -17,7 +17,10 @@
         "not_banned": "User is not banned",
         "warning_not_found": "Warning not found",
         "warning_already_removed": "Warning has already been removed",
-        "session_not_found": "Session not found"
+        "session_not_found": "Session not found",
+        "protected_user": "Cannot perform this action on a protected user",
+        "cannot_action_self": "Cannot perform this action on yourself",
+        "no_users_selected": "No users selected"
     },
     "validation": {
         "reason_required": "Reason is required",

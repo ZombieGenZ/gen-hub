@@ -31,6 +31,10 @@ export class PermissionService {
         return parseInt(process.env.REDIS_PERMISSION_LIST_CACHE_TTL || '60', 10);
     }
 
+    private getAssignmentCacheTtl(): number {
+        return parseInt(process.env.REDIS_PERMISSION_ASSIGNMENT_CACHE_TTL || '120', 10);
+    }
+
     /**
      * Lấy danh sách permissions
      * Nếu có type và id: trả về permissions với is_assigned
@@ -47,14 +51,14 @@ export class PermissionService {
         // Nếu có type và id, trả về permissions với trạng thái gán
         if (query.type && query.id) {
             return this.findManyWithAssignment(
-                { limit, offset, keywords: query.keywords, status },
+                { limit, offset, keywords: query.keywords, status, module: query.module },
                 query.type,
                 query.id,
             );
         }
 
         // Trả về danh sách permissions thuần (có cache)
-        const cacheKey = `${CACHE_LIST_KEY}:${JSON.stringify({ limit, offset, keywords: query.keywords, status })}`;
+        const cacheKey = `${CACHE_LIST_KEY}:${JSON.stringify({ limit, offset, keywords: query.keywords, status, module: query.module })}`;
 
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
@@ -66,6 +70,7 @@ export class PermissionService {
             offset,
             keywords: query.keywords,
             status,
+            module: query.module,
         });
 
         await this.redisService.set(cacheKey, JSON.stringify(result), this.getListCacheTtl());
@@ -77,10 +82,17 @@ export class PermissionService {
      * Lấy danh sách permissions với trạng thái gán cho role/user
      */
     private async findManyWithAssignment(
-        params: { limit: number; offset: number; keywords?: string; status?: StatusFilter },
+        params: { limit: number; offset: number; keywords?: string; status?: StatusFilter; module?: string },
         type: PermissionQueryType,
         id: string,
     ): Promise<IPermissionWithAssignmentListResult> {
+        // Check cache first
+        const cacheKey = `${CACHE_KEY_PREFIX}:with-assignment:${type}:${id}:${JSON.stringify(params)}`;
+        const cached = await this.redisService.get(cacheKey);
+        if (cached) {
+            return JSON.parse(cached);
+        }
+
         // Lấy permissions theo filter
         const result = await this.repository.findMany(params);
 
@@ -100,12 +112,17 @@ export class PermissionService {
             is_assigned: assignedPermissionIds.includes(permission.id),
         }));
 
-        return {
+        const response = {
             data: dataWithAssignment,
             total: result.total,
             limit: result.limit,
             offset: result.offset,
         };
+
+        // Cache the result
+        await this.redisService.set(cacheKey, JSON.stringify(response), this.getAssignmentCacheTtl());
+
+        return response;
     }
 
     /**
@@ -113,5 +130,53 @@ export class PermissionService {
      */
     async invalidateListCache(): Promise<void> {
         await this.redisService.delByPattern(`${CACHE_LIST_KEY}:*`);
+    }
+
+    /**
+     * Invalidate cache cho permission assignment (khi role/user được update permissions)
+     */
+    async invalidateAssignmentCache(type: 'role' | 'user', id: string): Promise<void> {
+        await this.redisService.delByPattern(`${CACHE_KEY_PREFIX}:with-assignment:${type}:${id}:*`);
+    }
+
+    /**
+     * Lấy danh sách permission IDs theo role IDs (với cache)
+     */
+    async getPermissionIdsByRoleIds(roleIds: string[]): Promise<string[]> {
+        if (!roleIds.length) return [];
+
+        // Sort role IDs for consistent cache key
+        const sortedRoleIds = [...roleIds].sort();
+        const cacheKey = `${CACHE_KEY_PREFIX}:by-roles:${sortedRoleIds.join(',')}`;
+
+        // Check cache first
+        const cached = await this.redisService.get(cacheKey);
+        if (cached) {
+            return JSON.parse(cached);
+        }
+
+        const result = await this.repository.getPermissionIdsByRoleIds(roleIds);
+
+        // Cache for 5 minutes
+        await this.redisService.set(cacheKey, JSON.stringify(result), 300);
+        return result;
+    }
+
+    /**
+     * Lấy danh sách modules (prefix) duy nhất từ permission keys
+     */
+    async getModules(): Promise<string[]> {
+        const cacheKey = `${CACHE_KEY_PREFIX}:modules`;
+
+        const cached = await this.redisService.get(cacheKey);
+        if (cached) {
+            return JSON.parse(cached);
+        }
+
+        const result = await this.repository.getDistinctModules();
+
+        // Cache for 5 minutes
+        await this.redisService.set(cacheKey, JSON.stringify(result), 300);
+        return result;
     }
 }

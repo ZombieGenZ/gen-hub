@@ -69,4 +69,13 @@ export class QueryPermissionDto {
     @ValidateIf((o) => o.type !== undefined)
     @IsUUID('4', { message: i18nValidationMessage('common.validation.is_uuid') })
     id?: string;
+
+    @ApiProperty({
+        description: 'Lọc theo module (prefix của permission key)',
+        required: false,
+        example: 'account-balance',
+    })
+    @IsOptional()
+    @IsString({ message: i18nValidationMessage('common.validation.is_string') })
+    module?: string;
 }

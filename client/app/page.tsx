@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { PrimeNestHeader } from "@/app/(public)/homepage/Header";
 import { PrimeNestHero } from "@/app/(public)/homepage/Hero";
 import { PrimeNestSearch } from "@/app/(public)/homepage/Search";
@@ -12,6 +12,9 @@ import { PrimeNestContact } from "@/app/(public)/homepage/Contact";
 import { PrimeNestFooter } from "@/app/(public)/homepage/Footer";
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { UserService } from "@/services/user/user.service";
+import { NotificationService } from "@/services/notification/notification.service";
+import type { Notification } from "@/types/notification/notification.type";
+import { useToast } from "@/contexts/ToastContext";
 
 interface UserInfo {
     name?: string;
@@ -28,9 +31,19 @@ interface SectionProps {
 }
 
 const Section = ({ children, index, activeSection, mousePos }: SectionProps) => {
+    const [particles] = useState(() => 
+        [...Array(20)].map(() => ({
+            left: Math.random() * 100,
+            top: Math.random() * 100,
+            duration: 5 + Math.random() * 10,
+            delay: Math.random() * 5,
+        }))
+    );
+    
     const isActive = index === activeSection;
     const isPast = index < activeSection;
     const isFuture = index > activeSection;
+    const isVisible = index <= activeSection; // Keep content visible for past sections to avoid re-animation
 
     const scale = isPast ? 0.88 - (activeSection - index) * 0.03 : isActive ? 1 : 0.92;
     const rotateX = isPast ? (activeSection - index) * 5 : isFuture ? -5 : 0;
@@ -42,7 +55,7 @@ const Section = ({ children, index, activeSection, mousePos }: SectionProps) => 
 
     return (
         <section
-            className={`sticky top-0 h-screen flex items-center justify-center overflow-hidden transition-all duration-700 ease-out ${index > 0 ? "rounded-t-[50px] shadow-2xl" : ""
+            className={`sticky top-0 h-screen flex items-center justify-center overflow-hidden transition-all duration-500 ease-out snap-start ${index > 0 ? "rounded-t-[50px] shadow-2xl" : ""
                 }`}
             style={{
                 zIndex: 10 + index, 
@@ -67,15 +80,15 @@ const Section = ({ children, index, activeSection, mousePos }: SectionProps) => 
 
             {/* Floating Particles */}
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                {[...Array(20)].map((_, i) => (
+                {particles.map((particle, i) => (
                     <div
                         key={i}
                         className="absolute w-2 h-2 bg-slate-400/20 rounded-full"
                         style={{
-                            left: `${Math.random() * 100}%`,
-                            top: `${Math.random() * 100}%`,
-                            animation: `float ${5 + Math.random() * 10}s ease-in-out infinite`,
-                            animationDelay: `${Math.random() * 5}s`,
+                            left: `${particle.left}%`,
+                            top: `${particle.top}%`,
+                            animation: `float ${particle.duration}s ease-in-out infinite`,
+                            animationDelay: `${particle.delay}s`,
                         }}
                     />
                 ))}
@@ -95,7 +108,7 @@ const Section = ({ children, index, activeSection, mousePos }: SectionProps) => 
             />
 
             {/* Content Wrapper */}
-            <div className={`relative z-10 w-full h-full flex flex-col justify-center transition-all duration-1000 ${isActive ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-20 scale-95'
+            <div className={`relative z-10 w-full h-full flex flex-col justify-center transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-20 scale-95'
                 }`}
                 style={{ transitionDelay: isActive ? '300ms' : '0ms' }}
             >
@@ -108,11 +121,14 @@ const Section = ({ children, index, activeSection, mousePos }: SectionProps) => 
 export default function Home() {
     const [isLogin, setIsLogin] = useState(false);
     const [user, setUser] = useState<UserInfo | undefined>(undefined);
+    const { showToast } = useToast()
+    const [notifications, setNotifications] = useState<Notification[]>([]);
 
     // Scroll Tracking State
     const [scrollProgress, setScrollProgress] = useState(0);
     const [activeSection, setActiveSection] = useState(0);
     const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         const checkAuth = async () => {
@@ -122,6 +138,7 @@ export default function Home() {
                 setIsLogin(true);
                 try {
                     const userService = new UserService();
+                    const notificationService = new NotificationService();
                     const userData = await userService.getUser(accessToken, refreshToken);
                     setUser({
                         name: userData.user.name,
@@ -129,24 +146,32 @@ export default function Home() {
                         avatar: undefined, // Will use default avatar
                         roles: userData.roles.map(r => r.name),
                     });
+
+                    const getUserNotifications = await notificationService.getNotifications(accessToken);
+                    const getGlobalNotifications = await notificationService.globalNotification(accessToken);
+                    setNotifications([...getGlobalNotifications, ...getUserNotifications]);
+                    showToast("You have new notifications!", "info");
+                    showToast(`You have ${getUserNotifications.length} new personal notifications and ${getGlobalNotifications.length} global notifications.`, "info");
                 } catch (error) {
                     console.error("Failed to fetch user data:", error);
                 }
             }
         };
         checkAuth();
-    }, []);
+    }, [showToast]);
 
     useEffect(() => {
         const handleScroll = () => {
-            const scrollTop = window.scrollY;
-            const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+            if (!scrollContainerRef.current) return;
+            const container = scrollContainerRef.current;
+            const scrollTop = container.scrollTop;
+            const docHeight = container.scrollHeight - container.clientHeight;
             const progress = docHeight > 0 ? scrollTop / docHeight : 0;
             setScrollProgress(progress);
             // Calculate active section based on scroll position - simplified for sticky stacking
             // In a sticky stack, the "active" visual section is the one currently at the top or mostly visible.
             // With h-screen sections, we can estimate:
-            const sectionIndex = Math.min(Math.floor((scrollTop + window.innerHeight * 0.5) / window.innerHeight), 6);
+            const sectionIndex = Math.min(Math.floor((scrollTop + container.clientHeight * 0.5) / container.clientHeight), 6);
             setActiveSection(sectionIndex);
         };
 
@@ -154,16 +179,21 @@ export default function Home() {
             setMousePos({ x: e.clientX, y: e.clientY });
         };
 
-        window.addEventListener('scroll', handleScroll);
+        const container = scrollContainerRef.current;
+        if (container) {
+            container.addEventListener('scroll', handleScroll);
+        }
         window.addEventListener('mousemove', handleMouseMove);
         return () => {
-            window.removeEventListener('scroll', handleScroll);
+            if (container) {
+                container.removeEventListener('scroll', handleScroll);
+            }
             window.removeEventListener('mousemove', handleMouseMove);
         };
     }, []);
 
     return (
-        <div className="relative min-h-screen bg-slate-50 text-slate-900 overflow-x-hidden">
+        <div ref={scrollContainerRef} className="relative h-screen bg-slate-50 text-slate-900 overflow-y-scroll snap-y snap-proximity overflow-x-hidden scroll-smooth">
             {/* Cursor Glow Effect */}
             <div
                 className="fixed w-96 h-96 pointer-events-none z-50 transition-all duration-300 ease-out mix-blend-multiply opacity-50"
@@ -178,7 +208,7 @@ export default function Home() {
             {/* Progress Bar */}
             <div className="fixed top-0 left-0 w-full h-1 bg-white/5 z-50">
                 <div
-                    className="h-full bg-gradient-to-r from-teal-500 via-emerald-500 to-green-500"
+                    className="h-full bg-linear-to-r from-teal-500 via-emerald-500 to-green-500"
                     style={{ width: `${scrollProgress * 100}%` }}
                 />
             </div>

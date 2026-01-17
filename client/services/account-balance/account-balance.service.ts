@@ -25,7 +25,7 @@ export interface OrganizationBalanceTransaction {
 }
 
 export class AccountBalanceService {
-
+    // Get organization balance
     async getOrganizationBalance(token: string, orgId: string): Promise<OrganizationBalance> {
         const response = await fetch(`${API}/organizations/${orgId}/balance`, {
             method: 'GET',
@@ -44,6 +44,7 @@ export class AccountBalanceService {
         return data.data;
     }
 
+    // Get organization balance transactions
     async getTransactions(token: string, orgId: string, params: {
         page?: number;
         limit?: number;
@@ -79,6 +80,7 @@ export class AccountBalanceService {
         return data.data;
     }
 
+    // Create a deposit (top-up) request
     async createDeposit(token: string, orgId: string, amount: number, notes?: string) {
         const response = await fetch(`${API}/organizations/${orgId}/balance/deposit`, {
             method: 'POST',

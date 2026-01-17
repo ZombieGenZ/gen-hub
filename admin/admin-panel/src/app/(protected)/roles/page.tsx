@@ -323,7 +323,8 @@ export default function RolesPage() {
                                 {roles.map((role) => (
                                     <tr
                                         key={role.id}
-                                        className="border-b border-[var(--border-primary)] hover:bg-[var(--background-tertiary)] transition-colors"
+                                        className="border-b border-[var(--border-primary)] hover:bg-[var(--background-tertiary)] transition-colors cursor-pointer"
+                                        onClick={() => router.push(`/roles/${role.id}`)}
                                     >
                                         <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                                             <label className="relative inline-flex items-center cursor-pointer">

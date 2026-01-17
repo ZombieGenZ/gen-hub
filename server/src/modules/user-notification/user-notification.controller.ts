@@ -19,7 +19,7 @@ import {
 import { I18nLang } from 'nestjs-i18n';
 
 import { UserNotificationService } from './user-notification.service';
-import { SendUserNotificationDto, QueryUserNotificationDto } from './dto';
+import { SendUserNotificationDto, QueryUserNotificationDto, SendBulkUserNotificationDto } from './dto';
 import { JwtAuthGuard, PermissionGuard } from '../../common/guards';
 import { RequirePermission, CurrentUser } from '../../common/decorators';
 import {
@@ -112,5 +112,20 @@ export class UserNotificationController {
     ): Promise<UpdatedResponse<{ count: number }>> {
         const result = await this.service.markAllAsRead(userId);
         return new UpdatedResponse(ResponseCode.USER_NOTIFICATION_MARK_ALL_READ_SUCCESS, result);
+    }
+
+    @Post('send-bulk')
+    @UseGuards(PermissionGuard)
+    @RequirePermission('user-notification.send.bulk')
+    @ApiOperation({ summary: 'Gửi thông báo cho nhiều users (Admin)' })
+    @ApiResponse({ status: 201, description: 'Gửi thành công' })
+    @ApiResponse({ status: 404, description: 'Một số user không tồn tại' })
+    async sendBulkNotification(
+        @Body() dto: SendBulkUserNotificationDto,
+        @CurrentUser('userId') senderId: string,
+        @I18nLang() lang: string,
+    ): Promise<CreatedResponse<{ count: number }>> {
+        const result = await this.service.sendBulkNotification(dto, senderId, lang);
+        return new CreatedResponse(ResponseCode.USER_NOTIFICATION_SEND_SUCCESS, result);
     }
 }

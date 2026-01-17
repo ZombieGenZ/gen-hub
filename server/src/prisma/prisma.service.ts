@@ -346,6 +346,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         this.seedWarningCategoryPermissions.bind(this),
         this.seedWarnPenaltyPermissions.bind(this),
         this.seedRolePermissions.bind(this),
+        this.seedSuperadminBypassPermission.bind(this),
       ];
 
       const BATCH_SIZE = 3; // Chạy 3 seed functions cùng lúc
@@ -769,6 +770,65 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         error instanceof Error ? error.message : String(error);
       this.logger.error(
         `❌ Failed to seed backup admin permission: ${errorMessage}`,
+      );
+    }
+  }
+
+  /**
+   * Seed permission superadmin.bypass cho việc bảo vệ super admin
+   * User có quyền này sẽ không thể bị ban/warn/update permissions bởi các admin khác
+   * Gán trực tiếp cho tài khoản admin được seed
+   */
+  private async seedSuperadminBypassPermission() {
+    try {
+      const existing = await this.permission.findFirst({
+        where: { key: 'superadmin.bypass' },
+      });
+
+      let permissionId = existing?.id;
+
+      if (!existing) {
+        const newPermission = await this.permission.create({
+          data: {
+            key: 'superadmin.bypass',
+            name: 'Superadmin Bypass',
+            description: 'Bảo vệ người dùng khỏi các hành động quản lý như ban, warn, update permissions',
+            is_active: true,
+            is_deleted: false,
+          },
+        });
+        permissionId = newPermission.id;
+        this.logger.log('✅ Superadmin bypass permission seeded');
+      }
+
+      // Gán trực tiếp cho admin account đã seed
+      if (permissionId && this.seedAdminId) {
+        const existingUserPermission = await this.userPermission.findFirst({
+          where: {
+            user_id: this.seedAdminId,
+            permission_id: permissionId,
+          },
+        });
+
+        if (!existingUserPermission) {
+          await this.userPermission.create({
+            data: {
+              user_id: this.seedAdminId,
+              permission_id: permissionId,
+              is_active: true,
+              is_deleted: false,
+            },
+          });
+          this.logger.log(
+            '✅ Superadmin bypass permission assigned to admin account',
+          );
+        }
+      }
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `❌ Failed to seed superadmin bypass permission: ${errorMessage}`,
       );
     }
   }
