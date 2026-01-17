@@ -108,6 +108,12 @@ export default function UserDetailPage() {
     const [notificationContent, setNotificationContent] = useState('');
     const [isSendingNotification, setIsSendingNotification] = useState(false);
 
+    // Confirmation modal states
+    const [showClearWarningsConfirm, setShowClearWarningsConfirm] = useState(false);
+    const [showRevokeAllSessionsConfirm, setShowRevokeAllSessionsConfirm] = useState(false);
+    const [showRevokeSessionConfirm, setShowRevokeSessionConfirm] = useState(false);
+    const [sessionToRevoke, setSessionToRevoke] = useState<string | null>(null);
+
     // Search states
     const [roleSearch, setRoleSearch] = useState('');
     const [permissionSearch, setPermissionSearch] = useState('');
@@ -143,6 +149,25 @@ export default function UserDetailPage() {
             perm.description?.toLowerCase().includes(search)
         );
     }, [allPermissions, permissionSearch]);
+
+    // Group permissions by prefix (e.g., user-management, role, etc.)
+    const groupedPermissions = useMemo(() => {
+        return filteredPermissions.reduce((acc, perm) => {
+            const parts = perm.key.split('.');
+            const group = parts[0] || 'other';
+            if (!acc[group]) acc[group] = [];
+            acc[group].push(perm);
+            return acc;
+        }, {} as Record<string, PermissionWithAssignment[]>);
+    }, [filteredPermissions]);
+
+    // Format group name: "balance-transaction" -> "Balance Transaction"
+    const formatGroupName = (group: string) => {
+        return group
+            .split('-')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
+    };
 
     const fetchUser = useCallback(async () => {
         if (!id) return;
@@ -249,9 +274,11 @@ export default function UserDetailPage() {
     const fetchWarnCategories = useCallback(async () => {
         try {
             const data = await warningCategoriesApi.getCategories();
-            setWarnCategories(data);
+            // Ensure data is an array
+            setWarnCategories(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error('Failed to fetch warning categories:', error);
+            setWarnCategories([]);
         }
     }, []);
 
@@ -353,7 +380,7 @@ export default function UserDetailPage() {
 
     const handleClearAllWarnings = async () => {
         if (!id) return;
-        if (!confirm(t('userManagement.confirmClearAllWarnings') || 'Are you sure you want to clear all warnings?')) return;
+        setShowClearWarningsConfirm(false);
         try {
             await userManagementApi.clearAllWarnings(id as string);
             setWarnings(prev => prev.map(w => ({ ...w, is_active: false })));
@@ -389,6 +416,8 @@ export default function UserDetailPage() {
 
     const handleRevokeSession = async (sessionId: string) => {
         if (!id) return;
+        setShowRevokeSessionConfirm(false);
+        setSessionToRevoke(null);
         try {
             await userManagementApi.revokeSession(id as string, sessionId);
             setSessions(prev => prev.filter(s => s.id !== sessionId));
@@ -399,8 +428,14 @@ export default function UserDetailPage() {
         }
     };
 
+    const confirmRevokeSession = (sessionId: string) => {
+        setSessionToRevoke(sessionId);
+        setShowRevokeSessionConfirm(true);
+    };
+
     const handleRevokeAllSessions = async () => {
         if (!id) return;
+        setShowRevokeAllSessionsConfirm(false);
         try {
             await userManagementApi.revokeAllSessions(id as string);
             setSessions([]);
@@ -698,7 +733,7 @@ export default function UserDetailPage() {
                                         <span className="hidden sm:inline">{t('userManagement.addWarning') || 'Add Warning'}</span>
                                     </button>
                                     <button
-                                        onClick={handleClearAllWarnings}
+                                        onClick={() => setShowClearWarningsConfirm(true)}
                                         disabled={warnings.filter(w => w.is_active).length === 0}
                                         className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg transition-colors disabled:opacity-50"
                                         title={t('userManagement.clearAllWarnings') || 'Clear All'}
@@ -775,7 +810,7 @@ export default function UserDetailPage() {
                                     {sessionsTotal} {t('userManagement.totalSessions') || 'phiên đăng nhập'}
                                 </div>
                                 <button
-                                    onClick={handleRevokeAllSessions}
+                                    onClick={() => setShowRevokeAllSessionsConfirm(true)}
                                     disabled={sessions.length === 0}
                                     className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg transition-colors disabled:opacity-50 whitespace-nowrap"
                                     title={t('userManagement.revokeAllSessions') || 'Thu hồi tất cả phiên'}
@@ -814,7 +849,7 @@ export default function UserDetailPage() {
                                                     </div>
                                                 </div>
                                                 <button
-                                                    onClick={() => handleRevokeSession(session.id)}
+                                                    onClick={() => confirmRevokeSession(session.id)}
                                                     className="self-end sm:self-center p-2 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors flex-shrink-0"
                                                     title={t('userManagement.revokeSession') || 'Thu hồi phiên'}
                                                 >
@@ -971,98 +1006,104 @@ export default function UserDetailPage() {
                                                 />
                                             </div>
                                         </div>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                            {filteredPermissions.map((perm) => {
-                                                const isInheritedFromRole = rolePermissionSet.has(perm.id);
-                                                const isDirectlySelected = selectedPermissionIds.has(perm.id);
-                                                const isDenied = deniedPermissionIds.has(perm.id);
-                                                // Effective permission: has it if (directly selected OR from role) AND not denied
-                                                const isEffectivelyEnabled = (isDirectlySelected || isInheritedFromRole) && !isDenied;
-
-                                                // Determine background color
-                                                let bgClass = 'bg-[var(--background-tertiary)] border border-[var(--border-primary)] hover:bg-[var(--background-tertiary)]/80';
-                                                if (isDenied && isInheritedFromRole) {
-                                                    bgClass = 'bg-red-500/10 border border-red-500/30';
-                                                } else if (isDirectlySelected && !isDenied) {
-                                                    bgClass = 'bg-[var(--accent-primary-muted)] border border-[var(--accent-primary)]';
-                                                } else if (isInheritedFromRole && !isDenied) {
-                                                    bgClass = 'bg-blue-500/10 border border-blue-500/30';
-                                                }
-
-                                                return (
-                                                    <div
-                                                        key={perm.id}
-                                                        className={`flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-colors ${bgClass}`}
-                                                        onClick={() => {
-                                                            if (isInheritedFromRole) {
-                                                                // Toggle deny for role permissions
-                                                                const newDenied = new Set(deniedPermissionIds);
-                                                                if (isDenied) {
-                                                                    newDenied.delete(perm.id);
-                                                                } else {
-                                                                    newDenied.add(perm.id);
-                                                                }
-                                                                setDeniedPermissionIds(newDenied);
-                                                            } else {
-                                                                // Toggle direct selection for non-role permissions
-                                                                const newSet = new Set(selectedPermissionIds);
-                                                                if (isDirectlySelected) {
-                                                                    newSet.delete(perm.id);
-                                                                } else {
-                                                                    newSet.add(perm.id);
-                                                                }
-                                                                setSelectedPermissionIds(newSet);
-                                                            }
-                                                        }}
-                                                    >
-                                                        <div className={`w-4 h-4 mt-0.5 rounded border flex items-center justify-center transition-colors flex-shrink-0 ${isDenied
-                                                            ? 'bg-red-500 border-red-500'
-                                                            : isDirectlySelected
-                                                                ? 'bg-[var(--accent-primary)] border-[var(--accent-primary)]'
-                                                                : isInheritedFromRole
-                                                                    ? 'bg-blue-500 border-blue-500'
-                                                                    : 'border-[var(--border-primary)]'
-                                                            }`}>
-                                                            {isDenied ? (
-                                                                <XCircle className="w-3 h-3 text-white" />
-                                                            ) : isEffectivelyEnabled ? (
-                                                                <CheckCircle2 className="w-3 h-3 text-white" />
-                                                            ) : null}
-                                                        </div>
-                                                        <div className="min-w-0 flex-1">
-                                                            <div className="flex flex-wrap items-center gap-2">
-                                                                <span className={`text-sm font-medium ${isDenied ? 'text-red-400 line-through' : 'text-white'}`}>
-                                                                    {perm.name}
-                                                                </span>
-                                                                {isInheritedFromRole && !isDenied && (
-                                                                    <span className="text-xs px-1.5 py-0.5 bg-blue-500/20 text-blue-400 rounded">
-                                                                        {t('userManagement.fromRole') || 'Từ vai trò'}
-                                                                    </span>
-                                                                )}
-                                                                {isDenied && isInheritedFromRole && (
-                                                                    <span className="text-xs px-1.5 py-0.5 bg-red-500/20 text-red-400 rounded">
-                                                                        {t('userManagement.denied') || 'Đã từ chối'}
-                                                                    </span>
-                                                                )}
-                                                                {isDirectlySelected && !isDenied && (
-                                                                    <span className="text-xs px-1.5 py-0.5 bg-[var(--accent-primary)]/20 text-[var(--accent-primary)] rounded">
-                                                                        {t('userManagement.direct') || 'Trực tiếp'}
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                            {perm.description && (
-                                                                <p className={`text-xs mt-1 ${isDenied ? 'text-red-400/50' : 'text-[var(--text-muted)]'}`}>
-                                                                    {perm.description}
-                                                                </p>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-                                            {filteredPermissions.length === 0 && (
-                                                <div className="col-span-full text-center py-4 text-[var(--text-muted)]">
+                                        <div className="space-y-4">
+                                            {Object.keys(groupedPermissions).length === 0 ? (
+                                                <div className="text-center py-4 text-[var(--text-muted)]">
                                                     {t('common.noResults') || 'Không tìm thấy kết quả'}
                                                 </div>
+                                            ) : (
+                                                Object.entries(groupedPermissions).map(([group, perms]) => (
+                                                    <div key={group} className="border border-[var(--border-primary)] rounded-lg overflow-hidden">
+                                                        <div className="bg-[var(--background-tertiary)] px-4 py-3 border-b border-[var(--border-primary)]">
+                                                            <h4 className="text-white font-medium">{formatGroupName(group)}</h4>
+                                                        </div>
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 p-3">
+                                                            {perms.map((perm) => {
+                                                                const isInheritedFromRole = rolePermissionSet.has(perm.id);
+                                                                const isDirectlySelected = selectedPermissionIds.has(perm.id);
+                                                                const isDenied = deniedPermissionIds.has(perm.id);
+                                                                const isEffectivelyEnabled = (isDirectlySelected || isInheritedFromRole) && !isDenied;
+
+                                                                let bgClass = 'bg-[var(--background-tertiary)] border border-[var(--border-primary)] hover:bg-[var(--background-tertiary)]/80';
+                                                                if (isDenied && isInheritedFromRole) {
+                                                                    bgClass = 'bg-red-500/10 border border-red-500/30';
+                                                                } else if (isDirectlySelected && !isDenied) {
+                                                                    bgClass = 'bg-[var(--accent-primary-muted)] border border-[var(--accent-primary)]';
+                                                                } else if (isInheritedFromRole && !isDenied) {
+                                                                    bgClass = 'bg-blue-500/10 border border-blue-500/30';
+                                                                }
+
+                                                                return (
+                                                                    <div
+                                                                        key={perm.id}
+                                                                        className={`flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-colors ${bgClass}`}
+                                                                        onClick={() => {
+                                                                            if (isInheritedFromRole) {
+                                                                                const newDenied = new Set(deniedPermissionIds);
+                                                                                if (isDenied) {
+                                                                                    newDenied.delete(perm.id);
+                                                                                } else {
+                                                                                    newDenied.add(perm.id);
+                                                                                }
+                                                                                setDeniedPermissionIds(newDenied);
+                                                                            } else {
+                                                                                const newSet = new Set(selectedPermissionIds);
+                                                                                if (isDirectlySelected) {
+                                                                                    newSet.delete(perm.id);
+                                                                                } else {
+                                                                                    newSet.add(perm.id);
+                                                                                }
+                                                                                setSelectedPermissionIds(newSet);
+                                                                            }
+                                                                        }}
+                                                                    >
+                                                                        <div className={`w-4 h-4 mt-0.5 rounded border flex items-center justify-center transition-colors flex-shrink-0 ${isDenied
+                                                                            ? 'bg-red-500 border-red-500'
+                                                                            : isDirectlySelected
+                                                                                ? 'bg-[var(--accent-primary)] border-[var(--accent-primary)]'
+                                                                                : isInheritedFromRole
+                                                                                    ? 'bg-blue-500 border-blue-500'
+                                                                                    : 'border-[var(--border-primary)]'
+                                                                            }`}>
+                                                                            {isDenied ? (
+                                                                                <XCircle className="w-3 h-3 text-white" />
+                                                                            ) : isEffectivelyEnabled ? (
+                                                                                <CheckCircle2 className="w-3 h-3 text-white" />
+                                                                            ) : null}
+                                                                        </div>
+                                                                        <div className="min-w-0 flex-1">
+                                                                            <div className="flex flex-wrap items-center gap-2">
+                                                                                <span className={`text-sm font-medium ${isDenied ? 'text-red-400 line-through' : 'text-white'}`}>
+                                                                                    {perm.name}
+                                                                                </span>
+                                                                                {isInheritedFromRole && !isDenied && (
+                                                                                    <span className="text-xs px-1.5 py-0.5 bg-blue-500/20 text-blue-400 rounded">
+                                                                                        {t('userManagement.fromRole') || 'Từ vai trò'}
+                                                                                    </span>
+                                                                                )}
+                                                                                {isDenied && isInheritedFromRole && (
+                                                                                    <span className="text-xs px-1.5 py-0.5 bg-red-500/20 text-red-400 rounded">
+                                                                                        {t('userManagement.denied') || 'Đã từ chối'}
+                                                                                    </span>
+                                                                                )}
+                                                                                {isDirectlySelected && !isDenied && (
+                                                                                    <span className="text-xs px-1.5 py-0.5 bg-[var(--accent-primary)]/20 text-[var(--accent-primary)] rounded">
+                                                                                        {t('userManagement.direct') || 'Trực tiếp'}
+                                                                                    </span>
+                                                                                )}
+                                                                            </div>
+                                                                            {perm.description && (
+                                                                                <p className={`text-xs mt-1 ${isDenied ? 'text-red-400/50' : 'text-[var(--text-muted)]'}`}>
+                                                                                    {perm.description}
+                                                                                </p>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </div>
+                                                ))
                                             )}
                                         </div>
                                     </div>
@@ -1404,6 +1445,90 @@ export default function UserDetailPage() {
                             >
                                 {isSendingNotification && <Loader2 className="w-4 h-4 animate-spin" />}
                                 {t('userManagement.send') || 'Send'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Clear All Warnings Confirmation Modal */}
+            {showClearWarningsConfirm && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-[var(--background-secondary)] rounded-xl p-6 w-full max-w-md border border-[var(--border-primary)]">
+                        <h2 className="text-xl font-bold text-white mb-4">{t('userManagement.confirmAction') || 'Xác nhận hành động'}</h2>
+                        <p className="text-[var(--text-muted)] mb-6">
+                            {t('userManagement.confirmClearAllWarnings') || 'Bạn có chắc chắn muốn xóa tất cả cảnh báo của người dùng này?'}
+                        </p>
+                        <div className="flex justify-end gap-2">
+                            <button
+                                onClick={() => setShowClearWarningsConfirm(false)}
+                                className="px-4 py-2 text-[var(--text-muted)] hover:text-white transition-colors"
+                            >
+                                {t('common.cancel') || 'Hủy'}
+                            </button>
+                            <button
+                                onClick={handleClearAllWarnings}
+                                className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
+                            >
+                                <Trash2 className="w-4 h-4" />
+                                {t('userManagement.clearAllWarnings') || 'Xóa tất cả'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Revoke All Sessions Confirmation Modal */}
+            {showRevokeAllSessionsConfirm && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-[var(--background-secondary)] rounded-xl p-6 w-full max-w-md border border-[var(--border-primary)]">
+                        <h2 className="text-xl font-bold text-white mb-4">{t('userManagement.confirmAction') || 'Xác nhận hành động'}</h2>
+                        <p className="text-[var(--text-muted)] mb-6">
+                            {t('userManagement.confirmRevokeAllSessions') || 'Bạn có chắc chắn muốn thu hồi tất cả phiên đăng nhập của người dùng này? Người dùng sẽ bị đăng xuất khỏi tất cả thiết bị.'}
+                        </p>
+                        <div className="flex justify-end gap-2">
+                            <button
+                                onClick={() => setShowRevokeAllSessionsConfirm(false)}
+                                className="px-4 py-2 text-[var(--text-muted)] hover:text-white transition-colors"
+                            >
+                                {t('common.cancel') || 'Hủy'}
+                            </button>
+                            <button
+                                onClick={handleRevokeAllSessions}
+                                className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
+                            >
+                                <LogOut className="w-4 h-4" />
+                                {t('userManagement.revokeAllSessions') || 'Thu hồi tất cả'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Revoke Single Session Confirmation Modal */}
+            {showRevokeSessionConfirm && sessionToRevoke && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-[var(--background-secondary)] rounded-xl p-6 w-full max-w-md border border-[var(--border-primary)]">
+                        <h2 className="text-xl font-bold text-white mb-4">{t('userManagement.confirmAction') || 'Xác nhận hành động'}</h2>
+                        <p className="text-[var(--text-muted)] mb-6">
+                            {t('userManagement.confirmRevokeSession') || 'Bạn có chắc chắn muốn thu hồi phiên đăng nhập này? Người dùng sẽ bị đăng xuất khỏi thiết bị này.'}
+                        </p>
+                        <div className="flex justify-end gap-2">
+                            <button
+                                onClick={() => {
+                                    setShowRevokeSessionConfirm(false);
+                                    setSessionToRevoke(null);
+                                }}
+                                className="px-4 py-2 text-[var(--text-muted)] hover:text-white transition-colors"
+                            >
+                                {t('common.cancel') || 'Hủy'}
+                            </button>
+                            <button
+                                onClick={() => handleRevokeSession(sessionToRevoke)}
+                                className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
+                            >
+                                <LogOut className="w-4 h-4" />
+                                {t('userManagement.revokeSession') || 'Thu hồi phiên'}
                             </button>
                         </div>
                     </div>

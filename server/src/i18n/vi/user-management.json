@@ -17,7 +17,10 @@
         "not_banned": "Người dùng chưa bị cấm",
         "warning_not_found": "Không tìm thấy cảnh báo",
         "warning_already_removed": "Cảnh báo đã được gỡ",
-        "session_not_found": "Không tìm thấy phiên đăng nhập"
+        "session_not_found": "Không tìm thấy phiên đăng nhập",
+        "protected_user": "Không thể thực hiện hành động này trên người dùng được bảo vệ",
+        "cannot_action_self": "Không thể thực hiện hành động này trên chính mình",
+        "no_users_selected": "Không có người dùng nào được chọn"
     },
     "validation": {
         "reason_required": "Lý do là bắt buộc",

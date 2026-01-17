@@ -523,4 +523,52 @@ export class UserManagementRepository {
             select: { id: true, name: true, email: true },
         });
     }
+
+    /**
+     * Kiểm tra xem user có quyền superadmin.bypass hay không
+     * User có quyền này được bảo vệ khỏi các hành động quản lý
+     */
+    async hasProtectedPermission(userId: string): Promise<boolean> {
+        // Kiểm tra quyền trực tiếp
+        const directPermission = await this.prisma.userPermission.findFirst({
+            where: {
+                user_id: userId,
+                is_active: true,
+                is_deleted: false,
+                permission: {
+                    key: 'superadmin.bypass',
+                    is_active: true,
+                    is_deleted: false,
+                },
+            },
+        });
+
+        if (directPermission) return true;
+
+        // Kiểm tra quyền từ role
+        const rolePermission = await this.prisma.userRole.findFirst({
+            where: {
+                user_id: userId,
+                is_active: true,
+                is_deleted: false,
+                role: {
+                    is_active: true,
+                    is_deleted: false,
+                    permissions: {
+                        some: {
+                            is_active: true,
+                            is_deleted: false,
+                            permission: {
+                                key: 'superadmin.bypass',
+                                is_active: true,
+                                is_deleted: false,
+                            },
+                        },
+                    },
+                },
+            },
+        });
+
+        return !!rolePermission;
+    }
 }

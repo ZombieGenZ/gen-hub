@@ -60,6 +60,32 @@ export class UserManagementService {
     }
 
     /**
+     * Kiểm tra xem có thể thực hiện hành động lên user hay không
+     * - Không thể thao tác lên chính mình
+     * - Không thể thao tác lên user có quyền superadmin.bypass
+     */
+    private async validateUserAction(
+        targetUserId: string,
+        adminId: string,
+        lang: string,
+    ): Promise<void> {
+        // Không cho phép thao tác lên chính mình
+        if (targetUserId === adminId) {
+            throw new BadRequestException(
+                this.i18n.t('user-management.error.cannot_action_self', { lang })
+            );
+        }
+
+        // Kiểm tra xem target user có được bảo vệ không
+        const isProtected = await this.repository.hasProtectedPermission(targetUserId);
+        if (isProtected) {
+            throw new BadRequestException(
+                this.i18n.t('user-management.error.protected_user', { lang })
+            );
+        }
+    }
+
+    /**
      * Lấy danh sách users với phân trang
      */
     async findMany(query: QueryUsersDto, lang: string): Promise<IUserListResult> {
@@ -107,6 +133,9 @@ export class UserManagementService {
         lang: string,
         requestInfo?: { ip?: string; userAgent?: string },
     ): Promise<IUserDetail> {
+        // Kiểm tra quyền thao tác lên user
+        await this.validateUserAction(userId, adminId, lang);
+
         const user = await this.repository.findById(userId);
         if (!user) {
             throw new NotFoundException(this.i18n.t('user-management.error.user_not_found', { lang }));
@@ -172,6 +201,9 @@ export class UserManagementService {
         lang: string,
         requestInfo?: { ip?: string; userAgent?: string },
     ): Promise<IUserDetail> {
+        // Kiểm tra quyền thao tác lên user
+        await this.validateUserAction(userId, adminId, lang);
+
         const user = await this.repository.findById(userId);
         if (!user) {
             throw new NotFoundException(this.i18n.t('user-management.error.user_not_found', { lang }));
@@ -251,6 +283,9 @@ export class UserManagementService {
         lang: string,
         requestInfo?: { ip?: string; userAgent?: string },
     ) {
+        // Kiểm tra quyền thao tác lên user
+        await this.validateUserAction(userId, adminId, lang);
+
         const user = await this.repository.findById(userId);
         if (!user) {
             throw new NotFoundException(this.i18n.t('user-management.error.user_not_found', { lang }));
@@ -346,6 +381,9 @@ export class UserManagementService {
         lang: string,
         requestInfo?: { ip?: string; userAgent?: string },
     ) {
+        // Kiểm tra quyền thao tác lên user
+        await this.validateUserAction(userId, adminId, lang);
+
         const user = await this.repository.findById(userId);
         if (!user) {
             throw new NotFoundException(this.i18n.t('user-management.error.user_not_found', { lang }));
@@ -551,6 +589,9 @@ export class UserManagementService {
         lang: string,
         requestInfo?: { ip?: string; userAgent?: string },
     ): Promise<IUserRolesAndPermissions> {
+        // Kiểm tra quyền thao tác lên user
+        await this.validateUserAction(userId, adminId, lang);
+
         const user = await this.repository.findById(userId);
         if (!user) {
             throw new NotFoundException(this.i18n.t('user-management.error.user_not_found', { lang }));
@@ -827,6 +868,9 @@ export class UserManagementService {
         lang: string,
         requestInfo?: { ip?: string; userAgent?: string },
     ): Promise<{ count: number }> {
+        // Kiểm tra quyền thao tác lên user
+        await this.validateUserAction(userId, adminId, lang);
+
         const user = await this.repository.findById(userId);
         if (!user) {
             throw new NotFoundException(this.i18n.t('user-management.error.user_not_found', { lang }));

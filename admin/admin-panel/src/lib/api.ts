@@ -1093,7 +1093,11 @@ export interface WarningCategory {
 export const warningCategoriesApi = {
     getCategories: async (): Promise<WarningCategory[]> => {
         const { data } = await api.get('/admin/warning-categories');
-        return data.data || [];
+        // Handle different response formats
+        if (Array.isArray(data)) return data;
+        if (Array.isArray(data?.data)) return data.data;
+        if (Array.isArray(data?.items)) return data.items;
+        return [];
     },
 };
 
