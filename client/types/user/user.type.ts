@@ -24,6 +24,7 @@ export interface UserData {
   user: User;
   roles: Role[];
   permissions: Permission[];
+  organization_id?: string;
 }
 // Nếu response từ API là { data: { ... } }
 export interface UserResponse {
