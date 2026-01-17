@@ -124,7 +124,7 @@ export default function ProfilePage() {
     }
 
     fetchUser()
-  }, [])
+  }, [router])
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -361,7 +361,7 @@ export default function ProfilePage() {
               Quét mã QR bằng ứng dụng xác thực của bạn để thêm tài khoản
             </p>
             <div className="flex justify-center p-4 bg-white rounded-lg border border-gray-200 dark:bg-slate-700 dark:border-slate-600">
-              <img
+              <Image
                 src={enable2FAData.data.qr_code_url}
                 alt="2FA QR Code"
                 className="w-48 h-48"
