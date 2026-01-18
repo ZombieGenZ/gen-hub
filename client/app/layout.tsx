@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ToastProvider } from "@/contexts/ToastContext";
+import { LoadingProvider } from "@/components/providers/LoadingProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,6 +32,8 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+        <link rel="preload" href="/assets/loading-video.webm" as="video" type="video/webm" />
+        <link rel="preload" href="/assets/GenHubv2.svg" as="image" />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased font-sans`}
@@ -42,7 +45,9 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <ToastProvider>
-            {children}
+            <LoadingProvider minLoadingTime={2500} maxLoadingTime={5000}>
+              {children}
+            </LoadingProvider>
           </ToastProvider>
         </ThemeProvider>
       </body>

@@ -10,6 +10,7 @@ import { PrimeNestTestimonials } from "@/app/(public)/homepage/Testimonials";
 import { PrimeNestFAQ } from "@/app/(public)/homepage/FAQ";
 import { PrimeNestContact } from "@/app/(public)/homepage/Contact";
 import { PrimeNestFooter } from "@/app/(public)/homepage/Footer";
+import { PrimeNestChatbot } from "@/app/(public)/homepage/Chatbot";
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { UserService } from "@/services/user/user.service";
 import { NotificationService } from "@/services/notification/notification.service";
@@ -27,10 +28,9 @@ interface SectionProps {
     children: React.ReactNode;
     index: number;
     activeSection: number;
-    mousePos: { x: number; y: number };
 }
 
-const Section = ({ children, index, activeSection, mousePos }: SectionProps) => {
+const Section = ({ children, index, activeSection }: SectionProps) => {
     const [particles] = useState(() => 
         [...Array(20)].map(() => ({
             left: Math.random() * 100,
@@ -43,7 +43,7 @@ const Section = ({ children, index, activeSection, mousePos }: SectionProps) => 
     const isActive = index === activeSection;
     const isPast = index < activeSection;
     const isFuture = index > activeSection;
-    const isVisible = index <= activeSection; // Keep content visible for past sections to avoid re-animation
+    const isVisible = index <= activeSection;
 
     const scale = isPast ? 0.88 - (activeSection - index) * 0.03 : isActive ? 1 : 0.92;
     const rotateX = isPast ? (activeSection - index) * 5 : isFuture ? -5 : 0;
@@ -67,16 +67,7 @@ const Section = ({ children, index, activeSection, mousePos }: SectionProps) => 
                 backgroundColor: index === 0 ? 'transparent' : 'white' // Ensure background for cards, Hero can be transparent
             }}
         >
-            {/* Background Effects */}
-            <div
-                className="absolute inset-0 opacity-30 pointer-events-none"
-                style={{
-                    background: `
-              radial-gradient(at ${mousePos.x / (typeof window !== 'undefined' ? window.innerWidth : 1) * 100}% ${mousePos.y / (typeof window !== 'undefined' ? window.innerHeight : 1) * 100}%, rgba(168, 85, 247, 0.3) 0%, transparent 50%),
-              radial-gradient(at ${100 - mousePos.x / (typeof window !== 'undefined' ? window.innerWidth : 1) * 100}% ${100 - mousePos.y / (typeof window !== 'undefined' ? window.innerHeight : 1) * 100}%, rgba(236, 72, 153, 0.3) 0%, transparent 50%)
-            `
-                }}
-            />
+
 
             {/* Floating Particles */}
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -127,7 +118,6 @@ export default function Home() {
     // Scroll Tracking State
     const [scrollProgress, setScrollProgress] = useState(0);
     const [activeSection, setActiveSection] = useState(0);
-    const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
     const scrollContainerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -175,36 +165,19 @@ export default function Home() {
             setActiveSection(sectionIndex);
         };
 
-        const handleMouseMove = (e: MouseEvent) => {
-            setMousePos({ x: e.clientX, y: e.clientY });
-        };
-
         const container = scrollContainerRef.current;
         if (container) {
             container.addEventListener('scroll', handleScroll);
         }
-        window.addEventListener('mousemove', handleMouseMove);
         return () => {
             if (container) {
                 container.removeEventListener('scroll', handleScroll);
             }
-            window.removeEventListener('mousemove', handleMouseMove);
         };
     }, []);
 
     return (
         <div ref={scrollContainerRef} className="relative h-screen bg-slate-50 text-slate-900 overflow-y-scroll snap-y snap-proximity overflow-x-hidden scroll-smooth">
-            {/* Cursor Glow Effect */}
-            <div
-                className="fixed w-96 h-96 pointer-events-none z-50 transition-all duration-300 ease-out mix-blend-multiply opacity-50"
-                style={{
-                    left: mousePos.x - 192,
-                    top: mousePos.y - 192,
-                    background: `radial-gradient(circle, rgba(15, 118, 110, 0.4) 0%, transparent 70%)`,
-                    filter: 'blur(40px)',
-                }}
-            />
-
             {/* Progress Bar */}
             <div className="fixed top-0 left-0 w-full h-1 bg-white/5 z-50">
                 <div
@@ -237,37 +210,37 @@ export default function Home() {
 
             <main className="relative z-10 w-full">
                 {/* 1. Hero */}
-                <Section index={0} activeSection={activeSection} mousePos={mousePos}>
+                <Section index={0} activeSection={activeSection}>
                     <PrimeNestHero />
                 </Section>
 
                 {/* 2. About */}
-                <Section index={1} activeSection={activeSection} mousePos={mousePos}>
+                <Section index={1} activeSection={activeSection}>
                      <PrimeNestAbout />
                 </Section>
 
                 {/* 3. Search */}
-                <Section index={2} activeSection={activeSection} mousePos={mousePos}>
+                <Section index={2} activeSection={activeSection}>
                     <PrimeNestSearch />
                 </Section>
 
                 {/* 4. Featured */}
-                <Section index={3} activeSection={activeSection} mousePos={mousePos}>
+                <Section index={3} activeSection={activeSection}>
                     <PrimeNestFeatured />
                 </Section>
 
                 {/* 5. Testimonials */}
-                <Section index={4} activeSection={activeSection} mousePos={mousePos}>
+                <Section index={4} activeSection={activeSection}>
                     <PrimeNestTestimonials />
                 </Section>
 
-                {/* 6. FAQ */}
-                <Section index={5} activeSection={activeSection} mousePos={mousePos}>
+                {/* 6. FAQ + Chatbot */}
+                <Section index={5} activeSection={activeSection}>
                     <PrimeNestFAQ />
                 </Section>
 
                 {/* 7. Contact & Footer */}
-                <Section index={6} activeSection={activeSection} mousePos={mousePos}>
+                <Section index={6} activeSection={activeSection}>
                      <div className="h-full flex flex-col justify-between">
                          <div className="bg-white flex-1 flex flex-col justify-center">
                             <PrimeNestContact />
@@ -276,6 +249,9 @@ export default function Home() {
                      </div>
                 </Section>
             </main>
+
+            {/* Chatbot Widget */}
+            <PrimeNestChatbot />
         </div>
     );
 }
