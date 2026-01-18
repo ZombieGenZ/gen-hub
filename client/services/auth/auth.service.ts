@@ -131,7 +131,7 @@ export class AuthService {
             const data = await response.json();
             authStorage.clearTokens();
             return data;
-        } catch (error: any) {
+        } catch (error: unknown) {
             // Clear tokens even if there's an error to ensure clean state
             authStorage.clearTokens();
             throw error;
@@ -157,7 +157,7 @@ export class AuthService {
             const data = await response.json();
             authStorage.clearTokens();
             return data;
-        } catch (error: any) {
+        } catch (error: unknown) {
             // Clear tokens even if there's an error to ensure clean state
             authStorage.clearTokens();
             throw error;
@@ -308,5 +308,24 @@ export class AuthService {
         return response.json();
     }
 
+    // Generate backup code
+    async generateBackupcode(access_token: string, access_verification_token: string) {
+        const response = await fetch(`${API}/2fa/regenerate-backup-codes`, {
+            method: "POST",
+            headers: {
+                'Authorization': `Bearer ${access_token}`,
+                'Content-Type': 'application/json',
+                'x-access-verification-token': `${access_verification_token}`
+            }
+        })
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Failed to generate backup code');
+        }
+
+        const data = await response.json()
+        return data
+    }
 }
 export const authService = new AuthService();

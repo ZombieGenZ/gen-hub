@@ -71,6 +71,12 @@ export default function ProfilePage() {
   // Avatar state
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
 
+  // Backup code
+  // Backup codes state - ĐÃ THÊM MỚI
+  const [backupCodes, setBackupCodes] = useState<string[]>([])
+  const [showBackupCodes, setShowBackupCodes] = useState(false)
+  const [generatingBackupCodes, setGeneratingBackupCodes] = useState(false)
+
   // Add these states at the top of your component
   const [showChangePassword, setShowChangePassword] = useState(false)
   const [changePasswordData, setChangePasswordData] = useState({
@@ -316,6 +322,50 @@ export default function ProfilePage() {
     }
   };
 
+  const handleGenerateBackupCodes = async () => {
+    setGeneratingBackupCodes(true)
+    try {
+      // TODO: Thay thế bằng API call thật
+      const access_token = authStorage.getAccessToken();
+      const access_verification_token = authStorage.getVerificationToken();
+
+      if(access_token == null || access_verification_token == null) {
+          showToast("Có lỗi trong quá trình tạo backup code", 'error')
+      }
+
+      const response = await authService.generateBackupcode(access_token!, access_verification_token!)
+
+      if(response.success) {
+          setBackupCodes(response.data.backup_codes)
+          setShowBackupCodes(true)
+          showToast('Mã dự phòng đã được tạo thành công', 'success')
+
+          setTimeout(() => {
+            setShowBackupCodes(false)
+            setBackupCodes([])
+            showToast('Mã dự phòng đã bị ẩn', 'info')
+          }, 10000)
+      } else {
+          setShowBackupCodes(false)
+          setBackupCodes([])
+          showToast('Tạo mã dự phòng không thành công', 'error')
+      }
+      
+    } catch (error) {
+      console.error('Error generating backup codes:', error)
+      showToast('Có lỗi xảy ra khi tạo mã dự phòng', 'error')
+    } finally {
+      setGeneratingBackupCodes(false)
+    }
+  }
+
+  // HÀM SAO CHÉP BACKUP CODES - ĐÃ THÊM MỚI
+  const handleCopyBackupCodes = () => {
+    const codesText = backupCodes.join('\n')
+    navigator.clipboard.writeText(codesText)
+    showToast('Đã sao chép mã dự phòng vào clipboard', 'success')
+  }
+
   const SecurityTab = ({ userData, enabling2FA, handleEnable2FA, handleDisable2FA }: SecurityTabProps) => (
     <div className="space-y-6">
       <div className="bg-white dark:bg-slate-900 rounded-xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-slate-200 dark:border-slate-800 p-5 md:p-8">
@@ -420,6 +470,104 @@ export default function ProfilePage() {
                 Mã xác thực sẽ hết hạn sau 30 giây
               </p>
             </div>
+          </div>
+        </div>
+      )}
+      {/* Backup Codes Section - ĐÃ THÊM MỚI */}
+      {userData?.user?.two_factor_enabled && (
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+          <div className="flex-1">
+            <h3 className="font-medium flex items-center gap-2">
+              <Lock className="w-4 h-4" />
+               Mã dự phòng
+            </h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+              Tạo mã dự phòng để khôi phục tài khoản khi mất thiết bị 2FA
+            </p>
+          </div>
+          <Button
+            onClick={handleGenerateBackupCodes}
+            disabled={generatingBackupCodes || showBackupCodes}
+            className="bg-brand hover:bg-brand/90 cursor-pointer border-green-200 dark:border-red-900/50 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20"
+          >
+            {generatingBackupCodes ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Đang tạo...
+              </>
+            ) : (
+              'Tạo mã dự phòng'
+            )}
+          </Button>
+        </div>
+      )}
+      {/* Backup Codes Display - ĐÃ THÊM MỚI */}
+      {showBackupCodes && backupCodes.length > 0 && (
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-slate-700 animate-in fade-in slide-in-from-top-4">
+          <div className="flex items-start justify-between mb-4">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                <Shield className="w-5 h-5 text-brand" />
+                Mã dự phòng của bạn
+              </h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                Lưu các mã này ở nơi an toàn. Mỗi mã chỉ có thể sử dụng một lần.
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleCopyBackupCodes}
+              className="shrink-0"
+            >
+              Sao chép tất cả
+            </Button>
+          </div>
+
+          {/* Warning Notice */}
+          <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-yellow-600 dark:text-yellow-500 shrink-0 mt-0.5" />
+            <div className="text-sm">
+              <p className="font-medium text-yellow-800 dark:text-yellow-300">Lưu ý quan trọng!</p>
+              <p className="text-yellow-700 dark:text-yellow-400 mt-1">
+                Mã dự phòng sẽ tự động ẩn sau 10 giây. Hãy lưu chúng ngay bây giờ!
+              </p>
+            </div>
+          </div>
+
+          {/* Backup Codes Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {backupCodes.map((code, index) => (
+              <div
+                key={index}
+                className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-slate-200 dark:border-slate-600 group hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+              >
+                <span className="text-xs font-semibold text-slate-400 dark:text-slate-500 w-6">
+                  {String(index + 1).padStart(2, '0')}
+                </span>
+                <code className="flex-1 font-mono text-sm font-medium text-slate-900 dark:text-white">
+                  {code}
+                </code>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(code)
+                    showToast('Đã sao chép mã', 'success')
+                  }}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-slate-200 dark:hover:bg-slate-600 rounded"
+                  title="Sao chép mã"
+                >
+                  <svg className="w-4 h-4 text-slate-600 dark:text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                </button>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+            <p className="text-sm text-blue-800 dark:text-blue-300">
+              💡 <strong>Mẹo:</strong> In hoặc lưu các mã này vào trình quản lý mật khẩu của bạn. Không chia sẻ với bất kỳ ai!
+            </p>
           </div>
         </div>
       )}
