@@ -47,10 +47,6 @@ export default function LoginPage() {
       const response = await authServices.login({
         email: formData.email,
         password: formData.password,
-        ...(requires_2fa && {
-          ...(formData.two_factor_code && { two_factor_code: formData.two_factor_code }),
-          ...(formData.backup_code && { backup_code: formData.backup_code })
-        }),
         turnstileToken
       })
       if (response && response.data.requires_2fa) {
@@ -81,7 +77,7 @@ export default function LoginPage() {
     setLoading(true)
     try {
       const response = await authServices.login2fa(temp_token!, formData.two_factor_code, formData.backup_code)
-      if (response) {
+      if (response.success) {
         showToast("Đăng nhập thành công!", 'success')
         router.push("/")
       } else {

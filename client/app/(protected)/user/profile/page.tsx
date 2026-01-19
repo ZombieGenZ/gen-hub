@@ -392,7 +392,7 @@ export default function ProfilePage() {
               <Button
                 onClick={handleEnable2FA}
                 disabled={enabling2FA}
-                className="bg-brand hover:bg-brand/90"
+                className="bg-brand dark:hover:bg-green-900/20 hover:bg-brand/90 border-green-200 dark:border-green-900/50 text-green-600 dark:text-green-400 hover:bg-green-50"
               >
                 {enabling2FA ? 'Đang bật...' : 'Bật xác thực 2 yếu tố'}
               </Button>
@@ -413,6 +413,8 @@ export default function ProfilePage() {
             <div className="flex justify-center p-4 bg-white rounded-lg border border-gray-200 dark:bg-slate-700 dark:border-slate-600">
               <Image
                 src={enable2FAData.data.qr_code_url}
+                width={192}
+                height={192}
                 alt="2FA QR Code"
                 className="w-48 h-48"
               />
