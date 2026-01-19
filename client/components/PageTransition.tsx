@@ -53,7 +53,7 @@ export function PageTransition({ children, isLoading, isComplete }: PageTransiti
                             }
                         }
                     }
-                    className="w-full min-h-screen"
+                    className="w-full"
                     style={{ transformOrigin: "center top" }}
                 >
                     {children}

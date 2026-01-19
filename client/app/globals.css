@@ -139,10 +139,32 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    overflow-x: hidden;
+    overflow-y: scroll;
+    scroll-behavior: smooth;
+  }
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-sans);
+    overflow-x: hidden;
+    overflow-y: visible;
   }
+}
+
+/* Hide duplicate scrollbars - keep only one */
+html::-webkit-scrollbar {
+  width: 8px;
+}
+html::-webkit-scrollbar-track {
+  background: transparent;
+}
+html::-webkit-scrollbar-thumb {
+  background: rgb(203 213 225);
+  border-radius: 4px;
+}
+html::-webkit-scrollbar-thumb:hover {
+  background: rgb(148 163 184);
 }
 
 /* Custom Utilities */
