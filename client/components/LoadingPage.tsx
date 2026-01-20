@@ -15,7 +15,7 @@ const LoadingPage = ({ onLoadingComplete }: LoadingPageProps) => {
 
   // Simulate loading progress
   useEffect(() => {
-    const duration = 3500;
+    const duration = 5000;
     const interval = 50;
     const step = 100 / (duration / interval);
 
@@ -65,7 +65,7 @@ const LoadingPage = ({ onLoadingComplete }: LoadingPageProps) => {
   const waveClipPath = useMemo(() => {
     // At 100%, show full text
     if (progress >= 100) {
-      return "polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)";
+      return "polygon(0% 0%, 150% 0%, 150% 100%, 0% 100%)";
     }
     
     // Reduce wave amplitude as progress increases
@@ -78,17 +78,20 @@ const LoadingPage = ({ onLoadingComplete }: LoadingPageProps) => {
     const points: string[] = [];
     
     // Create wave points along the top edge
-    for (let x = 0; x <= 100; x += 2) {
+    for (let x = 0; x <= 150; x += 2) {
       const y = fillHeight + Math.sin((x + waveOffset) * (Math.PI / 18)) * waveAmplitude;
       points.push(`${x}% ${Math.max(0, y)}%`);
     }
     
     // Complete the polygon (bottom corners)
-    return `polygon(${points.join(", ")}, 100% 100%, 0% 100%)`;
+    return `polygon(${points.join(", ")}, 150% 100%, 0% 100%)`;
   }, [progress, waveOffset]);
 
   const overlayVariants: Variants = {
-    initial: { scaleY: 1 },
+    initial: { 
+        scaleY: 1,
+        transition: { duration: 0 } 
+    },
     exit: {
       scaleY: 0,
       transition: {
@@ -104,21 +107,28 @@ const LoadingPage = ({ onLoadingComplete }: LoadingPageProps) => {
   }
 
   return (
-    <AnimatePresence mode="wait" onExitComplete={handleExitComplete}>
-      {!isExiting ? (
+    <>
         <motion.div
-          key="loader"
-          className="fixed inset-0 z-9999 flex flex-col items-center justify-center bg-loader-bg overflow-hidden"
-          initial={{ opacity: 1 }}
-          exit={{ opacity: 1 }}
+            className="fixed inset-0 z-9999 flex flex-col items-center justify-center bg-loader-bg overflow-hidden origin-bottom"
+            initial="initial"
+            animate={isExiting ? "exit" : "initial"}
+            variants={overlayVariants}
+            onAnimationComplete={(definition) => {
+                if (definition === "exit") {
+                    handleExitComplete();
+                }
+            }}
         >
-          {/* Main content wrapper */}
-          <div className="relative flex flex-col items-center">
-            {/* Text container with layered effect */}
-            <div className="relative">
+          {/* Main content wrapper - Fade out when exiting to avoid squashing effect */}
+          <motion.div 
+            className="relative flex flex-col items-center w-full h-full justify-center"
+            animate={{ opacity: isExiting ? 0 : 1 }}
+            transition={{ duration: 0.2 }}
+          >
+            <div className="relative inline-block">
               {/* Background text - Gray (unfilled) */}
               <h1
-                className="text-6xl sm:text-7xl md:text-[8rem] lg:text-[10rem] xl:text-[12rem] font-black tracking-tighter select-none"
+                className="text-6xl sm:text-7xl md:text-[8rem] lg:text-[10rem] xl:text-[12rem] font-black tracking-tighter select-none pr-4 sm:pr-6 md:pr-8"
                 style={{
                   fontStyle: "italic",
                   color: "var(--loader-text-unfilled)",
@@ -130,7 +140,7 @@ const LoadingPage = ({ onLoadingComplete }: LoadingPageProps) => {
 
               {/* Foreground text - White (filled based on progress) */}
               <h1
-                className="absolute inset-0 text-6xl sm:text-7xl md:text-[8rem] lg:text-[10rem] xl:text-[12rem] font-black tracking-tighter select-none"
+                className="absolute inset-0 text-6xl sm:text-7xl md:text-[8rem] lg:text-[10rem] xl:text-[12rem] font-black tracking-tighter select-none pr-4 sm:pr-6 md:pr-8"
                 style={{
                   fontStyle: "italic",
                   color: "var(--loader)",
@@ -141,23 +151,23 @@ const LoadingPage = ({ onLoadingComplete }: LoadingPageProps) => {
               >
                 {brandName}
               </h1>
-            </div>
 
-            {/* Loading text - positioned below the brand name on the right */}
-            <motion.div
-              className="flex items-center gap-3 self-end mt-2 md:mt-4"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.5 }}
-            >
-              <span className="text-sm md:text-base text-loader-muted tracking-wide">
-                loading...
-              </span>
-              <span className="text-sm md:text-base text-loader tabular-nums font-medium">
-                {Math.floor(progress)} %
-              </span>
-            </motion.div>
-          </div>
+              {/* Loading text - positioned below the right side (below "b") */}
+              <motion.div
+                className="absolute right-0 top-full flex items-center gap-3 mt-2 md:mt-4"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.5 }}
+              >
+                <span className="text-sm md:text-base text-loader-muted tracking-wide">
+                  loading...
+                </span>
+                <span className="text-sm md:text-base text-loader tabular-nums font-medium">
+                  {Math.floor(progress)} %
+                </span>
+              </motion.div>
+            </div>
+          </motion.div>
 
           {/* Dot indicator at bottom center */}
           <motion.div
@@ -180,16 +190,7 @@ const LoadingPage = ({ onLoadingComplete }: LoadingPageProps) => {
             />
           </motion.div>
         </motion.div>
-      ) : (
-        <motion.div
-          key="overlay-exit"
-          className="fixed inset-0 z-9999 bg-loader-bg origin-bottom"
-          variants={overlayVariants}
-          initial="initial"
-          animate="exit"
-        />
-      )}
-    </AnimatePresence>
+    </>
   );
 };
 

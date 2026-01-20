@@ -90,18 +90,9 @@ export function LoadingProvider({
             {!isComplete && (
                 <LoadingPage onLoadingComplete={handleLoadingComplete} />
             )}
-            <AnimatePresence>
-                {showContent && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ duration: 0.5, ease: "easeOut" }}
-                        className="w-full"
-                    >
-                        {children}
-                    </motion.div>
-                )}
-            </AnimatePresence>
+            <div className={`w-full transition-opacity duration-500 ${isComplete ? 'opacity-100' : 'opacity-0'}`}>
+                {children}
+            </div>
         </LoadingContext.Provider>
     );
 }

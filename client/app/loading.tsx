@@ -9,7 +9,7 @@ export default function Loading() {
 
     // Simulate loading progress
     useEffect(() => {
-        const duration = 2000;
+        const duration = 3000;
         const interval = 50;
         const step = 100 / (duration / interval);
 
