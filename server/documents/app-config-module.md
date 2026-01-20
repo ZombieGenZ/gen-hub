@@ -219,8 +219,31 @@ Content-Type: application/json
     "brandName": "GEN-HUB Pro",
     "supportEmail": "support@gen-hub.dev",
     "supportPhone": "0783 504 540",
-    "colors": { ... },
-    "pagination": { ... },
+    "colors": {
+      "primary": "#0F766E",
+      "primaryLight": "#14B8A6",
+      "primaryDark": "#0D5A52",
+      "gray900": "#1E293B",
+      "gray700": "#334155",
+      "gray500": "#64748B",
+      "gray300": "#CBD5E1",
+      "gray100": "#F1F5F9",
+      "background": "#F8FAFC",
+      "cardSurface": "#FFFFFF",
+      "sidebarBg": "#F1F5F9",
+      "success": "#10B981",
+      "warning": "#F59E0B",
+      "error": "#EF4444",
+      "info": "#0EA5E9",
+      "border": "#E2E8F0",
+      "shadow": "rgba(0, 0, 0, 0.04)"
+    },
+    "pagination": {
+      "defaultLimit": 10,
+      "defaultOffset": 0,
+      "maxLimit": 100,
+      "minLimit": 1
+    },
     "enableAiAutoReply": true
   }
 }
@@ -328,7 +351,20 @@ Authorization: Bearer <access_token>
       "primary": "#0F766E",
       "primaryLight": "#14B8A6",
       "primaryDark": "#0D5A52",
-      ...
+      "gray900": "#1E293B",
+      "gray700": "#334155",
+      "gray500": "#64748B",
+      "gray300": "#CBD5E1",
+      "gray100": "#F1F5F9",
+      "background": "#F8FAFC",
+      "cardSurface": "#FFFFFF",
+      "sidebarBg": "#F1F5F9",
+      "success": "#10B981",
+      "warning": "#F59E0B",
+      "error": "#EF4444",
+      "info": "#0EA5E9",
+      "border": "#E2E8F0",
+      "shadow": "rgba(0, 0, 0, 0.04)"
     },
     "pagination": {
       "defaultLimit": 10,
@@ -438,7 +474,33 @@ Authorization: Bearer <access_token>
   "data": {
     "brandName": "GEN-HUB",
     "supportEmail": "support@gen-hub.dev",
-    ...
+    "supportPhone": "0783 504 540",
+    "colors": {
+      "primary": "#0F766E",
+      "primaryLight": "#14B8A6",
+      "primaryDark": "#0D5A52",
+      "gray900": "#1E293B",
+      "gray700": "#334155",
+      "gray500": "#64748B",
+      "gray300": "#CBD5E1",
+      "gray100": "#F1F5F9",
+      "background": "#F8FAFC",
+      "cardSurface": "#FFFFFF",
+      "sidebarBg": "#F1F5F9",
+      "success": "#10B981",
+      "warning": "#F59E0B",
+      "error": "#EF4444",
+      "info": "#0EA5E9",
+      "border": "#E2E8F0",
+      "shadow": "rgba(0, 0, 0, 0.04)"
+    },
+    "pagination": {
+      "defaultLimit": 10,
+      "defaultOffset": 0,
+      "maxLimit": 100,
+      "minLimit": 1
+    },
+    "enableAiAutoReply": true
   }
 }
 ```
@@ -552,22 +614,139 @@ Các giá trị mặc định được lấy từ biến môi trường hoặc h
 
 ## Websocket Events
 
-Khi cấu hình được thay đổi, server sẽ emit các event qua WebSocket để thông báo cho clients:
+Khi cấu hình được thay đổi, server sẽ emit các event qua WebSocket để thông báo cho clients. Frontend có thể subscribe để nhận config mới realtime mà **không cần gọi lại API**.
 
-| Action | Event Type | Mô tả |
+### Event Types
+
+| Action | Event Name | Mô tả |
 |--------|------------|-------|
-| Update | `config:updated` | Cấu hình đã được cập nhật |
-| Reset | `config:reset` | Cấu hình đã được reset về mặc định |
-| Reload | `config:reloaded` | Cấu hình đã được reload từ file |
+| Update | `config:updated` | Cấu hình đã được cập nhật bởi admin |
+| Reset | `config:reset` | Cấu hình đã được reset về giá trị mặc định |
+| Reload | `config:reloaded` | Cấu hình đã được reload từ file trên server |
 
-**Event Payload:**
+### Event Payload Schema
+
+```typescript
+interface ConfigChangedEvent {
+  /** Loại hành động: 'updated' | 'reset' | 'reloaded' */
+  action: 'updated' | 'reset' | 'reloaded';
+  /** Dữ liệu config mới */
+  data: {
+    brandName: string;
+    supportEmail: string;
+    supportPhone: string;
+    colors: {
+      primary: string;
+      primaryLight: string;
+      primaryDark: string;
+      gray900: string;
+      gray700: string;
+      gray500: string;
+      gray300: string;
+      gray100: string;
+      background: string;
+      cardSurface: string;
+      sidebarBg: string;
+      success: string;
+      warning: string;
+      error: string;
+      info: string;
+      border: string;
+      shadow: string;
+    };
+    pagination: {
+      defaultLimit: number;
+      defaultOffset: number;
+      maxLimit: number;
+      minLimit: number;
+    };
+    enableAiAutoReply: boolean;
+  };
+  /** ID của user thực hiện thao tác */
+  updatedBy?: string;
+  /** Thời điểm event được emit (ISO 8601) */
+  timestamp: string;
+}
+```
+
+### Ví dụ Event Payload
+
 ```json
 {
-  "type": "config:updated",
-  "userId": "user-uuid",
+  "action": "updated",
+  "data": {
+    "brandName": "GEN-HUB Pro",
+    "supportEmail": "support@gen-hub.dev",
+    "supportPhone": "0783 504 540",
+    "colors": {
+      "primary": "#6366F1",
+      "primaryLight": "#818CF8",
+      "primaryDark": "#4F46E5",
+      "gray900": "#1E293B",
+      "gray700": "#334155",
+      "gray500": "#64748B",
+      "gray300": "#CBD5E1",
+      "gray100": "#F1F5F9",
+      "background": "#F8FAFC",
+      "cardSurface": "#FFFFFF",
+      "sidebarBg": "#F1F5F9",
+      "success": "#10B981",
+      "warning": "#F59E0B",
+      "error": "#EF4444",
+      "info": "#0EA5E9",
+      "border": "#E2E8F0",
+      "shadow": "rgba(0, 0, 0, 0.04)"
+    },
+    "pagination": {
+      "defaultLimit": 10,
+      "defaultOffset": 0,
+      "maxLimit": 100,
+      "minLimit": 1
+    },
+    "enableAiAutoReply": true
+  },
+  "updatedBy": "550e8400-e29b-41d4-a716-446655440000",
   "timestamp": "2026-01-20T06:00:00.000Z"
 }
 ```
+
+### Cách sử dụng ở Frontend
+
+```typescript
+// Sử dụng Socket.IO client
+import { io } from 'socket.io-client';
+
+const socket = io('wss://api.gen-hub.dev');
+
+// Subscribe các config events - KHÔNG cần gọi lại API
+socket.on('config:updated', (payload) => {
+  console.log('Config updated by:', payload.updatedBy);
+  // Sử dụng config mới trực tiếp từ payload
+  applyConfig(payload.data);
+});
+
+socket.on('config:reset', (payload) => {
+  console.log('Config reset at:', payload.timestamp);
+  applyConfig(payload.data);
+});
+
+socket.on('config:reloaded', (payload) => {
+  console.log('Config reloaded from file');
+  applyConfig(payload.data);
+});
+
+function applyConfig(config: IAppConfig) {
+  // Cập nhật theme colors
+  document.documentElement.style.setProperty('--color-primary', config.colors.primary);
+  // Cập nhật các settings khác...
+}
+```
+
+### Use Cases
+
+1. **Real-time UI Theme Update**: Khi admin thay đổi màu sắc, tất cả users đang online sẽ thấy theme mới ngay lập tức **mà không cần refresh**
+2. **Zero-latency Config Sync**: Frontend nhận config mới trực tiếp qua WebSocket, không cần gọi API
+3. **Admin Dashboard**: Hiển thị notification khi có admin khác thay đổi config
 
 ---
 
@@ -594,12 +773,12 @@ Khi cấu hình được thay đổi, server sẽ emit các event qua WebSocket 
 
 | File | Mô tả |
 |------|-------|
-| [app-config.module.ts](file:///c:/Users/pc/Desktop/document/PRO219/Project/GEN-HUB/server/src/common/config/app-config.module.ts) | NestJS module definition |
-| [app-config.controller.ts](file:///c:/Users/pc/Desktop/document/PRO219/Project/GEN-HUB/server/src/common/config/app-config.controller.ts) | REST API endpoints |
-| [app-config.service.ts](file:///c:/Users/pc/Desktop/document/PRO219/Project/GEN-HUB/server/src/common/config/app-config.service.ts) | Business logic và caching |
-| [app-config.dto.ts](file:///c:/Users/pc/Desktop/document/PRO219/Project/GEN-HUB/server/src/common/config/app-config.dto.ts) | DTOs với validation |
-| [types/app-config.type.ts](file:///c:/Users/pc/Desktop/document/PRO219/Project/GEN-HUB/server/src/common/config/types/app-config.type.ts) | TypeScript interfaces |
-| [helpers/cache-keys.helper.ts](file:///c:/Users/pc/Desktop/document/PRO219/Project/GEN-HUB/server/src/common/config/helpers/cache-keys.helper.ts) | Redis cache key helper |
+| [app-config.module.ts](https://github.com/ZombieGenZ/gen-hub/blob/main/server/src/common/config/app-config.module.ts) | NestJS module definition |
+| [app-config.controller.ts](https://github.com/ZombieGenZ/gen-hub/blob/main/server/src/common/config/app-config.controller.ts) | REST API endpoints |
+| [app-config.service.ts](https://github.com/ZombieGenZ/gen-hub/blob/main/server/src/common/config/app-config.service.ts) | Business logic và caching |
+| [app-config.dto.ts](https://github.com/ZombieGenZ/gen-hub/blob/main/server/src/common/config/app-config.dto.ts) | DTOs với validation |
+| [types/app-config.type.ts](https://github.com/ZombieGenZ/gen-hub/blob/main/server/src/common/config/types/app-config.type.ts) | TypeScript interfaces |
+| [helpers/cache-keys.helper.ts](https://github.com/ZombieGenZ/gen-hub/blob/main/server/src/common/config/helpers/cache-keys.helper.ts) | Redis cache key helper |
 
 ---
 

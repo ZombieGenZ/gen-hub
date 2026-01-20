@@ -897,10 +897,14 @@ export class WebsocketGateway
 
   /**
    * Emit event khi cập nhật config - broadcast đến tất cả clients
+   * @param action - Loại hành động: 'updated', 'reset', 'reloaded'
+   * @param configData - Dữ liệu config mới sau khi thay đổi
+   * @param updatedBy - User ID của người thực hiện thao tác
    */
-  emitConfigUpdated(action: 'updated' | 'reset' | 'reloaded', updatedBy?: string) {
-    this.server.emit('config:updated', {
+  emitConfigUpdated(action: 'updated' | 'reset' | 'reloaded', configData: Record<string, unknown>, updatedBy?: string) {
+    this.server.emit(`config:${action}`, {
       action,
+      data: configData,
       updatedBy,
       timestamp: new Date().toISOString(),
     });

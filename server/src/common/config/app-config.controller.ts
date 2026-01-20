@@ -364,7 +364,7 @@ export class AppConfigController {
   @Patch()
   async updateConfig(@Body() dto: UpdateAppConfigDto, @Request() req: any): Promise<SuccessResponse<IAppConfig>> {
     const result = await this.appConfigService.update(dto as Partial<IAppConfig>);
-    this.websocketGateway.emitConfigUpdated('updated', req.user?.userId);
+    this.websocketGateway.emitConfigUpdated('updated', result as unknown as Record<string, unknown>, req.user?.userId);
     return new SuccessResponse(ResponseCode.CONFIG_UPDATE_SUCCESS, result, 'Cập nhật cấu hình thành công');
   }
 
@@ -539,7 +539,7 @@ export class AppConfigController {
   @Post('reset')
   async resetConfig(@Request() req: any): Promise<SuccessResponse<IAppConfig>> {
     const result = await this.appConfigService.reset();
-    this.websocketGateway.emitConfigUpdated('reset', req.user?.userId);
+    this.websocketGateway.emitConfigUpdated('reset', result as unknown as Record<string, unknown>, req.user?.userId);
     return new SuccessResponse(ResponseCode.CONFIG_RESET_SUCCESS, result, 'Reset cấu hình thành công');
   }
 
@@ -714,7 +714,7 @@ export class AppConfigController {
   @Post('reload')
   async reloadConfig(@Request() req: any): Promise<SuccessResponse<IAppConfig>> {
     const result = await this.appConfigService.reload();
-    this.websocketGateway.emitConfigUpdated('reloaded', req.user?.userId);
+    this.websocketGateway.emitConfigUpdated('reloaded', result as unknown as Record<string, unknown>, req.user?.userId);
     return new SuccessResponse(ResponseCode.CONFIG_RELOAD_SUCCESS, result, 'Reload cấu hình thành công');
   }
 }
