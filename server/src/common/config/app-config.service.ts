@@ -4,59 +4,11 @@ import { promises as fs } from 'fs';
 import { existsSync } from 'fs';
 import * as path from 'path';
 import { RedisService } from '../../modules/redis/redis.service';
+import { IAppConfig, IAppColors, IPaginationConfig } from './types/app-config.type';
+import { AppConfigCacheKeys } from './helpers/cache-keys.helper';
 
-export interface IAppColors {
-  // Primary Colors
-  primary: string;
-  primaryLight: string;
-  primaryDark: string;
-
-  // Neutral / Greys
-  gray900: string;
-  gray700: string;
-  gray500: string;
-  gray300: string;
-  gray100: string;
-
-  // Background & Surface
-  background: string;
-  cardSurface: string;
-  sidebarBg: string;
-
-  // Accent Colors
-  success: string;
-  warning: string;
-  error: string;
-  info: string;
-
-  // Border + Shadow
-  border: string;
-  shadow: string;
-}
-
-export interface IPaginationConfig {
-  /** Số lượng record mặc định mỗi trang */
-  defaultLimit: number;
-  /** Vị trí bắt đầu mặc định */
-  defaultOffset: number;
-  /** Số lượng record tối đa cho phép mỗi trang */
-  maxLimit: number;
-  /** Số lượng record tối thiểu mỗi trang */
-  minLimit: number;
-}
-
-export interface IAppConfig {
-  brandName: string;
-  supportEmail: string;
-  supportPhone: string;
-  colors: IAppColors;
-  pagination: IPaginationConfig;
-  /** Bật/tắt tự động phản hồi bằng AI cho contact (giá trị mặc định) */
-  enableAiAutoReply: boolean;
-}
-
-/** Cache key for app config in Redis */
-const APP_CONFIG_CACHE_KEY = 'app:config';
+// Re-export for backward compatibility
+export type { IAppConfig, IAppColors, IPaginationConfig };
 
 /**
  * Service quản lý cấu hình động
@@ -74,6 +26,7 @@ export class AppConfigService implements OnModuleInit {
   constructor(
     private readonly configService: ConfigService,
     private readonly redisService: RedisService,
+    private readonly cacheKeys: AppConfigCacheKeys,
   ) {
     this.configPath = path.resolve(process.cwd(), 'app-config.json');
     this.configCache = this.getDefaultConfig();
@@ -161,12 +114,14 @@ export class AppConfigService implements OnModuleInit {
   private async loadConfig(): Promise<void> {
     try {
       // 1. Check Redis cache first (Cache Aside - Read)
-      const cachedData = await this.redisService.get(APP_CONFIG_CACHE_KEY);
+      const cacheKey = this.cacheKeys.key;
+      const cachedData = await this.redisService.get(cacheKey);
       if (cachedData) {
         this.configCache = JSON.parse(cachedData) as IAppConfig;
-        this.logger.debug('Config loaded from Redis cache');
+        this.logger.debug(`Cache HIT for key: ${cacheKey}`);
         return;
       }
+      this.logger.debug(`Cache MISS for key: ${cacheKey}`);
 
       // 2. Cache miss - Load from file (async)
       if (existsSync(this.configPath)) {
@@ -208,20 +163,22 @@ export class AppConfigService implements OnModuleInit {
    */
   private async updateRedisCache(config: IAppConfig): Promise<void> {
     const ttl = this.getCacheTtl();
+    const cacheKey = this.cacheKeys.key;
     await this.redisService.set(
-      APP_CONFIG_CACHE_KEY,
+      cacheKey,
       JSON.stringify(config),
       ttl,
     );
-    this.logger.debug(`Config cached in Redis with TTL: ${ttl}s`);
+    this.logger.debug(`Config cached in Redis with key: ${cacheKey}, TTL: ${ttl}s`);
   }
 
   /**
    * Invalidate Redis cache
    */
   private async invalidateRedisCache(): Promise<void> {
-    await this.redisService.del(APP_CONFIG_CACHE_KEY);
-    this.logger.debug('Redis cache invalidated');
+    const cacheKey = this.cacheKeys.key;
+    await this.redisService.del(cacheKey);
+    this.logger.debug(`Redis cache invalidated for key: ${cacheKey}`);
   }
 
   getAll(): IAppConfig {
