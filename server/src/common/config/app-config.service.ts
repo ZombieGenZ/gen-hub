@@ -1,7 +1,9 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import * as fs from 'fs';
+import { promises as fs } from 'fs';
+import { existsSync } from 'fs';
 import * as path from 'path';
+import { RedisService } from '../../modules/redis/redis.service';
 
 export interface IAppColors {
   // Primary Colors
@@ -53,22 +55,40 @@ export interface IAppConfig {
   enableAiAutoReply: boolean;
 }
 
+/** Cache key for app config in Redis */
+const APP_CONFIG_CACHE_KEY = 'app:config';
+
 /**
  * Service quản lý cấu hình động
- * Config được cache trong memory để tối ưu performance
+ * Sử dụng Cache Aside pattern: Redis → Memory → File
+ * - Redis cache cho distributed caching (multi-instance)
+ * - Memory cache cho fast access
+ * - File persistence cho durability
  */
 @Injectable()
 export class AppConfigService implements OnModuleInit {
+  private readonly logger = new Logger(AppConfigService.name);
   private configCache: IAppConfig;
   private readonly configPath: string;
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly redisService: RedisService,
+  ) {
     this.configPath = path.resolve(process.cwd(), 'app-config.json');
     this.configCache = this.getDefaultConfig();
   }
 
   async onModuleInit(): Promise<void> {
     await this.loadConfig();
+  }
+
+  /**
+   * Lấy TTL cho Redis cache từ biến môi trường
+   * @returns TTL in seconds
+   */
+  private getCacheTtl(): number {
+    return this.configService.get<number>('REDIS_APP_CONFIG_CACHE_TTL') || 300;
   }
 
   private getDefaultConfig(): IAppConfig {
@@ -132,31 +152,76 @@ export class AppConfigService implements OnModuleInit {
     };
   }
 
+  /**
+   * Load config với Cache Aside pattern
+   * 1. Check Redis cache first
+   * 2. If miss, load from file
+   * 3. Update Redis cache with TTL from .env
+   */
   private async loadConfig(): Promise<void> {
     try {
-      if (fs.existsSync(this.configPath)) {
-        const fileContent = fs.readFileSync(this.configPath, 'utf-8');
+      // 1. Check Redis cache first (Cache Aside - Read)
+      const cachedData = await this.redisService.get(APP_CONFIG_CACHE_KEY);
+      if (cachedData) {
+        this.configCache = JSON.parse(cachedData) as IAppConfig;
+        this.logger.debug('Config loaded from Redis cache');
+        return;
+      }
+
+      // 2. Cache miss - Load from file (async)
+      if (existsSync(this.configPath)) {
+        const fileContent = await fs.readFile(this.configPath, 'utf-8');
         const fileConfig = JSON.parse(fileContent) as Partial<IAppConfig>;
         this.configCache = { ...this.getDefaultConfig(), ...fileConfig };
+        this.logger.debug('Config loaded from file');
       } else {
+        // File doesn't exist - create with defaults
         await this.saveConfig(this.configCache);
+        this.logger.debug('Config file created with defaults');
       }
+
+      // 3. Update Redis cache with TTL from .env
+      await this.updateRedisCache(this.configCache);
     } catch (error) {
-      console.error('[AppConfigService] Error loading config:', error);
+      this.logger.error('Error loading config:', error);
     }
   }
 
+  /**
+   * Save config to file (async)
+   */
   private async saveConfig(config: IAppConfig): Promise<void> {
     try {
-      fs.writeFileSync(
+      await fs.writeFile(
         this.configPath,
         JSON.stringify(config, null, 2),
         'utf-8',
       );
     } catch (error) {
-      console.error('[AppConfigService] Error saving config:', error);
+      this.logger.error('Error saving config:', error);
       throw error;
     }
+  }
+
+  /**
+   * Update Redis cache với TTL từ .env
+   */
+  private async updateRedisCache(config: IAppConfig): Promise<void> {
+    const ttl = this.getCacheTtl();
+    await this.redisService.set(
+      APP_CONFIG_CACHE_KEY,
+      JSON.stringify(config),
+      ttl,
+    );
+    this.logger.debug(`Config cached in Redis with TTL: ${ttl}s`);
+  }
+
+  /**
+   * Invalidate Redis cache
+   */
+  private async invalidateRedisCache(): Promise<void> {
+    await this.redisService.del(APP_CONFIG_CACHE_KEY);
+    this.logger.debug('Redis cache invalidated');
   }
 
   getAll(): IAppConfig {
@@ -198,30 +263,74 @@ export class AppConfigService implements OnModuleInit {
     return JSON.stringify(oldConfig) !== JSON.stringify(newConfig);
   }
 
-  /** Cập nhật config - update cache ngay, ghi file async chỉ khi có thay đổi */
+  /**
+   * Cập nhật config với Cache Aside pattern
+   * - Update memory cache ngay lập tức
+   * - Update Redis cache với TTL từ .env
+   * - Ghi file async (parallel với Redis update)
+   */
   async update(updates: Partial<IAppConfig>): Promise<IAppConfig> {
     const newConfig = this.deepMerge(this.configCache, updates);
 
     // Chỉ update và save nếu có thay đổi thực sự
     if (this.hasChanges(this.configCache, newConfig)) {
+      // 1. Update memory cache immediately
       this.configCache = newConfig;
-      // Fire-and-forget: không chờ ghi file
-      this.saveConfig(this.configCache).catch((error) => {
-        console.error('[AppConfigService] Failed to persist config:', error);
-      });
+
+      // 2. Update Redis cache và save file in parallel (Promise.all)
+      await Promise.all([
+        this.updateRedisCache(this.configCache),
+        this.saveConfig(this.configCache).catch((error) => {
+          this.logger.error('Failed to persist config:', error);
+        }),
+      ]);
     }
 
     return this.getAll();
   }
 
+  /**
+   * Reset config về mặc định
+   * - Clear memory cache
+   * - Update Redis cache
+   * - Save to file
+   */
   async reset(): Promise<IAppConfig> {
     this.configCache = this.getDefaultConfig();
-    await this.saveConfig(this.configCache);
+
+    // Update Redis và save file in parallel (Promise.all)
+    await Promise.all([
+      this.updateRedisCache(this.configCache),
+      this.saveConfig(this.configCache),
+    ]);
+
     return this.getAll();
   }
 
+  /**
+   * Reload config từ file
+   * - Invalidate Redis cache
+   * - Force load từ file (bypass Redis cache)
+   * - Update Redis cache
+   */
   async reload(): Promise<IAppConfig> {
-    await this.loadConfig();
+    try {
+      // 1. Invalidate Redis cache first
+      await this.invalidateRedisCache();
+
+      // 2. Force load from file
+      if (existsSync(this.configPath)) {
+        const fileContent = await fs.readFile(this.configPath, 'utf-8');
+        const fileConfig = JSON.parse(fileContent) as Partial<IAppConfig>;
+        this.configCache = { ...this.getDefaultConfig(), ...fileConfig };
+      }
+
+      // 3. Update Redis cache
+      await this.updateRedisCache(this.configCache);
+    } catch (error) {
+      this.logger.error('Error reloading config:', error);
+    }
+
     return this.getAll();
   }
 }
