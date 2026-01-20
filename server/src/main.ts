@@ -1,10 +1,33 @@
 import { NestFactory } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { apiReference } from '@scalar/nestjs-api-reference';
 import { I18nValidationPipe, I18nService } from 'nestjs-i18n';
 import { AppModule } from './app.module';
 import { GlobalExceptionFilter, CustomValidationExceptionFilter } from './common/filters';
 import { HttpLoggingInterceptor } from './common/interceptors';
 import { SystemLogService } from './modules/system-log/system-log.service';
+
+// Scalar API Reference theme configuration
+const scalarTheme = {
+  colors: {
+    primary: '#0F766E',
+    primaryLight: '#14B8A6',
+    primaryDark: '#0D5A52',
+    gray900: '#1E293B',
+    gray700: '#334155',
+    gray500: '#64748B',
+    gray300: '#CBD5E1',
+    gray100: '#F1F5F9',
+    background: '#F8FAFC',
+    cardSurface: '#FFFFFF',
+    sidebarBg: '#F1F5F9',
+    success: '#10B981',
+    warning: '#F59E0B',
+    error: '#EF4444',
+    info: '#0EA5E9',
+    border: '#E2E8F0',
+  },
+};
 process.env.TZ = process.env.TZ || 'Asia/Ho_Chi_Minh';
 
 const serverStartTime = new Date();
@@ -98,11 +121,54 @@ async function bootstrap() {
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api-docs', app, document, {
-    swaggerOptions: {
-      persistAuthorization: true,
-    },
-    jsonDocumentUrl: '/api-docs-json',
+
+  // Scalar API Reference for main documentation
+  app.use(
+    '/api-docs',
+    apiReference({
+      content: document,
+      theme: 'kepler',
+      layout: 'modern',
+      darkMode: false,
+      hideModels: false,
+      hideDarkModeToggle: false,
+      customCss: `
+        :root {
+          --scalar-color-1: ${scalarTheme.colors.primary};
+          --scalar-color-2: ${scalarTheme.colors.primaryLight};
+          --scalar-color-3: ${scalarTheme.colors.primaryDark};
+          --scalar-color-accent: ${scalarTheme.colors.primary};
+          --scalar-background-1: ${scalarTheme.colors.background};
+          --scalar-background-2: ${scalarTheme.colors.cardSurface};
+          --scalar-background-3: ${scalarTheme.colors.sidebarBg};
+          --scalar-background-accent: ${scalarTheme.colors.gray100};
+          --scalar-border-color: ${scalarTheme.colors.border};
+          --scalar-color-green: ${scalarTheme.colors.success};
+          --scalar-color-red: ${scalarTheme.colors.error};
+          --scalar-color-yellow: ${scalarTheme.colors.warning};
+          --scalar-color-blue: ${scalarTheme.colors.info};
+        }
+        .dark-mode {
+          --scalar-background-1: ${scalarTheme.colors.gray900};
+          --scalar-background-2: ${scalarTheme.colors.gray700};
+          --scalar-background-3: ${scalarTheme.colors.gray900};
+          --scalar-color-1: ${scalarTheme.colors.primaryLight};
+        }
+        .sidebar { background: ${scalarTheme.colors.sidebarBg}; }
+        .scalar-card { background: ${scalarTheme.colors.cardSurface}; border-color: ${scalarTheme.colors.border}; }
+      `,
+      metaData: {
+        title: 'GEN-HUB API Documentation',
+        description: 'API documentation cho hệ thống GEN-HUB',
+        ogDescription: 'Modern API documentation for GEN-HUB system',
+        ogTitle: 'GEN-HUB API',
+      },
+    }),
+  );
+
+  // JSON endpoint for main API docs
+  app.getHttpAdapter().get('/api-docs-json', (req, res) => {
+    res.json(document);
   });
 
   // API Key Swagger - Dynamically include modules based on DB permissions
@@ -155,11 +221,53 @@ async function bootstrap() {
     include: includeModules,
   });
 
-  SwaggerModule.setup('api-docs-apikey', app, apiKeyDocument, {
-    swaggerOptions: {
-      persistAuthorization: true,
-    },
-    jsonDocumentUrl: '/api-docs-apikey-json',
+  // Scalar API Reference for API Key documentation
+  app.use(
+    '/api-docs-apikey',
+    apiReference({
+      content: apiKeyDocument,
+      theme: 'kepler',
+      layout: 'modern',
+      darkMode: false,
+      hideModels: false,
+      hideDarkModeToggle: false,
+      customCss: `
+        :root {
+          --scalar-color-1: ${scalarTheme.colors.primary};
+          --scalar-color-2: ${scalarTheme.colors.primaryLight};
+          --scalar-color-3: ${scalarTheme.colors.primaryDark};
+          --scalar-color-accent: ${scalarTheme.colors.primary};
+          --scalar-background-1: ${scalarTheme.colors.background};
+          --scalar-background-2: ${scalarTheme.colors.cardSurface};
+          --scalar-background-3: ${scalarTheme.colors.sidebarBg};
+          --scalar-background-accent: ${scalarTheme.colors.gray100};
+          --scalar-border-color: ${scalarTheme.colors.border};
+          --scalar-color-green: ${scalarTheme.colors.success};
+          --scalar-color-red: ${scalarTheme.colors.error};
+          --scalar-color-yellow: ${scalarTheme.colors.warning};
+          --scalar-color-blue: ${scalarTheme.colors.info};
+        }
+        .dark-mode {
+          --scalar-background-1: ${scalarTheme.colors.gray900};
+          --scalar-background-2: ${scalarTheme.colors.gray700};
+          --scalar-background-3: ${scalarTheme.colors.gray900};
+          --scalar-color-1: ${scalarTheme.colors.primaryLight};
+        }
+        .sidebar { background: ${scalarTheme.colors.sidebarBg}; }
+        .scalar-card { background: ${scalarTheme.colors.cardSurface}; border-color: ${scalarTheme.colors.border}; }
+      `,
+      metaData: {
+        title: 'GEN-HUB API Key Documentation',
+        description: 'API documentation cho các chức năng hổ trợ API Key của GEN-HUB',
+        ogDescription: 'API Key documentation for GEN-HUB system',
+        ogTitle: 'GEN-HUB API Key',
+      },
+    }),
+  );
+
+  // JSON endpoint for API Key docs
+  app.getHttpAdapter().get('/api-docs-apikey-json', (req, res) => {
+    res.json(apiKeyDocument);
   });
 
   // Count endpoints from Swagger documents
@@ -192,10 +300,10 @@ async function bootstrap() {
 
   // In các log sau khi server đã khởi động
   console.log(`🚀 Server đang chạy tại ${backendUrl}`);
-  console.log(`📚 Swagger docs: ${backendUrl}/api-docs`);
-  console.log(`📄 Swagger JSON: ${backendUrl}/api-docs-json`);
-  console.log(`🔑 API Key Swagger: ${backendUrl}/api-docs-apikey`);
-  console.log(`📄 API Key Swagger JSON: ${backendUrl}/api-docs-apikey-json`);
+  console.log(`📚 Scalar API Docs: ${backendUrl}/api-docs`);
+  console.log(`📄 API JSON: ${backendUrl}/api-docs-json`);
+  console.log(`🔑 Scalar API Key Docs: ${backendUrl}/api-docs-apikey`);
+  console.log(`📄 API Key JSON: ${backendUrl}/api-docs-apikey-json`);
   console.log(`🌐 CORS origins: ${corsOrigins.length > 0 ? corsOrigins.join(', ') : '*'}`);
   console.log(`🔑 API Key enabled modules: ${enabledModuleNames.join(', ')}`);
   console.log(`📊 Main API: ${mainStats.total} endpoints (${Object.entries(mainStats.byMethod).map(([m, c]) => `${m}: ${c}`).join(', ')})`);
