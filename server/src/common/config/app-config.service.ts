@@ -167,12 +167,50 @@ export class AppConfigService implements OnModuleInit {
     return this.configCache[key];
   }
 
-  /** Cập nhật config - update cache ngay, ghi file async */
+  /**
+   * Deep merge hai object, tự động merge nested objects
+   */
+  private deepMerge<T extends Record<string, any>>(target: T, source: Partial<T>): T {
+    const result = { ...target };
+    for (const key in source) {
+      if (source[key] !== undefined) {
+        if (
+          typeof source[key] === 'object' &&
+          source[key] !== null &&
+          !Array.isArray(source[key]) &&
+          typeof target[key] === 'object' &&
+          target[key] !== null
+        ) {
+          // Deep merge nested objects
+          result[key] = this.deepMerge(target[key], source[key] as any);
+        } else {
+          result[key] = source[key] as T[Extract<keyof T, string>];
+        }
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Kiểm tra nhanh xem có thay đổi không (shallow compare)
+   */
+  private hasChanges(oldConfig: IAppConfig, newConfig: IAppConfig): boolean {
+    return JSON.stringify(oldConfig) !== JSON.stringify(newConfig);
+  }
+
+  /** Cập nhật config - update cache ngay, ghi file async chỉ khi có thay đổi */
   async update(updates: Partial<IAppConfig>): Promise<IAppConfig> {
-    this.configCache = { ...this.configCache, ...updates };
-    this.saveConfig(this.configCache).catch((error) => {
-      console.error('[AppConfigService] Failed to persist config:', error);
-    });
+    const newConfig = this.deepMerge(this.configCache, updates);
+
+    // Chỉ update và save nếu có thay đổi thực sự
+    if (this.hasChanges(this.configCache, newConfig)) {
+      this.configCache = newConfig;
+      // Fire-and-forget: không chờ ghi file
+      this.saveConfig(this.configCache).catch((error) => {
+        console.error('[AppConfigService] Failed to persist config:', error);
+      });
+    }
+
     return this.getAll();
   }
 
