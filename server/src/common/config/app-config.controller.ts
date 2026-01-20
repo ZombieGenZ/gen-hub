@@ -4,6 +4,7 @@ import {
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
+  ApiBody,
 } from '@nestjs/swagger';
 import { AppConfigService } from './app-config.service';
 import type { IAppConfig } from './app-config.service';
@@ -20,12 +21,54 @@ export class AppConfigController {
     private readonly websocketGateway: WebsocketGateway,
   ) { }
 
-  @ApiOperation({ summary: 'Lấy cấu hình ứng dụng' })
+  @ApiOperation({
+    summary: 'Lấy cấu hình ứng dụng',
+    description: 'API công khai để lấy toàn bộ cấu hình ứng dụng bao gồm thông tin thương hiệu, bảng màu giao diện và cấu hình phân trang. Không yêu cầu xác thực.',
+  })
   @ApiResponse({
     status: 200,
-    description: 'Cấu hình ứng dụng hiện tại',
+    description: 'Trả về toàn bộ cấu hình ứng dụng hiện tại',
     schema: {
       type: 'object',
+      properties: {
+        brandName: { type: 'string', description: 'Tên thương hiệu ứng dụng', example: 'GEN-HUB' },
+        supportEmail: { type: 'string', description: 'Địa chỉ email hỗ trợ khách hàng', example: 'support@gen-hub.dev' },
+        supportPhone: { type: 'string', description: 'Số điện thoại hỗ trợ khách hàng', example: '0783 504 540' },
+        colors: {
+          type: 'object',
+          description: 'Bảng màu giao diện của ứng dụng',
+          properties: {
+            primary: { type: 'string', description: 'Màu chính', example: '#0F766E' },
+            primaryLight: { type: 'string', description: 'Màu chính sáng', example: '#14B8A6' },
+            primaryDark: { type: 'string', description: 'Màu chính tối', example: '#0D5A52' },
+            gray900: { type: 'string', description: 'Màu xám 900', example: '#1E293B' },
+            gray700: { type: 'string', description: 'Màu xám 700', example: '#334155' },
+            gray500: { type: 'string', description: 'Màu xám 500', example: '#64748B' },
+            gray300: { type: 'string', description: 'Màu xám 300', example: '#CBD5E1' },
+            gray100: { type: 'string', description: 'Màu xám 100', example: '#F1F5F9' },
+            background: { type: 'string', description: 'Màu nền trang', example: '#F8FAFC' },
+            cardSurface: { type: 'string', description: 'Màu bề mặt card', example: '#FFFFFF' },
+            sidebarBg: { type: 'string', description: 'Màu nền sidebar', example: '#F1F5F9' },
+            success: { type: 'string', description: 'Màu thành công', example: '#10B981' },
+            warning: { type: 'string', description: 'Màu cảnh báo', example: '#F59E0B' },
+            error: { type: 'string', description: 'Màu lỗi', example: '#EF4444' },
+            info: { type: 'string', description: 'Màu thông tin', example: '#0EA5E9' },
+            border: { type: 'string', description: 'Màu viền', example: '#E2E8F0' },
+            shadow: { type: 'string', description: 'Màu bóng đổ', example: 'rgba(0, 0, 0, 0.04)' },
+          },
+        },
+        pagination: {
+          type: 'object',
+          description: 'Cấu hình phân trang mặc định',
+          properties: {
+            defaultLimit: { type: 'number', description: 'Số lượng item mặc định mỗi trang', example: 10 },
+            defaultOffset: { type: 'number', description: 'Vị trí bắt đầu mặc định', example: 0 },
+            maxLimit: { type: 'number', description: 'Số lượng item tối đa mỗi trang', example: 100 },
+            minLimit: { type: 'number', description: 'Số lượng item tối thiểu mỗi trang', example: 1 },
+          },
+        },
+        enableAiAutoReply: { type: 'boolean', description: 'Trạng thái bật/tắt AI tự động phản hồi', example: true },
+      },
       example: {
         brandName: 'GEN-HUB',
         supportEmail: 'support@gen-hub.dev',
@@ -50,12 +93,12 @@ export class AppConfigController {
           shadow: 'rgba(0, 0, 0, 0.04)',
         },
         pagination: {
-          defaultLimit: '10',
-          defaultOffset: '0',
-          maxLimit: '1000',
-          minLimit: '1',
+          defaultLimit: 10,
+          defaultOffset: 0,
+          maxLimit: 100,
+          minLimit: 1,
         },
-        enableAiAutoReply: 'true',
+        enableAiAutoReply: true,
       },
     },
   })
@@ -65,10 +108,96 @@ export class AppConfigController {
     return this.appConfigService.getAll();
   }
 
-  @ApiOperation({ summary: 'Cập nhật cấu hình ứng dụng' })
+  @ApiOperation({
+    summary: 'Cập nhật cấu hình ứng dụng',
+    description: 'Cập nhật một phần hoặc toàn bộ cấu hình ứng dụng. Chỉ các trường được gửi trong request body mới được cập nhật, các trường khác giữ nguyên. Yêu cầu quyền `config.update`.',
+  })
+  @ApiBody({
+    type: UpdateAppConfigDto,
+    description: 'Dữ liệu cấu hình cần cập nhật (chỉ gửi các trường muốn thay đổi)',
+    examples: {
+      update_brand: {
+        summary: 'Cập nhật thông tin thương hiệu',
+        description: 'Ví dụ cập nhật tên thương hiệu và thông tin hỗ trợ',
+        value: {
+          brandName: 'GEN-HUB Pro',
+          supportEmail: 'support@gen-hub.dev',
+          supportPhone: '0783 504 540',
+        },
+      },
+      update_colors: {
+        summary: 'Cập nhật bảng màu',
+        description: 'Ví dụ cập nhật màu chính và màu accent',
+        value: {
+          colors: {
+            primary: '#6366F1',
+            primaryLight: '#818CF8',
+            primaryDark: '#4F46E5',
+            success: '#22C55E',
+            warning: '#EAB308',
+            error: '#DC2626',
+            info: '#3B82F6',
+          },
+        },
+      },
+      update_pagination: {
+        summary: 'Cập nhật cấu hình phân trang',
+        description: 'Ví dụ cập nhật cấu hình phân trang mặc định',
+        value: {
+          pagination: {
+            defaultLimit: 20,
+            maxLimit: 200,
+            minLimit: 5,
+          },
+        },
+      },
+      update_ai_reply: {
+        summary: 'Bật/tắt AI tự động phản hồi',
+        description: 'Ví dụ bật AI tự động phản hồi',
+        value: {
+          enableAiAutoReply: true,
+        },
+      },
+      update_full: {
+        summary: 'Cập nhật toàn bộ cấu hình',
+        description: 'Ví dụ cập nhật tất cả các trường cấu hình',
+        value: {
+          brandName: 'GEN-HUB Pro',
+          supportEmail: 'support@gen-hub.dev',
+          supportPhone: '0783 504 540',
+          colors: {
+            primary: '#0F766E',
+            primaryLight: '#14B8A6',
+            primaryDark: '#0D5A52',
+            gray900: '#1E293B',
+            gray700: '#334155',
+            gray500: '#64748B',
+            gray300: '#CBD5E1',
+            gray100: '#F1F5F9',
+            background: '#F8FAFC',
+            cardSurface: '#FFFFFF',
+            sidebarBg: '#F1F5F9',
+            success: '#10B981',
+            warning: '#F59E0B',
+            error: '#EF4444',
+            info: '#0EA5E9',
+            border: '#E2E8F0',
+            shadow: 'rgba(0, 0, 0, 0.04)',
+          },
+          pagination: {
+            defaultLimit: 10,
+            defaultOffset: 0,
+            maxLimit: 100,
+            minLimit: 1,
+          },
+          enableAiAutoReply: true,
+        },
+      },
+    },
+  })
   @ApiResponse({
     status: 200,
-    description: 'Cấu hình đã được cập nhật thành công',
+    description: 'Trả về toàn bộ cấu hình sau khi cập nhật thành công',
     schema: {
       type: 'object',
       properties: {
@@ -79,36 +208,36 @@ export class AppConfigController {
           type: 'object',
           description: 'Bảng màu giao diện',
           properties: {
-            primary: { type: 'string', example: '#0F766E' },
-            primaryLight: { type: 'string', example: '#14B8A6' },
-            primaryDark: { type: 'string', example: '#0D5A52' },
-            gray900: { type: 'string', example: '#1E293B' },
-            gray700: { type: 'string', example: '#334155' },
-            gray500: { type: 'string', example: '#64748B' },
-            gray300: { type: 'string', example: '#CBD5E1' },
-            gray100: { type: 'string', example: '#F1F5F9' },
-            background: { type: 'string', example: '#F8FAFC' },
-            cardSurface: { type: 'string', example: '#FFFFFF' },
-            sidebarBg: { type: 'string', example: '#F1F5F9' },
-            success: { type: 'string', example: '#10B981' },
-            warning: { type: 'string', example: '#F59E0B' },
-            error: { type: 'string', example: '#EF4444' },
-            info: { type: 'string', example: '#0EA5E9' },
-            border: { type: 'string', example: '#E2E8F0' },
-            shadow: { type: 'string', example: 'rgba(0, 0, 0, 0.04)' },
+            primary: { type: 'string', description: 'Màu chính', example: '#0F766E' },
+            primaryLight: { type: 'string', description: 'Màu chính sáng', example: '#14B8A6' },
+            primaryDark: { type: 'string', description: 'Màu chính tối', example: '#0D5A52' },
+            gray900: { type: 'string', description: 'Màu xám 900', example: '#1E293B' },
+            gray700: { type: 'string', description: 'Màu xám 700', example: '#334155' },
+            gray500: { type: 'string', description: 'Màu xám 500', example: '#64748B' },
+            gray300: { type: 'string', description: 'Màu xám 300', example: '#CBD5E1' },
+            gray100: { type: 'string', description: 'Màu xám 100', example: '#F1F5F9' },
+            background: { type: 'string', description: 'Màu nền trang', example: '#F8FAFC' },
+            cardSurface: { type: 'string', description: 'Màu bề mặt card', example: '#FFFFFF' },
+            sidebarBg: { type: 'string', description: 'Màu nền sidebar', example: '#F1F5F9' },
+            success: { type: 'string', description: 'Màu thành công', example: '#10B981' },
+            warning: { type: 'string', description: 'Màu cảnh báo', example: '#F59E0B' },
+            error: { type: 'string', description: 'Màu lỗi', example: '#EF4444' },
+            info: { type: 'string', description: 'Màu thông tin', example: '#0EA5E9' },
+            border: { type: 'string', description: 'Màu viền', example: '#E2E8F0' },
+            shadow: { type: 'string', description: 'Màu bóng đổ', example: 'rgba(0, 0, 0, 0.04)' },
           },
         },
         pagination: {
           type: 'object',
           description: 'Cấu hình phân trang',
           properties: {
-            defaultLimit: { type: 'string', description: 'Số item mặc định mỗi trang', example: '10' },
-            defaultOffset: { type: 'string', description: 'Vị trí bắt đầu mặc định', example: '0' },
-            maxLimit: { type: 'string', description: 'Số item tối đa mỗi trang', example: '1000' },
-            minLimit: { type: 'string', description: 'Số item tối thiểu mỗi trang', example: '1' },
+            defaultLimit: { type: 'number', description: 'Số lượng item mặc định mỗi trang', example: 10 },
+            defaultOffset: { type: 'number', description: 'Vị trí bắt đầu mặc định', example: 0 },
+            maxLimit: { type: 'number', description: 'Số lượng item tối đa mỗi trang', example: 100 },
+            minLimit: { type: 'number', description: 'Số lượng item tối thiểu mỗi trang', example: 1 },
           },
         },
-        enableAiAutoReply: { type: 'string', description: 'Bật/tắt AI tự động trả lời', example: 'true' },
+        enableAiAutoReply: { type: 'boolean', description: 'Trạng thái bật/tắt AI tự động phản hồi', example: true },
       },
       example: {
         brandName: 'GEN-HUB',
@@ -134,12 +263,12 @@ export class AppConfigController {
           shadow: 'rgba(0, 0, 0, 0.04)',
         },
         pagination: {
-          defaultLimit: '10',
-          defaultOffset: '0',
-          maxLimit: '1000',
-          minLimit: '1',
+          defaultLimit: 10,
+          defaultOffset: 0,
+          maxLimit: 100,
+          minLimit: 1,
         },
-        enableAiAutoReply: 'true',
+        enableAiAutoReply: true,
       },
     },
   })
@@ -237,10 +366,13 @@ export class AppConfigController {
     return result;
   }
 
-  @ApiOperation({ summary: 'Reset cấu hình về mặc định' })
+  @ApiOperation({
+    summary: 'Reset cấu hình về mặc định',
+    description: 'Khôi phục toàn bộ cấu hình ứng dụng về giá trị mặc định được định nghĩa trong biến môi trường (.env). Thao tác này sẽ ghi đè tất cả các tùy chỉnh hiện tại. Yêu cầu quyền `config.reset`.',
+  })
   @ApiResponse({
     status: 200,
-    description: 'Cấu hình đã được reset về giá trị mặc định',
+    description: 'Trả về toàn bộ cấu hình sau khi reset về giá trị mặc định',
     schema: {
       type: 'object',
       properties: {
@@ -251,36 +383,36 @@ export class AppConfigController {
           type: 'object',
           description: 'Bảng màu giao diện',
           properties: {
-            primary: { type: 'string', example: '#0F766E' },
-            primaryLight: { type: 'string', example: '#14B8A6' },
-            primaryDark: { type: 'string', example: '#0D5A52' },
-            gray900: { type: 'string', example: '#1E293B' },
-            gray700: { type: 'string', example: '#334155' },
-            gray500: { type: 'string', example: '#64748B' },
-            gray300: { type: 'string', example: '#CBD5E1' },
-            gray100: { type: 'string', example: '#F1F5F9' },
-            background: { type: 'string', example: '#F8FAFC' },
-            cardSurface: { type: 'string', example: '#FFFFFF' },
-            sidebarBg: { type: 'string', example: '#F1F5F9' },
-            success: { type: 'string', example: '#10B981' },
-            warning: { type: 'string', example: '#F59E0B' },
-            error: { type: 'string', example: '#EF4444' },
-            info: { type: 'string', example: '#0EA5E9' },
-            border: { type: 'string', example: '#E2E8F0' },
-            shadow: { type: 'string', example: 'rgba(0, 0, 0, 0.04)' },
+            primary: { type: 'string', description: 'Màu chính', example: '#0F766E' },
+            primaryLight: { type: 'string', description: 'Màu chính sáng', example: '#14B8A6' },
+            primaryDark: { type: 'string', description: 'Màu chính tối', example: '#0D5A52' },
+            gray900: { type: 'string', description: 'Màu xám 900', example: '#1E293B' },
+            gray700: { type: 'string', description: 'Màu xám 700', example: '#334155' },
+            gray500: { type: 'string', description: 'Màu xám 500', example: '#64748B' },
+            gray300: { type: 'string', description: 'Màu xám 300', example: '#CBD5E1' },
+            gray100: { type: 'string', description: 'Màu xám 100', example: '#F1F5F9' },
+            background: { type: 'string', description: 'Màu nền trang', example: '#F8FAFC' },
+            cardSurface: { type: 'string', description: 'Màu bề mặt card', example: '#FFFFFF' },
+            sidebarBg: { type: 'string', description: 'Màu nền sidebar', example: '#F1F5F9' },
+            success: { type: 'string', description: 'Màu thành công', example: '#10B981' },
+            warning: { type: 'string', description: 'Màu cảnh báo', example: '#F59E0B' },
+            error: { type: 'string', description: 'Màu lỗi', example: '#EF4444' },
+            info: { type: 'string', description: 'Màu thông tin', example: '#0EA5E9' },
+            border: { type: 'string', description: 'Màu viền', example: '#E2E8F0' },
+            shadow: { type: 'string', description: 'Màu bóng đổ', example: 'rgba(0, 0, 0, 0.04)' },
           },
         },
         pagination: {
           type: 'object',
           description: 'Cấu hình phân trang',
           properties: {
-            defaultLimit: { type: 'string', description: 'Số item mặc định mỗi trang', example: '10' },
-            defaultOffset: { type: 'string', description: 'Vị trí bắt đầu mặc định', example: '0' },
-            maxLimit: { type: 'string', description: 'Số item tối đa mỗi trang', example: '1000' },
-            minLimit: { type: 'string', description: 'Số item tối thiểu mỗi trang', example: '1' },
+            defaultLimit: { type: 'number', description: 'Số lượng item mặc định mỗi trang', example: 10 },
+            defaultOffset: { type: 'number', description: 'Vị trí bắt đầu mặc định', example: 0 },
+            maxLimit: { type: 'number', description: 'Số lượng item tối đa mỗi trang', example: 100 },
+            minLimit: { type: 'number', description: 'Số lượng item tối thiểu mỗi trang', example: 1 },
           },
         },
-        enableAiAutoReply: { type: 'string', description: 'Bật/tắt AI tự động trả lời', example: 'true' },
+        enableAiAutoReply: { type: 'boolean', description: 'Trạng thái bật/tắt AI tự động phản hồi', example: true },
       },
       example: {
         brandName: 'GEN-HUB',
@@ -306,12 +438,12 @@ export class AppConfigController {
           shadow: 'rgba(0, 0, 0, 0.04)',
         },
         pagination: {
-          defaultLimit: '10',
-          defaultOffset: '0',
-          maxLimit: '1000',
-          minLimit: '1',
+          defaultLimit: 10,
+          defaultOffset: 0,
+          maxLimit: 100,
+          minLimit: 1,
         },
-        enableAiAutoReply: 'true',
+        enableAiAutoReply: true,
       },
     },
   })
@@ -409,10 +541,13 @@ export class AppConfigController {
     return result;
   }
 
-  @ApiOperation({ summary: 'Reload cấu hình từ file' })
+  @ApiOperation({
+    summary: 'Reload cấu hình từ file',
+    description: 'Đọc lại cấu hình từ file `app-config.json` trên server và cập nhật vào bộ nhớ. Hữu ích khi cần đồng bộ cấu hình sau khi chỉnh sửa file trực tiếp trên server. Thao tác này sẽ invalidate Redis cache và force reload từ file. Yêu cầu quyền `config.reload`.',
+  })
   @ApiResponse({
     status: 200,
-    description: 'Cấu hình đã được reload từ file',
+    description: 'Trả về toàn bộ cấu hình sau khi reload từ file',
     schema: {
       type: 'object',
       properties: {
@@ -423,36 +558,36 @@ export class AppConfigController {
           type: 'object',
           description: 'Bảng màu giao diện',
           properties: {
-            primary: { type: 'string', example: '#0F766E' },
-            primaryLight: { type: 'string', example: '#14B8A6' },
-            primaryDark: { type: 'string', example: '#0D5A52' },
-            gray900: { type: 'string', example: '#1E293B' },
-            gray700: { type: 'string', example: '#334155' },
-            gray500: { type: 'string', example: '#64748B' },
-            gray300: { type: 'string', example: '#CBD5E1' },
-            gray100: { type: 'string', example: '#F1F5F9' },
-            background: { type: 'string', example: '#F8FAFC' },
-            cardSurface: { type: 'string', example: '#FFFFFF' },
-            sidebarBg: { type: 'string', example: '#F1F5F9' },
-            success: { type: 'string', example: '#10B981' },
-            warning: { type: 'string', example: '#F59E0B' },
-            error: { type: 'string', example: '#EF4444' },
-            info: { type: 'string', example: '#0EA5E9' },
-            border: { type: 'string', example: '#E2E8F0' },
-            shadow: { type: 'string', example: 'rgba(0, 0, 0, 0.04)' },
+            primary: { type: 'string', description: 'Màu chính', example: '#0F766E' },
+            primaryLight: { type: 'string', description: 'Màu chính sáng', example: '#14B8A6' },
+            primaryDark: { type: 'string', description: 'Màu chính tối', example: '#0D5A52' },
+            gray900: { type: 'string', description: 'Màu xám 900', example: '#1E293B' },
+            gray700: { type: 'string', description: 'Màu xám 700', example: '#334155' },
+            gray500: { type: 'string', description: 'Màu xám 500', example: '#64748B' },
+            gray300: { type: 'string', description: 'Màu xám 300', example: '#CBD5E1' },
+            gray100: { type: 'string', description: 'Màu xám 100', example: '#F1F5F9' },
+            background: { type: 'string', description: 'Màu nền trang', example: '#F8FAFC' },
+            cardSurface: { type: 'string', description: 'Màu bề mặt card', example: '#FFFFFF' },
+            sidebarBg: { type: 'string', description: 'Màu nền sidebar', example: '#F1F5F9' },
+            success: { type: 'string', description: 'Màu thành công', example: '#10B981' },
+            warning: { type: 'string', description: 'Màu cảnh báo', example: '#F59E0B' },
+            error: { type: 'string', description: 'Màu lỗi', example: '#EF4444' },
+            info: { type: 'string', description: 'Màu thông tin', example: '#0EA5E9' },
+            border: { type: 'string', description: 'Màu viền', example: '#E2E8F0' },
+            shadow: { type: 'string', description: 'Màu bóng đổ', example: 'rgba(0, 0, 0, 0.04)' },
           },
         },
         pagination: {
           type: 'object',
           description: 'Cấu hình phân trang',
           properties: {
-            defaultLimit: { type: 'string', description: 'Số item mặc định mỗi trang', example: '10' },
-            defaultOffset: { type: 'string', description: 'Vị trí bắt đầu mặc định', example: '0' },
-            maxLimit: { type: 'string', description: 'Số item tối đa mỗi trang', example: '1000' },
-            minLimit: { type: 'string', description: 'Số item tối thiểu mỗi trang', example: '1' },
+            defaultLimit: { type: 'number', description: 'Số lượng item mặc định mỗi trang', example: 10 },
+            defaultOffset: { type: 'number', description: 'Vị trí bắt đầu mặc định', example: 0 },
+            maxLimit: { type: 'number', description: 'Số lượng item tối đa mỗi trang', example: 100 },
+            minLimit: { type: 'number', description: 'Số lượng item tối thiểu mỗi trang', example: 1 },
           },
         },
-        enableAiAutoReply: { type: 'string', description: 'Bật/tắt AI tự động trả lời', example: 'true' },
+        enableAiAutoReply: { type: 'boolean', description: 'Trạng thái bật/tắt AI tự động phản hồi', example: true },
       },
       example: {
         brandName: 'GEN-HUB',
@@ -478,12 +613,12 @@ export class AppConfigController {
           shadow: 'rgba(0, 0, 0, 0.04)',
         },
         pagination: {
-          defaultLimit: '10',
-          defaultOffset: '0',
-          maxLimit: '1000',
-          minLimit: '1',
+          defaultLimit: 10,
+          defaultOffset: 0,
+          maxLimit: 100,
+          minLimit: 1,
         },
-        enableAiAutoReply: 'true',
+        enableAiAutoReply: true,
       },
     },
   })

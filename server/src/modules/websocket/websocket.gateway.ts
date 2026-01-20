@@ -917,8 +917,6 @@ export class WebsocketGateway
     });
   }
 
-
-
   /**
    * Emit event khi assign staff vào ticket
    */
