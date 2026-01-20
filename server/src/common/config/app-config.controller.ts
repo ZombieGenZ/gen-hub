@@ -146,36 +146,84 @@ export class AppConfigController {
   @ApiResponse({
     status: 401,
     description: 'Unauthorized - Chưa xác thực hoặc token không hợp lệ',
-    schema: {
-      type: 'object',
-      properties: {
-        statusCode: { type: 'number', example: 401 },
-        message: { type: 'string', example: 'Unauthorized' },
-        error: { type: 'string', example: 'Unauthorized' },
-      },
-      example: {
-        statusCode: 401,
-        message: 'Unauthorized',
-        error: 'Unauthorized',
+    content: {
+      'application/json': {
+        examples: {
+          token_missing: {
+            summary: 'Không có token',
+            value: {
+              statusCode: 401,
+              message: 'Không có quyền truy cập',
+              error: 'Unauthorized',
+            },
+          },
+          token_expired: {
+            summary: 'Token hết hạn',
+            value: {
+              statusCode: 401,
+              message: 'Token đã hết hạn',
+              error: 'Unauthorized',
+            },
+          },
+          token_invalid: {
+            summary: 'Token không hợp lệ',
+            value: {
+              statusCode: 401,
+              message: 'Token không hợp lệ',
+              error: 'Unauthorized',
+            },
+          },
+          token_malformed: {
+            summary: 'Token không đúng định dạng',
+            value: {
+              statusCode: 401,
+              message: 'Token không đúng định dạng',
+              error: 'Unauthorized',
+            },
+          },
+        },
       },
     },
   })
   @ApiResponse({
     status: 403,
-    description: 'Forbidden - Không có quyền config.update',
-    schema: {
-      type: 'object',
-      properties: {
-        statusCode: { type: 'number', example: 403 },
-        message: { type: 'string', example: 'Bạn không có quyền thực hiện hành động này' },
-        error: { type: 'string', example: 'Forbidden' },
-        requiredPermission: { type: 'string', example: 'config.update' },
-      },
-      example: {
-        statusCode: 403,
-        message: 'Bạn không có quyền thực hiện hành động này',
-        error: 'Forbidden',
-        requiredPermission: 'config.update',
+    description: 'Forbidden - Không có quyền truy cập',
+    content: {
+      'application/json': {
+        examples: {
+          no_permission: {
+            summary: 'Không có quyền thực hiện',
+            value: {
+              statusCode: 403,
+              message: 'Không có quyền thực hiện thao tác này',
+              error: 'Forbidden',
+            },
+          },
+          account_banned: {
+            summary: 'Tài khoản bị khóa',
+            value: {
+              statusCode: 403,
+              message: 'Tài khoản đã bị khóa',
+              error: 'Forbidden',
+            },
+          },
+          account_not_verified: {
+            summary: 'Tài khoản chưa xác minh',
+            value: {
+              statusCode: 403,
+              message: 'Tài khoản chưa được xác minh. Vui lòng xác minh email để tiếp tục.',
+              error: 'Forbidden',
+            },
+          },
+          account_not_found: {
+            summary: 'Tài khoản không tồn tại',
+            value: {
+              statusCode: 403,
+              message: 'Tài khoản không tồn tại',
+              error: 'Forbidden',
+            },
+          },
+        },
       },
     },
   })
@@ -270,36 +318,84 @@ export class AppConfigController {
   @ApiResponse({
     status: 401,
     description: 'Unauthorized - Chưa xác thực hoặc token không hợp lệ',
-    schema: {
-      type: 'object',
-      properties: {
-        statusCode: { type: 'number', example: 401 },
-        message: { type: 'string', example: 'Unauthorized' },
-        error: { type: 'string', example: 'Unauthorized' },
-      },
-      example: {
-        statusCode: 401,
-        message: 'Unauthorized',
-        error: 'Unauthorized',
+    content: {
+      'application/json': {
+        examples: {
+          token_missing: {
+            summary: 'Không có token',
+            value: {
+              statusCode: 401,
+              message: 'Không có quyền truy cập',
+              error: 'Unauthorized',
+            },
+          },
+          token_expired: {
+            summary: 'Token hết hạn',
+            value: {
+              statusCode: 401,
+              message: 'Token đã hết hạn',
+              error: 'Unauthorized',
+            },
+          },
+          token_invalid: {
+            summary: 'Token không hợp lệ',
+            value: {
+              statusCode: 401,
+              message: 'Token không hợp lệ',
+              error: 'Unauthorized',
+            },
+          },
+          token_malformed: {
+            summary: 'Token không đúng định dạng',
+            value: {
+              statusCode: 401,
+              message: 'Token không đúng định dạng',
+              error: 'Unauthorized',
+            },
+          },
+        },
       },
     },
   })
   @ApiResponse({
     status: 403,
-    description: 'Forbidden - Không có quyền config.reset',
-    schema: {
-      type: 'object',
-      properties: {
-        statusCode: { type: 'number', example: 403 },
-        message: { type: 'string', example: 'Bạn không có quyền thực hiện hành động này' },
-        error: { type: 'string', example: 'Forbidden' },
-        requiredPermission: { type: 'string', example: 'config.reset' },
-      },
-      example: {
-        statusCode: 403,
-        message: 'Bạn không có quyền thực hiện hành động này',
-        error: 'Forbidden',
-        requiredPermission: 'config.reset',
+    description: 'Forbidden - Không có quyền truy cập',
+    content: {
+      'application/json': {
+        examples: {
+          no_permission: {
+            summary: 'Không có quyền thực hiện',
+            value: {
+              statusCode: 403,
+              message: 'Không có quyền thực hiện thao tác này',
+              error: 'Forbidden',
+            },
+          },
+          account_banned: {
+            summary: 'Tài khoản bị khóa',
+            value: {
+              statusCode: 403,
+              message: 'Tài khoản đã bị khóa',
+              error: 'Forbidden',
+            },
+          },
+          account_not_verified: {
+            summary: 'Tài khoản chưa xác minh',
+            value: {
+              statusCode: 403,
+              message: 'Tài khoản chưa được xác minh. Vui lòng xác minh email để tiếp tục.',
+              error: 'Forbidden',
+            },
+          },
+          account_not_found: {
+            summary: 'Tài khoản không tồn tại',
+            value: {
+              statusCode: 403,
+              message: 'Tài khoản không tồn tại',
+              error: 'Forbidden',
+            },
+          },
+        },
       },
     },
   })
@@ -394,36 +490,84 @@ export class AppConfigController {
   @ApiResponse({
     status: 401,
     description: 'Unauthorized - Chưa xác thực hoặc token không hợp lệ',
-    schema: {
-      type: 'object',
-      properties: {
-        statusCode: { type: 'number', example: 401 },
-        message: { type: 'string', example: 'Unauthorized' },
-        error: { type: 'string', example: 'Unauthorized' },
-      },
-      example: {
-        statusCode: 401,
-        message: 'Unauthorized',
-        error: 'Unauthorized',
+    content: {
+      'application/json': {
+        examples: {
+          token_missing: {
+            summary: 'Không có token',
+            value: {
+              statusCode: 401,
+              message: 'Không có quyền truy cập',
+              error: 'Unauthorized',
+            },
+          },
+          token_expired: {
+            summary: 'Token hết hạn',
+            value: {
+              statusCode: 401,
+              message: 'Token đã hết hạn',
+              error: 'Unauthorized',
+            },
+          },
+          token_invalid: {
+            summary: 'Token không hợp lệ',
+            value: {
+              statusCode: 401,
+              message: 'Token không hợp lệ',
+              error: 'Unauthorized',
+            },
+          },
+          token_malformed: {
+            summary: 'Token không đúng định dạng',
+            value: {
+              statusCode: 401,
+              message: 'Token không đúng định dạng',
+              error: 'Unauthorized',
+            },
+          },
+        },
       },
     },
   })
   @ApiResponse({
     status: 403,
-    description: 'Forbidden - Không có quyền config.reload',
-    schema: {
-      type: 'object',
-      properties: {
-        statusCode: { type: 'number', example: 403 },
-        message: { type: 'string', example: 'Bạn không có quyền thực hiện hành động này' },
-        error: { type: 'string', example: 'Forbidden' },
-        requiredPermission: { type: 'string', example: 'config.reload' },
-      },
-      example: {
-        statusCode: 403,
-        message: 'Bạn không có quyền thực hiện hành động này',
-        error: 'Forbidden',
-        requiredPermission: 'config.reload',
+    description: 'Forbidden - Không có quyền truy cập',
+    content: {
+      'application/json': {
+        examples: {
+          no_permission: {
+            summary: 'Không có quyền thực hiện',
+            value: {
+              statusCode: 403,
+              message: 'Không có quyền thực hiện thao tác này',
+              error: 'Forbidden',
+            },
+          },
+          account_banned: {
+            summary: 'Tài khoản bị khóa',
+            value: {
+              statusCode: 403,
+              message: 'Tài khoản đã bị khóa',
+              error: 'Forbidden',
+            },
+          },
+          account_not_verified: {
+            summary: 'Tài khoản chưa xác minh',
+            value: {
+              statusCode: 403,
+              message: 'Tài khoản chưa được xác minh. Vui lòng xác minh email để tiếp tục.',
+              error: 'Forbidden',
+            },
+          },
+          account_not_found: {
+            summary: 'Tài khoản không tồn tại',
+            value: {
+              statusCode: 403,
+              message: 'Tài khoản không tồn tại',
+              error: 'Forbidden',
+            },
+          },
+        },
       },
     },
   })

@@ -5,7 +5,12 @@
         "not_found": "Không tìm thấy tài nguyên",
         "internal_error": "Đã xảy ra lỗi. Vui lòng thử lại sau",
         "validation_error": "Dữ liệu không hợp lệ",
-        "rate_limit": "Quá nhiều yêu cầu. Vui lòng thử lại sau"
+        "rate_limit": "Quá nhiều yêu cầu. Vui lòng thử lại sau",
+        "jwt_expired": "Token đã hết hạn",
+        "jwt_invalid": "Token không hợp lệ",
+        "jwt_malformed": "Token không đúng định dạng",
+        "jwt_no_token": "Không có token xác thực",
+        "jwt_invalid_signature": "Chữ ký token không hợp lệ"
     },
     "validation": {
         "name_required": "Tên không được để trống",

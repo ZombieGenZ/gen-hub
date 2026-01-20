@@ -5,7 +5,12 @@
         "not_found": "Resource not found",
         "internal_error": "An error occurred. Please try again later",
         "validation_error": "Invalid data",
-        "rate_limit": "Too many requests. Please try again later"
+        "rate_limit": "Too many requests. Please try again later",
+        "jwt_expired": "Token has expired",
+        "jwt_invalid": "Invalid token",
+        "jwt_malformed": "Malformed token",
+        "jwt_no_token": "No authentication token provided",
+        "jwt_invalid_signature": "Invalid token signature"
     },
     "validation": {
         "name_required": "Name is required",
