@@ -773,12 +773,12 @@ function applyConfig(config: IAppConfig) {
 
 | File | Mô tả |
 |------|-------|
-| [app-config.module.ts](https://github.com/ZombieGenZ/gen-hub/blob/main/server/src/common/config/app-config.module.ts) | NestJS module definition |
-| [app-config.controller.ts](https://github.com/ZombieGenZ/gen-hub/blob/main/server/src/common/config/app-config.controller.ts) | REST API endpoints |
-| [app-config.service.ts](https://github.com/ZombieGenZ/gen-hub/blob/main/server/src/common/config/app-config.service.ts) | Business logic và caching |
-| [app-config.dto.ts](https://github.com/ZombieGenZ/gen-hub/blob/main/server/src/common/config/app-config.dto.ts) | DTOs với validation |
-| [types/app-config.type.ts](https://github.com/ZombieGenZ/gen-hub/blob/main/server/src/common/config/types/app-config.type.ts) | TypeScript interfaces |
-| [helpers/cache-keys.helper.ts](https://github.com/ZombieGenZ/gen-hub/blob/main/server/src/common/config/helpers/cache-keys.helper.ts) | Redis cache key helper |
+| [app-config.module.ts](https://github.com/ZombieGenZ/gen-hub/blob/master/server/src/common/config/app-config.module.ts) | NestJS module definition |
+| [app-config.controller.ts](https://github.com/ZombieGenZ/gen-hub/blob/master/server/src/common/config/app-config.controller.ts) | REST API endpoints |
+| [app-config.service.ts](https://github.com/ZombieGenZ/gen-hub/blob/master/server/src/common/config/app-config.service.ts) | Business logic và caching |
+| [app-config.dto.ts](https://github.com/ZombieGenZ/gen-hub/blob/master/server/src/common/config/app-config.dto.ts) | DTOs với validation |
+| [types/app-config.type.ts](https://github.com/ZombieGenZ/gen-hub/blob/master/server/src/common/config/types/app-config.type.ts) | TypeScript interfaces |
+| [helpers/cache-keys.helper.ts](https://github.com/ZombieGenZ/gen-hub/blob/master/server/src/common/config/helpers/cache-keys.helper.ts) | Redis cache key helper |
 
 ---
 
