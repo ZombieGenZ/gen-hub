@@ -24,6 +24,12 @@ export enum ResponseCode {
     AUTH_LOGIN_RESOURCES_PANEL_SUCCESS = 'auth.login_resources_panel_success',
     AUTH_LOGIN_ADMIN_PANEL_SUCCESS = 'auth.login_admin_panel_success',
 
+    // Config
+    CONFIG_GET_SUCCESS = 'config.get_success',
+    CONFIG_UPDATE_SUCCESS = 'config.update_success',
+    CONFIG_RESET_SUCCESS = 'config.reset_success',
+    CONFIG_RELOAD_SUCCESS = 'config.reload_success',
+
     // Analytics
     ANALYTICS_TRAFFIC_SUCCESS = 'analytics.traffic_success',
 
@@ -227,7 +233,15 @@ export enum ResponseCode {
     ERROR_VALIDATION = 'error.validation',
     ERROR_BAD_REQUEST = 'error.bad_request',
     ERROR_UNAUTHORIZED = 'error.unauthorized',
+    ERROR_UNAUTHORIZED_TOKEN_MISSING = 'error.unauthorized.token_missing',
+    ERROR_UNAUTHORIZED_TOKEN_EXPIRED = 'error.unauthorized.token_expired',
+    ERROR_UNAUTHORIZED_TOKEN_INVALID = 'error.unauthorized.token_invalid',
+    ERROR_UNAUTHORIZED_TOKEN_MALFORMED = 'error.unauthorized.token_malformed',
     ERROR_FORBIDDEN = 'error.forbidden',
+    ERROR_FORBIDDEN_NO_PERMISSION = 'error.forbidden.no_permission',
+    ERROR_FORBIDDEN_ACCOUNT_BANNED = 'error.forbidden.account_banned',
+    ERROR_FORBIDDEN_ACCOUNT_NOT_VERIFIED = 'error.forbidden.account_not_verified',
+    ERROR_FORBIDDEN_ACCOUNT_NOT_FOUND = 'error.forbidden.account_not_found',
     ERROR_NOT_FOUND = 'error.not_found',
     ERROR_CONFLICT = 'error.conflict',
     ERROR_TOO_MANY_REQUESTS = 'error.too_many_requests',

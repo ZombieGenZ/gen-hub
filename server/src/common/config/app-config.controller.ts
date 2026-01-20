@@ -12,6 +12,7 @@ import { UpdateAppConfigDto } from './app-config.dto';
 import { Public, RequirePermission } from '../decorators';
 import { JwtAuthGuard, PermissionGuard } from '../guards';
 import { WebsocketGateway } from '../../modules/websocket/websocket.gateway';
+import { SuccessResponse, ResponseCode } from '../responses';
 
 @ApiTags('Config')
 @Controller('config')
@@ -104,8 +105,9 @@ export class AppConfigController {
   })
   @Public()
   @Get()
-  getConfig(): IAppConfig {
-    return this.appConfigService.getAll();
+  getConfig(): SuccessResponse<IAppConfig> {
+    const data = this.appConfigService.getAll();
+    return new SuccessResponse(ResponseCode.CONFIG_GET_SUCCESS, data, 'Lấy cấu hình thành công');
   }
 
   @ApiOperation({
@@ -281,33 +283,33 @@ export class AppConfigController {
           token_missing: {
             summary: 'Không có token',
             value: {
-              statusCode: 401,
+              code: 'error.unauthorized.token_missing',
               message: 'Không có quyền truy cập',
-              error: 'Unauthorized',
+              success: false,
             },
           },
           token_expired: {
             summary: 'Token hết hạn',
             value: {
-              statusCode: 401,
+              code: 'error.unauthorized.token_expired',
               message: 'Token đã hết hạn',
-              error: 'Unauthorized',
+              success: false,
             },
           },
           token_invalid: {
             summary: 'Token không hợp lệ',
             value: {
-              statusCode: 401,
+              code: 'error.unauthorized.token_invalid',
               message: 'Token không hợp lệ',
-              error: 'Unauthorized',
+              success: false,
             },
           },
           token_malformed: {
             summary: 'Token không đúng định dạng',
             value: {
-              statusCode: 401,
+              code: 'error.unauthorized.token_malformed',
               message: 'Token không đúng định dạng',
-              error: 'Unauthorized',
+              success: false,
             },
           },
         },
@@ -323,33 +325,33 @@ export class AppConfigController {
           no_permission: {
             summary: 'Không có quyền thực hiện',
             value: {
-              statusCode: 403,
+              code: 'error.forbidden.no_permission',
               message: 'Không có quyền thực hiện thao tác này',
-              error: 'Forbidden',
+              success: false,
             },
           },
           account_banned: {
             summary: 'Tài khoản bị khóa',
             value: {
-              statusCode: 403,
+              code: 'error.forbidden.account_banned',
               message: 'Tài khoản đã bị khóa',
-              error: 'Forbidden',
+              success: false,
             },
           },
           account_not_verified: {
             summary: 'Tài khoản chưa xác minh',
             value: {
-              statusCode: 403,
+              code: 'error.forbidden.account_not_verified',
               message: 'Tài khoản chưa được xác minh. Vui lòng xác minh email để tiếp tục.',
-              error: 'Forbidden',
+              success: false,
             },
           },
           account_not_found: {
             summary: 'Tài khoản không tồn tại',
             value: {
-              statusCode: 403,
+              code: 'error.forbidden.account_not_found',
               message: 'Tài khoản không tồn tại',
-              error: 'Forbidden',
+              success: false,
             },
           },
         },
@@ -360,10 +362,10 @@ export class AppConfigController {
   @UseGuards(JwtAuthGuard, PermissionGuard)
   @RequirePermission('config.update')
   @Patch()
-  async updateConfig(@Body() dto: UpdateAppConfigDto, @Request() req: any): Promise<IAppConfig> {
+  async updateConfig(@Body() dto: UpdateAppConfigDto, @Request() req: any): Promise<SuccessResponse<IAppConfig>> {
     const result = await this.appConfigService.update(dto as Partial<IAppConfig>);
     this.websocketGateway.emitConfigUpdated('updated', req.user?.userId);
-    return result;
+    return new SuccessResponse(ResponseCode.CONFIG_UPDATE_SUCCESS, result, 'Cập nhật cấu hình thành công');
   }
 
   @ApiOperation({
@@ -456,33 +458,33 @@ export class AppConfigController {
           token_missing: {
             summary: 'Không có token',
             value: {
-              statusCode: 401,
+              code: 'error.unauthorized.token_missing',
               message: 'Không có quyền truy cập',
-              error: 'Unauthorized',
+              success: false,
             },
           },
           token_expired: {
             summary: 'Token hết hạn',
             value: {
-              statusCode: 401,
+              code: 'error.unauthorized.token_expired',
               message: 'Token đã hết hạn',
-              error: 'Unauthorized',
+              success: false,
             },
           },
           token_invalid: {
             summary: 'Token không hợp lệ',
             value: {
-              statusCode: 401,
+              code: 'error.unauthorized.token_invalid',
               message: 'Token không hợp lệ',
-              error: 'Unauthorized',
+              success: false,
             },
           },
           token_malformed: {
             summary: 'Token không đúng định dạng',
             value: {
-              statusCode: 401,
+              code: 'error.unauthorized.token_malformed',
               message: 'Token không đúng định dạng',
-              error: 'Unauthorized',
+              success: false,
             },
           },
         },
@@ -498,33 +500,33 @@ export class AppConfigController {
           no_permission: {
             summary: 'Không có quyền thực hiện',
             value: {
-              statusCode: 403,
+              code: 'error.forbidden.no_permission',
               message: 'Không có quyền thực hiện thao tác này',
-              error: 'Forbidden',
+              success: false,
             },
           },
           account_banned: {
             summary: 'Tài khoản bị khóa',
             value: {
-              statusCode: 403,
+              code: 'error.forbidden.account_banned',
               message: 'Tài khoản đã bị khóa',
-              error: 'Forbidden',
+              success: false,
             },
           },
           account_not_verified: {
             summary: 'Tài khoản chưa xác minh',
             value: {
-              statusCode: 403,
+              code: 'error.forbidden.account_not_verified',
               message: 'Tài khoản chưa được xác minh. Vui lòng xác minh email để tiếp tục.',
-              error: 'Forbidden',
+              success: false,
             },
           },
           account_not_found: {
             summary: 'Tài khoản không tồn tại',
             value: {
-              statusCode: 403,
+              code: 'error.forbidden.account_not_found',
               message: 'Tài khoản không tồn tại',
-              error: 'Forbidden',
+              success: false,
             },
           },
         },
@@ -535,10 +537,10 @@ export class AppConfigController {
   @UseGuards(JwtAuthGuard, PermissionGuard)
   @RequirePermission('config.reset')
   @Post('reset')
-  async resetConfig(@Request() req: any): Promise<IAppConfig> {
+  async resetConfig(@Request() req: any): Promise<SuccessResponse<IAppConfig>> {
     const result = await this.appConfigService.reset();
     this.websocketGateway.emitConfigUpdated('reset', req.user?.userId);
-    return result;
+    return new SuccessResponse(ResponseCode.CONFIG_RESET_SUCCESS, result, 'Reset cấu hình thành công');
   }
 
   @ApiOperation({
@@ -631,33 +633,33 @@ export class AppConfigController {
           token_missing: {
             summary: 'Không có token',
             value: {
-              statusCode: 401,
+              code: 'error.unauthorized.token_missing',
               message: 'Không có quyền truy cập',
-              error: 'Unauthorized',
+              success: false,
             },
           },
           token_expired: {
             summary: 'Token hết hạn',
             value: {
-              statusCode: 401,
+              code: 'error.unauthorized.token_expired',
               message: 'Token đã hết hạn',
-              error: 'Unauthorized',
+              success: false,
             },
           },
           token_invalid: {
             summary: 'Token không hợp lệ',
             value: {
-              statusCode: 401,
+              code: 'error.unauthorized.token_invalid',
               message: 'Token không hợp lệ',
-              error: 'Unauthorized',
+              success: false,
             },
           },
           token_malformed: {
             summary: 'Token không đúng định dạng',
             value: {
-              statusCode: 401,
+              code: 'error.unauthorized.token_malformed',
               message: 'Token không đúng định dạng',
-              error: 'Unauthorized',
+              success: false,
             },
           },
         },
@@ -673,33 +675,33 @@ export class AppConfigController {
           no_permission: {
             summary: 'Không có quyền thực hiện',
             value: {
-              statusCode: 403,
+              code: 'error.forbidden.no_permission',
               message: 'Không có quyền thực hiện thao tác này',
-              error: 'Forbidden',
+              success: false,
             },
           },
           account_banned: {
             summary: 'Tài khoản bị khóa',
             value: {
-              statusCode: 403,
+              code: 'error.forbidden.account_banned',
               message: 'Tài khoản đã bị khóa',
-              error: 'Forbidden',
+              success: false,
             },
           },
           account_not_verified: {
             summary: 'Tài khoản chưa xác minh',
             value: {
-              statusCode: 403,
+              code: 'error.forbidden.account_not_verified',
               message: 'Tài khoản chưa được xác minh. Vui lòng xác minh email để tiếp tục.',
-              error: 'Forbidden',
+              success: false,
             },
           },
           account_not_found: {
             summary: 'Tài khoản không tồn tại',
             value: {
-              statusCode: 403,
+              code: 'error.forbidden.account_not_found',
               message: 'Tài khoản không tồn tại',
-              error: 'Forbidden',
+              success: false,
             },
           },
         },
@@ -710,9 +712,9 @@ export class AppConfigController {
   @UseGuards(JwtAuthGuard, PermissionGuard)
   @RequirePermission('config.reload')
   @Post('reload')
-  async reloadConfig(@Request() req: any): Promise<IAppConfig> {
+  async reloadConfig(@Request() req: any): Promise<SuccessResponse<IAppConfig>> {
     const result = await this.appConfigService.reload();
     this.websocketGateway.emitConfigUpdated('reloaded', req.user?.userId);
-    return result;
+    return new SuccessResponse(ResponseCode.CONFIG_RELOAD_SUCCESS, result, 'Reload cấu hình thành công');
   }
 }

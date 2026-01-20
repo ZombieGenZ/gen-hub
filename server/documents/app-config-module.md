@@ -67,35 +67,40 @@ Accept: application/json
 **Response (200 OK):**
 ```json
 {
-  "brandName": "GEN-HUB",
-  "supportEmail": "support@gen-hub.dev",
-  "supportPhone": "0783 504 540",
-  "colors": {
-    "primary": "#0F766E",
-    "primaryLight": "#14B8A6",
-    "primaryDark": "#0D5A52",
-    "gray900": "#1E293B",
-    "gray700": "#334155",
-    "gray500": "#64748B",
-    "gray300": "#CBD5E1",
-    "gray100": "#F1F5F9",
-    "background": "#F8FAFC",
-    "cardSurface": "#FFFFFF",
-    "sidebarBg": "#F1F5F9",
-    "success": "#10B981",
-    "warning": "#F59E0B",
-    "error": "#EF4444",
-    "info": "#0EA5E9",
-    "border": "#E2E8F0",
-    "shadow": "rgba(0, 0, 0, 0.04)"
-  },
-  "pagination": {
-    "defaultLimit": 10,
-    "defaultOffset": 0,
-    "maxLimit": 100,
-    "minLimit": 1
-  },
-  "enableAiAutoReply": true
+  "code": "config.get_success",
+  "message": "Lấy cấu hình thành công",
+  "success": true,
+  "data": {
+    "brandName": "GEN-HUB",
+    "supportEmail": "support@gen-hub.dev",
+    "supportPhone": "0783 504 540",
+    "colors": {
+      "primary": "#0F766E",
+      "primaryLight": "#14B8A6",
+      "primaryDark": "#0D5A52",
+      "gray900": "#1E293B",
+      "gray700": "#334155",
+      "gray500": "#64748B",
+      "gray300": "#CBD5E1",
+      "gray100": "#F1F5F9",
+      "background": "#F8FAFC",
+      "cardSurface": "#FFFFFF",
+      "sidebarBg": "#F1F5F9",
+      "success": "#10B981",
+      "warning": "#F59E0B",
+      "error": "#EF4444",
+      "info": "#0EA5E9",
+      "border": "#E2E8F0",
+      "shadow": "rgba(0, 0, 0, 0.04)"
+    },
+    "pagination": {
+      "defaultLimit": 10,
+      "defaultOffset": 0,
+      "maxLimit": 100,
+      "minLimit": 1
+    },
+    "enableAiAutoReply": true
+  }
 }
 ```
 
@@ -207,12 +212,17 @@ Content-Type: application/json
 
 ```json
 {
-  "brandName": "GEN-HUB Pro",
-  "supportEmail": "support@gen-hub.dev",
-  "supportPhone": "0783 504 540",
-  "colors": { ... },
-  "pagination": { ... },
-  "enableAiAutoReply": true
+  "code": "config.update_success",
+  "message": "Cập nhật cấu hình thành công",
+  "success": true,
+  "data": {
+    "brandName": "GEN-HUB Pro",
+    "supportEmail": "support@gen-hub.dev",
+    "supportPhone": "0783 504 540",
+    "colors": { ... },
+    "pagination": { ... },
+    "enableAiAutoReply": true
+  }
 }
 ```
 
@@ -224,30 +234,30 @@ Content-Type: application/json
 ```json
 // Không có token
 {
-  "statusCode": 401,
+  "code": "error.unauthorized.token_missing",
   "message": "Không có quyền truy cập",
-  "error": "Unauthorized"
+  "success": false
 }
 
 // Token hết hạn
 {
-  "statusCode": 401,
+  "code": "error.unauthorized.token_expired",
   "message": "Token đã hết hạn",
-  "error": "Unauthorized"
+  "success": false
 }
 
 // Token không hợp lệ
 {
-  "statusCode": 401,
+  "code": "error.unauthorized.token_invalid",
   "message": "Token không hợp lệ",
-  "error": "Unauthorized"
+  "success": false
 }
 
 // Token không đúng định dạng
 {
-  "statusCode": 401,
+  "code": "error.unauthorized.token_malformed",
   "message": "Token không đúng định dạng",
-  "error": "Unauthorized"
+  "success": false
 }
 ```
 </details>
@@ -258,30 +268,30 @@ Content-Type: application/json
 ```json
 // Không có quyền thực hiện
 {
-  "statusCode": 403,
+  "code": "error.forbidden.no_permission",
   "message": "Không có quyền thực hiện thao tác này",
-  "error": "Forbidden"
+  "success": false
 }
 
 // Tài khoản bị khóa
 {
-  "statusCode": 403,
+  "code": "error.forbidden.account_banned",
   "message": "Tài khoản đã bị khóa",
-  "error": "Forbidden"
+  "success": false
 }
 
 // Tài khoản chưa xác minh
 {
-  "statusCode": 403,
+  "code": "error.forbidden.account_not_verified",
   "message": "Tài khoản chưa được xác minh. Vui lòng xác minh email để tiếp tục.",
-  "error": "Forbidden"
+  "success": false
 }
 
 // Tài khoản không tồn tại
 {
-  "statusCode": 403,
+  "code": "error.forbidden.account_not_found",
   "message": "Tài khoản không tồn tại",
-  "error": "Forbidden"
+  "success": false
 }
 ```
 </details>
@@ -307,26 +317,99 @@ Authorization: Bearer <access_token>
 
 ```json
 {
-  "brandName": "GEN-HUB",
-  "supportEmail": "support@gen-hub.dev",
-  "supportPhone": "0783 504 540",
-  "colors": {
-    "primary": "#0F766E",
-    "primaryLight": "#14B8A6",
-    "primaryDark": "#0D5A52",
-    ...
-  },
-  "pagination": {
-    "defaultLimit": 10,
-    "defaultOffset": 0,
-    "maxLimit": 100,
-    "minLimit": 1
-  },
-  "enableAiAutoReply": true
+  "code": "config.reset_success",
+  "message": "Reset cấu hình thành công",
+  "success": true,
+  "data": {
+    "brandName": "GEN-HUB",
+    "supportEmail": "support@gen-hub.dev",
+    "supportPhone": "0783 504 540",
+    "colors": {
+      "primary": "#0F766E",
+      "primaryLight": "#14B8A6",
+      "primaryDark": "#0D5A52",
+      ...
+    },
+    "pagination": {
+      "defaultLimit": 10,
+      "defaultOffset": 0,
+      "maxLimit": 100,
+      "minLimit": 1
+    },
+    "enableAiAutoReply": true
+  }
 }
 ```
 
-**Error Responses:** Tương tự như PATCH /config
+**Error Responses:**
+
+<details>
+<summary><b>401 Unauthorized</b></summary>
+
+```json
+// Không có token
+{
+  "code": "error.unauthorized.token_missing",
+  "message": "Không có quyền truy cập",
+  "success": false
+}
+
+// Token hết hạn
+{
+  "code": "error.unauthorized.token_expired",
+  "message": "Token đã hết hạn",
+  "success": false
+}
+
+// Token không hợp lệ
+{
+  "code": "error.unauthorized.token_invalid",
+  "message": "Token không hợp lệ",
+  "success": false
+}
+
+// Token không đúng định dạng
+{
+  "code": "error.unauthorized.token_malformed",
+  "message": "Token không đúng định dạng",
+  "success": false
+}
+```
+</details>
+
+<details>
+<summary><b>403 Forbidden</b></summary>
+
+```json
+// Không có quyền thực hiện
+{
+  "code": "error.forbidden.no_permission",
+  "message": "Không có quyền thực hiện thao tác này",
+  "success": false
+}
+
+// Tài khoản bị khóa
+{
+  "code": "error.forbidden.account_banned",
+  "message": "Tài khoản đã bị khóa",
+  "success": false
+}
+
+// Tài khoản chưa xác minh
+{
+  "code": "error.forbidden.account_not_verified",
+  "message": "Tài khoản chưa được xác minh. Vui lòng xác minh email để tiếp tục.",
+  "success": false
+}
+
+// Tài khoản không tồn tại
+{
+  "code": "error.forbidden.account_not_found",
+  "message": "Tài khoản không tồn tại",
+  "success": false
+}
+```
+</details>
 
 ---
 
@@ -349,13 +432,86 @@ Authorization: Bearer <access_token>
 
 ```json
 {
-  "brandName": "GEN-HUB",
-  "supportEmail": "support@gen-hub.dev",
-  ...
+  "code": "config.reload_success",
+  "message": "Reload cấu hình thành công",
+  "success": true,
+  "data": {
+    "brandName": "GEN-HUB",
+    "supportEmail": "support@gen-hub.dev",
+    ...
+  }
 }
 ```
 
-**Error Responses:** Tương tự như PATCH /config
+**Error Responses:**
+
+<details>
+<summary><b>401 Unauthorized</b></summary>
+
+```json
+// Không có token
+{
+  "code": "error.unauthorized.token_missing",
+  "message": "Không có quyền truy cập",
+  "success": false
+}
+
+// Token hết hạn
+{
+  "code": "error.unauthorized.token_expired",
+  "message": "Token đã hết hạn",
+  "success": false
+}
+
+// Token không hợp lệ
+{
+  "code": "error.unauthorized.token_invalid",
+  "message": "Token không hợp lệ",
+  "success": false
+}
+
+// Token không đúng định dạng
+{
+  "code": "error.unauthorized.token_malformed",
+  "message": "Token không đúng định dạng",
+  "success": false
+}
+```
+</details>
+
+<details>
+<summary><b>403 Forbidden</b></summary>
+
+```json
+// Không có quyền thực hiện
+{
+  "code": "error.forbidden.no_permission",
+  "message": "Không có quyền thực hiện thao tác này",
+  "success": false
+}
+
+// Tài khoản bị khóa
+{
+  "code": "error.forbidden.account_banned",
+  "message": "Tài khoản đã bị khóa",
+  "success": false
+}
+
+// Tài khoản chưa xác minh
+{
+  "code": "error.forbidden.account_not_verified",
+  "message": "Tài khoản chưa được xác minh. Vui lòng xác minh email để tiếp tục.",
+  "success": false
+}
+
+// Tài khoản không tồn tại
+{
+  "code": "error.forbidden.account_not_found",
+  "message": "Tài khoản không tồn tại",
+  "success": false
+}
+```
+</details>
 
 ---
 

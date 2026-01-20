@@ -9,6 +9,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../../modules/redis/redis.service';
 import { PERMISSIONS_KEY } from '../decorators/require-permission.decorator';
 import { PERMISSIONS_ANY_KEY } from '../decorators/require-any-permission.decorator';
+import { ResponseCode } from '../responses';
 
 @Injectable()
 export class PermissionGuard implements CanActivate {
@@ -39,7 +40,11 @@ export class PermissionGuard implements CanActivate {
     const user = request.user as { userId: string } | undefined;
 
     if (!user?.userId) {
-      throw new ForbiddenException('Không có quyền truy cập');
+      throw new ForbiddenException({
+        code: ResponseCode.ERROR_FORBIDDEN,
+        message: 'Không có quyền truy cập',
+        success: false,
+      });
     }
 
     // Kiểm tra tài khoản đã được xác minh chưa
@@ -49,15 +54,27 @@ export class PermissionGuard implements CanActivate {
     });
 
     if (!userRecord) {
-      throw new ForbiddenException('Tài khoản không tồn tại');
+      throw new ForbiddenException({
+        code: ResponseCode.ERROR_FORBIDDEN_ACCOUNT_NOT_FOUND,
+        message: 'Tài khoản không tồn tại',
+        success: false,
+      });
     }
 
     if (userRecord.is_banned) {
-      throw new ForbiddenException('Tài khoản đã bị khóa');
+      throw new ForbiddenException({
+        code: ResponseCode.ERROR_FORBIDDEN_ACCOUNT_BANNED,
+        message: 'Tài khoản đã bị khóa',
+        success: false,
+      });
     }
 
     if (!userRecord.is_verified) {
-      throw new ForbiddenException('Tài khoản chưa được xác minh. Vui lòng xác minh email để tiếp tục.');
+      throw new ForbiddenException({
+        code: ResponseCode.ERROR_FORBIDDEN_ACCOUNT_NOT_VERIFIED,
+        message: 'Tài khoản chưa được xác minh. Vui lòng xác minh email để tiếp tục.',
+        success: false,
+      });
     }
 
     const userPermissions = await this.getUserPermissions(user.userId);
@@ -69,7 +86,11 @@ export class PermissionGuard implements CanActivate {
       );
 
       if (!hasAllPermissions) {
-        throw new ForbiddenException('Không có quyền thực hiện thao tác này');
+        throw new ForbiddenException({
+          code: ResponseCode.ERROR_FORBIDDEN_NO_PERMISSION,
+          message: 'Không có quyền thực hiện thao tác này',
+          success: false,
+        });
       }
     }
 
@@ -80,7 +101,11 @@ export class PermissionGuard implements CanActivate {
       );
 
       if (!hasAnyPermission) {
-        throw new ForbiddenException('Không có quyền thực hiện thao tác này');
+        throw new ForbiddenException({
+          code: ResponseCode.ERROR_FORBIDDEN_NO_PERMISSION,
+          message: 'Không có quyền thực hiện thao tác này',
+          success: false,
+        });
       }
     }
 

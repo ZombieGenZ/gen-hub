@@ -7,6 +7,7 @@ import { Reflector } from '@nestjs/core';
 import { AuthGuard } from '@nestjs/passport';
 import { I18nContext } from 'nestjs-i18n';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
+import { ResponseCode } from '../responses';
 
 /**
  * Guard xác thực JWT access token
@@ -51,23 +52,43 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     if (err || !user) {
       const i18n = I18nContext.current();
 
-      // Mapping từ JWT error message sang i18n key
-      const errorKeyMap: Record<string, string> = {
-        'jwt expired': 'common.errors.jwt_expired',
-        'invalid token': 'common.errors.jwt_invalid',
-        'jwt malformed': 'common.errors.jwt_malformed',
-        'No auth token': 'common.errors.jwt_no_token',
-        'invalid signature': 'common.errors.jwt_invalid_signature',
+      // Mapping từ JWT error message sang i18n key và response code
+      const errorMapping: Record<string, { i18nKey: string; code: ResponseCode }> = {
+        'jwt expired': {
+          i18nKey: 'common.errors.jwt_expired',
+          code: ResponseCode.ERROR_UNAUTHORIZED_TOKEN_EXPIRED,
+        },
+        'invalid token': {
+          i18nKey: 'common.errors.jwt_invalid',
+          code: ResponseCode.ERROR_UNAUTHORIZED_TOKEN_INVALID,
+        },
+        'jwt malformed': {
+          i18nKey: 'common.errors.jwt_malformed',
+          code: ResponseCode.ERROR_UNAUTHORIZED_TOKEN_MALFORMED,
+        },
+        'No auth token': {
+          i18nKey: 'common.errors.jwt_no_token',
+          code: ResponseCode.ERROR_UNAUTHORIZED_TOKEN_MISSING,
+        },
+        'invalid signature': {
+          i18nKey: 'common.errors.jwt_invalid_signature',
+          code: ResponseCode.ERROR_UNAUTHORIZED_TOKEN_INVALID,
+        },
       };
 
       let message: string;
-      if (info?.message && errorKeyMap[info.message]) {
-        message = i18n?.t(errorKeyMap[info.message]) as string || info.message;
+      let code: ResponseCode;
+
+      if (info?.message && errorMapping[info.message]) {
+        const mapping = errorMapping[info.message];
+        message = i18n?.t(mapping.i18nKey) as string || info.message;
+        code = mapping.code;
       } else {
         message = i18n?.t('common.errors.unauthorized') as string || 'Không có quyền truy cập';
+        code = ResponseCode.ERROR_UNAUTHORIZED_TOKEN_MISSING;
       }
 
-      throw err || new UnauthorizedException(message);
+      throw err || new UnauthorizedException({ code, message, success: false });
     }
     return user;
   }
