@@ -319,6 +319,22 @@ Content-Type: application/json
 ```
 </details>
 
+<details>
+<summary><b>422 Unprocessable Entity</b></summary>
+
+```json
+{
+  "code": "error.validation",
+  "message": "Dữ liệu đầu vào không hợp lệ",
+  "success": false,
+  "errors": [
+    { "field": "brandName", "message": "Tên thương hiệu không được quá 100 ký tự" },
+    { "field": "colors.primary", "message": "Mã màu không hợp lệ" }
+  ]
+}
+```
+</details>
+
 ---
 
 ### 3. POST /config/reset - Reset cấu hình về mặc định
