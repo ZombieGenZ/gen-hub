@@ -4,6 +4,7 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { RefreshTokenRepository } from './repositories/refresh-token.repository';
+import { AuthCacheKeysHelper } from './constants';
 import { UserModule } from '../user/user.module';
 import { BackupCodeModule } from '../backup-code/backup-code.module';
 import { NotificationModule } from '../notification/notification.module';
@@ -17,7 +18,8 @@ import { BruteForceModule } from '../brute-force/brute-force.module';
 @Module({
   imports: [UserModule, BackupCodeModule, NotificationModule, RedisModule, BruteForceModule],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, RefreshTokenRepository],
-  exports: [AuthService, JwtStrategy, RefreshTokenRepository],
+  providers: [AuthService, JwtStrategy, RefreshTokenRepository, AuthCacheKeysHelper],
+  exports: [AuthService, JwtStrategy, RefreshTokenRepository, AuthCacheKeysHelper],
 })
 export class AuthModule { }
+

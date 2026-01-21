@@ -1,15 +1,15 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { 
-    MessageCircle, 
-    X, 
-    Send, 
-    Bot, 
-    User, 
-    Phone, 
-    Calendar, 
-    ArrowLeft, 
+import {
+    MessageCircle,
+    X,
+    Send,
+    Bot,
+    User,
+    Phone,
+    Calendar,
+    ArrowLeft,
     Clock,
     MapPin,
     Ruler,
@@ -54,7 +54,6 @@ interface AppointmentForm {
 
 type ChatMode = 'bot' | 'live' | 'appointment' | 'lead-form';
 
-// ============ QUICK REPLIES ============
 const quickReplies: QuickReply[] = [
     {
         id: 'area',
@@ -82,7 +81,6 @@ const quickReplies: QuickReply[] = [
     }
 ];
 
-// ============ BOT RESPONSES (Fallback khi không có AI) ============
 const botResponses: Record<string, string> = {
     'diện tích': `Chúng tôi có nhiều lựa chọn diện tích kho:
 • **Kho nhỏ:** 50 - 100m² (phù hợp startup, hàng nhẹ)
@@ -91,7 +89,7 @@ const botResponses: Record<string, string> = {
 • **Kho siêu lớn:** Trên 2000m² (theo yêu cầu)
 
 Bạn cần diện tích khoảng bao nhiêu ạ?`,
-    
+
     'giá': `Giá thuê kho phụ thuộc vào nhiều yếu tố:
 • **Vị trí:** Khu vực trung tâm/ngoại thành
 • **Loại kho:** Kho thường/kho mát/kho lạnh
@@ -104,7 +102,7 @@ Bạn cần diện tích khoảng bao nhiêu ạ?`,
 • Kho lạnh: từ 250.000đ/m²/tháng
 
 Bạn muốn tìm hiểu loại kho nào?`,
-    
+
     'vị trí': `Hệ thống kho của chúng tôi phân bố tại:
 
 **TP. Hồ Chí Minh:**
@@ -119,7 +117,7 @@ Bạn muốn tìm hiểu loại kho nào?`,
 • Bình Dương, Đồng Nai, Long An
 
 Bạn đang tìm kho ở khu vực nào?`,
-    
+
     'thời gian': `Thời gian thuê kho linh hoạt:
 • **Tối thiểu:** 1 tháng
 • **Ngắn hạn:** 1-6 tháng
@@ -132,7 +130,7 @@ Thuê dài hạn sẽ được hưởng:
 ✓ Hỗ trợ vận hành 24/7
 
 Bạn dự định thuê trong bao lâu?`,
-    
+
     'default': `Cảm ơn bạn đã liên hệ! 
 
 Tôi có thể hỗ trợ bạn về:
@@ -149,7 +147,6 @@ Hoặc bạn có thể:
 Bạn cần hỗ trợ gì ạ?`
 };
 
-// ============ AI INTEGRATION ============
 async function getAIResponse(userMessage: string, conversationHistory: Message[]): Promise<string> {
     // Nếu không có API key, sử dụng responses có sẵn
     if (!CLAUDE_API_KEY) {
@@ -199,7 +196,7 @@ Khi khách hỏi giá cụ thể, khuyến khích để lại thông tin hoặc 
 
 function getFallbackResponse(message: string): string {
     const lowerMessage = message.toLowerCase();
-    
+
     if (lowerMessage.includes('diện tích') || lowerMessage.includes('m2') || lowerMessage.includes('mét vuông')) {
         return botResponses['diện tích'];
     }
@@ -212,11 +209,10 @@ function getFallbackResponse(message: string): string {
     if (lowerMessage.includes('thời gian') || lowerMessage.includes('bao lâu') || lowerMessage.includes('tháng')) {
         return botResponses['thời gian'];
     }
-    
+
     return botResponses['default'];
 }
 
-// ============ MAIN COMPONENT ============
 export function PrimeNestChatbot() {
     const [isOpen, setIsOpen] = useState(false);
     const [mode, setMode] = useState<ChatMode>('bot');
@@ -235,7 +231,7 @@ export function PrimeNestChatbot() {
         name: '', phone: '', date: '', time: '', warehouseType: '', note: ''
     });
     const [formSubmitted, setFormSubmitted] = useState(false);
-    
+
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
@@ -266,11 +262,11 @@ export function PrimeNestChatbot() {
 
     const simulateTyping = async (response: string) => {
         setIsTyping(true);
-        
+
         // Simulate typing delay (50-100ms per character, max 3s)
         const typingDelay = Math.min(response.length * 30, 3000);
         await new Promise(resolve => setTimeout(resolve, typingDelay));
-        
+
         setIsTyping(false);
         addMessage('bot', response);
     };
@@ -340,7 +336,6 @@ Chúng tôi sẽ gọi xác nhận lịch hẹn sớm nhất!`);
         setFormSubmitted(false);
     };
 
-    // ============ RENDER FUNCTIONS ============
     const renderMessage = (message: Message) => {
         const isUser = message.type === 'user';
         const isSystem = message.type === 'system';
@@ -358,19 +353,17 @@ Chúng tôi sẽ gọi xác nhận lịch hẹn sớm nhất!`);
         return (
             <div key={message.id} className={`flex gap-2 mb-3 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
                 {/* Avatar */}
-                <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${
-                    isUser ? 'bg-primary text-white' : 'bg-slate-100 text-primary'
-                }`}>
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${isUser ? 'bg-primary text-white' : 'bg-slate-100 text-primary'
+                    }`}>
                     {isUser ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
                 </div>
-                
+
                 {/* Message Bubble */}
-                <div className={`max-w-[75%] px-3 py-2 rounded-2xl text-sm ${
-                    isUser 
-                        ? 'bg-primary text-white rounded-tr-sm' 
+                <div className={`max-w-[75%] px-3 py-2 rounded-2xl text-sm ${isUser
+                        ? 'bg-primary text-white rounded-tr-sm'
                         : 'bg-slate-100 text-slate-800 rounded-tl-sm'
-                }`}>
-                    <div className="whitespace-pre-line" dangerouslySetInnerHTML={{ 
+                    }`}>
+                    <div className="whitespace-pre-line" dangerouslySetInnerHTML={{
                         __html: message.content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
                     }} />
                     <div className={`text-[10px] mt-1 ${isUser ? 'text-white/70' : 'text-slate-400'}`}>
@@ -398,16 +391,16 @@ Chúng tôi sẽ gọi xác nhận lịch hẹn sớm nhất!`);
 
     const renderLeadForm = () => (
         <div className="p-4">
-            <button 
+            <button
                 onClick={goBackToBot}
                 className="flex items-center gap-1 text-sm text-slate-600 hover:text-primary mb-4 transition-colors"
             >
                 <ArrowLeft className="w-4 h-4" /> Quay lại chat
             </button>
-            
+
             <h3 className="text-lg font-semibold text-slate-800 mb-1">Để lại thông tin</h3>
             <p className="text-sm text-slate-500 mb-4">Chúng tôi sẽ liên hệ tư vấn cho bạn</p>
-            
+
             {formSubmitted ? (
                 <div className="flex flex-col items-center justify-center py-8">
                     <CheckCircle className="w-12 h-12 text-green-500 mb-3" />
@@ -458,16 +451,16 @@ Chúng tôi sẽ gọi xác nhận lịch hẹn sớm nhất!`);
 
     const renderAppointmentForm = () => (
         <div className="p-4">
-            <button 
+            <button
                 onClick={goBackToBot}
                 className="flex items-center gap-1 text-sm text-slate-600 hover:text-primary mb-4 transition-colors"
             >
                 <ArrowLeft className="w-4 h-4" /> Quay lại chat
             </button>
-            
+
             <h3 className="text-lg font-semibold text-slate-800 mb-1">Đặt lịch xem kho</h3>
             <p className="text-sm text-slate-500 mb-4">Chọn thời gian phù hợp với bạn</p>
-            
+
             {formSubmitted ? (
                 <div className="flex flex-col items-center justify-center py-8">
                     <CheckCircle className="w-12 h-12 text-green-500 mb-3" />
@@ -618,7 +611,7 @@ Chúng tôi sẽ gọi xác nhận lịch hẹn sớm nhất!`);
                         )}
                     </button>
                 </div>
-                
+
                 {/* Live Chat Option */}
                 {mode === 'bot' && (
                     <button
@@ -637,9 +630,8 @@ Chúng tôi sẽ gọi xác nhận lịch hẹn sớm nhất!`);
             {/* Chat Button */}
             <button
                 onClick={() => setIsOpen(true)}
-                className={`fixed bottom-6 right-6 z-50 w-14 h-14 bg-primary text-white rounded-full shadow-lg flex items-center justify-center hover:bg-primary-dark transition-all duration-300 ${
-                    isOpen ? 'scale-0 opacity-0' : 'scale-100 opacity-100'
-                }`}
+                className={`fixed bottom-6 right-6 z-50 w-14 h-14 bg-primary text-white rounded-full shadow-lg flex items-center justify-center hover:bg-primary-dark transition-all duration-300 ${isOpen ? 'scale-0 opacity-0' : 'scale-100 opacity-100'
+                    }`}
             >
                 <MessageCircle className="w-6 h-6" />
                 {/* Notification Badge */}
@@ -649,15 +641,14 @@ Chúng tôi sẽ gọi xác nhận lịch hẹn sớm nhất!`);
             </button>
 
             {/* Chat Window */}
-            <div className={`fixed bottom-6 right-6 z-50 w-[380px] max-w-[calc(100vw-48px)] bg-white rounded-2xl shadow-2xl overflow-hidden transition-all duration-300 ${
-                isOpen 
-                    ? 'opacity-100 translate-y-0 scale-100' 
+            <div className={`fixed bottom-6 right-6 z-50 w-[380px] max-w-[calc(100vw-48px)] bg-white rounded-2xl shadow-2xl overflow-hidden transition-all duration-300 ${isOpen
+                    ? 'opacity-100 translate-y-0 scale-100'
                     : 'opacity-0 translate-y-4 scale-95 pointer-events-none'
-            }`}
-            style={{ 
-                height: 'min(600px, calc(100vh - 100px))',
-                maxHeight: 'calc(100vh - 100px)'
-            }}
+                }`}
+                style={{
+                    height: 'min(600px, calc(100vh - 100px))',
+                    maxHeight: 'calc(100vh - 100px)'
+                }}
             >
                 {/* Header */}
                 <div className="bg-primary text-white px-4 py-3 flex items-center justify-between">

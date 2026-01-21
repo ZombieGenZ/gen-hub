@@ -35,11 +35,14 @@ import {
   VerifyForgotPasswordTokenDto,
   LogoutDto,
 } from './dto';
+import { AuthCacheKeysHelper } from './constants';
+import { ICachedAuthUser } from './types';
 import { IDeviceInfo } from '../../common/interfaces';
 
 /**
  * Auth Service
  * Xử lý logic nghiệp vụ liên quan đến authentication
+ * Optimized with Redis caching using ConfigService for TTL and key prefixes
  */
 @Injectable()
 export class AuthService {
@@ -84,6 +87,7 @@ export class AuthService {
     private readonly hunterService: HunterService,
     private readonly bruteForceService: BruteForceService,
     private readonly prismaService: PrismaService,
+    private readonly authCacheKeys: AuthCacheKeysHelper,
   ) { }
 
   /**
@@ -1158,4 +1162,165 @@ export class AuthService {
       created_at: user.created_at,
     };
   }
+
+  /**
+   * Get user from cache or database (Cache-Aside Pattern)
+   * @param email - User email
+   * @returns User data or null
+   */
+  private async getUserByEmailWithCache(email: string): Promise<ICachedAuthUser | null> {
+    const cacheKey = this.authCacheKeys.session(email);
+
+    try {
+      // 1. Check cache first
+      const cached = await this.redisService.get(cacheKey);
+      if (cached) {
+        this.systemLogService.debug(
+          'auth',
+          'cache_hit',
+          `Cache hit for user: ${email}`,
+          { metaData: { cacheKey } },
+        );
+        return JSON.parse(cached) as ICachedAuthUser;
+      }
+
+      // 2. Cache miss - query database
+      const user = await this.userRepository.findByEmail(email);
+      if (!user) {
+        return null;
+      }
+
+      // 3. Store in cache with TTL from ConfigService
+      const ttl = this.authCacheKeys.sessionTtl;
+      const userData: ICachedAuthUser = {
+        id: user.id,
+        email: user.email,
+        password: user.password,
+        name: user.name,
+        email_confirmed: user.email_confirmed,
+        is_verified: user.is_verified,
+        is_banned: user.is_banned,
+        banned_end: user.banned_end,
+        two_factor_enabled: user.two_factor_enabled,
+        two_factor_token: user.two_factor_token,
+        language: user.language,
+        created_at: user.created_at,
+      };
+      await this.redisService.set(cacheKey, JSON.stringify(userData), ttl);
+
+      return userData;
+    } catch (error) {
+      // Cache error should not break auth - fallback to DB
+      this.systemLogService.warn(
+        'auth',
+        'cache_error',
+        `Cache error for user: ${email}`,
+        { metaData: { error: (error as Error).message } },
+      );
+      const user = await this.userRepository.findByEmail(email);
+      if (!user) return null;
+      return {
+        id: user.id,
+        email: user.email,
+        password: user.password,
+        name: user.name,
+        email_confirmed: user.email_confirmed,
+        is_verified: user.is_verified,
+        is_banned: user.is_banned,
+        banned_end: user.banned_end,
+        two_factor_enabled: user.two_factor_enabled,
+        two_factor_token: user.two_factor_token,
+        language: user.language,
+        created_at: user.created_at,
+      };
+    }
+  }
+
+  /**
+   * Check user permission with cache (Cache-Aside Pattern)
+   * @param userId - User ID
+   * @param permissionKey - Permission key to check
+   * @returns true if user has permission
+   */
+  private async checkUserPermissionWithCache(userId: string, permissionKey: string): Promise<boolean> {
+    const cacheKey = this.authCacheKeys.permissionCheck(userId, permissionKey);
+
+    try {
+      // 1. Check cache first
+      const cached = await this.redisService.get(cacheKey);
+      if (cached !== null) {
+        const result = JSON.parse(cached);
+        this.systemLogService.debug(
+          'auth',
+          'permission_cache_hit',
+          `Permission cache hit: ${userId} - ${permissionKey}`,
+          { metaData: { cacheKey, hasPermission: result.hasPermission } },
+        );
+        return result.hasPermission;
+      }
+
+      // 2. Cache miss - check permission
+      const hasPermission = await this.checkUserPermission(userId, permissionKey);
+
+      // 3. Store result in cache with TTL from ConfigService
+      const ttl = this.authCacheKeys.permissionTtl;
+      await this.redisService.set(
+        cacheKey,
+        JSON.stringify({ hasPermission, checkedAt: Date.now() }),
+        ttl,
+      );
+
+      return hasPermission;
+    } catch (error) {
+      // Cache error - fallback to direct check
+      this.systemLogService.warn(
+        'auth',
+        'permission_cache_error',
+        `Permission cache error: ${userId} - ${permissionKey}`,
+        { metaData: { error: (error as Error).message } },
+      );
+      return this.checkUserPermission(userId, permissionKey);
+    }
+  }
+
+  /**
+   * Invalidate all auth-related cache for a user
+   * Call this on logout, password change, permission update, etc.
+   * @param userId - User ID
+   * @param email - User email (optional, for session cache)
+   */
+  async invalidateUserAuthCache(userId: string, email?: string): Promise<void> {
+    const keysToDelete: string[] = [];
+
+    // Add permission cache pattern
+    const permissionPattern = this.authCacheKeys.userPermissionPattern(userId);
+
+    try {
+      await Promise.all([
+        // Invalidate session cache if email provided
+        email ? this.redisService.del(this.authCacheKeys.session(email)) : Promise.resolve(0),
+        // Invalidate permission cache by pattern
+        this.redisService.delByPattern(permissionPattern),
+        // Invalidate user cache (from redis.service)
+        this.redisService.invalidateUserCache(userId),
+        // Invalidate user permissions cache (from redis.service)
+        this.redisService.invalidateUserPermissionsCache(userId),
+      ]);
+
+      this.systemLogService.debug(
+        'auth',
+        'cache_invalidated',
+        `Auth cache invalidated for user: ${userId}`,
+        { metaData: { userId, email, deletedPatterns: [permissionPattern] } },
+      );
+    } catch (error) {
+      this.systemLogService.warn(
+        'auth',
+        'cache_invalidation_error',
+        `Failed to invalidate auth cache: ${userId}`,
+        { metaData: { error: (error as Error).message } },
+      );
+    }
+  }
 }
+

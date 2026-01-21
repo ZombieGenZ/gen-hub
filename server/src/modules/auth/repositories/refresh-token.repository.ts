@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { RefreshToken } from '@prisma/client';
+import { REFRESH_TOKEN_SELECT } from '../selects';
 
 /**
  * Interface cho thông tin device
@@ -15,10 +16,11 @@ interface IDeviceInfo {
 /**
  * Repository cho RefreshToken
  * Quản lý refresh tokens trong database
+ * Optimized with Prisma select for reduced data transfer
  */
 @Injectable()
 export class RefreshTokenRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   /**
    * Tạo refresh token mới
@@ -45,14 +47,16 @@ export class RefreshTokenRepository {
 
   /**
    * Tìm refresh token theo token string
+   * Uses Prisma select for optimized query - only fetches needed fields
    * @param token - Token string
    */
-  async findByToken(token: string): Promise<RefreshToken | null> {
+  async findByToken(token: string): Promise<Pick<RefreshToken, 'id' | 'user_id' | 'token' | 'ip' | 'device' | 'created_at'> | null> {
     return this.prisma.refreshToken.findFirst({
       where: {
         token,
         is_deleted: false,
       },
+      select: REFRESH_TOKEN_SELECT,
     });
   }
 
