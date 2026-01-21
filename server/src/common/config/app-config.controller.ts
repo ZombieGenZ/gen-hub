@@ -5,6 +5,7 @@ import {
   ApiResponse,
   ApiBearerAuth,
   ApiBody,
+  ApiHeader,
 } from '@nestjs/swagger';
 import { I18nService, I18nLang } from 'nestjs-i18n';
 import { AppConfigService } from './app-config.service';
@@ -27,6 +28,12 @@ export class AppConfigController {
   @ApiOperation({
     summary: 'Lấy cấu hình ứng dụng',
     description: 'API công khai để lấy toàn bộ cấu hình ứng dụng bao gồm thông tin thương hiệu, bảng màu giao diện và cấu hình phân trang. Không yêu cầu xác thực.',
+  })
+  @ApiHeader({
+    name: 'accept-language',
+    description: 'Ngôn ngữ phản hồi (vi, en). Mặc định: vi',
+    required: false,
+    example: 'vi',
   })
   @ApiResponse({
     status: 200,
@@ -129,6 +136,12 @@ export class AppConfigController {
   @ApiOperation({
     summary: 'Cập nhật cấu hình ứng dụng',
     description: 'Cập nhật một phần hoặc toàn bộ cấu hình ứng dụng. Chỉ các trường được gửi trong request body mới được cập nhật, các trường khác giữ nguyên. Yêu cầu quyền `config.update`.',
+  })
+  @ApiHeader({
+    name: 'accept-language',
+    description: 'Ngôn ngữ phản hồi (vi, en). Mặc định: vi',
+    required: false,
+    example: 'vi',
   })
   @ApiBody({
     type: UpdateAppConfigDto,
@@ -324,6 +337,12 @@ export class AppConfigController {
     summary: 'Reset cấu hình về mặc định',
     description: 'Khôi phục toàn bộ cấu hình ứng dụng về giá trị mặc định được định nghĩa trong biến môi trường (.env). Thao tác này sẽ ghi đè tất cả các tùy chỉnh hiện tại. Yêu cầu quyền `config.reset`.',
   })
+  @ApiHeader({
+    name: 'accept-language',
+    description: 'Ngôn ngữ phản hồi (vi, en). Mặc định: vi',
+    required: false,
+    example: 'vi',
+  })
   @ApiResponse({
     status: 200,
     description: 'Trả về toàn bộ cấu hình sau khi reset về giá trị mặc định',
@@ -432,6 +451,12 @@ export class AppConfigController {
   @ApiOperation({
     summary: 'Reload cấu hình từ file',
     description: 'Đọc lại cấu hình từ file `app-config.json` trên server và cập nhật vào bộ nhớ. Hữu ích khi cần đồng bộ cấu hình sau khi chỉnh sửa file trực tiếp trên server. Thao tác này sẽ invalidate Redis cache và force reload từ file. Yêu cầu quyền `config.reload`.',
+  })
+  @ApiHeader({
+    name: 'accept-language',
+    description: 'Ngôn ngữ phản hồi (vi, en). Mặc định: vi',
+    required: false,
+    example: 'vi',
   })
   @ApiResponse({
     status: 200,

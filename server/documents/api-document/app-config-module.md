@@ -51,6 +51,11 @@ flowchart TB
 
 ## API Endpoints
 
+> [!TIP]
+> Tất cả các API đều hỗ trợ header `Accept-Language` để chọn ngôn ngữ phản hồi.
+> - **vi** - Tiếng Việt (mặc định)
+> - **en** - English
+
 ### 1. GET /config - Lấy cấu hình ứng dụng
 
 **Mô tả:** API công khai để lấy toàn bộ cấu hình ứng dụng bao gồm thông tin thương hiệu, bảng màu giao diện và cấu hình phân trang.
@@ -62,6 +67,7 @@ flowchart TB
 GET /config HTTP/1.1
 Host: api.gen-hub.dev
 Accept: application/json
+Accept-Language: vi
 ```
 
 **Response (200 OK):**
@@ -118,6 +124,7 @@ Accept: application/json
 ```http
 Authorization: Bearer <access_token>
 Content-Type: application/json
+Accept-Language: vi
 ```
 
 **Request Body Schema:**
@@ -348,6 +355,7 @@ Content-Type: application/json
 **Headers:**
 ```http
 Authorization: Bearer <access_token>
+Accept-Language: vi
 ```
 
 **Request:** Không có body
@@ -476,6 +484,7 @@ Authorization: Bearer <access_token>
 **Headers:**
 ```http
 Authorization: Bearer <access_token>
+Accept-Language: vi
 ```
 
 **Request:** Không có body
