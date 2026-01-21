@@ -11,7 +11,6 @@ import {
   HttpStatus,
   Req,
 } from '@nestjs/common';
-import { Throttle } from '@nestjs/throttler';
 import {
   ApiTags,
   ApiOperation,
@@ -285,13 +284,47 @@ export class AccountController {
           example: 'Cập nhật thông tin tài khoản thành công',
         },
         success: { type: 'boolean', example: true },
-        data: { type: 'null', example: null },
+        data: {
+          type: 'object',
+          description: 'Thông tin người dùng',
+          properties: {
+            id: {
+              type: 'string',
+              format: 'uuid',
+              example: '550e8400-e29b-41d4-a716-446655440000',
+            },
+            name: { type: 'string', example: 'Nguyễn Văn A' },
+            email: {
+              type: 'string',
+              format: 'email',
+              example: 'user@example.com',
+            },
+            email_confirmed: { type: 'boolean', example: true },
+            is_verified: { type: 'boolean', example: true },
+            two_factor_enabled: { type: 'boolean', example: false },
+            language: { type: 'string', example: 'vi' },
+            created_at: {
+              type: 'string',
+              format: 'date-time',
+              example: '2026-01-01T00:00:00.000Z',
+            },
+          },
+        },
       },
       example: {
         code: 'account.update_profile_success',
         message: 'Cập nhật thông tin tài khoản thành công',
         success: true,
-        data: null,
+        data: {
+          id: '550e8400-e29b-41d4-a716-446655440000',
+          name: 'Nguyễn Văn B',
+          email: 'user@example.com',
+          email_confirmed: true,
+          is_verified: true,
+          two_factor_enabled: false,
+          language: 'en',
+          created_at: '2026-01-01T00:00:00.000Z',
+        },
       },
     },
   })
@@ -311,7 +344,7 @@ export class AccountController {
     );
     return new UpdatedResponse(
       ResponseCode.ACCOUNT_UPDATE_PROFILE_SUCCESS,
-      null,
+      result.user,
       result.message,
     );
   }

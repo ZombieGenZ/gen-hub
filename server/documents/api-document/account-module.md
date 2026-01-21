@@ -164,7 +164,16 @@ Accept-Language: vi
   "code": "account.update_profile_success",
   "message": "Cập nhật thông tin tài khoản thành công",
   "success": true,
-  "data": null
+  "data": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "name": "Nguyễn Văn B",
+    "email": "user@example.com",
+    "email_confirmed": true,
+    "is_verified": true,
+    "two_factor_enabled": false,
+    "language": "en",
+    "created_at": "2026-01-01T00:00:00.000Z"
+  }
 }
 ```
 

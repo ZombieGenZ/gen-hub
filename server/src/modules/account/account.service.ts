@@ -225,8 +225,15 @@ export class AccountService {
       },
     );
 
+    // Get updated profile to return and recache
+    const { message: _ignore, ...profileData } = await this.getProfile(
+      userId,
+      lang,
+    );
+
     return {
       message: await this.i18n.t('auth.update_profile.success', { lang }),
+      ...profileData,
     };
   }
 
