@@ -461,6 +461,69 @@ export class AccountController {
             data: {
               type: 'object',
               description: 'Toàn bộ dữ liệu cá nhân',
+              example: {
+                personal_info: {
+                  id: '550e8400-e29b-41d4-a716-446655440000',
+                  name: 'Nguyễn Văn A',
+                  email: 'user@example.com',
+                  email_confirmed: true,
+                  language: 'vi',
+                  is_verified: true,
+                  two_factor_enabled: true,
+                  created_at: '2025-01-01T00:00:00.000Z',
+                  updated_at: '2026-01-01T00:00:00.000Z',
+                },
+                account_status: {
+                  is_banned: false,
+                  banned_start: null,
+                  banned_end: null,
+                  is_online: true,
+                  last_online: '2026-01-21T10:00:00.000Z',
+                },
+                system_roles: [
+                  {
+                    id: '550e8400-e29b-41d4-a716-446655440001',
+                    name: 'User',
+                    description: 'Người dùng cơ bản',
+                    assigned_at: '2025-01-01T00:00:00.000Z',
+                  },
+                ],
+                system_permissions: [],
+                organizations: {
+                  owned: [
+                    {
+                      id: '550e8400-e29b-41d4-a716-446655440005',
+                      name: 'My Team',
+                      created_at: '2025-01-10T00:00:00.000Z',
+                    },
+                  ],
+                  memberships: [],
+                },
+                notifications: [
+                  {
+                    id: '550e8400-e29b-41d4-a716-446655440099',
+                    title: 'Chào mừng thành viên mới',
+                    content: 'Cảm ơn bạn đã tham gia GEN-HUB',
+                    is_read: true,
+                    created_at: '2025-01-01T00:00:00.000Z',
+                  },
+                ],
+                warnings: [],
+                sessions: [
+                  {
+                    id: '550e8400-e29b-41d4-a716-446655440088',
+                    ip: '127.0.0.1',
+                    location: 'Unknown',
+                    device: 'Chrome',
+                    os: 'Windows 10',
+                    created_at: '2026-01-21T09:00:00.000Z',
+                  },
+                ],
+                export_info: {
+                  exported_at: '2026-01-21T12:00:00.000Z',
+                  data_version: '1.0',
+                },
+              },
             },
             filename: {
               type: 'string',
