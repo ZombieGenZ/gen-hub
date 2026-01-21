@@ -40,7 +40,7 @@ export class TwoFactorService {
     private readonly websocketGateway: WebsocketGateway,
     private readonly bruteForceService: BruteForceService,
     private readonly redisService: RedisService,
-  ) { }
+  ) {}
 
   /**
    * Thiết lập 2FA (bước 1)
@@ -48,7 +48,9 @@ export class TwoFactorService {
   async setupTwoFactor(userId: string, lang = 'vi') {
     const user = await this.userRepository.findById(userId);
     if (!user) {
-      throw new BadRequestException('User không tồn tại');
+      throw new BadRequestException(
+        await this.i18n.t('two-factor.user_not_found', { lang }),
+      );
     }
 
     if (user.two_factor_enabled) {
@@ -94,7 +96,9 @@ export class TwoFactorService {
   ) {
     const user = await this.userRepository.findById(userId);
     if (!user || !user.two_factor_token) {
-      throw new BadRequestException('Chưa thiết lập 2FA');
+      throw new BadRequestException(
+        await this.i18n.t('two-factor.setup_not_started', { lang }),
+      );
     }
 
     const isValid = speakeasy.totp.verify({
@@ -115,7 +119,9 @@ export class TwoFactorService {
     const backupCodes =
       await this.backupCodeService.generateAndSaveBackupCodes(userId);
 
-    const message = await this.i18n.t('auth.two_factor.setup_success', { lang });
+    const message = await this.i18n.t('auth.two_factor.setup_success', {
+      lang,
+    });
 
     // Clear cache profile của user
     await this.redisService.invalidateUserCache(userId);
@@ -142,7 +148,9 @@ export class TwoFactorService {
   async disableTwoFactor(userId: string, lang = 'vi') {
     const user = await this.userRepository.findById(userId);
     if (!user) {
-      throw new BadRequestException('User không tồn tại');
+      throw new BadRequestException(
+        await this.i18n.t('two-factor.user_not_found', { lang }),
+      );
     }
 
     if (!user.two_factor_enabled) {
@@ -155,7 +163,9 @@ export class TwoFactorService {
 
     await this.backupCodeService.deleteAllBackupCodes(userId);
 
-    const message = await this.i18n.t('auth.two_factor.disabled_success', { lang });
+    const message = await this.i18n.t('auth.two_factor.disabled_success', {
+      lang,
+    });
 
     // Clear cache profile của user
     await this.redisService.invalidateUserCache(userId);
@@ -191,12 +201,16 @@ export class TwoFactorService {
         secret: this.configService.get<string>('TEMP_2FA_TOKEN_SECRET'),
       });
     } catch {
-      throw new UnauthorizedException('Token không hợp lệ hoặc đã hết hạn');
+      throw new UnauthorizedException(
+        await this.i18n.t('two-factor.temp_token_invalid', { lang }),
+      );
     }
 
     const user = await this.userRepository.findById(payload.userId);
     if (!user || !user.two_factor_token) {
-      throw new UnauthorizedException('User không tồn tại');
+      throw new UnauthorizedException(
+        await this.i18n.t('two-factor.user_not_found', { lang }),
+      );
     }
 
     // Kiểm tra tài khoản bị khóa (giống như login)
@@ -250,7 +264,10 @@ export class TwoFactorService {
     // Chạy song song: reset brute force + tạo tokens
     const [, tokens] = await Promise.all([
       user.email
-        ? this.bruteForceService.onSuccessfulLogin(user.email, deviceInfo?.ip || 'unknown')
+        ? this.bruteForceService.onSuccessfulLogin(
+            user.email,
+            deviceInfo?.ip || 'unknown',
+          )
         : Promise.resolve(),
       this.generateTokens(user.id, deviceInfo),
     ]);
@@ -339,7 +356,7 @@ export class TwoFactorService {
       userId,
       is_primary_auth: true,
       project: brandName,
-      team: "TANK ZENITH GEN Development Team",
+      team: 'TANK ZENITH GEN Development Team',
       copyright: `© ${new Date().getFullYear()} TANK ZENITH GEN. All rights reserved.`,
     };
 

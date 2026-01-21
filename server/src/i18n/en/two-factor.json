@@ -1,27 +1,30 @@
 {
-    "two_factor": {
-        "setup_success": "2FA setup successful",
-        "setup_in_progress": "Please verify the 2FA code to complete setup",
-        "already_enabled": "2FA is already enabled",
-        "not_enabled": "2FA is not enabled",
-        "verify_success": "2FA verification successful",
-        "verify_failed": "Invalid 2FA code",
-        "disabled_success": "2FA disabled successfully",
-        "backup_codes_generated": "New backup codes generated",
-        "rate_limit_exceeded": "Too many attempts. Please try again later"
-    },
-    "backup_codes": {
-        "list_success": "Backup codes retrieved successfully",
-        "regenerate_success": "Backup codes regenerated successfully",
-        "used": "Backup code has been used",
-        "invalid": "Invalid backup code"
-    },
-    "access_verification": {
-        "success": "Access verification successful",
-        "invalid_password": "Incorrect password",
-        "invalid_2fa_code": "Invalid 2FA code",
-        "invalid_backup_code": "Invalid or already used backup code",
-        "token_required": "Access verification token required",
-        "token_invalid": "Invalid or expired verification token"
-    }
+  "two_factor": {
+    "setup_success": "2FA setup successful",
+    "setup_in_progress": "Please verify the 2FA code to complete setup",
+    "already_enabled": "2FA is already enabled",
+    "not_enabled": "2FA is not enabled",
+    "verify_success": "2FA verification successful",
+    "verify_failed": "Invalid 2FA code",
+    "disabled_success": "2FA disabled successfully",
+    "backup_codes_generated": "New backup codes generated",
+    "rate_limit_exceeded": "Too many attempts. Please try again later"
+  },
+  "backup_codes": {
+    "list_success": "Backup codes retrieved successfully",
+    "regenerate_success": "Backup codes regenerated successfully",
+    "used": "Backup code has been used",
+    "invalid": "Invalid backup code"
+  },
+  "access_verification": {
+    "success": "Access verification successful",
+    "invalid_password": "Incorrect password",
+    "invalid_2fa_code": "Invalid 2FA code",
+    "invalid_backup_code": "Invalid or already used backup code",
+    "token_required": "Access verification token required",
+    "token_invalid": "Invalid or expired verification token"
+  },
+  "user_not_found": "User not found",
+  "setup_not_started": "2FA setup not started",
+  "temp_token_invalid": "Token is invalid or expired"
 }
