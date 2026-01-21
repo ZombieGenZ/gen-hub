@@ -367,8 +367,6 @@ export class UserManagementController {
         return new DeletedResponse('user-management.bulk_clear_all_warnings', result);
     }
 
-    // ===================== DELETE USERS =====================
-
     @Delete(':id')
     @RequirePermission('user-management.delete')
     @HttpCode(HttpStatus.OK)
@@ -405,8 +403,6 @@ export class UserManagementController {
         });
         return new DeletedResponse('user-management.bulk_delete_users', result);
     }
-
-    // ===================== DOWNLOAD USERS DATA =====================
 
     @Get(':id/download')
     @RequirePermission('user-management.download')

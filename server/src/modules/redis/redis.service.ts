@@ -24,6 +24,12 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   private readonly ORGANIZATION_LIST_CACHE_TTL: number;
   private readonly ORGANIZATION_MEMBER_CACHE_TTL: number;
 
+  // Account Module Cache Config
+  private readonly ACCOUNT_PROFILE_CACHE_TTL: number;
+  private readonly ACCOUNT_FULL_DATA_CACHE_TTL: number;
+  private readonly ACCOUNT_PROFILE_KEY_PREFIX: string;
+  private readonly ACCOUNT_FULL_DATA_KEY_PREFIX: string;
+
   constructor(private readonly configService: ConfigService) {
     this.USER_CACHE_TTL =
       this.configService.get<number>('REDIS_USER_CACHE_TTL') || 300;
@@ -39,6 +45,17 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
       this.configService.get<number>('REDIS_ORGANIZATION_LIST_CACHE_TTL') || 60;
     this.ORGANIZATION_MEMBER_CACHE_TTL =
       this.configService.get<number>('REDIS_ORGANIZATION_MEMBER_CACHE_TTL') || 300;
+
+    // Account Module Cache Config from env
+    this.ACCOUNT_PROFILE_CACHE_TTL =
+      this.configService.get<number>('REDIS_ACCOUNT_PROFILE_CACHE_TTL') || 300;
+    this.ACCOUNT_FULL_DATA_CACHE_TTL =
+      this.configService.get<number>('REDIS_ACCOUNT_FULL_DATA_CACHE_TTL') || 180;
+    this.ACCOUNT_PROFILE_KEY_PREFIX =
+      this.configService.get<string>('REDIS_ACCOUNT_PROFILE_KEY_PREFIX') || 'account:profile';
+    this.ACCOUNT_FULL_DATA_KEY_PREFIX =
+      this.configService.get<string>('REDIS_ACCOUNT_FULL_DATA_KEY_PREFIX') || 'account:fulldata';
+
     const redisUrl = this.configService.get<string>('REDIS_URL');
 
     if (redisUrl) {
@@ -519,5 +536,93 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
 
   async invalidateOrgChatMessageListCache(orgId: string): Promise<void> {
     await this.delByPattern(`org-chat:messages:${orgId}:*`);
+  }
+
+  /**
+   * Generate cache key for account profile
+   */
+  getAccountProfileCacheKey(userId: string): string {
+    return `${this.ACCOUNT_PROFILE_KEY_PREFIX}:${userId}`;
+  }
+
+  /**
+   * Get account profile from cache
+   */
+  async getAccountProfileCache<T>(userId: string): Promise<T | null> {
+    const data = await this.get(this.getAccountProfileCacheKey(userId));
+    if (!data) return null;
+    try {
+      return JSON.parse(data) as T;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Set account profile to cache
+   */
+  async setAccountProfileCache<T>(
+    userId: string,
+    data: T,
+    ttlSeconds?: number,
+  ): Promise<void> {
+    const ttl = ttlSeconds || this.ACCOUNT_PROFILE_CACHE_TTL;
+    await this.set(this.getAccountProfileCacheKey(userId), JSON.stringify(data), ttl);
+  }
+
+  /**
+   * Invalidate account profile cache
+   */
+  async invalidateAccountProfileCache(userId: string): Promise<void> {
+    await this.del(this.getAccountProfileCacheKey(userId));
+  }
+
+  /**
+   * Generate cache key for account full data (export)
+   */
+  getAccountFullDataCacheKey(userId: string): string {
+    return `${this.ACCOUNT_FULL_DATA_KEY_PREFIX}:${userId}`;
+  }
+
+  /**
+   * Get account full data from cache
+   */
+  async getAccountFullDataCache<T>(userId: string): Promise<T | null> {
+    const data = await this.get(this.getAccountFullDataCacheKey(userId));
+    if (!data) return null;
+    try {
+      return JSON.parse(data) as T;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Set account full data to cache
+   */
+  async setAccountFullDataCache<T>(
+    userId: string,
+    data: T,
+    ttlSeconds?: number,
+  ): Promise<void> {
+    const ttl = ttlSeconds || this.ACCOUNT_FULL_DATA_CACHE_TTL;
+    await this.set(this.getAccountFullDataCacheKey(userId), JSON.stringify(data), ttl);
+  }
+
+  /**
+   * Invalidate account full data cache
+   */
+  async invalidateAccountFullDataCache(userId: string): Promise<void> {
+    await this.del(this.getAccountFullDataCacheKey(userId));
+  }
+
+  /**
+   * Invalidate all account caches for a user
+   */
+  async invalidateAllAccountCache(userId: string): Promise<void> {
+    await Promise.all([
+      this.invalidateAccountProfileCache(userId),
+      this.invalidateAccountFullDataCache(userId),
+    ]);
   }
 }
