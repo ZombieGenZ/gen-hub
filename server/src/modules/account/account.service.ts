@@ -25,7 +25,9 @@ import { IDeviceInfo } from '../../common/interfaces';
 export class AccountService {
   /** Argon2id configuration */
   private get ARGON2_MEMORY_COST(): number {
-    return Number(this.configService.get<number>('ARGON2_MEMORY_COST')) || 65536;
+    return (
+      Number(this.configService.get<number>('ARGON2_MEMORY_COST')) || 65536
+    );
   }
   private get ARGON2_TIME_COST(): number {
     return Number(this.configService.get<number>('ARGON2_TIME_COST')) || 3;
@@ -43,7 +45,7 @@ export class AccountService {
     private readonly refreshTokenRepository: RefreshTokenRepository,
     private readonly redisService: RedisService,
     private readonly websocketGateway: WebsocketGateway,
-  ) { }
+  ) {}
 
   /**
    * Lấy thông tin profile
@@ -66,7 +68,9 @@ export class AccountService {
     const user =
       await this.userRepository.getUserWithRolesAndPermissions(userId);
     if (!user) {
-      throw new BadRequestException('User không tồn tại');
+      throw new BadRequestException(
+        await this.i18n.t('common.error.user_not_found', { lang }),
+      );
     }
 
     const roles = user.system_roles.map((ur) => ({
@@ -146,10 +150,16 @@ export class AccountService {
    */
   async updateProfile(userId: string, dto: UpdateProfileDto, lang = 'vi') {
     const user = await this.userRepository.findById(userId);
-    if (!user) throw new BadRequestException('User không tồn tại');
+    if (!user) {
+      throw new BadRequestException(
+        await this.i18n.t('common.error.user_not_found', { lang }),
+      );
+    }
 
     // Normalize language trước khi lưu (lowercase)
-    const normalizedLanguage = dto.language ? normalizeLanguage(dto.language) : undefined;
+    const normalizedLanguage = dto.language
+      ? normalizeLanguage(dto.language)
+      : undefined;
 
     await this.userRepository.updateProfile(userId, {
       name: dto.name,
@@ -163,7 +173,6 @@ export class AccountService {
     const updatedFields: string[] = [];
     if (dto.name) updatedFields.push('name');
     if (dto.language) updatedFields.push('language');
-
 
     // Emit realtime profile updated event
     this.websocketGateway.emitProfileUpdated(userId, updatedFields, {
@@ -198,15 +207,24 @@ export class AccountService {
     lang = 'vi',
   ) {
     const user = await this.userRepository.findById(userId);
-    if (!user) throw new BadRequestException('User không tồn tại');
+    if (!user) {
+      throw new BadRequestException(
+        await this.i18n.t('common.error.user_not_found', { lang }),
+      );
+    }
 
     if (!user.password) {
-      throw new BadRequestException('Tài khoản không có mật khẩu');
+      throw new BadRequestException(
+        await this.i18n.t('auth.change_password.no_password', { lang }),
+      );
     }
 
     let isPasswordValid = false;
     try {
-      isPasswordValid = await argon2.verify(user.password, dto.current_password);
+      isPasswordValid = await argon2.verify(
+        user.password,
+        dto.current_password,
+      );
     } catch {
       throw new UnauthorizedException(
         await this.i18n.t('auth.change_password.incorrect_current_password', {
@@ -228,14 +246,11 @@ export class AccountService {
       );
     }
 
-    const hashedPassword = await argon2.hash(
-      dto.new_password,
-      {
-        memoryCost: this.ARGON2_MEMORY_COST,
-        timeCost: this.ARGON2_TIME_COST,
-        parallelism: this.ARGON2_PARALLELISM,
-      },
-    );
+    const hashedPassword = await argon2.hash(dto.new_password, {
+      memoryCost: this.ARGON2_MEMORY_COST,
+      timeCost: this.ARGON2_TIME_COST,
+      parallelism: this.ARGON2_PARALLELISM,
+    });
     await this.userRepository.updatePassword(userId, hashedPassword);
 
     if (dto.logout_all_devices) {
