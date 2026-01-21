@@ -26,6 +26,7 @@ import { JwtAuthGuard, AccessVerificationGuard } from '../../common/guards';
 import {
   CurrentUser,
   ApiUnauthorizedResponses,
+  ApiAuthResponses,
   ApiValidationErrorResponse,
 } from '../../common/decorators';
 import {
@@ -437,7 +438,7 @@ export class AccountController {
       },
     },
   })
-  @ApiUnauthorizedResponses()
+  @ApiAuthResponses()
   @UseGuards(JwtAuthGuard, AccessVerificationGuard)
   @Get('download-data')
   async downloadPersonalData(
@@ -507,7 +508,7 @@ export class AccountController {
       },
     },
   })
-  @ApiUnauthorizedResponses()
+  @ApiAuthResponses()
   @ApiValidationErrorResponse()
   @UseGuards(JwtAuthGuard, AccessVerificationGuard)
   @Delete('delete-account')
