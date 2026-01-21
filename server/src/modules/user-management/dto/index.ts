@@ -282,4 +282,56 @@ export class BulkClearAllWarningsDto {
     note?: string;
 }
 
+/**
+ * DTO xóa 1 user
+ */
+export class DeleteUserDto {
+    @ApiPropertyOptional({ description: 'Lý do xóa tài khoản', example: 'Vi phạm nghiêm trọng' })
+    @IsString({ message: i18nValidationMessage('user-management.validation.reason_string') })
+    @IsOptional()
+    reason?: string;
+}
+
+/**
+ * DTO xóa nhiều users
+ */
+export class BulkDeleteUsersDto {
+    @ApiProperty({ description: 'Danh sách ID users cần xóa', example: ['uuid1', 'uuid2'] })
+    @IsUUID('4', { each: true, message: i18nValidationMessage('user-management.validation.user_ids_uuid') })
+    @IsNotEmpty({ message: i18nValidationMessage('user-management.validation.user_ids_required') })
+    user_ids: string[];
+
+    @ApiPropertyOptional({ description: 'Lý do xóa tài khoản', example: 'Vi phạm nghiêm trọng' })
+    @IsString({ message: i18nValidationMessage('user-management.validation.reason_string') })
+    @IsOptional()
+    reason?: string;
+}
+
+/**
+ * DTO tải xuống dữ liệu nhiều users
+ */
+export class BulkDownloadUsersDto {
+    @ApiProperty({ description: 'Danh sách ID users cần tải dữ liệu', example: ['uuid1', 'uuid2'] })
+    @IsUUID('4', { each: true, message: i18nValidationMessage('user-management.validation.user_ids_uuid') })
+    @IsNotEmpty({ message: i18nValidationMessage('user-management.validation.user_ids_required') })
+    user_ids: string[];
+}
+
+/**
+ * DTO tải xuống tất cả users (với filter)
+ */
+export class DownloadAllUsersDto {
+    @ApiPropertyOptional({ description: 'Từ khóa tìm kiếm', example: '' })
+    @IsOptional()
+    keywords?: string;
+
+    @ApiPropertyOptional({
+        description: 'Lọc theo trạng thái',
+        example: 'active',
+        enum: ['active', 'banned', 'verified', 'unverified', 'deleted'],
+    })
+    @IsOptional()
+    status?: string;
+}
+
 export * from './assign-user-roles-permissions.dto';

@@ -1000,4 +1000,210 @@ export class UserManagementService {
 
         return result;
     }
+
+    /**
+     * Xóa 1 user (soft delete)
+     */
+    async deleteUser(
+        userId: string,
+        reason: string | undefined,
+        adminId: string,
+        lang: string,
+        requestInfo?: { ip?: string; userAgent?: string },
+    ): Promise<{ count: number }> {
+        await this.validateUserAction(userId, adminId, lang);
+
+        const user = await this.repository.findById(userId);
+        if (!user) {
+            throw new NotFoundException(this.i18n.t('user-management.error.user_not_found', { lang }));
+        }
+
+        const result = await this.repository.softDeleteUser(userId, adminId);
+
+        // Invalidate caches
+        await this.invalidateUserCache(userId);
+        await this.invalidateListCache();
+        await this.redisService.invalidateUserCache(userId);
+        await this.redisService.invalidateUserPermissionsCache(userId);
+
+        // Emit socket event
+        this.websocketGateway.emitUserDeleted(userId, adminId);
+
+        // Log
+        this.systemLogService.logAsync({
+            level: 'WARN',
+            module: 'user-management',
+            action: 'delete_user',
+            message: `Đã xóa user: ${user.email}`,
+            userId: adminId,
+            ipAddress: requestInfo?.ip,
+            userAgent: requestInfo?.userAgent,
+            metaData: {
+                targetUserId: userId,
+                targetEmail: user.email,
+                reason,
+            },
+        });
+
+        return result;
+    }
+
+    /**
+     * Xóa nhiều users cùng lúc (soft delete)
+     */
+    async bulkDeleteUsers(
+        userIds: string[],
+        reason: string | undefined,
+        adminId: string,
+        lang: string,
+        requestInfo?: { ip?: string; userAgent?: string },
+    ): Promise<{ count: number }> {
+        if (userIds.length === 0) {
+            throw new BadRequestException(this.i18n.t('user-management.error.no_users_selected', { lang }));
+        }
+
+        // Validate từng user
+        const validUserIds: string[] = [];
+        for (const userId of userIds) {
+            try {
+                await this.validateUserAction(userId, adminId, lang);
+                validUserIds.push(userId);
+            } catch {
+                // Skip protected users
+            }
+        }
+
+        if (validUserIds.length === 0) {
+            throw new BadRequestException(this.i18n.t('user-management.error.no_users_selected', { lang }));
+        }
+
+        const result = await this.repository.softDeleteManyUsers(validUserIds, adminId);
+
+        // Invalidate caches
+        await this.invalidateListCache();
+        for (const userId of validUserIds) {
+            await this.invalidateUserCache(userId);
+            await this.redisService.invalidateUserCache(userId);
+            await this.redisService.invalidateUserPermissionsCache(userId);
+        }
+
+        // Emit socket events
+        this.websocketGateway.emitUsersDeletedMany(validUserIds, adminId);
+
+        // Log
+        this.systemLogService.logAsync({
+            level: 'WARN',
+            module: 'user-management',
+            action: 'bulk_delete_users',
+            message: `Đã xóa ${result.count} users`,
+            userId: adminId,
+            ipAddress: requestInfo?.ip,
+            userAgent: requestInfo?.userAgent,
+            metaData: {
+                targetUserIds: validUserIds,
+                deletedCount: result.count,
+                reason,
+            },
+        });
+
+        return result;
+    }
+
+    /**
+     * Tải dữ liệu 1 user
+     */
+    async downloadUserData(
+        userId: string,
+        adminId: string,
+        lang: string,
+        requestInfo?: { ip?: string; userAgent?: string },
+    ) {
+        const user = await this.repository.findById(userId);
+        if (!user) {
+            throw new NotFoundException(this.i18n.t('user-management.error.user_not_found', { lang }));
+        }
+
+        const users = await this.repository.getUsersForExport([userId]);
+
+        // Log
+        this.systemLogService.logAsync({
+            level: 'INFO',
+            module: 'user-management',
+            action: 'download_user_data',
+            message: `Đã tải dữ liệu user: ${user.email}`,
+            userId: adminId,
+            ipAddress: requestInfo?.ip,
+            userAgent: requestInfo?.userAgent,
+            metaData: { targetUserId: userId },
+        });
+
+        return {
+            data: users[0] || null,
+            filename: `user-${userId}-${new Date().toISOString().split('T')[0]}.json`,
+        };
+    }
+
+    /**
+     * Tải dữ liệu nhiều users
+     */
+    async bulkDownloadUsersData(
+        userIds: string[],
+        adminId: string,
+        lang: string,
+        requestInfo?: { ip?: string; userAgent?: string },
+    ) {
+        if (userIds.length === 0) {
+            throw new BadRequestException(this.i18n.t('user-management.error.no_users_selected', { lang }));
+        }
+
+        const users = await this.repository.getUsersForExport(userIds);
+
+        // Log
+        this.systemLogService.logAsync({
+            level: 'INFO',
+            module: 'user-management',
+            action: 'bulk_download_users_data',
+            message: `Đã tải dữ liệu ${users.length} users`,
+            userId: adminId,
+            ipAddress: requestInfo?.ip,
+            userAgent: requestInfo?.userAgent,
+            metaData: { targetUserIds: userIds, count: users.length },
+        });
+
+        return {
+            data: users,
+            count: users.length,
+            filename: `users-export-${new Date().toISOString().split('T')[0]}.json`,
+        };
+    }
+
+    /**
+     * Tải dữ liệu tất cả users (có filter)
+     */
+    async downloadAllUsersData(
+        params: { keywords?: string; status?: string },
+        adminId: string,
+        lang: string,
+        requestInfo?: { ip?: string; userAgent?: string },
+    ) {
+        const users = await this.repository.getAllUsersForExport(params);
+
+        // Log
+        this.systemLogService.logAsync({
+            level: 'INFO',
+            module: 'user-management',
+            action: 'download_all_users_data',
+            message: `Đã tải dữ liệu tất cả users (${users.length} records)`,
+            userId: adminId,
+            ipAddress: requestInfo?.ip,
+            userAgent: requestInfo?.userAgent,
+            metaData: { filter: params, count: users.length },
+        });
+
+        return {
+            data: users,
+            count: users.length,
+            filename: `all-users-export-${new Date().toISOString().split('T')[0]}.json`,
+        };
+    }
 }

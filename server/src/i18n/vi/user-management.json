@@ -9,7 +9,12 @@
         "session_revoke": "Đăng xuất phiên thành công",
         "sessions_revoke_all": "Đăng xuất tất cả phiên thành công",
         "roles_permissions_get": "Lấy roles và permissions của người dùng thành công",
-        "roles_permissions_assign": "Gán roles và permissions cho người dùng thành công"
+        "roles_permissions_assign": "Gán roles và permissions cho người dùng thành công",
+        "delete_user": "Xóa người dùng thành công",
+        "bulk_delete_users": "Xóa nhiều người dùng thành công",
+        "download_user_data": "Tải dữ liệu người dùng thành công",
+        "bulk_download_users_data": "Tải dữ liệu nhiều người dùng thành công",
+        "download_all_users_data": "Tải dữ liệu tất cả người dùng thành công"
     },
     "error": {
         "user_not_found": "Không tìm thấy người dùng",
@@ -20,7 +25,8 @@
         "session_not_found": "Không tìm thấy phiên đăng nhập",
         "protected_user": "Không thể thực hiện hành động này trên người dùng được bảo vệ",
         "cannot_action_self": "Không thể thực hiện hành động này trên chính mình",
-        "no_users_selected": "Không có người dùng nào được chọn"
+        "no_users_selected": "Không có người dùng nào được chọn",
+        "already_deleted": "Người dùng đã bị xóa"
     },
     "validation": {
         "reason_required": "Lý do là bắt buộc",
@@ -30,6 +36,11 @@
         "note_string": "Ghi chú phải là chuỗi",
         "category_id_required": "ID danh mục là bắt buộc",
         "category_id_uuid": "ID danh mục phải là UUID hợp lệ",
-        "expires_at_date": "Thời điểm hết hiệu lực phải là ngày hợp lệ"
+        "expires_at_date": "Thời điểm hết hiệu lực phải là ngày hợp lệ",
+        "user_ids_required": "Danh sách ID người dùng là bắt buộc",
+        "user_ids_uuid": "Danh sách ID phải chứa các UUID hợp lệ",
+        "duration_value_number": "Giá trị thời hạn phải là số",
+        "duration_value_min": "Giá trị thời hạn phải lớn hơn 0",
+        "duration_type_enum": "Loại thời hạn không hợp lệ"
     }
 }

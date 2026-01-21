@@ -246,6 +246,13 @@ export class AuthService {
       }
     }
 
+    // Kiểm tra tài khoản đã bị xóa
+    if (user.is_deleted) {
+      throw new UnauthorizedException(
+        await this.i18n.t('auth.login.account_deleted', { lang }),
+      );
+    }
+
     if (user.two_factor_enabled) {
       const tempToken = await this.generateTempToken(user.id);
       return {
@@ -418,6 +425,13 @@ export class AuthService {
           await this.i18n.t('auth.login.account_banned', { lang }),
         );
       }
+    }
+
+    // Kiểm tra tài khoản đã bị xóa
+    if (user.is_deleted) {
+      throw new UnauthorizedException(
+        await this.i18n.t('auth.login.account_deleted', { lang }),
+      );
     }
 
     // Kiểm tra permission TRƯỚC khi tạo token
@@ -609,6 +623,13 @@ export class AuthService {
           await this.i18n.t('auth.login.account_banned', { lang }),
         );
       }
+    }
+
+    // Kiểm tra tài khoản đã bị xóa
+    if (user.is_deleted) {
+      throw new UnauthorizedException(
+        await this.i18n.t('auth.login.account_deleted', { lang }),
+      );
     }
 
     // Kiểm tra có BẤT KỲ permission nào

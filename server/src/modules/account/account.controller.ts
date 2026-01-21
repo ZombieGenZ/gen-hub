@@ -3,6 +3,7 @@ import {
   Post,
   Get,
   Patch,
+  Delete,
   Body,
   UseGuards,
   Headers,
@@ -10,7 +11,6 @@ import {
   HttpStatus,
   Req,
 } from '@nestjs/common';
-import { Throttle } from '@nestjs/throttler';
 import {
   ApiTags,
   ApiOperation,
@@ -21,20 +21,23 @@ import {
 } from '@nestjs/swagger';
 import type { Request } from 'express';
 import { UpdateProfileDto, ChangePasswordDto } from '../auth/dto';
-import { JwtAuthGuard } from '../../common/guards';
+import { JwtAuthGuard, AccessVerificationGuard } from '../../common/guards';
 import {
   CurrentUser,
   ApiUnauthorizedResponses,
+  ApiAuthResponses,
   ApiValidationErrorResponse,
 } from '../../common/decorators';
 import {
   OkResponse,
   GetResponse,
   UpdatedResponse,
+  DeletedResponse,
   ResponseCode,
 } from '../../common/responses';
 import { AccountService } from './account.service';
 import type { IJwtPayload } from '../../common/interfaces';
+import { DeleteAccountDto } from './dto';
 
 /**
  * Lấy thông tin device từ request
@@ -57,7 +60,7 @@ function getDeviceInfo(req: Request) {
 @Controller('account')
 @ApiBearerAuth('JWT-auth')
 export class AccountController {
-  constructor(private readonly accountService: AccountService) {}
+  constructor(private readonly accountService: AccountService) { }
 
   @ApiOperation({
     summary: 'Lấy thông tin tài khoản',
@@ -281,13 +284,47 @@ export class AccountController {
           example: 'Cập nhật thông tin tài khoản thành công',
         },
         success: { type: 'boolean', example: true },
-        data: { type: 'null', example: null },
+        data: {
+          type: 'object',
+          description: 'Thông tin người dùng',
+          properties: {
+            id: {
+              type: 'string',
+              format: 'uuid',
+              example: '550e8400-e29b-41d4-a716-446655440000',
+            },
+            name: { type: 'string', example: 'Nguyễn Văn A' },
+            email: {
+              type: 'string',
+              format: 'email',
+              example: 'user@example.com',
+            },
+            email_confirmed: { type: 'boolean', example: true },
+            is_verified: { type: 'boolean', example: true },
+            two_factor_enabled: { type: 'boolean', example: false },
+            language: { type: 'string', example: 'vi' },
+            created_at: {
+              type: 'string',
+              format: 'date-time',
+              example: '2026-01-01T00:00:00.000Z',
+            },
+          },
+        },
       },
       example: {
         code: 'account.update_profile_success',
         message: 'Cập nhật thông tin tài khoản thành công',
         success: true,
-        data: null,
+        data: {
+          id: '550e8400-e29b-41d4-a716-446655440000',
+          name: 'Nguyễn Văn B',
+          email: 'user@example.com',
+          email_confirmed: true,
+          is_verified: true,
+          two_factor_enabled: false,
+          language: 'en',
+          created_at: '2026-01-01T00:00:00.000Z',
+        },
       },
     },
   })
@@ -307,7 +344,7 @@ export class AccountController {
     );
     return new UpdatedResponse(
       ResponseCode.ACCOUNT_UPDATE_PROFILE_SUCCESS,
-      null,
+      result.user,
       result.message,
     );
   }
@@ -388,6 +425,206 @@ export class AccountController {
     );
     return new OkResponse(
       ResponseCode.ACCOUNT_CHANGE_PASSWORD_SUCCESS,
+      null,
+      result.message,
+    );
+  }
+
+  @ApiOperation({
+    summary: 'Tải xuống dữ liệu cá nhân',
+    description:
+      'Tải xuống toàn bộ dữ liệu cá nhân của tài khoản dưới dạng JSON. Yêu cầu xác thực quyền truy cập thông qua header X-Access-Verification-Token.',
+  })
+  @ApiHeader({
+    name: 'Accept-Language',
+    description: 'Ngôn ngữ phản hồi (vi, en)',
+    required: false,
+    example: 'vi',
+  })
+  @ApiHeader({
+    name: 'X-Access-Verification-Token',
+    description: 'Token xác thực quyền truy cập (lấy từ API verify-access)',
+    required: true,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Trả về dữ liệu cá nhân dạng JSON',
+    schema: {
+      type: 'object',
+      properties: {
+        code: { type: 'string', example: 'account.download_data_success' },
+        message: { type: 'string', example: 'Tải dữ liệu thành công' },
+        success: { type: 'boolean', example: true },
+        data: {
+          type: 'object',
+          properties: {
+            data: {
+              type: 'object',
+              description: 'Toàn bộ dữ liệu cá nhân',
+              example: {
+                personal_info: {
+                  id: '550e8400-e29b-41d4-a716-446655440000',
+                  name: 'Nguyễn Văn A',
+                  email: 'user@example.com',
+                  email_confirmed: true,
+                  language: 'vi',
+                  is_verified: true,
+                  two_factor_enabled: true,
+                  created_at: '2025-01-01T00:00:00.000Z',
+                  updated_at: '2026-01-01T00:00:00.000Z',
+                },
+                account_status: {
+                  is_banned: false,
+                  banned_start: null,
+                  banned_end: null,
+                  is_online: true,
+                  last_online: '2026-01-21T10:00:00.000Z',
+                },
+                system_roles: [
+                  {
+                    id: '550e8400-e29b-41d4-a716-446655440001',
+                    name: 'User',
+                    description: 'Người dùng cơ bản',
+                    assigned_at: '2025-01-01T00:00:00.000Z',
+                  },
+                ],
+                system_permissions: [],
+                organizations: {
+                  owned: [
+                    {
+                      id: '550e8400-e29b-41d4-a716-446655440005',
+                      name: 'My Team',
+                      created_at: '2025-01-10T00:00:00.000Z',
+                    },
+                  ],
+                  memberships: [],
+                },
+                notifications: [
+                  {
+                    id: '550e8400-e29b-41d4-a716-446655440099',
+                    title: 'Chào mừng thành viên mới',
+                    content: 'Cảm ơn bạn đã tham gia GEN-HUB',
+                    is_read: true,
+                    created_at: '2025-01-01T00:00:00.000Z',
+                  },
+                ],
+                warnings: [],
+                sessions: [
+                  {
+                    id: '550e8400-e29b-41d4-a716-446655440088',
+                    ip: '127.0.0.1',
+                    location: 'Unknown',
+                    device: 'Chrome',
+                    os: 'Windows 10',
+                    created_at: '2026-01-21T09:00:00.000Z',
+                  },
+                ],
+                export_info: {
+                  exported_at: '2026-01-21T12:00:00.000Z',
+                  data_version: '1.0',
+                },
+              },
+            },
+            filename: {
+              type: 'string',
+              example: 'user-data-uuid-2026-01-21.json',
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiAuthResponses()
+  @UseGuards(JwtAuthGuard, AccessVerificationGuard)
+  @Get('download-data')
+  async downloadPersonalData(
+    @CurrentUser() user: IJwtPayload,
+    @Req() req: Request,
+    @Headers('accept-language') lang?: string,
+  ) {
+    const deviceInfo = getDeviceInfo(req);
+    const result = await this.accountService.downloadPersonalData(
+      user.userId,
+      deviceInfo,
+      lang || 'vi',
+    );
+    return new GetResponse(
+      ResponseCode.ACCOUNT_DOWNLOAD_DATA_SUCCESS,
+      { data: result.data, filename: result.filename },
+      result.message,
+    );
+  }
+
+  @ApiOperation({
+    summary: 'Xóa tài khoản',
+    description:
+      'Xóa tài khoản người dùng (soft delete). Yêu cầu xác thực quyền truy cập thông qua header X-Access-Verification-Token và nhập xác nhận "XÓA TÀI KHOẢN" hoặc "DELETE ACCOUNT".',
+  })
+  @ApiHeader({
+    name: 'Accept-Language',
+    description: 'Ngôn ngữ phản hồi (vi, en)',
+    required: false,
+    example: 'vi',
+  })
+  @ApiHeader({
+    name: 'X-Access-Verification-Token',
+    description: 'Token xác thực quyền truy cập (lấy từ API verify-access)',
+    required: true,
+  })
+  @ApiBody({
+    type: DeleteAccountDto,
+    description: 'Dữ liệu xóa tài khoản',
+    examples: {
+      delete_vi: {
+        summary: 'Xóa tài khoản (Tiếng Việt)',
+        value: {
+          confirmation: 'XÓA TÀI KHOẢN',
+          reason: 'Không còn sử dụng dịch vụ',
+        },
+      },
+      delete_en: {
+        summary: 'Xóa tài khoản (English)',
+        value: {
+          confirmation: 'DELETE ACCOUNT',
+          reason: 'No longer using the service',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Xóa tài khoản thành công',
+    schema: {
+      type: 'object',
+      properties: {
+        code: { type: 'string', example: 'account.delete_account_success' },
+        message: { type: 'string', example: 'Xóa tài khoản thành công' },
+        success: { type: 'boolean', example: true },
+        data: { type: 'null', example: null },
+      },
+    },
+  })
+  @ApiAuthResponses()
+  @ApiValidationErrorResponse()
+  @UseGuards(JwtAuthGuard, AccessVerificationGuard)
+  @Delete('delete-account')
+  @HttpCode(HttpStatus.OK)
+  async deleteAccount(
+    @CurrentUser() user: IJwtPayload,
+    @Body() dto: DeleteAccountDto,
+    @Req() req: Request,
+    @Headers('accept-language') lang?: string,
+  ) {
+    const deviceInfo = getDeviceInfo(req);
+    const result = await this.accountService.deleteAccount(
+      user.userId,
+      dto.confirmation,
+      dto.reason,
+      deviceInfo,
+      lang || 'vi',
+    );
+    return new DeletedResponse(
+      ResponseCode.ACCOUNT_DELETE_ACCOUNT_SUCCESS,
       null,
       result.message,
     );

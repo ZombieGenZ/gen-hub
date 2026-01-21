@@ -36,6 +36,8 @@ export enum ResponseCode {
     ACCOUNT_GET_PROFILE_SUCCESS = 'account.get_profile_success',
     ACCOUNT_UPDATE_PROFILE_SUCCESS = 'account.update_profile_success',
     ACCOUNT_CHANGE_PASSWORD_SUCCESS = 'account.change_password_success',
+    ACCOUNT_DOWNLOAD_DATA_SUCCESS = 'account.download_data_success',
+    ACCOUNT_DELETE_ACCOUNT_SUCCESS = 'account.delete_account_success',
 
     TWO_FACTOR_SETUP_SUCCESS = '2fa.setup_success',
     TWO_FACTOR_VERIFY_SETUP_SUCCESS = '2fa.verify_setup_success',

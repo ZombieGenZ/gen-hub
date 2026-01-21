@@ -9,7 +9,12 @@
         "session_revoke": "Session revoked successfully",
         "sessions_revoke_all": "All sessions revoked successfully",
         "roles_permissions_get": "User roles and permissions retrieved successfully",
-        "roles_permissions_assign": "User roles and permissions assigned successfully"
+        "roles_permissions_assign": "User roles and permissions assigned successfully",
+        "delete_user": "User deleted successfully",
+        "bulk_delete_users": "Users deleted successfully",
+        "download_user_data": "User data downloaded successfully",
+        "bulk_download_users_data": "Users data downloaded successfully",
+        "download_all_users_data": "All users data downloaded successfully"
     },
     "error": {
         "user_not_found": "User not found",
@@ -20,7 +25,8 @@
         "session_not_found": "Session not found",
         "protected_user": "Cannot perform this action on a protected user",
         "cannot_action_self": "Cannot perform this action on yourself",
-        "no_users_selected": "No users selected"
+        "no_users_selected": "No users selected",
+        "already_deleted": "User has already been deleted"
     },
     "validation": {
         "reason_required": "Reason is required",
@@ -30,6 +36,11 @@
         "note_string": "Note must be a string",
         "category_id_required": "Category ID is required",
         "category_id_uuid": "Category ID must be a valid UUID",
-        "expires_at_date": "expires_at must be a valid date"
+        "expires_at_date": "expires_at must be a valid date",
+        "user_ids_required": "User IDs list is required",
+        "user_ids_uuid": "User IDs must be valid UUIDs",
+        "duration_value_number": "Duration value must be a number",
+        "duration_value_min": "Duration value must be greater than 0",
+        "duration_type_enum": "Invalid duration type"
     }
 }

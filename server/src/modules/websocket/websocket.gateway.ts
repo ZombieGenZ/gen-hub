@@ -1607,5 +1607,70 @@ export class WebsocketGateway
     this.server.to(`user:${userId}`).emit('user:permissionsUpdated', event);
     this.server.to('admin_room').emit('user:permissionsUpdated', event);
   }
+
+  /**
+   * Emit event khi user tải dữ liệu cá nhân
+   */
+  emitUserDataDownloaded(userId: string) {
+    const event = {
+      userId,
+      timestamp: new Date().toISOString(),
+    };
+    this.server.to(`user:${userId}`).emit('user:dataDownloaded', event);
+  }
+
+  /**
+   * Emit event khi user tự xóa tài khoản
+   */
+  emitUserAccountDeleted(userId: string) {
+    const event = {
+      userId,
+      reason: 'self_delete',
+      timestamp: new Date().toISOString(),
+    };
+    // Emit đến user room để force logout tất cả devices
+    this.server.to(`user:${userId}`).emit('user:accountDeleted', event);
+    // Emit đến admin room để thông báo
+    this.server.to('admin_room').emit('user:accountDeleted', event);
+  }
+
+  /**
+   * Emit event khi admin xóa 1 user
+   */
+  emitUserDeleted(userId: string, deletedBy: string) {
+    const event = {
+      userId,
+      deletedBy,
+      reason: 'admin_delete',
+      timestamp: new Date().toISOString(),
+    };
+    // Emit đến user room để force logout
+    this.server.to(`user:${userId}`).emit('user:accountDeleted', event);
+    // Emit đến admin room
+    this.server.to('admin_room').emit('user:deleted', event);
+  }
+
+  /**
+   * Emit event khi admin xóa nhiều users
+   */
+  emitUsersDeletedMany(userIds: string[], deletedBy: string) {
+    const event = {
+      userIds,
+      count: userIds.length,
+      deletedBy,
+      timestamp: new Date().toISOString(),
+    };
+    // Emit đến từng user room để force logout
+    for (const userId of userIds) {
+      this.server.to(`user:${userId}`).emit('user:accountDeleted', {
+        userId,
+        deletedBy,
+        reason: 'admin_delete',
+        timestamp: new Date().toISOString(),
+      });
+    }
+    // Emit đến admin room
+    this.server.to('admin_room').emit('user:deletedMany', event);
+  }
 }
 

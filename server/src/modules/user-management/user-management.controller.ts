@@ -34,6 +34,10 @@ import {
     ClearAllWarningsDto,
     BulkClearAllWarningsDto,
     DurationType,
+    DeleteUserDto,
+    BulkDeleteUsersDto,
+    BulkDownloadUsersDto,
+    DownloadAllUsersDto,
 } from './dto';
 import {
     GetResponse,
@@ -361,5 +365,94 @@ export class UserManagementController {
             userAgent: req.headers['user-agent'],
         });
         return new DeletedResponse('user-management.bulk_clear_all_warnings', result);
+    }
+
+    @Delete(':id')
+    @RequirePermission('user-management.delete')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Xóa 1 user (soft delete)' })
+    @ApiResponse({ status: 200, description: 'Xóa thành công' })
+    async deleteUser(
+        @Param('id', ParseUUIDPipe) id: string,
+        @Body() dto: DeleteUserDto,
+        @CurrentUser('userId') adminId: string,
+        @I18nLang() lang: string,
+        @Req() req: Request,
+    ) {
+        const result = await this.service.deleteUser(id, dto.reason, adminId, lang, {
+            ip: req.ip,
+            userAgent: req.headers['user-agent'],
+        });
+        return new DeletedResponse('user-management.delete_user', result);
+    }
+
+    @Delete('bulk/delete')
+    @RequirePermission('user-management.delete')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Xóa nhiều users cùng lúc (soft delete)' })
+    @ApiResponse({ status: 200, description: 'Xóa thành công' })
+    async bulkDeleteUsers(
+        @Body() dto: BulkDeleteUsersDto,
+        @CurrentUser('userId') adminId: string,
+        @I18nLang() lang: string,
+        @Req() req: Request,
+    ) {
+        const result = await this.service.bulkDeleteUsers(dto.user_ids, dto.reason, adminId, lang, {
+            ip: req.ip,
+            userAgent: req.headers['user-agent'],
+        });
+        return new DeletedResponse('user-management.bulk_delete_users', result);
+    }
+
+    @Get(':id/download')
+    @RequirePermission('user-management.download')
+    @ApiOperation({ summary: 'Tải dữ liệu 1 user' })
+    @ApiResponse({ status: 200, description: 'Tải thành công' })
+    async downloadUserData(
+        @Param('id', ParseUUIDPipe) id: string,
+        @CurrentUser('userId') adminId: string,
+        @I18nLang() lang: string,
+        @Req() req: Request,
+    ) {
+        const result = await this.service.downloadUserData(id, adminId, lang, {
+            ip: req.ip,
+            userAgent: req.headers['user-agent'],
+        });
+        return new GetResponse('user-management.download_user_data', result);
+    }
+
+    @Post('bulk/download')
+    @RequirePermission('user-management.download')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Tải dữ liệu nhiều users' })
+    @ApiResponse({ status: 200, description: 'Tải thành công' })
+    async bulkDownloadUsersData(
+        @Body() dto: BulkDownloadUsersDto,
+        @CurrentUser('userId') adminId: string,
+        @I18nLang() lang: string,
+        @Req() req: Request,
+    ) {
+        const result = await this.service.bulkDownloadUsersData(dto.user_ids, adminId, lang, {
+            ip: req.ip,
+            userAgent: req.headers['user-agent'],
+        });
+        return new GetResponse('user-management.bulk_download_users_data', result);
+    }
+
+    @Get('download/all')
+    @RequirePermission('user-management.download')
+    @ApiOperation({ summary: 'Tải dữ liệu tất cả users (có filter)' })
+    @ApiResponse({ status: 200, description: 'Tải thành công' })
+    async downloadAllUsersData(
+        @Query() query: DownloadAllUsersDto,
+        @CurrentUser('userId') adminId: string,
+        @I18nLang() lang: string,
+        @Req() req: Request,
+    ) {
+        const result = await this.service.downloadAllUsersData(query, adminId, lang, {
+            ip: req.ip,
+            userAgent: req.headers['user-agent'],
+        });
+        return new GetResponse('user-management.download_all_users_data', result);
     }
 }
