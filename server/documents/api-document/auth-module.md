@@ -1,4 +1,4 @@
-# Auth Module Documentation
+﻿# Auth Module Documentation
 
 ## Tổng Quan
 
@@ -130,7 +130,7 @@ Accept-Language: vi
     "language": "vi",
     "created_at": "2026-01-21T08:00:00.000Z"
   },
-  "meta": {
+  "authorization": {
     "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
     "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
   }
@@ -219,7 +219,7 @@ Accept-Language: vi
     "avatar": null,
     "language": "vi"
   },
-  "meta": {
+  "authorization": {
     "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
     "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
   }
@@ -309,7 +309,7 @@ Accept-Language: vi
   "message": "Đăng nhập Database Panel thành công",
   "success": true,
   "data": { ... },
-  "meta": {
+  "authorization": {
     "access_token": "...",
     "refresh_token": "..."
   }
@@ -423,7 +423,7 @@ Accept-Language: vi
   "message": "Làm mới token thành công",
   "success": true,
   "data": null,
-  "meta": {
+  "authorization": {
     "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
     "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
   }
