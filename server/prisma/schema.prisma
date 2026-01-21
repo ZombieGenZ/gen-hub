@@ -91,6 +91,10 @@ model User {
   is_online   Boolean   @default(false)
   last_online DateTime?
 
+  is_deleted Boolean   @default(false)
+  deleted_at DateTime?
+  deleted_by String?   @db.Uuid
+
   created_at DateTime  @default(now())
   updated_at DateTime? @updatedAt
 

@@ -571,4 +571,135 @@ export class UserManagementRepository {
 
         return !!rolePermission;
     }
+
+    /**
+     * Soft delete 1 user
+     */
+    async softDeleteUser(userId: string, deletedBy: string): Promise<{ count: number }> {
+        const result = await this.prisma.user.updateMany({
+            where: {
+                id: userId,
+                is_deleted: false,
+            },
+            data: {
+                is_deleted: true,
+                deleted_at: new Date(),
+                deleted_by: deletedBy,
+            },
+        });
+        return { count: result.count };
+    }
+
+    /**
+     * Soft delete nhiều users cùng lúc
+     */
+    async softDeleteManyUsers(userIds: string[], deletedBy: string): Promise<{ count: number }> {
+        const result = await this.prisma.user.updateMany({
+            where: {
+                id: { in: userIds },
+                is_deleted: false,
+            },
+            data: {
+                is_deleted: true,
+                deleted_at: new Date(),
+                deleted_by: deletedBy,
+            },
+        });
+        return { count: result.count };
+    }
+
+    /**
+     * Lấy dữ liệu users để export
+     */
+    async getUsersForExport(userIds: string[]) {
+        return this.prisma.user.findMany({
+            where: { id: { in: userIds } },
+            select: {
+                id: true,
+                name: true,
+                email: true,
+                email_confirmed: true,
+                language: true,
+                is_verified: true,
+                is_banned: true,
+                banned_start: true,
+                banned_end: true,
+                is_online: true,
+                last_online: true,
+                is_deleted: true,
+                deleted_at: true,
+                created_at: true,
+                updated_at: true,
+                system_roles: {
+                    where: { is_deleted: false, is_active: true },
+                    include: {
+                        role: { select: { id: true, name: true } },
+                    },
+                },
+                warnings: {
+                    where: { is_deleted: false, is_active: true },
+                    select: {
+                        id: true,
+                        reason: true,
+                        is_permanent: true,
+                        expires_at: true,
+                        created_at: true,
+                    },
+                },
+            },
+        });
+    }
+
+    /**
+     * Lấy tất cả users để export (có filter)
+     */
+    async getAllUsersForExport(params: { keywords?: string; status?: string }) {
+        const { keywords, status } = params;
+        const where: any = {};
+
+        if (keywords) {
+            where.OR = [
+                { name: { contains: keywords, mode: 'insensitive' } },
+                { email: { contains: keywords, mode: 'insensitive' } },
+            ];
+        }
+
+        if (status === 'active') {
+            where.is_banned = false;
+            where.is_deleted = false;
+        } else if (status === 'banned') {
+            where.is_banned = true;
+        } else if (status === 'verified') {
+            where.is_verified = true;
+        } else if (status === 'unverified') {
+            where.is_verified = false;
+        } else if (status === 'deleted') {
+            where.is_deleted = true;
+        } else {
+            // Mặc định không lấy users đã xóa
+            where.is_deleted = false;
+        }
+
+        return this.prisma.user.findMany({
+            where,
+            select: {
+                id: true,
+                name: true,
+                email: true,
+                email_confirmed: true,
+                language: true,
+                is_verified: true,
+                is_banned: true,
+                banned_start: true,
+                banned_end: true,
+                is_online: true,
+                last_online: true,
+                is_deleted: true,
+                deleted_at: true,
+                created_at: true,
+                updated_at: true,
+            },
+            orderBy: { created_at: 'desc' },
+        });
+    }
 }

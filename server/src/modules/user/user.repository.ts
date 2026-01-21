@@ -421,4 +421,142 @@ export class UserRepository {
     });
     return members.map((m) => m.organization_id);
   }
+
+  /**
+   * Soft delete user - đánh dấu tài khoản đã bị xóa
+   * @param userId - ID của user cần xóa
+   * @param deletedBy - ID của người xóa (có thể là chính user hoặc admin)
+   */
+  async softDeleteUser(userId: string, deletedBy: string): Promise<User> {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        is_deleted: true,
+        deleted_at: new Date(),
+        deleted_by: deletedBy,
+      },
+    });
+  }
+
+  /**
+   * Lấy toàn bộ dữ liệu của user để export
+   * Bao gồm: thông tin cá nhân, organizations, notifications, v.v.
+   * @param userId - ID của user
+   */
+  async getUserFullDataForExport(userId: string) {
+    // Lấy thông tin cơ bản của user
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) return null;
+
+    // Query từng phần riêng biệt để tránh lỗi TypeScript với relations
+    const [
+      userRoles,
+      userPermissions,
+      ownedOrgs,
+      memberships,
+      notifications,
+      warnings,
+      sessions,
+    ] = await Promise.all([
+      // User roles
+      this.prisma.userRole.findMany({
+        where: { user_id: userId, is_deleted: false, is_active: true },
+        include: { role: { select: { id: true, name: true, description: true } } },
+      }),
+      // User permissions
+      this.prisma.userPermission.findMany({
+        where: { user_id: userId, is_deleted: false, is_active: true },
+        include: { permission: { select: { id: true, name: true, key: true, description: true } } },
+      }),
+      // Owned organizations
+      this.prisma.organization.findMany({
+        where: { owner_id: userId, is_deleted: false },
+        select: { id: true, name: true, created_at: true },
+      }),
+      // Organization memberships
+      this.prisma.organizationMember.findMany({
+        where: { user_id: userId, is_deleted: false },
+        include: { organization: { select: { id: true, name: true } } },
+      }),
+      // Notifications (last 100)
+      this.prisma.userNotification.findMany({
+        where: { user_id: userId, is_deleted: false },
+        orderBy: { created_at: 'desc' },
+        take: 100,
+        select: { id: true, title: true, content: true, is_read: true, created_at: true },
+      }),
+      // Warnings
+      this.prisma.userWarning.findMany({
+        where: { user_id: userId, is_deleted: false },
+        include: { category: { select: { id: true, name: true } } },
+      }),
+      // Sessions (refresh tokens)
+      this.prisma.refreshToken.findMany({
+        where: { user_id: userId, is_deleted: false },
+        select: { id: true, ip: true, location: true, device: true, os: true, created_at: true },
+      }),
+    ]);
+
+    // Format dữ liệu để export
+    return {
+      personal_info: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        email_confirmed: user.email_confirmed,
+        language: user.language,
+        is_verified: user.is_verified,
+        two_factor_enabled: user.two_factor_enabled,
+        created_at: user.created_at,
+        updated_at: user.updated_at,
+      },
+      account_status: {
+        is_banned: user.is_banned,
+        banned_start: user.banned_start,
+        banned_end: user.banned_end,
+        is_online: user.is_online,
+        last_online: user.last_online,
+      },
+      system_roles: userRoles.map((ur) => ({
+        id: ur.role.id,
+        name: ur.role.name,
+        description: ur.role.description,
+        assigned_at: ur.created_at,
+      })),
+      system_permissions: userPermissions.map((up) => ({
+        id: up.permission.id,
+        name: up.permission.name,
+        key: up.permission.key,
+        description: up.permission.description,
+        assigned_at: up.created_at,
+      })),
+      organizations: {
+        owned: ownedOrgs,
+        memberships: memberships.map((om) => ({
+          organization: om.organization,
+          display_name: om.display_name,
+          is_accepted: om.is_accepted,
+          joined_at: om.created_at,
+        })),
+      },
+      notifications,
+      warnings: warnings.map((w) => ({
+        id: w.id,
+        category: w.category,
+        reason: w.reason,
+        is_permanent: w.is_permanent,
+        expires_at: w.expires_at,
+        is_active: w.is_active,
+        created_at: w.created_at,
+      })),
+      sessions,
+      export_info: {
+        exported_at: new Date().toISOString(),
+        data_version: '1.0',
+      },
+    };
+  }
 }

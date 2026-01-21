@@ -45,7 +45,7 @@ export class AccountService {
     private readonly refreshTokenRepository: RefreshTokenRepository,
     private readonly redisService: RedisService,
     private readonly websocketGateway: WebsocketGateway,
-  ) {}
+  ) { }
 
   /**
    * Lấy thông tin profile
@@ -301,5 +301,121 @@ export class AccountService {
     this.websocketGateway.emitPasswordChanged(userId, message);
 
     return { message };
+  }
+
+  /**
+   * Tải xuống dữ liệu cá nhân
+   * Trả về toàn bộ dữ liệu của user dưới dạng JSON
+   */
+  async downloadPersonalData(userId: string, deviceInfo?: IDeviceInfo, lang = 'vi') {
+    const user = await this.userRepository.findById(userId);
+    if (!user) {
+      throw new BadRequestException(
+        await this.i18n.t('common.error.user_not_found', { lang }),
+      );
+    }
+
+    // Lấy toàn bộ dữ liệu của user
+    const userData = await this.userRepository.getUserFullDataForExport(userId);
+    if (!userData) {
+      throw new BadRequestException(
+        await this.i18n.t('common.error.user_not_found', { lang }),
+      );
+    }
+
+    // Ghi log
+    this.systemLogService.info(
+      'account',
+      'download_data',
+      `User downloaded personal data: ${user.email}`,
+      {
+        userId: user.id,
+        ipAddress: deviceInfo?.ip,
+        userAgent: deviceInfo?.device,
+      },
+    );
+
+    // Emit socket event
+    this.websocketGateway.emitUserDataDownloaded(userId);
+
+    return {
+      message: await this.i18n.t('account.download_data.success', { lang }),
+      data: userData,
+      filename: `user-data-${user.id}-${new Date().toISOString().split('T')[0]}.json`,
+    };
+  }
+
+  /**
+   * Xóa tài khoản (soft delete)
+   * Yêu cầu xác nhận bằng cách gõ "XÓA TÀI KHOẢN" hoặc "DELETE ACCOUNT"
+   */
+  async deleteAccount(
+    userId: string,
+    confirmation: string,
+    reason?: string,
+    deviceInfo?: IDeviceInfo,
+    lang = 'vi',
+  ) {
+    const user = await this.userRepository.findById(userId);
+    if (!user) {
+      throw new BadRequestException(
+        await this.i18n.t('common.error.user_not_found', { lang }),
+      );
+    }
+
+    // Kiểm tra xác nhận
+    const validConfirmations = ['XÓA TÀI KHOẢN', 'DELETE ACCOUNT'];
+    if (!validConfirmations.includes(confirmation.toUpperCase())) {
+      throw new BadRequestException(
+        await this.i18n.t('account.delete_account.invalid_confirmation', { lang }),
+      );
+    }
+
+    // Soft delete user
+    await this.userRepository.softDeleteUser(userId, userId);
+
+    // Xóa tất cả refresh tokens
+    await this.refreshTokenRepository.deleteAllByUserId(userId);
+
+    // Invalidate cache
+    await this.redisService.invalidateUserCache(userId);
+    await this.redisService.invalidateUserPermissionsCache(userId);
+
+    // Ghi log
+    this.systemLogService.warn(
+      'account',
+      'delete_account',
+      `User deleted their account: ${user.email}`,
+      {
+        userId: user.id,
+        ipAddress: deviceInfo?.ip,
+        userAgent: deviceInfo?.device,
+        metaData: { reason },
+      },
+    );
+
+    // TODO: Gửi email thông báo khi có method sendAccountDeletedEmail
+    // if (user.email) {
+    //   this.emailService
+    //     .sendAccountDeletedEmail(user.email, user.name, user.language)
+    //     .catch((error) => {
+    //       this.systemLogService.error(
+    //         'account',
+    //         'send_email_failed',
+    //         `Failed to send account deleted email: ${user.email}`,
+    //         {
+    //           userId: user.id,
+    //           metaData: { error: error.message },
+    //         },
+    //       );
+    //     });
+    // }
+
+    // Emit socket event để force logout
+    this.websocketGateway.emitUserAccountDeleted(userId);
+
+    return {
+      message: await this.i18n.t('account.delete_account.success', { lang }),
+    };
   }
 }

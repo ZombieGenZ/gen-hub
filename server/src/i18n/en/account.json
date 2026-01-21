@@ -22,5 +22,18 @@
         "cannot_unlink_primary": "Cannot unlink primary account",
         "primary_required_for_2fa": "Only primary login can setup 2FA",
         "primary_required_for_unlink": "Only primary login can unlink accounts"
+    },
+    "download_data": {
+        "success": "Data downloaded successfully"
+    },
+    "delete_account": {
+        "success": "Account deleted successfully. Your account has been deleted.",
+        "invalid_confirmation": "Invalid confirmation. Please enter 'XÓA TÀI KHOẢN' or 'DELETE ACCOUNT' to confirm."
+    },
+    "validation": {
+        "reason_string": "Reason must be a string",
+        "reason_max_length": "Reason must not exceed 500 characters",
+        "confirmation_required": "Deletion confirmation is required",
+        "confirmation_string": "Confirmation must be a string"
     }
 }

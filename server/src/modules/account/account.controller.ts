@@ -3,6 +3,7 @@ import {
   Post,
   Get,
   Patch,
+  Delete,
   Body,
   UseGuards,
   Headers,
@@ -21,7 +22,7 @@ import {
 } from '@nestjs/swagger';
 import type { Request } from 'express';
 import { UpdateProfileDto, ChangePasswordDto } from '../auth/dto';
-import { JwtAuthGuard } from '../../common/guards';
+import { JwtAuthGuard, AccessVerificationGuard } from '../../common/guards';
 import {
   CurrentUser,
   ApiUnauthorizedResponses,
@@ -31,10 +32,12 @@ import {
   OkResponse,
   GetResponse,
   UpdatedResponse,
+  DeletedResponse,
   ResponseCode,
 } from '../../common/responses';
 import { AccountService } from './account.service';
 import type { IJwtPayload } from '../../common/interfaces';
+import { DeleteAccountDto } from './dto';
 
 /**
  * Lấy thông tin device từ request
@@ -57,7 +60,7 @@ function getDeviceInfo(req: Request) {
 @Controller('account')
 @ApiBearerAuth('JWT-auth')
 export class AccountController {
-  constructor(private readonly accountService: AccountService) {}
+  constructor(private readonly accountService: AccountService) { }
 
   @ApiOperation({
     summary: 'Lấy thông tin tài khoản',
@@ -388,6 +391,143 @@ export class AccountController {
     );
     return new OkResponse(
       ResponseCode.ACCOUNT_CHANGE_PASSWORD_SUCCESS,
+      null,
+      result.message,
+    );
+  }
+
+  @ApiOperation({
+    summary: 'Tải xuống dữ liệu cá nhân',
+    description:
+      'Tải xuống toàn bộ dữ liệu cá nhân của tài khoản dưới dạng JSON. Yêu cầu xác thực quyền truy cập thông qua header X-Access-Verification-Token.',
+  })
+  @ApiHeader({
+    name: 'Accept-Language',
+    description: 'Ngôn ngữ phản hồi (vi, en)',
+    required: false,
+    example: 'vi',
+  })
+  @ApiHeader({
+    name: 'X-Access-Verification-Token',
+    description: 'Token xác thực quyền truy cập (lấy từ API verify-access)',
+    required: true,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Trả về dữ liệu cá nhân dạng JSON',
+    schema: {
+      type: 'object',
+      properties: {
+        code: { type: 'string', example: 'account.download_data_success' },
+        message: { type: 'string', example: 'Tải dữ liệu thành công' },
+        success: { type: 'boolean', example: true },
+        data: {
+          type: 'object',
+          properties: {
+            data: {
+              type: 'object',
+              description: 'Toàn bộ dữ liệu cá nhân',
+            },
+            filename: {
+              type: 'string',
+              example: 'user-data-uuid-2026-01-21.json',
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiUnauthorizedResponses()
+  @UseGuards(JwtAuthGuard, AccessVerificationGuard)
+  @Get('download-data')
+  async downloadPersonalData(
+    @CurrentUser() user: IJwtPayload,
+    @Req() req: Request,
+    @Headers('accept-language') lang?: string,
+  ) {
+    const deviceInfo = getDeviceInfo(req);
+    const result = await this.accountService.downloadPersonalData(
+      user.userId,
+      deviceInfo,
+      lang || 'vi',
+    );
+    return new GetResponse(
+      ResponseCode.ACCOUNT_DOWNLOAD_DATA_SUCCESS,
+      { data: result.data, filename: result.filename },
+      result.message,
+    );
+  }
+
+  @ApiOperation({
+    summary: 'Xóa tài khoản',
+    description:
+      'Xóa tài khoản người dùng (soft delete). Yêu cầu xác thực quyền truy cập thông qua header X-Access-Verification-Token và nhập xác nhận "XÓA TÀI KHOẢN" hoặc "DELETE ACCOUNT".',
+  })
+  @ApiHeader({
+    name: 'Accept-Language',
+    description: 'Ngôn ngữ phản hồi (vi, en)',
+    required: false,
+    example: 'vi',
+  })
+  @ApiHeader({
+    name: 'X-Access-Verification-Token',
+    description: 'Token xác thực quyền truy cập (lấy từ API verify-access)',
+    required: true,
+  })
+  @ApiBody({
+    type: DeleteAccountDto,
+    description: 'Dữ liệu xóa tài khoản',
+    examples: {
+      delete_vi: {
+        summary: 'Xóa tài khoản (Tiếng Việt)',
+        value: {
+          confirmation: 'XÓA TÀI KHOẢN',
+          reason: 'Không còn sử dụng dịch vụ',
+        },
+      },
+      delete_en: {
+        summary: 'Xóa tài khoản (English)',
+        value: {
+          confirmation: 'DELETE ACCOUNT',
+          reason: 'No longer using the service',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Xóa tài khoản thành công',
+    schema: {
+      type: 'object',
+      properties: {
+        code: { type: 'string', example: 'account.delete_account_success' },
+        message: { type: 'string', example: 'Xóa tài khoản thành công' },
+        success: { type: 'boolean', example: true },
+        data: { type: 'null', example: null },
+      },
+    },
+  })
+  @ApiUnauthorizedResponses()
+  @ApiValidationErrorResponse()
+  @UseGuards(JwtAuthGuard, AccessVerificationGuard)
+  @Delete('delete-account')
+  @HttpCode(HttpStatus.OK)
+  async deleteAccount(
+    @CurrentUser() user: IJwtPayload,
+    @Body() dto: DeleteAccountDto,
+    @Req() req: Request,
+    @Headers('accept-language') lang?: string,
+  ) {
+    const deviceInfo = getDeviceInfo(req);
+    const result = await this.accountService.deleteAccount(
+      user.userId,
+      dto.confirmation,
+      dto.reason,
+      deviceInfo,
+      lang || 'vi',
+    );
+    return new DeletedResponse(
+      ResponseCode.ACCOUNT_DELETE_ACCOUNT_SUCCESS,
       null,
       result.message,
     );
