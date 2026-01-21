@@ -1,7 +1,10 @@
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { apiReference } from '@scalar/nestjs-api-reference';
 import { I18nValidationPipe, I18nService } from 'nestjs-i18n';
+import { join } from 'path';
+import { Response } from 'express';
 import { AppModule } from './app.module';
 import { GlobalExceptionFilter, CustomValidationExceptionFilter } from './common/filters';
 import { HttpLoggingInterceptor } from './common/interceptors';
@@ -33,7 +36,10 @@ process.env.TZ = process.env.TZ || 'Asia/Ho_Chi_Minh';
 const serverStartTime = new Date();
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  // Serve static assets from public directory
+  app.useStaticAssets(join(__dirname, '..', 'public'));
   const systemLogService = app.get(SystemLogService);
   const i18nService = app.get<I18nService<Record<string, unknown>>>(I18nService);
 
@@ -157,6 +163,7 @@ async function bootstrap() {
         .sidebar { background: ${scalarTheme.colors.sidebarBg}; }
         .scalar-card { background: ${scalarTheme.colors.cardSurface}; border-color: ${scalarTheme.colors.border}; }
       `,
+      favicon: '/genhub.svg',
       metaData: {
         title: 'GEN-HUB API Documentation',
         description: 'API documentation cho hệ thống GEN-HUB',
@@ -167,7 +174,7 @@ async function bootstrap() {
   );
 
   // JSON endpoint for main API docs
-  app.getHttpAdapter().get('/api-docs-json', (req, res) => {
+  app.getHttpAdapter().get('/api-docs-json', (req, res: Response) => {
     res.json(document);
   });
 
@@ -256,6 +263,7 @@ async function bootstrap() {
         .sidebar { background: ${scalarTheme.colors.sidebarBg}; }
         .scalar-card { background: ${scalarTheme.colors.cardSurface}; border-color: ${scalarTheme.colors.border}; }
       `,
+      favicon: '/genhub.svg',
       metaData: {
         title: 'GEN-HUB API Key Documentation',
         description: 'API documentation cho các chức năng hổ trợ API Key của GEN-HUB',
@@ -266,7 +274,7 @@ async function bootstrap() {
   );
 
   // JSON endpoint for API Key docs
-  app.getHttpAdapter().get('/api-docs-apikey-json', (req, res) => {
+  app.getHttpAdapter().get('/api-docs-apikey-json', (req, res: Response) => {
     res.json(apiKeyDocument);
   });
 
