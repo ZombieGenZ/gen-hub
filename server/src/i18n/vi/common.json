@@ -1,5 +1,6 @@
 {
     "errors": {
+        "validation_error_message": "Dữ liệu đầu vào không hợp lệ",
         "unauthorized": "Không có quyền truy cập",
         "forbidden": "Truy cập bị từ chối",
         "not_found": "Không tìm thấy tài nguyên",

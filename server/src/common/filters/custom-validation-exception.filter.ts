@@ -53,9 +53,12 @@ export class CustomValidationExceptionFilter implements ExceptionFilter {
         // Flatten và dịch validation errors
         const errors = this.flattenAndTranslateErrors(exception.errors, lang);
 
+        // Dịch message chung
+        const message = this.i18n.t('common.errors.validation_error_message', { lang }) as string;
+
         response.status(HttpStatus.UNPROCESSABLE_ENTITY).json({
             code: ResponseCode.ERROR_VALIDATION,
-            message: 'Dữ liệu đầu vào không hợp lệ',
+            message,
             success: false,
             errors,
         });

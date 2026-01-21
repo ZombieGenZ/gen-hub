@@ -6,10 +6,11 @@ import {
   ApiBearerAuth,
   ApiBody,
 } from '@nestjs/swagger';
+import { I18nService, I18nLang } from 'nestjs-i18n';
 import { AppConfigService } from './app-config.service';
 import type { IAppConfig } from './app-config.service';
 import { UpdateAppConfigDto } from './app-config.dto';
-import { Public, RequirePermission, ApiAuthResponses } from '../decorators';
+import { Public, RequirePermission, ApiAuthResponses, ApiValidationErrorResponse } from '../decorators';
 import { JwtAuthGuard, PermissionGuard } from '../guards';
 import { WebsocketGateway } from '../../modules/websocket/websocket.gateway';
 import { SuccessResponse, ResponseCode } from '../responses';
@@ -20,6 +21,7 @@ export class AppConfigController {
   constructor(
     private readonly appConfigService: AppConfigService,
     private readonly websocketGateway: WebsocketGateway,
+    private readonly i18n: I18nService,
   ) { }
 
   @ApiOperation({
@@ -118,9 +120,10 @@ export class AppConfigController {
   })
   @Public()
   @Get()
-  getConfig(): SuccessResponse<IAppConfig> {
+  getConfig(@I18nLang() lang: string): SuccessResponse<IAppConfig> {
     const data = this.appConfigService.getAll();
-    return new SuccessResponse(ResponseCode.CONFIG_GET_SUCCESS, data, 'Lấy cấu hình thành công');
+    const message = this.i18n.t('config.success.get', { lang }) as string;
+    return new SuccessResponse(ResponseCode.CONFIG_GET_SUCCESS, data, message);
   }
 
   @ApiOperation({
@@ -301,14 +304,20 @@ export class AppConfigController {
     },
   })
   @ApiAuthResponses()
+  @ApiValidationErrorResponse()
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard, PermissionGuard)
   @RequirePermission('config.update')
   @Patch()
-  async updateConfig(@Body() dto: UpdateAppConfigDto, @Request() req: any): Promise<SuccessResponse<IAppConfig>> {
+  async updateConfig(
+    @Body() dto: UpdateAppConfigDto,
+    @Request() req: any,
+    @I18nLang() lang: string,
+  ): Promise<SuccessResponse<IAppConfig>> {
     const result = await this.appConfigService.update(dto as Partial<IAppConfig>);
     this.websocketGateway.emitConfigUpdated('updated', result as unknown as Record<string, unknown>, req.user?.userId);
-    return new SuccessResponse(ResponseCode.CONFIG_UPDATE_SUCCESS, result, 'Cập nhật cấu hình thành công');
+    const message = this.i18n.t('config.success.update', { lang }) as string;
+    return new SuccessResponse(ResponseCode.CONFIG_UPDATE_SUCCESS, result, message);
   }
 
   @ApiOperation({
@@ -410,10 +419,14 @@ export class AppConfigController {
   @UseGuards(JwtAuthGuard, PermissionGuard)
   @RequirePermission('config.reset')
   @Post('reset')
-  async resetConfig(@Request() req: any): Promise<SuccessResponse<IAppConfig>> {
+  async resetConfig(
+    @Request() req: any,
+    @I18nLang() lang: string,
+  ): Promise<SuccessResponse<IAppConfig>> {
     const result = await this.appConfigService.reset();
     this.websocketGateway.emitConfigUpdated('reset', result as unknown as Record<string, unknown>, req.user?.userId);
-    return new SuccessResponse(ResponseCode.CONFIG_RESET_SUCCESS, result, 'Reset cấu hình thành công');
+    const message = this.i18n.t('config.success.reset', { lang }) as string;
+    return new SuccessResponse(ResponseCode.CONFIG_RESET_SUCCESS, result, message);
   }
 
   @ApiOperation({
@@ -515,9 +528,13 @@ export class AppConfigController {
   @UseGuards(JwtAuthGuard, PermissionGuard)
   @RequirePermission('config.reload')
   @Post('reload')
-  async reloadConfig(@Request() req: any): Promise<SuccessResponse<IAppConfig>> {
+  async reloadConfig(
+    @Request() req: any,
+    @I18nLang() lang: string,
+  ): Promise<SuccessResponse<IAppConfig>> {
     const result = await this.appConfigService.reload();
     this.websocketGateway.emitConfigUpdated('reloaded', result as unknown as Record<string, unknown>, req.user?.userId);
-    return new SuccessResponse(ResponseCode.CONFIG_RELOAD_SUCCESS, result, 'Reload cấu hình thành công');
+    const message = this.i18n.t('config.success.reload', { lang }) as string;
+    return new SuccessResponse(ResponseCode.CONFIG_RELOAD_SUCCESS, result, message);
   }
 }

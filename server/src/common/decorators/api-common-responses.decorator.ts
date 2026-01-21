@@ -121,3 +121,57 @@ export function ApiForbiddenResponses() {
 export function ApiAuthResponses() {
     return applyDecorators(ApiUnauthorizedResponses(), ApiForbiddenResponses());
 }
+
+/**
+ * Decorator cho response 422 Unprocessable Entity (Validation Error)
+ * Sử dụng cho các API có validation input data
+ *
+ * @example
+ * ```typescript
+ * @Post()
+ * @ApiValidationErrorResponse()
+ * @ApiOperation({ summary: 'Tạo mới tài nguyên' })
+ * async create(@Body() dto: CreateDto) {
+ *   // ...
+ * }
+ * ```
+ */
+export function ApiValidationErrorResponse() {
+    return applyDecorators(
+        ApiResponse({
+            status: 422,
+            description: 'Unprocessable Entity - Dữ liệu không hợp lệ',
+            content: {
+                'application/json': {
+                    schema: {
+                        type: 'object',
+                        properties: {
+                            code: { type: 'string', example: 'error.validation' },
+                            message: { type: 'string', example: 'Dữ liệu đầu vào không hợp lệ' },
+                            success: { type: 'boolean', example: false },
+                            errors: {
+                                type: 'array',
+                                items: {
+                                    type: 'object',
+                                    properties: {
+                                        field: { type: 'string', example: 'email' },
+                                        message: { type: 'string', example: 'Email không hợp lệ' },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    example: {
+                        code: 'error.validation',
+                        message: 'Dữ liệu đầu vào không hợp lệ',
+                        success: false,
+                        errors: [
+                            { field: 'email', message: 'Email không hợp lệ' },
+                            { field: 'password', message: 'Mật khẩu phải có ít nhất 8 ký tự' },
+                        ],
+                    },
+                },
+            },
+        }),
+    );
+}

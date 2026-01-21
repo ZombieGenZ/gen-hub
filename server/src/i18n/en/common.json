@@ -1,5 +1,6 @@
 {
     "errors": {
+        "validation_error_message": "Invalid input data",
         "unauthorized": "Unauthorized access",
         "forbidden": "Access denied",
         "not_found": "Resource not found",

@@ -1,0 +1,29 @@
+{
+    "success": {
+        "get": "Lấy cấu hình thành công",
+        "update": "Cập nhật cấu hình thành công",
+        "reset": "Reset cấu hình thành công",
+        "reload": "Reload cấu hình thành công"
+    },
+    "validation": {
+        "brand_name_string": "Tên thương hiệu phải là chuỗi",
+        "brand_name_max_length": "Tên thương hiệu không được vượt quá {max} ký tự",
+        "support_email_string": "Email hỗ trợ phải là chuỗi",
+        "support_email_max_length": "Email hỗ trợ không được vượt quá {max} ký tự",
+        "support_phone_string": "Số điện thoại hỗ trợ phải là chuỗi",
+        "support_phone_max_length": "Số điện thoại hỗ trợ không được vượt quá {max} ký tự",
+        "color_string": "Màu sắc phải là chuỗi",
+        "color_hex": "Màu sắc phải là mã hex hợp lệ",
+        "default_limit_number": "Số lượng mặc định phải là số",
+        "default_limit_min": "Số lượng mặc định phải ít nhất là {min}",
+        "default_limit_max": "Số lượng mặc định không được vượt quá {max}",
+        "default_offset_number": "Vị trí bắt đầu mặc định phải là số",
+        "default_offset_min": "Vị trí bắt đầu mặc định phải ít nhất là {min}",
+        "max_limit_number": "Số lượng tối đa phải là số",
+        "max_limit_min": "Số lượng tối đa phải ít nhất là {min}",
+        "max_limit_max": "Số lượng tối đa không được vượt quá {max}",
+        "min_limit_number": "Số lượng tối thiểu phải là số",
+        "min_limit_min": "Số lượng tối thiểu phải ít nhất là {min}",
+        "enable_ai_auto_reply_boolean": "Bật/tắt AI tự động phản hồi phải là boolean"
+    }
+}

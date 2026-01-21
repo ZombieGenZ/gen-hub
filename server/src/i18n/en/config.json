@@ -1,0 +1,29 @@
+{
+    "success": {
+        "get": "Get configuration successfully",
+        "update": "Update configuration successfully",
+        "reset": "Reset configuration successfully",
+        "reload": "Reload configuration successfully"
+    },
+    "validation": {
+        "brand_name_string": "Brand name must be a string",
+        "brand_name_max_length": "Brand name must not exceed {max} characters",
+        "support_email_string": "Support email must be a string",
+        "support_email_max_length": "Support email must not exceed {max} characters",
+        "support_phone_string": "Support phone must be a string",
+        "support_phone_max_length": "Support phone must not exceed {max} characters",
+        "color_string": "Color must be a string",
+        "color_hex": "Color must be a valid hex color code",
+        "default_limit_number": "Default limit must be a number",
+        "default_limit_min": "Default limit must be at least {min}",
+        "default_limit_max": "Default limit must not exceed {max}",
+        "default_offset_number": "Default offset must be a number",
+        "default_offset_min": "Default offset must be at least {min}",
+        "max_limit_number": "Max limit must be a number",
+        "max_limit_min": "Max limit must be at least {min}",
+        "max_limit_max": "Max limit must not exceed {max}",
+        "min_limit_number": "Min limit must be a number",
+        "min_limit_min": "Min limit must be at least {min}",
+        "enable_ai_auto_reply_boolean": "Enable AI auto reply must be a boolean"
+    }
+}
