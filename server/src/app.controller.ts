@@ -12,7 +12,18 @@ export class AppController {
     private readonly appConfigService: AppConfigService,
   ) { }
 
-  @ApiOperation({ summary: 'Trang chủ' })
+  @ApiOperation({
+    summary: 'Trang chủ',
+    description: 'Endpoint gốc của API. Trả về thông điệp chào mừng để xác nhận API đang hoạt động và có thể truy cập được.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Trả về thông điệp chào mừng thành công',
+    schema: {
+      type: 'string',
+      example: 'Hello World!',
+    },
+  })
   @Public()
   @Get()
   getHello(): string {
