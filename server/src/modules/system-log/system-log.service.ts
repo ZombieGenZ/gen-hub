@@ -31,10 +31,6 @@ export class SystemLogService {
     private readonly websocketGateway?: WebsocketGateway,
   ) { }
 
-  // ========================================
-  // Log Creation Methods (Original API)
-  // ========================================
-
   /**
    * Log async - fire-and-forget, không await
    * Không làm tăng thời gian phản hồi của request
@@ -297,10 +293,6 @@ export class SystemLogService {
     });
   }
 
-  // ========================================
-  // Query Methods (With Caching)
-  // ========================================
-
   /**
    * Lấy logs với pagination và filtering (cache-aside pattern)
    */
@@ -386,10 +378,6 @@ export class SystemLogService {
 
     return result;
   }
-
-  // ========================================
-  // Private Helpers
-  // ========================================
 
   /**
    * Invalidate all system log caches
