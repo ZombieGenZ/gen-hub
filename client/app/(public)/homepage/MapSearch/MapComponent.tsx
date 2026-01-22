@@ -7,8 +7,7 @@ import mapboxgl from 'mapbox-gl';
 import { Property } from '@/data/mockProperties';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { BedDouble, Bath, X } from 'lucide-react';
-import { MapPinIcon } from '@heroicons/react/24/solid';
-import { ArrowsPointingOutIcon } from '@heroicons/react/24/solid';
+import { MapPinIcon, ArrowsPointingOutIcon, PaperAirplaneIcon, CubeIcon } from '@heroicons/react/24/solid';
 import Supercluster from 'supercluster';
 
 // Properties Map Component
@@ -136,9 +135,106 @@ export default function MapComponent({ properties, onBoundsChange, highlightedPr
     const handleMapClick = (event: mapboxgl.MapLayerMouseEvent) => {
         // Clear selection if clicking on the map background
         if (event.originalEvent.target && (event.originalEvent.target as HTMLElement).tagName.toLowerCase() === 'canvas') {
-            setSelectedInfo(null);
+            // Only clear in search mode to keep context in detail mode
+            if (variant === 'search') {
+                setSelectedInfo(null);
+            }
         }
     };
+
+    // Auto-select in detail mode
+    useEffect(() => {
+        if (variant === 'detail' && properties.length > 0) {
+            setSelectedInfo(properties[0]);
+            // Also center map on it
+            setViewState(prev => ({
+                ...prev,
+                latitude: properties[0].lat,
+                longitude: properties[0].lng,
+                zoom: 13
+            }));
+        }
+    }, [variant, properties]);
+
+    // 3. Handle Connectivity Lines & Markers (Imperative)
+    const hubMarkersRef = useRef<mapboxgl.Marker[]>([]);
+
+    useEffect(() => {
+        // Access the native Mapbox instance via getMap()
+        const map = mapRef.current?.getMap();
+        if (!map) return;
+
+        // Function to update or add layers
+        const updateLayers = () => {
+            if (!map.getStyle()) return; // Map style not loaded yet
+
+            // --- 1. LINES REMOVED (User request: highlight đường đến không dùng line) ---
+            // We rely on the Markers and Overlay Card to show context.
+            if (map.getLayer('route-line')) map.removeLayer('route-line');
+            if (map.getSource('connectivity-lines')) map.removeSource('connectivity-lines');
+
+            // --- 2. MARKERS RE-ADDED (User request: giữ Hub markers) ---
+            // Clear existing markers
+            hubMarkersRef.current.forEach(marker => marker.remove());
+            hubMarkersRef.current = [];
+
+            if (variant === 'detail' && selectedInfo) {
+                // Haversine Distance Helper
+                const getDistanceFromLatLonInKm = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+                    const R = 6371; // Radius of the earth in km
+                    const dLat = (lat2 - lat1) * (Math.PI / 180);
+                    const dLon = (lon2 - lon1) * (Math.PI / 180);
+                    const a =
+                        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                        Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
+                        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+                    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+                    return R * c;
+                };
+
+                const hubs = [
+                    { id: 'hub-1', type: 'port', name: 'Cảng Cát Lái', lat: 10.770, lng: 106.780 },
+                    { id: 'hub-2', type: 'airport', name: 'Sân bay TSN', lat: 10.814, lng: 106.666 },
+                    // { id: 'hub-3', type: 'highway', name: 'CT Long Thành', lat: 10.790, lng: 106.750 } // Hidden for now to focus on main 2
+                ];
+
+                hubs.forEach(hub => {
+                    const distance = getDistanceFromLatLonInKm(selectedInfo.lat, selectedInfo.lng, hub.lat, hub.lng);
+
+                    // SVG Icons as strings
+                    const portIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path fill-rule="evenodd" d="M11.54 22.351l.07.04.028.016a.76.76 0 00.723 0l.028-.015.071-.041a16.975 16.975 0 001.144-.742 19.58 19.58 0 002.683-2.282c1.944-1.99 3.963-4.98 3.963-8.827a8.25 8.25 0 00-16.5 0c0 3.846 2.02 6.837 3.963 8.827a19.58 19.58 0 002.682 2.282 16.975 16.975 0 001.145.742zM12 13.5a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd" /></svg>`;
+                    const planeIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path fill-rule="evenodd" d="M11.54 22.351l.07.04.028.016a.76.76 0 00.723 0l.028-.015.071-.041a16.975 16.975 0 001.144-.742 19.58 19.58 0 002.683-2.282c1.944-1.99 3.963-4.98 3.963-8.827a8.25 8.25 0 00-16.5 0c0 3.846 2.02 6.837 3.963 8.827a19.58 19.58 0 002.682 2.282 16.975 16.975 0 001.145.742zM12 13.5a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd" /></svg>`;
+
+                    const iconSvg = hub.type === 'port' ? portIcon : planeIcon;
+                    const el = document.createElement('div');
+                    el.className = 'flex flex-col items-center relative';
+                    el.style.cssText = 'width: 32px; height: 32px;'; // Fixed size for anchor calculation
+                    el.innerHTML = `
+                        <div class="${hub.type === 'port' ? 'text-blue-600' : 'text-sky-500'} relative drop-shadow-md flex justify-center items-center w-8 h-8">
+                            ${iconSvg}
+                        </div>
+                        <div class="absolute top-full mt-1 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-sm text-[10px] font-bold px-2 py-0.5 rounded shadow-sm whitespace-nowrap border border-slate-200">
+                            ${hub.name} (${distance.toFixed(1)} km)
+                        </div>
+                    `;
+
+                    const marker = new mapboxgl.Marker({ element: el, anchor: 'bottom' })
+                        .setLngLat([hub.lng, hub.lat])
+                        .addTo(map);
+
+                    hubMarkersRef.current.push(marker);
+                });
+            }
+        };
+
+        // Try updating immediately
+        if (map.isStyleLoaded()) {
+            updateLayers();
+        } else {
+            map.once('style.load', updateLayers);
+        }
+
+    }, [variant, selectedInfo]);
 
     // Helper to format price
     const formatPrice = (price: number) => {
@@ -214,15 +310,20 @@ export default function MapComponent({ properties, onBoundsChange, highlightedPr
                     const isHovered = hoverInfo?.id === p.id;
                     const isHighlighted = highlightedPropertyId === p.id;
 
-                    const sizeClass = (isSelected || isHighlighted || isHovered) ? "scale-110 z-50" : "scale-100 z-10";
-                    const pinColorClass = (isSelected || isHighlighted) ? "bg-slate-900 text-white" : "bg-white text-slate-900 hover:bg-slate-900 hover:text-white";
+                    // Airbnb-style badge styling
+                    const badgeBaseClass = "px-2.5 py-1.5 rounded-full font-semibold text-sm shadow-lg border transition-all duration-200 cursor-pointer select-none";
+                    const badgeColorClass = (isSelected || isHighlighted)
+                        ? "bg-slate-900 text-white border-slate-900 scale-110"
+                        : (isHovered
+                            ? "bg-slate-900 text-white border-slate-900 scale-105"
+                            : "bg-white text-slate-900 border-slate-300 hover:border-slate-900 hover:scale-105");
 
                     return (
                         <Marker
                             key={`leaf-${p.id}`}
                             longitude={lng}
                             latitude={lat}
-                            anchor="bottom"
+                            anchor="center"
                             onClick={(e) => {
                                 e.originalEvent.stopPropagation();
                                 setSelectedInfo(p);
@@ -236,27 +337,11 @@ export default function MapComponent({ properties, onBoundsChange, highlightedPr
                             }}
                         >
                             <div
-                                className={`relative cursor-pointer transition-all duration-300 ease-out ${sizeClass}`}
+                                className={`relative ${badgeBaseClass} ${badgeColorClass}`}
                                 onMouseEnter={() => setHoverInfo(p)}
                                 onMouseLeave={() => setHoverInfo(null)}
                             >
-                                <div className={`
-                                    flex items-center justify-center w-8 h-8 rounded-full shadow-lg border-2 border-white 
-                                    ${pinColorClass}
-                                    transition-colors duration-200
-                                `}>
-                                    <MapPinIcon className="w-5 h-5" />
-                                </div>
-
-                                {/* PRICE TOOLTIP */}
-                                {(isHovered && !selectedInfo) && (
-                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 pointer-events-none">
-                                        <div className="bg-slate-900 text-white text-[11px] font-bold px-3 py-1.5 rounded-full shadow-xl whitespace-nowrap animate-in fade-in zoom-in-95 duration-200">
-                                            {formatPrice(p.price)}
-                                            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 rotate-45"></div>
-                                        </div>
-                                    </div>
-                                )}
+                                {formatPrice(p.price)}
 
                                 {/* Highlight Ping */}
                                 {isHighlighted && !isSelected && (
@@ -267,8 +352,8 @@ export default function MapComponent({ properties, onBoundsChange, highlightedPr
                     );
                 })}
 
-                {/* CLICKED POPUP: Horizontal Card Layout */}
-                {selectedInfo && (
+                {/* CLICKED POPUP: Horizontal Card Layout - ONLY IN SEARCH MODE */}
+                {selectedInfo && variant !== 'detail' && (
                     <Popup
                         longitude={selectedInfo.lng}
                         latitude={selectedInfo.lat}
@@ -358,6 +443,55 @@ export default function MapComponent({ properties, onBoundsChange, highlightedPr
                     <p className="text-white text-xl font-medium px-6 py-3 bg-black/40 rounded-lg backdrop-blur-md">Giữ Ctrl + lăn chuột để zoom</p>
                 </div>
             )}
+            {/* Context Layers for Detail View */}
+            {variant === 'detail' && selectedInfo && (
+                <>
+                </>
+            )}
+
+            {/* FLOATING DISTANCE PANEL (Detail Mode Only) */}
+            {(variant === 'detail' && selectedInfo) && (
+                <div className="absolute top-4 left-4 bg-white/95 backdrop-blur shadow-xl rounded-xl border border-slate-200 p-4 z-50 max-w-[280px] animate-in slide-in-from-left duration-300">
+                    <h4 className="text-xs font-bold text-slate-500 uppercase mb-3 tracking-wider">Trọng điểm</h4>
+                    <div className="space-y-3">
+                        {/* Use Helper inside render if component state allows, but here we can recalc or reuse logic */}
+                        {[
+                            { name: 'Cảng Cát Lái', lat: 10.770, lng: 106.780, type: 'port', icon: CubeIcon, color: 'text-blue-600', bg: 'bg-blue-50' },
+                            { name: 'Sân bay TSN', lat: 10.814, lng: 106.666, type: 'airport', icon: PaperAirplaneIcon, color: 'text-sky-600', bg: 'bg-sky-50' }
+                        ].map(hub => {
+                            // Haversine calc (inline for now as helper is inside effect scope - ideally move outside)
+                            const R = 6371;
+                            const dLat = (hub.lat - selectedInfo.lat) * (Math.PI / 180);
+                            const dLon = (hub.lng - selectedInfo.lng) * (Math.PI / 180);
+                            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                                Math.cos(selectedInfo.lat * (Math.PI / 180)) * Math.cos(hub.lat * (Math.PI / 180)) *
+                                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+                            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+                            const dist = R * c;
+                            const time = Math.round((dist / 30) * 60); // 30km/h avg speed
+
+                            return (
+                                <div key={hub.name} className="flex items-center justify-between group cursor-pointer">
+                                    <div className="flex items-center gap-3">
+                                        <div className={`w-8 h-8 rounded-lg ${hub.bg} flex items-center justify-center ${hub.color}`}>
+                                            <hub.icon className="w-4 h-4" />
+                                        </div>
+                                        <div>
+                                            <p className="font-bold text-slate-800 text-sm">{hub.name}</p>
+                                            <p className="text-xs text-slate-500">{hub.type === 'port' ? 'Cửa ngõ xuất khẩu' : 'Vận chuyển hàng không'}</p>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="font-bold text-slate-900 text-sm">{dist.toFixed(1)} km</p>
+                                        <p className={`text-xs font-medium ${dist < 10 ? 'text-green-600' : 'text-orange-600'}`}>{time} phút</p>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+
         </div>
     );
 }

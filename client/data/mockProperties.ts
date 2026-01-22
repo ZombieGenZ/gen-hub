@@ -40,6 +40,12 @@ export interface Property {
     is_shared_warehouse?: boolean;
     province_name?: string;
     electricity?: string;
+    
+    // B2B Demo Fields
+    power_type?: string;
+    pccc_level?: string;
+    floor_load?: string;
+    container_access?: boolean;
 }
 
 export const mockProperties: Property[] = [

@@ -6,22 +6,30 @@ import { Property, mockProperties } from '@/data/mockProperties';
 import { PrimeNestHeader } from '@/app/(public)/homepage/Header';
 import { PrimeNestFooter } from '@/app/(public)/homepage/Footer';
 import MapComponent from '@/app/(public)/homepage/MapSearch/MapComponent';
+import { BookingWidget } from '@/components/warehouse/booking-widget';
 import {
-    MapPin,
-    Check,
-    Thermometer,
-    Truck,
-    Download,
-    ChevronRight,
-    ArrowUpFromLine,
-    Weight,
-    Warehouse as WarehouseIcon,
-    BadgeCheck,
-    Square,
-    Phone,
-    Home
-} from 'lucide-react';
+    MapPinIcon,
+    CheckIcon,
+    SunIcon,
+    TruckIcon,
+    ArrowDownTrayIcon,
+    ChevronRightIcon,
+    ArrowUpIcon,
+    CubeIcon,
+    BuildingOffice2Icon,
+    CheckBadgeIcon,
+    Squares2X2Icon,
+    PhoneIcon,
+    HomeIcon,
+    BoltIcon,
+    ShieldCheckIcon,
+    FireIcon,
+    InboxStackIcon,
+    InformationCircleIcon
+} from '@heroicons/react/24/outline';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 
 const PRIMARY_COLOR = "#0F766E"; // GenHub Teal
 
@@ -36,7 +44,15 @@ export default function WarehouseDetailPage() {
         if (id) {
             const found = mockProperties.find(p => p.id === Number(id));
             if (found) {
-                setProperty(found);
+                // Enriching mock data for B2B demo
+                const enrichedProperty = {
+                    ...found,
+                    power_type: "3 Pha / 500kVA",
+                    pccc_level: "Tự động Sprinkler (TCVN 3890)",
+                    floor_load: "3.5 - 5.0 Tấn/m²",
+                    container_access: true,
+                };
+                setProperty(enrichedProperty);
             }
             setLoading(false);
         }
@@ -80,264 +96,196 @@ export default function WarehouseDetailPage() {
     ];
 
     return (
-        <div className="flex flex-col min-h-screen bg-[#f8fafc] dark:bg-[#0f172a] font-sans text-slate-900 dark:text-white">
+        <div className="flex flex-col min-h-screen bg-white dark:bg-[#0f172a] font-sans text-slate-900 dark:text-white">
             <PrimeNestHeader isLogin={false} />
 
-            <main className="flex-1 w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <main className="flex-1 w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
 
-                {/* Custom Breadcrumbs */}
-                <nav className="flex flex-wrap items-center gap-2 mb-8 text-sm">
-                    <div
-                        className="flex items-center gap-1 text-slate-500 hover:text-[#0F766E] cursor-pointer transition-colors"
-                        onClick={() => router.push('/')}
-                    >
-                        <Home className="w-4 h-4" />
-                        <span className="font-medium">Trang chủ</span>
+                {/* 1. Header Section */}
+                <div className="space-y-4 mb-6">
+                    <div className="flex flex-wrap items-start justify-between gap-4">
+                        <div>
+                            {/* Breadcrumbs */}
+                            <div className="flex items-center gap-1 text-sm text-slate-500 mb-3">
+                                <span className="hover:text-[#0F766E] cursor-pointer" onClick={() => router.push('/')}>Trang chủ</span>
+                                <ChevronRightIcon className="w-4 h-4" />
+                                <span className="hover:text-[#0F766E] cursor-pointer" onClick={() => router.push('/kho-bai')}>Kho bãi</span>
+                                <ChevronRightIcon className="w-4 h-4" />
+                                <span className="font-medium text-slate-900 dark:text-white line-clamp-1">{property.title}</span>
+                            </div>
+
+                            <h1 className="text-2xl md:text-4xl font-black leading-tight tracking-tight text-slate-900 dark:text-white mb-2">
+                                {property.name || property.title}
+                            </h1>
+                            <div className="flex items-center gap-2 text-slate-500 dark:text-gray-400">
+                                <MapPinIcon className="w-5 h-5 text-[#0F766E]" />
+                                <p className="text-base font-medium">{property.address_detail || property.address}</p>
+                            </div>
+                        </div>
                     </div>
-                    <ChevronRight className="w-4 h-4 text-slate-400" />
-                    <span
-                        className="text-slate-500 hover:text-[#0F766E] font-medium cursor-pointer transition-colors"
-                        onClick={() => router.push('/kho-bai')}
-                    >
-                        Danh sách kho
-                    </span>
-                    <ChevronRight className="w-4 h-4 text-slate-400" />
-                    <span className="text-[#0F766E] font-bold px-2 py-0.5 bg-teal-50 rounded-md border border-teal-100">
-                        {property.title}
-                    </span>
-                </nav>
 
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    {/* Technical Highlights Badge Row - B2B Focus */}
+                    <div className="flex flex-wrap gap-3 pt-2">
+                        <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm font-medium">
+                            <BuildingOffice2Icon className="w-4 h-4 text-slate-500" />
+                            <span>{property.area.toLocaleString()} m²</span>
+                        </div>
+                        <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm font-medium">
+                            <CubeIcon className="w-4 h-4 text-slate-500" />
+                            <span>{property.floor_load || "5 Tấn/m²"}</span>
+                        </div>
+                        <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm font-medium">
+                            <ArrowUpIcon className="w-4 h-4 text-slate-500" />
+                            <span>Trần {property.ceiling_height || "10"}m</span>
+                        </div>
+                        <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm font-medium">
+                            <BoltIcon className="w-4 h-4 text-slate-500" />
+                            <span>{property.power_type || "Điện 3 Pha"}</span>
+                        </div>
+                    </div>
+                </div>
 
-                    {/* LEFT COLUMN (8 cols) */}
-                    <div className="lg:col-span-8 space-y-8">
+                {/* 2. Image Grid ) */}
+                <div className="rounded-2xl overflow-hidden shadow-sm mb-10 h-[300px] md:h-[450px]">
+                    <div className="grid grid-cols-4 grid-rows-2 h-full gap-2">
+                        {/* Main Image (Large Left) */}
+                        <div className="col-span-4 md:col-span-2 row-span-2 relative group cursor-pointer bg-slate-100">
+                            <img
+                                src={galleryImages[0]}
+                                alt="Main Warehouse"
+                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                            />
+                            <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors"></div>
+                        </div>
+                        {/* Sub Images */}
+                        <div className="hidden md:block col-span-1 row-span-1 relative group cursor-pointer bg-slate-100">
+                            <img src={galleryImages[1]} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                        </div>
+                        <div className="hidden md:block col-span-1 row-span-1 relative group cursor-pointer bg-slate-100">
+                            <img src={galleryImages[2]} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                        </div>
+                        <div className="hidden md:block col-span-1 row-span-1 relative group cursor-pointer bg-slate-100">
+                            <img src={galleryImages[3]} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                        </div>
+                        <div className="hidden md:block col-span-1 row-span-1 relative group cursor-pointer bg-slate-100">
+                            <img src={galleryImages[4]} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center pointer-events-none group-hover:bg-black/50 transition-colors">
+                                <span className="text-white font-bold text-lg">+5 ảnh</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-                        {/* Header Section */}
-                        <div className="space-y-4">
-                            <div className="flex flex-wrap items-start justify-between gap-4">
-                                <div>
-                                    <h1 className="text-3xl md:text-4xl font-black leading-tight tracking-tight text-slate-900 dark:text-white">
-                                        {property.name || property.title}
-                                    </h1>
-                                    <div className="flex items-center gap-2 mt-3 text-slate-500 dark:text-gray-400">
-                                        <MapPin className="w-5 h-5 text-[#0F766E]" />
-                                        <p className="text-base font-medium">{property.address_detail || property.address}</p>
-                                    </div>
-                                </div>
-                                <div className="flex gap-2">
-                                    <div className="flex h-9 items-center justify-center gap-x-2 rounded-full bg-emerald-50 dark:bg-emerald-900/30 px-4 border border-emerald-200 dark:border-emerald-800 shadow-sm">
-                                        <div className="relative flex h-2.5 w-2.5">
-                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-                                        </div>
-                                        <p className="text-emerald-700 dark:text-emerald-400 text-xs font-bold uppercase tracking-wide">Đang trống</p>
-                                    </div>
-                                    <div className="flex h-9 items-center justify-center gap-x-2 rounded-full bg-slate-100 dark:bg-slate-800 px-4 shadow-sm border border-slate-200">
-                                        <BadgeCheck className="w-4 h-4 text-slate-600" />
-                                        <p className="text-slate-700 dark:text-white text-xs font-bold uppercase tracking-wide">ISO 9001</p>
-                                    </div>
-                                </div>
+                {/* 3. Main Content Split */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+
+                    {/* LEFT COLUMN: Details (8 cols) */}
+                    <div className="lg:col-span-8 space-y-10">
+
+                        {/* Overview Host */}
+                        <div className="flex items-center justify-between pb-8 border-b border-slate-200 dark:border-slate-800">
+                            <div className="space-y-1">
+                                <h2 className="text-xl font-bold text-slate-900 dark:text-white">Quản lý bởi GenHub Logistics</h2>
+                            </div>
+                            <div className="size-14 rounded-full bg-teal-100 flex items-center justify-center text-[#0F766E] font-bold text-xl border-2 border-white shadow-sm">
+                                <img src="assets/images/icongenhub.png" alt="Logo" className="w-10 h-10" />
                             </div>
                         </div>
 
-                        {/* Gallery Grid (Improved Layout) */}
-                        <div className="rounded-2xl overflow-hidden shadow-sm border border-slate-100">
-                            <div className="grid grid-cols-4 grid-rows-2 h-[480px] gap-1">
-                                {/* Main Image (Large Left) */}
-                                <div className="col-span-2 row-span-2 relative group overflow-hidden cursor-pointer bg-slate-100">
-                                    <img
-                                        src={galleryImages[0]}
-                                        alt="Main Warehouse"
-                                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                                    />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                        {/* Technical Specs Table */}
+                        <section>
+                            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-5">Thông số kỹ thuật</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                                    <h4 className="font-semibold mb-3 flex items-center gap-2 text-slate-700 dark:text-slate-200">
+                                        <CubeIcon className="w-4 h-4 text-[#0F766E]" /> Kết cấu & Tải trọng
+                                    </h4>
+                                    <ul className="space-y-2 text-sm text-slate-600 dark:text-slate-400">
+                                        <li className="flex justify-between"><span>Tải trọng sàn:</span> <span className="font-medium text-slate-900 dark:text-white">{property.floor_load || "5.0 Tấn/m²"}</span></li>
+                                        <li className="flex justify-between"><span>Độ phẳng sàn:</span> <span className="font-medium text-slate-900 dark:text-white">FF25/FL20 (Tiêu chuẩn Superflat)</span></li>
+                                        <li className="flex justify-between"><span>Chiều cao trần:</span> <span className="font-medium text-slate-900 dark:text-white">{property.ceiling_height || "10.5"}m</span></li>
+                                    </ul>
                                 </div>
-                                {/* Sub Images */}
-                                {galleryImages.slice(1, 5).map((img, idx) => (
-                                    <div key={idx} className="col-span-1 row-span-1 relative group overflow-hidden cursor-pointer bg-slate-100">
-                                        <img
-                                            src={img}
-                                            alt={`Gallery ${idx}`}
-                                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                                        />
-                                        <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors"></div>
+                                <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                                    <h4 className="font-semibold mb-3 flex items-center gap-2 text-slate-700 dark:text-slate-200">
+                                        <BoltIcon className="w-4 h-4 text-[#0F766E]" /> Điện & PCCC
+                                    </h4>
+                                    <ul className="space-y-2 text-sm text-slate-600 dark:text-slate-400">
+                                        <li className="flex justify-between"><span>Nguồn điện:</span> <span className="font-medium text-slate-900 dark:text-white">{property.power_type || "3 Pha / 2000kVA"}</span></li>
+                                        <li className="flex justify-between"><span>Hệ thống PCCC:</span> <span className="font-medium text-slate-900 dark:text-white">Sprinkler Tự động</span></li>
+                                        <li className="flex justify-between"><span>Chiếu sáng:</span> <span className="font-medium text-slate-900 dark:text-white">LED 200 Lux</span></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </section>
+
+                        {/* Description */}
+                        <section>
+                            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4">Mô tả kho</h3>
+                            <div className="prose prose-slate dark:prose-invert max-w-none text-slate-600 dark:text-slate-300">
+                                <p className="leading-relaxed">
+                                    {property.description || "Kho nằm trong khu vực logistics trọng điểm, kết nối trực tiếp với Cao tốc Long Thành - Dầu Giây và Cảng Cát Lái. Thiết kế hiện đại với hệ thống dock leveler tự động, phù hợp cho trung tâm phân phối (DC) hoặc kho fulfillment thương mại điện tử."}
+                                </p>
+                                <p className="leading-relaxed mt-2">
+                                    Hệ thống an ninh 3 lớp với bảo vệ 24/7, camera CCTV toàn khu vực và hệ thống kiểm soát ra vào bằng thẻ từ, đảm bảo an toàn tuyệt đối cho hàng hóa giá trị cao.
+                                </p>
+                            </div>
+                            <div className="mt-4">
+                                <Button variant="link" className="px-0 text-[#0F766E] font-bold">
+                                    Xem thêm chi tiết <ChevronRightIcon className="w-4 h-4 ml-1" />
+                                </Button>
+                            </div>
+                        </section>
+
+                        <Separator className="bg-slate-100" />
+
+                        {/* Amenities */}
+                        <section>
+                            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-6">Tiện ích & Hạ tầng</h3>
+                            <div className="grid grid-cols-2 gap-y-4 gap-x-8">
+                                {[
+                                    { icon: ShieldCheckIcon, label: "Camera an ninh CCTV 24/7" },
+                                    { icon: FireIcon, label: "PCCC Sprinkler vách tường" },
+                                    { icon: TruckIcon, label: "Bãi đỗ container 500m²" },
+                                    { icon: InboxStackIcon, label: "3 Dock Leveler tự động" },
+                                    { icon: MapPinIcon, label: "Gần Cảng Cát Lái (5km)" },
+                                    { icon: InformationCircleIcon, label: "Văn phòng điều hành 50m²" },
+                                ].map((item, i) => (
+                                    <div key={i} className="flex items-center gap-3 text-slate-700 font-medium">
+                                        <item.icon className="w-6 h-6 text-slate-400" />
+                                        <span>{item.label}</span>
                                     </div>
                                 ))}
                             </div>
-                        </div>
+                        </section>
 
-                        {/* Key Metrics */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            {[
-                                { label: 'Diện tích', value: `${property.area.toLocaleString()} m²`, icon: Square },
-                                { label: 'Chiều cao trần', value: property.ceiling_height ? `${property.ceiling_height}m` : 'Tiêu chuẩn', icon: ArrowUpFromLine },
-                                { label: 'Tải trọng sàn', value: property.max_load_capacity ? `${property.max_load_capacity} tấn/m²` : 'Tiêu chuẩn', icon: Weight },
-                                { label: 'Loại kho', value: property.type, icon: WarehouseIcon },
-                            ].map((metric, idx) => (
-                                <div key={idx} className="p-5 rounded-2xl bg-white dark:bg-[#1a202c] border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col gap-3 hover:border-[#0F766E]/30 transition-colors group">
-                                    <div className="size-12 rounded-full bg-teal-50 dark:bg-teal-900/20 flex items-center justify-center text-[#0F766E] group-hover:scale-110 transition-transform">
-                                        <metric.icon className="w-6 h-6" />
-                                    </div>
-                                    <div>
-                                        <p className="text-slate-500 dark:text-gray-400 text-sm font-medium">{metric.label}</p>
-                                        <p className="text-slate-900 dark:text-white text-lg font-bold truncate">{metric.value}</p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
+                        <Separator className="bg-slate-100" />
 
-                        {/* Description */}
-                        <div className="bg-white dark:bg-[#1a202c] p-8 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">
-                            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-5 flex items-center gap-2">
-                                <span className="w-1 h-6 bg-[#0F766E] rounded-full"></span>
-                                Thông tin chi tiết
-                            </h3>
-                            <div className="prose prose-slate dark:prose-invert max-w-none text-slate-600 dark:text-slate-300 leading-relaxed">
-                                <p className="mb-4">{property.description || "Chưa có mô tả chi tiết cho kho này."}</p>
-                                <p>
-                                    Kho được thiết kế tối ưu cho việc lưu trữ và vận hành logistics.
-                                    Hệ thống chiếu sáng LED tiết kiệm năng lượng, sàn epoxy chống bụi, và dock leveler tự động.
-                                    Vị trí thuận lợi kết nối giao thông, xe container ra vào dễ dàng 24/7.
-                                </p>
-                            </div>
-                        </div>
-
-                        {/* Environment & Amenities */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            {/* Environment Monitor */}
-                            <div className="bg-white dark:bg-[#1a202c] p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">
-                                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
-                                    <Thermometer className="w-5 h-5 text-[#0F766E]" />
-                                    Môi trường kho
-                                </h3>
-                                <div className="space-y-6">
-                                    <div>
-                                        <div className="flex justify-between items-end mb-2">
-                                            <span className="text-sm font-medium text-slate-500">Nhiệt độ duy trì</span>
-                                            <span className="text-xl font-bold text-slate-900 dark:text-white">20°C - 25°C</span>
-                                        </div>
-                                        <div className="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-2.5 overflow-hidden">
-                                            <div className="bg-emerald-400 h-2.5 rounded-full" style={{ width: '45%', marginLeft: '25%' }}></div>
-                                        </div>
-                                        <p className="text-xs text-center text-slate-400 mt-2">Dải nhiệt độ lý tưởng</p>
-                                    </div>
-                                    <div>
-                                        <div className="flex justify-between items-end mb-2">
-                                            <span className="text-sm font-medium text-slate-500">Độ ẩm</span>
-                                            <span className="text-xl font-bold text-slate-900 dark:text-white">40% - 60%</span>
-                                        </div>
-                                        <div className="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-2.5 overflow-hidden">
-                                            <div className="bg-[#0F766E] h-2.5 rounded-full" style={{ width: '50%' }}></div>
-                                        </div>
-                                    </div>
-                                </div>
+                        {/* Map */}
+                        <section>
+                            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-6">Vị trí</h3>
+                            <div className="rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-sm h-[400px] relative z-0">
+                                <MapComponent
+                                    properties={[property]}
+                                    highlightedPropertyId={property.id}
+                                    onMarkerClick={() => { }} // No-op
+                                    variant="detail"
+                                />
                             </div>
 
-                            {/* Amenities */}
-                            <div className="bg-white dark:bg-[#1a202c] p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">
-                                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
-                                    <Truck className="w-5 h-5 text-[#0F766E]" />
-                                    Tiện ích & Hạ tầng
-                                </h3>
-                                <ul className="space-y-4">
-                                    {[
-                                        'Hệ thống PCCC Sprinkler tự động',
-                                        'Camera an ninh CCTV 24/7',
-                                        'Internet cáp quang tốc độ cao',
-                                        '3 Cửa nhập hàng (Dock Levelers)',
-                                        'Bãi đỗ xe container rộng 500m²'
-                                    ].map((item, i) => (
-                                        <li key={i} className="flex items-center gap-3">
-                                            <span className="flex items-center justify-center size-6 rounded-full bg-teal-50 dark:bg-teal-900/30 text-[#0F766E]">
-                                                <Check className="w-3.5 h-3.5" />
-                                            </span>
-                                            <span className="text-slate-700 dark:text-slate-200 text-sm font-medium">{item}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                        </div>
+                        </section>
 
-                        {/* Map Component Integration */}
-                        <div className="rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-sm h-[400px] relative z-0">
-                            <MapComponent
-                                properties={[property]}
-                                highlightedPropertyId={property.id}
-                                onMarkerClick={() => { }} // No-op for detail page
-                                variant="detail"
-                            />
-                            {/* Map Overlay Info */}
-                            <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-md px-4 py-3 rounded-xl shadow-lg border border-slate-100 z-10 max-w-[240px]">
-                                <div className="flex items-start gap-3">
-                                    <div className="p-2 bg-teal-50 rounded-lg text-[#0F766E]">
-                                        <MapPin className="w-5 h-5" />
-                                    </div>
-                                    <div>
-                                        <p className="font-bold text-slate-900 text-sm">Vị trí chính xác</p>
-                                        <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{property.address}</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
                     </div>
 
-                    {/* RIGHT COLUMN (4 cols) */}
-                    <div className="lg:col-span-4 space-y-6">
-
-                        {/* Pricing Card */}
-                        <div className="sticky top-24 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-[#1a202c] shadow-xl shadow-slate-200/50 p-6">
-                            <div className="border-b border-dashed border-slate-200 pb-6 mb-6">
-                                <p className="text-slate-500 text-sm font-medium mb-1">Giá thuê đề xuất</p>
-                                <div className="flex items-baseline gap-1">
-                                    <span className="text-4xl font-black text-[#0F766E] tracking-tight">
-                                        {property.price >= 1000000000
-                                            ? `${(property.price / 1000000000).toFixed(1).replace('.', ',')} Tỷ`
-                                            : `${(property.price).toLocaleString('vi-VN')}₫`
-                                        }
-                                    </span>
-                                    <span className="text-slate-500 font-medium">/ tháng</span>
-                                </div>
-                                <p className="text-xs text-slate-400 mt-2">*Giá chưa bao gồm VAT và phí dịch vụ</p>
-                            </div>
-
-                            <div className="space-y-3">
-                                <Button className="w-full h-12 rounded-xl bg-[#0F766E] hover:bg-[#0D655D] text-white text-base font-bold shadow-lg shadow-teal-500/20 transition-all">
-                                    Yêu cầu thuê ngay
-                                </Button>
-                                <Button variant="outline" className="w-full h-12 rounded-xl border-slate-200 hover:bg-slate-50 text-slate-700 font-bold transition-colors">
-                                    <Download className="w-4 h-4 mr-2 text-[#0F766E]" />
-                                    Tải brochure PDF
-                                </Button>
-                            </div>
-
-                            {/* Contact Person */}
-                            <div className="mt-8 pt-6 border-t border-slate-100">
-                                <p className="text-sm font-medium text-slate-900 dark:text-white mb-4">Liên hệ chuyên viên tư vấn:</p>
-                                <div className="flex items-center gap-4">
-                                    <div className="size-12 rounded-full overflow-hidden bg-slate-200 border-2 border-white shadow-sm ring-1 ring-slate-100">
-                                        <img
-                                            src="https://images.unsplash.com/photo-1560250097-0b93528c311a?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"
-                                            alt="Consultant"
-                                            className="w-full h-full object-cover"
-                                        />
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-bold text-slate-900 dark:text-white">Nguyễn Văn Minh</p>
-                                        <p className="text-xs text-slate-500 mb-1">Senior Property Manager</p>
-                                        <div className="flex items-center gap-1 text-[#0F766E] text-sm font-bold">
-                                            <Phone className="w-4 h-4" />
-                                            0912 345 678
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
+                    {/* RIGHT COLUMN: Booking Widget (Sticky) */}
+                    <div className="lg:col-span-4 relative">
+                        <BookingWidget price={property.price} />
                     </div>
-                </div>
-            </main>
+
+                </div >
+            </main >
 
             <PrimeNestFooter />
-        </div>
+        </div >
     );
 }
