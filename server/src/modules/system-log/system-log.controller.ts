@@ -106,7 +106,35 @@ export class SystemLogController {
                 data: {
                     type: 'object',
                     properties: {
-                        data: { type: 'array', items: { type: 'object' } },
+                        data: {
+                            type: 'array',
+                            description: 'Danh sách system logs',
+                            items: {
+                                type: 'object',
+                                properties: {
+                                    id: { type: 'string', description: 'ID của log entry', example: '550e8400-e29b-41d4-a716-446655440000' },
+                                    level: { type: 'string', enum: ['INFO', 'WARN', 'ERROR', 'DEBUG'], description: 'Mức độ log', example: 'INFO' },
+                                    module: { type: 'string', description: 'Tên module tạo log', example: 'auth' },
+                                    action: { type: 'string', description: 'Hành động được ghi log', example: 'login' },
+                                    message: { type: 'string', description: 'Nội dung log message', example: 'User logged in successfully' },
+                                    meta_data: { type: 'object', nullable: true, description: 'Dữ liệu bổ sung (JSON)', example: { userId: '123', method: 'password' } },
+                                    user_id: { type: 'string', nullable: true, description: 'ID của user thực hiện hành động', example: '550e8400-e29b-41d4-a716-446655440001' },
+                                    ip_address: { type: 'string', nullable: true, description: 'Địa chỉ IP', example: '192.168.1.1' },
+                                    user_agent: { type: 'string', nullable: true, description: 'User agent string', example: 'Mozilla/5.0' },
+                                    created_at: { type: 'string', format: 'date-time', description: 'Thời gian tạo log', example: '2026-01-22T08:00:00.000Z' },
+                                    user: {
+                                        type: 'object',
+                                        nullable: true,
+                                        description: 'Thông tin user (nếu có)',
+                                        properties: {
+                                            id: { type: 'string', example: '550e8400-e29b-41d4-a716-446655440001' },
+                                            name: { type: 'string', nullable: true, example: 'John Doe' },
+                                            email: { type: 'string', example: 'john@example.com' },
+                                        },
+                                    },
+                                },
+                            },
+                        },
                         meta: {
                             type: 'object',
                             properties: {
