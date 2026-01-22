@@ -1,8 +1,17 @@
-import { Injectable, Logger, Inject, forwardRef, Optional } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  Inject,
+  forwardRef,
+  Optional,
+} from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
-import { CreateLogDto, LogBuilder } from './dto';
+import { CreateLogDto, LogBuilder, QuerySystemLogDto } from './dto';
 import { WebsocketGateway } from '../websocket/websocket.gateway';
+import { RedisService } from '../redis/redis.service';
+import { SystemLogRepository } from './repositories';
+import { ISystemLogPaginated, ISystemLogStats } from './interfaces';
 
 /**
  * System Log Service
@@ -15,9 +24,16 @@ export class SystemLogService {
 
   constructor(
     private readonly prisma: PrismaService,
-    @Optional() @Inject(forwardRef(() => WebsocketGateway))
+    private readonly repository: SystemLogRepository,
+    private readonly redisService: RedisService,
+    @Optional()
+    @Inject(forwardRef(() => WebsocketGateway))
     private readonly websocketGateway?: WebsocketGateway,
   ) { }
+
+  // ========================================
+  // Log Creation Methods (Original API)
+  // ========================================
 
   /**
    * Log async - fire-and-forget, không await
@@ -50,6 +66,7 @@ export class SystemLogService {
 
   /**
    * Tạo log entry trong database và emit realtime event
+   * Invalidate cache khi có log mới
    */
   private async createLog(params: CreateLogDto): Promise<void> {
     const logEntry = await this.prisma.systemLog.create({
@@ -65,6 +82,11 @@ export class SystemLogService {
         ip_address: params.ipAddress || null,
         user_agent: params.userAgent || null,
       },
+    });
+
+    // Invalidate caches asynchronously (fire-and-forget)
+    this.invalidateCaches().catch(() => {
+      // Silent fail - cache invalidation should not affect log creation
     });
 
     // Emit realtime event để admin panel nhận log mới
@@ -273,6 +295,107 @@ export class SystemLogService {
         stack: exception.stack,
       },
     });
+  }
+
+  // ========================================
+  // Query Methods (With Caching)
+  // ========================================
+
+  /**
+   * Lấy logs với pagination và filtering (cache-aside pattern)
+   */
+  async getLogs(query: QuerySystemLogDto): Promise<ISystemLogPaginated> {
+    // Generate cache key từ query params
+    const cacheKey = this.redisService.getSystemLogListCacheKey(
+      query as Record<string, unknown>,
+    );
+
+    // 1. Check cache first
+    try {
+      const cached =
+        await this.redisService.getSystemLogListCache<ISystemLogPaginated>(
+          cacheKey,
+        );
+      if (cached) {
+        return cached;
+      }
+    } catch {
+      // Cache error - fallback to database
+    }
+
+    // 2. Query database qua repository
+    const result = await this.repository.findPaginated(query);
+
+    // 3. Set cache (fire-and-forget)
+    this.redisService
+      .setSystemLogListCache(cacheKey, result)
+      .catch(() => {
+        // Silent fail
+      });
+
+    return result;
+  }
+
+  /**
+   * Lấy statistics (cache-aside pattern)
+   */
+  async getStats(): Promise<ISystemLogStats> {
+    // 1. Check cache first
+    try {
+      const cached =
+        await this.redisService.getSystemLogStatsCache<ISystemLogStats>();
+      if (cached) {
+        return cached;
+      }
+    } catch {
+      // Cache error - fallback to database
+    }
+
+    // 2. Query database qua repository
+    const result = await this.repository.getStats();
+
+    // 3. Set cache (fire-and-forget)
+    this.redisService.setSystemLogStatsCache(result).catch(() => {
+      // Silent fail
+    });
+
+    return result;
+  }
+
+  /**
+   * Lấy unique modules list (cache-aside pattern)
+   */
+  async getModules(): Promise<string[]> {
+    // 1. Check cache first
+    try {
+      const cached = await this.redisService.getSystemLogModulesCache();
+      if (cached) {
+        return cached;
+      }
+    } catch {
+      // Cache error - fallback to database
+    }
+
+    // 2. Query database qua repository
+    const result = await this.repository.getUniqueModules();
+
+    // 3. Set cache (fire-and-forget)
+    this.redisService.setSystemLogModulesCache(result).catch(() => {
+      // Silent fail
+    });
+
+    return result;
+  }
+
+  // ========================================
+  // Private Helpers
+  // ========================================
+
+  /**
+   * Invalidate all system log caches
+   */
+  private async invalidateCaches(): Promise<void> {
+    await this.redisService.invalidateAllSystemLogCache();
   }
 
   /**

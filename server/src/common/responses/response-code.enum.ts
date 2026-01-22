@@ -221,6 +221,12 @@ export enum ResponseCode {
     ORG_CHAT_CALL_LEFT = 'org_chat.call_left',
     ORG_CHAT_CALL_ENDED = 'org_chat.call_ended',
 
+    // System Log
+    SYSTEM_LOG_LIST_SUCCESS = 'system_log.list_success',
+    SYSTEM_LOG_STATS_SUCCESS = 'system_log.stats_success',
+    SYSTEM_LOG_MODULES_SUCCESS = 'system_log.modules_success',
+    SYSTEM_LOG_LEVELS_SUCCESS = 'system_log.levels_success',
+
     // Permission
     PERMISSION_LIST_SUCCESS = 'permission.list_success',
 

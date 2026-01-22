@@ -1,0 +1,76 @@
+{
+    "success": {
+        "fetched": "Log fetched successfully",
+        "list": "Logs fetched successfully",
+        "stats": "Log statistics fetched successfully",
+        "modules": "Modules list fetched successfully",
+        "levels": "Log levels fetched successfully"
+    },
+    "errors": {
+        "fetch_failed": "Failed to fetch log",
+        "list_failed": "Failed to fetch logs",
+        "stats_failed": "Failed to fetch log statistics",
+        "modules_failed": "Failed to fetch modules list"
+    },
+    "validation": {
+        "page_positive": "Page must be a positive number",
+        "limit_positive": "Limit must be a positive number",
+        "limit_max": "Maximum limit is 100",
+        "level_invalid": "Invalid log level (INFO, WARN, ERROR, DEBUG)",
+        "module_string": "Module name must be a string",
+        "search_string": "Search keyword must be a string",
+        "start_date_invalid": "Invalid start date",
+        "end_date_invalid": "Invalid end date"
+    },
+    "swagger": {
+        "tag": "System Logs",
+        "list": {
+            "summary": "Get system logs",
+            "description": "Get a list of system logs with pagination and filtering. Supports filtering by level, module, search keyword and date range. Requires systemlogs.admin permission."
+        },
+        "stats": {
+            "summary": "Get system log statistics",
+            "description": "Get an overview of system log statistics including total logs, logs in the last 24 hours, and distribution by level. Requires systemlogs.admin permission."
+        },
+        "modules": {
+            "summary": "Get modules list",
+            "description": "Get a list of all modules that have created logs in the system. Used to display a dropdown filter in the admin panel. Requires systemlogs.admin permission."
+        },
+        "levels": {
+            "summary": "Get log levels list",
+            "description": "Get a list of all available log levels in the system. Requires systemlogs.admin permission."
+        },
+        "params": {
+            "page": "Page number (starting from 1)",
+            "limit": "Number of items per page (1-100)",
+            "level": "Filter by log level",
+            "module": "Filter by module name (case-insensitive)",
+            "search": "Search in message and action (case-insensitive)",
+            "start_date": "Start date filter (ISO 8601)",
+            "end_date": "End date filter (ISO 8601)"
+        },
+        "response": {
+            "list_success": "Returns a list of logs with pagination information",
+            "stats_success": "Returns an overview of system log statistics",
+            "modules_success": "Returns a list of module names that have logged",
+            "levels_success": "Returns a list of log levels"
+        },
+        "fields": {
+            "id": "Log entry ID",
+            "level": "Log level",
+            "module": "Module name that created the log",
+            "action": "Action that was logged",
+            "message": "Log message content",
+            "meta_data": "Additional data (JSON)",
+            "user_id": "ID of the user who performed the action",
+            "ip_address": "IP address",
+            "user_agent": "User agent string",
+            "created_at": "Log creation time",
+            "total": "Total logs",
+            "page": "Current page",
+            "total_pages": "Total pages",
+            "recent_count": "Logs in the last 24 hours",
+            "by_level": "Log count distribution by level"
+        }
+    }
+}

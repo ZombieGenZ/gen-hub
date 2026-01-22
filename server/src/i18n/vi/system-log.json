@@ -1,0 +1,76 @@
+{
+    "success": {
+        "fetched": "Lấy log thành công",
+        "list": "Lấy danh sách logs thành công",
+        "stats": "Lấy thống kê logs thành công",
+        "modules": "Lấy danh sách modules thành công",
+        "levels": "Lấy danh sách log levels thành công"
+    },
+    "errors": {
+        "fetch_failed": "Không thể lấy log",
+        "list_failed": "Không thể lấy danh sách logs",
+        "stats_failed": "Không thể lấy thống kê logs",
+        "modules_failed": "Không thể lấy danh sách modules"
+    },
+    "validation": {
+        "page_positive": "Số trang phải là số dương",
+        "limit_positive": "Số lượng items phải là số dương",
+        "limit_max": "Số lượng items tối đa là 100",
+        "level_invalid": "Mức độ log không hợp lệ (INFO, WARN, ERROR, DEBUG)",
+        "module_string": "Tên module phải là chuỗi",
+        "search_string": "Từ khóa tìm kiếm phải là chuỗi",
+        "start_date_invalid": "Ngày bắt đầu không hợp lệ",
+        "end_date_invalid": "Ngày kết thúc không hợp lệ"
+    },
+    "swagger": {
+        "tag": "System Logs",
+        "list": {
+            "summary": "Lấy danh sách system logs",
+            "description": "Lấy danh sách các system logs với phân trang và bộ lọc. Hỗ trợ lọc theo level, module, search keyword và khoảng thời gian. Yêu cầu quyền systemlogs.admin."
+        },
+        "stats": {
+            "summary": "Lấy thống kê system logs",
+            "description": "Lấy thống kê tổng quan về system logs bao gồm tổng số logs, số logs trong 24h gần nhất và phân bổ theo level. Yêu cầu quyền systemlogs.admin."
+        },
+        "modules": {
+            "summary": "Lấy danh sách modules",
+            "description": "Lấy danh sách tất cả các module đã tạo logs trong hệ thống. Dùng để hiển thị dropdown filter trong admin panel. Yêu cầu quyền systemlogs.admin."
+        },
+        "levels": {
+            "summary": "Lấy danh sách log levels",
+            "description": "Lấy danh sách tất cả các log level có sẵn trong hệ thống. Yêu cầu quyền systemlogs.admin."
+        },
+        "params": {
+            "page": "Số trang (bắt đầu từ 1)",
+            "limit": "Số lượng items mỗi trang (1-100)",
+            "level": "Lọc theo mức độ log",
+            "module": "Lọc theo tên module (không phân biệt hoa thường)",
+            "search": "Tìm kiếm trong message và action (không phân biệt hoa thường)",
+            "start_date": "Ngày bắt đầu lọc (ISO 8601)",
+            "end_date": "Ngày kết thúc lọc (ISO 8601)"
+        },
+        "response": {
+            "list_success": "Trả về danh sách logs với thông tin phân trang",
+            "stats_success": "Trả về thống kê tổng quan của system logs",
+            "modules_success": "Trả về danh sách tên các modules đã ghi log",
+            "levels_success": "Trả về danh sách các log levels"
+        },
+        "fields": {
+            "id": "ID của log entry",
+            "level": "Mức độ log",
+            "module": "Tên module tạo log",
+            "action": "Hành động được ghi log",
+            "message": "Nội dung log message",
+            "meta_data": "Dữ liệu bổ sung (JSON)",
+            "user_id": "ID của user thực hiện hành động",
+            "ip_address": "Địa chỉ IP",
+            "user_agent": "User agent string",
+            "created_at": "Thời gian tạo log",
+            "total": "Tổng số logs",
+            "page": "Trang hiện tại",
+            "total_pages": "Tổng số trang",
+            "recent_count": "Số logs trong 24 giờ gần nhất",
+            "by_level": "Phân bổ số lượng logs theo level"
+        }
+    }
+}

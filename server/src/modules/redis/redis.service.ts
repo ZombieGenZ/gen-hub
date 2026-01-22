@@ -625,4 +625,155 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
       this.invalidateAccountFullDataCache(userId),
     ]);
   }
+
+  private get SYSTEM_LOG_LIST_CACHE_TTL(): number {
+    return this.configService.get<number>('REDIS_SYSTEM_LOG_LIST_CACHE_TTL') || 30;
+  }
+
+  private get SYSTEM_LOG_STATS_CACHE_TTL(): number {
+    return this.configService.get<number>('REDIS_SYSTEM_LOG_STATS_CACHE_TTL') || 60;
+  }
+
+  private get SYSTEM_LOG_MODULES_CACHE_TTL(): number {
+    return this.configService.get<number>('REDIS_SYSTEM_LOG_MODULES_CACHE_TTL') || 300;
+  }
+
+  private get SYSTEM_LOG_LIST_KEY_PREFIX(): string {
+    return this.configService.get<string>('REDIS_SYSTEM_LOG_LIST_KEY_PREFIX') || 'system:log:list';
+  }
+
+  private get SYSTEM_LOG_STATS_KEY_PREFIX(): string {
+    return this.configService.get<string>('REDIS_SYSTEM_LOG_STATS_KEY_PREFIX') || 'system:log:stats';
+  }
+
+  private get SYSTEM_LOG_MODULES_KEY_PREFIX(): string {
+    return this.configService.get<string>('REDIS_SYSTEM_LOG_MODULES_KEY_PREFIX') || 'system:log:modules';
+  }
+
+  /**
+   * Generate cache key for system log list with query params
+   */
+  getSystemLogListCacheKey(query: Record<string, unknown>): string {
+    const sortedParams = Object.keys(query)
+      .sort()
+      .map((key) => `${key}=${query[key]}`)
+      .join('&');
+    return `${this.SYSTEM_LOG_LIST_KEY_PREFIX}:${sortedParams}`;
+  }
+
+  /**
+   * Get system log list from cache
+   */
+  async getSystemLogListCache<T>(cacheKey: string): Promise<T | null> {
+    const data = await this.get(cacheKey);
+    if (!data) return null;
+    try {
+      return JSON.parse(data) as T;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Set system log list to cache
+   */
+  async setSystemLogListCache<T>(
+    cacheKey: string,
+    data: T,
+    ttlSeconds?: number,
+  ): Promise<void> {
+    const ttl = ttlSeconds || this.SYSTEM_LOG_LIST_CACHE_TTL;
+    await this.set(cacheKey, JSON.stringify(data), ttl);
+  }
+
+  /**
+   * Invalidate all system log list cache
+   */
+  async invalidateSystemLogListCache(): Promise<void> {
+    await this.delByPattern(`${this.SYSTEM_LOG_LIST_KEY_PREFIX}:*`);
+  }
+
+  /**
+   * Get system log stats cache key
+   */
+  getSystemLogStatsCacheKey(): string {
+    return this.SYSTEM_LOG_STATS_KEY_PREFIX;
+  }
+
+  /**
+   * Get system log stats from cache
+   */
+  async getSystemLogStatsCache<T>(): Promise<T | null> {
+    const data = await this.get(this.SYSTEM_LOG_STATS_KEY_PREFIX);
+    if (!data) return null;
+    try {
+      return JSON.parse(data) as T;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Set system log stats to cache
+   */
+  async setSystemLogStatsCache<T>(data: T, ttlSeconds?: number): Promise<void> {
+    const ttl = ttlSeconds || this.SYSTEM_LOG_STATS_CACHE_TTL;
+    await this.set(this.SYSTEM_LOG_STATS_KEY_PREFIX, JSON.stringify(data), ttl);
+  }
+
+  /**
+   * Invalidate system log stats cache
+   */
+  async invalidateSystemLogStatsCache(): Promise<void> {
+    await this.del(this.SYSTEM_LOG_STATS_KEY_PREFIX);
+  }
+
+  /**
+   * Get system log modules cache key
+   */
+  getSystemLogModulesCacheKey(): string {
+    return this.SYSTEM_LOG_MODULES_KEY_PREFIX;
+  }
+
+  /**
+   * Get system log modules from cache
+   */
+  async getSystemLogModulesCache(): Promise<string[] | null> {
+    const data = await this.get(this.SYSTEM_LOG_MODULES_KEY_PREFIX);
+    if (!data) return null;
+    try {
+      return JSON.parse(data) as string[];
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Set system log modules to cache
+   */
+  async setSystemLogModulesCache(
+    modules: string[],
+    ttlSeconds?: number,
+  ): Promise<void> {
+    const ttl = ttlSeconds || this.SYSTEM_LOG_MODULES_CACHE_TTL;
+    await this.set(this.SYSTEM_LOG_MODULES_KEY_PREFIX, JSON.stringify(modules), ttl);
+  }
+
+  /**
+   * Invalidate system log modules cache
+   */
+  async invalidateSystemLogModulesCache(): Promise<void> {
+    await this.del(this.SYSTEM_LOG_MODULES_KEY_PREFIX);
+  }
+
+  /**
+   * Invalidate all system log caches
+   */
+  async invalidateAllSystemLogCache(): Promise<void> {
+    await Promise.all([
+      this.invalidateSystemLogListCache(),
+      this.invalidateSystemLogStatsCache(),
+      this.invalidateSystemLogModulesCache(),
+    ]);
+  }
 }
