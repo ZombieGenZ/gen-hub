@@ -1,29 +1,64 @@
 "use client";
 
 import { useRouter } from 'next/navigation';
-import React, { useRef, useState, useEffect, useMemo } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import Map, { Marker, MapRef, ViewStateChangeEvent, Popup } from 'react-map-gl/mapbox';
 import mapboxgl from 'mapbox-gl';
 import { Property } from '@/data/mockProperties';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import { BedDouble, Bath, X } from 'lucide-react';
-import { MapPinIcon, ArrowsPointingOutIcon, PaperAirplaneIcon, CubeIcon } from '@heroicons/react/24/solid';
+import { X } from 'lucide-react';
+import { ArrowsPointingOutIcon, PaperAirplaneIcon, CubeIcon } from '@heroicons/react/24/solid';
 import Supercluster from 'supercluster';
 
-// Properties Map Component
+// Constants
+const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+
+const HO_CHI_MINH_CITY_COORDS = {
+    latitude: 10.7769,
+    longitude: 106.7009,
+    zoom: 12,
+} as const;
+
+const CLUSTER_CONFIG = {
+    radius: 40,
+    maxZoom: 16,
+} as const;
+
+const EARTH_RADIUS_KM = 6371;
+const AVERAGE_SPEED_KMH = 30;
+
+const OVERLAY_TIMEOUT_MS = 2000;
+const POPUP_OFFSET = 45;
+const CARD_WIDTH_PX = 360;
+const IMAGE_SIZE_PX = 120;
+
+const TRANSPORT_HUBS = [
+    { id: 'hub-1', type: 'port', name: 'Cảng Cát Lái', lat: 10.770, lng: 106.780 },
+    { id: 'hub-2', type: 'airport', name: 'Sân bay TSN', lat: 10.814, lng: 106.666 },
+] as const;
+
+// Interfaces
 interface MapComponentProps {
     properties: Property[];
     onBoundsChange?: (bounds: { north: number; south: number; east: number; west: number }) => void;
     highlightedPropertyId?: number | string | null;
     onMarkerClick: (propertyId: number | string) => void;
     variant?: 'search' | 'detail';
+    searchTrigger?: number;
 }
 
-const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
-
-export default function MapComponent({ properties, onBoundsChange, highlightedPropertyId, onMarkerClick, variant = 'search' }: MapComponentProps) {
+export default function MapComponent({ properties, onBoundsChange, highlightedPropertyId, onMarkerClick, variant = 'search', searchTrigger }: MapComponentProps) {
     const router = useRouter();
     const mapRef = useRef<MapRef>(null);
+
+    const [isMapLoaded, setIsMapLoaded] = useState(false);
+
+    // Explicit resize to ensure map renders correctly if container size changes
+    useEffect(() => {
+        if (mapRef.current) {
+            mapRef.current.resize();
+        }
+    }, []);
 
     // State for Clicked Property (Full Card)
     const [selectedInfo, setSelectedInfo] = useState<Property | null>(null);
@@ -60,7 +95,7 @@ export default function MapComponent({ properties, onBoundsChange, highlightedPr
         }));
         superclusterRef.current.load(points);
         // Force update immediately
-        if (mapRef.current) {
+        if (mapRef.current && isMapLoaded) {
             const bounds = mapRef.current.getBounds();
             if (bounds) {
                 const zoom = mapRef.current.getZoom();
@@ -68,12 +103,12 @@ export default function MapComponent({ properties, onBoundsChange, highlightedPr
                 setClusters(superclusterRef.current.getClusters(bbox, Math.round(zoom)));
             }
         }
-    }, [properties]);
+    }, [properties, isMapLoaded]);
 
     // 2. Update clusters on map move
     useEffect(() => {
         const update = () => {
-            if (!mapRef.current) return;
+            if (!mapRef.current || !isMapLoaded) return;
             const bounds = mapRef.current.getBounds();
             if (!bounds) return;
 
@@ -87,8 +122,26 @@ export default function MapComponent({ properties, onBoundsChange, highlightedPr
 
         update();
         // Debounce? For now direct call is usually fine for smooth UI
-    }, [viewState]);
+    }, [viewState, isMapLoaded]);
     // ---------------------------
+
+    // Auto-Fit Bounds on Search Trigger
+    useEffect(() => {
+        if (!searchTrigger || !isMapLoaded || properties.length === 0 || !mapRef.current) return;
+
+        const lats = properties.map(p => p.lat);
+        const lngs = properties.map(p => p.lng);
+        const minLat = Math.min(...lats);
+        const maxLat = Math.max(...lats);
+        const minLng = Math.min(...lngs);
+        const maxLng = Math.max(...lngs);
+
+        // Fit bounds with some padding
+        mapRef.current.fitBounds(
+            [[minLng, minLat], [maxLng, maxLat]],
+            { padding: 80, duration: 1000 }
+        );
+    }, [searchTrigger, isMapLoaded]); // Only trigger when explicit search happens (searchTrigger changes) or map loads
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -119,7 +172,8 @@ export default function MapComponent({ properties, onBoundsChange, highlightedPr
 
     const handleMoveEnd = (evt: ViewStateChangeEvent) => {
         setViewState(evt.viewState);
-        if (searchAsIMove && mapRef.current) {
+        // Only trigger search if move was initiated by user (avoids loop with fitBounds)
+        if (searchAsIMove && mapRef.current && (evt as any).originalEvent) {
             const bounds = mapRef.current.getBounds();
             if (bounds) {
                 onBoundsChange?.({
@@ -179,37 +233,26 @@ export default function MapComponent({ properties, onBoundsChange, highlightedPr
             hubMarkersRef.current = [];
 
             if (variant === 'detail' && selectedInfo) {
-                // Haversine Distance Helper
-                const getDistanceFromLatLonInKm = (lat1: number, lon1: number, lat2: number, lon2: number) => {
-                    const R = 6371; // Radius of the earth in km
-                    const dLat = (lat2 - lat1) * (Math.PI / 180);
-                    const dLon = (lon2 - lon1) * (Math.PI / 180);
+                TRANSPORT_HUBS.forEach(hub => {
+                    // Calculate distance inline using Haversine formula
+                    const dLat = (hub.lat - selectedInfo.lat) * (Math.PI / 180);
+                    const dLon = (hub.lng - selectedInfo.lng) * (Math.PI / 180);
                     const a =
                         Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                        Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
+                        Math.cos(selectedInfo.lat * (Math.PI / 180)) * Math.cos(hub.lat * (Math.PI / 180)) *
                         Math.sin(dLon / 2) * Math.sin(dLon / 2);
                     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-                    return R * c;
-                };
-
-                const hubs = [
-                    { id: 'hub-1', type: 'port', name: 'Cảng Cát Lái', lat: 10.770, lng: 106.780 },
-                    { id: 'hub-2', type: 'airport', name: 'Sân bay TSN', lat: 10.814, lng: 106.666 },
-                    // { id: 'hub-3', type: 'highway', name: 'CT Long Thành', lat: 10.790, lng: 106.750 } // Hidden for now to focus on main 2
-                ];
-
-                hubs.forEach(hub => {
-                    const distance = getDistanceFromLatLonInKm(selectedInfo.lat, selectedInfo.lng, hub.lat, hub.lng);
+                    const distance = EARTH_RADIUS_KM * c;
 
                     // SVG Icons as strings
                     const portIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path fill-rule="evenodd" d="M11.54 22.351l.07.04.028.016a.76.76 0 00.723 0l.028-.015.071-.041a16.975 16.975 0 001.144-.742 19.58 19.58 0 002.683-2.282c1.944-1.99 3.963-4.98 3.963-8.827a8.25 8.25 0 00-16.5 0c0 3.846 2.02 6.837 3.963 8.827a19.58 19.58 0 002.682 2.282 16.975 16.975 0 001.145.742zM12 13.5a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd" /></svg>`;
                     const planeIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path fill-rule="evenodd" d="M11.54 22.351l.07.04.028.016a.76.76 0 00.723 0l.028-.015.071-.041a16.975 16.975 0 001.144-.742 19.58 19.58 0 002.683-2.282c1.944-1.99 3.963-4.98 3.963-8.827a8.25 8.25 0 00-16.5 0c0 3.846 2.02 6.837 3.963 8.827a19.58 19.58 0 002.682 2.282 16.975 16.975 0 001.145.742zM12 13.5a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd" /></svg>`;
 
                     const iconSvg = hub.type === 'port' ? portIcon : planeIcon;
-                    const el = document.createElement('div');
-                    el.className = 'flex flex-col items-center relative';
-                    el.style.cssText = 'width: 32px; height: 32px;'; // Fixed size for anchor calculation
-                    el.innerHTML = `
+                    const markerElement = document.createElement('div');
+                    markerElement.className = 'flex flex-col items-center relative';
+                    markerElement.style.cssText = 'width: 32px; height: 32px;';
+                    markerElement.innerHTML = `
                         <div class="${hub.type === 'port' ? 'text-blue-600' : 'text-sky-500'} relative drop-shadow-md flex justify-center items-center w-8 h-8">
                             ${iconSvg}
                         </div>
@@ -218,7 +261,7 @@ export default function MapComponent({ properties, onBoundsChange, highlightedPr
                         </div>
                     `;
 
-                    const marker = new mapboxgl.Marker({ element: el, anchor: 'bottom' })
+                    const marker = new mapboxgl.Marker({ element: markerElement, anchor: 'bottom' })
                         .setLngLat([hub.lng, hub.lat])
                         .addTo(map);
 
@@ -265,6 +308,21 @@ export default function MapComponent({ properties, onBoundsChange, highlightedPr
                 mapboxAccessToken={MAPBOX_TOKEN}
                 onClick={handleMapClick}
                 ref={mapRef}
+                onLoad={() => {
+                    if (mapRef.current) {
+                        // Resizing is often needed when map mounts in previously hidden container
+                        mapRef.current.resize();
+                        setIsMapLoaded(true);
+
+                        // Initial Cluster Load
+                        const bounds = mapRef.current.getBounds();
+                        if (bounds) {
+                            const zoom = mapRef.current.getZoom();
+                            const bbox = [bounds.getWest(), bounds.getSouth(), bounds.getEast(), bounds.getNorth()] as [number, number, number, number];
+                            setClusters(superclusterRef.current.getClusters(bbox, Math.round(zoom)));
+                        }
+                    }
+                }}
             >
                 {/* Render CLUSTERS and MARKERS */}
                 {clusters.map((cluster) => {

@@ -1,7 +1,36 @@
 "use client";
 
 import React from "react";
-import { ArchiveBoxIcon, CurrencyDollarIcon, UserGroupIcon, ArrowRightIcon } from "@heroicons/react/24/outline";
+import {
+    ArchiveBoxIcon,
+    CurrencyDollarIcon,
+    UserGroupIcon,
+    ArrowRightIcon
+} from "@heroicons/react/24/outline";
+
+interface Feature {
+    title: string;
+    description: string;
+    icon: React.ComponentType<{ className?: string }>;
+}
+
+const FEATURES: Feature[] = [
+    {
+        title: "Nguồn Kho Đa Dạng",
+        description: "Tiếp cận hệ thống kho phong phú, từ kho thường, kho mát đến kho ngoại quan.",
+        icon: ArchiveBoxIcon,
+    },
+    {
+        title: "Giá Cả Minh Bạch",
+        description: "Chúng tôi cam kết minh bạch về giá cả và thông tin chi tiết, giúp bạn quyết định tự tin.",
+        icon: CurrencyDollarIcon,
+    },
+    {
+        title: "Chuyên Gia Tư Vấn",
+        description: "Đội ngũ giàu kinh nghiệm luôn sẵn sàng hỗ trợ bạn nắm bắt thị trường.",
+        icon: UserGroupIcon,
+    },
+];
 
 export function PrimeNestAbout() {
     return (
@@ -11,7 +40,11 @@ export function PrimeNestAbout() {
                     {/* Image Section */}
                     <div className="relative">
                         <div className="relative rounded-3xl overflow-hidden bg-muted border border-border h-90 min-h-[500px]">
-                            <img src="./assets/unnamed.jpg  " alt="About GenHub" className="w-full h-full object-cover" />
+                            <img
+                                src="./assets/unnamed.jpg"
+                                alt="About GenHub"
+                                className="w-full h-full object-cover"
+                            />
                         </div>
                     </div>
 
@@ -23,31 +56,17 @@ export function PrimeNestAbout() {
                                 <span className="text-primary">Dịch Vụ Kho Bãi</span>
                             </h2>
                             <p className="text-muted-foreground leading-relaxed">
-                                Tại GenHub, chúng tôi đơn giản hóa quy trình tìm kiếm và vận hành kho bãi. Đội ngũ chuyên gia của chúng tôi luôn đồng hành và hỗ trợ bạn trong mọi bước đi, đảm bảo sự an tâm tuyệt đối.
+                                Tại GenHub, chúng tôi đơn giản hóa quy trình tìm kiếm và vận hành kho bãi.
+                                Đội ngũ chuyên gia của chúng tôi luôn đồng hành và hỗ trợ bạn trong mọi bước đi,
+                                đảm bảo sự an tâm tuyệt đối.
                             </p>
                         </div>
 
                         {/* Features Grid */}
                         <div className="grid md:grid-cols-3 gap-4">
-                            {[
-                                {
-                                    title: "Nguồn Kho Đa Dạng",
-                                    description: "Tiếp cận hệ thống kho phong phú, từ kho thường, kho mát đến kho ngoại quan.",
-                                    icon: ArchiveBoxIcon,
-                                },
-                                {
-                                    title: "Giá Cả Minh Bạch",
-                                    description: "Chúng tôi cam kết minh bạch về giá cả và thông tin chi tiết, giúp bạn quyết định tự tin.",
-                                    icon: CurrencyDollarIcon,
-                                },
-                                {
-                                    title: "Chuyên Gia Tư Vấn",
-                                    description: "Đội ngũ giàu kinh nghiệm luôn sẵn sàng hỗ trợ bạn nắm bắt thị trường.",
-                                    icon: UserGroupIcon,
-                                },
-                            ].map((feature, index) => (
+                            {FEATURES.map((feature, index) => (
                                 <div
-                                    key={index}
+                                    key={feature.title}
                                     className="bg-card rounded-xl p-4 border border-border shadow-sm hover:shadow-md transition-shadow"
                                 >
                                     <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center mb-3">
