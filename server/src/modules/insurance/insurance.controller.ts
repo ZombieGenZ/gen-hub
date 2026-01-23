@@ -19,7 +19,7 @@ import {
   ApiBody,
   ApiQuery,
 } from '@nestjs/swagger';
-import { I18nLang } from 'nestjs-i18n';
+import { I18nLang, I18nService } from 'nestjs-i18n';
 
 import { InsuranceService } from './insurance.service';
 import {
@@ -49,7 +49,10 @@ import { IInsurance, IPaginatedResponse } from './interfaces';
 @ApiTags('Insurances')
 @Controller('insurances')
 export class InsuranceController {
-  constructor(private readonly insuranceService: InsuranceService) {}
+  constructor(
+    private readonly insuranceService: InsuranceService,
+    private readonly i18n: I18nService,
+  ) { }
 
   @ApiOperation({
     summary: 'Tạo bảo hiểm mới',
@@ -181,7 +184,7 @@ export class InsuranceController {
     return new CreatedResponse(
       'insurance.create.success',
       result,
-      'Tạo bảo hiểm thành công',
+      this.i18n.t('insurance.success.created', { lang }),
     );
   }
 
@@ -285,12 +288,13 @@ export class InsuranceController {
   @Get()
   async findAll(
     @Query() query: QueryInsuranceDto,
+    @I18nLang() lang: string,
   ): Promise<GetResponse<IPaginatedResponse<IInsurance>>> {
     const result = await this.insuranceService.findAll(query);
     return new GetResponse(
       'insurance.list.success',
       result,
-      'Lấy danh sách bảo hiểm thành công',
+      this.i18n.t('insurance.success.list', { lang }),
     );
   }
 
@@ -350,12 +354,12 @@ export class InsuranceController {
   @UseGuards(JwtAuthGuard, PermissionGuard)
   @RequirePermission('insurance.list')
   @Get('active')
-  async findAllActive(): Promise<GetResponse<IInsurance[]>> {
+  async findAllActive(@I18nLang() lang: string): Promise<GetResponse<IInsurance[]>> {
     const result = await this.insuranceService.findAllActive();
     return new GetResponse(
       'insurance.list.success',
       result,
-      'Lấy danh sách bảo hiểm active thành công',
+      this.i18n.t('insurance.success.active_list', { lang }),
     );
   }
 
@@ -461,7 +465,7 @@ export class InsuranceController {
     return new GetResponse(
       'insurance.read.success',
       result,
-      'Lấy chi tiết bảo hiểm thành công',
+      this.i18n.t('insurance.success.fetched', { lang }),
     );
   }
 
@@ -622,7 +626,7 @@ export class InsuranceController {
     return new UpdatedResponse(
       'insurance.update.success',
       result,
-      'Cập nhật bảo hiểm thành công',
+      this.i18n.t('insurance.success.updated', { lang }),
     );
   }
 
@@ -698,7 +702,7 @@ export class InsuranceController {
     return new DeletedResponse(
       'insurance.delete.success',
       null,
-      'Xóa nhiều bảo hiểm thành công',
+      this.i18n.t('insurance.success.deleted_many', { lang }),
     );
   }
 
@@ -753,7 +757,7 @@ export class InsuranceController {
     return new DeletedResponse(
       'insurance.delete.success',
       null,
-      'Xóa bảo hiểm thành công',
+      this.i18n.t('insurance.success.deleted', { lang }),
     );
   }
 }

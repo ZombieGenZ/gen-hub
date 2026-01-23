@@ -1,9 +1,17 @@
 {
     "success": {
-        "created": "Đã tạo addon thành công",
-        "updated": "Đã cập nhật addon thành công",
-        "deleted": "Đã xóa addon thành công",
-        "fetched": "Lấy dữ liệu addon thành công"
+        "created": "Tạo addon thành công",
+        "updated": "Cập nhật addon thành công",
+        "deleted": "Xóa addon thành công",
+        "deleted_many": "Xóa nhiều addon thành công",
+        "fetched": "Lấy dữ liệu addon thành công",
+        "list": "Lấy danh sách addon thành công",
+        "active_list": "Lấy danh sách addon active thành công"
+    },
+    "logs": {
+        "created": "Tạo addon mới: {name}",
+        "updated": "Cập nhật addon: {name}",
+        "deleted": "Xóa addon: {name}"
     },
     "errors": {
         "not_found": "Không tìm thấy addon",

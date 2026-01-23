@@ -28,11 +28,13 @@ export class InsuranceService {
     }
 
     private getCacheKey(id: string): string {
-        return `insurance:${id}`;
+        const prefix = this.configService.get<string>('REDIS_INSURANCE_KEY_PREFIX', 'insurance');
+        return `${prefix}:${id}`;
     }
 
     private getListCacheKey(query: QueryInsuranceDto): string {
-        return `insurance:list:${JSON.stringify(query)}`;
+        const prefix = this.configService.get<string>('REDIS_INSURANCE_LIST_KEY_PREFIX', 'insurance:list');
+        return `${prefix}:${JSON.stringify(query)}`;
     }
 
     /**
@@ -56,7 +58,7 @@ export class InsuranceService {
         await this.invalidateListCache();
 
         // Ghi log
-        this.systemLogService.info('Insurance', 'CREATE', `Tạo bảo hiểm mới: ${insurance.name}`, {
+        this.systemLogService.info('Insurance', 'CREATE', this.i18n.t('insurance.logs.created', { lang: 'vi', args: { name: insurance.name } }), {
             userId,
             metaData: { insuranceId: insurance.id, name: insurance.name },
         });
@@ -145,7 +147,8 @@ export class InsuranceService {
      * Lấy tất cả bảo hiểm active (không phân trang, dùng cho dropdown)
      */
     async findAllActive() {
-        const cacheKey = 'insurance:active';
+        const prefix = this.configService.get<string>('REDIS_INSURANCE_ACTIVE_KEY_PREFIX', 'insurance:active');
+        const cacheKey = prefix;
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
             return JSON.parse(cached);
@@ -195,7 +198,7 @@ export class InsuranceService {
         await this.invalidateListCache();
 
         // Ghi log
-        this.systemLogService.info('Insurance', 'UPDATE', `Cập nhật bảo hiểm: ${updated.name}`, {
+        this.systemLogService.info('Insurance', 'UPDATE', this.i18n.t('insurance.logs.updated', { lang: 'vi', args: { name: updated.name } }), {
             userId,
             metaData: { insuranceId: id, updatedFields: Object.keys(dto) },
         });
@@ -234,7 +237,7 @@ export class InsuranceService {
         await this.invalidateListCache();
 
         // Ghi log
-        this.systemLogService.info('Insurance', 'DELETE', `Xóa bảo hiểm: ${insurance.name}`, {
+        this.systemLogService.info('Insurance', 'DELETE', this.i18n.t('insurance.logs.deleted', { lang: 'vi', args: { name: insurance.name } }), {
             userId,
             metaData: { insuranceId: id, name: insurance.name },
         });
@@ -280,7 +283,7 @@ export class InsuranceService {
 
         // Log
         insurances.forEach(i => {
-            this.systemLogService.info('Insurance', 'DELETE', `Xóa bảo hiểm: ${i.name}`, {
+            this.systemLogService.info('Insurance', 'DELETE', this.i18n.t('insurance.logs.deleted', { lang: 'vi', args: { name: i.name } }), {
                 userId,
                 metaData: { insuranceId: i.id, name: i.name },
             });
@@ -292,7 +295,9 @@ export class InsuranceService {
     }
 
     private async invalidateListCache() {
-        await this.redisService.delByPattern('insurance:list:*');
-        await this.redisService.del('insurance:active');
+        const listPrefix = this.configService.get<string>('REDIS_INSURANCE_LIST_KEY_PREFIX', 'insurance:list');
+        const activePrefix = this.configService.get<string>('REDIS_INSURANCE_ACTIVE_KEY_PREFIX', 'insurance:active');
+        await this.redisService.delByPattern(`${listPrefix}:*`);
+        await this.redisService.del(`${activePrefix}`);
     }
 }

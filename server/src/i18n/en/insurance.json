@@ -3,7 +3,15 @@
         "created": "Insurance created successfully",
         "updated": "Insurance updated successfully",
         "deleted": "Insurance deleted successfully",
-        "fetched": "Insurance fetched successfully"
+        "deleted_many": "Multiple insurances deleted successfully",
+        "fetched": "Insurance fetched successfully",
+        "list": "Insurance list fetched successfully",
+        "active_list": "Active insurance list fetched successfully"
+    },
+    "logs": {
+        "created": "Created new insurance: {name}",
+        "updated": "Updated insurance: {name}",
+        "deleted": "Deleted insurance: {name}"
     },
     "errors": {
         "not_found": "Insurance not found",

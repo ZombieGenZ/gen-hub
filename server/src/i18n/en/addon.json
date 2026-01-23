@@ -3,7 +3,15 @@
         "created": "Addon created successfully",
         "updated": "Addon updated successfully",
         "deleted": "Addon deleted successfully",
-        "fetched": "Addon fetched successfully"
+        "deleted_many": "Multiple addons deleted successfully",
+        "fetched": "Addon fetched successfully",
+        "list": "Addon list fetched successfully",
+        "active_list": "Active addon list fetched successfully"
+    },
+    "logs": {
+        "created": "Created new addon: {name}",
+        "updated": "Updated addon: {name}",
+        "deleted": "Deleted addon: {name}"
     },
     "errors": {
         "not_found": "Addon not found",
