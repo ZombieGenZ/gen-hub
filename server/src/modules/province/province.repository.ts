@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
-import { IProvince, IProvinceWithWards } from './interfaces';
+import { IProvince, IProvinceWithWards } from './types';
 import { QueryProvinceDto } from './dto';
+import { provinceDetailSelect, provinceListSelect } from './selects/province.select';
 
 @Injectable()
 export class ProvinceRepository {
@@ -33,16 +34,7 @@ export class ProvinceRepository {
         const items = await this.prisma.province.findMany({
             where,
             orderBy: { name: 'asc' },
-            select: {
-                id: true,
-                code: true,
-                name: true,
-                slug: true,
-                type: true,
-                is_active: true,
-                created_at: true,
-                updated_at: true,
-            },
+            select: provinceListSelect,
         });
 
         return items as IProvince[];
@@ -54,19 +46,7 @@ export class ProvinceRepository {
     async findById(id: string): Promise<IProvinceWithWards | null> {
         const province = await this.prisma.province.findFirst({
             where: { id, is_deleted: false, is_active: true },
-            include: {
-                wards: {
-                    where: { is_deleted: false, is_active: true },
-                    select: {
-                        id: true,
-                        code: true,
-                        name: true,
-                        slug: true,
-                        type: true,
-                    },
-                    orderBy: { name: 'asc' },
-                },
-            },
+            select: provinceDetailSelect,
         });
 
         return province as IProvinceWithWards | null;

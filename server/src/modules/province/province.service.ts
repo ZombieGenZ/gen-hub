@@ -1,50 +1,25 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { I18nService } from 'nestjs-i18n';
 import { ProvinceRepository } from './province.repository';
 import { RedisService } from '../redis/redis.service';
 import { QueryProvinceDto } from './dto';
-import { IProvince, IProvinceWithWards } from './interfaces';
+import { IProvince, IProvinceWithWards } from './types';
+import { ProvinceCacheKeysHelper } from './constants/province-cache-keys.helper';
 
 @Injectable()
 export class ProvinceService {
-    private readonly PROVINCE_LIST_TTL: number;
-    private readonly PROVINCE_DETAIL_TTL: number;
-
     constructor(
         private readonly repository: ProvinceRepository,
         private readonly redisService: RedisService,
-        private readonly configService: ConfigService,
         private readonly i18n: I18nService,
-    ) {
-        this.PROVINCE_LIST_TTL = this.configService.get<number>('REDIS_PROVINCE_LIST_TTL') || 86400;
-        this.PROVINCE_DETAIL_TTL = this.configService.get<number>('REDIS_PROVINCE_DETAIL_TTL') || 86400;
-    }
-
-    /**
-     * Lấy cache key cho danh sách tỉnh/thành
-     */
-    private getListCacheKey(query: QueryProvinceDto): string {
-        const sortedParams = Object.keys(query)
-            .sort()
-            .filter(key => query[key as keyof QueryProvinceDto] !== undefined)
-            .map(key => `${key}=${query[key as keyof QueryProvinceDto]}`)
-            .join('&');
-        return `province:list:${sortedParams}`;
-    }
-
-    /**
-     * Lấy cache key cho chi tiết tỉnh/thành
-     */
-    private getDetailCacheKey(id: string): string {
-        return `province:detail:${id}`;
-    }
+        private readonly cacheKeys: ProvinceCacheKeysHelper,
+    ) { }
 
     /**
      * Lấy danh sách tất cả tỉnh/thành với cache
      */
     async findMany(query: QueryProvinceDto, lang: string): Promise<IProvince[]> {
-        const cacheKey = this.getListCacheKey(query);
+        const cacheKey = this.cacheKeys.list(query);
 
         // Kiểm tra cache
         const cached = await this.redisService.get(cacheKey);
@@ -56,7 +31,7 @@ export class ProvinceService {
         const items = await this.repository.findMany(query);
 
         // Lưu vào cache
-        await this.redisService.set(cacheKey, JSON.stringify(items), this.PROVINCE_LIST_TTL);
+        await this.redisService.set(cacheKey, JSON.stringify(items), this.cacheKeys.listTtl);
 
         return items;
     }
@@ -65,7 +40,7 @@ export class ProvinceService {
      * Lấy chi tiết tỉnh/thành theo ID với cache
      */
     async findById(id: string, lang: string): Promise<IProvinceWithWards> {
-        const cacheKey = this.getDetailCacheKey(id);
+        const cacheKey = this.cacheKeys.detail(id);
 
         // Kiểm tra cache
         const cached = await this.redisService.get(cacheKey);
@@ -83,7 +58,7 @@ export class ProvinceService {
         }
 
         // Lưu vào cache
-        await this.redisService.set(cacheKey, JSON.stringify(province), this.PROVINCE_DETAIL_TTL);
+        await this.redisService.set(cacheKey, JSON.stringify(province), this.cacheKeys.detailTtl);
 
         return province;
     }

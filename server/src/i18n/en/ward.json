@@ -12,6 +12,7 @@
         "offset_int": "Offset must be an integer",
         "offset_min": "Offset must be >= 0",
         "keywords_string": "Keywords must be a string",
-        "province_id_uuid": "Province ID must be a valid UUID"
+        "province_id_uuid": "Province ID must be a valid UUID",
+        "type_invalid": "Ward type is invalid (must be WARD, COMMUNE, TOWNSHIP, TOWN or CITY)"
     }
 }
