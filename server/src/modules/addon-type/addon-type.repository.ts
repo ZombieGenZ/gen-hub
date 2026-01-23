@@ -1,14 +1,18 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
-import { IAddonTypeWithRelations } from './interfaces';
+import { IAddonTypeWithRelations } from './types';
+import { addonTypeListSelect, addonDetailSelect } from './selects';
 
 @Injectable()
 export class AddonTypeRepository {
     constructor(private readonly prisma: PrismaService) { }
 
     async create(data: Prisma.AddonTypeCreateInput): Promise<IAddonTypeWithRelations> {
-        return this.prisma.addonType.create({ data });
+        return this.prisma.addonType.create({
+            data,
+            select: addonDetailSelect,
+        });
     }
 
     async findAll(params: {
@@ -23,14 +27,7 @@ export class AddonTypeRepository {
             take,
             where,
             orderBy,
-            include: {
-                addons: {
-                    where: { is_deleted: false },
-                    include: {
-                        addon: true,
-                    },
-                },
-            },
+            select: addonTypeListSelect,
         });
     }
 
@@ -41,14 +38,7 @@ export class AddonTypeRepository {
     async findById(id: string): Promise<IAddonTypeWithRelations | null> {
         return this.prisma.addonType.findFirst({
             where: { id, is_deleted: false },
-            include: {
-                addons: {
-                    where: { is_deleted: false },
-                    include: {
-                        addon: true,
-                    },
-                },
-            },
+            select: addonDetailSelect,
         });
     }
 
@@ -59,6 +49,7 @@ export class AddonTypeRepository {
                 is_deleted: false,
                 ...(excludeId && { id: { not: excludeId } }),
             },
+            select: addonDetailSelect,
         });
     }
 
@@ -66,6 +57,7 @@ export class AddonTypeRepository {
         return this.prisma.addonType.findMany({
             where: { is_active: true, is_deleted: false },
             orderBy: { name: 'asc' },
+            select: addonTypeListSelect,
         });
     }
 
@@ -73,14 +65,7 @@ export class AddonTypeRepository {
         return this.prisma.addonType.update({
             where: { id },
             data,
-            include: {
-                addons: {
-                    where: { is_deleted: false },
-                    include: {
-                        addon: true,
-                    },
-                },
-            },
+            select: addonDetailSelect,
         });
     }
 
@@ -92,12 +77,14 @@ export class AddonTypeRepository {
                 deleted_at: new Date(),
                 deleted_by: userId,
             },
+            select: addonDetailSelect,
         });
     }
 
     async findByIds(ids: string[]): Promise<IAddonTypeWithRelations[]> {
         return this.prisma.addonType.findMany({
             where: { id: { in: ids }, is_deleted: false },
+            select: addonTypeListSelect,
         });
     }
 

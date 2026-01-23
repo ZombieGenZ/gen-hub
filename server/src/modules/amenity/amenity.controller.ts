@@ -36,12 +36,12 @@ import {
   GetResponse,
   DeletedResponse,
 } from '../../common/responses';
-import { IAmenity, IPaginatedResponse } from './interfaces';
+import { IAmenity, IPaginatedResponse } from './types';
 
 @ApiTags('Amenities')
 @Controller('amenities')
 export class AmenityController {
-  constructor(private readonly amenityService: AmenityService) {}
+  constructor(private readonly amenityService: AmenityService) { }
 
   @ApiOperation({
     summary: 'Tạo tiện ích mới',
@@ -155,11 +155,7 @@ export class AmenityController {
     @I18nLang() lang: string,
   ): Promise<CreatedResponse<IAmenity>> {
     const result = await this.amenityService.create(dto, userId, lang);
-    return new CreatedResponse(
-      'amenity.create.success',
-      result,
-      'Tạo tiện ích thành công',
-    );
+    return new CreatedResponse('amenity.create.success', result);
   }
 
   @ApiOperation({
@@ -256,11 +252,7 @@ export class AmenityController {
     @Query() query: QueryAmenityDto,
   ): Promise<GetResponse<IPaginatedResponse<IAmenity>>> {
     const result = await this.amenityService.findAll(query);
-    return new GetResponse(
-      'amenity.list.success',
-      result,
-      'Lấy danh sách tiện ích thành công',
-    );
+    return new GetResponse('amenity.list.success', result);
   }
 
   @ApiOperation({
@@ -351,11 +343,7 @@ export class AmenityController {
     @I18nLang() lang: string,
   ): Promise<GetResponse<IAmenity>> {
     const result = await this.amenityService.findById(id, lang);
-    return new GetResponse(
-      'amenity.get.success',
-      result,
-      'Lấy chi tiết tiện ích thành công',
-    );
+    return new GetResponse('amenity.get.success', result);
   }
 
   @ApiOperation({
@@ -482,11 +470,7 @@ export class AmenityController {
     @I18nLang() lang: string,
   ): Promise<UpdatedResponse<IAmenity>> {
     const result = await this.amenityService.update(id, dto, userId, lang);
-    return new UpdatedResponse(
-      'amenity.update.success',
-      result,
-      'Cập nhật tiện ích thành công',
-    );
+    return new UpdatedResponse('amenity.update.success', result);
   }
 
   @ApiOperation({
@@ -560,11 +544,7 @@ export class AmenityController {
     @I18nLang() lang: string,
   ): Promise<DeletedResponse<null>> {
     await this.amenityService.deleteMany(dto.ids, userId, lang);
-    return new DeletedResponse(
-      'amenity.delete.success',
-      null,
-      'Xóa nhiều tiện ích thành công',
-    );
+    return new DeletedResponse('amenity.delete.success', null);
   }
 
   @ApiOperation({
@@ -615,10 +595,6 @@ export class AmenityController {
     @I18nLang() lang: string,
   ): Promise<DeletedResponse<null>> {
     await this.amenityService.delete(id, userId, lang);
-    return new DeletedResponse(
-      'amenity.delete.success',
-      null,
-      'Xóa tiện ích thành công',
-    );
+    return new DeletedResponse('amenity.delete.success', null);
   }
 }

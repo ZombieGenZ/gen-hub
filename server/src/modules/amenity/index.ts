@@ -3,3 +3,5 @@ export * from './amenity.service';
 export * from './amenity.controller';
 export * from './amenity.repository';
 export * from './dto';
+export * from './types';
+export * from './constants';

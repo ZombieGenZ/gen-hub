@@ -2,15 +2,7 @@
 
 ## Tổng Quan
 
-Module `amenity` quản lý các tiện ích và hạ tầng (amenities) trong hệ thống GEN-HUB. Tiện ích có thể được áp dụng cho các warehouse template để mô tả các tiện nghi đi kèm như WiFi, điều hòa, hệ thống PCCC, v.v.
-
-**Các tính năng chính:**
-
-- CRUD tiện ích với soft delete
-- Tìm kiếm và lọc theo trạng thái
-- Cache với Redis cho hiệu suất cao
-- WebSocket events real-time
-- Audit log cho mọi thay đổi
+Module `amenity` quản lý các tiện ích và hạ tầng có thể áp dụng cho warehouse template trong hệ thống GEN-HUB. Các tiện ích bao gồm WiFi, hệ thống điều hòa, PCCC, camera an ninh, v.v.
 
 ---
 
@@ -21,39 +13,37 @@ flowchart TB
     subgraph Client
         A[API Request]
     end
-
+    
     subgraph Controller
         B[AmenityController]
     end
-
+    
     subgraph Service
         C[AmenityService]
     end
-
+    
     subgraph Repository
         D[AmenityRepository]
     end
-
+    
     subgraph Cache
         E[(Redis Cache)]
     end
-
+    
     subgraph Database
         F[(PostgreSQL)]
     end
-
+    
     subgraph Events
         G[WebSocket Gateway]
-        H[SystemLogService]
     end
-
+    
     A --> B
     B --> C
     C --> D
     C --> E
     D --> F
     C --> G
-    C --> H
 ```
 
 ---
@@ -62,23 +52,19 @@ flowchart TB
 
 > [!TIP]
 > Tất cả các API đều hỗ trợ header `Accept-Language` để chọn ngôn ngữ phản hồi.
->
 > - **vi** - Tiếng Việt (mặc định)
 > - **en** - English
 
 ### 1. POST /amenities - Tạo tiện ích mới
 
-**Mô tả:** Tạo một tiện ích mới trong hệ thống.
+**Mô tả:** Tạo một tiện ích mới trong hệ thống. Tiện ích có thể được áp dụng cho các warehouse template.
 
 **Xác thực:** Bearer Token (JWT)
 
 **Quyền yêu cầu:** `amenity.create`
 
 **Headers:**
-
 ```http
-POST /amenities HTTP/1.1
-Host: api.gen-hub.dev
 Authorization: Bearer <access_token>
 Content-Type: application/json
 Accept-Language: vi
@@ -86,11 +72,11 @@ Accept-Language: vi
 
 **Request Body Schema:**
 
-| Field         | Type    | Required | Description                          |
-| ------------- | ------- | -------- | ------------------------------------ |
-| `name`        | string  | Yes      | Tên tiện ích (max 255 ký tự)         |
-| `description` | string  | No       | Mô tả tiện ích                       |
-| `is_active`   | boolean | No       | Trạng thái hoạt động (default: true) |
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | string | Required | Tên tiện ích (max 255 ký tự) |
+| `description` | string | Optional | Mô tả chi tiết về tiện ích |
+| `is_active` | boolean | Optional | Trạng thái hoạt động (mặc định: true) |
 
 **Request Body Examples:**
 
@@ -102,7 +88,6 @@ Accept-Language: vi
   "name": "WiFi"
 }
 ```
-
 </details>
 
 <details>
@@ -115,7 +100,18 @@ Accept-Language: vi
   "is_active": true
 }
 ```
+</details>
 
+<details>
+<summary><b>Ví dụ 3: Tạo tiện ích không hoạt động</b></summary>
+
+```json
+{
+  "name": "Hệ thống PCCC",
+  "description": "Hệ thống phòng cháy chữa cháy tự động",
+  "is_active": false
+}
+```
 </details>
 
 **Response (201 Created):**
@@ -128,7 +124,7 @@ Accept-Language: vi
   "data": {
     "id": "550e8400-e29b-41d4-a716-446655440000",
     "name": "WiFi",
-    "description": null,
+    "description": "Internet tốc độ cao",
     "is_active": true,
     "is_deleted": false,
     "created_at": "2026-01-21T07:00:00.000Z",
@@ -166,7 +162,6 @@ Accept-Language: vi
   "success": false
 }
 ```
-
 </details>
 
 <details>
@@ -187,7 +182,6 @@ Accept-Language: vi
   "success": false
 }
 ```
-
 </details>
 
 <details>
@@ -200,7 +194,6 @@ Accept-Language: vi
   "success": false
 }
 ```
-
 </details>
 
 <details>
@@ -211,39 +204,57 @@ Accept-Language: vi
   "code": "error.validation",
   "message": "Dữ liệu đầu vào không hợp lệ",
   "success": false,
-  "errors": [{ "field": "name", "message": "Tên tiện ích không được để trống" }]
+  "errors": [
+    { "field": "name", "message": "Tên tiện ích không được để trống" },
+    { "field": "name", "message": "Tên tiện ích không được quá 255 ký tự" }
+  ]
 }
 ```
-
 </details>
 
 ---
 
 ### 2. GET /amenities - Lấy danh sách tiện ích
 
-**Mô tả:** Lấy danh sách tiện ích với phân trang và bộ lọc.
+**Mô tả:** Lấy danh sách tiện ích với phân trang và bộ lọc. Hỗ trợ tìm kiếm theo từ khóa và lọc theo trạng thái hoạt động.
 
 **Xác thực:** Bearer Token (JWT)
 
 **Quyền yêu cầu:** `amenity.list`
 
 **Headers:**
-
 ```http
-GET /amenities?limit=10&offset=0 HTTP/1.1
-Host: api.gen-hub.dev
 Authorization: Bearer <access_token>
 Accept-Language: vi
 ```
 
 **Query Parameters:**
 
-| Param       | Type    | Required | Default | Description                         |
-| ----------- | ------- | -------- | ------- | ----------------------------------- |
-| `limit`     | number  | No       | 10      | Số lượng bản ghi mỗi trang (1-1000) |
-| `offset`    | number  | No       | 0       | Vị trí bắt đầu                      |
-| `keywords`  | string  | No       | -       | Từ khóa tìm kiếm (tên, mô tả)       |
-| `is_active` | boolean | No       | -       | Lọc theo trạng thái hoạt động       |
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `limit` | number | Optional | 10 | Số lượng bản ghi mỗi trang (min: 1) |
+| `offset` | number | Optional | 0 | Vị trí bắt đầu (min: 0) |
+| `keywords` | string | Optional | - | Từ khóa tìm kiếm (tên, mô tả) |
+| `is_active` | boolean | Optional | - | Lọc theo trạng thái hoạt động |
+
+**Request Examples:**
+
+```http
+# Lấy 10 tiện ích đầu tiên
+GET /amenities HTTP/1.1
+
+# Lấy tiện ích với phân trang
+GET /amenities?limit=20&offset=40 HTTP/1.1
+
+# Tìm kiếm tiện ích
+GET /amenities?keywords=WiFi HTTP/1.1
+
+# Lọc tiện ích đang hoạt động
+GET /amenities?is_active=true HTTP/1.1
+
+# Kết hợp nhiều điều kiện
+GET /amenities?limit=10&offset=0&keywords=điều hòa&is_active=true HTTP/1.1
+```
 
 **Response (200 OK):**
 
@@ -267,12 +278,12 @@ Accept-Language: vi
       },
       {
         "id": "550e8400-e29b-41d4-a716-446655440002",
-        "name": "Điều hòa",
-        "description": "Hệ thống điều hòa trung tâm",
+        "name": "Hệ thống điều hòa",
+        "description": "Điều hòa trung tâm VRV",
         "is_active": true,
         "is_deleted": false,
-        "created_at": "2026-01-21T06:00:00.000Z",
-        "updated_at": "2026-01-21T06:00:00.000Z",
+        "created_at": "2026-01-20T07:00:00.000Z",
+        "updated_at": "2026-01-20T07:00:00.000Z",
         "created_by": "550e8400-e29b-41d4-a716-446655440001",
         "updated_by": null
       }
@@ -296,7 +307,6 @@ Accept-Language: vi
   "success": false
 }
 ```
-
 </details>
 
 <details>
@@ -309,7 +319,6 @@ Accept-Language: vi
   "success": false
 }
 ```
-
 </details>
 
 ---
@@ -323,19 +332,23 @@ Accept-Language: vi
 **Quyền yêu cầu:** `amenity.read`
 
 **Headers:**
-
 ```http
-GET /amenities/550e8400-e29b-41d4-a716-446655440000 HTTP/1.1
-Host: api.gen-hub.dev
 Authorization: Bearer <access_token>
 Accept-Language: vi
 ```
 
 **Path Parameters:**
 
-| Param | Type | Required | Description     |
-| ----- | ---- | -------- | --------------- |
-| `id`  | UUID | Yes      | ID của tiện ích |
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string (UUID) | Required | ID của tiện ích cần lấy thông tin |
+
+**Request Example:**
+
+```http
+GET /amenities/550e8400-e29b-41d4-a716-446655440000 HTTP/1.1
+Authorization: Bearer <access_token>
+```
 
 **Response (200 OK):**
 
@@ -370,7 +383,6 @@ Accept-Language: vi
   "success": false
 }
 ```
-
 </details>
 
 ---
@@ -384,10 +396,7 @@ Accept-Language: vi
 **Quyền yêu cầu:** `amenity.update`
 
 **Headers:**
-
 ```http
-PUT /amenities/550e8400-e29b-41d4-a716-446655440000 HTTP/1.1
-Host: api.gen-hub.dev
 Authorization: Bearer <access_token>
 Content-Type: application/json
 Accept-Language: vi
@@ -395,17 +404,17 @@ Accept-Language: vi
 
 **Path Parameters:**
 
-| Param | Type | Required | Description                  |
-| ----- | ---- | -------- | ---------------------------- |
-| `id`  | UUID | Yes      | ID của tiện ích cần cập nhật |
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string (UUID) | Required | ID của tiện ích cần cập nhật |
 
 **Request Body Schema:**
 
-| Field         | Type    | Required | Description                      |
-| ------------- | ------- | -------- | -------------------------------- |
-| `name`        | string  | No       | Tên tiện ích mới (max 255 ký tự) |
-| `description` | string  | No       | Mô tả tiện ích mới               |
-| `is_active`   | boolean | No       | Trạng thái hoạt động mới         |
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | string | Optional | Tên tiện ích (max 255 ký tự) |
+| `description` | string | Optional | Mô tả chi tiết |
+| `is_active` | boolean | Optional | Trạng thái hoạt động |
 
 **Request Body Examples:**
 
@@ -417,31 +426,38 @@ Accept-Language: vi
   "name": "WiFi 5G"
 }
 ```
-
 </details>
 
 <details>
-<summary><b>Ví dụ 2: Bật/tắt trạng thái</b></summary>
+<summary><b>Ví dụ 2: Cập nhật mô tả</b></summary>
+
+```json
+{
+  "description": "Internet tốc độ cao 1Gbps, hỗ trợ WiFi 6"
+}
+```
+</details>
+
+<details>
+<summary><b>Ví dụ 3: Bật/tắt trạng thái</b></summary>
 
 ```json
 {
   "is_active": false
 }
 ```
-
 </details>
 
 <details>
-<summary><b>Ví dụ 3: Cập nhật đầy đủ</b></summary>
+<summary><b>Ví dụ 4: Cập nhật đầy đủ</b></summary>
 
 ```json
 {
   "name": "Hệ thống điều hòa VRV",
-  "description": "Hệ thống điều hòa VRV tiết kiệm năng lượng",
+  "description": "Hệ thống điều hòa VRV tiết kiệm năng lượng, duy trì nhiệt độ 18-28°C",
   "is_active": true
 }
 ```
-
 </details>
 
 **Response (200 OK):**
@@ -458,9 +474,9 @@ Accept-Language: vi
     "is_active": true,
     "is_deleted": false,
     "created_at": "2026-01-21T07:00:00.000Z",
-    "updated_at": "2026-01-21T08:00:00.000Z",
+    "updated_at": "2026-01-23T07:00:00.000Z",
     "created_by": "550e8400-e29b-41d4-a716-446655440001",
-    "updated_by": "550e8400-e29b-41d4-a716-446655440001"
+    "updated_by": "550e8400-e29b-41d4-a716-446655440002"
   }
 }
 ```
@@ -477,7 +493,6 @@ Accept-Language: vi
   "success": false
 }
 ```
-
 </details>
 
 <details>
@@ -490,70 +505,6 @@ Accept-Language: vi
   "success": false
 }
 ```
-
-</details>
-
----
-
-### 5. DELETE /amenities/delete/many - Xóa nhiều tiện ích
-
-**Mô tả:** Xóa mềm (soft delete) nhiều tiện ích cùng lúc. Các mapping liên quan cũng sẽ bị xóa mềm.
-
-**Xác thực:** Bearer Token (JWT)
-
-**Quyền yêu cầu:** `amenity.delete`
-
-**Headers:**
-
-```http
-DELETE /amenities/delete/many HTTP/1.1
-Host: api.gen-hub.dev
-Authorization: Bearer <access_token>
-Content-Type: application/json
-Accept-Language: vi
-```
-
-**Request Body Schema:**
-
-| Field | Type     | Required | Description                                     |
-| ----- | -------- | -------- | ----------------------------------------------- |
-| `ids` | string[] | Yes      | Danh sách UUID của tiện ích cần xóa (ít nhất 1) |
-
-**Request Body Example:**
-
-```json
-{
-  "ids": [
-    "550e8400-e29b-41d4-a716-446655440000",
-    "550e8400-e29b-41d4-a716-446655440001"
-  ]
-}
-```
-
-**Response (200 OK):**
-
-```json
-{
-  "code": "amenity.delete.success",
-  "message": "Xóa nhiều tiện ích thành công",
-  "success": true,
-  "data": null
-}
-```
-
-**Error Responses:**
-
-<details>
-<summary><b>404 Not Found</b></summary>
-
-```json
-{
-  "code": "amenity.errors.not_found",
-  "message": "Không tìm thấy tiện ích",
-  "success": false
-}
-```
-
 </details>
 
 <details>
@@ -564,36 +515,41 @@ Accept-Language: vi
   "code": "error.validation",
   "message": "Dữ liệu đầu vào không hợp lệ",
   "success": false,
-  "errors": [{ "field": "ids", "message": "Danh sách ID không được để trống" }]
+  "errors": [
+    { "field": "name", "message": "Tên tiện ích không được quá 255 ký tự" }
+  ]
 }
 ```
-
 </details>
 
 ---
 
-### 6. DELETE /amenities/:id - Xóa tiện ích
+### 5. DELETE /amenities/:id - Xóa tiện ích
 
-**Mô tả:** Xóa mềm (soft delete) một tiện ích theo ID. Các mapping liên quan cũng sẽ bị xóa mềm.
+**Mô tả:** Xóa mềm (soft delete) một tiện ích theo ID. Các mapping liên quan đến tiện ích này cũng sẽ bị xóa mềm.
 
 **Xác thực:** Bearer Token (JWT)
 
 **Quyền yêu cầu:** `amenity.delete`
 
 **Headers:**
-
 ```http
-DELETE /amenities/550e8400-e29b-41d4-a716-446655440000 HTTP/1.1
-Host: api.gen-hub.dev
 Authorization: Bearer <access_token>
 Accept-Language: vi
 ```
 
 **Path Parameters:**
 
-| Param | Type | Required | Description             |
-| ----- | ---- | -------- | ----------------------- |
-| `id`  | UUID | Yes      | ID của tiện ích cần xóa |
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string (UUID) | Required | ID của tiện ích cần xóa |
+
+**Request Example:**
+
+```http
+DELETE /amenities/550e8400-e29b-41d4-a716-446655440000 HTTP/1.1
+Authorization: Bearer <access_token>
+```
 
 **Response (200 OK):**
 
@@ -618,8 +574,119 @@ Accept-Language: vi
   "success": false
 }
 ```
-
 </details>
+
+---
+
+### 6. DELETE /amenities/delete/many - Xóa nhiều tiện ích
+
+**Mô tả:** Xóa mềm (soft delete) nhiều tiện ích cùng lúc theo danh sách ID. Các mapping liên quan cũng sẽ bị xóa mềm.
+
+**Xác thực:** Bearer Token (JWT)
+
+**Quyền yêu cầu:** `amenity.delete`
+
+**Headers:**
+```http
+Authorization: Bearer <access_token>
+Content-Type: application/json
+Accept-Language: vi
+```
+
+**Request Body Schema:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `ids` | string[] (UUID) | Required | Mảng ID các tiện ích cần xóa |
+
+**Request Body Examples:**
+
+<details>
+<summary><b>Ví dụ 1: Xóa 2 tiện ích</b></summary>
+
+```json
+{
+  "ids": [
+    "550e8400-e29b-41d4-a716-446655440000",
+    "550e8400-e29b-41d4-a716-446655440001"
+  ]
+}
+```
+</details>
+
+<details>
+<summary><b>Ví dụ 2: Xóa nhiều tiện ích</b></summary>
+
+```json
+{
+  "ids": [
+    "550e8400-e29b-41d4-a716-446655440000",
+    "550e8400-e29b-41d4-a716-446655440001",
+    "550e8400-e29b-41d4-a716-446655440002",
+    "550e8400-e29b-41d4-a716-446655440003",
+    "550e8400-e29b-41d4-a716-446655440004"
+  ]
+}
+```
+</details>
+
+**Response (200 OK):**
+
+```json
+{
+  "code": "amenity.delete.success",
+  "message": "Xóa nhiều tiện ích thành công",
+  "success": true,
+  "data": null
+}
+```
+
+**Error Responses:**
+
+<details>
+<summary><b>404 Not Found</b></summary>
+
+```json
+{
+  "code": "amenity.errors.not_found",
+  "message": "Không tìm thấy tiện ích",
+  "success": false
+}
+```
+</details>
+
+<details>
+<summary><b>422 Unprocessable Entity</b></summary>
+
+```json
+{
+  "code": "error.validation",
+  "message": "Dữ liệu đầu vào không hợp lệ",
+  "success": false,
+  "errors": [
+    { "field": "ids", "message": "Danh sách ID không được để trống" }
+  ]
+}
+```
+</details>
+
+---
+
+## Caching Strategy
+
+Module sử dụng Redis caching với pattern **Cache Aside**:
+
+| Cache Key Pattern | TTL | Description |
+|-------------------|-----|-------------|
+| `amenity:detail:<id>` | 300s | Cache chi tiết tiện ích |
+| `amenity:list:*` | 300s | Cache danh sách tiện ích (theo query params) |
+
+### Cache Invalidation
+
+Cache được tự động invalidate khi:
+- Tạo tiện ích mới → Xóa cache list
+- Cập nhật tiện ích → Xóa cache detail + list
+- Xóa tiện ích → Xóa cache detail + list
 
 ---
 
@@ -629,17 +696,16 @@ Khi tiện ích được thay đổi, server sẽ emit các event qua WebSocket 
 
 ### Event Types
 
-| Action      | Event Name            | Mô tả                  |
-| ----------- | --------------------- | ---------------------- |
-| Create      | `amenity:created`     | Tiện ích mới được tạo  |
-| Update      | `amenity:updated`     | Tiện ích được cập nhật |
-| Delete      | `amenity:deleted`     | Tiện ích bị xóa        |
-| Delete Many | `amenity:deletedMany` | Nhiều tiện ích bị xóa  |
+| Action | Event Name | Description |
+|--------|------------|-------------|
+| Create | `amenity:created` | Tiện ích mới đã được tạo |
+| Update | `amenity:updated` | Tiện ích đã được cập nhật |
+| Delete | `amenity:deleted` | Tiện ích đã bị xóa |
+| Delete Many | `amenity:deletedMany` | Nhiều tiện ích đã bị xóa |
 
 ### Event Payload Examples
 
 **amenity:created**
-
 ```json
 {
   "amenityId": "550e8400-e29b-41d4-a716-446655440000",
@@ -650,7 +716,6 @@ Khi tiện ích được thay đổi, server sẽ emit các event qua WebSocket 
 ```
 
 **amenity:updated**
-
 ```json
 {
   "amenityId": "550e8400-e29b-41d4-a716-446655440000",
@@ -662,7 +727,6 @@ Khi tiện ích được thay đổi, server sẽ emit các event qua WebSocket 
 ```
 
 **amenity:deleted**
-
 ```json
 {
   "amenityId": "550e8400-e29b-41d4-a716-446655440000",
@@ -673,7 +737,6 @@ Khi tiện ích được thay đổi, server sẽ emit các event qua WebSocket 
 ```
 
 **amenity:deletedMany**
-
 ```json
 {
   "amenityIds": [
@@ -681,20 +744,21 @@ Khi tiện ích được thay đổi, server sẽ emit các event qua WebSocket 
     "550e8400-e29b-41d4-a716-446655440001"
   ],
   "deletedBy": "550e8400-e29b-41d4-a716-446655440002",
-  "timestamp": "2026-01-21T09:00:00.000Z"
+  "timestamp": "2026-01-21T10:00:00.000Z"
 }
 ```
 
-### Cách sử dụng ở Frontend
+### Frontend Usage
 
 ```typescript
 import { io } from 'socket.io-client';
 
 const socket = io('wss://api.gen-hub.dev');
 
+// Subscribe amenity events
 socket.on('amenity:created', (payload) => {
-  console.log('New amenity:', payload.name);
-  // Refresh list hoặc add to local state
+  console.log('New amenity created:', payload.name);
+  // Refresh amenity list
 });
 
 socket.on('amenity:updated', (payload) => {
@@ -706,11 +770,6 @@ socket.on('amenity:deleted', (payload) => {
   console.log('Amenity deleted:', payload.amenityId);
   // Remove from local state
 });
-
-socket.on('amenity:deletedMany', (payload) => {
-  console.log('Amenities deleted:', payload.amenityIds);
-  // Remove multiple from local state
-});
 ```
 
 ---
@@ -718,70 +777,44 @@ socket.on('amenity:deletedMany', (payload) => {
 ## Validation Rules
 
 ### Name
-
-- Bắt buộc, không được để trống
-- Phải là chuỗi (string)
-- Tối đa 255 ký tự
-- Phải là duy nhất trong hệ thống
+- **Required**
+- Kiểu dữ liệu: string
+- Độ dài tối đa: 255 ký tự
+- Unique (không trùng với tiện ích khác)
 
 ### Description
+- **Optional**
+- Kiểu dữ liệu: string
 
-- Không bắt buộc
-- Phải là chuỗi (string) nếu có
-
-### is_active
-
-- Không bắt buộc
-- Phải là boolean nếu có
-- Mặc định: `true`
-
-### Query Parameters
-
-- `limit`: Số nguyên dương >= 1
-- `offset`: Số nguyên >= 0
-- `keywords`: Chuỗi (string)
-- `is_active`: Boolean (`true` hoặc `false`)
+### Is Active
+- **Optional**
+- Kiểu dữ liệu: boolean
+- Mặc định: true
 
 ---
 
-## Caching Strategy
+## Quyền Hạn (Permissions)
 
-Module sử dụng Redis cache với pattern **Cache Aside**:
-
-| Cache Key Pattern | TTL  | Mô tả                         |
-| ----------------- | ---- | ----------------------------- |
-| `amenity:{id}`    | 300s | Cache chi tiết tiện ích       |
-| `amenity:list:*`  | 60s  | Cache danh sách có phân trang |
-
-**Invalidation:**
-
-- Khi tạo mới: Xóa tất cả cache list
-- Khi cập nhật: Xóa cache item + tất cả cache list
-- Khi xóa: Xóa cache item + tất cả cache list
+| Permission | Description |
+|------------|-------------|
+| `amenity.create` | Tạo tiện ích mới |
+| `amenity.list` | Xem danh sách tiện ích |
+| `amenity.read` | Xem chi tiết tiện ích |
+| `amenity.update` | Cập nhật tiện ích |
+| `amenity.delete` | Xóa tiện ích |
 
 ---
 
 ## Files Trong Module
 
-| File                              | Mô tả                              |
-| --------------------------------- | ---------------------------------- |
-| `amenity.controller.ts`           | Controller xử lý HTTP requests     |
-| `amenity.service.ts`              | Business logic và cache management |
-| `amenity.repository.ts`           | Data access layer (Prisma)         |
-| `amenity.module.ts`               | NestJS module definition           |
-| `dto/create-amenity.dto.ts`       | DTO tạo tiện ích                   |
-| `dto/update-amenity.dto.ts`       | DTO cập nhật tiện ích              |
-| `dto/query-amenity.dto.ts`        | DTO query parameters               |
-| `interfaces/amenity.interface.ts` | TypeScript interfaces              |
-
----
-
-## Permissions
-
-| Permission       | Mô tả                  |
-| ---------------- | ---------------------- |
-| `amenity.create` | Tạo tiện ích mới       |
-| `amenity.list`   | Xem danh sách tiện ích |
-| `amenity.read`   | Xem chi tiết tiện ích  |
-| `amenity.update` | Cập nhật tiện ích      |
-| `amenity.delete` | Xóa tiện ích           |
+| File | Mô tả |
+|------|-------|
+| `amenity.module.ts` | Module definition và providers |
+| `amenity.controller.ts` | API endpoints với Swagger decorators |
+| `amenity.service.ts` | Business logic, caching, logging |
+| `amenity.repository.ts` | Database operations với Prisma |
+| `dto/create-amenity.dto.ts` | DTO cho tạo tiện ích |
+| `dto/update-amenity.dto.ts` | DTO cho cập nhật tiện ích |
+| `dto/query-amenity.dto.ts` | DTO cho query parameters |
+| `types/amenity.type.ts` | TypeScript interfaces |
+| `constants/amenity-cache-keys.helper.ts` | Cache key helpers |

@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { amenityListSelect, amenityDetailSelect } from './selects';
 
 @Injectable()
 export class AmenityRepository {
@@ -18,6 +19,7 @@ export class AmenityRepository {
                 is_active: data.is_active ?? true,
                 created_by: data.created_by,
             },
+            select: amenityDetailSelect,
         });
     }
 
@@ -33,6 +35,7 @@ export class AmenityRepository {
             take,
             where,
             orderBy,
+            select: amenityListSelect,
         });
     }
 
@@ -43,6 +46,7 @@ export class AmenityRepository {
     async findById(id: string) {
         return this.prisma.amenity.findFirst({
             where: { id, is_deleted: false },
+            select: amenityDetailSelect,
         });
     }
 
@@ -53,6 +57,7 @@ export class AmenityRepository {
                 is_deleted: false,
                 ...(excludeId && { id: { not: excludeId } }),
             },
+            select: amenityDetailSelect,
         });
     }
 
@@ -70,6 +75,7 @@ export class AmenityRepository {
                 is_active: data.is_active,
                 updated_by: data.updated_by,
             },
+            select: amenityDetailSelect,
         });
     }
 
@@ -129,6 +135,7 @@ export class AmenityRepository {
     async findByIds(ids: string[]) {
         return this.prisma.amenity.findMany({
             where: { id: { in: ids }, is_deleted: false },
+            select: amenityListSelect,
         });
     }
 }

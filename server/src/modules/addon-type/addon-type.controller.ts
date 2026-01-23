@@ -26,6 +26,7 @@ import {
   UpdateAddonTypeDto,
   QueryAddonTypeDto,
 } from './dto';
+import { IAddonTypePaginatedResponse, IAddonTypeWithRelations } from './types';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { PermissionGuard } from '../../common/guards/permission.guard';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator';
@@ -45,7 +46,7 @@ import {
 @ApiTags('Addon Types')
 @Controller('addon-types')
 export class AddonTypeController {
-  constructor(private readonly addonTypeService: AddonTypeService) {}
+  constructor(private readonly addonTypeService: AddonTypeService) { }
 
   @ApiOperation({
     summary: 'Tạo loại addon mới',
@@ -238,7 +239,7 @@ export class AddonTypeController {
   @UseGuards(JwtAuthGuard, PermissionGuard)
   @RequirePermission('addon-type.list')
   @Get()
-  async findAll(@Query() query: QueryAddonTypeDto, @I18nLang() lang: string) {
+  async findAll(@Query() query: QueryAddonTypeDto, @I18nLang() lang: string): Promise<GetResponse<IAddonTypePaginatedResponse>> {
     const result = await this.addonTypeService.findAll(query);
     return new GetResponse('addon-type.list', result);
   }
@@ -366,7 +367,7 @@ export class AddonTypeController {
   async findById(
     @Param('id', ParseUUIDPipe) id: string,
     @I18nLang() lang: string,
-  ) {
+  ): Promise<GetResponse<IAddonTypeWithRelations>> {
     const addonType = await this.addonTypeService.findById(id, lang);
     return new GetResponse('addon-type.read', addonType);
   }
