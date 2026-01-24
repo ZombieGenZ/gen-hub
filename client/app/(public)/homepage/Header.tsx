@@ -19,7 +19,7 @@ export function PrimeNestHeader({ isLogin, user }: HeaderProps) {
     const [active, setActive] = useState<string | null>(null);
 
     return (
-        <header className="sticky top-0 w-full z-50 bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/95 border-b border-border shadow-sm">
+        <header className="sticky top-0 w-full z-[100] bg-background border-b border-border shadow-sm">
             <div className="w-full max-w-[1440px] mx-auto px-4 lg:px-4 h-[80px] flex items-center justify-between">
                 {/* Logo */}
                 <Link href="/" className="flex items-center gap-3 relative z-50 shrink-0">
@@ -64,9 +64,9 @@ export function PrimeNestHeader({ isLogin, user }: HeaderProps) {
                 </div>
 
                 {/* Right Actions */}
-                <div className="relative z-50 flex items-center gap-5 shrink-0">
+                <div className="relative z-50 flex items-center gap-5 shrink-0  ">
                     {isLogin ?
-                        <div className="hidden md:flex items-center gap-4">
+                        <div className="hidden md:flex items-center gap-4 ">
                             <UserDropdown user={user} />
                         </div>
                         :

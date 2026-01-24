@@ -6,7 +6,7 @@
    LAYOUT VARIABLES
    ============================================ */
 .search-page {
-  --header-height: 80px;
+  --header-height: 0px;
   --map-shadow: -10px 0 15px -3px rgba(0, 0, 0, 0.1);
 }
 
@@ -43,10 +43,10 @@
    ============================================ */
 .search-page__hero-search {
   position: sticky;
-  top: var(--header-height);
+  top: 0;
   z-index: 90;
   padding: 16px 24px;
-  background: rgba(248, 250, 252, 0.95);
+  background: rgba(248, 250, 252);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);

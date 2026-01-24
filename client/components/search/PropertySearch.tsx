@@ -9,8 +9,28 @@ import { MapIcon, ListBulletIcon } from '@heroicons/react/20/solid';
 import { cn } from '@/lib/utils';
 import { HeroSearchBar, SearchFilters } from '@/components/search/HeroSearchBar';
 import { FilterModal, FilterState } from '@/components/search/FilterModal';
+import { authStorage } from "@/services/auth/auth-storage.service";
+import { UserData } from "@/types/user/user.type";
+import UserDropdown from "@/components/ui/UserDropdown";
+import {
+    DropdownMenu,
+    DropdownMenuTrigger,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSub,
+    DropdownMenuSubTrigger,
+    DropdownMenuSubContent,
+    DropdownMenuSeparator
+} from "@/components/ui/dropdown-menu";
+import {
+    BuildingOffice2Icon,
+    SparklesIcon,
+    CubeIcon,
+    ShieldCheckIcon,
+} from '@heroicons/react/24/outline';
+import Link from 'next/link';
+import { Menu, MenuItem, HoveredLink } from "@/components/ui/navbar-menu";
 
-// Header height constant - match với PrimeNestHeader
 const HEADER_HEIGHT = 80;
 
 interface PropertySearchProps {
@@ -24,6 +44,16 @@ export default function PropertySearch({ initialLocationSlug }: PropertySearchPr
     const [highlightedPropertyId, setHighlightedPropertyId] = useState<number | null>(null);
     const [showMapMobile, setShowMapMobile] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
+
+    // Auth State
+    const [isLogin, setIsLogin] = useState(false);
+    const [user, setUser] = useState<UserData | null>(null);
+    const [active, setActive] = useState<string | null>(null);
+
+    useEffect(() => {
+        setIsLogin(authStorage.isAuthenticated());
+        setUser(authStorage.getUser());
+    }, []);
 
     const searchParams = useSearchParams();
 
@@ -85,12 +115,9 @@ export default function PropertySearch({ initialLocationSlug }: PropertySearchPr
 
         // ROUTING LOGIC: Path vs Query
         if (filters.location) {
-            // "Pretty URL": /kho-bai/tan-binh?type=...
             router.push(`/kho-bai/${filters.location}?${params.toString()}`);
-            // Also update local state immediately
             setSelectedCities([filters.location]);
         } else {
-            // Standard URL: /kho-bai?type=...
             router.push(`/kho-bai?${params.toString()}`);
             setSelectedCities([]);
         }
@@ -107,7 +134,6 @@ export default function PropertySearch({ initialLocationSlug }: PropertySearchPr
             }
         }
 
-        // Scroll to results
         document.getElementById('search-list-container')?.scrollIntoView({ behavior: 'smooth' });
     };
 
@@ -241,19 +267,87 @@ export default function PropertySearch({ initialLocationSlug }: PropertySearchPr
         return result;
     }, [properties, bounds, searchText, priceRange, areaRange, selectedTypes, selectedCities]);
 
+    const ITEMS_PER_PAGE = 12;
+    const totalPages = Math.ceil(filteredProperties.length / ITEMS_PER_PAGE);
+    const displayedProperties = filteredProperties.slice(
+        (currentPage - 1) * ITEMS_PER_PAGE,
+        currentPage * ITEMS_PER_PAGE
+    );
+
+    // Generate pagination array
+    const paginationRange = useMemo(() => {
+        const delta = 2;
+        const range = [];
+        const rangeWithDots = [];
+        let l;
+
+        for (let i = 1; i <= totalPages; i++) {
+            if (i === 1 || i === totalPages || (i >= currentPage - delta && i <= currentPage + delta)) {
+                range.push(i);
+            }
+        }
+
+        for (let i of range) {
+            if (l) {
+                if (i - l === 2) {
+                    rangeWithDots.push(l + 1);
+                } else if (i - l !== 1) {
+                    rangeWithDots.push('...');
+                }
+            }
+            rangeWithDots.push(i);
+            l = i;
+        }
+
+        return rangeWithDots;
+    }, [currentPage, totalPages]);
+
     const mapProperties = filteredProperties;
 
     return (
         <>
-            <div className="search-page bg-slate-50">
+            <div className="search-page bg-background">
                 {/* HERO SEARCH BAR - Sticky at top */}
                 <div className="search-page__hero-search">
-                    <HeroSearchBar
-                        onSearch={handleHeroSearch}
-                        onOpenFilter={() => setIsFilterModalOpen(true)}
-                        variant="compact"
-                        minified={isScrolled}
-                    />
+                    <div className="flex items-center justify-between gap-4 w-full max-w-[1920px] mx-auto">
+                        {/* 1. LOGO */}
+                        <a href="/" className="flex-shrink-0 flex items-center gap-2 group">
+                            <img src="/assets/GenHubv2.svg" alt="GenHub" className="h-9 w-auto transition-transform duration-300 group-hover:scale-105" />
+                        </a>
+
+                        {/* 2. SEARCH BAR - Centered & Flexible */}
+                        <div className="flex-1 max-w-[850px] mx-4">
+                            <HeroSearchBar
+                                onSearch={handleHeroSearch}
+                                onOpenFilter={() => setIsFilterModalOpen(true)}
+                                variant="compact"
+                                minified={isScrolled}
+                            />
+                        </div>
+
+                        {/* 3. MENU / AUTH - Right Side */}
+                        <div className="flex-shrink-0 flex items-center gap-6">
+                            {/* User Dropdown / Menu */}
+                            <div className="flex items-center px-2 py-1 bg-background hover:bg-muted transition-all duration-200 border border-border rounded-full shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05)] hover:shadow-[0_6px_12px_-2px_rgba(0,0,0,0.08)]">
+                                <UserDropdown
+                                    user={isLogin ? {
+                                        name: user?.user?.name || 'Người dùng',
+                                        email: user?.user?.email,
+                                        avatar: user?.user?.avatar || user?.user?.name ? `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.user?.name)}&background=334155&color=fff` : undefined,
+                                        roles: user?.roles?.map(r => r.name)
+                                    } : undefined}
+                                    onLogout={() => {
+                                        authStorage.clearTokens();
+                                        setIsLogin(false);
+                                        setUser(null);
+                                        router.push('/');
+                                    }}
+                                >
+                                </UserDropdown>
+                            </div>
+
+                        </div>
+                    </div>
                 </div>
 
                 {/* FILTER MODAL */}
@@ -295,7 +389,7 @@ export default function PropertySearch({ initialLocationSlug }: PropertySearchPr
                         {/* Property Grid */}
                         <div className="search-page__list-content">
                             <PropertyList
-                                properties={filteredProperties}
+                                properties={displayedProperties}
                                 onHover={(id) => setHighlightedPropertyId(id ? Number(id) : null)}
                                 highlightedPropertyId={highlightedPropertyId}
                                 variant="grid"
@@ -306,27 +400,36 @@ export default function PropertySearch({ initialLocationSlug }: PropertySearchPr
 
                         {/* Pagination */}
                         <div className="search-page__pagination">
-                            {[1, 2, 3, 4, '...', 15].map((page, index) => {
-                                const pageNum = typeof page === 'number' ? page : -1;
+                            {paginationRange.map((page, index) => {
+                                if (page === '...') {
+                                    return (
+                                        <span key={index} className="search-page__pagination-btn search-page__pagination-btn--ellipsis">
+                                            ...
+                                        </span>
+                                    );
+                                }
+                                const pageNum = Number(page);
                                 return (
                                     <button
                                         key={index}
-                                        onClick={() => pageNum !== -1 && setCurrentPage(pageNum)}
-                                        disabled={pageNum === -1}
+                                        onClick={() => setCurrentPage(pageNum)}
                                         className={cn(
                                             "search-page__pagination-btn",
                                             currentPage === pageNum
-                                                ? "search-page__pagination-btn--active"
-                                                : pageNum !== -1
-                                                    ? "search-page__pagination-btn--default"
-                                                    : "search-page__pagination-btn--ellipsis"
+                                                ? "search-page__pagination-btn--active bg-gray-900 text-white hover:bg-gray-800"
+                                                : "search-page__pagination-btn--default hover:bg-gray-100"
                                         )}
                                     >
                                         {page}
                                     </button>
                                 );
                             })}
-                            <button className="search-page__pagination-btn search-page__pagination-btn--next">
+
+                            <button
+                                className={"search-page__pagination-btn search-page__pagination-btn--next " + (currentPage >= totalPages ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-100")}
+                                onClick={() => currentPage < totalPages && setCurrentPage(p => p + 1)}
+                                disabled={currentPage >= totalPages}
+                            >
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                                 </svg>

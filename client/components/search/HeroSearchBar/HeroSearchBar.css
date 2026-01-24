@@ -31,8 +31,8 @@
     flex: 1;
     display: flex;
     align-items: center;
-    background: #ffffff;
-    border: 1px solid rgba(0, 0, 0, 0.08);
+    background: var(--background);
+    border: 1px solid var(--border);
     border-radius: 9999px;
     box-shadow:
         0 4px 6px -1px rgba(0, 0, 0, 0.02),
@@ -48,7 +48,7 @@
     height: 48px !important;
     padding: 4px;
     border-radius: 9999px;
-    border: 1px solid rgba(0, 0, 0, 0.08);
+    border: 1px solid var(--border);
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
     cursor: pointer;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -58,13 +58,13 @@
 }
 
 .hero-search-bar__container--minified:hover {
-    background-color: #f7f7f7;
+    background-color: var(--muted);
     box-shadow: 0 6px 12px -2px rgba(0, 0, 0, 0.08);
 }
 
 .hero-search-bar--active .hero-search-bar__container {
-    background: #f7f7f7;
-    border-color: rgba(0, 0, 0, 0.04);
+    background: var(--muted);
+    border-color: var(--border);
 }
 
 /* ============================================
@@ -84,11 +84,11 @@
 }
 
 .hero-search-bar__section:hover {
-    background-color: rgba(0, 0, 0, 0.06);
+    background-color: var(--accent);
 }
 
 .hero-search-bar__section--active {
-    background-color: #ffffff !important;
+    background-color: var(--background) !important;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
     z-index: 10;
 }
@@ -101,15 +101,15 @@
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    background: #f1f5f9;
-    color: #64748b;
+    background: var(--muted);
+    color: var(--muted-foreground);
     flex-shrink: 0;
     transition: all 0.2s ease;
 }
 
 .hero-search-bar__section--active .hero-search-bar__section-icon {
     background: var(--primary);
-    color: white;
+    color: var(--primary-foreground);
 }
 
 /* Section Content */
@@ -126,13 +126,13 @@
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.8px;
-    color: #64748b;
+    color: var(--muted-foreground);
 }
 
 .hero-search-bar__section-value {
     font-size: 14px;
     font-weight: 600;
-    color: #1e293b;
+    color: var(--foreground);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -146,21 +146,21 @@
     padding: 0;
     font-size: 14px;
     font-weight: 600;
-    color: #1e293b;
+    color: var(--foreground);
     outline: none;
     height: 21px; /* Match value height */
 }
 
 .hero-search-bar__input-inline::placeholder {
     font-weight: 400;
-    color: #94a3b8;
+    color: var(--muted-foreground);
 }
 
 /* Arrow */
 .hero-search-bar__section-arrow {
     width: 14px;
     height: 14px;
-    color: #94a3b8;
+    color: var(--muted-foreground);
     flex-shrink: 0;
     transition: transform 0.2s ease;
 }
@@ -175,7 +175,7 @@
 .hero-search-bar__divider {
     width: 1px;
     height: 32px;
-    background-color: #e2e8f0;
+    background-color: var(--border);
     flex-shrink: 0;
 }
 
@@ -195,7 +195,7 @@
     padding: 14px 14px;
     margin: 6px; /* Equal margin */
     background: var(--primary); /* Use theme color */
-    color: white;
+    color: var(--primary-foreground);
     font-weight: 600;
     font-size: 15px;
     border-radius: 9999px;
@@ -223,7 +223,7 @@
     padding: 14px 14px; 
     margin: 6px; 
     background: var(--secondary); /* Use theme color */
-    color: #1e293b;
+    color: var(--secondary-foreground);
     font-weight: 600;
     font-size: 15px;
     border-radius: 9999px;
@@ -247,7 +247,7 @@
     position: absolute;
     top: calc(100% + 12px);
     left: 0;
-    background: #ffffff;
+    background: var(--popover);
     border-radius: 24px;
     box-shadow:
         0 4px 6px rgba(0, 0, 0, 0.04),
@@ -280,7 +280,7 @@
 .hero-search-bar__dropdown-title {
     font-size: 14px;
     font-weight: 600;
-    color: #222222;
+    color: var(--foreground);
     margin-bottom: 16px;
 }
 
@@ -303,11 +303,11 @@
 }
 
 .hero-search-bar__dropdown-item:hover {
-    background-color: #f7f7f7;
+    background-color: var(--accent);
 }
 
 .hero-search-bar__dropdown-item--selected {
-    background-color: #f0f8ff;
+    background-color: var(--muted);
 }
 
 .hero-search-bar__dropdown-item-icon {
@@ -317,14 +317,14 @@
     width: 40px;
     height: 40px;
     border-radius: 12px;
-    background: #f7f7f7;
-    color: #717171;
+    background: var(--muted);
+    color: var(--muted-foreground);
     flex-shrink: 0;
 }
 
 .hero-search-bar__dropdown-item--selected .hero-search-bar__dropdown-item-icon {
     background: var(--primary);
-    color: white;
+    color: var(--primary-foreground);
 }
 
 .hero-search-bar__dropdown-item-content {
@@ -336,12 +336,12 @@
 .hero-search-bar__dropdown-item-name {
     font-size: 14px;
     font-weight: 500;
-    color: #222222;
+    color: var(--foreground);
 }
 
 .hero-search-bar__dropdown-item-meta {
     font-size: 12px;
-    color: #717171;
+    color: var(--muted-foreground);
 }
 
 /* ============================================
@@ -355,19 +355,19 @@
 
 .hero-search-bar__area-option {
     padding: 16px;
-    border: 1px solid #dddddd;
+    border: 1px solid var(--border);
     border-radius: 12px;
-    background: #ffffff;
+    background: var(--background);
     font-size: 14px;
     font-weight: 500;
-    color: #222222;
+    color: var(--foreground);
     cursor: pointer;
     text-align: center;
     transition: all 0.15s ease;
 }
 
 .hero-search-bar__area-option:hover {
-    border-color: #222222;
+    border-color: var(--foreground);
 }
 
 .hero-search-bar__area-option--selected {
@@ -390,17 +390,17 @@
     align-items: center;
     gap: 16px;
     padding: 16px;
-    border: 1px solid #dddddd;
+    border: 1px solid var(--border);
     border-radius: 16px;
-    background: #ffffff;
+    background: var(--background);
     cursor: pointer;
     text-align: left;
     transition: all 0.15s ease;
 }
 
 .hero-search-bar__rental-option:hover {
-    border-color: #222222;
-    background: #fafafa;
+    border-color: var(--foreground);
+    background: var(--muted);
 }
 
 .hero-search-bar__rental-option--selected {
@@ -422,12 +422,12 @@
 .hero-search-bar__rental-label {
     font-size: 15px;
     font-weight: 600;
-    color: #222222;
+    color: var(--foreground);
 }
 
 .hero-search-bar__rental-desc {
     font-size: 13px;
-    color: #717171;
+    color: var(--muted-foreground);
 }
 
 /* Dropdown Clear Button */
@@ -440,14 +440,14 @@
     border: none;
     font-size: 14px;
     font-weight: 500;
-    color: #717171;
+    color: var(--muted-foreground);
     cursor: pointer;
     text-decoration: underline;
     transition: color 0.15s ease;
 }
 
 .hero-search-bar__dropdown-clear:hover {
-    color: #222222;
+    color: var(--foreground);
 }
 
 /* ============================================

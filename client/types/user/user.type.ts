@@ -19,6 +19,7 @@ export interface User {
   two_factor_enabled: boolean;
   language: string;
   created_at: string; // hoặc Date nếu bạn parse
+  avatar?: string;
 }
 export interface UserData {
   user: User;

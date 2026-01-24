@@ -17,8 +17,8 @@ export default {
       },
     },
     fontFamily: {
-      sans: ['var(--font-geist-sans)', 'system-ui', 'sans-serif'],
-      mono: ['var(--font-geist-mono)', 'ui-monospace', 'monospace'],
+      sans: ['var(--font-space-grotesk)', 'system-ui', 'sans-serif'],
+      mono: ['var(--font-jetbrains-mono)', 'ui-monospace', 'monospace'],
     },
     extend: {
 

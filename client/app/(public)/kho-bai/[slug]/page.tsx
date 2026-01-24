@@ -82,7 +82,6 @@ export default function WarehouseDynamicPage() {
     if (loading) {
         return (
             <div className="flex flex-col min-h-screen">
-                <PrimeNestHeader isLogin={false} />
                 <main className="flex-1 flex items-center justify-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0F766E]"></div>
                 </main>
@@ -94,7 +93,6 @@ export default function WarehouseDynamicPage() {
     if (!property) {
         return (
             <div className="flex flex-col min-h-screen">
-                <PrimeNestHeader isLogin={false} />
                 <main className="flex-1 flex items-center justify-center">
                     <div className="text-center">
                         <h1 className="text-2xl font-bold text-slate-900 mb-2">Không tìm thấy kho</h1>
@@ -118,8 +116,6 @@ export default function WarehouseDynamicPage() {
 
     return (
         <div className="flex flex-col min-h-screen bg-white dark:bg-[#0f172a] font-sans text-slate-900 dark:text-white">
-            <PrimeNestHeader isLogin={false} />
-
             <main className="flex-1 w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
 
                 {/* 1. Header Section */}

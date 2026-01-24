@@ -16,16 +16,16 @@ import './HeroSearchBar.css';
 
 // Sample data for dropdowns
 const LOCATIONS = [
-    { id: 'tan-binh', name: 'Tân Bình', province: 'TP. Hồ Chí Minh', type: 'district' },
-    { id: 'cat-lai', name: 'Cát Lái', province: 'TP. Hồ Chí Minh', type: 'area' },
+    { id: 'ho-chi-minh', name: 'TP. Hồ Chí Minh', province: 'TP. Hồ Chí Minh', type: 'province' },
+    { id: 'bien-hoa', name: 'Biên Hòa', province: 'Đồng Nai', type: 'district' },
+    { id: 'thu-duc', name: 'Thủ Đức', province: 'TP. Hồ Chí Minh', type: 'district' },
+    { id: 'quan-9', name: 'Quận 9', province: 'TP. Hồ Chí Minh', type: 'district' },
+    { id: 'di-an', name: 'Dĩ An', province: 'Bình Dương', type: 'district' },
     { id: 'binh-duong', name: 'Bình Dương', province: 'Bình Dương', type: 'province' },
-    { id: 'long-an', name: 'Long An', province: 'Long An', type: 'province' },
     { id: 'dong-nai', name: 'Đồng Nai', province: 'Đồng Nai', type: 'province' },
     { id: 'kcn-vsip', name: 'KCN VSIP', province: 'Bình Dương', type: 'industrial' },
-    { id: 'kcn-tan-tao', name: 'KCN Tân Tạo', province: 'TP. Hồ Chí Minh', type: 'industrial' },
-    { id: 'thu-duc', name: 'Thủ Đức', province: 'TP. Hồ Chí Minh', type: 'district' },
-    { id: 'quan-7', name: 'Quận 7', province: 'TP. Hồ Chí Minh', type: 'district' },
-    { id: 'quan-9', name: 'Quận 9', province: 'TP. Hồ Chí Minh', type: 'district' },
+    { id: 'kcn-amta', name: 'KCN Amata', province: 'Đồng Nai', type: 'industrial' },
+    { id: 'kcn-high-tech', name: 'Khu Công Nghệ Cao', province: 'TP. Hồ Chí Minh', type: 'industrial' },
 ];
 
 const AREA_RANGES = [
@@ -114,7 +114,7 @@ export default function HeroSearchBar({
         }
     };
 
-    // MINIFIED RENDER (Airbnb Scroll State)
+    // MINIFIED RENDER
     if (minified && !activeSection) {
         return (
             <div
@@ -126,13 +126,13 @@ export default function HeroSearchBar({
             >
                 <div className="hero-search-bar__container hero-search-bar__container--minified">
                     <div className="flex items-center gap-4 pl-4 flex-1 overflow-hidden">
-                        <span className="text-sm font-semibold truncate text-slate-900 border-r border-slate-300 pr-4">
+                        <span className="text-sm font-semibold truncate text-foreground border-r border-border pr-4">
                             {selectedLocation ? selectedLocation.name : "Khu vực bất kỳ"}
                         </span>
-                        <span className="text-sm font-medium truncate text-slate-900 border-r border-slate-300 pr-4 hidden sm:block">
+                        <span className="text-sm font-medium truncate text-foreground border-r border-border pr-4 hidden sm:block">
                             {selectedArea ? selectedArea.label : "Diện tích bất kỳ"}
                         </span>
-                        <span className="text-sm font-medium truncate text-slate-500 hidden md:block">
+                        <span className="text-sm font-medium truncate text-muted-foreground hidden md:block">
                             {selectedRental ? selectedRental.label : "Hình thức"}
                         </span>
                     </div>
@@ -140,14 +140,14 @@ export default function HeroSearchBar({
                     <div className="flex items-center gap-2 pr-2">
                         {/* Filter Trigger in Minified */}
                         <div
-                            className="p-2.5 rounded-full hover:bg-slate-100 cursor-pointer transition-colors border border-transparent hover:border-slate-200"
+                            className="p-2.5 rounded-full hover:bg-accent cursor-pointer transition-colors border border-transparent hover:border-border"
                             onClick={(e) => {
                                 e.stopPropagation();
                                 onOpenFilter?.();
                             }}
                             title="Bộ lọc"
                         >
-                            <AdjustmentsHorizontalIcon className="w-5 h-5 text-slate-600" />
+                            <AdjustmentsHorizontalIcon className="w-5 h-5 text-muted-foreground" />
                         </div>
 
                         {/* Search Button */}
@@ -224,7 +224,7 @@ export default function HeroSearchBar({
                     </div>
                     <div className="hero-search-bar__section-content">
                         <span className="hero-search-bar__section-label">Diện tích</span>
-                        <span className="hero-search-bar__section-value text-sm font-semibold text-slate-800">
+                        <span className="hero-search-bar__section-value text-sm font-semibold text-foreground">
                             {selectedArea ? selectedArea.label : "Diện tích"}
                         </span>
                     </div>
@@ -251,7 +251,7 @@ export default function HeroSearchBar({
                     </div>
                     <div className="hero-search-bar__section-content">
                         <span className="hero-search-bar__section-label">Hình thức</span>
-                        <span className="hero-search-bar__section-value text-sm font-semibold text-slate-800">
+                        <span className="hero-search-bar__section-value text-sm font-semibold text-foreground">
                             {selectedRental ? selectedRental.label : "Hình thức"}
                         </span>
                     </div>

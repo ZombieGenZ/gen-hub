@@ -35,14 +35,14 @@ export default function WarehouseSearchCard({ property, onHover, isHighlighted }
         <div
             className={cn(
                 "group flex flex-col gap-3 cursor-pointer relative rounded-xl p-2 transition-colors",
-                isHighlighted ? "bg-slate-100" : "hover:bg-transparent"
+                isHighlighted ? "bg-accent" : "hover:bg-transparent"
             )}
             onMouseEnter={() => onHover?.(property.id)}
             onMouseLeave={() => onHover?.(null)}
             onClick={() => router.push(`/kho-bai/${property.id}`)}
         >
             {/* Image Carousel */}
-            <div className="relative aspect-[4/3] rounded-xl overflow-hidden bg-slate-200">
+            <div className="relative aspect-[4/3] rounded-xl overflow-hidden bg-muted">
                 <Carousel className="w-full h-full group/carousel">
                     <CarouselContent className="-ml-0 h-full">
                         {images.map((img, index) => (
@@ -58,8 +58,8 @@ export default function WarehouseSearchCard({ property, onHover, isHighlighted }
 
                     {/* Arrows - Only visible on hover */}
                     <div onClick={(e) => e.stopPropagation()}>
-                        <CarouselPrevious className="left-2 bg-white/80 hover:bg-white text-slate-900 border-none shadow-sm opacity-0 group-hover/carousel:opacity-100 transition-opacity disabled:opacity-0" />
-                        <CarouselNext className="right-2 bg-white/80 hover:bg-white text-slate-900 border-none shadow-sm opacity-0 group-hover/carousel:opacity-100 transition-opacity disabled:opacity-0" />
+                        <CarouselPrevious className="left-2 bg-background/80 hover:bg-background text-foreground border-none shadow-sm opacity-0 group-hover/carousel:opacity-100 transition-opacity disabled:opacity-0" />
+                        <CarouselNext className="right-2 bg-background/80 hover:bg-background text-foreground border-none shadow-sm opacity-0 group-hover/carousel:opacity-100 transition-opacity disabled:opacity-0" />
                     </div>
 
                     {/* Dots indicator (simplified visual only) */}
@@ -70,8 +70,8 @@ export default function WarehouseSearchCard({ property, onHover, isHighlighted }
                     </div>
 
                     {/* Guest Favorite Badge - Conditional */}
-                    <div className="absolute top-3 left-3 z-20 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-md shadow-sm">
-                        <span className="text-xs font-semibold text-slate-900 uppercase tracking-wide">{property.type}</span>
+                    <div className="absolute top-3 left-3 z-20 bg-background/90 backdrop-blur-sm px-3 py-1 rounded-md shadow-sm">
+                        <span className="text-xs font-semibold text-foreground uppercase tracking-wide">{property.type}</span>
                     </div>
 
                 </Carousel>
@@ -92,17 +92,17 @@ export default function WarehouseSearchCard({ property, onHover, isHighlighted }
 
             {/* Content info */}
             <div className="flex flex-col gap-0.5 px-0.5">
-                <div className="text-slate-500 text-[15px] leading-snug">
+                <div className="text-muted-foreground text-[15px] leading-snug">
                     <p className="line-clamp-1">Cách trung tâm {property.id + 2} km</p>
                 </div>
 
                 <div className="mt-1 flex items-baseline gap-1">
-                    <span className="font-semibold text-slate-900 text-[16px]">
+                    <span className="font-semibold text-foreground text-[16px]">
                         {property.price >= 1000000000
                             ? `${(property.price / 1000000000).toFixed(1)} Tỷ`
                             : `${(property.price / 1000000).toFixed(0)} Tr`}
                     </span>
-                    <span className="text-slate-900 text-[16px]">/tháng</span>
+                    <span className="text-foreground text-[16px]">/tháng</span>
                 </div>
             </div>
         </div>
