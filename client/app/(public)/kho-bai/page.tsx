@@ -4,16 +4,20 @@ import React, { Suspense } from 'react';
 import { PrimeNestHeader } from '@/app/(public)/homepage/Header';
 import { PrimeNestFooter } from '@/app/(public)/homepage/Footer';
 import PropertySearch from '@/components/search/PropertySearch';
+import './kho-bai.css';
 
 export default function KhoBaiPage() {
     return (
-        <div className="flex flex-col min-h-screen bg-slate-50">
+        <div className="kho-bai-page">
+            {/* Header - Sticky at top */}
             <PrimeNestHeader isLogin={false} />
-            <main className="flex-1 w-full flex flex-col">
-                <Suspense fallback={<div className="p-10 text-center">Đang tải...</div>}>
-                    <PropertySearch />
-                </Suspense>
-            </main>
+
+            {/* Main Content Area - Contains List + Map layout */}
+            <Suspense fallback={<div className="p-10 text-center">Đang tải...</div>}>
+                <PropertySearch />
+            </Suspense>
+
+            {/* Footer - Appears naturally when scrolling past the list */}
             <PrimeNestFooter />
         </div>
     );

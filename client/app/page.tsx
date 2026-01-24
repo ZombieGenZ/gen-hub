@@ -81,15 +81,7 @@ export default function Home() {
     }, []);
 
     return (
-        <div className="relative min-h-screen bg-slate-50 text-slate-900 overflow-x-hidden">
-            {/* Progress Bar */}
-            <div className="fixed top-0 left-0 w-full h-1 bg-white/5 z-50">
-                <div
-                    className="h-full bg-linear-to-r from-teal-500 via-emerald-500 to-green-500 transition-all duration-150"
-                    style={{ width: `${scrollProgress * 100}%` }}
-                />
-            </div>
-
+        <div className="relatisve min-h-screen bg-slate-50 text-slate-900 overflow-x-hidden">
             {/* Navbar - Always visible with scroll effect */}
             <div
                 className={`fixed top-0 left-0 right-0 z-40 transition-all duration-500 ${
@@ -101,51 +93,44 @@ export default function Home() {
                 <PrimeNestHeader isLogin={isLogin} user={user} />
             </div>
 
-            <main className="relative z-10 w-full">
+            <main className="z-10 h-full w-full">
                 {/* 1. Hero */}
-                <section className="min-h-screen flex items-center justify-center">
+                <section className="mt-20 flex items-center justify-center">
                     <ScrollReveal animation="fade-up" duration={800}>
                         <PrimeNestHero />
                     </ScrollReveal>
                 </section>
 
                 {/* 2. About */}
-                <section className="py-8 bg-white">
+                <section className="bg-white">
                     <ScrollReveal animation="fade-up" duration={700}>
                         <PrimeNestAbout />
                     </ScrollReveal>
                 </section>
 
-                {/* 3. Search */}
-                <section className="py-8 bg-slate-50">
-                    <ScrollReveal animation="fade-up" duration={700} delay={100}>
-                        <PrimeNestSearch />
-                    </ScrollReveal>
-                </section>
-
-                {/* 4. Featured */}
-                <section className="py-8 bg-white">
+                {/* 3. Featured */}
+                <section className="bg-white">
                     <ScrollReveal animation="zoom-in" duration={700}>
                         <PrimeNestFeatured />
                     </ScrollReveal>
                 </section>
 
                 {/* 5. Testimonials */}
-                <section className="py-8 bg-slate-50">
+                <section className="bg-slate-50">
                     <ScrollReveal animation="fade-left" duration={700}>
                         <PrimeNestTestimonials />
                     </ScrollReveal>
                 </section>
 
                 {/* 6. FAQ */}
-                <section className="py-8 bg-white">
+                <section className="bg-white">
                     <ScrollReveal animation="fade-up" duration={700}>
                         <PrimeNestFAQ />
                     </ScrollReveal>
                 </section>
 
                 {/* 7. Contact */}
-                <section className="py-8 bg-slate-50">
+                <section className="bg-slate-50">
                     <ScrollReveal animation="fade-up" duration={700}>
                         <PrimeNestContact />
                     </ScrollReveal>

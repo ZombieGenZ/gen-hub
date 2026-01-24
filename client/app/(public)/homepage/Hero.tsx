@@ -3,11 +3,15 @@
 import React from "react";
 import { motion } from "framer-motion";
 
+const WAREHOUSE_TYPES = ['Kho TMĐT', 'Kho Mát', 'Kho Ngoại Quan'] as const;
+
+const ANIMATION_DURATION = 0.5;
+
 export function PrimeNestHero() {
     return (
-        <section className="relative max-w-[1440px] pt-12 mx-auto w-full flex flex-col px-4">
+        <section className="relative max-w-[1440px] pt-12 mx-auto w-full flex flex-col">
             {/* Main Content Wrapper */}
-            <div className="relative w-full overflow-hidden min-h-[700px] flex flex-col md:block rounded-xl  border-white">
+            <div className="relative w-full overflow-hidden min-h-[700px] flex flex-col md:block rounded-xl border-white">
 
                 {/* Background Image & Overlay */}
                 <div className="absolute inset-0 z-0">
@@ -26,15 +30,15 @@ export function PrimeNestHero() {
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5 }}
+                        transition={{ duration: ANIMATION_DURATION }}
                         className="flex flex-wrap gap-3 mb-8 justify-center"
                     >
-                        {['Kho TMĐT', 'Kho Mát', 'Kho Ngoại Quan'].map((tag, i) => (
+                        {WAREHOUSE_TYPES.map((warehouseType) => (
                             <span
-                                key={tag}
+                                key={warehouseType}
                                 className="px-5 py-2 rounded-full bg-white/20 backdrop-blur-md border border-white/20 text-white text-sm font-medium hover:bg-white/30 transition-colors cursor-default"
                             >
-                                {tag}
+                                {warehouseType}
                             </span>
                         ))}
                     </motion.div>
@@ -43,8 +47,8 @@ export function PrimeNestHero() {
                     <motion.h1
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5, delay: 0.1 }}
-                        className="text-4xl md:text-6xl lg:text-7xl  !text-white mb-6 leading-[1.1] tracking-tight drop-shadow-md"
+                        transition={{ duration: ANIMATION_DURATION, delay: 0.1 }}
+                        className="text-4xl md:text-6xl lg:text-7xl !text-white mb-6 leading-[1.1] tracking-tight drop-shadow-md"
                     >
                         Nền Tảng Thuê Kho & Fulfillment Toàn Diện
                     </motion.h1>
@@ -53,7 +57,7 @@ export function PrimeNestHero() {
                     <motion.p
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5, delay: 0.2 }}
+                        transition={{ duration: ANIMATION_DURATION, delay: 0.2 }}
                         className="text-lg md:text-xl !text-gray-100 mb-10 leading-relaxed max-w-3xl font-light drop-shadow-sm"
                     >
                         Kết nối doanh nghiệp với mạng lưới kho bãi chất lượng cao trên toàn quốc.
@@ -64,7 +68,7 @@ export function PrimeNestHero() {
                     <motion.button
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5, delay: 0.3 }}
+                        transition={{ duration: ANIMATION_DURATION, delay: 0.3 }}
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                         className="w-fit px-8 py-4 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-lg rounded-full shadow-lg transition-colors flex items-center gap-2"
@@ -74,9 +78,8 @@ export function PrimeNestHero() {
                 </div>
 
                 {/* Stats Block (The Scoop) */}
-                <div
-                    className="flex w-full relative lg:absolute right-0 bottom-0 flex-col overflow-hidden rounded-tl-[2rem] sm:w-auto sm:flex-row md:flex-wrap mt-8 lg:mt-0 z-20"
-                >
+                <div className="flex w-full relative lg:absolute right-0 bottom-0 flex-col overflow-hidden rounded-tl-[2rem] sm:w-auto sm:flex-row md:flex-wrap mt-8 lg:mt-0 z-20">
+
                     <div className="flex z-10 w-full flex-col gap-[2rem] px-[3rem] py-[2rem] sm:flex-row lg:gap-[4rem] lg:px-[5rem]">
                         <div className="flex w-auto flex-col gap-[0.5rem]">
                             <div className="flex w-auto">

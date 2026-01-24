@@ -1,12 +1,15 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Property, mockProperties } from '@/data/mockProperties';
 import { PrimeNestHeader } from '@/app/(public)/homepage/Header';
 import { PrimeNestFooter } from '@/app/(public)/homepage/Footer';
 import MapComponent from '@/app/(public)/homepage/MapSearch/MapComponent';
 import { BookingWidget } from '@/components/warehouse/booking-widget';
+import PropertySearch from '@/components/search/PropertySearch';
+import '../kho-bai.css';
+
 import {
     MapPinIcon,
     CheckIcon,
@@ -33,10 +36,29 @@ import { Separator } from '@/components/ui/separator';
 
 const PRIMARY_COLOR = "#0F766E"; // GenHub Teal
 
-export default function WarehouseDetailPage() {
+export default function WarehouseDynamicPage() {
     const params = useParams();
     const router = useRouter();
-    const id = params.id as string;
+
+    // [slug] param matches both ID (123) and Location Slug (tan-binh)
+    const slug = params.slug as string;
+    const isId = !isNaN(Number(slug));
+
+    // --- SEARCH MODE (Location Slug) ---
+    if (!isId) {
+        return (
+            <div className="kho-bai-page">
+                <PrimeNestHeader isLogin={false} />
+                <Suspense fallback={<div className="p-10 text-center">Đang tải...</div>}>
+                    <PropertySearch initialLocationSlug={slug} />
+                </Suspense>
+                <PrimeNestFooter />
+            </div>
+        );
+    }
+
+    // --- DETAIL MODE (Numeric ID) ---
+    const id = slug; 
     const [property, setProperty] = useState<Property | null>(null);
     const [loading, setLoading] = useState(true);
 
@@ -44,7 +66,6 @@ export default function WarehouseDetailPage() {
         if (id) {
             const found = mockProperties.find(p => p.id === Number(id));
             if (found) {
-                // Enriching mock data for B2B demo
                 const enrichedProperty = {
                     ...found,
                     power_type: "3 Pha / 500kVA",
@@ -188,7 +209,7 @@ export default function WarehouseDetailPage() {
                                 <h2 className="text-xl font-bold text-slate-900 dark:text-white">Quản lý bởi GenHub Logistics</h2>
                             </div>
                             <div className="size-14 rounded-full bg-teal-100 flex items-center justify-center text-[#0F766E] font-bold text-xl border-2 border-white shadow-sm">
-                                <img src="assets/images/icongenhub.png" alt="Logo" className="w-10 h-10" />
+                                <img src="/assets/icongenhub.svg" alt="Logo" className="w-7 h-7" />
                             </div>
                         </div>
 

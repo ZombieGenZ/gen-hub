@@ -1,0 +1,350 @@
+/**
+ * KHO-BAI SEARCH PAGE STYLES
+ * ===========================
+ */
+/* ============================================
+   LAYOUT VARIABLES
+   ============================================ */
+.search-page {
+  --header-height: 80px;
+  --map-shadow: -10px 0 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+/* ============================================
+   MAIN PAGE CONTAINER
+   ============================================ */
+.kho-bai-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: #f8fafc; /* slate-50 */
+}
+
+/* ============================================
+   SEARCH PAGE - MAIN LAYOUT
+   ============================================ */
+.search-page {
+  width: 100%;
+  font-family: var(--font-sans);
+}
+
+/* Main Container - Chứa cả List và Map */
+.search-page__main-container {
+  display: flex;
+  width: 100%;
+  /* Đảm bảo container có chiều cao tối thiểu để sticky hoạt động */
+  min-height: calc(100vh - var(--header-height) - 100px);
+}
+
+/* ============================================
+   HERO SEARCH BAR SECTION
+   - Sticky below header
+   - Premium glass effect
+   ============================================ */
+.search-page__hero-search {
+  position: sticky;
+  top: var(--header-height);
+  z-index: 90;
+  padding: 16px 24px;
+  background: rgba(248, 250, 252, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 16px -4px rgba(0, 0, 0, 0.08);
+}
+
+@media (min-width: 768px) {
+  .search-page__hero-search {
+    padding: 20px 48px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .search-page__hero-search {
+    padding: 24px 72px;
+  }
+}
+
+/* ============================================
+   LIST COLUMN
+   - Chiều cao tự nhiên (do nội dung quyết định)
+   - Quyết định chiều cao của main-container
+   ============================================ */
+.search-page__list-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0; /* Prevent flex item overflow */
+}
+
+.search-page__list-column--hidden-mobile {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .search-page__list-column--hidden-mobile {
+    display: flex;
+  }
+}
+
+/* List Header */
+.search-page__list-header {
+  padding: 24px 16px 0;
+}
+
+@media (min-width: 1024px) {
+  .search-page__list-header {
+    padding: 24px 24px 0;
+  }
+}
+
+.search-page__list-info {
+  margin-bottom: 24px;
+}
+
+.search-page__list-title {
+  font-size: 18px;
+  line-height: 130%;
+  font-weight: 600;
+  color: #0f172a; /* slate-900 */
+  margin-bottom: 4px;
+}
+
+.search-page__list-page-indicator {
+  font-weight: 400;
+  color: #94a3b8; /* slate-400 */
+  margin-left: 4px;
+}
+
+.search-page__list-subtitle {
+  font-size: 14px;
+  line-height: 150%;
+  color: #64748b; /* slate-500 */
+}
+
+/* List Content */
+.search-page__list-content {
+  padding: 0 16px;
+}
+
+@media (min-width: 1024px) {
+  .search-page__list-content {
+    padding: 0 24px;
+  }
+}
+
+/* ============================================
+   PAGINATION
+   ============================================ */
+.search-page__pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-top: 48px;
+  margin-bottom: 48px;
+  padding: 0 16px;
+}
+
+.search-page__pagination-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 150ms ease;
+  border: none;
+  cursor: pointer;
+  background: transparent;
+}
+
+.search-page__pagination-btn--active {
+  background-color: #0f172a; /* slate-900 */
+  color: #ffffff;
+}
+
+.search-page__pagination-btn--default {
+  color: #334155; /* slate-700 */
+}
+
+.search-page__pagination-btn--default:hover {
+  background-color: #f1f5f9; /* slate-100 */
+}
+
+.search-page__pagination-btn--ellipsis {
+  color: #94a3b8; /* slate-400 */
+  cursor: default;
+}
+
+.search-page__pagination-btn--next {
+  color: #334155;
+}
+
+.search-page__pagination-btn--next:hover {
+  background-color: #f1f5f9;
+}
+
+/* ============================================
+   MAP COLUMN - STICKY POSITIONING
+   CHÌA KHÓA CỦA LAYOUT AIRBNB
+   
+   FLOATING MAP với bo góc
+   ============================================ */
+.search-page__map-column {
+  /* Ẩn trên mobile */
+  display: none;
+  
+  /* Kích thước */
+  width: 45%;
+  
+  /* STICKY MAGIC */
+  position: sticky;
+  top: var(--header-height);
+  height: calc(100vh - var(--header-height));
+  
+  /* 
+   * QUAN TRỌNG: align-self: flex-start
+   * Đảm bảo map-column không bị kéo dãn theo chiều cao của container
+   * Giúp sticky hoạt động đúng
+   */
+  align-self: flex-start;
+  
+  /* 
+   * FLOATING EFFECT - Airbnb Style
+   * Thêm padding để map float bên trong
+   */
+  padding: 16px;
+  padding-left: 8px;
+  
+  /* Không cần shadow ở column - sẽ đặt ở content */
+  box-shadow: none;
+  overflow: visible;
+}
+
+@media (min-width: 1024px) {
+  .search-page__map-column {
+    display: block;
+  }
+}
+
+@media (min-width: 1280px) {
+  .search-page__map-column {
+    width: 50%;
+  }
+}
+
+/* ============================================
+   MAP CONTENT - Floating Card Style
+   Bo góc lớn 24px như Airbnb
+   ============================================ */
+.search-page__map-content {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  
+  /* FLOATING MAP EFFECT */
+  border-radius: 24px;
+  overflow: hidden;
+  
+  /* Premium Shadow - nhiều lớp để tạo hiệu ứng depth */
+  box-shadow: 
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 10px 15px -3px rgba(0, 0, 0, 0.08),
+    0 20px 25px -5px rgba(0, 0, 0, 0.05),
+    0 0 0 1px rgba(0, 0, 0, 0.05);
+  
+  /* Subtle border để tăng definition */
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  
+  /* Transition cho hover effect */
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+
+/* Hover effect - subtle lift */
+.search-page__map-content:hover {
+  box-shadow: 
+    0 8px 10px -2px rgba(0, 0, 0, 0.12),
+    0 16px 25px -5px rgba(0, 0, 0, 0.1),
+    0 25px 35px -8px rgba(0, 0, 0, 0.08),
+    0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+
+/* Mobile Fullscreen Map */
+.search-page__map-column--mobile-fullscreen {
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  width: 100%;
+  height: 100%;
+  background: white;
+  box-shadow: none;
+}
+
+/* Map Close Button */
+.search-page__map-close-btn {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  padding: 8px;
+  background: white;
+  border-radius: 9999px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  z-index: 10;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 150ms ease;
+}
+
+.search-page__map-close-btn:hover {
+  background: #f8fafc;
+  transform: scale(1.05);
+}
+
+/* ============================================
+   MOBILE TOGGLE BUTTON
+   ============================================ */
+.search-page__mobile-toggle {
+  position: fixed;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+  user-select: none;
+}
+
+@media (min-width: 1024px) {
+  .search-page__mobile-toggle {
+    display: none;
+  }
+}
+
+.search-page__mobile-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 24px;
+  background-color: #0f172a; /* slate-900 */
+  color: white;
+  border-radius: 9999px;
+  font-weight: 500;
+  font-size: 14px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  border: none;
+  cursor: pointer;
+  transition: all 200ms ease;
+}
+
+.search-page__mobile-toggle-btn:hover {
+  transform: scale(1.05);
+}
+
+.search-page__mobile-toggle-btn:active {
+  transform: scale(0.95);
+}

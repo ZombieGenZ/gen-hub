@@ -158,15 +158,22 @@
     @apply border-border outline-ring/50;
   }
   html {
-    overflow-x: hidden;
-    overflow-y: scroll;
+    /* 
+     * QUAN TRỌNG: Không đặt overflow-x: hidden trên html
+     * vì nó sẽ phá vỡ position: sticky của các descendant elements.
+     * Thay vào đó, để body xử lý overflow.
+     */
     scroll-behavior: smooth;
   }
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-sans);
-    overflow-x: hidden;
-    overflow-y: visible;
+    /* 
+     * Đặt overflow-x: hidden trên body thay vì html
+     * Điều này cho phép sticky hoạt động đúng
+     */
+    overflow-x: clip; /* Sử dụng clip thay vì hidden để không tạo scroll container mới */
+    min-height: 100vh;
   }
 }
 

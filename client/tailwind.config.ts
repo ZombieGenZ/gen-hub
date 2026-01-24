@@ -26,15 +26,15 @@ export default {
         'display-lg': ['3.75rem', { lineHeight: '1.1', letterSpacing: '-0.02em' }],  // 60px
         'display': ['3rem', { lineHeight: '1.1', letterSpacing: '-0.02em' }],        // 48px
         'display-sm': ['2.25rem', { lineHeight: '1.2', letterSpacing: '-0.01em' }],  // 36px
-        'headline-lg': ['2rem', { lineHeight: '1.2', fontWeight: '700' }],      // 32px
+        'headline-lg': ['2rem', { lineHeight: '1.3', fontWeight: '700' }],      // 32px (User Rule: Headline Large, 130%)
         'headline-md': ['1.5rem', { lineHeight: '1.3', fontWeight: '600' }],    // 24px
-        'headline-sm': ['1.25rem', { lineHeight: '1.4', fontWeight: '600' }],   // 20px
+        'headline-sm': ['1.25rem', { lineHeight: '1.3', fontWeight: '600' }],   // 20px (User Rule: Headline Medium, 130%)
         'body-lg': ['1.125rem', { lineHeight: '1.6' }],   // 18px
-        'body': ['1rem', { lineHeight: '1.6' }],          // 16px
+        'body': ['1rem', { lineHeight: '1.5' }],          // 16px (User Rule: Body Large, 150%)
         'body-sm': ['0.875rem', { lineHeight: '1.5' }],   // 14px
         // Small sizes
         'label': ['0.875rem', { lineHeight: '1.4', fontWeight: '500' }],  // 14px
-        'caption': ['0.75rem', { lineHeight: '1.4' }],    // 12px
+        'caption': ['0.75rem', { lineHeight: '1.5' }],    // 12px (User Rule: Body Small, 150%)
         'overline': ['0.75rem', { lineHeight: '1.4', letterSpacing: '0.05em' }], // 12px
       },
       colors: {
