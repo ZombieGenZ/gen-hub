@@ -23,6 +23,27 @@ export class CouponService {
         }
     }
 
+    // Lấy coupon theo id
+    async getCouponById(access_token: string, id: string) {
+        try {
+            const response = await fetch(`${API}/coupons/${id}`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${access_token}`,
+                    'Content-Type': 'application/json',
+                },
+            })
+            if (!response.ok) {
+                throw new Error('Failed to fetch coupon')
+            }
+            const data = await response.json()
+            return data
+        }
+        catch (err) {
+            console.error("Failed to fetch coupon", err);
+        }
+    }
+    
     //Lấy coupon công khai
     async getPublicCoupons(access_token: string) {
         try {
