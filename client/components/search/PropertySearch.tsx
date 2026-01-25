@@ -12,6 +12,7 @@ import { FilterModal, FilterState } from '@/components/search/FilterModal';
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { UserData } from "@/types/user/user.type";
 import UserDropdown from "@/components/ui/UserDropdown";
+import SearchHeader from "@/components/search/SearchHeader";
 import {
     DropdownMenu,
     DropdownMenuTrigger,
@@ -73,6 +74,8 @@ export default function PropertySearch({ initialLocationSlug }: PropertySearchPr
         amenities: [],
         ceilingHeight: null,
         floorLoadCapacity: 3,
+        locationType: [],
+        pcccLevel: [],
     });
 
     // Legacy filter state (for URL sync)
@@ -308,47 +311,11 @@ export default function PropertySearch({ initialLocationSlug }: PropertySearchPr
         <>
             <div className="search-page bg-background">
                 {/* HERO SEARCH BAR - Sticky at top */}
-                <div className="search-page__hero-search">
-                    <div className="flex items-center justify-between gap-4 w-full max-w-[1920px] mx-auto">
-                        {/* 1. LOGO */}
-                        <a href="/" className="flex-shrink-0 flex items-center gap-2 group">
-                            <img src="/assets/GenHubv2.svg" alt="GenHub" className="h-9 w-auto transition-transform duration-300 group-hover:scale-105" />
-                        </a>
-
-                        {/* 2. SEARCH BAR - Centered & Flexible */}
-                        <div className="flex-1 max-w-[850px] mx-4">
-                            <HeroSearchBar
-                                onSearch={handleHeroSearch}
-                                onOpenFilter={() => setIsFilterModalOpen(true)}
-                                variant="compact"
-                                minified={isScrolled}
-                            />
-                        </div>
-
-                        {/* 3. MENU / AUTH - Right Side */}
-                        <div className="flex-shrink-0 flex items-center gap-6">
-                            {/* User Dropdown / Menu */}
-                            <div className="flex items-center px-2 py-1 bg-background hover:bg-muted transition-all duration-200 border border-border rounded-full shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05)] hover:shadow-[0_6px_12px_-2px_rgba(0,0,0,0.08)]">
-                                <UserDropdown
-                                    user={isLogin ? {
-                                        name: user?.user?.name || 'Người dùng',
-                                        email: user?.user?.email,
-                                        avatar: user?.user?.avatar || user?.user?.name ? `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.user?.name)}&background=334155&color=fff` : undefined,
-                                        roles: user?.roles?.map(r => r.name)
-                                    } : undefined}
-                                    onLogout={() => {
-                                        authStorage.clearTokens();
-                                        setIsLogin(false);
-                                        setUser(null);
-                                        router.push('/');
-                                    }}
-                                >
-                                </UserDropdown>
-                            </div>
-
-                        </div>
-                    </div>
-                </div>
+                <SearchHeader
+                    onSearch={handleHeroSearch}
+                    onOpenFilter={() => setIsFilterModalOpen(true)}
+                    isScrolled={isScrolled}
+                />
 
                 {/* FILTER MODAL */}
                 <FilterModal

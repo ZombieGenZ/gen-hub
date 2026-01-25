@@ -50,6 +50,28 @@ export class IsuranceService {
         }
     }
 
+    // Lấy bảo hiểm công khai cho BookingWidget (Không cần auth)
+    async getPublicActiveInsurance() {
+        try {
+            const response = await fetch(`${API}/public/insurances/active`, {
+                method: "GET",
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Failed to fetch Public Active Insurance');
+            }
+            const data = await response.json();
+            return data;
+        }
+        catch(err) {
+            console.error("Failed to fetch Public Active Insurance", err);
+        }
+    }
+
+
     // Lấy bảo hiểm theo ID
     async getInsuranceById(access_token: string, id: string) {
         try {

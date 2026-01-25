@@ -71,7 +71,7 @@ export default function WarehouseSearchCard({ property, onHover, isHighlighted }
 
                     {/* Guest Favorite Badge - Conditional */}
                     <div className="absolute top-3 left-3 z-20 bg-background/90 backdrop-blur-sm px-3 py-1 rounded-md shadow-sm">
-                        <span className="text-xs font-semibold text-foreground uppercase tracking-wide">{property.type}</span>
+                        <span className="text-xs font-semibold text-primary uppercase tracking-wide">{property.type}</span>
                     </div>
 
                 </Carousel>

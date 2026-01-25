@@ -66,6 +66,27 @@ export class AddonsService {
         }
     }
 
+    // Lấy addon công khai cho BookingWidget (Không cần auth)
+    async getPublicActiveAddons() {
+        try {
+            const response = await fetch(`${API}/public/addons/active`, {
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            if (!response.ok) {
+                throw new Error('Failed to fetch public active addons');
+            }
+            
+            const data = await response.json();
+            return data;
+        } catch (error) {
+            console.error('Error fetching public active addons:', error);
+            throw error;
+        }
+    }
+
+
     //Tạo addon mới (Để kiểu any để tạm thời đến khi có kiểu dữ liệu chính xác)
     async createAddon(access_token: string, addonData: AddonRequest) {
         try {

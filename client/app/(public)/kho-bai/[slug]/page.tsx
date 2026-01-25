@@ -8,6 +8,9 @@ import { PrimeNestFooter } from '@/app/(public)/homepage/Footer';
 import MapComponent from '@/app/(public)/homepage/MapSearch/MapComponent';
 import { BookingWidget } from '@/components/warehouse/booking-widget';
 import PropertySearch from '@/components/search/PropertySearch';
+import SearchHeader from "@/components/search/SearchHeader";
+import { FilterModal, FilterState } from '@/components/search/FilterModal';
+import { SearchFilters } from '@/components/search/HeroSearchBar';
 import '../kho-bai.css';
 
 import {
@@ -58,9 +61,25 @@ export default function WarehouseDynamicPage() {
     }
 
     // --- DETAIL MODE (Numeric ID) ---
-    const id = slug; 
+    const id = slug;
     const [property, setProperty] = useState<Property | null>(null);
     const [loading, setLoading] = useState(true);
+    const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+
+    const handleDetailSearch = (filters: SearchFilters) => {
+        const params = new URLSearchParams();
+        if (filters.areaRange) {
+            params.set('areaMin', filters.areaRange.min.toString());
+            params.set('areaMax', filters.areaRange.max.toString());
+        }
+        if (filters.rentalType) params.set('type', filters.rentalType);
+
+        if (filters.location) {
+            router.push(`/kho-bai/${filters.location}?${params.toString()}`);
+        } else {
+            router.push(`/kho-bai?${params.toString()}`);
+        }
+    };
 
     useEffect(() => {
         if (id) {
@@ -116,6 +135,21 @@ export default function WarehouseDynamicPage() {
 
     return (
         <div className="flex flex-col min-h-screen bg-white dark:bg-[#0f172a] font-sans text-slate-900 dark:text-white">
+            <SearchHeader
+                onSearch={handleDetailSearch}
+                onOpenFilter={() => setIsFilterModalOpen(true)}
+            />
+            <FilterModal
+                isOpen={isFilterModalOpen}
+                onClose={() => setIsFilterModalOpen(false)}
+                onApply={() => { setIsFilterModalOpen(false); /* Optional redirect logic could go here */ }}
+                initialFilters={{
+                    priceRange: [0, 500],
+                    amenities: [],
+                    ceilingHeight: null,
+                    floorLoadCapacity: 3,
+                }}
+            />
             <main className="flex-1 w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
 
                 {/* 1. Header Section */}
@@ -267,12 +301,48 @@ export default function WarehouseDynamicPage() {
                                     { icon: InboxStackIcon, label: "3 Dock Leveler tự động" },
                                     { icon: MapPinIcon, label: "Gần Cảng Cát Lái (5km)" },
                                     { icon: InformationCircleIcon, label: "Văn phòng điều hành 50m²" },
+                                    { icon: BoltIcon, label: "WiFi / Internet Tốc độ cao" },
+                                    { icon: SunIcon, label: "Điều hòa trung tâm (Kho mát)" },
+                                    { icon: BuildingOffice2Icon, label: "Phòng họp / Co-working space" },
+                                    { icon: Squares2X2Icon, label: "Khu vực Canteen / Ăn uống" },
                                 ].map((item, i) => (
                                     <div key={i} className="flex items-center gap-3 text-slate-700 font-medium">
                                         <item.icon className="w-6 h-6 text-slate-400" />
                                         <span>{item.label}</span>
                                     </div>
                                 ))}
+                            </div>
+                        </section>
+
+                        <Separator className="bg-slate-100" />
+
+                        {/* Terms Section from Document */}
+                        <section>
+                            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-6">Điều khoản thuê kho</h3>
+                            <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-6 border border-slate-100 dark:border-slate-700 space-y-4">
+                                <div>
+                                    <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm mb-1 uppercase tracking-wide">Thanh toán & Đặt cọc</h4>
+                                    <p className="text-sm text-slate-600 dark:text-slate-400">
+                                        Thanh toán 100% một lần trong vòng 07 ngày kể từ ngày ký HĐ. Phí dịch vụ chưa bao gồm VAT.
+                                        Lãi chậm trả: 0.05%/ngày.
+                                    </p>
+                                </div>
+                                <div>
+                                    <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm mb-1 uppercase tracking-wide">Quy trình vận hành</h4>
+                                    <p className="text-sm text-slate-600 dark:text-slate-400">
+                                        Tiếp nhận xe tại bãi đệm - Hạ hàng tại khu vực chung (miễn phí) - Cất hàng vào vị trí thuê.
+                                        Kiểm tra ngoại quan 100% hàng hóa đầu vào.
+                                    </p>
+                                </div>
+                                <div>
+                                    <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm mb-1 uppercase tracking-wide">Định mức hao hụt</h4>
+                                    <p className="text-sm text-slate-600 dark:text-slate-400">
+                                        Cho phép trong khoảng quy định. Bên A bồi thường nếu vượt định mức theo giá trị hóa đơn.
+                                    </p>
+                                </div>
+                                <div className="pt-2">
+                                    <a href="#" className="text-[#0F766E] font-bold text-sm hover:underline">Xem chi tiết Hợp đồng mẫu &gt;</a>
+                                </div>
                             </div>
                         </section>
 
@@ -285,7 +355,7 @@ export default function WarehouseDynamicPage() {
                                 <MapComponent
                                     properties={[property]}
                                     highlightedPropertyId={property.id}
-                                    onMarkerClick={() => { }} // No-op
+                                    onMarkerClick={() => { }} 
                                     variant="detail"
                                 />
                             </div>

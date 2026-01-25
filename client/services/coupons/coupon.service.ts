@@ -128,6 +128,43 @@ export class CouponService {
         }
     }
 
+    // Kiểm tra coupon cho BookingWidget
+    async validateCoupon(code: string, orderDetails: {
+        warehouse_template_id?: string;
+        row_template_ids?: string[];
+        total_amount: number;
+        duration_value: number;
+        duration_unit: string;
+    }) {
+        try {
+            const response = await fetch(`${API}/public/coupons/validate`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ code, ...orderDetails })
+            })
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                return {
+                    is_valid: false,
+                    discount_amount: 0,
+                    message: errorData.message || 'Mã giảm giá không hợp lệ'
+                };
+            }
+            const data = await response.json()
+            return data
+        } catch (err) {
+            console.error("Failed to validate coupon", err);
+            return {
+                is_valid: false,
+                discount_amount: 0,
+                message: 'Không thể kiểm tra mã giảm giá'
+            };
+        }
+    }
+
+
     //Tạo coupon
     async createCoupon(access_token: string, coupon: CouponRequest) {
         try {

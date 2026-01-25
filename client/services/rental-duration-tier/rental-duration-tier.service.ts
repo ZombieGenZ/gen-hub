@@ -64,6 +64,26 @@ export class RentalDurationTierService {
         }
     }
 
+    // Lấy danh sách gói thời gian thuê công khai cho BookingWidget (Không cần auth)
+    async getPublicActiveTiers() {
+        try {
+            const response = await fetch(`${API}/public/rental-duration-tiers/active`, {
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            if (!response.ok) {
+                throw new Error('Failed to fetch public active rental duration tiers');
+            }
+            const data = await response.json();
+            return data;
+        } catch (error) {
+            console.error('Error fetching public active rental duration tiers:', error);
+            throw error;
+        }
+    }
+
+
     // Tạo gói thời gian thuê
     async createRentalDurationTier(access_token: string, data: RentalDurationTier) {
         

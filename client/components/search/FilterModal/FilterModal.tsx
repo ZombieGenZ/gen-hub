@@ -68,6 +68,20 @@ const CEILING_HEIGHT_OPTIONS = [
     { id: 'gt12m', label: '> 12m', value: 12 },
 ];
 
+const LOCATION_TYPE_OPTIONS = [
+    { id: 'industrial_zone', label: 'Khu công nghiệp (KCN)', icon: CubeIcon },
+    { id: 'near_port', label: 'Gần cảng biển', icon: TruckIcon },
+    { id: 'near_airport', label: 'Gần sân bay', icon: TruckIcon },
+    { id: 'city_center', label: 'Nội thành', icon: CubeIcon },
+];
+
+const PCCC_LEVEL_OPTIONS = [
+    { id: 'sprinkler', label: 'Sprinkler tự động' },
+    { id: 'fire_wall', label: 'Vách ngăn chống cháy' },
+    { id: 'fire_alarm', label: 'Báo cháy tự động' },
+    { id: 'fire_hydrant', label: 'Trụ nước chữa cháy' },
+];
+
 // ============================================
 // INTERFACES
 // ============================================
@@ -76,6 +90,8 @@ export interface FilterState {
     amenities: string[];
     ceilingHeight: number | null;
     floorLoadCapacity: number;
+    locationType: string[];
+    pcccLevel: string[];
 }
 
 interface FilterModalProps {
@@ -234,9 +250,31 @@ export default function FilterModal({
     const [floorLoad, setFloorLoad] = useState<number>(
         initialFilters?.floorLoadCapacity || 3
     );
+    const [locationType, setLocationType] = useState<string[]>(
+        initialFilters?.locationType || []
+    );
+    const [pcccLevel, setPcccLevel] = useState<string[]>(
+        initialFilters?.pcccLevel || []
+    );
 
     const toggleAmenity = useCallback((id: string) => {
         setSelectedAmenities(prev =>
+            prev.includes(id)
+                ? prev.filter(a => a !== id)
+                : [...prev, id]
+        );
+    }, []);
+
+    const toggleLocationType = useCallback((id: string) => {
+        setLocationType(prev =>
+            prev.includes(id)
+                ? prev.filter(a => a !== id)
+                : [...prev, id]
+        );
+    }, []);
+
+    const togglePcccLevel = useCallback((id: string) => {
+        setPcccLevel(prev =>
             prev.includes(id)
                 ? prev.filter(a => a !== id)
                 : [...prev, id]
@@ -248,6 +286,8 @@ export default function FilterModal({
         setSelectedAmenities([]);
         setCeilingHeight(null);
         setFloorLoad(3);
+        setLocationType([]);
+        setPcccLevel([]);
     };
 
     const handleApply = () => {
@@ -256,6 +296,8 @@ export default function FilterModal({
             amenities: selectedAmenities,
             ceilingHeight,
             floorLoadCapacity: floorLoad,
+            locationType,
+            pcccLevel,
         });
         onClose();
     };
@@ -265,6 +307,8 @@ export default function FilterModal({
         selectedAmenities.length > 0,
         ceilingHeight !== null,
         floorLoad !== 3,
+        locationType.length > 0,
+        pcccLevel.length > 0,
     ].filter(Boolean).length;
 
     return (
@@ -353,6 +397,56 @@ export default function FilterModal({
                                                 ))}
                                             </div>
                                         </div>
+                                    ))}
+                                </div>
+                            </section>
+
+                            {/* LOCATION TYPE SECTION (B2B) */}
+                            <section className="filter-modal__section">
+                                <div className="filter-modal__section-header">
+                                    <h3 className="filter-modal__section-title">
+                                        <span className="filter-modal__section-icon">📍</span>
+                                        Vị trí kho
+                                    </h3>
+                                </div>
+                                <div className="filter-modal__amenity-list">
+                                    {LOCATION_TYPE_OPTIONS.map((opt) => (
+                                        <button
+                                            key={opt.id}
+                                            className={cn(
+                                                "filter-modal__amenity-btn",
+                                                locationType.includes(opt.id) && "filter-modal__amenity-btn--selected"
+                                            )}
+                                            onClick={() => toggleLocationType(opt.id)}
+                                        >
+                                            <opt.icon className="filter-modal__amenity-icon" />
+                                            <span>{opt.label}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </section>
+
+                            {/* PCCC LEVEL SECTION (B2B) */}
+                            <section className="filter-modal__section">
+                                <div className="filter-modal__section-header">
+                                    <h3 className="filter-modal__section-title">
+                                        <span className="filter-modal__section-icon">🔥</span>
+                                        Hệ thống PCCC
+                                    </h3>
+                                </div>
+                                <div className="filter-modal__amenity-list">
+                                    {PCCC_LEVEL_OPTIONS.map((opt) => (
+                                        <button
+                                            key={opt.id}
+                                            className={cn(
+                                                "filter-modal__amenity-btn",
+                                                pcccLevel.includes(opt.id) && "filter-modal__amenity-btn--selected"
+                                            )}
+                                            onClick={() => togglePcccLevel(opt.id)}
+                                        >
+                                            <FireIcon className="filter-modal__amenity-icon" />
+                                            <span>{opt.label}</span>
+                                        </button>
                                     ))}
                                 </div>
                             </section>

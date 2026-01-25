@@ -23,7 +23,6 @@
     position: fixed;
     top: 50%;
     left: 50%;
-    /* transform handled by framer-motion */
     width: 100%;
     max-width: 680px;
     max-height: 90vh;
@@ -312,7 +311,7 @@
     align-items: center;
     gap: 8px;
     padding: 12px 16px;
-    background: var(--background);
+    background: var(--muted);
     border: 1px solid var(--border);
     border-radius: 12px;
     font-size: 14px;
@@ -323,7 +322,7 @@
 }
 
 .filter-modal__amenity-btn:hover {
-    border-color: var(--foreground);
+    border-color: var(--primary);
 }
 
 .filter-modal__amenity-btn--selected {
@@ -383,7 +382,7 @@
 
 .filter-modal__spec-btn {
     padding: 10px 16px;
-    background: var(--background);
+    background: var(--muted);
     border: 1px solid var(--border);
     border-radius: 12px;
     font-size: 13px;
@@ -394,7 +393,7 @@
 }
 
 .filter-modal__spec-btn:hover {
-    border-color: var(--foreground);
+    border-color: var(--primary);
 }
 
 .filter-modal__spec-btn--selected {
