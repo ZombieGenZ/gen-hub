@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
+import { PrismaService } from '../../../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
+import { couponScheduleBasicSelect, couponScheduleFullSelect, couponScheduleWithRelationsSelect } from '../selects/coupon-schedule.select';
 
 @Injectable()
 export class CouponScheduleRepository {
@@ -22,6 +23,7 @@ export class CouponScheduleRepository {
             take,
             where,
             orderBy,
+            select: couponScheduleBasicSelect,
         });
     }
 
@@ -32,6 +34,7 @@ export class CouponScheduleRepository {
     async findById(id: string) {
         return this.prisma.couponSchedule.findFirst({
             where: { id, is_deleted: false },
+            select: couponScheduleFullSelect,
         });
     }
 
@@ -42,12 +45,14 @@ export class CouponScheduleRepository {
                 is_deleted: false,
                 ...(excludeId && { id: { not: excludeId } }),
             },
+            select: couponScheduleBasicSelect,
         });
     }
 
     async findByIds(ids: string[]) {
         return this.prisma.couponSchedule.findMany({
             where: { id: { in: ids }, is_deleted: false },
+            select: couponScheduleBasicSelect,
         });
     }
 
@@ -63,6 +68,7 @@ export class CouponScheduleRepository {
                 is_deleted: false,
                 ...(excludeId && { id: { not: excludeId } }),
             },
+            select: couponScheduleBasicSelect,
         });
     }
 
@@ -78,6 +84,7 @@ export class CouponScheduleRepository {
                     lte: new Date(),
                 },
             },
+            select: couponScheduleBasicSelect,
         });
     }
 
@@ -144,7 +151,18 @@ export class CouponScheduleRepository {
     async getGiftAddons(scheduleId: string) {
         return this.prisma.couponScheduleGiftAddon.findMany({
             where: { coupon_schedule_id: scheduleId, is_active: true },
-            include: { addon: true },
+            select: {
+                id: true,
+                addon_id: true,
+                is_active: true,
+                addon: {
+                    select: {
+                        id: true,
+                        name: true,
+                        description: true,
+                    },
+                },
+            },
         });
     }
 
@@ -166,7 +184,18 @@ export class CouponScheduleRepository {
     async getGiftInsurances(scheduleId: string) {
         return this.prisma.couponScheduleGiftInsurance.findMany({
             where: { coupon_schedule_id: scheduleId, is_active: true },
-            include: { insurance: true },
+            select: {
+                id: true,
+                insurance_id: true,
+                is_active: true,
+                insurance: {
+                    select: {
+                        id: true,
+                        name: true,
+                        description: true,
+                    },
+                },
+            },
         });
     }
 
@@ -176,14 +205,7 @@ export class CouponScheduleRepository {
     async getScheduleWithTargetsAndGifts(id: string) {
         return this.prisma.couponSchedule.findFirst({
             where: { id, is_deleted: false },
-            include: {
-                target_users: { where: { is_active: true } },
-                target_warehouses: { where: { is_active: true } },
-                target_rows: { where: { is_active: true } },
-                target_addons: { where: { is_active: true } },
-                gift_addons: { where: { is_active: true }, include: { addon: true } },
-                gift_insurances: { where: { is_active: true }, include: { insurance: true } },
-            },
+            select: couponScheduleWithRelationsSelect,
         });
     }
 }

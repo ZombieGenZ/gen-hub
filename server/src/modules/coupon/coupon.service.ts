@@ -1,7 +1,8 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { I18nService } from 'nestjs-i18n';
-import { CouponRepository } from './coupon.repository';
+import { CouponRepository } from './repositories/coupon.repository';
+import { CouponCacheKeys } from './constants/coupon-cache-keys.helper';
 import { RedisService } from '../redis/redis.service';
 import { WebsocketGateway } from '../websocket/websocket.gateway';
 import { SystemLogService } from '../system-log/system-log.service';
@@ -9,28 +10,15 @@ import { CreateCouponDto, UpdateCouponDto, QueryCouponDto } from './dto';
 
 @Injectable()
 export class CouponService {
-    private readonly cacheTTL: number;
-    private readonly listCacheTTL: number;
-
     constructor(
         private readonly repository: CouponRepository,
+        private readonly cacheKeys: CouponCacheKeys,
         private readonly redisService: RedisService,
         private readonly websocketGateway: WebsocketGateway,
         private readonly systemLogService: SystemLogService,
         private readonly configService: ConfigService,
         private readonly i18n: I18nService,
-    ) {
-        this.cacheTTL = this.configService.get<number>('REDIS_COUPON_CACHE_TTL', 300);
-        this.listCacheTTL = this.configService.get<number>('REDIS_COUPON_LIST_CACHE_TTL', 60);
-    }
-
-    private getCacheKey(id: string): string {
-        return `coupon:${id}`;
-    }
-
-    private getListCacheKey(query: QueryCouponDto): string {
-        return `coupon:list:${JSON.stringify(query)}`;
-    }
+    ) {}
 
     async create(dto: CreateCouponDto, userId: string, lang: string) {
         // Kiểm tra mã code trùng với thời gian hiệu lực chồng chéo
@@ -130,8 +118,8 @@ export class CouponService {
     async findAll(query: QueryCouponDto) {
         const { limit = 10, offset = 0, keywords, is_active, is_public } = query;
 
-        // Check cache
-        const cacheKey = this.getListCacheKey(query);
+        // Check cache - Cache-Aside Pattern
+        const cacheKey = this.cacheKeys.list(query);
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
             return JSON.parse(cached);
@@ -155,6 +143,7 @@ export class CouponService {
             ];
         }
 
+        // Parallel execution for better performance
         const [data, total] = await Promise.all([
             this.repository.findAll({
                 skip: offset,
@@ -168,20 +157,22 @@ export class CouponService {
         const hasMore = offset + data.length < total;
         const result = { items: data, total, limit, offset, hasMore };
 
-        // Set cache
-        await this.redisService.set(cacheKey, JSON.stringify(result), this.listCacheTTL);
+        // Set cache with TTL from environment
+        const ttl = this.cacheKeys.getTTL('list');
+        await this.redisService.set(cacheKey, JSON.stringify(result), ttl);
 
         return result;
     }
 
     async findById(id: string, lang: string) {
-        // Check cache
-        const cacheKey = this.getCacheKey(id);
+        // Check cache - Cache-Aside Pattern
+        const cacheKey = this.cacheKeys.item(id);
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
             return JSON.parse(cached);
         }
 
+        // Query database
         const coupon = await this.repository.findById(id);
         if (!coupon) {
             throw new NotFoundException(
@@ -189,8 +180,9 @@ export class CouponService {
             );
         }
 
-        // Set cache
-        await this.redisService.set(cacheKey, JSON.stringify(coupon), this.cacheTTL);
+        // Set cache with TTL from environment
+        const ttl = this.cacheKeys.getTTL('item');
+        await this.redisService.set(cacheKey, JSON.stringify(coupon), ttl);
 
         return coupon;
     }
@@ -334,9 +326,11 @@ export class CouponService {
             }
         }
 
-        // Xóa cache
-        await this.invalidateCache(id);
-        await this.invalidateListCache();
+        // Invalidate cache
+        await Promise.all([
+            this.invalidateCache(id),
+            this.invalidateListCache(),
+        ]);
 
         // Ghi log
         this.systemLogService.info('Coupon', 'UPDATE', `Cập nhật coupon: ${updated.name}`, {
@@ -368,9 +362,11 @@ export class CouponService {
 
         await this.repository.softDelete(id, userId);
 
-        // Xóa cache
-        await this.invalidateCache(id);
-        await this.invalidateListCache();
+        // Invalidate cache
+        await Promise.all([
+            this.invalidateCache(id),
+            this.invalidateListCache(),
+        ]);
 
         // Ghi log
         this.systemLogService.info('Coupon', 'DELETE', `Xóa coupon: ${coupon.name}`, {
@@ -419,10 +415,11 @@ export class CouponService {
     }
 
     private async invalidateCache(id: string) {
-        await this.redisService.del(this.getCacheKey(id));
+        await this.redisService.del(this.cacheKeys.item(id));
     }
 
     private async invalidateListCache() {
-        await this.redisService.delByPattern('coupon:list:*');
+        const listPrefix = this.cacheKeys.list();
+        await this.redisService.delByPattern(`${listPrefix}*`);
     }
 }

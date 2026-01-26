@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
+import { PrismaService } from '../../../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
+import { couponBasicSelect, couponFullSelect, couponWithRelationsSelect } from '../selects/coupon.select';
 
 @Injectable()
 export class CouponRepository {
@@ -22,6 +23,7 @@ export class CouponRepository {
             take,
             where,
             orderBy,
+            select: couponBasicSelect,
         });
     }
 
@@ -32,6 +34,7 @@ export class CouponRepository {
     async findById(id: string) {
         return this.prisma.coupon.findFirst({
             where: { id, is_deleted: false },
+            select: couponFullSelect,
         });
     }
 
@@ -42,6 +45,7 @@ export class CouponRepository {
                 is_deleted: false,
                 ...(excludeId && { id: { not: excludeId } }),
             },
+            select: couponBasicSelect,
         });
     }
 
@@ -55,7 +59,6 @@ export class CouponRepository {
         endsAt?: Date | null,
         excludeId?: string,
     ) {
-        const now = new Date();
         return this.prisma.coupon.findFirst({
             where: {
                 code,
@@ -81,6 +84,7 @@ export class CouponRepository {
                     ],
                 }),
             },
+            select: couponBasicSelect,
         });
     }
 
@@ -91,12 +95,14 @@ export class CouponRepository {
                 is_deleted: false,
                 ...(excludeId && { id: { not: excludeId } }),
             },
+            select: couponBasicSelect,
         });
     }
 
     async findByIds(ids: string[]) {
         return this.prisma.coupon.findMany({
             where: { id: { in: ids }, is_deleted: false },
+            select: couponBasicSelect,
         });
     }
 
@@ -147,11 +153,40 @@ export class CouponRepository {
     async getCouponWithTargets(id: string) {
         return this.prisma.coupon.findFirst({
             where: { id, is_deleted: false },
-            include: {
-                target_users: { where: { is_active: true } },
-                target_warehouses: { where: { is_active: true } },
-                target_rows: { where: { is_active: true } },
-                target_addons: { where: { is_active: true } },
+            select: {
+                ...couponFullSelect,
+                target_users: {
+                    where: { is_active: true },
+                    select: {
+                        id: true,
+                        user_id: true,
+                        is_active: true,
+                    },
+                },
+                target_warehouses: {
+                    where: { is_active: true },
+                    select: {
+                        id: true,
+                        warehouse_template_id: true,
+                        is_active: true,
+                    },
+                },
+                target_rows: {
+                    where: { is_active: true },
+                    select: {
+                        id: true,
+                        row_template_id: true,
+                        is_active: true,
+                    },
+                },
+                target_addons: {
+                    where: { is_active: true },
+                    select: {
+                        id: true,
+                        addon_id: true,
+                        is_active: true,
+                    },
+                },
             },
         });
     }
@@ -174,7 +209,18 @@ export class CouponRepository {
     async getGiftAddons(couponId: string) {
         return this.prisma.couponGiftAddon.findMany({
             where: { coupon_id: couponId, is_active: true },
-            include: { addon: true },
+            select: {
+                id: true,
+                addon_id: true,
+                is_active: true,
+                addon: {
+                    select: {
+                        id: true,
+                        name: true,
+                        description: true,
+                    },
+                },
+            },
         });
     }
 
@@ -196,7 +242,18 @@ export class CouponRepository {
     async getGiftInsurances(couponId: string) {
         return this.prisma.couponGiftInsurance.findMany({
             where: { coupon_id: couponId, is_active: true },
-            include: { insurance: true },
+            select: {
+                id: true,
+                insurance_id: true,
+                is_active: true,
+                insurance: {
+                    select: {
+                        id: true,
+                        name: true,
+                        description: true,
+                    },
+                },
+            },
         });
     }
 
@@ -206,14 +263,7 @@ export class CouponRepository {
     async getCouponWithTargetsAndGifts(id: string) {
         return this.prisma.coupon.findFirst({
             where: { id, is_deleted: false },
-            include: {
-                target_users: { where: { is_active: true } },
-                target_warehouses: { where: { is_active: true } },
-                target_rows: { where: { is_active: true } },
-                target_addons: { where: { is_active: true } },
-                gift_addons: { where: { is_active: true }, include: { addon: true } },
-                gift_insurances: { where: { is_active: true }, include: { insurance: true } },
-            },
+            select: couponWithRelationsSelect,
         });
     }
 }

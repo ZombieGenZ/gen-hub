@@ -1,9 +1,10 @@
 import { Injectable, NotFoundException, ConflictException, BadRequestException, Inject, forwardRef } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { I18nService } from 'nestjs-i18n';
-import { CouponScheduleRepository } from './coupon-schedule.repository';
+import { CouponScheduleRepository } from './repositories/coupon-schedule.repository';
+import { CouponScheduleCacheKeys } from './constants/coupon-schedule-cache-keys.helper';
 import { CouponScheduleRunnerService } from './coupon-schedule-runner.service';
-import { CouponRepository } from '../coupon/coupon.repository';
+import { CouponRepository } from '../coupon/repositories/coupon.repository';
 import { RedisService } from '../redis/redis.service';
 import { WebsocketGateway } from '../websocket/websocket.gateway';
 import { SystemLogService } from '../system-log/system-log.service';
@@ -12,8 +13,6 @@ import { CouponSchedulePeriod } from '@prisma/client';
 
 @Injectable()
 export class CouponScheduleService {
-    private readonly cacheTTL: number;
-    private readonly listCacheTTL: number;
     private readonly weekPrefix: string;
     private readonly monthPrefix: string;
     private readonly quarterPrefix: string;
@@ -23,25 +22,16 @@ export class CouponScheduleService {
         private readonly couponRepository: CouponRepository,
         @Inject(forwardRef(() => CouponScheduleRunnerService))
         private readonly runnerService: CouponScheduleRunnerService,
+        private readonly cacheKeys: CouponScheduleCacheKeys,
         private readonly redisService: RedisService,
         private readonly websocketGateway: WebsocketGateway,
         private readonly systemLogService: SystemLogService,
         private readonly configService: ConfigService,
         private readonly i18n: I18nService,
     ) {
-        this.cacheTTL = this.configService.get<number>('REDIS_COUPON_SCHEDULE_CACHE_TTL', 300);
-        this.listCacheTTL = this.configService.get<number>('REDIS_COUPON_SCHEDULE_LIST_CACHE_TTL', 60);
         this.weekPrefix = this.configService.get<string>('CODE_WEEK_PREFIX', 'W');
         this.monthPrefix = this.configService.get<string>('CODE_MONTH_PREFIX', 'M');
         this.quarterPrefix = this.configService.get<string>('CODE_QUARTER_PREFIX', 'P');
-    }
-
-    private getCacheKey(id: string): string {
-        return `coupon-schedule:${id}`;
-    }
-
-    private getListCacheKey(query: QueryCouponScheduleDto): string {
-        return `coupon-schedule:list:${JSON.stringify(query)}`;
     }
 
     /**
@@ -300,7 +290,8 @@ export class CouponScheduleService {
     async findAll(query: QueryCouponScheduleDto) {
         const { limit = 10, offset = 0, keywords, is_active } = query;
 
-        const cacheKey = this.getListCacheKey(query);
+        // Check cache - Cache-Aside Pattern
+        const cacheKey = this.cacheKeys.list(query);
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
             return JSON.parse(cached);
@@ -320,6 +311,7 @@ export class CouponScheduleService {
             ];
         }
 
+        // Parallel execution for better performance
         const [data, total] = await Promise.all([
             this.repository.findAll({
                 skip: offset,
@@ -333,18 +325,22 @@ export class CouponScheduleService {
         const hasMore = offset + data.length < total;
         const result = { items: data, total, limit, offset, hasMore };
 
-        await this.redisService.set(cacheKey, JSON.stringify(result), this.listCacheTTL);
+        // Set cache with TTL from environment
+        const ttl = this.cacheKeys.getTTL('list');
+        await this.redisService.set(cacheKey, JSON.stringify(result), ttl);
 
         return result;
     }
 
     async findById(id: string, lang: string) {
-        const cacheKey = this.getCacheKey(id);
+        // Check cache - Cache-Aside Pattern
+        const cacheKey = this.cacheKeys.item(id);
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
             return JSON.parse(cached);
         }
 
+        // Query database
         const schedule = await this.repository.findById(id);
         if (!schedule) {
             throw new NotFoundException(
@@ -352,7 +348,9 @@ export class CouponScheduleService {
             );
         }
 
-        await this.redisService.set(cacheKey, JSON.stringify(schedule), this.cacheTTL);
+        // Set cache with TTL from environment
+        const ttl = this.cacheKeys.getTTL('item');
+        await this.redisService.set(cacheKey, JSON.stringify(schedule), ttl);
 
         return schedule;
     }
@@ -417,8 +415,11 @@ export class CouponScheduleService {
             }
         }
 
-        await this.invalidateCache(id);
-        await this.invalidateListCache();
+        // Invalidate cache
+        await Promise.all([
+            this.invalidateCache(id),
+            this.invalidateListCache(),
+        ]);
 
         this.systemLogService.info('CouponSchedule', 'UPDATE', `Cập nhật lịch coupon: ${updated.name}`, {
             userId,
@@ -449,8 +450,11 @@ export class CouponScheduleService {
 
         await this.repository.softDelete(id, userId);
 
-        await this.invalidateCache(id);
-        await this.invalidateListCache();
+        // Invalidate cache
+        await Promise.all([
+            this.invalidateCache(id),
+            this.invalidateListCache(),
+        ]);
 
         this.systemLogService.info('CouponSchedule', 'DELETE', `Xóa lịch coupon: ${schedule.name}`, {
             userId,
@@ -498,10 +502,11 @@ export class CouponScheduleService {
     }
 
     private async invalidateCache(id: string) {
-        await this.redisService.del(this.getCacheKey(id));
+        await this.redisService.del(this.cacheKeys.item(id));
     }
 
     private async invalidateListCache() {
-        await this.redisService.delByPattern('coupon-schedule:list:*');
+        const listPrefix = this.cacheKeys.list();
+        await this.redisService.delByPattern(`${listPrefix}*`);
     }
 }

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
+import { PrismaService } from '../../../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
+import { publicCouponBasicSelect, publicCouponWithTargetsSelect } from '../selects/public-coupon.select';
 
 @Injectable()
 export class PublicCouponRepository {
@@ -21,6 +22,7 @@ export class PublicCouponRepository {
             take,
             where,
             orderBy,
+            select: publicCouponBasicSelect,
         });
     }
 
@@ -34,6 +36,7 @@ export class PublicCouponRepository {
     async findById(id: string) {
         return this.prisma.coupon.findFirst({
             where: { id, is_deleted: false, is_active: true },
+            select: publicCouponBasicSelect,
         });
     }
 
@@ -57,13 +60,7 @@ export class PublicCouponRepository {
                     },
                 ],
             },
-            include: {
-                target_users: { where: { is_active: true } },
-                target_warehouses: { where: { is_active: true } },
-                target_rows: { where: { is_active: true } },
-                target_addons: { where: { is_active: true } },
-                target_insurances: { where: { is_active: true } },
-            },
+            select: publicCouponWithTargetsSelect,
         });
     }
 
@@ -73,14 +70,38 @@ export class PublicCouponRepository {
     async getCouponWithTargetsAndGifts(id: string) {
         return this.prisma.coupon.findFirst({
             where: { id, is_deleted: false, is_active: true },
-            include: {
-                target_users: { where: { is_active: true } },
-                target_warehouses: { where: { is_active: true } },
-                target_rows: { where: { is_active: true } },
-                target_addons: { where: { is_active: true } },
-                target_insurances: { where: { is_active: true } },
-                gift_addons: { where: { is_active: true }, include: { addon: true } },
-                gift_insurances: { where: { is_active: true }, include: { insurance: true } },
+            select: {
+                ...publicCouponWithTargetsSelect,
+                gift_addons: {
+                    where: { is_active: true },
+                    select: {
+                        id: true,
+                        addon_id: true,
+                        is_active: true,
+                        addon: {
+                            select: {
+                                id: true,
+                                name: true,
+                                description: true,
+                            },
+                        },
+                    },
+                },
+                gift_insurances: {
+                    where: { is_active: true },
+                    select: {
+                        id: true,
+                        insurance_id: true,
+                        is_active: true,
+                        insurance: {
+                            select: {
+                                id: true,
+                                name: true,
+                                description: true,
+                            },
+                        },
+                    },
+                },
             },
         });
     }
@@ -125,8 +146,14 @@ export class PublicCouponRepository {
     async getSavedCoupons(userId: string, skip?: number, take?: number) {
         return this.prisma.userSavedCoupon.findMany({
             where: { user_id: userId, is_deleted: false },
-            include: {
-                coupon: true,
+            select: {
+                id: true,
+                user_id: true,
+                coupon_id: true,
+                created_at: true,
+                coupon: {
+                    select: publicCouponBasicSelect,
+                },
             },
             skip,
             take,
@@ -177,15 +204,13 @@ export class PublicCouponRepository {
                     ],
                 },
             },
-            include: {
+            select: {
+                id: true,
+                user_id: true,
+                coupon_id: true,
+                created_at: true,
                 coupon: {
-                    include: {
-                        target_users: { where: { is_active: true } },
-                        target_warehouses: { where: { is_active: true } },
-                        target_rows: { where: { is_active: true } },
-                        target_addons: { where: { is_active: true } },
-                        target_insurances: { where: { is_active: true } },
-                    },
+                    select: publicCouponWithTargetsSelect,
                 },
             },
             orderBy: { created_at: 'desc' },

@@ -1,6 +1,6 @@
 import { Injectable, Logger, OnModuleInit, Inject, forwardRef } from '@nestjs/common';
 import { SchedulerRegistry } from '@nestjs/schedule';
-import { CouponScheduleRepository } from './coupon-schedule.repository';
+import { CouponScheduleRepository } from './repositories/coupon-schedule.repository';
 import { CouponScheduleService } from './coupon-schedule.service';
 import { WebsocketGateway } from '../websocket/websocket.gateway';
 import { SystemLogService } from '../system-log/system-log.service';

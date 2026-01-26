@@ -290,46 +290,108 @@ export class PublicCouponController {
         success: { type: 'boolean', example: true },
         data: {
           type: 'array',
+          description: 'Danh sách coupon có thể áp dụng cho đơn hàng',
           items: {
             type: 'object',
             properties: {
               id: {
                 type: 'string',
                 format: 'uuid',
+                description: 'ID của coupon',
                 example: '550e8400-e29b-41d4-a716-446655440000',
               },
-              name: { type: 'string', example: 'Khuyến mãi Tết 2025' },
-              code: { type: 'string', example: 'TET2025' },
+              name: {
+                type: 'string',
+                description: 'Tên coupon',
+                example: 'Khuyến mãi Tết 2025',
+              },
+              description: {
+                type: 'string',
+                nullable: true,
+                description: 'Mô tả coupon',
+                example: 'Giảm 20% cho đơn hàng đầu tiên',
+              },
+              code: {
+                type: 'string',
+                description: 'Mã coupon',
+                example: 'TET2025',
+              },
               discount_type: {
                 type: 'string',
                 enum: ['PERCENT', 'AMOUNT', 'FREE_MONTHS'],
+                description: 'Loại giảm giá',
                 example: 'PERCENT',
               },
-              discount_value: { type: 'number', example: 20 },
+              discount_value: {
+                type: 'number',
+                description: 'Giá trị giảm giá',
+                example: 20,
+              },
               max_discount_amount: {
                 type: 'number',
                 nullable: true,
+                description: 'Giá trị giảm tối đa (cho PERCENT)',
                 example: 500000,
               },
               estimated_discount: {
                 type: 'number',
-                description: 'Số tiền giảm ước tính',
+                description: 'Số tiền giảm ước tính dựa trên đơn hàng',
                 example: 200000,
               },
-              is_applicable: { type: 'boolean', example: true },
+              is_applicable: {
+                type: 'boolean',
+                description: 'Coupon có thể áp dụng cho đơn hàng này',
+                example: true,
+              },
               gift_addons: {
                 type: 'array',
-                items: { type: 'object' },
-                description: 'Danh sách addon được tặng kèm',
+                description: 'Danh sách addon được tặng kèm khi áp dụng coupon',
+                items: {
+                  type: 'object',
+                  properties: {
+                    id: { type: 'string', format: 'uuid' },
+                    name: { type: 'string' },
+                    description: { type: 'string', nullable: true },
+                  },
+                },
+                example: [],
               },
               gift_insurances: {
                 type: 'array',
-                items: { type: 'object' },
-                description: 'Danh sách bảo hiểm được tặng kèm',
+                description: 'Danh sách bảo hiểm được tặng kèm khi áp dụng coupon',
+                items: {
+                  type: 'object',
+                  properties: {
+                    id: { type: 'string', format: 'uuid' },
+                    name: { type: 'string' },
+                    description: { type: 'string', nullable: true },
+                  },
+                },
+                example: [],
               },
             },
           },
         },
+      },
+      example: {
+        code: 'coupon.applicable.success',
+        message: 'Lấy danh sách coupon có thể áp dụng thành công',
+        success: true,
+        data: [
+          {
+            id: '550e8400-e29b-41d4-a716-446655440000',
+            name: 'Khuyến mãi Tết 2025',
+            description: 'Giảm 20% cho đơn hàng đầu tiên',
+            code: 'TET2025',
+            discount_type: 'PERCENT',
+            discount_value: 20,
+            max_discount_amount: 500000,
+            estimated_discount: 200000,
+            is_applicable: true,
+            gift_addons: [],
+            gift_insurances: [],
+          },
+        ],
       },
     },
   })
@@ -381,6 +443,132 @@ export class PublicCouponController {
   @ApiResponse({
     status: 200,
     description: 'Kiểm tra coupon thành công',
+    schema: {
+      type: 'object',
+      properties: {
+        code: {
+          type: 'string',
+          description: 'Mã response',
+          example: 'coupon.validate.success',
+        },
+        message: {
+          type: 'string',
+          description: 'Thông báo',
+          example: 'Coupon hợp lệ',
+        },
+        success: {
+          type: 'boolean',
+          description: 'Trạng thái thành công',
+          example: true,
+        },
+        data: {
+          oneOf: [
+            {
+              type: 'object',
+              description: 'Coupon hợp lệ',
+              properties: {
+                id: {
+                  type: 'string',
+                  format: 'uuid',
+                  description: 'ID của coupon',
+                  example: '550e8400-e29b-41d4-a716-446655440000',
+                },
+                name: {
+                  type: 'string',
+                  description: 'Tên coupon',
+                  example: 'Khuyến mãi Tết 2025',
+                },
+                description: {
+                  type: 'string',
+                  nullable: true,
+                  description: 'Mô tả coupon',
+                  example: 'Giảm 20% cho đơn hàng đầu tiên',
+                },
+                code: {
+                  type: 'string',
+                  description: 'Mã coupon',
+                  example: 'TET2025',
+                },
+                discount_type: {
+                  type: 'string',
+                  enum: ['PERCENT', 'AMOUNT', 'FREE_MONTHS'],
+                  description: 'Loại giảm giá',
+                  example: 'PERCENT',
+                },
+                discount_value: {
+                  type: 'number',
+                  description: 'Giá trị giảm giá',
+                  example: 20,
+                },
+                max_discount_amount: {
+                  type: 'number',
+                  nullable: true,
+                  description: 'Giá trị giảm tối đa',
+                  example: 500000,
+                },
+                estimated_discount: {
+                  type: 'number',
+                  description: 'Số tiền giảm ước tính',
+                  example: 200000,
+                },
+                is_valid: {
+                  type: 'boolean',
+                  description: 'Coupon hợp lệ',
+                  example: true,
+                },
+                gift_addons: {
+                  type: 'array',
+                  description: 'Danh sách addon được tặng kèm',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      id: { type: 'string', format: 'uuid' },
+                      name: { type: 'string' },
+                      description: { type: 'string', nullable: true },
+                    },
+                  },
+                  example: [],
+                },
+                gift_insurances: {
+                  type: 'array',
+                  description: 'Danh sách bảo hiểm được tặng kèm',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      id: { type: 'string', format: 'uuid' },
+                      name: { type: 'string' },
+                      description: { type: 'string', nullable: true },
+                    },
+                  },
+                  example: [],
+                },
+              },
+            },
+            {
+              type: 'object',
+              description: 'Coupon không hợp lệ',
+              properties: {
+                is_valid: {
+                  type: 'boolean',
+                  description: 'Coupon không hợp lệ',
+                  example: false,
+                },
+                error: {
+                  type: 'string',
+                  description: 'Thông báo lỗi',
+                  example: 'Coupon đã hết hạn',
+                },
+                error_code: {
+                  type: 'string',
+                  description: 'Mã lỗi',
+                  example: 'coupon.errors.expired',
+                },
+              },
+            },
+          ],
+        },
+      },
+    },
     content: {
       'application/json': {
         examples: {
@@ -393,6 +581,7 @@ export class PublicCouponController {
               data: {
                 id: '550e8400-e29b-41d4-a716-446655440000',
                 name: 'Khuyến mãi Tết 2025',
+                description: 'Giảm 20% cho đơn hàng đầu tiên',
                 code: 'TET2025',
                 discount_type: 'PERCENT',
                 discount_value: 20,

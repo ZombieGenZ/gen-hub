@@ -2,15 +2,9 @@
 
 ## Tổng Quan
 
-Module `coupon` quản lý hệ thống mã giảm giá cho ứng dụng GEN-HUB. Hỗ trợ nhiều loại giảm giá (phần trăm, số tiền cố định, tháng miễn phí) với các điều kiện áp dụng linh hoạt.
+Module `coupon` quản lý các mã giảm giá (coupon) trong hệ thống GEN-HUB. Module này cho phép admin tạo, quản lý và theo dõi các coupon với nhiều loại giảm giá khác nhau (phần trăm, số tiền cố định, tháng miễn phí) và các điều kiện áp dụng phức tạp.
 
-### Tính năng chính:
-
-- **Giảm giá linh hoạt**: Theo phần trăm, số tiền cố định, hoặc tháng miễn phí
-- **Điều kiện đa dạng**: Số kho tối thiểu, giá trị đơn hàng, thời gian thuê
-- **Target cụ thể**: Áp dụng cho kho, row, addon, bảo hiểm hoặc user cụ thể
-- **Tặng kèm**: Hỗ trợ tặng addon/bảo hiểm khi sử dụng coupon
-- **Lưu coupon**: User có thể lưu coupon để sử dụng sau
+Module sử dụng **Cache-Aside Pattern** với Redis để tối ưu hiệu năng và hỗ trợ WebSocket để thông báo realtime khi có thay đổi.
 
 ---
 
@@ -21,30 +15,39 @@ flowchart TB
     subgraph Client
         A[API Request]
     end
-
-    subgraph Controllers
-        B[CouponController - Admin]
-        C[PublicCouponController - User]
+    
+    subgraph Controller
+        B[CouponController]
     end
-
+    
     subgraph Service
-        D[CouponService]
+        C[CouponService]
     end
-
+    
+    subgraph Cache
+        D[(Redis Cache)]
+    end
+    
     subgraph Repository
         E[CouponRepository]
     end
-
+    
     subgraph Database
         F[(PostgreSQL)]
     end
-
+    
+    subgraph Events
+        G[WebSocket Gateway]
+        H[System Log]
+    end
+    
     A --> B
-    A --> C
-    B --> D
+    B --> C
     C --> D
-    D --> E
+    C --> E
     E --> F
+    C --> G
+    C --> H
 ```
 
 ---
@@ -53,68 +56,70 @@ flowchart TB
 
 > [!TIP]
 > Tất cả các API đều hỗ trợ header `Accept-Language` để chọn ngôn ngữ phản hồi.
->
 > - **vi** - Tiếng Việt (mặc định)
 > - **en** - English
 
----
-
-## Admin APIs (`/coupons`)
-
 ### 1. POST /coupons - Tạo coupon mới
 
-**Mô tả:** Tạo mã giảm giá mới với các điều kiện áp dụng.
+**Mô tả:** Tạo mã giảm giá mới với các điều kiện áp dụng. Hỗ trợ giảm giá theo phần trăm, số tiền cố định hoặc tháng miễn phí. Có thể cấu hình điều kiện sử dụng như số kho tối thiểu, thời gian thuê, giá trị đơn hàng.
 
 **Xác thực:** Bearer Token (JWT)
 
 **Quyền yêu cầu:** `coupon.create`
 
+**Headers:**
+```http
+Authorization: Bearer <access_token>
+Content-Type: application/json
+Accept-Language: vi
+```
+
 **Request Body Schema:**
 
-| Field                         | Type     | Required | Description                           |
-| ----------------------------- | -------- | -------- | ------------------------------------- |
-| `name`                        | string   | ✅       | Tên coupon (max 255 ký tự)            |
-| `code`                        | string   | ✅       | Mã coupon (max 50 ký tự, unique)      |
-| `discount_type`               | enum     | ✅       | PERCENT, AMOUNT, FREE_MONTHS          |
-| `discount_value`              | number   | ✅       | Giá trị giảm                          |
-| `coupon_type`                 | enum     | ❌       | PUBLIC (mặc định), PRIVATE            |
-| `description`                 | string   | ❌       | Mô tả                                 |
-| `is_unlimited_discount`       | boolean  | ❌       | Không giới hạn giảm giá (PERCENT)     |
-| `max_discount_amount`         | number   | ❌       | Giá trị giảm tối đa (PERCENT)         |
-| `require_min_warehouses`      | boolean  | ❌       | Yêu cầu số kho tối thiểu              |
-| `min_warehouses`              | number   | ❌       | Số kho tối thiểu                      |
-| `require_min_rows`            | boolean  | ❌       | Yêu cầu số row tối thiểu              |
-| `min_rows`                    | number   | ❌       | Số row tối thiểu                      |
-| `require_min_order_amount`    | boolean  | ❌       | Yêu cầu giá trị đơn tối thiểu         |
-| `min_order_amount`            | number   | ❌       | Giá trị đơn tối thiểu                 |
-| `require_min_rental_duration` | boolean  | ❌       | Yêu cầu thời gian thuê tối thiểu      |
-| `min_rental_duration_value`   | number   | ❌       | Giá trị thời gian thuê tối thiểu      |
-| `min_rental_duration_unit`    | enum     | ❌       | HOUR, DAY, WEEK, MONTH, YEAR          |
-| `is_permanent`                | boolean  | ❌       | Coupon vĩnh viễn                      |
-| `starts_at`                   | datetime | ❌       | Thời gian bắt đầu                     |
-| `ends_at`                     | datetime | ❌       | Thời gian kết thúc                    |
-| `max_usage`                   | number   | ❌       | Số lượng tối đa (0 = không giới hạn)  |
-| `is_public`                   | boolean  | ❌       | Coupon công khai                      |
-| `apply_for_first_rental`      | boolean  | ❌       | Áp dụng cho thuê lần đầu              |
-| `apply_for_renewal`           | boolean  | ❌       | Áp dụng cho gia hạn                   |
-| `apply_for_all_warehouses`    | boolean  | ❌       | Áp dụng cho tất cả kho                |
-| `apply_for_all_rows`          | boolean  | ❌       | Áp dụng cho tất cả row                |
-| `apply_for_all_addons`        | boolean  | ❌       | Áp dụng cho tất cả addon              |
-| `apply_for_all_insurances`    | boolean  | ❌       | Áp dụng cho tất cả bảo hiểm           |
-| `target_user_ids`             | string[] | ❌       | Danh sách user được áp dụng (PRIVATE) |
-| `target_warehouse_ids`        | string[] | ❌       | Danh sách kho được áp dụng            |
-| `target_row_ids`              | string[] | ❌       | Danh sách row được áp dụng            |
-| `target_addon_ids`            | string[] | ❌       | Danh sách addon được áp dụng          |
-| `target_insurance_ids`        | string[] | ❌       | Danh sách bảo hiểm được áp dụng       |
-| `is_unlimited_stack`          | boolean  | ❌       | Có thể stack vô hạn coupon khác       |
-| `max_stack_count`             | number   | ❌       | Số coupon tối đa có thể stack         |
-| `has_gift_addons`             | boolean  | ❌       | Có tặng kèm addon                     |
-| `gift_addon_ids`              | string[] | ❌       | Danh sách addon tặng kèm              |
-| `has_gift_insurances`         | boolean  | ❌       | Có tặng kèm bảo hiểm                  |
-| `gift_insurance_ids`          | string[] | ❌       | Danh sách bảo hiểm tặng kèm           |
-| `is_active`                   | boolean  | ❌       | Trạng thái hoạt động                  |
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | string | Yes | Tên coupon (max 255 ký tự) |
+| `description` | string | Optional | Mô tả coupon |
+| `code` | string | Yes | Mã coupon (unique, max 50 ký tự) |
+| `coupon_type` | enum | Optional | Loại coupon: `PUBLIC` hoặc `PRIVATE` (default: `PUBLIC`) |
+| `discount_type` | enum | Yes | Loại giảm giá: `PERCENT`, `AMOUNT`, `FREE_MONTHS` |
+| `discount_value` | number | Yes | Giá trị giảm giá (1-100 nếu PERCENT, >0 nếu AMOUNT/FREE_MONTHS) |
+| `require_min_warehouses` | boolean | Optional | Yêu cầu số kho tối thiểu (default: false) |
+| `min_warehouses` | number | Conditional | Số kho tối thiểu (required nếu `require_min_warehouses = true`) |
+| `require_min_rows` | boolean | Optional | Yêu cầu số row tối thiểu (default: false) |
+| `min_rows` | number | Conditional | Số row tối thiểu (required nếu `require_min_rows = true`) |
+| `require_min_order_amount` | boolean | Optional | Yêu cầu đơn hàng tối thiểu (default: false) |
+| `min_order_amount` | number | Conditional | Giá trị đơn hàng tối thiểu (required nếu `require_min_order_amount = true`) |
+| `require_min_rental_duration` | boolean | Optional | Yêu cầu thời gian thuê tối thiểu (default: false) |
+| `min_rental_duration_value` | number | Conditional | Giá trị thời gian thuê tối thiểu (required nếu `require_min_rental_duration = true`) |
+| `min_rental_duration_unit` | enum | Conditional | Đơn vị: `HOUR`, `DAY`, `WEEK`, `MONTH`, `YEAR` (required nếu `require_min_rental_duration = true`) |
+| `is_unlimited_discount` | boolean | Optional | Không giới hạn giảm giá (chỉ cho PERCENT, default: false) |
+| `max_discount_amount` | number | Conditional | Giá trị giảm tối đa (required nếu `discount_type = PERCENT` và `is_unlimited_discount = false`) |
+| `is_permanent` | boolean | Optional | Coupon vĩnh viễn (default: false) |
+| `starts_at` | date-time | Conditional | Thời gian bắt đầu (required nếu `is_permanent = false`) |
+| `ends_at` | date-time | Conditional | Thời gian kết thúc (required nếu `is_permanent = false`) |
+| `max_usage` | number | Optional | Số lượng sử dụng tối đa (0 = không giới hạn, default: 0) |
+| `is_public` | boolean | Optional | Coupon công khai (default: false) |
+| `apply_for_first_rental` | boolean | Optional | Áp dụng cho thuê lần đầu (default: true) |
+| `apply_for_renewal` | boolean | Optional | Áp dụng cho gia hạn (default: true) |
+| `apply_for_all_warehouses` | boolean | Optional | Áp dụng cho tất cả kho (default: true) |
+| `target_warehouse_ids` | array | Conditional | Danh sách ID warehouse template (required nếu `apply_for_all_warehouses = false`) |
+| `apply_for_all_rows` | boolean | Optional | Áp dụng cho tất cả row (default: true) |
+| `target_row_ids` | array | Conditional | Danh sách ID row template (required nếu `apply_for_all_rows = false`) |
+| `apply_for_all_addons` | boolean | Optional | Áp dụng cho tất cả addon (default: true) |
+| `target_addon_ids` | array | Conditional | Danh sách ID addon (required nếu `apply_for_all_addons = false`) |
+| `apply_for_all_insurances` | boolean | Optional | Áp dụng cho tất cả bảo hiểm (default: true) |
+| `target_insurance_ids` | array | Conditional | Danh sách ID bảo hiểm (required nếu `apply_for_all_insurances = false`) |
+| `target_user_ids` | array | Conditional | Danh sách ID user (required nếu `coupon_type = PRIVATE`) |
+| `is_unlimited_stack` | boolean | Optional | Có thể áp dụng chung với vô hạn coupon khác (default: false) |
+| `max_stack_count` | number | Conditional | Số coupon tối đa có thể áp dụng chung (required nếu `is_unlimited_stack = false`) |
+| `has_gift_addons` | boolean | Optional | Có tặng kèm addon (default: false) |
+| `gift_addon_ids` | array | Conditional | Danh sách ID addon được tặng (required nếu `has_gift_addons = true`) |
+| `has_gift_insurances` | boolean | Optional | Có tặng kèm bảo hiểm (default: false) |
+| `gift_insurance_ids` | array | Conditional | Danh sách ID bảo hiểm được tặng (required nếu `has_gift_insurances = true`) |
+| `is_active` | boolean | Optional | Trạng thái hoạt động (default: true) |
 
-**Request Examples:**
+**Request Body Examples:**
 
 <details>
 <summary><b>Ví dụ 1: Giảm giá theo phần trăm</b></summary>
@@ -133,10 +138,15 @@ flowchart TB
   "ends_at": "2025-02-28T23:59:59.999Z",
   "max_usage": 100,
   "is_public": true,
+  "apply_for_first_rental": true,
+  "apply_for_renewal": false,
+  "apply_for_all_warehouses": true,
+  "apply_for_all_rows": true,
+  "apply_for_all_addons": true,
+  "apply_for_all_insurances": true,
   "is_active": true
 }
 ```
-
 </details>
 
 <details>
@@ -145,35 +155,88 @@ flowchart TB
 ```json
 {
   "name": "Ưu đãi cuối tuần",
+  "description": "Giảm 200.000đ cho đơn hàng từ 1.000.000đ",
   "code": "WEEKEND200K",
   "discount_type": "AMOUNT",
   "discount_value": 200000,
   "require_min_order_amount": true,
   "min_order_amount": 1000000,
+  "is_permanent": false,
+  "starts_at": "2025-01-01T00:00:00.000Z",
+  "ends_at": "2025-12-31T23:59:59.999Z",
+  "max_usage": 0,
   "is_public": true,
   "is_active": true
 }
 ```
-
 </details>
 
 <details>
-<summary><b>Ví dụ 3: Coupon riêng tư cho VIP</b></summary>
+<summary><b>Ví dụ 3: Coupon riêng tư cho user cụ thể</b></summary>
 
 ```json
 {
   "name": "VIP Customer Discount",
+  "description": "Ưu đãi đặc biệt cho khách hàng VIP",
   "code": "VIP50",
   "coupon_type": "PRIVATE",
   "discount_type": "PERCENT",
   "discount_value": 50,
   "is_unlimited_discount": true,
   "is_permanent": true,
+  "max_usage": 0,
+  "is_public": false,
   "target_user_ids": ["550e8400-e29b-41d4-a716-446655440000"],
   "is_active": true
 }
 ```
+</details>
 
+<details>
+<summary><b>Ví dụ 4: Coupon với nhiều điều kiện</b></summary>
+
+```json
+{
+  "name": "Ưu đãi thuê dài hạn",
+  "description": "Giảm 30% cho thuê từ 6 tháng trở lên, ít nhất 2 kho",
+  "code": "LONGTERM30",
+  "discount_type": "PERCENT",
+  "discount_value": 30,
+  "is_unlimited_discount": false,
+  "max_discount_amount": 1000000,
+  "require_min_warehouses": true,
+  "min_warehouses": 2,
+  "require_min_rental_duration": true,
+  "min_rental_duration_value": 6,
+  "min_rental_duration_unit": "MONTH",
+  "is_permanent": false,
+  "starts_at": "2025-01-01T00:00:00.000Z",
+  "ends_at": "2025-06-30T23:59:59.999Z",
+  "is_public": true,
+  "is_active": true
+}
+```
+</details>
+
+<details>
+<summary><b>Ví dụ 5: Coupon tặng kèm addon</b></summary>
+
+```json
+{
+  "name": "Tặng kèm bảo vệ",
+  "description": "Thuê kho được tặng dịch vụ bảo vệ 24/7",
+  "code": "FREEGUARD",
+  "discount_type": "PERCENT",
+  "discount_value": 0,
+  "is_permanent": false,
+  "starts_at": "2025-01-01T00:00:00.000Z",
+  "ends_at": "2025-12-31T23:59:59.999Z",
+  "has_gift_addons": true,
+  "gift_addon_ids": ["550e8400-e29b-41d4-a716-446655440001"],
+  "is_public": true,
+  "is_active": true
+}
+```
 </details>
 
 **Response (201 Created):**
@@ -186,34 +249,106 @@ flowchart TB
   "data": {
     "id": "550e8400-e29b-41d4-a716-446655440000",
     "name": "Khuyến mãi Tết 2025",
+    "description": "Giảm 20% cho đơn hàng đầu tiên",
     "code": "TET2025",
+    "coupon_type": "PUBLIC",
     "discount_type": "PERCENT",
     "discount_value": 20,
+    "require_min_warehouses": false,
+    "min_warehouses": null,
+    "require_min_rows": false,
+    "min_rows": null,
+    "require_min_order_amount": false,
+    "min_order_amount": null,
+    "require_min_rental_duration": false,
+    "min_rental_duration_value": null,
+    "min_rental_duration_unit": null,
+    "is_unlimited_discount": false,
+    "max_discount_amount": 500000,
+    "is_permanent": false,
+    "starts_at": "2025-01-01T00:00:00.000Z",
+    "ends_at": "2025-02-28T23:59:59.999Z",
+    "max_usage": 100,
+    "current_usage": 0,
+    "is_public": true,
+    "apply_for_first_rental": true,
+    "apply_for_renewal": false,
+    "schedule_id": null,
     "is_active": true,
-    "created_at": "2025-01-01T00:00:00.000Z"
+    "created_at": "2025-01-01T00:00:00.000Z",
+    "updated_at": null,
+    "created_by": "550e8400-e29b-41d4-a716-446655440099"
   }
 }
 ```
 
+**Error Responses:**
+
+<details>
+<summary><b>409 Conflict - Mã coupon đã tồn tại</b></summary>
+
+```json
+{
+  "code": "coupon.errors.code_exists",
+  "message": "Mã coupon đã tồn tại",
+  "success": false
+}
+```
+</details>
+
+<details>
+<summary><b>401 Unauthorized</b></summary>
+
+Xem [Error Responses](#error-responses) chung
+</details>
+
+<details>
+<summary><b>403 Forbidden</b></summary>
+
+Xem [Error Responses](#error-responses) chung
+</details>
+
+<details>
+<summary><b>422 Unprocessable Entity - Validation Error</b></summary>
+
+```json
+{
+  "code": "error.validation",
+  "message": "Dữ liệu đầu vào không hợp lệ",
+  "success": false,
+  "errors": [
+    { "field": "code", "message": "Mã coupon đã tồn tại" },
+    { "field": "discount_value", "message": "Giá trị giảm giá phải từ 1 đến 100 cho loại PERCENT" }
+  ]
+}
+```
+</details>
+
 ---
 
-### 2. GET /coupons - Lấy danh sách coupon
+### 2. GET /coupons - Lấy danh sách coupon (Admin)
 
-**Mô tả:** Lấy danh sách tất cả coupon với phân trang và bộ lọc.
+**Mô tả:** Lấy danh sách tất cả coupon với phân trang và bộ lọc. Hỗ trợ tìm kiếm theo tên, mã coupon và lọc theo trạng thái.
 
 **Xác thực:** Bearer Token (JWT)
 
 **Quyền yêu cầu:** `coupon.list`
 
+**Headers:**
+```http
+Authorization: Bearer <access_token>
+Accept-Language: vi
+```
+
 **Query Parameters:**
 
-| Parameter   | Type    | Description                        |
-| ----------- | ------- | ---------------------------------- |
-| `limit`     | number  | Số bản ghi mỗi trang (default: 10) |
-| `offset`    | number  | Vị trí bắt đầu (default: 0)        |
-| `keywords`  | string  | Từ khóa tìm kiếm (tên, mã coupon)  |
-| `is_active` | boolean | Lọc theo trạng thái hoạt động      |
-| `is_public` | boolean | Lọc theo trạng thái công khai      |
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `limit` | number | Optional | Số lượng bản ghi mỗi trang (default: 10, min: 1) |
+| `offset` | number | Optional | Vị trí bắt đầu (default: 0, min: 0) |
+| `keywords` | string | Optional | Từ khóa tìm kiếm (tên, mô tả, mã coupon) |
+| `is_active` | boolean | Optional | Lọc theo trạng thái hoạt động |
+| `is_public` | boolean | Optional | Lọc theo trạng thái công khai |
 
 **Response (200 OK):**
 
@@ -227,56 +362,272 @@ flowchart TB
       {
         "id": "550e8400-e29b-41d4-a716-446655440000",
         "name": "Khuyến mãi Tết 2025",
+        "description": "Giảm 20% cho đơn hàng đầu tiên",
         "code": "TET2025",
+        "coupon_type": "PUBLIC",
         "discount_type": "PERCENT",
         "discount_value": 20,
+        "max_discount_amount": 500000,
         "max_usage": 100,
         "current_usage": 25,
+        "is_public": true,
         "is_active": true,
         "starts_at": "2025-01-01T00:00:00.000Z",
-        "ends_at": "2025-02-28T23:59:59.999Z"
+        "ends_at": "2025-02-28T23:59:59.999Z",
+        "created_at": "2025-01-01T00:00:00.000Z"
       }
     ],
     "total": 50,
     "limit": 10,
-    "offset": 0
+    "offset": 0,
+    "hasMore": true
   }
 }
 ```
+
+**Error Responses:**
+
+<details>
+<summary><b>401 Unauthorized</b></summary>
+
+Xem [Error Responses](#error-responses) chung
+</details>
+
+<details>
+<summary><b>403 Forbidden</b></summary>
+
+Xem [Error Responses](#error-responses) chung
+</details>
 
 ---
 
 ### 3. GET /coupons/:id - Lấy chi tiết coupon
 
-**Mô tả:** Lấy thông tin chi tiết của một coupon theo ID.
+**Mô tả:** Lấy thông tin chi tiết của một coupon theo ID. Bao gồm tất cả các điều kiện áp dụng, danh sách target và thống kê sử dụng.
 
 **Xác thực:** Bearer Token (JWT)
 
 **Quyền yêu cầu:** `coupon.read`
 
-**Response (200 OK):** Trả về đầy đủ thông tin coupon bao gồm tất cả điều kiện và targets.
+**Headers:**
+```http
+Authorization: Bearer <access_token>
+Accept-Language: vi
+```
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | string (UUID) | ID của coupon |
+
+**Response (200 OK):**
+
+```json
+{
+  "code": "coupon.read.success",
+  "message": "Lấy chi tiết coupon thành công",
+  "success": true,
+  "data": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "name": "Khuyến mãi Tết 2025",
+    "description": "Giảm 20% cho đơn hàng đầu tiên",
+    "code": "TET2025",
+    "coupon_type": "PUBLIC",
+    "discount_type": "PERCENT",
+    "discount_value": 20,
+    "require_min_warehouses": false,
+    "min_warehouses": null,
+    "require_min_rows": false,
+    "min_rows": null,
+    "require_min_order_amount": false,
+    "min_order_amount": null,
+    "require_min_rental_duration": false,
+    "min_rental_duration_value": null,
+    "min_rental_duration_unit": null,
+    "is_unlimited_discount": false,
+    "max_discount_amount": 500000,
+    "is_permanent": false,
+    "starts_at": "2025-01-01T00:00:00.000Z",
+    "ends_at": "2025-02-28T23:59:59.999Z",
+    "max_usage": 100,
+    "current_usage": 25,
+    "is_public": true,
+    "apply_for_first_rental": true,
+    "apply_for_renewal": false,
+    "is_active": true,
+    "created_at": "2025-01-01T00:00:00.000Z",
+    "updated_at": "2025-01-15T10:30:00.000Z"
+  }
+}
+```
+
+**Error Responses:**
+
+<details>
+<summary><b>404 Not Found</b></summary>
+
+```json
+{
+  "code": "coupon.errors.not_found",
+  "message": "Không tìm thấy coupon",
+  "success": false
+}
+```
+</details>
+
+<details>
+<summary><b>401 Unauthorized</b></summary>
+
+Xem [Error Responses](#error-responses) chung
+</details>
+
+<details>
+<summary><b>403 Forbidden</b></summary>
+
+Xem [Error Responses](#error-responses) chung
+</details>
 
 ---
 
 ### 4. PUT /coupons/:id - Cập nhật coupon
 
-**Mô tả:** Cập nhật thông tin coupon theo ID.
+**Mô tả:** Cập nhật thông tin coupon theo ID. Có thể cập nhật một phần hoặc toàn bộ thông tin. Không thể thay đổi mã coupon nếu đã có người sử dụng.
 
 **Xác thực:** Bearer Token (JWT)
 
 **Quyền yêu cầu:** `coupon.update`
 
-**Request Body:** Tương tự CreateCouponDto, chỉ gửi các trường cần cập nhật.
+**Headers:**
+```http
+Authorization: Bearer <access_token>
+Content-Type: application/json
+Accept-Language: vi
+```
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | string (UUID) | ID của coupon |
+
+**Request Body:** Tương tự như `CreateCouponDto` nhưng tất cả các trường đều optional (chỉ gửi các trường muốn thay đổi)
+
+**Request Body Examples:**
+
+<details>
+<summary><b>Ví dụ 1: Cập nhật giá trị giảm giá</b></summary>
+
+```json
+{
+  "discount_value": 25,
+  "max_discount_amount": 600000
+}
+```
+</details>
+
+<details>
+<summary><b>Ví dụ 2: Gia hạn thời gian hiệu lực</b></summary>
+
+```json
+{
+  "ends_at": "2025-03-31T23:59:59.999Z"
+}
+```
+</details>
+
+<details>
+<summary><b>Ví dụ 3: Thay đổi trạng thái</b></summary>
+
+```json
+{
+  "is_active": false
+}
+```
+</details>
+
+<details>
+<summary><b>Ví dụ 4: Cập nhật điều kiện áp dụng</b></summary>
+
+```json
+{
+  "require_min_warehouses": true,
+  "min_warehouses": 3
+}
+```
+</details>
+
+**Response (200 OK):** Trả về thông tin coupon sau khi cập nhật
+
+```json
+{
+  "code": "coupon.update.success",
+  "message": "Cập nhật coupon thành công",
+  "success": true,
+  "data": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "name": "Khuyến mãi Tết 2025",
+    "description": "Giảm 20% cho đơn hàng đầu tiên",
+    "code": "TET2025",
+    "coupon_type": "PUBLIC",
+    "discount_type": "PERCENT",
+    "discount_value": 25,
+    "max_discount_amount": 600000,
+    "is_active": true,
+    "updated_at": "2025-01-20T10:30:00.000Z",
+    "updated_by": "550e8400-e29b-41d4-a716-446655440099"
+  }
+}
+```
+
+**Error Responses:**
+
+<details>
+<summary><b>404 Not Found</b></summary>
+
+```json
+{
+  "code": "coupon.errors.not_found",
+  "message": "Không tìm thấy coupon",
+  "success": false
+}
+```
+</details>
+
+<details>
+<summary><b>401 Unauthorized</b></summary>
+
+Xem [Error Responses](#error-responses) chung
+</details>
+
+<details>
+<summary><b>403 Forbidden</b></summary>
+
+Xem [Error Responses](#error-responses) chung
+</details>
+
+<details>
+<summary><b>422 Unprocessable Entity - Validation Error</b></summary>
+
+Xem [Error Responses](#error-responses) chung
+</details>
 
 ---
 
 ### 5. DELETE /coupons/delete/many - Xóa nhiều coupon
 
-**Mô tả:** Xóa nhiều coupon cùng lúc.
+**Mô tả:** Xóa nhiều coupon cùng lúc theo danh sách ID. Coupon đã được sử dụng sẽ được soft delete.
 
 **Xác thực:** Bearer Token (JWT)
 
 **Quyền yêu cầu:** `coupon.delete`
+
+**Headers:**
+```http
+Authorization: Bearer <access_token>
+Content-Type: application/json
+Accept-Language: vi
+```
 
 **Request Body:**
 
@@ -284,143 +635,119 @@ flowchart TB
 {
   "ids": [
     "550e8400-e29b-41d4-a716-446655440001",
-    "550e8400-e29b-41d4-a716-446655440002"
+    "550e8400-e29b-41d4-a716-446655440002",
+    "550e8400-e29b-41d4-a716-446655440003"
   ]
 }
 ```
+
+**Response (200 OK):**
+
+```json
+{
+  "code": "coupon.delete.success",
+  "message": "Xóa nhiều coupon thành công",
+  "success": true,
+  "data": null
+}
+```
+
+**Error Responses:**
+
+<details>
+<summary><b>404 Not Found</b></summary>
+
+```json
+{
+  "code": "coupon.errors.not_found",
+  "message": "Không tìm thấy coupon",
+  "success": false
+}
+```
+</details>
+
+<details>
+<summary><b>401 Unauthorized</b></summary>
+
+Xem [Error Responses](#error-responses) chung
+</details>
+
+<details>
+<summary><b>403 Forbidden</b></summary>
+
+Xem [Error Responses](#error-responses) chung
+</details>
+
+<details>
+<summary><b>422 Unprocessable Entity - Validation Error</b></summary>
+
+Xem [Error Responses](#error-responses) chung
+</details>
 
 ---
 
 ### 6. DELETE /coupons/:id - Xóa coupon
 
-**Mô tả:** Xóa một coupon theo ID.
+**Mô tả:** Xóa một coupon theo ID. Coupon đã được sử dụng sẽ được soft delete để giữ lịch sử.
 
 **Xác thực:** Bearer Token (JWT)
 
 **Quyền yêu cầu:** `coupon.delete`
 
----
-
-## Public APIs (`/public/coupons`)
-
-### 1. GET /public/coupons - Lấy danh sách coupon công khai
-
-**Mô tả:** Lấy danh sách các coupon đang hoạt động và công khai.
-
-**Xác thực:** Không yêu cầu (Public)
-
-**Query Parameters:**
-
-| Parameter  | Type   | Description          |
-| ---------- | ------ | -------------------- |
-| `limit`    | number | Số bản ghi mỗi trang |
-| `offset`   | number | Vị trí bắt đầu       |
-| `keywords` | string | Từ khóa tìm kiếm     |
-
----
-
-### 2. GET /public/coupons/saved - Lấy coupon đã lưu
-
-**Mô tả:** Lấy danh sách các coupon mà user đã lưu.
-
-**Xác thực:** Bearer Token (JWT)
-
----
-
-### 3. POST /public/coupons/applicable - Lấy coupon có thể áp dụng
-
-**Mô tả:** Kiểm tra và trả về danh sách các coupon có thể áp dụng cho đơn hàng.
-
-**Xác thực:** Bearer Token (JWT)
-
-**Request Body:**
-
-```json
-{
-  "warehouse_template_ids": ["uuid"],
-  "row_template_ids": ["uuid"],
-  "addon_ids": ["uuid"],
-  "rental_duration_tier_id": "uuid",
-  "type": "NEW_CONTRACT"
-}
+**Headers:**
+```http
+Authorization: Bearer <access_token>
+Accept-Language: vi
 ```
 
----
+**Path Parameters:**
 
-### 4. POST /public/coupons/validate - Kiểm tra mã coupon
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | string (UUID) | ID của coupon |
 
-**Mô tả:** Kiểm tra một mã coupon cụ thể có thể áp dụng cho đơn hàng.
-
-**Xác thực:** Bearer Token (JWT)
-
-**Request Body:**
+**Response (200 OK):**
 
 ```json
 {
-  "code": "TET2025",
-  "warehouse_template_ids": ["uuid"],
-  "row_template_ids": ["uuid"],
-  "rental_duration_tier_id": "uuid",
-  "type": "NEW_CONTRACT"
-}
-```
-
-**Response (200 OK - Valid):**
-
-```json
-{
-  "code": "coupon.validate.success",
-  "message": "Coupon hợp lệ",
+  "code": "coupon.delete.success",
+  "message": "Xóa coupon thành công",
   "success": true,
-  "data": {
-    "id": "550e8400-e29b-41d4-a716-446655440000",
-    "name": "Khuyến mãi Tết 2025",
-    "code": "TET2025",
-    "discount_type": "PERCENT",
-    "discount_value": 20,
-    "estimated_discount": 200000,
-    "is_valid": true
-  }
+  "data": null
 }
 ```
 
-**Response (200 OK - Invalid):**
+**Error Responses:**
+
+<details>
+<summary><b>404 Not Found</b></summary>
 
 ```json
 {
-  "code": "coupon.validate.failed",
-  "message": "Coupon đã hết hạn",
-  "success": true,
-  "data": {
-    "is_valid": false,
-    "error": "Coupon đã hết hạn",
-    "error_code": "coupon.errors.expired"
-  }
+  "code": "coupon.errors.not_found",
+  "message": "Không tìm thấy coupon",
+  "success": false
 }
 ```
+</details>
 
----
+<details>
+<summary><b>401 Unauthorized</b></summary>
 
-### 5. POST /public/coupons/:id/save - Lưu coupon
+Xem [Error Responses](#error-responses) chung
+</details>
 
-**Mô tả:** Lưu một coupon vào tài khoản để sử dụng sau.
+<details>
+<summary><b>403 Forbidden</b></summary>
 
-**Xác thực:** Bearer Token (JWT)
-
----
-
-### 6. DELETE /public/coupons/:id/save - Bỏ lưu coupon
-
-**Mô tả:** Xóa coupon đã lưu khỏi danh sách.
-
-**Xác thực:** Bearer Token (JWT)
+Xem [Error Responses](#error-responses) chung
+</details>
 
 ---
 
 ## Error Responses
 
-<details>
-<summary><b>401 Unauthorized</b></summary>
+### 401 Unauthorized
 
 ```json
 // Không có token
@@ -436,59 +763,55 @@ flowchart TB
   "message": "Token đã hết hạn",
   "success": false
 }
+
+// Token không hợp lệ
+{
+  "code": "error.unauthorized.token_invalid",
+  "message": "Token không hợp lệ",
+  "success": false
+}
+
+// Token không đúng định dạng
+{
+  "code": "error.unauthorized.token_malformed",
+  "message": "Token không đúng định dạng",
+  "success": false
+}
 ```
 
-</details>
-
-<details>
-<summary><b>403 Forbidden</b></summary>
+### 403 Forbidden
 
 ```json
+// Không có quyền thực hiện
 {
   "code": "error.forbidden.no_permission",
   "message": "Không có quyền thực hiện thao tác này",
   "success": false
 }
-```
 
-</details>
-
-<details>
-<summary><b>404 Not Found</b></summary>
-
-```json
+// Tài khoản bị khóa
 {
-  "code": "coupon.errors.not_found",
-  "message": "Không tìm thấy coupon",
+  "code": "error.forbidden.account_banned",
+  "message": "Tài khoản đã bị khóa",
+  "success": false
+}
+
+// Tài khoản chưa xác minh
+{
+  "code": "error.forbidden.account_not_verified",
+  "message": "Tài khoản chưa được xác minh. Vui lòng xác minh email để tiếp tục.",
+  "success": false
+}
+
+// Tài khoản không tồn tại
+{
+  "code": "error.forbidden.account_not_found",
+  "message": "Tài khoản không tồn tại",
   "success": false
 }
 ```
 
-</details>
-
-<details>
-<summary><b>409 Conflict</b></summary>
-
-```json
-// Mã coupon đã tồn tại
-{
-  "code": "coupon.errors.code_exists",
-  "message": "Mã coupon đã tồn tại",
-  "success": false
-}
-
-// Coupon đã được lưu
-{
-  "code": "coupon.errors.already_saved",
-  "message": "Coupon đã được lưu",
-  "success": false
-}
-```
-
-</details>
-
-<details>
-<summary><b>422 Validation Error</b></summary>
+### 422 Unprocessable Entity - Validation Error
 
 ```json
 {
@@ -496,56 +819,92 @@ flowchart TB
   "message": "Dữ liệu đầu vào không hợp lệ",
   "success": false,
   "errors": [
-    { "field": "code", "message": "Mã coupon không được để trống" },
-    {
-      "field": "discount_value",
-      "message": "Giá trị giảm giá phải lớn hơn hoặc bằng 0"
-    }
+    { "field": "code", "message": "Mã coupon đã tồn tại" },
+    { "field": "discount_value", "message": "Giá trị giảm giá phải từ 1 đến 100 cho loại PERCENT" },
+    { "field": "min_warehouses", "message": "Số kho tối thiểu phải lớn hơn 0" }
   ]
 }
 ```
-
-</details>
 
 ---
 
 ## Validation Rules
 
-### Discount Types
+### Discount Type & Value
 
-- **PERCENT**: Giá trị từ 1-100, có thể set `max_discount_amount`
-- **AMOUNT**: Giá trị số tiền cố định
-- **FREE_MONTHS**: Số tháng miễn phí
+- **PERCENT**: `discount_value` phải từ 1-100
+- **AMOUNT**: `discount_value` phải > 0
+- **FREE_MONTHS**: `discount_value` phải > 0
 
-### Conditional Requirements
+### Conditional Fields
 
-- Khi `is_permanent = false`: phải có `starts_at` và `ends_at`
-- Khi `require_min_warehouses = true`: phải có `min_warehouses`
-- Khi `require_min_rental_duration = true`: phải có `min_rental_duration_value` và `min_rental_duration_unit`
-- Khi `coupon_type = PRIVATE`: phải có `target_user_ids`
-- Khi `apply_for_all_warehouses = false`: phải có `target_warehouse_ids`
+- Nếu `require_min_warehouses = true` → `min_warehouses` bắt buộc và phải >= 1
+- Nếu `require_min_rows = true` → `min_rows` bắt buộc và phải >= 1
+- Nếu `require_min_order_amount = true` → `min_order_amount` bắt buộc và phải > 0
+- Nếu `require_min_rental_duration = true` → `min_rental_duration_value` và `min_rental_duration_unit` bắt buộc
+- Nếu `discount_type = PERCENT` và `is_unlimited_discount = false` → `max_discount_amount` bắt buộc và phải > 0
+- Nếu `is_permanent = false` → `starts_at` và `ends_at` bắt buộc, và `starts_at` phải < `ends_at`
+- Nếu `coupon_type = PRIVATE` → `target_user_ids` bắt buộc và phải có ít nhất 1 phần tử
+- Nếu `apply_for_all_warehouses = false` → `target_warehouse_ids` bắt buộc
+- Nếu `apply_for_all_rows = false` → `target_row_ids` bắt buộc
+- Nếu `apply_for_all_addons = false` → `target_addon_ids` bắt buộc
+- Nếu `apply_for_all_insurances = false` → `target_insurance_ids` bắt buộc
+- Nếu `is_unlimited_stack = false` → `max_stack_count` bắt buộc và phải >= 1
+- Nếu `has_gift_addons = true` → `gift_addon_ids` bắt buộc
+- Nếu `has_gift_insurances = true` → `gift_insurance_ids` bắt buộc
+
+### String Lengths
+
+- `name`: max 255 ký tự
+- `description`: không giới hạn
+- `code`: max 50 ký tự, unique (khi `is_deleted = false`)
+
+### Date Validation
+
+- `starts_at` phải trước `ends_at`
+- Cả hai phải là ISO 8601 date-time format
 
 ---
 
-## Files Trong Module
+## Caching Strategy
 
-| File                                                                                                               | Mô tả                     |
-| ------------------------------------------------------------------------------------------------------------------ | ------------------------- |
-| [coupon.module.ts](file:///e:/STUDY/Demo/gen-hub/server/src/modules/coupon/coupon.module.ts)                       | NestJS module definition  |
-| [coupon.controller.ts](file:///e:/STUDY/Demo/gen-hub/server/src/modules/coupon/coupon.controller.ts)               | Admin API endpoints       |
-| [public-coupon.controller.ts](file:///e:/STUDY/Demo/gen-hub/server/src/modules/coupon/public-coupon.controller.ts) | Public/User API endpoints |
-| [coupon.service.ts](file:///e:/STUDY/Demo/gen-hub/server/src/modules/coupon/coupon.service.ts)                     | Business logic            |
-| [coupon.repository.ts](file:///e:/STUDY/Demo/gen-hub/server/src/modules/coupon/coupon.repository.ts)               | Database operations       |
-| [dto/](file:///e:/STUDY/Demo/gen-hub/server/src/modules/coupon/dto)                                                | DTOs với validation       |
+Module sử dụng **Cache-Aside Pattern** với Redis:
+
+- **List Cache**: TTL 60 giây (có thể config qua env)
+- **Item Cache**: TTL 300 giây (có thể config qua env)
+- Cache được invalidate khi:
+  - Tạo coupon mới
+  - Cập nhật coupon
+  - Xóa coupon
+
+Cache keys format:
+- Item: `coupon:{id}`
+- List: `coupon:list:{filters_json}`
 
 ---
 
 ## Permissions
 
-| Permission      | Mô tả                |
-| --------------- | -------------------- |
-| `coupon.create` | Tạo coupon mới       |
-| `coupon.list`   | Xem danh sách coupon |
-| `coupon.read`   | Xem chi tiết coupon  |
-| `coupon.update` | Cập nhật coupon      |
-| `coupon.delete` | Xóa coupon           |
+| Permission | Mô tả |
+|------------|-------|
+| `coupon.create` | Tạo coupon mới |
+| `coupon.list` | Xem danh sách coupon |
+| `coupon.read` | Xem chi tiết coupon |
+| `coupon.update` | Cập nhật coupon |
+| `coupon.delete` | Xóa coupon |
+
+---
+
+## Files Trong Module
+
+| File | Mô tả |
+|------|-------|
+| [coupon.module.ts](../../src/modules/coupon/coupon.module.ts) | NestJS module definition |
+| [coupon.controller.ts](../../src/modules/coupon/coupon.controller.ts) | REST API endpoints |
+| [coupon.service.ts](../../src/modules/coupon/coupon.service.ts) | Business logic và caching |
+| [coupon.repository.ts](../../src/modules/coupon/repositories/coupon.repository.ts) | Database operations |
+| [dto/create-coupon.dto.ts](../../src/modules/coupon/dto/create-coupon.dto.ts) | DTOs với validation |
+| [dto/update-coupon.dto.ts](../../src/modules/coupon/dto/update-coupon.dto.ts) | Update DTO |
+| [dto/query-coupon.dto.ts](../../src/modules/coupon/dto/query-coupon.dto.ts) | Query DTO |
+| [interfaces/coupon.interface.ts](../../src/modules/coupon/interfaces/coupon.interface.ts) | TypeScript interfaces |
+| [constants/coupon-cache-keys.helper.ts](../../src/modules/coupon/constants/coupon-cache-keys.helper.ts) | Redis cache key helper |

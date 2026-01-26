@@ -1,22 +1,20 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { I18nService } from 'nestjs-i18n';
-import { PublicCouponRepository } from './public-coupon.repository';
+import { PublicCouponRepository } from './repositories/public-coupon.repository';
+import { PublicCouponCacheKeys } from './constants/public-coupon-cache-keys.helper';
 import { RedisService } from '../redis/redis.service';
 import { QueryPublicCouponDto, CheckApplicableCouponDto, ValidateCouponDto } from './dto';
 
 @Injectable()
 export class PublicCouponService {
-    private readonly listCacheTTL: number;
-
     constructor(
         private readonly repository: PublicCouponRepository,
+        private readonly cacheKeys: PublicCouponCacheKeys,
         private readonly redisService: RedisService,
         private readonly configService: ConfigService,
         private readonly i18n: I18nService,
-    ) {
-        this.listCacheTTL = this.configService.get<number>('REDIS_COUPON_LIST_CACHE_TTL', 60);
-    }
+    ) {}
 
     /**
      * Lấy danh sách coupon công khai
@@ -24,7 +22,8 @@ export class PublicCouponService {
     async findAllPublic(query: QueryPublicCouponDto) {
         const { limit = 10, offset = 0, keywords } = query;
 
-        const cacheKey = `coupon:public:${JSON.stringify({ limit, offset, keywords })}`;
+        // Check cache - Cache-Aside Pattern
+        const cacheKey = this.cacheKeys.list({ limit, offset, keywords });
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
             return JSON.parse(cached);
@@ -43,6 +42,7 @@ export class PublicCouponService {
             ];
         }
 
+        // Parallel execution for better performance
         const [data, total] = await Promise.all([
             this.repository.findAllPublic({
                 skip: offset,
@@ -55,7 +55,10 @@ export class PublicCouponService {
 
         const hasMore = offset + data.length < total;
         const result = { items: data, total, limit, offset, hasMore };
-        await this.redisService.set(cacheKey, JSON.stringify(result), this.listCacheTTL);
+        
+        // Set cache with TTL from environment
+        const ttl = this.cacheKeys.getTTL('list');
+        await this.redisService.set(cacheKey, JSON.stringify(result), ttl);
 
         return result;
     }
