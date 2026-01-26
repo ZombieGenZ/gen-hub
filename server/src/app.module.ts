@@ -40,6 +40,7 @@ import { BlockTemplateModule } from './modules/block-template/block-template.mod
 import { AddonModule } from './modules/addon/addon.module';
 import { InsuranceModule } from './modules/insurance/insurance.module';
 import { CouponModule } from './modules/coupon/coupon.module';
+import { PublicCouponModule } from './modules/public-coupon/public-coupon.module';
 import { CouponScheduleModule } from './modules/coupon-schedule/coupon-schedule.module';
 import { DatabaseAdminModule } from './modules/database-admin/database-admin.module';
 import { FeatureFlagModule } from './modules/feature-flag/feature-flag.module';
@@ -127,6 +128,9 @@ import { RoleModule } from './modules/role/role.module';
 
     // Coupons
     CouponModule,
+
+    // Public Coupons
+    PublicCouponModule,
 
     // Coupon Schedules
     CouponScheduleModule,

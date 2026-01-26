@@ -20,9 +20,9 @@ import {
 } from '@nestjs/swagger';
 import { I18nLang } from 'nestjs-i18n';
 
-import { CouponService } from './coupon.service';
+import { PublicCouponService } from './public-coupon.service';
 import {
-  QueryCouponDto,
+  QueryPublicCouponDto,
   CheckApplicableCouponDto,
   ValidateCouponDto,
 } from './dto';
@@ -33,12 +33,12 @@ import {
   ApiValidationErrorResponse,
 } from '../../common/decorators/api-common-responses.decorator';
 import { GetResponse, OkResponse } from '../../common/responses';
-import { ICoupon, IPaginatedResponse } from './interfaces';
+import { IPublicCoupon, IPaginatedResponse } from './interfaces';
 
 @ApiTags('Public Coupons')
 @Controller('public/coupons')
 export class PublicCouponController {
-  constructor(private readonly couponService: CouponService) {}
+  constructor(private readonly publicCouponService: PublicCouponService) {}
 
   @ApiOperation({
     summary: 'Lấy danh sách coupon công khai',
@@ -134,9 +134,9 @@ export class PublicCouponController {
   @Public()
   @Get()
   async findAllPublic(
-    @Query() query: QueryCouponDto,
-  ): Promise<GetResponse<IPaginatedResponse<ICoupon>>> {
-    const result = await this.couponService.findAllPublic(query);
+    @Query() query: QueryPublicCouponDto,
+  ): Promise<GetResponse<IPaginatedResponse<IPublicCoupon>>> {
+    const result = await this.publicCouponService.findAllPublic(query);
     return new GetResponse(
       'coupon.public.list.success',
       result,
@@ -231,9 +231,9 @@ export class PublicCouponController {
   @Get('saved')
   async getSavedCoupons(
     @CurrentUser('userId') userId: string,
-    @Query() query: QueryCouponDto,
-  ): Promise<GetResponse<IPaginatedResponse<ICoupon>>> {
-    const result = await this.couponService.getSavedCoupons(userId, query);
+    @Query() query: QueryPublicCouponDto,
+  ): Promise<GetResponse<IPaginatedResponse<IPublicCoupon>>> {
+    const result = await this.publicCouponService.getSavedCoupons(userId, query);
     return new GetResponse(
       'coupon.saved.list.success',
       result,
@@ -343,7 +343,7 @@ export class PublicCouponController {
     @Body() dto: CheckApplicableCouponDto,
     @I18nLang() lang: string,
   ): Promise<GetResponse<any>> {
-    const result = await this.couponService.getApplicableCoupons(
+    const result = await this.publicCouponService.getApplicableCoupons(
       userId,
       dto,
       lang,
@@ -465,7 +465,7 @@ export class PublicCouponController {
     @Body() dto: ValidateCouponDto,
     @I18nLang() lang: string,
   ): Promise<OkResponse<any>> {
-    const result = await this.couponService.validateCoupon(userId, dto, lang);
+    const result = await this.publicCouponService.validateCoupon(userId, dto, lang);
     if ('error' in result && result.error) {
       return new OkResponse('coupon.validate.failed', result, result.error);
     }
@@ -530,7 +530,7 @@ export class PublicCouponController {
     @CurrentUser('userId') userId: string,
     @I18nLang() lang: string,
   ): Promise<OkResponse<null>> {
-    await this.couponService.saveCoupon(userId, id, lang);
+    await this.publicCouponService.saveCoupon(userId, id, lang);
     return new OkResponse('coupon.save.success', null, 'Lưu coupon thành công');
   }
 
@@ -580,7 +580,7 @@ export class PublicCouponController {
     @CurrentUser('userId') userId: string,
     @I18nLang() lang: string,
   ): Promise<OkResponse<null>> {
-    await this.couponService.unsaveCoupon(userId, id, lang);
+    await this.publicCouponService.unsaveCoupon(userId, id, lang);
     return new OkResponse(
       'coupon.unsave.success',
       null,
