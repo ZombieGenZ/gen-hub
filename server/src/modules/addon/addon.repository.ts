@@ -65,16 +65,12 @@ export class AddonRepository {
         });
     }
 
-    async findAllActive(addonTypeId?: string, userId?: string, hasListAllPermission?: boolean) {
+    async findAllActive(params?: { skip?: number; take?: number; addonTypeId?: string }) {
+        const { skip, take, addonTypeId } = params || {};
         const where: Prisma.AddonWhereInput = {
             is_active: true,
             is_deleted: false,
         };
-
-        // Nếu không có quyền list.all, chỉ lấy items của chính user
-        if (!hasListAllPermission && userId) {
-            where.created_by = userId;
-        }
 
         if (addonTypeId) {
             where.addon_types = {
@@ -86,9 +82,29 @@ export class AddonRepository {
         }
 
         return this.prisma.addon.findMany({
+            skip,
+            take,
             where,
             orderBy: { name: 'asc' },
         });
+    }
+
+    async countActive(addonTypeId?: string) {
+        const where: Prisma.AddonWhereInput = {
+            is_active: true,
+            is_deleted: false,
+        };
+
+        if (addonTypeId) {
+            where.addon_types = {
+                some: {
+                    addon_type_id: addonTypeId,
+                    is_deleted: false,
+                },
+            };
+        }
+
+        return this.prisma.addon.count({ where });
     }
 
     async update(id: string, data: Prisma.AddonUpdateInput) {

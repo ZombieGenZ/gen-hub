@@ -318,25 +318,32 @@ GET /addon-types?limit=10&offset=0&keywords=tiện ích&is_active=true HTTP/1.1
 
 ---
 
-### 3. GET /addon-types/active - Lấy tất cả loại addon đang hoạt động
+### 3. GET /addon-types/active - Lấy danh sách loại addon đang hoạt động
 
-**Mô tả:** Lấy danh sách tất cả loại addon có trạng thái `is_active = true`. API này thường được sử dụng cho dropdown select. Chỉ yêu cầu xác thực, không yêu cầu quyền đặc biệt.
+**Mô tả:** Lấy danh sách tất cả loại addon có trạng thái is_active = true và is_deleted = false với phân trang. API này không yêu cầu xác thực và có thể được sử dụng công khai.
 
-**Xác thực:** Bearer Token (JWT)
-
-**Quyền yêu cầu:** Không yêu cầu quyền đặc biệt (chỉ cần đăng nhập)
+**Xác thực:** Không yêu cầu
 
 **Headers:**
 ```http
-Authorization: Bearer <access_token>
 Accept-Language: vi
 ```
 
-**Request Example:**
+**Query Parameters:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `limit` | number | Optional | 10 | Số lượng bản ghi mỗi trang (min: 1) |
+| `offset` | number | Optional | 0 | Vị trí bắt đầu (min: 0) |
+
+**Request Examples:**
 
 ```http
+# Lấy 10 loại addon active đầu tiên
 GET /addon-types/active HTTP/1.1
-Authorization: Bearer <access_token>
+
+# Lấy với phân trang
+GET /addon-types/active?limit=20&offset=40 HTTP/1.1
 ```
 
 **Response (200 OK):**
@@ -346,42 +353,33 @@ Authorization: Bearer <access_token>
   "code": "addon-type.active",
   "message": "Lấy danh sách loại addon thành công",
   "success": true,
-  "data": [
-    {
-      "id": "550e8400-e29b-41d4-a716-446655440000",
-      "name": "Bảo mật",
-      "description": "Các addon liên quan đến bảo mật",
-      "is_active": true
-    },
-    {
-      "id": "550e8400-e29b-41d4-a716-446655440001",
-      "name": "Tiện ích",
-      "description": "Các addon tiện ích mở rộng",
-      "is_active": true
-    },
-    {
-      "id": "550e8400-e29b-41d4-a716-446655440002",
-      "name": "Tích hợp",
-      "description": "Các addon tích hợp bên ngoài",
-      "is_active": true
-    }
-  ]
+  "data": {
+    "items": [
+      {
+        "id": "550e8400-e29b-41d4-a716-446655440000",
+        "name": "Bảo mật",
+        "description": "Các addon liên quan đến bảo mật",
+        "is_active": true
+      },
+      {
+        "id": "550e8400-e29b-41d4-a716-446655440001",
+        "name": "Tiện ích",
+        "description": "Các addon tiện ích mở rộng",
+        "is_active": true
+      },
+      {
+        "id": "550e8400-e29b-41d4-a716-446655440002",
+        "name": "Tích hợp",
+        "description": "Các addon tích hợp bên ngoài",
+        "is_active": true
+      }
+    ],
+    "total": 25,
+    "limit": 10,
+    "offset": 0
+  }
 }
 ```
-
-**Error Responses:**
-
-<details>
-<summary><b>401 Unauthorized</b></summary>
-
-```json
-{
-  "code": "error.unauthorized.token_missing",
-  "message": "Không có quyền truy cập",
-  "success": false
-}
-```
-</details>
 
 ---
 
@@ -736,7 +734,7 @@ Module sử dụng Redis caching với pattern **Cache Aside**:
 |-------------------|-----|-------------|
 | `addon-type:detail:<id>` | 300s | Cache chi tiết loại addon |
 | `addon-type:list:*` | 300s | Cache danh sách loại addon (theo query params) |
-| `addon-type:active` | 300s | Cache danh sách loại addon đang hoạt động |
+| `addon-type:active:<limit>:<offset>` | 300s | Cache danh sách loại addon đang hoạt động (có phân trang) |
 
 ### Cache Invalidation
 
@@ -857,16 +855,17 @@ socket.on('addonType:deletedMany', (payload) => {
 
 ## Quyền Hạn (Permissions)
 
-| Permission | Description |
-|------------|-------------|
-| `addon-type.create` | Tạo loại addon mới |
-| `addon-type.list` | Xem danh sách loại addon |
-| `addon-type.read` | Xem chi tiết loại addon |
-| `addon-type.update` | Cập nhật loại addon |
-| `addon-type.delete` | Xóa loại addon |
+| Permission | Description | Endpoint |
+|------------|-------------|----------|
+| `addon-type.create` | Tạo loại addon mới | `POST /addon-types` |
+| `addon-type.list` | Xem danh sách loại addon | `GET /addon-types` |
+| - | Xem danh sách loại addon đang hoạt động (public) | `GET /addon-types/active` |
+| `addon-type.read` | Xem chi tiết loại addon | `GET /addon-types/:id` |
+| `addon-type.update` | Cập nhật loại addon | `PUT /addon-types/:id` |
+| `addon-type.delete` | Xóa loại addon | `DELETE /addon-types/:id`, `DELETE /addon-types/delete/many` |
 
 > [!NOTE]
-> API `GET /addon-types/active` không yêu cầu quyền đặc biệt, chỉ cần đăng nhập (authenticated).
+> API `GET /addon-types/active` không yêu cầu xác thực và có thể được sử dụng công khai.
 
 ---
 

@@ -309,6 +309,76 @@ export class AmenityController {
   }
 
   @ApiOperation({
+    summary: 'Lấy danh sách tiện ích đang hoạt động',
+    description:
+      'Lấy danh sách tất cả tiện ích có trạng thái is_active = true và is_deleted = false với phân trang. API này không yêu cầu xác thực và có thể được sử dụng công khai.',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Số lượng bản ghi mỗi trang (mặc định: 10)',
+    example: 10,
+  })
+  @ApiQuery({
+    name: 'offset',
+    required: false,
+    type: Number,
+    description: 'Vị trí bắt đầu (mặc định: 0)',
+    example: 0,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Lấy danh sách tiện ích active thành công',
+    schema: {
+      type: 'object',
+      properties: {
+        code: { type: 'string', example: 'amenity.list.success' },
+        message: {
+          type: 'string',
+          example: 'Lấy danh sách tiện ích active thành công',
+        },
+        success: { type: 'boolean', example: true },
+        data: {
+          type: 'object',
+          properties: {
+            items: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: {
+                    type: 'string',
+                    format: 'uuid',
+                    example: '550e8400-e29b-41d4-a716-446655440000',
+                  },
+                  name: { type: 'string', example: 'WiFi' },
+                  description: {
+                    type: 'string',
+                    nullable: true,
+                    example: 'Internet tốc độ cao',
+                  },
+                  is_active: { type: 'boolean', example: true },
+                },
+              },
+            },
+            total: { type: 'number', example: 25 },
+            limit: { type: 'number', example: 10 },
+            offset: { type: 'number', example: 0 },
+          },
+        },
+      },
+    },
+  })
+  @Get('active')
+  async findAllActive(
+    @Query() query: QueryAmenityDto,
+  ): Promise<GetResponse<IPaginatedResponse<IAmenity>>> {
+    const result = await this.amenityService.findAllActive(query);
+    return new GetResponse('amenity.list.success', result);
+  }
+
+  @ApiOperation({
     summary: 'Lấy chi tiết tiện ích',
     description:
       'Lấy thông tin chi tiết của một tiện ích theo ID. Yêu cầu quyền `amenity.read`.',
@@ -386,56 +456,6 @@ export class AmenityController {
       },
     },
   })
-  @ApiOperation({
-    summary: 'Lấy tất cả tiện ích đang hoạt động',
-    description:
-      'Lấy danh sách tất cả tiện ích có trạng thái is_active = true và is_deleted = false. API này thường được sử dụng cho dropdown select. Yêu cầu quyền `amenity.list` hoặc `amenity.list.all`.',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Lấy danh sách tiện ích active thành công',
-    schema: {
-      type: 'object',
-      properties: {
-        code: { type: 'string', example: 'amenity.list.success' },
-        message: {
-          type: 'string',
-          example: 'Lấy danh sách tiện ích active thành công',
-        },
-        success: { type: 'boolean', example: true },
-        data: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              id: {
-                type: 'string',
-                format: 'uuid',
-                example: '550e8400-e29b-41d4-a716-446655440000',
-              },
-              name: { type: 'string', example: 'WiFi' },
-              description: {
-                type: 'string',
-                nullable: true,
-                example: 'Internet tốc độ cao',
-              },
-              is_active: { type: 'boolean', example: true },
-            },
-          },
-        },
-      },
-    },
-  })
-  @ApiAuthResponses()
-  @ApiBearerAuth('JWT-auth')
-  @UseGuards(JwtAuthGuard, PermissionGuard)
-  @RequireAnyPermission('amenity.list', 'amenity.list.all')
-  @Get('active')
-  async findAllActive(@CurrentUser('userId') userId: string): Promise<GetResponse<IAmenity[]>> {
-    const hasListAllPermission = await this.hasPermission(userId, 'amenity.list.all');
-    const result = await this.amenityService.findAllActive(userId, hasListAllPermission);
-    return new GetResponse('amenity.list.success', result);
-  }
 
   @ApiAuthResponses()
   @ApiBearerAuth('JWT-auth')

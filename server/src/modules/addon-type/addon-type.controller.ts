@@ -302,9 +302,23 @@ export class AddonTypeController {
   }
 
   @ApiOperation({
-    summary: 'Lấy tất cả loại addon đang hoạt động',
+    summary: 'Lấy danh sách loại addon đang hoạt động',
     description:
-      'Lấy danh sách tất cả loại addon có trạng thái is_active = true. API này thường được sử dụng cho dropdown select. Chỉ yêu cầu xác thực, không yêu cầu quyền đặc biệt.',
+      'Lấy danh sách tất cả loại addon có trạng thái is_active = true và is_deleted = false với phân trang. API này không yêu cầu xác thực và có thể được sử dụng công khai.',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Số lượng bản ghi mỗi trang (mặc định: 10)',
+    example: 10,
+  })
+  @ApiQuery({
+    name: 'offset',
+    required: false,
+    type: Number,
+    description: 'Vị trí bắt đầu (mặc định: 0)',
+    example: 0,
   })
   @ApiResponse({
     status: 200,
@@ -319,74 +333,38 @@ export class AddonTypeController {
         },
         success: { type: 'boolean', example: true },
         data: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              id: {
-                type: 'string',
-                format: 'uuid',
-                example: '550e8400-e29b-41d4-a716-446655440000',
+          type: 'object',
+          properties: {
+            items: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: {
+                    type: 'string',
+                    format: 'uuid',
+                    example: '550e8400-e29b-41d4-a716-446655440000',
+                  },
+                  name: { type: 'string', example: 'Bảo mật' },
+                  description: {
+                    type: 'string',
+                    example: 'Các addon liên quan đến bảo mật',
+                  },
+                  is_active: { type: 'boolean', example: true },
+                },
               },
-              name: { type: 'string', example: 'Bảo mật' },
-              description: {
-                type: 'string',
-                example: 'Các addon liên quan đến bảo mật',
-              },
-              is_active: { type: 'boolean', example: true },
             },
+            total: { type: 'number', example: 25 },
+            limit: { type: 'number', example: 10 },
+            offset: { type: 'number', example: 0 },
           },
         },
       },
     },
   })
-  @ApiOperation({
-    summary: 'Lấy tất cả loại addon đang hoạt động',
-    description:
-      'Lấy danh sách tất cả loại addon có trạng thái is_active = true và is_deleted = false. API này thường được sử dụng cho dropdown select. Yêu cầu quyền `addon-type.list` hoặc `addon-type.list.all`.',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Lấy danh sách loại addon đang hoạt động thành công',
-    schema: {
-      type: 'object',
-      properties: {
-        code: { type: 'string', example: 'addon-type.active' },
-        message: {
-          type: 'string',
-          example: 'Lấy danh sách loại addon thành công',
-        },
-        success: { type: 'boolean', example: true },
-        data: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              id: {
-                type: 'string',
-                format: 'uuid',
-                example: '550e8400-e29b-41d4-a716-446655440000',
-              },
-              name: { type: 'string', example: 'Bảo mật' },
-              description: {
-                type: 'string',
-                example: 'Các addon liên quan đến bảo mật',
-              },
-              is_active: { type: 'boolean', example: true },
-            },
-          },
-        },
-      },
-    },
-  })
-  @ApiAuthResponses()
-  @ApiBearerAuth('JWT-auth')
-  @UseGuards(JwtAuthGuard, PermissionGuard)
-  @RequireAnyPermission('addon-type.list', 'addon-type.list.all')
   @Get('active')
-  async findAllActive(@CurrentUser('userId') userId: string) {
-    const hasListAllPermission = await this.hasPermission(userId, 'addon-type.list.all');
-    const result = await this.addonTypeService.findAllActive(userId, hasListAllPermission);
+  async findAllActive(@Query() query: QueryAddonTypeDto) {
+    const result = await this.addonTypeService.findAllActive(query);
     return new GetResponse('addon-type.active', result);
   }
 

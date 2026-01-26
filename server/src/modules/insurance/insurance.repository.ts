@@ -87,19 +87,26 @@ export class InsuranceRepository {
     }
 
     /**
-     * Lấy tất cả insurance active (cho dropdown)
+     * Lấy tất cả insurance active (có phân trang)
      */
-    async findAllActive(userId?: string, hasListAllPermission?: boolean) {
+    async findAllActive(params?: { skip?: number; take?: number }) {
+        const { skip, take } = params || {};
         const where: any = { is_active: true, is_deleted: false };
         
-        // Nếu không có quyền list.all, chỉ lấy items của chính user
-        if (!hasListAllPermission && userId) {
-            where.created_by = userId;
-        }
-        
         return this.prisma.insurance.findMany({
+            skip,
+            take,
             where,
             orderBy: { name: 'asc' },
+        });
+    }
+
+    /**
+     * Đếm số lượng insurance active
+     */
+    async countActive() {
+        return this.prisma.insurance.count({
+            where: { is_active: true, is_deleted: false },
         });
     }
 

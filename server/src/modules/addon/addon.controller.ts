@@ -326,9 +326,23 @@ export class AddonController {
   }
 
   @ApiOperation({
-    summary: 'Lấy tất cả addon active',
+    summary: 'Lấy danh sách addon đang hoạt động',
     description:
-      'Lấy danh sách tất cả addon đang hoạt động (không phân trang). Sử dụng cho dropdown selection. Yêu cầu quyền `addon.list`.',
+      'Lấy danh sách tất cả addon đang hoạt động (is_active = true, is_deleted = false) với phân trang. API này không yêu cầu xác thực và có thể được sử dụng công khai.',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Số lượng bản ghi mỗi trang (mặc định: 10)',
+    example: 10,
+  })
+  @ApiQuery({
+    name: 'offset',
+    required: false,
+    type: Number,
+    description: 'Vị trí bắt đầu (mặc định: 0)',
+    example: 0,
   })
   @ApiQuery({
     name: 'addon_type_id',
@@ -350,96 +364,44 @@ export class AddonController {
         },
         success: { type: 'boolean', example: true },
         data: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              id: {
-                type: 'string',
-                format: 'uuid',
-                example: '550e8400-e29b-41d4-a716-446655440001',
+          type: 'object',
+          properties: {
+            items: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: {
+                    type: 'string',
+                    format: 'uuid',
+                    example: '550e8400-e29b-41d4-a716-446655440001',
+                  },
+                  name: { type: 'string', example: 'Bảo hiểm kho hàng' },
+                  description: {
+                    type: 'string',
+                    nullable: true,
+                    example: 'Dịch vụ bảo hiểm hàng hóa trong kho',
+                  },
+                  price: { type: 'number', example: 500000 },
+                  is_monthly_payment: { type: 'boolean', example: false },
+                  is_active: { type: 'boolean', example: true },
+                },
               },
-              name: { type: 'string', example: 'Bảo hiểm kho hàng' },
-              description: {
-                type: 'string',
-                nullable: true,
-                example: 'Dịch vụ bảo hiểm hàng hóa trong kho',
-              },
-              price: { type: 'number', example: 500000 },
-              is_monthly_payment: { type: 'boolean', example: false },
-              is_active: { type: 'boolean', example: true },
             },
+            total: { type: 'number', example: 25 },
+            limit: { type: 'number', example: 10 },
+            offset: { type: 'number', example: 0 },
           },
         },
       },
     },
   })
-  @ApiOperation({
-    summary: 'Lấy tất cả addon active',
-    description:
-      'Lấy danh sách tất cả addon đang hoạt động (is_active = true, is_deleted = false). Sử dụng cho dropdown selection. Yêu cầu quyền `addon.list` hoặc `addon.list.all`.',
-  })
-  @ApiQuery({
-    name: 'addon_type_id',
-    required: false,
-    type: String,
-    description: 'Lọc theo ID loại addon (UUID)',
-    example: '550e8400-e29b-41d4-a716-446655440002',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Lấy danh sách addon active thành công',
-    schema: {
-      type: 'object',
-      properties: {
-        code: { type: 'string', example: 'addon.list.success' },
-        message: {
-          type: 'string',
-          example: 'Lấy danh sách addon active thành công',
-        },
-        success: { type: 'boolean', example: true },
-        data: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              id: {
-                type: 'string',
-                format: 'uuid',
-                example: '550e8400-e29b-41d4-a716-446655440001',
-              },
-              name: { type: 'string', example: 'Bảo hiểm kho hàng' },
-              description: {
-                type: 'string',
-                nullable: true,
-                example: 'Dịch vụ bảo hiểm hàng hóa trong kho',
-              },
-              price: { type: 'number', example: 500000 },
-              is_monthly_payment: { type: 'boolean', example: false },
-              is_active: { type: 'boolean', example: true },
-            },
-          },
-        },
-      },
-    },
-  })
-  @ApiAuthResponses()
-  @ApiBearerAuth('JWT-auth')
-  @UseGuards(JwtAuthGuard, PermissionGuard)
-  @RequireAnyPermission('addon.list', 'addon.list.all')
   @Get('active')
   async findAllActive(
     @Query() query: QueryActiveAddonDto,
-    @CurrentUser('userId') userId: string,
-    @I18nLang() lang: string,
-  ): Promise<GetResponse<IAddon[]>> {
-    const hasListAllPermission = await this.hasPermission(userId, 'addon.list.all');
-    const result = await this.addonService.findAllActive(query, userId, hasListAllPermission);
-    return new GetResponse(
-      'addon.list.success',
-      result,
-      this.i18n.t('addon.success.active_list', { lang }),
-    );
+  ): Promise<GetResponse<IPaginatedResponse<IAddon>>> {
+    const result = await this.addonService.findAllActive(query);
+    return new GetResponse('addon.list.success', result);
   }
 
   @ApiOperation({

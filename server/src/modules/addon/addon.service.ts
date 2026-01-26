@@ -146,22 +146,32 @@ export class AddonService {
         return addon;
     }
 
-    // Lấy tất cả active addons (không phân trang, dùng cho dropdown)
-    async findAllActive(query?: QueryActiveAddonDto, userId?: string, hasListAllPermission?: boolean) {
-        const addonTypeId = query?.addon_type_id;
+    // Lấy tất cả active addons (có phân trang)
+    async findAllActive(query?: QueryActiveAddonDto) {
+        const { limit = 10, offset = 0, addon_type_id } = query || {};
         const prefix = this.configService.get<string>('REDIS_ADDON_ACTIVE_KEY_PREFIX', 'addon:active');
-        const cacheKey = addonTypeId 
-            ? `${prefix}:type:${addonTypeId}:${userId}:${hasListAllPermission}` 
-            : `${prefix}:${userId}:${hasListAllPermission}`;
+        const cacheKey = addon_type_id 
+            ? `${prefix}:type:${addon_type_id}:${limit}:${offset}` 
+            : `${prefix}:${limit}:${offset}`;
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
             return JSON.parse(cached);
         }
 
-        const addons = await this.repository.findAllActive(addonTypeId, userId, hasListAllPermission);
-        await this.redisService.set(cacheKey, JSON.stringify(addons), this.listCacheTTL);
+        const [data, total] = await Promise.all([
+            this.repository.findAllActive({
+                skip: offset,
+                take: limit,
+                addonTypeId: addon_type_id,
+            }),
+            this.repository.countActive(addon_type_id),
+        ]);
 
-        return addons;
+        const hasMore = offset + data.length < total;
+        const result = { items: data, total, limit, offset, hasMore };
+        await this.redisService.set(cacheKey, JSON.stringify(result), this.listCacheTTL);
+
+        return result;
     }
 
     async update(id: string, dto: UpdateAddonDto, userId: string, hasUpdateAllPermission: boolean, lang: string) {

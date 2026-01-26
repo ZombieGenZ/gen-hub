@@ -57,18 +57,22 @@ export class AmenityRepository {
         });
     }
 
-    async findAllActive(userId?: string, hasListAllPermission?: boolean) {
+    async findAllActive(params?: { skip?: number; take?: number }) {
+        const { skip, take } = params || {};
         const where: any = { is_active: true, is_deleted: false };
         
-        // Nếu không có quyền list.all, chỉ lấy items của chính user
-        if (!hasListAllPermission && userId) {
-            where.created_by = userId;
-        }
-        
         return this.prisma.amenity.findMany({
+            skip,
+            take,
             where,
             orderBy: { name: 'asc' },
             select: amenityListSelect,
+        });
+    }
+
+    async countActive() {
+        return this.prisma.amenity.count({
+            where: { is_active: true, is_deleted: false },
         });
     }
 

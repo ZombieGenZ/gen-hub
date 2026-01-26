@@ -60,18 +60,22 @@ export class AddonTypeRepository {
         });
     }
 
-    async findAllActive(userId?: string, hasListAllPermission?: boolean): Promise<IAddonTypeWithRelations[]> {
+    async findAllActive(params?: { skip?: number; take?: number }): Promise<IAddonTypeWithRelations[]> {
+        const { skip, take } = params || {};
         const where: any = { is_active: true, is_deleted: false };
         
-        // Nếu không có quyền list.all, chỉ lấy items của chính user
-        if (!hasListAllPermission && userId) {
-            where.created_by = userId;
-        }
-        
         return this.prisma.addonType.findMany({
+            skip,
+            take,
             where,
             orderBy: { name: 'asc' },
             select: addonTypeListSelect,
+        });
+    }
+
+    async countActive(): Promise<number> {
+        return this.prisma.addonType.count({
+            where: { is_active: true, is_deleted: false },
         });
     }
 

@@ -331,19 +331,32 @@ GET /insurances?is_active=true HTTP/1.1
 
 ---
 
-### 3. GET /insurances/active - Lấy tất cả bảo hiểm đang hoạt động
+### 3. GET /insurances/active - Lấy danh sách bảo hiểm đang hoạt động
 
-**Mô tả:** Lấy danh sách tất cả bảo hiểm có trạng thái `is_active = true`, không phân trang. Dùng cho dropdown/select.
+**Mô tả:** Lấy danh sách tất cả bảo hiểm có trạng thái is_active = true và is_deleted = false với phân trang. API này không yêu cầu xác thực và có thể được sử dụng công khai.
 
-**Xác thực:** Bearer Token (JWT)
-
-**Quyền yêu cầu:** `insurance.list`
+**Xác thực:** Không yêu cầu
 
 **Headers:**
+```http
+Accept-Language: vi
+```
+
+**Query Parameters:**
+
+| Parameter | Type   | Required | Default | Description                         |
+| --------- | ------ | -------- | ------- | ----------------------------------- |
+| `limit`   | number | Optional | 10      | Số lượng bản ghi mỗi trang (min: 1) |
+| `offset`  | number | Optional | 0       | Vị trí bắt đầu (min: 0)             |
+
+**Request Examples:**
 
 ```http
-Authorization: Bearer <access_token>
-Accept-Language: vi
+# Lấy 10 bảo hiểm active đầu tiên
+GET /insurances/active HTTP/1.1
+
+# Lấy với phân trang
+GET /insurances/active?limit=20&offset=40 HTTP/1.1
 ```
 
 **Response (200 OK):**
@@ -353,18 +366,33 @@ Accept-Language: vi
   "code": "insurance.list.success",
   "message": "Lấy danh sách bảo hiểm active thành công",
   "success": true,
-  "data": [
-    {
-      "id": "550e8400-e29b-41d4-a716-446655440000",
-      "name": "Bảo hiểm hàng hóa cơ bản",
-      "description": "Bảo hiểm giá trị hàng hóa trong kho",
-      "price": 500000,
-      "use_management_fee": false,
-      "management_fee_type": null,
-      "management_fee_value": null,
-      "is_active": true
-    }
-  ]
+  "data": {
+    "items": [
+      {
+        "id": "550e8400-e29b-41d4-a716-446655440000",
+        "name": "Bảo hiểm hàng hóa cơ bản",
+        "description": "Bảo hiểm giá trị hàng hóa trong kho",
+        "price": 500000,
+        "use_management_fee": false,
+        "management_fee_type": null,
+        "management_fee_value": null,
+        "is_active": true
+      },
+      {
+        "id": "550e8400-e29b-41d4-a716-446655440001",
+        "name": "Bảo hiểm cao cấp",
+        "description": "Bảo hiểm toàn diện cho hàng hóa giá trị cao",
+        "price": 1000000,
+        "use_management_fee": true,
+        "management_fee_type": "PERCENT",
+        "management_fee_value": 10,
+        "is_active": true
+      }
+    ],
+    "total": 25,
+    "limit": 10,
+    "offset": 0
+  }
 }
 ```
 
@@ -748,11 +776,11 @@ Khi bảo hiểm được thay đổi, server sẽ emit các event qua WebSocket
 
 Module sử dụng Redis cache để tối ưu hiệu suất:
 
-| Cache Key Pattern  | TTL  | Description                     |
-| ------------------ | ---- | ------------------------------- |
-| `insurance:{id}`   | 300s | Cache chi tiết bảo hiểm theo ID |
-| `insurance:list:*` | 60s  | Cache danh sách bảo hiểm        |
-| `insurance:active` | 60s  | Cache danh sách bảo hiểm active |
+| Cache Key Pattern              | TTL  | Description                                      |
+| ------------------------------ | ---- | ------------------------------------------------ |
+| `insurance:{id}`               | 300s | Cache chi tiết bảo hiểm theo ID                  |
+| `insurance:list:*`             | 60s  | Cache danh sách bảo hiểm                          |
+| `insurance:active:<limit>:<offset>` | 60s  | Cache danh sách bảo hiểm active (có phân trang) |
 
 **Biến môi trường:**
 
@@ -805,10 +833,14 @@ Module sử dụng Redis cache để tối ưu hiệu suất:
 
 ## Required Permissions
 
-| Permission         | Description            |
-| ------------------ | ---------------------- |
-| `insurance.create` | Tạo bảo hiểm mới       |
-| `insurance.list`   | Xem danh sách bảo hiểm |
-| `insurance.read`   | Xem chi tiết bảo hiểm  |
-| `insurance.update` | Cập nhật bảo hiểm      |
-| `insurance.delete` | Xóa bảo hiểm           |
+| Permission         | Description                                    | Endpoint |
+| ------------------ | ---------------------------------------------- | -------- |
+| `insurance.create` | Tạo bảo hiểm mới                                | `POST /insurances` |
+| `insurance.list`   | Xem danh sách bảo hiểm                          | `GET /insurances` |
+| -                  | Xem danh sách bảo hiểm đang hoạt động (public)  | `GET /insurances/active` |
+| `insurance.read`   | Xem chi tiết bảo hiểm                           | `GET /insurances/:id` |
+| `insurance.update` | Cập nhật bảo hiểm                                | `PUT /insurances/:id` |
+| `insurance.delete` | Xóa bảo hiểm                                    | `DELETE /insurances/:id`, `DELETE /insurances/delete/many` |
+
+> [!NOTE]
+> API `GET /insurances/active` không yêu cầu xác thực và có thể được sử dụng công khai.

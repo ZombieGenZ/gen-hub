@@ -120,17 +120,26 @@ export class AmenityService {
         return amenity;
     }
 
-    async findAllActive(userId: string, hasListAllPermission: boolean) {
-        const cacheKey = `${this.cacheKeys.list({})}:active:${userId}:${hasListAllPermission}`;
+    async findAllActive(query: QueryAmenityDto) {
+        const { limit = 10, offset = 0 } = query;
+        const cacheKey = `${this.cacheKeys.list({})}:active:${limit}:${offset}`;
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
             return JSON.parse(cached);
         }
 
-        const amenities = await this.repository.findAllActive(userId, hasListAllPermission);
-        await this.redisService.set(cacheKey, JSON.stringify(amenities), this.cacheKeys.listTtl);
+        const [data, total] = await Promise.all([
+            this.repository.findAllActive({
+                skip: offset,
+                take: limit,
+            }),
+            this.repository.countActive(),
+        ]);
 
-        return amenities;
+        const result = { items: data, total, limit, offset };
+        await this.redisService.set(cacheKey, JSON.stringify(result), this.cacheKeys.listTtl);
+
+        return result;
     }
 
     async update(id: string, dto: UpdateAmenityDto, userId: string, hasUpdateAllPermission: boolean, lang: string) {

@@ -351,9 +351,23 @@ export class InsuranceController {
   }
 
   @ApiOperation({
-    summary: 'Lấy tất cả bảo hiểm đang hoạt động',
+    summary: 'Lấy danh sách bảo hiểm đang hoạt động',
     description:
-      'Lấy danh sách tất cả bảo hiểm có trạng thái is_active = true, không phân trang. Dùng cho dropdown/select. Yêu cầu quyền `insurance.list`.',
+      'Lấy danh sách tất cả bảo hiểm có trạng thái is_active = true và is_deleted = false với phân trang. API này không yêu cầu xác thực và có thể được sử dụng công khai.',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Số lượng bản ghi mỗi trang (mặc định: 10)',
+    example: 10,
+  })
+  @ApiQuery({
+    name: 'offset',
+    required: false,
+    type: Number,
+    description: 'Vị trí bắt đầu (mặc định: 0)',
+    example: 0,
   })
   @ApiResponse({
     status: 200,
@@ -368,55 +382,53 @@ export class InsuranceController {
         },
         success: { type: 'boolean', example: true },
         data: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              id: {
-                type: 'string',
-                format: 'uuid',
-                example: '550e8400-e29b-41d4-a716-446655440000',
+          type: 'object',
+          properties: {
+            items: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: {
+                    type: 'string',
+                    format: 'uuid',
+                    example: '550e8400-e29b-41d4-a716-446655440000',
+                  },
+                  name: { type: 'string', example: 'Bảo hiểm hàng hóa cơ bản' },
+                  description: {
+                    type: 'string',
+                    example: 'Bảo hiểm giá trị hàng hóa trong kho',
+                  },
+                  price: { type: 'number', example: 500000 },
+                  use_management_fee: { type: 'boolean', example: false },
+                  management_fee_type: {
+                    type: 'string',
+                    nullable: true,
+                    example: null,
+                  },
+                  management_fee_value: {
+                    type: 'number',
+                    nullable: true,
+                    example: null,
+                  },
+                  is_active: { type: 'boolean', example: true },
+                },
               },
-              name: { type: 'string', example: 'Bảo hiểm hàng hóa cơ bản' },
-              description: {
-                type: 'string',
-                example: 'Bảo hiểm giá trị hàng hóa trong kho',
-              },
-              price: { type: 'number', example: 500000 },
-              use_management_fee: { type: 'boolean', example: false },
-              management_fee_type: {
-                type: 'string',
-                nullable: true,
-                example: null,
-              },
-              management_fee_value: {
-                type: 'number',
-                nullable: true,
-                example: null,
-              },
-              is_active: { type: 'boolean', example: true },
             },
+            total: { type: 'number', example: 25 },
+            limit: { type: 'number', example: 10 },
+            offset: { type: 'number', example: 0 },
           },
         },
       },
     },
   })
-  @ApiAuthResponses()
-  @ApiBearerAuth('JWT-auth')
-  @UseGuards(JwtAuthGuard, PermissionGuard)
-  @RequireAnyPermission('insurance.list', 'insurance.list.all')
   @Get('active')
   async findAllActive(
-    @CurrentUser('userId') userId: string,
-    @I18nLang() lang: string,
-  ): Promise<GetResponse<IInsurance[]>> {
-    const hasListAllPermission = await this.hasPermission(userId, 'insurance.list.all');
-    const result = await this.insuranceService.findAllActive(userId, hasListAllPermission);
-    return new GetResponse(
-      'insurance.list.success',
-      result,
-      this.i18n.t('insurance.success.active_list', { lang }),
-    );
+    @Query() query: QueryInsuranceDto,
+  ): Promise<GetResponse<IPaginatedResponse<IInsurance>>> {
+    const result = await this.insuranceService.findAllActive(query);
+    return new GetResponse('insurance.list.success', result);
   }
 
   @ApiOperation({

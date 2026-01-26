@@ -57,9 +57,31 @@ export class QueryAddonDto {
 }
 
 /**
- * DTO query danh sách Addon active (không phân trang)
+ * DTO query danh sách Addon active (có phân trang)
  */
 export class QueryActiveAddonDto {
+    @ApiPropertyOptional({ description: 'Số lượng bản ghi mỗi trang', default: 10 })
+    @IsOptional()
+    @Type(() => Number)
+    @IsInt({
+        message: i18nValidationMessage('addon.validation.limit_positive'),
+    })
+    @Min(1, {
+        message: i18nValidationMessage('addon.validation.limit_positive'),
+    })
+    limit?: number;
+
+    @ApiPropertyOptional({ description: 'Vị trí bắt đầu', default: 0 })
+    @IsOptional()
+    @Type(() => Number)
+    @IsInt({
+        message: i18nValidationMessage('addon.validation.offset_min'),
+    })
+    @Min(0, {
+        message: i18nValidationMessage('addon.validation.offset_min'),
+    })
+    offset?: number;
+
     @ApiPropertyOptional({ description: 'ID loại addon để lọc' })
     @IsOptional()
     @IsUUID('4', {

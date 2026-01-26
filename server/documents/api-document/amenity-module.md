@@ -323,7 +323,66 @@ GET /amenities?limit=10&offset=0&keywords=điều hòa&is_active=true HTTP/1.1
 
 ---
 
-### 3. GET /amenities/:id - Lấy chi tiết tiện ích
+### 3. GET /amenities/active - Lấy danh sách tiện ích đang hoạt động
+
+**Mô tả:** Lấy danh sách tất cả tiện ích có trạng thái is_active = true và is_deleted = false với phân trang. API này không yêu cầu xác thực và có thể được sử dụng công khai.
+
+**Xác thực:** Không yêu cầu
+
+**Headers:**
+```http
+Accept-Language: vi
+```
+
+**Query Parameters:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `limit` | number | Optional | 10 | Số lượng bản ghi mỗi trang (min: 1) |
+| `offset` | number | Optional | 0 | Vị trí bắt đầu (min: 0) |
+
+**Request Examples:**
+
+```http
+# Lấy 10 tiện ích active đầu tiên
+GET /amenities/active HTTP/1.1
+
+# Lấy với phân trang
+GET /amenities/active?limit=20&offset=40 HTTP/1.1
+```
+
+**Response (200 OK):**
+
+```json
+{
+  "code": "amenity.list.success",
+  "message": "Lấy danh sách tiện ích active thành công",
+  "success": true,
+  "data": {
+    "items": [
+      {
+        "id": "550e8400-e29b-41d4-a716-446655440000",
+        "name": "WiFi",
+        "description": "Internet tốc độ cao",
+        "is_active": true
+      },
+      {
+        "id": "550e8400-e29b-41d4-a716-446655440002",
+        "name": "Hệ thống điều hòa",
+        "description": "Điều hòa trung tâm VRV",
+        "is_active": true
+      }
+    ],
+    "total": 25,
+    "limit": 10,
+    "offset": 0
+  }
+}
+```
+
+---
+
+### 4. GET /amenities/:id - Lấy chi tiết tiện ích
 
 **Mô tả:** Lấy thông tin chi tiết của một tiện ích theo ID.
 
@@ -387,7 +446,7 @@ Authorization: Bearer <access_token>
 
 ---
 
-### 4. PUT /amenities/:id - Cập nhật tiện ích
+### 5. PUT /amenities/:id - Cập nhật tiện ích
 
 **Mô tả:** Cập nhật thông tin của một tiện ích. Chỉ các trường được gửi trong request body mới được cập nhật.
 
@@ -524,7 +583,7 @@ Accept-Language: vi
 
 ---
 
-### 5. DELETE /amenities/:id - Xóa tiện ích
+### 6. DELETE /amenities/:id - Xóa tiện ích
 
 **Mô tả:** Xóa mềm (soft delete) một tiện ích theo ID. Các mapping liên quan đến tiện ích này cũng sẽ bị xóa mềm.
 
@@ -578,7 +637,7 @@ Authorization: Bearer <access_token>
 
 ---
 
-### 6. DELETE /amenities/delete/many - Xóa nhiều tiện ích
+### 7. DELETE /amenities/delete/many - Xóa nhiều tiện ích
 
 **Mô tả:** Xóa mềm (soft delete) nhiều tiện ích cùng lúc theo danh sách ID. Các mapping liên quan cũng sẽ bị xóa mềm.
 
@@ -680,6 +739,7 @@ Module sử dụng Redis caching với pattern **Cache Aside**:
 |-------------------|-----|-------------|
 | `amenity:detail:<id>` | 300s | Cache chi tiết tiện ích |
 | `amenity:list:*` | 300s | Cache danh sách tiện ích (theo query params) |
+| `amenity:list:*:active:<limit>:<offset>` | 300s | Cache danh sách tiện ích active (có phân trang) |
 
 ### Cache Invalidation
 
@@ -795,13 +855,17 @@ socket.on('amenity:deleted', (payload) => {
 
 ## Quyền Hạn (Permissions)
 
-| Permission | Description |
-|------------|-------------|
-| `amenity.create` | Tạo tiện ích mới |
-| `amenity.list` | Xem danh sách tiện ích |
-| `amenity.read` | Xem chi tiết tiện ích |
-| `amenity.update` | Cập nhật tiện ích |
-| `amenity.delete` | Xóa tiện ích |
+| Permission | Description | Endpoint |
+|------------|-------------|----------|
+| `amenity.create` | Tạo tiện ích mới | `POST /amenities` |
+| `amenity.list` | Xem danh sách tiện ích | `GET /amenities` |
+| - | Xem danh sách tiện ích đang hoạt động (public) | `GET /amenities/active` |
+| `amenity.read` | Xem chi tiết tiện ích | `GET /amenities/:id` |
+| `amenity.update` | Cập nhật tiện ích | `PUT /amenities/:id` |
+| `amenity.delete` | Xóa tiện ích | `DELETE /amenities/:id`, `DELETE /amenities/delete/many` |
+
+> [!NOTE]
+> API `GET /amenities/active` không yêu cầu xác thực và có thể được sử dụng công khai.
 
 ---
 

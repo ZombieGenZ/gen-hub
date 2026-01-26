@@ -274,27 +274,39 @@ Accept-Language: vi
 
 ---
 
-### 3. GET /addons/active - Lấy tất cả addon active
+### 3. GET /addons/active - Lấy danh sách addon đang hoạt động
 
-**Mô tả:** Lấy danh sách tất cả addon đang hoạt động (không phân trang). Sử dụng cho dropdown selection.
+**Mô tả:** Lấy danh sách tất cả addon đang hoạt động (is_active = true, is_deleted = false) với phân trang. API này không yêu cầu xác thực và có thể được sử dụng công khai.
 
-**Xác thực:** Bearer Token (JWT)
+**Xác thực:** Không yêu cầu
 
-**Quyền yêu cầu:** `addon.list`
+**Headers:**
+```http
+Accept-Language: vi
+```
 
 **Query Parameters:**
 
-| Parameter       | Type          | Required | Description            |
-| --------------- | ------------- | -------- | ---------------------- |
-| `addon_type_id` | string (UUID) | Optional | Lọc theo ID loại addon |
+| Parameter       | Type          | Required | Default | Description                              |
+| --------------- | ------------- | -------- | ------- | ---------------------------------------- |
+| `limit`         | number        | Optional | 10      | Số lượng bản ghi mỗi trang (min: 1)      |
+| `offset`        | number        | Optional | 0       | Vị trí bắt đầu (min: 0)                  |
+| `addon_type_id` | string (UUID) | Optional | -       | Lọc theo ID loại addon                   |
 
-**Request:**
+**Request Examples:**
 
 ```http
+# Lấy 10 addon active đầu tiên
 GET /addons/active HTTP/1.1
-Host: api.gen-hub.dev
-Authorization: Bearer <access_token>
-Accept-Language: vi
+
+# Lấy với phân trang
+GET /addons/active?limit=20&offset=40 HTTP/1.1
+
+# Lọc theo loại addon
+GET /addons/active?addon_type_id=550e8400-e29b-41d4-a716-446655440002 HTTP/1.1
+
+# Kết hợp phân trang và filter
+GET /addons/active?limit=10&offset=0&addon_type_id=550e8400-e29b-41d4-a716-446655440002 HTTP/1.1
 ```
 
 **Response (200 OK):**
@@ -304,24 +316,29 @@ Accept-Language: vi
   "code": "addon.list.success",
   "message": "Lấy danh sách addon active thành công",
   "success": true,
-  "data": [
-    {
-      "id": "550e8400-e29b-41d4-a716-446655440001",
-      "name": "Bảo hiểm kho hàng",
-      "description": "Dịch vụ bảo hiểm hàng hóa trong kho",
-      "price": 500000,
-      "is_monthly_payment": false,
-      "is_active": true
-    },
-    {
-      "id": "550e8400-e29b-41d4-a716-446655440002",
-      "name": "Hỗ trợ kỹ thuật 24/7",
-      "description": "Hỗ trợ kỹ thuật chuyên nghiệp 24/7",
-      "price": 1500000,
-      "is_monthly_payment": true,
-      "is_active": true
-    }
-  ]
+  "data": {
+    "items": [
+      {
+        "id": "550e8400-e29b-41d4-a716-446655440001",
+        "name": "Bảo hiểm kho hàng",
+        "description": "Dịch vụ bảo hiểm hàng hóa trong kho",
+        "price": 500000,
+        "is_monthly_payment": false,
+        "is_active": true
+      },
+      {
+        "id": "550e8400-e29b-41d4-a716-446655440002",
+        "name": "Hỗ trợ kỹ thuật 24/7",
+        "description": "Hỗ trợ kỹ thuật chuyên nghiệp 24/7",
+        "price": 1500000,
+        "is_monthly_payment": true,
+        "is_active": true
+      }
+    ],
+    "total": 25,
+    "limit": 10,
+    "offset": 0
+  }
 }
 ```
 
@@ -634,12 +651,12 @@ Khi addon được thay đổi, server sẽ emit các event qua WebSocket để 
 
 Module sử dụng Redis cache với pattern **Cache Aside**:
 
-| Cache Key                | TTL  | Mô tả                        |
-| ------------------------ | ---- | ---------------------------- |
-| `addon:{id}`             | 300s | Cache chi tiết addon         |
-| `addon:list:{query}`     | 60s  | Cache danh sách addon        |
-| `addon:active`           | 60s  | Cache danh sách addon active |
-| `addon:active:type:{id}` | 60s  | Cache addon active theo type |
+| Cache Key                              | TTL  | Mô tả                                        |
+| -------------------------------------- | ---- | -------------------------------------------- |
+| `addon:{id}`                           | 300s | Cache chi tiết addon                         |
+| `addon:list:{query}`                   | 60s  | Cache danh sách addon                         |
+| `addon:active:<limit>:<offset>`        | 60s  | Cache danh sách addon active (có phân trang)  |
+| `addon:active:type:{id}:<limit>:<offset>` | 60s  | Cache addon active theo type (có phân trang) |
 
 Cache được invalidate khi:
 
@@ -666,10 +683,14 @@ Cache được invalidate khi:
 
 ## Quyền (Permissions)
 
-| Permission     | Mô tả               |
-| -------------- | ------------------- |
-| `addon.create` | Tạo addon mới       |
-| `addon.list`   | Xem danh sách addon |
-| `addon.read`   | Xem chi tiết addon  |
-| `addon.update` | Cập nhật addon      |
-| `addon.delete` | Xóa addon           |
+| Permission     | Mô tả                                    | Endpoint |
+| -------------- | ---------------------------------------- | -------- |
+| `addon.create` | Tạo addon mới                            | `POST /addons` |
+| `addon.list`   | Xem danh sách addon                      | `GET /addons` |
+| -              | Xem danh sách addon đang hoạt động (public) | `GET /addons/active` |
+| `addon.read`   | Xem chi tiết addon                       | `GET /addons/:id` |
+| `addon.update` | Cập nhật addon                           | `PUT /addons/:id` |
+| `addon.delete` | Xóa addon                                | `DELETE /addons/:id`, `DELETE /addons/delete/many` |
+
+> [!NOTE]
+> API `GET /addons/active` không yêu cầu xác thực và có thể được sử dụng công khai.

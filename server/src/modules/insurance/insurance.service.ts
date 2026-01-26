@@ -149,20 +149,30 @@ export class InsuranceService {
     }
 
     /**
-     * Lấy tất cả bảo hiểm active (không phân trang, dùng cho dropdown)
+     * Lấy tất cả bảo hiểm active (có phân trang)
      */
-    async findAllActive(userId: string, hasListAllPermission: boolean) {
+    async findAllActive(query: QueryInsuranceDto) {
+        const { limit = 10, offset = 0 } = query;
         const prefix = this.configService.get<string>('REDIS_INSURANCE_ACTIVE_KEY_PREFIX', 'insurance:active');
-        const cacheKey = `${prefix}:${userId}:${hasListAllPermission}`;
+        const cacheKey = `${prefix}:${limit}:${offset}`;
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
             return JSON.parse(cached);
         }
 
-        const insurances = await this.repository.findAllActive(userId, hasListAllPermission);
-        await this.redisService.set(cacheKey, JSON.stringify(insurances), this.listCacheTTL);
+        const [data, total] = await Promise.all([
+            this.repository.findAllActive({
+                skip: offset,
+                take: limit,
+            }),
+            this.repository.countActive(),
+        ]);
 
-        return insurances;
+        const hasMore = offset + data.length < total;
+        const result = { items: data, total, limit, offset, hasMore };
+        await this.redisService.set(cacheKey, JSON.stringify(result), this.listCacheTTL);
+
+        return result;
     }
 
     /**

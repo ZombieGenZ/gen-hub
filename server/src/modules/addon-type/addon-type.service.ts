@@ -121,17 +121,27 @@ export class AddonTypeService {
         return addonType;
     }
 
-    async findAllActive(userId: string, hasListAllPermission: boolean) {
-        const cacheKey = `${this.cacheKeys.active()}:${userId}:${hasListAllPermission}`;
+    async findAllActive(query: QueryAddonTypeDto): Promise<IAddonTypePaginatedResponse> {
+        const { limit = 10, offset = 0 } = query;
+        const cacheKey = `${this.cacheKeys.active()}:${limit}:${offset}`;
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
             return JSON.parse(cached);
         }
 
-        const addonTypes = await this.repository.findAllActive(userId, hasListAllPermission);
-        await this.redisService.set(cacheKey, JSON.stringify(addonTypes), this.cacheKeys.listTtl);
+        const [data, total] = await Promise.all([
+            this.repository.findAllActive({
+                skip: offset,
+                take: limit,
+            }),
+            this.repository.countActive(),
+        ]);
 
-        return addonTypes;
+        const hasMore = offset + data.length < total;
+        const result = { items: data, total, limit, offset, hasMore };
+        await this.redisService.set(cacheKey, JSON.stringify(result), this.cacheKeys.listTtl);
+
+        return result;
     }
 
     async update(id: string, dto: UpdateAddonTypeDto, userId: string, hasUpdateAllPermission: boolean, lang: string) {
