@@ -68,17 +68,22 @@ export class AddonService {
         return addon;
     }
 
-    async findAll(query: QueryAddonDto) {
+    async findAll(query: QueryAddonDto, userId: string, hasListAllPermission: boolean) {
         const { limit = 10, offset = 0, keywords, is_active, addon_type_id } = query;
 
-        // Check cache
-        const cacheKey = this.getListCacheKey(query);
+        // Check cache - include userId and permission in cache key
+        const cacheKey = `${this.getListCacheKey(query)}:${userId}:${hasListAllPermission}`;
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
             return JSON.parse(cached);
         }
 
         const where: any = { is_deleted: false };
+
+        // Nếu không có quyền list.all, chỉ lấy items của chính user
+        if (!hasListAllPermission) {
+            where.created_by = userId;
+        }
 
         if (is_active !== undefined) {
             where.is_active = is_active;
@@ -120,15 +125,15 @@ export class AddonService {
         return result;
     }
 
-    async findById(id: string, lang: string) {
-        // Check cache
-        const cacheKey = this.getCacheKey(id);
+    async findById(id: string, userId: string, hasReadAllPermission: boolean, lang: string) {
+        // Check cache - include userId and permission in cache key
+        const cacheKey = `${this.getCacheKey(id)}:${userId}:${hasReadAllPermission}`;
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
             return JSON.parse(cached);
         }
 
-        const addon = await this.repository.findById(id);
+        const addon = await this.repository.findById(id, userId, hasReadAllPermission);
         if (!addon) {
             throw new NotFoundException(
                 this.i18n.t('addon.errors.not_found', { lang }),
@@ -142,23 +147,25 @@ export class AddonService {
     }
 
     // Lấy tất cả active addons (không phân trang, dùng cho dropdown)
-    async findAllActive(query?: QueryActiveAddonDto) {
+    async findAllActive(query?: QueryActiveAddonDto, userId?: string, hasListAllPermission?: boolean) {
         const addonTypeId = query?.addon_type_id;
         const prefix = this.configService.get<string>('REDIS_ADDON_ACTIVE_KEY_PREFIX', 'addon:active');
-        const cacheKey = addonTypeId ? `${prefix}:type:${addonTypeId}` : prefix;
+        const cacheKey = addonTypeId 
+            ? `${prefix}:type:${addonTypeId}:${userId}:${hasListAllPermission}` 
+            : `${prefix}:${userId}:${hasListAllPermission}`;
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
             return JSON.parse(cached);
         }
 
-        const addons = await this.repository.findAllActive(addonTypeId);
+        const addons = await this.repository.findAllActive(addonTypeId, userId, hasListAllPermission);
         await this.redisService.set(cacheKey, JSON.stringify(addons), this.listCacheTTL);
 
         return addons;
     }
 
-    async update(id: string, dto: UpdateAddonDto, userId: string, lang: string) {
-        const addon = await this.repository.findById(id);
+    async update(id: string, dto: UpdateAddonDto, userId: string, hasUpdateAllPermission: boolean, lang: string) {
+        const addon = await this.repository.findById(id, userId, hasUpdateAllPermission);
         if (!addon) {
             throw new NotFoundException(
                 this.i18n.t('addon.errors.not_found', { lang }),
@@ -207,8 +214,8 @@ export class AddonService {
         return updated;
     }
 
-    async delete(id: string, userId: string, lang: string) {
-        const addon = await this.repository.findById(id);
+    async delete(id: string, userId: string, hasDeleteAllPermission: boolean, lang: string) {
+        const addon = await this.repository.findById(id, userId, hasDeleteAllPermission);
         if (!addon) {
             throw new NotFoundException(
                 this.i18n.t('addon.errors.not_found', { lang }),
@@ -238,8 +245,8 @@ export class AddonService {
         });
     }
 
-    async deleteMany(ids: string[], userId: string, lang: string) {
-        const addons = await this.repository.findByIds(ids);
+    async deleteMany(ids: string[], userId: string, hasDeleteAllPermission: boolean, lang: string) {
+        const addons = await this.repository.findByIds(ids, userId, hasDeleteAllPermission);
         if (addons.length === 0) {
             throw new NotFoundException(
                 this.i18n.t('addon.errors.not_found', { lang }),

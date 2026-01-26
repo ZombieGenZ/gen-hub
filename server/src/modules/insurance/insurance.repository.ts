@@ -44,9 +44,16 @@ export class InsuranceRepository {
     /**
      * Tìm insurance theo ID
      */
-    async findById(id: string) {
+    async findById(id: string, userId?: string, hasReadAllPermission?: boolean) {
+        const where: any = { id, is_deleted: false };
+        
+        // Nếu không có quyền read.all, chỉ lấy item của chính user
+        if (!hasReadAllPermission && userId) {
+            where.created_by = userId;
+        }
+        
         return this.prisma.insurance.findFirst({
-            where: { id, is_deleted: false },
+            where,
         });
     }
 
@@ -66,18 +73,32 @@ export class InsuranceRepository {
     /**
      * Tìm nhiều insurance theo IDs
      */
-    async findByIds(ids: string[]) {
+    async findByIds(ids: string[], userId?: string, hasDeleteAllPermission?: boolean) {
+        const where: any = { id: { in: ids }, is_deleted: false };
+        
+        // Nếu không có quyền delete.all, chỉ lấy items của chính user
+        if (!hasDeleteAllPermission && userId) {
+            where.created_by = userId;
+        }
+        
         return this.prisma.insurance.findMany({
-            where: { id: { in: ids }, is_deleted: false },
+            where,
         });
     }
 
     /**
      * Lấy tất cả insurance active (cho dropdown)
      */
-    async findAllActive() {
+    async findAllActive(userId?: string, hasListAllPermission?: boolean) {
+        const where: any = { is_active: true, is_deleted: false };
+        
+        // Nếu không có quyền list.all, chỉ lấy items của chính user
+        if (!hasListAllPermission && userId) {
+            where.created_by = userId;
+        }
+        
         return this.prisma.insurance.findMany({
-            where: { is_active: true, is_deleted: false },
+            where,
             orderBy: { name: 'asc' },
         });
     }

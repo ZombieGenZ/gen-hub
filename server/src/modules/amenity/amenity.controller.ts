@@ -25,7 +25,8 @@ import { AmenityService } from './amenity.service';
 import { CreateAmenityDto, UpdateAmenityDto, QueryAmenityDto } from './dto';
 import { DeleteManyDto } from '../../common/dto';
 import { JwtAuthGuard, PermissionGuard } from '../../common/guards';
-import { RequirePermission, CurrentUser } from '../../common/decorators';
+import { RequirePermission, RequireAnyPermission, CurrentUser } from '../../common/decorators';
+import { PrismaService } from '../../prisma/prisma.service';
 import {
   ApiAuthResponses,
   ApiValidationErrorResponse,
@@ -41,7 +42,57 @@ import { IAmenity, IPaginatedResponse } from './types';
 @ApiTags('Amenities')
 @Controller('amenities')
 export class AmenityController {
-  constructor(private readonly amenityService: AmenityService) { }
+  constructor(
+    private readonly amenityService: AmenityService,
+    private readonly prisma: PrismaService,
+  ) { }
+
+  /**
+   * Kiểm tra user có permission cụ thể không
+   */
+  private async hasPermission(
+    userId: string,
+    permissionKey: string,
+  ): Promise<boolean> {
+    if (!userId) return false;
+
+    const user = await this.prisma.user.findFirst({
+      where: { id: userId },
+      include: {
+        system_roles: {
+          where: { is_deleted: false, is_active: true },
+          include: {
+            role: {
+              include: {
+                permissions: {
+                  where: { is_deleted: false, is_active: true },
+                  include: { permission: true },
+                },
+              },
+            },
+          },
+        },
+        system_permissions: {
+          where: { is_deleted: false, is_active: true },
+          include: { permission: true },
+        },
+      },
+    });
+
+    if (!user) return false;
+
+    // Check direct permissions
+    const hasDirectPerm = user.system_permissions.some(
+      (p) => p.permission.key === permissionKey,
+    );
+    if (hasDirectPerm) return true;
+
+    // Check role permissions
+    const hasRolePerm = user.system_roles.some((ur) =>
+      ur.role.permissions.some((rp) => rp.permission.key === permissionKey),
+    );
+    return hasRolePerm;
+  }
 
   @ApiOperation({
     summary: 'Tạo tiện ích mới',
@@ -246,12 +297,14 @@ export class AmenityController {
   @ApiAuthResponses()
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @RequirePermission('amenity.list')
+  @RequireAnyPermission('amenity.list', 'amenity.list.all')
   @Get()
   async findAll(
     @Query() query: QueryAmenityDto,
+    @CurrentUser('userId') userId: string,
   ): Promise<GetResponse<IPaginatedResponse<IAmenity>>> {
-    const result = await this.amenityService.findAll(query);
+    const hasListAllPermission = await this.hasPermission(userId, 'amenity.list.all');
+    const result = await this.amenityService.findAll(query, userId, hasListAllPermission);
     return new GetResponse('amenity.list.success', result);
   }
 
@@ -333,16 +386,69 @@ export class AmenityController {
       },
     },
   })
+  @ApiOperation({
+    summary: 'Lấy tất cả tiện ích đang hoạt động',
+    description:
+      'Lấy danh sách tất cả tiện ích có trạng thái is_active = true và is_deleted = false. API này thường được sử dụng cho dropdown select. Yêu cầu quyền `amenity.list` hoặc `amenity.list.all`.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Lấy danh sách tiện ích active thành công',
+    schema: {
+      type: 'object',
+      properties: {
+        code: { type: 'string', example: 'amenity.list.success' },
+        message: {
+          type: 'string',
+          example: 'Lấy danh sách tiện ích active thành công',
+        },
+        success: { type: 'boolean', example: true },
+        data: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: {
+                type: 'string',
+                format: 'uuid',
+                example: '550e8400-e29b-41d4-a716-446655440000',
+              },
+              name: { type: 'string', example: 'WiFi' },
+              description: {
+                type: 'string',
+                nullable: true,
+                example: 'Internet tốc độ cao',
+              },
+              is_active: { type: 'boolean', example: true },
+            },
+          },
+        },
+      },
+    },
+  })
   @ApiAuthResponses()
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @RequirePermission('amenity.read')
+  @RequireAnyPermission('amenity.list', 'amenity.list.all')
+  @Get('active')
+  async findAllActive(@CurrentUser('userId') userId: string): Promise<GetResponse<IAmenity[]>> {
+    const hasListAllPermission = await this.hasPermission(userId, 'amenity.list.all');
+    const result = await this.amenityService.findAllActive(userId, hasListAllPermission);
+    return new GetResponse('amenity.list.success', result);
+  }
+
+  @ApiAuthResponses()
+  @ApiBearerAuth('JWT-auth')
+  @UseGuards(JwtAuthGuard, PermissionGuard)
+  @RequireAnyPermission('amenity.read', 'amenity.read.all')
   @Get(':id')
   async findById(
     @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser('userId') userId: string,
     @I18nLang() lang: string,
   ): Promise<GetResponse<IAmenity>> {
-    const result = await this.amenityService.findById(id, lang);
+    const hasReadAllPermission = await this.hasPermission(userId, 'amenity.read.all');
+    const result = await this.amenityService.findById(id, userId, hasReadAllPermission, lang);
     return new GetResponse('amenity.get.success', result);
   }
 
@@ -461,7 +567,7 @@ export class AmenityController {
   @ApiValidationErrorResponse()
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @RequirePermission('amenity.update')
+  @RequireAnyPermission('amenity.update', 'amenity.update.all')
   @Put(':id')
   async update(
     @Param('id', ParseUUIDPipe) id: string,
@@ -469,7 +575,8 @@ export class AmenityController {
     @CurrentUser('userId') userId: string,
     @I18nLang() lang: string,
   ): Promise<UpdatedResponse<IAmenity>> {
-    const result = await this.amenityService.update(id, dto, userId, lang);
+    const hasUpdateAllPermission = await this.hasPermission(userId, 'amenity.update.all');
+    const result = await this.amenityService.update(id, dto, userId, hasUpdateAllPermission, lang);
     return new UpdatedResponse('amenity.update.success', result);
   }
 
@@ -536,14 +643,15 @@ export class AmenityController {
   @ApiValidationErrorResponse()
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @RequirePermission('amenity.delete')
+  @RequireAnyPermission('amenity.delete', 'amenity.delete.all')
   @Delete('delete/many')
   async deleteMany(
     @Body() dto: DeleteManyDto,
     @CurrentUser('userId') userId: string,
     @I18nLang() lang: string,
   ): Promise<DeletedResponse<null>> {
-    await this.amenityService.deleteMany(dto.ids, userId, lang);
+    const hasDeleteAllPermission = await this.hasPermission(userId, 'amenity.delete.all');
+    await this.amenityService.deleteMany(dto.ids, userId, hasDeleteAllPermission, lang);
     return new DeletedResponse('amenity.delete.success', null);
   }
 
@@ -587,14 +695,15 @@ export class AmenityController {
   @ApiAuthResponses()
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @RequirePermission('amenity.delete')
+  @RequireAnyPermission('amenity.delete', 'amenity.delete.all')
   @Delete(':id')
   async delete(
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser('userId') userId: string,
     @I18nLang() lang: string,
   ): Promise<DeletedResponse<null>> {
-    await this.amenityService.delete(id, userId, lang);
+    const hasDeleteAllPermission = await this.hasPermission(userId, 'amenity.delete.all');
+    await this.amenityService.delete(id, userId, hasDeleteAllPermission, lang);
     return new DeletedResponse('amenity.delete.success', null);
   }
 }

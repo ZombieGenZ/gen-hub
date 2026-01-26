@@ -31,10 +31,12 @@ import { DeleteManyDto } from '../../common/dto';
 import { JwtAuthGuard, PermissionGuard } from '../../common/guards';
 import {
   RequirePermission,
+  RequireAnyPermission,
   CurrentUser,
   ApiAuthResponses,
   ApiValidationErrorResponse,
 } from '../../common/decorators';
+import { PrismaService } from '../../prisma/prisma.service';
 import {
   CreatedResponse,
   UpdatedResponse,
@@ -52,7 +54,55 @@ export class InsuranceController {
   constructor(
     private readonly insuranceService: InsuranceService,
     private readonly i18n: I18nService,
+    private readonly prisma: PrismaService,
   ) { }
+
+  /**
+   * Kiểm tra user có permission cụ thể không
+   */
+  private async hasPermission(
+    userId: string,
+    permissionKey: string,
+  ): Promise<boolean> {
+    if (!userId) return false;
+
+    const user = await this.prisma.user.findFirst({
+      where: { id: userId },
+      include: {
+        system_roles: {
+          where: { is_deleted: false, is_active: true },
+          include: {
+            role: {
+              include: {
+                permissions: {
+                  where: { is_deleted: false, is_active: true },
+                  include: { permission: true },
+                },
+              },
+            },
+          },
+        },
+        system_permissions: {
+          where: { is_deleted: false, is_active: true },
+          include: { permission: true },
+        },
+      },
+    });
+
+    if (!user) return false;
+
+    // Check direct permissions
+    const hasDirectPerm = user.system_permissions.some(
+      (p) => p.permission.key === permissionKey,
+    );
+    if (hasDirectPerm) return true;
+
+    // Check role permissions
+    const hasRolePerm = user.system_roles.some((ur) =>
+      ur.role.permissions.some((rp) => rp.permission.key === permissionKey),
+    );
+    return hasRolePerm;
+  }
 
   @ApiOperation({
     summary: 'Tạo bảo hiểm mới',
@@ -284,13 +334,15 @@ export class InsuranceController {
   @ApiAuthResponses()
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @RequirePermission('insurance.list')
+  @RequireAnyPermission('insurance.list', 'insurance.list.all')
   @Get()
   async findAll(
     @Query() query: QueryInsuranceDto,
+    @CurrentUser('userId') userId: string,
     @I18nLang() lang: string,
   ): Promise<GetResponse<IPaginatedResponse<IInsurance>>> {
-    const result = await this.insuranceService.findAll(query);
+    const hasListAllPermission = await this.hasPermission(userId, 'insurance.list.all');
+    const result = await this.insuranceService.findAll(query, userId, hasListAllPermission);
     return new GetResponse(
       'insurance.list.success',
       result,
@@ -352,10 +404,14 @@ export class InsuranceController {
   @ApiAuthResponses()
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @RequirePermission('insurance.list')
+  @RequireAnyPermission('insurance.list', 'insurance.list.all')
   @Get('active')
-  async findAllActive(@I18nLang() lang: string): Promise<GetResponse<IInsurance[]>> {
-    const result = await this.insuranceService.findAllActive();
+  async findAllActive(
+    @CurrentUser('userId') userId: string,
+    @I18nLang() lang: string,
+  ): Promise<GetResponse<IInsurance[]>> {
+    const hasListAllPermission = await this.hasPermission(userId, 'insurance.list.all');
+    const result = await this.insuranceService.findAllActive(userId, hasListAllPermission);
     return new GetResponse(
       'insurance.list.success',
       result,
@@ -455,13 +511,15 @@ export class InsuranceController {
   @ApiAuthResponses()
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @RequirePermission('insurance.read')
+  @RequireAnyPermission('insurance.read', 'insurance.read.all')
   @Get(':id')
   async findById(
     @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser('userId') userId: string,
     @I18nLang() lang: string,
   ): Promise<GetResponse<IInsurance>> {
-    const result = await this.insuranceService.findById(id, lang);
+    const hasReadAllPermission = await this.hasPermission(userId, 'insurance.read.all');
+    const result = await this.insuranceService.findById(id, userId, hasReadAllPermission, lang);
     return new GetResponse(
       'insurance.read.success',
       result,
@@ -614,7 +672,7 @@ export class InsuranceController {
   @ApiValidationErrorResponse()
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @RequirePermission('insurance.update')
+  @RequireAnyPermission('insurance.update', 'insurance.update.all')
   @Put(':id')
   async update(
     @Param('id', ParseUUIDPipe) id: string,
@@ -622,7 +680,8 @@ export class InsuranceController {
     @CurrentUser('userId') userId: string,
     @I18nLang() lang: string,
   ): Promise<UpdatedResponse<IInsurance>> {
-    const result = await this.insuranceService.update(id, dto, userId, lang);
+    const hasUpdateAllPermission = await this.hasPermission(userId, 'insurance.update.all');
+    const result = await this.insuranceService.update(id, dto, userId, hasUpdateAllPermission, lang);
     return new UpdatedResponse(
       'insurance.update.success',
       result,
@@ -691,14 +750,15 @@ export class InsuranceController {
   @ApiValidationErrorResponse()
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @RequirePermission('insurance.delete')
+  @RequireAnyPermission('insurance.delete', 'insurance.delete.all')
   @Delete('delete/many')
   async deleteMany(
     @Body() dto: DeleteManyDto,
     @CurrentUser('userId') userId: string,
     @I18nLang() lang: string,
   ): Promise<DeletedResponse<null>> {
-    await this.insuranceService.deleteMany(dto.ids, userId, lang);
+    const hasDeleteAllPermission = await this.hasPermission(userId, 'insurance.delete.all');
+    await this.insuranceService.deleteMany(dto.ids, userId, hasDeleteAllPermission, lang);
     return new DeletedResponse(
       'insurance.delete.success',
       null,
@@ -746,14 +806,15 @@ export class InsuranceController {
   @ApiAuthResponses()
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @RequirePermission('insurance.delete')
+  @RequireAnyPermission('insurance.delete', 'insurance.delete.all')
   @Delete(':id')
   async delete(
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser('userId') userId: string,
     @I18nLang() lang: string,
   ): Promise<DeletedResponse<null>> {
-    await this.insuranceService.delete(id, userId, lang);
+    const hasDeleteAllPermission = await this.hasPermission(userId, 'insurance.delete.all');
+    await this.insuranceService.delete(id, userId, hasDeleteAllPermission, lang);
     return new DeletedResponse(
       'insurance.delete.success',
       null,

@@ -30,7 +30,8 @@ import {
 } from './dto';
 import { DeleteManyDto } from '../../common/dto';
 import { JwtAuthGuard, PermissionGuard } from '../../common/guards';
-import { RequirePermission, CurrentUser } from '../../common/decorators';
+import { RequirePermission, RequireAnyPermission, CurrentUser } from '../../common/decorators';
+import { PrismaService } from '../../prisma/prisma.service';
 import {
   ApiAuthResponses,
   ApiValidationErrorResponse,
@@ -49,7 +50,55 @@ export class AddonController {
   constructor(
     private readonly addonService: AddonService,
     private readonly i18n: I18nService,
+    private readonly prisma: PrismaService,
   ) { }
+
+  /**
+   * Kiểm tra user có permission cụ thể không
+   */
+  private async hasPermission(
+    userId: string,
+    permissionKey: string,
+  ): Promise<boolean> {
+    if (!userId) return false;
+
+    const user = await this.prisma.user.findFirst({
+      where: { id: userId },
+      include: {
+        system_roles: {
+          where: { is_deleted: false, is_active: true },
+          include: {
+            role: {
+              include: {
+                permissions: {
+                  where: { is_deleted: false, is_active: true },
+                  include: { permission: true },
+                },
+              },
+            },
+          },
+        },
+        system_permissions: {
+          where: { is_deleted: false, is_active: true },
+          include: { permission: true },
+        },
+      },
+    });
+
+    if (!user) return false;
+
+    // Check direct permissions
+    const hasDirectPerm = user.system_permissions.some(
+      (p) => p.permission.key === permissionKey,
+    );
+    if (hasDirectPerm) return true;
+
+    // Check role permissions
+    const hasRolePerm = user.system_roles.some((ur) =>
+      ur.role.permissions.some((rp) => rp.permission.key === permissionKey),
+    );
+    return hasRolePerm;
+  }
 
   @ApiOperation({
     summary: 'Tạo addon mới',
@@ -260,13 +309,15 @@ export class AddonController {
   @ApiAuthResponses()
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @RequirePermission('addon.list')
+  @RequireAnyPermission('addon.list', 'addon.list.all')
   @Get()
   async findAll(
     @Query() query: QueryAddonDto,
+    @CurrentUser('userId') userId: string,
     @I18nLang() lang: string,
   ): Promise<GetResponse<IPaginatedResponse<IAddon>>> {
-    const result = await this.addonService.findAll(query);
+    const hasListAllPermission = await this.hasPermission(userId, 'addon.list.all');
+    const result = await this.addonService.findAll(query, userId, hasListAllPermission);
     return new GetResponse(
       'addon.list.success',
       result,
@@ -323,16 +374,67 @@ export class AddonController {
       },
     },
   })
+  @ApiOperation({
+    summary: 'Lấy tất cả addon active',
+    description:
+      'Lấy danh sách tất cả addon đang hoạt động (is_active = true, is_deleted = false). Sử dụng cho dropdown selection. Yêu cầu quyền `addon.list` hoặc `addon.list.all`.',
+  })
+  @ApiQuery({
+    name: 'addon_type_id',
+    required: false,
+    type: String,
+    description: 'Lọc theo ID loại addon (UUID)',
+    example: '550e8400-e29b-41d4-a716-446655440002',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Lấy danh sách addon active thành công',
+    schema: {
+      type: 'object',
+      properties: {
+        code: { type: 'string', example: 'addon.list.success' },
+        message: {
+          type: 'string',
+          example: 'Lấy danh sách addon active thành công',
+        },
+        success: { type: 'boolean', example: true },
+        data: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: {
+                type: 'string',
+                format: 'uuid',
+                example: '550e8400-e29b-41d4-a716-446655440001',
+              },
+              name: { type: 'string', example: 'Bảo hiểm kho hàng' },
+              description: {
+                type: 'string',
+                nullable: true,
+                example: 'Dịch vụ bảo hiểm hàng hóa trong kho',
+              },
+              price: { type: 'number', example: 500000 },
+              is_monthly_payment: { type: 'boolean', example: false },
+              is_active: { type: 'boolean', example: true },
+            },
+          },
+        },
+      },
+    },
+  })
   @ApiAuthResponses()
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @RequirePermission('addon.list')
+  @RequireAnyPermission('addon.list', 'addon.list.all')
   @Get('active')
   async findAllActive(
     @Query() query: QueryActiveAddonDto,
+    @CurrentUser('userId') userId: string,
     @I18nLang() lang: string,
   ): Promise<GetResponse<IAddon[]>> {
-    const result = await this.addonService.findAllActive(query);
+    const hasListAllPermission = await this.hasPermission(userId, 'addon.list.all');
+    const result = await this.addonService.findAllActive(query, userId, hasListAllPermission);
     return new GetResponse(
       'addon.list.success',
       result,
@@ -420,13 +522,15 @@ export class AddonController {
   @ApiAuthResponses()
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @RequirePermission('addon.read')
+  @RequireAnyPermission('addon.read', 'addon.read.all')
   @Get(':id')
   async findById(
     @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser('userId') userId: string,
     @I18nLang() lang: string,
   ): Promise<GetResponse<IAddon>> {
-    const result = await this.addonService.findById(id, lang);
+    const hasReadAllPermission = await this.hasPermission(userId, 'addon.read.all');
+    const result = await this.addonService.findById(id, userId, hasReadAllPermission, lang);
     return new GetResponse(
       'addon.read.success',
       result,
@@ -548,7 +652,7 @@ export class AddonController {
   @ApiValidationErrorResponse()
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @RequirePermission('addon.update')
+  @RequireAnyPermission('addon.update', 'addon.update.all')
   @Put(':id')
   async update(
     @Param('id', ParseUUIDPipe) id: string,
@@ -556,7 +660,8 @@ export class AddonController {
     @CurrentUser('userId') userId: string,
     @I18nLang() lang: string,
   ): Promise<UpdatedResponse<IAddon>> {
-    const result = await this.addonService.update(id, dto, userId, lang);
+    const hasUpdateAllPermission = await this.hasPermission(userId, 'addon.update.all');
+    const result = await this.addonService.update(id, dto, userId, hasUpdateAllPermission, lang);
     return new UpdatedResponse(
       'addon.update.success',
       result,
@@ -615,14 +720,15 @@ export class AddonController {
   @ApiValidationErrorResponse()
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @RequirePermission('addon.delete')
+  @RequireAnyPermission('addon.delete', 'addon.delete.all')
   @Delete('delete/many')
   async deleteMany(
     @Body() dto: DeleteManyDto,
     @CurrentUser('userId') userId: string,
     @I18nLang() lang: string,
   ): Promise<DeletedResponse<null>> {
-    await this.addonService.deleteMany(dto.ids, userId, lang);
+    const hasDeleteAllPermission = await this.hasPermission(userId, 'addon.delete.all');
+    await this.addonService.deleteMany(dto.ids, userId, hasDeleteAllPermission, lang);
     return new DeletedResponse(
       'addon.delete.success',
       null,
@@ -670,14 +776,15 @@ export class AddonController {
   @ApiAuthResponses()
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @RequirePermission('addon.delete')
+  @RequireAnyPermission('addon.delete', 'addon.delete.all')
   @Delete(':id')
   async delete(
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser('userId') userId: string,
     @I18nLang() lang: string,
   ): Promise<DeletedResponse<null>> {
-    await this.addonService.delete(id, userId, lang);
+    const hasDeleteAllPermission = await this.hasPermission(userId, 'addon.delete.all');
+    await this.addonService.delete(id, userId, hasDeleteAllPermission, lang);
     return new DeletedResponse(
       'addon.delete.success',
       null,

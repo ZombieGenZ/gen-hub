@@ -35,9 +35,16 @@ export class AddonTypeRepository {
         return this.prisma.addonType.count({ where });
     }
 
-    async findById(id: string): Promise<IAddonTypeWithRelations | null> {
+    async findById(id: string, userId?: string, hasReadAllPermission?: boolean): Promise<IAddonTypeWithRelations | null> {
+        const where: any = { id, is_deleted: false };
+        
+        // Nếu không có quyền read.all, chỉ lấy item của chính user
+        if (!hasReadAllPermission && userId) {
+            where.created_by = userId;
+        }
+        
         return this.prisma.addonType.findFirst({
-            where: { id, is_deleted: false },
+            where,
             select: addonDetailSelect,
         });
     }
@@ -53,9 +60,16 @@ export class AddonTypeRepository {
         });
     }
 
-    async findAllActive(): Promise<IAddonTypeWithRelations[]> {
+    async findAllActive(userId?: string, hasListAllPermission?: boolean): Promise<IAddonTypeWithRelations[]> {
+        const where: any = { is_active: true, is_deleted: false };
+        
+        // Nếu không có quyền list.all, chỉ lấy items của chính user
+        if (!hasListAllPermission && userId) {
+            where.created_by = userId;
+        }
+        
         return this.prisma.addonType.findMany({
-            where: { is_active: true, is_deleted: false },
+            where,
             orderBy: { name: 'asc' },
             select: addonTypeListSelect,
         });
@@ -81,9 +95,16 @@ export class AddonTypeRepository {
         });
     }
 
-    async findByIds(ids: string[]): Promise<IAddonTypeWithRelations[]> {
+    async findByIds(ids: string[], userId?: string, hasDeleteAllPermission?: boolean): Promise<IAddonTypeWithRelations[]> {
+        const where: any = { id: { in: ids }, is_deleted: false };
+        
+        // Nếu không có quyền delete.all, chỉ lấy items của chính user
+        if (!hasDeleteAllPermission && userId) {
+            where.created_by = userId;
+        }
+        
         return this.prisma.addonType.findMany({
-            where: { id: { in: ids }, is_deleted: false },
+            where,
             select: addonTypeListSelect,
         });
     }

@@ -52,17 +52,22 @@ export class AmenityService {
         return amenity;
     }
 
-    async findAll(query: QueryAmenityDto) {
+    async findAll(query: QueryAmenityDto, userId: string, hasListAllPermission: boolean) {
         const { limit = 10, offset = 0, keywords, is_active } = query;
 
-        // Check cache
-        const cacheKey = this.cacheKeys.list(query);
+        // Check cache - include userId and permission in cache key
+        const cacheKey = `${this.cacheKeys.list(query)}:${userId}:${hasListAllPermission}`;
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
             return JSON.parse(cached);
         }
 
         const where: any = { is_deleted: false };
+
+        // Nếu không có quyền list.all, chỉ lấy items của chính user
+        if (!hasListAllPermission) {
+            where.created_by = userId;
+        }
 
         // Admin có thể filter theo is_active
         if (is_active !== undefined) {
@@ -94,15 +99,15 @@ export class AmenityService {
         return result;
     }
 
-    async findById(id: string, lang: string) {
-        // Check cache
-        const cacheKey = this.cacheKeys.detail(id);
+    async findById(id: string, userId: string, hasReadAllPermission: boolean, lang: string) {
+        // Check cache - include userId and permission in cache key
+        const cacheKey = `${this.cacheKeys.detail(id)}:${userId}:${hasReadAllPermission}`;
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
             return JSON.parse(cached);
         }
 
-        const amenity = await this.repository.findById(id);
+        const amenity = await this.repository.findById(id, userId, hasReadAllPermission);
         if (!amenity) {
             throw new NotFoundException(
                 this.i18n.t('amenity.errors.not_found', { lang }),
@@ -115,8 +120,21 @@ export class AmenityService {
         return amenity;
     }
 
-    async update(id: string, dto: UpdateAmenityDto, userId: string, lang: string) {
-        const amenity = await this.repository.findById(id);
+    async findAllActive(userId: string, hasListAllPermission: boolean) {
+        const cacheKey = `${this.cacheKeys.list({})}:active:${userId}:${hasListAllPermission}`;
+        const cached = await this.redisService.get(cacheKey);
+        if (cached) {
+            return JSON.parse(cached);
+        }
+
+        const amenities = await this.repository.findAllActive(userId, hasListAllPermission);
+        await this.redisService.set(cacheKey, JSON.stringify(amenities), this.cacheKeys.listTtl);
+
+        return amenities;
+    }
+
+    async update(id: string, dto: UpdateAmenityDto, userId: string, hasUpdateAllPermission: boolean, lang: string) {
+        const amenity = await this.repository.findById(id, userId, hasUpdateAllPermission);
         if (!amenity) {
             throw new NotFoundException(
                 this.i18n.t('amenity.errors.not_found', { lang }),
@@ -165,8 +183,8 @@ export class AmenityService {
         return updated;
     }
 
-    async delete(id: string, userId: string, lang: string) {
-        const amenity = await this.repository.findById(id);
+    async delete(id: string, userId: string, hasDeleteAllPermission: boolean, lang: string) {
+        const amenity = await this.repository.findById(id, userId, hasDeleteAllPermission);
         if (!amenity) {
             throw new NotFoundException(
                 this.i18n.t('amenity.errors.not_found', { lang }),
@@ -196,8 +214,8 @@ export class AmenityService {
         });
     }
 
-    async deleteMany(ids: string[], userId: string, lang: string) {
-        const amenities = await this.repository.findByIds(ids);
+    async deleteMany(ids: string[], userId: string, hasDeleteAllPermission: boolean, lang: string) {
+        const amenities = await this.repository.findByIds(ids, userId, hasDeleteAllPermission);
         if (amenities.length === 0) {
             throw new NotFoundException(
                 this.i18n.t('amenity.errors.not_found', { lang }),

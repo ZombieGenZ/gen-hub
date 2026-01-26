@@ -1704,13 +1704,33 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         },
         {
           key: 'amenity.list',
+          name: 'Xem danh sách tiện ích (của mình)',
+          description: 'Quyền xem danh sách tiện ích do chính mình tạo',
+        },
+        {
+          key: 'amenity.list.all',
           name: 'Xem tất cả tiện ích',
-          description: 'Quyền xem tất cả tiện ích',
+          description: 'Quyền xem tất cả tiện ích của mọi người',
         },
         {
           key: 'amenity.read',
-          name: 'Xem chi tiết tiện ích',
-          description: 'Quyền xem chi tiết tiện ích',
+          name: 'Xem chi tiết tiện ích (của mình)',
+          description: 'Quyền xem chi tiết tiện ích do chính mình tạo',
+        },
+        {
+          key: 'amenity.read.all',
+          name: 'Xem chi tiết tất cả tiện ích',
+          description: 'Quyền xem chi tiết tất cả tiện ích',
+        },
+        {
+          key: 'amenity.update.all',
+          name: 'Cập nhật tất cả tiện ích',
+          description: 'Quyền cập nhật tất cả tiện ích',
+        },
+        {
+          key: 'amenity.delete.all',
+          name: 'Xóa tất cả tiện ích',
+          description: 'Quyền xóa tất cả tiện ích',
         },
       ];
 
@@ -2714,23 +2734,43 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         },
         {
           key: 'addon.list',
-          name: 'Xem danh sách addon',
-          description: 'Quyền xem danh sách addon',
+          name: 'Xem danh sách addon (của mình)',
+          description: 'Quyền xem danh sách addon do chính mình tạo',
+        },
+        {
+          key: 'addon.list.all',
+          name: 'Xem tất cả addon',
+          description: 'Quyền xem tất cả addon của mọi người',
         },
         {
           key: 'addon.read',
-          name: 'Xem chi tiết addon',
-          description: 'Quyền xem chi tiết addon',
+          name: 'Xem chi tiết addon (của mình)',
+          description: 'Quyền xem chi tiết addon do chính mình tạo',
+        },
+        {
+          key: 'addon.read.all',
+          name: 'Xem chi tiết tất cả addon',
+          description: 'Quyền xem chi tiết tất cả addon',
         },
         {
           key: 'addon.update',
-          name: 'Cập nhật addon',
-          description: 'Quyền cập nhật addon',
+          name: 'Cập nhật addon (của mình)',
+          description: 'Quyền cập nhật addon do chính mình tạo',
+        },
+        {
+          key: 'addon.update.all',
+          name: 'Cập nhật tất cả addon',
+          description: 'Quyền cập nhật tất cả addon',
         },
         {
           key: 'addon.delete',
-          name: 'Xóa addon',
-          description: 'Quyền xóa addon',
+          name: 'Xóa addon (của mình)',
+          description: 'Quyền xóa addon do chính mình tạo',
+        },
+        {
+          key: 'addon.delete.all',
+          name: 'Xóa tất cả addon',
+          description: 'Quyền xóa tất cả addon',
         },
       ];
 
@@ -3097,23 +3137,43 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         },
         {
           key: 'insurance.list',
-          name: 'Xem danh sách bảo hiểm',
-          description: 'Quyền xem danh sách bảo hiểm',
+          name: 'Xem danh sách bảo hiểm (của mình)',
+          description: 'Quyền xem danh sách bảo hiểm do chính mình tạo',
+        },
+        {
+          key: 'insurance.list.all',
+          name: 'Xem tất cả bảo hiểm',
+          description: 'Quyền xem tất cả bảo hiểm của mọi người',
         },
         {
           key: 'insurance.read',
-          name: 'Xem chi tiết bảo hiểm',
-          description: 'Quyền xem chi tiết bảo hiểm',
+          name: 'Xem chi tiết bảo hiểm (của mình)',
+          description: 'Quyền xem chi tiết bảo hiểm do chính mình tạo',
+        },
+        {
+          key: 'insurance.read.all',
+          name: 'Xem chi tiết tất cả bảo hiểm',
+          description: 'Quyền xem chi tiết tất cả bảo hiểm',
         },
         {
           key: 'insurance.update',
-          name: 'Cập nhật bảo hiểm',
-          description: 'Quyền cập nhật thông tin bảo hiểm',
+          name: 'Cập nhật bảo hiểm (của mình)',
+          description: 'Quyền cập nhật bảo hiểm do chính mình tạo',
+        },
+        {
+          key: 'insurance.update.all',
+          name: 'Cập nhật tất cả bảo hiểm',
+          description: 'Quyền cập nhật tất cả bảo hiểm',
         },
         {
           key: 'insurance.delete',
-          name: 'Xóa bảo hiểm',
-          description: 'Quyền xóa bảo hiểm',
+          name: 'Xóa bảo hiểm (của mình)',
+          description: 'Quyền xóa bảo hiểm do chính mình tạo',
+        },
+        {
+          key: 'insurance.delete.all',
+          name: 'Xóa tất cả bảo hiểm',
+          description: 'Quyền xóa tất cả bảo hiểm',
         },
       ];
 
@@ -3188,10 +3248,14 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
     try {
       const addonTypePermissions = [
         { key: 'addon-type.create', name: 'Tạo loại addon', description: 'Quyền tạo loại addon mới' },
-        { key: 'addon-type.list', name: 'Xem danh sách loại addon', description: 'Quyền xem danh sách loại addon' },
-        { key: 'addon-type.read', name: 'Xem chi tiết loại addon', description: 'Quyền xem chi tiết loại addon' },
-        { key: 'addon-type.update', name: 'Cập nhật loại addon', description: 'Quyền cập nhật loại addon' },
-        { key: 'addon-type.delete', name: 'Xóa loại addon', description: 'Quyền xóa loại addon' },
+        { key: 'addon-type.list', name: 'Xem danh sách loại addon (của mình)', description: 'Quyền xem danh sách loại addon do chính mình tạo' },
+        { key: 'addon-type.list.all', name: 'Xem tất cả loại addon', description: 'Quyền xem tất cả loại addon của mọi người' },
+        { key: 'addon-type.read', name: 'Xem chi tiết loại addon (của mình)', description: 'Quyền xem chi tiết loại addon do chính mình tạo' },
+        { key: 'addon-type.read.all', name: 'Xem chi tiết tất cả loại addon', description: 'Quyền xem chi tiết tất cả loại addon' },
+        { key: 'addon-type.update', name: 'Cập nhật loại addon (của mình)', description: 'Quyền cập nhật loại addon do chính mình tạo' },
+        { key: 'addon-type.update.all', name: 'Cập nhật tất cả loại addon', description: 'Quyền cập nhật tất cả loại addon' },
+        { key: 'addon-type.delete', name: 'Xóa loại addon (của mình)', description: 'Quyền xóa loại addon do chính mình tạo' },
+        { key: 'addon-type.delete.all', name: 'Xóa tất cả loại addon', description: 'Quyền xóa tất cả loại addon' },
       ];
 
       for (const perm of addonTypePermissions) {

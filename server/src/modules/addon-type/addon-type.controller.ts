@@ -30,7 +30,9 @@ import { IAddonTypePaginatedResponse, IAddonTypeWithRelations } from './types';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { PermissionGuard } from '../../common/guards/permission.guard';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator';
+import { RequireAnyPermission } from '../../common/decorators/require-any-permission.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { PrismaService } from '../../prisma/prisma.service';
 import {
   ApiAuthResponses,
   ApiUnauthorizedResponses,
@@ -46,7 +48,57 @@ import {
 @ApiTags('Addon Types')
 @Controller('addon-types')
 export class AddonTypeController {
-  constructor(private readonly addonTypeService: AddonTypeService) { }
+  constructor(
+    private readonly addonTypeService: AddonTypeService,
+    private readonly prisma: PrismaService,
+  ) { }
+
+  /**
+   * Kiểm tra user có permission cụ thể không
+   */
+  private async hasPermission(
+    userId: string,
+    permissionKey: string,
+  ): Promise<boolean> {
+    if (!userId) return false;
+
+    const user = await this.prisma.user.findFirst({
+      where: { id: userId },
+      include: {
+        system_roles: {
+          where: { is_deleted: false, is_active: true },
+          include: {
+            role: {
+              include: {
+                permissions: {
+                  where: { is_deleted: false, is_active: true },
+                  include: { permission: true },
+                },
+              },
+            },
+          },
+        },
+        system_permissions: {
+          where: { is_deleted: false, is_active: true },
+          include: { permission: true },
+        },
+      },
+    });
+
+    if (!user) return false;
+
+    // Check direct permissions
+    const hasDirectPerm = user.system_permissions.some(
+      (p) => p.permission.key === permissionKey,
+    );
+    if (hasDirectPerm) return true;
+
+    // Check role permissions
+    const hasRolePerm = user.system_roles.some((ur) =>
+      ur.role.permissions.some((rp) => rp.permission.key === permissionKey),
+    );
+    return hasRolePerm;
+  }
 
   @ApiOperation({
     summary: 'Tạo loại addon mới',
@@ -237,10 +289,15 @@ export class AddonTypeController {
   @ApiAuthResponses()
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @RequirePermission('addon-type.list')
+  @RequireAnyPermission('addon-type.list', 'addon-type.list.all')
   @Get()
-  async findAll(@Query() query: QueryAddonTypeDto, @I18nLang() lang: string): Promise<GetResponse<IAddonTypePaginatedResponse>> {
-    const result = await this.addonTypeService.findAll(query);
+  async findAll(
+    @Query() query: QueryAddonTypeDto,
+    @CurrentUser('userId') userId: string,
+    @I18nLang() lang: string,
+  ): Promise<GetResponse<IAddonTypePaginatedResponse>> {
+    const hasListAllPermission = await this.hasPermission(userId, 'addon-type.list.all');
+    const result = await this.addonTypeService.findAll(query, userId, hasListAllPermission);
     return new GetResponse('addon-type.list', result);
   }
 
@@ -283,12 +340,53 @@ export class AddonTypeController {
       },
     },
   })
-  @ApiUnauthorizedResponses()
+  @ApiOperation({
+    summary: 'Lấy tất cả loại addon đang hoạt động',
+    description:
+      'Lấy danh sách tất cả loại addon có trạng thái is_active = true và is_deleted = false. API này thường được sử dụng cho dropdown select. Yêu cầu quyền `addon-type.list` hoặc `addon-type.list.all`.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Lấy danh sách loại addon đang hoạt động thành công',
+    schema: {
+      type: 'object',
+      properties: {
+        code: { type: 'string', example: 'addon-type.active' },
+        message: {
+          type: 'string',
+          example: 'Lấy danh sách loại addon thành công',
+        },
+        success: { type: 'boolean', example: true },
+        data: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: {
+                type: 'string',
+                format: 'uuid',
+                example: '550e8400-e29b-41d4-a716-446655440000',
+              },
+              name: { type: 'string', example: 'Bảo mật' },
+              description: {
+                type: 'string',
+                example: 'Các addon liên quan đến bảo mật',
+              },
+              is_active: { type: 'boolean', example: true },
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiAuthResponses()
   @ApiBearerAuth('JWT-auth')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, PermissionGuard)
+  @RequireAnyPermission('addon-type.list', 'addon-type.list.all')
   @Get('active')
-  async findAllActive() {
-    const result = await this.addonTypeService.findAllActive();
+  async findAllActive(@CurrentUser('userId') userId: string) {
+    const hasListAllPermission = await this.hasPermission(userId, 'addon-type.list.all');
+    const result = await this.addonTypeService.findAllActive(userId, hasListAllPermission);
     return new GetResponse('addon-type.active', result);
   }
 
@@ -362,13 +460,15 @@ export class AddonTypeController {
   @ApiAuthResponses()
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @RequirePermission('addon-type.read')
+  @RequireAnyPermission('addon-type.read', 'addon-type.read.all')
   @Get(':id')
   async findById(
     @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser('userId') userId: string,
     @I18nLang() lang: string,
   ): Promise<GetResponse<IAddonTypeWithRelations>> {
-    const addonType = await this.addonTypeService.findById(id, lang);
+    const hasReadAllPermission = await this.hasPermission(userId, 'addon-type.read.all');
+    const addonType = await this.addonTypeService.findById(id, userId, hasReadAllPermission, lang);
     return new GetResponse('addon-type.read', addonType);
   }
 
@@ -482,7 +582,7 @@ export class AddonTypeController {
   @ApiValidationErrorResponse()
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @RequirePermission('addon-type.update')
+  @RequireAnyPermission('addon-type.update', 'addon-type.update.all')
   @Put(':id')
   async update(
     @Param('id', ParseUUIDPipe) id: string,
@@ -490,7 +590,8 @@ export class AddonTypeController {
     @CurrentUser('userId') userId: string,
     @I18nLang() lang: string,
   ) {
-    const addonType = await this.addonTypeService.update(id, dto, userId, lang);
+    const hasUpdateAllPermission = await this.hasPermission(userId, 'addon-type.update.all');
+    const addonType = await this.addonTypeService.update(id, dto, userId, hasUpdateAllPermission, lang);
     return new UpdatedResponse('addon-type.updated', addonType);
   }
 
@@ -533,14 +634,15 @@ export class AddonTypeController {
   @ApiAuthResponses()
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @RequirePermission('addon-type.delete')
+  @RequireAnyPermission('addon-type.delete', 'addon-type.delete.all')
   @Delete(':id')
   async delete(
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser('userId') userId: string,
     @I18nLang() lang: string,
   ) {
-    await this.addonTypeService.delete(id, userId, lang);
+    const hasDeleteAllPermission = await this.hasPermission(userId, 'addon-type.delete.all');
+    await this.addonTypeService.delete(id, userId, hasDeleteAllPermission, lang);
     return new DeletedResponse('addon-type.deleted', null);
   }
 
@@ -623,14 +725,15 @@ export class AddonTypeController {
   @ApiValidationErrorResponse()
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @RequirePermission('addon-type.delete')
+  @RequireAnyPermission('addon-type.delete', 'addon-type.delete.all')
   @Delete('delete/many')
   async deleteMany(
     @Body('ids') ids: string[],
     @CurrentUser('userId') userId: string,
     @I18nLang() lang: string,
   ) {
-    await this.addonTypeService.deleteMany(ids, userId, lang);
+    const hasDeleteAllPermission = await this.hasPermission(userId, 'addon-type.delete.all');
+    await this.addonTypeService.deleteMany(ids, userId, hasDeleteAllPermission, lang);
     return new DeletedResponse('addon-type.deletedMany', null);
   }
 }

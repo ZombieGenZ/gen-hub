@@ -29,9 +29,16 @@ export class AddonRepository {
         return this.prisma.addon.count({ where });
     }
 
-    async findById(id: string) {
+    async findById(id: string, userId?: string, hasReadAllPermission?: boolean) {
+        const where: any = { id, is_deleted: false };
+        
+        // Nếu không có quyền read.all, chỉ lấy item của chính user
+        if (!hasReadAllPermission && userId) {
+            where.created_by = userId;
+        }
+        
         return this.prisma.addon.findFirst({
-            where: { id, is_deleted: false },
+            where,
         });
     }
 
@@ -45,17 +52,29 @@ export class AddonRepository {
         });
     }
 
-    async findByIds(ids: string[]) {
+    async findByIds(ids: string[], userId?: string, hasDeleteAllPermission?: boolean) {
+        const where: any = { id: { in: ids }, is_deleted: false };
+        
+        // Nếu không có quyền delete.all, chỉ lấy items của chính user
+        if (!hasDeleteAllPermission && userId) {
+            where.created_by = userId;
+        }
+        
         return this.prisma.addon.findMany({
-            where: { id: { in: ids }, is_deleted: false },
+            where,
         });
     }
 
-    async findAllActive(addonTypeId?: string) {
+    async findAllActive(addonTypeId?: string, userId?: string, hasListAllPermission?: boolean) {
         const where: Prisma.AddonWhereInput = {
             is_active: true,
             is_deleted: false,
         };
+
+        // Nếu không có quyền list.all, chỉ lấy items của chính user
+        if (!hasListAllPermission && userId) {
+            where.created_by = userId;
+        }
 
         if (addonTypeId) {
             where.addon_types = {
