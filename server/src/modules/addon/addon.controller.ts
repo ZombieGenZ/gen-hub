@@ -221,7 +221,7 @@ export class AddonController {
   @ApiOperation({
     summary: 'Lấy danh sách addon',
     description:
-      'Lấy danh sách addon có hỗ trợ phân trang và lọc theo từ khóa, trạng thái, loại addon. Yêu cầu quyền `addon.list`.',
+      'Lấy danh sách addon có hỗ trợ phân trang và lọc theo từ khóa, trạng thái, loại addon. Yêu cầu quyền `addon.list` hoặc `addon.list.all`. Với quyền `addon.list`: chỉ lấy các addon do chính user tạo. Với quyền `addon.list.all`: lấy tất cả addon của mọi người.',
   })
   @ApiQuery({
     name: 'limit',
@@ -407,7 +407,7 @@ export class AddonController {
   @ApiOperation({
     summary: 'Lấy chi tiết addon',
     description:
-      'Lấy thông tin chi tiết của một addon theo ID. Yêu cầu quyền `addon.read`.',
+      'Lấy thông tin chi tiết của một addon theo ID. Yêu cầu quyền `addon.read` hoặc `addon.read.all`. Với quyền `addon.read`: chỉ lấy được addon do chính user tạo. Với quyền `addon.read.all`: lấy được addon của bất kỳ ai.',
   })
   @ApiParam({
     name: 'id',
@@ -503,7 +503,7 @@ export class AddonController {
   @ApiOperation({
     summary: 'Cập nhật addon',
     description:
-      'Cập nhật thông tin addon theo ID. Chỉ các trường được gửi trong request body mới được cập nhật. Yêu cầu quyền `addon.update`.',
+      'Cập nhật thông tin addon theo ID. Chỉ các trường được gửi trong request body mới được cập nhật. Yêu cầu quyền `addon.update` hoặc `addon.update.all`. Với quyền `addon.update`: chỉ cập nhật được addon do chính user tạo. Với quyền `addon.update.all`: cập nhật được addon của bất kỳ ai.',
   })
   @ApiParam({
     name: 'id',
@@ -634,7 +634,7 @@ export class AddonController {
   @ApiOperation({
     summary: 'Xóa nhiều addon',
     description:
-      'Xóa nhiều addon cùng lúc (soft delete). Yêu cầu quyền `addon.delete`.',
+      'Xóa nhiều addon cùng lúc (soft delete). Yêu cầu quyền `addon.delete` hoặc `addon.delete.all`. Với quyền `addon.delete`: chỉ xóa được addon do chính user tạo. Với quyền `addon.delete.all`: xóa được addon của bất kỳ ai.',
   })
   @ApiBody({
     type: DeleteManyDto,
@@ -701,7 +701,7 @@ export class AddonController {
   @ApiOperation({
     summary: 'Xóa addon',
     description:
-      'Xóa một addon theo ID (soft delete). Addon bị xóa sẽ không hiển thị trong danh sách nhưng vẫn được lưu trong database. Yêu cầu quyền `addon.delete`.',
+      'Xóa một addon theo ID (soft delete). Addon bị xóa sẽ không hiển thị trong danh sách nhưng vẫn được lưu trong database. Yêu cầu quyền `addon.delete` hoặc `addon.delete.all`. Với quyền `addon.delete`: chỉ xóa được addon do chính user tạo. Với quyền `addon.delete.all`: xóa được addon của bất kỳ ai.',
   })
   @ApiParam({
     name: 'id',

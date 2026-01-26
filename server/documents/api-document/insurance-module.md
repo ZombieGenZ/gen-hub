@@ -255,7 +255,11 @@ Accept-Language: vi
 
 **Xác thực:** Bearer Token (JWT)
 
-**Quyền yêu cầu:** `insurance.list`
+**Quyền yêu cầu:** `insurance.list` hoặc `insurance.list.all`
+
+> [!NOTE]
+> - Với quyền `insurance.list`: chỉ lấy các bảo hiểm do chính user tạo (created_by = userId)
+> - Với quyền `insurance.list.all`: lấy tất cả bảo hiểm của mọi người
 
 **Headers:**
 
@@ -404,7 +408,11 @@ GET /insurances/active?limit=20&offset=40 HTTP/1.1
 
 **Xác thực:** Bearer Token (JWT)
 
-**Quyền yêu cầu:** `insurance.read`
+**Quyền yêu cầu:** `insurance.read` hoặc `insurance.read.all`
+
+> [!NOTE]
+> - Với quyền `insurance.read`: chỉ lấy được bảo hiểm do chính user tạo (created_by = userId)
+> - Với quyền `insurance.read.all`: lấy được bảo hiểm của bất kỳ ai
 
 **Headers:**
 
@@ -472,7 +480,11 @@ GET /insurances/550e8400-e29b-41d4-a716-446655440000 HTTP/1.1
 
 **Xác thực:** Bearer Token (JWT)
 
-**Quyền yêu cầu:** `insurance.update`
+**Quyền yêu cầu:** `insurance.update` hoặc `insurance.update.all`
+
+> [!NOTE]
+> - Với quyền `insurance.update`: chỉ cập nhật được bảo hiểm do chính user tạo (created_by = userId)
+> - Với quyền `insurance.update.all`: cập nhật được bảo hiểm của bất kỳ ai
 
 **Headers:**
 
@@ -596,7 +608,11 @@ Accept-Language: vi
 
 **Xác thực:** Bearer Token (JWT)
 
-**Quyền yêu cầu:** `insurance.delete`
+**Quyền yêu cầu:** `insurance.delete` hoặc `insurance.delete.all`
+
+> [!NOTE]
+> - Với quyền `insurance.delete`: chỉ xóa được bảo hiểm do chính user tạo (created_by = userId)
+> - Với quyền `insurance.delete.all`: xóa được bảo hiểm của bất kỳ ai
 
 **Headers:**
 
@@ -636,7 +652,11 @@ Accept-Language: vi
 
 **Xác thực:** Bearer Token (JWT)
 
-**Quyền yêu cầu:** `insurance.delete`
+**Quyền yêu cầu:** `insurance.delete` hoặc `insurance.delete.all`
+
+> [!NOTE]
+> - Với quyền `insurance.delete`: chỉ xóa được bảo hiểm do chính user tạo (created_by = userId)
+> - Với quyền `insurance.delete.all`: xóa được bảo hiểm của bất kỳ ai
 
 **Headers:**
 
@@ -836,11 +856,15 @@ Module sử dụng Redis cache để tối ưu hiệu suất:
 | Permission         | Description                                    | Endpoint |
 | ------------------ | ---------------------------------------------- | -------- |
 | `insurance.create` | Tạo bảo hiểm mới                                | `POST /insurances` |
-| `insurance.list`   | Xem danh sách bảo hiểm                          | `GET /insurances` |
+| `insurance.list`   | Xem danh sách bảo hiểm (chỉ của mình)          | `GET /insurances` |
+| `insurance.list.all` | Xem tất cả bảo hiểm (của mọi người)            | `GET /insurances` |
 | -                  | Xem danh sách bảo hiểm đang hoạt động (public)  | `GET /insurances/active` |
-| `insurance.read`   | Xem chi tiết bảo hiểm                           | `GET /insurances/:id` |
-| `insurance.update` | Cập nhật bảo hiểm                                | `PUT /insurances/:id` |
-| `insurance.delete` | Xóa bảo hiểm                                    | `DELETE /insurances/:id`, `DELETE /insurances/delete/many` |
+| `insurance.read`   | Xem chi tiết bảo hiểm (chỉ của mình)           | `GET /insurances/:id` |
+| `insurance.read.all` | Xem chi tiết tất cả bảo hiểm (của mọi người)   | `GET /insurances/:id` |
+| `insurance.update` | Cập nhật bảo hiểm (chỉ của mình)                | `PUT /insurances/:id` |
+| `insurance.update.all` | Cập nhật tất cả bảo hiểm (của mọi người)        | `PUT /insurances/:id` |
+| `insurance.delete` | Xóa bảo hiểm (chỉ của mình)                     | `DELETE /insurances/:id`, `DELETE /insurances/delete/many` |
+| `insurance.delete.all` | Xóa tất cả bảo hiểm (của mọi người)             | `DELETE /insurances/:id`, `DELETE /insurances/delete/many` |
 
 > [!NOTE]
 > API `GET /insurances/active` không yêu cầu xác thực và có thể được sử dụng công khai.

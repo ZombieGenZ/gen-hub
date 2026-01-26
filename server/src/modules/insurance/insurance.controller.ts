@@ -241,7 +241,7 @@ export class InsuranceController {
   @ApiOperation({
     summary: 'Lấy danh sách bảo hiểm',
     description:
-      'Lấy danh sách tất cả bảo hiểm với phân trang và bộ lọc. Yêu cầu quyền `insurance.list`.',
+      'Lấy danh sách tất cả bảo hiểm với phân trang và bộ lọc. Yêu cầu quyền `insurance.list` hoặc `insurance.list.all`. Với quyền `insurance.list`: chỉ lấy các bảo hiểm do chính user tạo. Với quyền `insurance.list.all`: lấy tất cả bảo hiểm của mọi người.',
   })
   @ApiQuery({
     name: 'limit',
@@ -434,7 +434,7 @@ export class InsuranceController {
   @ApiOperation({
     summary: 'Lấy chi tiết bảo hiểm',
     description:
-      'Lấy thông tin chi tiết của một bảo hiểm theo ID. Yêu cầu quyền `insurance.read`.',
+      'Lấy thông tin chi tiết của một bảo hiểm theo ID. Yêu cầu quyền `insurance.read` hoặc `insurance.read.all`. Với quyền `insurance.read`: chỉ lấy được bảo hiểm do chính user tạo. Với quyền `insurance.read.all`: lấy được bảo hiểm của bất kỳ ai.',
   })
   @ApiParam({
     name: 'id',
@@ -542,7 +542,7 @@ export class InsuranceController {
   @ApiOperation({
     summary: 'Cập nhật bảo hiểm',
     description:
-      'Cập nhật thông tin của một bảo hiểm. Chỉ các trường được gửi trong request body mới được cập nhật. Yêu cầu quyền `insurance.update`.',
+      'Cập nhật thông tin của một bảo hiểm. Chỉ các trường được gửi trong request body mới được cập nhật. Yêu cầu quyền `insurance.update` hoặc `insurance.update.all`. Với quyền `insurance.update`: chỉ cập nhật được bảo hiểm do chính user tạo. Với quyền `insurance.update.all`: cập nhật được bảo hiểm của bất kỳ ai.',
   })
   @ApiParam({
     name: 'id',
@@ -704,7 +704,7 @@ export class InsuranceController {
   @ApiOperation({
     summary: 'Xóa nhiều bảo hiểm',
     description:
-      'Xóa mềm nhiều bảo hiểm cùng lúc. Các bản ghi không bị xóa vĩnh viễn mà chỉ được đánh dấu là đã xóa. Yêu cầu quyền `insurance.delete`.',
+      'Xóa mềm nhiều bảo hiểm cùng lúc. Các bản ghi không bị xóa vĩnh viễn mà chỉ được đánh dấu là đã xóa. Yêu cầu quyền `insurance.delete` hoặc `insurance.delete.all`. Với quyền `insurance.delete`: chỉ xóa được bảo hiểm do chính user tạo. Với quyền `insurance.delete.all`: xóa được bảo hiểm của bất kỳ ai.',
   })
   @ApiBody({
     type: DeleteManyDto,
@@ -781,7 +781,7 @@ export class InsuranceController {
   @ApiOperation({
     summary: 'Xóa bảo hiểm',
     description:
-      'Xóa mềm một bảo hiểm. Bản ghi không bị xóa vĩnh viễn mà chỉ được đánh dấu là đã xóa. Yêu cầu quyền `insurance.delete`.',
+      'Xóa mềm một bảo hiểm. Bản ghi không bị xóa vĩnh viễn mà chỉ được đánh dấu là đã xóa. Yêu cầu quyền `insurance.delete` hoặc `insurance.delete.all`. Với quyền `insurance.delete`: chỉ xóa được bảo hiểm do chính user tạo. Với quyền `insurance.delete.all`: xóa được bảo hiểm của bất kỳ ai.',
   })
   @ApiParam({
     name: 'id',

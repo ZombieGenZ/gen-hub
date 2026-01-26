@@ -220,7 +220,11 @@ Accept-Language: vi
 
 **Xác thực:** Bearer Token (JWT)
 
-**Quyền yêu cầu:** `addon-type.list`
+**Quyền yêu cầu:** `addon-type.list` hoặc `addon-type.list.all`
+
+> [!NOTE]
+> - Với quyền `addon-type.list`: chỉ lấy các loại addon do chính user tạo (created_by = userId)
+> - Với quyền `addon-type.list.all`: lấy tất cả loại addon của mọi người
 
 **Headers:**
 ```http
@@ -389,7 +393,11 @@ GET /addon-types/active?limit=20&offset=40 HTTP/1.1
 
 **Xác thực:** Bearer Token (JWT)
 
-**Quyền yêu cầu:** `addon-type.read`
+**Quyền yêu cầu:** `addon-type.read` hoặc `addon-type.read.all`
+
+> [!NOTE]
+> - Với quyền `addon-type.read`: chỉ lấy được loại addon do chính user tạo (created_by = userId)
+> - Với quyền `addon-type.read.all`: lấy được loại addon của bất kỳ ai
 
 **Headers:**
 ```http
@@ -452,7 +460,11 @@ Authorization: Bearer <access_token>
 
 **Xác thực:** Bearer Token (JWT)
 
-**Quyền yêu cầu:** `addon-type.update`
+**Quyền yêu cầu:** `addon-type.update` hoặc `addon-type.update.all`
+
+> [!NOTE]
+> - Với quyền `addon-type.update`: chỉ cập nhật được loại addon do chính user tạo (created_by = userId)
+> - Với quyền `addon-type.update.all`: cập nhật được loại addon của bất kỳ ai
 
 **Headers:**
 ```http
@@ -587,7 +599,11 @@ Accept-Language: vi
 
 **Xác thực:** Bearer Token (JWT)
 
-**Quyền yêu cầu:** `addon-type.delete`
+**Quyền yêu cầu:** `addon-type.delete` hoặc `addon-type.delete.all`
+
+> [!NOTE]
+> - Với quyền `addon-type.delete`: chỉ xóa được loại addon do chính user tạo (created_by = userId)
+> - Với quyền `addon-type.delete.all`: xóa được loại addon của bất kỳ ai
 
 **Headers:**
 ```http
@@ -640,7 +656,11 @@ Authorization: Bearer <access_token>
 
 **Xác thực:** Bearer Token (JWT)
 
-**Quyền yêu cầu:** `addon-type.delete`
+**Quyền yêu cầu:** `addon-type.delete` hoặc `addon-type.delete.all`
+
+> [!NOTE]
+> - Với quyền `addon-type.delete`: chỉ xóa được loại addon do chính user tạo (created_by = userId)
+> - Với quyền `addon-type.delete.all`: xóa được loại addon của bất kỳ ai
 
 **Headers:**
 ```http
@@ -858,11 +878,15 @@ socket.on('addonType:deletedMany', (payload) => {
 | Permission | Description | Endpoint |
 |------------|-------------|----------|
 | `addon-type.create` | Tạo loại addon mới | `POST /addon-types` |
-| `addon-type.list` | Xem danh sách loại addon | `GET /addon-types` |
+| `addon-type.list` | Xem danh sách loại addon (chỉ của mình) | `GET /addon-types` |
+| `addon-type.list.all` | Xem tất cả loại addon (của mọi người) | `GET /addon-types` |
 | - | Xem danh sách loại addon đang hoạt động (public) | `GET /addon-types/active` |
-| `addon-type.read` | Xem chi tiết loại addon | `GET /addon-types/:id` |
-| `addon-type.update` | Cập nhật loại addon | `PUT /addon-types/:id` |
-| `addon-type.delete` | Xóa loại addon | `DELETE /addon-types/:id`, `DELETE /addon-types/delete/many` |
+| `addon-type.read` | Xem chi tiết loại addon (chỉ của mình) | `GET /addon-types/:id` |
+| `addon-type.read.all` | Xem chi tiết tất cả loại addon (của mọi người) | `GET /addon-types/:id` |
+| `addon-type.update` | Cập nhật loại addon (chỉ của mình) | `PUT /addon-types/:id` |
+| `addon-type.update.all` | Cập nhật tất cả loại addon (của mọi người) | `PUT /addon-types/:id` |
+| `addon-type.delete` | Xóa loại addon (chỉ của mình) | `DELETE /addon-types/:id`, `DELETE /addon-types/delete/many` |
+| `addon-type.delete.all` | Xóa tất cả loại addon (của mọi người) | `DELETE /addon-types/:id`, `DELETE /addon-types/delete/many` |
 
 > [!NOTE]
 > API `GET /addon-types/active` không yêu cầu xác thực và có thể được sử dụng công khai.

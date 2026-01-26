@@ -211,7 +211,7 @@ export class AddonTypeController {
   @ApiOperation({
     summary: 'Lấy danh sách loại addon',
     description:
-      'Lấy danh sách loại addon với hỗ trợ phân trang, lọc theo trạng thái và tìm kiếm theo từ khóa. Yêu cầu quyền `addon-type.list`.',
+      'Lấy danh sách loại addon với hỗ trợ phân trang, lọc theo trạng thái và tìm kiếm theo từ khóa. Yêu cầu quyền `addon-type.list` hoặc `addon-type.list.all`. Với quyền `addon-type.list`: chỉ lấy các loại addon do chính user tạo. Với quyền `addon-type.list.all`: lấy tất cả loại addon của mọi người.',
   })
   @ApiQuery({
     name: 'limit',
@@ -371,7 +371,7 @@ export class AddonTypeController {
   @ApiOperation({
     summary: 'Lấy chi tiết loại addon',
     description:
-      'Lấy thông tin chi tiết của một loại addon theo ID. Yêu cầu quyền `addon-type.read`.',
+      'Lấy thông tin chi tiết của một loại addon theo ID. Yêu cầu quyền `addon-type.read` hoặc `addon-type.read.all`. Với quyền `addon-type.read`: chỉ lấy được loại addon do chính user tạo. Với quyền `addon-type.read.all`: lấy được loại addon của bất kỳ ai.',
   })
   @ApiParam({
     name: 'id',
@@ -453,7 +453,7 @@ export class AddonTypeController {
   @ApiOperation({
     summary: 'Cập nhật loại addon',
     description:
-      'Cập nhật thông tin loại addon theo ID. Chỉ các trường được gửi trong request body mới được cập nhật. Yêu cầu quyền `addon-type.update`.',
+      'Cập nhật thông tin loại addon theo ID. Chỉ các trường được gửi trong request body mới được cập nhật. Yêu cầu quyền `addon-type.update` hoặc `addon-type.update.all`. Với quyền `addon-type.update`: chỉ cập nhật được loại addon do chính user tạo. Với quyền `addon-type.update.all`: cập nhật được loại addon của bất kỳ ai.',
   })
   @ApiParam({
     name: 'id',
@@ -576,7 +576,7 @@ export class AddonTypeController {
   @ApiOperation({
     summary: 'Xóa loại addon',
     description:
-      'Xóa mềm (soft delete) một loại addon theo ID. Loại addon bị xóa sẽ không hiển thị trong danh sách nhưng vẫn được lưu trong database. Yêu cầu quyền `addon-type.delete`.',
+      'Xóa mềm (soft delete) một loại addon theo ID. Loại addon bị xóa sẽ không hiển thị trong danh sách nhưng vẫn được lưu trong database. Yêu cầu quyền `addon-type.delete` hoặc `addon-type.delete.all`. Với quyền `addon-type.delete`: chỉ xóa được loại addon do chính user tạo. Với quyền `addon-type.delete.all`: xóa được loại addon của bất kỳ ai.',
   })
   @ApiParam({
     name: 'id',
@@ -627,7 +627,7 @@ export class AddonTypeController {
   @ApiOperation({
     summary: 'Xóa nhiều loại addon',
     description:
-      'Xóa mềm (soft delete) nhiều loại addon cùng lúc theo danh sách ID. Yêu cầu quyền `addon-type.delete`.',
+      'Xóa mềm (soft delete) nhiều loại addon cùng lúc theo danh sách ID. Yêu cầu quyền `addon-type.delete` hoặc `addon-type.delete.all`. Với quyền `addon-type.delete`: chỉ xóa được loại addon do chính user tạo. Với quyền `addon-type.delete.all`: xóa được loại addon của bất kỳ ai.',
   })
   @ApiBody({
     description: 'Danh sách ID các loại addon cần xóa',

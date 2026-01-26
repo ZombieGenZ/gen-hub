@@ -212,7 +212,7 @@ export class AmenityController {
   @ApiOperation({
     summary: 'Lấy danh sách tiện ích',
     description:
-      'Lấy danh sách tiện ích với phân trang và bộ lọc. Hỗ trợ tìm kiếm theo từ khóa và lọc theo trạng thái hoạt động. Yêu cầu quyền `amenity.list`.',
+      'Lấy danh sách tiện ích với phân trang và bộ lọc. Hỗ trợ tìm kiếm theo từ khóa và lọc theo trạng thái hoạt động. Yêu cầu quyền `amenity.list` hoặc `amenity.list.all`. Với quyền `amenity.list`: chỉ lấy các tiện ích do chính user tạo. Với quyền `amenity.list.all`: lấy tất cả tiện ích của mọi người.',
   })
   @ApiQuery({
     name: 'limit',
@@ -381,7 +381,7 @@ export class AmenityController {
   @ApiOperation({
     summary: 'Lấy chi tiết tiện ích',
     description:
-      'Lấy thông tin chi tiết của một tiện ích theo ID. Yêu cầu quyền `amenity.read`.',
+      'Lấy thông tin chi tiết của một tiện ích theo ID. Yêu cầu quyền `amenity.read` hoặc `amenity.read.all`. Với quyền `amenity.read`: chỉ lấy được tiện ích do chính user tạo. Với quyền `amenity.read.all`: lấy được tiện ích của bất kỳ ai.',
   })
   @ApiParam({
     name: 'id',
@@ -475,7 +475,7 @@ export class AmenityController {
   @ApiOperation({
     summary: 'Cập nhật tiện ích',
     description:
-      'Cập nhật thông tin của một tiện ích. Chỉ các trường được gửi trong request body mới được cập nhật. Yêu cầu quyền `amenity.update`.',
+      'Cập nhật thông tin của một tiện ích. Chỉ các trường được gửi trong request body mới được cập nhật. Yêu cầu quyền `amenity.update` hoặc `amenity.update.all`. Với quyền `amenity.update`: chỉ cập nhật được tiện ích do chính user tạo. Với quyền `amenity.update.all`: cập nhật được tiện ích của bất kỳ ai.',
   })
   @ApiParam({
     name: 'id',
@@ -603,7 +603,7 @@ export class AmenityController {
   @ApiOperation({
     summary: 'Xóa nhiều tiện ích',
     description:
-      'Xóa mềm (soft delete) nhiều tiện ích cùng lúc theo danh sách ID. Các mapping liên quan cũng sẽ bị xóa mềm. Yêu cầu quyền `amenity.delete`.',
+      'Xóa mềm (soft delete) nhiều tiện ích cùng lúc theo danh sách ID. Các mapping liên quan cũng sẽ bị xóa mềm. Yêu cầu quyền `amenity.delete` hoặc `amenity.delete.all`. Với quyền `amenity.delete`: chỉ xóa được tiện ích do chính user tạo. Với quyền `amenity.delete.all`: xóa được tiện ích của bất kỳ ai.',
   })
   @ApiBody({
     type: DeleteManyDto,
@@ -678,7 +678,7 @@ export class AmenityController {
   @ApiOperation({
     summary: 'Xóa tiện ích',
     description:
-      'Xóa mềm (soft delete) một tiện ích theo ID. Các mapping liên quan đến tiện ích này cũng sẽ bị xóa mềm. Yêu cầu quyền `amenity.delete`.',
+      'Xóa mềm (soft delete) một tiện ích theo ID. Các mapping liên quan đến tiện ích này cũng sẽ bị xóa mềm. Yêu cầu quyền `amenity.delete` hoặc `amenity.delete.all`. Với quyền `amenity.delete`: chỉ xóa được tiện ích do chính user tạo. Với quyền `amenity.delete.all`: xóa được tiện ích của bất kỳ ai.',
   })
   @ApiParam({
     name: 'id',

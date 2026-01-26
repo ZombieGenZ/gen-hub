@@ -220,7 +220,11 @@ Accept-Language: vi
 
 **Xác thực:** Bearer Token (JWT)
 
-**Quyền yêu cầu:** `amenity.list`
+**Quyền yêu cầu:** `amenity.list` hoặc `amenity.list.all`
+
+> [!NOTE]
+> - Với quyền `amenity.list`: chỉ lấy các tiện ích do chính user tạo (created_by = userId)
+> - Với quyền `amenity.list.all`: lấy tất cả tiện ích của mọi người
 
 **Headers:**
 ```http
@@ -388,7 +392,11 @@ GET /amenities/active?limit=20&offset=40 HTTP/1.1
 
 **Xác thực:** Bearer Token (JWT)
 
-**Quyền yêu cầu:** `amenity.read`
+**Quyền yêu cầu:** `amenity.read` hoặc `amenity.read.all`
+
+> [!NOTE]
+> - Với quyền `amenity.read`: chỉ lấy được tiện ích do chính user tạo (created_by = userId)
+> - Với quyền `amenity.read.all`: lấy được tiện ích của bất kỳ ai
 
 **Headers:**
 ```http
@@ -452,7 +460,11 @@ Authorization: Bearer <access_token>
 
 **Xác thực:** Bearer Token (JWT)
 
-**Quyền yêu cầu:** `amenity.update`
+**Quyền yêu cầu:** `amenity.update` hoặc `amenity.update.all`
+
+> [!NOTE]
+> - Với quyền `amenity.update`: chỉ cập nhật được tiện ích do chính user tạo (created_by = userId)
+> - Với quyền `amenity.update.all`: cập nhật được tiện ích của bất kỳ ai
 
 **Headers:**
 ```http
@@ -589,7 +601,11 @@ Accept-Language: vi
 
 **Xác thực:** Bearer Token (JWT)
 
-**Quyền yêu cầu:** `amenity.delete`
+**Quyền yêu cầu:** `amenity.delete` hoặc `amenity.delete.all`
+
+> [!NOTE]
+> - Với quyền `amenity.delete`: chỉ xóa được tiện ích do chính user tạo (created_by = userId)
+> - Với quyền `amenity.delete.all`: xóa được tiện ích của bất kỳ ai
 
 **Headers:**
 ```http
@@ -643,7 +659,11 @@ Authorization: Bearer <access_token>
 
 **Xác thực:** Bearer Token (JWT)
 
-**Quyền yêu cầu:** `amenity.delete`
+**Quyền yêu cầu:** `amenity.delete` hoặc `amenity.delete.all`
+
+> [!NOTE]
+> - Với quyền `amenity.delete`: chỉ xóa được tiện ích do chính user tạo (created_by = userId)
+> - Với quyền `amenity.delete.all`: xóa được tiện ích của bất kỳ ai
 
 **Headers:**
 ```http
@@ -858,11 +878,15 @@ socket.on('amenity:deleted', (payload) => {
 | Permission | Description | Endpoint |
 |------------|-------------|----------|
 | `amenity.create` | Tạo tiện ích mới | `POST /amenities` |
-| `amenity.list` | Xem danh sách tiện ích | `GET /amenities` |
+| `amenity.list` | Xem danh sách tiện ích (chỉ của mình) | `GET /amenities` |
+| `amenity.list.all` | Xem tất cả tiện ích (của mọi người) | `GET /amenities` |
 | - | Xem danh sách tiện ích đang hoạt động (public) | `GET /amenities/active` |
-| `amenity.read` | Xem chi tiết tiện ích | `GET /amenities/:id` |
-| `amenity.update` | Cập nhật tiện ích | `PUT /amenities/:id` |
-| `amenity.delete` | Xóa tiện ích | `DELETE /amenities/:id`, `DELETE /amenities/delete/many` |
+| `amenity.read` | Xem chi tiết tiện ích (chỉ của mình) | `GET /amenities/:id` |
+| `amenity.read.all` | Xem chi tiết tất cả tiện ích (của mọi người) | `GET /amenities/:id` |
+| `amenity.update` | Cập nhật tiện ích (chỉ của mình) | `PUT /amenities/:id` |
+| `amenity.update.all` | Cập nhật tất cả tiện ích (của mọi người) | `PUT /amenities/:id` |
+| `amenity.delete` | Xóa tiện ích (chỉ của mình) | `DELETE /amenities/:id`, `DELETE /amenities/delete/many` |
+| `amenity.delete.all` | Xóa tất cả tiện ích (của mọi người) | `DELETE /amenities/:id`, `DELETE /amenities/delete/many` |
 
 > [!NOTE]
 > API `GET /amenities/active` không yêu cầu xác thực và có thể được sử dụng công khai.

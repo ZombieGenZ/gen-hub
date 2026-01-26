@@ -215,7 +215,11 @@ Accept-Language: vi
 
 **Xác thực:** Bearer Token (JWT)
 
-**Quyền yêu cầu:** `addon.list`
+**Quyền yêu cầu:** `addon.list` hoặc `addon.list.all`
+
+> [!NOTE]
+> - Với quyền `addon.list`: chỉ lấy các addon do chính user tạo (created_by = userId)
+> - Với quyền `addon.list.all`: lấy tất cả addon của mọi người
 
 **Query Parameters:**
 
@@ -350,7 +354,11 @@ GET /addons/active?limit=10&offset=0&addon_type_id=550e8400-e29b-41d4-a716-44665
 
 **Xác thực:** Bearer Token (JWT)
 
-**Quyền yêu cầu:** `addon.read`
+**Quyền yêu cầu:** `addon.read` hoặc `addon.read.all`
+
+> [!NOTE]
+> - Với quyền `addon.read`: chỉ lấy được addon do chính user tạo (created_by = userId)
+> - Với quyền `addon.read.all`: lấy được addon của bất kỳ ai
 
 **Path Parameters:**
 
@@ -407,7 +415,11 @@ Accept-Language: vi
 
 **Xác thực:** Bearer Token (JWT)
 
-**Quyền yêu cầu:** `addon.update`
+**Quyền yêu cầu:** `addon.update` hoặc `addon.update.all`
+
+> [!NOTE]
+> - Với quyền `addon.update`: chỉ cập nhật được addon do chính user tạo (created_by = userId)
+> - Với quyền `addon.update.all`: cập nhật được addon của bất kỳ ai
 
 **Path Parameters:**
 
@@ -482,7 +494,11 @@ Accept-Language: vi
 
 **Xác thực:** Bearer Token (JWT)
 
-**Quyền yêu cầu:** `addon.delete`
+**Quyền yêu cầu:** `addon.delete` hoặc `addon.delete.all`
+
+> [!NOTE]
+> - Với quyền `addon.delete`: chỉ xóa được addon do chính user tạo (created_by = userId)
+> - Với quyền `addon.delete.all`: xóa được addon của bất kỳ ai
 
 **Request Body:**
 
@@ -515,7 +531,11 @@ Accept-Language: vi
 
 **Xác thực:** Bearer Token (JWT)
 
-**Quyền yêu cầu:** `addon.delete`
+**Quyền yêu cầu:** `addon.delete` hoặc `addon.delete.all`
+
+> [!NOTE]
+> - Với quyền `addon.delete`: chỉ xóa được addon do chính user tạo (created_by = userId)
+> - Với quyền `addon.delete.all`: xóa được addon của bất kỳ ai
 
 **Path Parameters:**
 
@@ -686,11 +706,15 @@ Cache được invalidate khi:
 | Permission     | Mô tả                                    | Endpoint |
 | -------------- | ---------------------------------------- | -------- |
 | `addon.create` | Tạo addon mới                            | `POST /addons` |
-| `addon.list`   | Xem danh sách addon                      | `GET /addons` |
+| `addon.list`   | Xem danh sách addon (chỉ của mình)       | `GET /addons` |
+| `addon.list.all` | Xem tất cả addon (của mọi người)         | `GET /addons` |
 | -              | Xem danh sách addon đang hoạt động (public) | `GET /addons/active` |
-| `addon.read`   | Xem chi tiết addon                       | `GET /addons/:id` |
-| `addon.update` | Cập nhật addon                           | `PUT /addons/:id` |
-| `addon.delete` | Xóa addon                                | `DELETE /addons/:id`, `DELETE /addons/delete/many` |
+| `addon.read`   | Xem chi tiết addon (chỉ của mình)        | `GET /addons/:id` |
+| `addon.read.all` | Xem chi tiết tất cả addon (của mọi người) | `GET /addons/:id` |
+| `addon.update` | Cập nhật addon (chỉ của mình)            | `PUT /addons/:id` |
+| `addon.update.all` | Cập nhật tất cả addon (của mọi người)    | `PUT /addons/:id` |
+| `addon.delete` | Xóa addon (chỉ của mình)                 | `DELETE /addons/:id`, `DELETE /addons/delete/many` |
+| `addon.delete.all` | Xóa tất cả addon (của mọi người)         | `DELETE /addons/:id`, `DELETE /addons/delete/many` |
 
 > [!NOTE]
 > API `GET /addons/active` không yêu cầu xác thực và có thể được sử dụng công khai.
