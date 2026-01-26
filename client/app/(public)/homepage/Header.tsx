@@ -49,6 +49,7 @@ export function PrimeNestHeader({ isLogin, user }: HeaderProps) {
                                 <HoveredLink href="/kho-bai?type=kho-mat">Kho Mát</HoveredLink>
                                 <HoveredLink href="/kho-bai?type=kho-thuong">Kho Thường</HoveredLink>
                                 <HoveredLink href="/kho-bai?type=kho-ngoai-quan">Kho Ngoại Quan</HoveredLink>
+                                <HoveredLink href="/warehouse-3d">Xem Kho 3D</HoveredLink>
                             </div>
                         </MenuItem>
 

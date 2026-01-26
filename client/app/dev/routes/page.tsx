@@ -101,6 +101,7 @@ const routeGroups: RouteGroup[] = [
         routes: [
             { path: "/error", label: "Error 404", description: "Not found page" },
             { path: "/dev/routes", label: "Route Explorer", description: "You are here" },
+            { path: "/warehouse-3d", label: "3D-Warehouse", description: "Interactive 3D warehouse visualization" },
         ]
     }
 ];
