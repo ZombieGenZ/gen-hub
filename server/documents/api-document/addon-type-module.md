@@ -2,15 +2,7 @@
 
 ## Tổng Quan
 
-Module `addon-type` quản lý các loại addon trong hệ thống GEN-HUB. Loại addon được sử dụng để phân loại các addon theo nhóm chức năng như: Bảo mật, Tiện ích, Tích hợp, v.v.
-
-**Chức năng chính:**
-
-- CRUD loại addon (tạo, đọc, cập nhật, xóa)
-- Phân trang và tìm kiếm
-- Lọc theo trạng thái hoạt động
-- Xóa nhiều loại addon cùng lúc
-- Real-time notification qua WebSocket
+Module `addon-type` quản lý các loại addon trong hệ thống GEN-HUB. Addon Type được sử dụng để phân loại các addon theo nhóm chức năng như bảo mật, tiện ích, tích hợp bên thứ ba, v.v.
 
 ---
 
@@ -21,33 +13,36 @@ flowchart TB
     subgraph Client
         A[API Request]
     end
-
+    
     subgraph Controller
         B[AddonTypeController]
     end
-
+    
     subgraph Service
         C[AddonTypeService]
     end
-
+    
+    subgraph Repository
+        D[AddonTypeRepository]
+    end
+    
     subgraph Cache
-        D[(Redis Cache)]
+        E[(Redis Cache)]
     end
-
+    
     subgraph Database
-        E[(PostgreSQL)]
+        F[(PostgreSQL)]
     end
-
+    
     subgraph Events
-        F[WebSocket Gateway]
-        G[System Log Service]
+        G[WebSocket Gateway]
     end
-
+    
     A --> B
     B --> C
     C --> D
     C --> E
-    C --> F
+    D --> F
     C --> G
 ```
 
@@ -57,7 +52,6 @@ flowchart TB
 
 > [!TIP]
 > Tất cả các API đều hỗ trợ header `Accept-Language` để chọn ngôn ngữ phản hồi.
->
 > - **vi** - Tiếng Việt (mặc định)
 > - **en** - English
 
@@ -70,10 +64,7 @@ flowchart TB
 **Quyền yêu cầu:** `addon-type.create`
 
 **Headers:**
-
 ```http
-POST /addon-types HTTP/1.1
-Host: api.gen-hub.dev
 Authorization: Bearer <access_token>
 Content-Type: application/json
 Accept-Language: vi
@@ -81,16 +72,16 @@ Accept-Language: vi
 
 **Request Body Schema:**
 
-| Field         | Type    | Required     | Description                           |
-| ------------- | ------- | ------------ | ------------------------------------- |
-| `name`        | string  | **Required** | Tên loại addon (max 255 ký tự)        |
-| `description` | string  | Optional     | Mô tả loại addon                      |
-| `is_active`   | boolean | Optional     | Trạng thái hoạt động (mặc định: true) |
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | string | Required | Tên loại addon (max 255 ký tự) |
+| `description` | string | Optional | Mô tả chi tiết về loại addon |
+| `is_active` | boolean | Optional | Trạng thái hoạt động (mặc định: true) |
 
 **Request Body Examples:**
 
 <details>
-<summary><b>Ví dụ 1: Tạo loại addon bảo mật</b></summary>
+<summary><b>Ví dụ 1: Loại addon bảo mật</b></summary>
 
 ```json
 {
@@ -99,11 +90,10 @@ Accept-Language: vi
   "is_active": true
 }
 ```
-
 </details>
 
 <details>
-<summary><b>Ví dụ 2: Tạo loại addon tiện ích</b></summary>
+<summary><b>Ví dụ 2: Loại addon tiện ích</b></summary>
 
 ```json
 {
@@ -112,11 +102,10 @@ Accept-Language: vi
   "is_active": true
 }
 ```
-
 </details>
 
 <details>
-<summary><b>Ví dụ 3: Tạo loại addon tích hợp (chưa kích hoạt)</b></summary>
+<summary><b>Ví dụ 3: Loại addon tích hợp (không hoạt động)</b></summary>
 
 ```json
 {
@@ -125,7 +114,6 @@ Accept-Language: vi
   "is_active": false
 }
 ```
-
 </details>
 
 **Response (201 Created):**
@@ -174,7 +162,6 @@ Accept-Language: vi
   "success": false
 }
 ```
-
 </details>
 
 <details>
@@ -195,7 +182,6 @@ Accept-Language: vi
   "success": false
 }
 ```
-
 </details>
 
 <details>
@@ -208,7 +194,6 @@ Accept-Language: vi
   "success": false
 }
 ```
-
 </details>
 
 <details>
@@ -225,7 +210,6 @@ Accept-Language: vi
   ]
 }
 ```
-
 </details>
 
 ---
@@ -239,37 +223,37 @@ Accept-Language: vi
 **Quyền yêu cầu:** `addon-type.list`
 
 **Headers:**
-
 ```http
-GET /addon-types?limit=10&offset=0 HTTP/1.1
-Host: api.gen-hub.dev
 Authorization: Bearer <access_token>
 Accept-Language: vi
 ```
 
 **Query Parameters:**
 
-| Parameter   | Type    | Required | Default | Description                          |
-| ----------- | ------- | -------- | ------- | ------------------------------------ |
-| `limit`     | number  | Optional | 10      | Số lượng bản ghi mỗi trang (min: 1)  |
-| `offset`    | number  | Optional | 0       | Vị trí bắt đầu (min: 0)              |
-| `keywords`  | string  | Optional | -       | Từ khóa tìm kiếm theo tên hoặc mô tả |
-| `is_active` | boolean | Optional | -       | Lọc theo trạng thái hoạt động        |
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `limit` | number | Optional | 10 | Số lượng bản ghi mỗi trang (min: 1) |
+| `offset` | number | Optional | 0 | Vị trí bắt đầu (min: 0) |
+| `keywords` | string | Optional | - | Từ khóa tìm kiếm theo tên hoặc mô tả |
+| `is_active` | boolean | Optional | - | Lọc theo trạng thái hoạt động (true/false) |
 
 **Request Examples:**
 
 ```http
-# Lấy 10 bản ghi đầu tiên
-GET /addon-types?limit=10&offset=0
+# Lấy 10 loại addon đầu tiên
+GET /addon-types HTTP/1.1
 
-# Tìm kiếm theo từ khóa
-GET /addon-types?keywords=bảo%20mật
+# Lấy với phân trang
+GET /addon-types?limit=20&offset=40 HTTP/1.1
 
-# Lọc theo trạng thái hoạt động
-GET /addon-types?is_active=true
+# Tìm kiếm loại addon
+GET /addon-types?keywords=bảo mật HTTP/1.1
+
+# Lọc loại addon đang hoạt động
+GET /addon-types?is_active=true HTTP/1.1
 
 # Kết hợp nhiều điều kiện
-GET /addon-types?limit=20&offset=0&keywords=tiện%20ích&is_active=true
+GET /addon-types?limit=10&offset=0&keywords=tiện ích&is_active=true HTTP/1.1
 ```
 
 **Response (200 OK):**
@@ -290,12 +274,12 @@ GET /addon-types?limit=20&offset=0&keywords=tiện%20ích&is_active=true
         "updated_at": "2026-01-22T07:00:00.000Z"
       },
       {
-        "id": "550e8400-e29b-41d4-a716-446655440001",
+        "id": "550e8400-e29b-41d4-a716-446655440002",
         "name": "Tiện ích",
         "description": "Các addon tiện ích mở rộng",
         "is_active": true,
-        "created_at": "2026-01-22T06:00:00.000Z",
-        "updated_at": "2026-01-22T06:00:00.000Z"
+        "created_at": "2026-01-21T07:00:00.000Z",
+        "updated_at": "2026-01-21T07:00:00.000Z"
       }
     ],
     "total": 50,
@@ -318,7 +302,6 @@ GET /addon-types?limit=20&offset=0&keywords=tiện%20ích&is_active=true
   "success": false
 }
 ```
-
 </details>
 
 <details>
@@ -331,26 +314,29 @@ GET /addon-types?limit=20&offset=0&keywords=tiện%20ích&is_active=true
   "success": false
 }
 ```
-
 </details>
 
 ---
 
 ### 3. GET /addon-types/active - Lấy tất cả loại addon đang hoạt động
 
-**Mô tả:** Lấy danh sách tất cả loại addon có trạng thái `is_active = true`. API này thường được sử dụng cho dropdown select.
+**Mô tả:** Lấy danh sách tất cả loại addon có trạng thái `is_active = true`. API này thường được sử dụng cho dropdown select. Chỉ yêu cầu xác thực, không yêu cầu quyền đặc biệt.
 
 **Xác thực:** Bearer Token (JWT)
 
-**Quyền yêu cầu:** Không yêu cầu quyền đặc biệt (chỉ cần xác thực)
+**Quyền yêu cầu:** Không yêu cầu quyền đặc biệt (chỉ cần đăng nhập)
 
 **Headers:**
+```http
+Authorization: Bearer <access_token>
+Accept-Language: vi
+```
+
+**Request Example:**
 
 ```http
 GET /addon-types/active HTTP/1.1
-Host: api.gen-hub.dev
 Authorization: Bearer <access_token>
-Accept-Language: vi
 ```
 
 **Response (200 OK):**
@@ -376,7 +362,7 @@ Accept-Language: vi
     {
       "id": "550e8400-e29b-41d4-a716-446655440002",
       "name": "Tích hợp",
-      "description": "Các addon tích hợp bên thứ ba",
+      "description": "Các addon tích hợp bên ngoài",
       "is_active": true
     }
   ]
@@ -395,7 +381,6 @@ Accept-Language: vi
   "success": false
 }
 ```
-
 </details>
 
 ---
@@ -409,19 +394,23 @@ Accept-Language: vi
 **Quyền yêu cầu:** `addon-type.read`
 
 **Headers:**
-
 ```http
-GET /addon-types/550e8400-e29b-41d4-a716-446655440000 HTTP/1.1
-Host: api.gen-hub.dev
 Authorization: Bearer <access_token>
 Accept-Language: vi
 ```
 
 **Path Parameters:**
 
-| Parameter | Type          | Required     | Description       |
-| --------- | ------------- | ------------ | ----------------- |
-| `id`      | string (UUID) | **Required** | ID của loại addon |
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string (UUID) | Required | ID của loại addon cần lấy thông tin |
+
+**Request Example:**
+
+```http
+GET /addon-types/550e8400-e29b-41d4-a716-446655440000 HTTP/1.1
+Authorization: Bearer <access_token>
+```
 
 **Response (200 OK):**
 
@@ -446,32 +435,6 @@ Accept-Language: vi
 **Error Responses:**
 
 <details>
-<summary><b>401 Unauthorized</b></summary>
-
-```json
-{
-  "code": "error.unauthorized.token_missing",
-  "message": "Không có quyền truy cập",
-  "success": false
-}
-```
-
-</details>
-
-<details>
-<summary><b>403 Forbidden</b></summary>
-
-```json
-{
-  "code": "error.forbidden.no_permission",
-  "message": "Không có quyền thực hiện thao tác này",
-  "success": false
-}
-```
-
-</details>
-
-<details>
 <summary><b>404 Not Found</b></summary>
 
 ```json
@@ -481,7 +444,6 @@ Accept-Language: vi
   "success": false
 }
 ```
-
 </details>
 
 ---
@@ -495,10 +457,7 @@ Accept-Language: vi
 **Quyền yêu cầu:** `addon-type.update`
 
 **Headers:**
-
 ```http
-PUT /addon-types/550e8400-e29b-41d4-a716-446655440000 HTTP/1.1
-Host: api.gen-hub.dev
 Authorization: Bearer <access_token>
 Content-Type: application/json
 Accept-Language: vi
@@ -506,17 +465,17 @@ Accept-Language: vi
 
 **Path Parameters:**
 
-| Parameter | Type          | Required     | Description                    |
-| --------- | ------------- | ------------ | ------------------------------ |
-| `id`      | string (UUID) | **Required** | ID của loại addon cần cập nhật |
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string (UUID) | Required | ID của loại addon cần cập nhật |
 
 **Request Body Schema:**
 
-| Field         | Type    | Required | Description                    |
-| ------------- | ------- | -------- | ------------------------------ |
-| `name`        | string  | Optional | Tên loại addon (max 255 ký tự) |
-| `description` | string  | Optional | Mô tả loại addon               |
-| `is_active`   | boolean | Optional | Trạng thái hoạt động           |
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | string | Optional | Tên loại addon (max 255 ký tự) |
+| `description` | string | Optional | Mô tả chi tiết |
+| `is_active` | boolean | Optional | Trạng thái hoạt động |
 
 **Request Body Examples:**
 
@@ -528,7 +487,6 @@ Accept-Language: vi
   "name": "Bảo mật nâng cao"
 }
 ```
-
 </details>
 
 <details>
@@ -539,11 +497,20 @@ Accept-Language: vi
   "is_active": false
 }
 ```
-
 </details>
 
 <details>
-<summary><b>Ví dụ 3: Cập nhật toàn bộ</b></summary>
+<summary><b>Ví dụ 3: Cập nhật mô tả</b></summary>
+
+```json
+{
+  "description": "Các addon bảo mật cao cấp cho doanh nghiệp"
+}
+```
+</details>
+
+<details>
+<summary><b>Ví dụ 4: Cập nhật toàn bộ</b></summary>
 
 ```json
 {
@@ -552,7 +519,6 @@ Accept-Language: vi
   "is_active": true
 }
 ```
-
 </details>
 
 **Response (200 OK):**
@@ -568,39 +534,13 @@ Accept-Language: vi
     "description": "Các addon bảo mật chuyên nghiệp",
     "is_active": true,
     "created_at": "2026-01-22T07:00:00.000Z",
-    "updated_at": "2026-01-22T08:00:00.000Z",
-    "updated_by": "550e8400-e29b-41d4-a716-446655440001"
+    "updated_at": "2026-01-23T07:00:00.000Z",
+    "updated_by": "550e8400-e29b-41d4-a716-446655440002"
   }
 }
 ```
 
 **Error Responses:**
-
-<details>
-<summary><b>401 Unauthorized</b></summary>
-
-```json
-{
-  "code": "error.unauthorized.token_missing",
-  "message": "Không có quyền truy cập",
-  "success": false
-}
-```
-
-</details>
-
-<details>
-<summary><b>403 Forbidden</b></summary>
-
-```json
-{
-  "code": "error.forbidden.no_permission",
-  "message": "Không có quyền thực hiện thao tác này",
-  "success": false
-}
-```
-
-</details>
 
 <details>
 <summary><b>404 Not Found</b></summary>
@@ -612,7 +552,6 @@ Accept-Language: vi
   "success": false
 }
 ```
-
 </details>
 
 <details>
@@ -625,7 +564,6 @@ Accept-Language: vi
   "success": false
 }
 ```
-
 </details>
 
 <details>
@@ -641,7 +579,6 @@ Accept-Language: vi
   ]
 }
 ```
-
 </details>
 
 ---
@@ -655,19 +592,23 @@ Accept-Language: vi
 **Quyền yêu cầu:** `addon-type.delete`
 
 **Headers:**
-
 ```http
-DELETE /addon-types/550e8400-e29b-41d4-a716-446655440000 HTTP/1.1
-Host: api.gen-hub.dev
 Authorization: Bearer <access_token>
 Accept-Language: vi
 ```
 
 **Path Parameters:**
 
-| Parameter | Type          | Required     | Description               |
-| --------- | ------------- | ------------ | ------------------------- |
-| `id`      | string (UUID) | **Required** | ID của loại addon cần xóa |
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string (UUID) | Required | ID của loại addon cần xóa |
+
+**Request Example:**
+
+```http
+DELETE /addon-types/550e8400-e29b-41d4-a716-446655440000 HTTP/1.1
+Authorization: Bearer <access_token>
+```
 
 **Response (200 OK):**
 
@@ -682,32 +623,6 @@ Accept-Language: vi
 **Error Responses:**
 
 <details>
-<summary><b>401 Unauthorized</b></summary>
-
-```json
-{
-  "code": "error.unauthorized.token_missing",
-  "message": "Không có quyền truy cập",
-  "success": false
-}
-```
-
-</details>
-
-<details>
-<summary><b>403 Forbidden</b></summary>
-
-```json
-{
-  "code": "error.forbidden.no_permission",
-  "message": "Không có quyền thực hiện thao tác này",
-  "success": false
-}
-```
-
-</details>
-
-<details>
 <summary><b>404 Not Found</b></summary>
 
 ```json
@@ -717,7 +632,6 @@ Accept-Language: vi
   "success": false
 }
 ```
-
 </details>
 
 ---
@@ -731,10 +645,7 @@ Accept-Language: vi
 **Quyền yêu cầu:** `addon-type.delete`
 
 **Headers:**
-
 ```http
-DELETE /addon-types/delete/many HTTP/1.1
-Host: api.gen-hub.dev
 Authorization: Bearer <access_token>
 Content-Type: application/json
 Accept-Language: vi
@@ -742,9 +653,9 @@ Accept-Language: vi
 
 **Request Body Schema:**
 
-| Field | Type     | Required     | Description                           |
-| ----- | -------- | ------------ | ------------------------------------- |
-| `ids` | string[] | **Required** | Mảng các ID loại addon cần xóa (UUID) |
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `ids` | string[] (UUID) | Required | Mảng ID các loại addon cần xóa |
 
 **Request Body Examples:**
 
@@ -759,7 +670,6 @@ Accept-Language: vi
   ]
 }
 ```
-
 </details>
 
 <details>
@@ -775,7 +685,6 @@ Accept-Language: vi
   ]
 }
 ```
-
 </details>
 
 **Response (200 OK):**
@@ -791,32 +700,6 @@ Accept-Language: vi
 **Error Responses:**
 
 <details>
-<summary><b>401 Unauthorized</b></summary>
-
-```json
-{
-  "code": "error.unauthorized.token_missing",
-  "message": "Không có quyền truy cập",
-  "success": false
-}
-```
-
-</details>
-
-<details>
-<summary><b>403 Forbidden</b></summary>
-
-```json
-{
-  "code": "error.forbidden.no_permission",
-  "message": "Không có quyền thực hiện thao tác này",
-  "success": false
-}
-```
-
-</details>
-
-<details>
 <summary><b>404 Not Found</b></summary>
 
 ```json
@@ -826,72 +709,71 @@ Accept-Language: vi
   "success": false
 }
 ```
+</details>
 
+<details>
+<summary><b>422 Unprocessable Entity</b></summary>
+
+```json
+{
+  "code": "error.validation",
+  "message": "Dữ liệu đầu vào không hợp lệ",
+  "success": false,
+  "errors": [
+    { "field": "ids", "message": "Danh sách ID không được để trống" }
+  ]
+}
+```
 </details>
 
 ---
 
-## Websocket Events
+## Caching Strategy
 
-Khi có thay đổi loại addon, server sẽ emit các event qua WebSocket để thông báo cho clients.
+Module sử dụng Redis caching với pattern **Cache Aside**:
+
+| Cache Key Pattern | TTL | Description |
+|-------------------|-----|-------------|
+| `addon-type:detail:<id>` | 300s | Cache chi tiết loại addon |
+| `addon-type:list:*` | 300s | Cache danh sách loại addon (theo query params) |
+| `addon-type:active` | 300s | Cache danh sách loại addon đang hoạt động |
+
+### Cache Invalidation
+
+Cache được tự động invalidate khi:
+- Tạo loại addon mới → Xóa cache list + active
+- Cập nhật loại addon → Xóa cache detail + list + active
+- Xóa loại addon → Xóa cache detail + list + active
+
+---
+
+## WebSocket Events
+
+Khi loại addon được thay đổi, server sẽ emit các event qua WebSocket để thông báo cho clients.
 
 ### Event Types
 
-| Action      | Event Name              | Mô tả                      |
-| ----------- | ----------------------- | -------------------------- |
-| Create      | `addonType:created`     | Loại addon mới được tạo    |
-| Update      | `addonType:updated`     | Loại addon được cập nhật   |
-| Delete      | `addonType:deleted`     | Loại addon đã bị xóa       |
+| Action | Event Name | Description |
+|--------|------------|-------------|
+| Create | `addonType:created` | Loại addon mới đã được tạo |
+| Update | `addonType:updated` | Loại addon đã được cập nhật |
+| Delete | `addonType:deleted` | Loại addon đã bị xóa |
 | Delete Many | `addonType:deletedMany` | Nhiều loại addon đã bị xóa |
 
-### Event Payload Schema
+### Event Payload Examples
 
-```typescript
-// addonType:created
-interface AddonTypeCreatedEvent {
-  addonTypeId: string;
-  name: string;
-  createdBy: string;
-  timestamp: string; // ISO 8601
-}
-
-// addonType:updated
-interface AddonTypeUpdatedEvent {
-  addonTypeId: string;
-  name: string;
-  updatedFields: string[];
-  updatedBy: string;
-  timestamp: string; // ISO 8601
-}
-
-// addonType:deleted
-interface AddonTypeDeletedEvent {
-  addonTypeId: string;
-  name: string;
-  deletedBy: string;
-  timestamp: string; // ISO 8601
-}
-
-// addonType:deletedMany
-interface AddonTypeDeletedManyEvent {
-  addonTypeIds: string[];
-  deletedBy: string;
-  timestamp: string; // ISO 8601
-}
-```
-
-### Ví dụ Event Payload
-
+**addonType:created**
 ```json
-// addonType:created
 {
   "addonTypeId": "550e8400-e29b-41d4-a716-446655440000",
   "name": "Bảo mật",
   "createdBy": "550e8400-e29b-41d4-a716-446655440001",
   "timestamp": "2026-01-22T07:00:00.000Z"
 }
+```
 
-// addonType:updated
+**addonType:updated**
+```json
 {
   "addonTypeId": "550e8400-e29b-41d4-a716-446655440000",
   "name": "Bảo mật Pro",
@@ -901,31 +783,54 @@ interface AddonTypeDeletedManyEvent {
 }
 ```
 
-### Cách sử dụng ở Frontend
+**addonType:deleted**
+```json
+{
+  "addonTypeId": "550e8400-e29b-41d4-a716-446655440000",
+  "name": "Bảo mật",
+  "deletedBy": "550e8400-e29b-41d4-a716-446655440001",
+  "timestamp": "2026-01-22T09:00:00.000Z"
+}
+```
+
+**addonType:deletedMany**
+```json
+{
+  "addonTypeIds": [
+    "550e8400-e29b-41d4-a716-446655440000",
+    "550e8400-e29b-41d4-a716-446655440001"
+  ],
+  "deletedBy": "550e8400-e29b-41d4-a716-446655440002",
+  "timestamp": "2026-01-22T10:00:00.000Z"
+}
+```
+
+### Frontend Usage
 
 ```typescript
 import { io } from 'socket.io-client';
 
 const socket = io('wss://api.gen-hub.dev');
 
+// Subscribe addon type events
 socket.on('addonType:created', (payload) => {
   console.log('New addon type created:', payload.name);
-  // Refresh danh sách hoặc thêm item mới
+  // Refresh addon type list
 });
 
 socket.on('addonType:updated', (payload) => {
   console.log('Addon type updated:', payload.addonTypeId);
-  // Cập nhật UI với dữ liệu mới
+  // Update local state
 });
 
 socket.on('addonType:deleted', (payload) => {
   console.log('Addon type deleted:', payload.addonTypeId);
-  // Xóa item khỏi danh sách
+  // Remove from local state
 });
 
 socket.on('addonType:deletedMany', (payload) => {
   console.log('Multiple addon types deleted:', payload.addonTypeIds);
-  // Xóa nhiều items khỏi danh sách
+  // Remove from local state
 });
 ```
 
@@ -934,70 +839,47 @@ socket.on('addonType:deletedMany', (payload) => {
 ## Validation Rules
 
 ### Name
-
-- **Bắt buộc:** Có
-- **Kiểu dữ liệu:** String
-- **Độ dài tối đa:** 255 ký tự
-- **Unique:** Có (không cho phép trùng tên)
+- **Required**
+- Kiểu dữ liệu: string
+- Độ dài tối đa: 255 ký tự
+- Unique (không trùng với loại addon khác)
 
 ### Description
-
-- **Bắt buộc:** Không
-- **Kiểu dữ liệu:** String
+- **Optional**
+- Kiểu dữ liệu: string
 
 ### Is Active
-
-- **Bắt buộc:** Không
-- **Kiểu dữ liệu:** Boolean
-- **Mặc định:** true
-
-### Query Parameters
-
-- **limit:** Số nguyên dương (min: 1)
-- **offset:** Số nguyên không âm (min: 0)
-- **keywords:** String
-- **is_active:** Boolean (true/false)
+- **Optional**
+- Kiểu dữ liệu: boolean
+- Mặc định: true
 
 ---
 
-## Caching Strategy
+## Quyền Hạn (Permissions)
 
-Module sử dụng Redis cache với strategy **Cache Aside**:
+| Permission | Description |
+|------------|-------------|
+| `addon-type.create` | Tạo loại addon mới |
+| `addon-type.list` | Xem danh sách loại addon |
+| `addon-type.read` | Xem chi tiết loại addon |
+| `addon-type.update` | Cập nhật loại addon |
+| `addon-type.delete` | Xóa loại addon |
 
-| Cache Key Pattern   | TTL  | Mô tả                      |
-| ------------------- | ---- | -------------------------- |
-| `addon-type:{id}`   | 300s | Cache chi tiết loại addon  |
-| `addon-type:list:*` | 60s  | Cache danh sách theo query |
-| `addon-type:active` | 60s  | Cache danh sách active     |
-
-**Invalidation:**
-
-- Khi tạo/cập nhật/xóa loại addon, cache tương ứng sẽ bị invalidate
-- Cache list sẽ bị xóa toàn bộ khi có thay đổi
+> [!NOTE]
+> API `GET /addon-types/active` không yêu cầu quyền đặc biệt, chỉ cần đăng nhập (authenticated).
 
 ---
 
 ## Files Trong Module
 
-| File                                 | Mô tả                          |
-| ------------------------------------ | ------------------------------ |
-| `addon-type.controller.ts`           | Controller xử lý HTTP requests |
-| `addon-type.service.ts`              | Business logic và caching      |
-| `addon-type.repository.ts`           | Data access layer với Prisma   |
-| `addon-type.module.ts`               | NestJS module configuration    |
-| `dto/create-addon-type.dto.ts`       | DTO cho request tạo mới        |
-| `dto/update-addon-type.dto.ts`       | DTO cho request cập nhật       |
-| `dto/query-addon-type.dto.ts`        | DTO cho query parameters       |
-| `interfaces/addon-type.interface.ts` | TypeScript interfaces          |
-
----
-
-## Permissions
-
-| Permission          | Mô tả                    |
-| ------------------- | ------------------------ |
-| `addon-type.create` | Tạo loại addon mới       |
-| `addon-type.list`   | Xem danh sách loại addon |
-| `addon-type.read`   | Xem chi tiết loại addon  |
-| `addon-type.update` | Cập nhật loại addon      |
-| `addon-type.delete` | Xóa loại addon           |
+| File | Mô tả |
+|------|-------|
+| `addon-type.module.ts` | Module definition và providers |
+| `addon-type.controller.ts` | API endpoints với Swagger decorators |
+| `addon-type.service.ts` | Business logic, caching, logging |
+| `addon-type.repository.ts` | Database operations với Prisma |
+| `dto/create-addon-type.dto.ts` | DTO cho tạo loại addon |
+| `dto/update-addon-type.dto.ts` | DTO cho cập nhật loại addon |
+| `dto/query-addon-type.dto.ts` | DTO cho query parameters |
+| `types/addon-type.type.ts` | TypeScript interfaces |
+| `constants/addon-type-cache-keys.helper.ts` | Cache key helpers |

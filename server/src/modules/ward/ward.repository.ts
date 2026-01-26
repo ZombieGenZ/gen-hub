@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
-import { IWard, IWardWithProvince } from './interfaces';
+import { IWard, IWardWithProvince } from './types';
 import { QueryWardDto } from './dto';
+import { wardDetailSelect, wardListSelect } from './selects/ward.select';
 
 @Injectable()
 export class WardRepository {
@@ -37,17 +38,7 @@ export class WardRepository {
         const items = await this.prisma.ward.findMany({
             where,
             orderBy: { name: 'asc' },
-            select: {
-                id: true,
-                code: true,
-                name: true,
-                slug: true,
-                type: true,
-                province_id: true,
-                is_active: true,
-                created_at: true,
-                updated_at: true,
-            },
+            select: wardListSelect,
         });
 
         return items as IWard[];
@@ -59,15 +50,7 @@ export class WardRepository {
     async findById(id: string): Promise<IWardWithProvince | null> {
         const ward = await this.prisma.ward.findFirst({
             where: { id, is_deleted: false, is_active: true },
-            include: {
-                province: {
-                    select: {
-                        id: true,
-                        code: true,
-                        name: true,
-                    },
-                },
-            },
+            select: wardDetailSelect,
         });
 
         return ward as IWardWithProvince | null;

@@ -12,6 +12,7 @@
         "offset_int": "Offset phải là số nguyên",
         "offset_min": "Offset phải >= 0",
         "keywords_string": "Từ khóa tìm kiếm phải là chuỗi",
-        "province_id_uuid": "ID tỉnh/thành phố phải là UUID hợp lệ"
+        "province_id_uuid": "ID tỉnh/thành phố phải là UUID hợp lệ",
+        "type_invalid": "Loại phường/xã không hợp lệ (phải là WARD, COMMUNE, TOWNSHIP, TOWN hoặc CITY)"
     }
 }

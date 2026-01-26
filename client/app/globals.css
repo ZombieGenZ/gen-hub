@@ -41,7 +41,7 @@
     --sidebar-border: oklch(0.21 0.034 264.665 / 0.125);
     --sidebar-ring: oklch(0.6 0.103 188);
     --radius: 1rem;
-    --font-sans: 'Geist', sans-serif;
+    --font-sans: var(--font-rem), ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
     --font-serif: 'Playfair Display', serif;
     --primary-light: oklch(0.79 0.131 185);
     --primary-dark: oklch(0.71 0.121 186);
@@ -147,10 +147,58 @@
   --color-loader-bg: var(--loader-bg);
   --color-loader-text-unfilled: var(--loader-text-unfilled);
 
+  /* User provided theme extensions */
+  --hu-font-geist: var(--font-geist);
+  --hu-font-jetbrains: var(--font-jetbrains-mono);
+  --radius: 0.8rem;
+  --card-radius: 1rem;
+  --hu-background: 0, 0%, 100%;
+  --hu-foreground: 0, 0%, 14%;
+  --hu-card: 0, 0%, 99%;
+  --hu-card-foreground: 0, 0%, 14%;
+  --hu-primary: 235, 100%, 60%;
+  --hu-primary-foreground: 0, 0%, 98%;
+  --hu-secondary: 0, 0%, 97%;
+  --hu-secondary-foreground: 0, 0%, 20%;
+  --hu-muted: 0, 0%, 97%;
+  --hu-muted-foreground: 0, 0%, 56%;
+  --hu-accent: 0, 0%, 96%;
+  --hu-accent-foreground: 0, 0%, 20%;
+  --hu-destructive: 9, 96%, 47%;
+  --hu-destructive-foreground: 0, 0%, 98%;
+  --hu-border: 0, 0%, 92%;
+  --hu-input: 0, 0%, 100%;
+  --hu-ring: 0, 0%, 71%;
+  --color-fd-background: hsl(var(--hu-background));
+  --color-fd-card: hsl(var(--hu-background));
+
+  /* Map custom variables for the component */
+  --color-hu-background: hsl(var(--hu-background));
+  --color-hu-foreground: hsl(var(--hu-foreground));
+  --color-hu-card: hsl(var(--hu-card));
+  --color-hu-card-foreground: hsl(var(--hu-card-foreground));
+  --color-hu-primary: hsl(var(--hu-primary));
+  --color-hu-primary-foreground: hsl(var(--hu-primary-foreground));
+  --color-hu-secondary: hsl(var(--hu-secondary));
+  --color-hu-secondary-foreground: hsl(var(--hu-secondary-foreground));
+  --color-hu-muted: hsl(var(--hu-muted));
+  --color-hu-muted-foreground: hsl(var(--hu-muted-foreground));
+  --color-hu-accent: hsl(var(--hu-accent));
+  --color-hu-accent-foreground: hsl(var(--hu-accent-foreground));
+  --color-hu-destructive: hsl(var(--hu-destructive));
+  --color-hu-destructive-foreground: hsl(var(--hu-destructive-foreground));
+  --color-hu-border: hsl(var(--hu-border));
+  --color-hu-input: hsl(var(--hu-input));
+  --color-hu-ring: hsl(var(--hu-ring));
+  
   /* Custom */
   --font-sans: var(--font-sans);
   --font-serif: var(--font-serif);
   --shadow-premium: var(--shadow-premium);
+}
+
+@utility rounded-ele {
+  border-radius: var(--radius);
 }
 
 @layer base {
@@ -158,15 +206,22 @@
     @apply border-border outline-ring/50;
   }
   html {
-    overflow-x: hidden;
-    overflow-y: scroll;
+    /* 
+     * QUAN TRỌNG: Không đặt overflow-x: hidden trên html
+     * vì nó sẽ phá vỡ position: sticky của các descendant elements.
+     * Thay vào đó, để body xử lý overflow.
+     */
     scroll-behavior: smooth;
   }
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-sans);
-    overflow-x: hidden;
-    overflow-y: visible;
+    /* 
+     * Đặt overflow-x: hidden trên body thay vì html
+     * Điều này cho phép sticky hoạt động đúng
+     */
+    overflow-x: clip; /* Sử dụng clip thay vì hidden để không tạo scroll container mới */
+    min-height: 100vh;
   }
 }
 

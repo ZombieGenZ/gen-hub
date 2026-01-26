@@ -11,6 +11,7 @@
         "limit_min": "Limit phải >= 1",
         "offset_int": "Offset phải là số nguyên",
         "offset_min": "Offset phải >= 0",
-        "keywords_string": "Từ khóa tìm kiếm phải là chuỗi"
+        "keywords_string": "Từ khóa tìm kiếm phải là chuỗi",
+        "type_invalid": "Loại tỉnh/thành phố không hợp lệ (phải là PROVINCE hoặc CITY)"
     }
 }

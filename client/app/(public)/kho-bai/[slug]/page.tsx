@@ -1,12 +1,18 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Property, mockProperties } from '@/data/mockProperties';
 import { PrimeNestHeader } from '@/app/(public)/homepage/Header';
 import { PrimeNestFooter } from '@/app/(public)/homepage/Footer';
 import MapComponent from '@/app/(public)/homepage/MapSearch/MapComponent';
 import { BookingWidget } from '@/components/warehouse/booking-widget';
+import PropertySearch from '@/components/search/PropertySearch';
+import SearchHeader from "@/components/search/SearchHeader";
+import { FilterModal, FilterState } from '@/components/search/FilterModal';
+import { SearchFilters } from '@/components/search/HeroSearchBar';
+import '../kho-bai.css';
+
 import {
     MapPinIcon,
     CheckIcon,
@@ -33,18 +39,52 @@ import { Separator } from '@/components/ui/separator';
 
 const PRIMARY_COLOR = "#0F766E"; // GenHub Teal
 
-export default function WarehouseDetailPage() {
+export default function WarehouseDynamicPage() {
     const params = useParams();
     const router = useRouter();
-    const id = params.id as string;
+
+    // [slug] param matches both ID (123) and Location Slug (tan-binh)
+    const slug = params.slug as string;
+    const isId = !isNaN(Number(slug));
+
+    // --- SEARCH MODE (Location Slug) ---
+    if (!isId) {
+        return (
+            <div className="kho-bai-page">
+                <PrimeNestHeader isLogin={false} />
+                <Suspense fallback={<div className="p-10 text-center">Đang tải...</div>}>
+                    <PropertySearch initialLocationSlug={slug} />
+                </Suspense>
+                <PrimeNestFooter />
+            </div>
+        );
+    }
+
+    // --- DETAIL MODE (Numeric ID) ---
+    const id = slug;
     const [property, setProperty] = useState<Property | null>(null);
     const [loading, setLoading] = useState(true);
+    const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+
+    const handleDetailSearch = (filters: SearchFilters) => {
+        const params = new URLSearchParams();
+        if (filters.areaRange) {
+            params.set('areaMin', filters.areaRange.min.toString());
+            params.set('areaMax', filters.areaRange.max.toString());
+        }
+        if (filters.rentalType) params.set('type', filters.rentalType);
+
+        if (filters.location) {
+            router.push(`/kho-bai/${filters.location}?${params.toString()}`);
+        } else {
+            router.push(`/kho-bai?${params.toString()}`);
+        }
+    };
 
     useEffect(() => {
         if (id) {
             const found = mockProperties.find(p => p.id === Number(id));
             if (found) {
-                // Enriching mock data for B2B demo
                 const enrichedProperty = {
                     ...found,
                     power_type: "3 Pha / 500kVA",
@@ -61,7 +101,6 @@ export default function WarehouseDetailPage() {
     if (loading) {
         return (
             <div className="flex flex-col min-h-screen">
-                <PrimeNestHeader isLogin={false} />
                 <main className="flex-1 flex items-center justify-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0F766E]"></div>
                 </main>
@@ -73,7 +112,6 @@ export default function WarehouseDetailPage() {
     if (!property) {
         return (
             <div className="flex flex-col min-h-screen">
-                <PrimeNestHeader isLogin={false} />
                 <main className="flex-1 flex items-center justify-center">
                     <div className="text-center">
                         <h1 className="text-2xl font-bold text-slate-900 mb-2">Không tìm thấy kho</h1>
@@ -97,8 +135,21 @@ export default function WarehouseDetailPage() {
 
     return (
         <div className="flex flex-col min-h-screen bg-white dark:bg-[#0f172a] font-sans text-slate-900 dark:text-white">
-            <PrimeNestHeader isLogin={false} />
-
+            <SearchHeader
+                onSearch={handleDetailSearch}
+                onOpenFilter={() => setIsFilterModalOpen(true)}
+            />
+            <FilterModal
+                isOpen={isFilterModalOpen}
+                onClose={() => setIsFilterModalOpen(false)}
+                onApply={() => { setIsFilterModalOpen(false); /* Optional redirect logic could go here */ }}
+                initialFilters={{
+                    priceRange: [0, 500],
+                    amenities: [],
+                    ceilingHeight: null,
+                    floorLoadCapacity: 3,
+                }}
+            />
             <main className="flex-1 w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
 
                 {/* 1. Header Section */}
@@ -188,7 +239,7 @@ export default function WarehouseDetailPage() {
                                 <h2 className="text-xl font-bold text-slate-900 dark:text-white">Quản lý bởi GenHub Logistics</h2>
                             </div>
                             <div className="size-14 rounded-full bg-teal-100 flex items-center justify-center text-[#0F766E] font-bold text-xl border-2 border-white shadow-sm">
-                                <img src="assets/images/icongenhub.png" alt="Logo" className="w-10 h-10" />
+                                <img src="/assets/icongenhub.svg" alt="Logo" className="w-7 h-7" />
                             </div>
                         </div>
 
@@ -250,12 +301,48 @@ export default function WarehouseDetailPage() {
                                     { icon: InboxStackIcon, label: "3 Dock Leveler tự động" },
                                     { icon: MapPinIcon, label: "Gần Cảng Cát Lái (5km)" },
                                     { icon: InformationCircleIcon, label: "Văn phòng điều hành 50m²" },
+                                    { icon: BoltIcon, label: "WiFi / Internet Tốc độ cao" },
+                                    { icon: SunIcon, label: "Điều hòa trung tâm (Kho mát)" },
+                                    { icon: BuildingOffice2Icon, label: "Phòng họp / Co-working space" },
+                                    { icon: Squares2X2Icon, label: "Khu vực Canteen / Ăn uống" },
                                 ].map((item, i) => (
                                     <div key={i} className="flex items-center gap-3 text-slate-700 font-medium">
                                         <item.icon className="w-6 h-6 text-slate-400" />
                                         <span>{item.label}</span>
                                     </div>
                                 ))}
+                            </div>
+                        </section>
+
+                        <Separator className="bg-slate-100" />
+
+                        {/* Terms Section from Document */}
+                        <section>
+                            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-6">Điều khoản thuê kho</h3>
+                            <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-6 border border-slate-100 dark:border-slate-700 space-y-4">
+                                <div>
+                                    <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm mb-1 uppercase tracking-wide">Thanh toán & Đặt cọc</h4>
+                                    <p className="text-sm text-slate-600 dark:text-slate-400">
+                                        Thanh toán 100% một lần trong vòng 07 ngày kể từ ngày ký HĐ. Phí dịch vụ chưa bao gồm VAT.
+                                        Lãi chậm trả: 0.05%/ngày.
+                                    </p>
+                                </div>
+                                <div>
+                                    <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm mb-1 uppercase tracking-wide">Quy trình vận hành</h4>
+                                    <p className="text-sm text-slate-600 dark:text-slate-400">
+                                        Tiếp nhận xe tại bãi đệm - Hạ hàng tại khu vực chung (miễn phí) - Cất hàng vào vị trí thuê.
+                                        Kiểm tra ngoại quan 100% hàng hóa đầu vào.
+                                    </p>
+                                </div>
+                                <div>
+                                    <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm mb-1 uppercase tracking-wide">Định mức hao hụt</h4>
+                                    <p className="text-sm text-slate-600 dark:text-slate-400">
+                                        Cho phép trong khoảng quy định. Bên A bồi thường nếu vượt định mức theo giá trị hóa đơn.
+                                    </p>
+                                </div>
+                                <div className="pt-2">
+                                    <a href="#" className="text-[#0F766E] font-bold text-sm hover:underline">Xem chi tiết Hợp đồng mẫu &gt;</a>
+                                </div>
                             </div>
                         </section>
 
@@ -268,7 +355,7 @@ export default function WarehouseDetailPage() {
                                 <MapComponent
                                     properties={[property]}
                                     highlightedPropertyId={property.id}
-                                    onMarkerClick={() => { }} // No-op
+                                    onMarkerClick={() => { }} 
                                     variant="detail"
                                 />
                             </div>

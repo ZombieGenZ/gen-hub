@@ -1,37 +1,23 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { I18nService } from 'nestjs-i18n';
 import { AddonTypeRepository } from './addon-type.repository';
 import { RedisService } from '../redis/redis.service';
 import { WebsocketGateway } from '../websocket/websocket.gateway';
 import { SystemLogService } from '../system-log/system-log.service';
 import { CreateAddonTypeDto, UpdateAddonTypeDto, QueryAddonTypeDto } from './dto';
-import { IAddonTypePaginatedResponse } from './interfaces';
+import { IAddonTypePaginatedResponse } from './types';
+import { AddonTypeCacheKeysHelper } from './constants';
 
 @Injectable()
 export class AddonTypeService {
-    private readonly cacheTTL: number;
-    private readonly listCacheTTL: number;
-
     constructor(
         private readonly repository: AddonTypeRepository,
         private readonly redisService: RedisService,
         private readonly websocketGateway: WebsocketGateway,
         private readonly systemLogService: SystemLogService,
-        private readonly configService: ConfigService,
         private readonly i18n: I18nService,
-    ) {
-        this.cacheTTL = this.configService.get<number>('REDIS_ADDON_TYPE_CACHE_TTL', 300);
-        this.listCacheTTL = this.configService.get<number>('REDIS_ADDON_TYPE_LIST_CACHE_TTL', 60);
-    }
-
-    private getCacheKey(id: string): string {
-        return `addon-type:${id}`;
-    }
-
-    private getListCacheKey(query: QueryAddonTypeDto): string {
-        return `addon-type:list:${JSON.stringify(query)}`;
-    }
+        private readonly cacheKeys: AddonTypeCacheKeysHelper,
+    ) { }
 
     async create(dto: CreateAddonTypeDto, userId: string, lang: string) {
         // Kiểm tra tên trùng
@@ -71,7 +57,7 @@ export class AddonTypeService {
         const { limit = 10, offset = 0, keywords, is_active } = query;
 
         // Check cache
-        const cacheKey = this.getListCacheKey(query);
+        const cacheKey = this.cacheKeys.list(query);
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
             return JSON.parse(cached);
@@ -104,14 +90,14 @@ export class AddonTypeService {
         const result = { items: data, total, limit, offset, hasMore };
 
         // Set cache
-        await this.redisService.set(cacheKey, JSON.stringify(result), this.listCacheTTL);
+        await this.redisService.set(cacheKey, JSON.stringify(result), this.cacheKeys.listTtl);
 
         return result;
     }
 
     async findById(id: string, lang: string) {
         // Check cache
-        const cacheKey = this.getCacheKey(id);
+        const cacheKey = this.cacheKeys.detail(id);
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
             return JSON.parse(cached);
@@ -125,20 +111,20 @@ export class AddonTypeService {
         }
 
         // Set cache
-        await this.redisService.set(cacheKey, JSON.stringify(addonType), this.cacheTTL);
+        await this.redisService.set(cacheKey, JSON.stringify(addonType), this.cacheKeys.detailTtl);
 
         return addonType;
     }
 
     async findAllActive() {
-        const cacheKey = 'addon-type:active';
+        const cacheKey = this.cacheKeys.active();
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
             return JSON.parse(cached);
         }
 
         const addonTypes = await this.repository.findAllActive();
-        await this.redisService.set(cacheKey, JSON.stringify(addonTypes), this.listCacheTTL);
+        await this.redisService.set(cacheKey, JSON.stringify(addonTypes), this.cacheKeys.listTtl);
 
         return addonTypes;
     }
@@ -234,9 +220,9 @@ export class AddonTypeService {
 
         // Soft delete và mappings
         await this.repository.softDeleteMany(ids, userId);
-        for (const id of ids) {
-            await this.repository.softDeleteMappings(id, userId);
-        }
+
+        // Parallelize soft delete mappings
+        await Promise.all(ids.map(id => this.repository.softDeleteMappings(id, userId)));
 
         // Invalidate cache
         await Promise.all(ids.map(id => this.invalidateCache(id)));
@@ -259,11 +245,11 @@ export class AddonTypeService {
     }
 
     private async invalidateCache(id: string) {
-        await this.redisService.del(this.getCacheKey(id));
+        await this.redisService.del(this.cacheKeys.detail(id));
     }
 
     private async invalidateListCache() {
-        await this.redisService.delByPattern('addon-type:list:*');
-        await this.redisService.del('addon-type:active');
+        await this.redisService.delByPattern(this.cacheKeys.listPattern());
+        await this.redisService.del(this.cacheKeys.active());
     }
 }

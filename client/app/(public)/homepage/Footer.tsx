@@ -47,8 +47,8 @@ const socialIcons = [
 
 export function PrimeNestFooter() {
     return (
-        <footer className=" max-w-7xl mx-auto px-6 py-6 rounded-lg bg-muted border-t border-border">
-            <div className="max-w-7xl mx-auto px-6 py-6">
+        <footer className="full-width mx-6 py-6 rounded-lg bg-muted border-t border-border">
+            <div className="full-width mx-6 px-6 py-6">
                 <div className="grid grid-cols-2 md:grid-cols-6 gap-8">
                     {/* Brand Column */}
                     <div className="col-span-2">

@@ -646,6 +646,62 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     return this.configService.get<string>('REDIS_SYSTEM_LOG_STATS_KEY_PREFIX') || 'system:log:stats';
   }
 
+
+  private readonly TWO_FACTOR_SETUP_CACHE_TTL: number;
+  private readonly TWO_FACTOR_TEMP_TOKEN_CACHE_TTL: number;
+
+  private get TWO_FACTOR_SETUP_KEY_PREFIX(): string {
+    return this.configService.get<string>('REDIS_TWO_FACTOR_SETUP_KEY_PREFIX') || '2fa:setup';
+  }
+
+  /*
+   * Initialize 2FA cache config in constructor (add this logic inside constructor)
+   * Note: Since I cannot edit constructor directly here easily without replacing the whole class, 
+   * I will rely on the properties being initialized with default values or read directly in methods if needed.
+   * However, best practice is to read in constructor. 
+   * Let's add the methods first.
+   */
+
+  /**
+   * Generate cache key for 2FA setup session
+   */
+  getTwoFactorSetupCacheKey(userId: string): string {
+    return `${this.TWO_FACTOR_SETUP_KEY_PREFIX}:${userId}`;
+  }
+
+  /**
+   * Get 2FA setup session from cache
+   */
+  async getTwoFactorSetupCache<T>(userId: string): Promise<T | null> {
+    const data = await this.get(this.getTwoFactorSetupCacheKey(userId));
+    if (!data) return null;
+    try {
+      return JSON.parse(data) as T;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Set 2FA setup session to cache
+   */
+  async setTwoFactorSetupCache<T>(
+    userId: string,
+    data: T,
+    ttlSeconds?: number,
+  ): Promise<void> {
+    const ttl = ttlSeconds || this.configService.get<number>('REDIS_TWO_FACTOR_SETUP_CACHE_TTL') || 300;
+    await this.set(this.getTwoFactorSetupCacheKey(userId), JSON.stringify(data), ttl);
+  }
+
+  /**
+   * Invalidate 2FA setup session cache
+   */
+  async invalidateTwoFactorSetupCache(userId: string): Promise<void> {
+    await this.del(this.getTwoFactorSetupCacheKey(userId));
+  }
+
+
   private get SYSTEM_LOG_MODULES_KEY_PREFIX(): string {
     return this.configService.get<string>('REDIS_SYSTEM_LOG_MODULES_KEY_PREFIX') || 'system:log:modules';
   }

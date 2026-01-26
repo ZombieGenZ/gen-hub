@@ -29,16 +29,14 @@ export const MenuItem = ({
         <div onMouseEnter={() => setActive(item)} className="relative">
             <motion.p
                 transition={{ duration: 0.2 }}
-                className={`cursor-pointer text-sm font-medium transition-colors duration-200 relative group ${
-                    isActive 
-                        ? 'text-teal-600' 
-                        : 'text-gray-700 hover:text-teal-600 dark:text-gray-300 dark:hover:text-teal-400'
-                }`}
+                className={`cursor-pointer text-sm font-medium transition-colors duration-200 relative group ${isActive
+                    ? 'text-primary'
+                    : 'text-muted-foreground hover:text-primary'
+                    }`}
             >
                 {item}
-                <span className={`absolute -bottom-1 left-0 h-0.5 bg-teal-500 transition-all duration-200 ${
-                    isActive ? 'w-full' : 'w-0 group-hover:w-full'
-                }`} />
+                <span className={`absolute -bottom-1 left-0 h-0.5 bg-primary transition-all duration-200 ${isActive ? 'w-full' : 'w-0 group-hover:w-full'
+                    }`} />
             </motion.p>
             {active !== null && active === item && children && (
                 <motion.div
@@ -112,7 +110,7 @@ export const HoveredLink = ({ children, ...rest }: any) => {
     return (
         <Link
             {...rest}
-            className="text-gray-700 dark:text-gray-300 hover:text-teal-600 dark:hover:text-teal-400 transition-colors duration-200 py-2 block font-normal"
+            className="text-muted-foreground hover:text-primary transition-colors duration-200 py-2 block font-normal"
         >
             {children}
         </Link>

@@ -25,11 +25,13 @@ export class AddonService {
     }
 
     private getCacheKey(id: string): string {
-        return `addon:${id}`;
+        const prefix = this.configService.get<string>('REDIS_ADDON_KEY_PREFIX', 'addon');
+        return `${prefix}:${id}`;
     }
 
     private getListCacheKey(query: QueryAddonDto): string {
-        return `addon:list:${JSON.stringify(query)}`;
+        const prefix = this.configService.get<string>('REDIS_ADDON_LIST_KEY_PREFIX', 'addon:list');
+        return `${prefix}:${JSON.stringify(query)}`;
     }
 
     async create(dto: CreateAddonDto, userId: string, lang: string) {
@@ -50,7 +52,7 @@ export class AddonService {
         await this.invalidateListCache();
 
         // Ghi log
-        this.systemLogService.info('Addon', 'CREATE', `Tạo addon mới: ${addon.name}`, {
+        this.systemLogService.info('Addon', 'CREATE', this.i18n.t('addon.logs.created', { lang: 'vi', args: { name: addon.name } }), {
             userId,
             metaData: { addonId: addon.id, name: addon.name },
         });
@@ -142,7 +144,8 @@ export class AddonService {
     // Lấy tất cả active addons (không phân trang, dùng cho dropdown)
     async findAllActive(query?: QueryActiveAddonDto) {
         const addonTypeId = query?.addon_type_id;
-        const cacheKey = addonTypeId ? `addon:active:type:${addonTypeId}` : 'addon:active';
+        const prefix = this.configService.get<string>('REDIS_ADDON_ACTIVE_KEY_PREFIX', 'addon:active');
+        const cacheKey = addonTypeId ? `${prefix}:type:${addonTypeId}` : prefix;
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
             return JSON.parse(cached);
@@ -187,7 +190,7 @@ export class AddonService {
         await this.invalidateListCache();
 
         // Ghi log
-        this.systemLogService.info('Addon', 'UPDATE', `Cập nhật addon: ${updated.name}`, {
+        this.systemLogService.info('Addon', 'UPDATE', this.i18n.t('addon.logs.updated', { lang: 'vi', args: { name: updated.name } }), {
             userId,
             metaData: { addonId: id, updatedFields: Object.keys(dto) },
         });
@@ -221,7 +224,7 @@ export class AddonService {
         await this.invalidateListCache();
 
         // Ghi log
-        this.systemLogService.info('Addon', 'DELETE', `Xóa addon: ${addon.name}`, {
+        this.systemLogService.info('Addon', 'DELETE', this.i18n.t('addon.logs.deleted', { lang: 'vi', args: { name: addon.name } }), {
             userId,
             metaData: { addonId: id, name: addon.name },
         });
@@ -262,7 +265,7 @@ export class AddonService {
 
         // Log
         addons.forEach(a => {
-            this.systemLogService.info('Addon', 'DELETE', `Xóa addon: ${a.name}`, {
+            this.systemLogService.info('Addon', 'DELETE', this.i18n.t('addon.logs.deleted', { lang: 'vi', args: { name: a.name } }), {
                 userId,
                 metaData: { addonId: a.id, name: a.name },
             });
@@ -274,6 +277,9 @@ export class AddonService {
     }
 
     private async invalidateListCache() {
-        await this.redisService.delByPattern('addon:list:*');
+        const listPrefix = this.configService.get<string>('REDIS_ADDON_LIST_KEY_PREFIX', 'addon:list');
+        const activePrefix = this.configService.get<string>('REDIS_ADDON_ACTIVE_KEY_PREFIX', 'addon:active');
+        await this.redisService.delByPattern(`${listPrefix}:*`);
+        await this.redisService.delByPattern(`${activePrefix}*`);
     }
 }

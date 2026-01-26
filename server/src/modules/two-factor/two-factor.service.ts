@@ -9,7 +9,7 @@ import * as speakeasy from 'speakeasy';
 import * as QRCode from 'qrcode';
 import { I18nService } from 'nestjs-i18n';
 
-import { UserRepository } from '../user/user.repository';
+import { TwoFactorRepository } from './repositories/two-factor.repository';
 import { BackupCodeService } from '../backup-code/backup-code.service';
 import { SystemLogService } from '../system-log/system-log.service';
 import { EmailService } from '../notification/email.service';
@@ -18,12 +18,15 @@ import { RefreshTokenRepository } from '../auth/repositories/refresh-token.repos
 import { WebsocketGateway } from '../websocket/websocket.gateway';
 import { BruteForceService } from '../brute-force/brute-force.service';
 import { RedisService } from '../redis/redis.service';
-import { VerifyTwoFactorSetupDto, VerifyTwoFactorLoginDto } from '../auth/dto';
+import { VerifyTwoFactorSetupDto, VerifyTwoFactorLoginDto } from './dto';
 import { IDeviceInfo } from '../../common/interfaces';
+import { TWO_FACTOR_ACTIONS, TWO_FACTOR_MODULE } from './constants/two-factor.constant';
+import { ISanitizedUser } from './types';
 
 /**
  * Two-Factor Service
  * Xử lý logic nghiệp vụ liên quan đến xác thực 2 yếu tố
+ * Đã tối ưu hóa: sử dụng Repository pattern và Redis caching
  */
 @Injectable()
 export class TwoFactorService {
@@ -31,7 +34,7 @@ export class TwoFactorService {
     private readonly configService: ConfigService,
     private readonly jwtService: JwtService,
     private readonly i18n: I18nService,
-    private readonly userRepository: UserRepository,
+    private readonly twoFactorRepository: TwoFactorRepository,
     private readonly backupCodeService: BackupCodeService,
     private readonly systemLogService: SystemLogService,
     private readonly emailService: EmailService,
@@ -40,13 +43,14 @@ export class TwoFactorService {
     private readonly websocketGateway: WebsocketGateway,
     private readonly bruteForceService: BruteForceService,
     private readonly redisService: RedisService,
-  ) {}
+  ) { }
 
   /**
    * Thiết lập 2FA (bước 1)
+   * Tối ưu: Lưu secret vào Redis thay vì DB
    */
   async setupTwoFactor(userId: string, lang = 'vi') {
-    const user = await this.userRepository.findById(userId);
+    const user = await this.twoFactorRepository.findUserForTwoFactor(userId);
     if (!user) {
       throw new BadRequestException(
         await this.i18n.t('two-factor.user_not_found', { lang }),
@@ -65,13 +69,15 @@ export class TwoFactorService {
       issuer: brandName,
     });
 
-    await this.userRepository.updateTwoFactorSecret(userId, secret.base32);
+    // Tối ưu: Lưu secret vào Redis (cache) thay vì DB
+    // Giúp tránh việc lưu rác vào DB nếu user không hoàn tất setup
+    await this.redisService.setTwoFactorSetupCache(userId, secret.base32);
 
     const qrCodeUrl = await QRCode.toDataURL(secret.otpauth_url || '');
 
     this.systemLogService.info(
-      'two-factor',
-      'setup_2fa',
+      TWO_FACTOR_MODULE,
+      TWO_FACTOR_ACTIONS.SETUP_2FA,
       `2FA setup initiated: ${user.email}`,
       {
         userId: user.id,
@@ -94,15 +100,31 @@ export class TwoFactorService {
     dto: VerifyTwoFactorSetupDto,
     lang = 'vi',
   ) {
-    const user = await this.userRepository.findById(userId);
-    if (!user || !user.two_factor_token) {
-      throw new BadRequestException(
-        await this.i18n.t('two-factor.setup_not_started', { lang }),
-      );
+    // 1. Lấy secret từ Redis cache
+    const secret = await this.redisService.getTwoFactorSetupCache<string>(userId);
+
+    // Nếu không tìm thấy trong cache, kiểm tra DB (fallback cho trường hợp cũ hoặc redis mất data)
+    let userSecret = secret;
+    let user = await this.twoFactorRepository.findUserForTwoFactor(userId);
+
+    if (!user) {
+      throw new BadRequestException(await this.i18n.t('two-factor.user_not_found', { lang }));
     }
 
+    if (!userSecret) {
+      // Fallback: Check if secret is already in DB (from legacy flow)
+      if (user.two_factor_token && !user.two_factor_enabled) {
+        userSecret = user.two_factor_token;
+      } else {
+        throw new BadRequestException(
+          await this.i18n.t('two-factor.setup_not_started', { lang }),
+        );
+      }
+    }
+
+    // 2. Verify token
     const isValid = speakeasy.totp.verify({
-      secret: user.two_factor_token,
+      secret: userSecret,
       encoding: 'base32',
       token: dto.two_factor_code,
     });
@@ -113,25 +135,30 @@ export class TwoFactorService {
       );
     }
 
-    await this.userRepository.enableTwoFactor(userId);
+    // 3. Nếu valid, cập nhật DB (Transaction-like via Promise.all if possible, but sequential dependence here)
+    // Cập nhật secret và enable 2FA
+    await Promise.all([
+      this.twoFactorRepository.updateTwoFactorSecret(userId, userSecret),
+      this.twoFactorRepository.enableTwoFactor(userId)
+    ]);
 
-    // Generate backup codes after successful verification
-    const backupCodes =
-      await this.backupCodeService.generateAndSaveBackupCodes(userId);
+    // 4. Generate backup codes
+    const backupCodes = await this.backupCodeService.generateAndSaveBackupCodes(userId);
 
-    const message = await this.i18n.t('auth.two_factor.setup_success', {
-      lang,
-    });
+    // 5. Cleanup cache
+    await Promise.all([
+      this.redisService.invalidateTwoFactorSetupCache(userId),
+      this.redisService.invalidateUserCache(userId)
+    ]);
 
-    // Clear cache profile của user
-    await this.redisService.invalidateUserCache(userId);
+    const message = await this.i18n.t('auth.two_factor.setup_success', { lang });
 
     // Emit socket event
     this.websocketGateway.emit2FAStatusChanged(userId, true, message);
 
     this.systemLogService.info(
-      'two-factor',
-      'enable_2fa',
+      TWO_FACTOR_MODULE,
+      TWO_FACTOR_ACTIONS.ENABLE_2FA,
       `2FA enabled: ${user.email}`,
       {
         userId: user.id,
@@ -146,7 +173,7 @@ export class TwoFactorService {
    * Vô hiệu hóa 2FA
    */
   async disableTwoFactor(userId: string, lang = 'vi') {
-    const user = await this.userRepository.findById(userId);
+    const user = await this.twoFactorRepository.findUserForTwoFactor(userId);
     if (!user) {
       throw new BadRequestException(
         await this.i18n.t('two-factor.user_not_found', { lang }),
@@ -159,23 +186,20 @@ export class TwoFactorService {
       );
     }
 
-    await this.userRepository.disableTwoFactor(userId);
-
+    await this.twoFactorRepository.disableTwoFactor(userId);
     await this.backupCodeService.deleteAllBackupCodes(userId);
 
-    const message = await this.i18n.t('auth.two_factor.disabled_success', {
-      lang,
-    });
+    const message = await this.i18n.t('auth.two_factor.disabled_success', { lang });
 
-    // Clear cache profile của user
+    // Clear cache
     await this.redisService.invalidateUserCache(userId);
 
     // Emit socket event
     this.websocketGateway.emit2FAStatusChanged(userId, false, message);
 
     this.systemLogService.info(
-      'two-factor',
-      'disable_2fa',
+      TWO_FACTOR_MODULE,
+      TWO_FACTOR_ACTIONS.DISABLE_2FA,
       `2FA disabled: ${user.email}`,
       {
         userId: user.id,
@@ -188,7 +212,6 @@ export class TwoFactorService {
 
   /**
    * Xác minh 2FA khi đăng nhập
-   * Bao gồm kiểm tra tài khoản bị khóa và ghi nhận failed attempts
    */
   async verifyTwoFactorLogin(
     dto: VerifyTwoFactorLoginDto,
@@ -206,14 +229,15 @@ export class TwoFactorService {
       );
     }
 
-    const user = await this.userRepository.findById(payload.userId);
+    // Tối ưu: sử dụng phương thức findUserForTwoFactor chỉ lấy fields cần thiết
+    const user = await this.twoFactorRepository.findUserForTwoFactor(payload.userId);
     if (!user || !user.two_factor_token) {
       throw new UnauthorizedException(
         await this.i18n.t('two-factor.user_not_found', { lang }),
       );
     }
 
-    // Kiểm tra tài khoản bị khóa (giống như login)
+    // Kiểm tra tài khoản bị khóa
     if (user.is_banned) {
       if (!user.banned_end || new Date(user.banned_end) > new Date()) {
         throw new UnauthorizedException(
@@ -224,6 +248,8 @@ export class TwoFactorService {
 
     let isValid = false;
 
+    // Use Promise.all for parallel verification check if needed, 
+    // but here strict conditional logic applies.
     if (dto.two_factor_code) {
       isValid = speakeasy.totp.verify({
         secret: user.two_factor_token,
@@ -238,7 +264,7 @@ export class TwoFactorService {
     }
 
     if (!isValid) {
-      // Ghi nhận lần đăng nhập thất bại
+      // Record failed attempt
       if (user.email) {
         await this.bruteForceService.recordFailedAttempt(
           user.email,
@@ -246,8 +272,8 @@ export class TwoFactorService {
         );
       }
       this.systemLogService.warn(
-        'two-factor',
-        'verify_2fa_failed',
+        TWO_FACTOR_MODULE,
+        TWO_FACTOR_ACTIONS.VERIFY_FAILED,
         `2FA verification failed: ${user.email}`,
         {
           userId: user.id,
@@ -261,18 +287,18 @@ export class TwoFactorService {
       );
     }
 
-    // Chạy song song: reset brute force + tạo tokens
+    // Parallel execution: reset brute force + generate tokens
     const [, tokens] = await Promise.all([
       user.email
         ? this.bruteForceService.onSuccessfulLogin(
-            user.email,
-            deviceInfo?.ip || 'unknown',
-          )
+          user.email,
+          deviceInfo?.ip || 'unknown',
+        )
         : Promise.resolve(),
       this.generateTokens(user.id, deviceInfo),
     ]);
 
-    // Gửi email thông báo (fire-and-forget)
+    // Fire-and-forget email notification
     if (user.email) {
       this.emailService
         .sendLoginNotificationEmail(
@@ -283,8 +309,8 @@ export class TwoFactorService {
         )
         .catch((error) => {
           this.systemLogService.error(
-            'two-factor',
-            'send_email_failed',
+            TWO_FACTOR_MODULE,
+            TWO_FACTOR_ACTIONS.SEND_EMAIL_FAILED,
             `Failed to send login notification email: ${user.email}`,
             {
               userId: user.id,
@@ -295,8 +321,8 @@ export class TwoFactorService {
     }
 
     this.systemLogService.info(
-      'two-factor',
-      'verify_2fa_login',
+      TWO_FACTOR_MODULE,
+      TWO_FACTOR_ACTIONS.VERIFY_LOGIN,
       `2FA login verified: ${user.email}`,
       {
         userId: user.id,
@@ -317,7 +343,7 @@ export class TwoFactorService {
    * Tạo mới backup codes
    */
   async regenerateBackupCodes(userId: string, lang = 'vi') {
-    const user = await this.userRepository.findById(userId);
+    const user = await this.twoFactorRepository.findUserForTwoFactor(userId);
     if (!user || !user.two_factor_enabled) {
       throw new BadRequestException(
         await this.i18n.t('auth.two_factor.not_enabled', { lang }),
@@ -335,18 +361,6 @@ export class TwoFactorService {
     };
   }
 
-  // /**
-  //  * Lấy danh sách backup codes
-  //  */
-  // async getBackupCodes(userId: string, lang = 'vi') {
-  //     const codesList = await this.backupCodeService.getBackupCodesList(userId);
-
-  //     return {
-  //         message: await this.i18n.t('auth.backup_codes.list_success', { lang }),
-  //         ...codesList,
-  //     };
-  // }
-
   /**
    * Tạo access và refresh tokens
    */
@@ -360,15 +374,17 @@ export class TwoFactorService {
       copyright: `© ${new Date().getFullYear()} TANK ZENITH GEN. All rights reserved.`,
     };
 
-    const accessToken = await this.jwtService.signAsync(payload, {
-      secret: this.configService.get<string>('JWT_ACCESS_SECRET'),
-      expiresIn: this.configService.get('JWT_ACCESS_EXPIRATION') || '15m',
-    });
-
-    const refreshToken = await this.jwtService.signAsync(payload, {
-      secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
-      expiresIn: this.configService.get('JWT_REFRESH_EXPIRATION') || '7d',
-    });
+    // Parallelize token generation
+    const [accessToken, refreshToken] = await Promise.all([
+      this.jwtService.signAsync(payload, {
+        secret: this.configService.get<string>('JWT_ACCESS_SECRET'),
+        expiresIn: this.configService.get('JWT_ACCESS_EXPIRATION') || '15m',
+      }),
+      this.jwtService.signAsync(payload, {
+        secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
+        expiresIn: this.configService.get('JWT_REFRESH_EXPIRATION') || '7d',
+      })
+    ]);
 
     await this.refreshTokenRepository.create(userId, refreshToken, deviceInfo);
 
@@ -381,16 +397,7 @@ export class TwoFactorService {
   /**
    * Loại bỏ các field nhạy cảm từ user object
    */
-  private sanitizeUser(user: {
-    id: string;
-    name: string;
-    email?: string | null;
-    email_confirmed: boolean;
-    is_verified?: boolean | null;
-    two_factor_enabled: boolean;
-    language: string;
-    created_at: Date;
-  }) {
+  private sanitizeUser(user: any): ISanitizedUser {
     return {
       id: user.id,
       name: user.name,

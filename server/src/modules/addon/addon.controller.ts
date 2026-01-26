@@ -19,7 +19,7 @@ import {
   ApiBody,
   ApiQuery,
 } from '@nestjs/swagger';
-import { I18nLang } from 'nestjs-i18n';
+import { I18nLang, I18nService } from 'nestjs-i18n';
 
 import { AddonService } from './addon.service';
 import {
@@ -46,7 +46,10 @@ import { IAddon, IPaginatedResponse } from './interfaces';
 @ApiTags('Addons')
 @Controller('addons')
 export class AddonController {
-  constructor(private readonly addonService: AddonService) {}
+  constructor(
+    private readonly addonService: AddonService,
+    private readonly i18n: I18nService,
+  ) { }
 
   @ApiOperation({
     summary: 'Tạo addon mới',
@@ -162,7 +165,7 @@ export class AddonController {
     return new CreatedResponse(
       'addon.create.success',
       result,
-      'Tạo addon thành công',
+      this.i18n.t('addon.success.created', { lang }),
     );
   }
 
@@ -261,12 +264,13 @@ export class AddonController {
   @Get()
   async findAll(
     @Query() query: QueryAddonDto,
+    @I18nLang() lang: string,
   ): Promise<GetResponse<IPaginatedResponse<IAddon>>> {
     const result = await this.addonService.findAll(query);
     return new GetResponse(
       'addon.list.success',
       result,
-      'Lấy danh sách addon thành công',
+      this.i18n.t('addon.success.list', { lang }),
     );
   }
 
@@ -326,12 +330,13 @@ export class AddonController {
   @Get('active')
   async findAllActive(
     @Query() query: QueryActiveAddonDto,
+    @I18nLang() lang: string,
   ): Promise<GetResponse<IAddon[]>> {
     const result = await this.addonService.findAllActive(query);
     return new GetResponse(
       'addon.list.success',
       result,
-      'Lấy danh sách addon active thành công',
+      this.i18n.t('addon.success.active_list', { lang }),
     );
   }
 
@@ -425,7 +430,7 @@ export class AddonController {
     return new GetResponse(
       'addon.read.success',
       result,
-      'Lấy chi tiết addon thành công',
+      this.i18n.t('addon.success.fetched', { lang }),
     );
   }
 
@@ -555,7 +560,7 @@ export class AddonController {
     return new UpdatedResponse(
       'addon.update.success',
       result,
-      'Cập nhật addon thành công',
+      this.i18n.t('addon.success.updated', { lang }),
     );
   }
 
@@ -621,7 +626,7 @@ export class AddonController {
     return new DeletedResponse(
       'addon.delete.success',
       null,
-      'Xóa nhiều addon thành công',
+      this.i18n.t('addon.success.deleted_many', { lang }),
     );
   }
 
@@ -676,7 +681,7 @@ export class AddonController {
     return new DeletedResponse(
       'addon.delete.success',
       null,
-      'Xóa addon thành công',
+      this.i18n.t('addon.success.deleted', { lang }),
     );
   }
 }

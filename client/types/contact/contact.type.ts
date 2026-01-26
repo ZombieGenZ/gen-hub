@@ -31,3 +31,30 @@ export interface ContactTag {
     updated_by: string,
     deleted_by: string
 }
+
+export interface ContactRequest {
+    name: string,
+    email: string,
+    phone: string,
+    company: string,
+    subject: string,
+    message: string
+}
+
+export interface ReplyRequest {
+    content: string,
+    is_internal: boolean
+}
+
+export interface ContactTagRequest {
+    name: string,
+    description: string,
+    color: string
+}
+
+export interface UpdateContactTagRequest {
+    name: string,
+    description: string,
+    color: string
+    is_active: boolean
+}

@@ -1,68 +1,222 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import PropertyList from '@/app/(public)/homepage/MapSearch/PropertyList';
 import MapComponent from '@/app/(public)/homepage/MapSearch/MapComponent';
 import { Property, mockProperties } from '@/data/mockProperties';
-import { MagnifyingGlassIcon, MapIcon, ListBulletIcon, XMarkIcon, FunnelIcon, ChevronDownIcon } from '@heroicons/react/20/solid';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Slider } from "@/components/ui/slider";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Button } from "@/components/ui/button";
-import { Snowflake, Truck, Package, RotateCcw, MapPin, ShieldCheck } from "lucide-react";
+import { MapIcon, ListBulletIcon } from '@heroicons/react/20/solid';
+import { cn } from '@/lib/utils';
+import { HeroSearchBar, SearchFilters } from '@/components/search/HeroSearchBar';
+import { FilterModal, FilterState } from '@/components/search/FilterModal';
+import { authStorage } from "@/services/auth/auth-storage.service";
+import { UserData } from "@/types/user/user.type";
+import UserDropdown from "@/components/ui/UserDropdown";
+import SearchHeader from "@/components/search/SearchHeader";
+import {
+    DropdownMenu,
+    DropdownMenuTrigger,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSub,
+    DropdownMenuSubTrigger,
+    DropdownMenuSubContent,
+    DropdownMenuSeparator
+} from "@/components/ui/dropdown-menu";
+import {
+    BuildingOffice2Icon,
+    SparklesIcon,
+    CubeIcon,
+    ShieldCheckIcon,
+} from '@heroicons/react/24/outline';
+import Link from 'next/link';
+import { Menu, MenuItem, HoveredLink } from "@/components/ui/navbar-menu";
 
-export default function PropertySearch() {
+const HEADER_HEIGHT = 80;
+
+interface PropertySearchProps {
+    initialLocationSlug?: string;
+}
+
+export default function PropertySearch({ initialLocationSlug }: PropertySearchProps) {
+    const router = useRouter();
     const [properties] = useState<Property[]>(mockProperties);
     const [bounds, setBounds] = useState<{ north: number; south: number; east: number; west: number } | null>(null);
     const [highlightedPropertyId, setHighlightedPropertyId] = useState<number | null>(null);
     const [showMapMobile, setShowMapMobile] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
 
-    // Derived state for the drawer
-    const selectedProperty = useMemo(() =>
-        properties.find(p => p.id === highlightedPropertyId),
-        [properties, highlightedPropertyId]);
+    // Auth State
+    const [isLogin, setIsLogin] = useState(false);
+    const [user, setUser] = useState<UserData | null>(null);
+    const [active, setActive] = useState<string | null>(null);
+
+    useEffect(() => {
+        setIsLogin(authStorage.isAuthenticated());
+        setUser(authStorage.getUser());
+    }, []);
 
     const searchParams = useSearchParams();
 
-    // Advanced Filter State
+    // Filter Modal State
+    const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+
+    // Hero Search Bar Filters
+    const [heroFilters, setHeroFilters] = useState<SearchFilters>({
+        location: initialLocationSlug || null,
+        areaRange: null,
+        rentalType: null,
+    });
+
+    // Advanced Filter State (from FilterModal)
+    const [advancedFilters, setAdvancedFilters] = useState<FilterState>({
+        priceRange: [0, 500],
+        amenities: [],
+        ceilingHeight: null,
+        floorLoadCapacity: 3,
+        locationType: [],
+        pcccLevel: [],
+    });
+
+    // Legacy filter state (for URL sync)
     const [searchText, setSearchText] = useState("");
     const [priceRange, setPriceRange] = useState([0, 500]); // 0 - 500 Million
     const [areaRange, setAreaRange] = useState([0, 5000]); // 0 - 5000 m2
     const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
     const [selectedCities, setSelectedCities] = useState<string[]>([]);
 
-    // Sync from URL
+    // State to track if search has been performed (or we have initial URL params)
+    const [hasSearched, setHasSearched] = useState(false);
+    // Trigger to signal Map to auto-fit bounds (increment to trigger)
+    const [searchTrigger, setSearchTrigger] = useState(0);
+
+    // Hero Search Handler
+    const handleHeroSearch = (filters: SearchFilters) => {
+        setHasSearched(true);
+        setHeroFilters(filters);
+        // Reset bounds to allow global search (e.g. if user searches specific location)
+        setBounds(null);
+        // Trigger map fit
+        setSearchTrigger(prev => prev + 1);
+
+        // Construct new URLSearchParams
+        const params = new URLSearchParams(searchParams.toString());
+
+        // Remove location from query if we are going to use path, OR if we are clearing it
+        params.delete('location');
+
+        if (filters.areaRange) {
+            params.set('areaMin', filters.areaRange.min.toString());
+            params.set('areaMax', filters.areaRange.max.toString());
+        } else {
+            params.delete('areaMin');
+            params.delete('areaMax');
+        }
+
+        if (filters.rentalType) params.set('type', filters.rentalType);
+        else params.delete('type');
+
+        // ROUTING LOGIC: Path vs Query
+        if (filters.location) {
+            router.push(`/kho-bai/${filters.location}?${params.toString()}`);
+            setSelectedCities([filters.location]);
+        } else {
+            router.push(`/kho-bai?${params.toString()}`);
+            setSelectedCities([]);
+        }
+
+        // Update local state (redundant if we rely solely on URL, but keeps UI snappy)
+        if (filters.areaRange) {
+            setAreaRange([filters.areaRange.min, filters.areaRange.max]);
+        }
+        if (filters.rentalType) {
+            switch (filters.rentalType) {
+                case 'shared': setSelectedTypes(['shared']); break;
+                case 'fulfillment': setSelectedTypes(['fulfillment']); break;
+                default: setSelectedTypes([]);
+            }
+        }
+
+        document.getElementById('search-list-container')?.scrollIntoView({ behavior: 'smooth' });
+    };
+
+    // Scroll Detection for Minified Search Bar
+    const [isScrolled, setIsScrolled] = useState(false);
+
+    useEffect(() => {
+        const handleScroll = () => {
+            setIsScrolled(window.scrollY > 50);
+        };
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
+    // Filter Modal Handler
+    const handleApplyFilters = (filters: FilterState) => {
+        setAdvancedFilters(filters);
+        setPriceRange(filters.priceRange);
+        // Reset bounds to show all matching results
+        setBounds(null);
+        // Trigger map fit
+        setSearchTrigger(prev => prev + 1);
+    };
+
+    // Scroll to top when page changes
+    useEffect(() => {
+        if (currentPage > 1) {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    }, [currentPage]);
+
+    // Sync from URL AND Props
     useEffect(() => {
         const typeParam = searchParams.get('type');
+        const locationParam = searchParams.get('location');
+        const areaMinParam = searchParams.get('areaMin');
+        const areaMaxParam = searchParams.get('areaMax');
+
+        // Check if ANY search param is present to enable "Has Searched" mode
+        // Also check if initialLocationSlug is present (Path-based search)
+        if (typeParam || locationParam || areaMinParam || areaMaxParam || initialLocationSlug) {
+            setHasSearched(true);
+            setSearchTrigger(prev => prev + 1);
+            setBounds(null); // Reset bounds to ensure list shows results while map flies
+        }
+
+        // Restore Filters
         if (typeParam) {
             switch (typeParam) {
-                case 'kho-mat':
-                    setSelectedTypes(['cold']);
-                    break;
-                case 'kho-thuong':
-                    setSelectedTypes(['standard']);
-                    break;
-                case 'kho-ngoai-quan':
-                    setSelectedTypes(['bonded']);
-                    break;
-                default:
-                    setSelectedTypes([]);
-                    break;
+                case 'kho-mat': case 'cold': setSelectedTypes(['cold']); break;
+                case 'kho-thuong': case 'standard': setSelectedTypes(['standard']); break;
+                case 'kho-ngoai-quan': case 'bonded': setSelectedTypes(['bonded']); break;
+                case 'shared': setSelectedTypes(['shared']); break;
+                case 'fulfillment': setSelectedTypes(['fulfillment']); break;
+                default: setSelectedTypes([]); break;
             }
         } else {
             setSelectedTypes([]);
         }
-    }, [searchParams]);
 
-    // Filter properties based on map bounds AND search/filters
+        if (areaMinParam && areaMaxParam) {
+            setAreaRange([Number(areaMinParam), Number(areaMaxParam)]);
+        }
+
+        // Prefer Prop (Path) over Query Param for Location
+        if (initialLocationSlug) {
+            setSelectedCities([initialLocationSlug]);
+            // Also sync heroFilters
+            setHeroFilters(prev => ({ ...prev, location: initialLocationSlug }));
+        } else if (locationParam) {
+            setSelectedCities([locationParam]);
+            setHeroFilters(prev => ({ ...prev, location: locationParam }));
+        }
+
+    }, [searchParams, initialLocationSlug]);
+
+    // Filter properties
     const filteredProperties = useMemo(() => {
         let result = properties;
 
-        // 1. Text Search (Title or Address)
         if (searchText) {
             const lowerText = searchText.toLowerCase();
             result = result.filter(p =>
@@ -71,37 +225,39 @@ export default function PropertySearch() {
             );
         }
 
-        // 2. Price Range
         if (priceRange[0] > 0 || priceRange[1] < 500) {
             result = result.filter(p => p.price >= priceRange[0] * 1000000 && p.price <= priceRange[1] * 1000000);
         }
 
-        // 3. Area Range
         if (areaRange[0] > 0 || areaRange[1] < 5000) {
             result = result.filter(p => p.area >= areaRange[0] && p.area <= areaRange[1]);
         }
 
-        // 4. Advanced Filters (Type & City)
         if (selectedTypes.length > 0) {
             result = result.filter(p => {
                 const isCold = selectedTypes.includes('cold') && p.is_cold_storage;
                 const isShared = selectedTypes.includes('shared') && p.is_shared_warehouse;
                 const isBonded = selectedTypes.includes('bonded') && p.type === 'Kho Ngoại Quan';
-
-                // Standard usually implies General/Standard warehouse (Kho Thường).
-                // Ensure we don't accidentally include Cold or Shared or Bonded if they are distinct in user's mind.
-                // However, our data model puts type="Kho Thường" for standard.
-                // Bonded items (id 4) has type="Kho Ngoại Quan".
                 const isStandard = selectedTypes.includes('standard') && p.type === 'Kho Thường';
-
                 return isCold || isShared || isStandard || isBonded;
             });
         }
         if (selectedCities.length > 0) {
-            result = result.filter(p => selectedCities.some(city => p.province_name?.includes(city)));
+            result = result.filter(p => selectedCities.some(city => {
+                if (!p.province_name) return false;
+                // Normalize property province name to match slug format
+                // Simple normalization: remove accents, lowercase, replace spaces with dashes
+                const normalizedProvince = p.province_name
+                    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                    .replace(/đ/g, 'd').replace(/Đ/g, 'D')
+                    .toLowerCase()
+                    .replace(/\s+/g, '-');
+
+                return normalizedProvince.includes(city.toLowerCase());
+            }));
         }
 
-        // 5. Map Bounds Filter - ONLY for List View if needed, 
+        // Apply Map Bounds Filter if available
         if (bounds) {
             result = result.filter(p =>
                 p.lat <= bounds.north &&
@@ -110,307 +266,211 @@ export default function PropertySearch() {
                 p.lng >= bounds.west
             );
         }
+
         return result;
     }, [properties, bounds, searchText, priceRange, areaRange, selectedTypes, selectedCities]);
 
-    const mapProperties = useMemo(() => {
-        let result = properties;
-        if (searchText) {
-            const lowerText = searchText.toLowerCase();
-            result = result.filter(p =>
-                p.title.toLowerCase().includes(lowerText) ||
-                p.address.toLowerCase().includes(lowerText)
-            );
+    const ITEMS_PER_PAGE = 12;
+    const totalPages = Math.ceil(filteredProperties.length / ITEMS_PER_PAGE);
+    const displayedProperties = filteredProperties.slice(
+        (currentPage - 1) * ITEMS_PER_PAGE,
+        currentPage * ITEMS_PER_PAGE
+    );
+
+    // Generate pagination array
+    const paginationRange = useMemo(() => {
+        const delta = 2;
+        const range = [];
+        const rangeWithDots = [];
+        let l;
+
+        for (let i = 1; i <= totalPages; i++) {
+            if (i === 1 || i === totalPages || (i >= currentPage - delta && i <= currentPage + delta)) {
+                range.push(i);
+            }
         }
 
-        // Advanced Filters (Type & City) - Apply to Map too
-        if (selectedTypes.length > 0) {
-            result = result.filter(p => {
-                const isCold = selectedTypes.includes('cold') && p.is_cold_storage;
-                const isShared = selectedTypes.includes('shared') && p.is_shared_warehouse;
-                const isBonded = selectedTypes.includes('bonded') && p.type === 'Kho Ngoại Quan';
-                const isStandard = selectedTypes.includes('standard') && p.type === 'Kho Thường';
-                return isCold || isShared || isStandard || isBonded;
-            });
-        }
-        if (selectedCities.length > 0) {
-            result = result.filter(p => selectedCities.some(city => p.province_name?.includes(city)));
+        for (let i of range) {
+            if (l) {
+                if (i - l === 2) {
+                    rangeWithDots.push(l + 1);
+                } else if (i - l !== 1) {
+                    rangeWithDots.push('...');
+                }
+            }
+            rangeWithDots.push(i);
+            l = i;
         }
 
-        // Apply Price & Area to Map? Usually yes
-        if (priceRange[0] > 0 || priceRange[1] < 500) {
-            result = result.filter(p => p.price >= priceRange[0] * 1000000 && p.price <= priceRange[1] * 1000000);
-        }
-        if (areaRange[0] > 0 || areaRange[1] < 5000) {
-            result = result.filter(p => p.area >= areaRange[0] && p.area <= areaRange[1]);
-        }
+        return rangeWithDots;
+    }, [currentPage, totalPages]);
 
-        return result;
-    }, [properties, searchText, priceRange, areaRange, selectedTypes, selectedCities]);
+    const mapProperties = filteredProperties;
 
     return (
-        <div className="flex flex-col min-h-screen font-sans relative">
-            {/* Sticky Filter Bar Container */}
-            <div className={`sticky top-0 z-30 flex flex-col shrink-0 ${showMapMobile ? 'hidden lg:flex' : 'flex'}`}>
+        <>
+            <div className="search-page bg-background">
+                {/* HERO SEARCH BAR - Sticky at top */}
+                <SearchHeader
+                    onSearch={handleHeroSearch}
+                    onOpenFilter={() => setIsFilterModalOpen(true)}
+                    isScrolled={isScrolled}
+                />
 
-                {/* 2. Actual Filter Bar */}
-                <div className="bg-[#fafafa] max-w-[1440px] w-full mx-auto">
-                    <div className="max-w-[1440px] w-full mx-auto px-4 lg:px-6 py-3 flex items-center gap-3">
-                        {/* 1. Search Input */}
-                        <div className="flex-1 relative">
-                            <input
-                                type="text"
-                                placeholder="Tìm kiếm kho bãi, khu công nghiệp..."
-                                className="w-full pl-10 pr-4 py-2.5 bg-white rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#0F766E] outline-none text-slate-700 shadow-sm text-sm"
-                                value={searchText}
-                                onChange={(e) => setSearchText(e.target.value)}
+                {/* FILTER MODAL */}
+                <FilterModal
+                    isOpen={isFilterModalOpen}
+                    onClose={() => setIsFilterModalOpen(false)}
+                    onApply={handleApplyFilters}
+                    initialFilters={advancedFilters}
+                />
+
+                {/* Main Container - Chứa cả List và Map */}
+                <div className="search-page__main-container">
+
+                    {/* LIST COLUMN - Quyết định chiều cao của container */}
+                    <div
+                        id="search-list-container"
+                        className={cn(
+                            "search-page__list-column",
+                            // List takes full width if no map (or map hidden)
+                            !hasSearched ? "max-w-[1440px] mx-auto" : "",
+                            showMapMobile ? "search-page__list-column--hidden-mobile" : ""
+                        )}
+                    >
+                        {/* Header info */}
+                        <div className="search-page__list-header">
+                            {filteredProperties.length > 0 ? (
+                                <div className="search-page__list-info">
+                                    <h1 className="search-page__list-title">
+                                        {filteredProperties.length} kho bãi tại khu vực tìm kiếm
+                                        <span className="search-page__list-page-indicator">(Trang {currentPage})</span>
+                                    </h1>
+                                    <p className="search-page__list-subtitle">
+                                        Hãy kiểm tra thông tin chi tiết trước khi đặt lịch xem.
+                                    </p>
+                                </div>
+                            ) : null}
+                        </div>
+
+                        {/* Property Grid */}
+                        <div className="search-page__list-content">
+                            <PropertyList
+                                properties={displayedProperties}
+                                onHover={(id) => setHighlightedPropertyId(id ? Number(id) : null)}
+                                highlightedPropertyId={highlightedPropertyId}
+                                variant="grid"
+                                // Adjust columns if map is hidden
+                                className={!hasSearched ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" : ""}
                             />
-                            <MagnifyingGlassIcon className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                         </div>
 
-                        {/* 2. Filters Group */}
-                        <div className="hidden md:flex gap-2 items-center">
-
-                            {/* Price Filter */}
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <Button variant="outline" className="rounded-xl bg-white border-slate-200 shadow-sm hover:bg-slate-50 min-w-[100px] justify-between h-10 px-3 text-sm whitespace-nowrap">
-                                        <span className="truncate">
-                                            {priceRange[0] === 0 && priceRange[1] === 500
-                                                ? "Giá"
-                                                : `${priceRange[0]} - ${priceRange[1]} Tr`
-                                            }
+                        {/* Pagination */}
+                        <div className="search-page__pagination">
+                            {paginationRange.map((page, index) => {
+                                if (page === '...') {
+                                    return (
+                                        <span key={index} className="search-page__pagination-btn search-page__pagination-btn--ellipsis">
+                                            ...
                                         </span>
-                                        <ChevronDownIcon className="w-4 h-4 ml-1 opacity-50 shrink-0" />
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-80 p-5" align="end">
-                                    <div className="space-y-4">
-                                        <h4 className="font-semibold leading-none">Mức Giá (Triệu/Tháng)</h4>
-                                        <p className="text-sm text-muted-foreground">
-                                            Từ {priceRange[0]} triệu đến {priceRange[1]} triệu
-                                        </p>
-                                        <Slider
-                                            defaultValue={[0, 500]}
-                                            max={500}
-                                            step={10}
-                                            value={priceRange}
-                                            onValueChange={setPriceRange}
-                                        />
-                                    </div>
-                                </PopoverContent>
-                            </Popover>
-
-                            {/* Area Filter */}
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <Button variant="outline" className="rounded-xl bg-white border-slate-200 shadow-sm hover:bg-slate-50 min-w-[100px] justify-between h-10 px-3 text-sm whitespace-nowrap">
-                                        <span className="truncate">
-                                            {areaRange[0] === 0 && areaRange[1] === 5000
-                                                ? "Diện tích"
-                                                : `${areaRange[0]} - ${areaRange[1]} m²`
-                                            }
-                                        </span>
-                                        <ChevronDownIcon className="w-4 h-4 ml-1 opacity-50 shrink-0" />
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-80 p-5" align="end">
-                                    <div className="space-y-4">
-                                        <h4 className="font-semibold leading-none">Diện Tích (m²)</h4>
-                                        <p className="text-sm text-muted-foreground">
-                                            Từ {areaRange[0]} m² đến {areaRange[1]} m²
-                                        </p>
-                                        <Slider
-                                            defaultValue={[0, 5000]}
-                                            max={5000}
-                                            step={50}
-                                            value={areaRange}
-                                            onValueChange={setAreaRange}
-                                        />
-                                    </div>
-                                </PopoverContent>
-                            </Popover>
-
-                            {/* Advanced Filter Modal */}
-                            <Dialog>
-                                <DialogTrigger asChild>
-                                    <Button className="rounded-xl bg-slate-900 text-white hover:bg-slate-800 shadow-md h-10 px-4 gap-2 shrink-0">
-                                        <FunnelIcon className="w-4 h-4" />
-                                        <span>Lọc</span>
-                                    </Button>
-                                </DialogTrigger>
-                                <DialogContent className="max-w-[600px] p-0 overflow-hidden bg-white gap-0 rounded-3xl border-none shadow-2xl">
-                                    <DialogHeader className="px-6 py-5 border-b border-slate-100 bg-slate-50/50">
-                                        <DialogTitle className="text-xl font-bold text-slate-900">Bộ Lọc Nâng Cao</DialogTitle>
-                                        <DialogDescription className="text-slate-500">
-                                            Tùy chỉnh tìm kiếm kho bãi theo nhu cầu của bạn
-                                        </DialogDescription>
-                                    </DialogHeader>
-
-                                    <div className="p-6 space-y-8 overflow-y-auto max-h-[70vh]">
-                                        {/* 1. Warehouse Types as Cards */}
-                                        <div className="space-y-4">
-                                            <h4 className="flex items-center gap-2 text-sm font-semibold text-slate-900 uppercase tracking-wider">
-                                                <Package className="w-4 h-4 text-[#0F766E]" />
-                                                Loại Hình Kho
-                                            </h4>
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                                {[
-                                                    { id: 'standard', label: 'Kho Thường', icon: Package },
-                                                    { id: 'cold', label: 'Kho Mát / Lạnh', icon: Snowflake },
-                                                    { id: 'shared', label: 'Fulfillment', icon: Truck },
-                                                    { id: 'bonded', label: 'Kho Ngoại Quan', icon: ShieldCheck },
-                                                ].map((type) => {
-                                                    const isSelected = selectedTypes.includes(type.id);
-                                                    const Icon = type.icon;
-                                                    return (
-                                                        <div
-                                                            key={type.id}
-                                                            onClick={() => {
-                                                                if (isSelected) setSelectedTypes(selectedTypes.filter(t => t !== type.id));
-                                                                else setSelectedTypes([...selectedTypes, type.id]);
-                                                            }}
-                                                            className={`
-                                                                relative cursor-pointer group flex flex-col items-center justify-center gap-3 p-4 rounded-2xl border-2 transition-all duration-200
-                                                                ${isSelected
-                                                                    ? 'border-[#0F766E] bg-[#0F766E]/5'
-                                                                    : 'border-slate-100 bg-white hover:border-[#0F766E]/30 hover:shadow-md'
-                                                                }
-                                                            `}
-                                                        >
-                                                            <div className={`p-3 rounded-full transition-colors ${isSelected ? 'bg-[#0F766E] text-white' : 'bg-slate-100 text-slate-500 group-hover:bg-[#0F766E]/10 group-hover:text-[#0F766E]'}`}>
-                                                                <Icon className="w-6 h-6" />
-                                                            </div>
-                                                            <span className={`font-medium text-sm text-center ${isSelected ? 'text-[#0F766E]' : 'text-slate-600'}`}>
-                                                                {type.label}
-                                                            </span>
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        </div>
-
-                                        {/* 2. Locations as Tags */}
-                                        <div className="space-y-4">
-                                            <h4 className="flex items-center gap-2 text-sm font-semibold text-slate-900 uppercase tracking-wider">
-                                                <MapPin className="w-4 h-4 text-[#0F766E]" />
-                                                Khu Vực Phổ Biến
-                                            </h4>
-                                            <div className="flex flex-wrap gap-2">
-                                                {['Hồ Chí Minh', 'Hà Nội', 'Bình Dương', 'Đồng Nai', 'Long An', 'Bắc Ninh', 'Hải Phòng', 'Đà Nẵng'].map((city) => {
-                                                    const isSelected = selectedCities.includes(city);
-                                                    return (
-                                                        <div
-                                                            key={city}
-                                                            onClick={() => {
-                                                                if (isSelected) setSelectedCities(selectedCities.filter(c => c !== city));
-                                                                else setSelectedCities([...selectedCities, city]);
-                                                            }}
-                                                            className={`
-                                                                cursor-pointer px-4 py-2.5 rounded-xl text-sm font-medium border transition-all duration-200 select-none
-                                                                ${isSelected
-                                                                    ? 'border-[#0F766E] bg-[#0F766E] text-white shadow-md shadow-[#0F766E]/20'
-                                                                    : 'border-slate-200 bg-white text-slate-600 hover:border-[#0F766E] hover:text-[#0F766E]'
-                                                                }
-                                                            `}
-                                                        >
-                                                            {city}
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <DialogFooter className="p-6 border-t border-slate-100 bg-slate-50/50 flex flex-row gap-3 items-center justify-between sm:justify-between w-full">
-                                        <Button
-                                            variant="ghost"
-                                            onClick={() => {
-                                                setSelectedTypes([]);
-                                                setSelectedCities([]);
-                                            }}
-                                            className="text-slate-500 hover:text-red-600 hover:bg-red-50 gap-2 h-11 px-4"
-                                        >
-                                            <RotateCcw className="w-4 h-4" />
-                                            <span className="hidden sm:inline">Đặt lại</span>
-                                        </Button>
-                                        <DialogClose asChild>
-                                            <Button className="flex-1 sm:flex-none shadow-lg shadow-[#0F766E]/20 bg-[#0F766E] hover:bg-[#0D655D] text-white rounded-xl px-8 h-11 font-medium transition-all hover:scale-105 active:scale-95">
-                                                Áp dụng {selectedTypes.length + selectedCities.length > 0 ? `(${selectedTypes.length + selectedCities.length})` : ''}
-                                            </Button>
-                                        </DialogClose>
-                                    </DialogFooter>
-                                </DialogContent>
-                            </Dialog>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Main Content: List Left, Map Right */}
-            <div className={`flex-1 max-w-360 w-full mx-auto p-4 lg:p-6 ${showMapMobile ? 'p-0 h-[calc(100vh-80px)]' : ''}`}>
-                <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 relative items-start h-full">
-
-                    {/* List Area (3/5) - Hidden on Mobile if Map is shown */}
-                    <div className={`lg:col-span-3 flex flex-col ${showMapMobile ? 'hidden lg:flex' : 'flex'}`}>
-                        <div className="sticky top-[60px] z-20 bg-[#F8FAFC] p-4 mb-2 flex items-baseline justify-between transition-all">
-                            <h2 className="font-bold text-xl text-slate-900">
-                                {filteredProperties.length} Kho bãi tại Hồ Chí Minh
-                            </h2>
-                            <span className="text-sm text-slate-500">Sắp xếp: Mới nhất</span>
-                        </div>
-
-                        <PropertyList
-                            properties={filteredProperties}
-                            onHover={(id) => setHighlightedPropertyId(id ? Number(id) : null)}
-                            highlightedPropertyId={highlightedPropertyId}
-                            variant="grid"
-                        />
-                    </div>
-
-                    {/* Map Area (2/5) - Sticky on Desktop, Full on Mobile */}
-                    <div className={`
-                        lg:block lg:col-span-2 lg:h-[calc(100vh-200px)] lg:sticky lg:top-[80px] lg:rounded-2xl lg:overflow-hidden lg:border lg:border-slate-200 lg:shadow-md
-                        ${showMapMobile ? 'fixed left-0 right-0 top-[88px] h-[calc(100vh-88px)] z-40 block w-full bg-slate-100' : 'hidden'}
-                    `}>
-                        <MapComponent
-                            properties={mapProperties}
-                            onBoundsChange={setBounds}
-                            highlightedPropertyId={highlightedPropertyId}
-                            onMarkerClick={(id) => {
-                                setHighlightedPropertyId(Number(id));
-                                // Desktop: Scroll to list
-                                if (!showMapMobile && window.innerWidth >= 1024) {
-                                    const element = document.getElementById(`property-card-${id}`);
-                                    element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                    );
                                 }
-                                // Mobile: Drawer handles it via selectedProperty state
-                            }}
-                        />
+                                const pageNum = Number(page);
+                                return (
+                                    <button
+                                        key={index}
+                                        onClick={() => setCurrentPage(pageNum)}
+                                        className={cn(
+                                            "search-page__pagination-btn",
+                                            currentPage === pageNum
+                                                ? "search-page__pagination-btn--active bg-gray-900 text-white hover:bg-gray-800"
+                                                : "search-page__pagination-btn--default hover:bg-gray-100"
+                                        )}
+                                    >
+                                        {page}
+                                    </button>
+                                );
+                            })}
+
+                            <button
+                                className={"search-page__pagination-btn search-page__pagination-btn--next " + (currentPage >= totalPages ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-100")}
+                                onClick={() => currentPage < totalPages && setCurrentPage(p => p + 1)}
+                                disabled={currentPage >= totalPages}
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                </svg>
+                            </button>
+                        </div>
                     </div>
 
+                    {/* MAP COLUMN - Sticky trong phạm vi container */}
+                    {/* ONLY SHOW IF SEARCHED */}
+                    {hasSearched && (
+                        <div
+                            className={cn(
+                                "search-page__map-column",
+                                showMapMobile ? "search-page__map-column--mobile-fullscreen" : ""
+                            )}
+                            style={{
+                                // CSS custom properties cho sticky positioning
+                                '--header-height': `${HEADER_HEIGHT}px`,
+                            } as React.CSSProperties}
+                        >
+                            <div className="search-page__map-content">
+                                <MapComponent
+                                    properties={mapProperties}
+                                    onBoundsChange={setBounds}
+                                    highlightedPropertyId={highlightedPropertyId}
+                                    onMarkerClick={(id) => {
+                                        setHighlightedPropertyId(Number(id));
+                                        if (!showMapMobile && window.innerWidth >= 1024) {
+                                            const element = document.getElementById(`property-card-${id}`);
+                                            element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                        }
+                                    }}
+                                    searchTrigger={searchTrigger}
+                                />
+                            </div>
+
+                            {/* Close button for mobile fullscreen map */}
+                            {showMapMobile && (
+                                <button
+                                    onClick={() => setShowMapMobile(false)}
+                                    className="search-page__map-close-btn"
+                                    aria-label="Đóng bản đồ"
+                                >
+                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            )}
+                        </div>
+                    )}
                 </div>
             </div>
 
-            {/* Floating Toggle Button (Mobile Only) */}
-            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 lg:hidden">
-                <button
-                    onClick={() => setShowMapMobile(!showMapMobile)}
-                    className="bg-slate-900 text-white px-5 py-3 rounded-full shadow-xl flex items-center gap-2 font-medium hover:bg-slate-800 transition-all active:scale-95"
-                >
-                    {showMapMobile ? (
-                        <>
-                            <ListBulletIcon className="w-5 h-5" />
-                            Danh sách
-                        </>
-                    ) : (
-                        <>
-                            <MapIcon className="w-5 h-5" />
-                            Bản đồ
-                        </>
-                    )}
-                </button>
-            </div>
-        </div>
+            {/* Mobile Toggle Button - Fixed at bottom - ONLY SHOW IF SEARCHED */}
+            {hasSearched && (
+                <div className="search-page__mobile-toggle">
+                    <button
+                        onClick={() => setShowMapMobile(!showMapMobile)}
+                        className="search-page__mobile-toggle-btn"
+                    >
+                        {showMapMobile ? (
+                            <>
+                                <ListBulletIcon className="w-5 h-5" />
+                                <span>Danh sách</span>
+                            </>
+                        ) : (
+                            <>
+                                <MapIcon className="w-5 h-5" />
+                                <span>Bản đồ</span>
+                            </>
+                        )}
+                    </button>
+                </div>
+            )}
+        </>
     );
 }

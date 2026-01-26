@@ -1,9 +1,17 @@
 {
     "success": {
-        "created": "Đã tạo bảo hiểm thành công",
-        "updated": "Đã cập nhật bảo hiểm thành công",
-        "deleted": "Đã xóa bảo hiểm thành công",
-        "fetched": "Lấy dữ liệu bảo hiểm thành công"
+        "created": "Tạo bảo hiểm thành công",
+        "updated": "Cập nhật bảo hiểm thành công",
+        "deleted": "Xóa bảo hiểm thành công",
+        "deleted_many": "Xóa nhiều bảo hiểm thành công",
+        "fetched": "Lấy dữ liệu bảo hiểm thành công",
+        "list": "Lấy danh sách bảo hiểm thành công",
+        "active_list": "Lấy danh sách bảo hiểm active thành công"
+    },
+    "logs": {
+        "created": "Tạo bảo hiểm mới: {name}",
+        "updated": "Cập nhật bảo hiểm: {name}",
+        "deleted": "Xóa bảo hiểm: {name}"
     },
     "errors": {
         "not_found": "Không tìm thấy bảo hiểm",

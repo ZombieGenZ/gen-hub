@@ -1,0 +1,501 @@
+
+/**
+ * HERO SEARCH BAR STYLES
+ * ========================
+ * Airbnb-style rounded search bar with 3 sections
+ * Following BEM convention
+ */
+
+/* ============================================
+   BASE COMPONENT
+   ============================================ */
+.hero-search-bar {
+    position: relative;
+    width: 100%;
+    max-width: 900px;
+    margin: 0 auto;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.hero-search-bar--compact {
+    max-width: 850px;
+}
+
+/* ============================================
+   MAIN CONTAINER (The Search Pill)
+   ============================================ */
+.hero-search-bar__container {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    background: var(--background);
+    border: 1px solid var(--border);
+    border-radius: 9999px;
+    box-shadow:
+        0 4px 6px -1px rgba(0, 0, 0, 0.02),
+        0 10px 15px -3px rgba(0, 0, 0, 0.04);
+    padding: 0;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    height: 66px; /* Explicit height for smooth transition */
+}
+
+/* MINIFIED CONTAINER */
+.hero-search-bar__container--minified {
+    height: 48px !important;
+    padding: 4px;
+    border-radius: 9999px;
+    border: 1px solid var(--border);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    justify-content: space-between; /* Override flex-start */
+    max-width: 600px; /* Optional: make it smaller */
+    margin: 0 auto;
+}
+
+.hero-search-bar__container--minified:hover {
+    background-color: var(--muted);
+    box-shadow: 0 6px 12px -2px rgba(0, 0, 0, 0.08);
+}
+
+.hero-search-bar--active .hero-search-bar__container {
+    background: var(--muted);
+    border-color: var(--border);
+}
+
+/* ============================================
+   SECTION (Each clickable segment)
+   ============================================ */
+.hero-search-bar__section {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 24px;
+    border-radius: 9999px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex: 1;
+    min-width: 0;
+    position: relative;
+}
+
+.hero-search-bar__section:hover {
+    background-color: var(--accent);
+}
+
+.hero-search-bar__section--active {
+    background-color: var(--background) !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    z-index: 10;
+}
+
+/* Section Icon */
+.hero-search-bar__section-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--muted);
+    color: var(--muted-foreground);
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+}
+
+.hero-search-bar__section--active .hero-search-bar__section-icon {
+    background: var(--primary);
+    color: var(--primary-foreground);
+}
+
+/* Section Content */
+.hero-search-bar__section-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    flex: 1;
+}
+
+.hero-search-bar__section-label {
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--muted-foreground);
+}
+
+.hero-search-bar__section-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--foreground);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* NEW INLINE INPUT */
+.hero-search-bar__input-inline {
+    width: 100%;
+    border: none;
+    background: transparent;
+    padding: 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--foreground);
+    outline: none;
+    height: 21px; /* Match value height */
+}
+
+.hero-search-bar__input-inline::placeholder {
+    font-weight: 400;
+    color: var(--muted-foreground);
+}
+
+/* Arrow */
+.hero-search-bar__section-arrow {
+    width: 14px;
+    height: 14px;
+    color: var(--muted-foreground);
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
+}
+
+.hero-search-bar__section-arrow--open {
+    transform: rotate(180deg);
+}
+
+/* ============================================
+   DIVIDER
+   ============================================ */
+.hero-search-bar__divider {
+    width: 1px;
+    height: 32px;
+    background-color: var(--border);
+    flex-shrink: 0;
+}
+
+/*Hide divider when adjacent to active section*/
+.hero-search-bar__section--active + .hero-search-bar__divider,
+.hero-search-bar__divider:has(+ .hero-search-bar__section--active) {
+    opacity: 0;
+}
+
+/* ============================================
+   BUTTONS
+   ============================================ */
+.hero-search-bar__search-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 14px;
+    margin: 6px; /* Equal margin */
+    background: var(--primary); /* Use theme color */
+    color: var(--primary-foreground);
+    font-weight: 600;
+    font-size: 15px;
+    border-radius: 9999px;
+    border: none;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--primary), transparent 70%);
+}
+
+.hero-search-bar__search-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px color-mix(in srgb, var(--primary), transparent 60%);
+    filter: brightness(110%);
+}
+
+.hero-search-bar__search-btn:active {
+    transform: translateY(0);
+}
+
+.hero-search-bar__filter-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 14px; 
+    margin: 6px; 
+    background: var(--secondary); /* Use theme color */
+    color: var(--secondary-foreground);
+    font-weight: 600;
+    font-size: 15px;
+    border-radius: 9999px;
+    border: none;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--secondary), transparent 70%);
+}
+
+.hero-search-bar__filter-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px color-mix(in srgb, var(--secondary), transparent 60%);
+    filter: brightness(110%);
+}
+
+/* ============================================
+   DROPDOWN PANELS
+   ============================================ */
+.hero-search-bar__dropdown {
+    position: absolute;
+    top: calc(100% + 12px);
+    left: 0;
+    background: var(--popover);
+    border-radius: 24px;
+    box-shadow:
+        0 4px 6px rgba(0, 0, 0, 0.04),
+        0 10px 20px rgba(0, 0, 0, 0.08),
+        0 0 0 1px rgba(0, 0, 0, 0.04);
+    padding: 24px;
+    min-width: 350px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.hero-search-bar__dropdown--location {
+    left: 0;
+    width: 400px;
+}
+
+.hero-search-bar__dropdown--area {
+    left: 28.3%;
+    transform: translateX(-50%);
+    width: 360px;
+}
+
+.hero-search-bar__dropdown--rental {
+    left: 56.6%;
+    transform: translateX(-50%);
+    width: 340px;
+}
+
+/* Dropdown Title */
+.hero-search-bar__dropdown-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--foreground);
+    margin-bottom: 16px;
+}
+
+/* Dropdown List */
+.hero-search-bar__dropdown-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+/* Dropdown Item */
+.hero-search-bar__dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.hero-search-bar__dropdown-item:hover {
+    background-color: var(--accent);
+}
+
+.hero-search-bar__dropdown-item--selected {
+    background-color: var(--muted);
+}
+
+.hero-search-bar__dropdown-item-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: var(--muted);
+    color: var(--muted-foreground);
+    flex-shrink: 0;
+}
+
+.hero-search-bar__dropdown-item--selected .hero-search-bar__dropdown-item-icon {
+    background: var(--primary);
+    color: var(--primary-foreground);
+}
+
+.hero-search-bar__dropdown-item-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.hero-search-bar__dropdown-item-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--foreground);
+}
+
+.hero-search-bar__dropdown-item-meta {
+    font-size: 12px;
+    color: var(--muted-foreground);
+}
+
+/* ============================================
+   AREA OPTIONS
+   ============================================ */
+.hero-search-bar__area-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+}
+
+.hero-search-bar__area-option {
+    padding: 16px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--background);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--foreground);
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s ease;
+}
+
+.hero-search-bar__area-option:hover {
+    border-color: var(--foreground);
+}
+
+.hero-search-bar__area-option--selected {
+    border-color: var(--primary);
+    background: linear-gradient(135deg, color-mix(in srgb, var(--primary), transparent 95%) 0%, color-mix(in srgb, var(--primary), transparent 90%) 100%);
+    color: var(--primary);
+}
+
+/* ============================================
+   RENTAL OPTIONS
+   ============================================ */
+.hero-search-bar__rental-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.hero-search-bar__rental-option {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: var(--background);
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.15s ease;
+}
+
+.hero-search-bar__rental-option:hover {
+    border-color: var(--foreground);
+    background: var(--muted);
+}
+
+.hero-search-bar__rental-option--selected {
+    border-color: var(--primary);
+    background: linear-gradient(135deg, color-mix(in srgb, var(--primary), transparent 97%) 0%, color-mix(in srgb, var(--primary), transparent 92%) 100%);
+}
+
+.hero-search-bar__rental-icon {
+    font-size: 28px;
+    flex-shrink: 0;
+}
+
+.hero-search-bar__rental-content {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.hero-search-bar__rental-label {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--foreground);
+}
+
+.hero-search-bar__rental-desc {
+    font-size: 13px;
+    color: var(--muted-foreground);
+}
+
+/* Dropdown Clear Button */
+.hero-search-bar__dropdown-clear {
+    display: block;
+    width: 100%;
+    margin-top: 16px;
+    padding: 12px;
+    background: transparent;
+    border: none;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--muted-foreground);
+    cursor: pointer;
+    text-decoration: underline;
+    transition: color 0.15s ease;
+}
+
+.hero-search-bar__dropdown-clear:hover {
+    color: var(--foreground);
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+@media (max-width: 768px) {
+    .hero-search-bar__container {
+        flex-direction: column;
+        border-radius: 24px;
+        padding: 16px;
+        gap: 8px;
+        height: auto;
+    }
+
+    .hero-search-bar__container--minified {
+        height: auto !important;
+        flex-direction: row;
+        align-items: center;
+        padding: 8px 12px;
+        max-width: 90%;
+    }
+
+    .hero-search-bar__section {
+        width: 100%;
+        padding: 12px 16px;
+        border-radius: 16px;
+    }
+
+    .hero-search-bar__divider {
+        width: 100%;
+        height: 1px;
+    }
+
+    .hero-search-bar__search-btn {
+        width: 100%;
+        justify-content: center;
+        margin-top: 8px;
+    }
+
+    .hero-search-bar__filter-btn {
+        display: none;
+    }
+
+    .hero-search-bar__dropdown {
+        left: 0 !important;
+        right: 0 !important;
+        transform: none !important;
+        width: 100% !important;
+        border-radius: 16px;
+    }
+}
