@@ -8,9 +8,9 @@
   "scripts": {
     "postinstall": "prisma generate",
     "heroku-postbuild": "npm run build",
-    "build": "nest build",
+    "build": "rimraf dist && nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
-    "start": "nest start -p $PORT",
+    "start": "node dist/src/main",
     "dev": "nest start --watch",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
