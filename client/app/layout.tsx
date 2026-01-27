@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
-import { REM, JetBrains_Mono } from "next/font/google"; 
+import { REM, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ToastProvider } from "@/contexts/ToastContext";
 import { LoadingProvider } from "@/components/providers/LoadingProvider";
+import { ProfileModalProviderWrapper } from "@/components/providers/ProfileModalProviderWrapper";
 
 const rem = REM({
   variable: "--font-rem",
@@ -47,7 +48,9 @@ export default function RootLayout({
         >
           <ToastProvider>
             <LoadingProvider>
-              {children}
+              <ProfileModalProviderWrapper>
+                {children}
+              </ProfileModalProviderWrapper>
             </LoadingProvider>
           </ToastProvider>
         </ThemeProvider>

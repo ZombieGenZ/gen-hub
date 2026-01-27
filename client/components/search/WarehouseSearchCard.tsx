@@ -91,19 +91,28 @@ export default function WarehouseSearchCard({ property, onHover, isHighlighted }
             </div>
 
             {/* Content info */}
-            <div className="flex flex-col gap-0.5 px-0.5">
-                <div className="text-muted-foreground text-[15px] leading-snug">
-                    <p className="line-clamp-1">Cách trung tâm {property.id + 2} km</p>
-                </div>
+            <div className="flex flex-col gap-1 px-0.5">
+                {/* Primary: Property Name */}
+                <h3 className="text-base font-semibold text-foreground line-clamp-1 leading-snug">
+                    {property.name}
+                </h3>
+                {/* Secondary: Address */}
+                <p className="text-xs text-muted-foreground line-clamp-1 leading-relaxed">
+                    {property.address}
+                </p>
+                {/* Tertiary: Distance */}
+                <p className="text-xs text-muted-foreground/80 line-clamp-1">
+                    Cách trung tâm {property.id + 2} km
+                </p>
+            </div>
 
-                <div className="mt-1 flex items-baseline gap-1">
-                    <span className="font-semibold text-foreground text-[16px]">
-                        {property.price >= 1000000000
-                            ? `${(property.price / 1000000000).toFixed(1)} Tỷ`
-                            : `${(property.price / 1000000).toFixed(0)} Tr`}
-                    </span>
-                    <span className="text-foreground text-[16px]">/tháng</span>
-                </div>
+            <div className="mt-0 flex items-baseline gap-1">
+                <span className="font-semibold text-foreground text-[16px]">
+                    {property.price >= 1000000000
+                        ? `${(property.price / 1000000000).toFixed(1)} Tỷ`
+                        : `${(property.price / 1000000).toFixed(0)} Tr`}
+                </span>
+                <span className="text-foreground text-[16px]">/tháng</span>
             </div>
         </div>
     );

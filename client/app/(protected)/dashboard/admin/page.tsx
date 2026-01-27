@@ -71,7 +71,7 @@ export default function DashboardPage() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
                     {/* Activity Feed / Placeholder for Charts */}
                     <div className="lg:col-span-2 space-y-6">
-                        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                        <div className="bg-white p-6 rounded-xl border-0 shadow-premium">
                             <div className="flex items-center justify-between mb-6">
                                 <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                                     <Activity className="w-5 h-5 text-brand" />
@@ -87,7 +87,7 @@ export default function DashboardPage() {
                             </div>
                         </div>
 
-                        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div className="bg-white rounded-xl border-0 shadow-premium overflow-hidden">
                             <div className="p-6 border-b border-slate-100 flex items-center justify-between">
                                 <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                                     <Package className="w-5 h-5 text-brand" />
@@ -101,7 +101,7 @@ export default function DashboardPage() {
                                 {[1, 2, 3].map((i) => (
                                     <div key={i} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-all cursor-pointer">
                                         <div className="flex items-center gap-4">
-                                            <div className="w-10 h-10 rounded-lg bg-brand-subtle flex items-center justify-center text-brand font-bold">
+                                            <div className="w-10 h-10 rounded-lg bg-brand/10 flex items-center justify-center text-brand font-bold">
                                                 W{i}
                                             </div>
                                             <div>
@@ -123,7 +123,7 @@ export default function DashboardPage() {
 
                     {/* Sidebar/Recent Activity */}
                     <div className="space-y-6">
-                        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                        <div className="bg-white p-6 rounded-xl border-0 shadow-premium">
                             <h2 className="text-lg font-bold text-slate-900 mb-6">Thông báo mới nhất</h2>
                             <div className="space-y-6">
                                 {[

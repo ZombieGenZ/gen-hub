@@ -333,7 +333,6 @@ export default function PropertySearch({ initialLocationSlug }: PropertySearchPr
                         id="search-list-container"
                         className={cn(
                             "search-page__list-column",
-                            // List takes full width if no map (or map hidden)
                             !hasSearched ? "max-w-[1440px] mx-auto" : "",
                             showMapMobile ? "search-page__list-column--hidden-mobile" : ""
                         )}

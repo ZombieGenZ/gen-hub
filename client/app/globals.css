@@ -8,7 +8,7 @@
 @variant dark (&:where(.dark, .dark *));
 
 :root {
-    --background: oklch(0.985 0.002 247.839);
+    --background: oklch(0.967 0.003 264.542);
     --foreground: oklch(0.21 0.034 264.665);
     --card: oklch(1 0 0);
     --card-foreground: oklch(0.21 0.034 264.665);
@@ -27,11 +27,11 @@
     --border: oklch(0.707 0.022 261.325 / 0.125);
     --input: oklch(0.21 0.034 264.665 / 0.15);
     --ring: oklch(0.71 0.121 186);
-    --chart-1: oklch(0.71 0.121 186);
-    --chart-2: oklch(0.79 0.131 185);
-    --chart-3: oklch(0.86 0.124 184);
-    --chart-4: oklch(0.852 0.199 91.936);
-    --chart-5: oklch(0.685 0.169 237.323);
+    --chart-1: oklch(0.78 0.11 193); /* Teal 400 - Imports */
+    --chart-2: oklch(0.69 0.19 15);  /* Rose 400 - Exports */
+    --chart-3: oklch(0.67 0.17 48);  /* Orange 500 - Warning */
+    --chart-4: oklch(0.63 0.22 291); /* Purple 500 - Analogous */
+    --chart-5: oklch(0.71 0.12 186); /* Brand Primary - Fallback */
     --sidebar: oklch(0.967 0.003 264.542);
     --sidebar-foreground: oklch(0.21 0.034 264.665);
     --sidebar-primary: oklch(0 0 0 / 0.85);
@@ -48,7 +48,7 @@
     --primary-ring: oklch(0.6 0.103 188);
 
   /* Additional variables needed for custom classes */
-  --shadow-premium: 0 20px 50px -12px rgba(0, 0, 0, 0.15), 0 10px 20px -8px rgba(0, 0, 0, 0.1);
+  --shadow-premium: 0 12px 30px -10px rgba(0, 0, 0, 0.08), 0 4px 10px -4px rgba(0, 0, 0, 0.04);
   --radius-hero: 2.5rem;
   --radius-pill: 9999px;
 
@@ -79,11 +79,11 @@
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
+  --chart-1: oklch(0.78 0.11 193); /* Teal 400 */
+  --chart-2: oklch(0.69 0.19 15);  /* Rose 400 */
+  --chart-3: oklch(0.67 0.17 48);  /* Orange 500 */
+  --chart-4: oklch(0.63 0.22 291); /* Purple 500 */
+  --chart-5: oklch(0.71 0.12 186); /* Brand Primary */
   --sidebar: oklch(0.205 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
   --sidebar-primary: oklch(0.488 0.243 264.376);
@@ -405,4 +405,24 @@ html::-webkit-scrollbar-thumb:hover {
   --ds-input-ring: 0 0 0 1px var(--ds-gray-alpha-600), 0 0 0 4px rgba(255, 255, 255, .24);
   --ds-red-900-alpha-160: hsla(358,100%,69%,.16);
   --geist-error: #ff0000;
+}
+
+.modal-profile-lg {
+  max-width: 1400px !important;
+  width: 98vw !important;
+  height: 95vh !important;
+
+  border-radius: var(--radius-xl) !important;
+  box-shadow: var(--ds-shadow-modal) !important;
+  border: 0px solid var(--border) !important;
+  
+  overflow: hidden !important;
+}
+
+@media (min-width: 640px) {
+  .modal-profile-lg {
+    max-width: 90vw !important;
+    width: 98vw !important;
+    height: 95vh !important;
+  }
 }

@@ -67,14 +67,12 @@
 
 /* ============================================
    LIST COLUMN
-   - Chiều cao tự nhiên (do nội dung quyết định)
-   - Quyết định chiều cao của main-container
    ============================================ */
 .search-page__list-column {
   flex: 1;
   display: flex;
   flex-direction: column;
-  min-width: 0; /* Prevent flex item overflow */
+  min-width: 0; 
 }
 
 .search-page__list-column--hidden-mobile {

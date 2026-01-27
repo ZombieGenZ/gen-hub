@@ -74,7 +74,7 @@ export function StatCard({
 
     return (
         <div className={cn(
-            "p-6 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 border",
+            "p-6 rounded-lg shadow-premium hover:shadow-2xl transition-all duration-300 border-0 bg-white",
             styles.bg,
             styles.borderColor,
             className
@@ -86,7 +86,7 @@ export function StatCard({
                     </p>
                     <h3 className={cn("text-3xl font-bold", styles.textColor)}>{value}</h3>
                 </div>
-                <div className={cn("p-2.5 rounded-xl shadow-sm", styles.iconBg)}>
+                <div className={cn("p-3 rounded-full shadow-sm", styles.iconBg)}>
                     <Icon className={cn("w-6 h-6", styles.iconColor)} />
                 </div>
             </div>
@@ -97,8 +97,8 @@ export function StatCard({
                     <div className={cn(
                         "flex items-center gap-1 text-sm font-bold",
                         trend.isPositive
-                            ? (variant === 'default' ? "text-emerald-600" : "text-emerald-600")
-                            : "text-rose-600"
+                            ? "text-chart-1" // Teal
+                            : "text-chart-2" // Rose/Coral
                     )}>
                         {trend.isPositive ? '+' : ''}{Math.abs(trend.value)}%
                         <span className={cn("text-xs font-normal ml-1", variant === 'default' ? "text-slate-500" : styles.textColor, "opacity-70")}>

@@ -3,11 +3,9 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
-    CalendarIcon,
     CheckIcon,
     DocumentTextIcon,
     ChatBubbleLeftRightIcon,
@@ -22,8 +20,7 @@ import {
     DialogTrigger,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { format, addMonths } from 'date-fns';
-import { vi } from 'date-fns/locale';
+
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
@@ -430,30 +427,16 @@ export function BookingWidget({ warehouseId, price, unit = "tháng" }: BookingWi
                     {/* Date Picker */}
                     <div className="space-y-2">
                         <Label className="text-slate-600 font-medium text-xs uppercase tracking-wide">Ngày bắt đầu thuê</Label>
-                        <Popover>
-                            <PopoverTrigger asChild>
-                                <Button
-                                    variant={"outline"}
-                                    className={cn(
-                                        "w-full justify-start text-left font-normal h-12 rounded-xl border-slate-200",
-                                        !date && "text-muted-foreground"
-                                    )}
-                                >
-                                    <CalendarIcon className="mr-2 h-4 w-4 text-[#0F766E]" />
-                                    {date ? format(date, "d 'tháng' M, yyyy", { locale: vi }) : <span>Chọn ngày</span>}
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                                <Calendar
-                                    mode="single"
-                                    selected={date}
-                                    onSelect={setDate}
-                                    initialFocus
-                                    className="rounded-xl border border-slate-100 shadow-lg"
-                                    disabled={(date) => date < new Date()}
-                                />
-                            </PopoverContent>
-                        </Popover>
+                        <DatePicker
+                            date={date}
+                            onDateChange={setDate}
+                            placeholder="Chọn ngày"
+                            disabled={(date) => {
+                                const today = new Date()
+                                today.setHours(0, 0, 0, 0)
+                                return date < today
+                            }}
+                        />
                     </div>
 
                     {/* Duration Select */}

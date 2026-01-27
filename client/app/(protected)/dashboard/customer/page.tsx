@@ -28,8 +28,11 @@ import {
 } from "@heroicons/react/24/outline";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
+import { Egg, Droplet, Package, Wheat, Milk, AlertCircle, Calendar } from "lucide-react";
 
 export default function CustomerDashboardOverview() {
     const router = useRouter();
@@ -112,11 +115,11 @@ export default function CustomerDashboardOverview() {
 
                 // Mock Top Products
                 setTopProducts([
-                    { name: "iPhone 15 Pro Max", count: 500, unit: "cái", trend: "up", data: [30, 45, 60, 50, 70, 90] },
-                    { name: "Ốp lưng Silicon", count: 200, unit: "cái", trend: "down", data: [80, 65, 50, 45, 30, 25] },
-                    { name: "Củ sạc 20W", count: 150, unit: "cái", trend: "up", data: [20, 35, 40, 50, 60, 80] },
-                    { name: "MacBook Air M2", count: 120, unit: "cái", trend: "up", data: [40, 50, 45, 60, 70, 85] },
-                    { name: "Kính cường lực", count: 85, unit: "cái", trend: "down", data: [70, 60, 55, 40, 35, 20] },
+                    { name: "Củ sạc 20W", count: 500, unit: "cái", trend: "up", data: [30, 45, 60, 50, 70, 90] },
+                    { name: "Kính cường lực", count: 200, unit: "cái", trend: "up", data: [20, 35, 40, 50, 60, 80] },
+                    { name: "MacBook Air M2", count: 150, unit: "cái", trend: "down", data: [40, 50, 45, 60, 70, 85] },
+                    { name: "iPhone 15 Pro Max", count: 120, unit: "cái", trend: "up", data: [80, 65, 50, 45, 30, 25] },
+                    { name: "Ốp lưng Silicon", count: 85, unit: "cái", trend: "down", data: [70, 60, 55, 40, 35, 20] },
                 ]);
 
             } catch (error) {
@@ -131,6 +134,19 @@ export default function CustomerDashboardOverview() {
 
     const formatCurrency = (val: number) =>
         new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val);
+
+    const lowStockItems = [
+        { name: "Trứng gà", left: 24, min: 100, unit: "kg", icon: Egg },
+        { name: "Dầu ăn", left: 24, min: 100, unit: "lit", icon: Droplet },
+        { name: "Tỏi", left: 12, min: 50, unit: "kg", icon: Package },
+        { name: "Tiêu đen", left: 32, min: 100, unit: "gói", icon: AlertCircle },
+    ];
+
+    const expiredItems = [
+        { name: "Bột mì", left: 0, unit: "kg", expiry: "25/01/2026", icon: Wheat },
+        { name: "Sữa tươi", left: 5, unit: "hộp", expiry: "20/01/2026", icon: Milk },
+        { name: "Nấm", left: 2, unit: "kg", expiry: "22/01/2026", icon: Package },
+    ];
 
     return (
         <div className="space-y-2">
@@ -164,17 +180,17 @@ export default function CustomerDashboardOverview() {
             {/* KPI Area (Top Row) */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* Total Stock */}
-                <Card className="border-border/60 shadow-sm">
+                <Card className="border-0 shadow-premium">
                     <CardContent className="p-5">
                         <div className="flex items-center gap-2 mb-2">
-                            <div className="w-2 h-2 rounded-full bg-blue-500" />
+                            <div className="w-2 h-2 rounded-full bg-chart-5" />
                             <span className="text-sm font-medium text-muted-foreground">Tổng tồn kho</span>
                         </div>
                         <div className="text-3xl font-bold text-foreground">{loading ? "-" : stats.totalStock.toLocaleString()}</div>
                         <div className="flex items-center gap-2 mt-2">
                             <Badge variant="secondary" className={cn(
                                 "px-1.5 py-0.5 text-[10px] gap-1",
-                                stats.totalStockTrend.direction === "up" ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-50" : "bg-rose-50 text-rose-700 hover:bg-rose-50"
+                                stats.totalStockTrend.direction === "up" ? "bg-chart-1/10 text-chart-1 hover:bg-chart-1/20" : "bg-chart-2/10 text-chart-2 hover:bg-chart-2/20"
                             )}>
                                 {stats.totalStockTrend.direction === "up" ? <ArrowTrendingUpIcon className="w-3 h-3" /> : <ArrowTrendingDownIcon className="w-3 h-3" />}
                                 {stats.totalStockTrend.value}
@@ -185,17 +201,17 @@ export default function CustomerDashboardOverview() {
                 </Card>
 
                 {/* Outbound Orders */}
-                <Card className="border-border/60 shadow-sm">
+                <Card className="border-0 shadow-premium">
                     <CardContent className="p-5">
                         <div className="flex items-center gap-2 mb-2">
-                            <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                            <div className="w-2 h-2 rounded-full bg-chart-1" />
                             <span className="text-sm font-medium text-muted-foreground">Đơn xuất hàng</span>
                         </div>
                         <div className="text-3xl font-bold text-foreground">{loading ? "-" : stats.outboundOrders.toLocaleString()}</div>
                         <div className="flex items-center gap-2 mt-2">
                             <Badge variant="secondary" className={cn(
                                 "px-1.5 py-0.5 text-[10px] gap-1",
-                                stats.outboundOrdersTrend.direction === "up" ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-50" : "bg-rose-50 text-rose-700 hover:bg-rose-50"
+                                stats.outboundOrdersTrend.direction === "up" ? "bg-chart-1/10 text-chart-1 hover:bg-chart-1/20" : "bg-chart-2/10 text-chart-2 hover:bg-chart-2/20"
                             )}>
                                 {stats.outboundOrdersTrend.direction === "up" ? <ArrowTrendingUpIcon className="w-3 h-3" /> : <ArrowTrendingDownIcon className="w-3 h-3" />}
                                 {stats.outboundOrdersTrend.value}
@@ -206,17 +222,17 @@ export default function CustomerDashboardOverview() {
                 </Card>
 
                 {/* Inbound Shipments */}
-                <Card className="border-border/60 shadow-sm">
+                <Card className="border-0 shadow-premium">
                     <CardContent className="p-5">
                         <div className="flex items-center gap-2 mb-2">
-                            <div className="w-2 h-2 rounded-full bg-purple-500" />
+                            <div className="w-2 h-2 rounded-full bg-chart-4" />
                             <span className="text-sm font-medium text-muted-foreground">Đơn nhập hàng</span>
                         </div>
                         <div className="text-3xl font-bold text-foreground">{loading ? "-" : stats.inboundShipments.toLocaleString()}</div>
                         <div className="flex items-center gap-2 mt-2">
                             <Badge variant="secondary" className={cn(
                                 "px-1.5 py-0.5 text-[10px] gap-1",
-                                stats.inboundShipmentsTrend.direction === "up" ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-50" : "bg-rose-50 text-rose-700 hover:bg-rose-50"
+                                stats.inboundShipmentsTrend.direction === "up" ? "bg-chart-1/10 text-chart-1 hover:bg-chart-1/20" : "bg-chart-2/10 text-chart-2 hover:bg-chart-2/20"
                             )}>
                                 {stats.inboundShipmentsTrend.direction === "up" ? <ArrowTrendingUpIcon className="w-3 h-3" /> : <ArrowTrendingDownIcon className="w-3 h-3" />}
                                 {stats.inboundShipmentsTrend.value}
@@ -227,15 +243,15 @@ export default function CustomerDashboardOverview() {
                 </Card>
 
                 {/* Active Contracts */}
-                <Card className="border-border/60 shadow-sm">
+                <Card className="border-0 shadow-premium">
                     <CardContent className="p-5">
                         <div className="flex items-center gap-2 mb-2">
-                            <div className="w-2 h-2 rounded-full bg-orange-500" />
+                            <div className="w-2 h-2 rounded-full bg-chart-3" />
                             <span className="text-sm font-medium text-muted-foreground">Hợp đồng đang thuê</span>
                         </div>
                         <div className="text-3xl font-bold text-foreground">{loading ? "-" : stats.activeContracts}</div>
                         <div className="flex items-center gap-2 mt-2">
-                            <Badge variant="secondary" className="bg-orange-50 text-orange-700 hover:bg-orange-50 px-1.5 py-0.5 text-[10px] gap-1">
+                            <Badge variant="secondary" className="bg-chart-3/10 text-chart-3 hover:bg-chart-3/20 px-1.5 py-0.5 text-[10px] gap-1">
                                 <ClockIcon className="w-3 h-3" />
                                 {stats.expiringContracts}
                             </Badge>
@@ -247,11 +263,11 @@ export default function CustomerDashboardOverview() {
 
             {/* Main Content Layout */}
             {/* Main Content Layout - Row 1 */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
 
                 {/* Stock Flow Analysis Chart (2/3) */}
                 <div className="lg:col-span-2">
-                    <Card className="h-full border-border/60 shadow-sm">
+                    <Card className="h-full border-0 shadow-premium">
                         <CardHeader className="flex flex-row items-center justify-between pb-2">
                             <CardTitle className="text-base font-semibold">Phân tích dòng hàng</CardTitle>
                             <div className="flex items-center gap-2">
@@ -274,7 +290,7 @@ export default function CustomerDashboardOverview() {
                             </div>
                         </CardHeader>
                         <CardContent>
-                            <div className="h-[210px] w-full relative pt-2">
+                            <div className="h-[200px] w-full relative pt-2">
                                 {/* Grid Lines (Optional - visual guide) */}
                                 <div className="absolute inset-x-0 bottom-6 top-4 flex flex-col justify-between pointer-events-none">
                                     {[1, 0.75, 0.5, 0.25, 0].map((tick, i) => (
@@ -299,14 +315,14 @@ export default function CustomerDashboardOverview() {
                                                     <div className="space-y-1">
                                                         <div className="flex items-center justify-between gap-3 text-muted-foreground">
                                                             <div className="flex items-center gap-1.5">
-                                                                <div className="w-1.5 h-1.5 rounded-full bg-teal-400 shadow-[0_0_6px_rgba(45,212,191,0.5)]" />
+                                                                <div className="w-1.5 h-1.5 rounded-full bg-chart-1 shadow-[0_0_6px_var(--chart-1)]" />
                                                                 <span>Nhập</span>
                                                             </div>
                                                             <span className="text-foreground font-mono font-medium">{item.inbound}</span>
                                                         </div>
                                                         <div className="flex items-center justify-between gap-3 text-muted-foreground">
                                                             <div className="flex items-center gap-1.5">
-                                                                <div className="w-1.5 h-1.5 rounded-full bg-rose-400 shadow-[0_0_6px_rgba(251,113,133,0.5)]" />
+                                                                <div className="w-1.5 h-1.5 rounded-full bg-chart-2 shadow-[0_0_6px_var(--chart-2)]" />
                                                                 <span>Xuất</span>
                                                             </div>
                                                             <span className="text-foreground font-mono font-medium">{item.outbound}</span>
@@ -317,12 +333,12 @@ export default function CustomerDashboardOverview() {
                                                 <div className="flex gap-1 md:gap-1.5 items-end justify-center w-full h-full">
                                                     {/* Inbound Bar */}
                                                     <div
-                                                        className="w-2.5 md:w-5 bg-gradient-to-t from-teal-500/80 to-emerald-400/80 rounded-t-lg shadow-sm transition-all duration-300 group-hover:from-teal-500 group-hover:to-emerald-400 group-hover:shadow-md hover:scale-y-[1.02] origin-bottom"
+                                                        className="w-2.5 md:w-5 bg-gradient-to-t from-chart-1/80 to-chart-1/60 rounded-t-lg shadow-sm transition-all duration-300 group-hover:from-chart-1 group-hover:to-chart-1 group-hover:shadow-md hover:scale-y-[1.02] origin-bottom"
                                                         style={{ height: `${inHeight}%` }}
                                                     />
-                                                    {/* Outbound Bar */}
+                                                    {/* Outbound Bar - Use Chart 2 (Rose) for Exports */}
                                                     <div
-                                                        className="w-2.5 md:w-5 bg-gradient-to-t from-orange-500/80 to-rose-400/80 rounded-t-lg shadow-sm transition-all duration-300 group-hover:from-orange-500 group-hover:to-rose-400 group-hover:shadow-md hover:scale-y-[1.02] origin-bottom"
+                                                        className="w-2.5 md:w-5 bg-gradient-to-t from-chart-2/80 to-chart-2/60 rounded-t-lg shadow-sm transition-all duration-300 group-hover:from-chart-2 group-hover:to-chart-2 group-hover:shadow-md hover:scale-y-[1.02] origin-bottom"
                                                         style={{ height: `${outHeight}%` }}
                                                     />
                                                 </div>
@@ -336,73 +352,195 @@ export default function CustomerDashboardOverview() {
                             {/* Legend */}
                             <div className="flex justify-center gap-6 mt-2">
                                 <div className="flex items-center gap-2">
-                                    <div className="w-3 h-3 bg-gradient-to-br from-teal-500 to-emerald-400 rounded-sm shadow-sm opacity-80" />
+                                    <div className="w-3 h-3 bg-gradient-to-br from-chart-1 to-chart-1/80 rounded-sm shadow-sm opacity-80" />
                                     <span className="text-[10px] text-muted-foreground font-medium">Hàng nhập</span>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <div className="w-3 h-3 bg-gradient-to-br from-orange-500 to-rose-400 rounded-sm shadow-sm opacity-80" />
+                                    <div className="w-3 h-3 bg-gradient-to-br from-chart-2 to-chart-2/80 rounded-sm shadow-sm opacity-80" />
                                     <span className="text-[10px] text-muted-foreground font-medium">Hàng xuất</span>
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
                 </div>
-
-                {/* Stocks Alert (1/3) */}
+                {/* Top Products (1/3) */}
                 <div>
-                    <Card className="h-full border-border/60 shadow-sm">
-                        <CardHeader className="flex flex-row items-center justify-between pb-2">
-                            <CardTitle className="text-base font-semibold">Cảnh báo tồn kho</CardTitle>
-                            <EllipsisHorizontalIcon className="w-4 h-4 text-muted-foreground/70 cursor-pointer hover:text-foreground transition-colors" />
+                    <Card className="h-full border-0 shadow-premium">
+                        <CardHeader className="pb-2">
+                            <CardTitle className="text-base font-semibold">Top sản phẩm xuất nhập</CardTitle>
                         </CardHeader>
-                        <CardContent className="p-3 space-y-2">
-                            {/* Summary Cards */}
-                            <div className="grid grid-cols-2 gap-2">
-                                <div className="bg-red-50 rounded-lg p-2 flex flex-col gap-0.5">
-                                    <div className="flex items-center gap-1.5">
-                                        <div className="w-5 h-5 rounded-full bg-red-100 flex items-center justify-center text-red-600">
-                                            <ExclamationTriangleIcon className="w-3 h-3" />
-                                        </div>
-                                        <span className="text-[10px] font-semibold text-red-900/70">Sắp hết hàng</span>
+                        <CardContent className="p-4">
+                            <div className="flex flex-col md:flex-row items-center gap-2 h-[200px]">
+                                {/* Chart Section */}
+                                <div className="flex-1 h-full w-full relative min-h-[160px]">
+                                    {/* Center Label - Moved Top for z-index layering */}
+                                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none z-0">
+                                        <span className="text-xl font-bold text-foreground leading-none block">
+                                            {topProducts.reduce((acc, curr) => acc + curr.count, 0).toLocaleString()}
+                                        </span>
+                                        <span className="text-[9px] text-muted-foreground font-medium uppercase tracking-wider">Tổng số</span>
                                     </div>
-                                    <span className="text-lg font-bold text-red-700 pl-1">{stockAlerts.length}</span>
-                                </div>
-                                <div className="bg-orange-50 rounded-lg p-2 flex flex-col gap-0.5">
-                                    <div className="flex items-center gap-1.5">
-                                        <div className="w-5 h-5 rounded-full bg-orange-100 flex items-center justify-center text-orange-600">
-                                            <XCircleIcon className="w-3 h-3" />
-                                        </div>
-                                        <span className="text-[10px] font-semibold text-orange-900/70">Hết hạn</span>
-                                    </div>
-                                    <span className="text-lg font-bold text-orange-700 pl-1">3</span>
-                                </div>
-                            </div>
 
-                            {/* Alert List */}
-                            <div className="space-y-1">
-                                {stockAlerts.map((item, i) => (
-                                    <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-red-50/40 hover:bg-red-50/80 transition-colors group cursor-pointer">
-                                        <div>
-                                            <p className="font-semibold text-xs text-foreground/90">{item.name}</p>
-                                            <p className="text-[10px] text-muted-foreground">{item.left} {item.unit}</p>
-                                        </div>
-                                        <div className="px-2 py-0.5 rounded-md bg-red-100/50 text-red-600 text-[9px] font-bold">
-                                            Low stock
-                                        </div>
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <PieChart>
+                                            <Pie
+                                                data={topProducts}
+                                                cx="50%"
+                                                cy="50%"
+                                                innerRadius={65}
+                                                outerRadius={85}
+                                                paddingAngle={4}
+                                                dataKey="count"
+                                                nameKey="name"
+                                                cornerRadius={4}
+                                            >
+                                                {topProducts.map((entry, index) => (
+                                                    <Cell
+                                                        key={`cell-${index}`}
+                                                        fill={`var(--chart-${(index % 5) + 1})`}
+                                                        strokeWidth={0}
+                                                        className="hover:opacity-80 transition-opacity cursor-pointer"
+                                                    />
+                                                ))}
+                                            </Pie>
+                                            <Tooltip
+                                                content={({ active, payload }) => {
+                                                    if (active && payload && payload.length) {
+                                                        const data = payload[0].payload;
+                                                        return (
+                                                            <div className="bg-popover/95 backdrop-blur-md shadow-xl border border-border/40 rounded-xl p-3 text-xs z-50">
+                                                                <div className="font-semibold mb-1 text-foreground">{data.name}</div>
+                                                                <div className="flex items-center gap-2 text-muted-foreground">
+                                                                    <span className="font-mono font-medium text-foreground text-sm">{data.count}</span>
+                                                                    <span>{data.unit}</span>
+                                                                </div>
+                                                                <div className={cn("text-[10px] flex items-center gap-1 mt-1", data.trend === "up" ? "text-chart-1" : "text-chart-2")}>
+                                                                    {data.trend === "up" ? <ArrowTrendingUpIcon className="w-3 h-3" /> : <ArrowTrendingDownIcon className="w-3 h-3" />}
+                                                                    <span>{data.trend === "up" ? "Tăng" : "Giảm"}</span>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    }
+                                                    return null;
+                                                }}
+                                            />
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                </div>
+
+                                {/* Legend Section */}
+                                <div className="w-full md:w-2/5 flex flex-col justify-center gap-2 pr-2">
+                                    <div className="space-y-2">
+                                        {topProducts.slice(0, 4).map((entry, index) => (
+                                            <div key={`legend-${index}`} className="flex items-center justify-between text-[9.5px] group cursor-pointer hover:bg-muted/50 p-1 rounded-lg -mx-1 transition-colors">
+                                                <div className="flex items-center gap-1.5 overflow-hidden">
+                                                    <div className="w-2 h-2 rounded-full shrink-0 shadow-sm" style={{ backgroundColor: `var(--chart-${(index % 5) + 1})` }} />
+                                                    <span className="truncate font-medium text-muted-foreground group-hover:text-foreground transition-colors max-w-[80px]" title={entry.name}>
+                                                        {entry.name}
+                                                    </span>
+                                                </div>
+                                                <span className="font-mono font-semibold text-foreground shrink-0">{entry.count}</span>
+                                            </div>
+                                        ))}
                                     </div>
-                                ))}
+                                    <Button variant="ghost" size="sm" className="w-full text-[10px] text-muted-foreground h-6 mt-0.5 hover:bg-muted/50">
+                                        Xem chi tiết
+                                    </Button>
+                                </div>
                             </div>
                         </CardContent>
                     </Card>
                 </div>
+                {/* Stocks Alert (1/3) */}
+                <div>
+                    <Card className="h-full border-0 shadow-premium">
+                        <CardHeader className="flex flex-row items-center justify-between pb-2">
+                            <CardTitle className="text-base font-semibold">Cảnh báo tồn kho</CardTitle>
+                            <EllipsisHorizontalIcon className="w-4 h-4 text-muted-foreground/70 cursor-pointer hover:text-foreground transition-colors" />
+                        </CardHeader>
+                        <CardContent className="p-0">
+                            <Tabs defaultValue="low_stock" className="w-full">
+                                <div className="px-3 pt-3">
+                                    <TabsList className="grid w-full grid-cols-2 h-9 p-1 bg-muted/50 rounded-lg">
+                                        <TabsTrigger
+                                            value="low_stock"
+                                            className="text-[10px] font-medium data-[state=active]:bg-background data-[state=active]:text-chart-2 data-[state=active]:shadow-sm transition-all rounded-md py-1"
+                                        >
+                                            Sắp hết hàng ({lowStockItems.length})
+                                        </TabsTrigger>
+                                        <TabsTrigger
+                                            value="expired"
+                                            className="text-[10px] font-medium data-[state=active]:bg-background data-[state=active]:text-chart-3 data-[state=active]:shadow-sm transition-all rounded-md py-1"
+                                        >
+                                            Hết hạn ({expiredItems.length})
+                                        </TabsTrigger>
+                                    </TabsList>
+                                </div>
+
+                                <div className="p-3">
+                                    <TabsContent value="low_stock" className="mt-0 space-y-3">
+                                        {lowStockItems.map((item, i) => (
+                                            <div key={i} className="flex gap-3 items-start group">
+                                                {/* Icon */}
+                                                <div className="w-8 h-8 rounded-lg bg-chart-2/10 flex items-center justify-center shrink-0 text-chart-2 mt-0.5 group-hover:bg-chart-2/20 transition-colors">
+                                                    <item.icon className="w-4 h-4" />
+                                                </div>
+
+                                                {/* Content */}
+                                                <div className="flex-1 space-y-1.5">
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-xs font-bold text-foreground/90">{item.name}</span>
+                                                        <span className="text-[10px] text-muted-foreground font-medium">
+                                                            {item.left} / {item.min} {item.unit}
+                                                        </span>
+                                                    </div>
+
+                                                    {/* Progress Bar */}
+                                                    <div className="space-y-1">
+                                                        <Progress value={(item.left / item.min) * 100} className="h-1.5 bg-chart-2/10" />
+                                                        <div className="flex justify-end">
+
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </TabsContent>
+
+                                    <TabsContent value="expired" className="mt-0 space-y-3">
+                                        {expiredItems.map((item, i) => (
+                                            <div key={i} className="flex gap-3 items-center group p-1 rounded-lg hover:bg-muted/30 transition-colors -mx-1">
+                                                {/* Icon */}
+                                                <div className="w-8 h-8 rounded-lg bg-chart-3/10 flex items-center justify-center shrink-0 text-chart-3 group-hover:bg-chart-3/20 transition-colors">
+                                                    <item.icon className="w-4 h-4" />
+                                                </div>
+
+                                                {/* Content */}
+                                                <div className="flex-1 flex items-center justify-between">
+                                                    <span className="text-xs font-bold text-foreground/90">{item.name}</span>
+                                                    <span className="text-[10px] font-bold text-chart-3 flex items-center gap-1 bg-chart-3/5 px-2 py-1 rounded-md border border-chart-3/10">
+                                                        <Calendar className="w-3 h-3" />
+                                                        {item.expiry}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </TabsContent>
+                                </div>
+                            </Tabs>
+                        </CardContent>
+                    </Card>
+                </div>
+
+
             </div>
 
             {/* Main Content Layout - Row 2 */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 gap-3">
 
                 {/* Shipments Timeline Table (2/3) */}
-                <div className="lg:col-span-2">
-                    <Card className="h-full border-border/60 shadow-sm">
+                <div>
+                    <Card className="h-full border-0 shadow-premium">
                         <CardHeader className="flex flex-row items-center justify-between pb-2">
                             <CardTitle className="text-base font-semibold">Tiến độ vận đơn</CardTitle>
                             <Link href="#" className="text-[10px] text-primary hover:underline flex items-center gap-1 font-medium">
@@ -428,7 +566,7 @@ export default function CustomerDashboardOverview() {
                                                     <div className="flex items-center gap-2">
                                                         <div className={cn(
                                                             "w-6 h-6 rounded-full flex items-center justify-center bg-muted/60 group-hover:bg-background shadow-none group-hover:shadow-sm transition-all border border-transparent group-hover:border-border/50",
-                                                            ship.type === "Nhập" ? "text-purple-600" : "text-teal-600"
+                                                            ship.type === "Nhập" ? "text-chart-1" : "text-chart-2"
                                                         )}>
                                                             {ship.type === "Nhập"
                                                                 ? <ArrowDownLeftIcon className="w-3 h-3" />
@@ -444,9 +582,9 @@ export default function CustomerDashboardOverview() {
                                                 <td className="px-2 py-1.5 text-right">
                                                     <span className={cn(
                                                         "text-[9px] px-1.5 py-0.5 rounded-full font-medium border",
-                                                        ship.status === "Hoàn tất" || ship.status === "Đã đến" ? "bg-emerald-50 text-emerald-700 border-emerald-100" :
-                                                            ship.status === "Đang xử lý" ? "bg-blue-50 text-blue-700 border-blue-100" :
-                                                                ship.status === "Delayed" ? "bg-orange-50 text-orange-700 border-orange-100" : "bg-red-50 text-red-700 border-red-100"
+                                                        ship.status === "Hoàn tất" || ship.status === "Đã đến" ? "bg-chart-1/10 text-chart-1 border-chart-1/20" :
+                                                            ship.status === "Đang xử lý" ? "bg-chart-4/10 text-chart-4 border-chart-4/20" :
+                                                                ship.status === "Delayed" ? "bg-chart-3/10 text-chart-3 border-chart-3/20" : "bg-chart-2/10 text-chart-2 border-chart-2/20"
                                                     )}>
                                                         {ship.status}
                                                     </span>
@@ -460,47 +598,7 @@ export default function CustomerDashboardOverview() {
                     </Card>
                 </div>
 
-                {/* Top Products (1/3) */}
-                <div>
-                    <Card className="h-full border-border/60 shadow-sm">
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-base font-semibold">Top sản phẩm xuất nhập</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-0.5 pt-2">
-                            {topProducts.map((item, i) => (
-                                <div key={i} className="flex items-center justify-between group cursor-pointer hover:bg-muted/40 p-2 rounded-lg -mx-2 transition-all duration-200">
-                                    <div className="flex items-center gap-3">
-                                        <div className={cn(
-                                            "w-8 h-8 rounded-full flex items-center justify-center font-bold text-[10px] shadow-sm border shrink-0 transition-transform group-hover:scale-105",
-                                            i === 0 ? "bg-yellow-50 text-yellow-700 border-yellow-200" :
-                                                i === 1 ? "bg-slate-50 text-slate-700 border-slate-200" :
-                                                    i === 2 ? "bg-orange-50 text-orange-700 border-orange-200" :
-                                                        "bg-muted/30 text-muted-foreground border-transparent"
-                                        )}>
-                                            {i + 1}
-                                        </div>
-                                        <div>
-                                            <p className="font-medium text-sm text-foreground/90 line-clamp-1 group-hover:text-primary transition-colors">{item.name}</p>
-                                            <p className="text-[12.5px] text-muted-foreground">{item.unit}</p>
-                                        </div>
-                                    </div>
 
-                                    <div className="text-right">
-                                        <div className="font-bold text-sm text-foreground">{item.count}</div>
-                                        <div className={cn("text-[10px] flex items-center justify-end gap-0.5", item.trend === "up" ? "text-emerald-600" : "text-rose-600")}>
-                                            {item.trend === "up" ? <ArrowTrendingUpIcon className="w-3 h-3" /> : <ArrowTrendingDownIcon className="w-3 h-3" />}
-                                            <span>{item.trend === "up" ? "Tăng" : "Giảm"}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-
-                            <Button variant="ghost" size="sm" className="w-full text-xs text-muted-foreground h-7 mt-1 hover:bg-muted/50">
-                                Xem tất cả sản phẩm
-                            </Button>
-                        </CardContent>
-                    </Card>
-                </div>
             </div>
         </div>
     );

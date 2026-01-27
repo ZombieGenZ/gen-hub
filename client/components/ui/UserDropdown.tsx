@@ -20,6 +20,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
 } from "@/components/ui/dropdown-menu";
+import { useProfileModal } from "@/contexts/ProfileModalContext";
 
 interface UserDropdownProps {
   user?: {
@@ -36,6 +37,7 @@ const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout, children })
   const [isOpen, setIsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const router = useRouter();
+  const { openModal } = useProfileModal();
 
   useEffect(() => {
     setMounted(true);
@@ -51,7 +53,7 @@ const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout, children })
 
   const handleProfile = () => {
     setIsOpen(false);
-    router.push("/user/profile");
+    openModal();
   };
 
   const handleSettings = () => {

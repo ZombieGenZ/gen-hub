@@ -18,19 +18,19 @@ export function NavItem({ href, icon: Icon, label, isActive, isCollapsed }: NavI
         <Link
             href={href}
             className={cn(
-                "flex items-center gap-2 py-2 rounded-sm transition-all group outline-none",
+                "flex items-center gap-3 py-2.5 rounded-full transition-all group outline-none",
                 isCollapsed ? "justify-center px-0 w-full" : "px-4",
                 isActive
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium hover:bg-sidebar-border"
-                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
+                    ? "bg-brand/10 text-brand font-medium"
+                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
             )}
         >
             <Icon className={cn(
-                "w-6 h-6 transition-colors flex-shrink-0",
-                isActive ? "text-sidebar-primary" : "text-sidebar-foreground/50 group-hover:text-sidebar-foreground"
+                "w-5 h-5 transition-colors flex-shrink-0",
+                isActive ? "text-brand" : "text-sidebar-foreground/60 group-hover:text-sidebar-foreground"
             )} />
             <span className={cn(
-                "whitespace-nowrap transition-all duration-300 overflow-hidden text-sm",
+                "whitespace-nowrap transition-all duration-300 overflow-hidden text-[13px] font-medium leading-none",
                 isCollapsed ? "w-0 opacity-0 hidden" : "w-auto opacity-100 block"
             )}>
                 {label}

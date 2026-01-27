@@ -5,6 +5,13 @@ import { useCheckout } from './CheckoutWizard';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import {
     UserIcon,
     IdentificationIcon,
     PhoneIcon,
@@ -13,6 +20,20 @@ import {
 } from '@heroicons/react/24/outline';
 import { cn } from '@/lib/utils';
 import { validatePhoneNumber, validateEmail } from '@/lib/validation.utils';
+
+// Common business titles for the representative
+const REPRESENTATIVE_TITLES = [
+    { value: 'giam-doc', label: 'Giám đốc' },
+    { value: 'tong-giam-doc', label: 'Tổng Giám đốc' },
+    { value: 'chu-tich-hdqt', label: 'Chủ tịch HĐQT' },
+    { value: 'pho-giam-doc', label: 'Phó Giám đốc' },
+    { value: 'giam-doc-tai-chinh', label: 'Giám đốc Tài chính (CFO)' },
+    { value: 'giam-doc-dieu-hanh', label: 'Giám đốc Điều hành (COO)' },
+    { value: 'truong-phong', label: 'Trưởng phòng' },
+    { value: 'ke-toan-truong', label: 'Kế toán trưởng' },
+    { value: 'nguoi-dai-dien-phap-luat', label: 'Người đại diện pháp luật' },
+    { value: 'chu-doanh-nghiep', label: 'Chủ doanh nghiệp' },
+];
 
 interface RepresentativeData {
     representative_name: string;
@@ -172,13 +193,28 @@ export function RepresentativeInfoStep({ initialData, onChange }: Representative
                     'VD: Nguyễn Văn A',
                     true
                 )}
-                {renderField(
-                    'representative_title',
-                    'Chức danh',
-                    <IdentificationIcon className="w-4 h-4 text-slate-400" />,
-                    'VD: Giám đốc, Chủ tịch HĐQT',
-                    false
-                )}
+                {/* Title Combobox */}
+                <div className="space-y-2">
+                    <Label className="text-slate-700 font-medium flex items-center gap-2">
+                        <IdentificationIcon className="w-4 h-4 text-slate-400" />
+                        Chức danh
+                    </Label>
+                    <Select
+                        value={formData.representative_title}
+                        onValueChange={(value) => handleChange('representative_title', value)}
+                    >
+                        <SelectTrigger className="h-12 rounded-xl border-slate-200">
+                            <SelectValue placeholder="Chọn chức danh" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {REPRESENTATIVE_TITLES.map((title) => (
+                                <SelectItem key={title.value} value={title.value}>
+                                    {title.label}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
             </div>
 
             {/* Phone & Email */}

@@ -17,7 +17,7 @@ export default {
       },
     },
     fontFamily: {
-      sans: ['var(--font-space-grotesk)', 'system-ui', 'sans-serif'],
+      sans: ['var(--font-rem)', 'system-ui', 'sans-serif'],
       mono: ['var(--font-jetbrains-mono)', 'ui-monospace', 'monospace'],
     },
     extend: {
@@ -54,19 +54,19 @@ export default {
           foreground: "var(--secondary-foreground)",
         },
         destructive: {
-          DEFAULT: "var(--destructive)",
+          DEFAULT: "var(--chart-2)", // Rose
           foreground: "var(--destructive-foreground)",
         },
         success: {
-          DEFAULT: "var(--color-success)",
+          DEFAULT: "var(--chart-1)", // Teal
           foreground: "var(--success-foreground)",
         },
         warning: {
-          DEFAULT: "var(--color-warning)",
+          DEFAULT: "var(--chart-3)", // Orange
           foreground: "var(--warning-foreground)",
         },
         info: {
-          DEFAULT: "var(--color-info)",
+          DEFAULT: "var(--chart-4)", // Purple
           foreground: "var(--info-foreground)",
         },
         muted: {
@@ -95,6 +95,13 @@ export default {
           border: "var(--border)",
           ring: "var(--ring)",
         },
+        chart: {
+          1: "var(--chart-1)",
+          2: "var(--chart-2)",
+          3: "var(--chart-3)",
+          4: "var(--chart-4)",
+          5: "var(--chart-5)",
+        }
       },
       borderColor: {
         DEFAULT: "var(--border)",

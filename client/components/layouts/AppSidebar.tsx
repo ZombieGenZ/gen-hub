@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { NavItem } from "@/components/ui/nav-item";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { useProfileModal } from "@/contexts/ProfileModalContext";
 
 // --- Types ---
 export interface SidebarLinkItem {
@@ -67,6 +68,7 @@ export function AppSidebarContent({
     const [showNotifications, setShowNotifications] = useState(false);
     const [user, setUser] = useState<any>(null);
     const { unreadCount } = useNotifications();
+    const { openModal } = useProfileModal();
 
     // Load User Data
     useEffect(() => {
@@ -228,11 +230,14 @@ export function AppSidebarContent({
                                     </span>
                                 </div>
                             </DropdownMenuItem>
-                            <DropdownMenuItem className="cursor-pointer rounded-sm p-2 focus:bg-sidebar-accent focus:text-sidebar-accent-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus:shadow-none focus:outline-none focus:ring-0 my-1 border-none group" asChild>
-                                <Link href="/user/profile" className="flex items-center w-full">
+                            <DropdownMenuItem
+                                className="cursor-pointer rounded-sm p-2 focus:bg-sidebar-accent focus:text-sidebar-accent-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus:shadow-none focus:outline-none focus:ring-0 my-1 border-none group"
+                                onClick={openModal}
+                            >
+                                <div className="flex items-center w-full">
                                     <UserIcon className="mr-3 h-4 w-4 text-sidebar-foreground/70 group-hover:text-sidebar-accent-foreground" />
                                     <span className="font-medium text-sidebar-foreground group-hover:text-sidebar-accent-foreground">Hồ sơ cá nhân</span>
-                                </Link>
+                                </div>
                             </DropdownMenuItem>
                             <DropdownMenuItem className="cursor-pointer rounded-sm p-2 focus:bg-sidebar-accent focus:text-sidebar-accent-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus:shadow-none focus:outline-none focus:ring-0 my-1 border-none group" asChild>
                                 <Link href="#" className="flex items-center w-full">
