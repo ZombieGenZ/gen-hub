@@ -1,0 +1,48 @@
+{
+  "success": {
+    "created": "Gửi yêu cầu cập nhật thông tin tổ chức thành công",
+    "list": "Lấy danh sách yêu cầu thành công",
+    "fetched": "Lấy chi tiết yêu cầu thành công",
+    "approved": "Duyệt yêu cầu thành công",
+    "rejected": "Từ chối yêu cầu thành công"
+  },
+  "errors": {
+    "not_found": "Không tìm thấy yêu cầu cập nhật",
+    "already_pending": "Đã có một yêu cầu đang chờ duyệt cho tổ chức này",
+    "not_pending": "Yêu cầu không ở trạng thái chờ duyệt",
+    "permission_denied": "Không có quyền thực hiện thao tác này"
+  },
+  "validation": {
+    "reject_reason_required": "Lý do từ chối không được để trống",
+    "reject_reason_string": "Lý do từ chối phải là chuỗi",
+    "status_invalid": "Trạng thái không hợp lệ",
+    "limit_positive": "Limit phải là số dương",
+    "offset_min": "Offset phải >= 0"
+  },
+  "swagger": {
+    "tag": "Yêu Cầu Cập Nhật Tổ Chức",
+    "list": {
+      "summary": "Lấy danh sách yêu cầu cập nhật tổ chức",
+      "description": "Lấy danh sách các yêu cầu cập nhật thông tin tổ chức với phân trang và lọc theo trạng thái. Yêu cầu quyền `organization.update_request.list`."
+    },
+    "read": {
+      "summary": "Lấy chi tiết yêu cầu cập nhật tổ chức",
+      "description": "Lấy thông tin chi tiết của một yêu cầu cập nhật bao gồm thông tin tổ chức và người yêu cầu. Yêu cầu quyền `organization.update_request.read`."
+    },
+    "approve": {
+      "summary": "Duyệt yêu cầu cập nhật thông tin tổ chức",
+      "description": "Phê duyệt yêu cầu cập nhật thông tin tổ chức. Sau khi duyệt, thông tin tổ chức sẽ được cập nhật theo yêu cầu. Yêu cầu quyền `organization.update_request.approve`."
+    },
+    "reject": {
+      "summary": "Từ chối yêu cầu cập nhật thông tin tổ chức",
+      "description": "Từ chối yêu cầu cập nhật thông tin tổ chức với lý do từ chối. Yêu cầu quyền `organization.update_request.reject`."
+    },
+    "params": {
+      "id": "ID yêu cầu cập nhật (UUID)",
+      "limit": "Số lượng bản ghi tối đa",
+      "offset": "Số bản ghi bỏ qua",
+      "status": "Lọc theo trạng thái (PENDING, APPROVED, REJECTED)",
+      "keyword": "Từ khóa tìm kiếm (tên tổ chức, mã số thuế...)"
+    }
+  }
+}

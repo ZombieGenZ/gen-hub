@@ -1,0 +1,48 @@
+{
+  "success": {
+    "created": "Organization update request submitted successfully",
+    "list": "Request list retrieved successfully",
+    "fetched": "Request details retrieved successfully",
+    "approved": "Request approved successfully",
+    "rejected": "Request rejected successfully"
+  },
+  "errors": {
+    "not_found": "Update request not found",
+    "already_pending": "There is already a pending request for this organization",
+    "not_pending": "Request is not in pending status",
+    "permission_denied": "Permission denied for this action"
+  },
+  "validation": {
+    "reject_reason_required": "Reject reason is required",
+    "reject_reason_string": "Reject reason must be a string",
+    "status_invalid": "Invalid status",
+    "limit_positive": "Limit must be a positive number",
+    "offset_min": "Offset must be >= 0"
+  },
+  "swagger": {
+    "tag": "Organization Update Requests",
+    "list": {
+      "summary": "Get list of organization update requests",
+      "description": "Get list of organization update requests with pagination and status filtering. Requires `organization.update_request.list` permission."
+    },
+    "read": {
+      "summary": "Get organization update request details",
+      "description": "Get detailed information of an update request including organization and requester info. Requires `organization.update_request.read` permission."
+    },
+    "approve": {
+      "summary": "Approve organization update request",
+      "description": "Approve an organization update request. After approval, the organization information will be updated accordingly. Requires `organization.update_request.approve` permission."
+    },
+    "reject": {
+      "summary": "Reject organization update request",
+      "description": "Reject an organization update request with a rejection reason. Requires `organization.update_request.reject` permission."
+    },
+    "params": {
+      "id": "Update request ID (UUID)",
+      "limit": "Maximum number of records",
+      "offset": "Number of records to skip",
+      "status": "Filter by status (PENDING, APPROVED, REJECTED)",
+      "keyword": "Search keyword (organization name, tax code...)"
+    }
+  }
+}
