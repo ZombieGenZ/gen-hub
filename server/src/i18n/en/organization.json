@@ -1,133 +1,266 @@
 {
-    "success": {
-        "created": "Organization created successfully",
-        "updated": "Organization updated successfully",
-        "deleted": "Organization deleted successfully",
-        "fetched": "Organization data retrieved successfully",
-        "list": "Organization list retrieved successfully",
-        "ownership_transferred": "Ownership transferred successfully",
-        "member_invited": "Invitation sent successfully",
-        "member_invite_removed": "Invitation cancelled successfully",
-        "member_accepted": "Invitation accepted successfully",
-        "member_rejected": "Invitation rejected successfully",
-        "member_removed": "Member removed successfully",
-        "member_left": "Left organization successfully",
-        "member_role_assigned": "Member role assigned successfully",
-        "member_permission_assigned": "Member permission assigned successfully",
-        "role_created": "Role created successfully",
-        "role_updated": "Role updated successfully",
-        "role_deleted": "Role deleted successfully",
-        "role_list": "Role list retrieved successfully",
-        "apikey_created": "API key created successfully",
-        "apikey_updated": "API key updated successfully",
-        "apikey_reset": "API key reset successfully",
-        "apikey_deleted": "API key deleted successfully",
-        "apikey_list": "API key list retrieved successfully"
+  "success": {
+    "created": "Organization created successfully",
+    "updated": "Organization updated successfully",
+    "deleted": "Organization deleted successfully",
+    "fetched": "Organization data retrieved successfully",
+    "list": "Organization list retrieved successfully",
+    "ownership_transferred": "Ownership transferred successfully",
+    "member_invited": "Invitation sent successfully",
+    "member_invite_removed": "Invitation cancelled successfully",
+    "member_accepted": "Invitation accepted successfully",
+    "member_rejected": "Invitation rejected successfully",
+    "member_removed": "Member removed successfully",
+    "member_left": "Left organization successfully",
+    "member_role_assigned": "Member role assigned successfully",
+    "member_permission_assigned": "Member permission assigned successfully",
+    "role_created": "Role created successfully",
+    "role_updated": "Role updated successfully",
+    "role_deleted": "Role deleted successfully",
+    "role_list": "Role list retrieved successfully",
+    "apikey_created": "API key created successfully",
+    "apikey_updated": "API key updated successfully",
+    "apikey_reset": "API key reset successfully",
+    "apikey_deleted": "API key deleted successfully",
+    "apikey_list": "API key list retrieved successfully"
+  },
+  "errors": {
+    "not_found": "Organization not found",
+    "name_exists": "Organization name already exists",
+    "permission_denied": "Permission denied for this action",
+    "not_owner": "Only the owner can perform this action",
+    "already_member": "User is already a member of this organization",
+    "already_invited": "User has already been invited to this organization",
+    "member_not_found": "Member not found",
+    "invite_not_found": "Invitation not found",
+    "cannot_remove_owner": "Cannot remove the owner from the organization",
+    "cannot_remove_self": "Cannot remove yourself from the organization",
+    "user_not_found": "User not found",
+    "role_not_found": "Role not found",
+    "role_in_use": "Role is in use and cannot be deleted",
+    "apikey_not_found": "API key not found",
+    "apikey_invalid_format": "Invalid API key format",
+    "apikey_expired": "API key has expired",
+    "invalid_new_owner": "Invalid new owner",
+    "new_owner_not_member": "New owner must be a member of the organization",
+    "invite_expired": "Invitation has expired",
+    "invite_not_for_you": "This invitation is not for you",
+    "cannot_transfer_to_self": "Cannot transfer ownership to yourself",
+    "owner_cannot_leave": "Owner cannot leave the organization. Please transfer ownership first.",
+    "apikey_permission_not_allowed": "This permission does not allow API key access",
+    "apikey_no_permission": "API key does not have permission for this operation",
+    "invite_failed_all": "Failed to invite any members",
+    "update_active_forbidden": "Only admin can update active status"
+  },
+  "validation": {
+    "name_required": "Organization name is required",
+    "name_string": "Organization name must be a string",
+    "name_max_length": "Organization name cannot exceed 255 characters",
+    "email_required": "Email is required",
+    "email_invalid": "Email is invalid",
+    "user_id_required": "User ID is required",
+    "user_id_uuid": "User ID must be a valid UUID",
+    "new_owner_id_required": "New owner ID is required",
+    "new_owner_id_uuid": "New owner ID must be a valid UUID",
+    "new_owner_email_required": "New owner email is required",
+    "new_owner_email_invalid": "New owner email is invalid",
+    "role_name_required": "Role name is required",
+    "role_name_string": "Role name must be a string",
+    "role_name_max_length": "Role name cannot exceed 100 characters",
+    "role_description_string": "Role description must be a string",
+    "permission_ids_array": "Permission IDs must be an array",
+    "permission_id_uuid": "Permission ID must be a valid UUID",
+    "role_ids_array": "Role IDs must be an array",
+    "role_id_uuid": "Role ID must be a valid UUID",
+    "apikey_name_required": "API key name is required",
+    "apikey_name_string": "API key name must be a string",
+    "apikey_name_max_length": "API key name cannot exceed 100 characters",
+    "apikey_description_string": "API key description must be a string",
+    "apikey_expires_at_date": "Expiration date must be a valid date",
+    "apikey_allowed_origins_array": "Allowed origins must be an array",
+    "apikey_allowed_origins_string": "Each allowed origin must be a string",
+    "apikey_allowed_origins_format": "Invalid allowed origin format. Must be URL, IPv4 or IPv6",
+    "limit_positive": "Limit must be a positive number",
+    "offset_min": "Offset must be >= 0",
+    "keywords_string": "Search keywords must be a string",
+    "is_active_boolean": "Status must be a boolean",
+    "is_accepted_boolean": "Accepted status must be a boolean",
+    "emails_required": "Email list is required",
+    "emails_array": "Emails must be an array",
+    "emails_min_one": "At least one email is required",
+    "display_name_required": "Display name is required",
+    "display_name_string": "Display name must be a string",
+    "display_name_max_length": "Display name cannot exceed 100 characters",
+    "google_client_id_string": "Google Client ID must be a string",
+    "google_client_secret_string": "Google Client Secret must be a string",
+    "google_refresh_token_string": "Google Refresh Token must be a string",
+    "email_primary_invalid": "Primary email is invalid",
+    "email_primary_max_length": "Primary email cannot exceed 255 characters",
+    "rate_limit_ttl_int": "Rate limit TTL must be an integer",
+    "rate_limit_ttl_min": "Rate limit TTL must be greater than 0",
+    "rate_limit_max_int": "Max requests must be an integer",
+    "rate_limit_max_min": "Max requests must be greater than 0",
+    "org_id_uuid": "Organization ID must be a valid UUID",
+    "google_fields_required": "Google Client ID, Secret, Refresh Token and Primary Email are required when using Google Email",
+    "google_credentials_invalid": "Failed to verify Google credentials. Please check your credentials.",
+    "international_name_string": "International name must be a string",
+    "international_name_max_length": "International name cannot exceed 255 characters",
+    "tax_code_required": "Tax code is required",
+    "tax_code_string": "Tax code must be a string",
+    "tax_code_max_length": "Tax code cannot exceed 20 characters",
+    "tax_code_exists": "Tax code is already registered by another organization",
+    "tax_code_invalid": "Tax code is invalid or business information not found",
+    "headquarters_address_string": "Headquarters address must be a string",
+    "headquarters_address_max_length": "Headquarters address cannot exceed 500 characters",
+    "representative_name_string": "Representative name must be a string",
+    "representative_name_max_length": "Representative name cannot exceed 255 characters",
+    "representative_name_required": "Representative name is required",
+    "representative_title_string": "Representative title must be a string",
+    "representative_title_max_length": "Representative title cannot exceed 100 characters",
+    "representative_title_required": "Representative title is required",
+    "representative_phone_string": "Representative phone must be a string",
+    "representative_phone_max_length": "Representative phone cannot exceed 20 characters",
+    "representative_phone_required": "Representative phone is required",
+    "representative_email_string": "Representative email must be a string",
+    "representative_email_max_length": "Representative email cannot exceed 255 characters",
+    "representative_email_required": "Representative email is required",
+    "representative_email_invalid": "Representative email is invalid",
+    "is_using_google_email_boolean": "Using Google Email must be a boolean",
+    "gmail_pubsub_topic_string": "Gmail Pub/Sub Topic must be a string",
+    "gmail_pubsub_subscription_string": "Gmail Pub/Sub Subscription must be a string",
+    "gmail_webhook_secret_string": "Gmail Webhook Secret must be a string"
+  },
+  "swagger": {
+    "tag": "Organizations",
+    "organization": {
+      "create": {
+        "summary": "Create new organization",
+        "description": "Create a new organization with full information including representative details, tax code and email configuration. Requires `organization.create` permission."
+      },
+      "list": {
+        "summary": "Get organization list",
+        "description": "Get list of organizations with pagination and search. Requires `organization.list` permission."
+      },
+      "read": {
+        "summary": "Get organization details",
+        "description": "Get detailed information of an organization including representative and configuration. Requires `organization.read` permission."
+      },
+      "update": {
+        "summary": "Update organization",
+        "description": "Update organization information. Requires `organization.update` permission."
+      },
+      "delete": {
+        "summary": "Delete organization",
+        "description": "Soft delete an organization. Requires `organization.delete` permission."
+      },
+      "delete_many": {
+        "summary": "Delete multiple organizations",
+        "description": "Soft delete multiple organizations at once. Requires `organization.delete` permission."
+      }
     },
-    "errors": {
-        "not_found": "Organization not found",
-        "name_exists": "Organization name already exists",
-        "permission_denied": "Permission denied for this action",
-        "not_owner": "Only the owner can perform this action",
-        "already_member": "User is already a member of this organization",
-        "already_invited": "User has already been invited to this organization",
-        "member_not_found": "Member not found",
-        "invite_not_found": "Invitation not found",
-        "cannot_remove_owner": "Cannot remove the owner from the organization",
-        "cannot_remove_self": "Cannot remove yourself from the organization",
-        "user_not_found": "User not found",
-        "role_not_found": "Role not found",
-        "role_in_use": "Role is in use and cannot be deleted",
-        "apikey_not_found": "API key not found",
-        "apikey_invalid_format": "Invalid API key format",
-        "apikey_expired": "API key has expired",
-        "invalid_new_owner": "Invalid new owner",
-        "new_owner_not_member": "New owner must be a member of the organization",
-        "invite_expired": "Invitation has expired",
-        "invite_not_for_you": "This invitation is not for you",
-        "cannot_transfer_to_self": "Cannot transfer ownership to yourself",
-        "owner_cannot_leave": "Owner cannot leave the organization. Please transfer ownership first.",
-        "apikey_permission_not_allowed": "This permission does not allow API key access",
-        "apikey_no_permission": "API key does not have permission for this operation",
-        "invite_failed_all": "Failed to invite any members",
-        "update_active_forbidden": "Only admin can update active status"
+    "member": {
+      "list": {
+        "summary": "Get member list",
+        "description": "Get list of organization members with pagination."
+      },
+      "invite": {
+        "summary": "Invite member to organization",
+        "description": "Send invitation to one or more users to join the organization."
+      },
+      "cancel_invite": {
+        "summary": "Cancel invitation",
+        "description": "Cancel an invitation sent to a member."
+      },
+      "accept": {
+        "summary": "Accept invitation",
+        "description": "Accept invitation to join the organization."
+      },
+      "reject": {
+        "summary": "Reject invitation",
+        "description": "Reject invitation to join the organization."
+      },
+      "remove": {
+        "summary": "Remove member",
+        "description": "Remove member from organization. Cannot remove owner."
+      },
+      "leave": {
+        "summary": "Leave organization",
+        "description": "Member leaves the organization. Owner cannot leave without transferring ownership."
+      },
+      "assign_roles": {
+        "summary": "Assign roles to member",
+        "description": "Assign one or more roles to a member in the organization."
+      },
+      "assign_permissions": {
+        "summary": "Assign permissions to member",
+        "description": "Assign permissions directly to a member in the organization."
+      }
     },
-    "validation": {
-        "name_required": "Organization name is required",
-        "name_string": "Organization name must be a string",
-        "name_max_length": "Organization name cannot exceed 255 characters",
-        "email_required": "Email is required",
-        "email_invalid": "Email is invalid",
-        "user_id_required": "User ID is required",
-        "user_id_uuid": "User ID must be a valid UUID",
-        "new_owner_id_required": "New owner ID is required",
-        "new_owner_id_uuid": "New owner ID must be a valid UUID",
-        "new_owner_email_required": "New owner email is required",
-        "new_owner_email_invalid": "New owner email is invalid",
-        "role_name_required": "Role name is required",
-        "role_name_string": "Role name must be a string",
-        "role_name_max_length": "Role name cannot exceed 100 characters",
-        "role_description_string": "Role description must be a string",
-        "permission_ids_array": "Permission IDs must be an array",
-        "permission_id_uuid": "Permission ID must be a valid UUID",
-        "role_ids_array": "Role IDs must be an array",
-        "role_id_uuid": "Role ID must be a valid UUID",
-        "apikey_name_required": "API key name is required",
-        "apikey_name_string": "API key name must be a string",
-        "apikey_name_max_length": "API key name cannot exceed 100 characters",
-        "apikey_description_string": "API key description must be a string",
-        "apikey_expires_at_date": "Expiration date must be a valid date",
-        "apikey_allowed_origins_array": "Allowed origins must be an array",
-        "apikey_allowed_origins_string": "Each allowed origin must be a string",
-        "apikey_allowed_origins_format": "Invalid allowed origin format. Must be URL, IPv4 or IPv6",
-        "limit_positive": "Limit must be a positive number",
-        "offset_min": "Offset must be >= 0",
-        "keywords_string": "Search keywords must be a string",
-        "is_active_boolean": "Status must be a boolean",
-        "is_accepted_boolean": "Accepted status must be a boolean",
-        "emails_required": "Email list is required",
-        "emails_array": "Emails must be an array",
-        "emails_min_one": "At least one email is required",
-        "display_name_required": "Display name is required",
-        "display_name_string": "Display name must be a string",
-        "display_name_max_length": "Display name cannot exceed 100 characters",
-        "google_client_id_string": "Google Client ID must be a string",
-        "google_client_secret_string": "Google Client Secret must be a string",
-        "google_refresh_token_string": "Google Refresh Token must be a string",
-        "email_primary_invalid": "Primary email is invalid",
-        "email_primary_max_length": "Primary email cannot exceed 255 characters",
-        "rate_limit_ttl_int": "Rate limit TTL must be an integer",
-        "rate_limit_ttl_min": "Rate limit TTL must be greater than 0",
-        "rate_limit_max_int": "Max requests must be an integer",
-        "rate_limit_max_min": "Max requests must be greater than 0",
-        "org_id_uuid": "Organization ID must be a valid UUID",
-        "google_fields_required": "Google Client ID, Secret, Refresh Token and Primary Email are required when using Google Email",
-        "google_credentials_invalid": "Failed to verify Google credentials. Please check your credentials.",
-        "international_name_string": "International name must be a string",
-        "international_name_max_length": "International name cannot exceed 255 characters",
-        "tax_code_required": "Tax code is required",
-        "tax_code_string": "Tax code must be a string",
-        "tax_code_max_length": "Tax code cannot exceed 20 characters",
-        "tax_code_exists": "Tax code is already registered by another organization",
-        "tax_code_invalid": "Tax code is invalid or business information not found",
-        "headquarters_address_string": "Headquarters address must be a string",
-        "headquarters_address_max_length": "Headquarters address cannot exceed 500 characters",
-        "representative_name_string": "Representative name must be a string",
-        "representative_name_max_length": "Representative name cannot exceed 255 characters",
-        "representative_name_required": "Representative name is required",
-        "representative_title_string": "Representative title must be a string",
-        "representative_title_max_length": "Representative title cannot exceed 100 characters",
-        "representative_title_required": "Representative title is required",
-        "representative_phone_string": "Representative phone must be a string",
-        "representative_phone_max_length": "Representative phone cannot exceed 20 characters",
-        "representative_phone_required": "Representative phone is required",
-        "representative_email_string": "Representative email must be a string",
-        "representative_email_max_length": "Representative email cannot exceed 255 characters",
-        "representative_email_required": "Representative email is required",
-        "representative_email_invalid": "Representative email is invalid",
-        "is_using_google_email_boolean": "Using Google Email must be a boolean",
-        "gmail_pubsub_topic_string": "Gmail Pub/Sub Topic must be a string",
-        "gmail_pubsub_subscription_string": "Gmail Pub/Sub Subscription must be a string",
-        "gmail_webhook_secret_string": "Gmail Webhook Secret must be a string"
+    "ownership": {
+      "transfer": {
+        "summary": "Transfer organization ownership",
+        "description": "Transfer organization ownership to another member. Only current owner has permission."
+      }
+    },
+    "role": {
+      "create": {
+        "summary": "Create new role in organization",
+        "description": "Create a new role with assigned permissions. Requires `organization.list` permission."
+      },
+      "list": {
+        "summary": "Get organization roles",
+        "description": "Get list of all roles in the organization including permissions."
+      },
+      "read": {
+        "summary": "Get role details",
+        "description": "Get detailed information of a role including permission list."
+      },
+      "update": {
+        "summary": "Update role",
+        "description": "Update role information including name, description and permissions."
+      },
+      "delete": {
+        "summary": "Delete role",
+        "description": "Soft delete a role. Roles in use cannot be deleted."
+      }
+    },
+    "apikey": {
+      "create": {
+        "summary": "Create new API key",
+        "description": "Create a new API key for the organization with permissions and rate limit configuration. Key is only displayed once after creation."
+      },
+      "list": {
+        "summary": "Get API keys list",
+        "description": "Get list of all API keys of the organization. Key value is not returned."
+      },
+      "read": {
+        "summary": "Get API key details",
+        "description": "Get detailed information of an API key including permissions and configuration."
+      },
+      "update": {
+        "summary": "Update API key",
+        "description": "Update API key information including name, description, permissions and configuration."
+      },
+      "reset": {
+        "summary": "Reset API key",
+        "description": "Regenerate API key value. Old key will no longer work. New key is only displayed once."
+      },
+      "delete": {
+        "summary": "Delete API key",
+        "description": "Soft delete an API key. Key will no longer work."
+      }
+    },
+    "params": {
+      "org_id": "Organization ID (UUID)",
+      "member_id": "Member ID (UUID)",
+      "role_id": "Role ID (UUID)",
+      "key_id": "API key ID (UUID)",
+      "token": "Invitation token",
+      "limit": "Maximum number of records",
+      "offset": "Number of records to skip",
+      "keywords": "Search keywords",
+      "is_active": "Filter by status",
+      "is_accepted": "Filter by acceptance status"
     }
+  }
 }

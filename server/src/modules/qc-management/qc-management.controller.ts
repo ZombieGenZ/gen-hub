@@ -67,32 +67,25 @@ export class QCManagementController {
     status: 200,
     description: 'Lấy danh sách QC Warehouses thành công',
     schema: {
-      type: 'object',
-      properties: {
-        code: { type: 'string', example: 'qc-management.list.success' },
-        message: {
-          type: 'string',
-          example: 'Lấy danh sách QC Warehouses thành công',
-        },
-        success: { type: 'boolean', example: true },
+      example: {
+        code: 'qc-management.list.success',
+        message: 'Lấy danh sách thành công',
+        success: true,
         data: {
-          type: 'object',
-          properties: {
-            items: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  id: { type: 'string', format: 'uuid' },
-                  warehouse_template_id: { type: 'string', format: 'uuid' },
-                  created_at: { type: 'string', format: 'date-time' },
-                },
+          items: [
+            {
+              id: '550e8400-e29b-41d4-a716-446655440000',
+              warehouse_template_id: '550e8400-e29b-41d4-a716-446655440001',
+              warehouse_template: {
+                id: '550e8400-e29b-41d4-a716-446655440001',
+                name: 'Kho Quận 7',
               },
+              created_at: '2026-01-20T06:00:00.000Z',
             },
-            total: { type: 'number', example: 50 },
-            limit: { type: 'number', example: 20 },
-            offset: { type: 'number', example: 0 },
-          },
+          ],
+          total: 50,
+          limit: 20,
+          offset: 0,
         },
       },
     },
@@ -124,42 +117,36 @@ export class QCManagementController {
     status: 200,
     description: 'Lấy chi tiết QC Warehouse thành công',
     schema: {
-      type: 'object',
-      properties: {
-        code: { type: 'string', example: 'qc-management.read.success' },
-        message: {
-          type: 'string',
-          example: 'Lấy chi tiết QC Warehouse thành công',
-        },
-        success: { type: 'boolean', example: true },
+      example: {
+        code: 'qc-management.read.success',
+        message: 'Lấy chi tiết thành công',
+        success: true,
         data: {
-          type: 'object',
-          properties: {
-            id: { type: 'string', format: 'uuid' },
-            warehouse_template_id: { type: 'string', format: 'uuid' },
-            warehouse_template: { type: 'object' },
-            user_assignments: { type: 'array' },
-            created_at: { type: 'string', format: 'date-time' },
+          id: '550e8400-e29b-41d4-a716-446655440000',
+          warehouse_template_id: '550e8400-e29b-41d4-a716-446655440001',
+          warehouse_template: {
+            id: '550e8400-e29b-41d4-a716-446655440001',
+            name: 'Kho Quận 7',
+            code: 'WH-Q7',
           },
+          user_assignments: [
+            {
+              id: '550e8400-e29b-41d4-a716-446655440100',
+              user_id: '550e8400-e29b-41d4-a716-446655440200',
+              user: {
+                id: '550e8400-e29b-41d4-a716-446655440200',
+                email: 'qc@example.com',
+                full_name: 'QC Manager',
+              },
+              permissions: [],
+            },
+          ],
+          created_at: '2026-01-20T06:00:00.000Z',
         },
       },
     },
   })
-  @ApiResponse({
-    status: 404,
-    description: 'Không tìm thấy QC Warehouse',
-    schema: {
-      type: 'object',
-      properties: {
-        code: {
-          type: 'string',
-          example: 'qc-management.errors.warehouse_not_found',
-        },
-        message: { type: 'string', example: 'Không tìm thấy QC Warehouse' },
-        success: { type: 'boolean', example: false },
-      },
-    },
-  })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy QC Warehouse' })
   @ApiAuthResponses()
   async getQCWarehouseById(
     @Param('qcWarehouseId', ParseUUIDPipe) qcWarehouseId: string,
@@ -202,6 +189,27 @@ export class QCManagementController {
   @ApiResponse({
     status: 200,
     description: 'Lấy danh sách Warehouses thành công',
+    schema: {
+      example: {
+        code: 'qc-management.list.success',
+        message: 'Lấy danh sách thành công',
+        success: true,
+        data: {
+          items: [
+            {
+              id: '550e8400-e29b-41d4-a716-446655440010',
+              name: 'Warehouse A',
+              code: 'WH-A',
+              qc_warehouse_id: '550e8400-e29b-41d4-a716-446655440000',
+              created_at: '2026-01-20T06:00:00.000Z',
+            },
+          ],
+          total: 10,
+          limit: 50,
+          offset: 0,
+        },
+      },
+    },
   })
   @ApiResponse({ status: 404, description: 'Không tìm thấy QC Warehouse' })
   @ApiAuthResponses()
@@ -242,6 +250,20 @@ export class QCManagementController {
   @ApiResponse({
     status: 200,
     description: 'Lấy chi tiết Warehouse thành công',
+    schema: {
+      example: {
+        code: 'qc-management.read.success',
+        message: 'Lấy chi tiết thành công',
+        success: true,
+        data: {
+          id: '550e8400-e29b-41d4-a716-446655440001',
+          name: 'Warehouse A',
+          code: 'WH-A',
+          address: '123 Nguyễn Văn Linh',
+          created_at: '2026-01-20T06:00:00.000Z',
+        },
+      },
+    },
   })
   @ApiResponse({ status: 404, description: 'Không tìm thấy Warehouse' })
   @ApiAuthResponses()
@@ -284,7 +306,31 @@ export class QCManagementController {
     description: 'Số bản ghi bỏ qua',
     example: 0,
   })
-  @ApiResponse({ status: 200, description: 'Lấy danh sách QC Rows thành công' })
+  @ApiResponse({
+    status: 200,
+    description: 'Lấy danh sách QC Rows thành công',
+    schema: {
+      example: {
+        code: 'qc-management.list.success',
+        message: 'Lấy danh sách thành công',
+        success: true,
+        data: {
+          items: [
+            {
+              id: '550e8400-e29b-41d4-a716-446655440020',
+              row_template_id: '550e8400-e29b-41d4-a716-446655440021',
+              row_template: { name: 'Row A' },
+              user_assignments: [],
+              created_at: '2026-01-20T06:00:00.000Z',
+            },
+          ],
+          total: 20,
+          limit: 50,
+          offset: 0,
+        },
+      },
+    },
+  })
   @ApiAuthResponses()
   async getQCRowsByWarehouse(
     @Param('qcWarehouseId', ParseUUIDPipe) qcWarehouseId: string,
@@ -321,7 +367,31 @@ export class QCManagementController {
   })
   @ApiQuery({ name: 'limit', required: false, type: Number, example: 50 })
   @ApiQuery({ name: 'offset', required: false, type: Number, example: 0 })
-  @ApiResponse({ status: 200, description: 'Lấy danh sách Rows thành công' })
+  @ApiResponse({
+    status: 200,
+    description: 'Lấy danh sách Rows thành công',
+    schema: {
+      example: {
+        code: 'qc-management.list.success',
+        message: 'Lấy danh sách thành công',
+        success: true,
+        data: {
+          items: [
+            {
+              id: '550e8400-e29b-41d4-a716-446655440030',
+              name: 'Row 01',
+              code: 'R01',
+              qc_row_id: '550e8400-e29b-41d4-a716-446655440001',
+              created_at: '2026-01-20T06:00:00.000Z',
+            },
+          ],
+          total: 15,
+          limit: 50,
+          offset: 0,
+        },
+      },
+    },
+  })
   @ApiResponse({ status: 404, description: 'Không tìm thấy QC Row' })
   @ApiAuthResponses()
   async getRowsByQCRow(
@@ -358,7 +428,24 @@ export class QCManagementController {
     type: 'string',
   })
   @ApiParam({ name: 'rowId', description: 'ID Row (UUID)', type: 'string' })
-  @ApiResponse({ status: 200, description: 'Lấy chi tiết Row thành công' })
+  @ApiResponse({
+    status: 200,
+    description: 'Lấy chi tiết Row thành công',
+    schema: {
+      example: {
+        code: 'qc-management.read.success',
+        message: 'Lấy chi tiết thành công',
+        success: true,
+        data: {
+          id: '550e8400-e29b-41d4-a716-446655440030',
+          name: 'Row 01',
+          code: 'R01',
+          rack_count: 10,
+          created_at: '2026-01-20T06:00:00.000Z',
+        },
+      },
+    },
+  })
   @ApiResponse({ status: 404, description: 'Không tìm thấy Row' })
   @ApiAuthResponses()
   async getRowDetail(
@@ -391,7 +478,32 @@ export class QCManagementController {
   @ApiParam({ name: 'rowId', description: 'ID Row (UUID)', type: 'string' })
   @ApiQuery({ name: 'limit', required: false, type: Number, example: 50 })
   @ApiQuery({ name: 'offset', required: false, type: Number, example: 0 })
-  @ApiResponse({ status: 200, description: 'Lấy danh sách Racks thành công' })
+  @ApiResponse({
+    status: 200,
+    description: 'Lấy danh sách Racks thành công',
+    schema: {
+      example: {
+        code: 'qc-management.list.success',
+        message: 'Lấy danh sách thành công',
+        success: true,
+        data: {
+          items: [
+            {
+              id: '550e8400-e29b-41d4-a716-446655440040',
+              name: 'Rack 01',
+              code: 'RK01',
+              row_id: '550e8400-e29b-41d4-a716-446655440030',
+              shelf_count: 5,
+              created_at: '2026-01-20T06:00:00.000Z',
+            },
+          ],
+          total: 10,
+          limit: 50,
+          offset: 0,
+        },
+      },
+    },
+  })
   @ApiResponse({ status: 404, description: 'Không tìm thấy Row' })
   @ApiAuthResponses()
   async getRacksByRow(
@@ -430,7 +542,24 @@ export class QCManagementController {
   })
   @ApiParam({ name: 'rowId', description: 'ID Row (UUID)', type: 'string' })
   @ApiParam({ name: 'rackId', description: 'ID Rack (UUID)', type: 'string' })
-  @ApiResponse({ status: 200, description: 'Lấy chi tiết Rack thành công' })
+  @ApiResponse({
+    status: 200,
+    description: 'Lấy chi tiết Rack thành công',
+    schema: {
+      example: {
+        code: 'qc-management.read.success',
+        message: 'Lấy chi tiết thành công',
+        success: true,
+        data: {
+          id: '550e8400-e29b-41d4-a716-446655440040',
+          name: 'Rack 01',
+          code: 'RK01',
+          shelf_count: 5,
+          created_at: '2026-01-20T06:00:00.000Z',
+        },
+      },
+    },
+  })
   @ApiResponse({ status: 404, description: 'Không tìm thấy Rack' })
   @ApiAuthResponses()
   async getRackDetail(
@@ -467,7 +596,33 @@ export class QCManagementController {
   @ApiParam({ name: 'rackId', description: 'ID Rack (UUID)', type: 'string' })
   @ApiQuery({ name: 'limit', required: false, type: Number, example: 50 })
   @ApiQuery({ name: 'offset', required: false, type: Number, example: 0 })
-  @ApiResponse({ status: 200, description: 'Lấy danh sách Shelves thành công' })
+  @ApiResponse({
+    status: 200,
+    description: 'Lấy danh sách Shelves thành công',
+    schema: {
+      example: {
+        code: 'qc-management.list.success',
+        message: 'Lấy danh sách thành công',
+        success: true,
+        data: {
+          items: [
+            {
+              id: '550e8400-e29b-41d4-a716-446655440050',
+              name: 'Shelf 01',
+              code: 'SH01',
+              rack_id: '550e8400-e29b-41d4-a716-446655440040',
+              level: 1,
+              block_count: 8,
+              created_at: '2026-01-20T06:00:00.000Z',
+            },
+          ],
+          total: 5,
+          limit: 50,
+          offset: 0,
+        },
+      },
+    },
+  })
   @ApiResponse({ status: 404, description: 'Không tìm thấy Rack' })
   @ApiAuthResponses()
   async getShelvesByRack(
@@ -510,7 +665,25 @@ export class QCManagementController {
   @ApiParam({ name: 'rowId', description: 'ID Row (UUID)', type: 'string' })
   @ApiParam({ name: 'rackId', description: 'ID Rack (UUID)', type: 'string' })
   @ApiParam({ name: 'shelfId', description: 'ID Shelf (UUID)', type: 'string' })
-  @ApiResponse({ status: 200, description: 'Lấy chi tiết Shelf thành công' })
+  @ApiResponse({
+    status: 200,
+    description: 'Lấy chi tiết Shelf thành công',
+    schema: {
+      example: {
+        code: 'qc-management.read.success',
+        message: 'Lấy chi tiết thành công',
+        success: true,
+        data: {
+          id: '550e8400-e29b-41d4-a716-446655440050',
+          name: 'Shelf 01',
+          code: 'SH01',
+          level: 1,
+          block_count: 8,
+          created_at: '2026-01-20T06:00:00.000Z',
+        },
+      },
+    },
+  })
   @ApiResponse({ status: 404, description: 'Không tìm thấy Shelf' })
   @ApiAuthResponses()
   async getShelfDetail(
@@ -549,7 +722,33 @@ export class QCManagementController {
   @ApiParam({ name: 'shelfId', description: 'ID Shelf (UUID)', type: 'string' })
   @ApiQuery({ name: 'limit', required: false, type: Number, example: 50 })
   @ApiQuery({ name: 'offset', required: false, type: Number, example: 0 })
-  @ApiResponse({ status: 200, description: 'Lấy danh sách Blocks thành công' })
+  @ApiResponse({
+    status: 200,
+    description: 'Lấy danh sách Blocks thành công',
+    schema: {
+      example: {
+        code: 'qc-management.list.success',
+        message: 'Lấy danh sách thành công',
+        success: true,
+        data: {
+          items: [
+            {
+              id: '550e8400-e29b-41d4-a716-446655440060',
+              name: 'Block 01',
+              code: 'BL01',
+              shelf_id: '550e8400-e29b-41d4-a716-446655440050',
+              position: 1,
+              capacity: 100,
+              created_at: '2026-01-20T06:00:00.000Z',
+            },
+          ],
+          total: 8,
+          limit: 50,
+          offset: 0,
+        },
+      },
+    },
+  })
   @ApiResponse({ status: 404, description: 'Không tìm thấy Shelf' })
   @ApiAuthResponses()
   async getBlocksByShelf(
@@ -594,7 +793,26 @@ export class QCManagementController {
   @ApiParam({ name: 'rackId', description: 'ID Rack (UUID)', type: 'string' })
   @ApiParam({ name: 'shelfId', description: 'ID Shelf (UUID)', type: 'string' })
   @ApiParam({ name: 'blockId', description: 'ID Block (UUID)', type: 'string' })
-  @ApiResponse({ status: 200, description: 'Lấy chi tiết Block thành công' })
+  @ApiResponse({
+    status: 200,
+    description: 'Lấy chi tiết Block thành công',
+    schema: {
+      example: {
+        code: 'qc-management.read.success',
+        message: 'Lấy chi tiết thành công',
+        success: true,
+        data: {
+          id: '550e8400-e29b-41d4-a716-446655440060',
+          name: 'Block 01',
+          code: 'BL01',
+          position: 1,
+          capacity: 100,
+          current_quantity: 50,
+          created_at: '2026-01-20T06:00:00.000Z',
+        },
+      },
+    },
+  })
   @ApiResponse({ status: 404, description: 'Không tìm thấy Block' })
   @ApiAuthResponses()
   async getBlockDetail(
@@ -620,6 +838,25 @@ export class QCManagementController {
   @ApiResponse({
     status: 200,
     description: 'Lấy danh sách QC Permissions thành công',
+    schema: {
+      example: {
+        code: 'qc-management.permissions.success',
+        message: 'Lấy danh sách QC Permissions thành công',
+        success: true,
+        data: [
+          {
+            id: '550e8400-e29b-41d4-a716-446655440070',
+            name: 'view_inventory',
+            description: 'Xem tồn kho',
+          },
+          {
+            id: '550e8400-e29b-41d4-a716-446655440071',
+            name: 'manage_inventory',
+            description: 'Quản lý tồn kho',
+          },
+        ],
+      },
+    },
   })
   @ApiAuthResponses()
   async getPermissions(@I18nLang() lang: string) {
@@ -657,7 +894,24 @@ export class QCManagementController {
       },
     },
   })
-  @ApiResponse({ status: 201, description: 'Gán user thành công' })
+  @ApiResponse({
+    status: 201,
+    description: 'Gán user thành công',
+    schema: {
+      example: {
+        code: 'qc-management.assign.success',
+        message: 'Gán user thành công',
+        success: true,
+        data: {
+          id: '550e8400-e29b-41d4-a716-446655440200',
+          qc_warehouse_id: '550e8400-e29b-41d4-a716-446655440000',
+          user_id: '550e8400-e29b-41d4-a716-446655440001',
+          permissions: [{ id: 'perm-uuid-1', name: 'view_inventory' }],
+          created_at: '2026-01-20T06:00:00.000Z',
+        },
+      },
+    },
+  })
   @ApiResponse({ status: 404, description: 'Không tìm thấy QC Warehouse' })
   @ApiResponse({ status: 400, description: 'Permissions không hợp lệ' })
   @ApiAuthResponses()
@@ -691,7 +945,18 @@ export class QCManagementController {
     type: 'string',
     example: '550e8400-e29b-41d4-a716-446655440000',
   })
-  @ApiResponse({ status: 200, description: 'Xóa phân công thành công' })
+  @ApiResponse({
+    status: 200,
+    description: 'Xóa phân công thành công',
+    schema: {
+      example: {
+        code: 'qc-management.remove.success',
+        message: 'Xóa phân công thành công',
+        success: true,
+        data: null,
+      },
+    },
+  })
   @ApiResponse({ status: 404, description: 'Không tìm thấy phân công' })
   @ApiAuthResponses()
   async removeWarehouseAssignment(
@@ -737,7 +1002,24 @@ export class QCManagementController {
       },
     },
   })
-  @ApiResponse({ status: 201, description: 'Gán user thành công' })
+  @ApiResponse({
+    status: 201,
+    description: 'Gán user thành công',
+    schema: {
+      example: {
+        code: 'qc-management.assign.success',
+        message: 'Gán user thành công',
+        success: true,
+        data: {
+          id: '550e8400-e29b-41d4-a716-446655440300',
+          qc_row_id: '550e8400-e29b-41d4-a716-446655440000',
+          user_id: '550e8400-e29b-41d4-a716-446655440001',
+          permissions: [{ id: 'perm-uuid-1', name: 'view_inventory' }],
+          created_at: '2026-01-20T06:00:00.000Z',
+        },
+      },
+    },
+  })
   @ApiResponse({ status: 400, description: 'Permissions không hợp lệ' })
   @ApiAuthResponses()
   @ApiValidationErrorResponse()
@@ -770,7 +1052,18 @@ export class QCManagementController {
     type: 'string',
     example: '550e8400-e29b-41d4-a716-446655440000',
   })
-  @ApiResponse({ status: 200, description: 'Xóa phân công thành công' })
+  @ApiResponse({
+    status: 200,
+    description: 'Xóa phân công thành công',
+    schema: {
+      example: {
+        code: 'qc-management.remove.success',
+        message: 'Xóa phân công thành công',
+        success: true,
+        data: null,
+      },
+    },
+  })
   @ApiResponse({ status: 404, description: 'Không tìm thấy phân công' })
   @ApiAuthResponses()
   async removeRowAssignment(

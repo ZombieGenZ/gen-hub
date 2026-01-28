@@ -1,133 +1,266 @@
 {
-    "success": {
-        "created": "Tạo tổ chức thành công",
-        "updated": "Cập nhật tổ chức thành công",
-        "deleted": "Xóa tổ chức thành công",
-        "fetched": "Lấy dữ liệu tổ chức thành công",
-        "list": "Lấy danh sách tổ chức thành công",
-        "ownership_transferred": "Chuyển quyền sở hữu thành công",
-        "member_invited": "Đã gửi lời mời thành công",
-        "member_invite_removed": "Đã hủy lời mời thành công",
-        "member_accepted": "Đã chấp nhận lời mời thành công",
-        "member_rejected": "Đã từ chối lời mời thành công",
-        "member_removed": "Đã xóa thành viên thành công",
-        "member_left": "Đã rời khỏi tổ chức thành công",
-        "member_role_assigned": "Đã gán vai trò cho thành viên thành công",
-        "member_permission_assigned": "Đã gán quyền cho thành viên thành công",
-        "role_created": "Tạo vai trò thành công",
-        "role_updated": "Cập nhật vai trò thành công",
-        "role_deleted": "Xóa vai trò thành công",
-        "role_list": "Lấy danh sách vai trò thành công",
-        "apikey_created": "Tạo API key thành công",
-        "apikey_updated": "Cập nhật API key thành công",
-        "apikey_reset": "Reset API key thành công",
-        "apikey_deleted": "Xóa API key thành công",
-        "apikey_list": "Lấy danh sách API key thành công"
+  "success": {
+    "created": "Tạo tổ chức thành công",
+    "updated": "Cập nhật tổ chức thành công",
+    "deleted": "Xóa tổ chức thành công",
+    "fetched": "Lấy dữ liệu tổ chức thành công",
+    "list": "Lấy danh sách tổ chức thành công",
+    "ownership_transferred": "Chuyển quyền sở hữu thành công",
+    "member_invited": "Đã gửi lời mời thành công",
+    "member_invite_removed": "Đã hủy lời mời thành công",
+    "member_accepted": "Đã chấp nhận lời mời thành công",
+    "member_rejected": "Đã từ chối lời mời thành công",
+    "member_removed": "Đã xóa thành viên thành công",
+    "member_left": "Đã rời khỏi tổ chức thành công",
+    "member_role_assigned": "Đã gán vai trò cho thành viên thành công",
+    "member_permission_assigned": "Đã gán quyền cho thành viên thành công",
+    "role_created": "Tạo vai trò thành công",
+    "role_updated": "Cập nhật vai trò thành công",
+    "role_deleted": "Xóa vai trò thành công",
+    "role_list": "Lấy danh sách vai trò thành công",
+    "apikey_created": "Tạo API key thành công",
+    "apikey_updated": "Cập nhật API key thành công",
+    "apikey_reset": "Reset API key thành công",
+    "apikey_deleted": "Xóa API key thành công",
+    "apikey_list": "Lấy danh sách API key thành công"
+  },
+  "errors": {
+    "not_found": "Không tìm thấy tổ chức",
+    "name_exists": "Tên tổ chức đã tồn tại",
+    "permission_denied": "Không có quyền thực hiện thao tác này",
+    "not_owner": "Chỉ chủ sở hữu mới có quyền thực hiện thao tác này",
+    "already_member": "Người dùng đã là thành viên của tổ chức",
+    "already_invited": "Người dùng đã được mời vào tổ chức",
+    "member_not_found": "Không tìm thấy thành viên",
+    "invite_not_found": "Không tìm thấy lời mời",
+    "cannot_remove_owner": "Không thể xóa chủ sở hữu khỏi tổ chức",
+    "cannot_remove_self": "Không thể tự xóa mình khỏi tổ chức",
+    "user_not_found": "Không tìm thấy người dùng",
+    "role_not_found": "Không tìm thấy vai trò",
+    "role_in_use": "Vai trò đang được sử dụng, không thể xóa",
+    "apikey_not_found": "Không tìm thấy API key",
+    "apikey_invalid_format": "Định dạng API key không hợp lệ",
+    "apikey_expired": "API key đã hết hạn",
+    "invalid_new_owner": "Chủ sở hữu mới không hợp lệ",
+    "new_owner_not_member": "Chủ sở hữu mới phải là thành viên của tổ chức",
+    "invite_expired": "Lời mời đã hết hạn",
+    "invite_not_for_you": "Lời mời này không dành cho bạn",
+    "cannot_transfer_to_self": "Không thể chuyển quyền sở hữu cho chính mình",
+    "owner_cannot_leave": "Chủ sở hữu không thể rời khỏi tổ chức. Hãy chuyển quyền sở hữu trước.",
+    "apikey_permission_not_allowed": "Permission này không cho phép sử dụng API key",
+    "apikey_no_permission": "API key không có quyền thực hiện thao tác này",
+    "invite_failed_all": "Không thể mời bất kỳ thành viên nào",
+    "update_active_forbidden": "Chỉ admin mới có quyền cập nhật trạng thái hoạt động"
+  },
+  "validation": {
+    "name_required": "Tên tổ chức không được để trống",
+    "name_string": "Tên tổ chức phải là chuỗi",
+    "name_max_length": "Tên tổ chức không được quá 255 ký tự",
+    "email_required": "Email người dùng không được để trống",
+    "email_invalid": "Email không hợp lệ",
+    "user_id_required": "ID người dùng không được để trống",
+    "user_id_uuid": "ID người dùng phải là UUID hợp lệ",
+    "new_owner_id_required": "ID chủ sở hữu mới không được để trống",
+    "new_owner_id_uuid": "ID chủ sở hữu mới phải là UUID hợp lệ",
+    "new_owner_email_required": "Email chủ sở hữu mới không được để trống",
+    "new_owner_email_invalid": "Email chủ sở hữu mới không hợp lệ",
+    "role_name_required": "Tên vai trò không được để trống",
+    "role_name_string": "Tên vai trò phải là chuỗi",
+    "role_name_max_length": "Tên vai trò không được quá 100 ký tự",
+    "role_description_string": "Mô tả vai trò phải là chuỗi",
+    "permission_ids_array": "Danh sách quyền phải là mảng",
+    "permission_id_uuid": "ID quyền phải là UUID hợp lệ",
+    "role_ids_array": "Danh sách vai trò phải là mảng",
+    "role_id_uuid": "ID vai trò phải là UUID hợp lệ",
+    "apikey_name_required": "Tên API key không được để trống",
+    "apikey_name_string": "Tên API key phải là chuỗi",
+    "apikey_name_max_length": "Tên API key không được quá 100 ký tự",
+    "apikey_description_string": "Mô tả API key phải là chuỗi",
+    "apikey_expires_at_date": "Ngày hết hạn phải là ngày hợp lệ",
+    "apikey_allowed_origins_array": "Danh sách allowed origins phải là mảng",
+    "apikey_allowed_origins_string": "Mỗi allowed origin phải là chuỗi",
+    "apikey_allowed_origins_format": "Định dạng allowed origin không hợp lệ. Phải là URL, IPv4 hoặc IPv6",
+    "limit_positive": "Limit phải là số dương",
+    "offset_min": "Offset phải >= 0",
+    "keywords_string": "Từ khóa tìm kiếm phải là chuỗi",
+    "is_active_boolean": "Trạng thái phải là boolean",
+    "is_accepted_boolean": "Trạng thái chấp nhận phải là boolean",
+    "emails_required": "Danh sách email không được để trống",
+    "emails_array": "Email phải là mảng",
+    "emails_min_one": "Phải có ít nhất một email",
+    "display_name_required": "Tên hiển thị không được để trống",
+    "display_name_string": "Tên hiển thị phải là chuỗi",
+    "display_name_max_length": "Tên hiển thị không được quá 100 ký tự",
+    "google_client_id_string": "Google Client ID phải là chuỗi",
+    "google_client_secret_string": "Google Client Secret phải là chuỗi",
+    "google_refresh_token_string": "Google Refresh Token phải là chuỗi",
+    "email_primary_invalid": "Email chính không hợp lệ",
+    "email_primary_max_length": "Email chính không được quá 255 ký tự",
+    "rate_limit_ttl_int": "TTL rate limit phải là số nguyên",
+    "rate_limit_ttl_min": "TTL rate limit phải lớn hơn 0",
+    "rate_limit_max_int": "Số request tối đa phải là số nguyên",
+    "rate_limit_max_min": "Số request tối đa phải lớn hơn 0",
+    "org_id_uuid": "ID tổ chức phải là UUID hợp lệ",
+    "google_fields_required": "Google Client ID, Secret, Refresh Token và Email chính là bắt buộc khi sử dụng Google Email",
+    "google_credentials_invalid": "Xác thực thông tin Google thất bại. Vui lòng kiểm tra lại thông tin.",
+    "international_name_string": "Tên quốc tế phải là chuỗi",
+    "international_name_max_length": "Tên quốc tế không được quá 255 ký tự",
+    "tax_code_required": "Mã số thuế không được để trống",
+    "tax_code_string": "Mã số thuế phải là chuỗi",
+    "tax_code_max_length": "Mã số thuế không được quá 20 ký tự",
+    "tax_code_exists": "Mã số thuế đã được đăng ký bởi tổ chức khác",
+    "tax_code_invalid": "Mã số thuế không hợp lệ hoặc không tìm thấy thông tin doanh nghiệp",
+    "headquarters_address_string": "Địa chỉ trụ sở phải là chuỗi",
+    "headquarters_address_max_length": "Địa chỉ trụ sở không được quá 500 ký tự",
+    "representative_name_string": "Tên người đại diện phải là chuỗi",
+    "representative_name_max_length": "Tên người đại diện không được quá 255 ký tự",
+    "representative_name_required": "Tên người đại diện không được để trống",
+    "representative_title_string": "Chức danh người đại diện phải là chuỗi",
+    "representative_title_max_length": "Chức danh người đại diện không được quá 100 ký tự",
+    "representative_title_required": "Chức danh người đại diện không được để trống",
+    "representative_phone_string": "Số điện thoại người đại diện phải là chuỗi",
+    "representative_phone_max_length": "Số điện thoại người đại diện không được quá 20 ký tự",
+    "representative_phone_required": "Số điện thoại người đại diện không được để trống",
+    "representative_email_string": "Email người đại diện phải là chuỗi",
+    "representative_email_max_length": "Email người đại diện không được quá 255 ký tự",
+    "representative_email_required": "Email người đại diện không được để trống",
+    "representative_email_invalid": "Email người đại diện không hợp lệ",
+    "is_using_google_email_boolean": "Trạng thái sử dụng Google Email phải là boolean",
+    "gmail_pubsub_topic_string": "Gmail Pub/Sub Topic phải là chuỗi",
+    "gmail_pubsub_subscription_string": "Gmail Pub/Sub Subscription phải là chuỗi",
+    "gmail_webhook_secret_string": "Gmail Webhook Secret phải là chuỗi"
+  },
+  "swagger": {
+    "tag": "Tổ Chức",
+    "organization": {
+      "create": {
+        "summary": "Tạo tổ chức mới",
+        "description": "Tạo mới một tổ chức với đầy đủ thông tin bao gồm thông tin đại diện, mã số thuế và cấu hình email. Yêu cầu quyền `organization.create`."
+      },
+      "list": {
+        "summary": "Lấy danh sách tổ chức",
+        "description": "Lấy danh sách các tổ chức với phân trang và tìm kiếm. Yêu cầu quyền `organization.list`."
+      },
+      "read": {
+        "summary": "Lấy chi tiết tổ chức",
+        "description": "Lấy thông tin chi tiết của một tổ chức bao gồm thông tin đại diện và cấu hình. Yêu cầu quyền `organization.read`."
+      },
+      "update": {
+        "summary": "Cập nhật tổ chức",
+        "description": "Cập nhật thông tin tổ chức. Yêu cầu quyền `organization.update`."
+      },
+      "delete": {
+        "summary": "Xóa tổ chức",
+        "description": "Xóa mềm một tổ chức. Yêu cầu quyền `organization.delete`."
+      },
+      "delete_many": {
+        "summary": "Xóa nhiều tổ chức",
+        "description": "Xóa mềm nhiều tổ chức cùng lúc. Yêu cầu quyền `organization.delete`."
+      }
     },
-    "errors": {
-        "not_found": "Không tìm thấy tổ chức",
-        "name_exists": "Tên tổ chức đã tồn tại",
-        "permission_denied": "Không có quyền thực hiện thao tác này",
-        "not_owner": "Chỉ chủ sở hữu mới có quyền thực hiện thao tác này",
-        "already_member": "Người dùng đã là thành viên của tổ chức",
-        "already_invited": "Người dùng đã được mời vào tổ chức",
-        "member_not_found": "Không tìm thấy thành viên",
-        "invite_not_found": "Không tìm thấy lời mời",
-        "cannot_remove_owner": "Không thể xóa chủ sở hữu khỏi tổ chức",
-        "cannot_remove_self": "Không thể tự xóa mình khỏi tổ chức",
-        "user_not_found": "Không tìm thấy người dùng",
-        "role_not_found": "Không tìm thấy vai trò",
-        "role_in_use": "Vai trò đang được sử dụng, không thể xóa",
-        "apikey_not_found": "Không tìm thấy API key",
-        "apikey_invalid_format": "Định dạng API key không hợp lệ",
-        "apikey_expired": "API key đã hết hạn",
-        "invalid_new_owner": "Chủ sở hữu mới không hợp lệ",
-        "new_owner_not_member": "Chủ sở hữu mới phải là thành viên của tổ chức",
-        "invite_expired": "Lời mời đã hết hạn",
-        "invite_not_for_you": "Lời mời này không dành cho bạn",
-        "cannot_transfer_to_self": "Không thể chuyển quyền sở hữu cho chính mình",
-        "owner_cannot_leave": "Chủ sở hữu không thể rời khỏi tổ chức. Hãy chuyển quyền sở hữu trước.",
-        "apikey_permission_not_allowed": "Permission này không cho phép sử dụng API key",
-        "apikey_no_permission": "API key không có quyền thực hiện thao tác này",
-        "invite_failed_all": "Không thể mời bất kỳ thành viên nào",
-        "update_active_forbidden": "Chỉ admin mới có quyền cập nhật trạng thái hoạt động"
+    "member": {
+      "list": {
+        "summary": "Lấy danh sách thành viên",
+        "description": "Lấy danh sách thành viên của tổ chức với phân trang."
+      },
+      "invite": {
+        "summary": "Mời thành viên vào tổ chức",
+        "description": "Gửi lời mời cho một hoặc nhiều người dùng tham gia tổ chức."
+      },
+      "cancel_invite": {
+        "summary": "Hủy lời mời",
+        "description": "Hủy lời mời đã gửi cho một thành viên."
+      },
+      "accept": {
+        "summary": "Chấp nhận lời mời",
+        "description": "Chấp nhận lời mời tham gia tổ chức."
+      },
+      "reject": {
+        "summary": "Từ chối lời mời",
+        "description": "Từ chối lời mời tham gia tổ chức."
+      },
+      "remove": {
+        "summary": "Xóa thành viên",
+        "description": "Xóa thành viên khỏi tổ chức. Không thể xóa chủ sở hữu."
+      },
+      "leave": {
+        "summary": "Rời khỏi tổ chức",
+        "description": "Thành viên tự rời khỏi tổ chức. Chủ sở hữu không thể rời nếu chưa chuyển quyền."
+      },
+      "assign_roles": {
+        "summary": "Gán vai trò cho thành viên",
+        "description": "Gán một hoặc nhiều vai trò cho thành viên trong tổ chức."
+      },
+      "assign_permissions": {
+        "summary": "Gán quyền cho thành viên",
+        "description": "Gán quyền trực tiếp cho thành viên trong tổ chức."
+      }
     },
-    "validation": {
-        "name_required": "Tên tổ chức không được để trống",
-        "name_string": "Tên tổ chức phải là chuỗi",
-        "name_max_length": "Tên tổ chức không được quá 255 ký tự",
-        "email_required": "Email người dùng không được để trống",
-        "email_invalid": "Email không hợp lệ",
-        "user_id_required": "ID người dùng không được để trống",
-        "user_id_uuid": "ID người dùng phải là UUID hợp lệ",
-        "new_owner_id_required": "ID chủ sở hữu mới không được để trống",
-        "new_owner_id_uuid": "ID chủ sở hữu mới phải là UUID hợp lệ",
-        "new_owner_email_required": "Email chủ sở hữu mới không được để trống",
-        "new_owner_email_invalid": "Email chủ sở hữu mới không hợp lệ",
-        "role_name_required": "Tên vai trò không được để trống",
-        "role_name_string": "Tên vai trò phải là chuỗi",
-        "role_name_max_length": "Tên vai trò không được quá 100 ký tự",
-        "role_description_string": "Mô tả vai trò phải là chuỗi",
-        "permission_ids_array": "Danh sách quyền phải là mảng",
-        "permission_id_uuid": "ID quyền phải là UUID hợp lệ",
-        "role_ids_array": "Danh sách vai trò phải là mảng",
-        "role_id_uuid": "ID vai trò phải là UUID hợp lệ",
-        "apikey_name_required": "Tên API key không được để trống",
-        "apikey_name_string": "Tên API key phải là chuỗi",
-        "apikey_name_max_length": "Tên API key không được quá 100 ký tự",
-        "apikey_description_string": "Mô tả API key phải là chuỗi",
-        "apikey_expires_at_date": "Ngày hết hạn phải là ngày hợp lệ",
-        "apikey_allowed_origins_array": "Danh sách allowed origins phải là mảng",
-        "apikey_allowed_origins_string": "Mỗi allowed origin phải là chuỗi",
-        "apikey_allowed_origins_format": "Định dạng allowed origin không hợp lệ. Phải là URL, IPv4 hoặc IPv6",
-        "limit_positive": "Limit phải là số dương",
-        "offset_min": "Offset phải >= 0",
-        "keywords_string": "Từ khóa tìm kiếm phải là chuỗi",
-        "is_active_boolean": "Trạng thái phải là boolean",
-        "is_accepted_boolean": "Trạng thái chấp nhận phải là boolean",
-        "emails_required": "Danh sách email không được để trống",
-        "emails_array": "Email phải là mảng",
-        "emails_min_one": "Phải có ít nhất một email",
-        "display_name_required": "Tên hiển thị không được để trống",
-        "display_name_string": "Tên hiển thị phải là chuỗi",
-        "display_name_max_length": "Tên hiển thị không được quá 100 ký tự",
-        "google_client_id_string": "Google Client ID phải là chuỗi",
-        "google_client_secret_string": "Google Client Secret phải là chuỗi",
-        "google_refresh_token_string": "Google Refresh Token phải là chuỗi",
-        "email_primary_invalid": "Email chính không hợp lệ",
-        "email_primary_max_length": "Email chính không được quá 255 ký tự",
-        "rate_limit_ttl_int": "TTL rate limit phải là số nguyên",
-        "rate_limit_ttl_min": "TTL rate limit phải lớn hơn 0",
-        "rate_limit_max_int": "Số request tối đa phải là số nguyên",
-        "rate_limit_max_min": "Số request tối đa phải lớn hơn 0",
-        "org_id_uuid": "ID tổ chức phải là UUID hợp lệ",
-        "google_fields_required": "Google Client ID, Secret, Refresh Token và Email chính là bắt buộc khi sử dụng Google Email",
-        "google_credentials_invalid": "Xác thực thông tin Google thất bại. Vui lòng kiểm tra lại thông tin.",
-        "international_name_string": "Tên quốc tế phải là chuỗi",
-        "international_name_max_length": "Tên quốc tế không được quá 255 ký tự",
-        "tax_code_required": "Mã số thuế không được để trống",
-        "tax_code_string": "Mã số thuế phải là chuỗi",
-        "tax_code_max_length": "Mã số thuế không được quá 20 ký tự",
-        "tax_code_exists": "Mã số thuế đã được đăng ký bởi tổ chức khác",
-        "tax_code_invalid": "Mã số thuế không hợp lệ hoặc không tìm thấy thông tin doanh nghiệp",
-        "headquarters_address_string": "Địa chỉ trụ sở phải là chuỗi",
-        "headquarters_address_max_length": "Địa chỉ trụ sở không được quá 500 ký tự",
-        "representative_name_string": "Tên người đại diện phải là chuỗi",
-        "representative_name_max_length": "Tên người đại diện không được quá 255 ký tự",
-        "representative_name_required": "Tên người đại diện không được để trống",
-        "representative_title_string": "Chức danh người đại diện phải là chuỗi",
-        "representative_title_max_length": "Chức danh người đại diện không được quá 100 ký tự",
-        "representative_title_required": "Chức danh người đại diện không được để trống",
-        "representative_phone_string": "Số điện thoại người đại diện phải là chuỗi",
-        "representative_phone_max_length": "Số điện thoại người đại diện không được quá 20 ký tự",
-        "representative_phone_required": "Số điện thoại người đại diện không được để trống",
-        "representative_email_string": "Email người đại diện phải là chuỗi",
-        "representative_email_max_length": "Email người đại diện không được quá 255 ký tự",
-        "representative_email_required": "Email người đại diện không được để trống",
-        "representative_email_invalid": "Email người đại diện không hợp lệ",
-        "is_using_google_email_boolean": "Trạng thái sử dụng Google Email phải là boolean",
-        "gmail_pubsub_topic_string": "Gmail Pub/Sub Topic phải là chuỗi",
-        "gmail_pubsub_subscription_string": "Gmail Pub/Sub Subscription phải là chuỗi",
-        "gmail_webhook_secret_string": "Gmail Webhook Secret phải là chuỗi"
+    "ownership": {
+      "transfer": {
+        "summary": "Chuyển quyền sở hữu tổ chức",
+        "description": "Chuyển quyền sở hữu tổ chức cho thành viên khác. Chỉ chủ sở hữu hiện tại mới có quyền."
+      }
+    },
+    "role": {
+      "create": {
+        "summary": "Tạo vai trò mới trong tổ chức",
+        "description": "Tạo một vai trò mới với các permissions được gán. Yêu cầu quyền `organization.list`."
+      },
+      "list": {
+        "summary": "Lấy danh sách vai trò của tổ chức",
+        "description": "Lấy danh sách tất cả vai trò trong tổ chức bao gồm permissions."
+      },
+      "read": {
+        "summary": "Lấy chi tiết vai trò",
+        "description": "Lấy thông tin chi tiết của một vai trò bao gồm danh sách permissions."
+      },
+      "update": {
+        "summary": "Cập nhật vai trò",
+        "description": "Cập nhật thông tin vai trò bao gồm tên, mô tả và permissions."
+      },
+      "delete": {
+        "summary": "Xóa vai trò",
+        "description": "Xóa mềm một vai trò. Vai trò đang được sử dụng không thể xóa."
+      }
+    },
+    "apikey": {
+      "create": {
+        "summary": "Tạo API key mới",
+        "description": "Tạo một API key mới cho tổ chức với các permissions và cấu hình rate limit. Key chỉ hiển thị một lần duy nhất sau khi tạo."
+      },
+      "list": {
+        "summary": "Lấy danh sách API keys",
+        "description": "Lấy danh sách tất cả API keys của tổ chức. Key value không được trả về."
+      },
+      "read": {
+        "summary": "Lấy chi tiết API key",
+        "description": "Lấy thông tin chi tiết của một API key bao gồm permissions và cấu hình."
+      },
+      "update": {
+        "summary": "Cập nhật API key",
+        "description": "Cập nhật thông tin API key bao gồm tên, mô tả, permissions và cấu hình."
+      },
+      "reset": {
+        "summary": "Reset API key",
+        "description": "Tạo lại giá trị API key mới. Key cũ sẽ không còn hoạt động. Key mới chỉ hiển thị một lần."
+      },
+      "delete": {
+        "summary": "Xóa API key",
+        "description": "Xóa mềm một API key. Key sẽ không còn hoạt động."
+      }
+    },
+    "params": {
+      "org_id": "ID tổ chức (UUID)",
+      "member_id": "ID thành viên (UUID)",
+      "role_id": "ID vai trò (UUID)",
+      "key_id": "ID API key (UUID)",
+      "token": "Token mời",
+      "limit": "Số lượng bản ghi tối đa",
+      "offset": "Số bản ghi bỏ qua",
+      "keywords": "Từ khóa tìm kiếm",
+      "is_active": "Lọc theo trạng thái",
+      "is_accepted": "Lọc theo trạng thái chấp nhận"
     }
+  }
 }
