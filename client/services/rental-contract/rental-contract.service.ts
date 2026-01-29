@@ -44,6 +44,30 @@ export class RentalContractService {
         }
     }
 
+    // Tạo hợp đồng mới
+    async createRentalContract(token: string, data: any) {
+        try {
+            const response = await fetch(`${API}/rental-contracts`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Failed to create rental contract');
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('Create rental contract error:', error);
+            throw error;
+        }
+    }
+
     // Danh sách hợp đồng bằng ID
     async getRentalContractById(token: string, id: string) {
         try {

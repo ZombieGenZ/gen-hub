@@ -27,13 +27,14 @@ interface CompanyData {
 interface CompanyInfoStepProps {
     initialData?: Partial<CompanyData>;
     onChange?: (data: CompanyData, isValid: boolean) => void;
+    allowEdit?: boolean;
 }
 
 /**
  * Step 2: Thông tin doanh nghiệp
  * Chỉ bao gồm thông tin công ty, không có thông tin người đại diện
  */
-export function CompanyInfoStep({ initialData, onChange }: CompanyInfoStepProps) {
+export function CompanyInfoStep({ initialData, onChange, allowEdit = true }: CompanyInfoStepProps) {
     const { setCanProceed } = useCheckout();
 
     const [formData, setFormData] = useState<CompanyData>({
@@ -188,10 +189,12 @@ export function CompanyInfoStep({ initialData, onChange }: CompanyInfoStepProps)
                         onChange={(e) => handleChange(field, e.target.value)}
                         onBlur={() => handleBlur(field)}
                         placeholder={placeholder}
+                        disabled={!allowEdit}
                         className={cn(
                             "h-12 rounded-xl border-slate-200",
                             error && "border-red-400 focus:border-red-500",
-                            showTaxCodeStatus && taxCodeStatus === 'valid' && "border-green-400"
+                            showTaxCodeStatus && taxCodeStatus === 'valid' && "border-green-400",
+                            !allowEdit && "bg-slate-50 text-slate-500"
                         )}
                     />
                     {field === 'tax_code' && (
@@ -228,13 +231,23 @@ export function CompanyInfoStep({ initialData, onChange }: CompanyInfoStepProps)
         <div className="space-y-6">
             {/* Header */}
             <div className="border-b border-slate-200 pb-4">
-                <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                    <BuildingOffice2Icon className="w-5 h-5 text-[#0F766E]" />
-                    Thông tin doanh nghiệp
-                </h3>
-                <p className="text-sm text-slate-500 mt-1">
-                    Vui lòng cung cấp thông tin chính xác để xuất hóa đơn VAT
-                </p>
+                <div className="flex justify-between items-start">
+                    <div>
+                        <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                            <BuildingOffice2Icon className="w-5 h-5 text-[#0F766E]" />
+                            Thông tin doanh nghiệp
+                        </h3>
+                        <p className="text-sm text-slate-500 mt-1">
+                            Vui lòng cung cấp thông tin chính xác để xuất hóa đơn VAT
+                        </p>
+                    </div>
+                    {!allowEdit && (
+                        <div className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-medium border border-blue-100 flex items-center gap-1.5">
+                            <CheckCircleIcon className="w-4 h-4" />
+                            Đã liên kết tổ chức
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* Company Name */}

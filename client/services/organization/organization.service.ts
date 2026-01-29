@@ -151,3 +151,5 @@ export class OrganizationService {
         }
     }
 }
+
+export const organizationService = new OrganizationService();

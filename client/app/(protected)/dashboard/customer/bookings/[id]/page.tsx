@@ -1,4 +1,6 @@
-import React from 'react';
+"use client";
+
+import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -17,71 +19,141 @@ import {
   Building2,
   Phone,
   Mail,
-  CreditCard
+  CreditCard,
+  Plus
 } from 'lucide-react';
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
+import { authStorage } from '@/services/auth/auth-storage.service';
+import { rentalContractService } from '@/services/rental-contract/rental-contract.service';
 
-export default async function BookingDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  // Mock Data - In a real app, fetch based on params.id
-  const booking = {
-    id: id || "HD-2023-001",
-    status: "active", // active, pending, ended
-    statusLabel: "Đang hoạt động",
-    statusColor: "bg-emerald-100 text-emerald-700 border-emerald-200",
-    createdDate: "28/12/2022",
+export default function BookingDetailPage() {
+  const params = useParams();
+  const id = params.id as string;
+  const [booking, setBooking] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-    warehouse: {
-      name: "Kho Tân Bình - Khu A",
-      address: "123 Đường Cộng Hòa, Phường 12, Quận Tân Bình, TP. Hồ Chí Minh",
-      manager: "Nguyễn Văn Quản Lý",
-      phone: "0909 123 456",
-      email: "quanly.tanbinh@genhub.vn",
-      image: "/placeholder-warehouse-1.jpg"
-    },
+  useEffect(() => {
+    const fetchBooking = async () => {
+      try {
+        const token = authStorage.getAccessToken();
+        if (!token) return;
 
-    contract: {
-      startDate: "01/01/2023",
-      endDate: "31/12/2023",
-      duration: "12 tháng",
-      area: "500 m²",
-      type: "Kho thường",
-      paymentCycle: "Hàng tháng",
-      deposit: "30.000.000 đ"
-    },
+        const data: any = await rentalContractService.getRentalContractById(token, id);
 
-    financial: {
-      pricePerSqm: "240.000 đ",
-      monthlyRent: "120.000.000 đ",
-      serviceFee: "5.000.000 đ",
-      vat: "12.500.000 đ",
-      totalMonthly: "137.500.000 đ",
-      nextPaymentDate: "05/11/2023",
-      paymentStatus: "Đã thanh toán T10/2023"
-    },
+        if (data) {
+          const createdDate = new Date(data.created_at || Date.now());
 
-    services: [
-      { name: "Bảo vệ 24/7", included: true },
-      { name: "PCCC tiêu chuẩn", included: true },
-      { name: "Điện 3 pha", included: true },
-      { name: "Xe nâng (theo giờ)", included: false, price: "200.000đ/giờ" },
-      { name: "Bốc xếp", included: false, price: "Thỏa thuận" }
-    ],
+          // Construct Timeline based on status logic requested
+          // 1. Sent (Green)
+          // 2. Pending (Blue - Current)
+          // 3. Sign (Gray - Future)
 
-    documents: [
-      { name: "Hợp đồng thuê kho.pdf", date: "28/12/2022", size: "2.4 MB" },
-      { name: "Biên bản bàn giao.pdf", date: "01/01/2023", size: "1.1 MB" },
-      { name: "Phụ lục gia hạn.pdf", date: "15/06/2023", size: "0.8 MB" }
-    ],
+          // Dynamic helper to determine styling based on current contract status
+          const getStepStatus = (stepIndex: number, currentStatus: string) => {
+            // Simplified map: 'pending' -> step 2 active. 'active' -> step 3 completed/active.
+            if (currentStatus === 'pending') {
+              if (stepIndex === 0) return 'completed';
+              if (stepIndex === 1) return 'current';
+              return 'pending';
+            }
+            if (currentStatus === 'active') {
+              return 'completed';
+            }
+            return 'pending';
+          };
 
-    history: [
-      { date: "05/10/2023", action: "Thanh toán tiền thuê tháng 10/2023", user: "Kế toán" },
-      { date: "05/09/2023", action: "Thanh toán tiền thuê tháng 09/2023", user: "Kế toán" },
-      { date: "15/06/2023", action: "Ký phụ lục gia hạn thêm dịch vụ xe nâng", user: "Admin" },
-      { date: "01/01/2023", action: "Bàn giao kho và bắt đầu hợp đồng", user: "Quản lý kho" },
-      { date: "28/12/2022", action: "Ký hợp đồng thuê kho", user: "Admin" }
-    ]
-  };
+          const timeline = [
+            {
+              date: createdDate.toLocaleDateString('vi-VN'),
+              action: "Gửi yêu cầu thuê",
+              user: "Khách hàng",
+              status: 'completed'
+            },
+            {
+              date: data.status === 'pending' ? "Hiện tại" : (data.approved_at ? new Date(data.approved_at).toLocaleDateString('vi-VN') : "Đang xử lý"),
+              action: "Chờ xác nhận",
+              user: "Hệ thống",
+              status: getStepStatus(1, data.status)
+            },
+            {
+              date: data.status === 'active' ? (data.signed_at ? new Date(data.signed_at).toLocaleDateString('vi-VN') : "Hoàn tất") : "Dự kiến",
+              action: "Ký hợp đồng",
+              user: "Admin",
+              status: getStepStatus(2, data.status)
+            }
+          ];
+
+          const mappedBooking = {
+            id: data.code || data.order_code || data.id,
+            status: data.status || 'pending',
+            statusLabel: data.status === 'active' ? 'Đang hoạt động' : (data.status === 'pending' ? 'Chờ xác nhận' : data.status),
+            statusColor: data.status === 'active' ? "bg-emerald-100 text-emerald-700 border-emerald-200" : "bg-amber-100 text-amber-700 border-amber-200",
+            createdDate: createdDate.toLocaleDateString('vi-VN'),
+
+            warehouse: {
+              name: data.warehouse_name || "Kho không tên",
+              address: data.warehouse_address || "Chưa cập nhật",
+              manager: "Quản lý kho",
+              phone: "1900 1234",
+              email: "support@genhub.vn",
+              image: "/placeholder-warehouse-1.jpg"
+            },
+
+            organization: {
+              name: data.organization?.name || data.organization_name || "Chưa cập nhật",
+              taxCode: data.organization?.tax_code || "N/A",
+              representative: data.organization?.representative_name || "N/A",
+              address: data.organization?.headquarters_address || "N/A"
+            },
+
+            contract: {
+              startDate: data.started_at ? new Date(data.started_at).toLocaleDateString('vi-VN') : "N/A",
+              endDate: data.ended_at ? new Date(data.ended_at).toLocaleDateString('vi-VN') : "N/A",
+              duration: `${data.duration_months || 0} tháng`,
+              area: "N/A",
+              type: data.rental_type === 'whole' ? "Thuê nguyên kho" : "Thuê theo dãy",
+              paymentCycle: "Hàng tháng",
+              deposit: new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(data.deposit_amount || 0)
+            },
+
+            financial: {
+              pricePerSqm: "N/A",
+              monthlyRent: new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(data.quotation?.basePrice || 0),
+              serviceFee: new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(data.quotation?.serviceFee || 0),
+              vat: "Included/N/A",
+              totalMonthly: new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(data.quotation?.grandTotal || 0),
+              nextPaymentDate: "N/A",
+              paymentStatus: "Chưa thanh toán"
+            },
+
+            services: (data.addon_ids || []).map((addonId: string) => ({ name: addonId, included: true })).concat(
+              data.insurance_id ? [{ name: data.insurance_id, included: true }] : []
+            ),
+
+            documents: [],
+
+            history: timeline
+          };
+          setBooking(mappedBooking);
+        }
+      } catch (error) {
+        console.error("Failed to fetch booking", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBooking();
+  }, [id]);
+
+  if (loading) {
+    return <div className="p-12 text-center text-slate-500">Đang tải thông tin hợp đồng...</div>;
+  }
+
+  if (!booking) {
+    return <div className="p-12 text-center text-slate-500">Không tìm thấy hợp đồng hoặc có lỗi xảy ra.</div>;
+  }
 
   return (
     <div className="space-y-6 p-6 max-w-7xl mx-auto">
@@ -104,7 +176,7 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
           </Link>
           <div>
             <h1 className="text-2xl font-bold tracking-tight flex items-center gap-3">
-              Hợp đồng #{booking.id}
+              Mã Hợp đồng: {booking.id.length > 20 ? booking.id.substring(0, 8) + '...' : booking.id}
               <Badge variant="outline" className={`${booking.statusColor} font-normal border`}>
                 {booking.statusLabel}
               </Badge>
@@ -130,11 +202,42 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column - Main Info */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Warehouse Info */}
+
+          {/* Organization Info (New) */}
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-lg flex items-center gap-2">
                 <Building2 className="h-5 w-5 text-emerald-600" />
+                Thông tin doanh nghiệp
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-muted-foreground block mb-1">Tên công ty:</span>
+                  <span className="font-medium text-base">{booking.organization?.name}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground block mb-1">Mã số thuế:</span>
+                  <span className="font-medium">{booking.organization?.taxCode}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground block mb-1">Người đại diện:</span>
+                  <span className="font-medium">{booking.organization?.representative}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground block mb-1">Địa chỉ:</span>
+                  <span className="font-medium truncate">{booking.organization?.address}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Warehouse Info */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <MapPin className="h-5 w-5 text-emerald-600" />
                 Thông tin kho bãi
               </CardTitle>
             </CardHeader>
@@ -227,7 +330,7 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
 
               <h4 className="font-medium mb-4">Dịch vụ đi kèm</h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {booking.services.map((service, index) => (
+                {booking.services.map((service: any, index: number) => (
                   <div key={index} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border">
                     <div className="flex items-center gap-2">
                       {service.included ? (
@@ -248,24 +351,31 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
             </CardContent>
           </Card>
 
-          {/* Activity History */}
+          {/* Activity History (Timeline) */}
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-lg flex items-center gap-2">
                 <Clock className="h-5 w-5 text-emerald-600" />
-                Lịch sử hoạt động
+                Tiến độ xử lý
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="relative pl-6 border-l-2 border-muted space-y-6">
-                {booking.history.map((item, index) => (
+              <div className="relative pl-6 border-l-2 border-muted space-y-8">
+                {booking.history.map((item: any, index: number) => (
                   <div key={index} className="relative">
-                    <div className="absolute -left-7 top-1 h-3 w-3 rounded-full bg-emerald-600 border-2 border-background ring-2 ring-muted" />
+                    <div className={`absolute -left-[31px] top-1 h-4 w-4 rounded-full border-2 border-white ring-2 ${item.status === 'completed' ? 'bg-emerald-500 ring-emerald-100' :
+                        item.status === 'current' ? 'bg-blue-500 ring-blue-100 animate-pulse' :
+                          'bg-slate-200 ring-slate-100'
+                      }`} />
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                      <span className="text-sm font-medium">{item.action}</span>
+                      <span className={`text-base font-medium ${item.status === 'current' ? 'text-blue-600' :
+                          item.status === 'completed' ? 'text-emerald-700' : 'text-slate-500'
+                        }`}>
+                        {item.action}
+                      </span>
                       <span className="text-xs text-muted-foreground">{item.date}</span>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">Thực hiện bởi: {item.user}</p>
+                    <p className="text-xs text-muted-foreground mt-1">Người xử lý: {item.user}</p>
                   </div>
                 ))}
               </div>
@@ -334,7 +444,8 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {booking.documents.map((doc, index) => (
+              {booking.documents.length === 0 && <span className="text-sm text-muted-foreground">Chưa có tài liệu nào.</span>}
+              {booking.documents.map((doc: any, index: number) => (
                 <div key={index} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer group">
                   <div className="flex items-center gap-3 overflow-hidden">
                     <div className="h-8 w-8 rounded bg-red-100 text-red-600 flex items-center justify-center shrink-0">
@@ -372,24 +483,4 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
       </div>
     </div>
   );
-}
-
-function Plus(props: any) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M5 12h14" />
-      <path d="M12 5v14" />
-    </svg>
-  )
 }

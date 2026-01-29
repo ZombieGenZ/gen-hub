@@ -125,7 +125,6 @@ export interface CreateOrderRequest {
     coupon_code?: string;
     organization_id: string;
     payment_method: PaymentMethod;
-    deposit_amount: number;         
     notes?: string;
 }
 

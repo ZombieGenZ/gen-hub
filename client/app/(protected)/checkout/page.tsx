@@ -25,28 +25,10 @@ import { mockProperties } from '@/data/mockProperties';
 import { MOCK_ADDONS, MOCK_INSURANCES, MOCK_DURATION_TIERS } from '@/types/booking/booking.type';
 
 // Default empty session
-const DEFAULT_SESSION: Partial<CheckoutSession> = {
-    warehouse_template_id: '',
-    rental_type: 'whole',
-    duration_tier_id: '',
-    duration_months: 0,
-    start_date: new Date().toISOString(),
-    addon_ids: [],
-    quotation: {
-        basePrice: 0,
-        durationMonths: 0,
-        durationDiscountPercent: 0,
-        durationDiscountAmount: 0,
-        addonsCost: 0,
-        insuranceCost: 0,
-        managementFee: 0,
-        subtotal: 0,
-        serviceFee: 0,
-        couponDiscount: 0,
-        grandTotal: 0,
-    },
-    deposit_amount: 0
-};
+import { authStorage } from '@/services/auth/auth-storage.service';
+import { organizationService } from '@/services/organization/organization.service';
+import { rentalContractService } from '@/services/rental-contract/rental-contract.service';
+import { CreateOrderRequest } from '@/types/checkout/checkout.type';
 
 interface CompanyData {
     name: string;
@@ -83,6 +65,48 @@ function CheckoutContent() {
         representative_email: '',
     });
 
+    const [hasExistingOrg, setHasExistingOrg] = useState(false);
+    const [initializing, setInitializing] = useState(true);
+
+    // Initial Data Fetch (Organization)
+    useEffect(() => {
+        const fetchOrgInfo = async () => {
+            try {
+                const token = authStorage.getAccessToken();
+                if (!token) return;
+
+                const user = authStorage.getUser();
+                if (user?.organization_id) {
+                    const org = await organizationService.getOrganizationById(token, user.organization_id);
+                    if (org) {
+                        setCompanyData({
+                            name: org.name,
+                            international_name: org.international_name || '',
+                            tax_code: org.tax_code,
+                            headquarters_address: org.headquarters_address,
+                            invoice_address: org.invoice_address || org.headquarters_address,
+                        });
+                        // Also pre-fill representative if available in organization
+                        setRepresentativeData({
+                            representative_name: org.representative_name || '',
+                            representative_title: org.representative_title || '',
+                            representative_phone: org.representative_phone || '',
+                            representative_email: org.representative_email || ''
+                        });
+                        setHasExistingOrg(true);
+                        setSession({ organization_id: user.organization_id });
+                    }
+                }
+            } catch (error) {
+                console.error("Failed to fetch organization info", error);
+            } finally {
+                setInitializing(false);
+            }
+        };
+
+        fetchOrgInfo();
+    }, [setSession]);
+
     // Handle company info change
     const handleCompanyChange = (data: CompanyData) => {
         setCompanyData(data);
@@ -102,20 +126,53 @@ function CheckoutContent() {
     const handleSubmitOrder = async () => {
         setIsSubmitting(true);
         try {
-            console.log('Creating order with:', {
-                ...session,
-                company: companyData,
-                representative: representativeData,
-            });
+            const token = authStorage.getAccessToken();
+            if (!token) throw new Error("Authentication required");
 
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            nextStep();
+            let orgId = session.organization_id;
+
+            // 1. Create Organization if needed
+            if (!hasExistingOrg && !orgId) {
+                const newOrg = await organizationService.createOrganization(token, {
+                    ...companyData,
+                    ...representativeData
+                });
+                orgId = newOrg.id;
+            }
+
+            if (!orgId) throw new Error("Missing organization ID");
+
+            // 2. Prepare Order Data
+            const payload: CreateOrderRequest = {
+                organization_id: orgId,
+                warehouse_template_id: session.warehouse_template_id || '',
+                rental_type: session.rental_type || 'whole',
+                row_template_ids: session.row_template_ids,
+                duration_tier_id: session.duration_tier_id || '',
+                started_at: session.start_date || new Date().toISOString(),
+                addon_ids: session.addon_ids || [],
+                insurance_id: session.insurance_id,
+                coupon_code: session.coupon_code,
+                payment_method: session.payment_method || 'sepay-qr',
+            };
+
+            // 3. Submit Order
+            const result = await rentalContractService.createRentalContract(token, payload);
+
+            // 4. Redirect to dashboard
+            router.push(`/dashboard/customer/bookings/${result.id}`);
+
         } catch (error) {
             console.error('Failed to create order:', error);
+            alert("Lỗi khi tạo đơn hàng. Vui lòng thử lại.");
         } finally {
             setIsSubmitting(false);
         }
     };
+
+    if (initializing) {
+        return <div className="p-12 text-center text-slate-500">Đang tải thông tin...</div>;
+    }
 
     return (
         <div className="min-h-screen bg-slate-50">
@@ -164,6 +221,7 @@ function CheckoutContent() {
                                 <CompanyInfoStep
                                     initialData={companyData}
                                     onChange={handleCompanyChange}
+                                    allowEdit={!hasExistingOrg}
                                 />
                             </CheckoutStepContainer>
 
@@ -249,10 +307,10 @@ function CheckoutContainer() {
             try {
                 // 1. Get IDs from URL
                 const warehouseId = searchParams.get('warehouseId');
+
+                // If warehouseId is missing, wait for a bit
                 if (!warehouseId) {
-                    // Redirect back if no warehouse ID
-                    // router.push('/kho-bai'); 
-                    // For dev, fallback to mock if empty
+                    // Optional: Handling logic here
                 }
 
                 const rentalType = (searchParams.get('rentalType') as 'whole' | 'row') || 'whole';
@@ -268,12 +326,18 @@ function CheckoutContainer() {
 
                 // Fetch Warehouse (API)
                 let property: any = mockProperties[0]; // Fallback
+                let warehouseAvailable = true;
                 try {
                     // Try to fetch from public API
                     const res = await fetch(`${API}/public/warehouse-templates/${warehouseId}`);
                     if (res.ok) {
                         const data = await res.json();
                         property = data.data || data; // Adjust based on API response structure
+
+                        // Check warehouse availability
+                        if (property.is_rented === true || property.rental_status === 'RENTED' || property.rental_status === 'LOCKED') {
+                            warehouseAvailable = false;
+                        }
                     } else {
                         // Fallback to searching in mock if API fails (dev mode)
                         const mock = mockProperties.find(p => p.id === Number(warehouseId));
@@ -285,12 +349,22 @@ function CheckoutContainer() {
                     if (mock) property = mock;
                 }
 
+                // If warehouse is not available, alert and redirect
+                if (!warehouseAvailable) {
+                    alert('Kho này đã được thuê hoặc đang bị khóa. Vui lòng chọn kho khác.');
+                    router.push('/kho-bai');
+                    return;
+                }
+
                 // Fetch Duration Tier (API)
                 let durationTier: any = null;
                 if (durationId) {
                     try {
                         const res = await fetch(`${API}/public/rental-duration-tiers/${durationId}`);
-                        if (res.ok) durationTier = await res.json();
+                        if (res.ok) {
+                            const data = await res.json();
+                            durationTier = data.data || data;
+                        }
                     } catch (e) {
                         console.warn("Error fetching tier, falling back to mock", e);
                     }
@@ -306,7 +380,8 @@ function CheckoutContainer() {
                 try {
                     const res = await fetch(`${API}/public/addons/active`);
                     if (res.ok) {
-                        const allAddons = await res.json();
+                        const data = await res.json();
+                        const allAddons = data.data || data;
                         addons = allAddons.filter((a: any) => addonIds.includes(String(a.id)));
                     }
                 } catch (e) {
@@ -328,7 +403,8 @@ function CheckoutContainer() {
                     try {
                         const res = await fetch(`${API}/public/insurances/active`);
                         if (res.ok) {
-                            const insurances = await res.json();
+                            const data = await res.json();
+                            const insurances = data.data || data;
                             insurance = insurances.find((i: any) => String(i.id) === insuranceId);
                         }
                     } catch (e) {
@@ -357,6 +433,7 @@ function CheckoutContainer() {
                 let managementFee = 0;
                 if (insurance) {
                     const insurancePrice = Number(insurance.price);
+                    // Mock logic for insurance cost
                     if (insurancePrice > 1000) {
                         insuranceCost = insurancePrice * durationMonths;
                         managementFee = 0;

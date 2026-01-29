@@ -355,7 +355,7 @@ export default function WarehouseDynamicPage() {
                                 <MapComponent
                                     properties={[property]}
                                     highlightedPropertyId={property.id}
-                                    onMarkerClick={() => { }} 
+                                    onMarkerClick={() => { }}
                                     variant="detail"
                                 />
                             </div>
@@ -366,7 +366,7 @@ export default function WarehouseDynamicPage() {
 
                     {/* RIGHT COLUMN: Booking Widget (Sticky) */}
                     <div className="lg:col-span-4 relative">
-                        <BookingWidget price={property.price} />
+                        <BookingWidget price={property.price} warehouseId={property.id.toString()} />
                     </div>
 
                 </div >
