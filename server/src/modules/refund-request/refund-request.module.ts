@@ -8,6 +8,7 @@ import { RedisModule } from '../redis/redis.module';
 import { WebsocketModule } from '../websocket/websocket.module';
 import { SystemLogModule } from '../system-log/system-log.module';
 import { OrganizationModule } from '../organization/organization.module';
+import { ApiKeyVerificationModule } from '../api-key-verification/api-key-verification.module';
 
 @Module({
     imports: [
@@ -16,6 +17,7 @@ import { OrganizationModule } from '../organization/organization.module';
         WebsocketModule,
         SystemLogModule,
         OrganizationModule,
+        ApiKeyVerificationModule,
     ],
     controllers: [RefundRequestController, OrgRefundRequestController],
     providers: [RefundRequestService, RefundRequestRepository],

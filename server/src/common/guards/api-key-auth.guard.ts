@@ -10,7 +10,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
-import { OrganizationService } from '../../modules/organization/organization.service';
+import { ApiKeyVerificationService } from '../../modules/api-key-verification/api-key-verification.service';
 import { RedisService } from '../../modules/redis/redis.service';
 import { IApiKeyInfo } from '../decorators/current-actor.decorator';
 
@@ -23,9 +23,8 @@ import { IApiKeyInfo } from '../decorators/current-actor.decorator';
 export class ApiKeyAuthGuard implements CanActivate {
     constructor(
         private readonly reflector: Reflector,
-        @Inject(forwardRef(() => OrganizationService))
-        private readonly organizationService: OrganizationService,
         private readonly redisService: RedisService,
+        private readonly apiKeyVerificationService: ApiKeyVerificationService,
     ) { }
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -49,7 +48,7 @@ export class ApiKeyAuthGuard implements CanActivate {
         try {
             // Verify API key và lấy thông tin
             const lang = request.headers['accept-language'] || 'vi';
-            const apiKeyInfo = await this.organizationService.getApiKeyByPlainKey(apiKey, lang);
+            const apiKeyInfo = await this.apiKeyVerificationService.getApiKeyByPlainKey(apiKey, lang);
 
             // Kiểm tra rate limit
             await this.checkRateLimit(apiKeyInfo.id, apiKeyInfo.rate_limit_ttl, apiKeyInfo.rate_limit_max);

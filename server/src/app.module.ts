@@ -18,7 +18,14 @@ import { WebsocketModule } from './modules/websocket/websocket.module';
 import { BanSchedulerModule } from './modules/ban-scheduler/ban-scheduler.module';
 import { ApiKeySchedulerModule } from './modules/apikey-scheduler/apikey-scheduler.module';
 import { WarehouseTemplateModule } from './modules/warehouse-template/warehouse-template.module';
+import { WarehouseManagerModule } from './modules/warehouse-manager/warehouse-manager.module';
+import { WarehouseManagerRoleModule } from './modules/warehouse-manager-role/warehouse-manager-role.module';
+import { WarehouseVisitModule } from './modules/warehouse-visit/warehouse-visit.module';
 import { OrganizationModule } from './modules/organization/organization.module';
+import { OrganizationRoleModule } from './modules/organization-role/organization-role.module';
+import { OrganizationApiKeyModule } from './modules/organization-api-key/organization-api-key.module';
+import { ApiKeyVerificationModule } from './modules/api-key-verification/api-key-verification.module';
+import { ApiKeyModule } from './modules/api-key/api-key.module';
 import { GlobalNotificationModule } from './modules/global-notification/global-notification.module';
 import { UserNotificationModule } from './modules/user-notification/user-notification.module';
 import { OrgNotificationModule } from './modules/org-notification/org-notification.module';
@@ -56,7 +63,6 @@ import { FaqModule } from './modules/faq/faq.module';
 import { ContactModule } from './modules/contact/contact.module';
 import { ContactTagModule } from './modules/contact-tag/contact-tag.module';
 import { ContactListModule } from './modules/contact-list/contact-list.module';
-import { QCManagementModule } from './modules/qc-management/qc-management.module';
 import { RefundRequestModule } from './modules/refund-request/refund-request.module';
 import { CategoryModule } from './modules/category/category.module';
 import { ArticleModule } from './modules/article/article.module';
@@ -140,16 +146,20 @@ import { RoleModule } from './modules/role/role.module';
 
     // Layout Template Modules
     WarehouseTemplateModule,
+    WarehouseManagerModule,
+    WarehouseManagerRoleModule,
+    WarehouseVisitModule,
     RowTemplateModule,
     RackTemplateModule,
     ShelfTemplateModule,
     BlockTemplateModule,
 
-    // QC Management Module
-    QCManagementModule,
-
     // Organizations
     OrganizationModule,
+    OrganizationRoleModule,
+    OrganizationApiKeyModule,
+    ApiKeyVerificationModule,
+    ApiKeyModule,
 
     // Organization Chat with Agora
     OrgChatModule,

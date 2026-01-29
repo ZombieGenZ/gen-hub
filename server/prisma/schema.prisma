@@ -124,6 +124,7 @@ model User {
   contact_staff_assignments      ContactConversationStaff[] @relation("ContactStaff")
 
   warnings UserWarning[]
+  warehouse_managers WarehouseTemplateManager[]
 
   @@map("users")
 }
@@ -454,9 +455,7 @@ model WarehouseTemplate {
   block_length Decimal @db.Decimal(10, 4)
   block_width  Decimal @db.Decimal(10, 4)
 
-  manager_name  String?
-  manager_phone String?
-  manager_email String?
+
 
   ceiling_height    Decimal? @db.Decimal(10, 4)
   max_load_capacity Decimal? @db.Decimal(19, 4)
@@ -490,7 +489,9 @@ model WarehouseTemplate {
   coupon_targets          CouponTargetWarehouse[]
   coupon_schedule_targets CouponScheduleTargetWarehouse[]
 
-  qc_warehouse QCWarehouse?
+  managers          WarehouseTemplateManager[]
+  visit_bookings    WarehouseVisitBooking[]
+  generated_warehouses Warehouse[] @relation("GeneratedWarehouses")
 
   @@map("warehouse_templates")
 }
@@ -1135,7 +1136,7 @@ model RowTemplate {
   coupon_targets          CouponTargetRow[]
   coupon_schedule_targets CouponScheduleTargetRow[]
 
-  qc_row QCRow?
+  generated_rows Row[] @relation("GeneratedRows")
 
   @@index([warehouse_template_id])
   @@map("row_templates")
@@ -1599,6 +1600,7 @@ model Organization {
   rental_contracts       RentalContract[]
   inventory_transactions InventoryTransaction[]
   inventories            Inventory[]
+  visit_bookings         WarehouseVisitBooking[]
   update_requests        OrganizationUpdateRequest[]
   audit_logs             OrganizationAuditLog[]
   api_key_logs           ApiKeyLog[]
@@ -1916,8 +1918,8 @@ model Warehouse {
 
   total_weight_capacity Decimal? @db.Decimal(19, 4)
 
-  qc_warehouse_id String?      @db.Uuid
-  qc_warehouse    QCWarehouse? @relation(fields: [qc_warehouse_id], references: [id])
+  warehouse_template_id String?            @db.Uuid
+  warehouse_template    WarehouseTemplate? @relation("GeneratedWarehouses", fields: [warehouse_template_id], references: [id])
 
   organization Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
 
@@ -1945,7 +1947,7 @@ model Warehouse {
   rental_contract_details RentalContractDetail[]
   notifications           OrganizationNotification[]
 
-  @@index([qc_warehouse_id])
+  @@index([warehouse_template_id])
   @@map("warehouses")
 }
 
@@ -1963,8 +1965,8 @@ model Row {
 
   total_weight_capacity Decimal? @db.Decimal(19, 4)
 
-  qc_row_id String? @db.Uuid
-  qc_row    QCRow?  @relation(fields: [qc_row_id], references: [id])
+  row_template_id String?      @db.Uuid
+  row_template    RowTemplate? @relation("GeneratedRows", fields: [row_template_id], references: [id])
 
   is_active  Boolean   @default(true)
   created_at DateTime  @default(now())
@@ -1981,7 +1983,7 @@ model Row {
   rental_contract_details RentalContractDetail[]
 
   @@index([warehouse_id])
-  @@index([qc_row_id])
+  @@index([row_template_id])
   @@map("rows")
 }
 
@@ -3810,60 +3812,8 @@ model AILog {
   @@map("ai_logs")
 }
 
-model QCWarehouse {
-  id                    String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
-  warehouse_template_id String @unique @db.Uuid
-
-  is_active  Boolean   @default(true)
-  created_at DateTime  @default(now())
-  updated_at DateTime? @updatedAt
-  is_deleted Boolean   @default(false)
-  deleted_at DateTime?
-
-  created_by String?
-  updated_by String?
-  deleted_by String?
-
-  warehouse_template WarehouseTemplate @relation(fields: [warehouse_template_id], references: [id])
-
-  rows        QCRow[]
-  assignments QCWarehouseAssignment[]
-
-  warehouses Warehouse[]
-
-  @@index([warehouse_template_id])
-  @@map("qc_warehouses")
-}
-
-model QCRow {
-  id              String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
-  qc_warehouse_id String @db.Uuid
-  row_template_id String @unique @db.Uuid
-
-  is_active  Boolean   @default(true)
-  created_at DateTime  @default(now())
-  updated_at DateTime? @updatedAt
-  is_deleted Boolean   @default(false)
-  deleted_at DateTime?
-
-  created_by String?
-  updated_by String?
-  deleted_by String?
-
-  qc_warehouse QCWarehouse @relation(fields: [qc_warehouse_id], references: [id], onDelete: Cascade)
-  row_template RowTemplate @relation(fields: [row_template_id], references: [id])
-
-  assignments QCRowAssignment[]
-
-  rows Row[]
-
-  @@index([qc_warehouse_id])
-  @@index([row_template_id])
-  @@map("qc_rows")
-}
-
-model QCPermission {
-  id          String  @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+model WarehouseManagerPermission {
+  id          String  @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   name        String
   key         String  @unique
   description String?
@@ -3878,16 +3828,17 @@ model QCPermission {
   updated_by String?
   deleted_by String?
 
-  warehouse_assignment_permissions QCWarehouseAssignmentPermission[]
-  row_assignment_permissions       QCRowAssignmentPermission[]
+  role_permissions WarehouseManagerRolePermission[]
 
-  @@map("qc_permissions")
+  @@map("warehouse_manager_permissions")
 }
 
-model QCWarehouseAssignment {
-  id              String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
-  qc_warehouse_id String @db.Uuid
-  user_id         String @db.Uuid
+model WarehouseManagerRole {
+  id          String  @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name        String
+  description String?
+  
+  is_default Boolean @default(false)
 
   is_active  Boolean   @default(true)
   created_at DateTime  @default(now())
@@ -3899,36 +3850,42 @@ model QCWarehouseAssignment {
   updated_by String?
   deleted_by String?
 
-  qc_warehouse QCWarehouse @relation(fields: [qc_warehouse_id], references: [id], onDelete: Cascade)
+  permissions WarehouseManagerRolePermission[]
+  managers    WarehouseTemplateManagerRole[]
 
-  permissions QCWarehouseAssignmentPermission[]
-
-  @@unique([qc_warehouse_id, user_id])
-  @@index([user_id])
-  @@map("qc_warehouse_assignments")
+  @@map("warehouse_manager_roles")
 }
 
-model QCWarehouseAssignmentPermission {
-  id            String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
-  assignment_id String @db.Uuid
+model WarehouseManagerRolePermission {
+  id            String @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  role_id       String @db.Uuid
   permission_id String @db.Uuid
 
-  is_active  Boolean  @default(true)
-  created_at DateTime @default(now())
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean   @default(false)
+  deleted_at DateTime?
 
-  assignment QCWarehouseAssignment @relation(fields: [assignment_id], references: [id], onDelete: Cascade)
-  permission QCPermission          @relation(fields: [permission_id], references: [id], onDelete: Cascade)
+  created_by String?
+  deleted_by String?
 
-  @@unique([assignment_id, permission_id])
-  @@index([assignment_id])
+  role       WarehouseManagerRole       @relation(fields: [role_id], references: [id], onDelete: Cascade)
+  permission WarehouseManagerPermission @relation(fields: [permission_id], references: [id], onDelete: Cascade)
+
+  @@unique([role_id, permission_id])
+  @@index([role_id])
   @@index([permission_id])
-  @@map("qc_warehouse_assignment_permissions")
+  @@map("warehouse_manager_role_permissions")
 }
 
-model QCRowAssignment {
-  id        String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
-  qc_row_id String @db.Uuid
-  user_id   String @db.Uuid
+model WarehouseTemplateManager {
+  id                    String  @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  warehouse_template_id String  @db.Uuid
+  user_id               String  @db.Uuid
+  
+  phone                 String?
+  notes                 String?
 
   is_active  Boolean   @default(true)
   created_at DateTime  @default(now())
@@ -3940,31 +3897,137 @@ model QCRowAssignment {
   updated_by String?
   deleted_by String?
 
-  qc_row QCRow @relation(fields: [qc_row_id], references: [id], onDelete: Cascade)
+  warehouse_template WarehouseTemplate          @relation(fields: [warehouse_template_id], references: [id], onDelete: Cascade)
+  user               User                       @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  roles              WarehouseTemplateManagerRole[]
 
-  permissions QCRowAssignmentPermission[]
-
-  @@unique([qc_row_id, user_id])
+  @@unique([warehouse_template_id, user_id])
+  @@index([warehouse_template_id])
   @@index([user_id])
-  @@map("qc_row_assignments")
+  @@map("warehouse_template_managers")
 }
 
-model QCRowAssignmentPermission {
-  id            String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
-  assignment_id String @db.Uuid
-  permission_id String @db.Uuid
+model WarehouseTemplateManagerRole {
+  id         String @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  manager_id String @db.Uuid
+  role_id    String @db.Uuid
 
-  is_active  Boolean  @default(true)
-  created_at DateTime @default(now())
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean   @default(false)
+  deleted_at DateTime?
 
-  assignment QCRowAssignment @relation(fields: [assignment_id], references: [id], onDelete: Cascade)
-  permission QCPermission    @relation(fields: [permission_id], references: [id], onDelete: Cascade)
+  created_by String?
+  deleted_by String?
 
-  @@unique([assignment_id, permission_id])
-  @@index([assignment_id])
-  @@index([permission_id])
-  @@map("qc_row_assignment_permissions")
+  manager WarehouseTemplateManager @relation(fields: [manager_id], references: [id], onDelete: Cascade)
+  role    WarehouseManagerRole     @relation(fields: [role_id], references: [id], onDelete: Cascade)
+
+  @@unique([manager_id, role_id])
+  @@index([manager_id])
+  @@index([role_id])
+  @@map("warehouse_template_manager_roles")
 }
+
+enum WarehouseVisitStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+  NO_SHOW
+  RESCHEDULED
+}
+
+enum WarehouseVisitPurpose {
+  RENTAL_INQUIRY
+  INSPECTION
+  PARTNERSHIP
+  OTHER
+}
+
+model WarehouseVisitBooking {
+  id                    String @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  code                  String @unique
+  warehouse_template_id String @db.Uuid
+  
+  user_id               String? @db.Uuid
+  organization_id       String? @db.Uuid
+  
+  visitor_name          String
+  visitor_email         String
+  visitor_phone         String?
+  visitor_company       String?
+  visitor_position      String?
+  
+  visit_date            DateTime @db.Date
+  visit_time_start      String
+  visit_time_end        String?
+  
+  purpose               WarehouseVisitPurpose @default(RENTAL_INQUIRY)
+  purpose_details       String? @db.Text
+  number_of_visitors    Int @default(1)
+  
+  status                WarehouseVisitStatus @default(PENDING)
+  
+  confirmed_at          DateTime?
+  confirmed_by          String? @db.Uuid
+  confirmation_notes    String?
+  
+  cancelled_at          DateTime?
+  cancelled_by          String? @db.Uuid
+  cancel_reason         String?
+  
+  rescheduled_from_id   String? @db.Uuid
+  rescheduled_at        DateTime?
+  rescheduled_by        String? @db.Uuid
+  reschedule_reason     String?
+  
+  completed_at          DateTime?
+  completed_by          String? @db.Uuid
+  completion_notes      String? @db.Text
+  satisfaction_rating   Int?
+  satisfaction_feedback String? @db.Text
+  
+  internal_notes        String? @db.Text
+  
+  reminder_sent_at      DateTime?
+  
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean   @default(false)
+  deleted_at DateTime?
+  
+  created_by String?
+  updated_by String?
+  deleted_by String?
+  
+  warehouse_template WarehouseTemplate        @relation(fields: [warehouse_template_id], references: [id], onDelete: Cascade)
+  organization       Organization?            @relation(fields: [organization_id], references: [id])
+  rescheduled_from   WarehouseVisitBooking?   @relation("RescheduledBookings", fields: [rescheduled_from_id], references: [id])
+  rescheduled_to     WarehouseVisitBooking[]  @relation("RescheduledBookings")
+  
+  @@index([warehouse_template_id])
+  @@index([organization_id])
+  @@index([user_id])
+  @@index([visit_date])
+  @@index([status])
+  @@index([code])
+  @@map("warehouse_visit_bookings")
+}
+
+
+
+
+
+
+
+
+
+
+
+
 
 model CozeConversation {
   id         String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid

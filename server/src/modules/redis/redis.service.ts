@@ -23,6 +23,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   private readonly ORGANIZATION_CACHE_TTL: number;
   private readonly ORGANIZATION_LIST_CACHE_TTL: number;
   private readonly ORGANIZATION_MEMBER_CACHE_TTL: number;
+  private readonly WAREHOUSE_MANAGER_CACHE_TTL: number;
 
   // Account Module Cache Config
   private readonly ACCOUNT_PROFILE_CACHE_TTL: number;
@@ -45,6 +46,8 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
       this.configService.get<number>('REDIS_ORGANIZATION_LIST_CACHE_TTL') || 60;
     this.ORGANIZATION_MEMBER_CACHE_TTL =
       this.configService.get<number>('REDIS_ORGANIZATION_MEMBER_CACHE_TTL') || 300;
+    this.WAREHOUSE_MANAGER_CACHE_TTL =
+      this.configService.get<number>('REDIS_WAREHOUSE_MANAGER_CACHE_TTL') || 300;
 
     // Account Module Cache Config from env
     this.ACCOUNT_PROFILE_CACHE_TTL =
@@ -831,5 +834,33 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
       this.invalidateSystemLogStatsCache(),
       this.invalidateSystemLogModulesCache(),
     ]);
+  }
+
+
+  private getWarehouseManagerCacheKey(id: string): string {
+    return `warehouse-manager:${id}`;
+  }
+
+  async getWarehouseManagerCache<T>(id: string): Promise<T | null> {
+    const data = await this.get(this.getWarehouseManagerCacheKey(id));
+    if (!data) return null;
+    try {
+      return JSON.parse(data) as T;
+    } catch {
+      return null;
+    }
+  }
+
+  async setWarehouseManagerCache<T>(
+    id: string,
+    data: T,
+    ttlSeconds?: number,
+  ): Promise<void> {
+    const ttl = ttlSeconds || this.WAREHOUSE_MANAGER_CACHE_TTL;
+    await this.set(this.getWarehouseManagerCacheKey(id), JSON.stringify(data), ttl);
+  }
+
+  async invalidateWarehouseManagerCache(id: string): Promise<void> {
+    await this.del(this.getWarehouseManagerCacheKey(id));
   }
 }

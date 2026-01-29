@@ -18,8 +18,8 @@ import {
   ApiResponse,
 } from '@nestjs/swagger';
 import { I18nLang } from 'nestjs-i18n';
-import { OrganizationService } from './organization.service';
-import { CreateApiKeyDto, UpdateApiKeyDto } from './dto';
+import { OrganizationApiKeyService } from './organization-api-key.service';
+import { CreateApiKeyDto, UpdateApiKeyDto } from './dto/api-key.dto';
 import { DeleteManyDto } from '../../common/dto';
 import {
   CurrentUser,
@@ -40,8 +40,8 @@ import {
 @ApiBearerAuth('JWT-auth')
 @Controller('organizations/:orgId/api-keys')
 @UseGuards(PermissionGuard)
-export class ApiKeyController {
-  constructor(private readonly service: OrganizationService) {}
+export class OrganizationApiKeyController {
+  constructor(private readonly service: OrganizationApiKeyService) { }
 
   @Post()
   @RequirePermission('organization.read')

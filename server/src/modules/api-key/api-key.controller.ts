@@ -11,8 +11,8 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiParam, ApiBody } from '@nestjs/swagger';
 import { I18nLang } from 'nestjs-i18n';
-import { OrganizationService } from './organization.service';
-import { QueryAdminApiKeyDto, UpdateAdminApiKeyDto } from './dto';
+import { ApiKeyService } from './api-key.service';
+import { QueryAdminApiKeyDto, UpdateAdminApiKeyDto } from './dto/api-key.dto';
 import { DeleteManyDto } from '../../common/dto';
 import { CurrentUser, RequirePermission } from '../../common/decorators';
 import { PermissionGuard } from '../../common/guards';
@@ -30,18 +30,17 @@ import {
 @ApiBearerAuth()
 @Controller('admin/api-keys')
 @UseGuards(PermissionGuard)
-export class ApiKeyAdminController {
-    constructor(private readonly service: OrganizationService) { }
+export class ApiKeyController {
+    constructor(private readonly service: ApiKeyService) { }
 
     @Get()
     @RequirePermission('apikey.admin.list')
     @ApiOperation({ summary: 'Lấy danh sách tất cả API keys (Admin)' })
     async findMany(
         @Query() query: QueryAdminApiKeyDto,
-        @CurrentUser('userId') userId: string,
         @I18nLang() lang: string,
     ) {
-        const result = await this.service.getAdminApiKeys(query, userId, lang);
+        const result = await this.service.getAdminApiKeys(query, lang);
         return new GetResponse(
             ResponseCode.APIKEY_LIST_SUCCESS,
             result,
@@ -55,10 +54,9 @@ export class ApiKeyAdminController {
     @ApiParam({ name: 'id', description: 'ID API key' })
     async findOne(
         @Param('id', ParseUUIDPipe) id: string,
-        @CurrentUser('userId') userId: string,
         @I18nLang() lang: string,
     ) {
-        const result = await this.service.getAdminApiKeyById(id, userId, lang);
+        const result = await this.service.getAdminApiKeyById(id, lang);
         return new GetResponse(
             ResponseCode.APIKEY_DETAIL_SUCCESS,
             result,

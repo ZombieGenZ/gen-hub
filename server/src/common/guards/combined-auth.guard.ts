@@ -10,7 +10,7 @@ import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
-import { OrganizationService } from '../../modules/organization/organization.service';
+import { ApiKeyVerificationService } from '../../modules/api-key-verification/api-key-verification.service';
 import { IApiKeyInfo } from '../decorators/current-actor.decorator';
 
 /**
@@ -24,8 +24,7 @@ export class CombinedAuthGuard implements CanActivate {
         private readonly reflector: Reflector,
         private readonly jwtService: JwtService,
         private readonly configService: ConfigService,
-        @Inject(forwardRef(() => OrganizationService))
-        private readonly organizationService: OrganizationService,
+        private readonly apiKeyVerificationService: ApiKeyVerificationService,
     ) { }
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -60,7 +59,7 @@ export class CombinedAuthGuard implements CanActivate {
         if (apiKey) {
             try {
                 const lang = request.headers['accept-language'] || 'vi';
-                const apiKeyInfo = await this.organizationService.getApiKeyByPlainKey(apiKey, lang);
+                const apiKeyInfo = await this.apiKeyVerificationService.getApiKeyByPlainKey(apiKey, lang);
 
                 // Lấy danh sách permission keys
                 const permissionKeys: string[] = [];

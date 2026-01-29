@@ -5,24 +5,18 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBody } from '@nestjs/swagger';
 import { I18nLang } from 'nestjs-i18n';
-import { IsNotEmpty, IsString } from 'class-validator';
-import { OrganizationService } from './organization.service';
+import { ApiKeyVerificationService } from './api-key-verification.service';
+import { VerifyApiKeyDto } from './dto/verify-api-key.dto';
 import { Public } from '../../common/decorators';
 import {
     GetResponse,
     ResponseCode,
 } from '../../common/responses';
 
-class VerifyApiKeyDto {
-    @IsNotEmpty()
-    @IsString()
-    api_key: string;
-}
-
 @ApiTags('API Key Verification')
 @Controller('api-keys')
 export class ApiKeyVerifyController {
-    constructor(private readonly service: OrganizationService) { }
+    constructor(private readonly service: ApiKeyVerificationService) { }
 
     @Post('verify')
     @Public()

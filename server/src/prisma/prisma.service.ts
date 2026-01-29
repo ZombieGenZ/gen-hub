@@ -337,8 +337,10 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         this.seedFaqPermissions.bind(this),
         this.seedContactPermissions.bind(this),
         this.seedContactTagPermissions.bind(this),
-        this.seedQCManagementPermissions.bind(this),
-        this.seedQCPermissions.bind(this),
+        this.seedWarehouseManagerPermissions.bind(this),
+        this.seedWarehouseVisitPermissions.bind(this),
+        this.seedWarehouseManagerRoles.bind(this),
+
         this.seedRefundRequestPermissions.bind(this),
         this.seedCategoryPermissions.bind(this),
         this.seedArticlePermissions.bind(this),
@@ -3543,20 +3545,20 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
   }
 
   /**
-   * Seed các permissions cho QC Management module
-   * - qc-management.list: Xem danh sách QC warehouses, rows
-   * - qc-management.read: Xem chi tiết QC warehouse, row
-   * - qc-management.assign: Gán/xóa user vào QC warehouse, row
+   * Seed các permissions cho Warehouse Manager module
    */
-  private async seedQCManagementPermissions() {
+  private async seedWarehouseManagerPermissions() {
     try {
-      const qcManagementPermissions = [
-        { key: 'qc-management.list', name: 'Xem danh sách QC', description: 'Quyền xem danh sách QC warehouses và rows' },
-        { key: 'qc-management.read', name: 'Xem chi tiết QC', description: 'Quyền xem chi tiết QC warehouse và row' },
-        { key: 'qc-management.assign', name: 'Phân công QC', description: 'Quyền gán/xóa user vào QC warehouse hoặc row' },
+      const warehouseManagerPermissions = [
+        { key: 'warehouse-manager.create', name: 'Gán người quản lý kho', description: 'Quyền gán người dùng làm người quản lý kho' },
+        { key: 'warehouse-manager.list', name: 'Xem danh sách người quản lý kho', description: 'Quyền xem danh sách những người quản lý kho' },
+        { key: 'warehouse-manager.read', name: 'Xem chi tiết người quản lý kho', description: 'Quyền xem chi tiết thông tin và vai trò của người quản lý kho' },
+        { key: 'warehouse-manager.update', name: 'Cập nhật người quản lý kho', description: 'Quyền cập nhật thông tin người quản lý kho' },
+        { key: 'warehouse-manager.delete', name: 'Xóa người quản lý kho', description: 'Quyền gỡ bỏ người quản lý khỏi kho hàng' },
+        { key: 'warehouse-manager.assign-role', name: 'Gán vai trò quản lý kho', description: 'Quyền gán các vai trò cụ thể cho người quản lý kho' },
       ];
 
-      for (const perm of qcManagementPermissions) {
+      for (const perm of warehouseManagerPermissions) {
         const existing = await this.permission.findFirst({
           where: { key: perm.key },
         });
@@ -3583,7 +3585,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
 
       const permissions = await this.permission.findMany({
         where: {
-          key: { in: qcManagementPermissions.map((p) => p.key) },
+          key: { in: warehouseManagerPermissions.map((p) => p.key) },
           is_deleted: false,
         },
       });
@@ -3610,52 +3612,125 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         }
       }
 
-      this.logger.log('✅ QC Management permissions seeded');
+      this.logger.log('✅ Warehouse Manager permissions seeded');
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      this.logger.error(`❌ Failed to seed qc-management permissions: ${errorMessage}`);
+      this.logger.error(`❌ Failed to seed warehouse-manager permissions: ${errorMessage}`);
     }
   }
 
   /**
-   * Seed các QC Permissions mặc định cho QCPermission model
-   * Đây là các quyền cho QC user được phân công quản lý kho
+   * Seed các permissions cho Warehouse Visit module
    */
-  private async seedQCPermissions() {
+  private async seedWarehouseVisitPermissions() {
     try {
-      const qcPermissions = [
-        { key: 'qc.import', name: 'Nhập hàng', description: 'Quyền nhập hàng vào kho/dãy' },
-        { key: 'qc.export', name: 'Xuất hàng', description: 'Quyền xuất hàng từ kho/dãy' },
-        { key: 'qc.view', name: 'Xem hàng', description: 'Quyền xem thông tin hàng hóa trong kho/dãy' },
-        { key: 'qc.manage', name: 'Quản lý kho', description: 'Quyền quản lý kho/dãy (sắp xếp, kiểm kê)' },
-        { key: 'qc.report', name: 'Báo cáo', description: 'Quyền xem và tạo báo cáo kho/dãy' },
+      const warehouseVisitPermissions = [
+        { key: 'warehouse-visit.create', name: 'Đặt lịch tham quan kho', description: 'Quyền tạo yêu cầu đặt lịch tham quan kho hàng' },
+        { key: 'warehouse-visit.list', name: 'Xem danh sách lịch tham quan (của mình)', description: 'Quyền xem danh sách các lịch tham quan do mình tạo' },
+        { key: 'warehouse-visit.list.all', name: 'Xem tất cả lịch tham quan', description: 'Quyền xem toàn bộ danh sách lịch tham quan trên hệ thống' },
+        { key: 'warehouse-visit.read', name: 'Xem chi tiết lịch tham quan', description: 'Quyền xem chi tiết thông tin một lịch tham quan' },
+        { key: 'warehouse-visit.update', name: 'Cập nhật lịch tham quan', description: 'Quyền cập nhật trạng thái hoặc thông tin lịch tham quan' },
+        { key: 'warehouse-visit.reschedule', name: 'Dời lịch tham quan', description: 'Quyền thay đổi thời gian tham quan kho hàng' },
+        { key: 'warehouse-visit.delete', name: 'Hủy lịch tham quan', description: 'Quyền hủy hoặc xóa lịch tham quan kho' },
       ];
 
-      for (const perm of qcPermissions) {
-        const existing = await this.qCPermission.findFirst({
-          where: { key: perm.key, is_deleted: false },
+      for (const perm of warehouseVisitPermissions) {
+        const existing = await this.permission.findFirst({
+          where: { key: perm.key },
         });
 
         if (!existing) {
-          await this.qCPermission.create({
+          await this.permission.create({
             data: {
               key: perm.key,
               name: perm.name,
               description: perm.description,
               is_active: true,
               is_deleted: false,
-              created_by: 'SYSTEM',
             },
           });
         }
       }
 
-      this.logger.log('✅ QC Permissions seeded');
+      const adminRoles = await this.role.findMany({
+        where: {
+          name: { in: ['Admin', 'Super Admin'] },
+          is_deleted: false,
+        },
+      });
+
+      const permissions = await this.permission.findMany({
+        where: {
+          key: { in: warehouseVisitPermissions.map((p) => p.key) },
+          is_deleted: false,
+        },
+      });
+
+      for (const role of adminRoles) {
+        for (const permission of permissions) {
+          const existingAssignment = await this.rolePermission.findFirst({
+            where: {
+              role_id: role.id,
+              permission_id: permission.id,
+            },
+          });
+
+          if (!existingAssignment) {
+            await this.rolePermission.create({
+              data: {
+                role_id: role.id,
+                permission_id: permission.id,
+                is_active: true,
+                is_deleted: false,
+              },
+            });
+          }
+        }
+      }
+
+      this.logger.log('✅ Warehouse Visit permissions seeded');
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      this.logger.error(`❌ Failed to seed QC permissions: ${errorMessage}`);
+      this.logger.error(`❌ Failed to seed warehouse-visit permissions: ${errorMessage}`);
     }
   }
+
+  /**
+   * Seed các vai trò quản lý kho hàng mặc định
+   */
+  private async seedWarehouseManagerRoles() {
+    try {
+      const warehouseManagerRoles = [
+        { name: 'Admin', description: 'Toàn quyền quản lý kho hàng' },
+        { name: 'Staff', description: 'Quản lý vận hành hàng ngày' },
+        { name: 'Security', description: 'Quản lý an ninh và ra vào' },
+        { name: 'Maintenance', description: 'Quản lý bảo trì và kỹ thuật' },
+      ];
+
+      for (const role of warehouseManagerRoles) {
+        const existing = await this.warehouseManagerRole.findFirst({
+          where: { name: role.name, is_deleted: false },
+        });
+
+        if (!existing) {
+          await this.warehouseManagerRole.create({
+            data: {
+              name: role.name,
+              description: role.description,
+              is_active: true,
+              is_deleted: false,
+            },
+          });
+        }
+      }
+      this.logger.log('✅ Warehouse Manager roles seeded');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error(`❌ Failed to seed warehouse-manager roles: ${errorMessage}`);
+    }
+  }
+
+
   /**
    * Seed các permissions cho RefundRequest
    */

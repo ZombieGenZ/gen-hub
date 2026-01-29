@@ -7,9 +7,10 @@ import { PrismaModule } from '../../prisma/prisma.module';
 import { WebsocketModule } from '../websocket/websocket.module';
 import { RedisModule } from '../redis/redis.module';
 import { OrganizationModule } from '../organization/organization.module';
+import { ApiKeyVerificationModule } from '../api-key-verification/api-key-verification.module';
 
 @Module({
-    imports: [PrismaModule, WebsocketModule, RedisModule, OrganizationModule],
+    imports: [PrismaModule, WebsocketModule, RedisModule, OrganizationModule, ApiKeyVerificationModule],
     controllers: [OrgChatController],
     providers: [OrgChatService, OrgChatRepository, AgoraService],
     exports: [OrgChatService, AgoraService],
