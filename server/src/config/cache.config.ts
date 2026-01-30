@@ -143,4 +143,69 @@ export default registerAs('cache', () => ({
             list: process.env.REDIS_BLOCK_TEMPLATE_LIST_KEY_PREFIX || 'block-template:list',
         },
     },
+    organization: {
+        ttl: {
+            item: parseInt(process.env.REDIS_ORGANIZATION_CACHE_TTL ?? '300', 10),
+            list: parseInt(process.env.REDIS_ORGANIZATION_LIST_CACHE_TTL ?? '60', 10),
+            member: parseInt(process.env.REDIS_ORGANIZATION_MEMBER_CACHE_TTL ?? '300', 10),
+        },
+        keys: {
+            item: process.env.REDIS_ORGANIZATION_KEY_PREFIX || 'organization',
+            list: process.env.REDIS_ORGANIZATION_LIST_KEY_PREFIX || 'organization:list',
+            member: process.env.REDIS_ORGANIZATION_MEMBER_KEY_PREFIX || 'organization:member',
+        },
+    },
+    organizationRole: {
+        ttl: {
+            item: parseInt(process.env.REDIS_ORG_ROLE_CACHE_TTL ?? '300', 10),
+            list: parseInt(process.env.REDIS_ORG_ROLE_LIST_CACHE_TTL ?? '60', 10),
+        },
+        keys: {
+            item: process.env.REDIS_ORG_ROLE_KEY_PREFIX || 'org:role',
+            list: process.env.REDIS_ORG_ROLE_LIST_KEY_PREFIX || 'org:role:list',
+            permissions: process.env.REDIS_ORG_ROLE_PERMISSIONS_KEY_PREFIX || 'org:role:perms',
+        },
+    },
+    organizationApiKey: {
+        ttl: {
+            item: parseInt(process.env.REDIS_ORG_API_KEY_CACHE_TTL ?? '300', 10),
+            list: parseInt(process.env.REDIS_ORG_API_KEY_LIST_CACHE_TTL ?? '60', 10),
+        },
+        keys: {
+            item: process.env.REDIS_ORG_API_KEY_KEY_PREFIX || 'org:apikey',
+            list: process.env.REDIS_ORG_API_KEY_LIST_KEY_PREFIX || 'org:apikey:list',
+        },
+    },
+    organizationUpdateRequest: {
+        ttl: {
+            item: parseInt(process.env.REDIS_ORG_UPDATE_REQUEST_CACHE_TTL ?? '300', 10),
+            list: parseInt(process.env.REDIS_ORG_UPDATE_REQUEST_LIST_CACHE_TTL ?? '60', 10),
+        },
+        keys: {
+            item: process.env.REDIS_ORG_UPDATE_REQUEST_KEY_PREFIX || 'org:update-request',
+            list: process.env.REDIS_ORG_UPDATE_REQUEST_LIST_KEY_PREFIX || 'org:update-request:list',
+        },
+    },
+    adminApiKey: {
+        ttl: {
+            item: parseInt(process.env.REDIS_ADMIN_API_KEY_CACHE_TTL ?? '300', 10),
+            list: parseInt(process.env.REDIS_ADMIN_API_KEY_LIST_CACHE_TTL ?? '60', 10),
+        },
+        keys: {
+            item: process.env.REDIS_ADMIN_API_KEY_KEY_PREFIX || 'admin:apikey',
+            list: process.env.REDIS_ADMIN_API_KEY_LIST_KEY_PREFIX || 'admin:apikey:list',
+        },
+    },
+    orgChat: {
+        ttl: {
+            item: parseInt(process.env.REDIS_ORG_CHAT_CACHE_TTL ?? '300', 10),
+            message: parseInt(process.env.REDIS_ORG_CHAT_MESSAGE_CACHE_TTL ?? '60', 10),
+            call: parseInt(process.env.REDIS_ORG_CHAT_CALL_CACHE_TTL ?? '300', 10),
+        },
+        keys: {
+            item: process.env.REDIS_ORG_CHAT_KEY_PREFIX || 'org:chat',
+            message: process.env.REDIS_ORG_CHAT_MESSAGE_KEY_PREFIX || 'org:chat:msg',
+            call: process.env.REDIS_ORG_CHAT_CALL_KEY_PREFIX || 'org:chat:call',
+        },
+    },
 }));

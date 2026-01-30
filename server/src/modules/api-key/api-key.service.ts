@@ -4,6 +4,10 @@ import { OrganizationApiKeyRepository } from '../organization-api-key/organizati
 import { OrganizationAuditLogService } from '../organization/organization-audit-log.service';
 import { QueryAdminApiKeyDto, UpdateAdminApiKeyDto } from './dto/api-key.dto';
 import { IPaginatedResponse, IApiKey } from '../organization/interfaces';
+import { RedisService } from '../redis/redis.service';
+import { AdminApiKeyCacheKeys } from './constants/cache-keys.helper';
+import { OrganizationApiKeyCacheKeys } from '../organization-api-key/constants/cache-keys.helper';
+
 
 @Injectable()
 export class ApiKeyService {
@@ -11,27 +15,46 @@ export class ApiKeyService {
         private readonly repository: OrganizationApiKeyRepository,
         private readonly auditLogService: OrganizationAuditLogService,
         private readonly i18n: I18nService,
+        private readonly redisService: RedisService,
+        private readonly adminCacheKeys: AdminApiKeyCacheKeys,
+        private readonly orgCacheKeys: OrganizationApiKeyCacheKeys,
     ) { }
+
 
     async getAdminApiKeys(
         query: QueryAdminApiKeyDto,
         lang: string,
     ): Promise<IPaginatedResponse<IApiKey>> {
-        return this.repository.findAllApiKeys(query);
+        const cacheKey = this.adminCacheKeys.list(query as unknown as Record<string, unknown>);
+        const cached = await this.redisService.getJson<IPaginatedResponse<IApiKey>>(cacheKey);
+        if (cached) return cached;
+
+        const result = await this.repository.findAllApiKeys(query);
+        await this.redisService.setJson(cacheKey, result, this.adminCacheKeys.ttlList);
+
+        return result;
     }
+
 
     async getAdminApiKeyById(
         keyId: string,
         lang: string,
     ): Promise<IApiKey> {
+        const cacheKey = this.adminCacheKeys.item(keyId);
+        const cached = await this.redisService.getJson<IApiKey>(cacheKey);
+        if (cached) return cached;
+
         const apiKey = await this.repository.findApiKeyById(keyId);
         if (!apiKey) {
             throw new NotFoundException(
                 await this.i18n.translate('organization.errors.apikey_not_found', { lang }),
             );
         }
+
+        await this.redisService.setJson(cacheKey, apiKey, this.adminCacheKeys.ttlItem);
         return apiKey;
     }
+
 
     async updateAdminApiKey(
         keyId: string,
@@ -88,8 +111,19 @@ export class ApiKeyService {
             );
         }
 
+        // Invalidate Admin Cache
+        await this.redisService.del(this.adminCacheKeys.item(keyId));
+        await this.redisService.delByPattern(this.adminCacheKeys.allList());
+
+        // Invalidate Org Cache
+        if (updated) {
+            await this.redisService.del(this.orgCacheKeys.item(updated.organization_id, keyId));
+            await this.redisService.del(this.orgCacheKeys.list(updated.organization_id));
+        }
+
         return updated!;
     }
+
 
     async deleteAdminApiKey(
         keyId: string,
@@ -112,7 +146,16 @@ export class ApiKeyService {
             { name: apiKey.name },
             { userId, description: 'Deleted by Admin' },
         );
+
+        // Invalidate Admin Cache
+        await this.redisService.del(this.adminCacheKeys.item(keyId));
+        await this.redisService.delByPattern(this.adminCacheKeys.allList());
+
+        // Invalidate Org Cache
+        await this.redisService.del(this.orgCacheKeys.item(apiKey.organization_id, keyId));
+        await this.redisService.del(this.orgCacheKeys.list(apiKey.organization_id));
     }
+
 
     async deleteManyAdminApiKeys(
         ids: string[],
@@ -126,6 +169,9 @@ export class ApiKeyService {
             );
         }
 
+        // Collect Org IDs for invalidation
+        const orgIds = [...new Set(apiKeys.map(k => k.organization_id))];
+
         await this.repository.softDeleteManyApiKeys(ids, userId);
 
         apiKeys.forEach(apiKey => {
@@ -137,5 +183,19 @@ export class ApiKeyService {
                 { userId, description: `Deleted by Admin: ${apiKey.name}` },
             );
         });
+
+        // Invalidate Admin Cache
+        await Promise.all(ids.map(id => this.redisService.del(this.adminCacheKeys.item(id))));
+        await this.redisService.delByPattern(this.adminCacheKeys.allList());
+
+        // Invalidate Org Cache
+        await Promise.all([
+            ...ids.map(id => {
+                const key = apiKeys.find(k => k.id === id);
+                return key ? this.redisService.del(this.orgCacheKeys.item(key.organization_id, id)) : Promise.resolve();
+            }),
+            ...orgIds.map(orgId => this.redisService.del(this.orgCacheKeys.list(orgId))),
+        ]);
     }
+
 }

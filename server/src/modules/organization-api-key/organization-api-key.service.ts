@@ -10,8 +10,11 @@ import * as argon2 from '@node-rs/argon2';
 
 import { OrganizationApiKeyRepository } from './organization-api-key.repository';
 import { OrganizationRepository } from '../organization/organization.repository';
+import { RedisService } from '../redis/redis.service';
 import { WebsocketGateway } from '../websocket/websocket.gateway';
 import { OrganizationAuditLogService } from '../organization/organization-audit-log.service';
+import { OrganizationApiKeyCacheKeys } from './constants/cache-keys.helper';
+
 import {
     IApiKey,
     IApiKeyWithPlainKey,
@@ -24,10 +27,13 @@ export class OrganizationApiKeyService {
         private readonly repository: OrganizationApiKeyRepository,
         private readonly orgRepository: OrganizationRepository,
         private readonly configService: ConfigService,
+        private readonly redisService: RedisService,
         private readonly websocketGateway: WebsocketGateway,
         private readonly auditLogService: OrganizationAuditLogService,
         private readonly i18n: I18nService,
+        private readonly cacheKeys: OrganizationApiKeyCacheKeys,
     ) { }
+
 
     async createApiKey(
         orgId: string,
@@ -124,10 +130,18 @@ export class OrganizationApiKeyService {
             lang,
         );
 
-        const apiKeys = await this.repository.findApiKeysByOrgId(orgId);
+        const cacheKey = this.cacheKeys.list(orgId);
+        const cached = await this.redisService.getJson<IApiKey[]>(cacheKey);
+        if (cached) return cached;
 
-        return this.mergeApiKeyPermissions(apiKeys);
+        const apiKeys = await this.repository.findApiKeysByOrgId(orgId);
+        const result = this.mergeApiKeyPermissions(apiKeys);
+
+        await this.redisService.setJson(cacheKey, result, this.cacheKeys.ttlList);
+
+        return result;
     }
+
 
     async getApiKeyById(
         orgId: string,
@@ -150,6 +164,10 @@ export class OrganizationApiKeyService {
             lang,
         );
 
+        const cacheKey = this.cacheKeys.item(orgId, keyId);
+        const cached = await this.redisService.getJson<IApiKey>(cacheKey);
+        if (cached) return cached;
+
         const apiKey = await this.repository.findApiKeyById(keyId);
         if (!apiKey || apiKey.organization_id !== orgId) {
             throw new NotFoundException(
@@ -158,8 +176,11 @@ export class OrganizationApiKeyService {
         }
 
         const [result] = this.mergeApiKeyPermissions([apiKey]);
+        await this.redisService.setJson(cacheKey, result, this.cacheKeys.ttlItem);
+
         return result;
     }
+
 
     async updateApiKey(
         orgId: string,
@@ -244,9 +265,16 @@ export class OrganizationApiKeyService {
 
         this.websocketGateway.emitApiKeyUpdated(orgId, keyId, updated?.name || '', userId);
 
+        this.websocketGateway.emitApiKeyUpdated(orgId, keyId, updated?.name || '', userId);
+
+        // Invalidate cache
+        await this.redisService.del(this.cacheKeys.item(orgId, keyId));
+        await this.redisService.del(this.cacheKeys.list(orgId));
+
         const [result] = this.mergeApiKeyPermissions([updated!]);
         return result;
     }
+
 
     async resetApiKey(
         orgId: string,
@@ -301,9 +329,16 @@ export class OrganizationApiKeyService {
 
         this.websocketGateway.emitApiKeyUpdated(orgId, keyId, updated?.name || '', userId);
 
+        this.websocketGateway.emitApiKeyUpdated(orgId, keyId, updated?.name || '', userId);
+
+        // Invalidate cache
+        await this.redisService.del(this.cacheKeys.item(orgId, keyId));
+        await this.redisService.del(this.cacheKeys.list(orgId));
+
         const [result] = this.mergeApiKeyPermissions([updated!]);
         return { ...result!, plain_key: plainKey };
     }
+
 
     async deleteApiKey(
         orgId: string,
@@ -344,7 +379,13 @@ export class OrganizationApiKeyService {
         );
 
         this.websocketGateway.emitApiKeyDeleted(orgId, keyId, userId);
+        this.websocketGateway.emitApiKeyDeleted(orgId, keyId, userId);
+
+        // Invalidate cache
+        await this.redisService.del(this.cacheKeys.item(orgId, keyId));
+        await this.redisService.del(this.cacheKeys.list(orgId));
     }
+
 
     async deleteManyApiKeys(
         orgId: string,
@@ -394,7 +435,15 @@ export class OrganizationApiKeyService {
                 { userId, description: `Deleted API Key: ${apiKey.name}` },
             );
         });
+
+
+        // Invalidate cache
+        await Promise.all([
+            ...ids.map(id => this.redisService.del(this.cacheKeys.item(orgId, id))),
+            this.redisService.del(this.cacheKeys.list(orgId)),
+        ]);
     }
+
 
     private generateApiKey(): string {
         const prefix = this.configService.get<string>('API_KEY_PREFIX') || 'GENHUB';

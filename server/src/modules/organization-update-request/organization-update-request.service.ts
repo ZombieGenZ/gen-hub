@@ -7,6 +7,9 @@ import { OrganizationUpdateRequestStatus } from '@prisma/client';
 import { SystemLogService } from '../system-log/system-log.service';
 import { WebsocketGateway } from '../websocket/websocket.gateway';
 import { OrganizationService } from '../organization/organization.service';
+import { RedisService } from '../redis/redis.service';
+import { OrganizationUpdateRequestCacheKeys } from './constants/cache-keys.helper';
+
 
 @Injectable()
 export class OrganizationUpdateRequestService {
@@ -17,7 +20,10 @@ export class OrganizationUpdateRequestService {
         private readonly systemLogService: SystemLogService,
         private readonly websocketGateway: WebsocketGateway,
         private readonly organizationService: OrganizationService,
+        private readonly redisService: RedisService,
+        private readonly cacheKeys: OrganizationUpdateRequestCacheKeys,
     ) { }
+
 
     async create(userId: string, organizationId: string, dto: CreateOrganizationUpdateRequestDto, lang: string) {
         // Validate organization exists
@@ -71,22 +77,44 @@ export class OrganizationUpdateRequestService {
         // But requirement said "socket.io for realtime updates".
         this.websocketGateway.server.to('admin_room').emit('organization_update_request_created', request);
 
+        // Invalidate list cache
+        await this.redisService.delByPattern(this.cacheKeys.allList());
+
         return request;
     }
 
+
     async findAll(query: QueryOrganizationUpdateRequestDto) {
-        return this.repository.findMany(query);
+        const cacheKey = this.cacheKeys.list(query as unknown as Record<string, unknown>);
+
+        // Using any because findMany returns object with data and meta, but I need to define return type properly if possible.
+        // Assuming findMany returns standard pagination response.
+        const cached = await this.redisService.getJson<any>(cacheKey);
+        if (cached) return cached;
+
+        const result = await this.repository.findMany(query);
+        await this.redisService.setJson(cacheKey, result, this.cacheKeys.ttlList);
+
+        return result;
     }
 
+
     async findOne(id: string, lang: string) {
+        const cacheKey = this.cacheKeys.item(id);
+        const cached = await this.redisService.getJson<any>(cacheKey);
+        if (cached) return cached;
+
         const request = await this.repository.findById(id);
         if (!request) {
             throw new NotFoundException(
                 await this.i18n.translate('organization.errors.request_not_found', { lang }),
             );
         }
+
+        await this.redisService.setJson(cacheKey, request, this.cacheKeys.ttlItem);
         return request;
     }
+
 
     async approve(id: string, userId: string, lang: string) {
         const request = await this.repository.findById(id);
@@ -140,8 +168,13 @@ export class OrganizationUpdateRequestService {
 
         // Email notification would go here (mock)
 
+        // Invalidate cache
+        await this.redisService.del(this.cacheKeys.item(id));
+        await this.redisService.delByPattern(this.cacheKeys.allList());
+
         return updatedRequest;
     }
+
 
     async reject(id: string, userId: string, dto: RejectOrganizationUpdateRequestDto, lang: string) {
         const request = await this.repository.findById(id);
@@ -175,6 +208,11 @@ export class OrganizationUpdateRequestService {
         // Emit Socket
         this.websocketGateway.server.to(`org_${request.organization_id}`).emit('organization_update_request_rejected', updatedRequest);
 
+        // Invalidate cache
+        await this.redisService.del(this.cacheKeys.item(id));
+        await this.redisService.delByPattern(this.cacheKeys.allList());
+
         return updatedRequest;
     }
+
 }
