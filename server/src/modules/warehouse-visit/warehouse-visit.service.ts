@@ -39,14 +39,14 @@ export class WarehouseVisitService {
         return newBooking;
     }
 
-    async findAllBookings(query: any): Promise<IPaginatedResponse<WarehouseVisitBooking>> {
-        const cacheKey = this.redisService.getWarehouseVisitListCacheKey(query);
+    async findAllBookings(query: any, ownerId?: string): Promise<IPaginatedResponse<WarehouseVisitBooking>> {
+        const cacheKey = this.redisService.getWarehouseVisitListCacheKey(query) + (ownerId ? `:user:${ownerId}` : ':all');
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
             return JSON.parse(cached);
         }
 
-        const result = await this.warehouseVisitRepository.findAllBookings(query);
+        const result = await this.warehouseVisitRepository.findAllBookings({ ...query, createdBy: ownerId });
 
         // Set cache
         const ttl = this.configService.get<number>('REDIS_WAREHOUSE_VISIT_LIST_CACHE_TTL', 60);
@@ -55,13 +55,24 @@ export class WarehouseVisitService {
         return result;
     }
 
-    async findBookingById(id: string, lang: string): Promise<WarehouseVisitBooking> {
+    async findBookingById(id: string, lang: string, ownerId?: string): Promise<WarehouseVisitBooking> {
         // Cache check
         const cached = await this.redisService.getWarehouseVisitCache<WarehouseVisitBooking>(id);
-        if (cached) return cached;
+        if (cached) {
+            // Check ownership if ownerId is provided
+            if (ownerId && cached.created_by !== ownerId) {
+                throw new NotFoundException(await this.i18n.translate('warehouse_visit.errors.booking_not_found', { lang }));
+            }
+            return cached;
+        }
 
         const booking = await this.warehouseVisitRepository.findBookingById(id);
         if (!booking) {
+            throw new NotFoundException(await this.i18n.translate('warehouse_visit.errors.booking_not_found', { lang }));
+        }
+
+        // Check ownership if ownerId is provided
+        if (ownerId && booking.created_by !== ownerId) {
             throw new NotFoundException(await this.i18n.translate('warehouse_visit.errors.booking_not_found', { lang }));
         }
 
@@ -71,8 +82,8 @@ export class WarehouseVisitService {
         return booking;
     }
 
-    async updateBooking(id: string, dto: UpdateWarehouseVisitBookingDto, userId: string, lang: string): Promise<WarehouseVisitBooking> {
-        const booking = await this.findBookingById(id, lang);
+    async updateBooking(id: string, dto: UpdateWarehouseVisitBookingDto, userId: string, lang: string, ownerId?: string): Promise<WarehouseVisitBooking> {
+        const booking = await this.findBookingById(id, lang, ownerId);
 
         const updateData: Prisma.WarehouseVisitBookingUpdateInput = {
             ...dto,
@@ -102,8 +113,8 @@ export class WarehouseVisitService {
         return updated;
     }
 
-    async rescheduleBooking(id: string, newDate: string, newTimeStart: string, newTimeEnd: string | undefined, userId: string, lang: string, reason?: string): Promise<WarehouseVisitBooking> {
-        const oldBooking = await this.findBookingById(id, lang);
+    async rescheduleBooking(id: string, newDate: string, newTimeStart: string, newTimeEnd: string | undefined, userId: string, lang: string, reason?: string, ownerId?: string): Promise<WarehouseVisitBooking> {
+        const oldBooking = await this.findBookingById(id, lang, ownerId);
 
         if (['CANCELLED', 'COMPLETED', 'NO_SHOW'].includes(oldBooking.status)) {
             // Cannot reschedule finalized bookings? Or maybe allowed? assuming only PENDING/CONFIRMED can be rescheduled
@@ -158,8 +169,8 @@ export class WarehouseVisitService {
         return newBooking;
     }
 
-    async softDeleteBooking(id: string, userId: string, lang: string): Promise<void> {
-        const booking = await this.findBookingById(id, lang);
+    async softDeleteBooking(id: string, userId: string, lang: string, ownerId?: string): Promise<void> {
+        const booking = await this.findBookingById(id, lang, ownerId);
         await this.warehouseVisitRepository.softDeleteBooking(id, userId);
 
         // Invalidate cache

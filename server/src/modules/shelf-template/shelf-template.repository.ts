@@ -151,7 +151,12 @@ export class ShelfTemplateRepository {
                 id: true,
                 row_template_id: true,
                 row_template: {
-                    select: { warehouse_template_id: true },
+                    select: {
+                        warehouse_template_id: true,
+                        warehouse_template: {
+                            select: { created_by: true },
+                        },
+                    },
                 },
             },
         });

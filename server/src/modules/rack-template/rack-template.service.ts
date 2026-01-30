@@ -112,7 +112,11 @@ export class RackTemplateService {
         await this.invalidateParentCaches(row.warehouse_template_id, rowTemplateId);
 
         // Log
-        this.systemLogService.info('RackTemplate', 'CREATE', `Tạo kệ: ${rack.name}`, {
+        const logMessage = await this.i18n.translate('rack-template.logs.created', {
+            lang,
+            args: { name: rack.name },
+        });
+        this.systemLogService.info('RackTemplate', 'CREATE', logMessage, {
             userId,
             metaData: { rackId: rack.id, rowTemplateId, name: rack.name, code: rack.code },
         });
@@ -137,10 +141,18 @@ export class RackTemplateService {
         rowTemplateId: string,
         query: QueryRackTemplateDto,
         lang: string,
+        ownerId?: string,
     ): Promise<IPaginatedResponse<any>> {
         // Kiểm tra row template tồn tại
         const row = await this.repository.rowTemplateExists(rowTemplateId);
         if (!row) {
+            throw new NotFoundException(
+                this.i18n.t('rack-template.errors.row_template_not_found', { lang }),
+            );
+        }
+
+        // Check ownership if ownerId is provided
+        if (ownerId && row.warehouse_template.created_by !== ownerId) {
             throw new NotFoundException(
                 this.i18n.t('rack-template.errors.row_template_not_found', { lang }),
             );
@@ -164,7 +176,7 @@ export class RackTemplateService {
     /**
      * Lấy chi tiết RackTemplate
      */
-    async findById(id: string, lang: string) {
+    async findById(id: string, lang: string, ownerId?: string) {
         // Check cache
         const cacheKey = this.getCacheKey(id);
         const cached = await this.redisService.get(cacheKey);
@@ -177,6 +189,16 @@ export class RackTemplateService {
             throw new NotFoundException(
                 this.i18n.t('rack-template.errors.not_found', { lang }),
             );
+        }
+
+        // Check ownership if ownerId is provided
+        if (ownerId) {
+            const row = await this.repository.rowTemplateExists(rack.row_template_id);
+            if (!row || row.warehouse_template.created_by !== ownerId) {
+                throw new NotFoundException(
+                    this.i18n.t('rack-template.errors.not_found', { lang }),
+                );
+            }
         }
 
         // Set cache
@@ -193,12 +215,23 @@ export class RackTemplateService {
         dto: UpdateRackTemplateDto,
         userId: string,
         lang: string,
+        ownerId?: string,
     ) {
         const rack = await this.repository.findById(id);
         if (!rack) {
             throw new NotFoundException(
                 this.i18n.t('rack-template.errors.not_found', { lang }),
             );
+        }
+
+        // Check ownership if ownerId is provided
+        if (ownerId) {
+            const row = await this.repository.rowTemplateExists(rack.row_template_id);
+            if (!row || row.warehouse_template.created_by !== ownerId) {
+                throw new NotFoundException(
+                    this.i18n.t('rack-template.errors.not_found', { lang }),
+                );
+            }
         }
 
         // Kiểm tra code trùng nếu đang cập nhật code
@@ -275,7 +308,11 @@ export class RackTemplateService {
         }
 
         // Log
-        this.systemLogService.info('RackTemplate', 'UPDATE', `Cập nhật kệ: ${updated.name}`, {
+        const logMessage = await this.i18n.translate('rack-template.logs.updated', {
+            lang,
+            args: { name: updated.name },
+        });
+        this.systemLogService.info('RackTemplate', 'UPDATE', logMessage, {
             userId,
             metaData: { rackId: id, updatedFields: Object.keys(dto) },
         });
@@ -296,12 +333,22 @@ export class RackTemplateService {
     /**
      * Xóa RackTemplate
      */
-    async delete(id: string, userId: string, lang: string) {
+    async delete(id: string, userId: string, lang: string, ownerId?: string) {
         const rack = await this.repository.findById(id);
         if (!rack) {
             throw new NotFoundException(
                 this.i18n.t('rack-template.errors.not_found', { lang }),
             );
+        }
+
+        // Check ownership if ownerId is provided
+        if (ownerId) {
+            const row = await this.repository.rowTemplateExists(rack.row_template_id);
+            if (!row || row.warehouse_template.created_by !== ownerId) {
+                throw new NotFoundException(
+                    this.i18n.t('rack-template.errors.not_found', { lang }),
+                );
+            }
         }
 
         await this.repository.softDelete(id, userId);
@@ -317,7 +364,11 @@ export class RackTemplateService {
         }
 
         // Log
-        this.systemLogService.info('RackTemplate', 'DELETE', `Xóa kệ: ${rack.name}`, {
+        const logMessage = await this.i18n.translate('rack-template.logs.deleted', {
+            lang,
+            args: { name: rack.name },
+        });
+        this.systemLogService.info('RackTemplate', 'DELETE', logMessage, {
             userId,
             metaData: { rackId: id, name: rack.name },
         });
@@ -353,8 +404,12 @@ export class RackTemplateService {
         ]);
 
         // Log
-        racks.forEach(rack => {
-            this.systemLogService.info('RackTemplate', 'DELETE', `Xóa kệ: ${rack.name}`, {
+        racks.forEach(async (rack) => {
+            const logMessage = await this.i18n.translate('rack-template.logs.deleted', {
+                lang,
+                args: { name: rack.name },
+            });
+            this.systemLogService.info('RackTemplate', 'DELETE', logMessage, {
                 userId,
                 metaData: { rackId: rack.id, name: rack.name },
             });

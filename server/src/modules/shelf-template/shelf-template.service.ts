@@ -87,7 +87,11 @@ export class ShelfTemplateService {
         );
 
         // Log
-        this.systemLogService.info('ShelfTemplate', 'CREATE', `Tạo tầng: ${shelf.name}`, {
+        const logMessage = await this.i18n.translate('shelf-template.logs.created', {
+            lang,
+            args: { name: shelf.name },
+        });
+        this.systemLogService.info('ShelfTemplate', 'CREATE', logMessage, {
             userId,
             metaData: { shelfId: shelf.id, rackTemplateId, name: shelf.name, code: shelf.code },
         });
@@ -112,10 +116,18 @@ export class ShelfTemplateService {
         rackTemplateId: string,
         query: QueryShelfTemplateDto,
         lang: string,
+        ownerId?: string,
     ): Promise<IPaginatedResponse<any>> {
         // Kiểm tra rack template tồn tại
         const rack = await this.repository.rackTemplateExists(rackTemplateId);
         if (!rack) {
+            throw new NotFoundException(
+                this.i18n.t('shelf-template.errors.rack_template_not_found', { lang }),
+            );
+        }
+
+        // Check ownership if ownerId is provided
+        if (ownerId && rack.row_template.warehouse_template.created_by !== ownerId) {
             throw new NotFoundException(
                 this.i18n.t('shelf-template.errors.rack_template_not_found', { lang }),
             );
@@ -139,7 +151,7 @@ export class ShelfTemplateService {
     /**
      * Lấy chi tiết ShelfTemplate
      */
-    async findById(id: string, lang: string) {
+    async findById(id: string, lang: string, ownerId?: string) {
         // Check cache
         const cacheKey = this.getCacheKey(id);
         const cached = await this.redisService.get(cacheKey);
@@ -152,6 +164,16 @@ export class ShelfTemplateService {
             throw new NotFoundException(
                 this.i18n.t('shelf-template.errors.not_found', { lang }),
             );
+        }
+
+        // Check ownership if ownerId is provided
+        if (ownerId) {
+            const rack = await this.repository.rackTemplateExists(shelf.rack_template_id);
+            if (!rack || rack.row_template.warehouse_template.created_by !== ownerId) {
+                throw new NotFoundException(
+                    this.i18n.t('shelf-template.errors.not_found', { lang }),
+                );
+            }
         }
 
         // Set cache
@@ -168,12 +190,23 @@ export class ShelfTemplateService {
         dto: UpdateShelfTemplateDto,
         userId: string,
         lang: string,
+        ownerId?: string,
     ) {
         const shelf = await this.repository.findById(id);
         if (!shelf) {
             throw new NotFoundException(
                 this.i18n.t('shelf-template.errors.not_found', { lang }),
             );
+        }
+
+        // Check ownership if ownerId is provided
+        if (ownerId) {
+            const rack = await this.repository.rackTemplateExists(shelf.rack_template_id);
+            if (!rack || rack.row_template.warehouse_template.created_by !== ownerId) {
+                throw new NotFoundException(
+                    this.i18n.t('shelf-template.errors.not_found', { lang }),
+                );
+            }
         }
 
         // Kiểm tra code trùng nếu đang cập nhật code
@@ -212,7 +245,11 @@ export class ShelfTemplateService {
         }
 
         // Log
-        this.systemLogService.info('ShelfTemplate', 'UPDATE', `Cập nhật tầng: ${updated.name}`, {
+        const logMessage = await this.i18n.translate('shelf-template.logs.updated', {
+            lang,
+            args: { name: updated.name },
+        });
+        this.systemLogService.info('ShelfTemplate', 'UPDATE', logMessage, {
             userId,
             metaData: { shelfId: id, updatedFields: Object.keys(dto) },
         });
@@ -233,12 +270,22 @@ export class ShelfTemplateService {
     /**
      * Xóa ShelfTemplate
      */
-    async delete(id: string, userId: string, lang: string) {
+    async delete(id: string, userId: string, lang: string, ownerId?: string) {
         const shelf = await this.repository.findById(id);
         if (!shelf) {
             throw new NotFoundException(
                 this.i18n.t('shelf-template.errors.not_found', { lang }),
             );
+        }
+
+        // Check ownership if ownerId is provided
+        if (ownerId) {
+            const rack = await this.repository.rackTemplateExists(shelf.rack_template_id);
+            if (!rack || rack.row_template.warehouse_template.created_by !== ownerId) {
+                throw new NotFoundException(
+                    this.i18n.t('shelf-template.errors.not_found', { lang }),
+                );
+            }
         }
 
         await this.repository.softDelete(id, userId);
@@ -258,7 +305,11 @@ export class ShelfTemplateService {
         }
 
         // Log
-        this.systemLogService.info('ShelfTemplate', 'DELETE', `Xóa tầng: ${shelf.name}`, {
+        const logMessage = await this.i18n.translate('shelf-template.logs.deleted', {
+            lang,
+            args: { name: shelf.name },
+        });
+        this.systemLogService.info('ShelfTemplate', 'DELETE', logMessage, {
             userId,
             metaData: { shelfId: id, name: shelf.name },
         });
@@ -294,8 +345,12 @@ export class ShelfTemplateService {
         ]);
 
         // Log
-        shelves.forEach(shelf => {
-            this.systemLogService.info('ShelfTemplate', 'DELETE', `Xóa tầng: ${shelf.name}`, {
+        shelves.forEach(async (shelf) => {
+            const logMessage = await this.i18n.translate('shelf-template.logs.deleted', {
+                lang,
+                args: { name: shelf.name },
+            });
+            this.systemLogService.info('ShelfTemplate', 'DELETE', logMessage, {
                 userId,
                 metaData: { shelfId: shelf.id, name: shelf.name },
             });

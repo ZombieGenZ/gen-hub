@@ -14,6 +14,11 @@
         "delete_failed": "Không thể xóa ô",
         "position_out_of_bounds": "Vị trí ô '{name}' vượt quá giới hạn kho (tối đa: {maxLength}m x {maxWidth}m)"
     },
+    "logs": {
+        "created": "Tạo ô: {name}",
+        "updated": "Cập nhật ô: {name}",
+        "deleted": "Xóa ô: {name}"
+    },
     "validation": {
         "name_required": "Tên ô không được để trống",
         "name_string": "Tên ô phải là chuỗi",

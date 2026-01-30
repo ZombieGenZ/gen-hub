@@ -14,6 +14,11 @@
         "delete_failed": "Failed to delete block",
         "position_out_of_bounds": "Block '{name}' position exceeds warehouse limits (max: {maxLength}m x {maxWidth}m)"
     },
+    "logs": {
+        "created": "Block created: {name}",
+        "updated": "Block updated: {name}",
+        "deleted": "Block deleted: {name}"
+    },
     "validation": {
         "name_required": "Block name is required",
         "name_string": "Block name must be a string",

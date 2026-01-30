@@ -104,7 +104,11 @@ export class BlockTemplateService {
         );
 
         // Log
-        this.systemLogService.info('BlockTemplate', 'CREATE', `Tạo ô: ${block.name}`, {
+        const logMessage = await this.i18n.translate('block-template.logs.created', {
+            lang,
+            args: { name: block.name },
+        });
+        this.systemLogService.info('BlockTemplate', 'CREATE', logMessage, {
             userId,
             metaData: { blockId: block.id, shelfTemplateId, name: block.name, code: block.code },
         });
@@ -129,10 +133,18 @@ export class BlockTemplateService {
         shelfTemplateId: string,
         query: QueryBlockTemplateDto,
         lang: string,
+        ownerId?: string,
     ): Promise<IPaginatedResponse<any>> {
         // Kiểm tra shelf template tồn tại
         const shelf = await this.repository.shelfTemplateExists(shelfTemplateId);
         if (!shelf) {
+            throw new NotFoundException(
+                this.i18n.t('block-template.errors.shelf_template_not_found', { lang }),
+            );
+        }
+
+        // Check ownership if ownerId is provided
+        if (ownerId && shelf.rack_template.row_template.warehouse_template.created_by !== ownerId) {
             throw new NotFoundException(
                 this.i18n.t('block-template.errors.shelf_template_not_found', { lang }),
             );
@@ -156,7 +168,7 @@ export class BlockTemplateService {
     /**
      * Lấy chi tiết BlockTemplate
      */
-    async findById(id: string, lang: string) {
+    async findById(id: string, lang: string, ownerId?: string) {
         // Check cache
         const cacheKey = this.getCacheKey(id);
         const cached = await this.redisService.get(cacheKey);
@@ -169,6 +181,16 @@ export class BlockTemplateService {
             throw new NotFoundException(
                 this.i18n.t('block-template.errors.not_found', { lang }),
             );
+        }
+
+        // Check ownership if ownerId is provided
+        if (ownerId) {
+            const shelf = await this.repository.shelfTemplateExists(block.shelf_template_id);
+            if (!shelf || shelf.rack_template.row_template.warehouse_template.created_by !== ownerId) {
+                throw new NotFoundException(
+                    this.i18n.t('block-template.errors.not_found', { lang }),
+                );
+            }
         }
 
         // Set cache
@@ -185,12 +207,23 @@ export class BlockTemplateService {
         dto: UpdateBlockTemplateDto,
         userId: string,
         lang: string,
+        ownerId?: string,
     ) {
         const block = await this.repository.findById(id);
         if (!block) {
             throw new NotFoundException(
                 this.i18n.t('block-template.errors.not_found', { lang }),
             );
+        }
+
+        // Check ownership if ownerId is provided
+        if (ownerId) {
+            const shelf = await this.repository.shelfTemplateExists(block.shelf_template_id);
+            if (!shelf || shelf.rack_template.row_template.warehouse_template.created_by !== ownerId) {
+                throw new NotFoundException(
+                    this.i18n.t('block-template.errors.not_found', { lang }),
+                );
+            }
         }
 
         // Kiểm tra code trùng nếu đang cập nhật code
@@ -251,7 +284,11 @@ export class BlockTemplateService {
         }
 
         // Log
-        this.systemLogService.info('BlockTemplate', 'UPDATE', `Cập nhật ô: ${updated.name}`, {
+        const logMessage = await this.i18n.translate('block-template.logs.updated', {
+            lang,
+            args: { name: updated.name },
+        });
+        this.systemLogService.info('BlockTemplate', 'UPDATE', logMessage, {
             userId,
             metaData: { blockId: id, updatedFields: Object.keys(dto) },
         });
@@ -272,12 +309,22 @@ export class BlockTemplateService {
     /**
      * Xóa BlockTemplate
      */
-    async delete(id: string, userId: string, lang: string) {
+    async delete(id: string, userId: string, lang: string, ownerId?: string) {
         const block = await this.repository.findById(id);
         if (!block) {
             throw new NotFoundException(
                 this.i18n.t('block-template.errors.not_found', { lang }),
             );
+        }
+
+        // Check ownership if ownerId is provided
+        if (ownerId) {
+            const shelf = await this.repository.shelfTemplateExists(block.shelf_template_id);
+            if (!shelf || shelf.rack_template.row_template.warehouse_template.created_by !== ownerId) {
+                throw new NotFoundException(
+                    this.i18n.t('block-template.errors.not_found', { lang }),
+                );
+            }
         }
 
         await this.repository.softDelete(id, userId);
@@ -298,7 +345,11 @@ export class BlockTemplateService {
         }
 
         // Log
-        this.systemLogService.info('BlockTemplate', 'DELETE', `Xóa ô: ${block.name}`, {
+        const logMessage = await this.i18n.translate('block-template.logs.deleted', {
+            lang,
+            args: { name: block.name },
+        });
+        this.systemLogService.info('BlockTemplate', 'DELETE', logMessage, {
             userId,
             metaData: { blockId: id, name: block.name },
         });
@@ -334,8 +385,12 @@ export class BlockTemplateService {
         ]);
 
         // Log
-        blocks.forEach(block => {
-            this.systemLogService.info('BlockTemplate', 'DELETE', `Xóa ô: ${block.name}`, {
+        blocks.forEach(async (block) => {
+            const logMessage = await this.i18n.translate('block-template.logs.deleted', {
+                lang,
+                args: { name: block.name },
+            });
+            this.systemLogService.info('BlockTemplate', 'DELETE', logMessage, {
                 userId,
                 metaData: { blockId: block.id, name: block.name },
             });

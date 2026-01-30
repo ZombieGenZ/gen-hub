@@ -126,17 +126,22 @@ export class RentalDurationTierService {
         return (await this.repository.findByIdWithGifts(tier.id))!;
     }
 
-    async findAll(query: QueryRentalDurationTierDto) {
+    async findAll(query: QueryRentalDurationTierDto, createdBy?: string) {
         const { limit = 10, offset = 0, keywords, is_active } = query;
 
-        // Check cache
-        const cacheKey = this.getListCacheKey(query);
+        // Check cache (include createdBy in cache key for proper caching)
+        const cacheKey = this.getListCacheKey(query) + (createdBy ? `:user:${createdBy}` : ':all');
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
             return JSON.parse(cached);
         }
 
         const where: any = { is_deleted: false };
+
+        // Filter by created_by if user doesn't have .list.all permission
+        if (createdBy) {
+            where.created_by = createdBy;
+        }
 
         if (is_active !== undefined) {
             where.is_active = is_active;
@@ -167,15 +172,21 @@ export class RentalDurationTierService {
         return result;
     }
 
-    async findById(id: string, lang: string) {
+    async findById(id: string, lang: string, ownerId?: string) {
         // Check cache
-        const cacheKey = this.getCacheKey(id);
+        const cacheKey = this.getCacheKey(id) + (ownerId ? `:user:${ownerId}` : '');
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
             return JSON.parse(cached);
         }
 
-        const tier = await this.repository.findById(id);
+        const where: any = { id, is_deleted: false };
+        // Filter by created_by if user doesn't have .read.all permission
+        if (ownerId) {
+            where.created_by = ownerId;
+        }
+
+        const tier = await this.repository.findFirst(where);
         if (!tier) {
             throw new NotFoundException(
                 this.i18n.t('rental-duration-tier.errors.not_found', { lang }),
@@ -202,8 +213,14 @@ export class RentalDurationTierService {
         return tiers;
     }
 
-    async update(id: string, dto: UpdateRentalDurationTierDto, userId: string, lang: string) {
-        const tier = await this.repository.findById(id);
+    async update(id: string, dto: UpdateRentalDurationTierDto, userId: string, lang: string, ownerId?: string) {
+        const where: any = { id, is_deleted: false };
+        // Filter by created_by if user doesn't have .update.all permission
+        if (ownerId) {
+            where.created_by = ownerId;
+        }
+
+        const tier = await this.repository.findFirst(where);
         if (!tier) {
             throw new NotFoundException(
                 this.i18n.t('rental-duration-tier.errors.not_found', { lang }),

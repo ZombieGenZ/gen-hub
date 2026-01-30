@@ -14,6 +14,11 @@
         "delete_failed": "Không thể xóa dãy",
         "position_out_of_bounds": "Vị trí dãy '{name}' vượt quá giới hạn kho (tối đa: {maxLength}m x {maxWidth}m)"
     },
+    "logs": {
+        "created": "Tạo dãy: {name}",
+        "updated": "Cập nhật dãy: {name}",
+        "deleted": "Xóa dãy: {name}"
+    },
     "validation": {
         "name_required": "Tên dãy không được để trống",
         "name_string": "Tên dãy phải là chuỗi",

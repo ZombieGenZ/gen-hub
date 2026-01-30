@@ -15,6 +15,11 @@
         "position_out_of_bounds": "Vị trí kệ '{name}' vượt quá giới hạn kho (tối đa: {maxLength}m x {maxWidth}m)",
         "racks_overlap": "Kệ '{name}' bị đè lên kệ '{otherRack}' trong cùng dãy"
     },
+    "logs": {
+        "created": "Tạo kệ: {name}",
+        "updated": "Cập nhật kệ: {name}",
+        "deleted": "Xóa kệ: {name}"
+    },
     "validation": {
         "name_required": "Tên kệ không được để trống",
         "name_string": "Tên kệ phải là chuỗi",

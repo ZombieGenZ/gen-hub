@@ -31,10 +31,12 @@ import { DeleteManyDto } from '../../common/dto';
 import { JwtAuthGuard, PermissionGuard } from '../../common/guards';
 import {
   RequirePermission,
+  RequireAnyPermission,
   CurrentUser,
   ApiAuthResponses,
   ApiValidationErrorResponse,
 } from '../../common/decorators';
+import { PrismaService } from '../../prisma/prisma.service';
 import {
   CreatedResponse,
   UpdatedResponse,
@@ -45,7 +47,52 @@ import {
 @ApiTags('Row Templates')
 @Controller('warehouse-templates/:warehouseTemplateId/rows')
 export class RowTemplateController {
-  constructor(private readonly service: RowTemplateService) {}
+  constructor(
+    private readonly service: RowTemplateService,
+    private readonly prisma: PrismaService,
+  ) { }
+
+  /**
+   * Kiểm tra user có permission cụ thể không
+   */
+  private async hasPermission(userId: string, permissionKey: string): Promise<boolean> {
+    const user = await this.prisma.user.findFirst({
+      where: { id: userId },
+      include: {
+        system_roles: {
+          where: { is_deleted: false, is_active: true },
+          include: {
+            role: {
+              include: {
+                permissions: {
+                  where: { is_deleted: false, is_active: true },
+                  include: { permission: true },
+                },
+              },
+            },
+          },
+        },
+        system_permissions: {
+          where: { is_deleted: false, is_active: true },
+          include: { permission: true },
+        },
+      },
+    });
+
+    if (!user) return false;
+
+    // Check direct permissions
+    const hasDirectPerm = user.system_permissions.some(
+      (p) => p.permission.key === permissionKey,
+    );
+    if (hasDirectPerm) return true;
+
+    // Check role permissions
+    const hasRolePerm = user.system_roles.some((ur) =>
+      ur.role.permissions.some((rp) => rp.permission.key === permissionKey),
+    );
+    return hasRolePerm;
+  }
 
   @Post()
   @ApiBearerAuth('JWT-auth')
@@ -258,7 +305,7 @@ export class RowTemplateController {
   @Get()
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @RequirePermission('row-template.list')
+  @RequireAnyPermission('row-template.list', 'row-template.list.all')
   @ApiOperation({
     summary: 'Lấy danh sách dãy của warehouse template',
     description:
@@ -375,7 +422,7 @@ export class RowTemplateController {
   @Get(':id')
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @RequirePermission('row-template.read')
+  @RequireAnyPermission('row-template.read', 'row-template.read.all')
   @ApiOperation({
     summary: 'Lấy chi tiết dãy',
     description:
@@ -507,7 +554,7 @@ export class RowTemplateController {
   @Put(':id')
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @RequirePermission('row-template.update')
+  @RequireAnyPermission('row-template.update', 'row-template.update.all')
   @ApiOperation({
     summary: 'Cập nhật dãy',
     description:
@@ -660,7 +707,7 @@ export class RowTemplateController {
   @Delete('delete/many')
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @RequirePermission('row-template.delete')
+  @RequireAnyPermission('row-template.delete', 'row-template.delete.all')
   @ApiOperation({
     summary: 'Xóa nhiều dãy',
     description:
@@ -728,7 +775,7 @@ export class RowTemplateController {
   @Delete(':id')
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @RequirePermission('row-template.delete')
+  @RequireAnyPermission('row-template.delete', 'row-template.delete.all')
   @ApiOperation({
     summary: 'Xóa dãy',
     description: 'Xóa mềm một dãy. Yêu cầu quyền `row-template.delete`.',

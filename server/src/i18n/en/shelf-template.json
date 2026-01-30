@@ -13,6 +13,11 @@
         "update_failed": "Failed to update shelf",
         "delete_failed": "Failed to delete shelf"
     },
+    "logs": {
+        "created": "Shelf created: {name}",
+        "updated": "Shelf updated: {name}",
+        "deleted": "Shelf deleted: {name}"
+    },
     "validation": {
         "name_required": "Shelf name is required",
         "name_string": "Shelf name must be a string",

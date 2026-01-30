@@ -53,6 +53,10 @@ export class RentalDurationTierRepository {
         });
     }
 
+    async findFirst(where: Prisma.RentalDurationTierWhereInput) {
+        return this.prisma.rentalDurationTier.findFirst({ where });
+    }
+
     async findByDuration(durationValue: number, durationUnit: string, excludeId?: string) {
         return this.prisma.rentalDurationTier.findFirst({
             where: {

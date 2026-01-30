@@ -13,6 +13,11 @@
         "update_failed": "Không thể cập nhật tầng",
         "delete_failed": "Không thể xóa tầng"
     },
+    "logs": {
+        "created": "Tạo tầng: {name}",
+        "updated": "Cập nhật tầng: {name}",
+        "deleted": "Xóa tầng: {name}"
+    },
     "validation": {
         "name_required": "Tên tầng không được để trống",
         "name_string": "Tên tầng phải là chuỗi",

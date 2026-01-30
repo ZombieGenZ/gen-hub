@@ -31,10 +31,12 @@ import { DeleteManyDto } from '../../common/dto';
 import { JwtAuthGuard, PermissionGuard } from '../../common/guards';
 import {
   RequirePermission,
+  RequireAnyPermission,
   CurrentUser,
   ApiAuthResponses,
   ApiValidationErrorResponse,
 } from '../../common/decorators';
+import { PrismaService } from '../../prisma/prisma.service';
 import {
   CreatedResponse,
   UpdatedResponse,
@@ -47,7 +49,50 @@ import {
   'warehouse-templates/:warehouseTemplateId/rows/:rowId/racks/:rackId/shelves',
 )
 export class ShelfTemplateController {
-  constructor(private readonly service: ShelfTemplateService) {}
+  constructor(
+    private readonly service: ShelfTemplateService,
+    private readonly prisma: PrismaService,
+  ) { }
+
+  /**
+   * Kiểm tra user có permission cụ thể không
+   */
+  private async hasPermission(userId: string, permissionKey: string): Promise<boolean> {
+    const user = await this.prisma.user.findFirst({
+      where: { id: userId },
+      include: {
+        system_roles: {
+          where: { is_deleted: false, is_active: true },
+          include: {
+            role: {
+              include: {
+                permissions: {
+                  where: { is_deleted: false, is_active: true },
+                  include: { permission: true },
+                },
+              },
+            },
+          },
+        },
+        system_permissions: {
+          where: { is_deleted: false, is_active: true },
+          include: { permission: true },
+        },
+      },
+    });
+
+    if (!user) return false;
+
+    const hasDirectPerm = user.system_permissions.some(
+      (p) => p.permission.key === permissionKey,
+    );
+    if (hasDirectPerm) return true;
+
+    const hasRolePerm = user.system_roles.some((ur) =>
+      ur.role.permissions.some((rp) => rp.permission.key === permissionKey),
+    );
+    return hasRolePerm;
+  }
 
   @Post()
   @ApiOperation({
@@ -308,7 +353,7 @@ export class ShelfTemplateController {
   @ApiAuthResponses()
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @RequirePermission('shelf-template.list')
+  @RequireAnyPermission('shelf-template.list', 'shelf-template.list.all')
   async findMany(
     @Param('warehouseTemplateId', ParseUUIDPipe) warehouseTemplateId: string,
     @Param('rowId', ParseUUIDPipe) rowId: string,
@@ -423,7 +468,7 @@ export class ShelfTemplateController {
   @ApiAuthResponses()
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @RequirePermission('shelf-template.read')
+  @RequireAnyPermission('shelf-template.read', 'shelf-template.read.all')
   async findById(
     @Param('warehouseTemplateId', ParseUUIDPipe) warehouseTemplateId: string,
     @Param('rowId', ParseUUIDPipe) rowId: string,
@@ -567,7 +612,7 @@ export class ShelfTemplateController {
   @ApiValidationErrorResponse()
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @RequirePermission('shelf-template.update')
+  @RequireAnyPermission('shelf-template.update', 'shelf-template.update.all')
   async update(
     @Param('warehouseTemplateId', ParseUUIDPipe) warehouseTemplateId: string,
     @Param('rowId', ParseUUIDPipe) rowId: string,
@@ -653,7 +698,7 @@ export class ShelfTemplateController {
   @ApiValidationErrorResponse()
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @RequirePermission('shelf-template.delete')
+  @RequireAnyPermission('shelf-template.delete', 'shelf-template.delete.all')
   async deleteMany(
     @Param('warehouseTemplateId', ParseUUIDPipe) warehouseTemplateId: string,
     @Param('rowId', ParseUUIDPipe) rowId: string,
@@ -728,7 +773,7 @@ export class ShelfTemplateController {
   @ApiAuthResponses()
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @RequirePermission('shelf-template.delete')
+  @RequireAnyPermission('shelf-template.delete', 'shelf-template.delete.all')
   async delete(
     @Param('warehouseTemplateId', ParseUUIDPipe) warehouseTemplateId: string,
     @Param('rowId', ParseUUIDPipe) rowId: string,

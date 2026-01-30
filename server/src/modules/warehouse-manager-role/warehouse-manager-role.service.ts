@@ -111,7 +111,8 @@ export class WarehouseManagerRoleService {
         const permissions = await this.warehouseManagerRoleRepository.findAllPermissions();
 
         // Set cache (Long TTL for permissions as they change rarely)
-        await this.redisService.set(cacheKey, JSON.stringify(permissions), 3600);
+        const ttl = this.configService.get<number>('REDIS_WAREHOUSE_MANAGER_PERMISSION_CACHE_TTL', 3600);
+        await this.redisService.set(cacheKey, JSON.stringify(permissions), ttl);
 
         return permissions;
     }

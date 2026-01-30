@@ -113,7 +113,11 @@ export class RowTemplateService {
         await this.invalidateListCache(warehouseTemplateId);
 
         // Log
-        this.systemLogService.info('RowTemplate', 'CREATE', `Tạo dãy: ${row.name}`, {
+        const logMessage = await this.i18n.translate('row-template.logs.created', {
+            lang,
+            args: { name: row.name },
+        });
+        this.systemLogService.info('RowTemplate', 'CREATE', logMessage, {
             userId,
             metaData: { rowId: row.id, warehouseTemplateId, name: row.name, code: row.code },
         });
@@ -138,10 +142,18 @@ export class RowTemplateService {
         warehouseTemplateId: string,
         query: QueryRowTemplateDto,
         lang: string,
+        ownerId?: string,
     ): Promise<IPaginatedResponse<any>> {
         // Kiểm tra warehouse template tồn tại
         const warehouse = await this.repository.warehouseTemplateExists(warehouseTemplateId);
         if (!warehouse) {
+            throw new NotFoundException(
+                this.i18n.t('row-template.errors.warehouse_template_not_found', { lang }),
+            );
+        }
+
+        // Check ownership if ownerId is provided
+        if (ownerId && warehouse.created_by !== ownerId) {
             throw new NotFoundException(
                 this.i18n.t('row-template.errors.warehouse_template_not_found', { lang }),
             );
@@ -165,7 +177,7 @@ export class RowTemplateService {
     /**
      * Lấy chi tiết RowTemplate
      */
-    async findById(id: string, lang: string) {
+    async findById(id: string, lang: string, ownerId?: string) {
         // Check cache
         const cacheKey = this.getCacheKey(id);
         const cached = await this.redisService.get(cacheKey);
@@ -178,6 +190,16 @@ export class RowTemplateService {
             throw new NotFoundException(
                 this.i18n.t('row-template.errors.not_found', { lang }),
             );
+        }
+
+        // Check ownership if ownerId is provided
+        if (ownerId) {
+            const warehouse = await this.repository.warehouseTemplateExists(row.warehouse_template_id);
+            if (!warehouse || warehouse.created_by !== ownerId) {
+                throw new NotFoundException(
+                    this.i18n.t('row-template.errors.not_found', { lang }),
+                );
+            }
         }
 
         // Set cache
@@ -194,12 +216,23 @@ export class RowTemplateService {
         dto: UpdateRowTemplateDto,
         userId: string,
         lang: string,
+        ownerId?: string,
     ) {
         const row = await this.repository.findById(id);
         if (!row) {
             throw new NotFoundException(
                 this.i18n.t('row-template.errors.not_found', { lang }),
             );
+        }
+
+        // Check ownership if ownerId is provided
+        if (ownerId) {
+            const warehouse = await this.repository.warehouseTemplateExists(row.warehouse_template_id);
+            if (!warehouse || warehouse.created_by !== ownerId) {
+                throw new NotFoundException(
+                    this.i18n.t('row-template.errors.not_found', { lang }),
+                );
+            }
         }
 
         // Kiểm tra code trùng nếu đang cập nhật code
@@ -264,7 +297,11 @@ export class RowTemplateService {
         await this.invalidateListCache(row.warehouse_template_id);
 
         // Log
-        this.systemLogService.info('RowTemplate', 'UPDATE', `Cập nhật dãy: ${updated.name}`, {
+        const logMessage = await this.i18n.translate('row-template.logs.updated', {
+            lang,
+            args: { name: updated.name },
+        });
+        this.systemLogService.info('RowTemplate', 'UPDATE', logMessage, {
             userId,
             metaData: { rowId: id, updatedFields: Object.keys(dto) },
         });
@@ -285,12 +322,22 @@ export class RowTemplateService {
     /**
      * Xóa RowTemplate
      */
-    async delete(id: string, userId: string, lang: string) {
+    async delete(id: string, userId: string, lang: string, ownerId?: string) {
         const row = await this.repository.findById(id);
         if (!row) {
             throw new NotFoundException(
                 this.i18n.t('row-template.errors.not_found', { lang }),
             );
+        }
+
+        // Check ownership if ownerId is provided
+        if (ownerId) {
+            const warehouse = await this.repository.warehouseTemplateExists(row.warehouse_template_id);
+            if (!warehouse || warehouse.created_by !== ownerId) {
+                throw new NotFoundException(
+                    this.i18n.t('row-template.errors.not_found', { lang }),
+                );
+            }
         }
 
         await this.repository.softDelete(id, userId);
@@ -300,7 +347,11 @@ export class RowTemplateService {
         await this.invalidateListCache(row.warehouse_template_id);
 
         // Log
-        this.systemLogService.info('RowTemplate', 'DELETE', `Xóa dãy: ${row.name}`, {
+        const logMessage = await this.i18n.translate('row-template.logs.deleted', {
+            lang,
+            args: { name: row.name },
+        });
+        this.systemLogService.info('RowTemplate', 'DELETE', logMessage, {
             userId,
             metaData: { rowId: id, name: row.name },
         });
@@ -361,8 +412,12 @@ export class RowTemplateService {
         ]);
 
         // Log
-        rows.forEach(row => {
-            this.systemLogService.info('RowTemplate', 'DELETE', `Xóa dãy: ${row.name}`, {
+        rows.forEach(async (row) => {
+            const logMessage = await this.i18n.translate('row-template.logs.deleted', {
+                lang,
+                args: { name: row.name },
+            });
+            this.systemLogService.info('RowTemplate', 'DELETE', logMessage, {
                 userId,
                 metaData: { rowId: row.id, name: row.name },
             });

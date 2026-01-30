@@ -246,9 +246,17 @@ export class WarehouseTemplateService {
         dto: UpdateWarehouseTemplateDto,
         userId: string,
         lang: string,
+        ownerId?: string,
     ): Promise<IWarehouseTemplateWithRelations> {
         const existing = await this.repository.findById(id);
         if (!existing) {
+            throw new NotFoundException(
+                this.i18n.t('warehouse-template.errors.not_found', { lang }),
+            );
+        }
+
+        // Check ownership if ownerId is provided (user doesn't have .update.all permission)
+        if (ownerId && existing.created_by !== ownerId) {
             throw new NotFoundException(
                 this.i18n.t('warehouse-template.errors.not_found', { lang }),
             );

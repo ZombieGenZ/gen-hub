@@ -29,11 +29,12 @@ import {
 } from './dto';
 import { DeleteManyDto } from '../../common/dto';
 import { JwtAuthGuard, PermissionGuard } from '../../common/guards';
-import { RequirePermission, CurrentUser } from '../../common/decorators';
+import { RequirePermission, RequireAnyPermission, CurrentUser } from '../../common/decorators';
 import {
   ApiAuthResponses,
   ApiValidationErrorResponse,
 } from '../../common/decorators';
+import { PrismaService } from '../../prisma/prisma.service';
 import {
   CreatedResponse,
   UpdatedResponse,
@@ -45,7 +46,55 @@ import { IRentalDurationTier, IPaginatedResponse } from './interfaces';
 @ApiTags('Rental Duration Tiers')
 @Controller('rental-duration-tiers')
 export class RentalDurationTierController {
-  constructor(private readonly service: RentalDurationTierService) {}
+  constructor(
+    private readonly service: RentalDurationTierService,
+    private readonly prisma: PrismaService,
+  ) { }
+
+  /**
+   * Check if user has specific permission
+   */
+  private async hasPermission(
+    userId: string,
+    permissionKey: string,
+  ): Promise<boolean> {
+    const user = await this.prisma.user.findFirst({
+      where: { id: userId },
+      include: {
+        system_roles: {
+          where: { is_deleted: false, is_active: true },
+          include: {
+            role: {
+              include: {
+                permissions: {
+                  where: { is_deleted: false, is_active: true },
+                  include: { permission: true },
+                },
+              },
+            },
+          },
+        },
+        system_permissions: {
+          where: { is_deleted: false, is_active: true },
+          include: { permission: true },
+        },
+      },
+    });
+
+    if (!user) return false;
+
+    // Check direct permissions
+    const hasDirectPerm = user.system_permissions.some(
+      (p) => p.permission.key === permissionKey,
+    );
+    if (hasDirectPerm) return true;
+
+    // Check role permissions
+    const hasRolePerm = user.system_roles.some((ur) =>
+      ur.role.permissions.some((rp) => rp.permission.key === permissionKey),
+    );
+    return hasRolePerm;
+  }
 
   @ApiOperation({
     summary: 'Tạo mốc thời gian thuê mới',
@@ -333,12 +382,14 @@ export class RentalDurationTierController {
   @ApiAuthResponses()
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @RequirePermission('rental-duration-tier.list')
+  @RequireAnyPermission('rental-duration-tier.list', 'rental-duration-tier.list.all')
   @Get()
   async findAll(
     @Query() query: QueryRentalDurationTierDto,
+    @CurrentUser('userId') userId: string,
   ): Promise<GetResponse<IPaginatedResponse<IRentalDurationTier>>> {
-    const result = await this.service.findAll(query);
+    const hasListAll = await this.hasPermission(userId, 'rental-duration-tier.list.all');
+    const result = await this.service.findAll(query, hasListAll ? undefined : userId);
     return new GetResponse(
       'rental-duration-tier.success.fetched',
       result,
@@ -519,13 +570,15 @@ export class RentalDurationTierController {
   @ApiAuthResponses()
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @RequirePermission('rental-duration-tier.read')
+  @RequireAnyPermission('rental-duration-tier.read', 'rental-duration-tier.read.all')
   @Get(':id')
   async findById(
     @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser('userId') userId: string,
     @I18nLang() lang: string,
   ): Promise<GetResponse<IRentalDurationTier>> {
-    const result = await this.service.findById(id, lang);
+    const hasReadAll = await this.hasPermission(userId, 'rental-duration-tier.read.all');
+    const result = await this.service.findById(id, lang, hasReadAll ? undefined : userId);
     return new GetResponse(
       'rental-duration-tier.success.fetched',
       result,
@@ -682,7 +735,7 @@ export class RentalDurationTierController {
   @ApiValidationErrorResponse()
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @RequirePermission('rental-duration-tier.update')
+  @RequireAnyPermission('rental-duration-tier.update', 'rental-duration-tier.update.all')
   @Put(':id')
   async update(
     @Param('id', ParseUUIDPipe) id: string,
@@ -690,7 +743,8 @@ export class RentalDurationTierController {
     @CurrentUser('userId') userId: string,
     @I18nLang() lang: string,
   ): Promise<UpdatedResponse<IRentalDurationTier>> {
-    const result = await this.service.update(id, dto, userId, lang);
+    const hasUpdateAll = await this.hasPermission(userId, 'rental-duration-tier.update.all');
+    const result = await this.service.update(id, dto, userId, lang, hasUpdateAll ? undefined : userId);
     return new UpdatedResponse(
       'rental-duration-tier.success.updated',
       result,

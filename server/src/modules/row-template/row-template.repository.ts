@@ -251,7 +251,7 @@ export class RowTemplateRepository {
     async warehouseTemplateExists(id: string) {
         return this.prisma.warehouseTemplate.findFirst({
             where: { id, is_deleted: false },
-            select: { id: true, length: true, width: true },
+            select: { id: true, length: true, width: true, created_by: true },
         });
     }
 

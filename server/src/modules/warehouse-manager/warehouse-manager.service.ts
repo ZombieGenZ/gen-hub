@@ -62,14 +62,14 @@ export class WarehouseManagerService {
         return newManager;
     }
 
-    async findAllManagers(query: any): Promise<IPaginatedResponse<WarehouseTemplateManager>> {
-        const cacheKey = this.redisService.getWarehouseManagerListCacheKey(query);
+    async findAllManagers(query: any, ownerId?: string): Promise<IPaginatedResponse<WarehouseTemplateManager>> {
+        const cacheKey = this.redisService.getWarehouseManagerListCacheKey(query) + (ownerId ? `:user:${ownerId}` : ':all');
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
             return JSON.parse(cached);
         }
 
-        const result = await this.warehouseManagerRepository.findAllManagers(query);
+        const result = await this.warehouseManagerRepository.findAllManagers({ ...query, createdBy: ownerId });
 
         // Set cache
         const ttl = this.configService.get<number>('REDIS_WAREHOUSE_MANAGER_LIST_CACHE_TTL', 60);
@@ -78,13 +78,24 @@ export class WarehouseManagerService {
         return result;
     }
 
-    async findManagerById(id: string, lang: string): Promise<WarehouseTemplateManager> {
+    async findManagerById(id: string, lang: string, ownerId?: string): Promise<WarehouseTemplateManager> {
         // Cache check
         const cached = await this.redisService.getWarehouseManagerCache<WarehouseTemplateManager>(id);
-        if (cached) return cached;
+        if (cached) {
+            // Check ownership if ownerId is provided
+            if (ownerId && cached.created_by !== ownerId) {
+                throw new NotFoundException(await this.i18n.translate('warehouse_manager.errors.manager_not_found', { lang }));
+            }
+            return cached;
+        }
 
         const manager = await this.warehouseManagerRepository.findManagerById(id);
         if (!manager) {
+            throw new NotFoundException(await this.i18n.translate('warehouse_manager.errors.manager_not_found', { lang }));
+        }
+
+        // Check ownership if ownerId is provided
+        if (ownerId && manager.created_by !== ownerId) {
             throw new NotFoundException(await this.i18n.translate('warehouse_manager.errors.manager_not_found', { lang }));
         }
 
@@ -94,9 +105,14 @@ export class WarehouseManagerService {
         return manager;
     }
 
-    async updateManager(id: string, dto: UpdateWarehouseManagerDto, userId: string, lang: string): Promise<WarehouseTemplateManager> {
+    async updateManager(id: string, dto: UpdateWarehouseManagerDto, userId: string, lang: string, ownerId?: string): Promise<WarehouseTemplateManager> {
         const manager = await this.warehouseManagerRepository.findManagerById(id);
         if (!manager) {
+            throw new NotFoundException(await this.i18n.translate('warehouse_manager.errors.manager_not_found', { lang }));
+        }
+
+        // Check ownership if ownerId is provided
+        if (ownerId && manager.created_by !== ownerId) {
             throw new NotFoundException(await this.i18n.translate('warehouse_manager.errors.manager_not_found', { lang }));
         }
 
@@ -125,9 +141,14 @@ export class WarehouseManagerService {
         return updatedManager;
     }
 
-    async removeManager(id: string, userId: string, lang: string): Promise<void> {
+    async removeManager(id: string, userId: string, lang: string, ownerId?: string): Promise<void> {
         const manager = await this.warehouseManagerRepository.findManagerById(id);
         if (!manager) {
+            throw new NotFoundException(await this.i18n.translate('warehouse_manager.errors.manager_not_found', { lang }));
+        }
+
+        // Check ownership if ownerId is provided
+        if (ownerId && manager.created_by !== ownerId) {
             throw new NotFoundException(await this.i18n.translate('warehouse_manager.errors.manager_not_found', { lang }));
         }
         await this.warehouseManagerRepository.softDeleteManager(id, userId);

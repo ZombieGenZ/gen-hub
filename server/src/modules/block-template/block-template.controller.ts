@@ -31,10 +31,12 @@ import { DeleteManyDto } from '../../common/dto';
 import { JwtAuthGuard, PermissionGuard } from '../../common/guards';
 import {
   RequirePermission,
+  RequireAnyPermission,
   CurrentUser,
   ApiAuthResponses,
   ApiValidationErrorResponse,
 } from '../../common/decorators';
+import { PrismaService } from '../../prisma/prisma.service';
 import {
   CreatedResponse,
   UpdatedResponse,
@@ -47,7 +49,50 @@ import {
   'warehouse-templates/:warehouseTemplateId/rows/:rowId/racks/:rackId/shelves/:shelfId/blocks',
 )
 export class BlockTemplateController {
-  constructor(private readonly service: BlockTemplateService) {}
+  constructor(
+    private readonly service: BlockTemplateService,
+    private readonly prisma: PrismaService,
+  ) { }
+
+  /**
+   * Kiểm tra user có permission cụ thể không
+   */
+  private async hasPermission(userId: string, permissionKey: string): Promise<boolean> {
+    const user = await this.prisma.user.findFirst({
+      where: { id: userId },
+      include: {
+        system_roles: {
+          where: { is_deleted: false, is_active: true },
+          include: {
+            role: {
+              include: {
+                permissions: {
+                  where: { is_deleted: false, is_active: true },
+                  include: { permission: true },
+                },
+              },
+            },
+          },
+        },
+        system_permissions: {
+          where: { is_deleted: false, is_active: true },
+          include: { permission: true },
+        },
+      },
+    });
+
+    if (!user) return false;
+
+    const hasDirectPerm = user.system_permissions.some(
+      (p) => p.permission.key === permissionKey,
+    );
+    if (hasDirectPerm) return true;
+
+    const hasRolePerm = user.system_roles.some((ur) =>
+      ur.role.permissions.some((rp) => rp.permission.key === permissionKey),
+    );
+    return hasRolePerm;
+  }
 
   @ApiOperation({
     summary: 'Tạo ô mới cho tầng',
@@ -319,7 +364,7 @@ export class BlockTemplateController {
   @ApiAuthResponses()
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @RequirePermission('block-template.list')
+  @RequireAnyPermission('block-template.list', 'block-template.list.all')
   @Get()
   async findMany(
     @Param('warehouseTemplateId', ParseUUIDPipe) warehouseTemplateId: string,
@@ -433,7 +478,7 @@ export class BlockTemplateController {
   @ApiAuthResponses()
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @RequirePermission('block-template.read')
+  @RequireAnyPermission('block-template.read', 'block-template.read.all')
   @Get(':id')
   async findById(
     @Param('warehouseTemplateId', ParseUUIDPipe) warehouseTemplateId: string,
@@ -587,7 +632,7 @@ export class BlockTemplateController {
   @ApiValidationErrorResponse()
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @RequirePermission('block-template.update')
+  @RequireAnyPermission('block-template.update', 'block-template.update.all')
   @Put(':id')
   async update(
     @Param('warehouseTemplateId', ParseUUIDPipe) warehouseTemplateId: string,
@@ -681,7 +726,7 @@ export class BlockTemplateController {
   @ApiValidationErrorResponse()
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @RequirePermission('block-template.delete')
+  @RequireAnyPermission('block-template.delete', 'block-template.delete.all')
   @Delete('delete/many')
   async deleteMany(
     @Param('warehouseTemplateId', ParseUUIDPipe) warehouseTemplateId: string,
@@ -764,7 +809,7 @@ export class BlockTemplateController {
   @ApiAuthResponses()
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @RequirePermission('block-template.delete')
+  @RequireAnyPermission('block-template.delete', 'block-template.delete.all')
   @Delete(':id')
   async delete(
     @Param('warehouseTemplateId', ParseUUIDPipe) warehouseTemplateId: string,

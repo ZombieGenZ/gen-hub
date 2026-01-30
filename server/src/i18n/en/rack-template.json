@@ -15,6 +15,11 @@
         "position_out_of_bounds": "Rack '{name}' position exceeds warehouse limits (max: {maxLength}m x {maxWidth}m)",
         "racks_overlap": "Rack '{name}' overlaps with rack '{otherRack}' in the same row"
     },
+    "logs": {
+        "created": "Rack created: {name}",
+        "updated": "Rack updated: {name}",
+        "deleted": "Rack deleted: {name}"
+    },
     "validation": {
         "name_required": "Rack name is required",
         "name_string": "Rack name must be a string",

@@ -183,7 +183,7 @@ export class RackTemplateRepository {
                 id: true,
                 warehouse_template_id: true,
                 warehouse_template: {
-                    select: { length: true, width: true },
+                    select: { length: true, width: true, created_by: true },
                 },
             },
         });

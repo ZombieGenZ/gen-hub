@@ -339,6 +339,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         this.seedContactTagPermissions.bind(this),
         this.seedWarehouseManagerPermissions.bind(this),
         this.seedWarehouseVisitPermissions.bind(this),
+        this.seedWarehouseManagerRolePermissions.bind(this),
         this.seedWarehouseManagerRoles.bind(this),
 
         this.seedRefundRequestPermissions.bind(this),
@@ -932,23 +933,33 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         },
         {
           key: 'warehouse-template.list',
-          name: 'Xem danh sách template kho hàng',
-          description: 'Quyền xem danh sách template kho hàng (chỉ is_active)',
+          name: 'Xem danh sách template kho hàng (của mình)',
+          description: 'Quyền xem danh sách template kho hàng do chính mình tạo',
         },
         {
           key: 'warehouse-template.list.all',
           name: 'Xem tất cả template kho hàng',
-          description: 'Quyền xem tất cả template kho hàng bao gồm cả is_active = false',
+          description: 'Quyền xem tất cả template kho hàng của mọi người',
         },
         {
           key: 'warehouse-template.read',
-          name: 'Xem chi tiết template kho hàng',
-          description: 'Quyền xem chi tiết template kho hàng',
+          name: 'Xem chi tiết template kho hàng (của mình)',
+          description: 'Quyền xem chi tiết template kho hàng do chính mình tạo',
+        },
+        {
+          key: 'warehouse-template.read.all',
+          name: 'Xem chi tiết tất cả template kho hàng',
+          description: 'Quyền xem chi tiết template kho hàng của bất kỳ ai',
         },
         {
           key: 'warehouse-template.update',
-          name: 'Cập nhật template kho hàng',
-          description: 'Quyền cập nhật thông tin template kho hàng',
+          name: 'Cập nhật template kho hàng (của mình)',
+          description: 'Quyền cập nhật template kho hàng do chính mình tạo',
+        },
+        {
+          key: 'warehouse-template.update.all',
+          name: 'Cập nhật tất cả template kho hàng',
+          description: 'Quyền cập nhật template kho hàng của bất kỳ ai',
         },
         {
           key: 'warehouse-template.design',
@@ -957,8 +968,13 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         },
         {
           key: 'warehouse-template.delete',
-          name: 'Xóa template kho hàng',
-          description: 'Quyền xóa template kho hàng',
+          name: 'Xóa template kho hàng (của mình)',
+          description: 'Quyền xóa template kho hàng do chính mình tạo',
+        },
+        {
+          key: 'warehouse-template.delete.all',
+          name: 'Xóa tất cả template kho hàng',
+          description: 'Quyền xóa template kho hàng của bất kỳ ai',
         },
       ];
 
@@ -1816,23 +1832,43 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         },
         {
           key: 'rental-duration-tier.list',
-          name: 'Xem danh sách mốc thời gian thuê',
-          description: 'Quyền xem danh sách mốc thời gian thuê',
+          name: 'Xem danh sách mốc thời gian thuê (của mình)',
+          description: 'Quyền xem danh sách mốc thời gian thuê do chính mình tạo',
+        },
+        {
+          key: 'rental-duration-tier.list.all',
+          name: 'Xem tất cả mốc thời gian thuê',
+          description: 'Quyền xem danh sách tất cả mốc thời gian thuê của mọi người',
         },
         {
           key: 'rental-duration-tier.read',
-          name: 'Xem chi tiết mốc thời gian thuê',
-          description: 'Quyền xem chi tiết mốc thời gian thuê',
+          name: 'Xem chi tiết mốc thời gian thuê (của mình)',
+          description: 'Quyền xem chi tiết mốc thời gian thuê do chính mình tạo',
+        },
+        {
+          key: 'rental-duration-tier.read.all',
+          name: 'Xem chi tiết tất cả mốc thời gian thuê',
+          description: 'Quyền xem chi tiết mốc thời gian thuê của bất kỳ ai',
         },
         {
           key: 'rental-duration-tier.update',
-          name: 'Cập nhật mốc thời gian thuê',
-          description: 'Quyền cập nhật mốc thời gian thuê',
+          name: 'Cập nhật mốc thời gian thuê (của mình)',
+          description: 'Quyền cập nhật mốc thời gian thuê do chính mình tạo',
+        },
+        {
+          key: 'rental-duration-tier.update.all',
+          name: 'Cập nhật tất cả mốc thời gian thuê',
+          description: 'Quyền cập nhật mốc thời gian thuê của bất kỳ ai',
         },
         {
           key: 'rental-duration-tier.delete',
-          name: 'Xóa mốc thời gian thuê',
-          description: 'Quyền xóa mốc thời gian thuê',
+          name: 'Xóa mốc thời gian thuê (của mình)',
+          description: 'Quyền xóa mốc thời gian thuê do chính mình tạo',
+        },
+        {
+          key: 'rental-duration-tier.delete.all',
+          name: 'Xóa tất cả mốc thời gian thuê',
+          description: 'Quyền xóa mốc thời gian thuê của bất kỳ ai',
         },
       ];
 
@@ -1914,23 +1950,43 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         },
         {
           key: 'row-template.list',
-          name: 'Xem danh sách dãy template',
-          description: 'Quyền xem danh sách dãy của warehouse template',
+          name: 'Xem danh sách dãy template (của mình)',
+          description: 'Quyền xem danh sách dãy của warehouse template do chính mình tạo',
+        },
+        {
+          key: 'row-template.list.all',
+          name: 'Xem tất cả dãy template',
+          description: 'Quyền xem danh sách tất cả dãy của mọi người',
         },
         {
           key: 'row-template.read',
-          name: 'Xem chi tiết dãy template',
-          description: 'Quyền xem chi tiết dãy',
+          name: 'Xem chi tiết dãy template (của mình)',
+          description: 'Quyền xem chi tiết dãy do chính mình tạo',
+        },
+        {
+          key: 'row-template.read.all',
+          name: 'Xem chi tiết tất cả dãy template',
+          description: 'Quyền xem chi tiết dãy của bất kỳ ai',
         },
         {
           key: 'row-template.update',
-          name: 'Cập nhật dãy template',
-          description: 'Quyền cập nhật dãy',
+          name: 'Cập nhật dãy template (của mình)',
+          description: 'Quyền cập nhật dãy do chính mình tạo',
+        },
+        {
+          key: 'row-template.update.all',
+          name: 'Cập nhật tất cả dãy template',
+          description: 'Quyền cập nhật dãy của bất kỳ ai',
         },
         {
           key: 'row-template.delete',
-          name: 'Xóa dãy template',
-          description: 'Quyền xóa dãy',
+          name: 'Xóa dãy template (của mình)',
+          description: 'Quyền xóa dãy do chính mình tạo',
+        },
+        {
+          key: 'row-template.delete.all',
+          name: 'Xóa tất cả dãy template',
+          description: 'Quyền xóa dãy của bất kỳ ai',
         },
       ];
 
@@ -2011,23 +2067,43 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         },
         {
           key: 'rack-template.list',
-          name: 'Xem danh sách kệ template',
-          description: 'Quyền xem danh sách kệ của dãy',
+          name: 'Xem danh sách kệ template (của mình)',
+          description: 'Quyền xem danh sách kệ của dãy do chính mình tạo',
+        },
+        {
+          key: 'rack-template.list.all',
+          name: 'Xem tất cả kệ template',
+          description: 'Quyền xem danh sách tất cả kệ của mọi người',
         },
         {
           key: 'rack-template.read',
-          name: 'Xem chi tiết kệ template',
-          description: 'Quyền xem chi tiết kệ',
+          name: 'Xem chi tiết kệ template (của mình)',
+          description: 'Quyền xem chi tiết kệ do chính mình tạo',
+        },
+        {
+          key: 'rack-template.read.all',
+          name: 'Xem chi tiết tất cả kệ template',
+          description: 'Quyền xem chi tiết kệ của bất kỳ ai',
         },
         {
           key: 'rack-template.update',
-          name: 'Cập nhật kệ template',
-          description: 'Quyền cập nhật kệ',
+          name: 'Cập nhật kệ template (của mình)',
+          description: 'Quyền cập nhật kệ do chính mình tạo',
+        },
+        {
+          key: 'rack-template.update.all',
+          name: 'Cập nhật tất cả kệ template',
+          description: 'Quyền cập nhật kệ của bất kỳ ai',
         },
         {
           key: 'rack-template.delete',
-          name: 'Xóa kệ template',
-          description: 'Quyền xóa kệ',
+          name: 'Xóa kệ template (của mình)',
+          description: 'Quyền xóa kệ do chính mình tạo',
+        },
+        {
+          key: 'rack-template.delete.all',
+          name: 'Xóa tất cả kệ template',
+          description: 'Quyền xóa kệ của bất kỳ ai',
         },
       ];
 
@@ -2108,23 +2184,43 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         },
         {
           key: 'shelf-template.list',
-          name: 'Xem danh sách tầng template',
-          description: 'Quyền xem danh sách tầng của kệ',
+          name: 'Xem danh sách tầng template (của mình)',
+          description: 'Quyền xem danh sách tầng của kệ do chính mình tạo',
+        },
+        {
+          key: 'shelf-template.list.all',
+          name: 'Xem tất cả tầng template',
+          description: 'Quyền xem danh sách tất cả tầng của mọi người',
         },
         {
           key: 'shelf-template.read',
-          name: 'Xem chi tiết tầng template',
-          description: 'Quyền xem chi tiết tầng',
+          name: 'Xem chi tiết tầng template (của mình)',
+          description: 'Quyền xem chi tiết tầng do chính mình tạo',
+        },
+        {
+          key: 'shelf-template.read.all',
+          name: 'Xem chi tiết tất cả tầng template',
+          description: 'Quyền xem chi tiết tầng của bất kỳ ai',
         },
         {
           key: 'shelf-template.update',
-          name: 'Cập nhật tầng template',
-          description: 'Quyền cập nhật tầng',
+          name: 'Cập nhật tầng template (của mình)',
+          description: 'Quyền cập nhật tầng do chính mình tạo',
+        },
+        {
+          key: 'shelf-template.update.all',
+          name: 'Cập nhật tất cả tầng template',
+          description: 'Quyền cập nhật tầng của bất kỳ ai',
         },
         {
           key: 'shelf-template.delete',
-          name: 'Xóa tầng template',
-          description: 'Quyền xóa tầng',
+          name: 'Xóa tầng template (của mình)',
+          description: 'Quyền xóa tầng do chính mình tạo',
+        },
+        {
+          key: 'shelf-template.delete.all',
+          name: 'Xóa tất cả tầng template',
+          description: 'Quyền xóa tầng của bất kỳ ai',
         },
       ];
 
@@ -2205,23 +2301,43 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         },
         {
           key: 'block-template.list',
-          name: 'Xem danh sách ô template',
-          description: 'Quyền xem danh sách ô của tầng',
+          name: 'Xem danh sách ô template (của mình)',
+          description: 'Quyền xem danh sách ô của tầng do chính mình tạo',
+        },
+        {
+          key: 'block-template.list.all',
+          name: 'Xem tất cả ô template',
+          description: 'Quyền xem danh sách tất cả ô của mọi người',
         },
         {
           key: 'block-template.read',
-          name: 'Xem chi tiết ô template',
-          description: 'Quyền xem chi tiết ô',
+          name: 'Xem chi tiết ô template (của mình)',
+          description: 'Quyền xem chi tiết ô do chính mình tạo',
+        },
+        {
+          key: 'block-template.read.all',
+          name: 'Xem chi tiết tất cả ô template',
+          description: 'Quyền xem chi tiết ô của bất kỳ ai',
         },
         {
           key: 'block-template.update',
-          name: 'Cập nhật ô template',
-          description: 'Quyền cập nhật ô',
+          name: 'Cập nhật ô template (của mình)',
+          description: 'Quyền cập nhật ô do chính mình tạo',
+        },
+        {
+          key: 'block-template.update.all',
+          name: 'Cập nhật tất cả ô template',
+          description: 'Quyền cập nhật ô của bất kỳ ai',
         },
         {
           key: 'block-template.delete',
-          name: 'Xóa ô template',
-          description: 'Quyền xóa ô',
+          name: 'Xóa ô template (của mình)',
+          description: 'Quyền xóa ô do chính mình tạo',
+        },
+        {
+          key: 'block-template.delete.all',
+          name: 'Xóa tất cả ô template',
+          description: 'Quyền xóa ô của bất kỳ ai',
         },
       ];
 
@@ -3591,10 +3707,14 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
     try {
       const warehouseManagerPermissions = [
         { key: 'warehouse-manager.create', name: 'Gán người quản lý kho', description: 'Quyền gán người dùng làm người quản lý kho' },
-        { key: 'warehouse-manager.list', name: 'Xem danh sách người quản lý kho', description: 'Quyền xem danh sách những người quản lý kho' },
-        { key: 'warehouse-manager.read', name: 'Xem chi tiết người quản lý kho', description: 'Quyền xem chi tiết thông tin và vai trò của người quản lý kho' },
-        { key: 'warehouse-manager.update', name: 'Cập nhật người quản lý kho', description: 'Quyền cập nhật thông tin người quản lý kho' },
-        { key: 'warehouse-manager.delete', name: 'Xóa người quản lý kho', description: 'Quyền gỡ bỏ người quản lý khỏi kho hàng' },
+        { key: 'warehouse-manager.list', name: 'Xem danh sách người quản lý kho (của mình)', description: 'Quyền xem danh sách những người quản lý kho do chính mình tạo' },
+        { key: 'warehouse-manager.list.all', name: 'Xem tất cả người quản lý kho', description: 'Quyền xem danh sách tất cả người quản lý kho của mọi người' },
+        { key: 'warehouse-manager.read', name: 'Xem chi tiết người quản lý kho (của mình)', description: 'Quyền xem chi tiết thông tin và vai trò của người quản lý kho do chính mình tạo' },
+        { key: 'warehouse-manager.read.all', name: 'Xem chi tiết tất cả người quản lý kho', description: 'Quyền xem chi tiết thông tin người quản lý kho của bất kỳ ai' },
+        { key: 'warehouse-manager.update', name: 'Cập nhật người quản lý kho (của mình)', description: 'Quyền cập nhật thông tin người quản lý kho do chính mình tạo' },
+        { key: 'warehouse-manager.update.all', name: 'Cập nhật tất cả người quản lý kho', description: 'Quyền cập nhật thông tin người quản lý kho của bất kỳ ai' },
+        { key: 'warehouse-manager.delete', name: 'Xóa người quản lý kho (của mình)', description: 'Quyền gỡ bỏ người quản lý khỏi kho hàng do chính mình tạo' },
+        { key: 'warehouse-manager.delete.all', name: 'Xóa tất cả người quản lý kho', description: 'Quyền gỡ bỏ người quản lý khỏi kho hàng của bất kỳ ai' },
         { key: 'warehouse-manager.assign-role', name: 'Gán vai trò quản lý kho', description: 'Quyền gán các vai trò cụ thể cho người quản lý kho' },
       ];
 
@@ -3668,10 +3788,13 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         { key: 'warehouse-visit.create', name: 'Đặt lịch tham quan kho', description: 'Quyền tạo yêu cầu đặt lịch tham quan kho hàng' },
         { key: 'warehouse-visit.list', name: 'Xem danh sách lịch tham quan (của mình)', description: 'Quyền xem danh sách các lịch tham quan do mình tạo' },
         { key: 'warehouse-visit.list.all', name: 'Xem tất cả lịch tham quan', description: 'Quyền xem toàn bộ danh sách lịch tham quan trên hệ thống' },
-        { key: 'warehouse-visit.read', name: 'Xem chi tiết lịch tham quan', description: 'Quyền xem chi tiết thông tin một lịch tham quan' },
-        { key: 'warehouse-visit.update', name: 'Cập nhật lịch tham quan', description: 'Quyền cập nhật trạng thái hoặc thông tin lịch tham quan' },
+        { key: 'warehouse-visit.read', name: 'Xem chi tiết lịch tham quan (của mình)', description: 'Quyền xem chi tiết thông tin một lịch tham quan do chính mình tạo' },
+        { key: 'warehouse-visit.read.all', name: 'Xem chi tiết tất cả lịch tham quan', description: 'Quyền xem chi tiết thông tin lịch tham quan của bất kỳ ai' },
+        { key: 'warehouse-visit.update', name: 'Cập nhật lịch tham quan (của mình)', description: 'Quyền cập nhật trạng thái hoặc thông tin lịch tham quan do chính mình tạo' },
+        { key: 'warehouse-visit.update.all', name: 'Cập nhật tất cả lịch tham quan', description: 'Quyền cập nhật lịch tham quan của bất kỳ ai' },
         { key: 'warehouse-visit.reschedule', name: 'Dời lịch tham quan', description: 'Quyền thay đổi thời gian tham quan kho hàng' },
-        { key: 'warehouse-visit.delete', name: 'Hủy lịch tham quan', description: 'Quyền hủy hoặc xóa lịch tham quan kho' },
+        { key: 'warehouse-visit.delete', name: 'Hủy lịch tham quan (của mình)', description: 'Quyền hủy hoặc xóa lịch tham quan kho do chính mình tạo' },
+        { key: 'warehouse-visit.delete.all', name: 'Hủy tất cả lịch tham quan', description: 'Quyền hủy hoặc xóa lịch tham quan của bất kỳ ai' },
       ];
 
       for (const perm of warehouseVisitPermissions) {
@@ -3732,6 +3855,84 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       this.logger.error(`❌ Failed to seed warehouse-visit permissions: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * Seed các permissions cho Warehouse Manager Role module
+   */
+  private async seedWarehouseManagerRolePermissions() {
+    try {
+      const warehouseManagerRolePermissions = [
+        { key: 'warehouse-manager-role.create', name: 'Tạo vai trò quản lý kho', description: 'Quyền tạo mới vai trò quản lý kho hàng' },
+        { key: 'warehouse-manager-role.list', name: 'Xem danh sách vai trò quản lý kho (của mình)', description: 'Quyền xem danh sách vai trò quản lý kho do chính mình tạo' },
+        { key: 'warehouse-manager-role.list.all', name: 'Xem tất cả vai trò quản lý kho', description: 'Quyền xem danh sách tất cả vai trò quản lý kho của mọi người' },
+        { key: 'warehouse-manager-role.read', name: 'Xem chi tiết vai trò quản lý kho (của mình)', description: 'Quyền xem chi tiết vai trò quản lý kho do chính mình tạo' },
+        { key: 'warehouse-manager-role.read.all', name: 'Xem chi tiết tất cả vai trò quản lý kho', description: 'Quyền xem chi tiết vai trò quản lý kho của bất kỳ ai' },
+        { key: 'warehouse-manager-role.update', name: 'Cập nhật vai trò quản lý kho (của mình)', description: 'Quyền cập nhật vai trò quản lý kho do chính mình tạo' },
+        { key: 'warehouse-manager-role.update.all', name: 'Cập nhật tất cả vai trò quản lý kho', description: 'Quyền cập nhật vai trò quản lý kho của bất kỳ ai' },
+        { key: 'warehouse-manager-role.delete', name: 'Xóa vai trò quản lý kho (của mình)', description: 'Quyền xóa vai trò quản lý kho do chính mình tạo' },
+        { key: 'warehouse-manager-role.delete.all', name: 'Xóa tất cả vai trò quản lý kho', description: 'Quyền xóa vai trò quản lý kho của bất kỳ ai' },
+      ];
+
+      for (const perm of warehouseManagerRolePermissions) {
+        const existing = await this.permission.findFirst({
+          where: { key: perm.key },
+        });
+
+        if (!existing) {
+          await this.permission.create({
+            data: {
+              key: perm.key,
+              name: perm.name,
+              description: perm.description,
+              is_active: true,
+              is_deleted: false,
+            },
+          });
+        }
+      }
+
+      const adminRoles = await this.role.findMany({
+        where: {
+          name: { in: ['Admin', 'Super Admin'] },
+          is_deleted: false,
+        },
+      });
+
+      const permissions = await this.permission.findMany({
+        where: {
+          key: { in: warehouseManagerRolePermissions.map((p) => p.key) },
+          is_deleted: false,
+        },
+      });
+
+      for (const role of adminRoles) {
+        for (const permission of permissions) {
+          const existingAssignment = await this.rolePermission.findFirst({
+            where: {
+              role_id: role.id,
+              permission_id: permission.id,
+            },
+          });
+
+          if (!existingAssignment) {
+            await this.rolePermission.create({
+              data: {
+                role_id: role.id,
+                permission_id: permission.id,
+                is_active: true,
+                is_deleted: false,
+              },
+            });
+          }
+        }
+      }
+
+      this.logger.log('✅ Warehouse Manager Role permissions seeded');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error(`❌ Failed to seed warehouse-manager-role permissions: ${errorMessage}`);
     }
   }
 

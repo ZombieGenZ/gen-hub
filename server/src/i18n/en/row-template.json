@@ -14,6 +14,11 @@
         "delete_failed": "Failed to delete row",
         "position_out_of_bounds": "Row '{name}' position exceeds warehouse limits (max: {maxLength}m x {maxWidth}m)"
     },
+    "logs": {
+        "created": "Row created: {name}",
+        "updated": "Row updated: {name}",
+        "deleted": "Row deleted: {name}"
+    },
     "validation": {
         "name_required": "Row name is required",
         "name_string": "Row name must be a string",
