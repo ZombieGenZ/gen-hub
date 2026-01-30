@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+    Injectable,
+    NotFoundException,
+    ConflictException,
+    ForbiddenException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { I18nService } from 'nestjs-i18n';
 import { CouponRepository } from './repositories/coupon.repository';
@@ -18,7 +23,7 @@ export class CouponService {
         private readonly systemLogService: SystemLogService,
         private readonly configService: ConfigService,
         private readonly i18n: I18nService,
-    ) {}
+    ) { }
 
     async create(dto: CreateCouponDto, userId: string, lang: string) {
         // Kiểm tra mã code trùng với thời gian hiệu lực chồng chéo
@@ -115,17 +120,28 @@ export class CouponService {
         return coupon;
     }
 
-    async findAll(query: QueryCouponDto) {
+    async findAll(
+        query: QueryCouponDto,
+        userId: string,
+        hasListAll: boolean = false,
+    ) {
         const { limit = 10, offset = 0, keywords, is_active, is_public } = query;
 
         // Check cache - Cache-Aside Pattern
-        const cacheKey = this.cacheKeys.list(query);
+        // Cache key cần bao gồm scope (all hoặc userId) để tránh leak data
+        const cacheFilters = { ...query, scope: hasListAll ? 'all' : userId };
+        const cacheKey = this.cacheKeys.list(cacheFilters);
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
             return JSON.parse(cached);
         }
 
         const where: any = { is_deleted: false };
+
+        // Nếu không có quyền list.all, chỉ lấy coupon do chính mình tạo
+        if (!hasListAll) {
+            where.created_by = userId;
+        }
 
         if (is_active !== undefined) {
             where.is_active = is_active;
@@ -164,12 +180,28 @@ export class CouponService {
         return result;
     }
 
-    async findById(id: string, lang: string) {
+    async findById(
+        id: string,
+        userId: string,
+        hasReadAll: boolean = false,
+        lang: string,
+    ) {
         // Check cache - Cache-Aside Pattern
         const cacheKey = this.cacheKeys.item(id);
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
-            return JSON.parse(cached);
+            const coupon = JSON.parse(cached);
+            // Check ownership logic (kể cả khi lấy từ cache)
+            if (!hasReadAll && coupon.created_by !== userId) {
+                // Nếu coupon là public, có thể cho phép read không?
+                // Logic hiện tại: *.read permission (ownership flow).
+                // Nếu muốn public access -> logic khác hoặc permission khác.
+                // Ở đây tuân thủ strict ownership nếu không có quyền .all
+                throw new ForbiddenException(
+                    this.i18n.t('coupon.errors.forbidden', { lang }),
+                );
+            }
+            return coupon;
         }
 
         // Query database
@@ -180,6 +212,13 @@ export class CouponService {
             );
         }
 
+        // Check ownership logic
+        if (!hasReadAll && coupon.created_by !== userId) {
+            throw new ForbiddenException(
+                this.i18n.t('coupon.errors.forbidden', { lang }),
+            );
+        }
+
         // Set cache with TTL from environment
         const ttl = this.cacheKeys.getTTL('item');
         await this.redisService.set(cacheKey, JSON.stringify(coupon), ttl);
@@ -187,11 +226,24 @@ export class CouponService {
         return coupon;
     }
 
-    async update(id: string, dto: UpdateCouponDto, userId: string, lang: string) {
+    async update(
+        id: string,
+        dto: UpdateCouponDto,
+        userId: string,
+        hasUpdateAll: boolean,
+        lang: string,
+    ) {
         const coupon = await this.repository.findById(id);
         if (!coupon) {
             throw new NotFoundException(
                 this.i18n.t('coupon.errors.not_found', { lang }),
+            );
+        }
+
+        // Check ownership
+        if (!hasUpdateAll && coupon.created_by !== userId) {
+            throw new ForbiddenException(
+                this.i18n.t('coupon.errors.forbidden', { lang }),
             );
         }
 
@@ -352,11 +404,23 @@ export class CouponService {
         return updated;
     }
 
-    async delete(id: string, userId: string, lang: string) {
+    async delete(
+        id: string,
+        userId: string,
+        hasDeleteAll: boolean,
+        lang: string,
+    ) {
         const coupon = await this.repository.findById(id);
         if (!coupon) {
             throw new NotFoundException(
                 this.i18n.t('coupon.errors.not_found', { lang }),
+            );
+        }
+
+        // Check ownership
+        if (!hasDeleteAll && coupon.created_by !== userId) {
+            throw new ForbiddenException(
+                this.i18n.t('coupon.errors.forbidden', { lang }),
             );
         }
 
@@ -384,12 +448,27 @@ export class CouponService {
         });
     }
 
-    async deleteMany(ids: string[], userId: string, lang: string) {
+    async deleteMany(
+        ids: string[],
+        userId: string,
+        hasDeleteAll: boolean,
+        lang: string,
+    ) {
         const coupons = await this.repository.findByIds(ids);
         if (coupons.length === 0) {
             throw new NotFoundException(
                 this.i18n.t('coupon.errors.not_found', { lang }),
             );
+        }
+
+        // Check ownership logic for ALL items
+        if (!hasDeleteAll) {
+            const hasNonOwned = coupons.some((c) => c.created_by !== userId);
+            if (hasNonOwned) {
+                throw new ForbiddenException(
+                    this.i18n.t('coupon.errors.forbidden', { lang }),
+                );
+            }
         }
 
         await this.repository.softDeleteMany(ids, userId);

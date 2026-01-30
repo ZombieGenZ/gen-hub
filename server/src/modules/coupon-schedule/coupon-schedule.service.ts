@@ -1,4 +1,12 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException, Inject, forwardRef } from '@nestjs/common';
+import {
+    Injectable,
+    NotFoundException,
+    ConflictException,
+    BadRequestException,
+    Inject,
+    forwardRef,
+    ForbiddenException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { I18nService } from 'nestjs-i18n';
 import { CouponScheduleRepository } from './repositories/coupon-schedule.repository';
@@ -287,17 +295,26 @@ export class CouponScheduleService {
         return schedule;
     }
 
-    async findAll(query: QueryCouponScheduleDto) {
+    async findAll(
+        query: QueryCouponScheduleDto,
+        userId: string,
+        hasListAll: boolean = false,
+    ) {
         const { limit = 10, offset = 0, keywords, is_active } = query;
 
         // Check cache - Cache-Aside Pattern
-        const cacheKey = this.cacheKeys.list(query);
+        const cacheFilters = { ...query, scope: hasListAll ? 'all' : userId };
+        const cacheKey = this.cacheKeys.list(cacheFilters);
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
             return JSON.parse(cached);
         }
 
         const where: any = { is_deleted: false };
+
+        if (!hasListAll) {
+            where.created_by = userId;
+        }
 
         if (is_active !== undefined) {
             where.is_active = is_active;
@@ -332,12 +349,23 @@ export class CouponScheduleService {
         return result;
     }
 
-    async findById(id: string, lang: string) {
+    async findById(
+        id: string,
+        userId: string,
+        hasReadAll: boolean = false,
+        lang: string,
+    ) {
         // Check cache - Cache-Aside Pattern
         const cacheKey = this.cacheKeys.item(id);
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
-            return JSON.parse(cached);
+            const schedule = JSON.parse(cached);
+            if (!hasReadAll && schedule.created_by !== userId) {
+                throw new ForbiddenException(
+                    this.i18n.t('coupon-schedule.errors.forbidden', { lang }),
+                );
+            }
+            return schedule;
         }
 
         // Query database
@@ -348,6 +376,12 @@ export class CouponScheduleService {
             );
         }
 
+        if (!hasReadAll && schedule.created_by !== userId) {
+            throw new ForbiddenException(
+                this.i18n.t('coupon-schedule.errors.forbidden', { lang }),
+            );
+        }
+
         // Set cache with TTL from environment
         const ttl = this.cacheKeys.getTTL('item');
         await this.redisService.set(cacheKey, JSON.stringify(schedule), ttl);
@@ -355,11 +389,23 @@ export class CouponScheduleService {
         return schedule;
     }
 
-    async update(id: string, dto: UpdateCouponScheduleDto, userId: string, lang: string) {
+    async update(
+        id: string,
+        dto: UpdateCouponScheduleDto,
+        userId: string,
+        hasUpdateAll: boolean,
+        lang: string,
+    ) {
         const schedule = await this.repository.findById(id);
         if (!schedule) {
             throw new NotFoundException(
                 this.i18n.t('coupon-schedule.errors.not_found', { lang }),
+            );
+        }
+
+        if (!hasUpdateAll && schedule.created_by !== userId) {
+            throw new ForbiddenException(
+                this.i18n.t('coupon-schedule.errors.forbidden', { lang }),
             );
         }
 
@@ -440,11 +486,22 @@ export class CouponScheduleService {
         return updated;
     }
 
-    async delete(id: string, userId: string, lang: string) {
+    async delete(
+        id: string,
+        userId: string,
+        hasDeleteAll: boolean,
+        lang: string,
+    ) {
         const schedule = await this.repository.findById(id);
         if (!schedule) {
             throw new NotFoundException(
                 this.i18n.t('coupon-schedule.errors.not_found', { lang }),
+            );
+        }
+
+        if (!hasDeleteAll && schedule.created_by !== userId) {
+            throw new ForbiddenException(
+                this.i18n.t('coupon-schedule.errors.forbidden', { lang }),
             );
         }
 
@@ -472,12 +529,26 @@ export class CouponScheduleService {
         this.runnerService.cancelSchedule(id);
     }
 
-    async deleteMany(ids: string[], userId: string, lang: string) {
+    async deleteMany(
+        ids: string[],
+        userId: string,
+        hasDeleteAll: boolean,
+        lang: string,
+    ) {
         const schedules = await this.repository.findByIds(ids);
         if (schedules.length === 0) {
             throw new NotFoundException(
                 this.i18n.t('coupon-schedule.errors.not_found', { lang }),
             );
+        }
+
+        if (!hasDeleteAll) {
+            const hasNonOwned = schedules.some((s) => s.created_by !== userId);
+            if (hasNonOwned) {
+                throw new ForbiddenException(
+                    this.i18n.t('coupon-schedule.errors.forbidden', { lang }),
+                );
+            }
         }
 
         await this.repository.softDeleteMany(ids, userId);

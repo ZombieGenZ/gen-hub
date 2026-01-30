@@ -2854,23 +2854,43 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         },
         {
           key: 'coupon.list',
-          name: 'Xem danh sách coupon',
-          description: 'Quyền xem danh sách coupon',
+          name: 'Xem danh sách coupon (owned)',
+          description: 'Quyền xem danh sách coupon do chính mình tạo',
         },
         {
           key: 'coupon.read',
-          name: 'Xem chi tiết coupon',
-          description: 'Quyền xem chi tiết coupon',
+          name: 'Xem chi tiết coupon (owned)',
+          description: 'Quyền xem chi tiết coupon do chính mình tạo',
         },
         {
           key: 'coupon.update',
-          name: 'Cập nhật coupon',
-          description: 'Quyền cập nhật coupon',
+          name: 'Cập nhật coupon (owned)',
+          description: 'Quyền cập nhật coupon do chính mình tạo',
         },
         {
           key: 'coupon.delete',
-          name: 'Xóa coupon',
-          description: 'Quyền xóa coupon',
+          name: 'Xóa coupon (owned)',
+          description: 'Quyền xóa coupon do chính mình tạo',
+        },
+        {
+          key: 'coupon.list.all',
+          name: 'Xem tất cả coupon',
+          description: 'Quyền xem danh sách tất cả coupon',
+        },
+        {
+          key: 'coupon.read.all',
+          name: 'Xem chi tiết tất cả coupon',
+          description: 'Quyền xem chi tiết tất cả coupon',
+        },
+        {
+          key: 'coupon.update.all',
+          name: 'Cập nhật tất cả coupon',
+          description: 'Quyền cập nhật tất cả coupon',
+        },
+        {
+          key: 'coupon.delete.all',
+          name: 'Xóa tất cả coupon',
+          description: 'Quyền xóa tất cả coupon',
         },
       ];
 
@@ -2952,23 +2972,43 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         },
         {
           key: 'coupon-schedule.list',
-          name: 'Xem danh sách lịch coupon',
-          description: 'Quyền xem danh sách lịch coupon',
+          name: 'Xem danh sách lịch coupon (owned)',
+          description: 'Quyền xem danh sách lịch coupon do chính mình tạo',
         },
         {
           key: 'coupon-schedule.read',
-          name: 'Xem chi tiết lịch coupon',
-          description: 'Quyền xem chi tiết lịch coupon',
+          name: 'Xem chi tiết lịch coupon (owned)',
+          description: 'Quyền xem chi tiết lịch coupon do chính mình tạo',
         },
         {
           key: 'coupon-schedule.update',
-          name: 'Cập nhật lịch coupon',
-          description: 'Quyền cập nhật lịch coupon',
+          name: 'Cập nhật lịch coupon (owned)',
+          description: 'Quyền cập nhật lịch coupon do chính mình tạo',
         },
         {
           key: 'coupon-schedule.delete',
-          name: 'Xóa lịch coupon',
-          description: 'Quyền xóa lịch coupon',
+          name: 'Xóa lịch coupon (owned)',
+          description: 'Quyền xóa lịch coupon do chính mình tạo',
+        },
+        {
+          key: 'coupon-schedule.list.all',
+          name: 'Xem tất cả lịch coupon',
+          description: 'Quyền xem danh sách tất cả lịch coupon',
+        },
+        {
+          key: 'coupon-schedule.read.all',
+          name: 'Xem chi tiết tất cả lịch coupon',
+          description: 'Quyền xem chi tiết tất cả lịch coupon',
+        },
+        {
+          key: 'coupon-schedule.update.all',
+          name: 'Cập nhật tất cả lịch coupon',
+          description: 'Quyền cập nhật tất cả lịch coupon',
+        },
+        {
+          key: 'coupon-schedule.delete.all',
+          name: 'Xóa tất cả lịch coupon',
+          description: 'Quyền xóa tất cả lịch coupon',
         },
       ];
 

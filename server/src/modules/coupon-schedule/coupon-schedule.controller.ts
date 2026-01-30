@@ -29,7 +29,7 @@ import {
 } from './dto';
 import { DeleteManyDto } from '../../common/dto';
 import { JwtAuthGuard, PermissionGuard } from '../../common/guards';
-import { RequirePermission, CurrentUser } from '../../common/decorators';
+import { RequirePermission, RequireAnyPermission, CurrentUser } from '../../common/decorators';
 import {
   ApiAuthResponses,
   ApiValidationErrorResponse,
@@ -40,12 +40,61 @@ import {
   GetResponse,
   DeletedResponse,
 } from '../../common/responses';
+import { PrismaService } from '../../prisma/prisma.service';
 import { ICouponSchedule, IPaginatedResponse } from './interfaces';
 
 @ApiTags('Coupon Schedules')
 @Controller('coupon-schedules')
 export class CouponScheduleController {
-  constructor(private readonly couponScheduleService: CouponScheduleService) {}
+  constructor(
+    private readonly couponScheduleService: CouponScheduleService,
+    private readonly prisma: PrismaService,
+  ) { }
+
+  /**
+   * Kiểm tra user có permission cụ thể không
+   */
+  private async hasPermission(
+    userId: string,
+    permissionKey: string,
+  ): Promise<boolean> {
+    const user = await this.prisma.user.findFirst({
+      where: { id: userId },
+      include: {
+        system_roles: {
+          where: { is_deleted: false, is_active: true },
+          include: {
+            role: {
+              include: {
+                permissions: {
+                  where: { is_deleted: false, is_active: true },
+                  include: { permission: true },
+                },
+              },
+            },
+          },
+        },
+        system_permissions: {
+          where: { is_deleted: false, is_active: true },
+          include: { permission: true },
+        },
+      },
+    });
+
+    if (!user) return false;
+
+    // Check direct permissions
+    const hasDirectPerm = user.system_permissions.some(
+      (p) => p.permission.key === permissionKey,
+    );
+    if (hasDirectPerm) return true;
+
+    // Check role permissions
+    const hasRolePerm = user.system_roles.some((ur) =>
+      ur.role.permissions.some((rp) => rp.permission.key === permissionKey),
+    );
+    return hasRolePerm;
+  }
 
   @ApiOperation({
     summary: 'Tạo lịch coupon mới',
@@ -620,12 +669,21 @@ export class CouponScheduleController {
   @ApiAuthResponses()
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @RequirePermission('coupon-schedule.list')
+  @RequireAnyPermission('coupon-schedule.list', 'coupon-schedule.list.all')
   @Get()
   async findAll(
     @Query() query: QueryCouponScheduleDto,
+    @CurrentUser('userId') userId: string,
   ): Promise<GetResponse<IPaginatedResponse<ICouponSchedule>>> {
-    const result = await this.couponScheduleService.findAll(query);
+    const hasListAll = await this.hasPermission(
+      userId,
+      'coupon-schedule.list.all',
+    );
+    const result = await this.couponScheduleService.findAll(
+      query,
+      userId,
+      hasListAll,
+    );
     return new GetResponse(
       'coupon-schedule.list.success',
       result,
@@ -780,13 +838,23 @@ export class CouponScheduleController {
   @ApiAuthResponses()
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @RequirePermission('coupon-schedule.read')
+  @RequireAnyPermission('coupon-schedule.read', 'coupon-schedule.read.all')
   @Get(':id')
   async findById(
     @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser('userId') userId: string,
     @I18nLang() lang: string,
   ): Promise<GetResponse<ICouponSchedule>> {
-    const result = await this.couponScheduleService.findById(id, lang);
+    const hasReadAll = await this.hasPermission(
+      userId,
+      'coupon-schedule.read.all',
+    );
+    const result = await this.couponScheduleService.findById(
+      id,
+      userId,
+      hasReadAll,
+      lang,
+    );
     return new GetResponse(
       'coupon-schedule.read.success',
       result,
@@ -797,7 +865,7 @@ export class CouponScheduleController {
   @ApiOperation({
     summary: 'Cập nhật lịch coupon',
     description:
-      'Cập nhật thông tin của một lịch coupon. Chỉ các trường được gửi trong request body mới được cập nhật, các trường khác giữ nguyên. Yêu cầu quyền `coupon-schedule.update`.',
+      'Cập nhật thông tin của một lịch coupon. Chỉ các trường được gửi trong request body mới được cập nhật, các trường khác giữ nguyên. Yêu cầu quyền `coupon-schedule.update` (cập nhật lịch do mình tạo) hoặc `coupon-schedule.update.all` (cập nhật bất kỳ lịch nào).',
   })
   @ApiParam({
     name: 'id',
@@ -900,7 +968,7 @@ export class CouponScheduleController {
   @ApiValidationErrorResponse()
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @RequirePermission('coupon-schedule.update')
+  @RequireAnyPermission('coupon-schedule.update', 'coupon-schedule.update.all')
   @Put(':id')
   async update(
     @Param('id', ParseUUIDPipe) id: string,
@@ -908,10 +976,15 @@ export class CouponScheduleController {
     @CurrentUser('userId') userId: string,
     @I18nLang() lang: string,
   ): Promise<UpdatedResponse<ICouponSchedule>> {
+    const hasUpdateAll = await this.hasPermission(
+      userId,
+      'coupon-schedule.update.all',
+    );
     const result = await this.couponScheduleService.update(
       id,
       dto,
       userId,
+      hasUpdateAll,
       lang,
     );
     return new UpdatedResponse(
@@ -982,14 +1055,23 @@ export class CouponScheduleController {
   @ApiValidationErrorResponse()
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @RequirePermission('coupon-schedule.delete')
+  @RequireAnyPermission('coupon-schedule.delete', 'coupon-schedule.delete.all')
   @Delete('delete/many')
   async deleteMany(
     @Body() dto: DeleteManyDto,
     @CurrentUser('userId') userId: string,
     @I18nLang() lang: string,
   ): Promise<DeletedResponse<null>> {
-    await this.couponScheduleService.deleteMany(dto.ids, userId, lang);
+    const hasDeleteAll = await this.hasPermission(
+      userId,
+      'coupon-schedule.delete.all',
+    );
+    await this.couponScheduleService.deleteMany(
+      dto.ids,
+      userId,
+      hasDeleteAll,
+      lang,
+    );
     return new DeletedResponse(
       'coupon-schedule.delete.success',
       null as any,
@@ -1037,14 +1119,18 @@ export class CouponScheduleController {
   @ApiAuthResponses()
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @RequirePermission('coupon-schedule.delete')
+  @RequireAnyPermission('coupon-schedule.delete', 'coupon-schedule.delete.all')
   @Delete(':id')
   async delete(
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser('userId') userId: string,
     @I18nLang() lang: string,
   ): Promise<DeletedResponse<null>> {
-    await this.couponScheduleService.delete(id, userId, lang);
+    const hasDeleteAll = await this.hasPermission(
+      userId,
+      'coupon-schedule.delete.all',
+    );
+    await this.couponScheduleService.delete(id, userId, hasDeleteAll, lang);
     return new DeletedResponse(
       'coupon-schedule.delete.success',
       null as any,
