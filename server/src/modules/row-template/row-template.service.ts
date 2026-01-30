@@ -32,11 +32,13 @@ export class RowTemplateService {
     }
 
     private getCacheKey(id: string): string {
-        return `row-template:${id}`;
+        const prefix = this.configService.get<string>('REDIS_ROW_TEMPLATE_KEY_PREFIX', 'row-template');
+        return `${prefix}:${id}`;
     }
 
     private getListCacheKey(warehouseTemplateId: string, query: QueryRowTemplateDto): string {
-        return `row-template:list:${warehouseTemplateId}:${JSON.stringify(query)}`;
+        const prefix = this.configService.get<string>('REDIS_ROW_TEMPLATE_LIST_KEY_PREFIX', 'row-template:list');
+        return `${prefix}:${warehouseTemplateId}:${JSON.stringify(query)}`;
     }
 
     /**
@@ -612,9 +614,12 @@ export class RowTemplateService {
     }
 
     private async invalidateListCache(warehouseTemplateId: string) {
-        await this.redisService.delByPattern(`row-template:list:${warehouseTemplateId}:*`);
+        const listPrefix = this.configService.get<string>('REDIS_ROW_TEMPLATE_LIST_KEY_PREFIX', 'row-template:list');
+        await this.redisService.delByPattern(`${listPrefix}:${warehouseTemplateId}:*`);
         // Cũng invalidate cache của warehouse template để đảm bảo data nhất quán
-        await this.redisService.del(`warehouse-template:${warehouseTemplateId}`);
-        await this.redisService.delByPattern('warehouse-template:list:*');
+        const warehousePrefix = this.configService.get<string>('REDIS_WAREHOUSE_TEMPLATE_KEY_PREFIX', 'warehouse-template');
+        const warehouseListPrefix = this.configService.get<string>('REDIS_WAREHOUSE_TEMPLATE_LIST_KEY_PREFIX', 'warehouse-template:list');
+        await this.redisService.del(`${warehousePrefix}:${warehouseTemplateId}`);
+        await this.redisService.delByPattern(`${warehouseListPrefix}:*`);
     }
 }

@@ -32,11 +32,13 @@ export class BlockTemplateService {
     }
 
     private getCacheKey(id: string): string {
-        return `block-template:${id}`;
+        const prefix = this.configService.get<string>('REDIS_BLOCK_TEMPLATE_KEY_PREFIX', 'block-template');
+        return `${prefix}:${id}`;
     }
 
     private getListCacheKey(shelfTemplateId: string, query: QueryBlockTemplateDto): string {
-        return `block-template:list:${shelfTemplateId}:${JSON.stringify(query)}`;
+        const prefix = this.configService.get<string>('REDIS_BLOCK_TEMPLATE_LIST_KEY_PREFIX', 'block-template:list');
+        return `${prefix}:${shelfTemplateId}:${JSON.stringify(query)}`;
     }
 
     /**
@@ -352,7 +354,8 @@ export class BlockTemplateService {
     }
 
     private async invalidateListCache(shelfTemplateId: string) {
-        await this.redisService.delByPattern(`block-template:list:${shelfTemplateId}:*`);
+        const listPrefix = this.configService.get<string>('REDIS_BLOCK_TEMPLATE_LIST_KEY_PREFIX', 'block-template:list');
+        await this.redisService.delByPattern(`${listPrefix}:${shelfTemplateId}:*`);
     }
 
     private async invalidateParentCaches(
@@ -361,15 +364,24 @@ export class BlockTemplateService {
         rackTemplateId: string,
         shelfTemplateId: string,
     ) {
+        const shelfPrefix = this.configService.get<string>('REDIS_SHELF_TEMPLATE_KEY_PREFIX', 'shelf-template');
+        const shelfListPrefix = this.configService.get<string>('REDIS_SHELF_TEMPLATE_LIST_KEY_PREFIX', 'shelf-template:list');
+        const rackPrefix = this.configService.get<string>('REDIS_RACK_TEMPLATE_KEY_PREFIX', 'rack-template');
+        const rackListPrefix = this.configService.get<string>('REDIS_RACK_TEMPLATE_LIST_KEY_PREFIX', 'rack-template:list');
+        const rowPrefix = this.configService.get<string>('REDIS_ROW_TEMPLATE_KEY_PREFIX', 'row-template');
+        const rowListPrefix = this.configService.get<string>('REDIS_ROW_TEMPLATE_LIST_KEY_PREFIX', 'row-template:list');
+        const warehousePrefix = this.configService.get<string>('REDIS_WAREHOUSE_TEMPLATE_KEY_PREFIX', 'warehouse-template');
+        const warehouseListPrefix = this.configService.get<string>('REDIS_WAREHOUSE_TEMPLATE_LIST_KEY_PREFIX', 'warehouse-template:list');
+
         await Promise.all([
-            this.redisService.del(`shelf-template:${shelfTemplateId}`),
-            this.redisService.delByPattern(`shelf-template:list:${rackTemplateId}:*`),
-            this.redisService.del(`rack-template:${rackTemplateId}`),
-            this.redisService.delByPattern(`rack-template:list:${rowTemplateId}:*`),
-            this.redisService.del(`row-template:${rowTemplateId}`),
-            this.redisService.delByPattern(`row-template:list:${warehouseTemplateId}:*`),
-            this.redisService.del(`warehouse-template:${warehouseTemplateId}`),
-            this.redisService.delByPattern('warehouse-template:list:*'),
+            this.redisService.del(`${shelfPrefix}:${shelfTemplateId}`),
+            this.redisService.delByPattern(`${shelfListPrefix}:${rackTemplateId}:*`),
+            this.redisService.del(`${rackPrefix}:${rackTemplateId}`),
+            this.redisService.delByPattern(`${rackListPrefix}:${rowTemplateId}:*`),
+            this.redisService.del(`${rowPrefix}:${rowTemplateId}`),
+            this.redisService.delByPattern(`${rowListPrefix}:${warehouseTemplateId}:*`),
+            this.redisService.del(`${warehousePrefix}:${warehouseTemplateId}`),
+            this.redisService.delByPattern(`${warehouseListPrefix}:*`),
         ]);
     }
 }

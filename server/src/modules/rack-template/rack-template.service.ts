@@ -32,11 +32,13 @@ export class RackTemplateService {
     }
 
     private getCacheKey(id: string): string {
-        return `rack-template:${id}`;
+        const prefix = this.configService.get<string>('REDIS_RACK_TEMPLATE_KEY_PREFIX', 'rack-template');
+        return `${prefix}:${id}`;
     }
 
     private getListCacheKey(rowTemplateId: string, query: QueryRackTemplateDto): string {
-        return `rack-template:list:${rowTemplateId}:${JSON.stringify(query)}`;
+        const prefix = this.configService.get<string>('REDIS_RACK_TEMPLATE_LIST_KEY_PREFIX', 'rack-template:list');
+        return `${prefix}:${rowTemplateId}:${JSON.stringify(query)}`;
     }
 
     /**
@@ -371,15 +373,21 @@ export class RackTemplateService {
     }
 
     private async invalidateListCache(rowTemplateId: string) {
-        await this.redisService.delByPattern(`rack-template:list:${rowTemplateId}:*`);
+        const listPrefix = this.configService.get<string>('REDIS_RACK_TEMPLATE_LIST_KEY_PREFIX', 'rack-template:list');
+        await this.redisService.delByPattern(`${listPrefix}:${rowTemplateId}:*`);
     }
 
     private async invalidateParentCaches(warehouseTemplateId: string, rowTemplateId: string) {
+        const rowPrefix = this.configService.get<string>('REDIS_ROW_TEMPLATE_KEY_PREFIX', 'row-template');
+        const rowListPrefix = this.configService.get<string>('REDIS_ROW_TEMPLATE_LIST_KEY_PREFIX', 'row-template:list');
+        const warehousePrefix = this.configService.get<string>('REDIS_WAREHOUSE_TEMPLATE_KEY_PREFIX', 'warehouse-template');
+        const warehouseListPrefix = this.configService.get<string>('REDIS_WAREHOUSE_TEMPLATE_LIST_KEY_PREFIX', 'warehouse-template:list');
+
         await Promise.all([
-            this.redisService.del(`row-template:${rowTemplateId}`),
-            this.redisService.delByPattern(`row-template:list:${warehouseTemplateId}:*`),
-            this.redisService.del(`warehouse-template:${warehouseTemplateId}`),
-            this.redisService.delByPattern('warehouse-template:list:*'),
+            this.redisService.del(`${rowPrefix}:${rowTemplateId}`),
+            this.redisService.delByPattern(`${rowListPrefix}:${warehouseTemplateId}:*`),
+            this.redisService.del(`${warehousePrefix}:${warehouseTemplateId}`),
+            this.redisService.delByPattern(`${warehouseListPrefix}:*`),
         ]);
     }
 

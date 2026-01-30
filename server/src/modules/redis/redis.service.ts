@@ -837,8 +837,21 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   }
 
 
-  private getWarehouseManagerCacheKey(id: string): string {
-    return `warehouse-manager:${id}`;
+  // Warehouse Manager Cache Helpers
+  getWarehouseManagerCacheKey(id: string): string {
+    const prefix = this.configService.get<string>(
+      'REDIS_WAREHOUSE_MANAGER_KEY_PREFIX',
+      'warehouse:manager',
+    );
+    return `${prefix}:${id}`;
+  }
+
+  getWarehouseManagerListCacheKey(query: Record<string, unknown>): string {
+    const prefix = this.configService.get<string>(
+      'REDIS_WAREHOUSE_MANAGER_LIST_KEY_PREFIX',
+      'warehouse:manager:list',
+    );
+    return `${prefix}:${JSON.stringify(query)}`;
   }
 
   async getWarehouseManagerCache<T>(id: string): Promise<T | null> {
@@ -856,11 +869,133 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     data: T,
     ttlSeconds?: number,
   ): Promise<void> {
-    const ttl = ttlSeconds || this.WAREHOUSE_MANAGER_CACHE_TTL;
-    await this.set(this.getWarehouseManagerCacheKey(id), JSON.stringify(data), ttl);
+    const ttl =
+      ttlSeconds ||
+      this.configService.get<number>('REDIS_WAREHOUSE_MANAGER_CACHE_TTL', 300);
+    await this.set(
+      this.getWarehouseManagerCacheKey(id),
+      JSON.stringify(data),
+      ttl,
+    );
   }
 
   async invalidateWarehouseManagerCache(id: string): Promise<void> {
     await this.del(this.getWarehouseManagerCacheKey(id));
+    // Also invalidate list cache
+    const listPrefix = this.configService.get<string>(
+      'REDIS_WAREHOUSE_MANAGER_LIST_KEY_PREFIX',
+      'warehouse:manager:list',
+    );
+    await this.delByPattern(`${listPrefix}:*`);
+  }
+
+  // Warehouse Manager Role Cache Helpers
+  getWarehouseManagerRoleCacheKey(id: string): string {
+    const prefix = this.configService.get<string>(
+      'REDIS_WAREHOUSE_MANAGER_ROLE_KEY_PREFIX',
+      'warehouse:manager:role',
+    );
+    return `${prefix}:${id}`;
+  }
+
+  getWarehouseManagerRoleListCacheKey(query: Record<string, unknown>): string {
+    const prefix = this.configService.get<string>(
+      'REDIS_WAREHOUSE_MANAGER_ROLE_LIST_KEY_PREFIX',
+      'warehouse:manager:role:list',
+    );
+    return `${prefix}:${JSON.stringify(query)}`;
+  }
+
+  getWarehouseManagerPermissionCacheKey(): string {
+    return this.configService.get<string>(
+      'REDIS_WAREHOUSE_MANAGER_PERMISSION_KEY_PREFIX',
+      'warehouse:manager:permission',
+    );
+  }
+
+  async getWarehouseManagerRoleCache<T>(id: string): Promise<T | null> {
+    const data = await this.get(this.getWarehouseManagerRoleCacheKey(id));
+    if (!data) return null;
+    try {
+      return JSON.parse(data) as T;
+    } catch {
+      return null;
+    }
+  }
+
+  async setWarehouseManagerRoleCache<T>(
+    id: string,
+    data: T,
+    ttlSeconds?: number,
+  ): Promise<void> {
+    const key = this.getWarehouseManagerRoleCacheKey(id);
+    const ttl =
+      ttlSeconds ||
+      this.configService.get<number>(
+        'REDIS_WAREHOUSE_MANAGER_ROLE_CACHE_TTL',
+        300,
+      );
+    await this.set(key, JSON.stringify(data), ttl);
+  }
+
+  async invalidateWarehouseManagerRoleCache(id: string): Promise<void> {
+    const key = this.getWarehouseManagerRoleCacheKey(id);
+    await this.del(key);
+    // Also invalidate list cache
+    const listPrefix = this.configService.get<string>(
+      'REDIS_WAREHOUSE_MANAGER_ROLE_LIST_KEY_PREFIX',
+      'warehouse:manager:role:list',
+    );
+    await this.delByPattern(`${listPrefix}:*`);
+  }
+
+  // Warehouse Visit Cache Helpers
+  getWarehouseVisitCacheKey(id: string): string {
+    const prefix = this.configService.get<string>(
+      'REDIS_WAREHOUSE_VISIT_KEY_PREFIX',
+      'warehouse:visit',
+    );
+    return `${prefix}:${id}`;
+  }
+
+  getWarehouseVisitListCacheKey(query: Record<string, unknown>): string {
+    const prefix = this.configService.get<string>(
+      'REDIS_WAREHOUSE_VISIT_LIST_KEY_PREFIX',
+      'warehouse:visit:list',
+    );
+    return `${prefix}:${JSON.stringify(query)}`;
+  }
+
+  async getWarehouseVisitCache<T>(id: string): Promise<T | null> {
+    const data = await this.get(this.getWarehouseVisitCacheKey(id));
+    if (!data) return null;
+    try {
+      return JSON.parse(data) as T;
+    } catch {
+      return null;
+    }
+  }
+
+  async setWarehouseVisitCache<T>(
+    id: string,
+    data: T,
+    ttlSeconds?: number,
+  ): Promise<void> {
+    const key = this.getWarehouseVisitCacheKey(id);
+    const ttl =
+      ttlSeconds ||
+      this.configService.get<number>('REDIS_WAREHOUSE_VISIT_CACHE_TTL', 300);
+    await this.set(key, JSON.stringify(data), ttl);
+  }
+
+  async invalidateWarehouseVisitCache(id: string): Promise<void> {
+    const key = this.getWarehouseVisitCacheKey(id);
+    await this.del(key);
+    // Also invalidate list cache
+    const listPrefix = this.configService.get<string>(
+      'REDIS_WAREHOUSE_VISIT_LIST_KEY_PREFIX',
+      'warehouse:visit:list',
+    );
+    await this.delByPattern(`${listPrefix}:*`);
   }
 }

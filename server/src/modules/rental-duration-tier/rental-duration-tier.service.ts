@@ -25,11 +25,13 @@ export class RentalDurationTierService {
     }
 
     private getCacheKey(id: string): string {
-        return `rental-duration-tier:${id}`;
+        const prefix = this.configService.get<string>('REDIS_RENTAL_DURATION_TIER_KEY_PREFIX', 'rental-duration-tier');
+        return `${prefix}:${id}`;
     }
 
     private getListCacheKey(query: QueryRentalDurationTierDto): string {
-        return `rental-duration-tier:list:${JSON.stringify(query)}`;
+        const prefix = this.configService.get<string>('REDIS_RENTAL_DURATION_TIER_LIST_KEY_PREFIX', 'rental-duration-tier:list');
+        return `${prefix}:${JSON.stringify(query)}`;
     }
 
     async create(dto: CreateRentalDurationTierDto, userId: string, lang: string) {
@@ -104,7 +106,8 @@ export class RentalDurationTierService {
         await this.invalidateListCache();
 
         // Ghi log
-        this.systemLogService.info('RentalDurationTier', 'CREATE', `Tạo mốc thời gian thuê: ${tier.name}`, {
+        const logAction = await this.i18n.translate('rental-duration-tier.logs.create', { args: { name: tier.name } });
+        this.systemLogService.info('RentalDurationTier', 'CREATE', logAction || `Create rental duration tier: ${tier.name}`, {
             userId,
             metaData: { tierId: tier.id, name: tier.name, duration_value: tier.duration_value, addon_gifts_count: addon_gifts?.length || 0, insurance_gifts_count: insurance_gifts?.length || 0 },
         });
@@ -187,7 +190,7 @@ export class RentalDurationTierService {
 
     // Lấy tất cả active tiers (không phân trang, dùng cho dropdown)
     async findAllActive() {
-        const cacheKey = 'rental-duration-tier:active';
+        const cacheKey = this.configService.get<string>('REDIS_RENTAL_DURATION_TIER_ACTIVE_KEY_PREFIX', 'rental-duration-tier:active');
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
             return JSON.parse(cached);
@@ -346,7 +349,8 @@ export class RentalDurationTierService {
         await this.invalidateListCache();
 
         // Ghi log
-        this.systemLogService.info('RentalDurationTier', 'UPDATE', `Cập nhật mốc thời gian thuê: ${updated.name}`, {
+        const logAction = await this.i18n.translate('rental-duration-tier.logs.update', { args: { name: updated.name } });
+        this.systemLogService.info('RentalDurationTier', 'UPDATE', logAction || `Update rental duration tier: ${updated.name}`, {
             userId,
             metaData: { tierId: id, updatedFields: Object.keys(dto), addon_gifts_count: addon_gifts?.length || 0, insurance_gifts_count: insurance_gifts?.length || 0 },
         });
@@ -379,7 +383,8 @@ export class RentalDurationTierService {
         await this.invalidateListCache();
 
         // Ghi log
-        this.systemLogService.info('RentalDurationTier', 'DELETE', `Xóa mốc thời gian thuê: ${tier.name}`, {
+        const logAction = await this.i18n.translate('rental-duration-tier.logs.delete', { args: { name: tier.name } });
+        this.systemLogService.info('RentalDurationTier', 'DELETE', logAction || `Delete rental duration tier: ${tier.name}`, {
             userId,
             metaData: { tierId: id, name: tier.name },
         });
@@ -415,12 +420,13 @@ export class RentalDurationTierService {
         });
 
         // Log
-        tiers.forEach(t => {
-            this.systemLogService.info('RentalDurationTier', 'DELETE', `Xóa mốc thời gian thuê: ${t.name}`, {
+        for (const t of tiers) {
+            const logAction = await this.i18n.translate('rental-duration-tier.logs.delete', { args: { name: t.name } });
+            this.systemLogService.info('RentalDurationTier', 'DELETE', logAction || `Delete rental duration tier: ${t.name}`, {
                 userId,
                 metaData: { tierId: t.id, name: t.name },
             });
-        });
+        }
     }
 
     private async invalidateCache(id: string) {
@@ -428,7 +434,9 @@ export class RentalDurationTierService {
     }
 
     private async invalidateListCache() {
-        await this.redisService.delByPattern('rental-duration-tier:list:*');
-        await this.redisService.del('rental-duration-tier:active');
+        const listPrefix = this.configService.get<string>('REDIS_RENTAL_DURATION_TIER_LIST_KEY_PREFIX', 'rental-duration-tier:list');
+        const activeKey = this.configService.get<string>('REDIS_RENTAL_DURATION_TIER_ACTIVE_KEY_PREFIX', 'rental-duration-tier:active');
+        await this.redisService.delByPattern(`${listPrefix}:*`);
+        await this.redisService.del(activeKey);
     }
 }

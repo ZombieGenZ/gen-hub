@@ -3,9 +3,10 @@ import { WarehouseManagerRoleService } from './warehouse-manager-role.service';
 import { WarehouseManagerRoleController } from './warehouse-manager-role.controller';
 import { WarehouseManagerRoleRepository } from './warehouse-manager-role.repository';
 import { PrismaModule } from '../../prisma/prisma.module';
+import { RedisModule } from '../redis/redis.module';
 
 @Module({
-    imports: [PrismaModule],
+    imports: [PrismaModule, RedisModule],
     controllers: [WarehouseManagerRoleController],
     providers: [WarehouseManagerRoleService, WarehouseManagerRoleRepository],
     exports: [WarehouseManagerRoleService],

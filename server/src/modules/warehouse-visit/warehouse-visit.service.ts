@@ -1,4 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { RedisService } from '../redis/redis.service';
 import { WarehouseVisitRepository } from './warehouse-visit.repository';
 import { CreateWarehouseVisitBookingDto } from './dto/create-warehouse-visit-booking.dto';
 import { UpdateWarehouseVisitBookingDto } from './dto/update-warehouse-visit-booking.dto';
@@ -11,11 +13,14 @@ export class WarehouseVisitService {
     constructor(
         private readonly warehouseVisitRepository: WarehouseVisitRepository,
         private readonly i18n: I18nService,
+        private readonly configService: ConfigService,
+        private readonly redisService: RedisService,
     ) { }
 
     async createBooking(dto: CreateWarehouseVisitBookingDto, userId: string | null): Promise<WarehouseVisitBooking> {
         // Generate code
-        const code = `VISIT-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+        const prefix = this.configService.get<string>('WAREHOUSE_VISIT_CODE_PREFIX', 'VISIT');
+        const code = `${prefix}-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
         const data: Prisma.WarehouseVisitBookingUncheckedCreateInput = {
             ...dto,
@@ -25,18 +30,44 @@ export class WarehouseVisitService {
             created_by: userId || 'SYSTEM',
         };
 
-        return this.warehouseVisitRepository.createBooking(data);
+        const newBooking = await this.warehouseVisitRepository.createBooking(data);
+
+        // Invalidate list cache
+        const listPrefix = this.configService.get<string>('REDIS_WAREHOUSE_VISIT_LIST_KEY_PREFIX', 'warehouse:visit:list');
+        await this.redisService.delByPattern(`${listPrefix}:*`);
+
+        return newBooking;
     }
 
     async findAllBookings(query: any): Promise<IPaginatedResponse<WarehouseVisitBooking>> {
-        return this.warehouseVisitRepository.findAllBookings(query);
+        const cacheKey = this.redisService.getWarehouseVisitListCacheKey(query);
+        const cached = await this.redisService.get(cacheKey);
+        if (cached) {
+            return JSON.parse(cached);
+        }
+
+        const result = await this.warehouseVisitRepository.findAllBookings(query);
+
+        // Set cache
+        const ttl = this.configService.get<number>('REDIS_WAREHOUSE_VISIT_LIST_CACHE_TTL', 60);
+        await this.redisService.set(cacheKey, JSON.stringify(result), ttl);
+
+        return result;
     }
 
     async findBookingById(id: string, lang: string): Promise<WarehouseVisitBooking> {
+        // Cache check
+        const cached = await this.redisService.getWarehouseVisitCache<WarehouseVisitBooking>(id);
+        if (cached) return cached;
+
         const booking = await this.warehouseVisitRepository.findBookingById(id);
         if (!booking) {
             throw new NotFoundException(await this.i18n.translate('warehouse_visit.errors.booking_not_found', { lang }));
         }
+
+        // Set cache
+        await this.redisService.setWarehouseVisitCache(id, booking);
+
         return booking;
     }
 
@@ -63,7 +94,12 @@ export class WarehouseVisitService {
             }
         }
 
-        return this.warehouseVisitRepository.updateBooking(id, updateData);
+        const updated = await this.warehouseVisitRepository.updateBooking(id, updateData);
+
+        // Invalidate cache
+        await this.redisService.invalidateWarehouseVisitCache(id);
+
+        return updated;
     }
 
     async rescheduleBooking(id: string, newDate: string, newTimeStart: string, newTimeEnd: string | undefined, userId: string, lang: string, reason?: string): Promise<WarehouseVisitBooking> {
@@ -75,7 +111,8 @@ export class WarehouseVisitService {
         }
 
         // Create new booking
-        const code = `VISIT-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+        const prefix = this.configService.get<string>('WAREHOUSE_VISIT_CODE_PREFIX', 'VISIT');
+        const code = `${prefix}-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
         const newBookingData: Prisma.WarehouseVisitBookingUncheckedCreateInput = {
             warehouse_template_id: oldBooking.warehouse_template_id,
             organization_id: oldBooking.organization_id,
@@ -110,11 +147,25 @@ export class WarehouseVisitService {
             reschedule_reason: reason,
         });
 
+        // Invalidate cache
+        await this.redisService.invalidateWarehouseVisitCache(oldBooking.id);
+        await this.redisService.invalidateWarehouseVisitCache(newBooking.id); // Probably redundant but safe
+
+        // Invalidate list cache
+        const listPrefix = this.configService.get<string>('REDIS_WAREHOUSE_VISIT_LIST_KEY_PREFIX', 'warehouse:visit:list');
+        await this.redisService.delByPattern(`${listPrefix}:*`);
+
         return newBooking;
     }
 
     async softDeleteBooking(id: string, userId: string, lang: string): Promise<void> {
         const booking = await this.findBookingById(id, lang);
         await this.warehouseVisitRepository.softDeleteBooking(id, userId);
+
+        // Invalidate cache
+        await this.redisService.invalidateWarehouseVisitCache(id);
+        // Invalidate list cache
+        const listPrefix = this.configService.get<string>('REDIS_WAREHOUSE_VISIT_LIST_KEY_PREFIX', 'warehouse:visit:list');
+        await this.redisService.delByPattern(`${listPrefix}:*`);
     }
 }

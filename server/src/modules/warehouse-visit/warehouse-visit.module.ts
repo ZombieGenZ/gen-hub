@@ -1,11 +1,12 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '../../prisma/prisma.module';
+import { RedisModule } from '../redis/redis.module';
 import { WarehouseVisitService } from './warehouse-visit.service';
 import { WarehouseVisitController } from './warehouse-visit.controller';
 import { WarehouseVisitRepository } from './warehouse-visit.repository';
 
 @Module({
-    imports: [PrismaModule],
+    imports: [PrismaModule, RedisModule],
     controllers: [WarehouseVisitController],
     providers: [WarehouseVisitService, WarehouseVisitRepository],
     exports: [WarehouseVisitService],

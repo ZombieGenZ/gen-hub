@@ -1,4 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { RedisService } from '../redis/redis.service';
 import { WarehouseManagerRoleRepository } from './warehouse-manager-role.repository';
 import { CreateWarehouseManagerRoleDto, UpdateWarehouseManagerRoleDto } from './dto';
 import { WarehouseManagerRole, WarehouseManagerPermission } from '@prisma/client';
@@ -10,6 +12,8 @@ export class WarehouseManagerRoleService {
     constructor(
         private readonly warehouseManagerRoleRepository: WarehouseManagerRoleRepository,
         private readonly i18n: I18nService,
+        private readonly redisService: RedisService,
+        private readonly configService: ConfigService,
     ) { }
 
     async createRole(dto: CreateWarehouseManagerRoleDto): Promise<WarehouseManagerRole> {
@@ -24,18 +28,42 @@ export class WarehouseManagerRoleService {
         if (!newRole) {
             throw new Error('Failed to retrieve created role');
         }
+        // Invalidate list cache
+        const listPrefix = this.configService.get<string>('REDIS_WAREHOUSE_MANAGER_ROLE_LIST_KEY_PREFIX', 'warehouse:manager:role:list');
+        await this.redisService.delByPattern(`${listPrefix}:*`);
+
         return newRole;
     }
 
     async findAllRoles(query: any): Promise<IPaginatedResponse<WarehouseManagerRole>> {
-        return this.warehouseManagerRoleRepository.findAllRoles(query);
+        const cacheKey = this.redisService.getWarehouseManagerRoleListCacheKey(query);
+        const cached = await this.redisService.get(cacheKey);
+        if (cached) {
+            return JSON.parse(cached);
+        }
+
+        const result = await this.warehouseManagerRoleRepository.findAllRoles(query);
+
+        // Set cache
+        const ttl = this.configService.get<number>('REDIS_WAREHOUSE_MANAGER_ROLE_LIST_CACHE_TTL', 60);
+        await this.redisService.set(cacheKey, JSON.stringify(result), ttl);
+
+        return result;
     }
 
     async findRoleById(id: string, lang: string): Promise<WarehouseManagerRole> {
+        // Cache check
+        const cached = await this.redisService.getWarehouseManagerRoleCache<WarehouseManagerRole>(id);
+        if (cached) return cached;
+
         const role = await this.warehouseManagerRoleRepository.findRoleById(id);
         if (!role) {
             throw new NotFoundException(await this.i18n.translate('warehouse_manager.errors.role_not_found', { lang }));
         }
+
+        // Set cache
+        await this.redisService.setWarehouseManagerRoleCache(id, role);
+
         return role;
     }
 
@@ -56,6 +84,9 @@ export class WarehouseManagerRoleService {
         if (!updatedRole) {
             throw new NotFoundException(await this.i18n.translate('warehouse_manager.errors.role_not_found', { lang }));
         }
+        // Invalidate cache
+        await this.redisService.invalidateWarehouseManagerRoleCache(id);
+
         return updatedRole;
     }
 
@@ -66,9 +97,22 @@ export class WarehouseManagerRoleService {
         }
 
         await this.warehouseManagerRoleRepository.softDeleteRole(id, userId);
+        // Invalidate cache
+        await this.redisService.invalidateWarehouseManagerRoleCache(id);
     }
 
     async findAllPermissions(): Promise<WarehouseManagerPermission[]> {
-        return this.warehouseManagerRoleRepository.findAllPermissions();
+        const cacheKey = this.redisService.getWarehouseManagerPermissionCacheKey();
+        const cached = await this.redisService.get(cacheKey);
+        if (cached) {
+            return JSON.parse(cached);
+        }
+
+        const permissions = await this.warehouseManagerRoleRepository.findAllPermissions();
+
+        // Set cache (Long TTL for permissions as they change rarely)
+        await this.redisService.set(cacheKey, JSON.stringify(permissions), 3600);
+
+        return permissions;
     }
 }

@@ -53,4 +53,94 @@ export default registerAs('cache', () => ({
             page: process.env.REDIS_COUPON_SCHEDULE_PAGE_KEY_PREFIX || 'coupon-schedule:page',
         },
     },
+    warehouseTemplate: {
+        ttl: {
+            item: parseInt(process.env.REDIS_WAREHOUSE_TEMPLATE_CACHE_TTL ?? '300', 10),
+            list: parseInt(process.env.REDIS_WAREHOUSE_TEMPLATE_LIST_CACHE_TTL ?? '60', 10),
+        },
+        keys: {
+            item: process.env.REDIS_WAREHOUSE_TEMPLATE_KEY_PREFIX || 'warehouse-template',
+            list: process.env.REDIS_WAREHOUSE_TEMPLATE_LIST_KEY_PREFIX || 'warehouse-template:list',
+        },
+    },
+    warehouseManager: {
+        ttl: {
+            item: parseInt(process.env.REDIS_WAREHOUSE_MANAGER_CACHE_TTL ?? '300', 10),
+            list: parseInt(process.env.REDIS_WAREHOUSE_MANAGER_LIST_CACHE_TTL ?? '60', 10),
+        },
+        keys: {
+            item: process.env.REDIS_WAREHOUSE_MANAGER_KEY_PREFIX || 'warehouse-manager',
+            list: process.env.REDIS_WAREHOUSE_MANAGER_LIST_KEY_PREFIX || 'warehouse-manager:list',
+        },
+    },
+    warehouseManagerRole: {
+        ttl: {
+            item: parseInt(process.env.REDIS_WAREHOUSE_MANAGER_ROLE_CACHE_TTL ?? '300', 10),
+            list: parseInt(process.env.REDIS_WAREHOUSE_MANAGER_ROLE_LIST_CACHE_TTL ?? '60', 10),
+        },
+        keys: {
+            item: process.env.REDIS_WAREHOUSE_MANAGER_ROLE_KEY_PREFIX || 'warehouse-manager-role',
+            list: process.env.REDIS_WAREHOUSE_MANAGER_ROLE_LIST_KEY_PREFIX || 'warehouse-manager-role:list',
+        },
+    },
+    warehouseVisit: {
+        ttl: {
+            item: parseInt(process.env.REDIS_WAREHOUSE_VISIT_CACHE_TTL ?? '300', 10),
+            list: parseInt(process.env.REDIS_WAREHOUSE_VISIT_LIST_CACHE_TTL ?? '60', 10),
+        },
+        keys: {
+            item: process.env.REDIS_WAREHOUSE_VISIT_KEY_PREFIX || 'warehouse-visit',
+            list: process.env.REDIS_WAREHOUSE_VISIT_LIST_KEY_PREFIX || 'warehouse-visit:list',
+        },
+    },
+    rentalDurationTier: {
+        ttl: {
+            item: parseInt(process.env.REDIS_RENTAL_DURATION_TIER_CACHE_TTL ?? '300', 10),
+            list: parseInt(process.env.REDIS_RENTAL_DURATION_TIER_LIST_CACHE_TTL ?? '60', 10),
+        },
+        keys: {
+            item: process.env.REDIS_RENTAL_DURATION_TIER_KEY_PREFIX || 'rental-duration-tier',
+            list: process.env.REDIS_RENTAL_DURATION_TIER_LIST_KEY_PREFIX || 'rental-duration-tier:list',
+        },
+    },
+    rowTemplate: {
+        ttl: {
+            item: parseInt(process.env.REDIS_ROW_TEMPLATE_CACHE_TTL ?? '300', 10),
+            list: parseInt(process.env.REDIS_ROW_TEMPLATE_LIST_CACHE_TTL ?? '60', 10),
+        },
+        keys: {
+            item: process.env.REDIS_ROW_TEMPLATE_KEY_PREFIX || 'row-template',
+            list: process.env.REDIS_ROW_TEMPLATE_LIST_KEY_PREFIX || 'row-template:list',
+        },
+    },
+    rackTemplate: {
+        ttl: {
+            item: parseInt(process.env.REDIS_RACK_TEMPLATE_CACHE_TTL ?? '300', 10),
+            list: parseInt(process.env.REDIS_RACK_TEMPLATE_LIST_CACHE_TTL ?? '60', 10),
+        },
+        keys: {
+            item: process.env.REDIS_RACK_TEMPLATE_KEY_PREFIX || 'rack-template',
+            list: process.env.REDIS_RACK_TEMPLATE_LIST_KEY_PREFIX || 'rack-template:list',
+        },
+    },
+    shelfTemplate: {
+        ttl: {
+            item: parseInt(process.env.REDIS_SHELF_TEMPLATE_CACHE_TTL ?? '300', 10),
+            list: parseInt(process.env.REDIS_SHELF_TEMPLATE_LIST_CACHE_TTL ?? '60', 10),
+        },
+        keys: {
+            item: process.env.REDIS_SHELF_TEMPLATE_KEY_PREFIX || 'shelf-template',
+            list: process.env.REDIS_SHELF_TEMPLATE_LIST_KEY_PREFIX || 'shelf-template:list',
+        },
+    },
+    blockTemplate: {
+        ttl: {
+            item: parseInt(process.env.REDIS_BLOCK_TEMPLATE_CACHE_TTL ?? '300', 10),
+            list: parseInt(process.env.REDIS_BLOCK_TEMPLATE_LIST_CACHE_TTL ?? '60', 10),
+        },
+        keys: {
+            item: process.env.REDIS_BLOCK_TEMPLATE_KEY_PREFIX || 'block-template',
+            list: process.env.REDIS_BLOCK_TEMPLATE_LIST_KEY_PREFIX || 'block-template:list',
+        },
+    },
 }));

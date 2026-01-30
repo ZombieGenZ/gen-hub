@@ -1,4 +1,5 @@
 import { Injectable, BadRequestException, NotFoundException, ConflictException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { WarehouseManagerRepository } from './warehouse-manager.repository';
 import { AssignWarehouseManagerDto, UpdateWarehouseManagerDto } from './dto';
 import { WarehouseTemplateManager } from '@prisma/client';
@@ -15,6 +16,7 @@ export class WarehouseManagerService {
         private readonly i18n: I18nService,
         private readonly redisService: RedisService,
         private readonly websocketGateway: WebsocketGateway,
+        private readonly configService: ConfigService,
     ) { }
 
     async assignManager(dto: AssignWarehouseManagerDto, createdBy: string, lang: string): Promise<WarehouseTemplateManager> {
@@ -54,11 +56,26 @@ export class WarehouseManagerService {
             createdBy
         );
 
+        // Invalidate list cache
+        await this.redisService.delByPattern(`${this.redisService.getWarehouseManagerListCacheKey({})}*`);
+
         return newManager;
     }
 
     async findAllManagers(query: any): Promise<IPaginatedResponse<WarehouseTemplateManager>> {
-        return this.warehouseManagerRepository.findAllManagers(query);
+        const cacheKey = this.redisService.getWarehouseManagerListCacheKey(query);
+        const cached = await this.redisService.get(cacheKey);
+        if (cached) {
+            return JSON.parse(cached);
+        }
+
+        const result = await this.warehouseManagerRepository.findAllManagers(query);
+
+        // Set cache
+        const ttl = this.configService.get<number>('REDIS_WAREHOUSE_MANAGER_LIST_CACHE_TTL', 60);
+        await this.redisService.set(cacheKey, JSON.stringify(result), ttl);
+
+        return result;
     }
 
     async findManagerById(id: string, lang: string): Promise<WarehouseTemplateManager> {
@@ -102,6 +119,9 @@ export class WarehouseManagerService {
             userId // using userId as updatedBy
         );
 
+        // Invalidate list cache as well
+        await this.redisService.delByPattern(`${this.redisService.getWarehouseManagerListCacheKey({})}*`);
+
         return updatedManager;
     }
 
@@ -114,6 +134,8 @@ export class WarehouseManagerService {
 
         // Invalidate cache
         await this.redisService.invalidateWarehouseManagerCache(id);
+        // Invalidate list cache
+        await this.redisService.delByPattern(`${this.redisService.getWarehouseManagerListCacheKey({})}*`);
 
         // Emit socket event
         this.websocketGateway.emitWarehouseManagerRemoved(
