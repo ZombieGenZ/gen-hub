@@ -1,4 +1,4 @@
-import { RentalContract, RentalContractDetail, ContractStatus } from '@prisma/client';
+import { RentalContract, RentalContractDetail } from '@prisma/client';
 
 /**
  * Interface rental contract với relations

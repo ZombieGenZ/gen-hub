@@ -31,6 +31,7 @@ import { UserNotificationModule } from './modules/user-notification/user-notific
 import { OrgNotificationModule } from './modules/org-notification/org-notification.module';
 import { WarehouseModule } from './modules/warehouse/warehouse.module';
 import { RentalContractModule } from './modules/rental-contract/rental-contract.module';
+import { OrgRentalContractModule } from './modules/org-rental-contract/org-rental-contract.module';
 import { RentalSchedulerModule } from './modules/rental-scheduler/rental-scheduler.module';
 import { PaymentModule } from './modules/payment/payment.module';
 import { AmenityModule } from './modules/amenity/amenity.module';
@@ -178,6 +179,7 @@ import { RoleModule } from './modules/role/role.module';
 
     // Rental Contracts
     RentalContractModule,
+    OrgRentalContractModule,
 
     // Warehouses
     WarehouseModule,

@@ -1,5 +1,5 @@
 import { Process, Processor } from '@nestjs/bull';
-import { Injectable, Logger, BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException, NotFoundException } from '@nestjs/common';
 import type { Job } from 'bull';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SepayService } from '../payment/sepay.service';
@@ -7,7 +7,7 @@ import { PaymentSchedulerService } from '../payment/payment-scheduler.service';
 import { SystemLogService } from '../system-log/system-log.service';
 import { WebsocketGateway } from '../websocket/websocket.gateway';
 import { ConfigService } from '@nestjs/config';
-import { ContractStatus, PaymentStatus, PaymentType } from '@prisma/client';
+import { ContractStatus, PaymentStatus } from '@prisma/client';
 import { I18nService } from 'nestjs-i18n';
 
 /**
