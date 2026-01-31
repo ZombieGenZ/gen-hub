@@ -29,6 +29,8 @@ jobs:
       resources_panel: ${{ steps.filter.outputs.resources_panel }}
       admin_panel: ${{ steps.filter.outputs.admin_panel }}
     steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
         id: filter
         with:
