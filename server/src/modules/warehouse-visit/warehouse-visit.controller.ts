@@ -61,10 +61,13 @@ export class WarehouseVisitController {
     }
 
     @Post()
-    @ApiOperation({ summary: 'Create a new visit booking', description: 'Tạo lịch hẹn tham quan kho mới' })
+    @ApiOperation({
+        summary: 'Tạo lịch hẹn tham quan',
+        description: 'Tạo mới một lịch hẹn tham quan kho. Yêu cầu quyền `warehouse-visit.create`.'
+    })
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('warehouse-visit.create')
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @ApiAuthResponses()
     @ApiValidationErrorResponse()
     @ApiBody({
@@ -95,13 +98,15 @@ export class WarehouseVisitController {
             properties: {
                 code: { type: 'string', example: 'warehouse_visit.create_success' },
                 message: { type: 'string', example: 'Tạo lịch hẹn thành công' },
+                success: { type: 'boolean', example: true },
                 data: {
                     type: 'object',
                     properties: {
                         id: { type: 'string' },
                         visitor_name: { type: 'string' },
                         status: { type: 'string', example: 'PENDING' },
-                        booking_code: { type: 'string', example: 'WV-20240215-XXXX' }
+                        booking_code: { type: 'string', example: 'WV-20240215-XXXX' },
+                        created_at: { type: 'string', format: 'date-time' },
                     }
                 }
             }
@@ -113,38 +118,60 @@ export class WarehouseVisitController {
 
     @Get()
     @UseGuards(JwtAuthGuard, PermissionGuard)
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @RequireAnyPermission('warehouse-visit.list', 'warehouse-visit.list.all')
-    @ApiOperation({ summary: 'Get all visit bookings with pagination', description: 'Lấy danh sách lịch hẹn tham quan' })
+    @ApiOperation({
+        summary: 'Lấy danh sách lịch hẹn',
+        description: 'Lấy danh sách lịch hẹn tham quan có phân trang và lọc theo trạng thái/ngày.'
+    })
     @ApiAuthResponses()
-    @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
-    @ApiQuery({ name: 'limit', required: false, type: Number, example: 10 })
-    @ApiQuery({ name: 'status', required: false, type: String, description: 'Lọc theo trạng thái' })
-    @ApiQuery({ name: 'date', required: false, type: String, description: 'Lọc theo ngày (YYYY-MM-DD)' })
+    @ApiQuery({ name: 'page', required: false, type: Number, example: 1, description: 'Trang hiện tại' })
+    @ApiQuery({ name: 'limit', required: false, type: Number, example: 10, description: 'Số lượng record mỗi trang' })
+    @ApiQuery({ name: 'status', required: false, type: String, description: 'Lọc theo trạng thái', example: 'PENDING' })
+    @ApiQuery({ name: 'date', required: false, type: String, description: 'Lọc theo ngày (YYYY-MM-DD)', example: '2024-02-15' })
     @ApiResponse({
         status: 200,
-        description: 'Danh sách lịch hẹn',
+        description: 'Lấy danh sách thành công',
         schema: {
             type: 'object',
             properties: {
+                code: { type: 'string', example: 'warehouse_visit.list_success' },
+                message: { type: 'string', example: 'Lấy danh sách lịch hẹn thành công' },
+                success: { type: 'boolean', example: true },
                 data: {
-                    type: 'array',
-                    items: {
-                        type: 'object',
-                        properties: {
-                            id: { type: 'string' },
-                            visitor_name: { type: 'string' },
-                            visit_date: { type: 'string' },
-                            status: { type: 'string' }
-                        }
-                    }
-                },
-                meta: {
                     type: 'object',
                     properties: {
-                        total: { type: 'number' },
-                        page: { type: 'number' },
-                        limit: { type: 'number' },
+                        items: {
+                            type: 'array',
+                            items: {
+                                type: 'object',
+                                properties: {
+                                    id: { type: 'string' },
+                                    visitor_name: { type: 'string' },
+                                    visit_date: { type: 'string' },
+                                    visit_time_start: { type: 'string' },
+                                    visit_time_end: { type: 'string' },
+                                    status: { type: 'string' },
+                                    booking_code: { type: 'string' },
+                                    warehouse_template: {
+                                        type: 'object',
+                                        properties: {
+                                            id: { type: 'string' },
+                                            name: { type: 'string' }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        meta: {
+                            type: 'object',
+                            properties: {
+                                total: { type: 'number' },
+                                page: { type: 'number' },
+                                limit: { type: 'number' },
+                                totalPages: { type: 'number' },
+                            }
+                        }
                     }
                 }
             }
@@ -157,23 +184,56 @@ export class WarehouseVisitController {
 
     @Get(':id')
     @UseGuards(JwtAuthGuard, PermissionGuard)
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @RequireAnyPermission('warehouse-visit.read', 'warehouse-visit.read.all')
-    @ApiOperation({ summary: 'Get a visit booking by id', description: 'Lấy chi tiết lịch hẹn tham quan' })
+    @ApiOperation({
+        summary: 'Lấy chi tiết lịch hẹn',
+        description: 'Lấy thông tin chi tiết của một lịch hẹn tham quan bao gồm lịch sử booking.'
+    })
     @ApiAuthResponses()
-    @ApiParam({ name: 'id', description: 'ID của lịch hẹn' })
+    @ApiParam({
+        name: 'id',
+        type: 'string',
+        description: 'ID của lịch hẹn (UUID)',
+        example: 'b2f76b83-ce55-49bc-955c-4ddf49bc955c'
+    })
     @ApiResponse({
         status: 200,
-        description: 'Thông tin chi tiết lịch hẹn',
+        description: 'Lấy chi tiết thành công',
         schema: {
             type: 'object',
             properties: {
-                id: { type: 'string' },
-                visitor_name: { type: 'string' },
-                visit_date: { type: 'string' },
-                history: { type: 'array', items: { type: 'object' } }
+                code: { type: 'string', example: 'warehouse_visit.get_success' },
+                message: { type: 'string', example: 'Lấy thông tin lịch hẹn thành công' },
+                success: { type: 'boolean', example: true },
+                data: {
+                    type: 'object',
+                    properties: {
+                        id: { type: 'string' },
+                        visitor_name: { type: 'string' },
+                        visitor_email: { type: 'string' },
+                        visitor_phone: { type: 'string' },
+                        visit_date: { type: 'string' },
+                        status: { type: 'string' },
+                        history: { type: 'array', items: { type: 'object' } },
+                        created_at: { type: 'string', format: 'date-time' },
+                        updated_at: { type: 'string', format: 'date-time' },
+                    }
+                }
             }
         }
+    })
+    @ApiResponse({
+        status: 404,
+        description: 'Không tìm thấy lịch hẹn',
+        schema: {
+            type: 'object',
+            properties: {
+                code: { type: 'string', example: 'warehouse_visit.not_found' },
+                message: { type: 'string', example: 'Không tìm thấy lịch hẹn' },
+                success: { type: 'boolean', example: false },
+            },
+        },
     })
     async findOne(@Param('id', ParseUUIDPipe) id: string, @CurrentUser('userId') userId: string, @Request() req: any) {
         const lang = req.headers['accept-language'] || 'vi';
@@ -183,14 +243,23 @@ export class WarehouseVisitController {
 
     @Patch(':id')
     @UseGuards(JwtAuthGuard, PermissionGuard)
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @RequireAnyPermission('warehouse-visit.update', 'warehouse-visit.update.all')
-    @ApiOperation({ summary: 'Update a visit booking', description: 'Cập nhật trạng thái hoặc ghi chú lịch hẹn' })
+    @ApiOperation({
+        summary: 'Cập nhật lịch hẹn',
+        description: 'Cập nhật trạng thái hoặc ghi chú của lịch hẹn.'
+    })
     @ApiAuthResponses()
     @ApiValidationErrorResponse()
-    @ApiParam({ name: 'id', description: 'ID của lịch hẹn' })
+    @ApiParam({
+        name: 'id',
+        type: 'string',
+        description: 'ID của lịch hẹn (UUID)',
+        example: 'b2f76b83-ce55-49bc-955c-4ddf49bc955c'
+    })
     @ApiBody({
         type: UpdateWarehouseVisitBookingDto,
+        description: 'Thông tin cập nhật',
         examples: {
             example_1: {
                 summary: 'Xác nhận lịch hẹn',
@@ -209,6 +278,31 @@ export class WarehouseVisitController {
             }
         }
     })
+    @ApiResponse({
+        status: 200,
+        description: 'Cập nhật thành công',
+        schema: {
+            type: 'object',
+            properties: {
+                code: { type: 'string', example: 'warehouse_visit.update_success' },
+                message: { type: 'string', example: 'Cập nhật lịch hẹn thành công' },
+                success: { type: 'boolean', example: true },
+                data: { type: 'object' },
+            }
+        }
+    })
+    @ApiResponse({
+        status: 404,
+        description: 'Không tìm thấy lịch hẹn',
+        schema: {
+            type: 'object',
+            properties: {
+                code: { type: 'string', example: 'warehouse_visit.not_found' },
+                message: { type: 'string', example: 'Không tìm thấy lịch hẹn' },
+                success: { type: 'boolean', example: false },
+            },
+        },
+    })
     async update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateWarehouseVisitBookingDto, @CurrentUser('userId') userId: string, @Request() req: any) {
         const lang = req.headers['accept-language'] || 'vi';
         const hasUpdateAll = await this.hasPermission(userId, 'warehouse-visit.update.all');
@@ -217,11 +311,44 @@ export class WarehouseVisitController {
 
     @Delete(':id')
     @UseGuards(JwtAuthGuard, PermissionGuard)
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @RequireAnyPermission('warehouse-visit.delete', 'warehouse-visit.delete.all')
-    @ApiOperation({ summary: 'Soft delete a visit booking', description: 'Xóa lịch hẹn (soft delete)' })
+    @ApiOperation({
+        summary: 'Xóa lịch hẹn',
+        description: 'Xóa mềm (soft delete) lịch hẹn khỏi hệ thống.'
+    })
     @ApiAuthResponses()
-    @ApiParam({ name: 'id', description: 'ID của lịch hẹn' })
+    @ApiParam({
+        name: 'id',
+        type: 'string',
+        description: 'ID của lịch hẹn (UUID)',
+        example: 'b2f76b83-ce55-49bc-955c-4ddf49bc955c'
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Xóa thành công',
+        schema: {
+            type: 'object',
+            properties: {
+                code: { type: 'string', example: 'warehouse_visit.delete_success' },
+                message: { type: 'string', example: 'Xóa lịch hẹn thành công' },
+                success: { type: 'boolean', example: true },
+                data: { type: 'null' },
+            }
+        }
+    })
+    @ApiResponse({
+        status: 404,
+        description: 'Không tìm thấy lịch hẹn',
+        schema: {
+            type: 'object',
+            properties: {
+                code: { type: 'string', example: 'warehouse_visit.not_found' },
+                message: { type: 'string', example: 'Không tìm thấy lịch hẹn' },
+                success: { type: 'boolean', example: false },
+            },
+        },
+    })
     async remove(@Param('id', ParseUUIDPipe) id: string, @CurrentUser('userId') userId: string, @Request() req: any) {
         const lang = req.headers['accept-language'] || 'vi';
         const hasDeleteAll = await this.hasPermission(userId, 'warehouse-visit.delete.all');
@@ -230,14 +357,23 @@ export class WarehouseVisitController {
 
     @Post(':id/reschedule')
     @UseGuards(JwtAuthGuard, PermissionGuard)
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @RequireAnyPermission('warehouse-visit.update', 'warehouse-visit.update.all')
-    @ApiOperation({ summary: 'Reschedule a visit booking', description: 'Đổi lịch hẹn sang ngày/giờ khác' })
+    @ApiOperation({
+        summary: 'Đổi lịch hẹn',
+        description: 'Thay đổi ngày giờ của lịch hẹn tham quan.'
+    })
     @ApiAuthResponses()
     @ApiValidationErrorResponse()
-    @ApiParam({ name: 'id', description: 'ID của lịch hẹn' })
+    @ApiParam({
+        name: 'id',
+        type: 'string',
+        description: 'ID của lịch hẹn (UUID)',
+        example: 'b2f76b83-ce55-49bc-955c-4ddf49bc955c'
+    })
     @ApiBody({
         type: RescheduleWarehouseVisitBookingDto,
+        description: 'Thông tin đổi lịch',
         examples: {
             example_1: {
                 summary: 'Đổi lịch sang tuần sau',
@@ -249,6 +385,40 @@ export class WarehouseVisitController {
                 }
             }
         }
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Đổi lịch thành công',
+        schema: {
+            type: 'object',
+            properties: {
+                code: { type: 'string', example: 'warehouse_visit.reschedule_success' },
+                message: { type: 'string', example: 'Đổi lịch hẹn thành công' },
+                success: { type: 'boolean', example: true },
+                data: {
+                    type: 'object',
+                    properties: {
+                        id: { type: 'string' },
+                        visit_date: { type: 'string' },
+                        visit_time_start: { type: 'string' },
+                        visit_time_end: { type: 'string' },
+                        updated_at: { type: 'string', format: 'date-time' }
+                    }
+                },
+            }
+        }
+    })
+    @ApiResponse({
+        status: 404,
+        description: 'Không tìm thấy lịch hẹn',
+        schema: {
+            type: 'object',
+            properties: {
+                code: { type: 'string', example: 'warehouse_visit.not_found' },
+                message: { type: 'string', example: 'Không tìm thấy lịch hẹn' },
+                success: { type: 'boolean', example: false },
+            },
+        },
     })
     async reschedule(@Param('id', ParseUUIDPipe) id: string, @Body() dto: RescheduleWarehouseVisitBookingDto, @CurrentUser('userId') userId: string, @Request() req: any) {
         const lang = req.headers['accept-language'] || 'vi';
