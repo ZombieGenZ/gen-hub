@@ -4,7 +4,7 @@ import { SharedModule } from '../../common/shared.module';
 import { SystemLogModule } from '../system-log/system-log.module';
 import { WebsocketModule } from '../websocket/websocket.module';
 import { RentalContractModule } from '../rental-contract/rental-contract.module';
-import { AccountBalanceModule } from '../account-balance/account-balance.module';
+import { OrganizationBalanceModule } from '../organization-balance/organization-balance.module';
 import { ContactListModule } from '../contact-list/contact-list.module';
 
 import { SepayService } from './sepay.service';
@@ -18,7 +18,7 @@ import { PaymentAdminController } from './payment-admin.controller';
         SystemLogModule,
         WebsocketModule,
         forwardRef(() => RentalContractModule),
-        forwardRef(() => AccountBalanceModule),
+        forwardRef(() => OrganizationBalanceModule),
         ContactListModule,
         BullModule.registerQueue({
             name: 'rental-contract',

@@ -331,7 +331,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         this.seedRackTemplatePermissions.bind(this),
         this.seedShelfTemplatePermissions.bind(this),
         this.seedBlockTemplatePermissions.bind(this),
-        this.seedAccountBalancePermissions.bind(this),
+        this.seedOrganizationBalancePermissions.bind(this),
         this.seedOrganizationUpdateRequestPermissions.bind(this),
         this.seedAddonTypePermissions.bind(this),
         this.seedFaqPermissions.bind(this),
@@ -3194,29 +3194,29 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
   }
 
   /**
-   * Seed các permissions cho Account Balance (Admin only)
+   * Seed các permissions cho Organization Balance (Admin only)
    */
-  private async seedAccountBalancePermissions() {
+  private async seedOrganizationBalancePermissions() {
     try {
-      const accountBalancePermissions = [
+      const organizationBalancePermissions = [
         {
-          key: 'account-balance.list.all',
+          key: 'organization-balance.list.all',
           name: 'Xem tất cả số dư',
           description: 'Quyền xem số dư của tất cả users',
         },
         {
-          key: 'account-balance.adjust',
+          key: 'organization-balance.adjust',
           name: 'Điều chỉnh số dư',
           description: 'Quyền điều chỉnh số dư (thưởng/phạt)',
         },
         {
-          key: 'balance-transaction.list.all',
+          key: 'organization-balance-transaction.list.all',
           name: 'Xem tất cả giao dịch',
           description: 'Quyền xem lịch sử giao dịch của tất cả users',
         },
       ];
 
-      for (const perm of accountBalancePermissions) {
+      for (const perm of organizationBalancePermissions) {
         const existing = await this.permission.findFirst({
           where: { key: perm.key },
         });
@@ -3244,7 +3244,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
 
       const permissions = await this.permission.findMany({
         where: {
-          key: { in: accountBalancePermissions.map((p) => p.key) },
+          key: { in: organizationBalancePermissions.map((p) => p.key) },
           is_deleted: false,
         },
       });
@@ -3276,7 +3276,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
       this.logger.error(
-        `❌ Failed to seed account-balance permissions: ${errorMessage}`,
+        `❌ Failed to seed organization-balance permissions: ${errorMessage}`,
       );
     }
   }

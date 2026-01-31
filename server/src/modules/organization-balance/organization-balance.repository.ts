@@ -5,7 +5,7 @@ import { IOrganizationBalance, IOrganizationBalanceTransaction, IPaginatedRespon
 import { QueryBalanceTransactionDto } from './dto';
 
 @Injectable()
-export class AccountBalanceRepository {
+export class OrganizationBalanceRepository {
     constructor(private readonly prisma: PrismaService) { }
 
     /**

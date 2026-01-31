@@ -73,7 +73,7 @@ export class QueryPermissionDto {
     @ApiProperty({
         description: 'Lọc theo module (prefix của permission key)',
         required: false,
-        example: 'account-balance',
+        example: 'organization-balance',
     })
     @IsOptional()
     @IsString({ message: i18nValidationMessage('common.validation.is_string') })

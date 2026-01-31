@@ -7,7 +7,7 @@ import { ConfigService } from '@nestjs/config';
 import { I18nService } from 'nestjs-i18n';
 import { BalanceTransactionType, BalanceReferenceType } from '@prisma/client';
 
-import { AccountBalanceRepository } from './account-balance.repository';
+import { OrganizationBalanceRepository } from './organization-balance.repository';
 import { CreateDepositDto, AdjustBalanceDto, QueryBalanceTransactionDto } from './dto';
 import { IOrganizationBalance, IOrganizationBalanceTransaction, IPaginatedResponse } from './interfaces';
 import { RedisService } from '../redis/redis.service';
@@ -15,12 +15,12 @@ import { WebsocketGateway } from '../websocket/websocket.gateway';
 import { SystemLogService } from '../system-log/system-log.service';
 
 @Injectable()
-export class AccountBalanceService {
+export class OrganizationBalanceService {
     private readonly BALANCE_CACHE_TTL: number;
     private readonly TRANSACTION_LIST_CACHE_TTL: number;
 
     constructor(
-        private readonly repository: AccountBalanceRepository,
+        private readonly repository: OrganizationBalanceRepository,
         private readonly redisService: RedisService,
         private readonly configService: ConfigService,
         private readonly websocketGateway: WebsocketGateway,
@@ -92,7 +92,7 @@ export class AccountBalanceService {
 
         await this.systemLogService.log({
             level: 'INFO',
-            module: 'AccountBalance',
+            module: 'OrganizationBalance',
             action: 'deposit.request',
             message: `Organization ${organizationId} yêu cầu nạp ${dto.amount} VND bởi user ${userId}`,
             userId,
@@ -101,7 +101,7 @@ export class AccountBalanceService {
 
         // Return placeholder - sẽ được gọi từ controller qua SepayService
         throw new BadRequestException(
-            await this.i18n.translate('account-balance.USE_DEPOSIT_ENDPOINT', { lang }),
+            await this.i18n.translate('organization-balance.USE_DEPOSIT_ENDPOINT', { lang }),
         );
     }
 
@@ -155,7 +155,7 @@ export class AccountBalanceService {
 
         await this.systemLogService.log({
             level: 'INFO',
-            module: 'AccountBalance',
+            module: 'OrganizationBalance',
             action: 'deposit.success',
             message: `Organization ${organizationId} nạp thành công ${amount} VND`,
             metaData: { organizationId, amount, paymentId, paymentCode, newBalance: result.balance.balance },
@@ -216,7 +216,7 @@ export class AccountBalanceService {
     ): Promise<IPaginatedResponse<IOrganizationBalance>> {
         await this.systemLogService.log({
             level: 'INFO',
-            module: 'AccountBalance',
+            module: 'OrganizationBalance',
             action: 'list.all',
             message: `Admin ${adminId} xem danh sách số dư tổ chức`,
             userId: adminId,
@@ -238,13 +238,13 @@ export class AccountBalanceService {
 
         if (!balance) {
             throw new NotFoundException(
-                await this.i18n.translate('account-balance.NOT_FOUND', { lang }),
+                await this.i18n.translate('organization-balance.NOT_FOUND', { lang }),
             );
         }
 
         await this.systemLogService.log({
             level: 'INFO',
-            module: 'AccountBalance',
+            module: 'OrganizationBalance',
             action: 'read',
             message: `Admin ${adminId} xem số dư của tổ chức ${targetOrganizationId}`,
             userId: adminId,
@@ -291,7 +291,7 @@ export class AccountBalanceService {
 
         await this.systemLogService.log({
             level: 'INFO',
-            module: 'AccountBalance',
+            module: 'OrganizationBalance',
             action: 'adjust',
             message: `Admin ${adminId} điều chỉnh số dư tổ chức ${targetOrganizationId}: ${dto.type} ${dto.amount} VND`,
             userId: adminId,

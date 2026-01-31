@@ -6,7 +6,7 @@ import { PaymentStatus, PaymentType, PaymentPurpose } from '@prisma/client';
 import { SystemLogService } from '../system-log/system-log.service';
 import { WebsocketGateway } from '../websocket/websocket.gateway';
 import { RentalContractService } from '../rental-contract/rental-contract.service';
-import { AccountBalanceService } from '../account-balance/account-balance.service';
+import { OrganizationBalanceService } from '../organization-balance/organization-balance.service';
 import { ContactListService } from '../contact-list/contact-list.service';
 
 /**
@@ -35,8 +35,8 @@ export class SepayService {
         private readonly websocketGateway: WebsocketGateway,
         @Inject(forwardRef(() => RentalContractService))
         private readonly rentalContractService: RentalContractService,
-        @Inject(forwardRef(() => AccountBalanceService))
-        private readonly accountBalanceService: AccountBalanceService,
+        @Inject(forwardRef(() => OrganizationBalanceService))
+        private readonly organizationBalanceService: OrganizationBalanceService,
         private readonly contactListService: ContactListService,
     ) {
         this.accountNumber = this.configService.get<string>('SEPAY_ACCOUNT_NUMBER') || '';
@@ -272,7 +272,7 @@ export class SepayService {
             // Nạp tiền vào tài khoản tổ chức
             const organizationId = payment.organization_id;
             if (organizationId) {
-                await this.accountBalanceService.processDepositSuccess(
+                await this.organizationBalanceService.processDepositSuccess(
                     organizationId,
                     payment.amount,
                     payment.id,

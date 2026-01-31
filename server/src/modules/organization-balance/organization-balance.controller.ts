@@ -16,7 +16,7 @@ import {
 } from '@nestjs/swagger';
 import type { Request } from 'express';
 
-import { AccountBalanceService } from './account-balance.service';
+import { OrganizationBalanceService } from './organization-balance.service';
 import { SepayService } from '../payment/sepay.service';
 import { CreateDepositDto, QueryBalanceTransactionDto } from './dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -32,9 +32,9 @@ import type { IOrganizationBalance, IOrganizationBalanceTransaction, IPaginatedR
 @Controller('organizations/:orgId/balance')
 @UseGuards(JwtAuthGuard, OrgPermissionGuard)
 @ApiBearerAuth()
-export class AccountBalanceController {
+export class OrganizationBalanceController {
     constructor(
-        private readonly service: AccountBalanceService,
+        private readonly service: OrganizationBalanceService,
         private readonly sepayService: SepayService,
     ) { }
 
@@ -51,7 +51,7 @@ export class AccountBalanceController {
     ): Promise<GetResponse<IOrganizationBalance>> {
         const lang = (req.user as any)?.language || 'vi';
         const data = await this.service.getOrganizationBalance(orgId, lang);
-        return new GetResponse('account-balance.get', data);
+        return new GetResponse('organization-balance.get', data);
     }
 
     /**
@@ -68,7 +68,7 @@ export class AccountBalanceController {
     ): Promise<GetResponse<IPaginatedResponse<IOrganizationBalanceTransaction>>> {
         const lang = (req.user as any)?.language || 'vi';
         const data = await this.service.getOrganizationTransactions(orgId, query, lang);
-        return new GetResponse('account-balance.transactions', data);
+        return new GetResponse('organization-balance.transactions', data);
     }
 
     /**
@@ -90,6 +90,6 @@ export class AccountBalanceController {
             amount: dto.amount,
             notes: dto.notes,
         });
-        return new CreatedResponse('account-balance.deposit.created', result, 'Tạo yêu cầu nạp tiền thành công');
+        return new CreatedResponse('organization-balance.deposit.created', result, 'Tạo yêu cầu nạp tiền thành công');
     }
 }
