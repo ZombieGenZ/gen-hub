@@ -1,22 +1,44 @@
+// Owner (lồng trong Organization)
+export interface OrganizationOwner {
+  id: string;
+  name: string;
+  email: string;
+}
+
 export interface Organization {
-    id: string;
-    name: string;
-    international_name: string | null;
-    is_active: boolean;
-    is_deleted: boolean;
-    owner_id: string;
-    tax_code: string;
-    headquarters_address: string;
-    representative_name: string;
-    representative_title: string;
-    representative_phone: string;
-    representative_email: string;
-    is_using_google_email: boolean;
-    _count: {
-        members: number;
-        roles: number;
-        api_keys: number;
-    };
+  id: string;
+  name: string;
+  international_name: string | null;
+  is_active: boolean;
+  is_deleted: boolean;
+  owner_id: string;
+  tax_code: string;
+  headquarters_address: string;
+  representative_name: string;
+  representative_title: string;
+  representative_phone: string;
+  representative_email: string;
+  is_using_google_email: boolean;
+  gmail_watch_label_ids: string;
+  gmail_watch_renew_interval_hours: number;
+  auto_delete_api_key_logs: boolean;
+  api_key_logs_retention_ms: number;
+  auto_delete_org_audit_logs: boolean;
+  org_audit_logs_retention_ms: number;
+  min_loss_tolerance: string;
+  max_loss_tolerance: string;
+  created_at: string;
+  updated_at: string | null;
+  deleted_at: string | null;
+  created_by: string;
+  updated_by: string | null;
+  deleted_by: string | null;
+  owner: OrganizationOwner;
+  _count: {
+    members: number;
+    roles: number;
+    api_keys: number;
+  };
 }
 
 export interface OrganizationResponse {
