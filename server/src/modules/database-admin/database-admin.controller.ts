@@ -29,7 +29,7 @@ export interface BatchChanges {
 }
 
 @ApiTags('Database')
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 @Controller('admin')
 @UseGuards(JwtAuthGuard, DatabaseAdminGuard)
 export class DatabaseAdminController {

@@ -6,6 +6,8 @@ import { OrganizationModule } from '../organization/organization.module';
 import { OrganizationRoleController } from './organization-role.controller';
 import { OrganizationRoleService } from './organization-role.service';
 import { OrganizationRoleRepository } from './organization-role.repository';
+import { OrganizationRoleCacheKeys } from './constants/cache-keys.helper';
+
 
 @Module({
     imports: [
@@ -18,10 +20,13 @@ import { OrganizationRoleRepository } from './organization-role.repository';
     providers: [
         OrganizationRoleService,
         OrganizationRoleRepository,
+        OrganizationRoleCacheKeys,
     ],
     exports: [
         OrganizationRoleService,
         OrganizationRoleRepository,
+        OrganizationRoleCacheKeys,
     ],
+
 })
 export class OrganizationRoleModule { }

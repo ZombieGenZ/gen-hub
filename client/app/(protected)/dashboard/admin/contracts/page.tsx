@@ -130,7 +130,6 @@ const ContractsPage = () => {
             };
 
             const data: any = await rentalContractService.getRentalContracts(token, params);
-
             if (data) {
                 if (Array.isArray(data)) {
                     setContracts(data);

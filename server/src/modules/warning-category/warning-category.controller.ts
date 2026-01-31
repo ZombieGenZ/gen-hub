@@ -33,7 +33,7 @@ import {
 import type { Request } from 'express';
 
 @ApiTags('Warning Category')
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 @Controller('admin/warning-categories')
 @UseGuards(JwtAuthGuard, PermissionGuard)
 export class WarningCategoryController {

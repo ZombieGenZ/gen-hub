@@ -8,9 +8,9 @@ import { i18nValidationMessage } from 'nestjs-i18n';
  */
 export class CreateDepositDto {
     @ApiProperty({ description: 'Số tiền nạp (VND)', example: 100000 })
-    @IsInt({ message: i18nValidationMessage('account-balance.AMOUNT_MUST_BE_INTEGER') })
-    @Min(10000, { message: i18nValidationMessage('account-balance.AMOUNT_MIN') })
-    @Max(100000000, { message: i18nValidationMessage('account-balance.AMOUNT_MAX') })
+    @IsInt({ message: i18nValidationMessage('organization-balance.AMOUNT_MUST_BE_INTEGER') })
+    @Min(10000, { message: i18nValidationMessage('organization-balance.AMOUNT_MIN') })
+    @Max(100000000, { message: i18nValidationMessage('organization-balance.AMOUNT_MAX') })
     @Transform(({ value }) => parseInt(value, 10))
     amount: number;
 

@@ -17,7 +17,7 @@ export class AdjustBalanceDto {
         example: 'BONUS'
     })
     @IsEnum(['ADJUSTMENT', 'BONUS', 'REFUND'], {
-        message: i18nValidationMessage('account-balance.INVALID_ADJUSTMENT_TYPE')
+        message: i18nValidationMessage('organization-balance.INVALID_ADJUSTMENT_TYPE')
     })
     type: 'ADJUSTMENT' | 'BONUS' | 'REFUND';
 

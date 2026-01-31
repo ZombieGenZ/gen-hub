@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { ContractStatus } from '@prisma/client';
 
-import { RentalContractRepository } from '../rental-contract/rental-contract.repository';
+import { RentalContractRepository } from '../rental-contract-shared/rental-contract.repository';
 import { SystemLogService } from '../system-log/system-log.service';
 import { OrgNotificationRepository } from '../org-notification/org-notification.repository';
 

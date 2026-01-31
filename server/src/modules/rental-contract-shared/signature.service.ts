@@ -4,14 +4,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { I18nService } from 'nestjs-i18n';
 import { ImageUploadService } from '../../common/services/image-upload.service';
 import { SystemLogService } from '../system-log/system-log.service';
-
-export interface SignatureUploadResult {
-    signatureId: string;
-    fileId: string;
-    filePath: string;
-    expiresAt: Date;
-    signedUrl: string;
-}
+import { ISignatureUploadResult } from './interfaces';
 
 /**
  * Service xử lý chữ ký hợp đồng
@@ -47,7 +40,7 @@ export class SignatureService {
         file: Buffer,
         userId: string,
         lang: string,
-    ): Promise<SignatureUploadResult> {
+    ): Promise<ISignatureUploadResult> {
         // Validate file format (chỉ chấp nhận PNG)
         const header = file.slice(0, 8);
         const pngSignature = Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]);

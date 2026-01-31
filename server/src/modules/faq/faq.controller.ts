@@ -32,7 +32,7 @@ export class FaqController {
 
     @Post()
     @ApiOperation({ summary: 'Tạo FAQ mới' })
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('faq.create')
     async create(
@@ -46,7 +46,7 @@ export class FaqController {
 
     @Get()
     @ApiOperation({ summary: 'Lấy danh sách FAQ' })
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('faq.list')
     async findAll(
@@ -67,7 +67,7 @@ export class FaqController {
     @Get(':id')
     @ApiOperation({ summary: 'Lấy chi tiết FAQ' })
     @ApiParam({ name: 'id', description: 'ID FAQ' })
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('faq.read')
     async findById(
@@ -81,7 +81,7 @@ export class FaqController {
     @Put(':id')
     @ApiOperation({ summary: 'Cập nhật FAQ' })
     @ApiParam({ name: 'id', description: 'ID FAQ' })
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('faq.update')
     async update(
@@ -97,7 +97,7 @@ export class FaqController {
     @Delete(':id')
     @ApiOperation({ summary: 'Xóa FAQ' })
     @ApiParam({ name: 'id', description: 'ID FAQ' })
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('faq.delete')
     async delete(
@@ -112,7 +112,7 @@ export class FaqController {
     @Delete('delete/many')
     @ApiOperation({ summary: 'Xóa nhiều FAQ' })
     @ApiBody({ schema: { type: 'object', properties: { ids: { type: 'array', items: { type: 'string' } } } } })
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('faq.delete')
     async deleteMany(

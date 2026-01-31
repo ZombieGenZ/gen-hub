@@ -54,4 +54,5 @@ export interface IPaginatedResponse<T> {
     limit: number;
     offset: number;
     hasMore: boolean;
+    hasPrevious?: boolean; // Sometimes helpful to add but stick to old interface
 }

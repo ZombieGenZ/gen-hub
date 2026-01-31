@@ -1,0 +1,21 @@
+{
+    "NOT_FOUND": "Organization balance not found",
+    "AMOUNT_MUST_BE_INTEGER": "Amount must be an integer",
+    "AMOUNT_MIN": "Minimum amount is 10,000 VND",
+    "AMOUNT_MAX": "Maximum amount is 100,000,000 VND",
+    "INVALID_ADJUSTMENT_TYPE": "Invalid adjustment type",
+    "USE_DEPOSIT_ENDPOINT": "Please use POST /organization/balance/deposit endpoint to deposit",
+    "INSUFFICIENT_BALANCE": "Insufficient balance",
+    "DEPOSIT_SUCCESS": "Deposit successful",
+    "ADJUST_SUCCESS": "Balance adjustment successful",
+    "GET_BALANCE_SUCCESS": "Get balance successful",
+    "GET_TRANSACTIONS_SUCCESS": "Get transactions successful",
+    "TRANSACTION_TYPE": {
+        "DEPOSIT": "Deposit",
+        "WITHDRAW": "Withdraw",
+        "PAYMENT": "Payment",
+        "REFUND": "Refund",
+        "ADJUSTMENT": "Adjustment",
+        "BONUS": "Bonus"
+    }
+}

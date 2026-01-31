@@ -4,6 +4,7 @@ import {
     Logger,
     OnModuleDestroy,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { SchedulerRegistry } from '@nestjs/schedule';
 import { UserRepository } from '../user/user.repository';
 import { RedisService } from '../redis/redis.service';
@@ -20,12 +21,16 @@ import { RedisService } from '../redis/redis.service';
 @Injectable()
 export class BanSchedulerService implements OnModuleInit, OnModuleDestroy {
     private readonly logger = new Logger(BanSchedulerService.name);
+    private readonly timeoutPrefix: string;
 
     constructor(
         private readonly userRepository: UserRepository,
         private readonly redisService: RedisService,
         private readonly schedulerRegistry: SchedulerRegistry,
-    ) { }
+        private readonly configService: ConfigService,
+    ) {
+        this.timeoutPrefix = this.configService.get<string>('SCHEDULER_UNBAN_PREFIX') || 'unban';
+    }
 
     async onModuleInit() {
         await this.processExistingBans();
@@ -35,7 +40,7 @@ export class BanSchedulerService implements OnModuleInit, OnModuleDestroy {
         // Clear all scheduled timeouts when module is destroyed
         const timeouts = this.schedulerRegistry.getTimeouts();
         timeouts.forEach((name) => {
-            if (name.startsWith('unban_')) {
+            if (name.startsWith(this.timeoutPrefix + '_')) {
                 this.schedulerRegistry.deleteTimeout(name);
             }
         });
@@ -107,7 +112,7 @@ export class BanSchedulerService implements OnModuleInit, OnModuleDestroy {
             return;
         }
 
-        const timeoutName = `unban_${userId}`;
+        const timeoutName = `${this.timeoutPrefix}_${userId}`;
 
         // Xóa timeout cũ nếu có (trong trường hợp ban được cập nhật)
         try {
@@ -156,7 +161,7 @@ export class BanSchedulerService implements OnModuleInit, OnModuleDestroy {
      * @param userId - ID của user
      */
     cancelScheduledUnban(userId: string): void {
-        const timeoutName = `unban_${userId}`;
+        const timeoutName = `${this.timeoutPrefix}_${userId}`;
         try {
             this.schedulerRegistry.deleteTimeout(timeoutName);
         } catch {

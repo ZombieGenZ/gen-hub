@@ -16,7 +16,7 @@ import {
 } from '@nestjs/swagger';
 import type { Request } from 'express';
 
-import { AccountBalanceService } from './account-balance.service';
+import { OrganizationBalanceService } from './organization-balance.service';
 import { AdjustBalanceDto } from './dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { PermissionGuard } from '../../common/guards/permission.guard';
@@ -30,9 +30,9 @@ import type { IOrganizationBalance, IOrganizationBalanceTransaction, IPaginatedR
 @ApiTags('Admin - Organization Balance')
 @Controller('admin/organization-balances')
 @UseGuards(JwtAuthGuard, PermissionGuard)
-@ApiBearerAuth()
-export class AccountBalanceAdminController {
-    constructor(private readonly service: AccountBalanceService) { }
+@ApiBearerAuth('JWT-auth')
+export class OrganizationBalanceAdminController {
+    constructor(private readonly service: OrganizationBalanceService) { }
 
     /**
      * Xem danh sách tất cả số dư tổ chức
@@ -49,7 +49,7 @@ export class AccountBalanceAdminController {
         const adminId = (req.user as any).id;
         const lang = (req.user as any).language || 'vi';
         const data = await this.service.findAll({ limit, offset, keywords }, adminId, lang);
-        return new GetResponse('account-balance.list', data);
+        return new GetResponse('organization-balance.list', data);
     }
 
     /**
@@ -66,7 +66,7 @@ export class AccountBalanceAdminController {
         const adminId = (req.user as any).id;
         const lang = (req.user as any).language || 'vi';
         const data = await this.service.findByOrganizationId(organizationId, adminId, lang);
-        return new GetResponse('account-balance.get', data);
+        return new GetResponse('organization-balance.get', data);
     }
 
     /**
@@ -84,6 +84,6 @@ export class AccountBalanceAdminController {
         const adminId = (req.user as any).id;
         const lang = (req.user as any).language || 'vi';
         const data = await this.service.adjustBalance(organizationId, dto, adminId, lang);
-        return new OkResponse('account-balance.adjust', data);
+        return new OkResponse('organization-balance.adjust', data);
     }
 }

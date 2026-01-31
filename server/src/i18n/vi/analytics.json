@@ -1,0 +1,7 @@
+{
+    "errors": {
+        "credentialsNotConfigured": "Chưa cấu hình thông tin đăng nhập Cloudflare",
+        "noZoneData": "Không tìm thấy dữ liệu zone",
+        "fetchFailed": "Không thể lấy dữ liệu analytics"
+    }
+}

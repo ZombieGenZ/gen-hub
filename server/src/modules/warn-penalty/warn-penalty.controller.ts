@@ -29,7 +29,7 @@ import {
 import type { Request } from 'express';
 
 @ApiTags('Warn Penalty')
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 @Controller('admin/warn-penalties')
 @UseGuards(JwtAuthGuard, PermissionGuard)
 export class WarnPenaltyController {

@@ -16,6 +16,8 @@ import {
     QueryCallsDto,
     StartCallDto,
 } from './dto';
+import { OrgChatCacheKeys } from './constants/cache-keys.helper';
+
 
 @Injectable()
 export class OrgChatService {
@@ -28,7 +30,9 @@ export class OrgChatService {
         private readonly redisService: RedisService,
         private readonly prisma: PrismaService,
         private readonly i18n: I18nService,
+        private readonly cacheKeys: OrgChatCacheKeys,
     ) { }
+
 
     /**
      * Lấy RTM token cho chat messaging
@@ -85,13 +89,13 @@ export class OrgChatService {
     async getMessages(orgId: string, query: QueryMessagesDto, userId: string, lang: string) {
         await this.verifyMembership(orgId, userId, lang);
 
-        const cacheKey = this.redisService.getOrgChatMessageListCacheKey(orgId, {
+        const cacheKey = this.cacheKeys.messageList(orgId, {
             limit: query.limit,
             offset: query.offset,
             keywords: query.keywords || '',
-        });
+        } as Record<string, unknown>);
 
-        const cached = await this.redisService.getOrgChatMessageListCache(cacheKey);
+        const cached = await this.redisService.getJson<any>(cacheKey);
         if (cached) return cached;
 
         const result = await this.repository.findMessages(orgId, {
@@ -100,9 +104,10 @@ export class OrgChatService {
             keywords: query.keywords,
         });
 
-        await this.redisService.setOrgChatMessageListCache(cacheKey, result);
+        await this.redisService.setJson(cacheKey, result, this.cacheKeys.ttlList);
         return result;
     }
+
 
     /**
      * Sync tin nhắn từ client
@@ -126,7 +131,8 @@ export class OrgChatService {
         const results = await this.repository.createManyMessages(messagesToCreate);
 
         // Invalidate cache
-        await this.redisService.invalidateOrgChatMessageListCache(orgId);
+        await this.redisService.delByPattern(this.cacheKeys.allMessageLists(orgId));
+
 
         // Log to SystemLog
         await this.logToSystemLog(orgId, 'chat.sync', userId, {
@@ -161,7 +167,8 @@ export class OrgChatService {
         await this.repository.deleteMessage(messageId, userId);
 
         // Invalidate cache
-        await this.redisService.invalidateOrgChatMessageListCache(orgId);
+        await this.redisService.delByPattern(this.cacheKeys.allMessageLists(orgId));
+
 
         // Emit socket event
         this.websocket.emitToOrganization(orgId, 'chat:messageDeleted', {

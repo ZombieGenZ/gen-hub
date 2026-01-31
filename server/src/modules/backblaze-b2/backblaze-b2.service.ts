@@ -10,26 +10,7 @@ import {
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import * as fs from 'fs';
 import * as path from 'path';
-
-/**
- * Interface kết quả upload file lên Backblaze B2
- */
-export interface IB2UploadResult {
-    key: string;
-    fileName: string;
-    fileSize: number;
-    friendlyUrl: string;
-}
-
-/**
- * Interface thông tin file trên B2
- */
-export interface IB2FileInfo {
-    key: string;
-    name: string;
-    size: number;
-    lastModified: Date;
-}
+import { IB2UploadResult, IB2FileInfo } from './types/backblaze-b2.type';
 
 /**
  * Service xử lý tích hợp Backblaze B2 (S3-compatible storage)
@@ -46,6 +27,7 @@ export class BackblazeB2Service implements OnModuleInit {
     private s3Client: S3Client;
     private isEnabled = false;
     private bucketName: string;
+    private defaultFolder: string;
 
     constructor(private readonly configService: ConfigService) { }
 
@@ -61,6 +43,7 @@ export class BackblazeB2Service implements OnModuleInit {
         const applicationKey = this.configService.get<string>('B2_APPLICATION_KEY');
         const endpoint = this.configService.get<string>('B2_ENDPOINT');
         this.bucketName = this.configService.get<string>('B2_BUCKET_NAME', '');
+        this.defaultFolder = this.configService.get<string>('B2_DEFAULT_FOLDER', 'backups');
 
         if (!keyId || !applicationKey || !endpoint || !this.bucketName) {
             this.logger.warn(
@@ -113,17 +96,19 @@ export class BackblazeB2Service implements OnModuleInit {
     async uploadFile(
         filePath: string,
         fileName?: string,
-        folder: string = 'backups',
+        folder?: string,
     ): Promise<IB2UploadResult | null> {
         if (!this.isEnabled) {
             this.logger.warn('Backblaze B2 service is not enabled');
             return null;
         }
 
+        const targetFolder = folder || this.defaultFolder;
+
         try {
             const fileStats = fs.statSync(filePath);
             const name = fileName || path.basename(filePath);
-            const key = `${folder}/${name}`;
+            const key = `${targetFolder}/${name}`;
 
             const fileBuffer = fs.readFileSync(filePath);
 
@@ -160,14 +145,15 @@ export class BackblazeB2Service implements OnModuleInit {
      * Liệt kê files trong bucket
      * @param folder Thư mục cần list (optional)
      */
-    async listFiles(folder: string = 'backups'): Promise<IB2FileInfo[]> {
+    async listFiles(folder?: string): Promise<IB2FileInfo[]> {
         if (!this.isEnabled) return [];
+        const targetFolder = folder || this.defaultFolder;
 
         try {
             const response = await this.s3Client.send(
                 new ListObjectsV2Command({
                     Bucket: this.bucketName,
-                    Prefix: folder ? `${folder}/` : undefined,
+                    Prefix: targetFolder ? `${targetFolder}/` : undefined,
                 }),
             );
 
@@ -211,10 +197,13 @@ export class BackblazeB2Service implements OnModuleInit {
     /**
      * Tạo pre-signed URL để download file
      * @param key Key của file trên B2
-     * @param expiresIn Thời gian hết hạn URL (giây), mặc định 1 giờ
+     * @param expiresIn Thời gian hết hạn URL (giây), mặc định từ .env
      */
-    async getDownloadUrl(key: string, expiresIn: number = 3600): Promise<string | null> {
+    async getDownloadUrl(key: string, expiresIn?: number): Promise<string | null> {
         if (!this.isEnabled) return null;
+
+        const defaultExpiresIn = this.configService.get<number>('B2_PRESIGNED_URL_EXPIRATION', 3600);
+        const ttl = expiresIn || defaultExpiresIn;
 
         try {
             const command = new GetObjectCommand({
@@ -222,7 +211,7 @@ export class BackblazeB2Service implements OnModuleInit {
                 Key: key,
             });
 
-            const url = await getSignedUrl(this.s3Client, command, { expiresIn });
+            const url = await getSignedUrl(this.s3Client, command, { expiresIn: ttl });
             return url;
         } catch (error) {
             this.logger.error(`❌ Failed to get download URL for ${key}:`, error);

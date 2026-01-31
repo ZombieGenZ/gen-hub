@@ -25,7 +25,7 @@ import { GetResponse, CreatedResponse, UpdatedResponse, DeletedResponse } from '
 import { PrismaService } from '../../prisma/prisma.service';
 
 @ApiTags('Rental Contracts')
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 @Controller('rental-contracts')
 @UseGuards(JwtAuthGuard, PermissionGuard)
 export class RentalContractController {

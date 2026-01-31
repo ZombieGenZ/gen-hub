@@ -113,9 +113,13 @@ export class BackupCodeRepository {
 @Injectable()
 export class BackupCodeService {
   /** Số lượng backup codes được tạo */
-  private readonly CODES_COUNT = 10;
+  private get CODES_COUNT(): number {
+    return this.configService.get<number>('BACKUP_CODE_COUNT') || 10;
+  }
   /** Độ dài của mỗi backup code */
-  private readonly CODE_LENGTH = 8;
+  private get CODE_LENGTH(): number {
+    return this.configService.get<number>('BACKUP_CODE_LENGTH') || 8;
+  }
   /** Argon2id configuration */
   private get ARGON2_MEMORY_COST(): number {
     return Number(this.configService.get<number>('ARGON2_MEMORY_COST')) || 65536;

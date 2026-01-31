@@ -4,6 +4,7 @@ import { BruteForceGuard } from './brute-force.guard';
 import { RedisModule } from '../redis/redis.module';
 import { PrismaModule } from '../../prisma/prisma.module';
 import { NotificationModule } from '../notification/notification.module';
+import { BruteForceCacheHelper } from './constants/brute-force-cache.helper';
 
 /**
  * Brute Force Protection Module
@@ -11,7 +12,7 @@ import { NotificationModule } from '../notification/notification.module';
  */
 @Module({
     imports: [RedisModule, PrismaModule, NotificationModule],
-    providers: [BruteForceService, BruteForceGuard],
+    providers: [BruteForceService, BruteForceGuard, BruteForceCacheHelper],
     exports: [BruteForceService, BruteForceGuard],
 })
 export class BruteForceModule { }

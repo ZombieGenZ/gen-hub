@@ -31,6 +31,7 @@ import { UserNotificationModule } from './modules/user-notification/user-notific
 import { OrgNotificationModule } from './modules/org-notification/org-notification.module';
 import { WarehouseModule } from './modules/warehouse/warehouse.module';
 import { RentalContractModule } from './modules/rental-contract/rental-contract.module';
+import { OrgRentalContractModule } from './modules/org-rental-contract/org-rental-contract.module';
 import { RentalSchedulerModule } from './modules/rental-scheduler/rental-scheduler.module';
 import { PaymentModule } from './modules/payment/payment.module';
 import { AmenityModule } from './modules/amenity/amenity.module';
@@ -56,7 +57,7 @@ import { ResourcesModule } from './modules/resources/resources.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { BruteForceModule } from './modules/brute-force/brute-force.module';
 import { EmailInboundModule } from './modules/email-inbound/email-inbound.module';
-import { AccountBalanceModule } from './modules/account-balance/account-balance.module';
+import { OrganizationBalanceModule } from './modules/organization-balance/organization-balance.module';
 import { OrganizationUpdateRequestModule } from './modules/organization-update-request/organization-update-request.module';
 import { DatabaseLogModule } from './modules/database-log/database-log.module';
 import { AddonTypeModule } from './modules/addon-type/addon-type.module';
@@ -178,6 +179,7 @@ import { RoleModule } from './modules/role/role.module';
 
     // Rental Contracts
     RentalContractModule,
+    OrgRentalContractModule,
 
     // Warehouses
     WarehouseModule,
@@ -186,7 +188,7 @@ import { RoleModule } from './modules/role/role.module';
     PaymentModule,
 
     // Account Balance
-    AccountBalanceModule,
+    OrganizationBalanceModule,
 
     // Notifications
     UserNotificationModule,

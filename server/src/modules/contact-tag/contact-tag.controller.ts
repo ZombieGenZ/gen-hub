@@ -32,7 +32,7 @@ export class ContactTagController {
 
     @Post()
     @ApiOperation({ summary: 'Tạo ContactTag mới' })
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact-tag.create')
     async create(
@@ -46,7 +46,7 @@ export class ContactTagController {
 
     @Get()
     @ApiOperation({ summary: 'Lấy danh sách ContactTag' })
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact-tag.list')
     async findAll(
@@ -59,7 +59,7 @@ export class ContactTagController {
 
     @Get('active')
     @ApiOperation({ summary: 'Lấy danh sách ContactTag đang active' })
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact-tag.list')
     async findAllActive() {
@@ -70,7 +70,7 @@ export class ContactTagController {
     @Get(':id')
     @ApiOperation({ summary: 'Lấy chi tiết ContactTag' })
     @ApiParam({ name: 'id', description: 'ID Tag' })
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact-tag.read')
     async findById(
@@ -84,7 +84,7 @@ export class ContactTagController {
     @Put(':id')
     @ApiOperation({ summary: 'Cập nhật ContactTag' })
     @ApiParam({ name: 'id', description: 'ID Tag' })
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact-tag.update')
     async update(
@@ -100,7 +100,7 @@ export class ContactTagController {
     @Delete(':id')
     @ApiOperation({ summary: 'Xóa ContactTag' })
     @ApiParam({ name: 'id', description: 'ID Tag' })
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact-tag.delete')
     async delete(
@@ -115,7 +115,7 @@ export class ContactTagController {
     @Delete('delete/many')
     @ApiOperation({ summary: 'Xóa nhiều ContactTag' })
     @ApiBody({ schema: { type: 'object', properties: { ids: { type: 'array', items: { type: 'string' } } } } })
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact-tag.delete')
     async deleteMany(

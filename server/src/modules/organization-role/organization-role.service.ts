@@ -12,7 +12,8 @@ import { WebsocketGateway } from '../websocket/websocket.gateway';
 import { OrganizationAuditLogService } from '../organization/organization-audit-log.service';
 import { CreateOrganizationRoleDto, UpdateOrganizationRoleDto } from './dto/organization-role.dto';
 import { IOrganizationRole, IOrganizationPermission } from '../organization/interfaces';
-import { ORG_ROLE_CACHE_TTL, ORG_ROLE_LIST_CACHE_TTL } from './constants/cache.constants';
+import { OrganizationRoleCacheKeys } from './constants/cache-keys.helper';
+
 
 @Injectable()
 export class OrganizationRoleService {
@@ -23,7 +24,10 @@ export class OrganizationRoleService {
         private readonly websocketGateway: WebsocketGateway,
         private readonly auditLogService: OrganizationAuditLogService,
         private readonly i18n: I18nService,
+
+        private readonly cacheKeys: OrganizationRoleCacheKeys,
     ) { }
+
 
     async createRole(
         orgId: string,
@@ -74,8 +78,14 @@ export class OrganizationRoleService {
 
         this.websocketGateway.emitOrgRoleCreated(orgId, role.id, role.name, userId);
 
+        this.websocketGateway.emitOrgRoleCreated(orgId, role.id, role.name, userId);
+
+        // Invalidate list cache
+        await this.redisService.del(this.cacheKeys.list(orgId));
+
         return result!;
     }
+
 
     async getRoles(
         orgId: string,
@@ -97,8 +107,17 @@ export class OrganizationRoleService {
             lang,
         );
 
-        return this.repository.findByOrgId(orgId);
+        const cacheKey = this.cacheKeys.list(orgId);
+        const cached = await this.redisService.getJson<IOrganizationRole[]>(cacheKey);
+        if (cached) return cached;
+
+        const roles = await this.repository.findByOrgId(orgId);
+        await this.redisService.setJson(cacheKey, roles, this.cacheKeys.ttlList);
+
+
+        return roles;
     }
+
 
     async getRoleById(
         orgId: string,
@@ -121,6 +140,10 @@ export class OrganizationRoleService {
             lang,
         );
 
+        const cacheKey = this.cacheKeys.item(orgId, roleId);
+        const cached = await this.redisService.getJson<IOrganizationRole>(cacheKey);
+        if (cached) return cached;
+
         const role = await this.repository.findById(roleId);
         if (!role || role.organization_id !== orgId) {
             throw new NotFoundException(
@@ -128,8 +151,12 @@ export class OrganizationRoleService {
             );
         }
 
+        await this.redisService.setJson(cacheKey, role, this.cacheKeys.ttlItem);
+
+
         return role;
     }
+
 
     async updateRole(
         orgId: string,
@@ -203,6 +230,14 @@ export class OrganizationRoleService {
 
         this.websocketGateway.emitOrgRoleUpdated(orgId, roleId, updated?.name || '', userId);
 
+        this.websocketGateway.emitOrgRoleUpdated(orgId, roleId, updated?.name || '', userId);
+
+        // Invalidate cache
+        await this.redisService.del(this.cacheKeys.item(orgId, roleId));
+        await this.redisService.del(this.cacheKeys.list(orgId));
+        // Permissions might have changed
+        await this.redisService.del(this.cacheKeys.permissions(orgId));
+
         return updated!;
     }
 
@@ -249,7 +284,14 @@ export class OrganizationRoleService {
         );
 
         this.websocketGateway.emitOrgRoleDeleted(orgId, roleId, userId);
+        this.websocketGateway.emitOrgRoleDeleted(orgId, roleId, userId);
+
+        // Invalidate cache
+        await this.redisService.del(this.cacheKeys.item(orgId, roleId));
+        await this.redisService.del(this.cacheKeys.list(orgId));
+        await this.redisService.del(this.cacheKeys.permissions(orgId));
     }
+
 
     async deleteManyRoles(
         orgId: string,
@@ -305,7 +347,16 @@ export class OrganizationRoleService {
                 { userId, description: `Deleted role: ${role.name}` },
             );
         });
+
+
+        // Invalidate cache
+        await Promise.all([
+            ...ids.map(id => this.redisService.del(this.cacheKeys.item(orgId, id))),
+            this.redisService.del(this.cacheKeys.list(orgId)),
+            this.redisService.del(this.cacheKeys.permissions(orgId)),
+        ]);
     }
+
 
     async getPermissions(
         orgId: string,
@@ -329,8 +380,18 @@ export class OrganizationRoleService {
             }
         }
 
-        return this.repository.findAllOrganizationPermissions();
+        const cacheKey = this.cacheKeys.permissions(orgId);
+        const cached = await this.redisService.getJson<IOrganizationPermission[]>(cacheKey);
+        if (cached) return cached;
+
+        const permissions = await this.repository.findAllOrganizationPermissions();
+        // Permission list ít thay đổi, có thể cache lâu hơn
+        await this.redisService.setJson(cacheKey, permissions, 3600);
+
+        return permissions;
     }
+
+
 
     private async checkOrgPermission(
         orgId: string,

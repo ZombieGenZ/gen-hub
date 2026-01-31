@@ -139,6 +139,22 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     return this.client.ttl(key);
   }
 
+  async getJson<T>(key: string): Promise<T | null> {
+    const data = await this.client.get(key);
+    if (!data) return null;
+    try {
+      return JSON.parse(data) as T;
+    } catch {
+      return null;
+    }
+  }
+
+  async setJson<T>(key: string, value: T, ttlSeconds?: number): Promise<'OK'> {
+    if (ttlSeconds) {
+      return this.client.setex(key, ttlSeconds, JSON.stringify(value));
+    }
+    return this.client.set(key, JSON.stringify(value));
+  }
 
   private getUserCacheKey(userId: string): string {
     return `user:profile:${userId}`;
