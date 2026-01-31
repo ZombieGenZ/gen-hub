@@ -13,9 +13,10 @@ interface HeaderProps {
         avatar?: string;
         roles?: string[];
     };
+    onLogout?: () => void;
 }
 
-export function PrimeNestHeader({ isLogin, user }: HeaderProps) {
+export function PrimeNestHeader({ isLogin, user, onLogout }: HeaderProps) {
     const [active, setActive] = useState<string | null>(null);
 
     return (
@@ -23,7 +24,7 @@ export function PrimeNestHeader({ isLogin, user }: HeaderProps) {
             <div className="w-full max-w-[1440px] mx-auto px-4 lg:px-4 h-[80px] flex items-center justify-between">
                 {/* Logo */}
                 <Link href="/" className="flex items-center gap-3 relative z-50 shrink-0">
-                    <img src="/assets/GenHubv2.svg" alt="GenHub" className="h-9 w-auto" />
+                    <img src="./assets/GenHubv2.svg" alt="GenHub" className="h-9 w-auto" />
                 </Link>
 
                 {/* Navigation - Centered */}
@@ -68,7 +69,7 @@ export function PrimeNestHeader({ isLogin, user }: HeaderProps) {
                 <div className="relative z-50 flex items-center gap-5 shrink-0  ">
                     {isLogin ?
                         <div className="hidden md:flex items-center gap-4 ">
-                            <UserDropdown user={user} />
+                            <UserDropdown user={user} onLogout={onLogout} />
                         </div>
                         :
                         <div className="hidden md:flex items-center gap-5">

@@ -1,5 +1,11 @@
 import type { AddonResponse } from "./addon.type";
 
+export interface AddonTypeRequest {
+    name: string;
+    description: string;
+    is_active: boolean;
+}
+
 export interface AddonType {
     id: string;
     name: string;

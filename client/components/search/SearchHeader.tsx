@@ -16,6 +16,9 @@ interface SearchHeaderProps {
     isScrolled?: boolean;
 }
 
+import { UserService } from "@/services/user/user.service";
+
+
 export default function SearchHeader({
     onSearch,
     onOpenFilter,
@@ -29,8 +32,29 @@ export default function SearchHeader({
     const [internalScrolled, setInternalScrolled] = useState(false);
 
     useEffect(() => {
-        setIsLogin(authStorage.isAuthenticated());
-        setUser(authStorage.getUser());
+        const checkAuth = async () => {
+            const isAuthenticated = authStorage.isAuthenticated();
+            setIsLogin(isAuthenticated);
+
+            if (isAuthenticated) {
+                const accessToken = authStorage.getAccessToken();
+                const refreshToken = authStorage.getRefreshToken();
+                if (accessToken && refreshToken) {
+                    try {
+                        const userService = new UserService();
+                        const userData = await userService.getUser(accessToken, refreshToken);
+                        setUser(userData);
+                    } catch (error) {
+                        console.error("Failed to fetch user profile:", error);
+                        setUser(authStorage.getUser());
+                    }
+                }
+            } else {
+                setUser(null);
+            }
+        };
+
+        checkAuth();
 
         if (isScrolled === undefined) {
             const handleScroll = () => {
@@ -73,10 +97,8 @@ export default function SearchHeader({
                                 roles: user?.roles?.map(r => r.name)
                             } : undefined}
                             onLogout={() => {
-                                authStorage.clearTokens();
                                 setIsLogin(false);
                                 setUser(null);
-                                router.push('/');
                             }}
                         />
                     </div>

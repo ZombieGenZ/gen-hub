@@ -123,8 +123,8 @@ export default function OrganizationPage() {
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="text-sm">
-                                                <p className="font-medium text-slate-900">{org.owner.name}</p>
-                                                <p className="text-xs text-slate-500">{org.owner.email}</p>
+                                                <p className="font-medium text-slate-900">{org.owner?.name || 'N/A'}</p>
+                                                <p className="text-xs text-slate-500">{org.owner?.email || 'N/A'}</p>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">

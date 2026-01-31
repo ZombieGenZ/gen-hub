@@ -5,8 +5,8 @@ import WarehouseSearchCard from '@/components/search/WarehouseSearchCard';
 
 interface PropertyListProps {
     properties: Property[];
-    onHover: (id: number | null) => void;
-    highlightedPropertyId: number | null;
+    onHover: (id: number | string | null) => void;
+    highlightedPropertyId: number | string | null;
     variant?: 'vertical' | 'horizontal' | 'grid';
     className?: string;
 }

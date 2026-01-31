@@ -15,6 +15,8 @@ import {
   UserPlusIcon
 } from "@heroicons/react/24/outline";
 import { authStorage } from "@/services/auth/auth-storage.service";
+import { authService } from "@/services/auth/auth.service";
+import { useToast } from "@/contexts/ToastContext";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -38,6 +40,7 @@ const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout, children })
   const [mounted, setMounted] = useState(false);
   const router = useRouter();
   const { openModal } = useProfileModal();
+  const { showToast } = useToast();
 
   useEffect(() => {
     setMounted(true);
@@ -64,7 +67,25 @@ const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout, children })
   const handleLogout = async () => {
     setIsOpen(false);
 
-    // Clear auth tokens using authStorage service
+    const token = authStorage.getAccessToken();
+    const refresh_token = authStorage.getRefreshToken();
+
+    if (token && refresh_token) {
+      try {
+        const response = await authService.logout(token, refresh_token);
+        if (response?.message) {
+          showToast(response.message, 'success');
+        } else {
+          showToast("Đăng xuất thành công", 'success');
+        }
+      } catch (error) {
+        console.error("Logout failed:", error);
+        showToast("Đăng xuất hoàn tất", 'info');
+      }
+    } else {
+      showToast("Đã đăng xuất", 'info');
+    }
+
     authStorage.clearTokens();
 
     // Call custom logout handler if provided

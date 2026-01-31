@@ -9,6 +9,11 @@ import {
     UserCircleIcon,
     ChartBarIcon,
     Cog6ToothIcon,
+    TicketIcon,
+    PuzzlePieceIcon,
+    SparklesIcon,
+    ShieldCheckIcon,
+    ListBulletIcon,
 } from "@heroicons/react/24/outline";
 import { AppSidebar, AppSidebarContent, SidebarGroup } from "./AppSidebar";
 
@@ -19,6 +24,16 @@ const adminNavGroups: SidebarGroup[] = [
             { href: "/dashboard/admin", icon: Squares2X2Icon, label: "Tổng quan", exactMatch: true },
             { href: "/dashboard/admin/warehouses", icon: HomeModernIcon, label: "Kho bãi" },
             { href: "/dashboard/admin/contracts", icon: DocumentTextIcon, label: "Hợp đồng" },
+        ]
+    },
+    {
+        title: "Dịch vụ & Tiện ích",
+        items: [
+            { href: "/dashboard/admin/amenities", icon: SparklesIcon, label: "Tiện ích" },
+            { href: "/dashboard/admin/addons", icon: PuzzlePieceIcon, label: "Dịch vụ bổ sung" },
+            { href: "/dashboard/admin/addon-types", icon: ListBulletIcon, label: "Loại dịch vụ" },
+            { href: "/dashboard/admin/insurances", icon: ShieldCheckIcon, label: "Bảo hiểm" },
+            { href: "/dashboard/admin/coupons", icon: TicketIcon, label: "Mã giảm giá" },
         ]
     },
     {

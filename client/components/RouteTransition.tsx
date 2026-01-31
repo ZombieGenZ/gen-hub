@@ -19,10 +19,10 @@ export function RouteTransition({ children }: RouteTransitionProps) {
     }, []);
 
     const variants = {
-        initial: prefersReducedMotion 
+        initial: prefersReducedMotion
             ? { opacity: 0 }
-            : { 
-                scale: 0.95, 
+            : {
+                scale: 0.95,
                 opacity: 0,
             },
         animate: prefersReducedMotion
@@ -32,7 +32,7 @@ export function RouteTransition({ children }: RouteTransitionProps) {
                 opacity: 1,
                 transition: {
                     duration: 0.5,
-                    ease: [0.4, 0, 0.2, 1],
+                    ease: [0.4, 0, 0.2, 1] as any,
                 }
             },
         exit: prefersReducedMotion
@@ -42,7 +42,7 @@ export function RouteTransition({ children }: RouteTransitionProps) {
                 opacity: 0,
                 transition: {
                     duration: 0.3,
-                    ease: [0.4, 0, 0.2, 1],
+                    ease: [0.4, 0, 0.2, 1] as any,
                 }
             }
     };

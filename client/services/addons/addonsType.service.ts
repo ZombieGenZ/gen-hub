@@ -61,4 +61,95 @@ export class AddonsTypeService {
             console.error("Failed to fetch addons type active", err);
         }
     }
+
+    // Tạo addon type mới
+    async createAddonType(access_token: string, addonTypeData: { name: string, description: string, is_active: boolean }) {
+        try {
+            const response = await fetch(`${API}/addon-types`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${access_token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(addonTypeData)
+            });
+            if(!response.ok) {
+                throw new Error('Failed to create addon type');
+            }
+            const data = await response.json();
+            return data;
+        }
+        catch(err) {
+            console.error("Failed to create addon type", err);
+            throw err;
+        }
+    }
+
+    // Cập nhật addon type
+    async updateAddonType(access_token: string, id: string, addonTypeData: { name: string, description: string, is_active: boolean }) {
+        try {
+            const response = await fetch(`${API}/addon-types/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${access_token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(addonTypeData)
+            });
+            if(!response.ok) {
+                throw new Error('Failed to update addon type');
+            }
+            const data = await response.json();
+            return data;
+        }
+        catch(err) {
+            console.error("Failed to update addon type", err);
+            throw err;
+        }
+    }
+
+    // Xóa addon type
+    async deleteAddonType(access_token: string, id: string) {
+        try {
+            const response = await fetch(`${API}/addon-types/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${access_token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            if(!response.ok) {
+                throw new Error('Failed to delete addon type');
+            }
+            const data = await response.json();
+            return data;
+        }
+        catch(err) {
+            console.error("Failed to delete addon type", err);
+            throw err;
+        }
+    }
+
+    // Xóa nhiều addon types
+    async deleteManyAddonTypes(access_token: string, ids: string[]) {
+        try {
+            const response = await fetch(`${API}/addon-types/delete/many`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${access_token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ ids: ids })
+            });
+            if(!response.ok) {
+                throw new Error('Failed to delete many addon types');
+            }
+            const data = await response.json();
+            return data;
+        }
+        catch(err) {
+            console.error("Failed to delete many addon types", err);
+            throw err;
+        }
+    }
 }

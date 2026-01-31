@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 
 export interface NavItemProps {
     href: string;
-    icon: React.ElementType;
+    icon: any;
     label: string;
     isActive?: boolean;
     isCollapsed?: boolean;

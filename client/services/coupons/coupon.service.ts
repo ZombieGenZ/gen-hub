@@ -15,13 +15,15 @@ export class CouponService {
             })
 
             if (!response.ok) {
-                throw new Error('Failed to fetch coupons')
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Failed to fetch coupons');
             }
             const data = await response.json()
             return data
         }
         catch (err) {
             console.error("Failed to fetch coupons", err);
+            throw err; 
         }
     }
 
@@ -37,6 +39,7 @@ export class CouponService {
             })
             if (!response.ok) {
                 throw new Error('Failed to fetch coupon')
+                
             }
             const data = await response.json()
             return data
@@ -177,7 +180,11 @@ export class CouponService {
                 body: JSON.stringify(coupon)
             })
             if (!response.ok) {
-                throw new Error('Failed to create coupon')
+                const errorData = await response.json().catch(() => ({}));
+                const errorMessage = errorData.errors 
+                    ? `${errorData.message}: ${errorData.errors.map((e: any) => e.message).join(', ')}`
+                    : errorData.message || 'Failed to create coupon';
+                throw new Error(errorMessage);
             }
             const data = await response.json()
             return data

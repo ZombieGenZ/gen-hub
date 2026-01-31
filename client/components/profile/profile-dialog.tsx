@@ -111,6 +111,7 @@ export function ProfileDialog({ open = true, onOpenChange }: ProfileDialogProps 
 
         if (!token || !refreshToken) {
           setError('Vui lòng đăng nhập')
+          onOpenChange?.(false)
           router.push('/login')
           return
         }
@@ -889,7 +890,10 @@ export function ProfileDialog({ open = true, onOpenChange }: ProfileDialogProps 
             <div className="bg-white p-6 rounded shadow border border-red-200 text-red-600">
               {error}
             </div>
-            <button onClick={() => router.push('/login')} className="bg-red-700 hover:bg-red-800 text-white font-medium px-8 py-3 rounded-lg transition-all shadow-lg shadow-red-700/20 hover:shadow-red-700/40 flex items-center gap-2 justify-center active:scale-[0.98]">Đăng nhập</button>
+            <button onClick={() => {
+              router.push('/login')
+              onOpenChange?.(false)
+            }} className="bg-red-700 hover:bg-red-800 text-white font-medium px-8 py-3 rounded-lg transition-all shadow-lg shadow-red-700/20 hover:shadow-red-700/40 flex items-center gap-2 justify-center active:scale-[0.98]">Đăng nhập</button>
           </div>
         ) : userData ? (
           <div className="flex flex-col md:flex-row h-full w-full bg-background text-slate-950">

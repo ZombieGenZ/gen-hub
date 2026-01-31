@@ -55,8 +55,7 @@ export default function Home() {
                     const getUserNotifications = await notificationService.getNotifications(accessToken);
                     const getGlobalNotifications = await notificationService.globalNotification(accessToken);
                     setNotifications([...getGlobalNotifications, ...getUserNotifications]);
-                    showToast("You have new notifications!", "info");
-                    showToast(`You have ${getUserNotifications.length} new personal notifications and ${getGlobalNotifications.length} global notifications.`, "info");
+
                 } catch (error) {
                     console.error("Failed to fetch user data:", error);
                 }
@@ -80,17 +79,21 @@ export default function Home() {
         };
     }, []);
 
+    const handleLogout = () => {
+        setIsLogin(false);
+        setUser(undefined);
+    };
+
     return (
         <div className="relatisve min-h-screen bg-slate-50 text-slate-900 overflow-x-hidden">
             {/* Navbar - Always visible with scroll effect */}
             <div
-                className={`fixed top-0 left-0 right-0 z-40 transition-all duration-500 ${
-                    isScrolled
+                className={`fixed top-0 left-0 right-0 z-40 transition-all duration-500 ${isScrolled
                         ? 'bg-white/95 backdrop-blur-md shadow-lg'
                         : 'bg-transparent'
-                }`}
+                    }`}
             >
-                <PrimeNestHeader isLogin={isLogin} user={user} />
+                <PrimeNestHeader isLogin={isLogin} user={user} onLogout={handleLogout} />
             </div>
 
             <main className="z-10 h-full w-full">

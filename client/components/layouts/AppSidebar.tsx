@@ -12,6 +12,7 @@ import {
     ArrowLeftOnRectangleIcon,
     WalletIcon,
     PlusIcon,
+    ChevronRightIcon,
 } from "@heroicons/react/24/outline";
 import { useSidebar } from "@/components/providers/sidebar-provider";
 import { cn } from "@/lib/utils";
@@ -69,6 +70,14 @@ export function AppSidebarContent({
     const [user, setUser] = useState<any>(null);
     const { unreadCount } = useNotifications();
     const { openModal } = useProfileModal();
+    const [collapsedGroups, setCollapsedGroups] = useState<Record<number, boolean>>({});
+
+    const toggleGroup = (index: number) => {
+        setCollapsedGroups(prev => ({
+            ...prev,
+            [index]: !prev[index]
+        }));
+    };
 
     // Load User Data
     useEffect(() => {
@@ -111,28 +120,41 @@ export function AppSidebarContent({
                     "flex-1 px-4 overflow-visible py-4 transition-all duration-300",
                     isCollapsed ? "space-y-2" : "space-y-6"
                 )}>
-                    {groups.map((group, groupIndex) => (
-                        <div key={groupIndex}>
-                            <div className={cn(
-                                "text-xs font-semibold text-sidebar-foreground/50 uppercase tracking-wider px-2 whitespace-nowrap transition-all duration-300",
-                                isCollapsed ? "opacity-0 w-0 h-0 overflow-hidden mb-0" : "opacity-100 mb-2"
-                            )}>
-                                {group.title}
+                    {groups.map((group, groupIndex) => {
+                        const isGroupCollapsed = collapsedGroups[groupIndex];
+                        return (
+                            <div key={groupIndex}>
+                                <button
+                                    onClick={() => !isCollapsed && toggleGroup(groupIndex)}
+                                    className={cn(
+                                        "w-full flex items-center justify-between text-xs font-semibold text-sidebar-foreground/50 uppercase tracking-wider px-2 whitespace-nowrap transition-all duration-300 hover:text-sidebar-foreground group outline-none",
+                                        isCollapsed ? "opacity-0 w-0 h-0 overflow-hidden mb-0" : "opacity-100 mb-2 cursor-pointer"
+                                    )}
+                                >
+                                    <span>{group.title}</span>
+                                    <ChevronRightIcon className={cn(
+                                        "w-3 h-3 transition-transform duration-200",
+                                        !isGroupCollapsed ? "rotate-90" : ""
+                                    )} />
+                                </button>
+                                <div className={cn(
+                                    "space-y-1 transition-all duration-300 overflow-hidden",
+                                    !isCollapsed && isGroupCollapsed ? "max-h-0 opacity-0" : "max-h-[500px] opacity-100" // Simple collapse
+                                )}>
+                                    {group.items.map((item, itemIndex) => (
+                                        <NavItem
+                                            key={itemIndex}
+                                            href={item.href}
+                                            icon={item.icon}
+                                            label={item.label}
+                                            isActive={isActive(item.href, item.exactMatch)}
+                                            isCollapsed={isCollapsed}
+                                        />
+                                    ))}
+                                </div>
                             </div>
-                            <div className="space-y-1">
-                                {group.items.map((item, itemIndex) => (
-                                    <NavItem
-                                        key={itemIndex}
-                                        href={item.href}
-                                        icon={item.icon}
-                                        label={item.label}
-                                        isActive={isActive(item.href, item.exactMatch)}
-                                        isCollapsed={isCollapsed}
-                                    />
-                                ))}
-                            </div>
-                        </div>
-                    ))}
+                        );
+                    })}
 
                     {/* Notifications Section */}
                     <div>

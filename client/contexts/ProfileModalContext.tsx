@@ -1,6 +1,4 @@
-'use client'
-
-import React, { createContext, useContext, useState } from 'react'
+import React, { createContext, useContext, useState, useCallback, useMemo } from 'react'
 
 interface ProfileModalContextType {
     isOpen: boolean
@@ -19,14 +17,17 @@ export function ProfileModalProvider({ children }: { children: React.ReactNode }
         return () => console.log('ProfileModalProvider unmounted')
     }, [])
 
-    const openModal = () => {
+    const openModal = useCallback(() => {
         console.log('openModal called')
         setIsOpen(true)
-    }
-    const closeModal = () => setIsOpen(false)
+    }, [])
+
+    const closeModal = useCallback(() => setIsOpen(false), [])
+
+    const value = useMemo(() => ({ isOpen, openModal, closeModal }), [isOpen, openModal, closeModal])
 
     return (
-        <ProfileModalContext.Provider value={{ isOpen, openModal, closeModal }}>
+        <ProfileModalContext.Provider value={value}>
             {children}
         </ProfileModalContext.Provider>
     )

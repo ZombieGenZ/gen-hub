@@ -1,4 +1,4 @@
-import { Coupon } from "../coupons/coupon.type";
+import { Coupon } from "@/types/coupons/coupon.type";
 
 export interface QuotationBreakdown {
   basePrice: number;

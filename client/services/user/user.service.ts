@@ -1,6 +1,6 @@
 import { UpdateUserRequest, UserData, ChangePasswordRequest } from "@/types/user/user.type"
 import { authStorage } from "@/services/auth/auth-storage.service"
-import { AuthService } from "../auth/auth.service"
+import { AuthService } from "@/services/auth/auth.service"
 
 export interface TokenResponse {
   access_token: string;

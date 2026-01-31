@@ -44,7 +44,7 @@ export function useCheckout() {
 
 // ==================== STEPS CONFIG ====================
 
-const CHECKOUT_STEPS: { id: CheckoutStep; label: string; icon: React.ElementType }[] = [
+const CHECKOUT_STEPS: { id: CheckoutStep; label: string; icon: any }[] = [
     { id: 'rental-info', label: 'Thông tin thuê', icon: DocumentTextIcon },
     { id: 'business-info', label: 'Doanh nghiệp', icon: BuildingOffice2Icon },
     { id: 'representative-info', label: 'Người đại diện', icon: UserIcon },

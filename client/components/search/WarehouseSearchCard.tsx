@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 
 interface WarehouseSearchCardProps {
     property: Property;
-    onHover?: (id: number | null) => void;
+    onHover?: (id: number | string | null) => void;
     isHighlighted?: boolean;
 }
 

@@ -161,4 +161,28 @@ export class IsuranceService {
             console.error("Failed to delete Insurance", err);
         }
     }
+
+    // Xóa nhiều bảo hiểm
+    async deleteManyInsurances(access_token: string, ids: string[]) {
+        try {
+            const response = await fetch(`${API}/insurances/delete/many`, {
+                method: "DELETE",
+                headers: {
+                    'Authorization': `Bearer ${access_token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ ids: ids })
+            })
+            if(!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Failed to delete many Insurances');
+            }
+            const data = await response.json();
+            return data;
+        }
+        catch(err) {
+            console.error("Failed to delete many Insurances", err);
+            throw err;
+        }
+    }
 }

@@ -5,7 +5,7 @@ import { User, Lock, Eye, EyeOff, Moon, Sun, Key } from "lucide-react"
 import Link from "next/link"
 import { AuthService } from '@/services/auth/auth.service'
 import { useRouter } from "next/navigation"
-import { useTheme } from '../ThemeContext'
+import { useTheme } from "@/app/(auth)/ThemeContext"
 import { authStorage } from '@/services/auth/auth-storage.service'
 import TurnstileWidget from '@/components/TurnstileWidget'
 import { useToast } from "@/contexts/ToastContext"
@@ -54,7 +54,7 @@ export default function LoginPage() {
         showToast('Vui lòng nhập mã xác thực 2 yếu tố', 'info')
         return
       }
-      
+
       if (response) {
         authStorage.setTokens(
           response.authorization.access_token,
@@ -205,14 +205,13 @@ export default function LoginPage() {
                     <input
                       type="text"
                       value={formData.two_factor_code}
-                      onChange={(e) => setFormData({...formData, two_factor_code: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, two_factor_code: e.target.value })}
                       onKeyDown={(e) => e.key === "Enter" && handleLogin()}
                       placeholder="Nhập mã xác thực 2FA"
-                      className={`w-full pl-10 pr-4 py-3 rounded-lg transition-all focus:outline-none focus:ring-2 ${
-                        darkMode
+                      className={`w-full pl-10 pr-4 py-3 rounded-lg transition-all focus:outline-none focus:ring-2 ${darkMode
                           ? "bg-slate-700/50 border border-slate-600 text-white placeholder-slate-400 focus:border-teal-600 focus:ring-teal-600/20"
                           : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-500 focus:border-teal-600 focus:ring-teal-600/20"
-                      }`}
+                        }`}
                     />
                   </div>
                 </div>
@@ -229,14 +228,13 @@ export default function LoginPage() {
                     <input
                       type="text"
                       value={formData.backup_code}
-                      onChange={(e) => setFormData({...formData, backup_code: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, backup_code: e.target.value })}
                       onKeyDown={(e) => e.key === "Enter" && handleLogin()}
                       placeholder="Nhập mã dự phòng"
-                      className={`w-full pl-10 pr-4 py-3 rounded-lg transition-all focus:outline-none focus:ring-2 ${
-                        darkMode
+                      className={`w-full pl-10 pr-4 py-3 rounded-lg transition-all focus:outline-none focus:ring-2 ${darkMode
                           ? "bg-slate-700/50 border border-slate-600 text-white placeholder-slate-400 focus:border-teal-600 focus:ring-teal-600/20"
                           : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-500 focus:border-teal-600 focus:ring-teal-600/20"
-                      }`}
+                        }`}
                     />
                   </div>
                 </div>
