@@ -44,6 +44,7 @@ import { AppConfigService } from '../../common/config/app-config.service';
 import { CozeService } from '../coze/coze.service';
 import { GeminiService } from '../../common/services/gemini.service';
 import { ContactListService } from '../contact-list/contact-list.service';
+import { ContactCacheKeysHelper } from './helpers/contact-cache-keys.helper';
 
 /**
  * Service xử lý business logic cho Contact module
@@ -51,8 +52,6 @@ import { ContactListService } from '../contact-list/contact-list.service';
  */
 @Injectable()
 export class ContactService implements OnModuleInit {
-    private readonly CACHE_TTL: number;
-    private readonly LIST_CACHE_TTL: number;
     private readonly TICKET_PREFIX: string;
 
     constructor(
@@ -68,9 +67,8 @@ export class ContactService implements OnModuleInit {
         private readonly cozeService: CozeService,
         private readonly geminiService: GeminiService,
         private readonly contactListService: ContactListService,
+        private readonly cacheKeys: ContactCacheKeysHelper,
     ) {
-        this.CACHE_TTL = this.configService.get<number>('REDIS_CONTACT_CACHE_TTL') || 300;
-        this.LIST_CACHE_TTL = this.configService.get<number>('REDIS_CONTACT_LIST_CACHE_TTL') || 60;
         this.TICKET_PREFIX = this.configService.get<string>('CONTACT_TICKET_PREFIX') || 'TICKET';
     }
 
@@ -167,32 +165,20 @@ export class ContactService implements OnModuleInit {
         });
     }
 
-    private getCacheKey(id: string): string {
-        return `contact:detail:${id}`;
-    }
-
-    private getListCachePattern(): string {
-        return 'contact:list:*';
-    }
-
-    private getListCacheKey(query: QueryContactDto): string {
-        const hash = Buffer.from(JSON.stringify(query)).toString('base64');
-        return `contact:list:${hash}`;
-    }
-
-    private getStaffCacheKey(id: string): string {
-        return `contact:staff:${id}`;
-    }
-
     private async invalidateCache(id: string): Promise<void> {
         await Promise.all([
-            this.redisService.del(this.getCacheKey(id)),
-            this.redisService.del(this.getStaffCacheKey(id)),
+            this.redisService.del(this.cacheKeys.detail(id)),
+            this.redisService.del(this.cacheKeys.staff(id)),
         ]);
     }
 
     private async invalidateListCache(): Promise<void> {
-        await this.redisService.delByPattern(this.getListCachePattern());
+        await Promise.all([
+            this.redisService.delByPattern(this.cacheKeys.listPattern()),
+            this.redisService.delByPattern(this.cacheKeys.priorityPattern()),
+            this.redisService.delByPattern(this.cacheKeys.normalPattern()),
+            this.redisService.delByPattern(this.cacheKeys.skippedPattern()),
+        ]);
     }
 
     /**
@@ -459,14 +445,11 @@ export class ContactService implements OnModuleInit {
         return { code, message, aiResponse: aiResponseContent };
     }
 
-    /**
-     * Lấy danh sách tickets (admin) - OPTIMIZED
-     */
     async findMany(
         query: QueryContactDto,
         lang: string = 'vi',
     ): Promise<IPaginatedContactResponse<IContactConversationListItem>> {
-        const cacheKey = this.getListCacheKey(query);
+        const cacheKey = this.cacheKeys.list(query);
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
             try {
@@ -478,19 +461,16 @@ export class ContactService implements OnModuleInit {
 
         const result = await this.repository.findMany(query);
 
-        await this.redisService.set(cacheKey, JSON.stringify(result), this.LIST_CACHE_TTL);
+        await this.redisService.set(cacheKey, JSON.stringify(result), this.cacheKeys.getTtl('list'));
         return result;
     }
 
-    /**
-     * Lấy danh sách tickets ưu tiên (is_priority_customer = true)
-     */
     async findManyPriority(
         query: QueryContactDto,
         lang: string = 'vi',
     ): Promise<IPaginatedContactResponse<IContactConversationListItem>> {
         const priorityQuery = { ...query, is_priority_customer: true };
-        const cacheKey = `contact:list:priority:${JSON.stringify(priorityQuery)}`;
+        const cacheKey = this.cacheKeys.priority(priorityQuery);
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
             try {
@@ -502,7 +482,7 @@ export class ContactService implements OnModuleInit {
 
         const result = await this.repository.findMany(priorityQuery);
 
-        await this.redisService.set(cacheKey, JSON.stringify(result), this.LIST_CACHE_TTL);
+        await this.redisService.set(cacheKey, JSON.stringify(result), this.cacheKeys.getTtl('list'));
         return result;
     }
 
@@ -514,7 +494,7 @@ export class ContactService implements OnModuleInit {
         lang: string = 'vi',
     ): Promise<IPaginatedContactResponse<IContactConversationListItem>> {
         const normalQuery = { ...query, is_priority_customer: false, is_skipped: false };
-        const cacheKey = `contact:list:normal:${JSON.stringify(normalQuery)}`;
+        const cacheKey = this.cacheKeys.normal(normalQuery);
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
             try {
@@ -526,7 +506,7 @@ export class ContactService implements OnModuleInit {
 
         const result = await this.repository.findMany(normalQuery);
 
-        await this.redisService.set(cacheKey, JSON.stringify(result), this.LIST_CACHE_TTL);
+        await this.redisService.set(cacheKey, JSON.stringify(result), this.cacheKeys.getTtl('list'));
         return result;
     }
 
@@ -538,7 +518,7 @@ export class ContactService implements OnModuleInit {
         lang: string = 'vi',
     ): Promise<IPaginatedContactResponse<IContactConversationListItem>> {
         const skippedQuery = { ...query, is_skipped: true };
-        const cacheKey = `contact:list:skipped:${JSON.stringify(skippedQuery)}`;
+        const cacheKey = this.cacheKeys.skipped(skippedQuery);
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
             try {
@@ -550,7 +530,7 @@ export class ContactService implements OnModuleInit {
 
         const result = await this.repository.findMany(skippedQuery);
 
-        await this.redisService.set(cacheKey, JSON.stringify(result), this.LIST_CACHE_TTL);
+        await this.redisService.set(cacheKey, JSON.stringify(result), this.cacheKeys.getTtl('list'));
         return result;
     }
 
@@ -561,7 +541,7 @@ export class ContactService implements OnModuleInit {
         id: string,
         lang: string = 'vi',
     ): Promise<IContactConversationWithMessages> {
-        const cacheKey = this.getCacheKey(id);
+        const cacheKey = this.cacheKeys.detail(id);
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
             try {
@@ -578,7 +558,7 @@ export class ContactService implements OnModuleInit {
             );
         }
 
-        await this.redisService.set(cacheKey, JSON.stringify(conversation), this.CACHE_TTL);
+        await this.redisService.set(cacheKey, JSON.stringify(conversation), this.cacheKeys.getTtl('item'));
         return conversation;
     }
 

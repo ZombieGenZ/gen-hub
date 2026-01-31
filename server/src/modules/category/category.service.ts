@@ -7,12 +7,10 @@ import { WebsocketGateway } from '../websocket/websocket.gateway';
 import { SystemLogService } from '../system-log/system-log.service';
 import { CreateCategoryDto, UpdateCategoryDto, QueryCategoryDto } from './dto';
 import { ICategoryPaginatedResponse } from './interfaces';
+import { CategoryCacheKeysHelper } from './helpers/category-cache-keys.helper';
 
 @Injectable()
 export class CategoryService {
-    private readonly cacheTTL: number;
-    private readonly listCacheTTL: number;
-
     constructor(
         private readonly repository: CategoryRepository,
         private readonly redisService: RedisService,
@@ -20,18 +18,8 @@ export class CategoryService {
         private readonly systemLogService: SystemLogService,
         private readonly configService: ConfigService,
         private readonly i18n: I18nService,
-    ) {
-        this.cacheTTL = this.configService.get<number>('REDIS_CATEGORY_CACHE_TTL', 300);
-        this.listCacheTTL = this.configService.get<number>('REDIS_CATEGORY_LIST_CACHE_TTL', 60);
-    }
-
-    private getCacheKey(id: string): string {
-        return `category:${id}`;
-    }
-
-    private getListCacheKey(query: QueryCategoryDto): string {
-        return `category:list:${JSON.stringify(query)}`;
-    }
+        private readonly cacheKeys: CategoryCacheKeysHelper,
+    ) { }
 
     async create(dto: CreateCategoryDto, userId: string, lang: string) {
         // Kiểm tra slug đã tồn tại
@@ -72,7 +60,7 @@ export class CategoryService {
         const { limit = 10, offset = 0, keywords, status, is_active, is_featured } = query;
 
         // Check cache
-        const cacheKey = this.getListCacheKey(query);
+        const cacheKey = this.cacheKeys.list(query);
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
             return JSON.parse(cached);
@@ -114,14 +102,14 @@ export class CategoryService {
         const result = { items: data, total, limit, offset, hasMore };
 
         // Set cache
-        await this.redisService.set(cacheKey, JSON.stringify(result), this.listCacheTTL);
+        await this.redisService.set(cacheKey, JSON.stringify(result), this.cacheKeys.getTtl('list'));
 
         return result;
     }
 
     async findById(id: string, lang: string) {
         // Check cache
-        const cacheKey = this.getCacheKey(id);
+        const cacheKey = this.cacheKeys.item(id);
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
             return JSON.parse(cached);
@@ -135,7 +123,7 @@ export class CategoryService {
         }
 
         // Set cache
-        await this.redisService.set(cacheKey, JSON.stringify(category), this.cacheTTL);
+        await this.redisService.set(cacheKey, JSON.stringify(category), this.cacheKeys.getTtl('item'));
 
         return category;
     }
@@ -144,7 +132,7 @@ export class CategoryService {
      * Lấy danh sách Category công khai (active + published)
      */
     async findAllActive(): Promise<ICategoryPaginatedResponse> {
-        const cacheKey = 'category:active';
+        const cacheKey = this.cacheKeys.active();
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
             return JSON.parse(cached);
@@ -159,7 +147,7 @@ export class CategoryService {
             hasMore: false,
         };
 
-        await this.redisService.set(cacheKey, JSON.stringify(result), this.listCacheTTL);
+        await this.redisService.set(cacheKey, JSON.stringify(result), this.cacheKeys.getTtl('list'));
 
         return result;
     }
@@ -269,11 +257,12 @@ export class CategoryService {
     }
 
     private async invalidateCache(id: string) {
-        await this.redisService.del(this.getCacheKey(id));
+        await this.redisService.del(this.cacheKeys.item(id));
     }
 
     private async invalidateListCache() {
-        await this.redisService.delByPattern('category:list:*');
-        await this.redisService.del('category:active');
+        await this.redisService.delByPattern(this.cacheKeys.listPattern());
+        await this.redisService.delByPattern(this.cacheKeys.activePattern());
     }
 }
+

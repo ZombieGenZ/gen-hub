@@ -11,7 +11,7 @@ import {
     HttpCode,
     HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse, ApiBody, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { I18nLang } from 'nestjs-i18n';
 
 import { ContactService } from './contact.service';
@@ -36,12 +36,13 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { PermissionGuard } from '../../common/guards/permission.guard';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { ApiAuthResponses, ApiValidationErrorResponse } from '../../common/decorators/api-common-responses.decorator';
 
 /**
  * Controller cho Contact module
  * Bao gồm public endpoint và admin endpoints
  */
-@ApiTags('Contact')
+@ApiTags('Contact & Live Chat')
 @Controller()
 export class ContactController {
     constructor(
@@ -55,7 +56,43 @@ export class ContactController {
     @Post('contact')
     @Public()
     @HttpCode(HttpStatus.CREATED)
-    @ApiOperation({ summary: 'Gửi yêu cầu liên hệ từ form website (public)' })
+    @ApiOperation({
+        summary: 'Gửi yêu cầu liên hệ (Public)',
+        description: 'API dành cho form liên hệ trên website. Khách vãng lai có thể gửi yêu cầu hỗ trợ.'
+    })
+    @ApiValidationErrorResponse()
+    @ApiBody({
+        type: CreateContactDto,
+        description: 'Thông tin liên hệ',
+        examples: {
+            support: {
+                summary: 'Yêu cầu hỗ trợ',
+                value: {
+                    name: 'Nguyễn Văn A',
+                    email: 'nguyenvana@example.com',
+                    phone: '0901234567',
+                    subject: 'Hỗ trợ kỹ thuật',
+                    message: 'Tôi gặp lỗi khi đăng nhập...',
+                    type: 'SUPPORT'
+                }
+            }
+        }
+    })
+    @ApiResponse({
+        status: 201,
+        description: 'Gửi liên hệ thành công',
+        schema: {
+            example: {
+                code: 'contact.created',
+                message: 'Gửi yêu cầu thành công, chúng tôi sẽ phản hồi sớm nhất.',
+                success: true,
+                data: {
+                    id: '...',
+                    ticket_number: 'TK-123456'
+                }
+            }
+        }
+    })
     async createPublic(
         @Body() dto: CreateContactDto,
         @I18nLang() lang: string,
@@ -70,7 +107,36 @@ export class ContactController {
     @Post('contact/chat/start')
     @Public()
     @HttpCode(HttpStatus.CREATED)
-    @ApiOperation({ summary: 'Khởi tạo phiên live chat (public)' })
+    @ApiOperation({
+        summary: 'Khởi tạo Live Chat (Public)',
+        description: 'Bắt đầu một phiên chat mới cho khách vãng lai.'
+    })
+    @ApiValidationErrorResponse()
+    @ApiBody({
+        type: StartChatDto,
+        description: 'Thông tin khách hàng',
+        examples: {
+            guest: {
+                summary: 'Khách mới',
+                value: { name: 'Guest User', email: 'guest@example.com' }
+            }
+        }
+    })
+    @ApiResponse({
+        status: 201,
+        description: 'Session chat được tạo',
+        schema: {
+            example: {
+                code: 'contact.live_chat.session_created',
+                message: 'Đã tạo phiên chat',
+                success: true,
+                data: {
+                    session_id: 'uuid-session',
+                    token: 'guest-token...'
+                }
+            }
+        }
+    })
     async startChatSession(
         @Body() dto: StartChatDto,
         @I18nLang() lang: string,
@@ -85,7 +151,21 @@ export class ContactController {
     @Post('contact/chat/:sessionId/message')
     @Public()
     @HttpCode(HttpStatus.OK)
-    @ApiOperation({ summary: 'Gửi tin nhắn trong live chat (public)' })
+    @ApiOperation({
+        summary: 'Guest gửi tin nhắn (Public)',
+        description: 'Khách gửi tin nhắn trong phiên chat đã tạo.'
+    })
+    @ApiParam({ name: 'sessionId', description: 'ID phiên chat (UUID)' })
+    @ApiBody({
+        type: SendMessageDto,
+        description: 'Nội dung tin nhắn',
+        examples: {
+            text: {
+                summary: 'Tin nhắn văn bản',
+                value: { content: 'Xin chào, tôi cần giúp đỡ.' }
+            }
+        }
+    })
     async sendGuestMessage(
         @Param('sessionId') sessionId: string,
         @Body() dto: SendMessageDto,
@@ -100,7 +180,26 @@ export class ContactController {
      */
     @Get('contact/chat/:sessionId')
     @Public()
-    @ApiOperation({ summary: 'Lấy conversation của session (public)' })
+    @ApiOperation({
+        summary: 'Lấy nội dung đoạn chat (Public)',
+        description: 'Lấy lịch sử tin nhắn của phiên chat cho khách.'
+    })
+    @ApiParam({ name: 'sessionId', description: 'ID phiên chat (UUID)' })
+    @ApiResponse({
+        status: 200,
+        description: 'Lấy lịch sử thành công',
+        schema: {
+            example: {
+                code: 'contact.live_chat.session',
+                message: 'Lấy thông tin thành công',
+                success: true,
+                data: {
+                    id: '...',
+                    messages: []
+                }
+            }
+        }
+    })
     async getChatSession(
         @Param('sessionId') sessionId: string,
         @I18nLang() lang: string,
@@ -116,7 +215,27 @@ export class ContactController {
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact.list')
     @ApiBearerAuth('JWT-auth')
-    @ApiOperation({ summary: 'Lấy danh sách tickets liên hệ (optimized)' })
+    @ApiOperation({
+        summary: 'Lấy danh sách tickets (Admin)',
+        description: 'API lấy danh sách yêu cầu liên hệ với bộ lọc nâng cao.'
+    })
+    @ApiAuthResponses()
+    @ApiQuery({ name: 'limit', required: false, example: 10 })
+    @ApiQuery({ name: 'offset', required: false, example: 0 })
+    @ApiQuery({ name: 'status', required: false, enum: ['PENDING', 'PROCESSING', 'RESOLVED', 'CLOSED'] })
+    @ApiQuery({ name: 'type', required: false, enum: ['SUPPORT', 'SALES', 'PARTNERSHIP'] })
+    @ApiResponse({
+        status: 200,
+        description: 'Lấy danh sách thành công',
+        schema: {
+            example: {
+                code: 'contact.list',
+                message: 'Lấy danh sách thành công',
+                success: true,
+                data: { items: [], total: 0 }
+            }
+        }
+    })
     async findAll(
         @Query() query: QueryContactDto,
         @I18nLang() lang: string,
@@ -132,7 +251,8 @@ export class ContactController {
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact.list')
     @ApiBearerAuth('JWT-auth')
-    @ApiOperation({ summary: 'Lấy danh sách tickets ưu tiên (is_priority_customer = true)' })
+    @ApiOperation({ summary: 'Lấy danh sách tickets ưu tiên' })
+    @ApiAuthResponses()
     async findPriority(
         @Query() query: QueryContactDto,
         @I18nLang() lang: string,
@@ -148,7 +268,8 @@ export class ContactController {
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact.list')
     @ApiBearerAuth('JWT-auth')
-    @ApiOperation({ summary: 'Lấy danh sách tickets bình thường' })
+    @ApiOperation({ summary: 'Lấy danh sách tickets thường' })
+    @ApiAuthResponses()
     async findNormal(
         @Query() query: QueryContactDto,
         @I18nLang() lang: string,
@@ -164,7 +285,8 @@ export class ContactController {
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact.list')
     @ApiBearerAuth('JWT-auth')
-    @ApiOperation({ summary: 'Lấy danh sách tickets bị bỏ qua (blacklisted)' })
+    @ApiOperation({ summary: 'Lấy danh sách tickets bị bỏ qua (Spam/Skipped)' })
+    @ApiAuthResponses()
     async findSkipped(
         @Query() query: QueryContactDto,
         @I18nLang() lang: string,
@@ -180,7 +302,9 @@ export class ContactController {
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact.read')
     @ApiBearerAuth('JWT-auth')
-    @ApiOperation({ summary: 'Lấy chi tiết ticket liên hệ' })
+    @ApiOperation({ summary: 'Lấy chi tiết ticket' })
+    @ApiParam({ name: 'id', description: 'ID ticket (UUID)' })
+    @ApiAuthResponses()
     async findOne(
         @Param('id') id: string,
         @I18nLang() lang: string,
@@ -196,7 +320,9 @@ export class ContactController {
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact.read')
     @ApiBearerAuth('JWT-auth')
-    @ApiOperation({ summary: 'Lấy danh sách messages của ticket' })
+    @ApiOperation({ summary: 'Lấy nội dung trao đổi của ticket' })
+    @ApiParam({ name: 'id', description: 'ID ticket (UUID)' })
+    @ApiAuthResponses()
     async findMessages(
         @Param('id') id: string,
         @I18nLang() lang: string,
@@ -205,8 +331,6 @@ export class ContactController {
         return new GetResponse('contact.messages', result);
     }
 
-
-
     /**
      * Cập nhật ticket
      */
@@ -214,7 +338,13 @@ export class ContactController {
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact.update')
     @ApiBearerAuth('JWT-auth')
-    @ApiOperation({ summary: 'Cập nhật ticket (status, priority, assign, staff)' })
+    @ApiOperation({
+        summary: 'Cập nhật thông tin ticket',
+        description: 'Cập nhật trạng thái, độ ưu tiên, gán nhân viên...'
+    })
+    @ApiParam({ name: 'id', description: 'ID ticket (UUID)' })
+    @ApiBody({ type: UpdateContactDto })
+    @ApiAuthResponses()
     async update(
         @Param('id') id: string,
         @Body() dto: UpdateContactDto,
@@ -225,8 +355,6 @@ export class ContactController {
         return new UpdatedResponse('contact.updated', result);
     }
 
-
-
     /**
      * Staff reply
      */
@@ -234,7 +362,13 @@ export class ContactController {
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact.reply')
     @ApiBearerAuth('JWT-auth')
-    @ApiOperation({ summary: 'Staff trả lời ticket' })
+    @ApiOperation({
+        summary: 'Nhân viên trả lời ticket',
+        description: 'Gửi email phản hồi cho khách hàng.'
+    })
+    @ApiParam({ name: 'id', description: 'ID ticket (UUID)' })
+    @ApiBody({ type: ReplyContactDto })
+    @ApiAuthResponses()
     async reply(
         @Param('id') id: string,
         @Body() dto: ReplyContactDto,
@@ -266,7 +400,9 @@ export class ContactController {
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact.update')
     @ApiBearerAuth('JWT-auth')
-    @ApiOperation({ summary: 'Đóng ticket' })
+    @ApiOperation({ summary: 'Đóng ticket (Hoàn tất)' })
+    @ApiParam({ name: 'id', description: 'ID ticket (UUID)' })
+    @ApiAuthResponses()
     async close(
         @Param('id') id: string,
         @CurrentUser() user: { userId: string },
@@ -283,7 +419,9 @@ export class ContactController {
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact.update')
     @ApiBearerAuth('JWT-auth')
-    @ApiOperation({ summary: 'Mở lại ticket' })
+    @ApiOperation({ summary: 'Mở lại ticket đã đóng' })
+    @ApiParam({ name: 'id', description: 'ID ticket (UUID)' })
+    @ApiAuthResponses()
     async reopen(
         @Param('id') id: string,
         @CurrentUser() user: { userId: string },
@@ -293,8 +431,6 @@ export class ContactController {
         return new OkResponse('contact.reopened', null, result.message);
     }
 
-
-
     /**
      * Xóa ticket
      */
@@ -302,7 +438,9 @@ export class ContactController {
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact.delete')
     @ApiBearerAuth('JWT-auth')
-    @ApiOperation({ summary: 'Xóa ticket' })
+    @ApiOperation({ summary: 'Xóa ticket (Soft delete)' })
+    @ApiParam({ name: 'id', description: 'ID ticket (UUID)' })
+    @ApiAuthResponses()
     async delete(
         @Param('id') id: string,
         @CurrentUser() user: { userId: string },
@@ -319,7 +457,9 @@ export class ContactController {
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact.delete')
     @ApiBearerAuth('JWT-auth')
-    @ApiOperation({ summary: 'Xóa nhiều tickets' })
+    @ApiOperation({ summary: 'Xóa nhiều tickets cùng lúc' })
+    @ApiBody({ schema: { type: 'object', properties: { ids: { type: 'array', items: { type: 'string' } } } } })
+    @ApiAuthResponses()
     async deleteMany(
         @Body('ids') ids: string[],
         @CurrentUser() user: { userId: string },

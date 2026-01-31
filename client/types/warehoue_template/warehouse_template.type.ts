@@ -1,3 +1,5 @@
+import type { Row_template } from './row_warehouse_template.type';
+
 // Base entity fields that are common across many types
 interface BaseEntity {
     id: string;
@@ -60,25 +62,6 @@ interface DiscountConfig extends BaseEntity {
     row_template_id?: string;
 }
 
-// Row and Rack related
-interface RowTemplate extends BaseEntity {
-    address: string;
-    code: string;
-    description: string;
-    is_rented: boolean;
-    latitude: string | null;
-    longitude: string | null;
-    name: string;
-    position_rotation: number | null;
-    position_x: number | null;
-    position_y: number | null;
-    price_per_month: string;
-    racks: []; // You might want to define a Rack type
-    total_weight_capacity: number | null;
-    warehouse_template_id: string;
-    discount_configs: DiscountConfig[];
-}
-
 // Image interface
 interface WarehouseImage {
     id: string;
@@ -138,7 +121,7 @@ export interface Warehouse extends BaseEntity {
     addon_gifts: AddonGift[];
     discount_configs: DiscountConfig[];
     images: WarehouseImage[];
-    rows: RowTemplate[];
+    rows: Row_template[];
 }
 
 // Create warehouse template interface

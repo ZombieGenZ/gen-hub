@@ -10,7 +10,7 @@ import {
     UseGuards,
     ParseUUIDPipe,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam, ApiQuery, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { I18nLang } from 'nestjs-i18n';
 import { ArticleCommentService } from './article-comment.service';
 import { CreateCommentDto, UpdateCommentDto } from './dto';
@@ -20,6 +20,7 @@ import { RequirePermission } from '../../common/decorators/require-permission.de
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { OptionalJwtAuthGuard } from '../../common/guards/optional-jwt-auth.guard';
 import { GetResponse, CreatedResponse, UpdatedResponse, DeletedResponse, OkResponse } from '../../common/responses/success.response';
+import { ApiAuthResponses, ApiValidationErrorResponse, ApiUnauthorizedResponses } from '../../common/decorators/api-common-responses.decorator';
 
 @ApiTags('Article Comments')
 @Controller('articles')
@@ -27,10 +28,35 @@ export class ArticleCommentController {
     constructor(private readonly commentService: ArticleCommentService) { }
 
     @Get(':id/comments')
-    @ApiOperation({ summary: 'Lấy danh sách comments của bài viết' })
-    @ApiParam({ name: 'id', description: 'ID bài viết' })
-    @ApiQuery({ name: 'limit', required: false })
-    @ApiQuery({ name: 'offset', required: false })
+    @ApiOperation({
+        summary: 'Lấy danh sách comments của bài viết',
+        description: 'Lấy danh sách bình luận của một bài viết, hỗ trợ phân trang.'
+    })
+    @ApiParam({ name: 'id', description: 'ID của bài viết (UUID)', example: 'b6f48b98-5c49-436f-87a3-e4d355038e24' })
+    @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Số lượng comment mỗi trang', example: 10 })
+    @ApiQuery({ name: 'offset', required: false, type: Number, description: 'Vị trí bắt đầu', example: 0 })
+    @ApiResponse({
+        status: 200,
+        description: 'Lấy danh sách comment thành công',
+        schema: {
+            example: {
+                code: 'article.comments',
+                message: 'Lấy comments thành công',
+                success: true,
+                data: {
+                    items: [
+                        {
+                            id: '...',
+                            content: 'Bài viết rất hay!',
+                            author: { name: 'User 1', avatar: '...' },
+                            created_at: '2023-11-01T10:00:00.000Z'
+                        }
+                    ],
+                    total: 5
+                }
+            }
+        }
+    })
     async getComments(
         @Param('id', ParseUUIDPipe) id: string,
         @Query('limit') limit: number = 10,
@@ -42,9 +68,49 @@ export class ArticleCommentController {
     }
 
     @Post(':id/comments')
-    @ApiOperation({ summary: 'Tạo comment (đăng nhập hoặc guest)' })
-    @ApiParam({ name: 'id', description: 'ID bài viết' })
+    @ApiOperation({
+        summary: 'Tạo comment',
+        description: 'Người dùng (hoặc khách) tạo bình luận mới cho bài viết.'
+    })
+    @ApiParam({ name: 'id', description: 'ID của bài viết (UUID)', example: 'b6f48b98-5c49-436f-87a3-e4d355038e24' })
+    @ApiValidationErrorResponse()
     @UseGuards(OptionalJwtAuthGuard)
+    @ApiBody({
+        type: CreateCommentDto,
+        description: 'Nội dung bình luận',
+        examples: {
+            user_comment: {
+                summary: 'Bình luận thông thường',
+                value: {
+                    content: 'Bài viết rất hữu ích, cảm ơn tác giả!',
+                    parent_id: null
+                }
+            },
+            reply_comment: {
+                summary: 'Trả lời bình luận khác',
+                value: {
+                    content: 'Tôi đồng ý với quan điểm này.',
+                    parent_id: 'c7d23a...'
+                }
+            }
+        }
+    })
+    @ApiResponse({
+        status: 201,
+        description: 'Tạo comment thành công',
+        schema: {
+            example: {
+                code: 'article.comment_created',
+                message: 'Đã tạo comment thành công',
+                success: true,
+                data: {
+                    id: '...',
+                    content: 'Bài viết rất hữu ích...',
+                    status: 'PENDING'
+                }
+            }
+        }
+    })
     async createComment(
         @Param('id', ParseUUIDPipe) id: string,
         @Body() dto: CreateCommentDto,
@@ -56,12 +122,43 @@ export class ArticleCommentController {
     }
 
     @Put(':id/comments/:commentId')
-    @ApiOperation({ summary: 'Cập nhật comment (owner hoặc admin)' })
-    @ApiParam({ name: 'id', description: 'ID bài viết' })
-    @ApiParam({ name: 'commentId', description: 'ID comment' })
+    @ApiOperation({
+        summary: 'Cập nhật comment',
+        description: 'Cập nhật nội dung bình luận (Chỉ tác giả mới được sửa). Yêu cầu quyền `article.read` để truy cập API.'
+    })
+    @ApiParam({ name: 'id', description: 'ID của bài viết (UUID)', example: 'b6f48b98-5c49-436f-87a3-e4d355038e24' })
+    @ApiParam({ name: 'commentId', description: 'ID của comment (UUID)', example: 'c7d23a...' })
+    @ApiAuthResponses()
+    @ApiValidationErrorResponse()
     @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('article.read')
+    @ApiBody({
+        type: UpdateCommentDto,
+        description: 'Nội dung cập nhật',
+        examples: {
+            update: {
+                summary: 'Sửa nội dung comment',
+                value: { content: 'Nội dung đã chỉnh sửa...' }
+            }
+        }
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Cập nhật thành công',
+        schema: {
+            example: {
+                code: 'article.comment_updated',
+                message: 'Đã cập nhật comment thành công',
+                success: true,
+                data: {
+                    id: '...',
+                    content: 'Nội dung đã chỉnh sửa...',
+                    updated_at: '2023-11-01T10:05:00.000Z'
+                }
+            }
+        }
+    })
     async updateComment(
         @Param('id', ParseUUIDPipe) id: string,
         @Param('commentId', ParseUUIDPipe) commentId: string,
@@ -75,12 +172,28 @@ export class ArticleCommentController {
     }
 
     @Delete(':id/comments/:commentId')
-    @ApiOperation({ summary: 'Xóa comment (owner hoặc admin)' })
-    @ApiParam({ name: 'id', description: 'ID bài viết' })
-    @ApiParam({ name: 'commentId', description: 'ID comment' })
+    @ApiOperation({
+        summary: 'Xóa comment',
+        description: 'Xóa bình luận (Chỉ tác giả mới được xóa). Yêu cầu quyền `article.read`.'
+    })
+    @ApiParam({ name: 'id', description: 'ID của bài viết (UUID)', example: 'b6f48b98-5c49-436f-87a3-e4d355038e24' })
+    @ApiParam({ name: 'commentId', description: 'ID của comment (UUID)', example: 'c7d23a...' })
+    @ApiAuthResponses()
     @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('article.read')
+    @ApiResponse({
+        status: 200,
+        description: 'Xóa thành công',
+        schema: {
+            example: {
+                code: 'article.comment_deleted',
+                message: 'Đã xóa comment thành công',
+                success: true,
+                data: null
+            }
+        }
+    })
     async deleteComment(
         @Param('id', ParseUUIDPipe) id: string,
         @Param('commentId', ParseUUIDPipe) commentId: string,
@@ -93,12 +206,28 @@ export class ArticleCommentController {
     }
 
     @Post(':id/comments/:commentId/approve')
-    @ApiOperation({ summary: 'Duyệt comment (admin)' })
-    @ApiParam({ name: 'id', description: 'ID bài viết' })
-    @ApiParam({ name: 'commentId', description: 'ID comment' })
+    @ApiOperation({
+        summary: 'Duyệt comment (Admin)',
+        description: 'Admin duyệt hiển thị một bình luận. Yêu cầu quyền `article.admin`.'
+    })
+    @ApiParam({ name: 'id', description: 'ID của bài viết (UUID)', example: 'b6f48b98-5c49-436f-87a3-e4d355038e24' })
+    @ApiParam({ name: 'commentId', description: 'ID của comment (UUID)', example: 'c7d23a...' })
+    @ApiAuthResponses()
     @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('article.admin')
+    @ApiResponse({
+        status: 200,
+        description: 'Duyệt thành công',
+        schema: {
+            example: {
+                code: 'article.comment_approved',
+                message: 'Đã duyệt comment',
+                success: true,
+                data: null
+            }
+        }
+    })
     async approveComment(
         @Param('id', ParseUUIDPipe) id: string,
         @Param('commentId', ParseUUIDPipe) commentId: string,
@@ -110,12 +239,28 @@ export class ArticleCommentController {
     }
 
     @Post(':id/comments/:commentId/reject')
-    @ApiOperation({ summary: 'Từ chối comment (admin)' })
-    @ApiParam({ name: 'id', description: 'ID bài viết' })
-    @ApiParam({ name: 'commentId', description: 'ID comment' })
+    @ApiOperation({
+        summary: 'Từ chối comment (Admin)',
+        description: 'Admin từ chối hiển thị một bình luận. Yêu cầu quyền `article.admin`.'
+    })
+    @ApiParam({ name: 'id', description: 'ID của bài viết (UUID)', example: 'b6f48b98-5c49-436f-87a3-e4d355038e24' })
+    @ApiParam({ name: 'commentId', description: 'ID của comment (UUID)', example: 'c7d23a...' })
+    @ApiAuthResponses()
     @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('article.admin')
+    @ApiResponse({
+        status: 200,
+        description: 'Từ chối thành công',
+        schema: {
+            example: {
+                code: 'article.comment_rejected',
+                message: 'Đã từ chối comment',
+                success: true,
+                data: null
+            }
+        }
+    })
     async rejectComment(
         @Param('id', ParseUUIDPipe) id: string,
         @Param('commentId', ParseUUIDPipe) commentId: string,
@@ -127,9 +272,26 @@ export class ArticleCommentController {
     }
 
     @Get(':id/comments/:commentId/history')
-    @ApiOperation({ summary: 'Lấy lịch sử chỉnh sửa comment' })
-    @ApiParam({ name: 'id', description: 'ID bài viết' })
-    @ApiParam({ name: 'commentId', description: 'ID comment' })
+    @ApiOperation({
+        summary: 'Lấy lịch sử chỉnh sửa comment',
+        description: 'Xem lịch sử các thay đổi của comment (Công khai).'
+    })
+    @ApiParam({ name: 'id', description: 'ID của bài viết (UUID)', example: 'b6f48b98-5c49-436f-87a3-e4d355038e24' })
+    @ApiParam({ name: 'commentId', description: 'ID của comment (UUID)', example: 'c7d23a...' })
+    @ApiResponse({
+        status: 200,
+        description: 'Lấy lịch sử thành công',
+        schema: {
+            example: {
+                code: 'article.comment_history',
+                message: 'Lấy lịch sử chỉnh sửa thành công',
+                success: true,
+                data: [
+                    { content: 'Nội dung cũ...', created_at: '...' }
+                ]
+            }
+        }
+    })
     async getCommentHistory(
         @Param('id', ParseUUIDPipe) id: string,
         @Param('commentId', ParseUUIDPipe) commentId: string,
@@ -150,9 +312,42 @@ export class ArticleCommentAdminController {
     constructor(private readonly commentService: ArticleCommentService) { }
 
     @Put(':articleId/comments/:commentId')
-    @ApiOperation({ summary: 'Admin sửa comment (lưu lịch sử)' })
+    @ApiOperation({
+        summary: 'Admin sửa comment',
+        description: 'Admin sửa nội dung comment (có lưu lịch sử). Yêu cầu quyền `article.admin`.'
+    })
+    @ApiAuthResponses()
+    @ApiValidationErrorResponse()
+    @ApiParam({ name: 'articleId', description: 'ID của bài viết (UUID)', example: 'b6f48b98-5c49-436f-87a3-e4d355038e24' })
+    @ApiParam({ name: 'commentId', description: 'ID của comment (UUID)', example: 'c7d23a...' })
     @ApiBearerAuth('JWT-auth')
     @RequirePermission('article.admin')
+    @ApiBody({
+        type: UpdateCommentDto,
+        description: 'Nội dung cập nhật',
+        examples: {
+            admin_update: {
+                summary: 'Admin sửa nội dung violation',
+                value: { content: '[Nội dung đã bị ẩn do vi phạm tiêu chuẩn cộng đồng]' }
+            }
+        }
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Cập nhật thành công',
+        schema: {
+            example: {
+                code: 'article.comment_updated',
+                message: 'Đã cập nhật comment thành công',
+                success: true,
+                data: {
+                    id: '...',
+                    content: '[Nội dung đã bị ẩn...]',
+                    updated_at: '2023-11-01T10:05:00.000Z'
+                }
+            }
+        }
+    })
     async adminUpdateComment(
         @Param('articleId', ParseUUIDPipe) articleId: string,
         @Param('commentId', ParseUUIDPipe) commentId: string,
@@ -165,9 +360,27 @@ export class ArticleCommentAdminController {
     }
 
     @Delete(':articleId/comments/:commentId')
-    @ApiOperation({ summary: 'Admin xóa comment' })
+    @ApiOperation({
+        summary: 'Admin xóa comment',
+        description: 'Admin xóa hoàn toàn comment khỏi hệ thống (cả soft delete). Yêu cầu quyền `article.admin`.'
+    })
+    @ApiAuthResponses()
+    @ApiParam({ name: 'articleId', description: 'ID của bài viết (UUID)', example: 'b6f48b98-5c49-436f-87a3-e4d355038e24' })
+    @ApiParam({ name: 'commentId', description: 'ID của comment (UUID)', example: 'c7d23a...' })
     @ApiBearerAuth('JWT-auth')
     @RequirePermission('article.admin')
+    @ApiResponse({
+        status: 200,
+        description: 'Xóa thành công',
+        schema: {
+            example: {
+                code: 'article.comment_deleted',
+                message: 'Đã xóa comment thành công',
+                success: true,
+                data: null
+            }
+        }
+    })
     async adminDeleteComment(
         @Param('articleId', ParseUUIDPipe) articleId: string,
         @Param('commentId', ParseUUIDPipe) commentId: string,

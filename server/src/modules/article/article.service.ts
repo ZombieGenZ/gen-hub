@@ -7,12 +7,10 @@ import { WebsocketGateway } from '../websocket/websocket.gateway';
 import { SystemLogService } from '../system-log/system-log.service';
 import { CreateArticleDto, UpdateArticleDto, QueryArticleDto } from './dto';
 import { IArticlePaginatedResponse, ISeoGenerationResult } from './interfaces';
+import { ArticleCacheKeysHelper } from './helpers/article-cache-keys.helper';
 
 @Injectable()
 export class ArticleService {
-    private readonly cacheTTL: number;
-    private readonly listCacheTTL: number;
-
     constructor(
         private readonly repository: ArticleRepository,
         private readonly redisService: RedisService,
@@ -20,18 +18,8 @@ export class ArticleService {
         private readonly systemLogService: SystemLogService,
         private readonly configService: ConfigService,
         private readonly i18n: I18nService,
-    ) {
-        this.cacheTTL = this.configService.get<number>('REDIS_ARTICLE_CACHE_TTL', 300);
-        this.listCacheTTL = this.configService.get<number>('REDIS_ARTICLE_LIST_CACHE_TTL', 60);
-    }
-
-    private getCacheKey(id: string): string {
-        return `article:${id}`;
-    }
-
-    private getListCacheKey(query: QueryArticleDto): string {
-        return `article:list:${JSON.stringify(query)}`;
-    }
+        private readonly cacheKeys: ArticleCacheKeysHelper,
+    ) { }
 
     async create(dto: CreateArticleDto, userId: string, lang: string) {
         // Kiểm tra slug đã tồn tại
@@ -83,7 +71,7 @@ export class ArticleService {
         const { limit = 10, offset = 0, keywords, status, type, is_active, is_featured, category_id } = query;
 
         // Check cache
-        const cacheKey = this.getListCacheKey(query);
+        const cacheKey = this.cacheKeys.list(query);
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
             return JSON.parse(cached);
@@ -139,14 +127,14 @@ export class ArticleService {
         const result = { items: data, total, limit, offset, hasMore };
 
         // Set cache
-        await this.redisService.set(cacheKey, JSON.stringify(result), this.listCacheTTL);
+        await this.redisService.set(cacheKey, JSON.stringify(result), this.cacheKeys.getTtl('list'));
 
         return result;
     }
 
     async findById(id: string, lang: string) {
         // Check cache
-        const cacheKey = this.getCacheKey(id);
+        const cacheKey = this.cacheKeys.item(id);
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
             return JSON.parse(cached);
@@ -160,7 +148,7 @@ export class ArticleService {
         }
 
         // Set cache
-        await this.redisService.set(cacheKey, JSON.stringify(article), this.cacheTTL);
+        await this.redisService.set(cacheKey, JSON.stringify(article), this.cacheKeys.getTtl('item'));
 
         return article;
     }
@@ -171,7 +159,7 @@ export class ArticleService {
     async findAllPublished(query: QueryArticleDto): Promise<IArticlePaginatedResponse> {
         const { limit = 10, offset = 0, keywords, type, category_id } = query;
 
-        const cacheKey = `article:public:${JSON.stringify({ limit, offset, keywords, type, category_id })}`;
+        const cacheKey = this.cacheKeys.public({ limit, offset, keywords, type, category_id });
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
             return JSON.parse(cached);
@@ -203,7 +191,7 @@ export class ArticleService {
         const hasMore = offset + data.length < total;
         const result = { items: data, total, limit, offset, hasMore };
 
-        await this.redisService.set(cacheKey, JSON.stringify(result), this.listCacheTTL);
+        await this.redisService.set(cacheKey, JSON.stringify(result), this.cacheKeys.getTtl('list'));
 
         return result;
     }
@@ -415,11 +403,11 @@ export class ArticleService {
     }
 
     private async invalidateCache(id: string) {
-        await this.redisService.del(this.getCacheKey(id));
+        await this.redisService.del(this.cacheKeys.item(id));
     }
 
     private async invalidateListCache() {
-        await this.redisService.delByPattern('article:list:*');
-        await this.redisService.delByPattern('article:public:*');
+        await this.redisService.delByPattern(this.cacheKeys.listPattern());
+        await this.redisService.delByPattern(this.cacheKeys.publicPattern());
     }
 }

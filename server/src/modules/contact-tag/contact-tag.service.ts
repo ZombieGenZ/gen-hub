@@ -7,12 +7,10 @@ import { WebsocketGateway } from '../websocket/websocket.gateway';
 import { SystemLogService } from '../system-log/system-log.service';
 import { CreateContactTagDto, UpdateContactTagDto, QueryContactTagDto } from './dto';
 import { IContactTagPaginatedResponse } from './interfaces';
+import { ContactTagCacheKeysHelper } from './helpers/contact-tag-cache-keys.helper';
 
 @Injectable()
 export class ContactTagService {
-    private readonly cacheTTL: number;
-    private readonly listCacheTTL: number;
-
     constructor(
         private readonly repository: ContactTagRepository,
         private readonly redisService: RedisService,
@@ -20,18 +18,8 @@ export class ContactTagService {
         private readonly systemLogService: SystemLogService,
         private readonly configService: ConfigService,
         private readonly i18n: I18nService,
-    ) {
-        this.cacheTTL = this.configService.get<number>('REDIS_CONTACT_TAG_CACHE_TTL', 300);
-        this.listCacheTTL = this.configService.get<number>('REDIS_CONTACT_TAG_LIST_CACHE_TTL', 60);
-    }
-
-    private getCacheKey(id: string): string {
-        return `contact-tag:${id}`;
-    }
-
-    private getListCacheKey(query: QueryContactTagDto): string {
-        return `contact-tag:list:${JSON.stringify(query)}`;
-    }
+        private readonly cacheKeys: ContactTagCacheKeysHelper,
+    ) { }
 
     async create(dto: CreateContactTagDto, userId: string, lang: string) {
         // Kiểm tra trùng tên
@@ -69,7 +57,7 @@ export class ContactTagService {
     async findAll(query: QueryContactTagDto): Promise<IContactTagPaginatedResponse> {
         const { limit = 10, offset = 0, keywords, is_active } = query;
 
-        const cacheKey = this.getListCacheKey(query);
+        const cacheKey = this.cacheKeys.list(query);
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
             return JSON.parse(cached);
@@ -101,13 +89,13 @@ export class ContactTagService {
         const hasMore = offset + data.length < total;
         const result = { items: data, total, limit, offset, hasMore };
 
-        await this.redisService.set(cacheKey, JSON.stringify(result), this.listCacheTTL);
+        await this.redisService.set(cacheKey, JSON.stringify(result), this.cacheKeys.getTtl('list'));
 
         return result;
     }
 
     async findById(id: string, lang: string) {
-        const cacheKey = this.getCacheKey(id);
+        const cacheKey = this.cacheKeys.item(id);
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
             return JSON.parse(cached);
@@ -120,7 +108,7 @@ export class ContactTagService {
             );
         }
 
-        await this.redisService.set(cacheKey, JSON.stringify(tag), this.cacheTTL);
+        await this.redisService.set(cacheKey, JSON.stringify(tag), this.cacheKeys.getTtl('item'));
 
         return tag;
     }
@@ -129,7 +117,7 @@ export class ContactTagService {
      * Lấy danh sách tags đang active
      */
     async findAllActive(): Promise<IContactTagPaginatedResponse> {
-        const cacheKey = 'contact-tag:active';
+        const cacheKey = this.cacheKeys.active();
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
             return JSON.parse(cached);
@@ -144,7 +132,7 @@ export class ContactTagService {
             hasMore: false,
         };
 
-        await this.redisService.set(cacheKey, JSON.stringify(result), this.listCacheTTL);
+        await this.redisService.set(cacheKey, JSON.stringify(result), this.cacheKeys.getTtl('list'));
 
         return result;
     }
@@ -245,11 +233,12 @@ export class ContactTagService {
     }
 
     private async invalidateCache(id: string) {
-        await this.redisService.del(this.getCacheKey(id));
+        await this.redisService.del(this.cacheKeys.item(id));
     }
 
     private async invalidateListCache() {
-        await this.redisService.delByPattern('contact-tag:list:*');
-        await this.redisService.del('contact-tag:active');
+        await this.redisService.delByPattern(this.cacheKeys.listPattern());
+        await this.redisService.delByPattern(this.cacheKeys.activePattern());
     }
 }
+
