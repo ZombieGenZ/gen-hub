@@ -12,6 +12,7 @@ import { SharedModule } from '../../common/shared.module';
 import { CozeModule } from '../coze/coze.module';
 import { GeminiService } from '../../common/services/gemini.service';
 import { ContactListModule } from '../contact-list/contact-list.module';
+import { ContactCacheKeysHelper } from './helpers/contact-cache-keys.helper';
 
 @Module({
     imports: [
@@ -26,8 +27,7 @@ import { ContactListModule } from '../contact-list/contact-list.module';
         ContactListModule,
     ],
     controllers: [ContactController],
-    providers: [ContactService, ContactRepository, GeminiService],
-    exports: [ContactService, ContactRepository],
+    providers: [ContactService, ContactRepository, GeminiService, ContactCacheKeysHelper],
+    exports: [ContactService, ContactRepository, ContactCacheKeysHelper],
 })
 export class ContactModule { }
-

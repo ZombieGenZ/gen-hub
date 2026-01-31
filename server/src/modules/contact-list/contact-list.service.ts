@@ -8,15 +8,13 @@ import { WebsocketGateway } from '../websocket/websocket.gateway';
 import { SystemLogService } from '../system-log/system-log.service';
 import { CreateContactListDto, UpdateContactListDto, QueryContactListDto } from './dto';
 import { IContactListPaginatedResponse, IContactListCheckResult } from './interfaces';
+import { ContactListCacheKeysHelper } from './helpers/contact-list-cache-keys.helper';
 
 /**
  * Service xử lý logic cho Contact List (Blacklist/Whitelist)
  */
 @Injectable()
 export class ContactListService {
-    private readonly cacheTTL: number;
-    private readonly listCacheTTL: number;
-
     constructor(
         private readonly repository: ContactListRepository,
         private readonly redisService: RedisService,
@@ -24,18 +22,8 @@ export class ContactListService {
         private readonly systemLogService: SystemLogService,
         private readonly configService: ConfigService,
         private readonly i18n: I18nService,
-    ) {
-        this.cacheTTL = this.configService.get<number>('REDIS_CONTACT_LIST_CACHE_TTL', 300);
-        this.listCacheTTL = this.configService.get<number>('REDIS_CONTACT_LIST_LIST_CACHE_TTL', 60);
-    }
-
-    private getCacheKey(id: string): string {
-        return `contact-list:${id}`;
-    }
-
-    private getListCacheKey(query: QueryContactListDto): string {
-        return `contact-list:list:${JSON.stringify(query)}`;
-    }
+        private readonly cacheKeys: ContactListCacheKeysHelper,
+    ) { }
 
     async create(dto: CreateContactListDto, userId: string, lang: string) {
         // Chuẩn hóa value
@@ -83,7 +71,7 @@ export class ContactListService {
     async findAll(query: QueryContactListDto): Promise<IContactListPaginatedResponse> {
         const { limit = 10, offset = 0, keywords, list_type, match_type, is_active } = query;
 
-        const cacheKey = this.getListCacheKey(query);
+        const cacheKey = this.cacheKeys.list(query);
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
             return JSON.parse(cached);
@@ -116,13 +104,13 @@ export class ContactListService {
         const hasMore = offset + data.length < total;
         const result = { items: data, total, limit, offset, hasMore };
 
-        await this.redisService.set(cacheKey, JSON.stringify(result), this.listCacheTTL);
+        await this.redisService.set(cacheKey, JSON.stringify(result), this.cacheKeys.getTtl('list'));
 
         return result;
     }
 
     async findById(id: string, lang: string) {
-        const cacheKey = this.getCacheKey(id);
+        const cacheKey = this.cacheKeys.item(id);
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
             return JSON.parse(cached);
@@ -135,7 +123,7 @@ export class ContactListService {
             );
         }
 
-        await this.redisService.set(cacheKey, JSON.stringify(entry), this.cacheTTL);
+        await this.redisService.set(cacheKey, JSON.stringify(entry), this.cacheKeys.getTtl('item'));
 
         return entry;
     }
@@ -460,10 +448,11 @@ export class ContactListService {
     }
 
     private async invalidateCache(id: string) {
-        await this.redisService.del(this.getCacheKey(id));
+        await this.redisService.del(this.cacheKeys.item(id));
     }
 
     private async invalidateListCache() {
-        await this.redisService.delByPattern('contact-list:list:*');
+        await this.redisService.delByPattern(this.cacheKeys.listPattern());
     }
 }
+

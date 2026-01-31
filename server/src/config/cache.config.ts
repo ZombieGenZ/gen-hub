@@ -208,4 +208,72 @@ export default registerAs('cache', () => ({
             call: process.env.REDIS_ORG_CHAT_CALL_KEY_PREFIX || 'org:chat:call',
         },
     },
+    // Article Module
+    article: {
+        ttl: {
+            item: parseInt(process.env.REDIS_ARTICLE_CACHE_TTL ?? '300', 10),
+            list: parseInt(process.env.REDIS_ARTICLE_LIST_CACHE_TTL ?? '60', 10),
+            emoji: parseInt(process.env.REDIS_ARTICLE_EMOJI_CACHE_TTL ?? '3600', 10),
+            comment: parseInt(process.env.REDIS_ARTICLE_COMMENT_CACHE_TTL ?? '60', 10),
+        },
+        keys: {
+            item: process.env.REDIS_ARTICLE_KEY_PREFIX || 'article',
+            list: process.env.REDIS_ARTICLE_LIST_KEY_PREFIX || 'article:list',
+            public: process.env.REDIS_ARTICLE_PUBLIC_KEY_PREFIX || 'article:public',
+            emoji: process.env.REDIS_ARTICLE_EMOJI_KEY_PREFIX || 'article:emoji',
+            comment: process.env.REDIS_ARTICLE_COMMENT_KEY_PREFIX || 'article:comment',
+        },
+    },
+    // Category Module
+    category: {
+        ttl: {
+            item: parseInt(process.env.REDIS_CATEGORY_CACHE_TTL ?? '300', 10),
+            list: parseInt(process.env.REDIS_CATEGORY_LIST_CACHE_TTL ?? '60', 10),
+        },
+        keys: {
+            item: process.env.REDIS_CATEGORY_KEY_PREFIX || 'category',
+            list: process.env.REDIS_CATEGORY_LIST_KEY_PREFIX || 'category:list',
+            active: process.env.REDIS_CATEGORY_ACTIVE_KEY_PREFIX || 'category:active',
+        },
+    },
+    // Contact Module
+    contact: {
+        ttl: {
+            item: parseInt(process.env.REDIS_CONTACT_CACHE_TTL ?? '300', 10),
+            list: parseInt(process.env.REDIS_CONTACT_LIST_CACHE_TTL ?? '60', 10),
+        },
+        keys: {
+            item: process.env.REDIS_CONTACT_KEY_PREFIX || 'contact',
+            detail: process.env.REDIS_CONTACT_DETAIL_KEY_PREFIX || 'contact:detail',
+            staff: process.env.REDIS_CONTACT_STAFF_KEY_PREFIX || 'contact:staff',
+            priority: process.env.REDIS_CONTACT_PRIORITY_KEY_PREFIX || 'contact:priority',
+            normal: process.env.REDIS_CONTACT_NORMAL_KEY_PREFIX || 'contact:normal',
+            skipped: process.env.REDIS_CONTACT_SKIPPED_KEY_PREFIX || 'contact:skipped',
+        },
+    },
+    // Contact List Module (Blacklist/Whitelist)
+    contactList: {
+        ttl: {
+            item: parseInt(process.env.REDIS_CONTACT_LIST_CACHE_TTL ?? '3600', 10),
+            list: parseInt(process.env.REDIS_CONTACT_LIST_LIST_CACHE_TTL ?? '300', 10),
+        },
+        keys: {
+            item: process.env.REDIS_CONTACT_LIST_ENTRY_KEY_PREFIX || 'contact-list',
+            list: process.env.REDIS_CONTACT_LIST_ENTRY_LIST_KEY_PREFIX || 'contact-list:list',
+            email: process.env.REDIS_CONTACT_LIST_ENTRY_EMAIL_KEY_PREFIX || 'contact-list:email',
+            ip: process.env.REDIS_CONTACT_LIST_ENTRY_IP_KEY_PREFIX || 'contact-list:ip',
+        },
+    },
+    // Contact Tag Module
+    contactTag: {
+        ttl: {
+            item: parseInt(process.env.REDIS_CONTACT_TAG_CACHE_TTL ?? '300', 10),
+            list: parseInt(process.env.REDIS_CONTACT_TAG_LIST_CACHE_TTL ?? '60', 10),
+        },
+        keys: {
+            item: process.env.REDIS_CONTACT_TAG_KEY_PREFIX || 'contact-tag',
+            list: process.env.REDIS_CONTACT_TAG_LIST_KEY_PREFIX || 'contact-tag:list',
+            active: process.env.REDIS_CONTACT_TAG_ACTIVE_KEY_PREFIX || 'contact-tag:active',
+        },
+    },
 }));
