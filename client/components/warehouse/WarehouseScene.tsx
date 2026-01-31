@@ -1,12 +1,16 @@
 'use client';
 
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, Grid, PerspectiveCamera, Stars } from '@react-three/drei';
+import { OrbitControls, PerspectiveCamera, Stars } from '@react-three/drei';
 import { useState, useCallback } from 'react';
-import Rack3D from './Rack3D';
-import Box3D from './Box3D';
+import EnhancedRack3D from './EnhancedRack3D';
+import EnhancedBox3D from './EnhancedBox3D';
 import RackTooltip from './RackTooltip';
-import { RackConfig, BoxItem, BoxCategory, WarehouseStats } from '@/types/warehouse';
+import StatsOverlay from './StatsOverlay';
+import ControlsHint from './ControlsHint';
+import FillRateLegend from './FillRateLegend';
+import { WarehouseStructure, WarehouseFloor, WarehouseLights, WarehouseProps } from './WarehouseEnvironment';
+import { RackConfig, BoxItem, BoxCategory, WarehouseStats, FillRateStatus } from '@/types/warehouse';
 
 interface WarehouseSceneProps {
   showBackground: boolean;
@@ -23,6 +27,11 @@ interface WarehouseSceneProps {
   filterCategory: BoxCategory | 'all';
   stats: WarehouseStats;
   isDragMode: boolean;
+  onDoubleClickRack?: (id: string) => void;
+  getRackFillRate?: (rackId: string) => number;
+  visibleRackIds?: string[] | null;
+  fillRateFilter?: FillRateStatus | null;
+  onSetFillRateFilter?: (status: FillRateStatus | null) => void;
 }
 
 const AxesHelper = () => {
@@ -30,51 +39,40 @@ const AxesHelper = () => {
     <group>
       {/* X axis - Red */}
       <group>
-        <mesh position={[10, 0, 0]} rotation={[0, 0, -Math.PI / 2]}>
+        <mesh position={[10, 0.1, 0]} rotation={[0, 0, -Math.PI / 2]}>
           <cylinderGeometry args={[0.05, 0.05, 20, 8]} />
-          <meshStandardMaterial color={0xff4444} />
+          <meshStandardMaterial color={0xff4444} emissive={0xff4444} emissiveIntensity={0.3} />
         </mesh>
-        <mesh position={[20.5, 0, 0]} rotation={[0, 0, -Math.PI / 2]}>
+        <mesh position={[20.5, 0.1, 0]} rotation={[0, 0, -Math.PI / 2]}>
           <coneGeometry args={[0.15, 0.5, 8]} />
-          <meshStandardMaterial color={0xff4444} />
+          <meshStandardMaterial color={0xff4444} emissive={0xff4444} emissiveIntensity={0.3} />
         </mesh>
       </group>
       {/* Y axis - Green */}
       <group>
         <mesh position={[0, 7.5, 0]}>
           <cylinderGeometry args={[0.05, 0.05, 15, 8]} />
-          <meshStandardMaterial color={0x44ff44} />
+          <meshStandardMaterial color={0x44ff44} emissive={0x44ff44} emissiveIntensity={0.3} />
         </mesh>
         <mesh position={[0, 15.5, 0]}>
           <coneGeometry args={[0.15, 0.5, 8]} />
-          <meshStandardMaterial color={0x44ff44} />
+          <meshStandardMaterial color={0x44ff44} emissive={0x44ff44} emissiveIntensity={0.3} />
         </mesh>
       </group>
       {/* Z axis - Blue */}
       <group>
-        <mesh position={[0, 0, 10]} rotation={[Math.PI / 2, 0, 0]}>
+        <mesh position={[0, 0.1, 10]} rotation={[Math.PI / 2, 0, 0]}>
           <cylinderGeometry args={[0.05, 0.05, 20, 8]} />
-          <meshStandardMaterial color={0x4444ff} />
+          <meshStandardMaterial color={0x4444ff} emissive={0x4444ff} emissiveIntensity={0.3} />
         </mesh>
-        <mesh position={[0, 0, 20.5]} rotation={[Math.PI / 2, 0, 0]}>
+        <mesh position={[0, 0.1, 20.5]} rotation={[Math.PI / 2, 0, 0]}>
           <coneGeometry args={[0.15, 0.5, 8]} />
-          <meshStandardMaterial color={0x4444ff} />
+          <meshStandardMaterial color={0x4444ff} emissive={0x4444ff} emissiveIntensity={0.3} />
         </mesh>
       </group>
     </group>
   );
 };
-
-const Floor = () => (
-  <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]} receiveShadow>
-    <planeGeometry args={[200, 200]} />
-    <meshStandardMaterial 
-      color={0x555555} 
-      roughness={0.8}
-      metalness={0.2}
-    />
-  </mesh>
-);
 
 const WarehouseScene = ({ 
   showBackground, 
@@ -91,6 +89,11 @@ const WarehouseScene = ({
   filterCategory,
   stats,
   isDragMode,
+  onDoubleClickRack,
+  getRackFillRate,
+  visibleRackIds,
+  fillRateFilter,
+  onSetFillRateFilter,
 }: WarehouseSceneProps) => {
   const [hoveredRack, setHoveredRack] = useState<string | null>(null);
 
@@ -111,10 +114,10 @@ const WarehouseScene = ({
       <Canvas
         shadows
         dpr={[1, 1.5]}
-        gl={{ antialias: false, powerPreference: 'high-performance' }}
-        className="bg-gradient-to-b from-slate-800 to-slate-900"
+        gl={{ antialias: true, powerPreference: 'high-performance' }}
+        className="bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900"
       >
-        <PerspectiveCamera makeDefault position={[30, 25, 30]} fov={50} />
+        <PerspectiveCamera makeDefault position={[35, 30, 35]} fov={50} />
         <OrbitControls
           enablePan={true}
           enableZoom={true}
@@ -127,105 +130,89 @@ const WarehouseScene = ({
           zoomSpeed={1.2}
         />
 
-        {/* Lighting */}
-        <ambientLight intensity={0.4} />
+        {/* Enhanced Lighting System */}
+        <ambientLight intensity={0.35} color={0xfff8f0} />
         <directionalLight
-          position={[30, 50, 30]}
-          intensity={1.2}
+          position={[40, 60, 40]}
+          intensity={1.0}
           castShadow
           shadow-mapSize-width={2048}
           shadow-mapSize-height={2048}
           shadow-camera-far={200}
-          shadow-camera-left={-50}
-          shadow-camera-right={50}
-          shadow-camera-top={50}
-          shadow-camera-bottom={-50}
+          shadow-camera-left={-60}
+          shadow-camera-right={60}
+          shadow-camera-top={60}
+          shadow-camera-bottom={-60}
+          shadow-bias={-0.0001}
+          color={0xfff8e0}
         />
-        <directionalLight position={[-20, 30, -20]} intensity={0.4} />
-        <hemisphereLight args={[0x87ceeb, 0x444444, 0.5]} />
+        <directionalLight position={[-30, 40, -30]} intensity={0.3} color={0xe8f0ff} />
+        <hemisphereLight args={[0x87ceeb, 0x444444, 0.4]} />
 
-        {/* Environment */}
-        <Stars radius={100} depth={50} count={2000} factor={4} saturation={0} fade speed={1} />
+        {/* Fog for depth */}
+        <fog attach="fog" args={[0x1a1f2e, 50, 150]} />
 
-        {/* Background floor and grid */}
+        {/* Environment - Stars in background */}
+        <Stars radius={150} depth={50} count={3000} factor={4} saturation={0} fade speed={0.5} />
+
+        {/* Warehouse Environment */}
         {showBackground && (
           <>
-            <Floor />
-            {showGrid && (
-              <Grid
-                args={[200, 200]}
-                cellSize={1}
-                cellThickness={0.5}
-                cellColor="#444444"
-                sectionSize={5}
-                sectionThickness={1.5}
-                sectionColor="#666666"
-                fadeDistance={150}
-                position={[0, 0.01, 0]}
-              />
-            )}
+            <WarehouseFloor />
+            <WarehouseStructure />
+            <WarehouseLights />
+            <WarehouseProps />
           </>
         )}
 
-        {/* Axes */}
+        {/* Axes Helper */}
         {showAxes && <AxesHelper />}
 
-        {/* Racks */}
-        {racks.map((rack) => (
-          <Rack3D
-            key={rack.id}
-            config={rack}
-            isSelected={rack.id === selectedRack}
-            onSelect={onSelectRack}
-            onDrag={onUpdateRackPosition}
-            isDraggable={isDragMode}
-            onHover={handleRackHover}
-          />
-        ))}
+        {/* Enhanced Racks */}
+        {racks.map((rack) => {
+          const fillRate = getRackFillRate?.(rack.id) ?? 0;
+          const isVisible = visibleRackIds === null || visibleRackIds === undefined || visibleRackIds.includes(rack.id);
+          return (
+            <EnhancedRack3D
+              key={rack.id}
+              config={rack}
+              isSelected={rack.id === selectedRack}
+              onSelect={onSelectRack}
+              onDrag={onUpdateRackPosition}
+              isDraggable={isDragMode}
+              onHover={handleRackHover}
+              onDoubleClick={onDoubleClickRack}
+              fillRate={fillRate}
+              isVisible={isVisible}
+            />
+          );
+        })}
 
-        {/* Boxes */}
-        {boxes.map((box) => (
-          <Box3D
-            key={box.id}
-            box={box}
-            onSelect={onSelectBox}
-            viewMode={viewMode}
-            isFiltered={isBoxFiltered(box)}
-          />
-        ))}
+        {/* Enhanced Boxes */}
+        {boxes.map((box) => {
+          const isRackVisible = visibleRackIds === null || visibleRackIds === undefined || visibleRackIds.includes(box.rackId);
+          if (!isRackVisible) return null;
+          
+          return (
+            <EnhancedBox3D
+              key={box.id}
+              box={box}
+              onSelect={onSelectBox}
+              viewMode={viewMode}
+              isFiltered={isBoxFiltered(box)}
+            />
+          );
+        })}
       </Canvas>
 
-      {/* Info overlay */}
-      <div className="absolute top-4 right-4 space-y-2">
-        <div className="bg-card/90 backdrop-blur border border-border p-4 rounded-lg shadow-lg min-w-52">
-          <h3 className="font-semibold text-sm mb-2">Thống kê kho</h3>
-          <div className="space-y-1 text-xs text-muted-foreground">
-            <div className="flex justify-between">
-              <span>Tổng kệ:</span>
-              <span className="font-medium text-foreground">{stats.totalRacks}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Tổng thùng:</span>
-              <span className="font-medium text-foreground">{stats.totalBoxes}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Tỷ lệ lấp đầy:</span>
-              <span className="font-medium text-foreground">
-                {stats.totalCapacity > 0 ? Math.round((stats.usedCapacity / stats.totalCapacity) * 100) : 0}%
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Controls hint */}
-        <div className="bg-card/90 backdrop-blur border border-border p-3 rounded-lg shadow-lg text-xs">
-          <div className="text-muted-foreground">
-            <div>🖱️ Chuột trái: Xoay</div>
-            <div>🖱️ Chuột phải: Di chuyển</div>
-            <div>🖱️ Cuộn: Zoom</div>
-            <div>👆 Click: Chọn</div>
-          </div>
-        </div>
+      {/* UI Overlays */}
+      <div className="absolute top-4 right-4 space-y-3">
+        <StatsOverlay stats={stats} />
+        <FillRateLegend 
+          onFilterByStatus={onSetFillRateFilter}
+          activeFilter={fillRateFilter}
+        />
+        <ControlsHint />
       </div>
 
       {/* Rack Tooltip */}

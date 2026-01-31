@@ -3,6 +3,7 @@
 import dynamic from 'next/dynamic';
 import { useWarehouse } from '@/hooks/useWarehouse';
 import { Toaster } from 'sonner';
+import RackModal from '@/components/warehouse/RackModal';
 
 // Dynamic import for 3D components to avoid SSR issues
 const WarehouseScene = dynamic(() => import('@/components/warehouse/WarehouseScene'), { 
@@ -49,7 +50,18 @@ export default function Warehouse3DPage() {
     updateRackPosition,
     rotateRack,
     cloneRack,
+    openRackModal,
+    closeRackModal,
+    removeBoxById,
+    getRackFillRate,
+    setFillRateFilter,
+    getVisibleRackIdsByFillRate,
   } = useWarehouse();
+
+  const visibleRackIds = getVisibleRackIdsByFillRate();
+  const focusedRack = state.focusedRackId 
+    ? state.racks.find(r => r.id === state.focusedRackId) || null 
+    : null;
 
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-background">
@@ -107,8 +119,28 @@ export default function Warehouse3DPage() {
           filterCategory={state.filterCategory}
           stats={stats}
           isDragMode={state.isDragMode}
+          onDoubleClickRack={openRackModal}
+          getRackFillRate={getRackFillRate}
+          visibleRackIds={visibleRackIds}
+          fillRateFilter={state.fillRateFilter}
+          onSetFillRateFilter={setFillRateFilter}
         />
       </div>
+
+      {/* Rack Modal */}
+      <RackModal
+        open={state.rackModalOpen}
+        onClose={closeRackModal}
+        rack={focusedRack}
+        boxes={state.boxes}
+        onAddBox={(count, category) => addBoxes(count, category)}
+        onRemoveBox={removeBoxById}
+        onRemoveAllBoxes={removeAllBoxes}
+        onDuplicateBox={duplicateBox}
+        onRotateRack={rotateRack}
+        onCloneRack={cloneRack}
+        onDeleteRack={removeRack}
+      />
     </div>
   );
 }
