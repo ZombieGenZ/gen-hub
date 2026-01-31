@@ -4,6 +4,7 @@ import {
     Logger,
     OnModuleDestroy,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { SchedulerRegistry } from '@nestjs/schedule';
 import { OrganizationRepository } from '../organization/organization.repository';
 
@@ -19,11 +20,15 @@ import { OrganizationRepository } from '../organization/organization.repository'
 @Injectable()
 export class ApiKeySchedulerService implements OnModuleInit, OnModuleDestroy {
     private readonly logger = new Logger(ApiKeySchedulerService.name);
+    private readonly timeoutPrefix: string;
 
     constructor(
         private readonly organizationRepository: OrganizationRepository,
         private readonly schedulerRegistry: SchedulerRegistry,
-    ) { }
+        private readonly configService: ConfigService,
+    ) {
+        this.timeoutPrefix = this.configService.get<string>('SCHEDULER_APIKEY_EXPIRE_PREFIX') || 'expire_apikey';
+    }
 
     async onModuleInit() {
         await this.processExistingApiKeys();
@@ -33,7 +38,7 @@ export class ApiKeySchedulerService implements OnModuleInit, OnModuleDestroy {
         // Clear all scheduled timeouts when module is destroyed
         const timeouts = this.schedulerRegistry.getTimeouts();
         timeouts.forEach((name) => {
-            if (name.startsWith('expire_apikey_')) {
+            if (name.startsWith(this.timeoutPrefix + '_')) {
                 this.schedulerRegistry.deleteTimeout(name);
             }
         });
@@ -103,7 +108,7 @@ export class ApiKeySchedulerService implements OnModuleInit, OnModuleDestroy {
             return;
         }
 
-        const timeoutName = `expire_apikey_${apiKeyId}`;
+        const timeoutName = `${this.timeoutPrefix}_${apiKeyId}`;
 
         // Xóa timeout cũ nếu có (trong trường hợp expires_at được cập nhật)
         try {
@@ -148,7 +153,7 @@ export class ApiKeySchedulerService implements OnModuleInit, OnModuleDestroy {
      * @param apiKeyId - ID của API key
      */
     cancelScheduledExpiration(apiKeyId: string): void {
-        const timeoutName = `expire_apikey_${apiKeyId}`;
+        const timeoutName = `${this.timeoutPrefix}_${apiKeyId}`;
         try {
             this.schedulerRegistry.deleteTimeout(timeoutName);
         } catch {

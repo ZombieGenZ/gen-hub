@@ -1,0 +1,7 @@
+{
+    "errors": {
+        "credentialsNotConfigured": "Cloudflare credentials not configured",
+        "noZoneData": "No zone data found",
+        "fetchFailed": "Failed to fetch analytics data"
+    }
+}

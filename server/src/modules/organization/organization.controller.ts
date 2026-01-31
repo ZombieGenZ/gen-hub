@@ -62,7 +62,7 @@ export class OrganizationController {
     private readonly service: OrganizationService,
     private readonly prisma: PrismaService,
     private readonly updateRequestService: OrganizationUpdateRequestService,
-  ) {}
+  ) { }
 
   private async hasPermission(
     userId: string,
@@ -111,10 +111,10 @@ export class OrganizationController {
     type: CreateOrganizationDto,
     description: 'Thông tin tổ chức cần tạo',
     examples: {
-      basic: {
-        summary: 'Tổ chức cơ bản',
-        value: { name: 'Công ty ABC', tax_code: '0123456789' },
-      },
+      // basic: {
+      //   summary: 'Tổ chức cơ bản',
+      //   value: { name: 'Công ty ABC', tax_code: '0123456789' },
+      // },
       full: {
         summary: 'Tổ chức đầy đủ',
         value: {

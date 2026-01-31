@@ -10,6 +10,7 @@ import { RedisService } from '../redis/redis.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EmailService } from '../notification/email.service';
 import { IUnlockTokenData, IPenaltyRules } from './interfaces';
+import { BruteForceCacheHelper } from './constants/brute-force-cache.helper';
 
 /**
  * Brute Force Service
@@ -22,6 +23,7 @@ export class BruteForceService {
     private readonly ipWhitelist: string[];
     private readonly unlockCodeTTL: number;
     private readonly permanentBanThreshold: number;
+    private readonly rateLimitTTL: number;
 
     constructor(
         private readonly configService: ConfigService,
@@ -29,6 +31,7 @@ export class BruteForceService {
         private readonly prismaService: PrismaService,
         private readonly emailService: EmailService,
         private readonly i18n: I18nService,
+        private readonly cacheHelper: BruteForceCacheHelper,
     ) {
         // Parse penalty rules từ env
         const rulesStr = this.configService.get<string>('PENALTY_RULES') || '{"5":10,"6":15,"7":30,"8":60,"16":-1}';
@@ -48,27 +51,9 @@ export class BruteForceService {
 
         // Permanent ban threshold
         this.permanentBanThreshold = Number(this.configService.get<number>('BRUTE_FORCE_PERMANENT_BAN_THRESHOLD')) || 16;
-    }
 
-    /**
-     * Lấy key rate limit cho email + IP
-     */
-    private getRateLimitKey(email: string, ip: string): string {
-        return `rate_limit:${email.toLowerCase()}:${ip}`;
-    }
-
-    /**
-     * Lấy key unlock token cho email
-     */
-    private getUnlockTokenKey(email: string): string {
-        return `unlock_token:${email.toLowerCase()}`;
-    }
-
-    /**
-     * Lấy key lock status cho email
-     */
-    private getLockStatusKey(email: string): string {
-        return `lock_status:${email.toLowerCase()}`;
+        // Rate limit TTL
+        this.rateLimitTTL = Number(this.configService.get<number>('REDIS_BRUTE_FORCE_RATE_LIMIT_TTL')) || 3600;
     }
 
     /**
@@ -83,17 +68,15 @@ export class BruteForceService {
      * @returns Số lần thất bại hiện tại
      */
     async recordFailedAttempt(email: string, ip: string): Promise<number> {
-        const key = this.getRateLimitKey(email, ip);
+        const key = this.cacheHelper.rateLimit(email, ip);
 
         // Increment counter
         const attempts = await this.redisService.incr(key);
 
-        // Set TTL 1 giờ cho counter nếu chưa có
+        // Set TTL cho counter nếu chưa có
         if (attempts === 1) {
-            await this.redisService.expire(key, 3600);
+            await this.redisService.expire(key, this.rateLimitTTL);
         }
-
-
 
         // Kiểm tra có cần áp dụng penalty không
         await this.applyPenaltyIfNeeded(email, ip, attempts);
@@ -124,8 +107,6 @@ export class BruteForceService {
      * Áp dụng khóa vĩnh viễn
      */
     private async applyPermanentBan(email: string): Promise<void> {
-
-
         // Cập nhật database
         await this.prismaService.user.updateMany({
             where: { email: email.toLowerCase() },
@@ -136,7 +117,7 @@ export class BruteForceService {
         });
 
         // Set lock status trong Redis
-        const lockKey = this.getLockStatusKey(email);
+        const lockKey = this.cacheHelper.lockStatus(email);
         await this.redisService.set(lockKey, JSON.stringify({
             type: 'permanent',
             since: Date.now(),
@@ -147,9 +128,7 @@ export class BruteForceService {
      * Áp dụng khóa tạm thời
      */
     private async applyTemporaryLock(email: string, ip: string, minutes: number, attempts: number): Promise<void> {
-
-
-        const lockKey = this.getLockStatusKey(email);
+        const lockKey = this.cacheHelper.lockStatus(email);
         const unlockAt = Date.now() + (minutes * 60 * 1000);
 
         // Set lock status trong Redis
@@ -180,7 +159,7 @@ export class BruteForceService {
         const code = Math.floor(100000 + Math.random() * 900000).toString();
 
         // Lưu vào Redis
-        const unlockKey = this.getUnlockTokenKey(email);
+        const unlockKey = this.cacheHelper.unlockToken(email);
         const data: IUnlockTokenData = {
             code,
             ip,
@@ -210,7 +189,6 @@ export class BruteForceService {
             });
         }
 
-
         return code;
     }
 
@@ -228,7 +206,7 @@ export class BruteForceService {
             return { locked: false };
         }
 
-        const lockKey = this.getLockStatusKey(email);
+        const lockKey = this.cacheHelper.lockStatus(email);
         const lockData = await this.redisService.get(lockKey);
 
         if (!lockData) {
@@ -270,15 +248,13 @@ export class BruteForceService {
     async verifyUnlockCode(email: string, code: string, fromEmail: string): Promise<boolean> {
         // Kiểm tra email khớp
         if (email.toLowerCase() !== fromEmail.toLowerCase()) {
-
             return false;
         }
 
-        const unlockKey = this.getUnlockTokenKey(email);
+        const unlockKey = this.cacheHelper.unlockToken(email);
         const tokenData = await this.redisService.get(unlockKey);
 
         if (!tokenData) {
-
             return false;
         }
 
@@ -286,7 +262,6 @@ export class BruteForceService {
             const parsed: IUnlockTokenData = JSON.parse(tokenData);
 
             if (parsed.code !== code) {
-
                 return false;
             }
 
@@ -327,22 +302,20 @@ export class BruteForceService {
         const normalizedEmail = email.toLowerCase();
 
         // Xóa lock status
-        await this.redisService.del(this.getLockStatusKey(normalizedEmail));
+        await this.redisService.del(this.cacheHelper.lockStatus(normalizedEmail));
 
         // Xóa unlock token
-        await this.redisService.del(this.getUnlockTokenKey(normalizedEmail));
+        await this.redisService.del(this.cacheHelper.unlockToken(normalizedEmail));
 
         // Xóa tất cả rate limit keys
-        await this.redisService.delByPattern(`rate_limit:${normalizedEmail}:*`);
-
-
+        await this.redisService.delByPattern(this.cacheHelper.rateLimitPattern(normalizedEmail));
     }
 
     /**
      * Xử lý khi đăng nhập thành công - reset counter
      */
     async onSuccessfulLogin(email: string, ip: string): Promise<void> {
-        const key = this.getRateLimitKey(email, ip);
+        const key = this.cacheHelper.rateLimit(email, ip);
         await this.redisService.del(key);
     }
 
@@ -356,36 +329,28 @@ export class BruteForceService {
         const minutes = Math.ceil((lockInfo.remainingSeconds || 0) / 60);
 
         if (lockInfo.type === 'permanent') {
-            // Try i18n first, fallback to hardcoded message
+            // Try i18n first
             try {
                 const translated = await this.i18n.translate('bruteForce.permanentlyLocked', { lang });
-                if (translated && translated !== 'bruteForce.permanentlyLocked') {
-                    return translated;
-                }
+                if (translated) return translated;
             } catch (e) {
                 this.logger.warn('i18n translation failed for permanentlyLocked');
             }
-            return lang === 'en'
-                ? 'Your account has been permanently locked due to too many failed login attempts. Please contact support.'
-                : 'Tài khoản của bạn đã bị khóa vĩnh viễn do quá nhiều lần đăng nhập sai. Vui lòng liên hệ hỗ trợ.';
+            return 'Account permanently locked due to failed login attempts.';
         }
 
-        // Try i18n first, fallback to hardcoded message
+        // Try i18n first
         try {
             const translated = await this.i18n.translate('bruteForce.temporarilyLocked', {
                 lang,
                 args: { minutes },
             });
-            if (translated && translated !== 'bruteForce.temporarilyLocked') {
-                return translated;
-            }
+            if (translated) return translated;
         } catch (e) {
             this.logger.warn('i18n translation failed for temporarilyLocked');
         }
 
-        return lang === 'en'
-            ? `Your account has been temporarily locked due to too many failed attempts. Please try again in ${minutes} minutes.`
-            : `Tài khoản của bạn tạm thời bị khóa do quá nhiều lần thử sai. Vui lòng thử lại sau ${minutes} phút.`;
+        return `Account temporarily locked. Please try again in ${minutes} minutes.`;
     }
 
     /**
@@ -393,7 +358,7 @@ export class BruteForceService {
      * (Khi mã cũ hết hạn nhưng vẫn trong thời gian banned_end)
      */
     async canRegenerateUnlockCode(email: string): Promise<boolean> {
-        const unlockKey = this.getUnlockTokenKey(email);
+        const unlockKey = this.cacheHelper.unlockToken(email);
         const exists = await this.redisService.exists(unlockKey);
 
         // Nếu unlock code đã hết hạn và user vẫn bị khóa, cho phép tạo mới
