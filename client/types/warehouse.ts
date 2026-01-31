@@ -4,6 +4,35 @@ export interface Position {
   z: number;
 }
 
+export type FillRateStatus = 'empty' | 'low' | 'medium' | 'high' | 'full' | 'overfilled';
+
+export const fillRateColors: Record<FillRateStatus, string> = {
+  empty: '#64748b',     // Slate gray - trống
+  low: '#22c55e',       // Green - còn nhiều chỗ
+  medium: '#eab308',    // Yellow - vừa phải
+  high: '#f97316',      // Orange - gần đầy
+  full: '#ef4444',      // Red - đầy
+  overfilled: '#dc2626', // Dark red - quá tải
+};
+
+export const fillRateLabels: Record<FillRateStatus, string> = {
+  empty: 'Trống',
+  low: 'Còn nhiều chỗ (< 30%)',
+  medium: 'Vừa phải (30-60%)',
+  high: 'Gần đầy (60-90%)',
+  full: 'Đầy (90-100%)',
+  overfilled: 'Quá tải (> 100%)',
+};
+
+export const getFillRateStatus = (fillRate: number): FillRateStatus => {
+  if (fillRate <= 0) return 'empty';
+  if (fillRate < 0.3) return 'low';
+  if (fillRate < 0.6) return 'medium';
+  if (fillRate < 0.9) return 'high';
+  if (fillRate <= 1) return 'full';
+  return 'overfilled';
+};
+
 export interface RackConfig {
   id: string;
   name: string;
@@ -74,6 +103,19 @@ export interface WarehouseState {
   filterCategory: BoxCategory | 'all';
   isDragMode: boolean;
   collisionWarnings: string[];
+  rackModalOpen: boolean;
+  focusedRackId: string | null;
+  visibleRackIds: string[] | null; // null = show all, array = show only these
+  fillRateFilter: FillRateStatus | null; // null = show all, otherwise filter by this status
+}
+
+export interface RackStats {
+  capacity: number;
+  boxCount: number;
+  fillRate: number;
+  status: FillRateStatus;
+  categories: Partial<Record<BoxCategory, number>>;
+  totalWeight: number;
 }
 
 export interface WarehouseAlert {

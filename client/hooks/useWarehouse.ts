@@ -3,7 +3,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import { 
   RackConfig, BoxItem, WarehouseState, BoxCategory, 
-  categoryColors, WarehouseStats 
+  categoryColors, WarehouseStats, FillRateStatus, getFillRateStatus
 } from '@/types/warehouse';
 import { toast } from 'sonner';
 
@@ -20,6 +20,10 @@ const initialState: WarehouseState = {
   filterCategory: 'all',
   isDragMode: false,
   collisionWarnings: [],
+  rackModalOpen: false,
+  focusedRackId: null,
+  visibleRackIds: null,
+  fillRateFilter: null,
 };
 
 const generateId = () => Math.random().toString(36).substring(2, 9);
@@ -134,40 +138,65 @@ export const useWarehouse = () => {
     
     const newBoxes: BoxItem[] = [];
     
+    // Smart placement algorithm: fill from bottom level, front to back, left to right
     for (let i = 0; i < count; i++) {
-      const rack = targetRacks[Math.floor(Math.random() * targetRacks.length)];
-      const level = Math.floor(Math.random() * rack.levels);
-      const row = Math.floor(Math.random() * rack.rows);
-      const col = Math.floor(Math.random() * rack.columns);
+      // Find rack with available space using smart placement
+      let placed = false;
       
-      const box: BoxItem = {
-        id: `box-${generateId()}-${i}`,
-        name: `${category.toUpperCase()}-${generateId().toUpperCase()}`,
-        rackId: rack.id,
-        row,
-        column: col,
-        level,
-        position: {
-          x: rack.position.x + col * rack.cellWidth + rack.cellWidth / 2,
-          y: rack.position.y + level * rack.cellHeight + rack.cellHeight / 2,
-          z: rack.position.z + row * rack.cellDepth + rack.cellDepth / 2,
-        },
-        color: categoryColors[category],
-        category,
-        weight: Math.floor(Math.random() * 50) + 1,
-        quantity: Math.floor(Math.random() * 100) + 1,
-        createdAt: new Date(),
-      };
-      newBoxes.push(box);
+      for (const rack of targetRacks) {
+        const rackBoxes = [...state.boxes, ...newBoxes].filter(b => b.rackId === rack.id);
+        const occupiedSlots = new Set(rackBoxes.map(b => `${b.level}-${b.row}-${b.column}`));
+        
+        // Fill from bottom level up, then front to back, then left to right
+        for (let level = 0; level < rack.levels && !placed; level++) {
+          for (let row = 0; row < rack.rows && !placed; row++) {
+            for (let col = 0; col < rack.columns && !placed; col++) {
+              const slotKey = `${level}-${row}-${col}`;
+              if (!occupiedSlots.has(slotKey)) {
+                const box: BoxItem = {
+                  id: `box-${generateId()}-${i}`,
+                  name: `${category.toUpperCase().substring(0, 3)}-${generateId().toUpperCase()}`,
+                  rackId: rack.id,
+                  row,
+                  column: col,
+                  level,
+                  position: {
+                    x: rack.position.x + col * rack.cellWidth + rack.cellWidth / 2,
+                    y: rack.position.y + level * rack.cellHeight + rack.cellHeight / 2,
+                    z: rack.position.z + row * rack.cellDepth + rack.cellDepth / 2,
+                  },
+                  color: categoryColors[category],
+                  category,
+                  weight: Math.floor(Math.random() * 50) + 1,
+                  quantity: Math.floor(Math.random() * 100) + 1,
+                  createdAt: new Date(),
+                };
+                newBoxes.push(box);
+                placed = true;
+              }
+            }
+          }
+        }
+        
+        if (placed) break;
+      }
+      
+      // If no slot found in any rack, show warning
+      if (!placed) {
+        toast.warning(`Không đủ chỗ để thêm tất cả ${count} thùng, chỉ thêm được ${newBoxes.length} thùng`);
+        break;
+      }
     }
     
-    const rackName = state.selectedRack 
-      ? targetRacks[0].name 
-      : 'tất cả kệ';
-    
-    setState(prev => ({ ...prev, boxes: [...prev.boxes, ...newBoxes] }));
-    toast.success(`Đã thêm ${count} thùng vào ${rackName}`);
-  }, [state.racks, state.selectedRack]);
+    if (newBoxes.length > 0) {
+      const rackName = state.selectedRack 
+        ? targetRacks[0].name 
+        : 'kho';
+      
+      setState(prev => ({ ...prev, boxes: [...prev.boxes, ...newBoxes] }));
+      toast.success(`Đã thêm ${newBoxes.length} thùng vào ${rackName}`);
+    }
+  }, [state.racks, state.selectedRack, state.boxes]);
 
   const removeAllBoxes = useCallback(() => {
     if (state.selectedRack) {
@@ -322,6 +351,10 @@ export const useWarehouse = () => {
       filterCategory: 'all',
       isDragMode: false,
       collisionWarnings: [],
+      rackModalOpen: false,
+      focusedRackId: null,
+      visibleRackIds: null,
+      fillRateFilter: null,
     });
     
     toast.success(`Đã tải ${demoRacks.length} kệ và ${demoBoxes.length} thùng hàng`);
@@ -487,6 +520,98 @@ export const useWarehouse = () => {
     toast.success(`Đã nhân đôi ${sourceRack.name}`);
   }, [state.racks]);
 
+  const openRackModal = useCallback((rackId: string) => {
+    setState(prev => ({ 
+      ...prev, 
+      rackModalOpen: true, 
+      focusedRackId: rackId,
+      selectedRack: rackId,
+    }));
+  }, []);
+
+  const closeRackModal = useCallback(() => {
+    setState(prev => ({ 
+      ...prev, 
+      rackModalOpen: false, 
+      focusedRackId: null,
+    }));
+  }, []);
+
+  const removeBoxById = useCallback((boxId: string) => {
+    const box = state.boxes.find(b => b.id === boxId);
+    setState(prev => ({
+      ...prev,
+      boxes: prev.boxes.filter(b => b.id !== boxId),
+      selectedBox: prev.selectedBox === boxId ? null : prev.selectedBox,
+    }));
+    if (box) {
+      toast.success(`Đã xóa ${box.name}`);
+    }
+  }, [state.boxes]);
+
+  // Get rack stats including fill rate
+  const getRackStats = useCallback((rackId: string) => {
+    const rack = state.racks.find(r => r.id === rackId);
+    if (!rack) return null;
+    
+    const rackBoxes = state.boxes.filter(b => b.rackId === rackId);
+    const capacity = rack.rows * rack.columns * rack.levels;
+    const fillRate = capacity > 0 ? rackBoxes.length / capacity : 0;
+    
+    return { capacity, boxCount: rackBoxes.length, fillRate };
+  }, [state.racks, state.boxes]);
+
+  const getRackFillRate = useCallback((rackId: string) => {
+    const stats = getRackStats(rackId);
+    return stats?.fillRate ?? 0;
+  }, [getRackStats]);
+
+  const setVisibleRacks = useCallback((rackIds: string[] | null) => {
+    setState(prev => ({ ...prev, visibleRackIds: rackIds }));
+    if (rackIds === null) {
+      toast.success('Hiển thị tất cả kệ');
+    } else if (rackIds.length === 0) {
+      toast.info('Đã ẩn tất cả kệ');
+    } else {
+      toast.success(`Hiển thị ${rackIds.length} kệ`);
+    }
+  }, []);
+
+  const showOnlyRack = useCallback((rackId: string) => {
+    setState(prev => ({ ...prev, visibleRackIds: [rackId] }));
+    const rack = state.racks.find(r => r.id === rackId);
+    toast.success(`Chỉ hiển thị ${rack?.name || 'kệ đã chọn'}`);
+  }, [state.racks]);
+
+  const showAllRacks = useCallback(() => {
+    setState(prev => ({ ...prev, visibleRackIds: null }));
+    toast.success('Hiển thị tất cả kệ');
+  }, []);
+
+  const setFillRateFilter = useCallback((status: FillRateStatus | null) => {
+    setState(prev => ({ ...prev, fillRateFilter: status }));
+    if (status === null) {
+      toast.success('Hiển thị tất cả kệ');
+    } else {
+      toast.success(`Đang lọc kệ: ${status}`);
+    }
+  }, []);
+
+  // Get visible rack IDs based on fill rate filter
+  const getVisibleRackIdsByFillRate = useCallback(() => {
+    if (state.fillRateFilter === null) return null;
+    
+    return state.racks
+      .filter(rack => {
+        const rackBoxes = state.boxes.filter(b => b.rackId === rack.id);
+        const capacity = rack.rows * rack.columns * rack.levels;
+        const fillRate = capacity > 0 ? rackBoxes.length / capacity : 0;
+        const status = getFillRateStatus(fillRate);
+        return status === state.fillRateFilter;
+      })
+      .map(r => r.id);
+  }, [state.racks, state.boxes, state.fillRateFilter]);
+
   return {
     state,
     stats,
@@ -514,5 +639,15 @@ export const useWarehouse = () => {
     updateRackPosition,
     rotateRack,
     cloneRack,
+    openRackModal,
+    closeRackModal,
+    removeBoxById,
+    getRackStats,
+    getRackFillRate,
+    setVisibleRacks,
+    showOnlyRack,
+    showAllRacks,
+    setFillRateFilter,
+    getVisibleRackIdsByFillRate,
   };
 };
