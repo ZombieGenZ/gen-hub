@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { PrimeNestHeader } from "@/app/(public)/homepage/Header";
 import { PrimeNestHero } from "@/app/(public)/homepage/Hero";
 import { PrimeNestSearch } from "@/app/(public)/homepage/Search";
@@ -25,11 +25,15 @@ interface UserInfo {
     roles?: string[];
 }
 
+const userService = new UserService();
+const notificationService = new NotificationService();
+
 export default function Home() {
     const [isLogin, setIsLogin] = useState(false);
     const [user, setUser] = useState<UserInfo | undefined>(undefined);
     const { showToast } = useToast()
     const [notifications, setNotifications] = useState<Notification[]>([]);
+    const hasShownNotificationRef = useRef(false);
 
     // Scroll Tracking State
     const [scrollProgress, setScrollProgress] = useState(0);
@@ -42,8 +46,6 @@ export default function Home() {
             if (accessToken && refreshToken) {
                 setIsLogin(true);
                 try {
-                    const userService = new UserService();
-                    const notificationService = new NotificationService();
                     const userData = await userService.getUser(accessToken, refreshToken);
                     setUser({
                         name: userData.user.name,
@@ -55,8 +57,11 @@ export default function Home() {
                     const getUserNotifications = await notificationService.getNotifications(accessToken);
                     const getGlobalNotifications = await notificationService.globalNotification(accessToken);
                     setNotifications([...getGlobalNotifications, ...getUserNotifications]);
-                    showToast("You have new notifications!", "info");
-                    showToast(`You have ${getUserNotifications.length} new personal notifications and ${getGlobalNotifications.length} global notifications.`, "info");
+                    const total = getUserNotifications.length + getGlobalNotifications.length;
+                    if (total > 0 && !hasShownNotificationRef.current) {
+                        hasShownNotificationRef.current = true;
+                        showToast(`Bạn có ${total} thông báo mới (${getUserNotifications.length} cá nhân, ${getGlobalNotifications.length} toàn hệ thống).`, "info");
+                    }
                 } catch (error) {
                     console.error("Failed to fetch user data:", error);
                 }
