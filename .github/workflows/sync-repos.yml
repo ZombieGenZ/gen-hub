@@ -22,6 +22,51 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Dependencies and Build
+        run: |
+          cd client
+          npm install
+          npm run build
+
+      - name: Discord Notification on Failure
+        if: failure()
+        run: |
+          curl -H "Content-Type: application/json" \
+          -X POST \
+          -d '{
+            "embeds": [{
+              "title": "❌ Sync Client Failed at ${{ github.repository }}",
+              "url": "${{ github.event.head_commit.url }}",
+              "color": 15548997,
+              "fields": [
+                {
+                  "name": "Nhánh",
+                  "value": "`${{ github.ref_name }}`",
+                  "inline": true
+                },
+                {
+                  "name": "Người thực hiện",
+                  "value": "`${{ github.actor }}`",
+                  "inline": true
+                },
+                {
+                  "name": "Nội dung commit",
+                  "value": "${{ github.event.head_commit.message }}"
+                }
+              ],
+              "footer": {
+                "text": "Hệ thống GEN-HUB"
+              },
+              "timestamp": "${{ github.event.head_commit.timestamp }}"
+            }]
+          }' \
+          ${{ secrets.DISCORD_WEBHOOK }}
+
       - name: Push Client folder
         uses: cpina/github-action-push-to-another-repository@main
         env:
@@ -39,6 +84,52 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Dependencies and Build
+        run: |
+          cd server
+          npm install
+          npx prisma generate
+          npm run build
+
+      - name: Discord Notification on Failure
+        if: failure()
+        run: |
+          curl -H "Content-Type: application/json" \
+          -X POST \
+          -d '{
+            "embeds": [{
+              "title": "❌ Sync Server Failed at ${{ github.repository }}",
+              "url": "${{ github.event.head_commit.url }}",
+              "color": 15548997,
+              "fields": [
+                {
+                  "name": "Nhánh",
+                  "value": "`${{ github.ref_name }}`",
+                  "inline": true
+                },
+                {
+                  "name": "Người thực hiện",
+                  "value": "`${{ github.actor }}`",
+                  "inline": true
+                },
+                {
+                  "name": "Nội dung commit",
+                  "value": "${{ github.event.head_commit.message }}"
+                }
+              ],
+              "footer": {
+                "text": "Hệ thống GEN-HUB"
+              },
+              "timestamp": "${{ github.event.head_commit.timestamp }}"
+            }]
+          }' \
+          ${{ secrets.DISCORD_WEBHOOK }}
 
       - name: Push Server folder
         uses: cpina/github-action-push-to-another-repository@main
@@ -58,6 +149,51 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Dependencies and Build
+        run: |
+          cd status
+          npm install
+          npm run build
+
+      - name: Discord Notification on Failure
+        if: failure()
+        run: |
+          curl -H "Content-Type: application/json" \
+          -X POST \
+          -d '{
+            "embeds": [{
+              "title": "❌ Sync Status Failed at ${{ github.repository }}",
+              "url": "${{ github.event.head_commit.url }}",
+              "color": 15548997,
+              "fields": [
+                {
+                  "name": "Nhánh",
+                  "value": "`${{ github.ref_name }}`",
+                  "inline": true
+                },
+                {
+                  "name": "Người thực hiện",
+                  "value": "`${{ github.actor }}`",
+                  "inline": true
+                },
+                {
+                  "name": "Nội dung commit",
+                  "value": "${{ github.event.head_commit.message }}"
+                }
+              ],
+              "footer": {
+                "text": "Hệ thống GEN-HUB"
+              },
+              "timestamp": "${{ github.event.head_commit.timestamp }}"
+            }]
+          }' \
+          ${{ secrets.DISCORD_WEBHOOK }}
+
       - name: Push status folder
         uses: cpina/github-action-push-to-another-repository@main
         env:
@@ -75,6 +211,51 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Dependencies and Build
+        run: |
+          cd admin/database-panel
+          npm install
+          npm run build
+
+      - name: Discord Notification on Failure
+        if: failure()
+        run: |
+          curl -H "Content-Type: application/json" \
+          -X POST \
+          -d '{
+            "embeds": [{
+              "title": "❌ Sync Database Panel Failed at ${{ github.repository }}",
+              "url": "${{ github.event.head_commit.url }}",
+              "color": 15548997,
+              "fields": [
+                {
+                  "name": "Nhánh",
+                  "value": "`${{ github.ref_name }}`",
+                  "inline": true
+                },
+                {
+                  "name": "Người thực hiện",
+                  "value": "`${{ github.actor }}`",
+                  "inline": true
+                },
+                {
+                  "name": "Nội dung commit",
+                  "value": "${{ github.event.head_commit.message }}"
+                }
+              ],
+              "footer": {
+                "text": "Hệ thống GEN-HUB"
+              },
+              "timestamp": "${{ github.event.head_commit.timestamp }}"
+            }]
+          }' \
+          ${{ secrets.DISCORD_WEBHOOK }}
 
       - name: Push database-panel folder
         uses: cpina/github-action-push-to-another-repository@main
@@ -94,6 +275,51 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Dependencies and Build
+        run: |
+          cd admin/feature-flag-panel
+          npm install
+          npm run build
+
+      - name: Discord Notification on Failure
+        if: failure()
+        run: |
+          curl -H "Content-Type: application/json" \
+          -X POST \
+          -d '{
+            "embeds": [{
+              "title": "❌ Sync Feature Flag Panel Failed at ${{ github.repository }}",
+              "url": "${{ github.event.head_commit.url }}",
+              "color": 15548997,
+              "fields": [
+                {
+                  "name": "Nhánh",
+                  "value": "`${{ github.ref_name }}`",
+                  "inline": true
+                },
+                {
+                  "name": "Người thực hiện",
+                  "value": "`${{ github.actor }}`",
+                  "inline": true
+                },
+                {
+                  "name": "Nội dung commit",
+                  "value": "${{ github.event.head_commit.message }}"
+                }
+              ],
+              "footer": {
+                "text": "Hệ thống GEN-HUB"
+              },
+              "timestamp": "${{ github.event.head_commit.timestamp }}"
+            }]
+          }' \
+          ${{ secrets.DISCORD_WEBHOOK }}
+
       - name: Push feature-flag-panel folder
         uses: cpina/github-action-push-to-another-repository@main
         env:
@@ -112,6 +338,51 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Dependencies and Build
+        run: |
+          cd admin/resources-panel
+          npm install
+          npm run build
+
+      - name: Discord Notification on Failure
+        if: failure()
+        run: |
+          curl -H "Content-Type: application/json" \
+          -X POST \
+          -d '{
+            "embeds": [{
+              "title": "❌ Sync Resources Panel Failed at ${{ github.repository }}",
+              "url": "${{ github.event.head_commit.url }}",
+              "color": 15548997,
+              "fields": [
+                {
+                  "name": "Nhánh",
+                  "value": "`${{ github.ref_name }}`",
+                  "inline": true
+                },
+                {
+                  "name": "Người thực hiện",
+                  "value": "`${{ github.actor }}`",
+                  "inline": true
+                },
+                {
+                  "name": "Nội dung commit",
+                  "value": "${{ github.event.head_commit.message }}"
+                }
+              ],
+              "footer": {
+                "text": "Hệ thống GEN-HUB"
+              },
+              "timestamp": "${{ github.event.head_commit.timestamp }}"
+            }]
+          }' \
+          ${{ secrets.DISCORD_WEBHOOK }}
+
       - name: Push resources-panel folder
         uses: cpina/github-action-push-to-another-repository@main
         env:
@@ -129,6 +400,51 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Dependencies and Build
+        run: |
+          cd admin/admin-panel
+          npm install
+          npm run build
+
+      - name: Discord Notification on Failure
+        if: failure()
+        run: |
+          curl -H "Content-Type: application/json" \
+          -X POST \
+          -d '{
+            "embeds": [{
+              "title": "❌ Sync Admin Panel Failed at ${{ github.repository }}",
+              "url": "${{ github.event.head_commit.url }}",
+              "color": 15548997,
+              "fields": [
+                {
+                  "name": "Nhánh",
+                  "value": "`${{ github.ref_name }}`",
+                  "inline": true
+                },
+                {
+                  "name": "Người thực hiện",
+                  "value": "`${{ github.actor }}`",
+                  "inline": true
+                },
+                {
+                  "name": "Nội dung commit",
+                  "value": "${{ github.event.head_commit.message }}"
+                }
+              ],
+              "footer": {
+                "text": "Hệ thống GEN-HUB"
+              },
+              "timestamp": "${{ github.event.head_commit.timestamp }}"
+            }]
+          }' \
+          ${{ secrets.DISCORD_WEBHOOK }}
 
       - name: Push admin-panel folder
         uses: cpina/github-action-push-to-another-repository@main
