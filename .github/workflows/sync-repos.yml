@@ -28,6 +28,8 @@ jobs:
           node-version: '20'
 
       - name: Install Dependencies and Build
+        env:
+          NODE_OPTIONS: "--max_old_space_size=4096"
         run: |
           cd client
           npm install
@@ -91,6 +93,8 @@ jobs:
           node-version: '20'
 
       - name: Install Dependencies and Build
+        env:
+          NODE_OPTIONS: "--max_old_space_size=4096"
         run: |
           cd server
           npm install
@@ -155,6 +159,8 @@ jobs:
           node-version: '20'
 
       - name: Install Dependencies and Build
+        env:
+          NODE_OPTIONS: "--max_old_space_size=4096"
         run: |
           cd status
           npm install
@@ -218,6 +224,8 @@ jobs:
           node-version: '20'
 
       - name: Install Dependencies and Build
+        env:
+          NODE_OPTIONS: "--max_old_space_size=4096"
         run: |
           cd admin/database-panel
           npm install
@@ -281,6 +289,8 @@ jobs:
           node-version: '20'
 
       - name: Install Dependencies and Build
+        env:
+          NODE_OPTIONS: "--max_old_space_size=4096"
         run: |
           cd admin/feature-flag-panel
           npm install
@@ -344,6 +354,8 @@ jobs:
           node-version: '20'
 
       - name: Install Dependencies and Build
+        env:
+          NODE_OPTIONS: "--max_old_space_size=4096"
         run: |
           cd admin/resources-panel
           npm install
@@ -407,6 +419,8 @@ jobs:
           node-version: '20'
 
       - name: Install Dependencies and Build
+        env:
+          NODE_OPTIONS: "--max_old_space_size=4096"
         run: |
           cd admin/admin-panel
           npm install
