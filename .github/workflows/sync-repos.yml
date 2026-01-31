@@ -16,7 +16,41 @@ on:
   workflow_dispatch:
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      client: ${{ steps.filter.outputs.client }}
+      server: ${{ steps.filter.outputs.server }}
+      status: ${{ steps.filter.outputs.status }}
+      database_panel: ${{ steps.filter.outputs.database_panel }}
+      feature_flag_panel: ${{ steps.filter.outputs.feature_flag_panel }}
+      resources_panel: ${{ steps.filter.outputs.resources_panel }}
+      admin_panel: ${{ steps.filter.outputs.admin_panel }}
+    steps:
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            client:
+              - 'client/**'
+            server:
+              - 'server/**'
+            status:
+              - 'status/**'
+            database_panel:
+              - 'admin/database-panel/**'
+            feature_flag_panel:
+              - 'admin/feature-flag-panel/**'
+            resources_panel:
+              - 'admin/resources-panel/**'
+            admin_panel:
+              - 'admin/admin-panel/**'
+
   sync-client:
+    needs: changes
+    if: ${{ needs.changes.outputs.client == 'true' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -82,6 +116,8 @@ jobs:
           commit-message: "Sync client: ${{ github.event.head_commit.message }}"
 
   sync-server:
+    needs: changes
+    if: ${{ needs.changes.outputs.server == 'true' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -148,6 +184,8 @@ jobs:
           commit-message: "Sync server: ${{ github.event.head_commit.message }}"
 
   sync-status:
+    needs: changes
+    if: ${{ needs.changes.outputs.status == 'true' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -213,6 +251,8 @@ jobs:
           commit-message: "Sync status: ${{ github.event.head_commit.message }}"
 
   sync-database-panel:
+    needs: changes
+    if: ${{ needs.changes.outputs.database_panel == 'true' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -278,6 +318,8 @@ jobs:
           commit-message: "Sync database-panel: ${{ github.event.head_commit.message }}"
 
   sync-feature-flag-panel:
+    needs: changes
+    if: ${{ needs.changes.outputs.feature_flag_panel == 'true' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -343,6 +385,8 @@ jobs:
           commit-message: "Sync feature-flag-panel: ${{ github.event.head_commit.message }}"
 
   sync-resources-panel:
+    needs: changes
+    if: ${{ needs.changes.outputs.resources_panel == 'true' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -408,6 +452,8 @@ jobs:
           commit-message: "Sync resources-panel: ${{ github.event.head_commit.message }}"
 
   sync-admin-panel:
+    needs: changes
+    if: ${{ needs.changes.outputs.admin_panel == 'true' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
