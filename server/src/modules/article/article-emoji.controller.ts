@@ -85,7 +85,7 @@ export class ArticleReactionAdminController {
 
     @Delete(':articleId/reactions/:reactionId')
     @ApiOperation({ summary: 'Admin xóa reaction' })
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @RequirePermission('article.admin')
     async adminDeleteReaction(
         @Param('articleId', ParseUUIDPipe) articleId: string,

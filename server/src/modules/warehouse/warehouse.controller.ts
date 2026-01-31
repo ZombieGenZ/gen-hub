@@ -18,7 +18,7 @@ import { RequirePermission, CurrentActor } from '../../common/decorators';
 import { GetResponse, UpdatedResponse, ResponseCode } from '../../common/responses';
 
 @ApiTags('Organization Warehouses')
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 @ApiHeader({ name: 'X-API-Key', description: 'API Key for authentication (alternative to JWT)', required: false })
 @Controller('organizations/:orgId/warehouses')
 @UseGuards(CombinedAuthGuard, PermissionGuard)

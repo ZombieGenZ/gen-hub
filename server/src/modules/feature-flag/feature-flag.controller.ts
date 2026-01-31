@@ -15,7 +15,7 @@ import { RequirePermission } from '../../common/decorators';
 import { FeatureFlagService } from './feature-flag.service';
 
 @ApiTags('Feature Flags')
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 @Controller('admin/feature-flags')
 @UseGuards(JwtAuthGuard, PermissionGuard)
 @RequirePermission('featureflag.admin')

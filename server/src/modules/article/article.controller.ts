@@ -33,7 +33,7 @@ export class ArticleController {
 
     @Post()
     @ApiOperation({ summary: 'Tạo bài viết mới' })
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('article.create')
     async create(
@@ -47,7 +47,7 @@ export class ArticleController {
 
     @Get()
     @ApiOperation({ summary: 'Lấy danh sách bài viết' })
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('article.list')
     async findAll(
@@ -68,7 +68,7 @@ export class ArticleController {
     @Get(':id')
     @ApiOperation({ summary: 'Lấy chi tiết bài viết' })
     @ApiParam({ name: 'id', description: 'ID bài viết' })
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('article.read')
     async findById(
@@ -82,7 +82,7 @@ export class ArticleController {
     @Put(':id')
     @ApiOperation({ summary: 'Cập nhật bài viết' })
     @ApiParam({ name: 'id', description: 'ID bài viết' })
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('article.update')
     async update(
@@ -98,7 +98,7 @@ export class ArticleController {
     @Delete(':id')
     @ApiOperation({ summary: 'Xóa bài viết' })
     @ApiParam({ name: 'id', description: 'ID bài viết' })
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('article.delete')
     async delete(
@@ -113,7 +113,7 @@ export class ArticleController {
     @Delete('delete/many')
     @ApiOperation({ summary: 'Xóa nhiều bài viết' })
     @ApiBody({ schema: { type: 'object', properties: { ids: { type: 'array', items: { type: 'string' } } } } })
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('article.delete')
     async deleteMany(
@@ -150,7 +150,7 @@ export class ArticleController {
     @Get(':id/history')
     @ApiOperation({ summary: 'Lấy lịch sử chỉnh sửa bài viết' })
     @ApiParam({ name: 'id', description: 'ID bài viết' })
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('article.read')
     async getEditHistory(
@@ -164,7 +164,7 @@ export class ArticleController {
     @Post(':id/generate-seo')
     @ApiOperation({ summary: 'Tạo SEO tự động bằng AI' })
     @ApiParam({ name: 'id', description: 'ID bài viết' })
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('article.update')
     async generateSeo(

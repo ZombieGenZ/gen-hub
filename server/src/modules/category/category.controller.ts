@@ -32,7 +32,7 @@ export class CategoryController {
 
     @Post()
     @ApiOperation({ summary: 'Tạo chủ đề mới' })
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('category.create')
     async create(
@@ -46,7 +46,7 @@ export class CategoryController {
 
     @Get()
     @ApiOperation({ summary: 'Lấy danh sách chủ đề' })
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('category.list')
     async findAll(
@@ -67,7 +67,7 @@ export class CategoryController {
     @Get(':id')
     @ApiOperation({ summary: 'Lấy chi tiết chủ đề' })
     @ApiParam({ name: 'id', description: 'ID chủ đề' })
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('category.read')
     async findById(
@@ -81,7 +81,7 @@ export class CategoryController {
     @Put(':id')
     @ApiOperation({ summary: 'Cập nhật chủ đề' })
     @ApiParam({ name: 'id', description: 'ID chủ đề' })
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('category.update')
     async update(
@@ -97,7 +97,7 @@ export class CategoryController {
     @Delete(':id')
     @ApiOperation({ summary: 'Xóa chủ đề' })
     @ApiParam({ name: 'id', description: 'ID chủ đề' })
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('category.delete')
     async delete(
@@ -112,7 +112,7 @@ export class CategoryController {
     @Delete('delete/many')
     @ApiOperation({ summary: 'Xóa nhiều chủ đề' })
     @ApiBody({ schema: { type: 'object', properties: { ids: { type: 'array', items: { type: 'string' } } } } })
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('category.delete')
     async deleteMany(

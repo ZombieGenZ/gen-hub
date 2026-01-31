@@ -41,7 +41,7 @@ import { GetResponse, CreatedResponse, UpdatedResponse, DeletedResponse } from '
  * Yêu cầu: owner hoặc member của organization đó
  */
 @ApiTags('Organization Rental Contracts')
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 @Controller('organizations/:orgId/rental-contracts')
 @UseGuards(JwtAuthGuard, PermissionGuard)
 export class OrgRentalContractController {

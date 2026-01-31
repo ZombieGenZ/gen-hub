@@ -31,7 +31,7 @@ import type { IOrganizationBalance, IOrganizationBalanceTransaction, IPaginatedR
 @ApiTags('Organization Balance')
 @Controller('organizations/:orgId/balance')
 @UseGuards(JwtAuthGuard, OrgPermissionGuard)
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 export class OrganizationBalanceController {
     constructor(
         private readonly service: OrganizationBalanceService,

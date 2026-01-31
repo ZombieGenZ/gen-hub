@@ -47,7 +47,7 @@ import {
 } from '../../common/responses/success.response';
 
 @ApiTags('User Management')
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 @Controller('admin/users')
 @UseGuards(JwtAuthGuard, PermissionGuard)
 export class UserManagementController {

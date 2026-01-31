@@ -42,7 +42,7 @@ export class ContactListController {
 
     @Post()
     @ApiOperation({ summary: 'Tạo Contact List entry mới' })
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact-list.create')
     async create(
@@ -56,7 +56,7 @@ export class ContactListController {
 
     @Get()
     @ApiOperation({ summary: 'Lấy danh sách Contact List entries' })
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact-list.list')
     async findAll(@Query() query: QueryContactListDto) {
@@ -67,7 +67,7 @@ export class ContactListController {
     @Get(':id')
     @ApiOperation({ summary: 'Lấy chi tiết Contact List entry' })
     @ApiParam({ name: 'id', description: 'ID entry' })
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact-list.read')
     async findById(
@@ -81,7 +81,7 @@ export class ContactListController {
     @Put(':id')
     @ApiOperation({ summary: 'Cập nhật Contact List entry' })
     @ApiParam({ name: 'id', description: 'ID entry' })
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact-list.update')
     async update(
@@ -97,7 +97,7 @@ export class ContactListController {
     @Delete(':id')
     @ApiOperation({ summary: 'Xóa Contact List entry' })
     @ApiParam({ name: 'id', description: 'ID entry' })
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact-list.delete')
     async delete(
@@ -112,7 +112,7 @@ export class ContactListController {
     @Delete('delete/many')
     @ApiOperation({ summary: 'Xóa nhiều Contact List entries' })
     @ApiBody({ schema: { type: 'object', properties: { ids: { type: 'array', items: { type: 'string' } } } } })
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact-list.delete')
     async deleteMany(
@@ -126,7 +126,7 @@ export class ContactListController {
 
     @Post('email/blacklist')
     @ApiOperation({ summary: 'Thêm email vào blacklist' })
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact-list.create')
     async addEmailToBlacklist(
@@ -139,7 +139,7 @@ export class ContactListController {
 
     @Delete('email/blacklist')
     @ApiOperation({ summary: 'Xóa email khỏi blacklist' })
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact-list.delete')
     async removeEmailFromBlacklist(
@@ -152,7 +152,7 @@ export class ContactListController {
 
     @Post('email/whitelist')
     @ApiOperation({ summary: 'Thêm email vào whitelist' })
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact-list.create')
     async addEmailToWhitelist(
@@ -165,7 +165,7 @@ export class ContactListController {
 
     @Delete('email/whitelist')
     @ApiOperation({ summary: 'Xóa email khỏi whitelist' })
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact-list.delete')
     async removeEmailFromWhitelist(
@@ -178,7 +178,7 @@ export class ContactListController {
 
     @Post('domain/blacklist')
     @ApiOperation({ summary: 'Thêm domain vào blacklist' })
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact-list.create')
     async addDomainToBlacklist(
@@ -191,7 +191,7 @@ export class ContactListController {
 
     @Delete('domain/blacklist')
     @ApiOperation({ summary: 'Xóa domain khỏi blacklist' })
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact-list.delete')
     async removeDomainFromBlacklist(
@@ -204,7 +204,7 @@ export class ContactListController {
 
     @Post('domain/whitelist')
     @ApiOperation({ summary: 'Thêm domain vào whitelist' })
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact-list.create')
     async addDomainToWhitelist(
@@ -217,7 +217,7 @@ export class ContactListController {
 
     @Delete('domain/whitelist')
     @ApiOperation({ summary: 'Xóa domain khỏi whitelist' })
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact-list.delete')
     async removeDomainFromWhitelist(
@@ -230,7 +230,7 @@ export class ContactListController {
 
     @Post('ip/blacklist')
     @ApiOperation({ summary: 'Thêm IP vào blacklist' })
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact-list.create')
     async addIPToBlacklist(
@@ -243,7 +243,7 @@ export class ContactListController {
 
     @Delete('ip/blacklist')
     @ApiOperation({ summary: 'Xóa IP khỏi blacklist' })
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact-list.delete')
     async removeIPFromBlacklist(
@@ -256,7 +256,7 @@ export class ContactListController {
 
     @Post('ip/whitelist')
     @ApiOperation({ summary: 'Thêm IP vào whitelist' })
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact-list.create')
     async addIPToWhitelist(
@@ -269,7 +269,7 @@ export class ContactListController {
 
     @Delete('ip/whitelist')
     @ApiOperation({ summary: 'Xóa IP khỏi whitelist' })
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact-list.delete')
     async removeIPFromWhitelist(
@@ -282,7 +282,7 @@ export class ContactListController {
 
     @Post('region/country/blacklist')
     @ApiOperation({ summary: 'Thêm quốc gia vào blacklist' })
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact-list.create')
     async addCountryToBlacklist(
@@ -295,7 +295,7 @@ export class ContactListController {
 
     @Delete('region/country/blacklist')
     @ApiOperation({ summary: 'Xóa quốc gia khỏi blacklist' })
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact-list.delete')
     async removeCountryFromBlacklist(
@@ -308,7 +308,7 @@ export class ContactListController {
 
     @Post('region/country/whitelist')
     @ApiOperation({ summary: 'Thêm quốc gia vào whitelist' })
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact-list.create')
     async addCountryToWhitelist(
@@ -321,7 +321,7 @@ export class ContactListController {
 
     @Delete('region/country/whitelist')
     @ApiOperation({ summary: 'Xóa quốc gia khỏi whitelist' })
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact-list.delete')
     async removeCountryFromWhitelist(
@@ -334,7 +334,7 @@ export class ContactListController {
 
     @Post('region/city/blacklist')
     @ApiOperation({ summary: 'Thêm tỉnh/thành phố vào blacklist' })
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact-list.create')
     async addCityToBlacklist(
@@ -347,7 +347,7 @@ export class ContactListController {
 
     @Delete('region/city/blacklist')
     @ApiOperation({ summary: 'Xóa tỉnh/thành phố khỏi blacklist' })
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact-list.delete')
     async removeCityFromBlacklist(
@@ -360,7 +360,7 @@ export class ContactListController {
 
     @Post('region/city/whitelist')
     @ApiOperation({ summary: 'Thêm tỉnh/thành phố vào whitelist' })
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact-list.create')
     async addCityToWhitelist(
@@ -373,7 +373,7 @@ export class ContactListController {
 
     @Delete('region/city/whitelist')
     @ApiOperation({ summary: 'Xóa tỉnh/thành phố khỏi whitelist' })
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact-list.delete')
     async removeCityFromWhitelist(

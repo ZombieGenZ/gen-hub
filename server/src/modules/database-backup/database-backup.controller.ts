@@ -35,7 +35,7 @@ import { I18nService } from 'nestjs-i18n';
 @ApiTags('Database Backup')
 @Controller('admin/backups')
 @UseGuards(JwtAuthGuard, PermissionGuard)
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 export class DatabaseBackupController {
     constructor(
         private readonly databaseBackupService: DatabaseBackupService,

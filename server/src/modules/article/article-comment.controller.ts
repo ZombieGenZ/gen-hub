@@ -59,7 +59,7 @@ export class ArticleCommentController {
     @ApiOperation({ summary: 'Cập nhật comment (owner hoặc admin)' })
     @ApiParam({ name: 'id', description: 'ID bài viết' })
     @ApiParam({ name: 'commentId', description: 'ID comment' })
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('article.read')
     async updateComment(
@@ -78,7 +78,7 @@ export class ArticleCommentController {
     @ApiOperation({ summary: 'Xóa comment (owner hoặc admin)' })
     @ApiParam({ name: 'id', description: 'ID bài viết' })
     @ApiParam({ name: 'commentId', description: 'ID comment' })
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('article.read')
     async deleteComment(
@@ -96,7 +96,7 @@ export class ArticleCommentController {
     @ApiOperation({ summary: 'Duyệt comment (admin)' })
     @ApiParam({ name: 'id', description: 'ID bài viết' })
     @ApiParam({ name: 'commentId', description: 'ID comment' })
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('article.admin')
     async approveComment(
@@ -113,7 +113,7 @@ export class ArticleCommentController {
     @ApiOperation({ summary: 'Từ chối comment (admin)' })
     @ApiParam({ name: 'id', description: 'ID bài viết' })
     @ApiParam({ name: 'commentId', description: 'ID comment' })
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('article.admin')
     async rejectComment(
@@ -151,7 +151,7 @@ export class ArticleCommentAdminController {
 
     @Put(':articleId/comments/:commentId')
     @ApiOperation({ summary: 'Admin sửa comment (lưu lịch sử)' })
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @RequirePermission('article.admin')
     async adminUpdateComment(
         @Param('articleId', ParseUUIDPipe) articleId: string,
@@ -166,7 +166,7 @@ export class ArticleCommentAdminController {
 
     @Delete(':articleId/comments/:commentId')
     @ApiOperation({ summary: 'Admin xóa comment' })
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @RequirePermission('article.admin')
     async adminDeleteComment(
         @Param('articleId', ParseUUIDPipe) articleId: string,

@@ -18,7 +18,7 @@ import { GetResourcesDto } from './dto';
 @ApiTags('Resources')
 @Controller('admin/resources')
 @UseGuards(JwtAuthGuard, PermissionGuard)
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 export class ResourcesController {
     constructor(private readonly resourcesService: ResourcesService) { }
 

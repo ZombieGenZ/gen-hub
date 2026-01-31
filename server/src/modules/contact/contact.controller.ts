@@ -115,7 +115,7 @@ export class ContactController {
     @Get('admin/contacts')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact.list')
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @ApiOperation({ summary: 'Lấy danh sách tickets liên hệ (optimized)' })
     async findAll(
         @Query() query: QueryContactDto,
@@ -131,7 +131,7 @@ export class ContactController {
     @Get('admin/contacts/priority')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact.list')
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @ApiOperation({ summary: 'Lấy danh sách tickets ưu tiên (is_priority_customer = true)' })
     async findPriority(
         @Query() query: QueryContactDto,
@@ -147,7 +147,7 @@ export class ContactController {
     @Get('admin/contacts/normal')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact.list')
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @ApiOperation({ summary: 'Lấy danh sách tickets bình thường' })
     async findNormal(
         @Query() query: QueryContactDto,
@@ -163,7 +163,7 @@ export class ContactController {
     @Get('admin/contacts/skipped')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact.list')
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @ApiOperation({ summary: 'Lấy danh sách tickets bị bỏ qua (blacklisted)' })
     async findSkipped(
         @Query() query: QueryContactDto,
@@ -179,7 +179,7 @@ export class ContactController {
     @Get('admin/contacts/:id')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact.read')
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @ApiOperation({ summary: 'Lấy chi tiết ticket liên hệ' })
     async findOne(
         @Param('id') id: string,
@@ -195,7 +195,7 @@ export class ContactController {
     @Get('admin/contacts/:id/messages')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact.read')
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @ApiOperation({ summary: 'Lấy danh sách messages của ticket' })
     async findMessages(
         @Param('id') id: string,
@@ -213,7 +213,7 @@ export class ContactController {
     @Patch('admin/contacts/:id')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact.update')
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @ApiOperation({ summary: 'Cập nhật ticket (status, priority, assign, staff)' })
     async update(
         @Param('id') id: string,
@@ -233,7 +233,7 @@ export class ContactController {
     @Post('admin/contacts/:id/reply')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact.reply')
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @ApiOperation({ summary: 'Staff trả lời ticket' })
     async reply(
         @Param('id') id: string,
@@ -265,7 +265,7 @@ export class ContactController {
     @Post('admin/contacts/:id/close')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact.update')
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @ApiOperation({ summary: 'Đóng ticket' })
     async close(
         @Param('id') id: string,
@@ -282,7 +282,7 @@ export class ContactController {
     @Post('admin/contacts/:id/reopen')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact.update')
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @ApiOperation({ summary: 'Mở lại ticket' })
     async reopen(
         @Param('id') id: string,
@@ -301,7 +301,7 @@ export class ContactController {
     @Delete('admin/contacts/:id')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact.delete')
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @ApiOperation({ summary: 'Xóa ticket' })
     async delete(
         @Param('id') id: string,
@@ -318,7 +318,7 @@ export class ContactController {
     @Delete('admin/contacts/delete/many')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact.delete')
-    @ApiBearerAuth()
+    @ApiBearerAuth('JWT-auth')
     @ApiOperation({ summary: 'Xóa nhiều tickets' })
     async deleteMany(
         @Body('ids') ids: string[],
