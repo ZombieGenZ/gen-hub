@@ -31,7 +31,7 @@ export function AddonForm({ initialData, onSuccess, onCancel, isEdit = false }: 
         price: initialData?.price || 0,
         is_monthly_payment: initialData?.is_monthly_payment || false,
         is_active: initialData?.is_active !== undefined ? initialData.is_active : true,
-        unit: initialData?.unit || ""
+        unit: initialData?.unit || " s"
     });
 
     const [openUnit, setOpenUnit] = useState(false);

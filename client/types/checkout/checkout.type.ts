@@ -34,35 +34,7 @@ export const PAYMENT_METHODS: PaymentMethodInfo[] = [
 /**
  * Dữ liệu checkout session (lưu trữ trong context)
  */
-export interface CheckoutSession {
-    // Thông tin kho
-    warehouse_template_id: string;
-    warehouse_name?: string;
-    
-    // Loại thuê
-    rental_type: 'whole' | 'row';
-    row_template_ids?: string[];
-    
-    // Thời gian
-    duration_tier_id: string;
-    duration_tier_name?: string;
-    duration_months: number;
-    start_date: string;
-    
-    // Dịch vụ
-    addon_ids: string[];
-    insurance_id?: string;
-    coupon_code?: string;
-    
-    // Thông tin doanh nghiệp
-    organization_id?: string;
-    
-    // Thanh toán
-    payment_method?: PaymentMethod;
-    
-    // Báo giá
-    quotation: QuotationBreakdown;
-}
+
 
 /**
  * Dữ liệu checkout session (lưu trữ trong context)
@@ -102,6 +74,7 @@ export interface CheckoutSession {
     
     // Thông tin doanh nghiệp
     organization_id?: string;
+    company_address?: string;
     
     // Thanh toán
     payment_method?: PaymentMethod;

@@ -78,7 +78,7 @@ export function ContractPreview({
                         <ul className="pl-6 space-y-1 list-none">
                             <li>- Mã số thuế: {session.organization_id || "...................."}</li>
                             <li>- Địa chỉ: {session.company_address || "...................................................."}</li>
-                            <li>- Đại diện: Ông/Bà {representativeName.toUpperCase()}</li>
+                            <li>- Đại diện: Ông/Bà {(representativeName || "").toUpperCase()}</li>
                         </ul>
                     </div>
 

@@ -4,6 +4,7 @@ export interface AddonRequest {
     price: number;
     is_monthly_payment: boolean;
     is_active: boolean;
+    unit?: string;
 }
 
 export interface AddonResponse{
@@ -13,6 +14,7 @@ export interface AddonResponse{
     price: number,
     is_monthly_payment: boolean,
     is_active: boolean,
+    unit?: string | null,
     created_at: string,
     updated_at?: string | null,
     is_deleted: boolean,

@@ -73,6 +73,8 @@ export interface OrganizationCreateRequest {
     is_using_google_email?: boolean;
 }
 
+export type OrganizationRequest = OrganizationCreateRequest;
+
 /**
  * Kết quả kiểm tra mã số thuế
  */

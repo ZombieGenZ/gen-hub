@@ -125,7 +125,7 @@ export function OrganizationForm({
         ];
 
         requiredFields.forEach(field => {
-            const error = validateField(field, formData[field] || '');
+            const error = validateField(field, (formData[field] as string) || '');
             if (error) {
                 newErrors[field as keyof FormErrors] = error;
             }
@@ -163,7 +163,7 @@ export function OrganizationForm({
     const handleBlur = useCallback((field: keyof OrganizationRequest) => {
         setTouched(prev => ({ ...prev, [field]: true }));
 
-        const value = formData[field] || '';
+        const value = (formData[field] as string) || '';
         const error = validateField(field, value);
 
         if (error) {
@@ -261,7 +261,7 @@ export function OrganizationForm({
         required: boolean = true,
         type: string = 'text'
     ) => {
-        const value = formData[field] || '';
+        const value = (formData[field] as string) || '';
         const error = touched[field] ? errors[field as keyof FormErrors] : undefined;
         const showTaxCodeStatus = field === 'tax_code' && touched[field] && !error;
 
