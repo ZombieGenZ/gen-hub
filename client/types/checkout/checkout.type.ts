@@ -5,6 +5,7 @@ export type CheckoutStep =
     | 'business-info'           
     | 'representative-info'     
     | 'payment'                 
+    | 'signature'               
     | 'confirmation';           
 
 export type PaymentMethod = 
@@ -103,9 +104,12 @@ export interface CheckoutSession {
     organization_id?: string;
     
     // Thanh toán
-    // Thanh toán
     payment_method?: PaymentMethod;
     deposit_amount?: number;
+    
+    // Chữ ký hợp đồng
+    signature_data?: string;
+    signature_date?: string;
     
     // Báo giá
     quotation: QuotationBreakdown;

@@ -66,9 +66,9 @@ export function ContractPreview({
                     <div className="space-y-2">
                         <h4 className="font-bold uppercase">BÊN A (BÊN CHO THUÊ): CÔNG TY TNHH GENHUB LOGISTICS</h4>
                         <ul className="pl-6 space-y-1 list-none">
-                            <li>- Mã số thuế: 0312345678</li>
-                            <li>- Địa chỉ: KCN Long Hậu, Cần Giuộc, Long An</li>
-                            <li>- Đại diện: Ông Trần Văn B - Chức vụ: Giám đốc Kinh doanh</li>
+                            <li>- Mã số thuế: 036xxxxxxx</li>
+                            <li>- Địa chỉ: 36 Nguyễn Văn Linh, Phường Tân Phong, Quận 7, Thành phố Hồ Chí Minh</li>
+                            <li>- Đại diện: Đặng Phạm Thành Thái - Chức vụ: Chủ Doanh Nghiệp</li>
                         </ul>
                     </div>
 
@@ -77,7 +77,7 @@ export function ContractPreview({
                         <h4 className="font-bold uppercase">BÊN B (BÊN THUÊ): {companyName.toUpperCase()}</h4>
                         <ul className="pl-6 space-y-1 list-none">
                             <li>- Mã số thuế: {session.organization_id || "...................."}</li>
-                            <li>- Địa chỉ: ............................................................</li>
+                            <li>- Địa chỉ: {session.company_address || "...................................................."}</li>
                             <li>- Đại diện: Ông/Bà {representativeName.toUpperCase()}</li>
                         </ul>
                     </div>
@@ -102,10 +102,68 @@ export function ContractPreview({
                     {/* DIEU 2 */}
                     <div>
                         <h4 className="font-bold mb-1">ĐIỀU 2: GIÁ TRỊ HỢP ĐỒNG & THANH TOÁN</h4>
-                        <p>Tổng giá trị hợp đồng (đã bao gồm VAT và phí dịch vụ):</p>
-                        <p className="text-xl font-bold text-center py-2">{formatCurrency(session.quotation?.grandTotal || 0)}</p>
 
-                        <p className="font-bold mt-2 underline">Phương thức thanh toán:</p>
+                        <p className="font-bold mt-2 underline">Chi tiết giá:</p>
+                        <div className="pl-4 space-y-1 text-sm">
+                            {/* Base Rental */}
+                            <div className="flex justify-between border-b border-slate-100 pb-1">
+                                <span>• Giá thuê kho ({session.duration_months} tháng)</span>
+                                <span className="font-semibold">{formatCurrency(session.quotation?.basePrice || 0)}</span>
+                            </div>
+
+                            {/* Duration Discount */}
+                            {!!(session.quotation?.durationDiscountAmount && session.quotation.durationDiscountAmount > 0) && (
+                                <div className="flex justify-between border-b border-slate-100 pb-1 text-green-700">
+                                    <span>• Giảm giá kỳ hạn ({session.quotation.durationDiscountPercent}%)</span>
+                                    <span className="font-semibold">-{formatCurrency(session.quotation.durationDiscountAmount)}</span>
+                                </div>
+                            )}
+
+                            {/* Add-ons */}
+                            {!!(session.addon_details && session.addon_details.length > 0) && (
+                                <>
+                                    <p className="font-semibold mt-2 text-slate-700">Dịch vụ cộng thêm:</p>
+                                    {session.addon_details.map((addon, idx) => (
+                                        <div key={idx} className="flex justify-between border-b border-slate-100 pb-1 pl-2">
+                                            <span>• {addon.name} {addon.is_monthly_payment ? `(${session.duration_months} tháng)` : '(1 lần)'}</span>
+                                            <span className="font-semibold">{formatCurrency(addon.price)}</span>
+                                        </div>
+                                    ))}
+                                </>
+                            )}
+
+                            {/* Insurance */}
+                            {!!session.insurance_details && (
+                                <div className="flex justify-between border-b border-slate-100 pb-1">
+                                    <span>• Bảo hiểm: {session.insurance_details.name}</span>
+                                    <span className="font-semibold">{formatCurrency(session.insurance_details.price)}</span>
+                                </div>
+                            )}
+
+                            {/* Service Fee */}
+                            {!!(session.quotation?.serviceFee && session.quotation.serviceFee > 0) && (
+                                <div className="flex justify-between border-b border-slate-100 pb-1">
+                                    <span>• Phí dịch vụ (10%)</span>
+                                    <span className="font-semibold">{formatCurrency(session.quotation.serviceFee)}</span>
+                                </div>
+                            )}
+
+                            {/* Coupon Discount */}
+                            {!!(session.quotation?.couponDiscount && session.quotation.couponDiscount > 0) && (
+                                <div className="flex justify-between border-b border-slate-100 pb-1 text-green-700">
+                                    <span>• Giảm giá mã khuyến mãi</span>
+                                    <span className="font-semibold">-{formatCurrency(session.quotation.couponDiscount)}</span>
+                                </div>
+                            )}
+
+                            {/* Grand Total */}
+                            <div className="flex justify-between pt-2 border-t-2 border-slate-300 mt-2">
+                                <span className="font-bold">TỔNG GIÁ TRỊ HỢP ĐỒNG (đã bao gồm VAT):</span>
+                                <span className="font-bold text-lg">{formatCurrency(session.quotation?.grandTotal || 0)}</span>
+                            </div>
+                        </div>
+
+                        <p className="font-bold mt-4 underline">Phương thức thanh toán:</p>
                         <ul className="list-disc pl-8 mt-1 space-y-1">
                             <li>
                                 <strong>Đặt cọc (Deposit):</strong> {formatCurrency(session.deposit_amount || 0)} (Đã thanh toán)
@@ -122,33 +180,86 @@ export function ContractPreview({
 
                     {/* DIEU 3 */}
                     <div>
-                        <h4 className="font-bold mb-1">ĐIỀU 3: QUYỀN VÀ NGHĨA VỤ</h4>
-                        <p>
-                            <strong>3.1. Quyền và nghĩa vụ của Bên A:</strong>
-                            <br />
-                            - Bàn giao kho đúng thời hạn và đảm bảo điều kiện kỹ thuật như cam kết.
-                            <br />
-                            - Chịu trách nhiệm bảo vệ an ninh vòng ngoài (CCTV, Bảo vệ 24/7).
-                        </p>
-                        <p className="mt-2">
-                            <strong>3.2. Quyền và nghĩa vụ của Bên B:</strong>
-                            <br />
-                            - Sử dụng kho đúng mục đích, không chứa hàng cấm, cháy nổ.
-                            <br />
-                            - Thanh toán đầy đủ và đúng hạn.
-                        </p>
+                        <h4 className="font-bold mb-2">ĐIỀU 3: QUYỀN VÀ NGHĨA VỤ CỦA CÁC BÊN</h4>
+
+                        <p className="font-semibold mt-3">3.1. Quyền và nghĩa vụ của Bên A (Bên cho thuê):</p>
+                        <ul className="list-disc pl-8 mt-1 space-y-1">
+                            <li>Bàn giao kho đúng thời hạn và đảm bảo điều kiện kỹ thuật như cam kết.</li>
+                            <li>Chịu trách nhiệm bảo vệ an ninh vòng ngoài (CCTV, Bảo vệ 24/7).</li>
+                            <li>Duy trì hệ thống điện, nước, PCCC đạt tiêu chuẩn an toàn.</li>
+                            <li>Hỗ trợ Bên B trong quá trình sử dụng kho theo quy định.</li>
+                            <li>Có quyền kiểm tra kho định kỳ với thông báo trước 24 giờ.</li>
+                        </ul>
+
+                        <p className="font-semibold mt-3">3.2. Quyền và nghĩa vụ của Bên B (Bên thuê):</p>
+                        <ul className="list-disc pl-8 mt-1 space-y-1">
+                            <li>Sử dụng kho đúng mục đích, không chứa hàng cấm, hàng dễ cháy nổ.</li>
+                            <li>Thanh toán đầy đủ và đúng hạn theo thỏa thuận.</li>
+                            <li>Bảo quản, sử dụng kho cẩn thận, không gây hư hỏng tài sản.</li>
+                            <li>Tuân thủ quy định về PCCC, ATVSLĐ của Bên A và pháp luật.</li>
+                            <li>Mua bảo hiểm cho hàng hóa nếu có yêu cầu.</li>
+                            <li>Có quyền sử dụng đầy đủ các dịch vụ đi kèm đã thanh toán.</li>
+                        </ul>
                     </div>
 
                     {/* DIEU 4 */}
                     <div>
-                        <h4 className="font-bold mb-1">ĐIỀU 4: ĐIỀU KHOẢN CHUNG</h4>
-                        <p>
-                            - Hai bên cam kết thực hiện đúng các điều khoản đã ghi.
-                            <br />
-                            - Hợp đồng này được lập thành 02 bản, có giá trị pháp lý như nhau.
-                            <br />
-                            - Hợp đồng có hiệu lực kể từ ngày ký.
-                        </p>
+                        <h4 className="font-bold mb-2">ĐIỀU 4: THANH TOÁN VÀ PHẠT TRỄ HẠN</h4>
+
+                        <p className="font-semibold">4.1. Hình thức thanh toán:</p>
+                        <ul className="list-disc pl-8 mt-1 space-y-1">
+                            <li>Chuyển khoản ngân hàng hoặc thanh toán điện tử (SePay QR).</li>
+                            <li>Bên B phải cung cấp chứng từ thanh toán sau mỗi lần chuyển tiền.</li>
+                        </ul>
+
+                        <p className="font-semibold mt-3">4.2. Phạt chậm thanh toán:</p>
+                        <ul className="list-disc pl-8 mt-1 space-y-1">
+                            <li>Chậm 1-7 ngày: Phạt 0.1%/ngày trên số tiền nợ.</li>
+                            <li>Chậm 8-15 ngày: Phạt 0.2%/ngày trên số tiền nợ.</li>
+                            <li>Chậm trên 15 ngày: Bên A có quyền đơn phương chấm dứt hợp đồng và tịch thu tiền cọc.</li>
+                        </ul>
+                    </div>
+
+                    {/* DIEU 5 */}
+                    <div>
+                        <h4 className="font-bold mb-2">ĐIỀU 5: CHẤM DỨT HỢP ĐỒNG</h4>
+
+                        <p className="font-semibold">5.1. Chấm dứt theo thỏa thuận:</p>
+                        <p className="pl-4">Hai bên có thể thỏa thuận chấm dứt hợp đồng trước hạn với thông báo trước 30 ngày.</p>
+
+                        <p className="font-semibold mt-3">5.2. Chấm dứt đơn phương:</p>
+                        <ul className="list-disc pl-8 mt-1 space-y-1">
+                            <li><strong>Bên A được chấm dứt</strong> nếu Bên B vi phạm nghiêm trọng (chứa hàng cấm, nợ quá hạn trên 15 ngày, gây hư hỏng tài sản...).</li>
+                            <li><strong>Bên B được chấm dứt</strong> nếu Bên A không bàn giao kho đúng hạn hoặc kho không đảm bảo điều kiện cam kết.</li>
+                        </ul>
+
+                        <p className="font-semibold mt-3">5.3. Xử lý khi chấm dứt:</p>
+                        <ul className="list-disc pl-8 mt-1 space-y-1">
+                            <li>Bên B phải bàn giao lại kho trong vòng 7 ngày.</li>
+                            <li>Tiền cọc được hoàn trả sau khi kiểm tra kho nguyên vẹn (trừ trường hợp vi phạm).</li>
+                            <li>Các khoản phí phát sinh (nếu có) được thanh toán trong vòng 5 ngày.</li>
+                        </ul>
+                    </div>
+
+                    {/* DIEU 6 */}
+                    <div>
+                        <h4 className="font-bold mb-2">ĐIỀU 6: TRÁCH NHIỆM BỒI THƯỜNG</h4>
+                        <ul className="list-disc pl-8 mt-1 space-y-1">
+                            <li>Bên A không chịu trách nhiệm về mất mát, hư hỏng hàng hóa do lỗi của Bên B hoặc bất khả kháng.</li>
+                            <li>Bên B phải bồi thường 100% thiệt hại nếu gây hư hỏng tài sản, cơ sở vật chất của Bên A.</li>
+                            <li>Trong trường hợp tranh chấp, hai bên ưu tiên giải quyết thông qua thương lượng.</li>
+                        </ul>
+                    </div>
+
+                    {/* DIEU 7 */}
+                    <div>
+                        <h4 className="font-bold mb-2">ĐIỀU 7: ĐIỀU KHOẢN CHUNG</h4>
+                        <ul className="list-disc pl-8 mt-1 space-y-1">
+                            <li>Hai bên cam kết thực hiện đúng các điều khoản đã ghi trong hợp đồng này.</li>
+                            <li>Mọi tranh chấp phát sinh sẽ được giải quyết trên tinh thần thiện chí. Nếu không thỏa thuận được, sẽ đưa ra Tòa án có thẩm quyền.</li>
+                            <li>Hợp đồng này được lập thành 02 bản, mỗi bên giữ 01 bản, có giá trị pháp lý như nhau.</li>
+                            <li>Hợp đồng có hiệu lực kể từ ngày ký và kết thúc vào {format(endDate, "dd/MM/yyyy")} (hoặc đến khi hai bên thỏa thuận chấm dứt).</li>
+                        </ul>
                     </div>
 
                     {/* Signature Section */}
@@ -167,8 +278,8 @@ export function ContractPreview({
                                     }}
                                 />
                             </div>
-                            <p className="font-bold mt-2">Trần Văn B</p>
-                            <p className="text-xs text-slate-500">Giám đốc Kinh doanh</p>
+                            <p className="font-bold mt-2">Đặng Phạm Thành Thái</p>
+                            <p className="text-xs text-slate-500">Chủ Doanh Nghiệp</p>
                         </div>
 
                         {/* Party B Signature */}

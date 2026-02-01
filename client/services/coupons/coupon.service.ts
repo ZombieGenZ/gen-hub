@@ -160,26 +160,33 @@ export class CouponService {
 
     /**
      * Kiểm tra coupon cho BookingWidget
-     * @param access_token Token truy cập
      * @param code Mã giảm giá
      * @param orderDetails Thông tin đơn hàng
+     * @param access_token Token truy cập
      * @returns Kết quả kiểm tra coupon
      */
-    async validateCoupon(access_token: string, code: string, orderDetails: {
-        warehouse_template_id?: string;
+    async validateCoupon(code: string, orderDetails: {
+        warehouse_template_ids?: string[];
         row_template_ids?: string[];
-        total_amount: number;
-        duration_value: number;
-        duration_unit: string;
-    }) {
+        addon_ids?: string[];
+        rental_duration_tier_id: string;    
+        type: 'NEW_CONTRACT' | 'RENEWAL';
+    }, access_token: string) {
         try {
             const response = await fetch(`${API}/public/coupons/validate`, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${access_token}`,
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${access_token}`,
                 },
-                body: JSON.stringify({ code, ...orderDetails })
+                body: JSON.stringify({ 
+                    code, 
+                    warehouse_template_ids: orderDetails.warehouse_template_ids,
+                    row_template_ids: orderDetails.row_template_ids,
+                    addon_ids: orderDetails.addon_ids,
+                    rental_duration_tier_id: orderDetails.rental_duration_tier_id,
+                    type: orderDetails.type,
+                })
             })
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));

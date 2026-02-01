@@ -9,9 +9,22 @@ export class IsuranceService {
      * @param access_token Token truy cập
      * @returns Danh sách bảo hiểm
      */
-    async getAllInsurance(access_token: string) {
+    async getAllInsurance(access_token: string, params?: {
+        limit?: number;
+        offset?: number;
+        keywords?: string;
+        is_active?: boolean;
+    }) {
         try {
-            const response = await fetch(`${API}/insurances`, {
+            const query = new URLSearchParams();
+            if (params) {
+                if (params.limit !== undefined) query.append('limit', String(params.limit));
+                if (params.offset !== undefined) query.append('offset', String(params.offset));
+                if (params.keywords) query.append('keywords', params.keywords);
+                if (params.is_active !== undefined) query.append('is_active', String(params.is_active));
+            }
+
+            const response = await fetch(`${API}/insurances?${query.toString()}`, {
                 method: "GET",
                 headers: {
                     'Authorization': `Bearer ${access_token}`,

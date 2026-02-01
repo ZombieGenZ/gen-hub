@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -40,6 +41,8 @@ import {
 import { RentalDurationTier } from '@/types/rental-duration-tier/rental-duration-tier.type';
 import { AddonResponse } from '@/types/addon/addon.type';
 import { Insurance } from '@/types/insurance/Insurance.types';
+import { CouponService } from '@/services/coupons/coupon.service';
+import { authStorage } from '@/services/auth/auth-storage.service';
 
 interface BookingWidgetProps {
     warehouseId?: string;
@@ -272,53 +275,42 @@ export function BookingWidget({ warehouseId, price, unit = "tháng" }: BookingWi
         setCouponError("");
         setIsValidatingCoupon(true);
 
-        try {
-            const API = process.env.NEXT_PUBLIC_API_URL;
-            const response = await fetch(`${API}/public/coupons/validate`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    code: couponCode,
-                    warehouse_template_id: warehouseId,
-                    row_template_ids: rentalType === 'row' ? selectedRowIds : undefined,
-                    total_amount: quotation.subtotal,
-                    duration_value: durationMonths,
-                    duration_unit: 'MONTH',
-                }),
-            });
+        // Check if user is logged in
+        const accessToken = authStorage.getAccessToken();
+        if (!accessToken) {
+            setCouponError("LOGIN_REQUIRED");
+            setIsValidatingCoupon(false);
+            return;
+        }
 
-            if (response.ok) {
-                const result: CouponValidationResult = await response.json();
-                if (result.is_valid) {
-                    setAppliedCoupon({ code: couponCode, discount: result.discount_amount });
-                } else {
-                    setCouponError(result.message || 'Mã giảm giá không hợp lệ');
-                }
+        try {
+            const couponService = new CouponService();
+            const result = await couponService.validateCoupon(
+                couponCode,
+                {
+                    warehouse_template_ids: warehouseId ? [warehouseId] : undefined,
+                    row_template_ids: rentalType === 'row' ? selectedRowIds : undefined,
+                    addon_ids: selectedAddons.length > 0 ? selectedAddons : undefined,
+                    rental_duration_tier_id: selectedDurationId,
+                    type: 'NEW_CONTRACT',
+                },
+                accessToken
+            );
+
+            if (result.is_valid) {
+                setAppliedCoupon({ code: couponCode, discount: result.discount_amount });
             } else {
-                // Fallback to mock validation
-                handleMockCouponValidation();
+                setCouponError(result.message || 'Mã giảm giá không hợp lệ');
+                setAppliedCoupon(null);
             }
-        } catch {
-            // Fallback to mock validation
-            handleMockCouponValidation();
+
+        } catch (error) {
+            console.error("Error validating coupon:", error);
+            setCouponError("Có lỗi xảy ra khi kiểm tra mã giảm giá");
         } finally {
             setIsValidatingCoupon(false);
         }
-    }, [couponCode, warehouseId, rentalType, selectedRowIds, quotation.subtotal, durationMonths]);
-
-    // Mock coupon validation for development
-    const handleMockCouponValidation = useCallback(() => {
-        if (couponCode === "TET2025") {
-            setAppliedCoupon({ code: "TET2025", discount: Math.min(quotation.subtotal * 0.2, 5000000) });
-        } else if (couponCode === "WEEKEND200K") {
-            setAppliedCoupon({ code: "WEEKEND200K", discount: 200000 });
-        } else if (couponCode === "NEWUSER") {
-            setAppliedCoupon({ code: "NEWUSER", discount: 500000 });
-        } else {
-            setCouponError("Mã giảm giá không hợp lệ hoặc đã hết hạn");
-            setAppliedCoupon(null);
-        }
-    }, [couponCode, quotation.subtotal]);
+    }, [couponCode, warehouseId, rentalType, selectedRowIds, selectedAddons, selectedDurationId]);
 
     // Handle addon toggle
     const toggleAddon = useCallback((addonId: string) => {
@@ -625,7 +617,25 @@ export function BookingWidget({ warehouseId, price, unit = "tháng" }: BookingWi
                             {isValidatingCoupon ? "..." : appliedCoupon ? "Đã áp dụng" : "Áp dụng"}
                         </Button>
                     </div>
-                    {couponError && <p className="text-xs text-red-500">{couponError}</p>}
+                    {couponError && (
+                        couponError === "LOGIN_REQUIRED" ? (
+                            <div className="flex items-center gap-2 p-2 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-700">
+                                <ExclamationCircleIcon className="w-4 h-4 shrink-0" />
+                                <span>
+                                    Vui lòng{' '}
+                                    <Link
+                                        href="/login"
+                                        className="font-semibold text-[#0F766E] hover:underline"
+                                    >
+                                        đăng nhập
+                                    </Link>
+                                    {' '}để sử dụng mã giảm giá
+                                </span>
+                            </div>
+                        ) : (
+                            <p className="text-xs text-red-500">{couponError}</p>
+                        )
+                    )}
                     {appliedCoupon && (
                         <div className="flex justify-between items-center bg-teal-50 p-2 rounded text-xs text-[#0F766E]">
                             <span>Mã {appliedCoupon.code}</span>

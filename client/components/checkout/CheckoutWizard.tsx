@@ -13,6 +13,7 @@ import {
     BuildingOffice2Icon,
     CreditCardIcon,
     UserIcon,
+    PencilSquareIcon,
     CheckCircleIcon as CheckCircleSolidIcon
 } from '@heroicons/react/24/solid';
 
@@ -49,6 +50,7 @@ const CHECKOUT_STEPS: { id: CheckoutStep; label: string; icon: any }[] = [
     { id: 'business-info', label: 'Doanh nghiệp', icon: BuildingOffice2Icon },
     { id: 'representative-info', label: 'Người đại diện', icon: UserIcon },
     { id: 'payment', label: 'Thanh toán', icon: CreditCardIcon },
+    { id: 'signature', label: 'Ký hợp đồng', icon: PencilSquareIcon },
     { id: 'confirmation', label: 'Xác nhận', icon: CheckCircleSolidIcon },
 ];
 

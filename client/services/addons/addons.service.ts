@@ -8,9 +8,24 @@ export class AddonsService {
      * @param access_token Token truy cập
      * @returns Danh sách tất cả addons
      */
-    async getAllAddons(access_token: string) {
+    async getAllAddons(access_token: string, params?: {
+        limit?: number;
+        offset?: number;
+        keywords?: string;
+        is_active?: boolean;
+        addon_type_id?: string;
+    }) {
         try {
-            const response = await fetch(`${API}/addons`, {
+            const queryParams = new URLSearchParams();
+            if (params) {
+                if (params.limit !== undefined) queryParams.append('limit', params.limit.toString());
+                if (params.offset !== undefined) queryParams.append('offset', params.offset.toString());
+                if (params.keywords) queryParams.append('keywords', params.keywords);
+                if (params.is_active !== undefined) queryParams.append('is_active', params.is_active.toString());
+                if (params.addon_type_id) queryParams.append('addon_type_id', params.addon_type_id);
+            }
+
+            const response = await fetch(`${API}/addons?${queryParams.toString()}`, {
                 headers: {
                     'Authorization': `Bearer ${access_token}`,
                     'Content-Type': 'application/json'

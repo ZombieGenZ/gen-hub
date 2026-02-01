@@ -15,6 +15,7 @@ import { CompanyInfoStep } from '@/components/checkout/CompanyInfoStep';
 import { RepresentativeInfoStep } from '@/components/checkout/RepresentativeInfoStep';
 import { PaymentMethodSelector } from '@/components/checkout/PaymentMethodSelector';
 import { OrderConfirmation } from '@/components/checkout/OrderConfirmation';
+import { ContractSignatureStep } from '@/components/checkout/ContractSignatureStep';
 import { QuotationSummary } from '@/components/warehouse/QuotationSummary';
 import { CheckoutSession, PaymentMethod } from '@/types/checkout/checkout.type';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
@@ -28,7 +29,7 @@ import { MOCK_ADDONS, MOCK_INSURANCES, MOCK_DURATION_TIERS } from '@/types/booki
 import { authStorage } from '@/services/auth/auth-storage.service';
 import { organizationService } from '@/services/organization/organization.service';
 import { rentalContractService } from '@/services/rental-contract/rental-contract.service';
-import { CreateOrderRequest } from '@/types/checkout/checkout.type';
+import { CreateRentalContractRequest, RentalContractPaymentType, RentalContractPaymentMethod } from '@/types/rental-contracts/rental-contracts.type';
 
 interface CompanyData {
     name: string;
@@ -119,7 +120,22 @@ function CheckoutContent() {
 
     // Handle payment method change
     const handlePaymentMethodChange = (method: PaymentMethod) => {
-        setSession({ payment_method: method });
+        setSession({ ...session, payment_method: method });
+    };
+
+    const handleSignatureComplete = async (signatureData: string) => {
+        // Store signature in session
+        setSession({
+            ...session,
+            signature_data: signatureData,
+            signature_date: new Date().toISOString()
+        });
+
+        // Now submit the order with signature
+        await handleSubmitOrder();
+
+        // Proceed to confirmation
+        nextStep();
     };
 
     // Handle order submission
@@ -143,24 +159,27 @@ function CheckoutContent() {
             if (!orgId) throw new Error("Missing organization ID");
 
             // 2. Prepare Order Data
-            const payload: CreateOrderRequest = {
+            const payload: CreateRentalContractRequest = {
                 organization_id: orgId,
-                warehouse_template_id: session.warehouse_template_id || '',
-                rental_type: session.rental_type || 'whole',
-                row_template_ids: session.row_template_ids,
                 duration_tier_id: session.duration_tier_id || '',
-                started_at: session.start_date || new Date().toISOString(),
+                templates: [{
+                    template_id: session.warehouse_template_id || '',
+                    warehouse_name: session.warehouse_name || '',
+                    warehouse_description: session.warehouse_details?.address,
+                    row_template_ids: session.row_template_ids,
+                }],
+                type: 'TRANSFER' as RentalContractPaymentType,
                 addon_ids: session.addon_ids || [],
-                insurance_id: session.insurance_id,
-                coupon_code: session.coupon_code,
-                payment_method: session.payment_method || 'sepay-qr',
+                insurance_ids: session.insurance_id ? [session.insurance_id] : undefined,
+                coupon_codes: session.coupon_code ? [session.coupon_code] : undefined,
+                payment_method: 'TRANSFER' as RentalContractPaymentMethod,
+                scheduled_start_at: session.start_date || new Date().toISOString(),
             };
 
             // 3. Submit Order
             const result = await rentalContractService.createRentalContract(token, payload);
 
-            // 4. Redirect to dashboard
-            router.push(`/dashboard/customer/bookings/${result.id}`);
+            console.log('Order created successfully:', result);
 
         } catch (error) {
             console.error('Failed to create order:', error);
@@ -241,19 +260,35 @@ function CheckoutContent() {
                                 />
                             </CheckoutStepContainer>
 
-                            {/* Step 5: Confirmation */}
+                            {/* Step 5: Signature */}
+                            <CheckoutStepContainer step="signature">
+                                <ContractSignatureStep
+                                    companyData={companyData}
+                                    representativeData={representativeData}
+                                    onSignatureComplete={handleSignatureComplete}
+                                />
+                            </CheckoutStepContainer>
+
+                            {/* Step 6: Confirmation */}
                             <CheckoutStepContainer step="confirmation">
                                 <OrderConfirmation
                                     onViewOrder={() => router.push('/dashboard/orders')}
                                     onDownloadInvoice={() => console.log('Download invoice')}
+                                    companyData={companyData}
+                                    representativeData={{
+                                        name: representativeData.representative_name,
+                                        title: representativeData.representative_title,
+                                        phone: representativeData.representative_phone,
+                                        email: representativeData.representative_email,
+                                    }}
                                 />
                             </CheckoutStepContainer>
 
                             {/* Navigation Buttons */}
-                            {currentStep !== 'confirmation' && (
+                            {currentStep !== 'confirmation' && currentStep !== 'signature' && (
                                 <CheckoutNavigation
-                                    onSubmit={currentStep === 'payment' ? handleSubmitOrder : undefined}
-                                    submitLabel="Xác nhận & Tạo đơn"
+                                    onSubmit={undefined}
+                                    submitLabel="Tiếp tục"
                                     className="mt-8"
                                 />
                             )}

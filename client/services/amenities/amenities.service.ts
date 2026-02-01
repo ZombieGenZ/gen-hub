@@ -15,7 +15,7 @@ export class AmenitiesService {
         is_active?: boolean;
         rental_status?: string;
         province_id?: string;
-        page?: number;
+        offset?: number;
         limit?: number;
         type?: string;
     } = {}) {
@@ -25,7 +25,7 @@ export class AmenitiesService {
         if (params.is_active !== undefined) query.append('is_active', String(params.is_active));
         if (params.rental_status) query.append('rental_status', params.rental_status);
         if (params.province_id) query.append('province_id', params.province_id);
-        if (params.page) query.append('page', String(params.page));
+        if (params.offset !== undefined) query.append('offset', String(params.offset));
         if (params.limit) query.append('limit', String(params.limit));
         if (params.type) query.append('type', params.type);
         

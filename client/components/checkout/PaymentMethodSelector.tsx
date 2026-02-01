@@ -10,9 +10,11 @@ import {
     QrCodeIcon,
     BuildingLibraryIcon,
     CheckCircleIcon,
-    ClockIcon
+    ClockIcon,
+    ShieldCheckIcon
 } from '@heroicons/react/24/outline';
 import { useCheckout } from './CheckoutWizard';
+import { formatCurrency } from '@/lib/utils';
 
 interface PaymentMethodSelectorProps {
     value?: PaymentMethod;
@@ -47,14 +49,40 @@ export function PaymentMethodSelector({
     };
 
     return (
-        <div className={cn("space-y-4", className)}>
-            <div className="border-b border-slate-200 pb-4">
-                <h3 className="text-lg font-bold text-slate-900">
-                    Thanh toán đặt cọc
-                </h3>
-                <p className="text-sm text-slate-500 mt-1">
-                    Thanh toán khoản cọc để giữ chỗ và khóa kho trước khi ký hợp đồng
-                </p>
+        <div className={cn("space-y-6", className)}>
+            {/* Order Summary */}
+            <div className="bg-white border border-slate-200 rounded-xl p-6">
+                <h3 className="font-bold text-slate-900 mb-4">Thông tin đơn hàng</h3>
+                <div className="space-y-3 text-sm">
+                    <div className="flex justify-between">
+                        <span className="text-slate-600">Tổng giá trị hợp đồng</span>
+                        <span className="font-semibold text-slate-900">{formatCurrency(450000000)}đ</span>
+                    </div>
+                    <div className="flex justify-between">
+                        <span className="text-slate-600">Thời gian thuê</span>
+                        <span className="text-slate-700">6 tháng</span>
+                    </div>
+                    <div className="pt-3 border-t border-slate-200">
+                        <div className="flex justify-between items-center">
+                            <span className="font-semibold text-slate-900">Số tiền đặt cọc</span>
+                            <span className="text-lg font-bold text-[#0F766E]">{formatCurrency(45000000)}đ</span>
+                        </div>
+                        <p className="text-xs text-slate-500 mt-1">10% giá trị hợp đồng</p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Payment Method Selection */}
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3">
+                <div className="shrink-0 mt-0.5">
+                    <ShieldCheckIcon className="w-5 h-5 text-blue-600" />
+                </div>
+                <div className="flex-1">
+                    <h4 className="font-semibold text-blue-900">Thanh toán đặt cọc</h4>
+                    <p className="text-sm text-blue-700 mt-1">
+                        Thanh toán đặt cọc để giữ chỗ. Sau đó bạn sẽ ký hợp đồng điện tử và hoàn tất quy trình.
+                    </p>
+                </div>
             </div>
 
             <RadioGroup

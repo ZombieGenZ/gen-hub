@@ -12,16 +12,32 @@ import {
     QrCodeIcon,
     ClipboardDocumentIcon,
     ArrowPathIcon,
-    ExclamationTriangleIcon
+    ExclamationTriangleIcon,
+    DocumentTextIcon
 } from '@heroicons/react/24/outline';
 import { CheckCircleIcon as CheckCircleSolidIcon } from '@heroicons/react/24/solid';
 import { CreateOrderResponse } from '@/types/checkout/checkout.type';
 import { cn } from '@/lib/utils';
+import { contractTemplateService } from '@/services/contract/contract-template.service';
+import { convertCheckoutToContract } from '@/lib/contract.utils';
 
 interface OrderConfirmationProps {
     orderResponse?: CreateOrderResponse;
     onDownloadInvoice?: () => void;
     onViewOrder?: () => void;
+    companyData?: {
+        name: string;
+        international_name?: string;
+        tax_code: string;
+        headquarters_address: string;
+        invoice_address?: string;
+    };
+    representativeData?: {
+        name: string;
+        title: string;
+        phone: string;
+        email: string;
+    };
 }
 
 /**
@@ -30,13 +46,16 @@ interface OrderConfirmationProps {
 export function OrderConfirmation({
     orderResponse,
     onDownloadInvoice,
-    onViewOrder
+    onViewOrder,
+    companyData,
+    representativeData
 }: OrderConfirmationProps) {
     const router = useRouter();
     const { session } = useCheckout();
     const [copied, setCopied] = useState(false);
     const [paymentStatus, setPaymentStatus] = useState<'pending' | 'processing' | 'paid'>('pending');
     const [isCheckingPayment, setIsCheckingPayment] = useState(false);
+    const [isGeneratingContract, setIsGeneratingContract] = useState(false);
 
     // Simulate payment status polling for SePay
     useEffect(() => {
@@ -64,6 +83,40 @@ export function OrderConfirmation({
             setIsCheckingPayment(false);
             setPaymentStatus('paid'); // Demo purpose
         }, 2000);
+    };
+
+    const handleDownloadContract = async () => {
+        if (!companyData || !representativeData) {
+            alert('Thiếu thông tin công ty hoặc người đại diện');
+            return;
+        }
+
+        setIsGeneratingContract(true);
+        try {
+            // Convert checkout data to contract format
+            const contractData = convertCheckoutToContract({
+                session,
+                company: companyData,
+                representative: representativeData,
+                order_id: orderResponse?.order_code || mockOrderCode,
+            });
+
+            // Generate contract PDF
+            const result = await contractTemplateService.generateContract(contractData);
+
+            if (result.success && result.contract_blob) {
+                // Download the contract
+                const filename = `Hop-dong-${contractData.contract_code}.pdf`;
+                contractTemplateService.downloadContract(result.contract_blob, filename);
+            } else {
+                throw new Error(result.error || 'Failed to generate contract');
+            }
+        } catch (error) {
+            console.error('Contract generation error:', error);
+            alert('Không thể tạo hợp đồng. Vui lòng thử lại sau.');
+        } finally {
+            setIsGeneratingContract(false);
+        }
     };
 
     const formatCurrency = (amount: number) => {
@@ -103,8 +156,8 @@ export function OrderConfirmation({
                         <>
                             <CheckCircleIcon className="w-6 h-6 text-green-600" />
                             <div>
-                                <p className="font-semibold text-green-800">Đã đặt cọc thành công</p>
-                                <p className="text-sm text-green-600">Vui lòng ký hợp đồng để hoàn tất quy trình.</p>
+                                <p className="font-semibold text-green-800">Hợp đồng đã ký thành công!</p>
+                                <p className="text-sm text-green-600">Đơn hàng đã được tạo và hợp đồng điện tử đã hoàn tất.</p>
                             </div>
                         </>
                     ) : (
@@ -165,31 +218,52 @@ export function OrderConfirmation({
             <div className="bg-slate-50 rounded-xl p-4 space-y-3">
                 <h4 className="font-medium text-slate-700">Các bước tiếp theo</h4>
                 <ol className="list-decimal list-inside space-y-2 text-sm text-slate-600">
-                    <li>Hoàn tất thanh toán cọc</li>
-                    <li>Ký hợp đồng điện tử</li>
+                    <li>Xem và lưu hợp đồng đã ký</li>
                     <li>Thanh toán phần còn lại khi nhận kho</li>
+                    <li>Bàn giao kho theo lịch hẹn</li>
                 </ol>
             </div>
 
             {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row gap-3 pt-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4">
                 <Button
                     variant="outline"
-                    className="flex-1 h-12 rounded-xl"
-                    onClick={onDownloadInvoice}
+                    className="h-12 rounded-xl"
+                    onClick={() => {
+                        // Navigate to signed contract view
+                        console.log('View signed contract');
+                    }}
                 >
-                    <DocumentArrowDownIcon className="w-5 h-5 mr-2" />
-                    Tải báo giá PDF
+                    <DocumentTextIcon className="w-5 h-5 mr-2" />
+                    Xem hợp đồng
                 </Button>
                 <Button
-                    className="flex-1 h-12 rounded-xl bg-[#0F766E] hover:bg-[#0D655D]"
-                    onClick={() => {
-                        // Redirect to contract signing page
-                        router.push(`/orders/${mockOrderCode}/contract`);
-                    }}
-                    disabled={paymentStatus !== 'paid'}
+                    variant="outline"
+                    className="h-12 rounded-xl"
+                    onClick={handleDownloadContract}
+                    disabled={isGeneratingContract || !companyData || !representativeData}
                 >
-                    Ký hợp đồng ngay
+                    {isGeneratingContract ? (
+                        <>
+                            <ArrowPathIcon className="w-5 h-5 mr-2 animate-spin" />
+                            Đang tạo...
+                        </>
+                    ) : (
+                        <>
+                            <DocumentArrowDownIcon className="w-5 h-5 mr-2" />
+                            Tải PDF
+                        </>
+                    )}
+                </Button>
+                <Button
+                    className="h-12 rounded-xl bg-[#0F766E] hover:bg-[#0D655D]"
+                    onClick={() => {
+                        if (onViewOrder) {
+                            onViewOrder();
+                        }
+                    }}
+                >
+                    Xem đơn hàng
                 </Button>
             </div>
         </div>
