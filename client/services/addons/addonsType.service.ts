@@ -2,7 +2,11 @@ const API = process.env.NEXT_PUBLIC_API_URL;
 
 export class AddonsTypeService {
 
-    // Lấy tất cả addons type
+    /**
+     * Lấy tất cả addons type
+     * @param access_token Token truy cập
+     * @returns Danh sách addons type
+     */
     async getAllAddonsType(access_token: string) {
         try {
             const response = await fetch(`${API}/addon-types`, {
@@ -22,7 +26,12 @@ export class AddonsTypeService {
         }
     }
 
-    // Lấy addons type theo ID
+    /**
+     * Lấy addons type theo ID
+     * @param access_token Token truy cập
+     * @param id ID của addon type
+     * @returns Thông tin addon type
+     */
     async getAddonsTypeById(access_token: string, id: string) {
         try {
             const response = await fetch(`${API}/addon-types/${id}`, {
@@ -42,7 +51,11 @@ export class AddonsTypeService {
         }
     }
 
-    // Lấy addons type theo active
+    /**
+     * Lấy addons type theo active
+     * @param access_token Token truy cập
+     * @returns Danh sách addons type active
+     */
     async getAddonsTypeActive(access_token: string) {
         try {
             const response = await fetch(`${API}/addon-types/active`, {
@@ -62,7 +75,12 @@ export class AddonsTypeService {
         }
     }
 
-    // Tạo addon type mới
+    /**
+     * Tạo addon type mới
+     * @param access_token Token truy cập
+     * @param addonTypeData Dữ liệu addon type cần tạo
+     * @returns Thông tin addon type sau khi tạo
+     */
     async createAddonType(access_token: string, addonTypeData: { name: string, description: string, is_active: boolean }) {
         try {
             const response = await fetch(`${API}/addon-types`, {
@@ -85,7 +103,13 @@ export class AddonsTypeService {
         }
     }
 
-    // Cập nhật addon type
+    /**
+     * Cập nhật addon type
+     * @param access_token Token truy cập
+     * @param id ID của addon type
+     * @param addonTypeData Dữ liệu cập nhật addon type
+     * @returns Thông tin addon type sau khi cập nhật
+     */
     async updateAddonType(access_token: string, id: string, addonTypeData: { name: string, description: string, is_active: boolean }) {
         try {
             const response = await fetch(`${API}/addon-types/${id}`, {
@@ -108,7 +132,12 @@ export class AddonsTypeService {
         }
     }
 
-    // Xóa addon type
+    /**
+     * Xóa addon type
+     * @param access_token Token truy cập
+     * @param id ID của addon type
+     * @returns Kết quả xóa
+     */
     async deleteAddonType(access_token: string, id: string) {
         try {
             const response = await fetch(`${API}/addon-types/${id}`, {
@@ -130,7 +159,12 @@ export class AddonsTypeService {
         }
     }
 
-    // Xóa nhiều addon types
+    /**
+     * Xóa nhiều addon types
+     * @param access_token Token truy cập
+     * @param ids Danh sách ID addon type
+     * @returns Kết quả xóa nhiều
+     */
     async deleteManyAddonTypes(access_token: string, ids: string[]) {
         try {
             const response = await fetch(`${API}/addon-types/delete/many`, {

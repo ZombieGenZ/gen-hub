@@ -1,3 +1,5 @@
+import { OrganizationCreateRequest } from '../../types/organization/organization.type';
+
 const API = process.env.NEXT_PUBLIC_API_URL;
 
 export class OrganizationService {
@@ -59,17 +61,7 @@ export class OrganizationService {
     }
 
     // Tạo tổ chức mới
-    async createOrganization(token: string, data: {
-        name: string;
-        international_name?: string;
-        tax_code: string;
-        headquarters_address: string;
-        invoice_address?: string;
-        representative_name: string;
-        representative_title?: string;
-        representative_phone: string;
-        representative_email: string;
-    }) {
+    async createOrganization(token: string, data: OrganizationCreateRequest) {
         try {
             const response = await fetch(`${API}/organizations`, {
                 method: 'POST',
@@ -128,7 +120,11 @@ export class OrganizationService {
         }
     }
 
-    // Kiểm tra mã số thuế đã tồn tại trong hệ thống chưa
+    /**
+     * Kiểm tra mã số thuế đã tồn tại trong hệ thống chưa
+     * @param taxCode Mã số thuế
+     * @returns Kết quả kiểm tra
+     */
     async checkTaxCodeExists(taxCode: string): Promise<{ exists: boolean; organization_name?: string }> {
         try {
             const response = await fetch(`${API}/public/organizations/check-tax-code?tax_code=${encodeURIComponent(taxCode)}`, {

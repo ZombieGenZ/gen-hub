@@ -18,3 +18,37 @@ export interface ShelfWarehouseTemplate {
         blocks: number;
     };
 }
+
+// Create shelf template
+export interface CreateShelfTemplateRequest {
+    warehouse_template_id: string;
+    row_template_id: string;
+    rack_template_id: string;
+    name: string;
+    code: string;
+}
+
+// Update shelf template
+export interface UpdateShelfTemplateRequest {
+    warehouse_template_id: string;
+    row_template_id: string;
+    rack_template_id: string;
+    shelf_template_id: string;
+    name: string;
+}
+
+// Delete shelf template
+export interface DeleteShelfTemplateRequest {
+    warehouse_template_id: string;
+    row_template_id: string;
+    rack_template_id: string;
+    shelf_template_id: string;
+}
+
+// Delete many shelf template
+export interface DeleteManyShelfTemplateRequest {
+    warehouse_template_id: string;
+    row_template_id: string;
+    rack_template_id: string;
+    ids: string[];
+}

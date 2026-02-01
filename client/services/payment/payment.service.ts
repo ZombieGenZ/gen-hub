@@ -11,6 +11,11 @@ export interface Payment {
 
 export class PaymentService {
     
+    /**
+     * Lấy thông tin thanh toán theo mã
+     * @param paymentCode Mã thanh toán
+     * @returns Thông tin thanh toán
+     */
     async getPaymentByCode(paymentCode: string): Promise<Payment> {
         // Public endpoint, likely no auth needed for getting basic info, but usually auth is good practice if protected
         // Based on controller, it is not marked @Public() except webhook/callback. 

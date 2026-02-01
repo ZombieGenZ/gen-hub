@@ -11,7 +11,12 @@ const API = process.env.NEXT_PUBLIC_API_URL
 
 export class UserService {
    
-   // Lấy thông tin user
+   /**
+    * Lấy thông tin user
+    * @param access_token Token truy cập
+    * @param refresh_token Refresh token
+    * @returns Thông tin user
+    */
    async getUser(access_token: string, refresh_token: string): Promise<UserData> {
       const response = await fetch(`${API}/account/profile`, {
          headers: {
@@ -40,7 +45,11 @@ export class UserService {
       return data.data;
    }
 
-   // Refresh access token using refresh token
+   /**
+    * Refresh access token using refresh token
+    * @param refreshToken Refresh token
+    * @returns Token mới hoặc null
+    */
    private async refreshToken(refreshToken: string): Promise<TokenResponse | null> {
       const response = await fetch(`${API}/auth/refresh-token`, {
          method: 'POST',
@@ -121,7 +130,13 @@ export class UserService {
       return response.json();
    }
 
-   //Xác minh secret code verify set up
+   /**
+    * Xác minh secret code verify set up
+    * @param access_token Token truy cập
+    * @param access_verification_token Token xác minh truy cập
+    * @param twoFactorCode Mã 2FA
+    * @returns Kết quả xác minh
+    */
    async verifySetUp(access_token: string, access_verification_token: string, twoFactorCode: string) {
       const response = await fetch(`${API}/2fa/verify-setup`, {
          method: 'POST',
@@ -141,7 +156,12 @@ export class UserService {
       return response.json();
    }
 
-   // Tắt xác thực 2fa
+   /**
+    * Tắt xác thực 2fa
+    * @param token Token truy cập
+    * @param access_verification_token Token xác minh truy cập
+    * @returns Kết quả tắt 2FA
+    */
    async disableTwoFactor(token: string, access_verification_token: string) {
       const response = await fetch(`${API}/2fa/disable`, {
          method: 'POST',

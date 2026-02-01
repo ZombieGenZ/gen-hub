@@ -22,57 +22,108 @@ class AuthStorageService {
     return AuthStorageService.instance;
   }
 
+  /**
+   * Lấy token tạm thời (cho 2FA)
+   * @returns Token tạm thời hoặc null
+   */
   getTempToken(): string | null {
     return getCookie(this.TEMP_TOKEN!);
   }
 
+  /**
+   * Lấy trạng thái yêu cầu 2FA
+   * @returns Trạng thái 2FA hoặc null
+   */
   getRequies2fa(): string | null {
     return getCookie(this.REQUIES_2FA!);
   }
 
+  /**
+   * Lấy trạng thái xác minh email
+   * @returns Trạng thái xác minh email hoặc null
+   */
   getEmailVerified(): string | null {
     return getCookie(this.EMAIL_VERIFIED!);
   }
 
   // Token methods
+  /**
+   * Lấy token truy cập (Access Token)
+   * @returns Token truy cập hoặc null
+   */
   getAccessToken(): string | null {
     return getCookie(this.ACCESS_TOKEN_KEY!);
   }
 
+  /**
+   * Lấy token làm mới (Refresh Token)
+   * @returns Token làm mới hoặc null
+   */
   getRefreshToken(): string | null {
     return getCookie(this.REFRESH_TOKEN_KEY!);
   }
 
+  /**
+   * Lấy token xác minh (Verification Token)
+   * @returns Token xác minh hoặc null
+   */
   getVerificationToken(): string | null {
     return getCookie(this.VERIFICATION_TOKEN_KEY!);
   }
 
+  /**
+   * Đặt trạng thái yêu cầu 2FA
+   * @param is_2fa Trạng thái 2FA
+   */
   setRequies2fa(is_2fa: string) {
     setCookie(this.REQUIES_2FA!, is_2fa, 365)
   }
 
+  /**
+   * Lưu token tạm thời
+   * @param temp_token Token tạm thời
+   */
   setTempToken(temp_token: string) {
     setCookie(this.TEMP_TOKEN!, temp_token, 365)
   }
 
+  /**
+   * Lưu trữ cặp token (Access & Refresh)
+   * @param accessToken Token truy cập
+   * @param refreshToken Token làm mới
+   */
   setTokens(accessToken: string, refreshToken: string): void {
     setCookie(this.ACCESS_TOKEN_KEY!, accessToken, Number(process.env.NEXT_PUBLIC_JWT_ACCESS_EXPIRATION)!);
     setCookie(this.REFRESH_TOKEN_KEY!, refreshToken, Number(process.env.NEXT_PUBLIC_JWT_REFRESH_EXPIRATION)!);
   }
 
+  /**
+   * Lưu token xác minh
+   * @param token Token xác minh
+   */
   setVerificationToken(token: string): void {
     setCookie(this.VERIFICATION_TOKEN_KEY!, token, Number(process.env.NEXT_PUBLIC_ACCESS_VERIFICATION_TOKEN_EXPIRATION)!);
   }
 
+  /**
+   * Đặt trạng thái xác minh email
+   * @param is_verified Trạng thái xác minh
+   */
   setEmailVerified(is_verified: string) {
     setCookie(this.EMAIL_VERIFIED!, is_verified, 365)
   }
 
+  /**
+   * Xóa thông tin yêu cầu 2FA và token tạm
+   */
   clearRequies2fa(): void {
     removeCookie(this.REQUIES_2FA!)
     removeCookie(this.TEMP_TOKEN!)
   }
 
+  /**
+   * Xóa toàn bộ token và thông tin xác thực
+   */
   clearTokens(): void {
     removeCookie(this.EMAIL_VERIFIED!)
     removeCookie(this.ACCESS_TOKEN_KEY!);
@@ -83,15 +134,27 @@ class AuthStorageService {
   }
 
   // Theme methods
+  /**
+   * Lấy cài đặt giao diện (sáng/tối)
+   * @returns Giao diện hiện tại ('light' hoặc 'dark')
+   */
   getTheme(): 'dark' | 'light' {
     return (getCookie(this.THEME_KEY!) as 'dark' | 'light') || 'dark';
   }
 
+  /**
+   * Lưu cài đặt giao diện
+   * @param theme Giao diện ('light' hoặc 'dark')
+   */
   setTheme(theme: 'dark' | 'light'): void {
     setCookie(this.THEME_KEY!, theme, 365);
   }
 
   // Authentication state
+  /**
+   * Kiểm tra xem người dùng đã đăng nhập chưa
+   * @returns True nếu đã đăng nhập và token còn hạn, False nếu ngược lại
+   */
   isAuthenticated(): boolean {
     const token = this.getAccessToken();
     if (!token) return false;
@@ -106,6 +169,10 @@ class AuthStorageService {
     }
   }
 
+  /**
+   * Lấy thông tin người dùng từ token truy cập
+   * @returns Thông tin người dùng hoặc null nếu không có token hợp lệ
+   */
   getUser(): UserData | null {
     const token = this.getAccessToken();
     if (!token) return null;

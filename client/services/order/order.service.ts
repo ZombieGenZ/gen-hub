@@ -4,7 +4,12 @@ const API = process.env.NEXT_PUBLIC_API_URL;
 
 export class OrderService {
     
-    // Tạo đơn thuê mới
+    /**
+     * Tạo đơn thuê mới
+     * @param token Token truy cập
+     * @param data Dữ liệu đơn thuê
+     * @returns Thông tin đơn thuê sau khi tạo
+     */
     async createOrder(token: string, data: CreateOrderRequest): Promise<CreateOrderResponse> {
         try {
             const response = await fetch(`${API}/orders`, {
@@ -108,7 +113,12 @@ export class OrderService {
         }
     }
 
-    // Kiểm tra trạng thái thanh toán
+    /**
+     * Kiểm tra trạng thái thanh toán
+     * @param token Token truy cập
+     * @param orderId ID của đơn thuê
+     * @returns Trạng thái thanh toán
+     */
     async checkPaymentStatus(token: string, orderId: string): Promise<{
         status: 'pending' | 'processing' | 'paid' | 'failed';
         paid_at?: string;
@@ -136,7 +146,12 @@ export class OrderService {
         }
     }
 
-    // Lấy QR code SePay cho thanh toán
+    /**
+     * Lấy QR code SePay cho thanh toán
+     * @param token Token truy cập
+     * @param orderId ID của đơn thuê
+     * @returns Thông tin QR code thanh toán
+     */
     async getSePayQRCode(token: string, orderId: string): Promise<{
         qr_code_url: string;
         qr_content: string;

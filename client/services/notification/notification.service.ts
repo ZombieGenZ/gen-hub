@@ -3,6 +3,11 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export class NotificationService {
 
+    /**
+     * Lấy danh sách thông báo người dùng
+     * @param access_token Token truy cập
+     * @returns Danh sách thông báo
+     */
     async getNotifications(access_token: string) {
         try {
             const response = await fetch(`${API_URL}/user-notifications`, {
@@ -25,6 +30,11 @@ export class NotificationService {
         }
     }
 
+    /**
+     * Lấy danh sách thông báo toàn hệ thống
+     * @param access_token Token truy cập
+     * @returns Danh sách thông báo toàn hệ thống
+     */
     async globalNotification(access_token: string) {
         try {
             const response = await fetch(`${API_URL}/global-notifications`, {

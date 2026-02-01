@@ -4,7 +4,12 @@ const API = process.env.NEXT_PUBLIC_API_URL;
 
 export class RentalDurationTierService {
 
-    // Lấy danh sách các gói thời gian thuê
+    /**
+     * Lấy danh sách các gói thời gian thuê
+     * @param access_token Token truy cập
+     * @param params Các tham số lọc
+     * @returns Danh sách gói thời gian thuê
+     */
     async getAllRentalDuratuion(access_token: string, params: {
         keywords?: string;
         is_active?: boolean;
@@ -44,7 +49,12 @@ export class RentalDurationTierService {
         }
     }
 
-    // Lấy 1 gói thời gian thuê cụ thể
+    /**
+     * Lấy 1 gói thời gian thuê cụ thể
+     * @param access_token Token truy cập
+     * @param id ID của gói thời gian thuê
+     * @returns Thông tin gói thời gian thuê
+     */
     async getRentalDurationTier(access_token: string, id: string) {
         try {
             const response = await fetch(`${API}/rental-duration-tiers/${id}`, {
@@ -94,12 +104,22 @@ export class RentalDurationTierService {
         
     }
 
-    // Xoá gói thời gian thuê
+    /**
+     * Xoá gói thời gian thuê
+     * @param access_token Token truy cập
+     * @param id ID của gói thời gian thuê
+     * @returns Kết quả xoá
+     */
     async deleteRentalDurationTier(access_token: string, id: string) {
         
     }
 
-    // Xoá nhiều gói thời gian thuê
+    /**
+     * Xoá nhiều gói thời gian thuê
+     * @param access_token Token truy cập
+     * @param ids Danh sách ID gói thời gian thuê
+     * @returns Kết quả xoá nhiều
+     */
     async deleteMultipleRentalDurationTier(access_token: string, ids: string[]) {
         
     }

@@ -4,7 +4,11 @@ const API = process.env.NEXT_PUBLIC_API_URL
 
 export class CategoriesService {
 
-    // Lấy tất cả danh mục
+    /**
+     * Lấy tất cả danh mục
+     * @param access_token Token truy cập
+     * @returns Danh sách tất cả các danh mục
+     */
     async getAllCategories(access_token: string) {
         try {
             const response = await fetch(`${API}/categories`, {
@@ -26,7 +30,12 @@ export class CategoriesService {
         }
     }
 
-    // Lấy danh mục theo ID
+    /**
+     * Lấy danh mục theo ID
+     * @param access_token Token truy cập
+     * @param id ID của danh mục
+     * @returns Thông tin chi tiết của danh mục
+     */
     async getCategoryById(access_token: string, id: string) {
         try {
             const response = await fetch(`${API}/categories/${id}`, {
@@ -48,7 +57,11 @@ export class CategoriesService {
         }
     }
 
-    // Lấy danh mục theo active
+    /**
+     * Lấy danh mục đang hoạt động
+     * @param access_token Token truy cập
+     * @returns Danh sách các danh mục đang hoạt động
+     */
     async getActiveCategories(access_token: string) {
         try {
             const response = await fetch(`${API}/categories/active`, {
@@ -70,7 +83,12 @@ export class CategoriesService {
         }
     }
 
-    // Tạo danh mục
+    /**
+     * Tạo danh mục mới
+     * @param access_token Token truy cập
+     * @param request Dữ liệu danh mục cần tạo
+     * @returns Thông tin danh mục sau khi tạo
+     */
     async createCategory(access_token: string, request: CreateUpdateCategoryRequest) {
         try {
             const response = await fetch(`${API}/categories`, {
@@ -93,7 +111,13 @@ export class CategoriesService {
         }
     }
 
-    // Cập nhật danh mục
+    /**
+     * Cập nhật danh mục
+     * @param access_token Token truy cập
+     * @param id ID của danh mục
+     * @param request Dữ liệu cập nhật danh mục
+     * @returns Thông tin danh mục sau khi cập nhật
+     */
     async updateCategory(access_token: string, id: string, request: CreateUpdateCategoryRequest) {
         try {
             const response = await fetch(`${API}/categories/${id}`, {
@@ -116,7 +140,12 @@ export class CategoriesService {
         }
     }
 
-    // Xóa danh mục
+    /**
+     * Xóa danh mục
+     * @param access_token Token truy cập
+     * @param id ID của danh mục cần xóa
+     * @returns Kết quả xóa danh mục
+     */
     async deleteCategory(access_token: string, id: string) {
         try {
             const response = await fetch(`${API}/categories/${id}`, {

@@ -25,7 +25,12 @@ export interface OrganizationBalanceTransaction {
 }
 
 export class AccountBalanceService {
-    // Get organization balance
+    /**
+     * Lấy số dư của tổ chức
+     * @param token Token truy cập
+     * @param orgId ID của tổ chức
+     * @returns Thông tin số dư tổ chức
+     */
     async getOrganizationBalance(token: string, orgId: string): Promise<OrganizationBalance> {
         const response = await fetch(`${API}/organizations/${orgId}/balance`, {
             method: 'GET',
@@ -44,7 +49,13 @@ export class AccountBalanceService {
         return data.data;
     }
 
-    // Get organization balance transactions
+    /**
+     * Lấy lịch sử giao dịch của tổ chức
+     * @param token Token truy cập
+     * @param orgId ID của tổ chức
+     * @param params Các tham số lọc giao dịch (trang, giới hạn, loại, ngày,...)
+     * @returns Danh sách lịch sử giao dịch
+     */
     async getTransactions(token: string, orgId: string, params: {
         page?: number;
         limit?: number;
@@ -80,7 +91,14 @@ export class AccountBalanceService {
         return data.data;
     }
 
-    // Create a deposit (top-up) request
+    /**
+     * Tạo yêu cầu nạp tiền
+     * @param token Token truy cập
+     * @param orgId ID của tổ chức
+     * @param amount Số tiền nạp
+     * @param notes Ghi chú (tùy chọn)
+     * @returns Thông tin giao dịch nạp tiền (bao gồm mã QR nếu có)
+     */
     async createDeposit(token: string, orgId: string, amount: number, notes?: string) {
         const response = await fetch(`${API}/organizations/${orgId}/balance/deposit`, {
             method: 'POST',

@@ -3,7 +3,11 @@ import { AddonRequest } from "@/types/addon/addon.type";
 const API = process.env.NEXT_PUBLIC_API_URL;
 
 export class AddonsService {
-    // Lấy tất cả addons
+    /**
+     * Lấy tất cả addons
+     * @param access_token Token truy cập
+     * @returns Danh sách tất cả addons
+     */
     async getAllAddons(access_token: string) {
         try {
             const response = await fetch(`${API}/addons`, {
@@ -24,7 +28,12 @@ export class AddonsService {
         }
     }
 
-    // Lấy addon theo ID
+    /**
+     * Lấy addon theo ID
+     * @param access_token Token truy cập
+     * @param addon_id ID của addon
+     * @returns Thông tin chi tiết của addon
+     */
     async getAddonById(access_token: string, addon_id: string) {
         try {
             const response = await fetch(`${API}/addons/${addon_id}`, {
@@ -45,7 +54,11 @@ export class AddonsService {
         }
     }
 
-    // addon kích hoạt
+    /**
+     * Lấy tất cả addons đang kích hoạt
+     * @param access_token Token truy cập
+     * @returns Danh sách các addon đang hoạt động
+     */
     async getAllAddonActive(access_token: string) {
         try {
             const response = await fetch(`${API}/addons/active`, {
@@ -66,7 +79,10 @@ export class AddonsService {
         }
     }
 
-    // Lấy addon công khai cho BookingWidget (Không cần auth)
+    /**
+     * Lấy addon công khai cho BookingWidget (Không cần auth)
+     * @returns Danh sách addon công khai đang hoạt động
+     */
     async getPublicActiveAddons() {
         try {
             const response = await fetch(`${API}/public/addons/active`, {
@@ -87,7 +103,12 @@ export class AddonsService {
     }
 
 
-    //Tạo addon mới (Để kiểu any để tạm thời đến khi có kiểu dữ liệu chính xác)
+    /**
+     * Tạo addon mới
+     * @param access_token Token truy cập
+     * @param addonData Dữ liệu addon cần tạo
+     * @returns Thông tin addon sau khi tạo
+     */
     async createAddon(access_token: string, addonData: AddonRequest) {
         try {
             const response = await fetch(`${API}/addons`, {
@@ -110,7 +131,13 @@ export class AddonsService {
         }
     }
 
-    //Cập nhật addon
+    /**
+     * Cập nhật addon
+     * @param access_token Token truy cập
+     * @param addon_id ID của addon
+     * @param addonData Dữ liệu cập nhật addon
+     * @returns Thông tin addon sau khi cập nhật
+     */
     async updateAddon(access_token: string, addon_id: string, addonData: AddonRequest) {
         try {
             const response = await fetch(`${API}/addons/${addon_id}`, {
@@ -133,7 +160,12 @@ export class AddonsService {
         }
     }
 
-    //Xóa addon
+    /**
+     * Xóa addon
+     * @param access_token Token truy cập
+     * @param addon_id ID của addon cần xóa
+     * @returns Kết quả xóa addon
+     */
     async deleteAddon(access_token: string, addon_id: string) {
         try {
             const response = await fetch(`${API}/addons/${addon_id}`, {
@@ -155,7 +187,12 @@ export class AddonsService {
         }
     }
 
-    //xoá many addon
+    /**
+     * Xóa nhiều addon
+     * @param access_token Token truy cập
+     * @param addon_ids Danh sách ID các addon cần xóa
+     * @returns Kết quả xóa nhiều addon
+     */
     async deleteManyAddons(access_token: string, addon_ids: string[]) {
         try {
             const response = await fetch(`${API}/addons/delete/many`, {

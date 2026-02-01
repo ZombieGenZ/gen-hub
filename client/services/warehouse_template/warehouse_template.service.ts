@@ -80,7 +80,13 @@ export class WarehouseTemplateService {
         return data;
     }
 
-    // Lấy row kho
+    // API Row warehouse
+    /**
+     * Lấy danh sách hàng trong kho
+     * @param warehouse_id ID của kho
+     * @param access_token Token truy cập
+     * @returns Danh sách hàng trong kho
+     */
     async getWarehouseRow(warehouse_id: string, access_token: string) {
         try {
             const response = await fetch(`${API}/warehouse-templates/${warehouse_id}/rows`, {
@@ -102,7 +108,14 @@ export class WarehouseTemplateService {
         }
     }
 
-    // Lấy rack warehouse
+    // API Rack warehouse
+    /**
+     * Lấy danh sách cột trong hàng
+     * @param row_id ID của hàng
+     * @param warehouse_id ID của kho
+     * @param access_token Token truy cập
+     * @returns Danh sách cột trong hàng
+     */
     async getWarehouseRack(row_id: string, warehouse_id: string, access_token: string) {
         try {
             const response = await fetch(`${API}/warehouse-templates/${warehouse_id}/rows/${row_id}/rack`, {
@@ -125,7 +138,16 @@ export class WarehouseTemplateService {
         }
     }
 
-    // Lấy shelf warehouse
+    /**
+     * Lấy danh sách hàng trong kho
+     * @param rack_id ID của rack
+     * @param row_id ID của hàng
+     * @param warehouse_id ID của kho
+     * @param access_token Token truy cập
+     * @returns Danh sách hàng trong kho
+     */
+    // API Shelf warehouse
+
     async getWarehouseShelf(rack_id: string, row_id: string, warehouse_id: string, access_token: string) {
         try {
             const response = await fetch(`${API}/warehouse-templates/${warehouse_id}/rows/${row_id}/rack/${rack_id}/shelves`, {
@@ -148,7 +170,16 @@ export class WarehouseTemplateService {
         }
     }
 
-    // Lấy block warehouse
+    // API Block warehouse
+    /**
+     * Lấy danh sách khối trong hàng
+     * @param shelves_id ID của hàng
+     * @param rack_id ID của rack
+     * @param row_id ID của hàng
+     * @param warehouse_id ID của kho
+     * @param access_token Token truy cập
+     * @returns Danh sách khối trong hàng
+     */
     async getWarehouseBlock(shelves_id: string, rack_id: string, row_id: string, warehouse_id: string, access_token: string) {
         try {
             const response = await fetch(`${API}/warehouse-templates/${warehouse_id}/rows/${row_id}/rack/${rack_id}/shelves/${shelves_id}/blocks`, {

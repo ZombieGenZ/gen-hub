@@ -26,3 +26,35 @@ export interface RackWarehouseTemplate {
         shelves: number
     }
 }
+
+// Create rack template
+export interface CreateRackTemplateRequest {
+    warehouse_template_id: string;
+    row_template_id: string;
+    name: string;
+    code: string;
+    description: string;
+}
+
+// Update rack template
+export interface UpdateRackTemplateRequest {
+    warehouse_template_id: string;
+    row_template_id: string;
+    rack_template_id: string;
+    name: string;
+    description: string;
+}
+
+// Delete rack template
+export interface DeleteRackTemplateRequest {
+    warehouse_template_id: string;
+    row_template_id: string;
+    rack_template_id: string;
+}
+
+// Delete many rack template
+export interface DeleteManyRackTemplateRequest {
+    warehouse_template_id: string;
+    row_template_id: string;
+    ids: string[];
+}

@@ -2,7 +2,12 @@ const API = process.env.NEXT_PUBLIC_API_URL
 
 export class RentalContractService {
 
-    // Danh sách hợp đồng
+    /**
+     * Danh sách hợp đồng
+     * @param token Token truy cập
+     * @param params Các tham số lọc
+     * @returns Danh sách hợp đồng
+     */
     async getRentalContracts(token: string, params: {
         keywords?: string;
         status?: string;
@@ -44,7 +49,12 @@ export class RentalContractService {
         }
     }
 
-    // Tạo hợp đồng mới
+    /**
+     * Tạo hợp đồng mới
+     * @param token Token truy cập
+     * @param data Dữ liệu hợp đồng
+     * @returns Kết quả tạo hợp đồng
+     */
     async createRentalContract(token: string, data: any) {
         try {
             const response = await fetch(`${API}/rental-contracts`, {
@@ -68,7 +78,12 @@ export class RentalContractService {
         }
     }
 
-    // Danh sách hợp đồng bằng ID
+    /**
+     * Lấy chi tiết hợp đồng theo ID
+     * @param token Token truy cập
+     * @param id ID của hợp đồng
+     * @returns Chi tiết hợp đồng
+     */
     async getRentalContractById(token: string, id: string) {
         try {
             const response = await fetch(`${API}/rental-contracts/${id}`, {

@@ -3,6 +3,13 @@ import { AmenityRequest } from "@/types/amenities/amenities.type";
 const API = process.env.NEXT_PUBLIC_API_URL;
 
 export class AmenitiesService {
+
+    /**
+     * Lấy tất cả tiện nghi
+     * @param access_token Token truy cập
+     * @param params Tham số truy vấn
+     * @returns Danh sách tiện nghi
+     */
     async getAllAmenities(access_token: string, params: {
         keywords?: string;
         is_active?: boolean;
@@ -42,7 +49,12 @@ export class AmenitiesService {
         }
     }
 
-    // Lấy thông tin một tiện nghi
+    /**
+     * Lấy thông tin một tiện nghi
+     * @param access_token Token truy cập
+     * @param amenity_id ID của tiện nghi
+     * @returns Thông tin tiện nghi
+     */
     async getAmenity(access_token: string, amenity_id: string) {
         try {
             const response = await fetch(`${API}/amenities/${amenity_id}`, {
@@ -62,7 +74,12 @@ export class AmenitiesService {
         }
     }
 
-    // Tạo tiện nghi mới
+    /**
+     * Tạo tiện nghi mới
+     * @param access_token Token truy cập
+     * @param amenityData Dữ liệu tiện nghi cần tạo
+     * @returns Thông tin tiện nghi sau khi tạo
+     */
     async createAmenity(access_token: string, amenityData: AmenityRequest) {
         try {
             const response = await fetch(`${API}/amenities`, {
@@ -84,7 +101,13 @@ export class AmenitiesService {
         }
     }
 
-    // Cập nhật tiện nghi
+    /**
+     * Cập nhật tiện nghi
+     * @param access_token Token truy cập
+     * @param amenity_id ID của tiện nghi
+     * @param amenityData Dữ liệu cập nhật tiện nghi
+     * @returns Thông tin tiện nghi sau khi cập nhật
+     */
     async updateAmenity(access_token: string, amenity_id: string, amenityData: AmenityRequest) {
         try {
             const response = await fetch(`${API}/amenities/${amenity_id}`, {
@@ -106,7 +129,12 @@ export class AmenitiesService {
         }
     }
 
-    //Xoá tiện nghi
+    /**
+     * Xoá tiện nghi
+     * @param access_token Token truy cập
+     * @param amenity_id ID của tiện nghi
+     * @returns Thông tin tiện nghi sau khi xoá
+     */
     async deleteAmenity(access_token: string, amenity_id: string) {
         try {
             const response = await fetch(`${API}/amenities/${amenity_id}`, {
@@ -127,7 +155,12 @@ export class AmenitiesService {
         }
     }
 
-    //Xoá nhiều tiện nghi
+    /**
+     * Xoá nhiều tiện nghi
+     * @param access_token Token truy cập
+     * @param amenity_ids Danh sách ID của tiện nghi cần xoá
+     * @returns Thông tin tiện nghi sau khi xoá
+     */
     async deleteMultipleAmenities(access_token: string, amenity_ids: string[]) {
         try {
             const response = await fetch(`${API}/amenities/delete-multiple`, {

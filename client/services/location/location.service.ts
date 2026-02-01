@@ -5,7 +5,11 @@ const API = process.env.NEXT_PUBLIC_API_URL
 
 export class LocationService {
 
-    //Lấy danh sách tỉnh/thành phố
+    /**
+     * Lấy danh sách tỉnh/thành phố
+     * @param params Tham số truy vấn
+     * @returns Danh sách tỉnh/thành phố
+     */
     async getProvinces(params: {
         keywords?: string;
         is_active?: boolean;
@@ -43,7 +47,11 @@ export class LocationService {
         }
     }
 
-    //Lấy thông tin tỉnh theo ID
+    /**
+     * Lấy thông tin tỉnh theo ID
+     * @param province_id ID của tỉnh/thành phố
+     * @returns Thông tin tỉnh/thành phố
+     */
     async getProvincesById(province_id: string): Promise<Province> {
         try {
             const response = await fetch(`${API}/provinces/${province_id}`);
@@ -58,7 +66,11 @@ export class LocationService {
         }
     }
 
-    //Lấy danh sách phường/xã
+    /**
+     * Lấy danh sách phường/xã
+     * @param params Tham số truy vấn
+     * @returns Danh sách phường/xã
+     */
     async getWards(params: {
         keywords?: string;
         is_active?: boolean;
@@ -67,7 +79,7 @@ export class LocationService {
         page?: number;
         limit?: number;
         type?: string;
-    } = {}): Promise<Ward> {
+    } = {}): Promise<Ward[]> {
         const query = new URLSearchParams();
         
         if (params.keywords) query.append('keywords', params.keywords);
@@ -94,7 +106,11 @@ export class LocationService {
         }
     }
 
-    //Lấy thông tin phường/xã theo ID
+    /**
+     * Lấy thông tin phường/xã theo ID
+     * @param ward_id ID của phường/xã
+     * @returns Thông tin phường/xã
+     */
     async getWardById(ward_id: string): Promise<Ward> {
         try {
             const response = await fetch(`${API}/wards/${ward_id}`);

@@ -4,8 +4,11 @@ import { authStorage } from './auth-storage.service';
 const API = process.env.NEXT_PUBLIC_API_URL
 
 export class AuthService {
-
-    // Đăng ký
+    /**
+     * Đăng ký
+     * @param input Dữ liệu đăng ký
+     * @returns Dữ liệu phản hồi
+     */
     async register(input: RegisterInput) {
         const response = await fetch(`${API}/auth/register`, {
             method: 'POST',
@@ -23,7 +26,11 @@ export class AuthService {
         return response.json();
     }
 
-    // Đăng nhập
+    /**
+     * Đăng nhập
+     * @param input Dữ liệu đăng nhập
+     * @returns Dữ liệu phản hồi
+     */
     async login(input: LoginInput) {
         const response = await fetch(`${API}/auth/login`, {
             method: 'POST',
@@ -55,6 +62,13 @@ export class AuthService {
         }
     }
 
+    /**
+     * Đăng nhập 2FA
+     * @param temp_token Token tạm thời
+     * @param auth_code Mã xác nhận 2FA
+     * @param backup_code Mã резерв
+     * @returns Dữ liệu phản hồi
+     */
     async login2fa(temp_token: string, auth_code?: string, backup_code?: string) {
         try {
             const response = await fetch(`${API}/2fa/verify-login`, {
@@ -87,7 +101,14 @@ export class AuthService {
         }
     }
 
-    //Xác minh bằng mật khẩu
+    /**
+     * Xác minh bằng mật khẩu
+     * @param token Token xác thực
+     * @param password Mật khẩu (tùy chọn)
+     * @param auth_code Mã xác thực 2FA (tùy chọn)
+     * @param backup_code Mã dự phòng (tùy chọn)
+     * @returns Kết quả xác minh
+     */
     async verify_password(token: string, password?: string, auth_code?: string, backup_code?: string) {
         const response = await fetch(`${API}/auth/verify-access`, {
             method: 'POST',
@@ -111,7 +132,12 @@ export class AuthService {
         return data;
     }
 
-    //Đăng xuất
+    /**
+     * Đăng xuất
+     * @param token Token truy cập
+     * @param refresh_token Token làm mới
+     * @returns Kết quả đăng xuất
+     */
     async logout(token: string, refresh_token: string) {
         try {
             const response = await fetch(`${API}/auth/logout`, {
@@ -138,7 +164,11 @@ export class AuthService {
         }
     }
 
-    //Đăng xuất tất cả thiết bị
+    /**
+     * Đăng xuất tất cả thiết bị
+     * @param token Token truy cập
+     * @returns Kết quả đăng xuất tất cả thiết bị
+     */
     async logoutAllDevices(token: string) {
         try {
             const response = await fetch(`${API}/auth/logout-all`, {
@@ -164,7 +194,11 @@ export class AuthService {
         }
     }
 
-    // Lấy token mới
+    /**
+     * Lấy token mới từ refresh token
+     * @param refresh_token Token làm mới
+     * @returns Cặp token mới (access và refresh)
+     */
     async getNewToken(refresh_token: string) {
         const response = await fetch(`${API}/auth/refresh`, {
             method: 'POST',
@@ -190,7 +224,12 @@ export class AuthService {
         return data;
     }
 
-    //Xác minh email
+    /**
+     * Xác minh email
+     * @param access_token Token truy cập
+     * @param token Token xác minh email
+     * @returns Kết quả xác minh email
+     */
     async confirmToken(access_token: string, token: string) {
         const response = await fetch(`${API}/auth/verify-email`, {
             method: 'POST',
@@ -209,7 +248,11 @@ export class AuthService {
         return response.json();
     }
 
-    //Xác minh token
+    /**
+     * Gửi lại email xác minh
+     * @param token Token truy cập
+     * @returns Kết quả gửi lại email xác minh
+     */
     async confirmEmail(token: string) {
         const response = await fetch(`${API}/auth/resend-verification`, {
             method: 'POST',
@@ -227,7 +270,11 @@ export class AuthService {
         return response.json();
     }
 
-    // Quên mật khẩu
+    /**
+     * Yêu cầu đặt lại mật khẩu (Quên mật khẩu)
+     * @param input Thông tin yêu cầu (email)
+     * @returns Kết quả yêu cầu đặt lại mật khẩu
+     */
     async forgotpassword(input: ForgotPasswordInput) {
         const response = await fetch(`${API}/auth/forgot-password`, {
             method: 'POST',
@@ -246,7 +293,11 @@ export class AuthService {
         return response.json();
     }
 
-    // kiểm tra token sửa mật khẩu
+    /**
+     * Kiểm tra token đặt lại mật khẩu
+     * @param token Token đặt lại mật khẩu
+     * @returns Kết quả kiểm tra token
+     */
     async checkToken(token: string) {
         const response = await fetch(`${API}/auth/verify-forgot-password-token`, {
             method: 'POST',
@@ -265,7 +316,11 @@ export class AuthService {
         return response.json();
     }
 
-    // Thay đổi mật khẩu quên
+    /**
+     * Đặt lại mật khẩu mới
+     * @param req Thông tin đặt lại mật khẩu
+     * @returns Kết quả đặt lại mật khẩu
+     */
     async changePass(req: ChangePass) {
         const response = await fetch(`${API}/auth/reset-password`, {
             method: 'POST',
@@ -289,7 +344,11 @@ export class AuthService {
         return response.json();
     }
 
-    // Gửi email quên mật khẩu
+    /**
+     * Gửi email quên mật khẩu (Deprecated? Use forgotpassword instead)
+     * @param email Email người dùng
+     * @returns Kết quả gửi email
+     */
     async forgotPass(email: string) {
         const response = await fetch(`${API}/auth/forgot-password`, {
             method: 'POST',
@@ -308,7 +367,12 @@ export class AuthService {
         return response.json();
     }
 
-    // Generate backup code
+    /**
+     * Tạo mã dự phòng mới
+     * @param access_token Token truy cập
+     * @param access_verification_token Token xác minh truy cập
+     * @returns Danh sách mã dự phòng mới
+     */
     async generateBackupcode(access_token: string, access_verification_token: string) {
         const response = await fetch(`${API}/2fa/regenerate-backup-codes`, {
             method: "POST",

@@ -4,7 +4,11 @@ const API = process.env.NEXT_PUBLIC_API_URL
 
 export class IsuranceService {
 
-    // Lấy danh sách bảo hiểm
+    /**
+     * Lấy danh sách bảo hiểm
+     * @param access_token Token truy cập
+     * @returns Danh sách bảo hiểm
+     */
     async getAllInsurance(access_token: string) {
         try {
             const response = await fetch(`${API}/insurances`, {
@@ -28,7 +32,11 @@ export class IsuranceService {
         }
     }
 
-    // Lấy bảo hiển theo active
+    /**
+     * Lấy bảo hiển theo active
+     * @param access_token Token truy cập
+     * @returns Danh sách bảo hiểm active
+     */
     async getActiveInsurance(access_token: string) {
         try {
             const response = await fetch(`${API}/insurances/active`, {
@@ -50,7 +58,10 @@ export class IsuranceService {
         }
     }
 
-    // Lấy bảo hiểm công khai cho BookingWidget (Không cần auth)
+    /**
+     * Lấy bảo hiểm công khai cho BookingWidget (Không cần auth)
+     * @returns Danh sách bảo hiểm công khai
+     */
     async getPublicActiveInsurance() {
         try {
             const response = await fetch(`${API}/public/insurances/active`, {
@@ -72,7 +83,12 @@ export class IsuranceService {
     }
 
 
-    // Lấy bảo hiểm theo ID
+    /**
+     * Lấy bảo hiểm theo ID
+     * @param access_token Token truy cập
+     * @param id ID của bảo hiểm
+     * @returns Thông tin bảo hiểm
+     */
     async getInsuranceById(access_token: string, id: string) {
         try {
             const response = await fetch(`${API}/insurances/${id}`, {
@@ -93,7 +109,12 @@ export class IsuranceService {
         }
     }
 
-    // Tạo bảo hiểm
+    /**
+     * Tạo bảo hiểm
+     * @param access_token Token truy cập
+     * @param request Dữ liệu tạo bảo hiểm
+     * @returns Thông tin bảo hiểm sau khi tạo
+     */
     async createInsurance(access_token: string, request: CreateInsuranceRequest) {
         try {
             const response = await fetch(`${API}/insurances`, {
@@ -117,7 +138,13 @@ export class IsuranceService {
         }
     }
 
-    // Cập nhật bảo hiểm
+    /**
+     * Cập nhật bảo hiểm
+     * @param access_token Token truy cập
+     * @param id ID của bảo hiểm
+     * @param request Dữ liệu cập nhật bảo hiểm
+     * @returns Thông tin bảo hiểm sau khi cập nhật
+     */
     async updateInsurance(access_token: string, id: string, request: UpdateInsuranceRequest) {
         try {
             const response = await fetch(`${API}/insurances/${id}`, {
@@ -140,7 +167,12 @@ export class IsuranceService {
         }
     }
 
-    // Xóa bảo hiểm
+    /**
+     * Xóa bảo hiểm
+     * @param access_token Token truy cập
+     * @param id ID của bảo hiểm
+     * @returns Kết quả xóa
+     */
     async deleteInsurance(access_token: string, id: string) {
         try {
             const response = await fetch(`${API}/insurances/${id}`, {
@@ -162,7 +194,12 @@ export class IsuranceService {
         }
     }
 
-    // Xóa nhiều bảo hiểm
+    /**
+     * Xóa nhiều bảo hiểm
+     * @param access_token Token truy cập
+     * @param ids Danh sách ID bảo hiểm
+     * @returns Kết quả xóa nhiều
+     */
     async deleteManyInsurances(access_token: string, ids: string[]) {
         try {
             const response = await fetch(`${API}/insurances/delete/many`, {

@@ -19,3 +19,41 @@ export interface BlockWarehouseTemplate {
     updated_by: string | null;
     deleted_by: string | null;
 }
+
+// Create block template
+export interface CreateBlockTemplateRequest {
+    warehouse_template_id: string;
+    row_template_id: string;
+    rack_template_id: string;
+    shelf_template_id: string;
+    name: string;
+    code: string;
+}
+
+// Update block template
+export interface UpdateBlockTemplateRequest {
+    warehouse_template_id: string;
+    row_template_id: string;
+    rack_template_id: string;
+    shelf_template_id: string;
+    block_template_id: string;
+    name: string;
+}
+
+// Delete block template
+export interface DeleteBlockTemplateRequest {
+    warehouse_template_id: string;
+    row_template_id: string;
+    rack_template_id: string;
+    shelf_template_id: string;
+    block_template_id: string;
+}
+
+// Delete many block template
+export interface DeleteManyBlockTemplateRequest {
+    warehouse_template_id: string;
+    row_template_id: string;
+    rack_template_id: string;
+    shelf_template_id: string;
+    ids: string[];
+}

@@ -3,7 +3,11 @@ import { CouponRequest } from "@/types/coupons/coupon.type"
 const API = process.env.NEXT_PUBLIC_API_URL
 
 export class CouponService {
-    // Lấy tất cả coupon người dùng
+    /**
+     * Lấy tất cả coupon người dùng
+     * @param access_token Token truy cập
+     * @returns Danh sách coupon
+     */
     async getAllCoupons(access_token: string) {
         try {
             const response = await fetch(`${API}/coupons`, {
@@ -27,7 +31,12 @@ export class CouponService {
         }
     }
 
-    // Lấy coupon theo id
+    /**
+     * Lấy coupon theo id
+     * @param access_token Token truy cập
+     * @param id ID của coupon
+     * @returns Thông tin coupon
+     */
     async getCouponById(access_token: string, id: string) {
         try {
             const response = await fetch(`${API}/coupons/${id}`, {
@@ -49,7 +58,11 @@ export class CouponService {
         }
     }
     
-    //Lấy coupon công khai
+    /**
+     * Lấy coupon công khai
+     * @param access_token Token truy cập
+     * @returns Danh sách coupon công khai
+     */
     async getPublicCoupons(access_token: string) {
         try {
             const response = await fetch(`${API}/public/coupons`, {
@@ -71,7 +84,11 @@ export class CouponService {
         }
     }
 
-    // Lấy coupon đã lưu
+    /**
+     * Lấy coupon đã lưu
+     * @param access_token Token truy cập
+     * @returns Danh sách coupon đã lưu
+     */
     async getSavedCoupons(access_token: string) {
         try {
             const response = await fetch(`${API}/public/coupons/saved`, {
@@ -91,7 +108,12 @@ export class CouponService {
         }
     }
 
-    // Lưu coupon
+    /**
+     * Lưu coupon
+     * @param access_token Token truy cập
+     * @param id ID của coupon
+     * @returns Kết quả lưu coupon
+     */
     async saveCoupon(access_token: string, id: string) {
         try {
             const response = await fetch(`${API}/public/coupons/${id}/save`, {
@@ -111,7 +133,12 @@ export class CouponService {
         }
     }
 
-    // Bỏ lưu coupon
+    /**
+     * Bỏ lưu coupon
+     * @param access_token Token truy cập
+     * @param id ID của coupon
+     * @returns Kết quả bỏ lưu coupon
+     */
     async unsaveCoupon(access_token: string, id: string) {
         try {
             const response = await fetch(`${API}/public/coupons/${id}/save`, {
@@ -131,8 +158,14 @@ export class CouponService {
         }
     }
 
-    // Kiểm tra coupon cho BookingWidget
-    async validateCoupon(code: string, orderDetails: {
+    /**
+     * Kiểm tra coupon cho BookingWidget
+     * @param access_token Token truy cập
+     * @param code Mã giảm giá
+     * @param orderDetails Thông tin đơn hàng
+     * @returns Kết quả kiểm tra coupon
+     */
+    async validateCoupon(access_token: string, code: string, orderDetails: {
         warehouse_template_id?: string;
         row_template_ids?: string[];
         total_amount: number;
@@ -143,6 +176,7 @@ export class CouponService {
             const response = await fetch(`${API}/public/coupons/validate`, {
                 method: 'POST',
                 headers: {
+                    'Authorization': `Bearer ${access_token}`,
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({ code, ...orderDetails })
@@ -168,7 +202,12 @@ export class CouponService {
     }
 
 
-    //Tạo coupon
+    /**
+     * Tạo coupon
+     * @param access_token Token truy cập
+     * @param coupon Dữ liệu coupon cần tạo
+     * @returns Thông tin coupon sau khi tạo
+     */
     async createCoupon(access_token: string, coupon: CouponRequest) {
         try {
             const response = await fetch(`${API}/coupons`, {
@@ -193,7 +232,13 @@ export class CouponService {
         }
     }
 
-    //Cập nhật coupon
+    /**
+     * Cập nhật coupon
+     * @param access_token Token truy cập
+     * @param id ID của coupon
+     * @param coupon Dữ liệu coupon cần cập nhật
+     * @returns Thông tin coupon sau khi cập nhật
+     */
     async updateCoupon(access_token: string, id: string, coupon: CouponRequest) {
         try {
             const response = await fetch(`${API}/coupons/${id}`, {
@@ -214,7 +259,12 @@ export class CouponService {
         }
     }
 
-    //Xóa coupon
+    /**
+     * Xóa coupon
+     * @param access_token Token truy cập
+     * @param id ID của coupon
+     * @returns Kết quả xóa coupon
+     */
     async deleteCoupon(access_token: string, id: string) {
         try {
             const response = await fetch(`${API}/coupons/${id}`, {
@@ -234,7 +284,12 @@ export class CouponService {
         }
     }
 
-    //Xóa nhiều coupon
+    /**
+     * Xóa nhiều coupon
+     * @param access_token Token truy cập
+     * @param ids Danh sách ID coupon
+     * @returns Kết quả xóa nhiều coupon
+     */
     async deleteManyCoupons(access_token: string, ids: string[]) {
         try {
             const response = await fetch(`${API}/coupons/delete/many`, {

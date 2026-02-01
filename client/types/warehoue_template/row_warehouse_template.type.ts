@@ -90,3 +90,33 @@ export interface Row_Detail_template extends Row_template {
   insurance_gifts: Insurance[];
   racks: unknown[];
 }
+
+// create row template
+export interface CreateRowTemplateRequest {
+  warehouse_template_id: string;
+  name: string;
+  code: string;
+  price_per_month: number;
+  is_active: boolean;
+}
+
+// update row template
+export interface UpdateRowTemplateRequest {
+  warehouse_template_id: string;
+  row_template_id: string;
+  name: string;
+  description: string;
+  price_per_month: number;
+}
+
+// Delete row template
+export interface DeleteRowTemplateRequest {
+  warehouse_template_id: string;
+  row_template_id: string;
+}
+
+// Delete many row template
+export interface DeleteManyRowTemplateRequest {
+  warehouse_template_id: string;
+  ids: string[];
+}
