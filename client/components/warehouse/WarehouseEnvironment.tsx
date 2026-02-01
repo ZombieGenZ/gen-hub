@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useRef } from 'react';
+import React, { useMemo, useRef } from 'react';
 import * as THREE from 'three';
 
 // Warehouse walls and ceiling structure
@@ -14,7 +14,7 @@ export const WarehouseStructure = () => {
       {/* Back wall */}
       <mesh position={[warehouseWidth / 2 - 10, warehouseHeight / 2, -5]} receiveShadow>
         <boxGeometry args={[warehouseWidth + 20, warehouseHeight, 0.3]} />
-        <meshStandardMaterial 
+        <meshStandardMaterial
           color={0x8899aa}
           metalness={0.4}
           roughness={0.6}
@@ -24,7 +24,7 @@ export const WarehouseStructure = () => {
       {/* Left wall */}
       <mesh position={[-15, warehouseHeight / 2, warehouseDepth / 2 - 5]} rotation={[0, Math.PI / 2, 0]} receiveShadow>
         <boxGeometry args={[warehouseDepth + 10, warehouseHeight, 0.3]} />
-        <meshStandardMaterial 
+        <meshStandardMaterial
           color={0x8899aa}
           metalness={0.4}
           roughness={0.6}
@@ -63,18 +63,18 @@ export const WarehouseStructure = () => {
 // Warehouse floor with markings
 export const WarehouseFloor = () => {
   const floorSize = 200;
-  
+
   // Create floor texture procedurally
   const floorMaterial = useMemo(() => {
     const canvas = document.createElement('canvas');
     canvas.width = 512;
     canvas.height = 512;
     const ctx = canvas.getContext('2d')!;
-    
+
     // Base concrete color
     ctx.fillStyle = '#7a8590';
     ctx.fillRect(0, 0, 512, 512);
-    
+
     // Add noise/texture
     for (let i = 0; i < 3000; i++) {
       const x = Math.random() * 512;
@@ -83,12 +83,12 @@ export const WarehouseFloor = () => {
       ctx.fillStyle = `rgba(${128 + brightness}, ${140 + brightness}, ${150 + brightness}, 0.3)`;
       ctx.fillRect(x, y, 2 + Math.random() * 3, 2 + Math.random() * 3);
     }
-    
+
     const texture = new THREE.CanvasTexture(canvas);
     texture.wrapS = THREE.RepeatWrapping;
     texture.wrapT = THREE.RepeatWrapping;
     texture.repeat.set(20, 20);
-    
+
     return new THREE.MeshStandardMaterial({
       map: texture,
       roughness: 0.8,
@@ -109,7 +109,7 @@ export const WarehouseFloor = () => {
       {/* Epoxy reflective overlay in work areas */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[20, 0.01, 15]} receiveShadow>
         <planeGeometry args={[50, 40]} />
-        <meshStandardMaterial 
+        <meshStandardMaterial
           color={0x8a9aa8}
           roughness={0.3}
           metalness={0.2}
@@ -124,15 +124,15 @@ export const WarehouseFloor = () => {
 // Floor markings component
 const FloorMarkings = () => {
   const markings = useMemo(() => {
-    const lines: JSX.Element[] = [];
-    
+    const lines: React.JSX.Element[] = [];
+
     // Yellow safety lines along aisles
     for (let i = 0; i < 6; i++) {
       // Horizontal lines
       lines.push(
-        <mesh 
-          key={`h-line-${i}`} 
-          rotation={[-Math.PI / 2, 0, 0]} 
+        <mesh
+          key={`h-line-${i}`}
+          rotation={[-Math.PI / 2, 0, 0]}
           position={[-10 + i * 10, 0.02, 20]}
         >
           <planeGeometry args={[0.15, 50]} />
@@ -140,13 +140,13 @@ const FloorMarkings = () => {
         </mesh>
       );
     }
-    
+
     // Vertical lines
     for (let i = 0; i < 5; i++) {
       lines.push(
-        <mesh 
-          key={`v-line-${i}`} 
-          rotation={[-Math.PI / 2, 0, Math.PI / 2]} 
+        <mesh
+          key={`v-line-${i}`}
+          rotation={[-Math.PI / 2, 0, Math.PI / 2]}
           position={[20, 0.02, -5 + i * 10]}
         >
           <planeGeometry args={[0.15, 60]} />
@@ -158,9 +158,9 @@ const FloorMarkings = () => {
     // Zebra crossing at entry
     for (let i = 0; i < 8; i++) {
       lines.push(
-        <mesh 
-          key={`zebra-${i}`} 
-          rotation={[-Math.PI / 2, 0, 0]} 
+        <mesh
+          key={`zebra-${i}`}
+          rotation={[-Math.PI / 2, 0, 0]}
           position={[-12, 0.02, -3 + i * 1.5]}
         >
           <planeGeometry args={[3, 0.8]} />
@@ -168,7 +168,7 @@ const FloorMarkings = () => {
         </mesh>
       );
     }
-    
+
     return lines;
   }, []);
 
@@ -178,16 +178,16 @@ const FloorMarkings = () => {
 // LED lights on ceiling
 export const WarehouseLights = () => {
   const lightRef = useRef<THREE.Group>(null);
-  
+
   const lights = useMemo(() => {
-    const fixtures: JSX.Element[] = [];
-    
+    const fixtures: React.JSX.Element[] = [];
+
     // LED strip lights
     for (let x = 0; x < 5; x++) {
       for (let z = 0; z < 4; z++) {
         const posX = x * 12 - 5;
         const posZ = z * 10;
-        
+
         fixtures.push(
           <group key={`light-${x}-${z}`} position={[posX, 18, posZ]}>
             {/* Light fixture body */}
@@ -198,7 +198,7 @@ export const WarehouseLights = () => {
             {/* LED panel (emissive) */}
             <mesh position={[0, -0.1, 0]}>
               <boxGeometry args={[3.8, 0.05, 0.35]} />
-              <meshStandardMaterial 
+              <meshStandardMaterial
                 color={0xffffee}
                 emissive={0xffffee}
                 emissiveIntensity={0.8}
@@ -216,7 +216,7 @@ export const WarehouseLights = () => {
         );
       }
     }
-    
+
     return fixtures;
   }, []);
 
