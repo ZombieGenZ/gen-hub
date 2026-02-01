@@ -8,11 +8,21 @@ import { Warehouse } from '@/types/warehoue_template/warehouse_template.type' //
 import { authStorage } from '@/services/auth/auth-storage.service'
 import { WarehouseTemplateService } from '@/services/warehouse_template/warehouse_template.service'
 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { MoreVertical, Edit, Trash } from "lucide-react"
+
 interface WarehouseCardProps {
     warehouse: Warehouse
+    onEdit?: (warehouse: Warehouse) => void
+    onDelete?: (warehouse: Warehouse) => void
 }
 
-export function WarehouseCard({ warehouse }: WarehouseCardProps) {
+export function WarehouseCard({ warehouse, onEdit, onDelete }: WarehouseCardProps) {
     const router = useRouter()
     const [imageUrl, setImageUrl] = useState<string>('/placeholder.png')
     const [isLoading, setIsLoading] = useState(true)
@@ -66,6 +76,31 @@ export function WarehouseCard({ warehouse }: WarehouseCardProps) {
                     >
                         {warehouse.is_active ? 'Hoạt động' : 'Bảo trì'}
                     </span>
+                    {(onEdit || onDelete) && (
+                         <div onClick={(e) => e.stopPropagation()}>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <button className="h-6 w-6 rounded-full bg-white/90 hover:bg-white flex items-center justify-center shadow-sm backdrop-blur-sm transition-all">
+                                  <MoreVertical className="h-3 w-3 text-slate-600" />
+                                </button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                {onEdit && (
+                                  <DropdownMenuItem onClick={() => onEdit(warehouse)}>
+                                    <Edit className="mr-2 h-4 w-4" />
+                                    Chỉnh sửa
+                                  </DropdownMenuItem>
+                                )}
+                                {onDelete && (
+                                  <DropdownMenuItem onClick={() => onDelete(warehouse)} className="text-red-600 focus:text-red-600">
+                                    <Trash className="mr-2 h-4 w-4" />
+                                    Xóa
+                                  </DropdownMenuItem>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                         </div>
+                    )}
                 </div>
             </div>
 

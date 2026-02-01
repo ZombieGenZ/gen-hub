@@ -4,7 +4,12 @@ const API = process.env.NEXT_PUBLIC_API_URL
 
 export class OrganizationApiKeyService {
    
-   // Lấy thông tin api key của organization
+   /**
+    * Lấy thông tin API key của tổ chức
+    * @param access_token Token truy cập
+    * @param organization_id ID của tổ chức
+    * @returns Thông tin API key của tổ chức hoặc null
+    */
    async getOrganizationApiKey(access_token: string, organization_id: string): Promise<OrganizationApiKeyData | null> {
       try {
          const response = await fetch(`${API}/organizations/${organization_id}/api-key`, {

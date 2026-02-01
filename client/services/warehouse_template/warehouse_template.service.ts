@@ -3,6 +3,12 @@ const API = process.env.NEXT_PUBLIC_API_URL
 export class WarehouseTemplateService {
 
     // Lấy danh sách kho
+    /**
+     * Lấy danh sách kho
+     * @param token Token truy cập
+     * @param params Tham số lọc
+     * @returns Danh sách kho
+     */
     async getWarehouseTemplates(token: string, params: {
         keywords?: string;
         is_active?: boolean;
@@ -44,6 +50,12 @@ export class WarehouseTemplateService {
     }
 
     // Lấy kho bằng ID
+    /**
+     * Lấy kho hàng bằng ID
+     * @param token Token truy cập
+     * @param id ID của kho hàng
+     * @returns Thông tin kho hàng
+     */
     async getWarehouseTemplateById(token: string, id: string) {
         const response = await fetch(`${API}/warehouse-templates/${id}`, {
             method: 'GET',
@@ -60,6 +72,78 @@ export class WarehouseTemplateService {
         
         const data = await response.json();
         return data.data;
+    }
+
+    /**
+     * Tạo mới template kho hàng
+     * @param token Token truy cập
+     * @param data Dữ liệu tạo mới
+     * @returns Kết quả tạo mới
+     */
+    async createWarehouseTemplate(token: string, data: any) {
+        const response = await fetch(`${API}/warehouse-templates`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Failed to create warehouse template');
+        }
+        
+        return await response.json();
+    }
+
+    /**
+     * Cập nhật template kho hàng
+     * @param token Token truy cập
+     * @param id ID của template
+     * @param data Dữ liệu cập nhật
+     * @returns Kết quả cập nhật
+     */
+    async updateWarehouseTemplate(token: string, id: string, data: any) {
+        const response = await fetch(`${API}/warehouse-templates/${id}`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Failed to update warehouse template');
+        }
+        
+        return await response.json();
+    }
+
+    /**
+     * Xóa template kho hàng
+     * @param token Token truy cập
+     * @param id ID của template
+     * @returns Kết quả xóa
+     */
+    async deleteWarehouseTemplate(token: string, id: string) {
+        const response = await fetch(`${API}/warehouse-templates/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Failed to delete warehouse template');
+        }
+        
+        return await response.json();
     }
 
     // Lấy ảnh từng kho

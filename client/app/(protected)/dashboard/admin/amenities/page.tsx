@@ -59,8 +59,9 @@ export default function AmenitiesPage() {
             if (!token) return;
 
             const data = await amenitiesService.getAllAmenities(token);
-            if (Array.isArray(data)) {
-                setAmenities(data);
+            console.log(data);
+            if (Array.isArray(data.data.items)) {
+                setAmenities(data.data.items);
             }
         } catch (error) {
             console.error("Failed to fetch amenities", error);

@@ -1,6 +1,5 @@
 "use client";
 
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,8 +47,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { Organization } from "@/types/organization/organization.type";
+import { CreateContractModal } from "@/components/dashboard/CreateContractModal";
+import { OrganizationService } from "@/services/organization/organization.service";
+import React from "react";
 
 const rentalContractService = new RentalContractService();
+const organizationService = new OrganizationService();
 
 interface Contract {
     id: string;
@@ -84,6 +87,9 @@ const ContractsPage = () => {
     const [page, setPage] = useState(1);
     const [limit] = useState(10);
     const [total, setTotal] = useState(0);
+
+    // Modal state
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
     // Filters
     const [searchTerm, setSearchTerm] = useState("");
@@ -121,6 +127,30 @@ const ContractsPage = () => {
 
             setIsLoading(true);
             setError(null);
+
+            // Fetch organizations if empty
+            if (organizations.length === 0) {
+                try {
+                    const response: any = await organizationService.getOrganizations(token, { limit: 100, is_active: true });
+                    let orgs: Organization[] = [];
+                    
+                    if (Array.isArray(response)) {
+                        orgs = response;
+                    } else if (response?.data && Array.isArray(response.data)) {
+                        orgs = response.data;
+                    } else if (response?.items && Array.isArray(response.items)) {
+                        orgs = response.items;
+                    } else if (response?.data?.items && Array.isArray(response.data.items)) {
+                        orgs = response.data.items;
+                    }
+
+                    if (orgs.length > 0) {
+                        setOrganizations(orgs);
+                    }
+                } catch (err) {
+                    console.error("Failed to fetch organizations", err);
+                }
+            }
 
             const params = {
                 page,
@@ -184,9 +214,14 @@ const ContractsPage = () => {
                             <Download className="w-4 h-4 mr-2" />
                             Xuất báo cáo
                         </Button>
-                        <Button className="bg-brand hover:bg-brand-hover text-primary-foreground gap-2 shadow-md shadow-brand/20">
+                        <Button 
+                            className="gap-2"
+                            style={{ borderRadius: "12px" }}
+                            onClick={() => setIsCreateModalOpen(true)}
+                        >
                             <Plus className="w-4 h-4" />
-                            Tạo hợp đồng
+                            <span className="hidden sm:inline">Tạo hợp đồng</span>
+                            <span className="sm:hidden">Tạo</span>
                         </Button>
                     </div>
                 </div>
@@ -243,85 +278,95 @@ const ContractsPage = () => {
                     </div>
                 </div>
 
-                {/* Data Table */}
-                <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
+                {/* Contracts Table */}
+                <div className="bg-card rounded-xl border shadow-sm overflow-hidden">
                     <Table>
-                        <TableHeader className="bg-muted/40 border-b border-border">
-                            <TableRow>
-                                <TableHead className="w-[150px] font-bold text-muted-foreground uppercase text-xs tracking-wider py-4">Mã Booking</TableHead>
-                                <TableHead className="font-bold text-muted-foreground uppercase text-xs tracking-wider py-4">Khách hàng / Tên HĐ</TableHead>
-                                <TableHead className="font-bold text-muted-foreground uppercase text-xs tracking-wider py-4">Thời hạn</TableHead>
-                                <TableHead className="font-bold text-muted-foreground uppercase text-xs tracking-wider py-4 text-right">Giá trị</TableHead>
-                                <TableHead className="font-bold text-muted-foreground uppercase text-xs tracking-wider py-4 text-center w-[150px]">Trạng thái</TableHead>
-                                <TableHead className="w-[80px] py-4"></TableHead>
+                        <TableHeader>
+                            <TableRow className="bg-muted/50 hover:bg-muted/50">
+                                <TableHead className="w-[50px]">#</TableHead>
+                                <TableHead>Mã HĐ</TableHead>
+                                <TableHead>Khách hàng</TableHead>
+                                <TableHead>Ngày bắt đầu</TableHead>
+                                <TableHead>Ngày kết thúc</TableHead>
+                                <TableHead>Giá trị</TableHead>
+                                <TableHead>Trạng thái</TableHead>
+                                <TableHead className="text-right">Thao tác</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {isLoading ? (
                                 <TableRow>
-                                    <TableCell colSpan={6} className="h-48 text-center">
-                                        <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
-                                            <Loader2 className="w-6 h-6 animate-spin text-brand" />
-                                            <p>Đang tải dữ liệu...</p>
+                                    <TableCell colSpan={8} className="h-24 text-center">
+                                        <div className="flex justify-center items-center gap-2">
+                                            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                                            <span className="text-muted-foreground">Đang tải dữ liệu...</span>
                                         </div>
-                                    </TableCell>
-                                </TableRow>
-                            ) : error ? (
-                                <TableRow>
-                                    <TableCell colSpan={6} className="h-48 text-center text-red-500">
-                                        {error}
                                     </TableCell>
                                 </TableRow>
                             ) : contracts.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={6} className="h-48 text-center text-muted-foreground">
-                                        Không tìm thấy hợp đồng nào
+                                    <TableCell colSpan={8} className="h-32 text-center">
+                                        <div className="flex flex-col items-center justify-center text-muted-foreground">
+                                            <FileText className="h-8 w-8 mb-2 opacity-50" />
+                                            <p>Không tìm thấy hợp đồng nào</p>
+                                        </div>
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                contracts.map((contract) => {
-                                    const status = statusConfig[contract.status] || DEFAULT_STATUS;
+                                contracts.map((contract, index) => {
+                                    const statusInfo = statusConfig[contract.status] || DEFAULT_STATUS;
                                     return (
-                                        <TableRow key={contract.id} className="hover:bg-muted/10">
-                                            <TableCell className="font-medium text-foreground">
-                                                {contract.code}
+                                        <TableRow key={contract.id} className="group hover:bg-muted/50 transition-colors">
+                                            <TableCell className="font-medium text-muted-foreground">
+                                                {(page - 1) * limit + index + 1}
                                             </TableCell>
                                             <TableCell>
                                                 <div className="flex flex-col">
-                                                    <span className="font-medium text-foreground">{contract.name}</span>
-                                                    <span className="text-xs text-muted-foreground">{contract.customer?.name || "Khách lẻ"}</span>
+                                                    <span className="font-semibold text-foreground">{contract.code}</span>
+                                                    <span className="text-xs text-muted-foreground">{contract.name}</span>
                                                 </div>
                                             </TableCell>
                                             <TableCell>
-                                                <div className="flex flex-col text-sm text-foreground">
-                                                    <span className="flex items-center gap-1"><span className="w-16 text-xs text-muted-foreground">Bắt đầu:</span> {formatDate(contract.started_at)}</span>
-                                                    <span className="flex items-center gap-1"><span className="w-16 text-xs text-muted-foreground">Kết thúc:</span> {formatDate(contract.expired_at)}</span>
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs">
+                                                        {contract.customer?.name?.charAt(0) || "K"}
+                                                    </div>
+                                                    <span className="font-medium">{contract.customer?.name || "Khách hàng"}</span>
                                                 </div>
                                             </TableCell>
-                                            <TableCell className="text-right font-medium text-foreground">
-                                                {formatCurrency(contract.final_price)}
+                                            <TableCell>{formatDate(contract.started_at)}</TableCell>
+                                            <TableCell>{formatDate(contract.expired_at)}</TableCell>
+                                            <TableCell>
+                                                <div className="flex flex-col">
+                                                    <span className="font-bold text-brand">{formatCurrency(contract.final_price)}</span>
+                                                    {contract.final_price !== contract.total_price && (
+                                                        <span className="text-xs text-muted-foreground line-through">
+                                                            {formatCurrency(contract.total_price)}
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </TableCell>
-                                            <TableCell className="text-center">
-                                                <Badge variant="outline" className={status.className}>
-                                                    {status.label}
+                                            <TableCell>
+                                                <Badge variant="outline" className={cn("font-medium", statusInfo.className)}>
+                                                    {statusInfo.label}
                                                 </Badge>
                                             </TableCell>
-                                            <TableCell>
+                                            <TableCell className="text-right">
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger asChild>
-                                                        <Button variant="ghost" className="h-8 w-8 p-0">
-                                                            <span className="sr-only">Open menu</span>
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8">
                                                             <MoreHorizontal className="h-4 w-4" />
                                                         </Button>
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent align="end">
                                                         <DropdownMenuLabel>Thao tác</DropdownMenuLabel>
-                                                        <DropdownMenuItem onClick={() => navigator.clipboard.writeText(contract.code)}>
-                                                            Sao chép mã HĐ
+                                                        <DropdownMenuItem onClick={() => router.push(`/dashboard/admin/contracts/${contract.id}`)}>
+                                                            Xem chi tiết
                                                         </DropdownMenuItem>
                                                         <DropdownMenuSeparator />
-                                                        <DropdownMenuItem>Xem chi tiết</DropdownMenuItem>
-                                                        <DropdownMenuItem>Chỉnh sửa</DropdownMenuItem>
+                                                        <DropdownMenuItem className="text-red-600">
+                                                            Hủy hợp đồng
+                                                        </DropdownMenuItem>
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>
                                             </TableCell>
@@ -331,32 +376,59 @@ const ContractsPage = () => {
                             )}
                         </TableBody>
                     </Table>
+                </div>
 
-                    {/* Pagination */}
-                    <div className="flex items-center justify-between p-4 border-t border-border">
-                        <div className="text-sm text-muted-foreground">
-                            Trang {page} / ?
+                {/* Pagination */}
+                <div className="flex items-center justify-between border-t pt-4">
+                    <div className="text-sm text-muted-foreground">
+                        Hiển thị {contracts.length > 0 ? (page - 1) * limit + 1 : 0} - {Math.min(page * limit, total)} trong số {total} hợp đồng
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setPage(p => Math.max(1, p - 1))}
+                            disabled={page === 1 || isLoading}
+                        >
+                            <ChevronLeft className="h-4 w-4" />
+                            Trước
+                        </Button>
+                        <div className="flex items-center gap-1">
+                            {Array.from({ length: Math.ceil(total / limit) }, (_, i) => i + 1)
+                                .filter(p => p === 1 || p === Math.ceil(total / limit) || Math.abs(p - page) <= 1)
+                                .map((p, i, arr) => (
+                                    <React.Fragment key={p}>
+                                        {i > 0 && arr[i - 1] !== p - 1 && <span className="px-2">...</span>}
+                                        <Button
+                                            variant={page === p ? "default" : "outline"}
+                                            size="sm"
+                                            onClick={() => setPage(p)}
+                                            className={page === p ? "bg-brand hover:bg-brand-hover" : ""}
+                                        >
+                                            {p}
+                                        </Button>
+                                    </React.Fragment>
+
+                                ))}
                         </div>
-                        <div className="flex items-center gap-2">
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setPage(p => Math.max(1, p - 1))}
-                                disabled={page === 1}
-                            >
-                                <ChevronLeft className="w-4 h-4" />
-                            </Button>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setPage(p => p + 1)}
-                                disabled={contracts.length < limit}
-                            >
-                                <ChevronRight className="w-4 h-4" />
-                            </Button>
-                        </div>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setPage(p => Math.min(Math.ceil(total / limit), p + 1))}
+                            disabled={page >= Math.ceil(total / limit) || isLoading}
+                        >
+                            Tiếp
+                            <ChevronRight className="h-4 w-4" />
+                        </Button>
                     </div>
                 </div>
+
+                <CreateContractModal 
+                    open={isCreateModalOpen} 
+                    onOpenChange={setIsCreateModalOpen} 
+                    onSuccess={fetchContracts}
+                    organizations={organizations}
+                />
             </main>
         </div>
     );

@@ -6,7 +6,12 @@ const API = process.env.NEXT_PUBLIC_API_URL
 
 export class OrganizationRoleService {
    
-   // Lấy thông tin role của organization
+   /**
+    * Lấy thông tin vai trò của tổ chức
+    * @param access_token Token truy cập
+    * @param organization_id ID của tổ chức
+    * @returns Thông tin vai trò của tổ chức
+    */
    async getOrganizationRole(access_token: string, organization_id: string) {
       const response = await fetch(`${API}/organizations/${organization_id}`, {
          method: 'GET',

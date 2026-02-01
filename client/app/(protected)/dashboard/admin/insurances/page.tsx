@@ -65,8 +65,8 @@ export default function InsurancesPage() {
             if (!token) return;
 
             const data = await insuranceService.getAllInsurance(token);
-            if (Array.isArray(data)) {
-                setInsurances(data);
+            if (Array.isArray(data.data.items)) {
+                setInsurances(data.data.items);
             }
         } catch (error) {
             console.error("Failed to fetch insurances", error);

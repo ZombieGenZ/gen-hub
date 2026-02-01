@@ -1,3 +1,5 @@
+import { CreateRentalContractRequest } from '../../types/rental-contracts/rental-contracts.type'
+
 const API = process.env.NEXT_PUBLIC_API_URL
 
 export class RentalContractService {
@@ -55,7 +57,7 @@ export class RentalContractService {
      * @param data Dữ liệu hợp đồng
      * @returns Kết quả tạo hợp đồng
      */
-    async createRentalContract(token: string, data: any) {
+    async createRentalContract(token: string, data: CreateRentalContractRequest) {
         try {
             const response = await fetch(`${API}/rental-contracts`, {
                 method: 'POST',

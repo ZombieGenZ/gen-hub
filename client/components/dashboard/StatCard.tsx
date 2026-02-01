@@ -57,7 +57,7 @@ const variantStyles: Record<StatCardVariant, {
         iconBg: "bg-brand",
         iconColor: "text-white",
         textColor: "text-brand",
-        borderColor: "border-brand/10"
+        borderColor: "border-brand/10",
     }
 };
 

@@ -4,12 +4,17 @@ import React, { useEffect, useState } from "react";
 import { WarehouseTemplateService } from "@/services/warehouse_template/warehouse_template.service";
 import { Warehouse } from "@/types/warehoue_template/warehouse_template.type";
 import { useDebounce } from "@/hooks/use-debounce";
-
-import Image from "next/image";
 import { WarehouseCard } from '@/components/dashboard/WarehouseCard'
 import { useRouter } from "next/navigation";
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { LocationService } from "@/services/location/location.service";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
+import {
+    CreateWarehouseModal,
+    UpdateWarehouseModal,
+    DeleteWarehouseDialog
+} from "@/components/dashboard/WarehouseModals";
 // ... (other imports)
 
 // Type definitions
@@ -30,8 +35,12 @@ export default function WarehouseTemplatePage() {
     const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [createModalOpen, setCreateModalOpen] = useState(false);
+    const [updateModalOpen, setUpdateModalOpen] = useState(false);
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+    const [selectedWarehouse, setSelectedWarehouse] = useState<Warehouse | null>(null);
 
-    // ... (state for filters and pagination)
+    // Filters... (state for filters and pagination)
 
     const [filters, setFilters] = useState<{
         keywords: string;
@@ -138,6 +147,29 @@ export default function WarehouseTemplatePage() {
         }
     };
 
+    // Handlers for modals
+    const handleCreateSuccess = () => {
+        fetchWarehouses();
+    };
+
+    const handleEdit = (warehouse: Warehouse) => {
+        setSelectedWarehouse(warehouse);
+        setUpdateModalOpen(true);
+    };
+
+    const handleDelete = (warehouse: Warehouse) => {
+        setSelectedWarehouse(warehouse);
+        setDeleteModalOpen(true);
+    };
+
+    const handleUpdateSuccess = () => {
+        fetchWarehouses();
+    };
+
+    const handleDeleteSuccess = () => {
+        fetchWarehouses();
+    };
+
     useEffect(() => {
         fetchWarehouses();
         fetchLocation(); // test lấy danh sách tỉnh và phường
@@ -184,11 +216,15 @@ export default function WarehouseTemplatePage() {
                             <span className="hidden sm:inline">Xuất Excel</span>
                             <span className="sm:hidden">Excel</span>
                         </button>
-                        <button className="px-4 py-2 bg-brand text-white rounded-lg font-medium hover:bg-brand-hover transition-all shadow-lg shadow-brand/30 flex items-center gap-2">
-                            <i className="fas fa-plus"></i>
+                        <Button 
+                            onClick={() => setCreateModalOpen(true)}
+                            className="gap-2"
+                            style={{ borderRadius: "12px" }}
+                        >
+                            <Plus className="w-4 h-4" />
                             <span className="hidden sm:inline">Thêm kho mới</span>
                             <span className="sm:hidden">Thêm</span>
-                        </button>
+                        </Button>
                     </div>
                 </div>
                 <div className="flex items-center gap-4 bg-slate-50 px-4 py-2 rounded-xl border border-slate-200 focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all w-full md:w-96 mb-6">
@@ -265,12 +301,20 @@ export default function WarehouseTemplatePage() {
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
                         {warehouses.map((warehouse) => (
-                            <WarehouseCard key={warehouse.id} warehouse={warehouse} />
+                            <WarehouseCard 
+                                key={warehouse.id} 
+                                warehouse={warehouse} 
+                                onEdit={handleEdit}
+                                onDelete={handleDelete}
+                            />
                         ))}
 
                         {/* Add New Card (always visible at end) */}
                         {warehouses.length < pagination.limit && (
-                            <div className="border-2 border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center p-8 text-slate-400 hover:border-primary hover:text-primary hover:bg-teal-50/50 transition-all cursor-pointer h-full min-h-[400px] group">
+                            <div 
+                                onClick={() => setCreateModalOpen(true)}
+                                className="border-2 border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center p-8 text-slate-400 hover:border-primary hover:text-primary hover:bg-teal-50/50 transition-all cursor-pointer h-full min-h-[400px] group"
+                            >
                                 <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4 group-hover:bg-teal-100 transition-colors">
                                     <i className="fas fa-plus text-2xl group-hover:scale-110 transition-transform"></i>
                                 </div>
@@ -329,6 +373,26 @@ export default function WarehouseTemplatePage() {
                     </div>
                 </div>
             </div>
+            
+            <CreateWarehouseModal
+                open={createModalOpen}
+                onOpenChange={setCreateModalOpen}
+                onSuccess={handleCreateSuccess}
+            />
+            
+            <UpdateWarehouseModal
+                open={updateModalOpen}
+                onOpenChange={setUpdateModalOpen}
+                warehouse={selectedWarehouse}
+                onSuccess={handleUpdateSuccess}
+            />
+            
+            <DeleteWarehouseDialog
+                open={deleteModalOpen}
+                onOpenChange={setDeleteModalOpen}
+                warehouse={selectedWarehouse}
+                onSuccess={handleDeleteSuccess}
+            />
         </>
     );
 }
