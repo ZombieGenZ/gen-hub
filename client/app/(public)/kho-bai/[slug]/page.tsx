@@ -124,9 +124,10 @@ export default function WarehouseDynamicPage() {
         );
     }
 
-    // Mock extra images
+    const PLACEHOLDER_IMAGE = "/placeholder-warehouse.svg";
+    // Mock extra images; fallback to placeholder when no main image
     const galleryImages = [
-        property.image,
+        property.image || PLACEHOLDER_IMAGE,
         "https://images.unsplash.com/photo-1587293852726-70cdb56c2866?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
         "https://images.unsplash.com/photo-1553413077-190dd305871c?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
         "https://images.unsplash.com/photo-1629814249584-bd4d53cf0e7d?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
@@ -205,21 +206,22 @@ export default function WarehouseDynamicPage() {
                                 src={galleryImages[0]}
                                 alt="Main Warehouse"
                                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                                onError={(e) => { (e.target as HTMLImageElement).src = PLACEHOLDER_IMAGE; }}
                             />
                             <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors"></div>
                         </div>
                         {/* Sub Images */}
                         <div className="hidden md:block col-span-1 row-span-1 relative group cursor-pointer bg-slate-100">
-                            <img src={galleryImages[1]} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                            <img src={galleryImages[1]} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" onError={(e) => { (e.target as HTMLImageElement).src = PLACEHOLDER_IMAGE; }} alt="" />
                         </div>
                         <div className="hidden md:block col-span-1 row-span-1 relative group cursor-pointer bg-slate-100">
-                            <img src={galleryImages[2]} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                            <img src={galleryImages[2]} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" onError={(e) => { (e.target as HTMLImageElement).src = PLACEHOLDER_IMAGE; }} alt="" />
                         </div>
                         <div className="hidden md:block col-span-1 row-span-1 relative group cursor-pointer bg-slate-100">
-                            <img src={galleryImages[3]} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                            <img src={galleryImages[3]} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" onError={(e) => { (e.target as HTMLImageElement).src = PLACEHOLDER_IMAGE; }} alt="" />
                         </div>
                         <div className="hidden md:block col-span-1 row-span-1 relative group cursor-pointer bg-slate-100">
-                            <img src={galleryImages[4]} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                            <img src={galleryImages[4]} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" onError={(e) => { (e.target as HTMLImageElement).src = PLACEHOLDER_IMAGE; }} alt="" />
                             <div className="absolute inset-0 bg-black/40 flex items-center justify-center pointer-events-none group-hover:bg-black/50 transition-colors">
                                 <span className="text-white font-bold text-lg">+5 ảnh</span>
                             </div>

@@ -5,8 +5,6 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import { Warehouse } from '@/types/warehoue_template/warehouse_template.type' // Make sure to import the correct type
-import { authStorage } from '@/services/auth/auth-storage.service'
-import { WarehouseTemplateService } from '@/services/warehouse_template/warehouse_template.service'
 
 import {
   DropdownMenu,
@@ -24,28 +22,28 @@ interface WarehouseCardProps {
 
 export function WarehouseCard({ warehouse, onEdit, onDelete }: WarehouseCardProps) {
     const router = useRouter()
-    const [imageUrl, setImageUrl] = useState<string>('/placeholder.png')
-    const [isLoading, setIsLoading] = useState(true)
-    const warehouseService = new WarehouseTemplateService()
+    const PLACEHOLDER = 'https://pos.nvncdn.com/8bbc53-108873/art/artCT/20230720_DHTlXEUa.jpg';
+    const hasImages = warehouse.images && warehouse.images.length > 0;
+    const [imageUrl, setImageUrl] = useState<string>(hasImages ? (warehouse.images?.[0]?.url ?? PLACEHOLDER) : PLACEHOLDER);
+    const [isLoading, setIsLoading] = useState(hasImages);
 
     useEffect(() => {
-        const fetchImage = async () => {
-            if (!warehouse.images) return;
-
-            try {
-                const response = await fetch(warehouse.images[0].url);
-                if (response.ok) {
-                    setImageUrl(warehouse.images[0].url);
-                }
-                setIsLoading(false);
-            } catch (error) {
-                console.error('Error loading image:', error);
-                setIsLoading(false);
-            }
+        if (!hasImages) {
+            setIsLoading(false);
+            setImageUrl(PLACEHOLDER);
+            return;
         }
-
-        fetchImage();
-    }, [warehouse.id, warehouse.images]);  // Thêm các dependencies cần thiết
+        const url = warehouse.images![0].url;
+        setImageUrl(url);
+        setIsLoading(true);
+        fetch(url, { method: 'HEAD' })
+            .then((res) => {
+                if (res.ok) setImageUrl(url);
+                else setImageUrl(PLACEHOLDER);
+            })
+            .catch(() => setImageUrl(PLACEHOLDER))
+            .finally(() => setIsLoading(false));
+    }, [warehouse.id, hasImages, warehouse.images?.[0]?.url]);
 
     return (
         <div
@@ -57,16 +55,12 @@ export function WarehouseCard({ warehouse, onEdit, onDelete }: WarehouseCardProp
                     <div className="w-full h-full flex items-center justify-center bg-slate-200 animate-pulse" />
                 ) : (
                     <Image
-                        src={imageUrl || '/placeholder.png'}
+                        src={imageUrl || PLACEHOLDER}
                         alt={warehouse.name || 'Warehouse image'}
                         fill
                         className="object-cover transform group-hover:scale-110 transition-transform duration-500"
                         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                        onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.onerror = null; // Prevent infinite loop
-                            target.src = '/placeholder.png';
-                        }}
+                        onError={() => setImageUrl(PLACEHOLDER)}
                     />
                 )}
                 <div className="absolute top-3 right-3 flex gap-2 z-10">

@@ -47,6 +47,8 @@ export default function WarehouseDetailPage() {
     const router = useRouter();
     const { showToast } = useToast();
     const [warehouse, setWarehouse] = useState<WarehouseDetail | null>(null);
+    const [imageError, setImageError] = useState(false);
+    const PLACEHOLDER_IMAGE = "/placeholder-warehouse.svg";
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -102,10 +104,11 @@ export default function WarehouseDetailPage() {
                     {/* Image Gallery (Simplified) */}
                     <div className="aspect-video relative rounded-2xl overflow-hidden bg-muted">
                         <Image
-                            src={warehouse.images?.[0]?.url || "/placeholder-warehouse.jpg"}
+                            src={imageError ? PLACEHOLDER_IMAGE : (warehouse.images?.[0]?.url || PLACEHOLDER_IMAGE)}
                             alt={warehouse.name}
                             fill
                             className="object-cover"
+                            onError={() => setImageError(true)}
                         />
                         <div className="absolute top-4 left-4">
                             <Badge className={warehouse.is_cold_storage ? "bg-blue-500" : "bg-orange-500"}>

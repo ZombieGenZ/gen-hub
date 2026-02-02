@@ -215,13 +215,36 @@ export class AuthService {
 
         const data = await response.json();
 
-        // Update tokens in storage
-        authStorage.setTokens(
-            data.authorization.access_token,
-            data.authorization.refresh_token
-        );
+        // API trả về authorization ở top-level: { authorization: { access_token, refresh_token } }
+        const auth = data.authorization || data;
+        const accessToken = auth.access_token ?? auth.accessToken;
+        const refreshToken = auth.refresh_token ?? auth.refreshToken;
+        if (!accessToken || !refreshToken) {
+            authStorage.clearTokens();
+            throw new Error('Invalid refresh response: missing tokens');
+        }
 
+        authStorage.setTokens(accessToken, refreshToken);
         return data;
+    }
+
+    /**
+     * Lấy access token còn hiệu lực: nếu hết hạn thì thử refresh bằng refresh token.
+     * @returns Access token hoặc null nếu không thể có token hợp lệ
+     */
+    async getValidAccessToken(): Promise<string | null> {
+        if (authStorage.isAuthenticated()) {
+            return authStorage.getAccessToken();
+        }
+        const refreshToken = authStorage.getRefreshToken();
+        if (!refreshToken) return null;
+        try {
+            await this.getNewToken(refreshToken);
+            return authStorage.getAccessToken();
+        } catch {
+            authStorage.clearTokens();
+            return null;
+        }
     }
 
     /**

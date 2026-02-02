@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { authStorage } from "@/services/auth/auth-storage.service";
+import { AuthService } from "@/services/auth/auth.service";
 import { Loader2 } from "lucide-react";
 import { ProfileModalProvider } from "@/contexts/ProfileModalContext";
 import { ProfileModalWrapper } from "@/components/profile/profile-modal-wrapper";
+
+const authService = new AuthService();
 
 export default function ProtectedLayout({ children, modal }: { children: React.ReactNode; modal: React.ReactNode }) {
     const router = useRouter();
@@ -13,15 +15,13 @@ export default function ProtectedLayout({ children, modal }: { children: React.R
     const [isAuthorized, setIsAuthorized] = useState(false);
 
     useEffect(() => {
-        const checkAuth = () => {
-            const isAuthenticated = authStorage.isAuthenticated();
-            const token = authStorage.getAccessToken();
-
-            if (!isAuthenticated || !token) {
-                // Save return url if needed, e.g. router.push(`/login?returnUrl=${pathname}`)
-                router.push('/login');
-            } else {
+        const checkAuth = async () => {
+            // Lấy access token hợp lệ: nếu hết hạn thì thử refresh bằng refresh token
+            const validToken = await authService.getValidAccessToken();
+            if (validToken) {
                 setIsAuthorized(true);
+            } else {
+                router.push('/login');
             }
         };
         checkAuth();

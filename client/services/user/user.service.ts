@@ -10,7 +10,8 @@ export interface TokenResponse {
 const API = process.env.NEXT_PUBLIC_API_URL
 
 export class UserService {
-   
+   private readonly authService = new AuthService();
+
    /**
     * Lấy thông tin user
     * @param access_token Token truy cập
@@ -27,10 +28,15 @@ export class UserService {
 
       if (!response.ok) {
          if (response.status === 401) {
-            const newTokens = await this.refreshToken(refresh_token);
-            if (newTokens) {
-               authStorage.setTokens(newTokens.access_token, newTokens.refresh_token);
-               return this.getUser(newTokens.access_token, newTokens.refresh_token);
+            try {
+               await this.authService.getNewToken(refresh_token);
+               const newAccess = authStorage.getAccessToken();
+               const newRefresh = authStorage.getRefreshToken();
+               if (newAccess && newRefresh) {
+                  return this.getUser(newAccess, newRefresh);
+               }
+            } catch {
+               // Refresh thất bại, fall through để throw
             }
          }
          const errorData = await response.json().catch(() => ({}));
@@ -43,27 +49,6 @@ export class UserService {
       await authStorage.setEmailVerified(data.data.user.email_confirmed);
       console.log(data)
       return data.data;
-   }
-
-   /**
-    * Refresh access token using refresh token
-    * @param refreshToken Refresh token
-    * @returns Token mới hoặc null
-    */
-   private async refreshToken(refreshToken: string): Promise<TokenResponse | null> {
-      const response = await fetch(`${API}/auth/refresh-token`, {
-         method: 'POST',
-         headers: {
-            'Content-Type': 'application/json',
-         },
-         body: JSON.stringify({ refresh_token: refreshToken })
-      });
-
-      if (!response.ok) {
-         return null;
-      }
-
-      return response.json();
    }
 
    // Cập nhật thông tin user

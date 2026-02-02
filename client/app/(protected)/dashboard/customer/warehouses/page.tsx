@@ -47,6 +47,8 @@ interface Warehouse {
 export default function WarehouseListPage() {
     const router = useRouter();
     const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
+    const [imageErrorIds, setImageErrorIds] = useState<Set<string>>(new Set());
+    const PLACEHOLDER_IMAGE = "/placeholder-warehouse.svg";
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
     const [typeFilter, setTypeFilter] = useState("all");
@@ -151,10 +153,11 @@ export default function WarehouseListPage() {
                         >
                             <div className="relative h-48 bg-muted">
                                 <Image
-                                    src={warehouse.images?.[0]?.url || "/placeholder-warehouse.jpg"}
+                                    src={imageErrorIds.has(warehouse.id) ? PLACEHOLDER_IMAGE : (warehouse.images?.[0]?.url || PLACEHOLDER_IMAGE)}
                                     alt={warehouse.name}
                                     fill
                                     className="object-cover transition-transform duration-500 group-hover:scale-105"
+                                    onError={() => setImageErrorIds((prev) => new Set(prev).add(warehouse.id))}
                                 />
                                 <div className="absolute top-3 left-3">
                                     <Badge variant="secondary" className="bg-background/90 backdrop-blur text-foreground shadow-sm">

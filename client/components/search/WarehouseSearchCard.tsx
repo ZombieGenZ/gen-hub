@@ -23,9 +23,9 @@ export default function WarehouseSearchCard({ property, onHover, isHighlighted }
     const router = useRouter();
     const [isFavorite, setIsFavorite] = useState(false);
 
-    // Create a mock gallery if only one image exists, just for the UI feel
+    const PLACEHOLDER_IMAGE = "/placeholder-warehouse.svg";
     const images = [
-        property.image,
+        property.image || PLACEHOLDER_IMAGE,
         "https://images.unsplash.com/photo-1587293852726-70cdb56c2866?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
         "https://images.unsplash.com/photo-1553413077-190dd305871c?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
         "https://images.unsplash.com/photo-1629814249584-bd4d53cf0e7d?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
@@ -51,6 +51,7 @@ export default function WarehouseSearchCard({ property, onHover, isHighlighted }
                                     src={img}
                                     alt={`Warehouse ${index + 1}`}
                                     className="w-full h-full object-cover"
+                                    onError={(e) => { (e.target as HTMLImageElement).src = PLACEHOLDER_IMAGE; }}
                                 />
                             </CarouselItem>
                         ))}

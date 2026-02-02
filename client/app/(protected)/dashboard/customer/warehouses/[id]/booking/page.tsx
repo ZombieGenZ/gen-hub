@@ -25,6 +25,8 @@ function RentalRequestContent() {
     const preSelectedWarehouseId = params.id as string;
 
     const [warehouse, setWarehouse] = useState<Warehouse | null>(null);
+    const [warehouseImageError, setWarehouseImageError] = useState(false);
+    const PLACEHOLDER_IMAGE = "/placeholder-warehouse.svg";
     const [loading, setLoading] = useState(true);
 
     // Form State
@@ -280,10 +282,11 @@ function RentalRequestContent() {
                         {warehouse ? (
                             <div className="mb-6 relative h-40 rounded-lg overflow-hidden">
                                 <Image
-                                    src={warehouse.images?.[0]?.url || "/placeholder-warehouse.jpg"}
+                                    src={warehouseImageError ? PLACEHOLDER_IMAGE : (warehouse.images?.[0]?.url || PLACEHOLDER_IMAGE)}
                                     alt={warehouse.name}
                                     fill
                                     className="object-cover"
+                                    onError={() => setWarehouseImageError(true)}
                                 />
                                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3">
                                     <p className="text-white font-bold text-sm">{warehouse.name}</p>
