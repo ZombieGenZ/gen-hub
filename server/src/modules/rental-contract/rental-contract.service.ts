@@ -146,9 +146,9 @@ export class RentalContractService {
         templateItem.row_template_ids!.forEach((rowId) => lockKeys.push(`rental:lock:row:${rowId}`));
       }
 
-      const priceDetail = await this.calculateRentalPriceForTemplate(template, templateItem, rentalMonths, isWholeWarehouse);
+      const priceDetail = await this.calculateRentalPriceForTemplate(template, templateItem, rentalMonths, isWholeWarehouse, dto.duration_tier_id);
       allPriceDetails.push(priceDetail);
-      totalPrice += priceDetail.subtotal;
+      totalPrice += isNaN(priceDetail.subtotal) ? 0 : priceDetail.subtotal;
     }
 
     const overallDiscountRate = allPriceDetails.length > 0
@@ -506,22 +506,30 @@ export class RentalContractService {
     templateItem: RentalTemplateItemDto,
     months: number,
     isWholeWarehouse: boolean,
+    durationTierId: string,
   ): Promise<IRentalPriceCalculation> {
-    const discountRate = this.getDiscountRate(months, isWholeWarehouse, template);
+    const discountRate = this.getDiscountRate(isWholeWarehouse, template, templateItem.row_template_ids, durationTierId);
     const rentalDays = months * 30;
     let pricePerMonth = 0;
     let subtotal = 0;
 
     if (isWholeWarehouse) {
-      pricePerMonth = Number(template.price_per_month);
+      const rawPrice = Number(template.price_per_month);
+      pricePerMonth = isNaN(rawPrice) ? 0 : rawPrice;
       subtotal = pricePerMonth * months * (1 - discountRate / 100);
     } else if (templateItem.row_template_ids?.length) {
       for (const rowId of templateItem.row_template_ids) {
         const row = template.rows?.find((r: any) => r.id === rowId);
-        if (row) pricePerMonth += Number(row.price_per_month);
+        if (row) {
+          const rowPrice = Number(row.price_per_month);
+          pricePerMonth += isNaN(rowPrice) ? 0 : rowPrice;
+        }
       }
       subtotal = pricePerMonth * months * (1 - discountRate / 100);
     }
+
+    // Ensure subtotal is never NaN
+    if (isNaN(subtotal)) subtotal = 0;
 
     return {
       templateId: templateItem.template_id,
@@ -537,15 +545,52 @@ export class RentalContractService {
     };
   }
 
-  private getDiscountRate(months: number, isWholeWarehouse: boolean, template: any): number {
-    let baseDiscount = 0;
-    if (months >= 36) baseDiscount = Number(template.discount_3_years_plus);
-    else if (months >= 24) baseDiscount = Number(template.discount_2_years);
-    else if (months >= 12) baseDiscount = Number(template.discount_1_year);
-    else if (months >= 6) baseDiscount = Number(template.discount_6_months);
-    else if (months >= 3) baseDiscount = Number(template.discount_3_months);
-    else baseDiscount = Number(template.discount_1_month);
-    return Math.min(baseDiscount, 100);
+  /**
+   * Get discount rate from WarehouseDiscountConfig or RowDiscountConfig based on duration tier
+   */
+  private getDiscountRate(
+    isWholeWarehouse: boolean,
+    template: any,
+    rowTemplateIds: string[] | undefined,
+    durationTierId: string,
+  ): number {
+    // For whole warehouse, use warehouse discount_configs
+    if (isWholeWarehouse && template.discount_configs) {
+      const config = template.discount_configs.find(
+        (c: any) => c.duration_tier_id === durationTierId && !c.is_deleted,
+      );
+      if (config) {
+        const discount = Number(config.discount_percent);
+        return isNaN(discount) ? 0 : Math.min(discount, 100);
+      }
+    }
+
+    // For shared warehouse (row rental), calculate average discount from rows
+    if (!isWholeWarehouse && rowTemplateIds?.length && template.rows) {
+      let totalDiscount = 0;
+      let count = 0;
+      for (const rowId of rowTemplateIds) {
+        const row = template.rows.find((r: any) => r.id === rowId);
+        if (row?.discount_configs) {
+          const rowConfig = row.discount_configs.find(
+            (c: any) => c.duration_tier_id === durationTierId && !c.is_deleted,
+          );
+          if (rowConfig) {
+            const discount = Number(rowConfig.discount_percent);
+            if (!isNaN(discount)) {
+              totalDiscount += discount;
+              count++;
+            }
+          }
+        }
+      }
+      if (count > 0) {
+        return Math.min(totalDiscount / count, 100);
+      }
+    }
+
+    // Default: no discount
+    return 0;
   }
 
   private async sendContractTimeChangedEmail(data: IContractTimeChangedEmail): Promise<void> {
