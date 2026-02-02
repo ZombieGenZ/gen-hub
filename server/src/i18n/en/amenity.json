@@ -18,6 +18,7 @@
         "name_max_length": "Amenity name must not exceed 255 characters",
         "description_string": "Description must be a string",
         "icon_string": "Icon must be a string",
+        "icon_max_length": "Icon must not exceed 255 characters",
         "id_required": "ID is required",
         "id_uuid": "ID must be a valid UUID",
         "limit_positive": "Limit must be a positive number",

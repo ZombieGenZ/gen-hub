@@ -392,6 +392,7 @@ model Amenity {
   id          String  @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
   name        String
   description String?
+  icon        String?
 
   is_active  Boolean   @default(true)
   created_at DateTime  @default(now())

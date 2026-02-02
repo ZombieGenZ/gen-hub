@@ -24,6 +24,16 @@ export class CreateAmenityDto {
     })
     name: string;
 
+    @ApiPropertyOptional({ description: 'Icon CSS class', example: 'fa-solid fa-wifi' })
+    @IsOptional()
+    @IsString({
+        message: i18nValidationMessage('amenity.validation.icon_string'),
+    })
+    @MaxLength(255, {
+        message: i18nValidationMessage('amenity.validation.icon_max_length'),
+    })
+    icon?: string;
+
     @ApiPropertyOptional({ description: 'Mô tả', example: 'Internet tốc độ cao' })
     @IsOptional()
     @IsString({

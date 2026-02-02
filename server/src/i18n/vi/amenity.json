@@ -18,6 +18,7 @@
         "name_max_length": "Tên tiện ích không được quá 255 ký tự",
         "description_string": "Mô tả phải là chuỗi",
         "icon_string": "Icon phải là chuỗi",
+        "icon_max_length": "Icon không được quá 255 ký tự",
         "id_required": "ID không được để trống",
         "id_uuid": "ID phải là UUID hợp lệ",
         "limit_positive": "Limit phải là số dương",

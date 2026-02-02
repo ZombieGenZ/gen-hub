@@ -4,6 +4,7 @@ export const amenityListSelect = {
     id: true,
     name: true,
     description: true,
+    icon: true,
     is_active: true,
     is_deleted: true,
     created_at: true,

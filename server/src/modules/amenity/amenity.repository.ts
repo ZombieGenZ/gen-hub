@@ -9,6 +9,7 @@ export class AmenityRepository {
     async create(data: {
         name: string;
         description?: string;
+        icon?: string;
         is_active?: boolean;
         created_by: string;
     }) {
@@ -16,6 +17,7 @@ export class AmenityRepository {
             data: {
                 name: data.name,
                 description: data.description,
+                icon: data.icon,
                 is_active: data.is_active ?? true,
                 created_by: data.created_by,
             },
@@ -45,12 +47,12 @@ export class AmenityRepository {
 
     async findById(id: string, userId?: string, hasReadAllPermission?: boolean) {
         const where: any = { id, is_deleted: false };
-        
+
         // Nếu không có quyền read.all, chỉ lấy item của chính user
         if (!hasReadAllPermission && userId) {
             where.created_by = userId;
         }
-        
+
         return this.prisma.amenity.findFirst({
             where,
             select: amenityDetailSelect,
@@ -60,7 +62,7 @@ export class AmenityRepository {
     async findAllActive(params?: { skip?: number; take?: number }) {
         const { skip, take } = params || {};
         const where: any = { is_active: true, is_deleted: false };
-        
+
         return this.prisma.amenity.findMany({
             skip,
             take,
@@ -90,6 +92,7 @@ export class AmenityRepository {
     async update(id: string, data: {
         name?: string;
         description?: string;
+        icon?: string;
         is_active?: boolean;
         updated_by: string;
     }) {
@@ -98,6 +101,7 @@ export class AmenityRepository {
             data: {
                 name: data.name,
                 description: data.description,
+                icon: data.icon,
                 is_active: data.is_active,
                 updated_by: data.updated_by,
             },
@@ -160,12 +164,12 @@ export class AmenityRepository {
 
     async findByIds(ids: string[], userId?: string, hasDeleteAllPermission?: boolean) {
         const where: any = { id: { in: ids }, is_deleted: false };
-        
+
         // Nếu không có quyền delete.all, chỉ lấy items của chính user
         if (!hasDeleteAllPermission && userId) {
             where.created_by = userId;
         }
-        
+
         return this.prisma.amenity.findMany({
             where,
             select: amenityListSelect,
