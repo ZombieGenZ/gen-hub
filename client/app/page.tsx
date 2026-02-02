@@ -12,9 +12,11 @@ import { PrimeNestContact } from "@/app/(public)/homepage/Contact";
 import { PrimeNestFooter } from "@/app/(public)/homepage/Footer";
 import { PrimeNestChatbot } from "@/app/(public)/homepage/Chatbot";
 import { authStorage } from "@/services/auth/auth-storage.service";
+import { AuthService } from "@/services/auth/auth.service";
 import { UserService } from "@/services/user/user.service";
 import { NotificationService } from "@/services/notification/notification.service";
 import type { Notification } from "@/types/notification/notification.type";
+import { useRouter } from "next/navigation";
 import { useToast } from "@/contexts/ToastContext";
 import { ScrollReveal } from "@/components/ScrollReveal";
 
@@ -27,45 +29,114 @@ interface UserInfo {
 
 const userService = new UserService();
 const notificationService = new NotificationService();
+const authService = new AuthService();
+
+const FIVE_MINUTES_MS = 5 * 60 * 1000;
 
 export default function Home() {
+    const router = useRouter();
     const [isLogin, setIsLogin] = useState(false);
     const [user, setUser] = useState<UserInfo | undefined>(undefined);
     const { showToast } = useToast()
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const hasShownNotificationRef = useRef(false);
+    const isFetchingRef = useRef(false);
 
     // Scroll Tracking State
     const [scrollProgress, setScrollProgress] = useState(0);
     const [isScrolled, setIsScrolled] = useState(false);
 
     useEffect(() => {
-        const checkAuth = async () => {
-            const accessToken = authStorage.getAccessToken();
-            const refreshToken = authStorage.getRefreshToken();
-            if (accessToken && refreshToken) {
-                setIsLogin(true);
-                try {
-                    const userData = await userService.getUser(accessToken, refreshToken);
-                    setUser({
-                        name: userData.user.name,
-                        email: userData.user.email,
-                        avatar: undefined, // Will use default avatar
-                        roles: userData.roles.map(r => r.name),
-                    });
+        let isMounted = true;
+        let intervalId: number | undefined;
 
-                    const getUserNotifications = await notificationService.getNotifications(accessToken);
-                    const getGlobalNotifications = await notificationService.globalNotification(accessToken);
-                    setNotifications([...getGlobalNotifications, ...getUserNotifications]);
-                    showToast("You have new notifications!", "info");
-                    showToast(`You have ${getUserNotifications.length} new personal notifications and ${getGlobalNotifications.length} global notifications.`, "info");
-                } catch (error) {
-                    console.error("Failed to fetch user data:", error);
+        const fetchMeAndNotifications = async () => {
+            if (isFetchingRef.current) return;
+            isFetchingRef.current = true;
+            try {
+                // Nếu không có refresh token thì coi như chưa đăng nhập
+                const refreshToken = authStorage.getRefreshToken();
+                if (!refreshToken) {
+                    if (!isMounted) return;
+                    setIsLogin(false);
+                    setUser(undefined);
+                    setNotifications([]);
+                    return;
                 }
+
+                // Nếu thiếu access token nhưng còn refresh token -> refresh ngay để lấy token mới
+                let accessToken = authStorage.getAccessToken();
+                if (!accessToken) {
+                    try {
+                        await authService.getNewToken(refreshToken);
+                        accessToken = authStorage.getAccessToken();
+                    } catch {
+                        accessToken = null;
+                    }
+                }
+
+                // Nếu access token có nhưng hết hạn -> lấy token hợp lệ (tự refresh nếu cần)
+                if (accessToken && !authStorage.isAuthenticated()) {
+                    accessToken = await authService.getValidAccessToken();
+                }
+
+                if (!accessToken) {
+                    if (!isMounted) return;
+                    setIsLogin(false);
+                    setUser(undefined);
+                    setNotifications([]);
+                    router.push("/login");
+                    return;
+                }
+
+                if (!isMounted) return;
+                setIsLogin(true);
+
+                // Sau refresh token rotation, refresh token trong cookie có thể đã đổi
+                const latestRefreshToken = authStorage.getRefreshToken() || refreshToken;
+
+                const userData = await userService.getUser(accessToken, latestRefreshToken);
+                if (!isMounted) return;
+                setUser({
+                    name: userData.user.name,
+                    email: userData.user.email,
+                    avatar: undefined,
+                    roles: userData.roles.map((r) => r.name),
+                });
+
+                const [userNotifs, globalNotifs] = await Promise.all([
+                    notificationService.getNotifications(accessToken),
+                    notificationService.globalNotification(accessToken),
+                ]);
+
+                if (!isMounted) return;
+                setNotifications([...(globalNotifs || []), ...(userNotifs || [])]);
+
+                const total = (userNotifs?.length || 0) + (globalNotifs?.length || 0);
+                if (total > 0 && !hasShownNotificationRef.current) {
+                    hasShownNotificationRef.current = true;
+                    showToast(
+                        `Bạn có ${total} thông báo mới (${userNotifs.length} cá nhân, ${globalNotifs.length} toàn hệ thống).`,
+                        "info"
+                    );
+                }
+            } catch (error) {
+                console.error("Failed to fetch user/notifications:", error);
+            } finally {
+                isFetchingRef.current = false;
             }
         };
-        checkAuth();
-    }, [showToast]);
+
+        // gọi ngay khi mount
+        fetchMeAndNotifications();
+        // gọi lại mỗi 5 phút
+        intervalId = window.setInterval(fetchMeAndNotifications, FIVE_MINUTES_MS);
+
+        return () => {
+            isMounted = false;
+            if (intervalId) window.clearInterval(intervalId);
+        };
+    }, [router, showToast]);
 
     useEffect(() => {
         const handleScroll = () => {

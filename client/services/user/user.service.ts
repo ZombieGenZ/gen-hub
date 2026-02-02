@@ -36,7 +36,7 @@ export class UserService {
                   return this.getUser(newAccess, newRefresh);
                }
             } catch {
-               // Refresh thất bại, fall through để throw
+               console.error('Failed to refresh token, falling through to throw error');
             }
          }
          const errorData = await response.json().catch(() => ({}));

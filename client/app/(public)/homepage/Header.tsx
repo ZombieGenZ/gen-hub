@@ -18,7 +18,7 @@ interface HeaderProps {
 
 export function PrimeNestHeader({ isLogin, user, onLogout }: HeaderProps) {
     const [active, setActive] = useState<string | null>(null);
-
+    console.log(isLogin);
     return (
         <header className="sticky top-0 w-full z-[100] bg-background border-b border-border shadow-sm">
             <div className="w-full max-w-[1440px] mx-auto px-4 lg:px-4 h-[80px] flex items-center justify-between">
