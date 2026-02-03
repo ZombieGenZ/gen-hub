@@ -8,12 +8,13 @@ import { Slider } from '@/components/ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 import { 
   Layers, Trash2, Box, Download, Plus, Grid3X3, 
   Eye, EyeOff, Search, Palette, Upload, Axis3D,
   LayoutGrid, Thermometer, Package, Boxes, Copy,
   Move, X, Target, ArrowRight, GripVertical, RotateCw,
-  AlertTriangle
+  AlertTriangle, User, Home, Gauge, Activity
 } from 'lucide-react';
 import { BoxCategory, categoryLabels, categoryColors, WarehouseStats, RackConfig, BoxItem } from '@/types/warehouse';
 
@@ -39,6 +40,17 @@ interface ControlPanelProps {
   onToggleDragMode: () => void;
   onRotateRack: (rackId: string) => void;
   onCloneRack: (rackId: string) => void;
+  onShowOnlyRack: (rackId: string) => void;
+  onShowAllRacks: () => void;
+  // New feature toggles
+  onToggleHumans?: () => void;
+  onToggleRoof?: () => void;
+  onTogglePerformanceMode?: () => void;
+  onToggleFPS?: () => void;
+  showHumans?: boolean;
+  showRoof?: boolean;
+  performanceMode?: boolean;
+  showFPS?: boolean;
   hasBackground: boolean;
   hasRacks: boolean;
   showAxes: boolean;
@@ -53,6 +65,7 @@ interface ControlPanelProps {
   boxes: BoxItem[];
   isDragMode: boolean;
   collisionWarnings: string[];
+  isFilteringRacks: boolean;
 }
 
 const ControlPanel = ({
@@ -77,6 +90,16 @@ const ControlPanel = ({
   onToggleDragMode,
   onRotateRack,
   onCloneRack,
+  onShowOnlyRack,
+  onShowAllRacks,
+  onToggleHumans,
+  onToggleRoof,
+  onTogglePerformanceMode,
+  onToggleFPS,
+  showHumans = true,
+  showRoof = true,
+  performanceMode = false,
+  showFPS = false,
   hasBackground,
   hasRacks,
   showAxes,
@@ -91,6 +114,7 @@ const ControlPanel = ({
   boxes,
   isDragMode,
   collisionWarnings,
+  isFilteringRacks,
 }: ControlPanelProps) => {
   const [rackRows, setRackRows] = React.useState(2);
   const [rackColumns, setRackColumns] = React.useState(3);
@@ -126,7 +150,20 @@ const ControlPanel = ({
           </div>
         )}
 
-        {/* Drag Mode Toggle */}
+        {/* Show All Racks Button - visible when filtering */}
+        {isFilteringRacks && (
+          <Button
+            variant="secondary"
+            size="sm"
+            className="w-full text-xs"
+            onClick={onShowAllRacks}
+          >
+            <Eye className="w-3 h-3 mr-1" />
+            Hiển thị tất cả kệ
+          </Button>
+        )}
+
+        {/* Rack Move Mode Toggle */}
         <Button
           variant={isDragMode ? "default" : "outline"}
           size="sm"
@@ -134,7 +171,7 @@ const ControlPanel = ({
           onClick={onToggleDragMode}
         >
           <GripVertical className="w-3 h-3 mr-1" />
-          {isDragMode ? 'Tắt kéo thả kệ' : 'Bật kéo thả kệ'}
+          {isDragMode ? 'Tắt di chuyển kệ' : 'Bật di chuyển kệ (←↑↓→)'}
         </Button>
 
         {/* Selection Info */}
@@ -188,6 +225,19 @@ const ControlPanel = ({
                   >
                     <Copy className="w-3 h-3 mr-1" />
                     Nhân đôi
+                  </Button>
+                </div>
+                
+                {/* Filter/Isolate Rack */}
+                <div className="flex gap-1">
+                  <Button
+                    variant={isFilteringRacks ? "default" : "outline"}
+                    size="sm"
+                    className="flex-1 text-xs h-7"
+                    onClick={() => onShowOnlyRack(selectedRack!)}
+                  >
+                    <Target className="w-3 h-3 mr-1" />
+                    Chỉ hiện kệ này
                   </Button>
                 </div>
               </div>
@@ -369,6 +419,61 @@ const ControlPanel = ({
             >
               <Thermometer className="w-3 h-3" />
             </Button>
+          </div>
+        </div>
+
+        <Separator />
+
+        {/* Performance & Features */}
+        <div className="space-y-3">
+          <h3 className="text-xs font-semibold uppercase text-muted-foreground flex items-center gap-1">
+            <Gauge className="w-3 h-3" />
+            Hiệu suất & Tính năng
+          </h3>
+          
+          {/* Performance Mode Toggle */}
+          <div className="flex items-center justify-between">
+            <Label className="text-xs flex items-center gap-1.5">
+              <Activity className="w-3 h-3" />
+              Chế độ hiệu suất
+            </Label>
+            <Switch 
+              checked={performanceMode}
+              onCheckedChange={onTogglePerformanceMode}
+            />
+          </div>
+          
+          {/* FPS Counter Toggle */}
+          <div className="flex items-center justify-between">
+            <Label className="text-xs">Hiển thị FPS</Label>
+            <Switch 
+              checked={showFPS}
+              onCheckedChange={onToggleFPS}
+            />
+          </div>
+          
+          {/* Human Figures Toggle */}
+          <div className="flex items-center justify-between">
+            <Label className="text-xs flex items-center gap-1.5">
+              <User className="w-3 h-3" />
+              Người tham chiếu
+            </Label>
+            <Switch 
+              checked={showHumans}
+              onCheckedChange={onToggleHumans}
+            />
+          </div>
+          
+          {/* Roof Toggle */}
+          <div className="flex items-center justify-between">
+            <Label className="text-xs flex items-center gap-1.5">
+              <Home className="w-3 h-3" />
+              Hiển thị mái
+            </Label>
+            <Switch 
+              checked={showRoof}
+              onCheckedChange={onToggleRoof}
+            />
           </div>
         </div>
 

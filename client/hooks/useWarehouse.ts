@@ -288,33 +288,69 @@ export const useWarehouse = () => {
     const demoRacks: RackConfig[] = [];
     const demoBoxes: BoxItem[] = [];
     
-    // Create a nice grid of racks
-    for (let row = 0; row < 3; row++) {
-      for (let col = 0; col < 4; col++) {
+    // Industrial pallet rack dimensions (optimized for performance)
+    const rackConfig = {
+      cellWidth: 2.8,   // 2.8m wide per bay
+      cellHeight: 1.2,  // 1.2m per level
+      cellDepth: 1.1,   // 1.1m deep
+      levels: 4,        // 4 levels high
+      rows: 1,          // Single row deep
+      columns: 3,       // 3 bays per rack unit
+    };
+    
+    // Optimized layout: ~35 racks for smooth performance
+    const sections = [
+      { name: 'A', startX: 5, startZ: 5, rackCount: 5, direction: 'horizontal' },
+      { name: 'B', startX: 5, startZ: 12, rackCount: 5, direction: 'horizontal' },
+      { name: 'C', startX: 5, startZ: 19, rackCount: 5, direction: 'horizontal' },
+      { name: 'D', startX: 5, startZ: 26, rackCount: 5, direction: 'horizontal' },
+      { name: 'E', startX: 5, startZ: 33, rackCount: 5, direction: 'horizontal' },
+      { name: 'F', startX: 45, startZ: 5, rackCount: 5, direction: 'vertical' },
+      { name: 'G', startX: 55, startZ: 5, rackCount: 5, direction: 'vertical' },
+    ];
+    
+    let rackIndex = 0;
+    
+    sections.forEach((section) => {
+      for (let i = 0; i < section.rackCount; i++) {
+        const isVertical = section.direction === 'vertical';
+        const spacing = isVertical ? 7 : 10;
+        
         const rack: RackConfig = {
-          id: `rack-${row}-${col}`,
-          name: `Kệ ${String.fromCharCode(65 + row)}${col + 1}`,
-          position: { x: col * 7, y: 0, z: row * 6 },
-          rows: 2,
-          columns: 3,
-          levels: 4,
-          cellWidth: 1.2,
-          cellHeight: 1.2,
-          cellDepth: 1.2,
-          color: rackColors[(row * 4 + col) % rackColors.length],
+          id: `rack-${section.name}-${i + 1}`,
+          name: `${section.name}${i + 1}`,
+          position: {
+            x: section.startX + (isVertical ? 0 : i * spacing),
+            y: 0,
+            z: section.startZ + (isVertical ? i * spacing : 0),
+          },
+          rows: isVertical ? rackConfig.columns : rackConfig.rows,
+          columns: isVertical ? rackConfig.rows : rackConfig.columns,
+          levels: rackConfig.levels,
+          cellWidth: isVertical ? rackConfig.cellDepth : rackConfig.cellWidth,
+          cellHeight: rackConfig.cellHeight,
+          cellDepth: isVertical ? rackConfig.cellWidth : rackConfig.cellDepth,
+          color: rackColors[rackIndex % rackColors.length],
         };
         demoRacks.push(rack);
+        rackIndex++;
       }
-    }
+    });
     
-    // Fill with random boxes
+    // Fill with boxes - optimized quantity
     const categories: BoxCategory[] = ['electronics', 'food', 'clothing', 'fragile', 'heavy', 'standard'];
     
-    demoRacks.forEach(rack => {
-      for (let level = 0; level < rack.levels; level++) {
-        for (let row = 0; row < rack.rows; row++) {
-          for (let col = 0; col < rack.columns; col++) {
-            if (Math.random() > 0.3) {
+    demoRacks.forEach((rack, rackIdx) => {
+      // Vary fill rates for demonstration
+      const fillTarget = rackIdx % 3 === 0 ? 0.3 : rackIdx % 3 === 1 ? 0.7 : 1.1;
+      const capacity = rack.rows * rack.columns * rack.levels;
+      const targetBoxes = Math.floor(capacity * fillTarget);
+      let boxCount = 0;
+      
+      for (let level = 0; level < rack.levels && boxCount < targetBoxes; level++) {
+        for (let row = 0; row < rack.rows && boxCount < targetBoxes; row++) {
+          for (let col = 0; col < rack.columns && boxCount < targetBoxes; col++) {
+            if (Math.random() > 0.1 || fillTarget > 1) {
               const category = categories[Math.floor(Math.random() * categories.length)];
               demoBoxes.push({
                 id: `box-${rack.id}-${level}-${row}-${col}`,
@@ -330,10 +366,11 @@ export const useWarehouse = () => {
                 },
                 color: categoryColors[category],
                 category,
-                weight: Math.floor(Math.random() * 50) + 1,
-                quantity: Math.floor(Math.random() * 100) + 1,
+                weight: Math.floor(Math.random() * 50) + 5,
+                quantity: Math.floor(Math.random() * 100) + 10,
                 createdAt: new Date(),
               });
+              boxCount++;
             }
           }
         }
@@ -435,8 +472,14 @@ export const useWarehouse = () => {
 
   const toggleDragMode = useCallback(() => {
     setState(prev => ({ ...prev, isDragMode: !prev.isDragMode }));
-    toast.success(state.isDragMode ? 'Đã tắt chế độ kéo thả' : 'Bật chế độ kéo thả - chọn kệ rồi kéo');
+    toast.success(state.isDragMode ? 'Đã tắt chế độ di chuyển kệ' : 'Bật chế độ di chuyển kệ - chọn kệ rồi dùng phím mũi tên ←↑↓→');
   }, [state.isDragMode]);
+
+  // Get rack position for keyboard navigation
+  const getRackPosition = useCallback((rackId: string) => {
+    const rack = state.racks.find(r => r.id === rackId);
+    return rack?.position || null;
+  }, [state.racks]);
 
   const updateRackPosition = useCallback((rackId: string, position: { x: number; y: number; z: number }) => {
     setState(prev => {
@@ -651,5 +694,6 @@ export const useWarehouse = () => {
     showAllRacks,
     setFillRateFilter,
     getVisibleRackIdsByFillRate,
+    getRackPosition,
   };
 };

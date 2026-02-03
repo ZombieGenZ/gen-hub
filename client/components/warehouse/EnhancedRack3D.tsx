@@ -4,7 +4,7 @@ import { useMemo, useState, useRef } from 'react';
 import * as THREE from 'three';
 import { RackConfig, getFillRateStatus, fillRateColors } from '@/types/warehouse';
 import { Html } from '@react-three/drei';
-import { ThreeEvent, useThree } from '@react-three/fiber';
+import { ThreeEvent } from '@react-three/fiber';
 
 interface EnhancedRack3DProps {
   config: RackConfig;
@@ -22,7 +22,6 @@ const EnhancedRack3D = ({
   config, 
   isSelected, 
   onSelect, 
-  onDrag, 
   isDraggable = false, 
   onHover, 
   onDoubleClick, 
@@ -30,9 +29,7 @@ const EnhancedRack3D = ({
   isVisible = true,
 }: EnhancedRack3DProps) => {
   const [hovered, setHovered] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
   const groupRef = useRef<THREE.Group>(null);
-  const { raycaster, gl } = useThree();
   
   const { position, rows, columns, levels, cellWidth, cellHeight, cellDepth } = config;
 
@@ -112,61 +109,32 @@ const EnhancedRack3D = ({
     return { frameGeometry: frameGeo, shelfGeometry: shelfGeo, postPositions: posts };
   }, [rows, columns, levels, cellWidth, cellHeight, cellDepth]);
 
-  const frameColor = isDragging
-    ? 0xffaa00
-    : isSelected
-      ? 0x00ff88
-      : hovered
-        ? 0x44aaff
-        : 0x3366aa; // Industrial blue
+  const frameColor = isSelected
+    ? 0x00ff88
+    : hovered
+      ? 0x44aaff
+      : 0x3366aa; // Industrial blue
 
-  const handlePointerDown = (e: ThreeEvent<PointerEvent>) => {
-    if (!isDraggable || !isSelected) return;
-    if (!e.nativeEvent.ctrlKey && !e.nativeEvent.metaKey) return;
-    e.stopPropagation();
-    setIsDragging(true);
-    gl.domElement.style.cursor = 'grabbing';
-  };
+  // Mouse drag is now disabled - use keyboard arrows instead
+  // This prevents conflicts with camera controls
 
-  const handlePointerUp = (e: ThreeEvent<PointerEvent>) => {
-    if (!isDragging) return;
-    e.stopPropagation();
-    setIsDragging(false);
-    gl.domElement.style.cursor = 'auto';
-
-    if (groupRef.current && onDrag) {
-      const pos = groupRef.current.position;
-      onDrag(config.id, {
-        x: Math.round(pos.x * 2) / 2,
-        y: 0,
-        z: Math.round(pos.z * 2) / 2,
-      });
-    }
-  };
-
-  const handlePointerMove = (e: ThreeEvent<PointerEvent>) => {
-    if (!isDragging || !groupRef.current) return;
-    e.stopPropagation();
-
-    const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
-    const intersection = new THREE.Vector3();
-    raycaster.ray.intersectPlane(plane, intersection);
-
-    if (intersection) {
-      groupRef.current.position.x = intersection.x - (columns * cellWidth) / 2;
-      groupRef.current.position.z = intersection.z - (rows * cellDepth) / 2;
-    }
-  };
-
-  const handleClick = (e: ThreeEvent<MouseEvent>) => {
-    if (isDragging) return;
-    e.stopPropagation();
+  const handleClick = () => {
     onSelect(config.id);
   };
 
   const handleDoubleClick = (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation();
     onDoubleClick?.(config.id);
+  };
+
+  const handlePointerOver = () => {
+    setHovered(true);
+    onHover?.(config.id);
+  };
+
+  const handlePointerOut = () => {
+    setHovered(false);
+    onHover?.(null);
   };
 
   if (!isVisible) return null;
@@ -181,24 +149,8 @@ const EnhancedRack3D = ({
       position={[position.x, position.y, position.z]}
       onClick={handleClick}
       onDoubleClick={handleDoubleClick}
-      onPointerDown={handlePointerDown}
-      onPointerUp={handlePointerUp}
-      onPointerMove={handlePointerMove}
-      onPointerOver={(e) => {
-        e.stopPropagation();
-        setHovered(true);
-        onHover?.(config.id);
-        if (isDraggable && isSelected) {
-          gl.domElement.style.cursor = 'grab';
-        }
-      }}
-      onPointerOut={() => {
-        setHovered(false);
-        onHover?.(null);
-        if (!isDragging) {
-          gl.domElement.style.cursor = 'auto';
-        }
-      }}
+      onPointerOver={handlePointerOver}
+      onPointerOut={handlePointerOut}
     >
       {/* Main frame - thicker lines for industrial look */}
       <lineSegments geometry={frameGeometry}>
@@ -279,7 +231,7 @@ const EnhancedRack3D = ({
             <span className="mr-2">{config.name}</span>
             <span className="opacity-80">({Math.round(fillRate * 100)}%)</span>
             {isDraggable && isSelected && (
-              <span className="ml-2 text-[10px] opacity-70">Ctrl+Drag</span>
+              <span className="ml-2 text-[10px] opacity-70">←↑↓→</span>
             )}
           </div>
         </Html>

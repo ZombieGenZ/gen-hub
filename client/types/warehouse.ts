@@ -4,32 +4,24 @@ export interface Position {
   z: number;
 }
 
-export type FillRateStatus = 'empty' | 'low' | 'medium' | 'high' | 'full' | 'overfilled';
+// Simplified to 3 colors: GREEN (<50%), YELLOW (50-100%), RED (>100%)
+export type FillRateStatus = 'low' | 'medium' | 'overfilled';
 
 export const fillRateColors: Record<FillRateStatus, string> = {
-  empty: '#64748b',     // Slate gray - trống
-  low: '#22c55e',       // Green - còn nhiều chỗ
-  medium: '#eab308',    // Yellow - vừa phải
-  high: '#f97316',      // Orange - gần đầy
-  full: '#ef4444',      // Red - đầy
-  overfilled: '#dc2626', // Dark red - quá tải
+  low: '#22c55e',       // Green - còn nhiều chỗ (< 50%)
+  medium: '#eab308',    // Yellow - vừa phải (50-100%)
+  overfilled: '#ef4444', // Red - quá tải (> 100%)
 };
 
 export const fillRateLabels: Record<FillRateStatus, string> = {
-  empty: 'Trống',
-  low: 'Còn nhiều chỗ (< 30%)',
-  medium: 'Vừa phải (30-60%)',
-  high: 'Gần đầy (60-90%)',
-  full: 'Đầy (90-100%)',
+  low: 'Còn nhiều chỗ (< 50%)',
+  medium: 'Vừa phải (50-100%)',
   overfilled: 'Quá tải (> 100%)',
 };
 
 export const getFillRateStatus = (fillRate: number): FillRateStatus => {
-  if (fillRate <= 0) return 'empty';
-  if (fillRate < 0.3) return 'low';
-  if (fillRate < 0.6) return 'medium';
-  if (fillRate < 0.9) return 'high';
-  if (fillRate <= 1) return 'full';
+  if (fillRate < 0.5) return 'low';
+  if (fillRate <= 1) return 'medium';
   return 'overfilled';
 };
 

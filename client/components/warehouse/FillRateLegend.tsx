@@ -9,7 +9,8 @@ interface FillRateLegendProps {
 }
 
 const FillRateLegend = ({ onFilterByStatus, activeFilter }: FillRateLegendProps) => {
-  const statuses: FillRateStatus[] = ['empty', 'low', 'medium', 'high', 'full', 'overfilled'];
+  // Simplified to 3 colors only
+  const statuses: FillRateStatus[] = ['low', 'medium', 'overfilled'];
 
   return (
     <div className="bg-card/95 backdrop-blur-md border border-border/50 p-3 rounded-xl shadow-lg">
