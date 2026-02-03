@@ -79,24 +79,26 @@ export const useWarehouse = () => {
 
   const createRack = useCallback((config: { rows: number; columns: number; levels: number }) => {
     const rackCount = state.racks.length;
-    const spacing = 8;
-    const col = rackCount % 5;
-    const row = Math.floor(rackCount / 5);
+    const spacingX = 12; // More space between racks
+    const spacingZ = 8;
+    const col = rackCount % 6;
+    const row = Math.floor(rackCount / 6);
     
+    // Industrial pallet rack dimensions
     const newRack: RackConfig = {
       id: `rack-${generateId()}`,
-      name: `Kệ ${rackCount + 1}`,
+      name: `Kệ ${String.fromCharCode(65 + row)}${col + 1}`,
       position: {
-        x: col * spacing,
+        x: 5 + col * spacingX,
         y: 0,
-        z: row * spacing,
+        z: 5 + row * spacingZ,
       },
       rows: config.rows,
       columns: config.columns,
       levels: config.levels,
-      cellWidth: 1.2,
-      cellHeight: 1.2,
-      cellDepth: 1.2,
+      cellWidth: 2.8,   // 2.8m wide per bay
+      cellHeight: 1.2,  // 1.2m per level (total ~5m for 4 levels)
+      cellDepth: 1.1,   // 1.1m deep (standard pallet depth)
       color: rackColors[rackCount % rackColors.length],
     };
     
