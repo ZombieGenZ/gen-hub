@@ -679,22 +679,6 @@ const ControlPanel = ({
           </div>
         </div>
       </div>
-
-      {/* Category Legend */}
-      <div className="p-4 border-t border-border bg-muted/30">
-        <h3 className="text-xs font-semibold uppercase text-muted-foreground mb-2">Chú thích</h3>
-        <div className="grid grid-cols-2 gap-1 text-xs">
-          {Object.entries(categoryLabels).map(([key, label]) => (
-            <div key={key} className="flex items-center gap-1">
-              <div 
-                className="w-2 h-2 rounded-full" 
-                style={{ backgroundColor: categoryColors[key as BoxCategory] }}
-              />
-              <span className="text-muted-foreground truncate">{label}</span>
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
   );
 };
