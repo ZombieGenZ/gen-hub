@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import UserDropdown from "@/components/ui/UserDropdown";
 import { Menu, MenuItem, HoveredLink } from "@/components/ui/navbar-menu";
+import { authStorage } from "@/services/auth/auth-storage.service";
 
 interface HeaderProps {
     isLogin: boolean;
@@ -18,7 +19,10 @@ interface HeaderProps {
 
 export function PrimeNestHeader({ isLogin, user, onLogout }: HeaderProps) {
     const [active, setActive] = useState<string | null>(null);
-    console.log(isLogin);
+    // Dùng isLogin từ parent làm nguồn chính; fallback token khi vừa đăng nhập xong (parent chưa kịp set state)
+    const token = authStorage.getAccessToken();
+    const showUserSection = isLogin || !!token;
+    console.log(showUserSection);
     return (
         <header className="sticky top-0 w-full z-[100] bg-background border-b border-border shadow-sm">
             <div className="w-full max-w-[1440px] mx-auto px-4 lg:px-4 h-[80px] flex items-center justify-between">
@@ -67,11 +71,11 @@ export function PrimeNestHeader({ isLogin, user, onLogout }: HeaderProps) {
 
                 {/* Right Actions */}
                 <div className="relative z-50 flex items-center gap-5 shrink-0  ">
-                    {isLogin ?
+                    {showUserSection ? (
                         <div className="hidden md:flex items-center gap-4 ">
                             <UserDropdown user={user} onLogout={onLogout} />
                         </div>
-                        :
+                    ) : (
                         <div className="hidden md:flex items-center gap-5">
                             <Link href="/login" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors duration-200">
                                 Đăng Nhập
@@ -83,7 +87,7 @@ export function PrimeNestHeader({ isLogin, user, onLogout }: HeaderProps) {
                                 Đăng Ký
                             </Link>
                         </div>
-                    }
+                    )}
 
                     {/* Mobile Menu Button - Kept for mobile */}
                     <button className="lg:hidden text-muted-foreground p-2 hover:bg-accent hover:text-accent-foreground rounded-3xl transition-colors" aria-label="Open menu">
