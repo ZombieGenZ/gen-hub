@@ -4,10 +4,23 @@ import dynamic from 'next/dynamic';
 import { useCallback, useState } from 'react';
 import { useWarehouse } from '@/hooks/useWarehouse';
 import { useRackKeyboardNav } from '@/hooks/useRackKeyboardNav';
+import { useInventory } from '@/hooks/useInventory';
+import { useVoiceCommands } from '@/hooks/useVoiceCommands';
+import { useRealtimePresence } from '@/hooks/useRealtimePresence';
 import { Toaster } from 'sonner';
 import RackModal from '@/components/warehouse/RackModal';
-import TopNavbar from '@/components/warehouse/TopNavbar';
+import FeatureToolbar from '@/components/warehouse/FeatureToolbar';
+import FloatingToolbar from '@/components/warehouse/FloatingToolbar';
+import SearchPanel from '@/components/warehouse/SearchPanel';
+import AlertsPanel from '@/components/warehouse/AlertsPanel';
+import StatsDashboard from '@/components/warehouse/StatsDashboard';
+import TransactionPanel from '@/components/warehouse/TransactionPanel';
+import AISuggestionPanel from '@/components/warehouse/AISuggestionPanel';
+import BarcodeScannerPanel from '@/components/warehouse/BarcodeScannerPanel';
+import VoiceCommandIndicator from '@/components/warehouse/VoiceCommandIndicator';
+import { RealtimeUsersList } from '@/components/warehouse/RealtimeCursors';
 import { BoxCategory } from '@/types/warehouse';
+import { SearchResult } from '@/types/inventory';
 
 // Dynamic import for 3D components to avoid SSR issues
 const WarehouseScene = dynamic(() => import('@/components/warehouse/WarehouseScene'), { 
@@ -71,6 +84,64 @@ export default function Warehouse3DPage() {
   const [performanceMode, setPerformanceMode] = useState(false);
   const [showFPS, setShowFPS] = useState(false);
 
+  // Panel visibility states
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [alertsOpen, setAlertsOpen] = useState(false);
+  const [statsOpen, setStatsOpen] = useState(false);
+  const [transactionsOpen, setTransactionsOpen] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
+  const [barcodeOpen, setBarcodeOpen] = useState(false);
+  const [realtimeEnabled, setRealtimeEnabled] = useState(false);
+
+  // Inventory management hook
+  const {
+    transactions,
+    alerts,
+    alertsBySeverity,
+    highlightedBoxId,
+    generateAlerts,
+    dismissAlert,
+    clearDismissedAlerts,
+    searchBoxes,
+    highlightBox,
+    categoryStats,
+    rackUtilization,
+    transactionSummary,
+  } = useInventory({ boxes: state.boxes, racks: state.racks });
+
+  // Realtime presence hook
+  const {
+    isConnected: realtimeConnected,
+    users: realtimeUsers,
+    updateCursor,
+  } = useRealtimePresence({
+    enabled: realtimeEnabled,
+    selectedRackId: state.selectedRack,
+  });
+
+  // Voice commands hook
+  const {
+    isListening: voiceListening,
+    isSupported: voiceSupported,
+    transcript: voiceTranscript,
+    toggleListening: toggleVoice,
+  } = useVoiceCommands({
+    onSearch: (query) => {
+      setSearchOpen(true);
+      setSearchQuery(query);
+    },
+    onHighlightRack: selectRack,
+    onClearSelection: clearSelection,
+    racks: state.racks,
+  });
+
+  // Handle search locate
+  const handleLocateResult = useCallback((result: SearchResult) => {
+    selectRack(result.rackId);
+    highlightBox(result.boxId);
+    setSearchOpen(false);
+  }, [selectRack, highlightBox]);
+
   // Keyboard navigation for rack movement
   useRackKeyboardNav({
     selectedRackId: state.selectedRack,
@@ -98,8 +169,7 @@ export default function Warehouse3DPage() {
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-background">
       <Toaster position="top-right" richColors />
-      <TopNavbar />
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden relative">
         <ControlPanel
           onCreateBackground={createBackground}
           onRemoveBackground={removeBackground}
@@ -177,6 +247,104 @@ export default function Warehouse3DPage() {
           // Modal integration
           focusedRackId={state.focusedRackId}
           isModalOpen={state.rackModalOpen}
+        />
+
+        {/* Feature Toolbar - Top Left */}
+        <FeatureToolbar
+          alertCount={alerts.length}
+          onToggleSearch={() => setSearchOpen(prev => !prev)}
+          onToggleAlerts={() => setAlertsOpen(prev => !prev)}
+          onToggleStats={() => setStatsOpen(prev => !prev)}
+          onToggleTransactions={() => setTransactionsOpen(prev => !prev)}
+          onRefreshAlerts={generateAlerts}
+          searchOpen={searchOpen}
+          alertsOpen={alertsOpen}
+          statsOpen={statsOpen}
+          transactionsOpen={transactionsOpen}
+        />
+
+        {/* Floating Toolbar - Bottom Right */}
+        <FloatingToolbar
+          onToggleAI={() => setAiOpen(prev => !prev)}
+          onToggleBarcode={() => setBarcodeOpen(prev => !prev)}
+          onToggleRealtime={() => setRealtimeEnabled(prev => !prev)}
+          onToggleVoice={toggleVoice}
+          aiOpen={aiOpen}
+          barcodeOpen={barcodeOpen}
+          realtimeConnected={realtimeConnected}
+          voiceListening={voiceListening}
+          realtimeUserCount={realtimeUsers.length}
+        />
+
+        {/* Search Panel */}
+        <SearchPanel
+          isOpen={searchOpen}
+          onClose={() => setSearchOpen(false)}
+          onSearch={searchBoxes}
+          onLocate={handleLocateResult}
+          onHighlight={highlightBox}
+        />
+
+        {/* Alerts Panel */}
+        <AlertsPanel
+          isOpen={alertsOpen}
+          onClose={() => setAlertsOpen(false)}
+          alerts={alerts}
+          alertsBySeverity={alertsBySeverity}
+          onDismiss={dismissAlert}
+          onClearDismissed={clearDismissedAlerts}
+          onViewRack={selectRack}
+        />
+
+        {/* Stats Dashboard */}
+        <StatsDashboard
+          isOpen={statsOpen}
+          onClose={() => setStatsOpen(false)}
+          stats={stats}
+          categoryStats={categoryStats}
+          rackUtilization={rackUtilization}
+          transactionSummary={transactionSummary}
+          onViewRack={selectRack}
+        />
+
+        {/* Transaction Panel */}
+        <TransactionPanel
+          isOpen={transactionsOpen}
+          onClose={() => setTransactionsOpen(false)}
+          transactions={transactions}
+        />
+
+        {/* AI Suggestion Panel */}
+        <AISuggestionPanel
+          isOpen={aiOpen}
+          onClose={() => setAiOpen(false)}
+          racks={state.racks}
+          boxes={state.boxes}
+          onHighlightRack={selectRack}
+          onSelectRack={(rackId) => {
+            selectRack(rackId);
+            openRackModal(rackId);
+          }}
+        />
+
+        {/* Barcode Scanner Panel */}
+        <BarcodeScannerPanel
+          isOpen={barcodeOpen}
+          onClose={() => setBarcodeOpen(false)}
+          onSearch={searchBoxes}
+          onLocate={handleLocateResult}
+        />
+
+        {/* Voice Command Indicator */}
+        <VoiceCommandIndicator
+          isListening={voiceListening}
+          transcript={voiceTranscript}
+        />
+
+        {/* Realtime Users List */}
+        <RealtimeUsersList
+          users={realtimeUsers}
+          isConnected={realtimeConnected}
         />
       </div>
 

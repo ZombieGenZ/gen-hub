@@ -29,7 +29,7 @@ const TopNavbar = () => {
           </button>
         ))}
         <div className="px-3 py-2 text-xs font-medium flex items-center gap-1 cursor-pointer hover:bg-navbar-hover">
-          <span>Kho Brozen</span>
+          <span>Kho</span>
           <ChevronDown className="w-3 h-3" />
         </div>
       </div>
@@ -37,11 +37,11 @@ const TopNavbar = () => {
       <div className="flex items-center space-x-3">
         <button className="flex items-center gap-1 px-2 py-1 text-xs hover:bg-navbar-hover rounded">
           <Globe className="w-4 h-4" />
-          <span>EN</span>
+          <span>VN</span>
         </button>
         <button className="flex items-center gap-1 px-2 py-1 text-xs hover:bg-navbar-hover rounded">
           <User className="w-4 h-4" />
-          <span>test</span>
+          <span>EMTHAIBIZEN</span>
           <ChevronDown className="w-3 h-3" />
         </button>
       </div>

@@ -8,7 +8,6 @@ import EnhancedRack3D from './EnhancedRack3D';
 import EnhancedBox3D from './EnhancedBox3D';
 import RackTooltip from './RackTooltip';
 import StatsOverlay from './StatsOverlay';
-import ControlsHint from './ControlsHint';
 import FillRateLegend from './FillRateLegend';
 import HumanFigures from './HumanFigures';
 import WarehouseBuilding from './WarehouseBuilding';
@@ -441,7 +440,6 @@ const WarehouseScene = ({
           onFilterByStatus={onSetFillRateFilter}
           activeFilter={fillRateFilter}
         />
-        <ControlsHint />
       </div>
 
       {/* Rack Tooltip */}
