@@ -46,12 +46,35 @@ const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout, children })
     setMounted(true);
   }, []);
 
+  // Use token as primary source of auth state, fallback to user prop
+  const token = authStorage.getAccessToken();
+  const isAuth = !!token || !!user;
+  
+  // Get user data from token if user prop is not available
+  const [userDataFromToken, setUserDataFromToken] = useState<any>(null);
+  
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (token && !user) {
+        try {
+          const data = await authStorage.getUser();
+          console.log('User data from token:', data);
+          setUserDataFromToken(data);
+        } catch (error) {
+          console.error('Failed to parse user from token:', error);
+        }
+      }
+    };
+    
+    fetchUserData();
+  }, [token, user]);
+  
   // Default user data if not provided
-  const defaultName = user?.name || "Người dùng";
+  const defaultName = user?.name || userDataFromToken?.user?.name || "Người dùng";
   const userData = {
     name: defaultName,
-    email: user?.email || "user@example.com",
-    avatar: user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(defaultName)}&background=334155&color=fff`,
+    email: user?.email || userDataFromToken?.user?.email || "user@example.com",
+    avatar: user?.avatar || userDataFromToken?.user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(defaultName)}&background=334155&color=fff`,
   };
 
   const handleProfile = () => {
@@ -104,9 +127,9 @@ const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout, children })
       label: "Dashboard",
       onClick: () => {
         setIsOpen(false);
-        const roles = user?.roles || [];
+        const roles = user?.roles || userDataFromToken?.roles || [];
         // Check for ADMIN role (case-insensitive)
-        if (roles.some(role => role.toUpperCase() === 'ADMIN' || role.toUpperCase() === 'ADMINISTRATOR')) {
+        if (roles.some((role: any) => typeof role === 'string' ? role.toUpperCase() === 'ADMIN' || role.toUpperCase() === 'ADMINISTRATOR' : role.name.toUpperCase() === 'ADMIN' || role.name.toUpperCase() === 'ADMINISTRATOR')) {
           router.push("/dashboard/admin");
         } else {
           router.push("/dashboard/customer");
@@ -144,7 +167,7 @@ const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout, children })
             aria-expanded={isOpen}
             aria-haspopup="true"
           >
-            {user ? (
+            {isAuth ? (
               <>
                 <div className="relative group/avatar">
                   <div
@@ -206,7 +229,7 @@ const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout, children })
               </div>
             )}
 
-            {user ? (
+            {isAuth ? (
               <>
                 {/* User info header */}
                 <div className="border-t border-b border-border bg-muted/40 px-4 py-3">

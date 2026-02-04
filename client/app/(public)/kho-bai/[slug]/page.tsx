@@ -151,7 +151,7 @@ export default function WarehouseDynamicPage() {
                     floorLoadCapacity: 3,
                 }}
             />
-            <main className="flex-1 w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <main className="flex-1 w-full max-w-350 mx-auto px-4 sm:px-6 lg:px-8 py-6">
 
                 {/* 1. Header Section */}
                 <div className="space-y-4 mb-6">
@@ -198,7 +198,7 @@ export default function WarehouseDynamicPage() {
                 </div>
 
                 {/* 2. Image Grid ) */}
-                <div className="rounded-2xl overflow-hidden shadow-sm mb-10 h-[300px] md:h-[450px]">
+                <div className="rounded-2xl overflow-hidden shadow-sm mb-10 h-75 md:h-112.5">
                     <div className="grid grid-cols-4 grid-rows-2 h-full gap-2">
                         {/* Main Image (Large Left) */}
                         <div className="col-span-4 md:col-span-2 row-span-2 relative group cursor-pointer bg-slate-100">

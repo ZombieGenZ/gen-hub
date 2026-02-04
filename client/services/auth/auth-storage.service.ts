@@ -173,13 +173,26 @@ class AuthStorageService {
    * Lấy thông tin người dùng từ token truy cập
    * @returns Thông tin người dùng hoặc null nếu không có token hợp lệ
    */
-  getUser(): UserData | null {
+  async getUser(): Promise<UserData | null> {
     const token = this.getAccessToken();
     if (!token) return null;
     try {
-        return JSON.parse(atob(token.split('.')[1]));
-    } catch {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/account/profile`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
         return null;
+      }
+      
+      const data = await response.json();
+      return data.data;
+    } catch (error) {
+      console.error('Failed to fetch user profile:', error);
+      return null;
     }
   }
 }

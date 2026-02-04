@@ -31,7 +31,7 @@ const userService = new UserService();
 const notificationService = new NotificationService();
 const authService = new AuthService();
 
-const FIVE_MINUTES_MS = 5 * 60 * 1000;
+const FIVE_MINUTES_MS = 1 * 60 * 1000;
 
 export default function Home() {
     const router = useRouter();
@@ -50,7 +50,7 @@ export default function Home() {
         let isMounted = true;
         let intervalId: number | undefined;
 
-        const fetchMeAndNotifications = async () => {
+        const fetchUserData = async () => {
             if (isFetchingRef.current) return;
             isFetchingRef.current = true;
             try {
@@ -69,6 +69,8 @@ export default function Home() {
                 if (!accessToken) {
                     try {
                         await authService.getNewToken(refreshToken);
+                        showToast("Token đã được cập nhật", "success");
+                        console.log("Token đã được cập nhật");
                         accessToken = authStorage.getAccessToken();
                     } catch {
                         accessToken = null;
@@ -103,6 +105,31 @@ export default function Home() {
                     avatar: undefined,
                     roles: userData.roles.map((r) => r.name),
                 });
+            } catch (error) {
+                console.error("Failed to fetch user data:", error);
+            } finally {
+                isFetchingRef.current = false;
+            }
+        };
+
+        // gọi ngay khi mount
+        fetchUserData();
+        // gọi lại mỗi 1 phút
+        intervalId = window.setInterval(fetchUserData, FIVE_MINUTES_MS);
+
+        return () => {
+            isMounted = false;
+            if (intervalId) window.clearInterval(intervalId);
+        };
+    }, [router, showToast]);
+
+    useEffect(() => {
+        let isMounted = true;
+
+        const fetchNotifications = async () => {
+            try {
+                const accessToken = authStorage.getAccessToken();
+                if (!accessToken || !isLogin) return;
 
                 const [userNotifs, globalNotifs] = await Promise.all([
                     notificationService.getNotifications(accessToken),
@@ -121,22 +148,15 @@ export default function Home() {
                     );
                 }
             } catch (error) {
-                console.error("Failed to fetch user/notifications:", error);
-            } finally {
-                isFetchingRef.current = false;
+                console.error("Failed to fetch notifications:", error);
             }
         };
 
-        // gọi ngay khi mount
-        fetchMeAndNotifications();
-        // gọi lại mỗi 5 phút
-        intervalId = window.setInterval(fetchMeAndNotifications, FIVE_MINUTES_MS);
-
-        return () => {
-            isMounted = false;
-            if (intervalId) window.clearInterval(intervalId);
-        };
-    }, [router, showToast]);
+        // Chỉ fetch notifications khi user đã đăng nhập
+        if (isLogin) {
+            fetchNotifications();
+        }
+    }, [isLogin, showToast]);
 
     useEffect(() => {
         const handleScroll = () => {
