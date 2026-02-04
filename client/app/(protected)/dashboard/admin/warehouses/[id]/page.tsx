@@ -4,6 +4,8 @@ import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { WarehouseTemplateService } from "@/services/warehouse_template/warehouse_template.service";
 import { Warehouse } from "@/types/warehoue_template/warehouse_template.type";
+import type { Row_template } from "@/types/warehoue_template/row_warehouse_template.type";
+import type { RackWarehouseTemplate } from "@/types/warehoue_template/rack_warehouse_template.type";
 import { authStorage } from "@/services/auth/auth-storage.service";
 
 import { Button } from "@/components/ui/button";
@@ -25,10 +27,15 @@ import {
     Mail,
     ChevronRight,
     Home,
-    Box
+    Box,
+    Rows3,
+    PanelsTopLeft,
+    Layers3,
+    Grid3X3
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
+import { ro } from "date-fns/locale";
 
 export default function WarehouseDetailPage() {
     const params = useParams();
@@ -39,6 +46,20 @@ export default function WarehouseDetailPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [activeImage, setActiveImage] = useState<string>("");
+
+    // Hierarchical storage structure state
+    const [rows, setRows] = useState<Row_template[]>([]);
+    const [selectedRow, setSelectedRow] = useState<Row_template | null>(null);
+    const [racks, setRacks] = useState<RackWarehouseTemplate[]>([]);
+    const [selectedRack, setSelectedRack] = useState<RackWarehouseTemplate | null>(null);
+    const [shelves, setShelves] = useState<any[]>([]);
+    const [selectedShelf, setSelectedShelf] = useState<any | null>(null);
+    const [blocks, setBlocks] = useState<any[]>([]);
+
+    const [loadingRows, setLoadingRows] = useState(false);
+    const [loadingRacks, setLoadingRacks] = useState(false);
+    const [loadingShelves, setLoadingShelves] = useState(false);
+    const [loadingBlocks, setLoadingBlocks] = useState(false);
 
     useEffect(() => {
         const fetchWarehouse = async () => {
@@ -71,6 +92,97 @@ export default function WarehouseDetailPage() {
 
         fetchWarehouse();
     }, [id, router]);
+
+    // Load rows when warehouse is available
+    useEffect(() => {
+        const loadRows = async () => {
+            if (!warehouse) return;
+            const token = authStorage.getAccessToken();
+            if (!token) return;
+            setLoadingRows(true);
+            try {
+                const wsService = new WarehouseTemplateService();
+                const res: any = await wsService.getWarehouseRow(warehouse.id, token);
+                const rowsData: Row_template[] = res.data.items || [];
+                console.log(rowsData);
+                setRows(rowsData);
+                setSelectedRow(null);
+                setRacks([]);
+                setShelves([]);
+                setBlocks([]);
+            } catch (e) {
+                console.error("Failed to load rows", e);
+            } finally {
+                setLoadingRows(false);
+            }
+        };
+        loadRows();
+    }, [warehouse]);
+
+    const handleSelectRow = async (row: Row_template) => {
+        setSelectedRow(row);
+        setSelectedRack(null);
+        setShelves([]);
+        setBlocks([]);
+        const token = authStorage.getAccessToken();
+        if (!token || !warehouse) return;
+        setLoadingRacks(true);
+        try {
+            const wsService = new WarehouseTemplateService();
+            const res: any = await wsService.getWarehouseRack(row.id, warehouse.id, token);
+            const racksData: RackWarehouseTemplate[] = res?.data || res || [];
+            setRacks(racksData);
+        } catch (e) {
+            console.error("Failed to load racks", e);
+            setRacks([]);
+        } finally {
+            setLoadingRacks(false);
+        }
+    };
+
+    const handleSelectRack = async (rack: RackWarehouseTemplate) => {
+        setSelectedRack(rack);
+        setSelectedShelf(null);
+        setBlocks([]);
+        const token = authStorage.getAccessToken();
+        if (!token || !warehouse || !selectedRow) return;
+        setLoadingShelves(true);
+        try {
+            const wsService = new WarehouseTemplateService();
+            const res: any = await wsService.getWarehouseShelf(rack.id, selectedRow.id, warehouse.id, token);
+            const shelvesData: any[] = res.data.items || [];
+            setShelves(shelvesData);
+        } catch (e) {
+            console.error("Failed to load shelves", e);
+            setShelves([]);
+        } finally {
+            setLoadingShelves(false);
+        }
+    };
+
+    const handleSelectShelf = async (shelf: any) => {
+        setSelectedShelf(shelf);
+        const token = authStorage.getAccessToken();
+        if (!token || !warehouse || !selectedRow || !selectedRack) return;
+        setLoadingBlocks(true);
+        try {
+            const wsService = new WarehouseTemplateService();
+            const res: any = await wsService.getWarehouseBlock(
+                shelf.id,
+                selectedRack.id,
+                selectedRow.id,
+                warehouse.id,
+                token
+            );
+            const blocksData: any[] = res.data.items || [];
+            setBlocks(blocksData);
+        } catch (e) {
+            console.error("Failed to load blocks", e);
+            setBlocks([]);
+        } finally {
+            setLoadingBlocks(false);
+        }
+    };
 
     if (loading) {
         return (
@@ -296,6 +408,154 @@ export default function WarehouseDetailPage() {
                                         <span className="text-slate-600 text-sm">Bãi đỗ xe container rộng 500m²</span>
                                     </li>
                                 </ul>
+                            </div>
+                        </div>
+
+                        {/* Storage Layout: Rows / Racks / Shelves / Blocks */}
+                        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                            <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                                <Rows3 className="w-5 h-5 text-primary" />
+                                Cấu trúc lưu trữ (Row / Rack / Shelf / Block)
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                {/* Rows */}
+                                <div>
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="text-sm font-semibold text-slate-700 flex items-center gap-1">
+                                            <Rows3 className="w-4 h-4" /> Rows
+                                        </span>
+                                        {loadingRows && <span className="text-xs text-slate-400">Đang tải...</span>}
+                                    </div>
+                                    <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                                        {rows.length === 0 && !loadingRows && (
+                                            <p className="text-xs text-slate-400">Chưa có row nào.</p>
+                                        )}
+                                        {Array.isArray(rows) && rows.map((row) => (
+                                            <button
+                                                key={row.id}
+                                                onClick={() => handleSelectRow(row)}
+                                                className={`w-full text-left px-3 py-2 rounded-lg border text-xs transition-all ${
+                                                    selectedRow?.id === row.id
+                                                        ? "border-primary bg-teal-50 text-teal-900"
+                                                        : "border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700"
+                                                }`}
+                                            >
+                                                <div className="font-semibold line-clamp-1">{row.name}</div>
+                                                <div className="text-[10px] text-slate-500">Mã: {row.code}</div>
+                                                <div className="text-[10px] text-slate-500">
+                                                    Số rack: {row._count?.racks ?? 0}
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Racks */}
+                                <div>
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="text-sm font-semibold text-slate-700 flex items-center gap-1">
+                                            <PanelsTopLeft className="w-4 h-4" /> Racks
+                                        </span>
+                                        {loadingRacks && <span className="text-xs text-slate-400">Đang tải...</span>}
+                                    </div>
+                                    <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                                        {selectedRow == null && (
+                                            <p className="text-xs text-slate-400">Chọn một Row để xem Racks.</p>
+                                        )}
+                                        {selectedRow && racks.length === 0 && !loadingRacks && (
+                                            <p className="text-xs text-slate-400">Row này chưa có rack.</p>
+                                        )}
+                                        {racks.map((rack) => (
+                                            <button
+                                                key={rack.id}
+                                                onClick={() => handleSelectRack(rack)}
+                                                className={`w-full text-left px-3 py-2 rounded-lg border text-xs transition-all ${
+                                                    selectedRack?.id === rack.id
+                                                        ? "border-primary bg-teal-50 text-teal-900"
+                                                        : "border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700"
+                                                }`}
+                                            >
+                                                <div className="font-semibold line-clamp-1">{rack.name}</div>
+                                                <div className="text-[10px] text-slate-500">Mã: {rack.code}</div>
+                                                <div className="text-[10px] text-slate-500">
+                                                    Shelves: {rack.count?.shelves ?? 0}
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Shelves */}
+                                <div>
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="text-sm font-semibold text-slate-700 flex items-center gap-1">
+                                            <Layers3 className="w-4 h-4" /> Shelves
+                                        </span>
+                                        {loadingShelves && <span className="text-xs text-slate-400">Đang tải...</span>}
+                                    </div>
+                                    <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                                        {selectedRack == null && (
+                                            <p className="text-xs text-slate-400">Chọn một Rack để xem Shelves.</p>
+                                        )}
+                                        {selectedRack && shelves.length === 0 && !loadingShelves && (
+                                            <p className="text-xs text-slate-400">Rack này chưa có shelf.</p>
+                                        )}
+                                        {shelves.map((shelf) => (
+                                            <button
+                                                key={shelf.id}
+                                                onClick={() => handleSelectShelf(shelf)}
+                                                className={`w-full text-left px-3 py-2 rounded-lg border text-xs transition-all ${
+                                                    selectedShelf?.id === shelf.id
+                                                        ? "border-primary bg-teal-50 text-teal-900"
+                                                        : "border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700"
+                                                }`}
+                                            >
+                                                <div className="font-semibold line-clamp-1">
+                                                    {shelf.name || `Shelf ${shelf.order || ""}`}
+                                                </div>
+                                                {shelf.code && (
+                                                    <div className="text-[10px] text-slate-500">Mã: {shelf.code}</div>
+                                                )}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Blocks */}
+                                <div>
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="text-sm font-semibold text-slate-700 flex items-center gap-1">
+                                            <Grid3X3 className="w-4 h-4" /> Blocks
+                                        </span>
+                                        {loadingBlocks && <span className="text-xs text-slate-400">Đang tải...</span>}
+                                    </div>
+                                    <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                                        {selectedShelf == null && (
+                                            <p className="text-xs text-slate-400">Chọn một Shelf để xem Blocks.</p>
+                                        )}
+                                        {selectedShelf && blocks.length === 0 && !loadingBlocks && (
+                                            <p className="text-xs text-slate-400">Shelf này chưa có block.</p>
+                                        )}
+                                        {blocks.map((block) => (
+                                            <div
+                                                key={block.id}
+                                                className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 text-xs text-slate-700"
+                                            >
+                                                <div className="font-semibold line-clamp-1">
+                                                    {block.name || `Block ${block.order || ""}`}
+                                                </div>
+                                                {block.code && (
+                                                    <div className="text-[10px] text-slate-500">Mã: {block.code}</div>
+                                                )}
+                                                {block.max_weight_capacity && (
+                                                    <div className="text-[10px] text-slate-500">
+                                                        Tải trọng: {block.max_weight_capacity} kg
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
                             </div>
                         </div>
 

@@ -52,8 +52,18 @@ export default function PropertySearch({ initialLocationSlug }: PropertySearchPr
     const [active, setActive] = useState<string | null>(null);
 
     useEffect(() => {
-        setIsLogin(authStorage.isAuthenticated());
-        setUser(authStorage.getUser());
+        const initAuth = async () => {
+            setIsLogin(authStorage.isAuthenticated());
+            try {
+                const userData = await authStorage.getUser();
+                setUser(userData);
+            } catch (error) {
+                console.error('Failed to get user data:', error);
+                setUser(null);
+            }
+        };
+        
+        initAuth();
     }, []);
 
     const searchParams = useSearchParams();
