@@ -99,7 +99,7 @@ const RackModal = ({
                 variant="secondary"
                 style={{ 
                   backgroundColor: fillRateColors[stats.status],
-                  color: stats.status === 'low' || stats.status === 'empty' ? '#000' : '#fff'
+                  color: stats.status === 'low' || stats.status === 'overfilled' ? '#000' : '#fff'
                 }}
               >
                 {Math.round(stats.fillRate * 100)}% - {fillRateLabels[stats.status]}
