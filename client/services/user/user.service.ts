@@ -1,4 +1,4 @@
-import { UpdateUserRequest, UserData, ChangePasswordRequest } from "@/types/user/user.type"
+import { UpdateUserRequest, UserData, ChangePasswordRequest, User } from "@/types/user/user.type"
 import { authStorage } from "@/services/auth/auth-storage.service"
 import { AuthService } from "@/services/auth/auth.service"
 
@@ -163,5 +163,39 @@ export class UserService {
       }
       
       return response.json();
+   }
+   /**
+    * Tìm kiếm user
+    */
+   async searchUsers(token: string, keyword: string): Promise<User[]> {
+      const searchParams = new URLSearchParams();
+      searchParams.append('keywords', keyword);
+      // Giới hạn kết quả trả về
+      searchParams.append('limit', '20'); 
+      
+      const response = await fetch(`${API}/admin/users?${searchParams.toString()}`, {
+         headers: {
+            'Authorization': `Bearer ${token}`
+         }
+      });
+
+      if (!response.ok) {
+         // Fallback to empty list if endpoint doesn't allow search or fails
+         console.warn('Search users failed');
+         return [];
+      }
+      
+      const data = await response.json();
+      return data.data.items || data.data || [];
+   }
+
+   /**
+    * Lấy danh sách user theo role (nếu có endpoint)
+    * Tạm thời dùng search
+    */
+   async getUsersByRole(token: string, role: string): Promise<User[]> {
+       // TODO: Implement real endpoint if available. 
+       // For now, we return empty or implement a filter if search supports it.
+       return [];
    }
 }

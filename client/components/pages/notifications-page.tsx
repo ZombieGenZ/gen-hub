@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { NotificationList } from "@/components/ui/notification-inbox-popover";
+import { NotificationList } from "@/components/notifications/NotificationList";
 import { BellIcon } from "@heroicons/react/24/outline";
 
 export function NotificationsPage() {
@@ -20,7 +20,6 @@ export function NotificationsPage() {
             <div className="bg-card border rounded-xl shadow-sm overflow-hidden min-h-[600px] flex flex-col">
                 <NotificationList
                     className="w-full flex-1 border-none shadow-none bg-card"
-                    isFullPage={true}
                 />
             </div>
         </div>

@@ -64,10 +64,10 @@ export class GlobalNotificationService {
         const cacheKey = this.redisService.getGlobalNotificationListCacheKey(query as Record<string, unknown>);
 
         // Check cache
-        const cached = await this.redisService.getGlobalNotificationListCache<IPaginatedResponse<IGlobalNotification>>(cacheKey);
-        if (cached) {
-            return cached;
-        }
+        // const cached = await this.redisService.getGlobalNotificationListCache<IPaginatedResponse<IGlobalNotification>>(cacheKey);
+        // if (cached) {
+        //     return cached;
+        // }
 
         const result = await this.repository.findMany(query);
 

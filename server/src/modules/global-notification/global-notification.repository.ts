@@ -61,8 +61,22 @@ export class GlobalNotificationRepository {
             this.prisma.globalNotification.count({ where }),
         ]);
 
+        // Fetch creators
+        const creatorIds = [...new Set(items.map(item => item.created_by).filter(id => id))];
+        const creators = await this.prisma.user.findMany({
+            where: { id: { in: creatorIds as string[] } },
+            select: { id: true, name: true, email: true },
+        });
+
+        const creatorMap = new Map(creators.map(c => [c.id, c]));
+
+        const itemsWithCreator = items.map(item => ({
+            ...item,
+            creator: item.created_by ? creatorMap.get(item.created_by) : null,
+        }));
+
         return {
-            items,
+            items: itemsWithCreator as any, // Cast to any or intersection type
             total,
             limit,
             offset,

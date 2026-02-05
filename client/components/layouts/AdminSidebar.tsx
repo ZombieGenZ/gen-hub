@@ -14,6 +14,7 @@ import {
     SparklesIcon,
     ShieldCheckIcon,
     ListBulletIcon,
+    BellIcon,
 } from "@heroicons/react/24/outline";
 import { AppSidebar, AppSidebarContent, SidebarGroup } from "./AppSidebar";
 
@@ -24,6 +25,7 @@ const adminNavGroups: SidebarGroup[] = [
             { href: "/dashboard/admin", icon: Squares2X2Icon, label: "Tổng quan", exactMatch: true },
             { href: "/dashboard/admin/warehouses", icon: HomeModernIcon, label: "Kho bãi" },
             { href: "/dashboard/admin/contracts", icon: DocumentTextIcon, label: "Hợp đồng" },
+            { href: "/dashboard/admin/notifications", icon: BellIcon, label: "Quản lý thông báo" },
         ]
     },
     {

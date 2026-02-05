@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
@@ -9,122 +9,122 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
     Bell,
-    GitMerge,
-    FileText,
-    ClipboardCheck,
-    Mail,
-    MessageSquareQuote,
     AlertCircle,
     AlertTriangle,
     Info,
-    LucideIcon,
+    CheckCircle2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { authStorage } from "@/services/auth/auth-storage.service";
+import { NotificationService } from "@/services/notification/notification.service";
+import { UserService } from "@/services/user/user.service";
+import { UserNotification, NotificationType } from "@/types/notification/notification.type";
+import { formatRelativeTime } from "@/lib/format-time";
+import { NotificationSkeleton } from "@/components/notifications/notification-skeleton";
+import { NotificationEmptyState } from "@/components/notifications/notification-empty-state";
 
-interface Notification {
-    id: number;
-    user: string;
-    action: string;
-    target: string;
-    timestamp: string;
-    unread: boolean;
-    icon: LucideIcon;
-    alertType?: 'warning' | 'danger' | 'info';
-}
+const notificationService = new NotificationService();
+const userService = new UserService();
 
-const initialNotifications: Notification[] = [
-    {
-        id: 1,
-        user: "Alicia Keys",
-        action: "merged",
-        target: "PR #105: Dark mode support",
-        timestamp: "10 minutes ago",
-        unread: true,
-        icon: GitMerge,
-    },
-    {
-        id: 2,
-        user: "Daniel Green",
-        action: "shared file",
-        target: "Quarterly Report.pdf",
-        timestamp: "30 minutes ago",
-        unread: true,
-        icon: FileText,
-    },
-    {
-        id: 3,
-        user: "Sophia Turner",
-        action: "assigned you a task",
-        target: "Marketing campaign brief",
-        timestamp: "2 hours ago",
-        unread: false,
-        icon: ClipboardCheck,
-    },
-    {
-        id: 4,
-        user: "Michael Ross",
-        action: "sent you a message",
-        target: "Project feedback discussion",
-        timestamp: "5 hours ago",
-        unread: false,
-        icon: Mail,
-    },
-    {
-        id: 5,
-        user: "Priya Sharma",
-        action: "added a comment",
-        target: "UX Review Notes",
-        timestamp: "1 day ago",
-        unread: false,
-        icon: MessageSquareQuote,
-    },
-    {
-        id: 6,
-        user: "System",
-        action: "alert",
-        target: "Server downtime scheduled",
-        timestamp: "3 days ago",
-        unread: true,
-        icon: AlertCircle,
-        alertType: 'danger'
-    },
-    {
-        id: 7,
-        user: "Security",
-        action: "alert",
-        target: "Unusual login attempt detected",
-        timestamp: "5 hours ago",
-        unread: true,
-        icon: AlertTriangle,
-        alertType: 'warning'
-    },
-    {
-        id: 8,
-        user: "Maintenance",
-        action: "alert",
-        target: "System update completed",
-        timestamp: "1 day ago",
-        unread: false,
-        icon: Info,
-        alertType: 'info'
-    },
-];
+// Icon and style mapping for notification types
+const getNotificationConfig = (type: NotificationType) => {
+    switch (type) {
+        case 'SUCCESS':
+            return {
+                icon: CheckCircle2,
+                bgColor: "bg-green-100",
+                textColor: "text-green-600",
+            };
+        case 'WARNING':
+            return {
+                icon: AlertTriangle,
+                bgColor: "bg-yellow-100",
+                textColor: "text-yellow-600",
+            };
+        case 'ERROR':
+            return {
+                icon: AlertCircle,
+                bgColor: "bg-red-100",
+                textColor: "text-red-600",
+            };
+        case 'INFO':
+        default:
+            return {
+                icon: Info,
+                bgColor: "bg-blue-100",
+                textColor: "text-blue-600",
+            };
+    }
+};
 
 export function useNotifications() {
-    const [notifications, setNotifications] = useState(initialNotifications);
-    const unreadCount = notifications.filter((n) => n.unread).length;
+    const [notifications, setNotifications] = useState<UserNotification[]>([]);
+    const [unreadCount, setUnreadCount] = useState(0);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
-    const markAsRead = (id: number) => {
-        setNotifications(
-            notifications.map((n) => (n.id === id ? { ...n, unread: false } : n)),
-        );
+    const fetchNotifications = useCallback(async () => {
+        const token = authStorage.getAccessToken();
+        if (!token) return;
+
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            const [response, count] = await Promise.all([
+                notificationService.getNotifications(token, { limit: 20 }),
+                notificationService.getUnreadCount(token),
+            ]);
+
+            setNotifications(response.items);
+            setUnreadCount(count);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Có lỗi xảy ra');
+            console.error('Failed to fetch notifications:', err);
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+    const markAsRead = useCallback(async (id: string) => {
+        const token = authStorage.getAccessToken();
+        if (!token) return;
+
+        try {
+            await notificationService.markAsRead(token, id);
+            setNotifications(prev =>
+                prev.map(n => n.id === id ? { ...n, is_read: true, read_at: new Date().toISOString() } : n)
+            );
+            setUnreadCount(prev => Math.max(0, prev - 1));
+        } catch (err) {
+            console.error('Failed to mark as read:', err);
+        }
+    }, []);
+
+    const markAllAsRead = useCallback(async () => {
+        const token = authStorage.getAccessToken();
+        if (!token) return;
+
+        try {
+            await notificationService.markAllAsRead(token);
+            setNotifications(prev =>
+                prev.map(n => ({ ...n, is_read: true, read_at: new Date().toISOString() }))
+            );
+            setUnreadCount(0);
+        } catch (err) {
+            console.error('Failed to mark all as read:', err);
+        }
+    }, []);
+
+    return {
+        notifications,
+        unreadCount,
+        isLoading,
+        error,
+        fetchNotifications,
+        markAsRead,
+        markAllAsRead
     };
-
-    const markAllAsRead = () => {
-        setNotifications(notifications.map((n) => ({ ...n, unread: false })));
-    };
-
-    return { notifications, unreadCount, markAsRead, markAllAsRead };
 }
 
 interface NotificationListProps {
@@ -133,19 +133,62 @@ interface NotificationListProps {
 }
 
 export function NotificationList({ className, isFullPage = false }: NotificationListProps) {
-    const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
+    const {
+        notifications,
+        unreadCount,
+        isLoading,
+        error,
+        fetchNotifications,
+        markAsRead,
+        markAllAsRead
+    } = useNotifications();
     const [tab, setTab] = useState("all");
+    const [currentUser, setCurrentUser] = useState<any>(null);
     const pathname = usePathname();
 
-    // Determine link base on current path
+    // Fetch user for variable substitution
+    useEffect(() => {
+        const fetchUser = async () => {
+            try {
+                const token = authStorage.getAccessToken();
+                const refreshToken = authStorage.getRefreshToken();
+                if (token && refreshToken) {
+                    const userData = await userService.getUser(token, refreshToken);
+                    setCurrentUser(userData.user);
+                }
+            } catch (error) {
+                console.error("Failed to fetch user for notifications", error);
+            }
+        };
+        fetchUser();
+    }, []);
+
+    const formatContent = (content: string) => {
+        if (!content || !currentUser) return content;
+
+        const name = currentUser.full_name || currentUser.name || "Người dùng";
+        const email = currentUser.email || "";
+
+        let formatted = content.replace(/\{\{full_name\}\}/g, name);
+        formatted = formatted.replace(/\{\{email\}\}/g, email);
+        return formatted;
+    };
+
+    // Fetch notifications on mount
+    useEffect(() => {
+        fetchNotifications();
+    }, [fetchNotifications]);
+
+    // Determine link based on current path
     const isCustomer = pathname?.includes("/dashboard/customer");
     const notificationsLink = isCustomer
         ? "/dashboard/customer/notifications"
         : "/dashboard/admin/notifications";
 
+    // Filter notifications based on selected tab
     const filtered =
-        tab === "unread" ? notifications.filter((n) => n.unread) :
-            tab === "alert" ? notifications.filter((n) => n.action === "alert") :
+        tab === "unread" ? notifications.filter((n) => !n.is_read) :
+            tab === "alert" ? notifications.filter((n) => n.type === 'WARNING' || n.type === 'ERROR') :
                 notifications;
 
     return (
@@ -171,55 +214,57 @@ export function NotificationList({ className, isFullPage = false }: Notification
                 </div>
 
                 {/* Notifications List */}
-                <div className="flex-1 overflow-y-auto">
-                    {filtered.length === 0 ? (
-                        <div className="px-3 py-6 text-center text-sm text-muted-foreground">
-                            Không có thông báo
+                <div className="flex-1 overflow-y-auto max-h-[400px]">
+                    {/* Loading State - Skeleton */}
+                    {isLoading && <NotificationSkeleton count={5} />}
+
+                    {/* Error State */}
+                    {!isLoading && error && (
+                        <div className="px-3 py-6 text-center text-sm text-red-500">
+                            {error}
                         </div>
-                    ) : (
+                    )}
+
+                    {/* Empty State */}
+                    {!isLoading && !error && filtered.length === 0 && (
+                        <NotificationEmptyState />
+                    )}
+
+                    {/* Notification Items */}
+                    {!isLoading && !error && filtered.length > 0 && (
                         filtered.map((n) => {
-                            const Icon = n.icon;
-
-                            // Helper to get color styles based on action and alert type
-                            const getIconStyles = (n: Notification) => {
-                                if (n.action === 'alert') {
-                                    switch (n.alertType) {
-                                        case 'danger': return "bg-red-100 text-red-600";
-                                        case 'warning': return "bg-yellow-100 text-yellow-600";
-                                        case 'info': return "bg-blue-100 text-blue-600";
-                                        default: return "bg-red-100 text-red-600";
-                                    }
-                                }
-
-                                switch (n.action) {
-                                    case 'merged': return "bg-purple-100 text-purple-600";
-                                    case 'assigned you a task': return "bg-green-100 text-green-600";
-                                    case 'shared file': return "bg-orange-100 text-orange-600";
-                                    default: return "bg-gray-100 text-gray-600";
-                                }
-                            };
+                            const config = getNotificationConfig(n.type);
+                            const Icon = config.icon;
 
                             return (
                                 <button
                                     key={n.id}
-                                    onClick={() => markAsRead(n.id)}
+                                    onClick={() => !n.is_read && markAsRead(n.id)}
                                     className="flex w-full items-start gap-3 border-b px-3 py-3 text-left hover:bg-accent transition-colors"
                                 >
-                                    <div className={cn("mt-1 p-2 rounded-full shrink-0", getIconStyles(n))}>
+                                    <div className={cn(
+                                        "mt-1 p-2 rounded-full shrink-0",
+                                        config.bgColor,
+                                        config.textColor
+                                    )}>
                                         <Icon size={16} />
                                     </div>
-                                    <div className="flex-1 space-y-1">
-                                        <p
-                                            className={`text-sm ${n.unread ? "font-semibold text-foreground" : "text-foreground/80"
-                                                }`}
-                                        >
-                                            {n.user} {n.action}{" "}
-                                            <span className="font-medium">{n.target}</span>
+                                    <div className="flex-1 space-y-1 min-w-0">
+                                        <p className={cn(
+                                            "text-sm truncate",
+                                            !n.is_read ? "font-semibold text-foreground" : "text-foreground/80"
+                                        )}>
+                                            {n.title}
                                         </p>
-                                        <p className="text-xs text-muted-foreground">{n.timestamp}</p>
+                                        <p className="text-xs text-muted-foreground line-clamp-2">
+                                            {formatContent(n.content)}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">
+                                            {formatRelativeTime(n.created_at)}
+                                        </p>
                                     </div>
-                                    {n.unread && (
-                                        <span className="mt-1 inline-block size-2 rounded-full bg-primary" />
+                                    {!n.is_read && (
+                                        <span className="mt-1 inline-block size-2 rounded-full bg-primary shrink-0" />
                                     )}
                                 </button>
                             );
@@ -250,12 +295,41 @@ interface NotificationInboxPopoverProps {
     className?: string;
 }
 
-function NotificationInboxPopover({ trigger, side = "bottom", align = "center", sideOffset = 4, className }: NotificationInboxPopoverProps) {
-    const { unreadCount } = useNotifications();
+function NotificationInboxPopover({
+    trigger,
+    side = "bottom",
+    align = "center",
+    sideOffset = 4,
+    className
+}: NotificationInboxPopoverProps) {
+    const [open, setOpen] = useState(false);
+    const [unreadCount, setUnreadCount] = useState(0);
+
+    // Fetch unread count on mount and when popover opens
+    useEffect(() => {
+        const fetchUnreadCount = async () => {
+            const token = authStorage.getAccessToken();
+            if (!token) return;
+
+            try {
+                const count = await notificationService.getUnreadCount(token);
+                setUnreadCount(count);
+            } catch (err) {
+                console.error('Failed to fetch unread count:', err);
+            }
+        };
+
+        fetchUnreadCount();
+
+        // Refresh count periodically (every 30 seconds)
+        const interval = setInterval(fetchUnreadCount, 30000);
+        return () => clearInterval(interval);
+    }, []);
+
     const triggerNode = typeof trigger === "function" ? trigger(unreadCount) : trigger;
 
     return (
-        <Popover>
+        <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
                 {triggerNode ? (
                     triggerNode
@@ -270,7 +344,12 @@ function NotificationInboxPopover({ trigger, side = "bottom", align = "center", 
                     </Button>
                 )}
             </PopoverTrigger>
-            <PopoverContent side={side} align={align} sideOffset={sideOffset} className={cn("p-2", className)}>
+            <PopoverContent
+                side={side}
+                align={align}
+                sideOffset={sideOffset}
+                className={cn("p-0", className)}
+            >
                 <NotificationList className="w-[380px] h-full" />
             </PopoverContent>
         </Popover>

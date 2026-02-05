@@ -15,7 +15,7 @@ import { authStorage } from "@/services/auth/auth-storage.service";
 import { AuthService } from "@/services/auth/auth.service";
 import { UserService } from "@/services/user/user.service";
 import { NotificationService } from "@/services/notification/notification.service";
-import type { Notification } from "@/types/notification/notification.type";
+import type { UserNotification as Notification } from "@/types/notification/notification.type";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/contexts/ToastContext";
 import { ScrollReveal } from "@/components/ScrollReveal";
@@ -131,13 +131,16 @@ export default function Home() {
                 const accessToken = authStorage.getAccessToken();
                 if (!accessToken || !isLogin) return;
 
-                const [userNotifs, globalNotifs] = await Promise.all([
+                const [userNotifsResponse, globalNotifsResponse] = await Promise.all([
                     notificationService.getNotifications(accessToken),
-                    notificationService.globalNotification(accessToken),
+                    notificationService.getGlobalNotifications(accessToken),
                 ]);
 
                 if (!isMounted) return;
-                setNotifications([...(globalNotifs || []), ...(userNotifs || [])]);
+                const userNotifs = userNotifsResponse?.items || [];
+                const globalNotifs = globalNotifsResponse?.items || [];
+                // Cast global notifications to any to merge with user notifications for now
+                setNotifications([...(globalNotifs as any[]), ...userNotifs]);
 
                 const total = (userNotifs?.length || 0) + (globalNotifs?.length || 0);
                 if (total > 0 && !hasShownNotificationRef.current) {
@@ -183,8 +186,8 @@ export default function Home() {
             {/* Navbar - Always visible with scroll effect */}
             <div
                 className={`fixed top-0 left-0 right-0 z-40 transition-all duration-500 ${isScrolled
-                        ? 'bg-white/95 backdrop-blur-md shadow-lg'
-                        : 'bg-transparent'
+                    ? 'bg-white/95 backdrop-blur-md shadow-lg'
+                    : 'bg-transparent'
                     }`}
             >
                 <PrimeNestHeader isLogin={isLogin} user={user} onLogout={handleLogout} />

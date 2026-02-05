@@ -122,9 +122,10 @@ export function ProfileDialog({ open = true, onOpenChange }: ProfileDialogProps 
           setName(data.user?.name || '')
         }
 
-        const getUserNotifications = await notificationService.getNotifications(token);
+        const userNotifsResponse = await notificationService.getNotifications(token);
         const getGlobalNotifications = await notificationService.globalNotification(token);
-        setNotifications([...getGlobalNotifications, ...getUserNotifications]);
+        const userNotifs = userNotifsResponse?.items || [];
+        setNotifications([...getGlobalNotifications, ...userNotifs]);
 
         // Fetch organization if user has one
         if ((data?.user as any)?.organization_id) {

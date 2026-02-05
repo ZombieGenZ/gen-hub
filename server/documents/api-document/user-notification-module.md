@@ -3,6 +3,7 @@
 ## Tổng Quan
 
 Module `user-notification` quản lý thông báo trong hệ thống cho người dùng. Hỗ trợ:
+
 - Xem danh sách thông báo với phân trang và lọc
 - Đếm số thông báo chưa đọc
 - Đánh dấu đã đọc (đơn lẻ/tất cả)
@@ -54,7 +55,7 @@ flowchart TB
 ## Loại Thông Báo (NotificationType)
 
 | Type | Description | Use Case |
-|------|-------------|----------|
+| :--- | :--- | :--- |
 | `INFO` | Thông tin chung | Thông báo hệ thống, cập nhật tính năng |
 | `WARNING` | Cảnh báo | Hợp đồng sắp hết hạn, tài khoản sắp bị khóa |
 | `SUCCESS` | Thành công | Thanh toán thành công, gia hạn thành công |
@@ -69,7 +70,7 @@ flowchart TB
 
 ### Base URL
 
-```
+```text
 /user-notifications
 ```
 
@@ -88,7 +89,7 @@ Authorization: Bearer <access_token>
 **Query Parameters:**
 
 | Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
+| :--- | :--- | :--- | :--- | :--- |
 | `limit` | number | No | 10 | Số lượng bản ghi tối đa |
 | `offset` | number | No | 0 | Vị trí bắt đầu |
 | `keywords` | string | No | - | Tìm theo tiêu đề/nội dung |
@@ -96,6 +97,7 @@ Authorization: Bearer <access_token>
 | `type` | enum | No | - | Lọc theo loại thông báo |
 
 **Response (200 OK):**
+
 ```json
 {
   "code": "user-notification.list_success",
@@ -128,6 +130,7 @@ Authorization: Bearer <access_token>
 **Mô tả:** Trả về số lượng thông báo chưa đọc. Thường dùng để hiển thị badge.
 
 **Response (200 OK):**
+
 ```json
 {
   "code": "user-notification.get_success",
@@ -150,7 +153,7 @@ Authorization: Bearer <access_token>
 **Path Parameters:**
 
 | Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
+| :--- | :--- | :--- | :--- |
 | `userId` | UUID | Yes | ID của user cần xem thông báo |
 
 **Query Parameters:** Giống endpoint GET /user-notifications
@@ -166,7 +169,7 @@ Authorization: Bearer <access_token>
 **Request Body:**
 
 | Field | Type | Required | Description |
-|-------|------|----------|-------------|
+| :--- | :--- | :--- | :--- |
 | `user_id` | UUID | Yes | ID người nhận |
 | `title` | string | Yes | Tiêu đề (max 255 ký tự) |
 | `content` | string | Yes | Nội dung thông báo |
@@ -185,6 +188,7 @@ Authorization: Bearer <access_token>
   "type": "WARNING"
 }
 ```
+
 </details>
 
 <details>
@@ -198,9 +202,11 @@ Authorization: Bearer <access_token>
   "type": "SUCCESS"
 }
 ```
+
 </details>
 
 **Response (201 Created):**
+
 ```json
 {
   "code": "user-notification.send_success",
@@ -228,10 +234,11 @@ Authorization: Bearer <access_token>
 **Path Parameters:**
 
 | Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
+| :--- | :--- | :--- | :--- |
 | `id` | UUID | Yes | ID của thông báo |
 
 **Response (200 OK):**
+
 ```json
 {
   "code": "user-notification.mark_read_success",
@@ -249,7 +256,7 @@ Authorization: Bearer <access_token>
 **Error Responses:**
 
 | Status | Description |
-|--------|-------------|
+| :--- | :--- |
 | 403 | Không có quyền đánh dấu thông báo này |
 | 404 | Không tìm thấy thông báo |
 
@@ -260,6 +267,7 @@ Authorization: Bearer <access_token>
 **Mô tả:** Đánh dấu tất cả thông báo chưa đọc thành đã đọc.
 
 **Response (200 OK):**
+
 ```json
 {
   "code": "user-notification.mark_all_read_success",
@@ -282,13 +290,14 @@ Authorization: Bearer <access_token>
 **Request Body:**
 
 | Field | Type | Required | Description |
-|-------|------|----------|-------------|
+| :--- | :--- | :--- | :--- |
 | `user_ids` | UUID[] | Yes | Danh sách ID người nhận |
 | `title` | string | Yes | Tiêu đề (max 255 ký tự) |
 | `content` | string | Yes | Nội dung thông báo |
 | `type` | enum | No | Loại thông báo (mặc định: INFO) |
 
 **Request Body Example:**
+
 ```json
 {
   "user_ids": [
@@ -303,6 +312,7 @@ Authorization: Bearer <access_token>
 ```
 
 **Response (201 Created):**
+
 ```json
 {
   "code": "user-notification.send_success",
@@ -319,7 +329,7 @@ Authorization: Bearer <access_token>
 ## Permissions Matrix
 
 | Permission | Description |
-|------------|-------------|
+| :--- | :--- |
 | `user-notification.list.all` | Xem thông báo của user bất kỳ |
 | `user-notification.send` | Gửi thông báo cho user |
 | `user-notification.send.bulk` | Gửi thông báo hàng loạt |
@@ -332,7 +342,7 @@ Authorization: Bearer <access_token>
 ## Files Trong Module
 
 | File | Mô tả |
-|------|-------|
+| :--- | :--- |
 | `user-notification.controller.ts` | Controller xử lý HTTP requests |
 | `user-notification.service.ts` | Business logic layer |
 | `user-notification.repository.ts` | Data access layer |
