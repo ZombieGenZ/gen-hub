@@ -5,7 +5,7 @@ import { useCallback, useState } from 'react';
 import { useWarehouse } from '@/hooks/useWarehouse';
 import { useRackKeyboardNav } from '@/hooks/useRackKeyboardNav';
 import { useInventory } from '@/hooks/useInventory';
-import { useVoiceCommands } from '@/hooks/useVoiceCommands';
+import { useAIVoiceCommands } from '@/hooks/useAIVoiceCommands';
 import { useRealtimePresence } from '@/hooks/useRealtimePresence';
 import { Toaster } from 'sonner';
 import RackModal from '@/components/warehouse/RackModal';
@@ -119,20 +119,77 @@ export default function Warehouse3DPage() {
     selectedRackId: state.selectedRack,
   });
 
-  // Voice commands hook
+  // AI Voice commands hook - với tất cả chức năng
   const {
     isListening: voiceListening,
     isSupported: voiceSupported,
+    isProcessing: voiceProcessing,
     transcript: voiceTranscript,
+    lastCommand: voiceLastCommand,
+    confidence: voiceConfidence,
     toggleListening: toggleVoice,
-  } = useVoiceCommands({
+    availableCommands: voiceCommands,
+    executeTextCommand,
+  } = useAIVoiceCommands({
+    // Search & Navigation
     onSearch: (query) => {
       setSearchOpen(true);
       setSearchQuery(query);
     },
     onHighlightRack: selectRack,
     onClearSelection: clearSelection,
+    
+    // Rack management
+    onCreateRack: createRack,
+    onRemoveRack: removeRack,
+    onRotateRack: rotateRack,
+    onCloneRack: cloneRack,
+    onShowOnlyRack: showOnlyRack,
+    onShowAllRacks: showAllRacks,
+    onOpenRackModal: openRackModal,
+    
+    // Box management
+    onAddBoxes: addBoxes,
+    onRemoveAllBoxes: removeAllBoxes,
+    onRemoveSelectedBox: removeSelectedBox,
+    onDuplicateBox: duplicateBox,
+    
+    // View controls
+    onToggleAxes: toggleAxes,
+    onToggleGrid: toggleGrid,
+    onSetViewMode: setViewMode,
+    onFilterCategory: setFilterCategory,
+    
+    // Environment
+    onCreateBackground: createBackground,
+    onRemoveBackground: removeBackground,
+    onToggleHumans: () => setShowHumans(prev => !prev),
+    onToggleRoof: () => setShowRoof(prev => !prev),
+    onTogglePerformanceMode: () => setPerformanceMode(prev => !prev),
+    onToggleFPS: () => setShowFPS(prev => !prev),
+    
+    // Data
+    onLoadDemoData: loadDemoData,
+    onExportData: exportData,
+    onImportData: importData,
+    
+    // Panels
+    onToggleSearch: () => setSearchOpen(prev => !prev),
+    onToggleAlerts: () => setAlertsOpen(prev => !prev),
+    onToggleStats: () => setStatsOpen(prev => !prev),
+    onToggleTransactions: () => setTransactionsOpen(prev => !prev),
+    onToggleAI: () => setAiOpen(prev => !prev),
+    onToggleBarcode: () => setBarcodeOpen(prev => !prev),
+    onToggleRealtime: () => setRealtimeEnabled(prev => !prev),
+    
+    // Mode toggles
+    onToggleDragMode: toggleDragMode,
+    
+    // Data references
     racks: state.racks,
+    boxes: state.boxes,
+    selectedRack: state.selectedRack,
+    selectedBox: state.selectedBox,
   });
 
   // Handle search locate
@@ -335,10 +392,15 @@ export default function Warehouse3DPage() {
           onLocate={handleLocateResult}
         />
 
-        {/* Voice Command Indicator */}
+        {/* Voice Command Indicator - Enhanced */}
         <VoiceCommandIndicator
           isListening={voiceListening}
           transcript={voiceTranscript}
+          isProcessing={voiceProcessing}
+          lastCommand={voiceLastCommand}
+          confidence={voiceConfidence}
+          availableCommands={voiceCommands}
+          onExecuteTextCommand={executeTextCommand}
         />
 
         {/* Realtime Users List */}
