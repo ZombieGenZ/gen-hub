@@ -298,15 +298,14 @@ export const useWarehouse = () => {
       columns: 3,       // 3 bays per rack unit
     };
     
-    // Optimized layout: ~35 racks for smooth performance
+    // Optimized layout: 27 racks for better performance
     const sections = [
       { name: 'A', startX: 5, startZ: 5, rackCount: 5, direction: 'horizontal' },
       { name: 'B', startX: 5, startZ: 12, rackCount: 5, direction: 'horizontal' },
       { name: 'C', startX: 5, startZ: 19, rackCount: 5, direction: 'horizontal' },
       { name: 'D', startX: 5, startZ: 26, rackCount: 5, direction: 'horizontal' },
-      { name: 'E', startX: 5, startZ: 33, rackCount: 5, direction: 'horizontal' },
-      { name: 'F', startX: 45, startZ: 5, rackCount: 5, direction: 'vertical' },
-      { name: 'G', startX: 55, startZ: 5, rackCount: 5, direction: 'vertical' },
+      { name: 'E', startX: 45, startZ: 5, rackCount: 4, direction: 'vertical' },
+      { name: 'F', startX: 55, startZ: 5, rackCount: 3, direction: 'vertical' },
     ];
     
     let rackIndex = 0;
@@ -337,20 +336,27 @@ export const useWarehouse = () => {
       }
     });
     
-    // Fill with boxes - optimized quantity
+    // Fill with boxes - limited to 210 boxes for optimal performance
     const categories: BoxCategory[] = ['electronics', 'food', 'clothing', 'fragile', 'heavy', 'standard'];
+    const maxTotalBoxes = 210;
+    let totalBoxCount = 0;
     
     demoRacks.forEach((rack, rackIdx) => {
-      // Vary fill rates for demonstration
-      const fillTarget = rackIdx % 3 === 0 ? 0.3 : rackIdx % 3 === 1 ? 0.7 : 1.1;
+      if (totalBoxCount >= maxTotalBoxes) return;
+      
+      // Vary fill rates for demonstration (reduced to fit 210 total)
+      const fillTarget = rackIdx % 3 === 0 ? 0.25 : rackIdx % 3 === 1 ? 0.5 : 0.75;
       const capacity = rack.rows * rack.columns * rack.levels;
-      const targetBoxes = Math.floor(capacity * fillTarget);
+      const targetBoxes = Math.min(
+        Math.floor(capacity * fillTarget),
+        maxTotalBoxes - totalBoxCount
+      );
       let boxCount = 0;
       
       for (let level = 0; level < rack.levels && boxCount < targetBoxes; level++) {
         for (let row = 0; row < rack.rows && boxCount < targetBoxes; row++) {
           for (let col = 0; col < rack.columns && boxCount < targetBoxes; col++) {
-            if (Math.random() > 0.1 || fillTarget > 1) {
+            if (Math.random() > 0.15) {
               const category = categories[Math.floor(Math.random() * categories.length)];
               demoBoxes.push({
                 id: `box-${rack.id}-${level}-${row}-${col}`,
@@ -371,6 +377,7 @@ export const useWarehouse = () => {
                 createdAt: new Date(),
               });
               boxCount++;
+              totalBoxCount++;
             }
           }
         }

@@ -286,7 +286,7 @@ const ControlPanel = ({
                         <SelectValue placeholder="Chọn kệ..." />
                       </SelectTrigger>
                       <SelectContent>
-                        {racks.filter(r => r.id !== selectedBoxInfo.rackId).map(rack => (
+                        {racks.filter(r => r.id !== selectedBoxInfo?.rackId).map(rack => (
                           <SelectItem key={rack.id} value={rack.id}>
                             {rack.name}
                           </SelectItem>
