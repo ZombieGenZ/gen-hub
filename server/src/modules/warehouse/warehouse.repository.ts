@@ -365,4 +365,57 @@ export class WarehouseRepository {
 
         return shelf?.rack?.row?.warehouse_id === warehouseId;
     }
+
+    /**
+     * Lấy danh sách rows của warehouse
+     */
+    async findRowsByWarehouseId(warehouseId: string) {
+        return this.prisma.row.findMany({
+            where: {
+                warehouse_id: warehouseId,
+                is_deleted: false,
+            },
+            orderBy: { created_at: 'desc' },
+        });
+    }
+
+    /**
+     * Lấy chi tiết row theo ID
+     */
+    async findRowById(rowId: string) {
+        return this.prisma.row.findFirst({
+            where: {
+                id: rowId,
+                is_deleted: false,
+            },
+        });
+    }
+
+    /**
+     * Lấy danh sách racks theo row ID
+     */
+    async findRacksByRowId(rowId: string) {
+        return this.prisma.rack.findMany({
+            where: {
+                row_id: rowId,
+                is_deleted: false,
+            },
+            orderBy: { created_at: 'desc' },
+        });
+    }
+
+    /**
+     * Cập nhật shelf
+     */
+    async updateShelf(shelfId: string, data: { assigned_product_id?: string | null; updated_by?: string }) {
+        return this.prisma.shelf.update({
+            where: { id: shelfId },
+            data: {
+                assigned_product_id: data.assigned_product_id,
+                updated_by: data.updated_by,
+                updated_at: new Date(),
+            },
+        });
+    }
 }
+

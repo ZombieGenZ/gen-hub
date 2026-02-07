@@ -2,6 +2,7 @@ import {
     Controller,
     Get,
     Put,
+    Patch,
     Body,
     Param,
     Query,
@@ -12,10 +13,11 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam, ApiHeader } from '@nest
 import { I18nLang } from 'nestjs-i18n';
 
 import { WarehouseService } from './warehouse.service';
-import { UpdateWarehouseDto, QueryWarehouseDto } from './dto';
+import { UpdateWarehouseDto, QueryWarehouseDto, UpdateShelfDto } from './dto';
 import { CombinedAuthGuard, PermissionGuard } from '../../common/guards';
 import { RequirePermission, CurrentActor } from '../../common/decorators';
 import { GetResponse, UpdatedResponse, ResponseCode } from '../../common/responses';
+
 
 @ApiTags('Organization Warehouses')
 @ApiBearerAuth('JWT-auth')
@@ -155,6 +157,89 @@ export class WarehouseController {
     ) {
         const data = await this.warehouseService.getBlocks(id, shelfId, actorId, orgId, lang);
         return new GetResponse(ResponseCode.WAREHOUSE_BLOCKS_SUCCESS, data, 'Lấy danh sách ô thành công');
+    }
+
+    // ==================== ROWS ENDPOINTS ====================
+
+    /**
+     * Lấy danh sách rows của warehouse
+     */
+    @Get(':id/rows')
+    @RequirePermission('warehouse.view')
+    @ApiOperation({ summary: 'Lấy danh sách rows của warehouse' })
+    @ApiParam({ name: 'orgId', description: 'ID tổ chức' })
+    @ApiParam({ name: 'id', description: 'ID warehouse' })
+    async getRows(
+        @Param('orgId', ParseUUIDPipe) orgId: string,
+        @Param('id', ParseUUIDPipe) id: string,
+        @CurrentActor() actorId: string,
+        @I18nLang() lang: string,
+    ) {
+        const data = await this.warehouseService.getRows(id, actorId, orgId, lang);
+        return new GetResponse(ResponseCode.WAREHOUSE_ROWS_SUCCESS, data, 'Lấy danh sách dãy thành công');
+    }
+
+    /**
+     * Lấy chi tiết row
+     */
+    @Get(':id/rows/:rowId')
+    @RequirePermission('warehouse.view')
+    @ApiOperation({ summary: 'Lấy chi tiết row' })
+    @ApiParam({ name: 'orgId', description: 'ID tổ chức' })
+    @ApiParam({ name: 'id', description: 'ID warehouse' })
+    @ApiParam({ name: 'rowId', description: 'ID row' })
+    async getRowById(
+        @Param('orgId', ParseUUIDPipe) orgId: string,
+        @Param('id', ParseUUIDPipe) id: string,
+        @Param('rowId', ParseUUIDPipe) rowId: string,
+        @CurrentActor() actorId: string,
+        @I18nLang() lang: string,
+    ) {
+        const data = await this.warehouseService.getRowById(id, rowId, actorId, orgId, lang);
+        return new GetResponse(ResponseCode.WAREHOUSE_ROW_SUCCESS, data, 'Lấy chi tiết dãy thành công');
+    }
+
+    /**
+     * Lấy danh sách racks theo row (nested)
+     */
+    @Get(':id/rows/:rowId/racks')
+    @RequirePermission('warehouse.view')
+    @ApiOperation({ summary: 'Lấy danh sách racks theo row' })
+    @ApiParam({ name: 'orgId', description: 'ID tổ chức' })
+    @ApiParam({ name: 'id', description: 'ID warehouse' })
+    @ApiParam({ name: 'rowId', description: 'ID row' })
+    async getRacksByRow(
+        @Param('orgId', ParseUUIDPipe) orgId: string,
+        @Param('id', ParseUUIDPipe) id: string,
+        @Param('rowId', ParseUUIDPipe) rowId: string,
+        @CurrentActor() actorId: string,
+        @I18nLang() lang: string,
+    ) {
+        const data = await this.warehouseService.getRacksByRow(id, rowId, actorId, orgId, lang);
+        return new GetResponse(ResponseCode.WAREHOUSE_RACKS_SUCCESS, data, 'Lấy danh sách kệ thành công');
+    }
+
+    // ==================== UPDATE SHELF ENDPOINT ====================
+
+    /**
+     * Cập nhật shelf (assigned_product_id)
+     */
+    @Patch(':id/shelves/:shelfId')
+    @RequirePermission('warehouse.shelf.update')
+    @ApiOperation({ summary: 'Cập nhật shelf (assigned_product_id)' })
+    @ApiParam({ name: 'orgId', description: 'ID tổ chức' })
+    @ApiParam({ name: 'id', description: 'ID warehouse' })
+    @ApiParam({ name: 'shelfId', description: 'ID shelf' })
+    async updateShelf(
+        @Param('orgId', ParseUUIDPipe) orgId: string,
+        @Param('id', ParseUUIDPipe) id: string,
+        @Param('shelfId', ParseUUIDPipe) shelfId: string,
+        @Body() dto: UpdateShelfDto,
+        @CurrentActor() actorId: string,
+        @I18nLang() lang: string,
+    ) {
+        const data = await this.warehouseService.updateShelf(id, shelfId, dto, actorId, orgId, lang);
+        return new UpdatedResponse(ResponseCode.WAREHOUSE_SHELF_UPDATE_SUCCESS, data, 'Cập nhật tầng thành công');
     }
 }
 

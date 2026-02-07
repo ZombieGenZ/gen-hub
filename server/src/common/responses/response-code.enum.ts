@@ -122,9 +122,13 @@ export enum ResponseCode {
     WAREHOUSE_LAYOUT_SUCCESS = 'warehouse.layout_success',
     WAREHOUSE_UPDATE_SUCCESS = 'warehouse.update_success',
     WAREHOUSE_DELETE_SUCCESS = 'warehouse.delete_success',
+    WAREHOUSE_ROWS_SUCCESS = 'warehouse.rows_success',
+    WAREHOUSE_ROW_SUCCESS = 'warehouse.row_success',
     WAREHOUSE_RACKS_SUCCESS = 'warehouse.racks_success',
     WAREHOUSE_SHELVES_SUCCESS = 'warehouse.shelves_success',
+    WAREHOUSE_SHELF_UPDATE_SUCCESS = 'warehouse.shelf_update_success',
     WAREHOUSE_BLOCKS_SUCCESS = 'warehouse.blocks_success',
+
 
     // Rental Contract
     RENTAL_CONTRACT_CREATE_SUCCESS = 'rental_contract.create_success',

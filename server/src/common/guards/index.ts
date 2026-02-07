@@ -7,3 +7,4 @@ export * from './permission.guard';
 export * from './api-key-auth.guard';
 export * from './combined-auth.guard';
 export * from './org-permission.guard';
+export * from './warehouse-manager-permission.guard';

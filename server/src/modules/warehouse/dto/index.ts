@@ -76,3 +76,12 @@ export class QueryWarehouseDto {
     @IsUUID('4', { message: i18nValidationMessage('warehouse.validation.organization_id_uuid') })
     organization_id?: string;
 }
+
+/**
+ * DTO để cập nhật shelf (assigned_product_id)
+ */
+export class UpdateShelfDto {
+    @IsOptional()
+    @IsUUID('4', { message: i18nValidationMessage('warehouse.validation.product_id_uuid') })
+    assigned_product_id?: string | null;
+}

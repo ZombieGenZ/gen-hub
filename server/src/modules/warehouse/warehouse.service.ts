@@ -470,4 +470,176 @@ export class WarehouseService {
 
     return this.repository.findBlocksByShelfId(shelfId);
   }
+
+  /**
+   * Lấy danh sách rows của warehouse
+   */
+  async getRows(
+    warehouseId: string,
+    userId: string,
+    organizationId: string,
+    lang: string,
+  ) {
+    // Kiểm tra quyền
+    if (organizationId) {
+      await this.checkOrgPermission(
+        organizationId,
+        userId,
+        'warehouse.view',
+        lang,
+      );
+    }
+
+    // Kiểm tra warehouse tồn tại
+    const warehouse = await this.repository.findById(warehouseId);
+    if (!warehouse || (organizationId && warehouse.organization_id !== organizationId)) {
+      throw new NotFoundException(
+        this.i18n.t('warehouse.errors.not_found', { lang }),
+      );
+    }
+
+    return this.repository.findRowsByWarehouseId(warehouseId);
+  }
+
+  /**
+   * Lấy chi tiết row
+   */
+  async getRowById(
+    warehouseId: string,
+    rowId: string,
+    userId: string,
+    organizationId: string,
+    lang: string,
+  ) {
+    // Kiểm tra quyền
+    if (organizationId) {
+      await this.checkOrgPermission(
+        organizationId,
+        userId,
+        'warehouse.view',
+        lang,
+      );
+    }
+
+    // Kiểm tra warehouse tồn tại
+    const warehouse = await this.repository.findById(warehouseId);
+    if (!warehouse || (organizationId && warehouse.organization_id !== organizationId)) {
+      throw new NotFoundException(
+        this.i18n.t('warehouse.errors.not_found', { lang }),
+      );
+    }
+
+    // Kiểm tra row thuộc warehouse
+    const row = await this.repository.findRowById(rowId);
+    if (!row || row.warehouse_id !== warehouseId) {
+      throw new NotFoundException(
+        this.i18n.t('warehouse.errors.row_not_found', { lang }),
+      );
+    }
+
+    return row;
+  }
+
+  /**
+   * Lấy danh sách racks theo row
+   */
+  async getRacksByRow(
+    warehouseId: string,
+    rowId: string,
+    userId: string,
+    organizationId: string,
+    lang: string,
+  ) {
+    // Kiểm tra quyền
+    if (organizationId) {
+      await this.checkOrgPermission(
+        organizationId,
+        userId,
+        'warehouse.view',
+        lang,
+      );
+    }
+
+    // Kiểm tra warehouse tồn tại
+    const warehouse = await this.repository.findById(warehouseId);
+    if (!warehouse || (organizationId && warehouse.organization_id !== organizationId)) {
+      throw new NotFoundException(
+        this.i18n.t('warehouse.errors.not_found', { lang }),
+      );
+    }
+
+    // Kiểm tra row thuộc warehouse
+    const row = await this.repository.findRowById(rowId);
+    if (!row || row.warehouse_id !== warehouseId) {
+      throw new NotFoundException(
+        this.i18n.t('warehouse.errors.row_not_found', { lang }),
+      );
+    }
+
+    return this.repository.findRacksByRowId(rowId);
+  }
+
+  /**
+   * Cập nhật shelf (assigned_product_id)
+   */
+  async updateShelf(
+    warehouseId: string,
+    shelfId: string,
+    dto: { assigned_product_id?: string | null },
+    userId: string,
+    organizationId: string,
+    lang: string,
+  ) {
+    // Kiểm tra quyền
+    if (organizationId) {
+      await this.checkOrgPermission(
+        organizationId,
+        userId,
+        'warehouse.shelf.update',
+        lang,
+      );
+    }
+
+    // Kiểm tra warehouse tồn tại
+    const warehouse = await this.repository.findById(warehouseId);
+    if (!warehouse || (organizationId && warehouse.organization_id !== organizationId)) {
+      throw new NotFoundException(
+        this.i18n.t('warehouse.errors.not_found', { lang }),
+      );
+    }
+
+    // Kiểm tra shelf thuộc warehouse
+    const isShelfInWarehouse = await this.repository.isShelfInWarehouse(shelfId, warehouseId);
+    if (!isShelfInWarehouse) {
+      throw new NotFoundException(
+        this.i18n.t('warehouse.errors.shelf_not_found', { lang }),
+      );
+    }
+
+    // Update shelf
+    const updatedShelf = await this.repository.updateShelf(shelfId, {
+      assigned_product_id: dto.assigned_product_id ?? null,
+      updated_by: userId,
+    });
+
+    // Emit socket event
+    this.websocketGateway.emitToOrganization(organizationId, 'shelf:updated', {
+      shelf: updatedShelf,
+      warehouseId,
+      updatedBy: userId,
+    });
+
+    // Ghi audit log
+    this.auditLogService.logUpdate(
+      organizationId,
+      'Shelf',
+      shelfId,
+      {},
+      { assigned_product_id: dto.assigned_product_id },
+      { userId, description: `Cập nhật shelf ${shelfId} assigned_product_id` },
+    );
+
+
+    return updatedShelf;
+  }
 }
