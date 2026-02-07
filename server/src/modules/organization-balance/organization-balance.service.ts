@@ -18,6 +18,8 @@ import { SystemLogService } from '../system-log/system-log.service';
 export class OrganizationBalanceService {
     private readonly BALANCE_CACHE_TTL: number;
     private readonly TRANSACTION_LIST_CACHE_TTL: number;
+    private readonly BALANCE_CACHE_KEY_PREFIX: string;
+    private readonly TRANSACTION_CACHE_KEY_PREFIX: string;
 
     constructor(
         private readonly repository: OrganizationBalanceRepository,
@@ -29,14 +31,16 @@ export class OrganizationBalanceService {
     ) {
         this.BALANCE_CACHE_TTL = this.configService.get<number>('REDIS_ACCOUNT_BALANCE_CACHE_TTL') || 300;
         this.TRANSACTION_LIST_CACHE_TTL = this.configService.get<number>('REDIS_BALANCE_TRANSACTION_LIST_CACHE_TTL') || 60;
+        this.BALANCE_CACHE_KEY_PREFIX = this.configService.get<string>('REDIS_ORG_BALANCE_KEY_PREFIX') || 'organization_balance';
+        this.TRANSACTION_CACHE_KEY_PREFIX = this.configService.get<string>('REDIS_ORG_BALANCE_TRANSACTION_KEY_PREFIX') || 'organization_balance_transactions';
     }
 
     private getBalanceCacheKey(organizationId: string): string {
-        return `organization_balance:${organizationId}`;
+        return `${this.BALANCE_CACHE_KEY_PREFIX}:${organizationId}`;
     }
 
     private getTransactionListCacheKey(organizationId: string, query: QueryBalanceTransactionDto): string {
-        return `organization_balance_transactions:${organizationId}:${JSON.stringify(query)}`;
+        return `${this.TRANSACTION_CACHE_KEY_PREFIX}:${organizationId}:${JSON.stringify(query)}`;
     }
 
     /**
@@ -213,6 +217,6 @@ export class OrganizationBalanceService {
      */
     async invalidateOrganizationCache(organizationId: string): Promise<void> {
         await this.redisService.del(this.getBalanceCacheKey(organizationId));
-        await this.redisService.delByPattern(`organization_balance_transactions:${organizationId}:*`);
+        await this.redisService.delByPattern(`${this.TRANSACTION_CACHE_KEY_PREFIX}:${organizationId}:*`);
     }
 }
