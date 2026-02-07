@@ -73,51 +73,7 @@ export class OrganizationBalanceRepository {
         return balance ? this.toInterface(balance) : null;
     }
 
-    /**
-     * Lấy danh sách tất cả OrganizationBalances (Admin)
-     */
-    async findAll(query: {
-        limit?: number;
-        offset?: number;
-        keywords?: string;
-    }): Promise<IPaginatedResponse<IOrganizationBalance>> {
-        const { limit = 20, offset = 0, keywords } = query;
 
-        const where: Prisma.OrganizationBalanceWhereInput = {
-            is_deleted: false,
-        };
-
-        if (keywords) {
-            where.organization = {
-                OR: [
-                    { name: { contains: keywords, mode: 'insensitive' } },
-                ],
-            };
-        }
-
-        const [items, total] = await Promise.all([
-            this.prisma.organizationBalance.findMany({
-                where,
-                take: limit,
-                skip: offset,
-                orderBy: { created_at: 'desc' },
-                include: {
-                    organization: {
-                        select: { id: true, name: true },
-                    },
-                },
-            }),
-            this.prisma.organizationBalance.count({ where }),
-        ]);
-
-        return {
-            items: items.map((item) => this.toInterface(item)),
-            total,
-            limit,
-            offset,
-            hasMore: offset + items.length < total,
-        };
-    }
 
     /**
      * Cập nhật số dư và tạo transaction

@@ -1,6 +1,6 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { OrganizationBalanceController } from './organization-balance.controller';
-import { OrganizationBalanceAdminController } from './organization-balance-admin.controller';
+
 import { OrganizationBalanceService } from './organization-balance.service';
 import { OrganizationBalanceRepository } from './organization-balance.repository';
 import { SharedModule } from '../../common/shared.module';
@@ -17,7 +17,7 @@ import { PaymentModule } from '../payment/payment.module';
         SystemLogModule,
         forwardRef(() => PaymentModule),
     ],
-    controllers: [OrganizationBalanceController, OrganizationBalanceAdminController],
+    controllers: [OrganizationBalanceController],
     providers: [OrganizationBalanceService, OrganizationBalanceRepository],
     exports: [OrganizationBalanceService, OrganizationBalanceRepository],
 })
