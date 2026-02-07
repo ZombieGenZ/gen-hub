@@ -109,7 +109,80 @@ async function bootstrap() {
     credentials: true,
   });
 
-  const config = new DocumentBuilder()
+  const orderedTags = [
+    'Health',
+    'Config',
+    'Auth',
+    'Account',
+    'Two-Factor Authentication',
+    'Provinces',
+    'Wards',
+    'Amenities',
+    'Addon Types',
+    'Addons',
+    'Insurances',
+    'Coupons',
+    'Public Coupons',
+    'Coupon Schedules',
+    'Rental Duration Tiers',
+    'Warehouse Templates',
+    'Warehouse Managers',
+    'Warehouse Manager Roles',
+    'Warehouse Manager View',
+    'Warehouse Visit Booking',
+    'Row Templates',
+    'Rack Templates',
+    'Shelf Templates',
+    'Block Templates',
+    'Organizations',
+    'Organization Update Requests',
+    'Organization Roles',
+    'Organization Balance',
+    'Admin - Organization Balance',
+    'Organization Chat',
+    'Organization Notifications',
+    'Organization API Keys',
+    'API Keys',
+    'API Key Verification',
+    'Public Quotation',
+    'Organization Rental Contracts',
+    'Rental Contracts',
+    'Payment',
+    'Payment Admin',
+    'Organization Refund Requests',
+    'Organization Warehouses',
+    'Partners',
+    'Products',
+    'Batches',
+    'Global Notifications',
+    'User Notifications',
+    'Contact Tags',
+    'Contact List (Blacklist/Whitelist)',
+    'Contact & Live Chat',
+    'Admin Refund Requests',
+    'Warning Category',
+    'Warn Penalty',
+    'Roles',
+    'Permissions',
+    'User Management',
+    'FAQs',
+    'Categories',
+    'Articles',
+    'Article Emojis & Reactions',
+    'Admin - Article Reactions',
+    'Article Comments',
+    'Admin - Article Comments',
+    'System Logs',
+    'Coze Plugin',
+    'Database',
+    'Database Backup',
+    'Feature Flags',
+    'Resources',
+    'Analytics',
+    'Webhooks',
+  ];
+
+  const configBuilder = new DocumentBuilder()
     .setTitle('GEN-HUB API')
     .setDescription('API documentation cho hệ thống GEN-HUB')
     .setVersion('1.0')
@@ -123,8 +196,11 @@ async function bootstrap() {
         in: 'header',
       },
       'JWT-auth',
-    )
-    .build();
+    );
+
+  orderedTags.forEach((tag) => configBuilder.addTag(tag));
+
+  const config = configBuilder.build();
 
   const document = SwaggerModule.createDocument(app, config);
 
