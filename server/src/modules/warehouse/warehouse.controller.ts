@@ -159,8 +159,6 @@ export class WarehouseController {
         return new GetResponse(ResponseCode.WAREHOUSE_BLOCKS_SUCCESS, data, 'Lấy danh sách ô thành công');
     }
 
-    // ==================== ROWS ENDPOINTS ====================
-
     /**
      * Lấy danh sách rows của warehouse
      */
@@ -218,8 +216,6 @@ export class WarehouseController {
         const data = await this.warehouseService.getRacksByRow(id, rowId, actorId, orgId, lang);
         return new GetResponse(ResponseCode.WAREHOUSE_RACKS_SUCCESS, data, 'Lấy danh sách kệ thành công');
     }
-
-    // ==================== UPDATE SHELF ENDPOINT ====================
 
     /**
      * Cập nhật shelf (assigned_product_id)

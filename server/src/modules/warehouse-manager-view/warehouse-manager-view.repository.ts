@@ -12,8 +12,6 @@ import { QueryWarehouseManagerViewDto } from './dto/query-warehouse-manager-view
 export class WarehouseManagerViewRepository {
     constructor(private readonly prisma: PrismaService) { }
 
-    // ==================== WAREHOUSES ====================
-
     /**
      * Lấy danh sách warehouses theo template ID
      */
@@ -81,8 +79,6 @@ export class WarehouseManagerViewRepository {
         });
     }
 
-    // ==================== ROWS ====================
-
     /**
      * Lấy danh sách rows theo warehouse ID
      */
@@ -136,8 +132,6 @@ export class WarehouseManagerViewRepository {
         });
     }
 
-    // ==================== RACKS ====================
-
     /**
      * Lấy danh sách racks theo row ID
      */
@@ -190,8 +184,6 @@ export class WarehouseManagerViewRepository {
             },
         });
     }
-
-    // ==================== SHELVES ====================
 
     /**
      * Lấy danh sách shelves theo rack ID
@@ -255,8 +247,6 @@ export class WarehouseManagerViewRepository {
             },
         });
     }
-
-    // ==================== BLOCKS ====================
 
     /**
      * Lấy danh sách blocks theo shelf ID

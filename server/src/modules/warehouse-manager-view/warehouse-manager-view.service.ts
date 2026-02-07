@@ -370,8 +370,6 @@ export class WarehouseManagerViewService {
         );
     }
 
-    // ==================== HELPER METHODS ====================
-
     private async verifyWarehouseBelongsToTemplate(
         warehouseId: string,
         templateId: string,

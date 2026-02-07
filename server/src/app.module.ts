@@ -19,6 +19,7 @@ import { BanSchedulerModule } from './modules/ban-scheduler/ban-scheduler.module
 import { ApiKeySchedulerModule } from './modules/apikey-scheduler/apikey-scheduler.module';
 import { WarehouseTemplateModule } from './modules/warehouse-template/warehouse-template.module';
 import { WarehouseManagerModule } from './modules/warehouse-manager/warehouse-manager.module';
+import { WarehouseManagerViewModule } from './modules/warehouse-manager-view/warehouse-manager-view.module';
 import { WarehouseManagerRoleModule } from './modules/warehouse-manager-role/warehouse-manager-role.module';
 import { WarehouseVisitModule } from './modules/warehouse-visit/warehouse-visit.module';
 import { OrganizationModule } from './modules/organization/organization.module';
@@ -152,6 +153,8 @@ import { RoleModule } from './modules/role/role.module';
     // Layout Template Modules
     WarehouseTemplateModule,
     WarehouseManagerModule,
+    WarehouseManagerViewModule,
+
     WarehouseManagerRoleModule,
     WarehouseVisitModule,
     RowTemplateModule,

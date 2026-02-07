@@ -21,8 +21,6 @@ export class WarehouseManagerViewController {
         private readonly warehouseManagerViewService: WarehouseManagerViewService,
     ) { }
 
-    // ==================== WAREHOUSES ====================
-
     @Get(':templateId/warehouses')
     @RequireWMPermission('warehouse.view')
     @ApiOperation({
@@ -95,8 +93,6 @@ export class WarehouseManagerViewController {
         return this.warehouseManagerViewService.findWarehouseDetail(templateId, warehouseId, userId, lang);
     }
 
-    // ==================== ROWS ====================
-
     @Get(':templateId/warehouses/:warehouseId/rows')
     @RequireWMPermission('warehouse.view')
     @ApiOperation({
@@ -143,8 +139,6 @@ export class WarehouseManagerViewController {
         const userId = req.user.userId;
         return this.warehouseManagerViewService.findRowDetail(templateId, warehouseId, rowId, userId, lang);
     }
-
-    // ==================== RACKS ====================
 
     @Get(':templateId/warehouses/:warehouseId/rows/:rowId/racks')
     @RequireWMPermission('warehouse.view')
@@ -196,8 +190,6 @@ export class WarehouseManagerViewController {
         const userId = req.user.userId;
         return this.warehouseManagerViewService.findRackDetail(templateId, warehouseId, rowId, rackId, userId, lang);
     }
-
-    // ==================== SHELVES ====================
 
     @Get(':templateId/warehouses/:warehouseId/rows/:rowId/racks/:rackId/shelves')
     @RequireWMPermission('warehouse.view')
@@ -253,8 +245,6 @@ export class WarehouseManagerViewController {
         const userId = req.user.userId;
         return this.warehouseManagerViewService.findShelfDetail(templateId, warehouseId, rowId, rackId, shelfId, userId, lang);
     }
-
-    // ==================== BLOCKS ====================
 
     @Get(':templateId/warehouses/:warehouseId/rows/:rowId/racks/:rackId/shelves/:shelfId/blocks')
     @RequireWMPermission('warehouse.view')
