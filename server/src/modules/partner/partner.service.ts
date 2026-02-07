@@ -12,6 +12,8 @@ import { OrganizationAuditLogService } from '../organization/organization-audit-
 export class PartnerService {
     private readonly PARTNER_LIST_TTL: number;
     private readonly PARTNER_DETAIL_TTL: number;
+    private readonly PARTNER_KEY_PREFIX: string;
+    private readonly PARTNER_LIST_KEY_PREFIX: string;
 
     constructor(
         private readonly repository: PartnerRepository,
@@ -23,6 +25,8 @@ export class PartnerService {
     ) {
         this.PARTNER_LIST_TTL = this.configService.get<number>('REDIS_PARTNER_LIST_TTL') || 300;
         this.PARTNER_DETAIL_TTL = this.configService.get<number>('REDIS_PARTNER_DETAIL_TTL') || 600;
+        this.PARTNER_KEY_PREFIX = this.configService.get<string>('REDIS_PARTNER_KEY_PREFIX') || 'partner:detail';
+        this.PARTNER_LIST_KEY_PREFIX = this.configService.get<string>('REDIS_PARTNER_LIST_KEY_PREFIX') || 'partner:list';
     }
 
     private getListCacheKey(orgId: string, query: QueryPartnerDto): string {
@@ -31,11 +35,11 @@ export class PartnerService {
             .filter(key => query[key as keyof QueryPartnerDto] !== undefined)
             .map(key => `${key}=${query[key as keyof QueryPartnerDto]}`)
             .join('&');
-        return `partner:list:${orgId}:${sortedParams}`;
+        return `${this.PARTNER_LIST_KEY_PREFIX}:${orgId}:${sortedParams}`;
     }
 
     private getDetailCacheKey(id: string): string {
-        return `partner:detail:${id}`;
+        return `${this.PARTNER_KEY_PREFIX}:${id}`;
     }
 
     /**
@@ -87,7 +91,7 @@ export class PartnerService {
         });
 
         // Invalidate cache
-        await this.redisService.delByPattern(`partner:list:${orgId}:*`);
+        await this.redisService.delByPattern(`${this.PARTNER_LIST_KEY_PREFIX}:${orgId}:*`);
 
         // Emit realtime event
         this.websocketGateway.emitToOrganization(orgId, 'partner:created', {
@@ -207,7 +211,7 @@ export class PartnerService {
 
         // Invalidate cache
         await this.redisService.del(this.getDetailCacheKey(id));
-        await this.redisService.delByPattern(`partner:list:${orgId}:*`);
+        await this.redisService.delByPattern(`${this.PARTNER_LIST_KEY_PREFIX}:${orgId}:*`);
 
         // Emit realtime event
         this.websocketGateway.emitToOrganization(orgId, 'partner:updated', {
@@ -245,7 +249,7 @@ export class PartnerService {
 
         // Invalidate cache
         await this.redisService.del(this.getDetailCacheKey(id));
-        await this.redisService.delByPattern(`partner:list:${orgId}:*`);
+        await this.redisService.delByPattern(`${this.PARTNER_LIST_KEY_PREFIX}:${orgId}:*`);
 
         // Emit realtime event
         this.websocketGateway.emitToOrganization(orgId, 'partner:deleted', {
@@ -283,7 +287,7 @@ export class PartnerService {
 
         // Invalidate cache
         await Promise.all(ids.map(id => this.redisService.del(this.getDetailCacheKey(id))));
-        await this.redisService.delByPattern(`partner:list:${orgId}:*`);
+        await this.redisService.delByPattern(`${this.PARTNER_LIST_KEY_PREFIX}:${orgId}:*`);
 
         // Emit realtime events
         this.websocketGateway.emitToOrganization(orgId, 'partner:deletedMany', {

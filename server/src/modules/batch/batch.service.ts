@@ -12,6 +12,8 @@ import { OrganizationAuditLogService } from '../organization/organization-audit-
 export class BatchService {
     private readonly BATCH_LIST_TTL: number;
     private readonly BATCH_DETAIL_TTL: number;
+    private readonly BATCH_KEY_PREFIX: string;
+    private readonly BATCH_LIST_KEY_PREFIX: string;
 
     constructor(
         private readonly repository: BatchRepository,
@@ -23,6 +25,8 @@ export class BatchService {
     ) {
         this.BATCH_LIST_TTL = this.configService.get<number>('REDIS_BATCH_LIST_TTL') || 300;
         this.BATCH_DETAIL_TTL = this.configService.get<number>('REDIS_BATCH_DETAIL_TTL') || 600;
+        this.BATCH_KEY_PREFIX = this.configService.get<string>('REDIS_BATCH_KEY_PREFIX') || 'batch:detail';
+        this.BATCH_LIST_KEY_PREFIX = this.configService.get<string>('REDIS_BATCH_LIST_KEY_PREFIX') || 'batch:list';
     }
 
     private getListCacheKey(productId: string, query: QueryBatchDto): string {
@@ -31,11 +35,11 @@ export class BatchService {
             .filter(key => query[key as keyof QueryBatchDto] !== undefined)
             .map(key => `${key}=${query[key as keyof QueryBatchDto]}`)
             .join('&');
-        return `batch:list:${productId}:${sortedParams}`;
+        return `${this.BATCH_LIST_KEY_PREFIX}:${productId}:${sortedParams}`;
     }
 
     private getDetailCacheKey(id: string): string {
-        return `batch:detail:${id}`;
+        return `${this.BATCH_KEY_PREFIX}:${id}`;
     }
 
     async create(
@@ -71,7 +75,7 @@ export class BatchService {
         });
 
         // Invalidate cache
-        await this.redisService.delByPattern(`batch:list:${dto.product_id}:*`);
+        await this.redisService.delByPattern(`${this.BATCH_LIST_KEY_PREFIX}:${dto.product_id}:*`);
 
         // Emit realtime event
         this.websocketGateway.emitToOrganization(orgId, 'batch:created', {
@@ -179,7 +183,7 @@ export class BatchService {
 
         // Invalidate cache
         await this.redisService.del(this.getDetailCacheKey(id));
-        await this.redisService.delByPattern(`batch:list:${existing.product_id}:*`);
+        await this.redisService.delByPattern(`${this.BATCH_LIST_KEY_PREFIX}:${existing.product_id}:*`);
 
         // Emit realtime event
         this.websocketGateway.emitToOrganization(orgId, 'batch:updated', {
@@ -214,7 +218,7 @@ export class BatchService {
 
         // Invalidate cache
         await this.redisService.del(this.getDetailCacheKey(id));
-        await this.redisService.delByPattern(`batch:list:${existing.product_id}:*`);
+        await this.redisService.delByPattern(`${this.BATCH_LIST_KEY_PREFIX}:${existing.product_id}:*`);
 
         // Emit realtime event
         this.websocketGateway.emitToOrganization(orgId, 'batch:deleted', {
@@ -253,7 +257,7 @@ export class BatchService {
         // Invalidate cache
         await Promise.all(ids.map(id => this.redisService.del(this.getDetailCacheKey(id))));
         const productIds = new Set(batches.map(b => b.product_id));
-        await Promise.all(Array.from(productIds).map(pid => this.redisService.delByPattern(`batch:list:${pid}:*`)));
+        await Promise.all(Array.from(productIds).map(pid => this.redisService.delByPattern(`${this.BATCH_LIST_KEY_PREFIX}:${pid}:*`)));
 
         // Emit realtime events
         this.websocketGateway.emitToOrganization(orgId, 'batch:deletedMany', {

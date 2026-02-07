@@ -12,6 +12,8 @@ import { OrganizationAuditLogService } from '../organization/organization-audit-
 export class ProductService {
     private readonly PRODUCT_LIST_TTL: number;
     private readonly PRODUCT_DETAIL_TTL: number;
+    private readonly PRODUCT_KEY_PREFIX: string;
+    private readonly PRODUCT_LIST_KEY_PREFIX: string;
 
     constructor(
         private readonly repository: ProductRepository,
@@ -23,6 +25,8 @@ export class ProductService {
     ) {
         this.PRODUCT_LIST_TTL = this.configService.get<number>('REDIS_PRODUCT_LIST_TTL') || 300;
         this.PRODUCT_DETAIL_TTL = this.configService.get<number>('REDIS_PRODUCT_DETAIL_TTL') || 600;
+        this.PRODUCT_KEY_PREFIX = this.configService.get<string>('REDIS_PRODUCT_KEY_PREFIX') || 'product:detail';
+        this.PRODUCT_LIST_KEY_PREFIX = this.configService.get<string>('REDIS_PRODUCT_LIST_KEY_PREFIX') || 'product:list';
     }
 
     private getListCacheKey(orgId: string, query: QueryProductDto): string {
@@ -31,11 +35,11 @@ export class ProductService {
             .filter(key => query[key as keyof QueryProductDto] !== undefined)
             .map(key => `${key}=${query[key as keyof QueryProductDto]}`)
             .join('&');
-        return `product:list:${orgId}:${sortedParams}`;
+        return `${this.PRODUCT_LIST_KEY_PREFIX}:${orgId}:${sortedParams}`;
     }
 
     private getDetailCacheKey(id: string): string {
-        return `product:detail:${id}`;
+        return `${this.PRODUCT_KEY_PREFIX}:${id}`;
     }
 
     async create(
@@ -102,7 +106,7 @@ export class ProductService {
         );
 
         // Invalidate cache
-        await this.redisService.delByPattern(`product:list:${orgId}:*`);
+        await this.redisService.delByPattern(`${this.PRODUCT_LIST_KEY_PREFIX}:${orgId}:*`);
 
         // Emit realtime event
         this.websocketGateway.emitToOrganization(orgId, 'product:created', {
@@ -232,7 +236,7 @@ export class ProductService {
 
         // Invalidate cache
         await this.redisService.del(this.getDetailCacheKey(id));
-        await this.redisService.delByPattern(`product:list:${orgId}:*`);
+        await this.redisService.delByPattern(`${this.PRODUCT_LIST_KEY_PREFIX}:${orgId}:*`);
 
         // Emit realtime event
         this.websocketGateway.emitToOrganization(orgId, 'product:updated', {
@@ -267,7 +271,7 @@ export class ProductService {
 
         // Invalidate cache
         await this.redisService.del(this.getDetailCacheKey(id));
-        await this.redisService.delByPattern(`product:list:${orgId}:*`);
+        await this.redisService.delByPattern(`${this.PRODUCT_LIST_KEY_PREFIX}:${orgId}:*`);
 
         // Emit realtime event
         this.websocketGateway.emitToOrganization(orgId, 'product:deleted', {
@@ -306,7 +310,7 @@ export class ProductService {
 
         // Invalidate cache
         await Promise.all(ids.map(id => this.redisService.del(this.getDetailCacheKey(id))));
-        await this.redisService.delByPattern(`product:list:${orgId}:*`);
+        await this.redisService.delByPattern(`${this.PRODUCT_LIST_KEY_PREFIX}:${orgId}:*`);
 
         // Emit realtime events
         this.websocketGateway.emitToOrganization(orgId, 'product:deleted_many', {

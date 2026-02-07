@@ -18,7 +18,21 @@ export class WarehouseManagerViewService {
         private readonly i18n: I18nService,
         private readonly redisService: RedisService,
         private readonly configService: ConfigService,
-    ) { }
+    ) {
+        this.WM_VIEW_WAREHOUSE_KEY_PREFIX = this.configService.get<string>('REDIS_WM_VIEW_WAREHOUSE_KEY_PREFIX') || 'wm:view:warehouse';
+        this.WM_VIEW_WAREHOUSE_LIST_KEY_PREFIX = this.configService.get<string>('REDIS_WM_VIEW_WAREHOUSE_LIST_KEY_PREFIX') || 'wm:view:warehouses';
+        this.WM_VIEW_ROW_LIST_KEY_PREFIX = this.configService.get<string>('REDIS_WM_VIEW_ROW_LIST_KEY_PREFIX') || 'wm:view:rows';
+        this.WM_VIEW_RACK_LIST_KEY_PREFIX = this.configService.get<string>('REDIS_WM_VIEW_RACK_LIST_KEY_PREFIX') || 'wm:view:racks';
+        this.WM_VIEW_SHELF_LIST_KEY_PREFIX = this.configService.get<string>('REDIS_WM_VIEW_SHELF_LIST_KEY_PREFIX') || 'wm:view:shelves';
+        this.WM_VIEW_BLOCK_LIST_KEY_PREFIX = this.configService.get<string>('REDIS_WM_VIEW_BLOCK_LIST_KEY_PREFIX') || 'wm:view:blocks';
+    }
+
+    private readonly WM_VIEW_WAREHOUSE_KEY_PREFIX: string;
+    private readonly WM_VIEW_WAREHOUSE_LIST_KEY_PREFIX: string;
+    private readonly WM_VIEW_ROW_LIST_KEY_PREFIX: string;
+    private readonly WM_VIEW_RACK_LIST_KEY_PREFIX: string;
+    private readonly WM_VIEW_SHELF_LIST_KEY_PREFIX: string;
+    private readonly WM_VIEW_BLOCK_LIST_KEY_PREFIX: string;
 
     /**
      * Lấy danh sách warehouse theo template
@@ -30,7 +44,7 @@ export class WarehouseManagerViewService {
         lang: string,
     ): Promise<GetResponse<IPaginatedResponse<Warehouse>>> {
         // Check cache
-        const cacheKey = `wm:view:warehouses:${templateId}:${JSON.stringify(query)}`;
+        const cacheKey = `${this.WM_VIEW_WAREHOUSE_LIST_KEY_PREFIX}:${templateId}:${JSON.stringify(query)}`;
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
             return new GetResponse(
@@ -63,7 +77,7 @@ export class WarehouseManagerViewService {
         lang: string,
     ): Promise<GetResponse<Warehouse>> {
         // Check cache
-        const cacheKey = `wm:view:warehouse:${warehouseId}`;
+        const cacheKey = `${this.WM_VIEW_WAREHOUSE_KEY_PREFIX}:${warehouseId}`;
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
             const warehouse = JSON.parse(cached);
@@ -118,7 +132,7 @@ export class WarehouseManagerViewService {
         // Verify warehouse belongs to template
         await this.verifyWarehouseBelongsToTemplate(warehouseId, templateId, lang);
 
-        const cacheKey = `wm:view:rows:${warehouseId}:${JSON.stringify(query)}`;
+        const cacheKey = `${this.WM_VIEW_ROW_LIST_KEY_PREFIX}:${warehouseId}:${JSON.stringify(query)}`;
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
             return new GetResponse(
@@ -180,7 +194,7 @@ export class WarehouseManagerViewService {
         await this.verifyWarehouseBelongsToTemplate(warehouseId, templateId, lang);
         await this.verifyRowBelongsToWarehouse(rowId, warehouseId, lang);
 
-        const cacheKey = `wm:view:racks:${rowId}:${JSON.stringify(query)}`;
+        const cacheKey = `${this.WM_VIEW_RACK_LIST_KEY_PREFIX}:${rowId}:${JSON.stringify(query)}`;
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
             return new GetResponse(
@@ -246,7 +260,7 @@ export class WarehouseManagerViewService {
         await this.verifyRowBelongsToWarehouse(rowId, warehouseId, lang);
         await this.verifyRackBelongsToRow(rackId, rowId, lang);
 
-        const cacheKey = `wm:view:shelves:${rackId}:${JSON.stringify(query)}`;
+        const cacheKey = `${this.WM_VIEW_SHELF_LIST_KEY_PREFIX}:${rackId}:${JSON.stringify(query)}`;
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
             return new GetResponse(
@@ -316,7 +330,7 @@ export class WarehouseManagerViewService {
         await this.verifyRackBelongsToRow(rackId, rowId, lang);
         await this.verifyShelfBelongsToRack(shelfId, rackId, lang);
 
-        const cacheKey = `wm:view:blocks:${shelfId}:${JSON.stringify(query)}`;
+        const cacheKey = `${this.WM_VIEW_BLOCK_LIST_KEY_PREFIX}:${shelfId}:${JSON.stringify(query)}`;
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
             return new GetResponse(

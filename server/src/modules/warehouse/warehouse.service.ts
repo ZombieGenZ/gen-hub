@@ -31,6 +31,8 @@ import { OrganizationRepository } from '../organization/organization.repository'
 export class WarehouseService {
   private readonly WAREHOUSE_CACHE_TTL: number;
   private readonly WAREHOUSE_LIST_CACHE_TTL: number;
+  private readonly WAREHOUSE_KEY_PREFIX: string;
+  private readonly WAREHOUSE_LIST_KEY_PREFIX: string;
 
   constructor(
     private readonly repository: WarehouseRepository,
@@ -46,6 +48,10 @@ export class WarehouseService {
       this.configService.get<number>('REDIS_WAREHOUSE_CACHE_TTL') || 300;
     this.WAREHOUSE_LIST_CACHE_TTL =
       this.configService.get<number>('REDIS_WAREHOUSE_LIST_CACHE_TTL') || 60;
+    this.WAREHOUSE_KEY_PREFIX =
+      this.configService.get<string>('REDIS_WAREHOUSE_KEY_PREFIX') || 'warehouse:detail';
+    this.WAREHOUSE_LIST_KEY_PREFIX =
+      this.configService.get<string>('REDIS_WAREHOUSE_LIST_KEY_PREFIX') || 'warehouse:list';
   }
 
   /**
@@ -344,7 +350,7 @@ export class WarehouseService {
 
   // Private helper methods
   private getWarehouseCacheKey(id: string): string {
-    return `warehouse:${id}`;
+    return `${this.WAREHOUSE_KEY_PREFIX}:${id}`;
   }
 
   private getWarehouseListCacheKey(query: Record<string, unknown>): string {
@@ -352,7 +358,7 @@ export class WarehouseService {
       .sort()
       .map((key) => `${key}=${query[key]}`)
       .join('&');
-    return `warehouse:list:${sortedParams}`;
+    return `${this.WAREHOUSE_LIST_KEY_PREFIX}:${sortedParams}`;
   }
 
   private async invalidateWarehouseCache(id: string): Promise<void> {
@@ -360,7 +366,7 @@ export class WarehouseService {
   }
 
   private async invalidateWarehouseListCache(): Promise<void> {
-    await this.redisService.delByPattern('warehouse:list:*');
+    await this.redisService.delByPattern(`${this.WAREHOUSE_LIST_KEY_PREFIX}:*`);
   }
 
   /**
