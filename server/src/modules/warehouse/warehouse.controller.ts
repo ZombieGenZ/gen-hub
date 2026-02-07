@@ -9,7 +9,7 @@ import {
     UseGuards,
     ParseUUIDPipe,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam, ApiHeader } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam, ApiHeader, ApiResponse, ApiBody, ApiQuery } from '@nestjs/swagger';
 import { I18nLang } from 'nestjs-i18n';
 
 import { WarehouseService } from './warehouse.service';
@@ -17,7 +17,7 @@ import { UpdateWarehouseDto, QueryWarehouseDto, UpdateShelfDto } from './dto';
 import { CombinedAuthGuard, PermissionGuard } from '../../common/guards';
 import { RequirePermission, CurrentActor } from '../../common/decorators';
 import { GetResponse, UpdatedResponse, ResponseCode } from '../../common/responses';
-
+import { ApiAuthResponses, ApiValidationErrorResponse } from '../../common/decorators';
 
 @ApiTags('Organization Warehouses')
 @ApiBearerAuth('JWT-auth')
@@ -27,13 +27,51 @@ import { GetResponse, UpdatedResponse, ResponseCode } from '../../common/respons
 export class WarehouseController {
     constructor(private readonly warehouseService: WarehouseService) { }
 
-    /**
-     * Lấy danh sách warehouse của tổ chức
-     */
     @Get()
     @RequirePermission('warehouse.list')
     @ApiOperation({ summary: 'Lấy danh sách warehouse của tổ chức' })
-    @ApiParam({ name: 'orgId', description: 'ID tổ chức' })
+    @ApiAuthResponses()
+    @ApiParam({ name: 'orgId', description: 'ID tổ chức (UUID)', example: '550e8400-e29b-41d4-a716-446655440000' })
+    @ApiQuery({ name: 'limit', required: false, type: Number, example: 10, description: 'Số lượng record mỗi trang' })
+    @ApiQuery({ name: 'offset', required: false, type: Number, example: 0, description: 'Vị trí bắt đầu' })
+    @ApiQuery({ name: 'keywords', required: false, type: String, description: 'Tìm kiếm theo tên hoặc mô tả' })
+    @ApiQuery({ name: 'is_active', required: false, type: Boolean, description: 'Lọc theo trạng thái hoạt động' })
+    @ApiResponse({
+        status: 200,
+        description: 'Lấy danh sách thành công',
+        schema: {
+            type: 'object',
+            properties: {
+                code: { type: 'string', example: 'warehouse.list_success' },
+                message: { type: 'string', example: 'Lấy danh sách kho thành công' },
+                success: { type: 'boolean', example: true },
+                data: {
+                    type: 'object',
+                    properties: {
+                        items: {
+                            type: 'array',
+                            items: {
+                                type: 'object',
+                                properties: {
+                                    id: { type: 'string', format: 'uuid' },
+                                    name: { type: 'string', example: 'Kho Chính' },
+                                    description: { type: 'string' },
+                                    address_detail: { type: 'string' },
+                                    width: { type: 'number' },
+                                    length: { type: 'number' },
+                                    is_active: { type: 'boolean' },
+                                    created_at: { type: 'string', format: 'date-time' },
+                                }
+                            }
+                        },
+                        total: { type: 'number' },
+                        limit: { type: 'number' },
+                        offset: { type: 'number' },
+                    }
+                }
+            }
+        }
+    })
     async findMany(
         @Param('orgId', ParseUUIDPipe) orgId: string,
         @Query() query: QueryWarehouseDto,
@@ -44,14 +82,40 @@ export class WarehouseController {
         return new GetResponse(ResponseCode.WAREHOUSE_LIST_SUCCESS, data, 'Lấy danh sách kho thành công');
     }
 
-    /**
-     * Lấy chi tiết warehouse
-     */
     @Get(':id')
     @RequirePermission('warehouse.read')
     @ApiOperation({ summary: 'Lấy chi tiết warehouse' })
-    @ApiParam({ name: 'orgId', description: 'ID tổ chức' })
-    @ApiParam({ name: 'id', description: 'ID warehouse' })
+    @ApiAuthResponses()
+    @ApiParam({ name: 'orgId', description: 'ID tổ chức (UUID)' })
+    @ApiParam({ name: 'id', description: 'ID warehouse (UUID)' })
+    @ApiResponse({
+        status: 200,
+        description: 'Lấy chi tiết thành công',
+        schema: {
+            type: 'object',
+            properties: {
+                code: { type: 'string', example: 'warehouse.read_success' },
+                message: { type: 'string', example: 'Lấy thông tin kho thành công' },
+                success: { type: 'boolean', example: true },
+                data: {
+                    type: 'object',
+                    properties: {
+                        id: { type: 'string', format: 'uuid' },
+                        name: { type: 'string', example: 'Kho Chính' },
+                        description: { type: 'string' },
+                        width: { type: 'number' },
+                        length: { type: 'number' },
+                        address_detail: { type: 'string' },
+                        ward_id: { type: 'string', format: 'uuid' },
+                        latitude: { type: 'number' },
+                        longitude: { type: 'number' },
+                        max_load_capacity: { type: 'number' },
+                        is_active: { type: 'boolean' }
+                    }
+                }
+            }
+        }
+    })
     async findById(
         @Param('orgId', ParseUUIDPipe) orgId: string,
         @Param('id', ParseUUIDPipe) id: string,
@@ -62,14 +126,78 @@ export class WarehouseController {
         return new GetResponse(ResponseCode.WAREHOUSE_READ_SUCCESS, data, 'Lấy thông tin kho thành công');
     }
 
-    /**
-     * Lấy layout warehouse
-     */
     @Get(':id/layout')
     @RequirePermission('warehouse.layout.view')
     @ApiOperation({ summary: 'Lấy layout warehouse' })
-    @ApiParam({ name: 'orgId', description: 'ID tổ chức' })
-    @ApiParam({ name: 'id', description: 'ID warehouse' })
+    @ApiAuthResponses()
+    @ApiParam({ name: 'orgId', description: 'ID tổ chức (UUID)' })
+    @ApiParam({ name: 'id', description: 'ID warehouse (UUID)' })
+    @ApiResponse({
+        status: 200,
+        description: 'Lấy layout thành công',
+        schema: {
+            type: 'object',
+            properties: {
+                code: { type: 'string', example: 'warehouse.layout_view_success' },
+                message: { type: 'string', example: 'Lấy layout kho thành công' },
+                success: { type: 'boolean', example: true },
+                data: {
+                    type: 'object',
+                    properties: {
+                        id: { type: 'string', format: 'uuid' },
+                        name: { type: 'string' },
+                        width: { type: 'number' },
+                        length: { type: 'number' },
+                        rows: {
+                            type: 'array',
+                            items: {
+                                type: 'object',
+                                properties: {
+                                    id: { type: 'string', format: 'uuid' },
+                                    name: { type: 'string' },
+                                    position_x: { type: 'number' },
+                                    position_y: { type: 'number' },
+                                    position_rotation: { type: 'number' },
+                                    racks: {
+                                        type: 'array',
+                                        items: {
+                                            type: 'object',
+                                            properties: {
+                                                id: { type: 'string', format: 'uuid' },
+                                                name: { type: 'string' },
+                                                position_x: { type: 'number' },
+                                                position_y: { type: 'number' },
+                                                shelves: {
+                                                    type: 'array',
+                                                    items: {
+                                                        type: 'object',
+                                                        properties: {
+                                                            id: { type: 'string', format: 'uuid' },
+                                                            name: { type: 'string' },
+                                                            blocks: {
+                                                                type: 'array',
+                                                                items: {
+                                                                    type: 'object',
+                                                                    properties: {
+                                                                        id: { type: 'string', format: 'uuid' },
+                                                                        name: { type: 'string' }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    })
     async getLayout(
         @Param('orgId', ParseUUIDPipe) orgId: string,
         @Param('id', ParseUUIDPipe) id: string,
@@ -80,14 +208,46 @@ export class WarehouseController {
         return new GetResponse(ResponseCode.WAREHOUSE_LAYOUT_SUCCESS, data, 'Lấy layout kho thành công');
     }
 
-    /**
-     * Cập nhật warehouse (chỉ name/description)
-     */
     @Put(':id')
     @RequirePermission('warehouse.update')
     @ApiOperation({ summary: 'Cập nhật warehouse' })
-    @ApiParam({ name: 'orgId', description: 'ID tổ chức' })
-    @ApiParam({ name: 'id', description: 'ID warehouse' })
+    @ApiAuthResponses()
+    @ApiValidationErrorResponse()
+    @ApiParam({ name: 'orgId', description: 'ID tổ chức (UUID)' })
+    @ApiParam({ name: 'id', description: 'ID warehouse (UUID)' })
+    @ApiBody({
+        type: UpdateWarehouseDto,
+        description: 'Thông tin cập nhật kho',
+        examples: {
+            example1: {
+                summary: 'Cập nhật tên và mô tả',
+                value: {
+                    name: 'Kho A - Mới',
+                    description: 'Mô tả mới cho kho A'
+                }
+            }
+        }
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Cập nhật thành công',
+        schema: {
+            type: 'object',
+            properties: {
+                code: { type: 'string', example: 'warehouse.update_success' },
+                message: { type: 'string', example: 'Cập nhật kho thành công' },
+                success: { type: 'boolean', example: true },
+                data: {
+                    type: 'object',
+                    properties: {
+                        id: { type: 'string', format: 'uuid' },
+                        name: { type: 'string' },
+                        updated_at: { type: 'string', format: 'date-time' }
+                    }
+                }
+            }
+        }
+    })
     async update(
         @Param('orgId', ParseUUIDPipe) orgId: string,
         @Param('id', ParseUUIDPipe) id: string,
@@ -99,14 +259,38 @@ export class WarehouseController {
         return new UpdatedResponse(ResponseCode.WAREHOUSE_UPDATE_SUCCESS, data, 'Cập nhật kho thành công');
     }
 
-    /**
-     * Lấy danh sách racks của warehouse
-     */
     @Get(':id/racks')
     @RequirePermission('warehouse.view')
     @ApiOperation({ summary: 'Lấy danh sách racks của warehouse' })
-    @ApiParam({ name: 'orgId', description: 'ID tổ chức' })
-    @ApiParam({ name: 'id', description: 'ID warehouse' })
+    @ApiAuthResponses()
+    @ApiParam({ name: 'orgId', description: 'ID tổ chức (UUID)' })
+    @ApiParam({ name: 'id', description: 'ID warehouse (UUID)' })
+    @ApiResponse({
+        status: 200,
+        description: 'Lấy danh sách kệ thành công',
+        schema: {
+            type: 'object',
+            properties: {
+                code: { type: 'string', example: 'warehouse.racks_list_success' },
+                message: { type: 'string', example: 'Lấy danh sách kệ thành công' },
+                success: { type: 'boolean', example: true },
+                data: {
+                    type: 'array',
+                    items: {
+                        type: 'object',
+                        properties: {
+                            id: { type: 'string', format: 'uuid' },
+                            name: { type: 'string', example: 'Kệ 01' },
+                            code: { type: 'string', example: 'RACK-01' },
+                            position_x: { type: 'number' },
+                            position_y: { type: 'number' },
+                            is_active: { type: 'boolean' }
+                        }
+                    }
+                }
+            }
+        }
+    })
     async getRacks(
         @Param('orgId', ParseUUIDPipe) orgId: string,
         @Param('id', ParseUUIDPipe) id: string,
@@ -117,15 +301,39 @@ export class WarehouseController {
         return new GetResponse(ResponseCode.WAREHOUSE_RACKS_SUCCESS, data, 'Lấy danh sách kệ thành công');
     }
 
-    /**
-     * Lấy danh sách shelves của rack
-     */
     @Get(':id/racks/:rackId/shelves')
     @RequirePermission('warehouse.view')
     @ApiOperation({ summary: 'Lấy danh sách shelves của rack' })
-    @ApiParam({ name: 'orgId', description: 'ID tổ chức' })
-    @ApiParam({ name: 'id', description: 'ID warehouse' })
-    @ApiParam({ name: 'rackId', description: 'ID rack' })
+    @ApiAuthResponses()
+    @ApiParam({ name: 'orgId', description: 'ID tổ chức (UUID)' })
+    @ApiParam({ name: 'id', description: 'ID warehouse (UUID)' })
+    @ApiParam({ name: 'rackId', description: 'ID rack (UUID)' })
+    @ApiResponse({
+        status: 200,
+        description: 'Lấy danh sách tầng thành công',
+        schema: {
+            type: 'object',
+            properties: {
+                code: { type: 'string', example: 'warehouse.shelves_list_success' },
+                message: { type: 'string', example: 'Lấy danh sách tầng thành công' },
+                success: { type: 'boolean', example: true },
+                data: {
+                    type: 'array',
+                    items: {
+                        type: 'object',
+                        properties: {
+                            id: { type: 'string', format: 'uuid' },
+                            name: { type: 'string', example: 'Tầng 1' },
+                            code: { type: 'string', example: 'SHELF-1' },
+                            height: { type: 'number' },
+                            assigned_product_id: { type: 'string', format: 'uuid' },
+                            is_active: { type: 'boolean' }
+                        }
+                    }
+                }
+            }
+        }
+    })
     async getShelves(
         @Param('orgId', ParseUUIDPipe) orgId: string,
         @Param('id', ParseUUIDPipe) id: string,
@@ -137,16 +345,41 @@ export class WarehouseController {
         return new GetResponse(ResponseCode.WAREHOUSE_SHELVES_SUCCESS, data, 'Lấy danh sách tầng thành công');
     }
 
-    /**
-     * Lấy danh sách blocks của shelf
-     */
     @Get(':id/racks/:rackId/shelves/:shelfId/blocks')
     @RequirePermission('warehouse.view')
     @ApiOperation({ summary: 'Lấy danh sách blocks của shelf' })
-    @ApiParam({ name: 'orgId', description: 'ID tổ chức' })
-    @ApiParam({ name: 'id', description: 'ID warehouse' })
-    @ApiParam({ name: 'rackId', description: 'ID rack' })
-    @ApiParam({ name: 'shelfId', description: 'ID shelf' })
+    @ApiAuthResponses()
+    @ApiParam({ name: 'orgId', description: 'ID tổ chức (UUID)' })
+    @ApiParam({ name: 'id', description: 'ID warehouse (UUID)' })
+    @ApiParam({ name: 'rackId', description: 'ID rack (UUID)' })
+    @ApiParam({ name: 'shelfId', description: 'ID shelf (UUID)' })
+    @ApiResponse({
+        status: 200,
+        description: 'Lấy danh sách ô thành công',
+        schema: {
+            type: 'object',
+            properties: {
+                code: { type: 'string', example: 'warehouse.blocks_list_success' },
+                message: { type: 'string', example: 'Lấy danh sách ô thành công' },
+                success: { type: 'boolean', example: true },
+                data: {
+                    type: 'array',
+                    items: {
+                        type: 'object',
+                        properties: {
+                            id: { type: 'string', format: 'uuid' },
+                            name: { type: 'string', example: 'Ô 1' },
+                            code: { type: 'string', example: 'BLOCK-1' },
+                            position_x: { type: 'number' },
+                            position_y: { type: 'number' },
+                            is_overloaded: { type: 'boolean' },
+                            is_active: { type: 'boolean' }
+                        }
+                    }
+                }
+            }
+        }
+    })
     async getBlocks(
         @Param('orgId', ParseUUIDPipe) orgId: string,
         @Param('id', ParseUUIDPipe) id: string,
@@ -159,14 +392,39 @@ export class WarehouseController {
         return new GetResponse(ResponseCode.WAREHOUSE_BLOCKS_SUCCESS, data, 'Lấy danh sách ô thành công');
     }
 
-    /**
-     * Lấy danh sách rows của warehouse
-     */
     @Get(':id/rows')
     @RequirePermission('warehouse.view')
     @ApiOperation({ summary: 'Lấy danh sách rows của warehouse' })
-    @ApiParam({ name: 'orgId', description: 'ID tổ chức' })
-    @ApiParam({ name: 'id', description: 'ID warehouse' })
+    @ApiAuthResponses()
+    @ApiParam({ name: 'orgId', description: 'ID tổ chức (UUID)' })
+    @ApiParam({ name: 'id', description: 'ID warehouse (UUID)' })
+    @ApiResponse({
+        status: 200,
+        description: 'Lấy danh sách dãy thành công',
+        schema: {
+            type: 'object',
+            properties: {
+                code: { type: 'string', example: 'warehouse.rows_list_success' },
+                message: { type: 'string', example: 'Lấy danh sách dãy thành công' },
+                success: { type: 'boolean', example: true },
+                data: {
+                    type: 'array',
+                    items: {
+                        type: 'object',
+                        properties: {
+                            id: { type: 'string', format: 'uuid' },
+                            name: { type: 'string', example: 'Dãy A' },
+                            code: { type: 'string', example: 'ROW-A' },
+                            position_x: { type: 'number' },
+                            position_y: { type: 'number' },
+                            is_rented: { type: 'boolean' },
+                            is_active: { type: 'boolean' }
+                        }
+                    }
+                }
+            }
+        }
+    })
     async getRows(
         @Param('orgId', ParseUUIDPipe) orgId: string,
         @Param('id', ParseUUIDPipe) id: string,
@@ -177,15 +435,39 @@ export class WarehouseController {
         return new GetResponse(ResponseCode.WAREHOUSE_ROWS_SUCCESS, data, 'Lấy danh sách dãy thành công');
     }
 
-    /**
-     * Lấy chi tiết row
-     */
     @Get(':id/rows/:rowId')
     @RequirePermission('warehouse.view')
     @ApiOperation({ summary: 'Lấy chi tiết row' })
-    @ApiParam({ name: 'orgId', description: 'ID tổ chức' })
-    @ApiParam({ name: 'id', description: 'ID warehouse' })
-    @ApiParam({ name: 'rowId', description: 'ID row' })
+    @ApiAuthResponses()
+    @ApiParam({ name: 'orgId', description: 'ID tổ chức (UUID)' })
+    @ApiParam({ name: 'id', description: 'ID warehouse (UUID)' })
+    @ApiParam({ name: 'rowId', description: 'ID row (UUID)' })
+    @ApiResponse({
+        status: 200,
+        description: 'Lấy chi tiết dãy thành công',
+        schema: {
+            type: 'object',
+            properties: {
+                code: { type: 'string', example: 'warehouse.row_detail_success' },
+                message: { type: 'string', example: 'Lấy chi tiết dãy thành công' },
+                success: { type: 'boolean', example: true },
+                data: {
+                    type: 'object',
+                    properties: {
+                        id: { type: 'string', format: 'uuid' },
+                        name: { type: 'string', example: 'Dãy A' },
+                        code: { type: 'string', example: 'ROW-A' },
+                        description: { type: 'string' },
+                        position_x: { type: 'number' },
+                        position_y: { type: 'number' },
+                        position_rotation: { type: 'number' },
+                        total_weight_capacity: { type: 'number' },
+                        is_active: { type: 'boolean' }
+                    }
+                }
+            }
+        }
+    })
     async getRowById(
         @Param('orgId', ParseUUIDPipe) orgId: string,
         @Param('id', ParseUUIDPipe) id: string,
@@ -197,15 +479,40 @@ export class WarehouseController {
         return new GetResponse(ResponseCode.WAREHOUSE_ROW_SUCCESS, data, 'Lấy chi tiết dãy thành công');
     }
 
-    /**
-     * Lấy danh sách racks theo row (nested)
-     */
     @Get(':id/rows/:rowId/racks')
     @RequirePermission('warehouse.view')
     @ApiOperation({ summary: 'Lấy danh sách racks theo row' })
-    @ApiParam({ name: 'orgId', description: 'ID tổ chức' })
-    @ApiParam({ name: 'id', description: 'ID warehouse' })
-    @ApiParam({ name: 'rowId', description: 'ID row' })
+    @ApiAuthResponses()
+    @ApiParam({ name: 'orgId', description: 'ID tổ chức (UUID)' })
+    @ApiParam({ name: 'id', description: 'ID warehouse (UUID)' })
+    @ApiParam({ name: 'rowId', description: 'ID row (UUID)' })
+    @ApiResponse({
+        status: 200,
+        description: 'Lấy danh sách kệ thành công',
+        schema: {
+            type: 'object',
+            properties: {
+                code: { type: 'string', example: 'warehouse.racks_list_success' },
+                message: { type: 'string', example: 'Lấy danh sách kệ thành công' },
+                success: { type: 'boolean', example: true },
+                data: {
+                    type: 'array',
+                    items: {
+                        type: 'object',
+                        properties: {
+                            id: { type: 'string', format: 'uuid' },
+                            name: { type: 'string', example: 'Kệ 01' },
+                            code: { type: 'string', example: 'RACK-01' },
+                            position_x: { type: 'number' },
+                            position_y: { type: 'number' },
+                            total_height: { type: 'number' },
+                            is_active: { type: 'boolean' }
+                        }
+                    }
+                }
+            }
+        }
+    })
     async getRacksByRow(
         @Param('orgId', ParseUUIDPipe) orgId: string,
         @Param('id', ParseUUIDPipe) id: string,
@@ -217,15 +524,53 @@ export class WarehouseController {
         return new GetResponse(ResponseCode.WAREHOUSE_RACKS_SUCCESS, data, 'Lấy danh sách kệ thành công');
     }
 
-    /**
-     * Cập nhật shelf (assigned_product_id)
-     */
     @Patch(':id/shelves/:shelfId')
     @RequirePermission('warehouse.shelf.update')
     @ApiOperation({ summary: 'Cập nhật shelf (assigned_product_id)' })
-    @ApiParam({ name: 'orgId', description: 'ID tổ chức' })
-    @ApiParam({ name: 'id', description: 'ID warehouse' })
-    @ApiParam({ name: 'shelfId', description: 'ID shelf' })
+    @ApiAuthResponses()
+    @ApiValidationErrorResponse()
+    @ApiParam({ name: 'orgId', description: 'ID tổ chức (UUID)' })
+    @ApiParam({ name: 'id', description: 'ID warehouse (UUID)' })
+    @ApiParam({ name: 'shelfId', description: 'ID shelf (UUID)' })
+    @ApiBody({
+        type: UpdateShelfDto,
+        description: 'Thông tin cập nhật tầng',
+        examples: {
+            example1: {
+                summary: 'Gán sản phẩm',
+                value: {
+                    assigned_product_id: 'product-uuid'
+                }
+            },
+            example2: {
+                summary: 'Bỏ gán sản phẩm',
+                value: {
+                    assigned_product_id: null
+                }
+            }
+        }
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Cập nhật tầng thành công',
+        schema: {
+            type: 'object',
+            properties: {
+                code: { type: 'string', example: 'warehouse.shelf_update_success' },
+                message: { type: 'string', example: 'Cập nhật tầng thành công' },
+                success: { type: 'boolean', example: true },
+                data: {
+                    type: 'object',
+                    properties: {
+                        id: { type: 'string', format: 'uuid' },
+                        name: { type: 'string' },
+                        assigned_product_id: { type: 'string', format: 'uuid' },
+                        updated_at: { type: 'string', format: 'date-time' }
+                    }
+                }
+            }
+        }
+    })
     async updateShelf(
         @Param('orgId', ParseUUIDPipe) orgId: string,
         @Param('id', ParseUUIDPipe) id: string,

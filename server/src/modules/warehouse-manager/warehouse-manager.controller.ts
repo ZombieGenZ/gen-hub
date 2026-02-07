@@ -269,6 +269,7 @@ export class WarehouseManagerController {
         examples: {
             example_1: {
                 summary: 'Cập nhật ghi chú và vai trò',
+                description: 'Cập nhật ghi chú mới và danh sách quyền hạn',
                 value: {
                     notes: 'Cập nhật ghi chú mới',
                     role_ids: ['a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', 'b1fde99-8d0c-4fa2-bc7e-7cc8be491b22']
