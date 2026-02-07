@@ -35,6 +35,7 @@ import { RentalContractModule } from './modules/rental-contract/rental-contract.
 import { OrgRentalContractModule } from './modules/org-rental-contract/org-rental-contract.module';
 import { RentalSchedulerModule } from './modules/rental-scheduler/rental-scheduler.module';
 import { PaymentModule } from './modules/payment/payment.module';
+import { PaymentAdminModule } from './modules/payment-admin/payment-admin.module';
 import { AmenityModule } from './modules/amenity/amenity.module';
 import { ProvinceModule } from './modules/province/province.module';
 import { WardModule } from './modules/ward/ward.module';
@@ -68,6 +69,7 @@ import { ContactModule } from './modules/contact/contact.module';
 import { ContactTagModule } from './modules/contact-tag/contact-tag.module';
 import { ContactListModule } from './modules/contact-list/contact-list.module';
 import { RefundRequestModule } from './modules/refund-request/refund-request.module';
+import { OrgRefundRequestModule } from './modules/org-refund-request/org-refund-request.module';
 import { CategoryModule } from './modules/category/category.module';
 import { ArticleModule } from './modules/article/article.module';
 import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
@@ -190,6 +192,7 @@ import { RoleModule } from './modules/role/role.module';
 
     // Payment
     PaymentModule,
+    PaymentAdminModule,
 
     // Account Balance
     OrganizationBalanceModule,
@@ -211,6 +214,7 @@ import { RoleModule } from './modules/role/role.module';
 
     // Refund Request Module
     RefundRequestModule,
+    OrgRefundRequestModule,
 
     // Contact Tags Module
     ContactTagModule,

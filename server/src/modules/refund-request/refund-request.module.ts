@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { RefundRequestController } from './refund-request.controller';
-import { OrgRefundRequestController } from './org-refund-request.controller';
 import { RefundRequestService } from './refund-request.service';
 import { RefundRequestRepository } from './refund-request.repository';
 import { PrismaModule } from '../../prisma/prisma.module';
@@ -19,7 +18,7 @@ import { ApiKeyVerificationModule } from '../api-key-verification/api-key-verifi
         OrganizationModule,
         ApiKeyVerificationModule,
     ],
-    controllers: [RefundRequestController, OrgRefundRequestController],
+    controllers: [RefundRequestController],
     providers: [RefundRequestService, RefundRequestRepository],
     exports: [RefundRequestService],
 })

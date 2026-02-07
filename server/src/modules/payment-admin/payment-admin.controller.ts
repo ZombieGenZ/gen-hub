@@ -7,7 +7,7 @@ import {
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
 import { I18nLang } from 'nestjs-i18n';
 
-import { SepayService } from './sepay.service';
+import { SepayService } from '../payment/sepay.service';
 import { QueryPaymentDto } from './dto';
 import { JwtAuthGuard, PermissionGuard } from '../../common/guards';
 import { RequirePermission, CurrentUser } from '../../common/decorators';
