@@ -586,12 +586,12 @@ export class WarehouseService {
   }
 
   /**
-   * Cập nhật shelf (assigned_product_id)
+   * Cập nhật shelf (name, description, assigned_product_id)
    */
   async updateShelf(
     warehouseId: string,
     shelfId: string,
-    dto: { assigned_product_id?: string | null },
+    dto: { name?: string; description?: string; assigned_product_id?: string | null },
     userId: string,
     organizationId: string,
     lang: string,
@@ -624,7 +624,9 @@ export class WarehouseService {
 
     // Update shelf
     const updatedShelf = await this.repository.updateShelf(shelfId, {
-      assigned_product_id: dto.assigned_product_id ?? null,
+      name: dto.name,
+      description: dto.description,
+      assigned_product_id: dto.assigned_product_id,
       updated_by: userId,
     });
 
@@ -641,11 +643,202 @@ export class WarehouseService {
       'Shelf',
       shelfId,
       {},
-      { assigned_product_id: dto.assigned_product_id },
-      { userId, description: `Cập nhật shelf ${shelfId} assigned_product_id` },
+      dto as Record<string, unknown>,
+      { userId, description: `Cập nhật shelf ${shelfId}` },
     );
 
-
     return updatedShelf;
+  }
+
+  /**
+   * Cập nhật row (name, description)
+   */
+  async updateRow(
+    warehouseId: string,
+    rowId: string,
+    dto: { name?: string; description?: string },
+    userId: string,
+    organizationId: string,
+    lang: string,
+  ) {
+    // Kiểm tra quyền
+    if (organizationId) {
+      await this.checkOrgPermission(
+        organizationId,
+        userId,
+        'warehouse.row.update',
+        lang,
+      );
+    }
+
+    // Kiểm tra warehouse tồn tại
+    const warehouse = await this.repository.findById(warehouseId);
+    if (!warehouse || (organizationId && warehouse.organization_id !== organizationId)) {
+      throw new NotFoundException(
+        this.i18n.t('warehouse.errors.not_found', { lang }),
+      );
+    }
+
+    // Kiểm tra row thuộc warehouse
+    const isRowInWarehouse = await this.repository.isRowInWarehouse(rowId, warehouseId);
+    if (!isRowInWarehouse) {
+      throw new NotFoundException(
+        this.i18n.t('warehouse.errors.row_not_found', { lang }),
+      );
+    }
+
+    // Update row
+    const updatedRow = await this.repository.updateRow(rowId, {
+      name: dto.name,
+      description: dto.description,
+      updated_by: userId,
+    });
+
+    // Emit socket event
+    this.websocketGateway.emitToOrganization(organizationId, 'row:updated', {
+      row: updatedRow,
+      warehouseId,
+      updatedBy: userId,
+    });
+
+    // Ghi audit log
+    this.auditLogService.logUpdate(
+      organizationId,
+      'Row',
+      rowId,
+      {},
+      dto as Record<string, unknown>,
+      { userId, description: `Cập nhật row ${rowId}` },
+    );
+
+    return updatedRow;
+  }
+
+  /**
+   * Cập nhật rack (name, description)
+   */
+  async updateRack(
+    warehouseId: string,
+    rackId: string,
+    dto: { name?: string; description?: string },
+    userId: string,
+    organizationId: string,
+    lang: string,
+  ) {
+    // Kiểm tra quyền
+    if (organizationId) {
+      await this.checkOrgPermission(
+        organizationId,
+        userId,
+        'warehouse.rack.update',
+        lang,
+      );
+    }
+
+    // Kiểm tra warehouse tồn tại
+    const warehouse = await this.repository.findById(warehouseId);
+    if (!warehouse || (organizationId && warehouse.organization_id !== organizationId)) {
+      throw new NotFoundException(
+        this.i18n.t('warehouse.errors.not_found', { lang }),
+      );
+    }
+
+    // Kiểm tra rack thuộc warehouse
+    const isRackInWarehouse = await this.repository.isRackInWarehouse(rackId, warehouseId);
+    if (!isRackInWarehouse) {
+      throw new NotFoundException(
+        this.i18n.t('warehouse.errors.rack_not_found', { lang }),
+      );
+    }
+
+    // Update rack
+    const updatedRack = await this.repository.updateRack(rackId, {
+      name: dto.name,
+      description: dto.description,
+      updated_by: userId,
+    });
+
+    // Emit socket event
+    this.websocketGateway.emitToOrganization(organizationId, 'rack:updated', {
+      rack: updatedRack,
+      warehouseId,
+      updatedBy: userId,
+    });
+
+    // Ghi audit log
+    this.auditLogService.logUpdate(
+      organizationId,
+      'Rack',
+      rackId,
+      {},
+      dto as Record<string, unknown>,
+      { userId, description: `Cập nhật rack ${rackId}` },
+    );
+
+    return updatedRack;
+  }
+
+  /**
+   * Cập nhật block (name, description)
+   */
+  async updateBlock(
+    warehouseId: string,
+    blockId: string,
+    dto: { name?: string; description?: string },
+    userId: string,
+    organizationId: string,
+    lang: string,
+  ) {
+    // Kiểm tra quyền
+    if (organizationId) {
+      await this.checkOrgPermission(
+        organizationId,
+        userId,
+        'warehouse.block.update',
+        lang,
+      );
+    }
+
+    // Kiểm tra warehouse tồn tại
+    const warehouse = await this.repository.findById(warehouseId);
+    if (!warehouse || (organizationId && warehouse.organization_id !== organizationId)) {
+      throw new NotFoundException(
+        this.i18n.t('warehouse.errors.not_found', { lang }),
+      );
+    }
+
+    // Kiểm tra block thuộc warehouse
+    const isBlockInWarehouse = await this.repository.isBlockInWarehouse(blockId, warehouseId);
+    if (!isBlockInWarehouse) {
+      throw new NotFoundException(
+        this.i18n.t('warehouse.errors.block_not_found', { lang }),
+      );
+    }
+
+    // Update block
+    const updatedBlock = await this.repository.updateBlock(blockId, {
+      name: dto.name,
+      description: dto.description,
+      updated_by: userId,
+    });
+
+    // Emit socket event
+    this.websocketGateway.emitToOrganization(organizationId, 'block:updated', {
+      block: updatedBlock,
+      warehouseId,
+      updatedBy: userId,
+    });
+
+    // Ghi audit log
+    this.auditLogService.logUpdate(
+      organizationId,
+      'Block',
+      blockId,
+      {},
+      dto as Record<string, unknown>,
+      { userId, description: `Cập nhật block ${blockId}` },
+    );
+
+    return updatedBlock;
   }
 }

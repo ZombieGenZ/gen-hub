@@ -13,7 +13,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam, ApiHeader, ApiResponse,
 import { I18nLang } from 'nestjs-i18n';
 
 import { WarehouseService } from './warehouse.service';
-import { UpdateWarehouseDto, QueryWarehouseDto, UpdateShelfDto } from './dto';
+import { UpdateWarehouseDto, QueryWarehouseDto, UpdateShelfDto, UpdateRowDto, UpdateRackDto, UpdateBlockDto } from './dto';
 import { CombinedAuthGuard, PermissionGuard } from '../../common/guards';
 import { RequirePermission, CurrentActor } from '../../common/decorators';
 import { GetResponse, UpdatedResponse, ResponseCode } from '../../common/responses';
@@ -526,7 +526,7 @@ export class WarehouseController {
 
     @Patch(':id/shelves/:shelfId')
     @RequirePermission('warehouse.shelf.update')
-    @ApiOperation({ summary: 'Cập nhật shelf (assigned_product_id)' })
+    @ApiOperation({ summary: 'Cập nhật shelf (name, description, assigned_product_id)' })
     @ApiAuthResponses()
     @ApiValidationErrorResponse()
     @ApiParam({ name: 'orgId', description: 'ID tổ chức (UUID)' })
@@ -537,12 +537,19 @@ export class WarehouseController {
         description: 'Thông tin cập nhật tầng',
         examples: {
             example1: {
+                summary: 'Cập nhật tên và mô tả',
+                value: {
+                    name: 'Tầng 1 - Mới',
+                    description: 'Mô tả mới'
+                }
+            },
+            example2: {
                 summary: 'Gán sản phẩm',
                 value: {
                     assigned_product_id: 'product-uuid'
                 }
             },
-            example2: {
+            example3: {
                 summary: 'Bỏ gán sản phẩm',
                 value: {
                     assigned_product_id: null
@@ -564,6 +571,7 @@ export class WarehouseController {
                     properties: {
                         id: { type: 'string', format: 'uuid' },
                         name: { type: 'string' },
+                        description: { type: 'string' },
                         assigned_product_id: { type: 'string', format: 'uuid' },
                         updated_at: { type: 'string', format: 'date-time' }
                     }
@@ -582,5 +590,166 @@ export class WarehouseController {
         const data = await this.warehouseService.updateShelf(id, shelfId, dto, actorId, orgId, lang);
         return new UpdatedResponse(ResponseCode.WAREHOUSE_SHELF_UPDATE_SUCCESS, data, 'Cập nhật tầng thành công');
     }
-}
 
+    @Patch(':id/rows/:rowId')
+    @RequirePermission('warehouse.row.update')
+    @ApiOperation({ summary: 'Cập nhật row (name, description)' })
+    @ApiAuthResponses()
+    @ApiValidationErrorResponse()
+    @ApiParam({ name: 'orgId', description: 'ID tổ chức (UUID)' })
+    @ApiParam({ name: 'id', description: 'ID warehouse (UUID)' })
+    @ApiParam({ name: 'rowId', description: 'ID row (UUID)' })
+    @ApiBody({
+        type: UpdateRowDto,
+        description: 'Thông tin cập nhật dãy',
+        examples: {
+            example1: {
+                summary: 'Cập nhật tên và mô tả',
+                value: {
+                    name: 'Dãy A - Mới',
+                    description: 'Mô tả mới cho dãy A'
+                }
+            }
+        }
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Cập nhật dãy thành công',
+        schema: {
+            type: 'object',
+            properties: {
+                code: { type: 'string', example: 'warehouse.row_update_success' },
+                message: { type: 'string', example: 'Cập nhật dãy thành công' },
+                success: { type: 'boolean', example: true },
+                data: {
+                    type: 'object',
+                    properties: {
+                        id: { type: 'string', format: 'uuid' },
+                        name: { type: 'string' },
+                        description: { type: 'string' },
+                        updated_at: { type: 'string', format: 'date-time' }
+                    }
+                }
+            }
+        }
+    })
+    async updateRow(
+        @Param('orgId', ParseUUIDPipe) orgId: string,
+        @Param('id', ParseUUIDPipe) id: string,
+        @Param('rowId', ParseUUIDPipe) rowId: string,
+        @Body() dto: UpdateRowDto,
+        @CurrentActor() actorId: string,
+        @I18nLang() lang: string,
+    ) {
+        const data = await this.warehouseService.updateRow(id, rowId, dto, actorId, orgId, lang);
+        return new UpdatedResponse(ResponseCode.WAREHOUSE_ROW_UPDATE_SUCCESS, data, 'Cập nhật dãy thành công');
+    }
+
+    @Patch(':id/racks/:rackId')
+    @RequirePermission('warehouse.rack.update')
+    @ApiOperation({ summary: 'Cập nhật rack (name, description)' })
+    @ApiAuthResponses()
+    @ApiValidationErrorResponse()
+    @ApiParam({ name: 'orgId', description: 'ID tổ chức (UUID)' })
+    @ApiParam({ name: 'id', description: 'ID warehouse (UUID)' })
+    @ApiParam({ name: 'rackId', description: 'ID rack (UUID)' })
+    @ApiBody({
+        type: UpdateRackDto,
+        description: 'Thông tin cập nhật kệ',
+        examples: {
+            example1: {
+                summary: 'Cập nhật tên và mô tả',
+                value: {
+                    name: 'Kệ 01 - Mới',
+                    description: 'Mô tả mới cho kệ 01'
+                }
+            }
+        }
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Cập nhật kệ thành công',
+        schema: {
+            type: 'object',
+            properties: {
+                code: { type: 'string', example: 'warehouse.rack_update_success' },
+                message: { type: 'string', example: 'Cập nhật kệ thành công' },
+                success: { type: 'boolean', example: true },
+                data: {
+                    type: 'object',
+                    properties: {
+                        id: { type: 'string', format: 'uuid' },
+                        name: { type: 'string' },
+                        description: { type: 'string' },
+                        updated_at: { type: 'string', format: 'date-time' }
+                    }
+                }
+            }
+        }
+    })
+    async updateRack(
+        @Param('orgId', ParseUUIDPipe) orgId: string,
+        @Param('id', ParseUUIDPipe) id: string,
+        @Param('rackId', ParseUUIDPipe) rackId: string,
+        @Body() dto: UpdateRackDto,
+        @CurrentActor() actorId: string,
+        @I18nLang() lang: string,
+    ) {
+        const data = await this.warehouseService.updateRack(id, rackId, dto, actorId, orgId, lang);
+        return new UpdatedResponse(ResponseCode.WAREHOUSE_RACK_UPDATE_SUCCESS, data, 'Cập nhật kệ thành công');
+    }
+
+    @Patch(':id/blocks/:blockId')
+    @RequirePermission('warehouse.block.update')
+    @ApiOperation({ summary: 'Cập nhật block (name, description)' })
+    @ApiAuthResponses()
+    @ApiValidationErrorResponse()
+    @ApiParam({ name: 'orgId', description: 'ID tổ chức (UUID)' })
+    @ApiParam({ name: 'id', description: 'ID warehouse (UUID)' })
+    @ApiParam({ name: 'blockId', description: 'ID block (UUID)' })
+    @ApiBody({
+        type: UpdateBlockDto,
+        description: 'Thông tin cập nhật ô',
+        examples: {
+            example1: {
+                summary: 'Cập nhật tên và mô tả',
+                value: {
+                    name: 'Ô 01 - Mới',
+                    description: 'Mô tả mới cho ô 01'
+                }
+            }
+        }
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Cập nhật ô thành công',
+        schema: {
+            type: 'object',
+            properties: {
+                code: { type: 'string', example: 'warehouse.block_update_success' },
+                message: { type: 'string', example: 'Cập nhật ô thành công' },
+                success: { type: 'boolean', example: true },
+                data: {
+                    type: 'object',
+                    properties: {
+                        id: { type: 'string', format: 'uuid' },
+                        name: { type: 'string' },
+                        description: { type: 'string' },
+                        updated_at: { type: 'string', format: 'date-time' }
+                    }
+                }
+            }
+        }
+    })
+    async updateBlock(
+        @Param('orgId', ParseUUIDPipe) orgId: string,
+        @Param('id', ParseUUIDPipe) id: string,
+        @Param('blockId', ParseUUIDPipe) blockId: string,
+        @Body() dto: UpdateBlockDto,
+        @CurrentActor() actorId: string,
+        @I18nLang() lang: string,
+    ) {
+        const data = await this.warehouseService.updateBlock(id, blockId, dto, actorId, orgId, lang);
+        return new UpdatedResponse(ResponseCode.WAREHOUSE_BLOCK_UPDATE_SUCCESS, data, 'Cập nhật ô thành công');
+    }
+}

@@ -3,9 +3,10 @@ import { WarehouseManagerViewController } from './warehouse-manager-view.control
 import { WarehouseManagerViewService } from './warehouse-manager-view.service';
 import { WarehouseManagerViewRepository } from './warehouse-manager-view.repository';
 import { PrismaModule } from '../../prisma/prisma.module';
+import { ApiKeyVerificationModule } from '../api-key-verification/api-key-verification.module';
 
 @Module({
-    imports: [PrismaModule],
+    imports: [PrismaModule, ApiKeyVerificationModule],
     controllers: [WarehouseManagerViewController],
     providers: [
         WarehouseManagerViewService,

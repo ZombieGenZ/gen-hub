@@ -127,6 +127,9 @@ export enum ResponseCode {
     WAREHOUSE_RACKS_SUCCESS = 'warehouse.racks_success',
     WAREHOUSE_SHELVES_SUCCESS = 'warehouse.shelves_success',
     WAREHOUSE_SHELF_UPDATE_SUCCESS = 'warehouse.shelf_update_success',
+    WAREHOUSE_ROW_UPDATE_SUCCESS = 'warehouse.row_update_success',
+    WAREHOUSE_RACK_UPDATE_SUCCESS = 'warehouse.rack_update_success',
+    WAREHOUSE_BLOCK_UPDATE_SUCCESS = 'warehouse.block_update_success',
     WAREHOUSE_BLOCKS_SUCCESS = 'warehouse.blocks_success',
 
 

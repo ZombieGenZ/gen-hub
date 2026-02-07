@@ -78,10 +78,57 @@ export class QueryWarehouseDto {
 }
 
 /**
- * DTO để cập nhật shelf (assigned_product_id)
+ * DTO để cập nhật row
+ */
+export class UpdateRowDto {
+    @IsOptional()
+    @IsString({ message: i18nValidationMessage('warehouse.validation.name_string') })
+    name?: string;
+
+    @IsOptional()
+    @IsString({ message: i18nValidationMessage('warehouse.validation.description_string') })
+    description?: string;
+}
+
+/**
+ * DTO để cập nhật rack
+ */
+export class UpdateRackDto {
+    @IsOptional()
+    @IsString({ message: i18nValidationMessage('warehouse.validation.name_string') })
+    name?: string;
+
+    @IsOptional()
+    @IsString({ message: i18nValidationMessage('warehouse.validation.description_string') })
+    description?: string;
+}
+
+/**
+ * DTO để cập nhật shelf (name, description, assigned_product_id)
  */
 export class UpdateShelfDto {
     @IsOptional()
+    @IsString({ message: i18nValidationMessage('warehouse.validation.name_string') })
+    name?: string;
+
+    @IsOptional()
+    @IsString({ message: i18nValidationMessage('warehouse.validation.description_string') })
+    description?: string;
+
+    @IsOptional()
     @IsUUID('4', { message: i18nValidationMessage('warehouse.validation.product_id_uuid') })
     assigned_product_id?: string | null;
+}
+
+/**
+ * DTO để cập nhật block
+ */
+export class UpdateBlockDto {
+    @IsOptional()
+    @IsString({ message: i18nValidationMessage('warehouse.validation.name_string') })
+    name?: string;
+
+    @IsOptional()
+    @IsString({ message: i18nValidationMessage('warehouse.validation.description_string') })
+    description?: string;
 }

@@ -407,14 +407,121 @@ export class WarehouseRepository {
     /**
      * Cập nhật shelf
      */
-    async updateShelf(shelfId: string, data: { assigned_product_id?: string | null; updated_by?: string }) {
+    async updateShelf(shelfId: string, data: { name?: string; description?: string; assigned_product_id?: string | null; updated_by?: string }) {
         return this.prisma.shelf.update({
             where: { id: shelfId },
             data: {
-                assigned_product_id: data.assigned_product_id,
+                ...(data.name !== undefined && { name: data.name }),
+                ...(data.description !== undefined && { description: data.description }),
+                ...(data.assigned_product_id !== undefined && { assigned_product_id: data.assigned_product_id }),
                 updated_by: data.updated_by,
                 updated_at: new Date(),
             },
+        });
+    }
+
+    /**
+     * Kiểm tra row thuộc warehouse
+     */
+    async isRowInWarehouse(rowId: string, warehouseId: string): Promise<boolean> {
+        const row = await this.prisma.row.findFirst({
+            where: { id: rowId, is_deleted: false, warehouse_id: warehouseId },
+        });
+        return !!row;
+    }
+
+    /**
+     * Kiểm tra block thuộc warehouse
+     */
+    async isBlockInWarehouse(blockId: string, warehouseId: string): Promise<boolean> {
+        const block = await this.prisma.block.findFirst({
+            where: { id: blockId, is_deleted: false },
+            include: {
+                shelf: {
+                    include: {
+                        rack: {
+                            include: {
+                                row: {
+                                    select: { warehouse_id: true },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        });
+        return block?.shelf?.rack?.row?.warehouse_id === warehouseId;
+    }
+
+    /**
+     * Cập nhật row
+     */
+    async updateRow(rowId: string, data: { name?: string; description?: string; updated_by?: string }) {
+        return this.prisma.row.update({
+            where: { id: rowId },
+            data: {
+                ...(data.name !== undefined && { name: data.name }),
+                ...(data.description !== undefined && { description: data.description }),
+                updated_by: data.updated_by,
+                updated_at: new Date(),
+            },
+        });
+    }
+
+    /**
+     * Cập nhật rack
+     */
+    async updateRack(rackId: string, data: { name?: string; description?: string; updated_by?: string }) {
+        return this.prisma.rack.update({
+            where: { id: rackId },
+            data: {
+                ...(data.name !== undefined && { name: data.name }),
+                ...(data.description !== undefined && { description: data.description }),
+                updated_by: data.updated_by,
+                updated_at: new Date(),
+            },
+        });
+    }
+
+    /**
+     * Cập nhật block
+     */
+    async updateBlock(blockId: string, data: { name?: string; description?: string; updated_by?: string }) {
+        return this.prisma.block.update({
+            where: { id: blockId },
+            data: {
+                ...(data.name !== undefined && { name: data.name }),
+                ...(data.description !== undefined && { description: data.description }),
+                updated_by: data.updated_by,
+                updated_at: new Date(),
+            },
+        });
+    }
+
+    /**
+     * Tìm rack theo ID
+     */
+    async findRackById(rackId: string) {
+        return this.prisma.rack.findFirst({
+            where: { id: rackId, is_deleted: false },
+        });
+    }
+
+    /**
+     * Tìm block theo ID
+     */
+    async findBlockById(blockId: string) {
+        return this.prisma.block.findFirst({
+            where: { id: blockId, is_deleted: false },
+        });
+    }
+
+    /**
+     * Tìm shelf theo ID
+     */
+    async findShelfById(shelfId: string) {
+        return this.prisma.shelf.findFirst({
+            where: { id: shelfId, is_deleted: false },
         });
     }
 }
