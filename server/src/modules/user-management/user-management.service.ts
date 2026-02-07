@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { I18nService } from 'nestjs-i18n';
 import { UserManagementRepository } from './user-management.repository';
 import { WarningCategoryRepository } from '../warning-category/warning-category.repository';
@@ -27,9 +28,6 @@ import {
     IUserRolesAndPermissions,
 } from './interfaces';
 
-const CACHE_KEY_PREFIX = 'user_management';
-const CACHE_LIST_KEY = `${CACHE_KEY_PREFIX}:list`;
-
 @Injectable()
 export class UserManagementService {
     constructor(
@@ -41,23 +39,38 @@ export class UserManagementService {
         private readonly redisService: RedisService,
         private readonly systemLogService: SystemLogService,
         private readonly websocketGateway: WebsocketGateway,
+        private readonly configService: ConfigService,
         private readonly i18n: I18nService,
     ) { }
 
+    /**
+     * Get cache key prefix from environment via ConfigService
+     */
+    private getCacheKeyPrefix(): string {
+        return this.configService.get<string>('REDIS_USER_MANAGEMENT_KEY_PREFIX') || 'user_management';
+    }
+
+    /**
+     * Get list cache key prefix
+     */
+    private getListCacheKeyPrefix(): string {
+        return `${this.getCacheKeyPrefix()}:list`;
+    }
+
     private getListCacheTtl(): number {
-        return parseInt(process.env.REDIS_USER_LIST_TTL || '120', 10);
+        return this.configService.get<number>('REDIS_USER_LIST_TTL') || 120;
     }
 
     private getDetailCacheTtl(): number {
-        return parseInt(process.env.REDIS_USER_DETAIL_TTL || '300', 10);
+        return this.configService.get<number>('REDIS_USER_DETAIL_TTL') || 300;
     }
 
     private getWarningsCacheTtl(): number {
-        return parseInt(process.env.REDIS_USER_WARNINGS_TTL || '300', 10);
+        return this.configService.get<number>('REDIS_USER_WARNINGS_TTL') || 300;
     }
 
     private getSessionsCacheTtl(): number {
-        return parseInt(process.env.REDIS_USER_SESSIONS_TTL || '120', 10);
+        return this.configService.get<number>('REDIS_USER_SESSIONS_TTL') || 120;
     }
 
     /**
@@ -113,7 +126,7 @@ export class UserManagementService {
      * Lấy danh sách users với phân trang
      */
     async findMany(query: QueryUsersDto, lang: string): Promise<IUserListResult> {
-        const cacheKey = `${CACHE_LIST_KEY}:${JSON.stringify(query)}`;
+        const cacheKey = `${this.getListCacheKeyPrefix()}:${JSON.stringify(query)}`;
 
         const cached = await this.redisService.get(cacheKey);
         if (cached) return JSON.parse(cached);
@@ -133,7 +146,7 @@ export class UserManagementService {
      * Lấy chi tiết user
      */
     async findById(id: string, lang: string): Promise<IUserDetail> {
-        const cacheKey = `${CACHE_KEY_PREFIX}:${id}`;
+        const cacheKey = `${this.getCacheKeyPrefix()}:${id}`;
 
         const cached = await this.redisService.get(cacheKey);
         if (cached) return JSON.parse(cached);
@@ -282,7 +295,7 @@ export class UserManagementService {
             throw new NotFoundException(this.i18n.t('user-management.error.user_not_found', { lang }));
         }
 
-        const cacheKey = `${CACHE_KEY_PREFIX}:${userId}:warnings:${JSON.stringify(query)}`;
+        const cacheKey = `${this.getCacheKeyPrefix()}:${userId}:warnings:${JSON.stringify(query)}`;
 
         const cached = await this.redisService.get(cacheKey);
         if (cached) return JSON.parse(cached);
@@ -465,7 +478,7 @@ export class UserManagementService {
             throw new NotFoundException(this.i18n.t('user-management.error.user_not_found', { lang }));
         }
 
-        const cacheKey = `${CACHE_KEY_PREFIX}:${userId}:sessions:${JSON.stringify(query)}`;
+        const cacheKey = `${this.getCacheKeyPrefix()}:${userId}:sessions:${JSON.stringify(query)}`;
 
         const cached = await this.redisService.get(cacheKey);
         if (cached) return JSON.parse(cached);
@@ -566,25 +579,24 @@ export class UserManagementService {
         return { success: true, count };
     }
 
-    // Cache invalidation helpers
     private async invalidateUserCache(userId: string): Promise<void> {
-        await this.redisService.del(`${CACHE_KEY_PREFIX}:${userId}`);
+        await this.redisService.del(`${this.getCacheKeyPrefix()}:${userId}`);
     }
 
     private async invalidateListCache(): Promise<void> {
-        await this.redisService.delByPattern(`${CACHE_LIST_KEY}:*`);
+        await this.redisService.delByPattern(`${this.getListCacheKeyPrefix()}:*`);
     }
 
     private async invalidateUserWarningsCache(userId: string): Promise<void> {
-        await this.redisService.delByPattern(`${CACHE_KEY_PREFIX}:${userId}:warnings:*`);
+        await this.redisService.delByPattern(`${this.getCacheKeyPrefix()}:${userId}:warnings:*`);
     }
 
     private async invalidateUserSessionsCache(userId: string): Promise<void> {
-        await this.redisService.delByPattern(`${CACHE_KEY_PREFIX}:${userId}:sessions:*`);
+        await this.redisService.delByPattern(`${this.getCacheKeyPrefix()}:${userId}:sessions:*`);
     }
 
     private async invalidateUserRolesPermissionsCache(userId: string): Promise<void> {
-        await this.redisService.del(`${CACHE_KEY_PREFIX}:${userId}:roles-permissions`);
+        await this.redisService.del(`${this.getCacheKeyPrefix()}:${userId}:roles-permissions`);
     }
 
     /**
@@ -594,7 +606,7 @@ export class UserManagementService {
         userId: string,
         lang: string,
     ): Promise<IUserRolesAndPermissions> {
-        const cacheKey = `${CACHE_KEY_PREFIX}:${userId}:roles-permissions`;
+        const cacheKey = `${this.getCacheKeyPrefix()}:${userId}:roles-permissions`;
 
         // Check cache first
         const cached = await this.redisService.get(cacheKey);
@@ -691,7 +703,7 @@ export class UserManagementService {
         warned: number;
         banned: number;
     }> {
-        const cacheKey = `${CACHE_KEY_PREFIX}:stats`;
+        const cacheKey = `${this.getCacheKeyPrefix()}:stats`;
 
         const cached = await this.redisService.get(cacheKey);
         if (cached) return JSON.parse(cached);

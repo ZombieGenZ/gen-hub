@@ -1,4 +1,5 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { I18nService } from 'nestjs-i18n';
 import { WarningCategoryRepository } from './warning-category.repository';
 import { CreateWarningCategoryDto, UpdateWarningCategoryDto, QueryWarningCategoryDto } from './dto';
@@ -7,10 +8,6 @@ import { WarningCategory } from '@prisma/client';
 import { RedisService } from '../redis/redis.service';
 import { SystemLogService } from '../system-log/system-log.service';
 import { WebsocketGateway } from '../websocket/websocket.gateway';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
-
-const CACHE_KEY_PREFIX = 'warning_category';
-const CACHE_LIST_KEY = `${CACHE_KEY_PREFIX}:list`;
 
 @Injectable()
 export class WarningCategoryService {
@@ -19,14 +16,29 @@ export class WarningCategoryService {
         private readonly redisService: RedisService,
         private readonly systemLogService: SystemLogService,
         private readonly websocketGateway: WebsocketGateway,
+        private readonly configService: ConfigService,
         private readonly i18n: I18nService,
     ) { }
 
     /**
-     * Lấy TTL từ env hoặc dùng mặc định
+     * Get cache TTL from environment via ConfigService
      */
     private getCacheTtl(): number {
-        return parseInt(process.env.REDIS_WARNING_CATEGORY_LIST_TTL || '600', 10);
+        return this.configService.get<number>('REDIS_WARNING_CATEGORY_LIST_TTL') || 600;
+    }
+
+    /**
+     * Get cache key prefix from environment via ConfigService
+     */
+    private getCacheKeyPrefix(): string {
+        return this.configService.get<string>('REDIS_WARNING_CATEGORY_KEY_PREFIX') || 'warning_category';
+    }
+
+    /**
+     * Get list cache key prefix
+     */
+    private getListCacheKeyPrefix(): string {
+        return `${this.getCacheKeyPrefix()}:list`;
     }
 
     /**
@@ -48,12 +60,12 @@ export class WarningCategoryService {
         // Invalidate cache
         await this.invalidateListCache();
 
-        // Log hành động
+        // Log action with i18n
         this.systemLogService.logAsync({
             level: 'INFO',
             module: 'warning-category',
             action: 'create',
-            message: `Tạo danh mục cảnh báo: ${category.name}`,
+            message: this.i18n.t('warning-category.log.created', { lang, args: { name: category.name } }) as string,
             userId,
             ipAddress: requestInfo?.ip,
             userAgent: requestInfo?.userAgent,
@@ -79,7 +91,7 @@ export class WarningCategoryService {
         query: QueryWarningCategoryDto,
         lang: string,
     ): Promise<IWarningCategoryListResult> {
-        const cacheKey = `${CACHE_LIST_KEY}:${JSON.stringify(query)}`;
+        const cacheKey = `${this.getListCacheKeyPrefix()}:${JSON.stringify(query)}`;
 
         // Thử lấy từ cache
         const cached = await this.redisService.get(cacheKey);
@@ -104,7 +116,7 @@ export class WarningCategoryService {
      * Lấy tất cả danh mục active (cho dropdown)
      */
     async findAllActive(lang: string): Promise<WarningCategory[]> {
-        const cacheKey = `${CACHE_KEY_PREFIX}:all_active`;
+        const cacheKey = `${this.getCacheKeyPrefix()}:all_active`;
 
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
@@ -121,7 +133,7 @@ export class WarningCategoryService {
      * Lấy chi tiết danh mục theo ID
      */
     async findById(id: string, lang: string): Promise<WarningCategory> {
-        const cacheKey = `${CACHE_KEY_PREFIX}:${id}`;
+        const cacheKey = `${this.getCacheKeyPrefix()}:${id}`;
 
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
@@ -168,12 +180,12 @@ export class WarningCategoryService {
         await this.invalidateItemCache(id);
         await this.invalidateListCache();
 
-        // Log hành động
+        // Log action with i18n
         this.systemLogService.logAsync({
             level: 'INFO',
             module: 'warning-category',
             action: 'update',
-            message: `Cập nhật danh mục cảnh báo: ${category.name}`,
+            message: this.i18n.t('warning-category.log.updated', { lang, args: { name: category.name } }) as string,
             userId,
             ipAddress: requestInfo?.ip,
             userAgent: requestInfo?.userAgent,
@@ -221,12 +233,12 @@ export class WarningCategoryService {
         await this.invalidateItemCache(id);
         await this.invalidateListCache();
 
-        // Log hành động
+        // Log action with i18n
         this.systemLogService.logAsync({
             level: 'INFO',
             module: 'warning-category',
             action: 'delete',
-            message: `Xóa danh mục cảnh báo: ${existing.name}`,
+            message: this.i18n.t('warning-category.log.deleted', { lang, args: { name: existing.name } }) as string,
             userId,
             ipAddress: requestInfo?.ip,
             userAgent: requestInfo?.userAgent,
@@ -269,12 +281,12 @@ export class WarningCategoryService {
         }
         await this.invalidateListCache();
 
-        // Log hành động
+        // Log action with i18n
         this.systemLogService.logAsync({
             level: 'INFO',
             module: 'warning-category',
             action: 'delete-many',
-            message: `Xóa ${count} danh mục cảnh báo`,
+            message: this.i18n.t('warning-category.log.deleted_many', { lang, args: { count } }) as string,
             userId,
             ipAddress: requestInfo?.ip,
             userAgent: requestInfo?.userAgent,
@@ -289,17 +301,17 @@ export class WarningCategoryService {
     }
 
     /**
-     * Invalidate cache cho một item
+     * Invalidate cache for a single item
      */
     private async invalidateItemCache(id: string): Promise<void> {
-        await this.redisService.del(`${CACHE_KEY_PREFIX}:${id}`);
+        await this.redisService.del(`${this.getCacheKeyPrefix()}:${id}`);
     }
 
     /**
-     * Invalidate cache cho list
+     * Invalidate cache for list
      */
     private async invalidateListCache(): Promise<void> {
-        await this.redisService.delByPattern(`${CACHE_LIST_KEY}:*`);
-        await this.redisService.del(`${CACHE_KEY_PREFIX}:all_active`);
+        await this.redisService.delByPattern(`${this.getListCacheKeyPrefix()}:*`);
+        await this.redisService.del(`${this.getCacheKeyPrefix()}:all_active`);
     }
 }

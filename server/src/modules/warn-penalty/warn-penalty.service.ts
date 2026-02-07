@@ -1,4 +1,5 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { I18nService } from 'nestjs-i18n';
 import { WarnPenaltyRepository } from './warn-penalty.repository';
 import { CreateWarnPenaltyDto, UpdateWarnPenaltyDto, QueryWarnPenaltyDto } from './dto';
@@ -8,9 +9,6 @@ import { RedisService } from '../redis/redis.service';
 import { SystemLogService } from '../system-log/system-log.service';
 import { WebsocketGateway } from '../websocket/websocket.gateway';
 
-const CACHE_KEY_PREFIX = 'warn_penalty';
-const CACHE_LIST_KEY = `${CACHE_KEY_PREFIX}:list`;
-
 @Injectable()
 export class WarnPenaltyService {
     constructor(
@@ -18,18 +16,36 @@ export class WarnPenaltyService {
         private readonly redisService: RedisService,
         private readonly systemLogService: SystemLogService,
         private readonly websocketGateway: WebsocketGateway,
+        private readonly configService: ConfigService,
         private readonly i18n: I18nService,
     ) { }
 
     /**
-     * Lấy TTL từ env hoặc dùng mặc định
+     * Get cache key prefix from environment via ConfigService
      */
-    private getCacheTtl(): number {
-        return parseInt(process.env.REDIS_WARN_PENALTY_CACHE_TTL || '300', 10);
+    private getCacheKeyPrefix(): string {
+        return this.configService.get<string>('REDIS_WARN_PENALTY_KEY_PREFIX') || 'warn_penalty';
     }
 
+    /**
+     * Get list cache key prefix
+     */
+    private getListCacheKeyPrefix(): string {
+        return `${this.getCacheKeyPrefix()}:list`;
+    }
+
+    /**
+     * Get cache TTL from environment via ConfigService
+     */
+    private getCacheTtl(): number {
+        return this.configService.get<number>('REDIS_WARN_PENALTY_CACHE_TTL') || 300;
+    }
+
+    /**
+     * Get list cache TTL from environment via ConfigService
+     */
     private getListCacheTtl(): number {
-        return parseInt(process.env.REDIS_WARN_PENALTY_LIST_CACHE_TTL || '60', 10);
+        return this.configService.get<number>('REDIS_WARN_PENALTY_LIST_CACHE_TTL') || 60;
     }
 
     /**
@@ -83,12 +99,12 @@ export class WarnPenaltyService {
         // Invalidate cache
         await this.invalidateListCache();
 
-        // Log hành động
+        // Log action with i18n
         this.systemLogService.logAsync({
             level: 'INFO',
             module: 'warn-penalty',
             action: 'create',
-            message: `Tạo quy tắc phạt warn: ${dto.min_warn_count}-${dto.max_warn_count ?? '∞'}`,
+            message: this.i18n.t('warn-penalty.log.created', { lang, args: { min: dto.min_warn_count, max: dto.max_warn_count ?? '∞' } }) as string,
             userId,
             ipAddress: requestInfo?.ip,
             userAgent: requestInfo?.userAgent,
@@ -113,7 +129,7 @@ export class WarnPenaltyService {
         query: QueryWarnPenaltyDto,
         lang: string,
     ): Promise<IWarnPenaltyListResult> {
-        const cacheKey = `${CACHE_LIST_KEY}:${JSON.stringify(query)}`;
+        const cacheKey = `${this.getListCacheKeyPrefix()}:${JSON.stringify(query)}`;
 
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
@@ -136,7 +152,7 @@ export class WarnPenaltyService {
      * Lấy tất cả active (cho dropdown hoặc internal use)
      */
     async findAllActive(lang: string): Promise<WarnPenalty[]> {
-        const cacheKey = `${CACHE_KEY_PREFIX}:all_active`;
+        const cacheKey = `${this.getCacheKeyPrefix()}:all_active`;
 
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
@@ -153,7 +169,7 @@ export class WarnPenaltyService {
      * Lấy chi tiết theo ID
      */
     async findById(id: string, lang: string): Promise<WarnPenalty> {
-        const cacheKey = `${CACHE_KEY_PREFIX}:${id}`;
+        const cacheKey = `${this.getCacheKeyPrefix()}:${id}`;
 
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
@@ -247,12 +263,12 @@ export class WarnPenaltyService {
         await this.invalidateItemCache(id);
         await this.invalidateListCache();
 
-        // Log hành động
+        // Log action with i18n
         this.systemLogService.logAsync({
             level: 'INFO',
             module: 'warn-penalty',
             action: 'update',
-            message: `Cập nhật quy tắc phạt warn ID: ${id}`,
+            message: this.i18n.t('warn-penalty.log.updated', { lang, args: { id } }) as string,
             userId,
             ipAddress: requestInfo?.ip,
             userAgent: requestInfo?.userAgent,
@@ -292,12 +308,12 @@ export class WarnPenaltyService {
         await this.invalidateItemCache(id);
         await this.invalidateListCache();
 
-        // Log hành động
+        // Log action with i18n
         this.systemLogService.logAsync({
             level: 'INFO',
             module: 'warn-penalty',
             action: 'delete',
-            message: `Xóa quy tắc phạt warn: ${existing.min_warn_count}-${existing.max_warn_count ?? '∞'}`,
+            message: this.i18n.t('warn-penalty.log.deleted', { lang, args: { min: existing.min_warn_count, max: existing.max_warn_count ?? '∞' } }) as string,
             userId,
             ipAddress: requestInfo?.ip,
             userAgent: requestInfo?.userAgent,
@@ -325,12 +341,12 @@ export class WarnPenaltyService {
         }
         await this.invalidateListCache();
 
-        // Log hành động
+        // Log action with i18n
         this.systemLogService.logAsync({
             level: 'INFO',
             module: 'warn-penalty',
             action: 'delete-many',
-            message: `Xóa ${count} quy tắc phạt warn`,
+            message: this.i18n.t('warn-penalty.log.deleted_many', { lang, args: { count } }) as string,
             userId,
             ipAddress: requestInfo?.ip,
             userAgent: requestInfo?.userAgent,
@@ -351,17 +367,17 @@ export class WarnPenaltyService {
     }
 
     /**
-     * Invalidate cache cho một item
+     * Invalidate cache for a single item
      */
     private async invalidateItemCache(id: string): Promise<void> {
-        await this.redisService.del(`${CACHE_KEY_PREFIX}:${id}`);
+        await this.redisService.del(`${this.getCacheKeyPrefix()}:${id}`);
     }
 
     /**
-     * Invalidate cache cho list
+     * Invalidate cache for list
      */
     private async invalidateListCache(): Promise<void> {
-        await this.redisService.delByPattern(`${CACHE_LIST_KEY}:*`);
-        await this.redisService.del(`${CACHE_KEY_PREFIX}:all_active`);
+        await this.redisService.delByPattern(`${this.getListCacheKeyPrefix()}:*`);
+        await this.redisService.del(`${this.getCacheKeyPrefix()}:all_active`);
     }
 }

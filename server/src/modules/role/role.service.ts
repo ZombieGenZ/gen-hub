@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { I18nService } from 'nestjs-i18n';
 import { RoleRepository } from './role.repository';
 import {
@@ -13,9 +14,6 @@ import { SystemLogService } from '../system-log/system-log.service';
 import { WebsocketGateway } from '../websocket/websocket.gateway';
 import { Role } from '@prisma/client';
 
-const CACHE_KEY_PREFIX = 'role';
-const CACHE_LIST_KEY = `${CACHE_KEY_PREFIX}:list`;
-
 @Injectable()
 export class RoleService {
     constructor(
@@ -23,15 +21,36 @@ export class RoleService {
         private readonly redisService: RedisService,
         private readonly systemLogService: SystemLogService,
         private readonly websocketGateway: WebsocketGateway,
+        private readonly configService: ConfigService,
         private readonly i18n: I18nService,
     ) { }
 
-    private getCacheTtl(): number {
-        return parseInt(process.env.REDIS_ROLE_CACHE_TTL || '300', 10);
+    /**
+     * Get cache key prefix from environment via ConfigService
+     */
+    private getCacheKeyPrefix(): string {
+        return this.configService.get<string>('REDIS_ROLE_KEY_PREFIX') || 'role';
     }
 
+    /**
+     * Get list cache key prefix
+     */
+    private getListCacheKeyPrefix(): string {
+        return `${this.getCacheKeyPrefix()}:list`;
+    }
+
+    /**
+     * Get cache TTL from environment via ConfigService
+     */
+    private getCacheTtl(): number {
+        return this.configService.get<number>('REDIS_ROLE_CACHE_TTL') || 300;
+    }
+
+    /**
+     * Get list cache TTL from environment via ConfigService
+     */
     private getListCacheTtl(): number {
-        return parseInt(process.env.REDIS_ROLE_LIST_CACHE_TTL || '60', 10);
+        return this.configService.get<number>('REDIS_ROLE_LIST_CACHE_TTL') || 60;
     }
 
     /**
@@ -57,12 +76,12 @@ export class RoleService {
         // Invalidate cache
         await this.invalidateListCache();
 
-        // Log
+        // Log action with i18n
         this.systemLogService.logAsync({
             level: 'INFO',
             module: 'role',
             action: 'create',
-            message: `Tạo role mới: ${role.name}`,
+            message: this.i18n.t('role.log.created', { lang, args: { name: role.name } }) as string,
             userId,
             ipAddress: requestInfo?.ip,
             userAgent: requestInfo?.userAgent,
@@ -83,7 +102,7 @@ export class RoleService {
         const offset = query.offset ? Number(query.offset) : 0;
         const status = query.status || StatusFilter.ACTIVE;
 
-        const cacheKey = `${CACHE_LIST_KEY}:${JSON.stringify({ limit, offset, keywords: query.keywords, status })}`;
+        const cacheKey = `${this.getListCacheKeyPrefix()}:${JSON.stringify({ limit, offset, keywords: query.keywords, status })}`;
 
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
@@ -106,7 +125,7 @@ export class RoleService {
      * Lấy chi tiết role với permissions
      */
     async findById(id: string, lang: string): Promise<IRoleWithPermissions> {
-        const cacheKey = `${CACHE_KEY_PREFIX}:${id}`;
+        const cacheKey = `${this.getCacheKeyPrefix()}:${id}`;
 
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
@@ -158,12 +177,12 @@ export class RoleService {
         await this.invalidateItemCache(id);
         await this.invalidateListCache();
 
-        // Log
+        // Log action with i18n
         this.systemLogService.logAsync({
             level: 'INFO',
             module: 'role',
             action: 'update',
-            message: `Cập nhật role: ${role.name}`,
+            message: this.i18n.t('role.log.updated', { lang, args: { name: role.name } }) as string,
             userId,
             ipAddress: requestInfo?.ip,
             userAgent: requestInfo?.userAgent,
@@ -198,12 +217,12 @@ export class RoleService {
         await this.invalidateItemCache(id);
         await this.invalidateListCache();
 
-        // Log
+        // Log action with i18n
         this.systemLogService.logAsync({
             level: 'INFO',
             module: 'role',
             action: 'delete',
-            message: `Xóa role: ${existing.name}`,
+            message: this.i18n.t('role.log.deleted', { lang, args: { name: existing.name } }) as string,
             userId,
             ipAddress: requestInfo?.ip,
             userAgent: requestInfo?.userAgent,
@@ -231,12 +250,12 @@ export class RoleService {
         }
         await this.invalidateListCache();
 
-        // Log
+        // Log action with i18n
         this.systemLogService.logAsync({
             level: 'INFO',
             module: 'role',
             action: 'delete-many',
-            message: `Xóa ${count} roles`,
+            message: this.i18n.t('role.log.deleted_many', { lang, args: { count } }) as string,
             userId,
             ipAddress: requestInfo?.ip,
             userAgent: requestInfo?.userAgent,
@@ -250,10 +269,10 @@ export class RoleService {
     }
 
     private async invalidateItemCache(id: string): Promise<void> {
-        await this.redisService.del(`${CACHE_KEY_PREFIX}:${id}`);
+        await this.redisService.del(`${this.getCacheKeyPrefix()}:${id}`);
     }
 
     private async invalidateListCache(): Promise<void> {
-        await this.redisService.delByPattern(`${CACHE_LIST_KEY}:*`);
+        await this.redisService.delByPattern(`${this.getListCacheKeyPrefix()}:*`);
     }
 }

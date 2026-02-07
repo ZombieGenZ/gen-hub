@@ -12,6 +12,7 @@ import { IFaqPaginatedResponse } from './interfaces';
 export class FaqService {
     private readonly cacheTTL: number;
     private readonly listCacheTTL: number;
+    private readonly cacheKeyPrefix: string;
 
     constructor(
         private readonly repository: FaqRepository,
@@ -23,14 +24,15 @@ export class FaqService {
     ) {
         this.cacheTTL = this.configService.get<number>('REDIS_FAQ_CACHE_TTL', 300);
         this.listCacheTTL = this.configService.get<number>('REDIS_FAQ_LIST_CACHE_TTL', 60);
+        this.cacheKeyPrefix = this.configService.get<string>('REDIS_FAQ_KEY_PREFIX') || 'faq';
     }
 
     private getCacheKey(id: string): string {
-        return `faq:${id}`;
+        return `${this.cacheKeyPrefix}:${id}`;
     }
 
     private getListCacheKey(query: QueryFaqDto): string {
-        return `faq:list:${JSON.stringify(query)}`;
+        return `${this.cacheKeyPrefix}:list:${JSON.stringify(query)}`;
     }
 
     async create(dto: CreateFaqDto, userId: string, lang: string) {
@@ -126,7 +128,7 @@ export class FaqService {
      * Lấy danh sách FAQ công khai (không cần auth)
      */
     async findAllPublic(): Promise<IFaqPaginatedResponse> {
-        const cacheKey = 'faq:public';
+        const cacheKey = `${this.cacheKeyPrefix}:public`;
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
             return JSON.parse(cached);
@@ -244,7 +246,7 @@ export class FaqService {
     }
 
     private async invalidateListCache() {
-        await this.redisService.delByPattern('faq:list:*');
-        await this.redisService.del('faq:public');
+        await this.redisService.delByPattern(`${this.cacheKeyPrefix}:list:*`);
+        await this.redisService.del(`${this.cacheKeyPrefix}:public`);
     }
 }
