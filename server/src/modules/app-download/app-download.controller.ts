@@ -10,69 +10,72 @@ import {
     Res,
     HttpStatus
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiHeader } from '@nestjs/swagger';
 import { AppDownloadService } from './app-download.service';
 import { CreateShareInviteDto, AppDownloadShareResponseDto } from './dto';
 import type { Response } from 'express';
-import { join } from 'path';
 import { existsSync } from 'fs';
-
-// Assuming you have an AuthGuard or you want these to be public? 
-// The user requested a "token" for download, but for management APIs (GET ALL, INVITE, etc) 
-// they probably need to be protected. I'll assume standard AuthGuard used in the project.
-// import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard'; 
-// Since I don't know the exact path of AuthGuard, I will comment it out or use a generic one if I knew it.
-// I'll stick to basic implementation and let user add AuthGuard if needed, or check other files.
-// Checking user.repository.ts, it imports typical things.
-// I'll skip imports for AuthGuard for now to avoid errors, assuming user handles protection 
-// or I'll add a comment.
+import { CombinedAuthGuard, PermissionGuard } from '../../common/guards';
+import { RequirePermission, Public, CurrentActor, ApiAuthResponses } from '../../common/decorators';
 
 @ApiTags('App Download')
+@ApiBearerAuth('JWT-auth')
+@ApiHeader({ name: 'X-API-Key', description: 'API Key for authentication (alternative to JWT)', required: false })
 @Controller('app-download')
-@ApiBearerAuth()
+@UseGuards(CombinedAuthGuard, PermissionGuard)
 export class AppDownloadController {
     constructor(private readonly service: AppDownloadService) { }
 
     @Get('shares')
+    @RequirePermission('app-download.list')
     @ApiOperation({ summary: 'Get all shares' })
+    @ApiAuthResponses()
     @ApiResponse({ status: 200, type: [AppDownloadShareResponseDto] })
     async getAllShares() {
         return this.service.getAllShares();
     }
 
     @Get('shares/:id')
+    @RequirePermission('app-download.read')
     @ApiOperation({ summary: 'Get share by ID' })
+    @ApiAuthResponses()
     @ApiResponse({ status: 200, type: AppDownloadShareResponseDto })
     async getShareById(@Param('id') id: string) {
         return this.service.getShareById(id);
     }
 
     @Post('shares/invite')
+    @RequirePermission('app-download.invite')
     @ApiOperation({ summary: 'Create invite and send email' })
+    @ApiAuthResponses()
     @ApiResponse({ status: 201, type: AppDownloadShareResponseDto })
-    async createInvite(@Body() dto: CreateShareInviteDto, @Req() req: any) {
-        // Assuming req.user exists if AuthGuard is used
-        const userId = req.user?.id;
-        return this.service.createShareInvite(dto, userId);
+    async createInvite(@Body() dto: CreateShareInviteDto, @CurrentActor() actorId: string) {
+        return this.service.createShareInvite(dto, actorId);
     }
 
     @Post('invites/:id/resend')
+    @RequirePermission('app-download.invite')
     @ApiOperation({ summary: 'Resend invite email' })
+    @ApiAuthResponses()
     @ApiResponse({ status: 200 })
     async resendInvite(@Param('id') id: string) {
         return this.service.resendInvite(id);
     }
 
     @Delete('invites/:id')
+    @RequirePermission('app-download.delete')
     @ApiOperation({ summary: 'Delete invite' })
+    @ApiAuthResponses()
     @ApiResponse({ status: 200 })
-    async deleteInvite(@Param('id') id: string, @Req() req: any) {
-        const userId = req.user?.id;
-        return this.service.deleteInvite(id, userId);
+    async deleteInvite(@Param('id') id: string, @CurrentActor() actorId: string) {
+        return this.service.deleteInvite(id, actorId);
     }
 
     @Get('download/:token')
-    @ApiOperation({ summary: 'Download app with token' })
+    @Public()
+    @ApiOperation({ summary: 'Download app with token (public endpoint)' })
+    @ApiResponse({ status: 200, description: 'File download started' })
+    @ApiResponse({ status: 404, description: 'Token invalid or file not found' })
     async downloadApp(@Param('token') token: string, @Res() res: Response) {
         const share = await this.service.validateDownloadToken(token);
 

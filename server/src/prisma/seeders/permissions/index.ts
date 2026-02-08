@@ -10,3 +10,4 @@ export * from './content-permissions.seeder';
 export * from './user-permissions.seeder';
 export * from './warehouse-manager-permissions.seeder';
 export * from './payment-permissions.seeder';
+export * from './app-download-permissions.seeder';
