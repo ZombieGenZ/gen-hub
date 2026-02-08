@@ -6,16 +6,25 @@ import { NotificationModule } from '../notification/notification.module';
 import { ConfigModule } from '@nestjs/config';
 import { PermissionModule } from '../permission/permission.module';
 import { ApiKeyVerificationModule } from '../api-key-verification/api-key-verification.module';
+import { RedisModule } from '../redis/redis.module';
+import { AppDownloadCacheKeys } from './constants/app-download-cache.helper';
+import { InviteSchedulerService } from './invite-scheduler.service';
 
 @Module({
     imports: [
-        ConfigModule,
         NotificationModule, // Ensure NotificationModule exports EmailService
+        ConfigModule,
         PermissionModule,
         ApiKeyVerificationModule,
+        RedisModule,
     ],
     controllers: [AppDownloadController],
-    providers: [AppDownloadService, AppDownloadRepository],
-    exports: [AppDownloadService],
+    providers: [
+        AppDownloadService,
+        AppDownloadRepository,
+        AppDownloadCacheKeys,
+        InviteSchedulerService,
+    ],
+    exports: [AppDownloadService, AppDownloadRepository],
 })
 export class AppDownloadModule { }

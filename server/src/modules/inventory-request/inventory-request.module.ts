@@ -7,6 +7,7 @@ import { RedisModule } from '../redis/redis.module';
 import { WebsocketModule } from '../websocket/websocket.module';
 import { OrganizationModule } from '../organization/organization.module';
 import { ApiKeyVerificationModule } from '../api-key-verification/api-key-verification.module';
+import { InventoryRequestCacheKeys } from './constants/inventory-request-cache.helper';
 
 @Module({
     imports: [
@@ -17,7 +18,7 @@ import { ApiKeyVerificationModule } from '../api-key-verification/api-key-verifi
         ApiKeyVerificationModule,
     ],
     controllers: [InventoryRequestController],
-    providers: [InventoryRequestService, InventoryRequestRepository],
-    exports: [InventoryRequestService, InventoryRequestRepository],
+    providers: [InventoryRequestService, InventoryRequestRepository, InventoryRequestCacheKeys],
+    exports: [InventoryRequestService, InventoryRequestRepository, InventoryRequestCacheKeys],
 })
 export class InventoryRequestModule { }

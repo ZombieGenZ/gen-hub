@@ -19,6 +19,7 @@ import { RedisService } from '../redis/redis.service';
 import { WebsocketGateway } from '../websocket/websocket.gateway';
 import { OrganizationAuditLogService } from '../organization/organization-audit-log.service';
 import { PrismaService } from '../../prisma/prisma.service';
+import { InventoryRequestCacheKeys } from './constants/inventory-request-cache.helper';
 
 @Injectable()
 export class InventoryRequestService {
@@ -26,8 +27,6 @@ export class InventoryRequestService {
     private readonly OUTBOUND_LIST_TTL: number;
     private readonly INBOUND_DETAIL_TTL: number;
     private readonly OUTBOUND_DETAIL_TTL: number;
-    private readonly INBOUND_KEY_PREFIX: string;
-    private readonly OUTBOUND_KEY_PREFIX: string;
 
     constructor(
         private readonly repository: InventoryRequestRepository,
@@ -37,13 +36,12 @@ export class InventoryRequestService {
         private readonly websocketGateway: WebsocketGateway,
         private readonly auditLogService: OrganizationAuditLogService,
         private readonly i18n: I18nService,
+        private readonly cacheKeys: InventoryRequestCacheKeys,
     ) {
         this.INBOUND_LIST_TTL = this.configService.get<number>('REDIS_INBOUND_LIST_TTL') || 60;
         this.OUTBOUND_LIST_TTL = this.configService.get<number>('REDIS_OUTBOUND_LIST_TTL') || 60;
         this.INBOUND_DETAIL_TTL = this.configService.get<number>('REDIS_INBOUND_DETAIL_TTL') || 120;
         this.OUTBOUND_DETAIL_TTL = this.configService.get<number>('REDIS_OUTBOUND_DETAIL_TTL') || 120;
-        this.INBOUND_KEY_PREFIX = this.configService.get<string>('REDIS_INBOUND_KEY_PREFIX') || 'inventory:inbound';
-        this.OUTBOUND_KEY_PREFIX = this.configService.get<string>('REDIS_OUTBOUND_KEY_PREFIX') || 'inventory:outbound';
     }
 
     private getInboundListCacheKey(orgId: string, query: QueryInboundRequestDto): string {
@@ -52,7 +50,7 @@ export class InventoryRequestService {
             .filter(key => query[key as keyof QueryInboundRequestDto] !== undefined)
             .map(key => `${key}=${query[key as keyof QueryInboundRequestDto]}`)
             .join('&');
-        return `${this.INBOUND_KEY_PREFIX}:list:${orgId}:${sortedParams}`;
+        return this.cacheKeys.inboundList(orgId, sortedParams);
     }
 
     private getOutboundListCacheKey(orgId: string, query: QueryOutboundRequestDto): string {
@@ -61,15 +59,15 @@ export class InventoryRequestService {
             .filter(key => query[key as keyof QueryOutboundRequestDto] !== undefined)
             .map(key => `${key}=${query[key as keyof QueryOutboundRequestDto]}`)
             .join('&');
-        return `${this.OUTBOUND_KEY_PREFIX}:list:${orgId}:${sortedParams}`;
+        return this.cacheKeys.outboundList(orgId, sortedParams);
     }
 
     private getInboundDetailCacheKey(id: string): string {
-        return `${this.INBOUND_KEY_PREFIX}:detail:${id}`;
+        return this.cacheKeys.inboundDetail(id);
     }
 
     private getOutboundDetailCacheKey(id: string): string {
-        return `${this.OUTBOUND_KEY_PREFIX}:detail:${id}`;
+        return this.cacheKeys.outboundDetail(id);
     }
 
     /**
@@ -195,7 +193,8 @@ export class InventoryRequestService {
         const fullReceipt = await this.repository.findInboundById(receipt.id, orgId);
 
         // Invalidate cache
-        await this.redisService.delByPattern(`${this.INBOUND_KEY_PREFIX}:list:${orgId}:*`);
+        // Invalidate cache
+        await this.redisService.delByPattern(this.cacheKeys.inboundList(orgId, '*'));
 
         // Emit realtime event
         this.websocketGateway.emitToOrganization(orgId, 'inbound:created', {
@@ -372,7 +371,8 @@ export class InventoryRequestService {
         const fullExport = await this.repository.findOutboundById(exportRecord.id, orgId);
 
         // Invalidate cache
-        await this.redisService.delByPattern(`${this.OUTBOUND_KEY_PREFIX}:list:${orgId}:*`);
+        // Invalidate cache
+        await this.redisService.delByPattern(this.cacheKeys.outboundList(orgId, '*'));
 
         // Emit realtime event
         this.websocketGateway.emitToOrganization(orgId, 'outbound:created', {

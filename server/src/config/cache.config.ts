@@ -276,4 +276,28 @@ export default registerAs('cache', () => ({
             active: process.env.REDIS_CONTACT_TAG_ACTIVE_KEY_PREFIX || 'contact-tag:active',
         },
     },
+    // App Download Module
+    appDownload: {
+        ttl: {
+            share: parseInt(process.env.REDIS_APP_DOWNLOAD_SHARE_TTL ?? '300', 10),
+            list: parseInt(process.env.REDIS_APP_DOWNLOAD_LIST_TTL ?? '60', 10),
+        },
+        keys: {
+            share: process.env.REDIS_APP_DOWNLOAD_SHARE_KEY_PREFIX || 'app-download:share',
+            list: process.env.REDIS_APP_DOWNLOAD_LIST_KEY_PREFIX || 'app-download:list',
+        },
+    },
+    // Inventory Request Module
+    inventoryRequest: {
+        ttl: {
+            inboundList: parseInt(process.env.REDIS_INBOUND_LIST_TTL ?? '60', 10),
+            outboundList: parseInt(process.env.REDIS_OUTBOUND_LIST_TTL ?? '60', 10),
+            inboundDetail: parseInt(process.env.REDIS_INBOUND_DETAIL_TTL ?? '120', 10),
+            outboundDetail: parseInt(process.env.REDIS_OUTBOUND_DETAIL_TTL ?? '120', 10),
+        },
+        keys: {
+            inbound: process.env.REDIS_INBOUND_KEY_PREFIX || 'inventory:inbound',
+            outbound: process.env.REDIS_OUTBOUND_KEY_PREFIX || 'inventory:outbound',
+        },
+    },
 }));

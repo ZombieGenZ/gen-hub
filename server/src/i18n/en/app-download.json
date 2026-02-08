@@ -1,0 +1,26 @@
+{
+    "success": {
+        "share_created": "Share link created successfully",
+        "invite_sent": "Invite sent successfully",
+        "invite_deleted": "Invite deleted successfully",
+        "list_shares": "Shares fetched successfully",
+        "get_share": "Share details fetched successfully"
+    },
+    "errors": {
+        "share_not_found": "Share not found",
+        "invite_not_found": "Invite not found",
+        "invalid_token": "Invalid token",
+        "link_inactive": "Link is no longer active",
+        "link_expired": "Link has expired",
+        "limit_reached": "Download limit reached",
+        "send_email_failed": "Failed to send invite email",
+        "no_permission": "You do not have permission to perform this action"
+    },
+    "validation": {
+        "email_invalid": "Invalid email address",
+        "email_required": "Email is required",
+        "expires_at_date": "Invalid expiration date",
+        "max_download_number": "Max download must be a number",
+        "is_permanent_boolean": "Is permanent must be a boolean"
+    }
+}

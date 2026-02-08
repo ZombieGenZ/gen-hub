@@ -98,4 +98,40 @@ export class AppDownloadRepository {
             },
         });
     }
+
+    async findExpiredShares(): Promise<AppDownloadShare[]> {
+        return this.prisma.appDownloadShare.findMany({
+            where: {
+                is_deleted: false,
+                is_permanent: false,
+                expires_at: {
+                    lte: new Date(),
+                },
+            },
+        });
+    }
+
+    async findActiveSharesWithExpiration(): Promise<AppDownloadShare[]> {
+        return this.prisma.appDownloadShare.findMany({
+            where: {
+                is_deleted: false,
+                is_permanent: false,
+                expires_at: {
+                    gt: new Date(),
+                },
+            },
+        });
+    }
+
+    async softDeleteShare(id: string, deletedBy?: string): Promise<AppDownloadShare> {
+        return this.prisma.appDownloadShare.update({
+            where: { id },
+            data: {
+                is_deleted: true,
+                deleted_at: new Date(),
+                deleted_by: deletedBy,
+                is_active: false,
+            },
+        });
+    }
 }

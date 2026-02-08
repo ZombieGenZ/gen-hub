@@ -1,0 +1,26 @@
+{
+    "success": {
+        "share_created": "Tạo liên kết chia sẻ thành công",
+        "invite_sent": "Gửi lời mời thành công",
+        "invite_deleted": "Xóa lời mời thành công",
+        "list_shares": "Lấy danh sách chia sẻ thành công",
+        "get_share": "Lấy chi tiết chia sẻ thành công"
+    },
+    "errors": {
+        "share_not_found": "Không tìm thấy chia sẻ",
+        "invite_not_found": "Không tìm thấy lời mời",
+        "invalid_token": "Token không hợp lệ",
+        "link_inactive": "Liên kết không còn hoạt động",
+        "link_expired": "Liên kết đã hết hạn",
+        "limit_reached": "Đã đạt giới hạn tải xuống",
+        "send_email_failed": "Gửi email lời mời thất bại",
+        "no_permission": "Bạn không có quyền thực hiện thao tác này"
+    },
+    "validation": {
+        "email_invalid": "Địa chỉ email không hợp lệ",
+        "email_required": "Vui lòng nhập email",
+        "expires_at_date": "Ngày hết hạn không hợp lệ",
+        "max_download_number": "Số lượt tải tối đa phải là số",
+        "is_permanent_boolean": "Trạng thái vĩnh viễn phải là boolean"
+    }
+}

@@ -13,10 +13,12 @@ import {
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiHeader } from '@nestjs/swagger';
 import { AppDownloadService } from './app-download.service';
 import { CreateShareInviteDto, AppDownloadShareResponseDto } from './dto';
+import { GetResponse, CreatedResponse } from '../../common/responses/success.response';
 import type { Response } from 'express';
 import { existsSync } from 'fs';
 import { CombinedAuthGuard, PermissionGuard } from '../../common/guards';
 import { RequirePermission, Public, CurrentActor, ApiAuthResponses } from '../../common/decorators';
+import { I18nLang, I18nService } from 'nestjs-i18n';
 
 @ApiTags('App Download')
 @ApiBearerAuth('JWT-auth')
@@ -24,15 +26,23 @@ import { RequirePermission, Public, CurrentActor, ApiAuthResponses } from '../..
 @Controller('app-download')
 @UseGuards(CombinedAuthGuard, PermissionGuard)
 export class AppDownloadController {
-    constructor(private readonly service: AppDownloadService) { }
+    constructor(
+        private readonly service: AppDownloadService,
+        private readonly i18n: I18nService
+    ) { }
 
     @Get('shares')
     @RequirePermission('app-download.list')
     @ApiOperation({ summary: 'Get all shares' })
     @ApiAuthResponses()
     @ApiResponse({ status: 200, type: [AppDownloadShareResponseDto] })
-    async getAllShares() {
-        return this.service.getAllShares();
+    async getAllShares(@I18nLang() lang: string) {
+        const shares = await this.service.getAllShares();
+        return new GetResponse(
+            'app-download.list_shares',
+            shares,
+            await this.i18n.translate('app-download.success.list_shares', { lang })
+        );
     }
 
     @Get('shares/:id')
@@ -40,8 +50,13 @@ export class AppDownloadController {
     @ApiOperation({ summary: 'Get share by ID' })
     @ApiAuthResponses()
     @ApiResponse({ status: 200, type: AppDownloadShareResponseDto })
-    async getShareById(@Param('id') id: string) {
-        return this.service.getShareById(id);
+    async getShareById(@Param('id') id: string, @I18nLang() lang: string) {
+        const share = await this.service.getShareById(id);
+        return new GetResponse(
+            'app-download.get_share',
+            share,
+            await this.i18n.translate('app-download.success.get_share', { lang })
+        );
     }
 
     @Post('shares/invite')
@@ -49,8 +64,13 @@ export class AppDownloadController {
     @ApiOperation({ summary: 'Create invite and send email' })
     @ApiAuthResponses()
     @ApiResponse({ status: 201, type: AppDownloadShareResponseDto })
-    async createInvite(@Body() dto: CreateShareInviteDto, @CurrentActor() actorId: string) {
-        return this.service.createShareInvite(dto, actorId);
+    async createInvite(@Body() dto: CreateShareInviteDto, @CurrentActor() actorId: string, @I18nLang() lang: string) {
+        const share = await this.service.createShareInvite(dto, actorId);
+        return new CreatedResponse(
+            'app-download.create_invite',
+            share,
+            await this.i18n.translate('app-download.success.share_created', { lang })
+        );
     }
 
     @Post('invites/:id/resend')
@@ -58,8 +78,13 @@ export class AppDownloadController {
     @ApiOperation({ summary: 'Resend invite email' })
     @ApiAuthResponses()
     @ApiResponse({ status: 200 })
-    async resendInvite(@Param('id') id: string) {
-        return this.service.resendInvite(id);
+    async resendInvite(@Param('id') id: string, @I18nLang() lang: string) {
+        await this.service.resendInvite(id);
+        return new GetResponse(
+            'app-download.resend_invite',
+            null,
+            await this.i18n.translate('app-download.success.invite_sent', { lang })
+        );
     }
 
     @Delete('invites/:id')
@@ -67,8 +92,13 @@ export class AppDownloadController {
     @ApiOperation({ summary: 'Delete invite' })
     @ApiAuthResponses()
     @ApiResponse({ status: 200 })
-    async deleteInvite(@Param('id') id: string, @CurrentActor() actorId: string) {
-        return this.service.deleteInvite(id, actorId);
+    async deleteInvite(@Param('id') id: string, @CurrentActor() actorId: string, @I18nLang() lang: string) {
+        await this.service.deleteInvite(id, actorId);
+        return new GetResponse(
+            'app-download.delete_invite',
+            null,
+            await this.i18n.translate('app-download.success.invite_deleted', { lang })
+        );
     }
 
     @Get('download/:token')

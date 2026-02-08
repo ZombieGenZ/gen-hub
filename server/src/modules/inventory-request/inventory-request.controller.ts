@@ -17,7 +17,7 @@ import {
     ApiSecurity,
     ApiResponse,
 } from '@nestjs/swagger';
-import { I18nLang } from 'nestjs-i18n';
+import { I18nLang, I18nService } from 'nestjs-i18n';
 
 import { InventoryRequestService } from './inventory-request.service';
 import {
@@ -38,7 +38,10 @@ import { CreatedResponse, GetResponse } from '../../common/responses/success.res
 @Controller('organizations/:orgId/inventory')
 @UseGuards(CombinedAuthGuard, OrgPermissionGuard)
 export class InventoryRequestController {
-    constructor(private readonly inventoryRequestService: InventoryRequestService) { }
+    constructor(
+        private readonly inventoryRequestService: InventoryRequestService,
+        private readonly i18n: I18nService,
+    ) { }
 
     @Post('inbound')
     @RequireOrgPermission('org.inventory.inbound.create')
@@ -110,7 +113,7 @@ Tạo phiếu yêu cầu nhập kho mới cho tổ chức.
         return new CreatedResponse(
             'inventory-request.create_inbound',
             receipt,
-            lang === 'vi' ? 'Tạo yêu cầu nhập kho thành công' : 'Inbound request created successfully',
+            await this.i18n.translate('inventory-request.success.create_inbound', { lang }),
         );
     }
 
@@ -160,7 +163,7 @@ Lấy danh sách phiếu nhập kho của tổ chức.
         return new GetResponse(
             'inventory-request.list_inbound',
             result,
-            lang === 'vi' ? 'Lấy danh sách yêu cầu nhập kho thành công' : 'Inbound requests fetched successfully',
+            await this.i18n.translate('inventory-request.success.list_inbound', { lang }),
         );
     }
 
@@ -189,7 +192,7 @@ Lấy chi tiết một phiếu nhập kho.
         return new GetResponse(
             'inventory-request.get_inbound',
             receipt,
-            lang === 'vi' ? 'Lấy chi tiết yêu cầu nhập kho thành công' : 'Inbound request details fetched successfully',
+            await this.i18n.translate('inventory-request.success.get_inbound', { lang }),
         );
     }
 
@@ -244,7 +247,7 @@ Tạo phiếu yêu cầu xuất kho mới cho tổ chức.
         return new CreatedResponse(
             'inventory-request.create_outbound',
             exportRecord,
-            lang === 'vi' ? 'Tạo yêu cầu xuất kho thành công' : 'Outbound request created successfully',
+            await this.i18n.translate('inventory-request.success.create_outbound', { lang }),
         );
     }
 
@@ -277,7 +280,7 @@ Lấy danh sách phiếu xuất kho của tổ chức.
         return new GetResponse(
             'inventory-request.list_outbound',
             result,
-            lang === 'vi' ? 'Lấy danh sách yêu cầu xuất kho thành công' : 'Outbound requests fetched successfully',
+            await this.i18n.translate('inventory-request.success.list_outbound', { lang }),
         );
     }
 
@@ -306,7 +309,7 @@ Lấy chi tiết một phiếu xuất kho.
         return new GetResponse(
             'inventory-request.get_outbound',
             exportRecord,
-            lang === 'vi' ? 'Lấy chi tiết yêu cầu xuất kho thành công' : 'Outbound request details fetched successfully',
+            await this.i18n.translate('inventory-request.success.get_outbound', { lang }),
         );
     }
 }
