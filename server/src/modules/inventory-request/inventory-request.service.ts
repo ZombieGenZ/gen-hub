@@ -138,7 +138,7 @@ export class InventoryRequestService {
                     status: ReceiptStatus.PENDING,
                     notes: dto.notes,
                     purchase_order_code: dto.purchase_order_code,
-                    organization: { connect: { id: orgId } },
+                    organization_id: orgId,
                     warehouse: { connect: { id: dto.warehouse_id } },
                     ...(dto.partner_id && { partner: { connect: { id: dto.partner_id } } }),
                     created_by: actorId,
@@ -168,7 +168,7 @@ export class InventoryRequestService {
                 const productUnit = await tx.productUnit.findFirst({
                     where: {
                         product_id: detail.product_id,
-                        conversion_unit_id: detail.unit_id,
+                        unit_id: detail.unit_id,
                         is_deleted: false,
                     },
                     select: { conversion_rate: true },
@@ -333,7 +333,7 @@ export class InventoryRequestService {
                     code,
                     status: 'PENDING',
                     sales_order_code: dto.sales_order_code,
-                    organization: { connect: { id: orgId } },
+                    organization_id: orgId,
                     warehouse: { connect: { id: dto.warehouse_id } },
                     ...(dto.partner_id && { partner: { connect: { id: dto.partner_id } } }),
                     created_by: actorId,
@@ -346,7 +346,7 @@ export class InventoryRequestService {
                 const productUnit = await tx.productUnit.findFirst({
                     where: {
                         product_id: detail.product_id,
-                        conversion_unit_id: detail.unit_id,
+                        unit_id: detail.unit_id,
                         is_deleted: false,
                     },
                     select: { conversion_rate: true },
