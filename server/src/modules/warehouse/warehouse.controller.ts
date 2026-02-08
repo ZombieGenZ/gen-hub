@@ -208,7 +208,7 @@ export class WarehouseController {
         return new GetResponse(ResponseCode.WAREHOUSE_LAYOUT_SUCCESS, data, 'Lấy layout kho thành công');
     }
 
-    @Put(':id')
+    @Patch(':id')
     @RequirePermission('warehouse.update')
     @ApiOperation({ summary: 'Cập nhật warehouse' })
     @ApiAuthResponses()
