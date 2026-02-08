@@ -84,6 +84,8 @@ import { WarnPenaltyModule } from './modules/warn-penalty/warn-penalty.module';
 import { WarnSchedulerModule } from './modules/warn-scheduler/warn-scheduler.module';
 import { PermissionModule } from './modules/permission/permission.module';
 import { RoleModule } from './modules/role/role.module';
+import { InventoryRequestModule } from './modules/inventory-request/inventory-request.module';
+import { WarehouseManagerInventoryModule } from './modules/warehouse-manager-inventory/warehouse-manager-inventory.module';
 
 
 @Module({
@@ -179,6 +181,11 @@ import { RoleModule } from './modules/role/role.module';
     PartnerModule,
     ProductModule,
     BatchModule,
+
+    // Inventory Management (Organization level)
+    InventoryRequestModule,
+    WarehouseManagerInventoryModule,
+
 
     // Organization Update Request
     OrganizationUpdateRequestModule,

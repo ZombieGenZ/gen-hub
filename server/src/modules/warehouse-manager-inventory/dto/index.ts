@@ -1,0 +1,193 @@
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+    IsOptional,
+    IsString,
+    IsInt,
+    Min,
+    IsEnum,
+    IsArray,
+    ArrayMinSize,
+    ValidateNested,
+    IsUUID,
+    IsNumber,
+} from 'class-validator';
+import { Type } from 'class-transformer';
+import { i18nValidationMessage } from 'nestjs-i18n';
+import { ReceiptStatus, ExportStatus } from '@prisma/client';
+import { PickingStrategy } from '../../inventory-request/interfaces';
+
+/**
+ * DTO query danh sách pending inbound
+ */
+export class QueryPendingInboundDto {
+    @ApiPropertyOptional({
+        description: 'ID kho (lọc theo kho)',
+        example: '550e8400-e29b-41d4-a716-446655440003',
+    })
+    @IsOptional()
+    @IsString()
+    warehouse_id?: string;
+
+    @ApiPropertyOptional({
+        description: 'Từ khóa tìm kiếm',
+        example: 'PN-2026',
+    })
+    @IsOptional()
+    @IsString()
+    keywords?: string;
+
+    @ApiPropertyOptional({
+        description: 'Số lượng bản ghi trên trang',
+        default: 10,
+        minimum: 1,
+    })
+    @IsOptional()
+    @Type(() => Number)
+    @IsInt()
+    @Min(1)
+    limit?: number = 10;
+
+    @ApiPropertyOptional({
+        description: 'Vị trí bắt đầu',
+        default: 0,
+        minimum: 0,
+    })
+    @IsOptional()
+    @Type(() => Number)
+    @IsInt()
+    @Min(0)
+    offset?: number = 0;
+}
+
+/**
+ * DTO query danh sách pending outbound
+ */
+export class QueryPendingOutboundDto {
+    @ApiPropertyOptional({
+        description: 'ID kho (lọc theo kho)',
+        example: '550e8400-e29b-41d4-a716-446655440003',
+    })
+    @IsOptional()
+    @IsString()
+    warehouse_id?: string;
+
+    @ApiPropertyOptional({
+        description: 'Từ khóa tìm kiếm',
+        example: 'PX-2026',
+    })
+    @IsOptional()
+    @IsString()
+    keywords?: string;
+
+    @ApiPropertyOptional({
+        description: 'Số lượng bản ghi trên trang',
+        default: 10,
+        minimum: 1,
+    })
+    @IsOptional()
+    @Type(() => Number)
+    @IsInt()
+    @Min(1)
+    limit?: number = 10;
+
+    @ApiPropertyOptional({
+        description: 'Vị trí bắt đầu',
+        default: 0,
+        minimum: 0,
+    })
+    @IsOptional()
+    @Type(() => Number)
+    @IsInt()
+    @Min(0)
+    offset?: number = 0;
+}
+
+/**
+ * DTO chi tiết số lượng thực tế cho approve inbound
+ */
+export class ActualQuantityDetailDto {
+    @ApiProperty({
+        description: 'ID chi tiết phiếu nhập',
+        example: '550e8400-e29b-41d4-a716-446655440000',
+    })
+    @IsUUID('4')
+    detail_id: string;
+
+    @ApiProperty({
+        description: 'Số lượng thực tế đã nhận',
+        example: 95,
+        minimum: 0,
+    })
+    @IsNumber()
+    @Min(0)
+    actual_qty: number;
+}
+
+/**
+ * DTO approve inbound request
+ */
+export class ApproveInboundDto {
+    @ApiPropertyOptional({
+        description: 'Chi tiết số lượng thực tế (nếu khác expected)',
+        type: [ActualQuantityDetailDto],
+    })
+    @IsOptional()
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => ActualQuantityDetailDto)
+    actual_quantities?: ActualQuantityDetailDto[];
+
+    @ApiPropertyOptional({
+        description: 'Ghi chú của warehouse manager',
+        example: 'Đã kiểm tra và xác nhận nhập kho',
+    })
+    @IsOptional()
+    @IsString()
+    notes?: string;
+}
+
+/**
+ * DTO reject inbound request
+ */
+export class RejectInboundDto {
+    @ApiProperty({
+        description: 'Lý do từ chối',
+        example: 'Hàng không đúng chất lượng',
+    })
+    @IsString({ message: i18nValidationMessage('inventory-request.validation.reject_reason_string') })
+    reason: string;
+}
+
+/**
+ * DTO approve outbound request
+ */
+export class ApproveOutboundDto {
+    @ApiPropertyOptional({
+        description: 'Chiến lược xuất kho (mặc định từ request hoặc FEFO)',
+        enum: PickingStrategy,
+        example: 'FEFO',
+    })
+    @IsOptional()
+    @IsEnum(PickingStrategy)
+    picking_strategy?: PickingStrategy;
+
+    @ApiPropertyOptional({
+        description: 'Ghi chú của warehouse manager',
+        example: 'Đã chuẩn bị hàng và sẵn sàng xuất',
+    })
+    @IsOptional()
+    @IsString()
+    notes?: string;
+}
+
+/**
+ * DTO reject outbound request
+ */
+export class RejectOutboundDto {
+    @ApiProperty({
+        description: 'Lý do từ chối',
+        example: 'Không đủ tồn kho',
+    })
+    @IsString({ message: i18nValidationMessage('inventory-request.validation.reject_reason_string') })
+    reason: string;
+}

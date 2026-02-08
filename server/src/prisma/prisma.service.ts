@@ -348,6 +348,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         this.seedUserManagementPermissions.bind(this),
         this.seedWarningCategoryPermissions.bind(this),
         this.seedWarnPenaltyPermissions.bind(this),
+        this.seedInventoryPermissions.bind(this),
         this.seedRolePermissions.bind(this),
         this.seedSuperadminBypassPermission.bind(this),
       ];
@@ -5122,6 +5123,117 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       this.logger.error(`❌ Failed to seed role permissions: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * Seed các permissions cho Inventory (Nhập/Xuất kho)
+   */
+  private async seedInventoryPermissions() {
+    try {
+      // 1. Organization Permissions - cho member org
+      const orgPermissions = [
+        {
+          key: 'org.inventory.inbound.create',
+          name: 'Tạo yêu cầu nhập kho',
+          description: 'Quyền tạo yêu cầu nhập kho cho tổ chức',
+          allow_api_key: true,
+        },
+        {
+          key: 'org.inventory.inbound.list',
+          name: 'Xem danh sách phiếu nhập kho',
+          description: 'Quyền xem danh sách phiếu nhập kho của tổ chức',
+          allow_api_key: true,
+        },
+        {
+          key: 'org.inventory.outbound.create',
+          name: 'Tạo yêu cầu xuất kho',
+          description: 'Quyền tạo yêu cầu xuất kho cho tổ chức',
+          allow_api_key: true,
+        },
+        {
+          key: 'org.inventory.outbound.list',
+          name: 'Xem danh sách phiếu xuất kho',
+          description: 'Quyền xem danh sách phiếu xuất kho của tổ chức',
+          allow_api_key: true,
+        },
+      ];
+
+      for (const perm of orgPermissions) {
+        const existing = await this.organizationPermission.findFirst({
+          where: { key: perm.key },
+        });
+
+        if (!existing) {
+          await this.organizationPermission.create({
+            data: {
+              key: perm.key,
+              name: perm.name,
+              description: perm.description,
+              allow_api_key: perm.allow_api_key,
+              is_active: true,
+              is_deleted: false,
+            },
+          });
+        }
+      }
+
+      // 2. Warehouse Manager Permissions
+      const warehouseManagerPermissions = [
+        {
+          key: 'warehouse-manager.inventory.inbound.list',
+          name: 'Xem danh sách nhập kho chờ xử lý',
+          description: 'Quyền xem danh sách yêu cầu nhập kho chờ xử lý',
+        },
+        {
+          key: 'warehouse-manager.inventory.inbound.approve',
+          name: 'Xác nhận nhập kho',
+          description: 'Quyền xác nhận yêu cầu nhập kho',
+        },
+        {
+          key: 'warehouse-manager.inventory.inbound.reject',
+          name: 'Từ chối nhập kho',
+          description: 'Quyền từ chối yêu cầu nhập kho',
+        },
+        {
+          key: 'warehouse-manager.inventory.outbound.list',
+          name: 'Xem danh sách xuất kho chờ xử lý',
+          description: 'Quyền xem danh sách yêu cầu xuất kho chờ xử lý',
+        },
+        {
+          key: 'warehouse-manager.inventory.outbound.approve',
+          name: 'Xác nhận xuất kho',
+          description: 'Quyền xác nhận yêu cầu xuất kho',
+        },
+        {
+          key: 'warehouse-manager.inventory.outbound.reject',
+          name: 'Từ chối xuất kho',
+          description: 'Quyền từ chối yêu cầu xuất kho',
+        },
+      ];
+
+      for (const perm of warehouseManagerPermissions) {
+        const existing = await this.warehouseManagerPermission.findFirst({
+          where: { key: perm.key },
+        });
+
+        if (!existing) {
+          await this.warehouseManagerPermission.create({
+            data: {
+              key: perm.key,
+              name: perm.name,
+              description: perm.description,
+              is_active: true,
+              is_deleted: false,
+            },
+          });
+        }
+      }
+
+      this.logger.log('✅ Inventory permissions seeded');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error(`❌ Failed to seed inventory permissions: ${errorMessage}`);
     }
   }
 }
