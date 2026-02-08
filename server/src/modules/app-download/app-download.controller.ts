@@ -10,21 +10,20 @@ import {
     Res,
     HttpStatus
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiHeader } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { AppDownloadService } from './app-download.service';
 import { CreateShareInviteDto, AppDownloadShareResponseDto } from './dto';
 import { GetResponse, CreatedResponse } from '../../common/responses/success.response';
 import type { Response } from 'express';
 import { existsSync } from 'fs';
-import { CombinedAuthGuard, PermissionGuard } from '../../common/guards';
+import { JwtAuthGuard, PermissionGuard } from '../../common/guards';
 import { RequirePermission, Public, CurrentActor, ApiAuthResponses } from '../../common/decorators';
 import { I18nLang, I18nService } from 'nestjs-i18n';
 
 @ApiTags('App Download')
 @ApiBearerAuth('JWT-auth')
-@ApiHeader({ name: 'X-API-Key', description: 'API Key for authentication (alternative to JWT)', required: false })
 @Controller('app-download')
-@UseGuards(CombinedAuthGuard, PermissionGuard)
+@UseGuards(JwtAuthGuard, PermissionGuard)
 export class AppDownloadController {
     constructor(
         private readonly service: AppDownloadService,
@@ -74,7 +73,7 @@ export class AppDownloadController {
     }
 
     @Post('invites/:id/resend')
-    @RequirePermission('app-download.invite')
+    @RequirePermission('app-download.resend_invite')
     @ApiOperation({ summary: 'Resend invite email' })
     @ApiAuthResponses()
     @ApiResponse({ status: 200 })

@@ -32,8 +32,13 @@ export class AppDownloadPermissionsSeeder extends BaseSeeder {
                 },
                 {
                     key: 'app-download.invite',
-                    name: 'Tạo và gửi lời mời tải app',
-                    description: 'Quyền tạo mới và gửi lại lời mời tải app qua email'
+                    name: 'Tạo lời mời tải app',
+                    description: 'Quyền tạo mới lời mời tải app qua email'
+                },
+                {
+                    key: 'app-download.resend_invite',
+                    name: 'Gửi lại lời mời tải app',
+                    description: 'Quyền gửi lại lời mời tải app qua email'
                 },
                 {
                     key: 'app-download.delete',
