@@ -86,6 +86,8 @@ import { PermissionModule } from './modules/permission/permission.module';
 import { RoleModule } from './modules/role/role.module';
 import { InventoryRequestModule } from './modules/inventory-request/inventory-request.module';
 import { WarehouseManagerInventoryModule } from './modules/warehouse-manager-inventory/warehouse-manager-inventory.module';
+import { AppDownloadModule } from './modules/app-download/app-download.module';
+
 
 
 @Module({
@@ -279,6 +281,9 @@ import { WarehouseManagerInventoryModule } from './modules/warehouse-manager-inv
 
     // Database Backup
     DatabaseBackupModule,
+
+    // App Download Distribution
+    AppDownloadModule,
   ],
   controllers: [AppController],
   providers: [

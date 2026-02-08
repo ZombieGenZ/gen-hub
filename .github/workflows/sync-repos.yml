@@ -8,6 +8,7 @@ on:
       - 'client/**'
       - 'server/**'
       - 'status/**'
+      - 'App/**'
       - 'admin/database-panel/**'
       - 'admin/feature-flag-panel/**'
       - 'admin/resources-panel/**'
@@ -24,6 +25,7 @@ jobs:
       client: ${{ steps.filter.outputs.client }}
       server: ${{ steps.filter.outputs.server }}
       status: ${{ steps.filter.outputs.status }}
+      app: ${{ steps.filter.outputs.app }}
       database_panel: ${{ steps.filter.outputs.database_panel }}
       feature_flag_panel: ${{ steps.filter.outputs.feature_flag_panel }}
       resources_panel: ${{ steps.filter.outputs.resources_panel }}
@@ -41,6 +43,8 @@ jobs:
               - 'server/**'
             status:
               - 'status/**'
+            app:
+              - 'App/**'
             database_panel:
               - 'admin/database-panel/**'
             feature_flag_panel:
@@ -519,3 +523,46 @@ jobs:
           user-email: ${{ secrets.GH_EMAIL }}
           target-branch: master
           commit-message: "Sync admin-panel: ${{ github.event.head_commit.message }}"
+
+  sync-app:
+    needs: changes
+    if: ${{ needs.changes.outputs.app == 'true' || github.event_name == 'workflow_dispatch' }}
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Build Single-File Executable
+        run: |
+          cd App/GenHubApp
+          dotnet publish -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true -o ./publish
+
+      - name: Prepare App Folder
+        run: |
+          mkdir app-release
+          copy App\GenHubApp\publish\GenHubApp.exe app-release\
+
+      - name: Discord Notification on Failure
+        if: failure()
+        run: |
+          curl -H "Content-Type: application/json" ^
+          -X POST ^
+          -d "{\"embeds\": [{\"title\": \"❌ Sync App Failed at ${{ github.repository }}\", \"url\": \"${{ github.event.head_commit.url }}\", \"color\": 15548997, \"fields\": [{\"name\": \"Nhánh\", \"value\": \"`${{ github.ref_name }}`\", \"inline\": true}, {\"name\": \"Người thực hiện\", \"value\": \"`${{ github.actor }}`\", \"inline\": true}, {\"name\": \"Nội dung commit\", \"value\": \"${{ github.event.head_commit.message }}\"}], \"footer\": {\"text\": \"Hệ thống GEN-HUB\"}, \"timestamp\": \"${{ github.event.head_commit.timestamp }}\"}]}" ^
+          ${{ secrets.DISCORD_WEBHOOK }}
+
+      - name: Push App to Release Repo
+        uses: cpina/github-action-push-to-another-repository@main
+        env:
+          API_TOKEN_GITHUB: ${{ secrets.API_TOKEN_GITHUB }}
+        with:
+          source-directory: 'app-release'
+          destination-github-username: ${{ secrets.GH_USERNAME }}
+          destination-repository-name: ${{ secrets.REPO_APP }}
+          user-email: ${{ secrets.GH_EMAIL }}
+          target-branch: master
+          commit-message: "App Release: ${{ github.event.head_commit.message }}"

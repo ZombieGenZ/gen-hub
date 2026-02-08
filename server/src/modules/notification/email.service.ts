@@ -1481,5 +1481,80 @@ export class EmailService {
       return false;
     }
   }
+
+  /**
+   * Gửi email mời tải xuống ứng dụng
+   */
+  async sendAppDownloadInviteEmail(
+    to: string,
+    downloadUrl: string,
+    expiresAt?: Date,
+    lang: string = 'vi',
+  ): Promise<boolean> {
+    const appName = this.appConfigService.get('brandName');
+    const locale = lang === 'vi' ? 'vi-VN' : 'en-US';
+
+    // Hardcoded text for now until i18n keys are added
+    const greeting = lang === 'vi' ? 'Xin chào' : 'Hello';
+    const message = lang === 'vi'
+      ? `Bạn đã được mời tải xuống ứng dụng <strong style="color: #6366f1;">${appName}</strong>.`
+      : `You have been invited to download the <strong style="color: #6366f1;">${appName}</strong> application.`;
+    const actionText = lang === 'vi' ? 'Tải xuống ngay' : 'Download Now';
+    const expirationText = expiresAt
+      ? (lang === 'vi' ? `Liên kết này sẽ hết hạn vào lúc: <strong>${expiresAt.toLocaleString(locale)}</strong>` : `This link will expire at: <strong>${expiresAt.toLocaleString(locale)}</strong>`)
+      : '';
+    const subject = lang === 'vi' ? `Mời tải xuống ứng dụng ${appName}` : `Invitation to download ${appName}`;
+
+    // Get colors from config
+    const colors = this.appConfigService.get('colors');
+    // Fallback colors if not available
+    const primary = colors?.primary || '#6366f1';
+    const primaryDark = colors?.primaryDark || '#4f46e5';
+    const gray700 = colors?.gray700 || '#374151';
+    const gray500 = colors?.gray500 || '#6b7280';
+    const gray100 = colors?.gray100 || '#f3f4f6';
+    const info = colors?.info || '#3b82f6';
+    const shadow = colors?.shadow || 'rgba(0, 0, 0, 0.1)';
+    const cardSurface = colors?.cardSurface || '#ffffff';
+    const border = colors?.border || '#e5e7eb';
+
+    const content = `
+      <h2 style="margin: 0 0 20px; font-size: 24px; font-weight: 600; color: ${primary}; text-align: center;">
+        ${greeting}! 👋
+      </h2>
+      <p style="margin: 0 0 20px; font-size: 15px; color: ${gray700}; line-height: 1.7; text-align: center;">
+        ${message}
+      </p>
+      
+      <div style="text-align: center; margin: 35px 0;">
+        <a href="${downloadUrl}" 
+           style="display: inline-block; padding: 16px 48px; background: linear-gradient(135deg, ${primary} 0%, ${primaryDark} 100%); color: #ffffff; text-decoration: none; border-radius: 12px; font-size: 16px; font-weight: 600; letter-spacing: 0.3px; box-shadow: 0 4px 15px ${shadow};">
+          ${actionText}
+        </a>
+      </div>
+
+      ${expirationText ? `
+      <div style="background-color: ${gray100}; border-radius: 8px; padding: 15px; margin: 25px 0; text-align: center;">
+        <p style="margin: 0; font-size: 13px; color: ${gray500};">
+          ${expirationText}
+        </p>
+      </div>` : ''}
+      
+      <div style="background-color: ${gray100}; border-radius: 8px; padding: 15px; margin: 25px 0;">
+        <p style="margin: 0 0 8px; font-size: 13px; color: ${gray500}; text-align: center;">
+          ${lang === 'vi' ? 'Hoặc sao chép liên kết này:' : 'Or copy this link:'}
+        </p>
+        <p style="margin: 0; font-size: 12px; word-break: break-all; color: ${info}; text-align: center; background-color: ${cardSurface}; padding: 12px; border-radius: 6px; border: 1px solid ${border};">
+          ${downloadUrl}
+        </p>
+      </div>
+    `;
+
+    return this.sendEmail({
+      to,
+      subject,
+      html: await this.createEmailTemplate(content, appName, lang),
+    });
+  }
 }
 

@@ -4326,3 +4326,49 @@ model WarnPenalty {
 
   @@map("warn_penalties")
 }
+
+model AppDownloadShare {
+  id               String    @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  token            String    @unique
+  max_download     Int       @default(-1)
+  current_download Int       @default(0)
+  is_permanent     Boolean   @default(false)
+  expires_at       DateTime?
+  
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean   @default(false)
+  deleted_at DateTime?
+  
+  created_by String?
+  deleted_by String?
+  
+  invites AppDownloadInvite[]
+  
+  @@map("app_download_shares")
+}
+
+model AppDownloadInvite {
+  id       String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  share_id String @db.Uuid
+  email    String
+  
+  email_sent_at    DateTime?
+  email_sent_count Int       @default(0)
+  
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean   @default(false)
+  deleted_at DateTime?
+  
+  created_by String?
+  deleted_by String?
+  
+  share AppDownloadShare @relation(fields: [share_id], references: [id], onDelete: Cascade)
+  
+  @@index([share_id])
+  @@index([email])
+  @@map("app_download_invites")
+}
