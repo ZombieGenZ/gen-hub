@@ -49,7 +49,7 @@ export class WarehouseManagerPermissionsSeeder extends BaseSeeder {
                 }
             }
 
-            this.logger.log('✅ Warehouse View (WM) permissions seeded');
+            this.logger.log('✅ Warehouse View permissions seeded');
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : String(error);
             this.logger.error(`❌ Failed to seed warehouse view permissions: ${errorMessage}`);
