@@ -12,7 +12,7 @@ import { InviteSchedulerService } from './invite-scheduler.service';
 
 @Module({
     imports: [
-        NotificationModule, // Ensure NotificationModule exports EmailService
+        NotificationModule,
         ConfigModule,
         PermissionModule,
         ApiKeyVerificationModule,
