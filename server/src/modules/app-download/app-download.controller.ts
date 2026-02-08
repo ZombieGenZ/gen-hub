@@ -109,17 +109,9 @@ export class AppDownloadController {
     async downloadApp(@Param('token') token: string, @Res() res: Response) {
         const share = await this.service.validateDownloadToken(token);
 
-        // Track download start
         await this.service.trackDownload(share.id);
 
-        // Serve file
-        // Assumes file is served from a configured path
-        // For now, I'll use a hardcoded path relative to project root or configured via env
-        // User mentioned: "LƯU Ý NÓ SẼ KHÔNG ĐỂ LẠI FILE đó trên repo hiện tại và ở server sẽ có 1 API để tải xuống"
-        // This implies the server (NestJS) must have access to the file.
-        // Maybe an env variable APP_RELEASE_PATH
-
-        const filePath = process.env.APP_RELEASE_PATH || 'uploads/GenHubApp.exe'; // Default/Fallback
+        const filePath = process.env.APP_RELEASE_PATH || 'uploads/GenHubApp.exe';
 
         if (!existsSync(filePath)) {
             return res.status(HttpStatus.NOT_FOUND).send('Installer file not found on server.');
