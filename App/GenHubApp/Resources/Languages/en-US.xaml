@@ -34,7 +34,7 @@
     <system:String x:Key="Password">Password</system:String>
     <system:String x:Key="RememberMe">Remember me</system:String>
     <system:String x:Key="ForgotPassword">Forgot password?</system:String>
-    <system:String x:Key="LoginTitle">Admin Panel Login</system:String>
+    <system:String x:Key="LoginTitle">Panel Login</system:String>
     <system:String x:Key="LoginSubtitle">Enter your credentials to continue</system:String>
     <system:String x:Key="LoginButton">Sign In</system:String>
     <system:String x:Key="LoggingIn">Signing in...</system:String>

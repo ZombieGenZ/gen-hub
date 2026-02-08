@@ -34,7 +34,7 @@
     <system:String x:Key="Password">Mật khẩu</system:String>
     <system:String x:Key="RememberMe">Ghi nhớ đăng nhập</system:String>
     <system:String x:Key="ForgotPassword">Quên mật khẩu?</system:String>
-    <system:String x:Key="LoginTitle">Đăng nhập Admin Panel</system:String>
+    <system:String x:Key="LoginTitle">Đăng nhập hệ thống quản lý</system:String>
     <system:String x:Key="LoginSubtitle">Nhập thông tin đăng nhập để tiếp tục</system:String>
     <system:String x:Key="LoginButton">Đăng nhập</system:String>
     <system:String x:Key="LoggingIn">Đang đăng nhập...</system:String>

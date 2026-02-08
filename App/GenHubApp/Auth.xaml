@@ -22,7 +22,7 @@
                 Background="{DynamicResource PrimaryBrush}"
                 Padding="60">
             <Grid VerticalAlignment="Center">
-                <StackPanel>
+                <StackPanel HorizontalAlignment="Center">
                     <!-- Logo/Icon -->
                     <Border Width="80" Height="80" 
                             CornerRadius="16"
