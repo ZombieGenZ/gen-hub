@@ -5,8 +5,284 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:GenHubApp"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="{DynamicResource AppName}" 
+        Height="700" Width="1000"
+        MinHeight="600" MinWidth="800"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource BackgroundBrush}">
+    
     <Grid>
-
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
+        
+        <!-- Left Panel - Branding -->
+        <Border Grid.Column="0" 
+                Background="{DynamicResource PrimaryBrush}"
+                Padding="60">
+            <Grid VerticalAlignment="Center">
+                <StackPanel>
+                    <!-- Logo/Icon -->
+                    <Border Width="80" Height="80" 
+                            CornerRadius="16"
+                            Background="{DynamicResource PrimaryLightBrush}"
+                            Margin="0,0,0,32">
+                        <TextBlock Text="G" 
+                                   FontSize="40" 
+                                   FontWeight="Bold"
+                                   Foreground="White"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"/>
+                    </Border>
+                    
+                    <!-- App Name -->
+                    <TextBlock Text="{DynamicResource AppName}" 
+                               FontSize="36" 
+                               FontWeight="Bold"
+                               Foreground="White"
+                               Margin="0,0,0,16"/>
+                    
+                    <!-- Tagline -->
+                    <TextBlock Text="Admin Panel" 
+                               FontSize="18"
+                               Foreground="#BBFFFFFF"
+                               Opacity="0.8"/>
+                    
+                    <!-- Features -->
+                    <StackPanel Margin="0,48,0,0">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                            <TextBlock Text="✓" Foreground="#AAFFFFFF" FontSize="16" Margin="0,0,12,0"/>
+                            <TextBlock Text="Quản lý kho hàng thông minh" Foreground="#CCFFFFFF" FontSize="14"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                            <TextBlock Text="✓" Foreground="#AAFFFFFF" FontSize="16" Margin="0,0,12,0"/>
+                            <TextBlock Text="Theo dõi tồn kho realtime" Foreground="#CCFFFFFF" FontSize="14"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="✓" Foreground="#AAFFFFFF" FontSize="16" Margin="0,0,12,0"/>
+                            <TextBlock Text="Báo cáo chi tiết" Foreground="#CCFFFFFF" FontSize="14"/>
+                        </StackPanel>
+                    </StackPanel>
+                </StackPanel>
+            </Grid>
+        </Border>
+        
+        <!-- Right Panel - Login Form -->
+        <Border Grid.Column="1" 
+                Width="450"
+                Background="{DynamicResource SurfaceBrush}"
+                Padding="48">
+            <Grid VerticalAlignment="Center">
+                
+                <!-- Login View -->
+                <StackPanel x:Name="LoginPanel" 
+                            Visibility="Visible">
+                    <!-- Title -->
+                    <TextBlock Text="{DynamicResource LoginTitle}" 
+                               Style="{StaticResource HeadingLarge}"
+                               Margin="0,0,0,8"/>
+                    <TextBlock Text="{DynamicResource LoginSubtitle}" 
+                               Style="{StaticResource MutedText}"
+                               Margin="0,0,0,32"/>
+                    
+                    <!-- Email -->
+                    <TextBlock Text="{DynamicResource Email}" 
+                               Style="{StaticResource InputLabel}"/>
+                    <TextBox x:Name="EmailInput" 
+                             Style="{StaticResource ModernTextBox}"
+                             Margin="0,0,0,20"/>
+                    
+                    <!-- Password -->
+                    <TextBlock Text="{DynamicResource Password}" 
+                               Style="{StaticResource InputLabel}"/>
+                    <PasswordBox x:Name="PasswordInput" 
+                                 Style="{StaticResource ModernPasswordBox}"
+                                 Margin="0,0,0,20"/>
+                    
+                    <!-- Remember Me & Forgot Password -->
+                    <Grid Margin="0,0,0,32">
+                        <CheckBox Content="{DynamicResource RememberMe}"
+                                  Style="{StaticResource ModernCheckBox}"
+                                  HorizontalAlignment="Left"/>
+                        <Button Content="{DynamicResource ForgotPassword}"
+                                Style="{StaticResource LinkButton}"
+                                HorizontalAlignment="Right"
+                                Click="ForgotPassword_Click"/>
+                    </Grid>
+                    
+                    <!-- Error Message -->
+                    <TextBlock x:Name="ErrorText"
+                               Style="{StaticResource ErrorText}"
+                               TextWrapping="Wrap"
+                               Visibility="Collapsed"
+                               Margin="0,0,0,16"/>
+                    
+                    <!-- Login Button -->
+                    <Button x:Name="LoginButton"
+                            Content="{DynamicResource LoginButton}"
+                            Style="{StaticResource PrimaryButton}"
+                            Click="Login_Click"
+                            Height="48"/>
+                    
+                    <!-- Loading Indicator -->
+                    <TextBlock x:Name="LoadingText"
+                               Text="{DynamicResource LoggingIn}"
+                               Style="{StaticResource MutedText}"
+                               HorizontalAlignment="Center"
+                               Margin="0,16,0,0"
+                               Visibility="Collapsed"/>
+                    
+                    <!-- Theme & Language Toggle -->
+                    <StackPanel Orientation="Horizontal" 
+                                HorizontalAlignment="Center"
+                                Margin="0,48,0,0">
+                        <Button x:Name="ThemeToggle"
+                                Style="{StaticResource SecondaryButton}"
+                                Padding="12,8"
+                                Click="ThemeToggle_Click"
+                                Margin="0,0,16,0">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="🌙" Margin="0,0,8,0"/>
+                                <TextBlock x:Name="ThemeLabel" Text="{DynamicResource DarkMode}"/>
+                            </StackPanel>
+                        </Button>
+                        <Button x:Name="LanguageToggle"
+                                Style="{StaticResource SecondaryButton}"
+                                Padding="12,8"
+                                Click="LanguageToggle_Click">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="🌐" Margin="0,0,8,0"/>
+                                <TextBlock x:Name="LanguageLabel" Text="EN"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </StackPanel>
+                
+                <!-- 2FA View -->
+                <StackPanel x:Name="TwoFactorPanel" 
+                            Visibility="Collapsed">
+                    <!-- Back Button -->
+                    <Button Content="← Quay lại" 
+                            Style="{StaticResource LinkButton}"
+                            HorizontalAlignment="Left"
+                            Click="Back2FA_Click"
+                            Margin="0,0,0,24"/>
+                    
+                    <!-- Title -->
+                    <TextBlock Text="{DynamicResource TwoFactorTitle}" 
+                               Style="{StaticResource HeadingLarge}"
+                               Margin="0,0,0,8"/>
+                    <TextBlock Text="{DynamicResource TwoFactorSubtitle}" 
+                               Style="{StaticResource MutedText}"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,32"/>
+                    
+                    <!-- 2FA Code Input -->
+                    <TextBlock x:Name="TwoFactorCodeLabel"
+                               Text="{DynamicResource TwoFactorCode}" 
+                               Style="{StaticResource InputLabel}"/>
+                    <TextBox x:Name="TwoFactorCodeInput" 
+                             Style="{StaticResource ModernTextBox}"
+                             MaxLength="6"
+                             FontSize="24"
+                             TextAlignment="Center"
+                             Margin="0,0,0,16"/>
+                    
+                    <!-- Backup Code Input (Hidden by default) -->
+                    <StackPanel x:Name="BackupCodePanel" Visibility="Collapsed">
+                        <TextBlock Text="{DynamicResource BackupCode}" 
+                                   Style="{StaticResource InputLabel}"/>
+                        <TextBox x:Name="BackupCodeInput" 
+                                 Style="{StaticResource ModernTextBox}"
+                                 FontSize="16"
+                                 TextAlignment="Center"
+                                 Margin="0,0,0,16"/>
+                    </StackPanel>
+                    
+                    <!-- Use Backup Code Link -->
+                    <Button x:Name="UseBackupCodeButton"
+                            Content="{DynamicResource UseBackupCode}"
+                            Style="{StaticResource LinkButton}"
+                            Click="UseBackupCode_Click"
+                            HorizontalAlignment="Left"
+                            Margin="0,0,0,24"/>
+                    
+                    <!-- Error Message -->
+                    <TextBlock x:Name="TwoFactorErrorText"
+                               Style="{StaticResource ErrorText}"
+                               TextWrapping="Wrap"
+                               Visibility="Collapsed"
+                               Margin="0,0,0,16"/>
+                    
+                    <!-- Verify Button -->
+                    <Button x:Name="VerifyButton"
+                            Content="{DynamicResource VerifyButton}"
+                            Style="{StaticResource PrimaryButton}"
+                            Click="Verify2FA_Click"
+                            Height="48"/>
+                    
+                    <!-- Loading Indicator -->
+                    <TextBlock x:Name="Verify2FALoadingText"
+                               Text="{DynamicResource Verifying}"
+                               Style="{StaticResource MutedText}"
+                               HorizontalAlignment="Center"
+                               Margin="0,16,0,0"
+                               Visibility="Collapsed"/>
+                </StackPanel>
+                
+                <!-- Forgot Password View -->
+                <StackPanel x:Name="ForgotPasswordPanel" 
+                            Visibility="Collapsed">
+                    <!-- Back Button -->
+                    <Button Content="← Quay lại" 
+                            Style="{StaticResource LinkButton}"
+                            HorizontalAlignment="Left"
+                            Click="BackForgotPassword_Click"
+                            Margin="0,0,0,24"/>
+                    
+                    <!-- Title -->
+                    <TextBlock Text="{DynamicResource ForgotPasswordTitle}" 
+                               Style="{StaticResource HeadingLarge}"
+                               Margin="0,0,0,8"/>
+                    <TextBlock Text="{DynamicResource ForgotPasswordSubtitle}" 
+                               Style="{StaticResource MutedText}"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,32"/>
+                    
+                    <!-- Email -->
+                    <TextBlock Text="{DynamicResource Email}" 
+                               Style="{StaticResource InputLabel}"/>
+                    <TextBox x:Name="ForgotPasswordEmailInput" 
+                             Style="{StaticResource ModernTextBox}"
+                             Margin="0,0,0,24"/>
+                    
+                    <!-- Send Reset Link Button -->
+                    <Button x:Name="SendResetLinkButton"
+                            Content="{DynamicResource SendResetLink}"
+                            Style="{StaticResource PrimaryButton}"
+                            Click="SendResetLink_Click"
+                            Height="48"/>
+                    
+                    <!-- Success Message -->
+                    <Border x:Name="ResetLinkSentPanel"
+                            Background="#10B981"
+                            CornerRadius="8"
+                            Padding="16"
+                            Margin="0,24,0,0"
+                            Visibility="Collapsed">
+                        <StackPanel>
+                            <TextBlock Text="{DynamicResource ResetLinkSent}" 
+                                       Foreground="White"
+                                       FontWeight="SemiBold"
+                                       Margin="0,0,0,4"/>
+                            <TextBlock Text="{DynamicResource CheckYourEmail}" 
+                                       Foreground="#CCFFFFFF"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+                
+            </Grid>
+        </Border>
     </Grid>
 </Window>

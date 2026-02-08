@@ -1,0 +1,169 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+
+    <!-- English Language Strings -->
+    
+    <!-- Common -->
+    <system:String x:Key="AppName">GEN-HUB</system:String>
+    <system:String x:Key="Loading">Loading...</system:String>
+    <system:String x:Key="Save">Save</system:String>
+    <system:String x:Key="Cancel">Cancel</system:String>
+    <system:String x:Key="Confirm">Confirm</system:String>
+    <system:String x:Key="Close">Close</system:String>
+    <system:String x:Key="Back">Back</system:String>
+    <system:String x:Key="Next">Next</system:String>
+    <system:String x:Key="Yes">Yes</system:String>
+    <system:String x:Key="No">No</system:String>
+    <system:String x:Key="Error">Error</system:String>
+    <system:String x:Key="Success">Success</system:String>
+    <system:String x:Key="Warning">Warning</system:String>
+    <system:String x:Key="Info">Information</system:String>
+    <system:String x:Key="Search">Search</system:String>
+    <system:String x:Key="Filter">Filter</system:String>
+    <system:String x:Key="Add">Add</system:String>
+    <system:String x:Key="Edit">Edit</system:String>
+    <system:String x:Key="Delete">Delete</system:String>
+    <system:String x:Key="View">View</system:String>
+    <system:String x:Key="Actions">Actions</system:String>
+    
+    <!-- Auth -->
+    <system:String x:Key="Login">Login</system:String>
+    <system:String x:Key="Logout">Logout</system:String>
+    <system:String x:Key="Email">Email</system:String>
+    <system:String x:Key="Password">Password</system:String>
+    <system:String x:Key="RememberMe">Remember me</system:String>
+    <system:String x:Key="ForgotPassword">Forgot password?</system:String>
+    <system:String x:Key="LoginTitle">Admin Panel Login</system:String>
+    <system:String x:Key="LoginSubtitle">Enter your credentials to continue</system:String>
+    <system:String x:Key="LoginButton">Sign In</system:String>
+    <system:String x:Key="LoggingIn">Signing in...</system:String>
+    <system:String x:Key="LoginSuccess">Login successful</system:String>
+    <system:String x:Key="LoginFailed">Login failed</system:String>
+    <system:String x:Key="InvalidCredentials">Invalid email or password</system:String>
+    <system:String x:Key="EmailRequired">Please enter your email</system:String>
+    <system:String x:Key="PasswordRequired">Please enter your password</system:String>
+    <system:String x:Key="InvalidEmail">Invalid email address</system:String>
+    
+    <!-- 2FA -->
+    <system:String x:Key="TwoFactorTitle">Two-Factor Authentication</system:String>
+    <system:String x:Key="TwoFactorSubtitle">Enter the 6-digit code from your authenticator app</system:String>
+    <system:String x:Key="TwoFactorCode">Authentication Code</system:String>
+    <system:String x:Key="TwoFactorCodePlaceholder">000000</system:String>
+    <system:String x:Key="UseBackupCode">Use backup code</system:String>
+    <system:String x:Key="BackupCode">Backup Code</system:String>
+    <system:String x:Key="BackupCodePlaceholder">XXXXXXXX</system:String>
+    <system:String x:Key="VerifyButton">Verify</system:String>
+    <system:String x:Key="Verifying">Verifying...</system:String>
+    <system:String x:Key="InvalidCode">Invalid authentication code</system:String>
+    
+    <!-- Forgot Password -->
+    <system:String x:Key="ForgotPasswordTitle">Forgot Password</system:String>
+    <system:String x:Key="ForgotPasswordSubtitle">Enter your email to receive a password reset link</system:String>
+    <system:String x:Key="SendResetLink">Send Reset Link</system:String>
+    <system:String x:Key="BackToLogin">Back to Login</system:String>
+    <system:String x:Key="ResetLinkSent">Password reset link sent</system:String>
+    <system:String x:Key="CheckYourEmail">Please check your email</system:String>
+    
+    <!-- Navigation -->
+    <system:String x:Key="Dashboard">Dashboard</system:String>
+    <system:String x:Key="Inventory">Inventory</system:String>
+    <system:String x:Key="Products">Products</system:String>
+    <system:String x:Key="StockIn">Stock In</system:String>
+    <system:String x:Key="StockOut">Stock Out</system:String>
+    <system:String x:Key="Reports">Reports</system:String>
+    <system:String x:Key="Settings">Settings</system:String>
+    <system:String x:Key="Profile">Profile</system:String>
+    <system:String x:Key="Security">Security</system:String>
+    
+    <!-- Profile -->
+    <system:String x:Key="ProfileTitle">Account Information</system:String>
+    <system:String x:Key="ProfileSubtitle">Manage your personal information</system:String>
+    <system:String x:Key="Name">Full Name</system:String>
+    <system:String x:Key="Language">Language</system:String>
+    <system:String x:Key="Vietnamese">Tiếng Việt</system:String>
+    <system:String x:Key="English">English</system:String>
+    <system:String x:Key="UpdateProfile">Update Profile</system:String>
+    <system:String x:Key="ProfileUpdated">Profile has been updated</system:String>
+    
+    <!-- Change Password -->
+    <system:String x:Key="ChangePassword">Change Password</system:String>
+    <system:String x:Key="ChangePasswordSubtitle">Change your account password</system:String>
+    <system:String x:Key="CurrentPassword">Current Password</system:String>
+    <system:String x:Key="NewPassword">New Password</system:String>
+    <system:String x:Key="ConfirmPassword">Confirm Password</system:String>
+    <system:String x:Key="LogoutAllDevices">Logout all devices</system:String>
+    <system:String x:Key="PasswordChanged">Password has been changed</system:String>
+    <system:String x:Key="PasswordMismatch">Passwords do not match</system:String>
+    <system:String x:Key="WeakPassword">Password is too weak</system:String>
+    
+    <!-- Security / 2FA -->
+    <system:String x:Key="SecurityTitle">Security</system:String>
+    <system:String x:Key="SecuritySubtitle">Manage your account security settings</system:String>
+    <system:String x:Key="TwoFactorAuth">Two-Factor Authentication</system:String>
+    <system:String x:Key="TwoFactorEnabled">Two-factor authentication is enabled</system:String>
+    <system:String x:Key="TwoFactorDisabled">Two-factor authentication is not enabled</system:String>
+    <system:String x:Key="Enable2FA">Enable 2FA</system:String>
+    <system:String x:Key="Disable2FA">Disable 2FA</system:String>
+    <system:String x:Key="Setup2FATitle">Set Up Two-Factor Authentication</system:String>
+    <system:String x:Key="Setup2FAStep1">Step 1: Scan QR Code</system:String>
+    <system:String x:Key="Setup2FAStep1Desc">Use an authenticator app (Google Authenticator, Authy) to scan this QR code</system:String>
+    <system:String x:Key="Setup2FAStep2">Step 2: Enter Verification Code</system:String>
+    <system:String x:Key="Setup2FAStep2Desc">Enter the 6-digit code from your authenticator app to complete setup</system:String>
+    <system:String x:Key="ManualEntry">Manual Entry</system:String>
+    <system:String x:Key="SecretKey">Secret Key</system:String>
+    <system:String x:Key="CopySecret">Copy</system:String>
+    <system:String x:Key="Copied">Copied!</system:String>
+    <system:String x:Key="BackupCodesTitle">Backup Codes</system:String>
+    <system:String x:Key="BackupCodesDesc">Save these codes in a safe place. Each code can only be used once.</system:String>
+    <system:String x:Key="DownloadCodes">Download</system:String>
+    <system:String x:Key="RegenerateBackupCodes">Regenerate Codes</system:String>
+    <system:String x:Key="Disable2FAConfirm">Are you sure you want to disable two-factor authentication?</system:String>
+    <system:String x:Key="VerifyIdentity">Verify Identity</system:String>
+    <system:String x:Key="VerifyIdentityDesc">Enter your password or 2FA code to continue</system:String>
+    
+    <!-- Dashboard -->
+    <system:String x:Key="DashboardTitle">Warehouse Overview</system:String>
+    <system:String x:Key="TotalProducts">Total Products</system:String>
+    <system:String x:Key="TotalStock">Total Stock</system:String>
+    <system:String x:Key="StockInToday">Stock In Today</system:String>
+    <system:String x:Key="StockOutToday">Stock Out Today</system:String>
+    <system:String x:Key="LowStockAlerts">Low Stock Alerts</system:String>
+    <system:String x:Key="RecentActivity">Recent Activity</system:String>
+    <system:String x:Key="QuickActions">Quick Actions</system:String>
+    
+    <!-- Inventory -->
+    <system:String x:Key="InventoryTitle">Inventory Management</system:String>
+    <system:String x:Key="ProductName">Product Name</system:String>
+    <system:String x:Key="SKU">SKU</system:String>
+    <system:String x:Key="Category">Category</system:String>
+    <system:String x:Key="Quantity">Quantity</system:String>
+    <system:String x:Key="Unit">Unit</system:String>
+    <system:String x:Key="Location">Location</system:String>
+    <system:String x:Key="ExpiryDate">Expiry Date</system:String>
+    <system:String x:Key="LastUpdated">Last Updated</system:String>
+    <system:String x:Key="Status">Status</system:String>
+    <system:String x:Key="InStock">In Stock</system:String>
+    <system:String x:Key="LowStock">Low Stock</system:String>
+    <system:String x:Key="OutOfStock">Out of Stock</system:String>
+    <system:String x:Key="Expired">Expired</system:String>
+    <system:String x:Key="AddProduct">Add Product</system:String>
+    <system:String x:Key="EditProduct">Edit Product</system:String>
+    <system:String x:Key="DeleteProduct">Delete Product</system:String>
+    <system:String x:Key="DeleteConfirm">Are you sure you want to delete?</system:String>
+    <system:String x:Key="ProductDeleted">Product has been deleted</system:String>
+    <system:String x:Key="ProductSaved">Product has been saved</system:String>
+    
+    <!-- Theme -->
+    <system:String x:Key="Theme">Theme</system:String>
+    <system:String x:Key="LightMode">Light Mode</system:String>
+    <system:String x:Key="DarkMode">Dark Mode</system:String>
+    
+    <!-- Errors -->
+    <system:String x:Key="NetworkError">Network connection error</system:String>
+    <system:String x:Key="ServerError">Server error</system:String>
+    <system:String x:Key="UnknownError">An unknown error occurred</system:String>
+    <system:String x:Key="SessionExpired">Session has expired</system:String>
+    <system:String x:Key="PleaseLoginAgain">Please login again</system:String>
+
+</ResourceDictionary>

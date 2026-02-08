@@ -2,8 +2,29 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:GenHubApp"
-             StartupUri="MainWindow.xaml">
+             xmlns:converters="clr-namespace:GenHubApp.Converters"
+             StartupUri="Auth.xaml">
     <Application.Resources>
-         
+        <ResourceDictionary>
+            <!-- Converters -->
+            <converters:BoolToVisibilityConverter x:Key="BoolToVisibility"/>
+            <converters:BoolToHiddenConverter x:Key="BoolToHidden"/>
+            <converters:InverseBoolConverter x:Key="InverseBool"/>
+            <converters:StringNotEmptyConverter x:Key="StringNotEmpty"/>
+            <converters:StringToVisibilityConverter x:Key="StringToVisibility"/>
+            <converters:EqualityConverter x:Key="Equality"/>
+            <converters:StatusToBrushConverter x:Key="StatusToBrush"/>
+
+            <ResourceDictionary.MergedDictionaries>
+                <!-- Control Styles -->
+                <ResourceDictionary Source="Resources/Styles/Controls.xaml"/>
+                
+                <!-- Default Theme (Light) -->
+                <ResourceDictionary Source="Resources/Themes/LightTheme.xaml"/>
+                
+                <!-- Default Language (Vietnamese) -->
+                <ResourceDictionary Source="Resources/Languages/vi-VN.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
     </Application.Resources>
 </Application>

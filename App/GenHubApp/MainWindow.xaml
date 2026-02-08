@@ -1,0 +1,610 @@
+<Window x:Class="GenHubApp.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:GenHubApp"
+        mc:Ignorable="d"
+        Title="{DynamicResource AppName}" 
+        Height="800" Width="1280"
+        MinHeight="600" MinWidth="900"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource BackgroundBrush}">
+    
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <!-- Sidebar -->
+            <ColumnDefinition x:Name="SidebarColumn" Width="260"/>
+            <!-- Main Content -->
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        
+        <!-- Sidebar -->
+        <Border Grid.Column="0" 
+                Background="{DynamicResource SidebarBgBrush}"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="0,0,1,0">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                
+                <!-- Header / Logo -->
+                <Border Grid.Row="0" Padding="20,24">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        
+                        <StackPanel Grid.Column="0" Orientation="Horizontal">
+                            <Border Width="40" Height="40" 
+                                    CornerRadius="10"
+                                    Background="{DynamicResource PrimaryBrush}"
+                                    Margin="0,0,12,0">
+                                <TextBlock Text="G" 
+                                           FontSize="20" 
+                                           FontWeight="Bold"
+                                           Foreground="White"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"/>
+                            </Border>
+                            <TextBlock x:Name="AppTitle"
+                                       Text="{DynamicResource AppName}" 
+                                       Style="{StaticResource HeadingMedium}"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+                        
+                        <!-- Collapse Button -->
+                        <Button Grid.Column="1" 
+                                x:Name="CollapseButton"
+                                Style="{StaticResource IconButton}"
+                                Click="CollapseSidebar_Click"
+                                Width="32" Height="32">
+                            <TextBlock x:Name="CollapseIcon" Text="◀" FontSize="12"/>
+                        </Button>
+                    </Grid>
+                </Border>
+                
+                <!-- Navigation Menu -->
+                <ScrollViewer Grid.Row="1" 
+                              VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel Margin="0,8">
+                        
+                        <!-- Main Section -->
+                        <TextBlock Text="MENU" 
+                                   x:Name="MenuLabel1"
+                                   Style="{StaticResource SmallText}"
+                                   FontWeight="SemiBold"
+                                   Margin="24,0,0,12"
+                                   Opacity="0.6"/>
+                        
+                        <RadioButton x:Name="NavDashboard"
+                                     Style="{StaticResource SidebarMenuItem}"
+                                     IsChecked="True"
+                                     Checked="Nav_Checked"
+                                     Tag="Dashboard">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="📊" FontSize="16" Margin="0,0,12,0"/>
+                                <TextBlock x:Name="NavDashboardText" 
+                                           Text="{DynamicResource Dashboard}" 
+                                           VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </RadioButton>
+                        
+                        <RadioButton x:Name="NavInventory"
+                                     Style="{StaticResource SidebarMenuItem}"
+                                     Checked="Nav_Checked"
+                                     Tag="Inventory">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="📦" FontSize="16" Margin="0,0,12,0"/>
+                                <TextBlock x:Name="NavInventoryText" 
+                                           Text="{DynamicResource Inventory}" 
+                                           VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </RadioButton>
+                        
+                        <RadioButton x:Name="NavProducts"
+                                     Style="{StaticResource SidebarMenuItem}"
+                                     Checked="Nav_Checked"
+                                     Tag="Products">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="🏷️" FontSize="16" Margin="0,0,12,0"/>
+                                <TextBlock x:Name="NavProductsText" 
+                                           Text="{DynamicResource Products}" 
+                                           VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </RadioButton>
+                        
+                        <!-- Settings Section -->
+                        <TextBlock Text="SETTINGS" 
+                                   x:Name="MenuLabel2"
+                                   Style="{StaticResource SmallText}"
+                                   FontWeight="SemiBold"
+                                   Margin="24,24,0,12"
+                                   Opacity="0.6"/>
+                        
+                        <RadioButton x:Name="NavProfile"
+                                     Style="{StaticResource SidebarMenuItem}"
+                                     Checked="Nav_Checked"
+                                     Tag="Profile">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="👤" FontSize="16" Margin="0,0,12,0"/>
+                                <TextBlock x:Name="NavProfileText" 
+                                           Text="{DynamicResource Profile}" 
+                                           VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </RadioButton>
+                        
+                        <RadioButton x:Name="NavSecurity"
+                                     Style="{StaticResource SidebarMenuItem}"
+                                     Checked="Nav_Checked"
+                                     Tag="Security">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="🔒" FontSize="16" Margin="0,0,12,0"/>
+                                <TextBlock x:Name="NavSecurityText" 
+                                           Text="{DynamicResource Security}" 
+                                           VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </RadioButton>
+                        
+                    </StackPanel>
+                </ScrollViewer>
+                
+                <!-- User Section -->
+                <Border Grid.Row="2" 
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="0,1,0,0"
+                        Padding="16">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        
+                        <!-- Theme & Language Toggles -->
+                        <StackPanel Grid.Row="0" 
+                                    x:Name="SettingsPanel"
+                                    Orientation="Horizontal" 
+                                    Margin="0,0,0,16">
+                            <ToggleButton x:Name="ThemeToggle"
+                                          Style="{StaticResource ToggleSwitch}"
+                                          IsChecked="{Binding Source={x:Static local:ThemeServiceProxy.IsDarkMode}, Mode=OneWay}"
+                                          Checked="ThemeToggle_Checked"
+                                          Unchecked="ThemeToggle_Unchecked"
+                                          Margin="0,0,12,0"/>
+                            <TextBlock x:Name="ThemeLabel" 
+                                       Text="🌙" 
+                                       FontSize="16"
+                                       VerticalAlignment="Center"
+                                       Margin="0,0,24,0"/>
+                            
+                            <Button x:Name="LanguageButton"
+                                    Style="{StaticResource SecondaryButton}"
+                                    Padding="8,4"
+                                    Click="LanguageToggle_Click">
+                                <TextBlock x:Name="LanguageLabel" Text="VI"/>
+                            </Button>
+                        </StackPanel>
+                        
+                        <!-- User Info & Logout -->
+                        <Grid Grid.Row="1">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            
+                            <!-- Avatar -->
+                            <Border Grid.Column="0"
+                                    Width="40" Height="40"
+                                    CornerRadius="20"
+                                    Background="{DynamicResource PrimaryLightBrush}"
+                                    Margin="0,0,12,0">
+                                <TextBlock x:Name="UserInitial"
+                                           Text="U"
+                                           FontWeight="Bold"
+                                           Foreground="White"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"/>
+                            </Border>
+                            
+                            <!-- User Name -->
+                            <StackPanel Grid.Column="1" 
+                                        x:Name="UserInfoPanel"
+                                        VerticalAlignment="Center">
+                                <TextBlock x:Name="UserName"
+                                           Text="User"
+                                           Style="{StaticResource BodyText}"
+                                           FontWeight="SemiBold"/>
+                                <TextBlock x:Name="UserEmail"
+                                           Text="user@example.com"
+                                           Style="{StaticResource SmallText}"/>
+                            </StackPanel>
+                            
+                            <!-- Logout Button -->
+                            <Button Grid.Column="2"
+                                    x:Name="LogoutButton"
+                                    Style="{StaticResource IconButton}"
+                                    ToolTip="{DynamicResource Logout}"
+                                    Click="Logout_Click">
+                                <TextBlock Text="🚪" FontSize="16"/>
+                            </Button>
+                        </Grid>
+                    </Grid>
+                </Border>
+            </Grid>
+        </Border>
+        
+        <!-- Main Content Area -->
+        <Border Grid.Column="1" Padding="32">
+            <Grid>
+                <!-- Dashboard View -->
+                <Grid x:Name="DashboardView" Visibility="Visible">
+                    <StackPanel>
+                        <TextBlock Text="{DynamicResource DashboardTitle}" 
+                                   Style="{StaticResource HeadingLarge}"
+                                   Margin="0,0,0,24"/>
+                        
+                        <!-- Stats Cards -->
+                        <UniformGrid Rows="1" Margin="0,0,0,24">
+                            <Border Style="{StaticResource Card}" Margin="0,0,16,0">
+                                <StackPanel>
+                                    <TextBlock Text="{DynamicResource TotalProducts}" 
+                                               Style="{StaticResource MutedText}"
+                                               Margin="0,0,0,8"/>
+                                    <TextBlock Text="1,234" 
+                                               Style="{StaticResource HeadingLarge}"
+                                               Foreground="{DynamicResource PrimaryBrush}"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource Card}" Margin="0,0,16,0">
+                                <StackPanel>
+                                    <TextBlock Text="{DynamicResource TotalStock}" 
+                                               Style="{StaticResource MutedText}"
+                                               Margin="0,0,0,8"/>
+                                    <TextBlock Text="45,678" 
+                                               Style="{StaticResource HeadingLarge}"
+                                               Foreground="{DynamicResource SuccessBrush}"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource Card}" Margin="0,0,16,0">
+                                <StackPanel>
+                                    <TextBlock Text="{DynamicResource StockInToday}" 
+                                               Style="{StaticResource MutedText}"
+                                               Margin="0,0,0,8"/>
+                                    <TextBlock Text="+523" 
+                                               Style="{StaticResource HeadingLarge}"
+                                               Foreground="{DynamicResource InfoBrush}"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource Card}">
+                                <StackPanel>
+                                    <TextBlock Text="{DynamicResource StockOutToday}" 
+                                               Style="{StaticResource MutedText}"
+                                               Margin="0,0,0,8"/>
+                                    <TextBlock Text="-287" 
+                                               Style="{StaticResource HeadingLarge}"
+                                               Foreground="{DynamicResource WarningBrush}"/>
+                                </StackPanel>
+                            </Border>
+                        </UniformGrid>
+                        
+                        <!-- Low Stock Alerts -->
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Text="{DynamicResource LowStockAlerts}" 
+                                           Style="{StaticResource HeadingSmall}"
+                                           Margin="0,0,0,16"/>
+                                
+                                <StackPanel>
+                                    <Border Background="{DynamicResource BackgroundBrush}" 
+                                            CornerRadius="8" 
+                                            Padding="16"
+                                            Margin="0,0,0,8">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel Grid.Column="0">
+                                                <TextBlock Text="Sản phẩm A" Style="{StaticResource BodyText}"/>
+                                                <TextBlock Text="SKU: SP001" Style="{StaticResource SmallText}"/>
+                                            </StackPanel>
+                                            <Border Grid.Column="1" 
+                                                    Background="#FEE2E2" 
+                                                    CornerRadius="4" 
+                                                    Padding="8,4">
+                                                <TextBlock Text="5 còn lại" 
+                                                           Foreground="#EF4444"
+                                                           FontWeight="SemiBold"
+                                                           FontSize="12"/>
+                                            </Border>
+                                        </Grid>
+                                    </Border>
+                                    
+                                    <Border Background="{DynamicResource BackgroundBrush}" 
+                                            CornerRadius="8" 
+                                            Padding="16"
+                                            Margin="0,0,0,8">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel Grid.Column="0">
+                                                <TextBlock Text="Sản phẩm B" Style="{StaticResource BodyText}"/>
+                                                <TextBlock Text="SKU: SP002" Style="{StaticResource SmallText}"/>
+                                            </StackPanel>
+                                            <Border Grid.Column="1" 
+                                                    Background="#FEF3C7" 
+                                                    CornerRadius="4" 
+                                                    Padding="8,4">
+                                                <TextBlock Text="12 còn lại" 
+                                                           Foreground="#F59E0B"
+                                                           FontWeight="SemiBold"
+                                                           FontSize="12"/>
+                                            </Border>
+                                        </Grid>
+                                    </Border>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Grid>
+                
+                <!-- Inventory View -->
+                <Grid x:Name="InventoryView" Visibility="Collapsed">
+                    <StackPanel>
+                        <Grid Margin="0,0,0,24">
+                            <TextBlock Text="{DynamicResource InventoryTitle}" 
+                                       Style="{StaticResource HeadingLarge}"/>
+                            <Button Content="{DynamicResource AddProduct}"
+                                    Style="{StaticResource PrimaryButton}"
+                                    HorizontalAlignment="Right"/>
+                        </Grid>
+                        
+                        <Border Style="{StaticResource Card}">
+                            <DataGrid Style="{StaticResource ModernDataGrid}"
+                                      ItemsSource="{Binding DemoProducts}"
+                                      AutoGenerateColumns="False"
+                                      MinHeight="400">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="SKU" Binding="{Binding SKU}" Width="100"/>
+                                    <DataGridTextColumn Header="Tên sản phẩm" Binding="{Binding Name}" Width="*"/>
+                                    <DataGridTextColumn Header="Danh mục" Binding="{Binding Category}" Width="120"/>
+                                    <DataGridTextColumn Header="Số lượng" Binding="{Binding Quantity}" Width="80"/>
+                                    <DataGridTextColumn Header="Vị trí" Binding="{Binding Location}" Width="100"/>
+                                    <DataGridTextColumn Header="Trạng thái" Binding="{Binding Status}" Width="100"/>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </Border>
+                    </StackPanel>
+                </Grid>
+                
+                <!-- Products View -->
+                <Grid x:Name="ProductsView" Visibility="Collapsed">
+                    <StackPanel>
+                        <TextBlock Text="{DynamicResource Products}" 
+                                   Style="{StaticResource HeadingLarge}"
+                                   Margin="0,0,0,24"/>
+                        
+                        <Border Style="{StaticResource Card}">
+                            <TextBlock Text="Products Management Coming Soon" 
+                                       Style="{StaticResource MutedText}"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       Margin="0,100"/>
+                        </Border>
+                    </StackPanel>
+                </Grid>
+                
+                <!-- Profile View -->
+                <Grid x:Name="ProfileView" Visibility="Collapsed">
+                    <StackPanel MaxWidth="600" HorizontalAlignment="Left">
+                        <TextBlock Text="{DynamicResource ProfileTitle}" 
+                                   Style="{StaticResource HeadingLarge}"
+                                   Margin="0,0,0,8"/>
+                        <TextBlock Text="{DynamicResource ProfileSubtitle}" 
+                                   Style="{StaticResource MutedText}"
+                                   Margin="0,0,0,32"/>
+                        
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <!-- Name -->
+                                <TextBlock Text="{DynamicResource Name}" 
+                                           Style="{StaticResource InputLabel}"/>
+                                <TextBox x:Name="ProfileNameInput"
+                                         Style="{StaticResource ModernTextBox}"
+                                         Margin="0,0,0,20"/>
+                                
+                                <!-- Email (readonly) -->
+                                <TextBlock Text="{DynamicResource Email}" 
+                                           Style="{StaticResource InputLabel}"/>
+                                <TextBox x:Name="ProfileEmailInput"
+                                         Style="{StaticResource ModernTextBox}"
+                                         IsReadOnly="True"
+                                         Margin="0,0,0,20"/>
+                                
+                                <!-- Language -->
+                                <TextBlock Text="{DynamicResource Language}" 
+                                           Style="{StaticResource InputLabel}"/>
+                                <ComboBox x:Name="ProfileLanguageCombo"
+                                          Margin="0,0,0,24">
+                                    <ComboBoxItem Content="Tiếng Việt" Tag="vi-VN"/>
+                                    <ComboBoxItem Content="English" Tag="en-US"/>
+                                </ComboBox>
+                                
+                                <!-- Save Button -->
+                                <Button Content="{DynamicResource UpdateProfile}"
+                                        Style="{StaticResource PrimaryButton}"
+                                        Click="SaveProfile_Click"
+                                        HorizontalAlignment="Left"/>
+                            </StackPanel>
+                        </Border>
+                        
+                        <!-- Change Password Section -->
+                        <Border Style="{StaticResource Card}" Margin="0,24,0,0">
+                            <StackPanel>
+                                <TextBlock Text="{DynamicResource ChangePassword}" 
+                                           Style="{StaticResource HeadingSmall}"
+                                           Margin="0,0,0,16"/>
+                                
+                                <TextBlock Text="{DynamicResource CurrentPassword}" 
+                                           Style="{StaticResource InputLabel}"/>
+                                <PasswordBox x:Name="CurrentPasswordInput"
+                                             Style="{StaticResource ModernPasswordBox}"
+                                             Margin="0,0,0,16"/>
+                                
+                                <TextBlock Text="{DynamicResource NewPassword}" 
+                                           Style="{StaticResource InputLabel}"/>
+                                <PasswordBox x:Name="NewPasswordInput"
+                                             Style="{StaticResource ModernPasswordBox}"
+                                             Margin="0,0,0,16"/>
+                                
+                                <TextBlock Text="{DynamicResource ConfirmPassword}" 
+                                           Style="{StaticResource InputLabel}"/>
+                                <PasswordBox x:Name="ConfirmPasswordInput"
+                                             Style="{StaticResource ModernPasswordBox}"
+                                             Margin="0,0,0,24"/>
+                                
+                                <Button Content="{DynamicResource ChangePassword}"
+                                        Style="{StaticResource PrimaryButton}"
+                                        Click="ChangePassword_Click"
+                                        HorizontalAlignment="Left"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Grid>
+                
+                <!-- Security View -->
+                <Grid x:Name="SecurityView" Visibility="Collapsed">
+                    <StackPanel MaxWidth="600" HorizontalAlignment="Left">
+                        <TextBlock Text="{DynamicResource SecurityTitle}" 
+                                   Style="{StaticResource HeadingLarge}"
+                                   Margin="0,0,0,8"/>
+                        <TextBlock Text="{DynamicResource SecuritySubtitle}" 
+                                   Style="{StaticResource MutedText}"
+                                   Margin="0,0,0,32"/>
+                        
+                        <!-- 2FA Section -->
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <Grid Margin="0,0,0,16">
+                                    <StackPanel>
+                                        <TextBlock Text="{DynamicResource TwoFactorAuth}" 
+                                                   Style="{StaticResource HeadingSmall}"/>
+                                        <TextBlock x:Name="TwoFactorStatusText"
+                                                   Text="{DynamicResource TwoFactorDisabled}" 
+                                                   Style="{StaticResource MutedText}"
+                                                   Margin="0,4,0,0"/>
+                                    </StackPanel>
+                                    
+                                    <Button x:Name="Toggle2FAButton"
+                                            Content="{DynamicResource Enable2FA}"
+                                            Style="{StaticResource PrimaryButton}"
+                                            HorizontalAlignment="Right"
+                                            Click="Toggle2FA_Click"/>
+                                </Grid>
+                                
+                                <!-- 2FA Setup Panel (Hidden by default) -->
+                                <Border x:Name="Setup2FAPanel"
+                                        Background="{DynamicResource BackgroundBrush}"
+                                        CornerRadius="8"
+                                        Padding="20"
+                                        Visibility="Collapsed"
+                                        Margin="0,16,0,0">
+                                    <StackPanel>
+                                        <TextBlock Text="{DynamicResource Setup2FAStep1}" 
+                                                   Style="{StaticResource HeadingSmall}"
+                                                   Margin="0,0,0,8"/>
+                                        <TextBlock Text="{DynamicResource Setup2FAStep1Desc}" 
+                                                   Style="{StaticResource MutedText}"
+                                                   TextWrapping="Wrap"
+                                                   Margin="0,0,0,16"/>
+                                        
+                                        <!-- QR Code Placeholder -->
+                                        <Border Width="200" Height="200"
+                                                Background="White"
+                                                CornerRadius="8"
+                                                HorizontalAlignment="Left"
+                                                Margin="0,0,0,16">
+                                            <TextBlock Text="[QR Code]"
+                                                       HorizontalAlignment="Center"
+                                                       VerticalAlignment="Center"
+                                                       Foreground="Gray"/>
+                                        </Border>
+                                        
+                                        <TextBlock Text="{DynamicResource Setup2FAStep2}" 
+                                                   Style="{StaticResource HeadingSmall}"
+                                                   Margin="0,16,0,8"/>
+                                        <TextBlock Text="{DynamicResource Setup2FAStep2Desc}" 
+                                                   Style="{StaticResource MutedText}"
+                                                   TextWrapping="Wrap"
+                                                   Margin="0,0,0,16"/>
+                                        
+                                        <TextBox x:Name="Setup2FACodeInput"
+                                                 Style="{StaticResource ModernTextBox}"
+                                                 MaxLength="6"
+                                                 FontSize="20"
+                                                 TextAlignment="Center"
+                                                 Width="200"
+                                                 HorizontalAlignment="Left"
+                                                 Margin="0,0,0,16"/>
+                                        
+                                        <Button Content="{DynamicResource VerifyButton}"
+                                                Style="{StaticResource PrimaryButton}"
+                                                HorizontalAlignment="Left"
+                                                Click="Verify2FASetup_Click"/>
+                                    </StackPanel>
+                                </Border>
+                                
+                                <!-- Backup Codes Panel (Hidden by default) -->
+                                <Border x:Name="BackupCodesPanel"
+                                        Background="{DynamicResource BackgroundBrush}"
+                                        CornerRadius="8"
+                                        Padding="20"
+                                        Visibility="Collapsed"
+                                        Margin="0,16,0,0">
+                                    <StackPanel>
+                                        <TextBlock Text="{DynamicResource BackupCodesTitle}" 
+                                                   Style="{StaticResource HeadingSmall}"
+                                                   Margin="0,0,0,8"/>
+                                        <TextBlock Text="{DynamicResource BackupCodesDesc}" 
+                                                   Style="{StaticResource MutedText}"
+                                                   TextWrapping="Wrap"
+                                                   Margin="0,0,0,16"/>
+                                        
+                                        <Border Background="White"
+                                                CornerRadius="8"
+                                                Padding="16"
+                                                Margin="0,0,0,16">
+                                            <TextBlock x:Name="BackupCodesText"
+                                                       Text="XXXXXXXX&#x0a;XXXXXXXX&#x0a;XXXXXXXX&#x0a;XXXXXXXX&#x0a;XXXXXXXX"
+                                                       FontFamily="Consolas"
+                                                       FontSize="14"
+                                                       LineHeight="24"/>
+                                        </Border>
+                                        
+                                        <StackPanel Orientation="Horizontal">
+                                            <Button Content="{DynamicResource DownloadCodes}"
+                                                    Style="{StaticResource SecondaryButton}"
+                                                    Margin="0,0,12,0"/>
+                                            <Button Content="{DynamicResource RegenerateBackupCodes}"
+                                                    Style="{StaticResource SecondaryButton}"
+                                                    Click="RegenerateBackupCodes_Click"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Grid>
+                
+            </Grid>
+        </Border>
+    </Grid>
+</Window>
