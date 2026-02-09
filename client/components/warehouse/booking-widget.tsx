@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -43,6 +43,7 @@ import { AddonResponse } from '@/types/addon/addon.type';
 import { Insurance } from '@/types/insurance/Insurance.types';
 import { CouponService } from '@/services/coupons/coupon.service';
 import { authStorage } from '@/services/auth/auth-storage.service';
+import { publicQuotationService, QuotationApiResponse } from '@/services/public-quotation/public-quotation.service';
 
 interface BookingWidgetProps {
     warehouseId?: string;
@@ -86,6 +87,12 @@ export function BookingWidget({ warehouseId, price, unit = "tháng" }: BookingWi
     const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number } | null>(null);
     const [couponError, setCouponError] = useState("");
     const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
+
+    // API Quotation State
+    const [apiQuotation, setApiQuotation] = useState<QuotationApiResponse | null>(null);
+    const [isCalculatingQuotation, setIsCalculatingQuotation] = useState(false);
+    const [quotationError, setQuotationError] = useState<string | null>(null);
+    const quotationDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
     const handleBooking = () => {
         const params = new URLSearchParams();
@@ -203,8 +210,8 @@ export function BookingWidget({ warehouseId, price, unit = "tháng" }: BookingWi
         return insurances.find(i => i.id === selectedInsuranceId);
     }, [insurances, selectedInsuranceId]);
 
-    // Calculate quotation
-    const quotation = useMemo((): QuotationBreakdown => {
+    // Calculate quotation (client-side fallback)
+    const clientSideQuotation = useMemo((): QuotationBreakdown => {
         // Base price calculation
         let basePrice = rentalType === "whole" ? price : 0;
         if (rentalType === "row" && selectedRowIds.length > 0) {
@@ -268,6 +275,76 @@ export function BookingWidget({ warehouseId, price, unit = "tháng" }: BookingWi
             grandTotal,
         };
     }, [price, rentalType, selectedRowIds, rows, selectedTier, durationMonths, selectedAddons, addons, selectedInsurance, appliedCoupon]);
+
+    // Call API for server-side quotation calculation (debounced)
+    useEffect(() => {
+        // Clear previous debounce
+        if (quotationDebounceRef.current) {
+            clearTimeout(quotationDebounceRef.current);
+        }
+
+        // Skip if no warehouse or duration selected
+        if (!warehouseId || !selectedDurationId || !date) {
+            return;
+        }
+
+        // Skip if rental_type is row but no rows selected
+        if (rentalType === 'row' && selectedRowIds.length === 0) {
+            return;
+        }
+
+        quotationDebounceRef.current = setTimeout(async () => {
+            setIsCalculatingQuotation(true);
+            setQuotationError(null);
+
+            try {
+                const result = await publicQuotationService.calculateQuotation({
+                    warehouse_template_id: warehouseId,
+                    rental_type: rentalType,
+                    duration_months: durationMonths,
+                    start_date: date.toISOString().split('T')[0],
+                    row_ids: rentalType === 'row' ? selectedRowIds : undefined,
+                    selected_amenities: selectedAddons.length > 0 ? selectedAddons : undefined,
+                    insurance_id: selectedInsuranceId || undefined,
+                    coupon_code: appliedCoupon?.code || undefined,
+                });
+
+                setApiQuotation(result);
+            } catch (error) {
+                console.warn('API quotation failed, using client-side calculation:', error);
+                setQuotationError('Đang sử dụng tính toán cục bộ');
+                setApiQuotation(null);
+            } finally {
+                setIsCalculatingQuotation(false);
+            }
+        }, 500);
+
+        return () => {
+            if (quotationDebounceRef.current) {
+                clearTimeout(quotationDebounceRef.current);
+            }
+        };
+    }, [warehouseId, rentalType, durationMonths, date, selectedRowIds, selectedAddons, selectedInsuranceId, appliedCoupon, selectedDurationId]);
+
+    // Use API quotation if available, otherwise fall back to client-side
+    const quotation = useMemo((): QuotationBreakdown => {
+        if (apiQuotation) {
+            return {
+                basePrice: apiQuotation.base_price_per_month,
+                durationMonths: apiQuotation.duration_months,
+                durationDiscountPercent: apiQuotation.duration_discount_percent,
+                durationDiscountAmount: (apiQuotation.base_price_per_month * apiQuotation.duration_months) * (apiQuotation.duration_discount_percent / 100),
+                addonsCost: 0, // API includes this in subtotal
+                insuranceCost: 0, // API includes this in subtotal
+                managementFee: 0, // API includes this in subtotal
+                serviceFee: apiQuotation.service_fee,
+                couponDiscount: apiQuotation.coupon_discount,
+                subtotal: apiQuotation.subtotal,
+                grandTotal: apiQuotation.grand_total,
+            };
+        }
+        return clientSideQuotation;
+    }, [apiQuotation, clientSideQuotation]);
 
     // Handle coupon validation
     const handleApplyCoupon = useCallback(async () => {
@@ -390,13 +467,22 @@ export function BookingWidget({ warehouseId, price, unit = "tháng" }: BookingWi
                 {/* Price Display */}
                 <div>
                     <div className="flex items-baseline gap-1 mb-1">
-                        <span className="text-3xl font-black text-[#0F766E] tracking-tight">
-                            {quotation.grandTotal >= 1000000000
-                                ? `${(quotation.grandTotal / 1000000000).toFixed(2).replace('.', ',')} Tỷ`
-                                : `${Math.round(quotation.grandTotal).toLocaleString('vi-VN')}₫`
-                            }
-                        </span>
-                        <span className="text-slate-500 font-medium">/ tổng</span>
+                        {isCalculatingQuotation ? (
+                            <div className="flex items-center gap-2">
+                                <Skeleton className="h-9 w-40" />
+                                <span className="text-xs text-slate-400 animate-pulse">Đang tính...</span>
+                            </div>
+                        ) : (
+                            <>
+                                <span className="text-3xl font-black text-[#0F766E] tracking-tight">
+                                    {quotation.grandTotal >= 1000000000
+                                        ? `${(quotation.grandTotal / 1000000000).toFixed(2).replace('.', ',')} Tỷ`
+                                        : `${Math.round(quotation.grandTotal).toLocaleString('vi-VN')}₫`
+                                    }
+                                </span>
+                                <span className="text-slate-500 font-medium">/ tổng</span>
+                            </>
+                        )}
                     </div>
                     <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-sm text-slate-500">

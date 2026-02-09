@@ -17,6 +17,7 @@ import { PaymentMethodSelector } from '@/components/checkout/PaymentMethodSelect
 import { OrderConfirmation } from '@/components/checkout/OrderConfirmation';
 import { ContractSignatureStep } from '@/components/checkout/ContractSignatureStep';
 import { QuotationSummary } from '@/components/warehouse/QuotationSummary';
+import { CouponDrawer } from '@/components/checkout/CouponDrawer';
 import { CheckoutSession, PaymentMethod } from '@/types/checkout/checkout.type';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { Button } from '@/components/ui/button';
@@ -68,6 +69,10 @@ function CheckoutContent() {
 
     const [hasExistingOrg, setHasExistingOrg] = useState(false);
     const [initializing, setInitializing] = useState(true);
+
+    // Coupon state
+    const [couponDrawerOpen, setCouponDrawerOpen] = useState(false);
+    const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number } | null>(null);
 
     // Initial Data Fetch (Organization)
     useEffect(() => {
@@ -137,6 +142,35 @@ function CheckoutContent() {
         // Proceed to confirmation
         nextStep();
     };
+
+    // Handle coupon applied
+    const handleCouponApplied = (coupon: { code: string; discount: number } | null) => {
+        setAppliedCoupon(coupon);
+        if (coupon) {
+            // Update session with coupon info
+            setSession({
+                ...session,
+                coupon_code: coupon.code,
+                quotation: session.quotation ? {
+                    ...session.quotation,
+                    couponDiscount: coupon.discount,
+                    grandTotal: Math.max(0, session.quotation.grandTotal - coupon.discount + (session.quotation.couponDiscount || 0))
+                } : undefined
+            });
+        } else {
+            // Remove coupon from session
+            setSession({
+                ...session,
+                coupon_code: undefined,
+                quotation: session.quotation ? {
+                    ...session.quotation,
+                    couponDiscount: 0,
+                    grandTotal: session.quotation.grandTotal + (session.quotation.couponDiscount || 0)
+                } : undefined
+            });
+        }
+    };
+
 
     // Handle order submission
     const handleSubmitOrder = async () => {
@@ -305,6 +339,8 @@ function CheckoutContent() {
                                     warehouseName={session.warehouse_name}
                                     selectedAddons={session.addon_details as any}
                                     selectedInsurance={session.insurance_details as any}
+                                    appliedCoupon={appliedCoupon}
+                                    onCouponClick={() => setCouponDrawerOpen(true)}
                                 />
                             )}
 
@@ -323,6 +359,22 @@ function CheckoutContent() {
                                     </p>
                                 </div>
                             </div>
+
+
+
+                            {/* Coupon Drawer */}
+                            <CouponDrawer
+                                open={couponDrawerOpen}
+                                onOpenChange={setCouponDrawerOpen}
+                                onCouponApplied={handleCouponApplied}
+                                appliedCoupon={appliedCoupon}
+                                warehouseId={session.warehouse_template_id}
+                                rentalType={session.rental_type}
+                                rowIds={session.row_template_ids}
+                                addonIds={session.addon_ids}
+                                durationTierId={session.duration_tier_id}
+                                orderAmount={session.quotation?.grandTotal || 0}
+                            />
                         </div>
                     </div>
                 </div>

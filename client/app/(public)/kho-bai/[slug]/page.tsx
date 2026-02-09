@@ -36,6 +36,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { WarehouseBookingPanel } from '@/components/warehouse/WarehouseBookingPanel';
 
 const PRIMARY_COLOR = "#0F766E"; // GenHub Teal
 
@@ -368,7 +369,7 @@ export default function WarehouseDynamicPage() {
 
                     {/* RIGHT COLUMN: Booking Widget (Sticky) */}
                     <div className="lg:col-span-4 relative">
-                        <BookingWidget price={property.price} warehouseId={property.id.toString()} />
+                        <WarehouseBookingPanel price={property.price} warehouseId={property.id.toString()} />
                     </div>
 
                 </div >
