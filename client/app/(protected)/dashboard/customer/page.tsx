@@ -62,7 +62,7 @@ export default function CustomerDashboardOverview() {
         const fetchData = async () => {
             try {
                 const token = authStorage.getAccessToken();
-                const user = authStorage.getUser();
+                const user = await authStorage.getUser();
                 if (!token) return;
                 const balanceRes = user?.organization_id
                     ? await accountBalanceService.getOrganizationBalance(token, user.organization_id).catch(() => ({ balance: 0 }))

@@ -57,11 +57,19 @@ export default function FinancePage() {
 
     const [date, setDate] = useState<RangeValue | null>(null);
 
-    const user = authStorage.getUser();
-    // Assuming organization_id is in the token payload. 
-    // If not, we might need to fetch profile. 
-    // Usually payload has: sub (userId), email, roles, organization_id (if part of one)
-    const orgId = user?.organization_id;
+    const [orgId, setOrgId] = useState<string | null>(null);
+
+    useEffect(() => {
+        const initUser = async () => {
+            const user = await authStorage.getUser();
+            if (user?.organization_id) {
+                setOrgId(user.organization_id);
+            } else {
+                setLoading(false);
+            }
+        };
+        initUser();
+    }, []);
 
     const fetchData = async () => {
         try {
@@ -136,7 +144,7 @@ export default function FinancePage() {
     const formatCurrency = (val: number) =>
         new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val);
 
-    if (orgId) {
+    if (!loading && !orgId) {
         return <div className="p-8 text-center text-muted-foreground">Bạn chưa thuộc về tổ chức nào.</div>;
     }
 
@@ -168,7 +176,7 @@ export default function FinancePage() {
                                         open={isDepositOpen}
                                         onOpenChange={setIsDepositOpen}
                                         onSuccess={fetchData}
-                                        orgId={orgId}
+                                        orgId={orgId!}
                                         currentBalance={balance?.balance || 0}
                                     />
                                     <Button

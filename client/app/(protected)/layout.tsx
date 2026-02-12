@@ -6,6 +6,7 @@ import { AuthService } from "@/services/auth/auth.service";
 import { Loader2 } from "lucide-react";
 import { ProfileModalProvider } from "@/contexts/ProfileModalContext";
 import { ProfileModalWrapper } from "@/components/profile/profile-modal-wrapper";
+import { QueryProvider } from "@/components/providers/query-provider";
 
 const authService = new AuthService();
 
@@ -28,18 +29,20 @@ export default function ProtectedLayout({ children, modal }: { children: React.R
     }, [pathname, router]);
 
     return (
-        <ProfileModalProvider>
-            {!isAuthorized ? (
-                <div className="h-screen w-full flex items-center justify-center bg-background">
-                    <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                </div>
-            ) : (
-                <>
-                    {children}
-                    {modal}
-                    <ProfileModalWrapper />
-                </>
-            )}
-        </ProfileModalProvider>
+        <QueryProvider>
+            <ProfileModalProvider>
+                {!isAuthorized ? (
+                    <div className="h-screen w-full flex items-center justify-center bg-background">
+                        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                    </div>
+                ) : (
+                    <>
+                        {children}
+                        {modal}
+                        <ProfileModalWrapper />
+                    </>
+                )}
+            </ProfileModalProvider>
+        </QueryProvider>
     );
 }

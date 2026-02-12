@@ -18,7 +18,8 @@ import { authStorage } from '@/services/auth/auth-storage.service'
 import { useToast } from "@/contexts/ToastContext"
 import Image from 'next/image'
 import { NotificationService } from "@/services/notification/notification.service";
-import type { Notification } from "@/types/notification/notification.type";
+import type { UserNotification, GlobalNotification } from "@/types/notification/notification.type";
+type Notification = UserNotification | GlobalNotification;
 import { organizationService } from "@/services/organization/organization.service";
 import { CheckoutProvider } from '@/components/checkout/CheckoutWizard';
 import { CompanyInfoStep } from '@/components/checkout/CompanyInfoStep';
@@ -123,9 +124,9 @@ export function ProfileDialog({ open = true, onOpenChange }: ProfileDialogProps 
         }
 
         const userNotifsResponse = await notificationService.getNotifications(token);
-        const getGlobalNotifications = await notificationService.globalNotification(token);
+        const getGlobalNotifications = await notificationService.getGlobalNotifications(token);
         const userNotifs = userNotifsResponse?.items || [];
-        setNotifications([...getGlobalNotifications, ...userNotifs]);
+        setNotifications([...(getGlobalNotifications?.items || []), ...userNotifs]);
 
         // Fetch organization if user has one
         if ((data?.user as any)?.organization_id) {

@@ -81,7 +81,7 @@ function CheckoutContent() {
                 const token = authStorage.getAccessToken();
                 if (!token) return;
 
-                const user = authStorage.getUser();
+                const user = await authStorage.getUser();
                 if (user?.organization_id) {
                     const org = await organizationService.getOrganizationById(token, user.organization_id);
                     if (org) {
