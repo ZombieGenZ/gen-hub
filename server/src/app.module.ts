@@ -52,6 +52,7 @@ import { InsuranceModule } from './modules/insurance/insurance.module';
 import { CouponModule } from './modules/coupon/coupon.module';
 import { PublicCouponModule } from './modules/public-coupon/public-coupon.module';
 import { PublicQuotationModule } from './modules/public-quotation/public-quotation.module';
+import { PublicCatalogModule } from './modules/public-catalog/public-catalog.module';
 import { CouponScheduleModule } from './modules/coupon-schedule/coupon-schedule.module';
 import { DatabaseAdminModule } from './modules/database-admin/database-admin.module';
 import { FeatureFlagModule } from './modules/feature-flag/feature-flag.module';
@@ -150,6 +151,9 @@ import { AppDownloadModule } from './modules/app-download/app-download.module';
 
     // Public Quotation (for checkout page)
     PublicQuotationModule,
+
+    // Public Catalog (addons, insurances, rental-duration-tiers for booking widget)
+    PublicCatalogModule,
 
     // Coupon Schedules
     CouponScheduleModule,

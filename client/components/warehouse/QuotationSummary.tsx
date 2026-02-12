@@ -10,6 +10,7 @@ import {
     ShieldCheckIcon,
     CubeIcon,
     ReceiptPercentIcon,
+    TicketIcon,
 } from '@heroicons/react/24/outline';
 import { QuotationBreakdown } from '@/types/booking/booking.type';
 import { AddonResponse } from '@/types/addon/addon.type';
@@ -20,6 +21,7 @@ interface QuotationSummaryProps {
     selectedAddons?: AddonResponse[];
     selectedInsurance?: Insurance | null;
     appliedCoupon?: { code: string; discount: number } | null;
+    onCouponClick?: () => void;
     rentalType?: "whole" | "row";
     warehouseName?: string;
     className?: string;
@@ -35,6 +37,7 @@ export function QuotationSummary({
     selectedAddons = [],
     selectedInsurance,
     appliedCoupon,
+    onCouponClick,
     rentalType = "whole",
     warehouseName,
     className,
@@ -177,20 +180,48 @@ export function QuotationSummary({
                     </span>
                 </div>
 
-                {/* Coupon Discount */}
-                {appliedCoupon && appliedCoupon.discount > 0 && (
-                    <div className="flex justify-between items-center bg-teal-50 rounded-lg px-3 py-2 -mx-1">
+                {/* Coupon Section */}
+                {appliedCoupon && appliedCoupon.discount > 0 ? (
+                    <div
+                        className={cn(
+                            "flex justify-between items-center bg-teal-50 rounded-xl px-4 py-3 -mx-1 border border-teal-100",
+                            onCouponClick && "cursor-pointer hover:bg-teal-100/60 transition-colors"
+                        )}
+                        onClick={onCouponClick}
+                        role={onCouponClick ? "button" : undefined}
+                    >
                         <div className="flex items-center gap-2">
                             <TagIcon className="w-4 h-4 text-teal-600" />
-                            <span className="text-teal-700 text-sm font-medium">
-                                Mã giảm giá: {appliedCoupon.code}
-                            </span>
+                            <div className="flex flex-col">
+                                <span className="text-teal-700 text-sm font-medium">
+                                    Mã: {appliedCoupon.code}
+                                </span>
+                                {onCouponClick && (
+                                    <span className="text-xs text-teal-500">Nhấn để thay đổi</span>
+                                )}
+                            </div>
                         </div>
                         <span className="text-teal-600 font-semibold">
                             -{formatCurrency(appliedCoupon.discount)}
                         </span>
                     </div>
-                )}
+                ) : onCouponClick ? (
+                    <button
+                        onClick={onCouponClick}
+                        className="w-full flex items-center gap-3 px-4 py-3 -mx-1 rounded-xl border border-dashed border-slate-300 hover:border-teal-400 hover:bg-teal-50/50 transition-all group"
+                    >
+                        <TicketIcon className="w-5 h-5 text-slate-400 group-hover:text-teal-600 transition-colors" />
+                        <div className="flex-1 text-left">
+                            <span className="text-sm font-medium text-slate-600 group-hover:text-teal-700 transition-colors">
+                                Mã giảm giá
+                            </span>
+                            <p className="text-xs text-slate-400">Nhấn để chọn hoặc nhập mã</p>
+                        </div>
+                        <span className="text-sm font-medium text-teal-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                            Chọn mã
+                        </span>
+                    </button>
+                ) : null}
 
                 <Separator className="bg-slate-200" />
 

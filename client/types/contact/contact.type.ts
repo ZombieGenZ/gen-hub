@@ -58,3 +58,37 @@ export interface UpdateContactTagRequest {
     color: string
     is_active: boolean
 }
+
+export interface ContactMessage {
+    id: string,
+    conversation_id: string,
+    sender_type: 'CUSTOMER' | 'STAFF' | 'BOT' | 'SYSTEM',
+    sender_name: string,
+    sender_email?: string,
+    content: string,
+    attachments?: string[],
+    is_internal: boolean,
+    created_at: string
+}
+
+export interface ContactConversation extends Contact {
+    message?: string,
+    messages?: ContactMessage[],
+    ai_summary?: string,
+    satisfaction_rating?: number,
+    first_response_at?: string,
+    is_skipped?: boolean,
+    resolved_at?: string,
+    closed_at?: string,
+    assigned_staff_id?: string,
+    assigned_staff_name?: string,
+    customer_avatar?: string
+}
+
+export interface UpdateContactDto {
+    status?: string,
+    priority?: string,
+    assigned_staff_id?: string,
+    tag_ids?: string[],
+    is_skipped?: boolean
+}

@@ -446,8 +446,6 @@ export class RentalDurationTierController {
     },
   })
   @ApiAuthResponses()
-  @ApiBearerAuth('JWT-auth')
-  @UseGuards(JwtAuthGuard)
   @Get('active')
   async findAllActive(): Promise<GetResponse<IRentalDurationTier[]>> {
     const result = await this.service.findAllActive();

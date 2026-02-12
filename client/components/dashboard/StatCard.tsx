@@ -26,8 +26,8 @@ const variantStyles: Record<StatCardVariant, {
 }> = {
     default: {
         bg: "bg-bg-elevated",
-        iconBg: "bg-brand/10",
-        iconColor: "text-brand",
+        iconBg: "bg-primary/10",
+        iconColor: "text-primary",
         textColor: "text-text",
         borderColor: "border-border"
     },
@@ -53,11 +53,11 @@ const variantStyles: Record<StatCardVariant, {
         borderColor: "border-info/10"
     },
     brand: {
-        bg: "bg-brand/5",
-        iconBg: "bg-brand",
+        bg: "bg-primary/5",
+        iconBg: "bg-primary",
         iconColor: "text-white",
-        textColor: "text-brand",
-        borderColor: "border-brand/10",
+        textColor: "text-primary",
+        borderColor: "border-primary/10",
     }
 };
 

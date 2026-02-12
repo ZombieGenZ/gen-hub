@@ -15,6 +15,7 @@ import {
     ShieldCheckIcon,
     ListBulletIcon,
     BellIcon,
+    LifebuoyIcon,
 } from "@heroicons/react/24/outline";
 import { AppSidebar, AppSidebarContent, SidebarGroup } from "./AppSidebar";
 
@@ -26,6 +27,12 @@ const adminNavGroups: SidebarGroup[] = [
             { href: "/dashboard/admin/warehouses", icon: HomeModernIcon, label: "Kho bãi" },
             { href: "/dashboard/admin/contracts", icon: DocumentTextIcon, label: "Hợp đồng" },
             { href: "/dashboard/admin/notifications", icon: BellIcon, label: "Quản lý thông báo" },
+        ]
+    },
+    {
+        title: "Hỗ trợ",
+        items: [
+            { href: "/dashboard/admin/contacts", icon: LifebuoyIcon, label: "Liên hệ" },
         ]
     },
     {
