@@ -5,5 +5,6 @@ export * from './addon.seeder';
 export * from './insurance.seeder';
 export * from './rental.seeder';
 export * from './contact.seeder';
+export * from './contact-list.seeder';
 export * from './category.seeder';
 export * from './warehouse-manager-roles.seeder';

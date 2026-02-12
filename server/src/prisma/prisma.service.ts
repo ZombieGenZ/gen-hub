@@ -32,6 +32,7 @@ import {
   InsuranceSeeder,
   RentalSeeder,
   ContactSeeder,
+  ContactListSeeder,
   CategorySeeder,
   WarehouseManagerRolesSeeder,
 } from './seeders';
@@ -350,6 +351,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         new InsuranceSeeder(this),
         new RentalSeeder(this),
         new ContactSeeder(this),
+        new ContactListSeeder(this),
         new CategorySeeder(this),
         new WarehouseManagerRolesSeeder(this),
       ];
