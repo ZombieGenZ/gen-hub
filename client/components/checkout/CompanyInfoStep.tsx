@@ -11,10 +11,11 @@ import {
     MapPinIcon,
     CheckCircleIcon,
     ExclamationCircleIcon,
-    ArrowPathIcon
+    ArrowPathIcon,
+    EnvelopeIcon
 } from '@heroicons/react/24/outline';
 import { cn } from '@/lib/utils';
-import { validateTaxCode } from '@/lib/validation.utils';
+import { validateTaxCode, validateEmail } from '@/lib/validation.utils';
 
 interface CompanyData {
     name: string;
@@ -22,6 +23,14 @@ interface CompanyData {
     tax_code: string;
     headquarters_address: string;
     invoice_address: string;
+    email_primary_address: string;
+    is_using_google_email: boolean;
+    gmail_pubsub_subscription: string;
+    gmail_pubsub_topic: string;
+    gmail_webhook_secret: string;
+    google_client_id: string;
+    google_client_secret: string;
+    google_refresh_token: string;
 }
 
 interface CompanyInfoStepProps {
@@ -43,6 +52,14 @@ export function CompanyInfoStep({ initialData, onChange, allowEdit = true }: Com
         tax_code: initialData?.tax_code || '',
         headquarters_address: initialData?.headquarters_address || '',
         invoice_address: initialData?.invoice_address || '',
+        email_primary_address: initialData?.email_primary_address || '',
+        is_using_google_email: initialData?.is_using_google_email || false,
+        gmail_pubsub_subscription: initialData?.gmail_pubsub_subscription || '',
+        gmail_pubsub_topic: initialData?.gmail_pubsub_topic || '',
+        gmail_webhook_secret: initialData?.gmail_webhook_secret || '',
+        google_client_id: initialData?.google_client_id || '',
+        google_client_secret: initialData?.google_client_secret || '',
+        google_refresh_token: initialData?.google_refresh_token || '',
     });
 
     const [errors, setErrors] = useState<Partial<Record<keyof CompanyData, string>>>({});
@@ -70,6 +87,12 @@ export function CompanyInfoStep({ initialData, onChange, allowEdit = true }: Com
                     return 'Địa chỉ phải có ít nhất 10 ký tự';
                 }
                 break;
+            case 'email_primary_address':
+                const emailResult = validateEmail(value as string);
+                if (!emailResult.isValid) {
+                    return emailResult.message;
+                }
+                break;
         }
         return undefined;
     }, []);
@@ -80,9 +103,17 @@ export function CompanyInfoStep({ initialData, onChange, allowEdit = true }: Com
         let isValid = true;
 
         requiredFields.forEach(field => {
-            const error = validateField(field, formData[field]);
-            if (error) isValid = false;
+            if (typeof formData[field] === 'string') { // Ensure only string fields are validated here
+                const error = validateField(field, formData[field] as string);
+                if (error) isValid = false;
+            }
         });
+
+        // Conditionally validate email_primary_address
+        if (formData.is_using_google_email) {
+            const error = validateField('email_primary_address', formData.email_primary_address);
+            if (error) isValid = false;
+        }
 
         return isValid && taxCodeStatus !== 'exists';
     }, [formData, validateField, taxCodeStatus]);
@@ -97,11 +128,11 @@ export function CompanyInfoStep({ initialData, onChange, allowEdit = true }: Com
     }, [formData, taxCodeStatus, validateAll, setCanProceed, onChange]);
 
     // Handle change
-    const handleChange = useCallback((field: keyof CompanyData, value: string) => {
+    const handleChange = useCallback((field: keyof CompanyData, value: string | boolean) => {
         setFormData(prev => {
             const newData = { ...prev, [field]: value };
             if (field === 'headquarters_address' && sameAsHeadquarters) {
-                newData.invoice_address = value;
+                newData.invoice_address = value as string;
             }
             return newData;
         });
@@ -118,13 +149,18 @@ export function CompanyInfoStep({ initialData, onChange, allowEdit = true }: Com
     // Handle blur
     const handleBlur = useCallback((field: keyof CompanyData) => {
         setTouched(prev => ({ ...prev, [field]: true }));
-        const error = validateField(field, formData[field]);
-        if (error) {
-            setErrors(prev => ({ ...prev, [field]: error }));
+        let error: string | undefined;
+
+        // Only validate string fields
+        if (typeof formData[field] === 'string') {
+            error = validateField(field, formData[field] as string);
+            if (error) {
+                setErrors(prev => ({ ...prev, [field]: error }));
+            }
         }
 
         // Check tax code exists
-        if (field === 'tax_code' && !error && formData.tax_code.length >= 10) {
+        if (field === 'tax_code' && !error && (formData.tax_code as string).length >= 10) {
             checkTaxCodeExists(formData.tax_code);
         }
     }, [formData, validateField]);
@@ -165,13 +201,14 @@ export function CompanyInfoStep({ initialData, onChange, allowEdit = true }: Com
 
     // Render field
     const renderField = (
-        field: keyof CompanyData,
+        field: Exclude<keyof CompanyData, 'is_using_google_email'>,
         label: string,
         icon: React.ReactNode,
         placeholder: string,
-        required: boolean = true
+        required: boolean = true,
+        type: string = 'text'
     ) => {
-        const value = formData[field];
+        const value = formData[field] as string; // Explicitly cast to string
         const error = touched[field] ? errors[field] : undefined;
         const showTaxCodeStatus = field === 'tax_code' && touched[field] && !error;
 
@@ -184,7 +221,7 @@ export function CompanyInfoStep({ initialData, onChange, allowEdit = true }: Com
                 </Label>
                 <div className="relative">
                     <Input
-                        type="text"
+                        type={type}
                         value={value}
                         onChange={(e) => handleChange(field, e.target.value)}
                         onBlur={() => handleBlur(field)}
@@ -307,6 +344,75 @@ export function CompanyInfoStep({ initialData, onChange, allowEdit = true }: Com
                     <MapPinIcon className="w-4 h-4 text-slate-400" />,
                     'Địa chỉ nhận hóa đơn VAT',
                     false
+                )}
+            </div>
+
+            {/* Google Email Integration */}
+            <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                    <Checkbox
+                        id="is_using_google_email"
+                        checked={formData.is_using_google_email}
+                        onCheckedChange={(checked) => handleChange('is_using_google_email', checked as boolean)}
+                        className="data-[state=checked]:bg-[#0F766E] data-[state=checked]:border-[#0F766E]"
+                    />
+                    <Label htmlFor="is_using_google_email" className="text-sm text-slate-600 cursor-pointer">
+                        Sử dụng email Google để nhận thông báo
+                    </Label>
+                </div>
+
+                {formData.is_using_google_email && (
+                    <>
+                        {renderField(
+                            'email_primary_address',
+                            'Địa chỉ email chính',
+                            <EnvelopeIcon className="w-4 h-4 text-slate-400" />,
+                            'email@company.com',
+                            true
+                        )}
+                        {renderField(
+                            'gmail_pubsub_subscription',
+                            'Gmail Pub/Sub Subscription',
+                            <IdentificationIcon className="w-4 h-4 text-slate-400" />,
+                            'Enter Gmail Pub/Sub Subscription',
+                            false
+                        )}
+                        {renderField(
+                            'gmail_pubsub_topic',
+                            'Gmail Pub/Sub Topic',
+                            <IdentificationIcon className="w-4 h-4 text-slate-400" />,
+                            'Enter Gmail Pub/Sub Topic',
+                            false
+                        )}
+                        {renderField(
+                            'gmail_webhook_secret',
+                            'Gmail Webhook Secret',
+                            <IdentificationIcon className="w-4 h-4 text-slate-400" />,
+                            'Enter Gmail Webhook Secret',
+                            false
+                        )}
+                        {renderField(
+                            'google_client_id',
+                            'Google Client ID',
+                            <IdentificationIcon className="w-4 h-4 text-slate-400" />,
+                            'Enter Google Client ID',
+                            false
+                        )}
+                        {renderField(
+                            'google_client_secret',
+                            'Google Client Secret',
+                            <IdentificationIcon className="w-4 h-4 text-slate-400" />,
+                            'Enter Google Client Secret',
+                            false
+                        )}
+                        {renderField(
+                            'google_refresh_token',
+                            'Google Refresh Token',
+                            <IdentificationIcon className="w-4 h-4 text-slate-400" />,
+                            'Enter Google Refresh Token',
+                            false
+                        )}
+                    </>
                 )}
             </div>
         </div>

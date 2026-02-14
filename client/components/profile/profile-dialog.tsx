@@ -24,6 +24,7 @@ import { organizationService } from "@/services/organization/organization.servic
 import { CheckoutProvider } from '@/components/checkout/CheckoutWizard';
 import { CompanyInfoStep } from '@/components/checkout/CompanyInfoStep';
 import { RepresentativeInfoStep } from '@/components/checkout/RepresentativeInfoStep';
+import { Organization, OrganizationCreateRequest } from '@/types/organization/organization.type';
 
 import {
   Modal,
@@ -78,7 +79,7 @@ export function ProfileDialog({ open = true, onOpenChange }: ProfileDialogProps 
 
 
   // Organization state
-  const [organizationData, setOrganizationData] = useState<any | null>(null);
+  const [organizationData, setOrganizationData] = useState<Organization | null>(null);
   const [isCreatingOrg, setIsCreatingOrg] = useState(false);
 
   // Backup code
@@ -129,16 +130,14 @@ export function ProfileDialog({ open = true, onOpenChange }: ProfileDialogProps 
         setNotifications([...(getGlobalNotifications?.items || []), ...userNotifs]);
 
         // Fetch organization if user has one
-        if ((data?.user as any)?.organization_id) {
+        if (data?.organization_id) {
           try {
-            const org = await organizationService.getOrganizationById(token, (data.user as any).organization_id);
+            const org = await organizationService.getOrganizationById(token, data.organization_id);
             setOrganizationData(org);
           } catch (error) {
             console.error("Failed to fetch organization", error);
           }
         }
-
-
       } catch (err) {
         console.error('Error fetching user:', err)
         setError('Đã xảy ra lỗi khi tải thông tin người dùng')
@@ -315,8 +314,6 @@ export function ProfileDialog({ open = true, onOpenChange }: ProfileDialogProps 
       return { success: false };
     }
   }
-
-
 
   const handleLogout = async () => {
     const token = authStorage.getAccessToken();
@@ -740,9 +737,9 @@ export function ProfileDialog({ open = true, onOpenChange }: ProfileDialogProps 
     }
   }
 
-  const OrganizationCreationForm = ({ onSuccess, onCancel }: { onSuccess: (data: any) => void, onCancel: () => void }) => {
-    const [companyData, setCompanyData] = useState<any>({});
-    const [repData, setRepData] = useState<any>({});
+  const OrganizationCreationForm = ({ onSuccess, onCancel }: { onSuccess: (data: Organization) => void, onCancel: () => void }) => {
+    const [companyData, setCompanyData] = useState<Partial<OrganizationCreateRequest>>({});
+    const [repData, setRepData] = useState<Partial<OrganizationCreateRequest>>({});
     const [isCompanyValid, setIsCompanyValid] = useState(false);
     const [isRepValid, setIsRepValid] = useState(false);
     const [submitting, setSubmitting] = useState(false);
@@ -767,12 +764,16 @@ export function ProfileDialog({ open = true, onOpenChange }: ProfileDialogProps 
           ...repData
         };
 
-        const newOrg = await organizationService.createOrganization(token, payload);
+        const newOrg = await organizationService.createOrganization(token, payload as OrganizationCreateRequest);
         showToast("Tạo thông tin doanh nghiệp thành công", "success");
         onSuccess(newOrg);
-      } catch (error: any) {
+      } catch (error) {
         console.error(error);
-        showToast(error.message || "Có lỗi xảy ra khi tạo doanh nghiệp", "error");
+        if (error instanceof Error) {
+          showToast(error.message || "Có lỗi xảy ra khi tạo doanh nghiệp", "error");
+        } else {
+          showToast("Có lỗi xảy ra khi tạo doanh nghiệp", "error");
+        }
       } finally {
         setSubmitting(false);
       }
@@ -783,7 +784,7 @@ export function ProfileDialog({ open = true, onOpenChange }: ProfileDialogProps 
         <div className="space-y-8 animate-in fade-in zoom-in-95 duration-300">
           <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-xl border border-slate-200 dark:border-slate-800">
             <CompanyInfoStep
-              onChange={(data, isValid) => {
+              onChange={(data: Partial<OrganizationCreateRequest>, isValid: boolean) => {
                 setCompanyData(data);
                 setIsCompanyValid(isValid);
               }}
@@ -793,7 +794,7 @@ export function ProfileDialog({ open = true, onOpenChange }: ProfileDialogProps 
 
           <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-xl border border-slate-200 dark:border-slate-800">
             <RepresentativeInfoStep
-              onChange={(data, isValid) => {
+              onChange={(data: Partial<OrganizationCreateRequest>, isValid: boolean) => {
                 setRepData(data);
                 setIsRepValid(isValid);
               }}
@@ -1179,7 +1180,7 @@ export function ProfileDialog({ open = true, onOpenChange }: ProfileDialogProps 
                               <div className="col-span-1 md:col-span-2 space-y-1">
                                 <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Địa chỉ xuất hóa đơn</label>
                                 <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white">
-                                  {organizationData.invoice_address || organizationData.headquarters_address}
+                                  {organizationData.headquarters_address}
                                 </div>
                               </div>
                             </div>
