@@ -25,6 +25,46 @@ export class CreateOrganizationDto {
     })
     tax_code: string;
 
+    @ApiPropertyOptional({ description: 'Tên doanh nghiệp (sẽ được ghi đè bởi kết quả tra cứu MST)', example: 'Công ty ABC' })
+    @IsOptional()
+    @IsString({
+        message: i18nValidationMessage('organization.validation.name_string'),
+    })
+    @MaxLength(500, {
+        message: i18nValidationMessage('organization.validation.name_max_length'),
+    })
+    name?: string;
+
+    @ApiPropertyOptional({ description: 'Tên quốc tế (sẽ được ghi đè bởi kết quả tra cứu MST)', example: 'ABC Company' })
+    @IsOptional()
+    @IsString({
+        message: i18nValidationMessage('organization.validation.international_name_string'),
+    })
+    @MaxLength(500, {
+        message: i18nValidationMessage('organization.validation.international_name_max_length'),
+    })
+    international_name?: string;
+
+    @ApiPropertyOptional({ description: 'Địa chỉ trụ sở chính (sẽ được ghi đè bởi kết quả tra cứu MST)', example: '123 Đường ABC' })
+    @IsOptional()
+    @IsString({
+        message: i18nValidationMessage('organization.validation.headquarters_address_string'),
+    })
+    @MaxLength(500, {
+        message: i18nValidationMessage('organization.validation.headquarters_address_max_length'),
+    })
+    headquarters_address?: string;
+
+    @ApiPropertyOptional({ description: 'Địa chỉ xuất hóa đơn', example: '123 Đường XYZ' })
+    @IsOptional()
+    @IsString({
+        message: i18nValidationMessage('organization.validation.invoice_address_string'),
+    })
+    @MaxLength(500, {
+        message: i18nValidationMessage('organization.validation.invoice_address_max_length'),
+    })
+    invoice_address?: string;
+
     @ApiProperty({ description: 'Tên người đại diện', example: 'Nguyễn Văn A' })
     @IsNotEmpty({
         message: i18nValidationMessage('organization.validation.representative_name_required'),
