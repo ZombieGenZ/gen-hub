@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import PropertyList from '@/app/(public)/homepage/MapSearch/PropertyList';
 import MapComponent from '@/app/(public)/homepage/MapSearch/MapComponent';
-import { Property, mockProperties } from '@/data/mockProperties';
+import { Property, mapWarehouseToProperty } from '@/data/mockProperties';
+import { publicWarehouseService } from '@/services/public-warehouse/public-warehouse.service';
 import { MapIcon, ListBulletIcon } from '@heroicons/react/20/solid';
 import { cn } from '@/lib/utils';
 import { HeroSearchBar, SearchFilters } from '@/components/search/HeroSearchBar';
@@ -40,7 +41,8 @@ interface PropertySearchProps {
 
 export default function PropertySearch({ initialLocationSlug }: PropertySearchProps) {
     const router = useRouter();
-    const [properties] = useState<Property[]>(mockProperties);
+    const [properties, setProperties] = useState<Property[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [bounds, setBounds] = useState<{ north: number; south: number; east: number; west: number } | null>(null);
     const [highlightedPropertyId, setHighlightedPropertyId] = useState<number | null>(null);
     const [showMapMobile, setShowMapMobile] = useState(false);
@@ -50,6 +52,28 @@ export default function PropertySearch({ initialLocationSlug }: PropertySearchPr
     const [isLogin, setIsLogin] = useState(false);
     const [user, setUser] = useState<UserData | null>(null);
     const [active, setActive] = useState<string | null>(null);
+
+    // Fetch warehouses from API
+    const fetchWarehouses = useCallback(async () => {
+        try {
+            setIsLoading(true);
+            const result = await publicWarehouseService.getPublicWarehouses({
+                limit: 100,
+            });
+            const items = result?.items || result || [];
+            const mapped = Array.isArray(items) ? items.map(mapWarehouseToProperty) : [];
+            setProperties(mapped);
+        } catch (error) {
+            console.error('Failed to fetch warehouses:', error);
+            setProperties([]);
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchWarehouses();
+    }, [fetchWarehouses]);
 
     useEffect(() => {
         const initAuth = async () => {
@@ -62,7 +86,7 @@ export default function PropertySearch({ initialLocationSlug }: PropertySearchPr
                 setUser(null);
             }
         };
-        
+
         initAuth();
     }, []);
 
@@ -135,7 +159,6 @@ export default function PropertySearch({ initialLocationSlug }: PropertySearchPr
             setSelectedCities([]);
         }
 
-        // Update local state (redundant if we rely solely on URL, but keeps UI snappy)
         if (filters.areaRange) {
             setAreaRange([filters.areaRange.min, filters.areaRange.max]);
         }

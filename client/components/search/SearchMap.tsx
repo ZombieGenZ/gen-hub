@@ -9,7 +9,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 
 interface SearchMapProps {
     properties: Property[];
-    selectedPropertyId: number | null;
+    selectedPropertyId: string | number | null;
     onSelectProperty: (property: Property | null) => void;
     viewState: { latitude: number; longitude: number; zoom: number };
     onViewStateChange: (viewState: { latitude: number; longitude: number; zoom: number }) => void;

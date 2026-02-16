@@ -16,6 +16,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { FormattedNumberInput } from "@/components/ui/formatted-number-input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
     Dialog,
@@ -117,6 +119,16 @@ export default function WarehouseTemplatePage() {
     const [deleteTarget, setDeleteTarget] = useState<Warehouse | null>(null);
     const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
     const [isBulkActionLoading, setIsBulkActionLoading] = useState(false);
+
+    // ── Create Modal ──
+    const [createDialogOpen, setCreateDialogOpen] = useState(false);
+    const [isCreating, setIsCreating] = useState(false);
+    const [createForm, setCreateForm] = useState({
+        name: "",
+        length: 0,
+        width: 0,
+        price_per_month: 0,
+    });
 
     // ── Filters ──
     const [searchTerm, setSearchTerm] = useState("");
@@ -251,6 +263,39 @@ export default function WarehouseTemplatePage() {
         }
     };
 
+    // ── Create handler ──
+    const handleCreate = async () => {
+        if (!createForm.name.trim()) {
+            toast.error("Vui lòng nhập tên kho.");
+            return;
+        }
+        const token = authStorage.getAccessToken();
+        if (!token) return;
+
+        setIsCreating(true);
+        try {
+            const result = await warehouseService.createWarehouseTemplate(token, {
+                ...createForm,
+                block_length: 1,
+                block_width: 1,
+                is_active: false,
+            });
+            toast.success(`Đã tạo kho "${createForm.name}"`);
+            setCreateDialogOpen(false);
+            setCreateForm({ name: "", length: 0, width: 0, price_per_month: 0 });
+            const newId = result?.data?.id || result?.id;
+            if (newId) {
+                router.push(`/dashboard/admin/warehouses/${newId}`);
+            } else {
+                fetchWarehouses();
+            }
+        } catch {
+            toast.error("Tạo kho thất bại. Vui lòng thử lại.");
+        } finally {
+            setIsCreating(false);
+        }
+    };
+
     // ── Handlers ──
     const handleEdit = (id: string) => router.push(`/dashboard/admin/warehouses/${id}`);
     const handleDuplicate = (warehouse: Warehouse) => {
@@ -282,7 +327,7 @@ export default function WarehouseTemplatePage() {
                         <span className="hidden sm:inline">Xuất Excel</span>
                     </Button>
                     <Button
-                        onClick={() => router.push("/dashboard/admin/warehouses/create")}
+                        onClick={() => setCreateDialogOpen(true)}
                         className="gap-2 bg-[#0F766E] hover:bg-[#0F766E]/90 text-white"
                         style={{ borderRadius: "12px" }}
                     >
@@ -669,6 +714,83 @@ export default function WarehouseTemplatePage() {
                         </Button>
                         <Button variant="destructive" onClick={handleBulkDelete} disabled={isBulkActionLoading} style={{ borderRadius: "12px" }}>
                             {isBulkActionLoading ? "Đang xóa..." : "Xóa tất cả"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* ── Create Warehouse Modal ── */}
+            <Dialog open={createDialogOpen} onOpenChange={(open) => {
+                if (!open && !isCreating) {
+                    setCreateDialogOpen(false);
+                    setCreateForm({ name: "", length: 0, width: 0, price_per_month: 0 });
+                }
+            }}>
+                <DialogContent style={{ borderRadius: "16px" }} className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Tạo kho mới</DialogTitle>
+                        <DialogDescription>
+                            Nhập thông tin cơ bản để tạo kho. Bạn có thể bổ sung chi tiết sau.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 p-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="create-name">Tên kho *</Label>
+                            <Input
+                                id="create-name"
+                                value={createForm.name}
+                                onChange={(e) => setCreateForm(prev => ({ ...prev, name: e.target.value }))}
+                                placeholder="Nhập tên kho..."
+                                style={{ borderRadius: "12px" }}
+                                autoFocus
+                            />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label>Chiều dài</Label>
+                                <FormattedNumberInput
+                                    value={createForm.length}
+                                    onChange={(v) => setCreateForm(prev => ({ ...prev, length: v }))}
+                                    suffix="m"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Chiều rộng</Label>
+                                <FormattedNumberInput
+                                    value={createForm.width}
+                                    onChange={(v) => setCreateForm(prev => ({ ...prev, width: v }))}
+                                    suffix="m"
+                                />
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Giá thuê / tháng</Label>
+                            <FormattedNumberInput
+                                value={createForm.price_per_month}
+                                onChange={(v) => setCreateForm(prev => ({ ...prev, price_per_month: v }))}
+                                suffix="đ"
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button
+                            variant="outline"
+                            onClick={() => {
+                                setCreateDialogOpen(false);
+                                setCreateForm({ name: "", length: 0, width: 0, price_per_month: 0 });
+                            }}
+                            disabled={isCreating}
+                            style={{ borderRadius: "12px" }}
+                        >
+                            Hủy
+                        </Button>
+                        <Button
+                            onClick={handleCreate}
+                            disabled={isCreating || !createForm.name.trim()}
+                            className="bg-[#0F766E] hover:bg-[#0F766E]/90 text-white"
+                            style={{ borderRadius: "12px" }}
+                        >
+                            {isCreating ? "Đang tạo..." : "Tạo kho"}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

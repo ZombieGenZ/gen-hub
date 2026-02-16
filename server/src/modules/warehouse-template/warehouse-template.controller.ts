@@ -45,6 +45,7 @@ import {
   CurrentUser,
   ApiAuthResponses,
   ApiValidationErrorResponse,
+  Public,
 } from '../../common/decorators';
 import {
   CreatedResponse,
@@ -280,6 +281,7 @@ export class WarehouseTemplateController {
    * - Không có quyền list.all: chỉ xem is_active = true
    */
   @Get()
+  @Public()
   @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({
     summary: 'Lấy danh sách template kho hàng',
@@ -392,6 +394,7 @@ export class WarehouseTemplateController {
    * Lấy chi tiết template - không cần xác thực
    */
   @Get(':id')
+  @Public()
   @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({
     summary: 'Lấy chi tiết template kho hàng',
@@ -908,6 +911,7 @@ export class WarehouseTemplateController {
    * Lấy danh sách ảnh - không cần xác thực
    */
   @Get(':id/images')
+  @Public()
   @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({
     summary: 'Lấy danh sách ảnh của template',

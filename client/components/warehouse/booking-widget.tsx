@@ -134,7 +134,8 @@ export function BookingWidget({ warehouseId, price, unit = "tháng" }: BookingWi
                 // Process duration tiers
                 if (tiersRes.status === 'fulfilled' && tiersRes.value.ok) {
                     const tiersData = await tiersRes.value.json();
-                    setDurationTiers(tiersData.data || tiersData);
+                    const tiersArray = Array.isArray(tiersData.data) ? tiersData.data : (Array.isArray(tiersData) ? tiersData : []);
+                    setDurationTiers(tiersArray);
                 } else {
                     console.warn('Using mock duration tiers');
                     setDurationTiers(MOCK_DURATION_TIERS);
@@ -143,7 +144,8 @@ export function BookingWidget({ warehouseId, price, unit = "tháng" }: BookingWi
                 // Process addons
                 if (addonsRes.status === 'fulfilled' && addonsRes.value.ok) {
                     const addonsData = await addonsRes.value.json();
-                    setAddons(addonsData.data || addonsData);
+                    const addonsArray = Array.isArray(addonsData.data) ? addonsData.data : (Array.isArray(addonsData) ? addonsData : []);
+                    setAddons(addonsArray);
                 } else {
                     console.warn('Using mock addons');
                     setAddons(MOCK_ADDONS as AddonResponse[]);
@@ -152,7 +154,8 @@ export function BookingWidget({ warehouseId, price, unit = "tháng" }: BookingWi
                 // Process insurances
                 if (insuranceRes.status === 'fulfilled' && insuranceRes.value.ok) {
                     const insuranceData = await insuranceRes.value.json();
-                    setInsurances(insuranceData.data || insuranceData);
+                    const insuranceArray = Array.isArray(insuranceData.data) ? insuranceData.data : (Array.isArray(insuranceData) ? insuranceData : []);
+                    setInsurances(insuranceArray);
                 } else {
                     console.warn('Using mock insurances');
                     setInsurances(MOCK_INSURANCES as unknown as Insurance[]);

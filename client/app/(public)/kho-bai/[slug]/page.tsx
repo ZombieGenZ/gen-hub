@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState, Suspense } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Property, mockProperties } from '@/data/mockProperties';
+import { Property, mapWarehouseToProperty } from '@/data/mockProperties';
+import { publicWarehouseService } from '@/services/public-warehouse/public-warehouse.service';
 import { PrimeNestHeader } from '@/app/(public)/homepage/Header';
 import { PrimeNestFooter } from '@/app/(public)/homepage/Footer';
 import MapComponent from '@/app/(public)/homepage/MapSearch/MapComponent';
@@ -44,11 +45,9 @@ export default function WarehouseDynamicPage() {
     const params = useParams();
     const router = useRouter();
 
-    // [slug] param matches both ID (123) and Location Slug (tan-binh)
     const slug = params.slug as string;
     const isId = !isNaN(Number(slug));
 
-    // --- SEARCH MODE (Location Slug) ---
     if (!isId) {
         return (
             <div className="kho-bai-page">
@@ -83,20 +82,29 @@ export default function WarehouseDynamicPage() {
     };
 
     useEffect(() => {
-        if (id) {
-            const found = mockProperties.find(p => p.id === Number(id));
-            if (found) {
-                const enrichedProperty = {
-                    ...found,
-                    power_type: "3 Pha / 500kVA",
-                    pccc_level: "Tự động Sprinkler (TCVN 3890)",
-                    floor_load: "3.5 - 5.0 Tấn/m²",
-                    container_access: true,
-                };
-                setProperty(enrichedProperty);
+        const fetchWarehouse = async () => {
+            if (!id) return;
+            try {
+                setLoading(true);
+                const data = await publicWarehouseService.getPublicWarehouseById(id);
+                if (data) {
+                    const mapped = mapWarehouseToProperty(data);
+                    const enrichedProperty = {
+                        ...mapped,
+                        power_type: mapped.power_type || "3 Pha / 500kVA",
+                        pccc_level: mapped.pccc_level || "Tự động Sprinkler (TCVN 3890)",
+                        floor_load: mapped.floor_load || `${mapped.max_load_capacity || 3.5} Tấn/m²`,
+                        container_access: mapped.container_access ?? true,
+                    };
+                    setProperty(enrichedProperty);
+                }
+            } catch (error) {
+                console.error('Failed to fetch warehouse:', error);
+            } finally {
+                setLoading(false);
             }
-            setLoading(false);
-        }
+        };
+        fetchWarehouse();
     }, [id]);
 
     if (loading) {
@@ -126,13 +134,14 @@ export default function WarehouseDynamicPage() {
     }
 
     const PLACEHOLDER_IMAGE = "/placeholder-warehouse.svg";
-    // Mock extra images; fallback to placeholder when no main image
-    const galleryImages = [
+    // Use real images from API; fallback to placeholder
+    const apiImages = (property.images || []).sort((a, b) => (a.order || 0) - (b.order || 0)).map(img => img.url);
+    const galleryImages = apiImages.length > 0 ? apiImages : [
         property.image || PLACEHOLDER_IMAGE,
-        "https://images.unsplash.com/photo-1587293852726-70cdb56c2866?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
-        "https://images.unsplash.com/photo-1553413077-190dd305871c?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
-        "https://images.unsplash.com/photo-1629814249584-bd4d53cf0e7d?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
-        "https://images.unsplash.com/photo-1565514020176-8c03566a01d5?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"
+        PLACEHOLDER_IMAGE,
+        PLACEHOLDER_IMAGE,
+        PLACEHOLDER_IMAGE,
+        PLACEHOLDER_IMAGE,
     ];
 
     return (
@@ -297,23 +306,31 @@ export default function WarehouseDynamicPage() {
                         <section>
                             <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-6">Tiện ích & Hạ tầng</h3>
                             <div className="grid grid-cols-2 gap-y-4 gap-x-8">
-                                {[
-                                    { icon: ShieldCheckIcon, label: "Camera an ninh CCTV 24/7" },
-                                    { icon: FireIcon, label: "PCCC Sprinkler vách tường" },
-                                    { icon: TruckIcon, label: "Bãi đỗ container 500m²" },
-                                    { icon: InboxStackIcon, label: "3 Dock Leveler tự động" },
-                                    { icon: MapPinIcon, label: "Gần Cảng Cát Lái (5km)" },
-                                    { icon: InformationCircleIcon, label: "Văn phòng điều hành 50m²" },
-                                    { icon: BoltIcon, label: "WiFi / Internet Tốc độ cao" },
-                                    { icon: SunIcon, label: "Điều hòa trung tâm (Kho mát)" },
-                                    { icon: BuildingOffice2Icon, label: "Phòng họp / Co-working space" },
-                                    { icon: Squares2X2Icon, label: "Khu vực Canteen / Ăn uống" },
-                                ].map((item, i) => (
-                                    <div key={i} className="flex items-center gap-3 text-slate-700 font-medium">
-                                        <item.icon className="w-6 h-6 text-slate-400" />
-                                        <span>{item.label}</span>
-                                    </div>
-                                ))}
+                                {(property.amenities && property.amenities.length > 0
+                                    ? property.amenities.map((item, i) => (
+                                        <div key={item.id || i} className="flex items-center gap-3 text-slate-700 font-medium">
+                                            <CheckIcon className="w-6 h-6 text-[#0F766E]" />
+                                            <span>{item.name}</span>
+                                        </div>
+                                    ))
+                                    : [
+                                        { icon: ShieldCheckIcon, label: "Camera an ninh CCTV 24/7" },
+                                        { icon: FireIcon, label: "PCCC Sprinkler vách tường" },
+                                        { icon: TruckIcon, label: "Bãi đỗ container 500m²" },
+                                        { icon: InboxStackIcon, label: "3 Dock Leveler tự động" },
+                                        { icon: MapPinIcon, label: "Gần Cảng Cát Lái (5km)" },
+                                        { icon: InformationCircleIcon, label: "Văn phòng điều hành 50m²" },
+                                        { icon: BoltIcon, label: "WiFi / Internet Tốc độ cao" },
+                                        { icon: SunIcon, label: "Điều hòa trung tâm (Kho mát)" },
+                                        { icon: BuildingOffice2Icon, label: "Phòng họp / Co-working space" },
+                                        { icon: Squares2X2Icon, label: "Khu vực Canteen / Ăn uống" },
+                                    ].map((item, i) => (
+                                        <div key={i} className="flex items-center gap-3 text-slate-700 font-medium">
+                                            <item.icon className="w-6 h-6 text-slate-400" />
+                                            <span>{item.label}</span>
+                                        </div>
+                                    ))
+                                )}
                             </div>
                         </section>
 
@@ -369,7 +386,7 @@ export default function WarehouseDynamicPage() {
 
                     {/* RIGHT COLUMN: Booking Widget (Sticky) */}
                     <div className="lg:col-span-4 relative">
-                        <WarehouseBookingPanel price={property.price} warehouseId={property.id.toString()} />
+                        <WarehouseBookingPanel price={property.price} warehouseId={property.id} />
                     </div>
 
                 </div >

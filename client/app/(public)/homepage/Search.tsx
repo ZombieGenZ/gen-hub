@@ -1,8 +1,9 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { Snowflake, Truck, Package, RotateCcw, MapPin } from "lucide-react";
 import MapComponent from "./MapSearch/MapComponent";
 import PropertyList from "./MapSearch/PropertyList";
-import { Property, mockProperties } from "@/data/mockProperties";
+import { Property, mapWarehouseToProperty } from "@/data/mockProperties";
+import { publicWarehouseService } from "@/services/public-warehouse/public-warehouse.service";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
@@ -26,8 +27,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 
 export function PrimeNestSearch() {
-    const [properties, setProperties] = useState<Property[]>(mockProperties);
-    const [loading, setLoading] = useState(false);
+    const [properties, setProperties] = useState<Property[]>([]);
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [bounds, setBounds] = useState<{ north: number; south: number; east: number; west: number } | null>(null);
     const [highlightedPropertyId, setHighlightedPropertyId] = useState<number | string | null>(null);
@@ -81,22 +82,28 @@ export function PrimeNestSearch() {
         setSelectedCities([]);
     };
 
-    // Fetch warehouses from API (Public - No Auth Required)
-    // Live API fetch disabled - Using mockProperties by default
-    /*
-    useEffect(() => {
-        const fetchWarehouses = async () => {
-             // ... API Logic (Commented Out)
-             // To restore: Uncomment and call fetchWarehouses();
-             try {
-                // ...
-             } finally {
-                setLoading(false);
-             }
-        };
-        fetchWarehouses();
+    // Fetch warehouses from API
+    const fetchWarehouses = useCallback(async () => {
+        try {
+            setLoading(true);
+            const result = await publicWarehouseService.getPublicWarehouses({
+                limit: 100,
+            });
+            const items = result?.items || result || [];
+            const mapped = Array.isArray(items) ? items.map(mapWarehouseToProperty) : [];
+            setProperties(mapped);
+        } catch (error) {
+            console.error('Failed to fetch warehouses:', error);
+            setError('Không thể tải danh sách kho');
+            setProperties([]);
+        } finally {
+            setLoading(false);
+        }
     }, []);
-    */
+
+    useEffect(() => {
+        fetchWarehouses();
+    }, [fetchWarehouses]);
 
     // Filter properties based on map bounds AND search/filters
     const filteredProperties = useMemo(() => {

@@ -6,20 +6,12 @@ import { WarehouseTemplateService } from "@/services/warehouse_template/warehous
 import { Warehouse } from "@/types/warehoue_template/warehouse_template.type";
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { toast } from "sonner";
-import { ArrowLeftIcon } from "@heroicons/react/24/outline";
+import { ArrowLeftIcon, GlobeAltIcon } from "@heroicons/react/24/outline";
 
 // ── shadcn/ui ──
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-    Breadcrumb,
-    BreadcrumbItem,
-    BreadcrumbLink,
-    BreadcrumbList,
-    BreadcrumbPage,
-    BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // ── Tab Components ──
@@ -41,8 +33,9 @@ export default function WarehouseEditPage() {
     const [saving, setSaving] = useState(false);
     const [activeTab, setActiveTab] = useState("overview");
     const [isDirty, setIsDirty] = useState(false);
+    const [publishing, setPublishing] = useState(false);
 
-    // ── Form data (controlled by each tab) ──
+    // ── Form data  ──
     const [formData, setFormData] = useState<Record<string, any>>({});
 
     // ── Load warehouse data ──
@@ -91,6 +84,24 @@ export default function WarehouseEditPage() {
         }
     };
 
+    // ── Publish/Unpublish handler ──
+    const handleTogglePublish = async () => {
+        const token = authStorage.getAccessToken();
+        if (!token) return;
+
+        setPublishing(true);
+        try {
+            const newStatus = !formData.is_active;
+            await warehouseService.updateWarehouseTemplate(token, id, { is_active: newStatus });
+            toast.success(newStatus ? "Kho đã được xuất bản!" : "Kho đã được ẩn.");
+            fetchWarehouse();
+        } catch {
+            toast.error("Thao tác thất bại. Vui lòng thử lại.");
+        } finally {
+            setPublishing(false);
+        }
+    };
+
     if (loading) {
         return (
             <div className="space-y-6">
@@ -114,22 +125,7 @@ export default function WarehouseEditPage() {
                     >
                         <ArrowLeftIcon className="w-4 h-4" />
                     </Button>
-                    <Breadcrumb>
-                        <BreadcrumbList>
-                            <BreadcrumbItem>
-                                <BreadcrumbLink
-                                    href="/dashboard/admin/warehouses"
-                                    className="cursor-pointer"
-                                >
-                                    Templates
-                                </BreadcrumbLink>
-                            </BreadcrumbItem>
-                            <BreadcrumbSeparator />
-                            <BreadcrumbItem>
-                                <BreadcrumbPage>{warehouse?.name || "Chỉnh sửa"}</BreadcrumbPage>
-                            </BreadcrumbItem>
-                        </BreadcrumbList>
-                    </Breadcrumb>
+                    <h1 className="text-lg font-semibold truncate">{warehouse?.name || "Chỉnh sửa"}</h1>
                     {isDirty && (
                         <Badge variant="outline" className="text-amber-600 border-amber-300 bg-amber-50 rounded-md text-xs">
                             Chưa lưu
@@ -145,6 +141,22 @@ export default function WarehouseEditPage() {
                         Hủy
                     </Button>
                     <Button
+                        variant={formData.is_active ? "outline" : "default"}
+                        onClick={handleTogglePublish}
+                        disabled={publishing}
+                        className={formData.is_active
+                            ? "gap-2 text-amber-600 border-amber-300 hover:bg-amber-50"
+                            : "gap-2 bg-green-600 hover:bg-green-700 text-white"
+                        }
+                        style={{ borderRadius: "12px" }}
+                    >
+                        <GlobeAltIcon className="w-4 h-4" />
+                        {publishing
+                            ? "Đang xử lý..."
+                            : formData.is_active ? "Unpublish" : "Publish"
+                        }
+                    </Button>
+                    <Button
                         onClick={handleSave}
                         disabled={saving || !isDirty}
                         loading={saving}
@@ -156,7 +168,7 @@ export default function WarehouseEditPage() {
                 </div>
             </div>
 
-            {/* ── Tab Navigation (shadcn Tabs) ── */}
+            {/* ── Tab Navigation ── */}
             <Tabs value={activeTab} onValueChange={setActiveTab}>
                 <TabsList className="w-full justify-start bg-muted/30 h-auto p-1 rounded-xl">
                     <TabsTrigger value="overview" className="rounded-lg">Overview</TabsTrigger>

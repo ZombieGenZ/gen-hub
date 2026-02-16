@@ -62,8 +62,6 @@ interface DurationTierWithDiscount extends Partial<RentalDurationTier> {
     gift_insurance?: boolean;
 }
 
-// Time slots for visit booking
-// Time slots removed
 
 
 export function WarehouseBookingPanel({
@@ -99,7 +97,6 @@ export function WarehouseBookingPanel({
     const [quotationError, setQuotationError] = useState<string | null>(null);
     const quotationDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
-    // ========== VISIT BOOKING TAB STATE REMOVED ==========
 
     // ========== QUOTATION LOGIC ==========
     const handleBooking = () => {
@@ -143,7 +140,8 @@ export function WarehouseBookingPanel({
                 if (tiersRes.status === 'fulfilled' && tiersRes.value.ok) {
                     const tiersData = await tiersRes.value.json();
                     console.log('[WarehouseBookingPanel] Duration Tiers from API:', tiersData);
-                    setDurationTiers(tiersData.data || tiersData);
+                    const tiersArray = Array.isArray(tiersData.data) ? tiersData.data : (Array.isArray(tiersData) ? tiersData : []);
+                    setDurationTiers(tiersArray);
                 } else {
                     console.warn('[WarehouseBookingPanel] Duration Tiers API failed, using mock:',
                         tiersRes.status === 'rejected' ? tiersRes.reason : `Status: ${tiersRes.value?.status}`);
@@ -154,7 +152,8 @@ export function WarehouseBookingPanel({
                 if (addonsRes.status === 'fulfilled' && addonsRes.value.ok) {
                     const addonsData = await addonsRes.value.json();
                     console.log('[WarehouseBookingPanel] Addons from API:', addonsData);
-                    setAddons(addonsData.data || addonsData);
+                    const addonsArray = Array.isArray(addonsData.data) ? addonsData.data : (Array.isArray(addonsData) ? addonsData : []);
+                    setAddons(addonsArray);
                 } else {
                     console.warn('[WarehouseBookingPanel] Addons API failed, using mock:',
                         addonsRes.status === 'rejected' ? addonsRes.reason : `Status: ${addonsRes.value?.status}`);
@@ -165,7 +164,8 @@ export function WarehouseBookingPanel({
                 if (insuranceRes.status === 'fulfilled' && insuranceRes.value.ok) {
                     const insuranceData = await insuranceRes.value.json();
                     console.log('[WarehouseBookingPanel] Insurances from API:', insuranceData);
-                    setInsurances(insuranceData.data || insuranceData);
+                    const insuranceArray = Array.isArray(insuranceData.data) ? insuranceData.data : (Array.isArray(insuranceData) ? insuranceData : []);
+                    setInsurances(insuranceArray);
                 } else {
                     console.warn('[WarehouseBookingPanel] Insurances API failed, using mock:',
                         insuranceRes.status === 'rejected' ? insuranceRes.reason : `Status: ${insuranceRes.value?.status}`);
@@ -256,7 +256,7 @@ export function WarehouseBookingPanel({
 
         const subtotal = baseTotalBeforeDiscount - durationDiscountAmount + addonsCost + insuranceCost + managementFee;
         const serviceFee = subtotal * 0.1;
-        const couponDiscount = 0; // Coupon will be applied in checkout
+        const couponDiscount = 0;
         const grandTotal = Math.max(0, subtotal + serviceFee - couponDiscount);
 
         return {

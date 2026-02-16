@@ -23,7 +23,7 @@ import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { Button } from '@/components/ui/button';
 
 import { useSearchParams } from 'next/navigation';
-import { mockProperties } from '@/data/mockProperties';
+import { publicWarehouseService } from '@/services/public-warehouse/public-warehouse.service';
 import { MOCK_ADDONS, MOCK_INSURANCES, MOCK_DURATION_TIERS } from '@/types/booking/booking.type';
 
 // Default empty session
@@ -412,28 +412,24 @@ function CheckoutContainer() {
                 const API = process.env.NEXT_PUBLIC_API_URL;
 
                 // Fetch Warehouse (API)
-                let property: any = mockProperties[0]; // Fallback
+                let property: any = null;
                 let warehouseAvailable = true;
                 try {
-                    // Try to fetch from public API
-                    const res = await fetch(`${API}/public/warehouse-templates/${warehouseId}`);
-                    if (res.ok) {
-                        const data = await res.json();
-                        property = data.data || data; // Adjust based on API response structure
+                    const data = await publicWarehouseService.getPublicWarehouseById(warehouseId || '');
+                    property = data;
 
-                        // Check warehouse availability
-                        if (property.is_rented === true || property.rental_status === 'RENTED' || property.rental_status === 'LOCKED') {
-                            warehouseAvailable = false;
-                        }
-                    } else {
-                        // Fallback to searching in mock if API fails (dev mode)
-                        const mock = mockProperties.find(p => p.id === Number(warehouseId));
-                        if (mock) property = mock;
+                    // Check warehouse availability
+                    if (property.is_rented === true || property.rental_status === 'RENTED' || property.rental_status === 'LOCKED') {
+                        warehouseAvailable = false;
                     }
                 } catch (e) {
                     console.error("Error fetching warehouse", e);
-                    const mock = mockProperties.find(p => p.id === Number(warehouseId));
-                    if (mock) property = mock;
+                }
+
+                if (!property) {
+                    alert('Không tìm thấy thông tin kho. Vui lòng thử lại.');
+                    router.push('/kho-bai');
+                    return;
                 }
 
                 // If warehouse is not available, alert and redirect
@@ -506,7 +502,7 @@ function CheckoutContainer() {
                 }
 
                 // 3. Calculate Quotation 
-                const basePrice = Number(property.price) || 0;
+                const basePrice = Number(property.price_per_month || property.price) || 0;
                 const durationMonths = durationTier?.duration_value || 1;
 
                 const durationDiscountPercent = durationTier?.discount_percent || 0;

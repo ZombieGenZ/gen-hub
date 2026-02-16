@@ -1,11 +1,11 @@
 export interface Property {
-    id: number; // Keep number for Map compatibility
+    id: string;
     // UI Fields
     title: string;
     price: number;
     currency: string;
     area: number; // m2
-    type: 'Kho Mát' | 'Kho Thường' | 'Fulfillment' | 'Kho Ngoại Quan';
+    type: string;
     address: string;
     image: string;
     lat: number;
@@ -19,6 +19,18 @@ export interface Property {
     organization_id?: string;
     address_detail?: string;
     ward_id?: string;
+    ward?: {
+        id: string;
+        name: string;
+        district?: {
+            id: string;
+            name: string;
+            province?: {
+                id: string;
+                name: string;
+            };
+        };
+    };
     
     length?: number;
     width?: number;
@@ -29,6 +41,8 @@ export interface Property {
     ceiling_height?: number;
     max_load_capacity?: number;
     total_weight_capacity?: number;
+    
+    price_per_month?: number;
     
     qc_warehouse_id?: string;
     created_at?: string;
@@ -46,247 +60,71 @@ export interface Property {
     pccc_level?: string;
     floor_load?: string;
     container_access?: boolean;
+
+    // API Images
+    images?: { id: string; url: string; order: number }[];
+    // API Amenities
+    amenities?: { id: string; name: string; icon?: string; description?: string }[];
+    // Rental status
+    rental_status?: string;
 }
 
-export const mockProperties: Property[] = [
-    {
-        id: 1,
-        title: "Kho Mát Thủ Đức",
-        name: "Kho Mát Thủ Đức Zone A",
-        description: "Kho mát tiêu chuẩn quốc tế tại Thủ Đức, thích hợp cho bảo quản thực phẩm, dược phẩm. Hệ thống lạnh trung tâm hiện đại.",
-        price: 45000000,
-        currency: "VND",
-        area: 300,
-        type: "Kho Mát",
-        address: "Thủ Đức, TP. Hồ Chí Minh",
-        address_detail: "Số 12, Đường số 5, KCN Linh Trung",
-        image: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
-        lat: 10.849409,
-        lng: 106.753705,
-        length: 20,
-        width: 15,
-        block_length: 5,
-        block_width: 5,
-        ceiling_height: 8,
-        max_load_capacity: 3.5,
-        total_weight_capacity: 1000,
-        electricity: "3 Pha",
-        is_active: true,
-        is_cold_storage: true,
-        is_shared_warehouse: false,
-        organization_id: "org-uuid-001",
-        province_name: "Hồ Chí Minh",
-        created_at: "2024-01-15T08:00:00Z",
-        created_by: "System"
-    },
-    {
-        id: 3,
-        title: "Trung Tâm Fulfillment Dĩ An",
-        name: "Di An Fulfillment Center",
-        description: "Trung tâm xử lý đơn hàng TMĐT, tích hợp hệ thống quản lý kho WMS, đóng gói và giao hàng nhanh. Vị trí giáp ranh Thủ Đức.",
-        price: 90000000,
-        currency: "VND",
-        area: 1200,
-        type: "Fulfillment",
-        address: "Dĩ An, Bình Dương",
-        address_detail: "KCN Sóng Thần 1",
-        image: "https://images.unsplash.com/photo-1595246140625-573b715e11d3?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
-        lat: 10.887622,
-        lng: 106.762974,
-        length: 40,
-        width: 30,
-        block_length: 10,
-        block_width: 10,
-        ceiling_height: 12,
-        max_load_capacity: 4,
-        total_weight_capacity: 5000,
-        electricity: "3 Pha",
-        is_active: true,
-        is_cold_storage: false,
-        is_shared_warehouse: true,
-        organization_id: "org-uuid-003",
-        province_name: "Bình Dương",
-        created_at: "2024-03-10T14:20:00Z",
-        created_by: "Admin"
-    },
-    {
-        id: 5,
-        title: "Kho Bình Dương VSIP 1",
-        name: "VSIP 1 Standard Warehouse",
-        description: "Kho tiêu chuẩn tại KCN VSIP 1, Bình Dương. Hạ tầng hoàn thiện, đường xe container ra vào thoải mái.",
-        price: 65000000,
-        currency: "VND",
-        area: 500,
-        type: "Kho Thường",
-        address: "Thuận An, Bình Dương",
-        address_detail: "Đường Hữu Nghị, VSIP 1",
-        image: "https://images.unsplash.com/photo-1629814249584-bd4d53cf0e7d?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
-        lat: 10.925501,
-        lng: 106.702958,
-        length: 25,
-        width: 20,
-        block_length: 5,
-        block_width: 5,
-        ceiling_height: 9,
-        max_load_capacity: 4,
-        total_weight_capacity: 2000,
-        electricity: "3 Pha",
-        is_active: true,
-        is_cold_storage: false,
-        is_shared_warehouse: false,
-        organization_id: "org-uuid-005",
-        province_name: "Bình Dương",
-        created_at: "2024-04-05T11:15:00Z",
-        created_by: "VSIP Mgmt"
-    },
-    {
-        id: 7,
-        title: "Kho Quận 9 - Khu Công Nghệ Cao",
-        name: "SHTP Warehouse",
-        description: "Kho chất lượng cao trong Khu Công Nghệ Cao TP.HCM. Ưu tiên doanh nghiệp công nghệ, linh kiện điện tử.",
-        price: 150000000,
-        currency: "VND",
-        area: 1000,
-        type: "Fulfillment",
-        address: "Quận 9, TP. Hồ Chí Minh",
-        address_detail: "Lô I-2, Đường D1, Khu Công Nghệ Cao",
-        image: "https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
-        lat: 10.852358,
-        lng: 106.797203,
-        length: 40,
-        width: 25,
-        block_length: 10,
-        block_width: 5,
-        ceiling_height: 11,
-        max_load_capacity: 5,
-        total_weight_capacity: 5000,
-        electricity: "3 Pha Ưu tiên",
-        is_active: true,
-        is_cold_storage: false,
-        is_shared_warehouse: true,
-        organization_id: "org-uuid-007",
-        province_name: "Hồ Chí Minh",
-        created_at: "2024-02-15T09:00:00Z",
-        created_by: "SHTP Admin"
-    },
-    {
-        id: 9,
-        title: "Kho Biên Hòa 2",
-        name: "Bien Hoa 2 Industrial Storage",
-        description: "Kho xưởng KCN Biên Hòa 2. Diện tích rộng, có PCCC tự động, bảo vệ 24/24. Cửa ngõ kết nối Đồng Nai - HCM.",
-        price: 75000000,
-        currency: "VND",
-        area: 800,
-        type: "Kho Thường",
-        address: "Biên Hòa, Đồng Nai",
-        address_detail: "Đường 2A, KCN Biên Hòa 2",
-        image: "https://images.unsplash.com/photo-1605218457335-ee1d8d32d6fa?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
-        lat: 10.938561,
-        lng: 106.852504,
-        length: 40,
-        width: 20,
-        block_length: 10,
-        block_width: 10,
-        ceiling_height: 9.5,
-        max_load_capacity: 4.5,
-        total_weight_capacity: 3600,
-        electricity: "3 Pha",
-        is_active: true,
-        is_cold_storage: false,
-        is_shared_warehouse: false,
-        organization_id: "org-uuid-009",
-        province_name: "Đồng Nai",
-        created_at: "2024-04-10T10:30:00Z",
-        created_by: "BH Mgmt"
-    },
-    {
-        id: 11,
-        title: "Kho Linh Trung 2",
-        name: "Linh Trung 2 Export Zone",
-        description: "Kho nằm trong khu chế xuất Linh Trung 2. Ưu đãi thuế quan, thích hợp doanh nghiệp sản xuất xuất khẩu.",
-        price: 48000000,
-        currency: "VND",
-        area: 350,
-        type: "Kho Mát",
-        address: "Thủ Đức, TP. Hồ Chí Minh",
-        address_detail: "Lô 15, KCX Linh Trung 2",
-        image: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
-        lat: 10.855409,
-        lng: 106.758705,
-        length: 20,
-        width: 17.5,
-        block_length: 5,
-        block_width: 5,
-        ceiling_height: 8,
-        max_load_capacity: 3,
-        total_weight_capacity: 1050,
-        electricity: "3 Pha",
-        is_active: true,
-        is_cold_storage: true,
-        is_shared_warehouse: false,
-        organization_id: "org-uuid-011",
-        province_name: "Hồ Chí Minh",
-        created_at: "2024-03-20T15:45:00Z",
-        created_by: "EPZ Admin"
-    },
-    {
-        id: 12,
-        title: "Kho Tam Bình",
-        name: "Tam Binh Distribution Point",
-        description: "Kho Tam Bình gần chợ đầu mối nông sản. Thích hợp lưu trữ hàng nông sản, thực phẩm tươi sống.",
-        price: 42000000,
-        currency: "VND",
-        area: 280,
-        type: "Kho Thường",
-        address: "Thủ Đức, TP. Hồ Chí Minh",
-        address_detail: "QL1A, P. Tam Bình",
-        image: "https://images.unsplash.com/photo-1553413077-190dd305871c?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
-        lat: 10.844409,
-        lng: 106.749705,
-        length: 20,
-        width: 14,
-        block_length: 5,
-        block_width: 7,
-        ceiling_height: 7,
-        max_load_capacity: 3,
-        total_weight_capacity: 840,
-        electricity: "3 Pha",
-        is_active: true,
-        is_cold_storage: false,
-        is_shared_warehouse: false,
-        organization_id: "org-uuid-012",
-        province_name: "Hồ Chí Minh",
-        created_at: "2024-02-12T08:30:00Z",
-        created_by: "Tam Binh Mgmt"
-    },
-    {
-        id: 16,
-        title: "Kho AMATA Biên Hòa",
-        name: "Amata Logistics Hub",
-        description: "Kho hiện đại tại KCN Amata, Biên Hòa. Vị trí chiến lược kết nối QL1A, thuận tiện đi cảng.",
-        price: 95000000,
-        currency: "VND",
-        area: 1500,
-        type: "Kho Ngoại Quan",
-        address: "Biên Hòa, Đồng Nai",
-        address_detail: "Đường số 1, KCN Amata, Long Bình",
-        image: "https://images.unsplash.com/photo-1587293852726-70cdb56c2866?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
-        lat: 10.932915,
-        lng: 106.877051,
-        length: 50,
-        width: 30,
-        block_length: 25,
-        block_width: 15,
-        ceiling_height: 12,
-        max_load_capacity: 5,
-        total_weight_capacity: 7500,
-        electricity: "CN",
-        is_active: true,
-        is_cold_storage: false,
-        is_shared_warehouse: false,
-        organization_id: "org-uuid-016",
-        province_name: "Đồng Nai",
-        created_at: "2024-05-20T10:00:00Z",
-        created_by: "Amata Mgmt"
-    }
-];
+/**
+ * Map raw API warehouse template response → Property interface
+ */
+export function mapWarehouseToProperty(w: any): Property {
+    const provinceName = w.ward?.district?.province?.name || '';
+    const districtName = w.ward?.district?.name || '';
+    const wardName = w.ward?.name || '';
+    const fullAddress = [wardName, districtName, provinceName].filter(Boolean).join(', ');
+
+    // Determine type
+    let type = 'Kho Thường';
+    if (w.is_cold_storage) type = 'Kho Mát';
+    else if (w.is_shared_warehouse) type = 'Fulfillment';
+
+    // Get first image URL
+    const sortedImages = (w.images || []).sort((a: any, b: any) => (a.order || 0) - (b.order || 0));
+    const firstImage = sortedImages[0]?.url || '';
+
+    return {
+        id: w.id,
+        title: w.name || '',
+        name: w.name,
+        description: w.description,
+        price: Number(w.price_per_month) || 0,
+        price_per_month: Number(w.price_per_month) || 0,
+        currency: 'VND',
+        area: (Number(w.length) || 0) * (Number(w.width) || 0),
+        type,
+        address: fullAddress || w.address_detail || '',
+        address_detail: w.address_detail,
+        image: firstImage,
+        images: sortedImages,
+        lat: Number(w.latitude) || 10.85,
+        lng: Number(w.longitude) || 106.75,
+        length: Number(w.length) || 0,
+        width: Number(w.width) || 0,
+        block_length: Number(w.block_length) || 0,
+        block_width: Number(w.block_width) || 0,
+        ceiling_height: Number(w.ceiling_height) || undefined,
+        max_load_capacity: Number(w.max_load_capacity) || undefined,
+        total_weight_capacity: Number(w.total_weight_capacity) || undefined,
+        is_active: w.is_active,
+        is_cold_storage: w.is_cold_storage,
+        is_shared_warehouse: w.is_shared_warehouse,
+        ward_id: w.ward_id,
+        ward: w.ward,
+        province_name: provinceName,
+        rental_status: w.rental_status,
+        amenities: w.amenities?.map((a: any) => ({
+            id: a.amenity?.id || a.id,
+            name: a.amenity?.name || a.name,
+            icon: a.amenity?.icon || a.icon,
+            description: a.amenity?.description || a.description,
+        })) || [],
+        created_at: w.created_at,
+        updated_at: w.updated_at,
+        created_by: w.created_by,
+    };
+}

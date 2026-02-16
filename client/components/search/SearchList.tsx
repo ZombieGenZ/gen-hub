@@ -6,8 +6,8 @@ import Link from 'next/link';
 
 interface SearchListProps {
     properties: Property[];
-    onHover: (id: number | null) => void;
-    highlightedPropertyId: number | null;
+    onHover: (id: string | number | null) => void;
+    highlightedPropertyId: string | number | null;
 }
 
 export default function SearchList({ properties, onHover, highlightedPropertyId }: SearchListProps) {
@@ -33,8 +33,8 @@ export default function SearchList({ properties, onHover, highlightedPropertyId 
                 >
                     <div
                         className={`group rounded-2xl border transition-all duration-300 cursor-pointer overflow-hidden bg-white h-full flex flex-col ${highlightedPropertyId === property.id
-                                ? 'border-[#0F766E] ring-1 ring-[#0F766E] shadow-lg transform -translate-y-1'
-                                : 'border-slate-100 shadow-sm hover:shadow-md hover:border-slate-200'
+                            ? 'border-[#0F766E] ring-1 ring-[#0F766E] shadow-lg transform -translate-y-1'
+                            : 'border-slate-100 shadow-sm hover:shadow-md hover:border-slate-200'
                             }`}
                         onMouseEnter={() => onHover(property.id)}
                         onMouseLeave={() => onHover(null)}
