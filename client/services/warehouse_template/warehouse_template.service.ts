@@ -286,6 +286,158 @@ export class WarehouseTemplateService {
             console.error("Failed to fetch warehouse block", err);
         }
     }
+
+    /**
+     * Xóa nhiều template cùng lúc
+     * @param token Token truy cập
+     * @param ids Danh sách ID template cần xóa
+     * @returns Kết quả xóa
+     */
+    async deleteManyWarehouseTemplates(token: string, ids: string[]) {
+        const response = await fetch(`${API}/warehouse-templates/delete/many`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ ids }),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Failed to delete warehouse templates');
+        }
+
+        return await response.json();
+    }
+
+    /**
+     * Cập nhật toàn bộ layout (Rows -> Racks -> Shelves -> Blocks)
+     * @param token Token truy cập
+     * @param id ID template
+     * @param data Layout data (UpsertLayoutDto)
+     * @returns Kết quả cập nhật
+     */
+    async upsertLayout(token: string, id: string, data: { rows: any[] }) {
+        const response = await fetch(`${API}/warehouse-templates/${id}/layout`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Failed to update warehouse layout');
+        }
+
+        return await response.json();
+    }
+
+    /**
+     * Upload nhiều ảnh cho template
+     * @param token Token truy cập
+     * @param id ID template
+     * @param files Danh sách file ảnh
+     * @returns Kết quả upload
+     */
+    async uploadImages(token: string, id: string, files: File[]) {
+        const formData = new FormData();
+        files.forEach((file) => {
+            formData.append('images', file);
+        });
+
+        const response = await fetch(`${API}/warehouse-templates/${id}/images`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+            },
+            body: formData,
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Failed to upload images');
+        }
+
+        return await response.json();
+    }
+
+    /**
+     * Xóa một ảnh
+     * @param token Token truy cập
+     * @param id ID template
+     * @param imageId ID ảnh cần xóa
+     * @returns Kết quả xóa
+     */
+    async deleteImage(token: string, id: string, imageId: string) {
+        const response = await fetch(`${API}/warehouse-templates/${id}/images/${imageId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Failed to delete image');
+        }
+
+        return await response.json();
+    }
+
+    /**
+     * Xóa nhiều ảnh cùng lúc
+     * @param token Token truy cập
+     * @param id ID template
+     * @param imageIds Danh sách ID ảnh cần xóa
+     * @returns Kết quả xóa
+     */
+    async deleteManyImages(token: string, id: string, imageIds: string[]) {
+        const response = await fetch(`${API}/warehouse-templates/${id}/images/delete/many`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ ids: imageIds }),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Failed to delete images');
+        }
+
+        return await response.json();
+    }
+
+    /**
+     * Sắp xếp lại thứ tự ảnh
+     * @param token Token truy cập
+     * @param id ID template
+     * @param images Danh sách { id, order }
+     * @returns Kết quả sắp xếp
+     */
+    async reorderImages(token: string, id: string, images: { id: string; order: number }[]) {
+        const response = await fetch(`${API}/warehouse-templates/${id}/images/reorder`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ images }),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Failed to reorder images');
+        }
+
+        return await response.json();
+    }
 }
 
 export const warehouseTemplateService = new WarehouseTemplateService();

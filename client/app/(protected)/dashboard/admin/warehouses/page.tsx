@@ -1,110 +1,164 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { WarehouseTemplateService } from "@/services/warehouse_template/warehouse_template.service";
 import { Warehouse } from "@/types/warehoue_template/warehouse_template.type";
 import { useDebounce } from "@/hooks/use-debounce";
-import { WarehouseCard } from '@/components/dashboard/WarehouseCard'
 import { useRouter } from "next/navigation";
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { LocationService } from "@/services/location/location.service";
+import { Province } from "@/types/location/provinces.type";
+import { toast } from "sonner";
+
+// ── shadcn/ui components ──
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
-    CreateWarehouseModal,
-    UpdateWarehouseModal,
-    DeleteWarehouseDialog
-} from "@/components/dashboard/WarehouseModals";
-// ... (other imports)
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 
-// Type definitions
-interface GetWarehouseParams {
-    keywords: string;
-    page: number;
-    limit: number;
-    province_id?: string;
-    is_active?: boolean;
-    rental_status?: string;
-}
+// ── Icons ──
+import {
+    MagnifyingGlassIcon,
+    PlusIcon,
+    ArrowDownTrayIcon,
+    EllipsisHorizontalIcon,
+    PencilSquareIcon,
+    TrashIcon,
+    DocumentDuplicateIcon,
+    ChevronLeftIcon,
+    ChevronRightIcon,
+    ChevronUpDownIcon,
+    XMarkIcon,
+    CheckCircleIcon,
+    XCircleIcon,
+} from "@heroicons/react/24/outline";
 
+// ── Services & Constants ──
 const warehouseService = new WarehouseTemplateService();
 const locationService = new LocationService();
+const ITEMS_PER_PAGE = 10;
+const IMG_API = process.env.NEXT_PUBLIC_API_URL;
 
+// ────────────────────────────────────────────────
+// Helper: format VND
+// ────────────────────────────────────────────────
+function formatVND(value: string | number): string {
+    const num = typeof value === "string" ? parseFloat(value) : value;
+    if (isNaN(num)) return "—";
+    return num.toLocaleString("vi-VN") + " ₫";
+}
+
+// ────────────────────────────────────────────────
+// Helper: badge for warehouse type
+// ────────────────────────────────────────────────
+function WarehouseTypeBadge({ warehouse }: { warehouse: Warehouse }) {
+    if (warehouse.is_cold_storage) {
+        return (
+            <Badge variant="outline" className="rounded-md font-normal bg-sky-50 text-sky-700 border-sky-200">
+                Kho lạnh
+            </Badge>
+        );
+    }
+    if (warehouse.is_shared_warehouse) {
+        return (
+            <Badge variant="outline" className="rounded-md font-normal bg-violet-50 text-violet-700 border-violet-200">
+                Chia sẻ
+            </Badge>
+        );
+    }
+    return (
+        <Badge variant="outline" className="rounded-md font-normal bg-white text-gray-600 border-gray-200">
+            Tiêu chuẩn
+        </Badge>
+    );
+}
+
+// ════════════════════════════════════════════════
+// MAIN PAGE COMPONENT
+// ════════════════════════════════════════════════
 export default function WarehouseTemplatePage() {
     const router = useRouter();
+
+    // ── Data state ──
     const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
+    const [provinces, setProvinces] = useState<Province[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [createModalOpen, setCreateModalOpen] = useState(false);
-    const [updateModalOpen, setUpdateModalOpen] = useState(false);
-    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-    const [selectedWarehouse, setSelectedWarehouse] = useState<Warehouse | null>(null);
 
-    // Filters... (state for filters and pagination)
+    // ── Selection state ──
+    const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
-    const [filters, setFilters] = useState<{
-        keywords: string;
-        province_id: string;
-        status_label: string;
-        type_label: string;
-    }>({
-        keywords: "",
-        province_id: "",
-        status_label: "Tất cả",
-        type_label: "Tất cả"
-    });
+    // ── Dialogs ──
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [deleteTarget, setDeleteTarget] = useState<Warehouse | null>(null);
+    const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
+    const [isBulkActionLoading, setIsBulkActionLoading] = useState(false);
 
-    const [pagination, setPagination] = useState({
-        page: 1,
-        limit: 9,
-        total: 0,
-        totalPages: 0
-    });
+    // ── Filters ──
+    const [searchTerm, setSearchTerm] = useState("");
+    const [provinceFilter, setProvinceFilter] = useState("all");
+    const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive" | "full">("all");
 
-    const debouncedKeywords = useDebounce(filters.keywords, 500);
+    // ── Sort ──
+    const [sortPriceDir, setSortPriceDir] = useState<"asc" | "desc" | null>(null);
 
-    const fetchWarehouses = async () => {
+    // ── Pagination ──
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalItems, setTotalItems] = useState(0);
+
+    const debouncedKeywords = useDebounce(searchTerm, 500);
+    const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+
+    // ── Fetch warehouses ──
+    const fetchWarehouses = useCallback(async () => {
         try {
             const token = authStorage.getAccessToken();
-            if (!token) {
-                router.push("/login");
-                return;
-            }
+            if (!token) { router.push("/login"); return; }
 
             setLoading(true);
             setError(null);
 
-            // ... (rest of the logic)
-
-            // Map UI filters to API params
-            const apiParams: GetWarehouseParams = {
+            const apiParams: Record<string, any> = {
                 keywords: debouncedKeywords,
-                page: pagination.page,
-                limit: pagination.limit,
+                page: currentPage,
+                limit: ITEMS_PER_PAGE,
             };
-
-            // Map Province
-            if (filters.province_id && filters.province_id !== "all") {
-                apiParams.province_id = filters.province_id;
+            if (provinceFilter && provinceFilter !== "all") {
+                apiParams.province_id = provinceFilter;
             }
+            if (statusFilter === "active") apiParams.is_active = true;
+            else if (statusFilter === "inactive") apiParams.is_active = false;
+            else if (statusFilter === "full") apiParams.rental_status = "RENTED";
 
-            // Map Status
-            if (filters.status_label === "Hoạt động") {
-                apiParams.is_active = true;
-            } else if (filters.status_label === "Đang bảo trì") {
-                apiParams.is_active = false;
-            } else if (filters.status_label === "Đầy kho") {
-                apiParams.rental_status = 'RENTED';
-            }
-
-            // Note: 'Type' filter is not yet supported by backend API, skipping mapping.
             const data = await warehouseService.getWarehouseTemplates(token, apiParams);
 
             if (data) {
-                // Handle different response structures (array vs paginated object)
                 let items: Warehouse[] = [];
                 let total = 0;
-
                 if (Array.isArray(data)) {
                     items = data;
                     total = data.length;
@@ -113,286 +167,512 @@ export default function WarehouseTemplatePage() {
                     total = data.total || 0;
                 }
                 setWarehouses(items);
-                setPagination(prev => ({
-                    ...prev,
-                    total,
-                    totalPages: Math.ceil(total / prev.limit)
-                }));
+                setTotalItems(total);
             }
         } catch (err) {
             const error = err instanceof Error ? err : new Error(String(err));
-            console.error("Failed to fetch warehouses", error);
-            if (error.message === "Unauthorized") {
-                router.push("/login");
-                return;
-            }
-            // Fallback for demo purposes if API fails completely
+            if (error.message === "Unauthorized") { router.push("/login"); return; }
             setError("Không thể tải dữ liệu kho. Vui lòng thử lại sau.");
         } finally {
             setLoading(false);
         }
-    };
+    }, [debouncedKeywords, provinceFilter, statusFilter, currentPage, router]);
 
-    //fetch location data for filters
-    const fetchLocation = async () => {
+    // ── Fetch provinces ──
+    const fetchProvinces = useCallback(async () => {
         try {
-            const ward = await locationService.getWards();
-            console.log("Wards data:", ward);
-            // You can set the wards data to state here if needed
-            // setWards(ward);
-            const province = await locationService.getProvinces();
-            console.log("Provinces data:", province);
-        } catch (err) {
-            console.error("Failed to fetch locations", err);
+            const data = await locationService.getProvinces();
+            if (Array.isArray(data)) setProvinces(data);
+        } catch { /* silent */ }
+    }, []);
+
+    useEffect(() => { fetchWarehouses(); }, [fetchWarehouses]);
+    useEffect(() => { fetchProvinces(); }, [fetchProvinces]);
+
+    // ── Client-side sort ──
+    const sortedWarehouses = React.useMemo(() => {
+        if (!sortPriceDir) return warehouses;
+        return [...warehouses].sort((a, b) => {
+            const pa = parseFloat(a.price_per_month) || 0;
+            const pb = parseFloat(b.price_per_month) || 0;
+            return sortPriceDir === "asc" ? pa - pb : pb - pa;
+        });
+    }, [warehouses, sortPriceDir]);
+
+    // ── Selection helpers (Array-based like addons) ──
+    const toggleSelection = (id: string) => {
+        if (selectedIds.includes(id)) {
+            setSelectedIds(selectedIds.filter(item => item !== id));
+        } else {
+            setSelectedIds([...selectedIds, id]);
         }
     };
 
-    // Handlers for modals
-    const handleCreateSuccess = () => {
-        fetchWarehouses();
+    const toggleSelectAll = () => {
+        if (selectedIds.length === sortedWarehouses.length) {
+            setSelectedIds([]);
+        } else {
+            setSelectedIds(sortedWarehouses.map(w => w.id));
+        }
     };
 
-    const handleEdit = (warehouse: Warehouse) => {
-        setSelectedWarehouse(warehouse);
-        setUpdateModalOpen(true);
+    // ── Delete single ──
+    const handleDeleteConfirm = async () => {
+        if (!deleteTarget) return;
+        try {
+            const token = authStorage.getAccessToken();
+            if (!token) return;
+            await warehouseService.deleteWarehouseTemplate(token, deleteTarget.id);
+            toast.success(`Đã xóa "${deleteTarget.name}"`);
+            setDeleteDialogOpen(false);
+            setDeleteTarget(null);
+            setSelectedIds([]);
+            fetchWarehouses();
+        } catch {
+            toast.error("Xóa thất bại. Vui lòng thử lại.");
+        }
     };
 
+    // ── Bulk delete (matches addons pattern) ──
+    const handleBulkDelete = async () => {
+        setIsBulkActionLoading(true);
+        try {
+            const token = authStorage.getAccessToken();
+            if (!token) return;
+            await warehouseService.deleteManyWarehouseTemplates(token, selectedIds);
+            toast.success(`Đã xóa ${selectedIds.length} template`);
+            setIsBulkDeleteDialogOpen(false);
+            setSelectedIds([]);
+            fetchWarehouses();
+        } catch {
+            toast.error("Xóa thất bại. Vui lòng thử lại.");
+        } finally {
+            setIsBulkActionLoading(false);
+        }
+    };
+
+    // ── Handlers ──
+    const handleEdit = (id: string) => router.push(`/dashboard/admin/warehouses/${id}`);
+    const handleDuplicate = (warehouse: Warehouse) => {
+        router.push(`/dashboard/admin/warehouses/create?duplicate=${warehouse.id}`);
+    };
     const handleDelete = (warehouse: Warehouse) => {
-        setSelectedWarehouse(warehouse);
-        setDeleteModalOpen(true);
+        setDeleteTarget(warehouse);
+        setDeleteDialogOpen(true);
     };
 
-    const handleUpdateSuccess = () => {
-        fetchWarehouses();
-    };
-
-    const handleDeleteSuccess = () => {
-        fetchWarehouses();
-    };
-
-    useEffect(() => {
-        fetchWarehouses();
-        fetchLocation(); // test lấy danh sách tỉnh và phường
-    }, [debouncedKeywords, filters.province_id, filters.status_label, pagination.page]);
-
-    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setFilters(prev => ({ ...prev, keywords: e.target.value }));
-        setPagination(prev => ({ ...prev, page: 1 })); // Reset to page 1 on search
-    };
-
-    const handleProvinceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        setFilters(prev => ({ ...prev, province_id: e.target.value }));
-        setPagination(prev => ({ ...prev, page: 1 }));
-    };
-
-    const handleTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        setFilters(prev => ({ ...prev, type_label: e.target.value }));
-        setPagination(prev => ({ ...prev, page: 1 }));
-    };
-
-    const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        setFilters(prev => ({ ...prev, status_label: e.target.value }));
-        setPagination(prev => ({ ...prev, page: 1 }));
-    };
-
-    const handlePageChange = (newPage: number) => {
-        if (newPage >= 1 && newPage <= pagination.totalPages) {
-            setPagination(prev => ({ ...prev, page: newPage }));
-        }
-    };
-
+    // ════════════════════════════════════════════
+    // RENDER
+    // ════════════════════════════════════════════
     return (
-        <>
-            <div className="p-4 py-0">
-                {/* Page Header */}
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
-                    <div>
-                        <h1 className="text-2xl font-bold text-slate-900 mb-1">Quản lý kho</h1>
-                        <p className="text-slate-500">Quản lý và theo dõi {pagination.total} kho hàng trên toàn hệ thống</p>
+        <div className="space-y-6">
+            {/* ── Header ── */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h1 className="text-3xl font-bold tracking-tight" style={{ fontSize: "32px", lineHeight: "130%" }}>
+                        Quản lý kho
+                    </h1>
+                    <p className="text-muted-foreground mt-1">
+                        Quản lý và theo dõi {totalItems} kho hàng trên toàn hệ thống
+                    </p>
+                </div>
+                <div className="flex items-center gap-2">
+                    <Button variant="outline" className="gap-2" style={{ borderRadius: "12px" }}>
+                        <ArrowDownTrayIcon className="w-4 h-4" />
+                        <span className="hidden sm:inline">Xuất Excel</span>
+                    </Button>
+                    <Button
+                        onClick={() => router.push("/dashboard/admin/warehouses/create")}
+                        className="gap-2 bg-[#0F766E] hover:bg-[#0F766E]/90 text-white"
+                        style={{ borderRadius: "12px" }}
+                    >
+                        <PlusIcon className="w-4 h-4" />
+                        Thêm kho mới
+                    </Button>
+                </div>
+            </div>
+
+            {/* ── Filter Bar ── */}
+            <Card className="border-0 shadow-premium" style={{ borderRadius: "24px" }}>
+                <CardContent className="p-6">
+                    <div className="flex flex-wrap items-center gap-4">
+                        {/* Search */}
+                        <div className="relative flex-1 min-w-[250px]">
+                            <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                            <Input
+                                placeholder="Tìm kiếm kho..."
+                                className="pl-9"
+                                value={searchTerm}
+                                onChange={(e) => {
+                                    setSearchTerm(e.target.value);
+                                    setCurrentPage(1);
+                                }}
+                                style={{ borderRadius: "12px" }}
+                            />
+                        </div>
+
+                        {/* Province filter */}
+                        <Select value={provinceFilter} onValueChange={(v) => { setProvinceFilter(v); setCurrentPage(1); }}>
+                            <SelectTrigger className="w-[200px]" style={{ borderRadius: "12px" }}>
+                                <SelectValue placeholder="Khu vực: Tất cả" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">Tất cả khu vực</SelectItem>
+                                {provinces.map(p => (
+                                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+
+                        {/* Status Filters */}
+                        <div className="flex items-center gap-2">
+                            <Button
+                                variant={statusFilter === "all" ? "secondary" : "ghost"}
+                                onClick={() => { setStatusFilter("all"); setCurrentPage(1); }}
+                                size="sm"
+                                className="rounded-full"
+                            >
+                                Tất cả
+                            </Button>
+                            <Button
+                                variant={statusFilter === "active" ? "secondary" : "ghost"}
+                                onClick={() => { setStatusFilter("active"); setCurrentPage(1); }}
+                                size="sm"
+                                className="rounded-full gap-1"
+                            >
+                                <CheckCircleIcon className="w-4 h-4 text-green-600" /> Hoạt động
+                            </Button>
+                            <Button
+                                variant={statusFilter === "inactive" ? "secondary" : "ghost"}
+                                onClick={() => { setStatusFilter("inactive"); setCurrentPage(1); }}
+                                size="sm"
+                                className="rounded-full gap-1"
+                            >
+                                <XCircleIcon className="w-4 h-4 text-gray-400" /> Đang bảo trì
+                            </Button>
+                            <Button
+                                variant={statusFilter === "full" ? "secondary" : "ghost"}
+                                onClick={() => { setStatusFilter("full"); setCurrentPage(1); }}
+                                size="sm"
+                                className="rounded-full gap-1"
+                            >
+                                Đầy kho
+                            </Button>
+                        </div>
                     </div>
-                    <div className="flex items-center gap-3 flex-wrap">
-                        <button className="px-4 py-2 bg-white border border-slate-200 rounded-lg text-slate-700 font-medium hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm flex items-center gap-2">
-                            <i className="fas fa-file-export text-slate-400"></i>
-                            <span className="hidden sm:inline">Xuất Excel</span>
-                            <span className="sm:hidden">Excel</span>
-                        </button>
-                        <Button 
-                            onClick={() => setCreateModalOpen(true)}
-                            className="gap-2"
-                            style={{ borderRadius: "12px" }}
+                </CardContent>
+            </Card>
+
+            {/* ── Table ── */}
+            <Card className="border-0 shadow-premium overflow-hidden" style={{ borderRadius: "24px" }}>
+                <CardContent className="p-0">
+                    <div className="overflow-x-auto">
+                        <table className="w-full">
+                            <thead className="bg-muted/30 border-b">
+                                <tr>
+                                    <th className="w-12 py-3 px-4">
+                                        <Checkbox
+                                            checked={sortedWarehouses.length > 0 && selectedIds.length === sortedWarehouses.length}
+                                            onCheckedChange={toggleSelectAll}
+                                        />
+                                    </th>
+                                    <th className="text-left py-3 px-4 font-semibold text-xs text-muted-foreground uppercase w-[30%]">
+                                        Template Info
+                                    </th>
+                                    <th className="text-left py-3 px-4 font-semibold text-xs text-muted-foreground uppercase">
+                                        Specs
+                                    </th>
+                                    <th
+                                        className="text-left py-3 px-4 font-semibold text-xs text-muted-foreground uppercase cursor-pointer select-none"
+                                        onClick={() =>
+                                            setSortPriceDir(prev =>
+                                                prev === null ? "asc" : prev === "asc" ? "desc" : null
+                                            )
+                                        }
+                                    >
+                                        <div className="flex items-center gap-1">
+                                            <span>Price</span>
+                                            <ChevronUpDownIcon className="w-4 h-4" />
+                                            {sortPriceDir && (
+                                                <span className="text-[10px] text-primary">
+                                                    {sortPriceDir === "asc" ? "↑" : "↓"}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </th>
+                                    <th className="text-center py-3 px-4 font-semibold text-xs text-muted-foreground uppercase">
+                                        Status
+                                    </th>
+                                    <th className="text-right py-3 px-4 font-semibold text-xs text-muted-foreground uppercase">
+                                        Thao tác
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y relative">
+                                {loading ? (
+                                    Array.from({ length: 5 }).map((_, index) => (
+                                        <tr key={`skeleton-${index}`}>
+                                            <td className="py-4 px-4"><Skeleton className="h-4 w-4 rounded" /></td>
+                                            <td className="py-4 px-4">
+                                                <div className="flex items-center gap-3">
+                                                    <Skeleton className="h-12 w-12 rounded-lg" />
+                                                    <div>
+                                                        <Skeleton className="h-5 w-32 mb-2" />
+                                                        <Skeleton className="h-4 w-24" />
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="py-4 px-4">
+                                                <Skeleton className="h-5 w-24 mb-1" />
+                                                <Skeleton className="h-5 w-16 rounded-md" />
+                                            </td>
+                                            <td className="py-4 px-4"><Skeleton className="h-6 w-28" /></td>
+                                            <td className="py-4 px-4"><div className="flex justify-center"><Skeleton className="h-6 w-24 rounded-full" /></div></td>
+                                            <td className="py-4 px-4"><div className="flex justify-end gap-2"><Skeleton className="h-8 w-8 rounded-full" /></div></td>
+                                        </tr>
+                                    ))
+                                ) : error ? (
+                                    <tr>
+                                        <td colSpan={6} className="py-12 text-center text-muted-foreground">
+                                            {error}
+                                        </td>
+                                    </tr>
+                                ) : sortedWarehouses.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={6} className="py-12 text-center text-muted-foreground">
+                                            Không tìm thấy kho nào phù hợp
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    sortedWarehouses.map((w) => (
+                                        <tr
+                                            key={w.id}
+                                            className="hover:bg-muted/50 transition-colors group cursor-pointer"
+                                            onClick={() => handleEdit(w.id)}
+                                        >
+                                            {/* Checkbox */}
+                                            <td className="py-4 px-4" onClick={(e) => e.stopPropagation()}>
+                                                <Checkbox
+                                                    checked={selectedIds.includes(w.id)}
+                                                    onCheckedChange={() => toggleSelection(w.id)}
+                                                />
+                                            </td>
+
+                                            {/* Template Info */}
+                                            <td className="py-4 px-4">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="h-12 w-12 rounded-lg overflow-hidden bg-muted flex-shrink-0">
+                                                        {w.images?.[0] ? (
+                                                            <img
+                                                                src={w.images[0].url?.startsWith("http") ? w.images[0].url : `${IMG_API}${w.images[0].url}`}
+                                                                alt={w.name}
+                                                                className="h-full w-full object-cover"
+                                                            />
+                                                        ) : (
+                                                            <div className="h-full w-full flex items-center justify-center text-lg">📦</div>
+                                                        )}
+                                                    </div>
+                                                    <div>
+                                                        <div className="font-semibold text-base text-gray-900">{w.name}</div>
+                                                        <div className="text-sm text-muted-foreground/80 mt-0.5 font-normal">
+                                                            {w.ward?.province?.name || "—"}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </td>
+
+                                            {/* Specs */}
+                                            <td className="py-4 px-4">
+                                                <div className="flex flex-col gap-1">
+                                                    <span className="text-sm font-medium text-gray-600">
+                                                        {w.length} × {w.width} m
+                                                    </span>
+                                                    <WarehouseTypeBadge warehouse={w} />
+                                                </div>
+                                            </td>
+
+                                            {/* Price */}
+                                            <td className="py-4 px-4">
+                                                <div className="font-bold text-base text-[#0F766E]">
+                                                    {formatVND(w.price_per_month)}
+                                                </div>
+                                            </td>
+
+                                            {/* Status */}
+                                            <td className="py-4 px-4 text-center">
+                                                {w.is_active ? (
+                                                    <Badge className="bg-green-50 text-green-700 hover:bg-green-100 border-green-200 gap-1 pl-1 pr-2 rounded-full shadow-none font-normal">
+                                                        <CheckCircleIcon className="w-4 h-4" /> Hoạt động
+                                                    </Badge>
+                                                ) : (
+                                                    <Badge variant="secondary" className="gap-1 pl-1 pr-2 rounded-full shadow-none font-normal text-muted-foreground">
+                                                        <XCircleIcon className="w-4 h-4" /> Khóa
+                                                    </Badge>
+                                                )}
+                                            </td>
+
+                                            {/* Actions */}
+                                            <td className="py-4 px-4 text-right" onClick={(e) => e.stopPropagation()}>
+                                                <div className="flex justify-end gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild>
+                                                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
+                                                                <EllipsisHorizontalIcon className="w-5 h-5" />
+                                                            </Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent align="end">
+                                                            <DropdownMenuItem onClick={() => handleEdit(w.id)}>
+                                                                <PencilSquareIcon className="w-4 h-4 mr-2" />
+                                                                Chỉnh sửa
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem onClick={() => handleDuplicate(w)}>
+                                                                <DocumentDuplicateIcon className="w-4 h-4 mr-2" />
+                                                                Nhân bản
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuSeparator />
+                                                            <DropdownMenuItem
+                                                                className="text-destructive focus:text-destructive"
+                                                                onClick={() => handleDelete(w)}
+                                                            >
+                                                                <TrashIcon className="w-4 h-4 mr-2" />
+                                                                Xóa
+                                                            </DropdownMenuItem>
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* ── Pagination ── */}
+            {totalItems > ITEMS_PER_PAGE && (
+                <div className="flex items-center justify-between">
+                    <div className="text-sm text-muted-foreground">
+                        Hiển thị {(currentPage - 1) * ITEMS_PER_PAGE + 1} đến {Math.min(currentPage * ITEMS_PER_PAGE, totalItems)} trong tổng số {totalItems} kết quả
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                            disabled={currentPage === 1}
+                            className="h-8 w-8 p-0 rounded-lg"
                         >
-                            <Plus className="w-4 h-4" />
-                            <span className="hidden sm:inline">Thêm kho mới</span>
-                            <span className="sm:hidden">Thêm</span>
+                            <ChevronLeftIcon className="h-4 w-4" />
+                        </Button>
+                        <div className="flex items-center gap-1">
+                            {Array.from({ length: totalPages }, (_, i) => i + 1)
+                                .filter(page => Math.abs(page - currentPage) <= 2 || page === 1 || page === totalPages)
+                                .map((page, index, array) => (
+                                    <React.Fragment key={page}>
+                                        {index > 0 && array[index - 1] !== page - 1 && (
+                                            <span className="text-gray-400">...</span>
+                                        )}
+                                        <Button
+                                            variant={currentPage === page ? "default" : "outline"}
+                                            size="sm"
+                                            onClick={() => { setCurrentPage(page); setSelectedIds([]); }}
+                                            className={`h-8 min-w-[32px] rounded-lg ${currentPage === page ? "bg-[#0F766E] hover:bg-[#0F766E]/90" : "text-gray-600"}`}
+                                        >
+                                            {page}
+                                        </Button>
+                                    </React.Fragment>
+                                ))
+                            }
+                        </div>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                            disabled={currentPage === totalPages}
+                            className="h-8 w-8 p-0 rounded-lg"
+                        >
+                            <ChevronRightIcon className="h-4 w-4" />
                         </Button>
                     </div>
                 </div>
-                <div className="flex items-center gap-4 bg-slate-50 px-4 py-2 rounded-xl border border-slate-200 focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all w-full md:w-96 mb-6">
-                    <i className="fas fa-search text-slate-400"></i>
-                    <input
-                        type="text"
-                        placeholder="Tìm kiếm kho..."
-                        className="bg-transparent border-none outline-none text-sm w-full placeholder-slate-400 text-slate-700"
-                        value={filters.keywords}
-                        onChange={handleSearchChange}
-                    />
-                </div>
-                {/* Filters */}
-                <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-6 flex flex-col sm:flex-row items-start sm:items-center gap-4 flex-wrap">
-                    <div className="flex items-center gap-2 text-slate-700 font-medium min-w-[80px]">
-                        <i className="fas fa-filter text-primary"></i>
-                        Bộ lọc:
-                    </div>
+            )}
 
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full sm:w-auto flex-1">
-                        <div className="relative group w-full">
-                            <select
-                                className="appearance-none w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 px-4 pr-8 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer"
-                                value={filters.province_id}
-                                onChange={handleProvinceChange}
-                            >
-                                <option value="">Khu vực: Tất cả</option>
-                                <option value="hanoi">Hà Nội (Demo)</option>
-                                <option value="danang">Đà Nẵng (Demo)</option>
-                                <option value="hcm">TP. HCM (Demo)</option>
-                            </select>
-                            <i className="fas fa-chevron-down absolute right-3 top-3 text-slate-400 text-xs pointer-events-none group-hover:text-primary transition-colors"></i>
-                        </div>
-
-                        <div className="relative group w-full">
-                            <select
-                                className="appearance-none w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 px-4 pr-8 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer"
-                                value={filters.type_label}
-                                onChange={handleTypeChange}
-                            >
-                                <option value="Tất cả">Loại kho: Tất cả</option>
-                                <option value="Kho công nghệ">Kho công nghệ</option>
-                                <option value="Kho thường">Kho thường</option>
-                                <option value="Kho lạnh">Kho lạnh</option>
-                            </select>
-                            <i className="fas fa-chevron-down absolute right-3 top-3 text-slate-400 text-xs pointer-events-none group-hover:text-primary transition-colors"></i>
-                        </div>
-
-                        <div className="relative group w-full">
-                            <select
-                                className="appearance-none w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 px-4 pr-8 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer"
-                                value={filters.status_label}
-                                onChange={handleStatusChange}
-                            >
-                                <option value="Tất cả">Trạng thái: Tất cả</option>
-                                <option value="Hoạt động">Hoạt động</option>
-                                <option value="Đang bảo trì">Đang bảo trì</option>
-                                <option value="Đầy kho">Đầy kho</option>
-                            </select>
-                            <i className="fas fa-chevron-down absolute right-3 top-3 text-slate-400 text-xs pointer-events-none group-hover:text-primary transition-colors"></i>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Warehouse Grid */}
-                {loading ? (
-                    <div className="flex justify-center items-center h-64">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-                    </div>
-                ) : error ? (
-                    <div className="text-center p-8 bg-red-50 text-red-600 rounded-xl">
-                        {error}
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
-                        {warehouses.map((warehouse) => (
-                            <WarehouseCard 
-                                key={warehouse.id} 
-                                warehouse={warehouse} 
-                                onEdit={handleEdit}
-                                onDelete={handleDelete}
-                            />
-                        ))}
-
-                        {/* Add New Card (always visible at end) */}
-                        {warehouses.length < pagination.limit && (
-                            <div 
-                                onClick={() => setCreateModalOpen(true)}
-                                className="border-2 border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center p-8 text-slate-400 hover:border-primary hover:text-primary hover:bg-teal-50/50 transition-all cursor-pointer h-full min-h-[400px] group"
-                            >
-                                <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4 group-hover:bg-teal-100 transition-colors">
-                                    <i className="fas fa-plus text-2xl group-hover:scale-110 transition-transform"></i>
-                                </div>
-                                <span className="font-semibold">Thêm kho mới</span>
-                                <p className="text-sm mt-2 text-center max-w-[200px]">Tạo kho mới với cấu hình tùy chỉnh</p>
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {/* Pagination */}
-                <div className="flex flex-col md:flex-row items-center justify-between gap-4 border-t border-slate-200 pt-6">
-                    <div className="text-sm text-slate-500">
-                        Hiển thị <span className="font-medium text-slate-900">{warehouses.length > 0 ? (pagination.page - 1) * pagination.limit + 1 : 0}-{Math.min(pagination.page * pagination.limit, pagination.total)}</span> của <span className="font-medium text-slate-900">{pagination.total}</span> kho
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                        <button
-                            className="w-10 h-10 flex items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 hover:border-slate-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                            onClick={() => handlePageChange(pagination.page - 1)}
-                            disabled={pagination.page <= 1}
+            {/* ══════════════════════════════════════════
+                Floating Bulk Action Bar (Addons Pattern)
+               ══════════════════════════════════════════ */}
+            {selectedIds.length > 0 && (
+                <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50">
+                    <div
+                        className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg border border-border shadow-2xl px-4 py-2 flex items-center gap-4 animate-in slide-in-from-bottom-4 fade-in"
+                        style={{ borderRadius: "24px" }}
+                    >
+                        <span className="text-muted-foreground text-sm font-medium">
+                            {selectedIds.length} đã chọn
+                        </span>
+                        <div className="h-4 w-px bg-border" />
+                        <Button
+                            variant="destructive"
+                            size="sm"
+                            className="gap-2 rounded-xl"
+                            onClick={() => setIsBulkDeleteDialogOpen(true)}
                         >
-                            <i className="fas fa-chevron-left text-xs"></i>
-                        </button>
-
-                        {/* Simple pagination buttons logic */}
-                        {[...Array(pagination.totalPages)].map((_, i) => {
-                            const pageNum = i + 1;
-                            // Show first, last, and current +- 1. Simplified for now.
-                            if (pageNum === 1 || pageNum === pagination.totalPages || (pageNum >= pagination.page - 1 && pageNum <= pagination.page + 1)) {
-                                return (
-                                    <button
-                                        key={pageNum}
-                                        className={`w-10 h-10 flex items-center justify-center rounded-lg font-medium transition-all ${pagination.page === pageNum
-                                            ? "bg-brand text-white shadow-lg shadow-brand/30"
-                                            : "text-slate-600 hover:bg-slate-50 border border-transparent hover:border-slate-200"
-                                            }`}
-                                        onClick={() => handlePageChange(pageNum)}
-                                    >
-                                        {pageNum}
-                                    </button>
-                                );
-                            } else if (pageNum === pagination.page - 2 || pageNum === pagination.page + 2) {
-                                return <span key={pageNum} className="text-slate-400">...</span>
-                            }
-                            return null;
-                        })}
-
-                        <button
-                            className="w-10 h-10 flex items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 hover:border-slate-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                            onClick={() => handlePageChange(pagination.page + 1)}
-                            disabled={pagination.page >= pagination.totalPages}
+                            <TrashIcon className="w-4 h-4" /> Xóa
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setSelectedIds([])}
+                            className="rounded-full text-muted-foreground hover:text-foreground h-8 w-8"
                         >
-                            <i className="fas fa-chevron-right text-xs"></i>
-                        </button>
+                            <XMarkIcon className="w-4 h-4" />
+                        </Button>
                     </div>
                 </div>
-            </div>
-            
-            <CreateWarehouseModal
-                open={createModalOpen}
-                onOpenChange={setCreateModalOpen}
-                onSuccess={handleCreateSuccess}
-            />
-            
-            <UpdateWarehouseModal
-                open={updateModalOpen}
-                onOpenChange={setUpdateModalOpen}
-                warehouse={selectedWarehouse}
-                onSuccess={handleUpdateSuccess}
-            />
-            
-            <DeleteWarehouseDialog
-                open={deleteModalOpen}
-                onOpenChange={setDeleteModalOpen}
-                warehouse={selectedWarehouse}
-                onSuccess={handleDeleteSuccess}
-            />
-        </>
+            )}
+
+            {/* ── Delete Confirmation Dialog ── */}
+            <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                <DialogContent style={{ borderRadius: "16px" }}>
+                    <DialogHeader>
+                        <DialogTitle>Xác nhận xóa</DialogTitle>
+                        <DialogDescription>
+                            Bạn có chắc chắn muốn xóa kho &quot;{deleteTarget?.name}&quot; không?
+                            Hành động này không thể hoàn tác.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setDeleteDialogOpen(false)} style={{ borderRadius: "12px" }}>
+                            Hủy
+                        </Button>
+                        <Button variant="destructive" onClick={handleDeleteConfirm} style={{ borderRadius: "12px" }}>
+                            Xóa
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* ── Bulk Delete Dialog ── */}
+            <Dialog open={isBulkDeleteDialogOpen} onOpenChange={setIsBulkDeleteDialogOpen}>
+                <DialogContent style={{ borderRadius: "16px" }}>
+                    <DialogHeader>
+                        <DialogTitle>Xác nhận xóa nhiều</DialogTitle>
+                        <DialogDescription>
+                            Bạn có chắc chắn muốn xóa {selectedIds.length} template đã chọn không?
+                            Hành động này không thể hoàn tác.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsBulkDeleteDialogOpen(false)} disabled={isBulkActionLoading} style={{ borderRadius: "12px" }}>
+                            Hủy
+                        </Button>
+                        <Button variant="destructive" onClick={handleBulkDelete} disabled={isBulkActionLoading} style={{ borderRadius: "12px" }}>
+                            {isBulkActionLoading ? "Đang xóa..." : "Xóa tất cả"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        </div>
     );
 }

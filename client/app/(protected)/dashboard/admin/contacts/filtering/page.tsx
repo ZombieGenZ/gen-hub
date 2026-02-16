@@ -95,9 +95,9 @@ export default function ContactFilteringPage() {
             });
 
             if (response && response.data) {
-                setEntries(response.data);
-                if (response.meta) {
-                    setTotal(response.meta.total);
+                setEntries(response.data.items || []);
+                if (response.data.total !== undefined) {
+                    setTotal(response.data.total);
                 }
             }
         } catch (error) {
@@ -174,7 +174,7 @@ export default function ContactFilteringPage() {
     const totalPages = Math.ceil(total / limit);
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 p-4">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h1 className="font-bold text-slate-900" style={{ fontSize: "32px", lineHeight: "130%" }}>

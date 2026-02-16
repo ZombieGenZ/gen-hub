@@ -70,13 +70,29 @@ export function AppSidebarContent({
     const [user, setUser] = useState<any>(null);
     const { unreadCount } = useNotifications();
     const { openModal } = useProfileModal();
-    const [collapsedGroups, setCollapsedGroups] = useState<Record<number, boolean>>({});
+    const [expandedGroups, setExpandedGroups] = useState<Record<number, boolean>>({});
+
+    // Load persisted state
+    useEffect(() => {
+        const stored = localStorage.getItem("sidebar:groups-state");
+        if (stored) {
+            try {
+                setExpandedGroups(JSON.parse(stored));
+            } catch (e) {
+                console.error("Failed to parse sidebar groups state", e);
+            }
+        }
+    }, []);
 
     const toggleGroup = (index: number) => {
-        setCollapsedGroups(prev => ({
-            ...prev,
-            [index]: !prev[index]
-        }));
+        setExpandedGroups(prev => {
+            const next = {
+                ...prev,
+                [index]: !prev[index]
+            };
+            localStorage.setItem("sidebar:groups-state", JSON.stringify(next));
+            return next;
+        });
     };
 
     // Load User Data
@@ -117,11 +133,11 @@ export function AppSidebarContent({
 
                 {/* Navigation Links */}
                 <nav className={cn(
-                    "flex-1 px-4 overflow-visible py-4 transition-all duration-300",
+                    "flex-1 px-4 overflow-y-auto overflow-x-hidden py-4 transition-all duration-300 min-h-0 scrollbar-hide",
                     isCollapsed ? "space-y-2" : "space-y-6"
                 )}>
                     {groups.map((group, groupIndex) => {
-                        const isGroupCollapsed = collapsedGroups[groupIndex];
+                        const isGroupExpanded = expandedGroups[groupIndex]; // Default is undefined (false/collapsed)
                         return (
                             <div key={groupIndex}>
                                 <button
@@ -134,12 +150,12 @@ export function AppSidebarContent({
                                     <span>{group.title}</span>
                                     <ChevronRightIcon className={cn(
                                         "w-3 h-3 transition-transform duration-200",
-                                        !isGroupCollapsed ? "rotate-90" : ""
+                                        isGroupExpanded ? "rotate-90" : ""
                                     )} />
                                 </button>
                                 <div className={cn(
                                     "space-y-1 transition-all duration-300 overflow-hidden",
-                                    !isCollapsed && isGroupCollapsed ? "max-h-0 opacity-0" : "max-h-[500px] opacity-100" // Simple collapse
+                                    !isCollapsed && !isGroupExpanded ? "max-h-0 opacity-0" : "max-h-[500px] opacity-100" // Simple collapse
                                 )}>
                                     {group.items.map((item, itemIndex) => (
                                         <NavItem

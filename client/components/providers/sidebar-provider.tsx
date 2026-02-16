@@ -13,25 +13,43 @@ interface SidebarContextType {
 const SidebarContext = createContext<SidebarContextType | undefined>(undefined);
 
 export function SidebarProvider({ children }: { children: React.ReactNode }) {
-    const [isOpen, setIsOpen] = useState(true);
+    const [isOpen, setIsOpenState] = useState(true); 
     const [isMobile, setIsMobile] = useState(false);
 
+    const updateOpenState = (newState: boolean) => {
+        setIsOpenState(newState);
+        localStorage.setItem("sidebar:state", String(newState));
+    };
+
     useEffect(() => {
-        const checkMobile = () => {
-            const mobile = window.innerWidth < 1024; // lg breakpoint
+        const handleResize = () => {
+            const mobile = window.innerWidth < 1024; 
             setIsMobile(mobile);
-            if (mobile) setIsOpen(false); // Default close on mobile
-            else setIsOpen(true); // Default open on desktop
+
+            if (mobile) {
+                setIsOpenState(false);
+            } else {
+                const stored = localStorage.getItem("sidebar:state");
+                setIsOpenState(stored === "true");
+            }
         };
 
-        checkMobile();
-        window.addEventListener("resize", checkMobile);
-        return () => window.removeEventListener("resize", checkMobile);
+        handleResize();
+
+        window.addEventListener("resize", handleResize);
+        return () => window.removeEventListener("resize", handleResize);
     }, []);
 
-    const toggle = () => setIsOpen((prev) => !prev);
-    const close = () => setIsOpen(false);
-    const open = () => setIsOpen(true);
+    const toggle = () => {
+        setIsOpenState((prev) => {
+            const next = !prev;
+            localStorage.setItem("sidebar:state", String(next));
+            return next;
+        });
+    };
+
+    const close = () => updateOpenState(false);
+    const open = () => updateOpenState(true);
 
     return (
         <SidebarContext.Provider value={{ isOpen, toggle, close, open, isMobile }}>

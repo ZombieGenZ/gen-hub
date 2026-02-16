@@ -241,6 +241,15 @@ html::-webkit-scrollbar-thumb:hover {
 }
 
 /* Custom Utilities */
+
+.scrollbar-hide {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+
 .custom-map-popup .mapboxgl-popup-content {
   background: transparent !important;
   box-shadow: none !important;

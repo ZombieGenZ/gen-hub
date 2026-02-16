@@ -48,7 +48,7 @@ export default function ContactTagsPage() {
             });
 
             if (response && response.data) {
-                setTags(response.data);
+                setTags(response.data.items || []);
             }
         } catch (error) {
             console.error("Failed to fetch contact tags", error);
@@ -79,7 +79,7 @@ export default function ContactTagsPage() {
     };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 p-4">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h1 className="font-bold text-slate-900" style={{ fontSize: "32px", lineHeight: "130%" }}>
