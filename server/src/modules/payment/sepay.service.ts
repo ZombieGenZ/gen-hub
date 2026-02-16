@@ -463,4 +463,181 @@ export class SepayService {
             hasMore: offset + items.length < total,
         };
     }
+
+    /**
+     * Admin manually accept payment (giống như webhook thành công)
+     * Thực hiện toàn bộ logic như khi payment thực tế được hoàn thành
+     */
+    async manualAcceptPayment(paymentId: string, adminUserId: string): Promise<{ success: boolean; message: string }> {
+        const payment = await this.prisma.payment.findUnique({
+            where: { id: paymentId },
+            include: {
+                rental_contract: true,
+                organization: true,
+            },
+        });
+
+        if (!payment) {
+            throw new BadRequestException('Payment not found');
+        }
+
+        if (payment.status !== PaymentStatus.PENDING) {
+            throw new BadRequestException(`Payment is not PENDING. Current status: ${payment.status}`);
+        }
+
+        // Cập nhật payment status = PAID với admin action
+        await this.prisma.payment.update({
+            where: { id: payment.id },
+            data: {
+                status: PaymentStatus.PAID,
+                paid_at: new Date(),
+                // Note: sepay_transaction_id để null vì đây là manual action
+            },
+        });
+
+        // Xử lý theo loại payment (giống logic trong handlePaymentWebhook)
+        if (payment.type === PaymentType.ACCOUNT_DEPOSIT) {
+            // Nạp tiền vào tài khoản tổ chức
+            const organizationId = payment.organization_id;
+            if (organizationId) {
+                await this.organizationBalanceService.processDepositSuccess(
+                    organizationId,
+                    payment.amount,
+                    payment.id,
+                    payment.payment_code,
+                    adminUserId, // Admin is performing the action
+                );
+            }
+        } else if (payment.type === PaymentType.NEW_CONTRACT && payment.rental_contract_id) {
+            // Cập nhật rental contract status = ACTIVE
+            await this.prisma.rentalContract.update({
+                where: { id: payment.rental_contract_id },
+                data: { status: 'ACTIVE' },
+            });
+
+            // Hủy các contracts PENDING xung đột
+            await this.rentalContractService.cancelConflictingContracts(payment.rental_contract_id);
+
+            // Emit socket contract:activated
+            const contract = await this.prisma.rentalContract.findUnique({
+                where: { id: payment.rental_contract_id },
+            });
+            if (contract) {
+                this.websocketGateway.server.to(`user:${payment.created_by}`).emit('contract:activated', {
+                    contractId: contract.id,
+                    code: contract.code,
+                    manuallyAccepted: true,
+                    acceptedByAdmin: adminUserId,
+                });
+            }
+        }
+
+        // Emit socket payment:paid
+        this.websocketGateway.server.to(`user:${payment.created_by}`).emit('payment:paid', {
+            paymentId: payment.id,
+            contractId: payment.rental_contract_id,
+            paidAt: new Date(),
+            manuallyAccepted: true,
+            acceptedByAdmin: adminUserId,
+        });
+
+        this.systemLogService.info('payment', 'manual-accept',
+            `Payment manually accepted by admin: ${payment.payment_code}`,
+            { userId: adminUserId, metaData: { paymentId: payment.id, paymentCode: payment.payment_code } });
+
+        // Tự động thêm user vào whitelist sau khi thanh toán thành công
+        if (payment.created_by) {
+            try {
+                const user = await this.prisma.user.findUnique({
+                    where: { id: payment.created_by },
+                    select: { email: true }
+                });
+
+                if (user?.email) {
+                    await this.contactListService.addToWhitelist(
+                        user.email,
+                        `Auto whitelist after manually accepted payment: ${payment.payment_code}`,
+                        'SYSTEM_PAYMENT'
+                    );
+                }
+            } catch (error) {
+                this.systemLogService.error('payment', 'auto_whitelist',
+                    `Failed to auto whitelist user ${payment.created_by}: ${error.message}`,
+                    { metaData: { paymentId: payment.id } });
+            }
+        }
+
+        return { success: true, message: 'Payment manually accepted successfully' };
+    }
+
+    /**
+     * Admin manually reject payment (giống như hủy payment)
+     * Thực hiện toàn bộ logic như khi payment bị từ chối/hủy
+     */
+    async manualRejectPayment(paymentId: string, adminUserId: string): Promise<{ success: boolean; message: string }> {
+        const payment = await this.prisma.payment.findUnique({
+            where: { id: paymentId },
+            include: {
+                rental_contract: true,
+            },
+        });
+
+        if (!payment) {
+            throw new BadRequestException('Payment not found');
+        }
+
+        if (payment.status !== PaymentStatus.PENDING) {
+            throw new BadRequestException(`Payment is not PENDING. Current status: ${payment.status}`);
+        }
+
+        // Cập nhật payment status = CANCELLED
+        await this.prisma.payment.update({
+            where: { id: payment.id },
+            data: {
+                status: PaymentStatus.CANCELLED,
+            },
+        });
+
+        // Nếu là payment cho rental contract, hủy contract
+        if (payment.rental_contract_id) {
+            const contract = await this.prisma.rentalContract.findUnique({
+                where: { id: payment.rental_contract_id },
+            });
+
+            if (contract && contract.status === 'PENDING') {
+                // Hủy contract (chỉ hủy nếu còn PENDING)
+                await this.prisma.rentalContract.update({
+                    where: { id: payment.rental_contract_id },
+                    data: {
+                        status: 'CANCELLED',
+                        cancel_reason: 'Payment manually rejected by admin',
+                        cancel_type: 'PROVIDER_REQUEST',
+                    },
+                });
+
+                // Emit socket contract:cancelled
+                this.websocketGateway.server.to(`user:${payment.created_by}`).emit('contract:cancelled', {
+                    contractId: contract.id,
+                    code: contract.code,
+                    reason: 'payment_rejected_by_admin',
+                    rejectedByAdmin: adminUserId,
+                });
+            }
+        }
+
+        // Emit socket payment:cancelled
+        this.websocketGateway.server.to(`user:${payment.created_by}`).emit('payment:cancelled', {
+            paymentId: payment.id,
+            contractId: payment.rental_contract_id,
+            cancelledAt: new Date(),
+            manuallyRejected: true,
+            rejectedByAdmin: adminUserId,
+        });
+
+        this.systemLogService.info('payment', 'manual-reject',
+            `Payment manually rejected by admin: ${payment.payment_code}`,
+            { userId: adminUserId, metaData: { paymentId: payment.id, paymentCode: payment.payment_code } });
+
+        return { success: true, message: 'Payment manually rejected successfully' };
+    }
 }

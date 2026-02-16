@@ -30,3 +30,5 @@ export class QueryPaymentDto {
     @IsUUID()
     organizationId?: string;
 }
+
+export * from './manual-action-payment.dto';

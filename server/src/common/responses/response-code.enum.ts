@@ -39,12 +39,14 @@ export enum ResponseCode {
     ACCOUNT_DOWNLOAD_DATA_SUCCESS = 'account.download_data_success',
     ACCOUNT_DELETE_ACCOUNT_SUCCESS = 'account.delete_account_success',
 
+    // 2FA
     TWO_FACTOR_SETUP_SUCCESS = '2fa.setup_success',
     TWO_FACTOR_VERIFY_SETUP_SUCCESS = '2fa.verify_setup_success',
     TWO_FACTOR_DISABLE_SUCCESS = '2fa.disable_success',
     TWO_FACTOR_VERIFY_LOGIN_SUCCESS = '2fa.verify_login_success',
     TWO_FACTOR_REGENERATE_BACKUP_CODES_SUCCESS = '2fa.regenerate_backup_codes_success',
 
+    // Warehouse Template
     WAREHOUSE_TEMPLATE_CREATE_SUCCESS = 'warehouse_template.create_success',
     WAREHOUSE_TEMPLATE_LIST_SUCCESS = 'warehouse_template.list_success',
     WAREHOUSE_TEMPLATE_GET_SUCCESS = 'warehouse_template.get_success',
@@ -56,6 +58,7 @@ export enum ResponseCode {
     WAREHOUSE_TEMPLATE_IMAGE_DELETE_SUCCESS = 'warehouse_template.image_delete_success',
     WAREHOUSE_TEMPLATE_IMAGE_REORDER_SUCCESS = 'warehouse_template.image_reorder_success',
 
+    // Organization
     ORGANIZATION_CREATE_SUCCESS = 'organization.create_success',
     ORGANIZATION_LIST_SUCCESS = 'organization.list_success',
     ORGANIZATION_GET_SUCCESS = 'organization.get_success',
@@ -98,18 +101,21 @@ export enum ResponseCode {
     APIKEY_DELETE_SUCCESS = 'apikey.delete_success',
     APIKEY_VERIFY_SUCCESS = 'apikey.verify_success',
 
+    // Global Notification
     GLOBAL_NOTIFICATION_CREATE_SUCCESS = 'global_notification.create_success',
     GLOBAL_NOTIFICATION_LIST_SUCCESS = 'global_notification.list_success',
     GLOBAL_NOTIFICATION_GET_SUCCESS = 'global_notification.get_success',
     GLOBAL_NOTIFICATION_UPDATE_SUCCESS = 'global_notification.update_success',
     GLOBAL_NOTIFICATION_DELETE_SUCCESS = 'global_notification.delete_success',
 
+    // User Notification
     USER_NOTIFICATION_LIST_SUCCESS = 'user_notification.list_success',
     USER_NOTIFICATION_GET_SUCCESS = 'user_notification.get_success',
     USER_NOTIFICATION_SEND_SUCCESS = 'user_notification.send_success',
     USER_NOTIFICATION_MARK_READ_SUCCESS = 'user_notification.mark_read_success',
     USER_NOTIFICATION_MARK_ALL_READ_SUCCESS = 'user_notification.mark_all_read_success',
 
+    // Organization Notification
     ORG_NOTIFICATION_CREATE_SUCCESS = 'org_notification.create_success',
     ORG_NOTIFICATION_LIST_SUCCESS = 'org_notification.list_success',
     ORG_NOTIFICATION_GET_SUCCESS = 'org_notification.get_success',
@@ -131,7 +137,6 @@ export enum ResponseCode {
     WAREHOUSE_RACK_UPDATE_SUCCESS = 'warehouse.rack_update_success',
     WAREHOUSE_BLOCK_UPDATE_SUCCESS = 'warehouse.block_update_success',
     WAREHOUSE_BLOCKS_SUCCESS = 'warehouse.blocks_success',
-
 
     // Rental Contract
     RENTAL_CONTRACT_CREATE_SUCCESS = 'rental_contract.create_success',
@@ -207,6 +212,8 @@ export enum ResponseCode {
     // Payment
     PAYMENT_LIST_SUCCESS = 'payment.list_success',
     PAYMENT_GET_SUCCESS = 'payment.get_success',
+    PAYMENT_MANUAL_ACCEPT_SUCCESS = 'payment.manual.accept_success',
+    PAYMENT_MANUAL_REJECT_SUCCESS = 'payment.manual.reject_success',
 
     // Refund Request
     REFUND_REQUEST_LIST_SUCCESS = 'refund_request.list_success',
