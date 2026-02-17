@@ -19,6 +19,8 @@ export class GeminiService implements OnModuleInit {
     private models: Map<number, GenerativeModel> = new Map();
     private modelName: string;
     private isEnabled = false;
+    private lastExhaustionTime: number = 0;
+    private readonly EXHAUSTION_COOLDOWN_MS = 60000; // 1 minute cooldown
 
     constructor(
         private readonly configService: ConfigService,
@@ -92,6 +94,19 @@ export class GeminiService implements OnModuleInit {
             };
         }
 
+        // Check if we're in cooldown period after exhaustion
+        const timeSinceExhaustion = Date.now() - this.lastExhaustionTime;
+        if (this.lastExhaustionTime > 0 && timeSinceExhaustion < this.EXHAUSTION_COOLDOWN_MS) {
+            this.logger.warn(`In cooldown period (${Math.ceil((this.EXHAUSTION_COOLDOWN_MS - timeSinceExhaustion) / 1000)}s remaining)`);
+            return {
+                isUserContact: true,
+                isSpamOrAdvertising: false,
+                category: 'contact',
+                confidence: 0.4,
+                reason: 'API keys in cooldown period',
+            };
+        }
+
         const startTime = Date.now();
         const prompt = buildEmailClassificationPrompt(senderEmail, senderName, subject, content);
 
@@ -159,7 +174,17 @@ export class GeminiService implements OnModuleInit {
 
         // Tất cả API keys đều bị exhausted
         this.logger.error('All Gemini API keys exhausted');
-        throw lastError || new Error('All Gemini API keys exhausted');
+        this.lastExhaustionTime = Date.now();
+
+        // Return default classification instead of throwing to prevent cascading failures
+        this.logger.warn('Returning default classification due to API exhaustion');
+        return {
+            isUserContact: true,
+            isSpamOrAdvertising: false,
+            category: 'contact',
+            confidence: 0.3,
+            reason: 'All API keys exhausted',
+        };
     }
 
     /**
@@ -212,6 +237,20 @@ export class GeminiService implements OnModuleInit {
                 category: 'inquiry',
                 confidence: 0.5,
                 reason: 'AI classification disabled',
+                isPotentialCustomer: Boolean(company || phone),
+            };
+        }
+
+        // Check if we're in cooldown period after exhaustion
+        const timeSinceExhaustion = Date.now() - this.lastExhaustionTime;
+        if (this.lastExhaustionTime > 0 && timeSinceExhaustion < this.EXHAUSTION_COOLDOWN_MS) {
+            this.logger.warn(`In cooldown period (${Math.ceil((this.EXHAUSTION_COOLDOWN_MS - timeSinceExhaustion) / 1000)}s remaining)`);
+            return {
+                isUserContact: true,
+                isSpamOrAdvertising: false,
+                category: 'inquiry',
+                confidence: 0.4,
+                reason: 'API keys in cooldown period',
                 isPotentialCustomer: Boolean(company || phone),
             };
         }
@@ -283,7 +322,18 @@ export class GeminiService implements OnModuleInit {
 
         // Tất cả API keys đều bị exhausted
         this.logger.error('All Gemini API keys exhausted');
-        throw lastError || new Error('All Gemini API keys exhausted');
+        this.lastExhaustionTime = Date.now();
+
+        // Return default classification instead of throwing to prevent cascading failures
+        this.logger.warn('Returning default classification due to API exhaustion');
+        return {
+            isUserContact: true,
+            isSpamOrAdvertising: false,
+            category: 'inquiry',
+            confidence: 0.3,
+            reason: 'All API keys exhausted',
+            isPotentialCustomer: Boolean(company || phone),
+        };
     }
 
     /**

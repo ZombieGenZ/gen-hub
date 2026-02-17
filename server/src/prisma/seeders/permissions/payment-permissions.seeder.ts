@@ -21,8 +21,11 @@ export class PaymentPermissionsSeeder extends BaseSeeder {
             // System permissions
             const systemPaymentPermissions = [
                 { key: 'payment.list', name: 'Xem danh sách thanh toán', description: 'Quyền xem danh sách giao dịch thanh toán' },
+                { key: 'payment.list.all', name: 'Xem tất cả thanh toán (Admin)', description: 'Quyền xem tất cả giao dịch thanh toán trong hệ thống' },
                 { key: 'payment.read', name: 'Xem chi tiết thanh toán', description: 'Quyền xem chi tiết giao dịch thanh toán' },
                 { key: 'payment.refund', name: 'Hoàn tiền giao dịch', description: 'Quyền xử lý hoàn tiền giao dịch' },
+                { key: 'payment.manual.accept', name: 'Chủ động accept thanh toán', description: 'Quyền admin chủ động accept payment và thực hiện toàn bộ logic hoàn thành đơn hàng' },
+                { key: 'payment.manual.reject', name: 'Chủ động reject thanh toán', description: 'Quyền admin chủ động reject payment và thực hiện toàn bộ logic hủy đơn hàng' },
             ];
 
             for (const perm of systemPaymentPermissions) {

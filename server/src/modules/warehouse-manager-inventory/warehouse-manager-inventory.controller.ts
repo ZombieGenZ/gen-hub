@@ -34,7 +34,7 @@ import { RequirePermission } from '../../common/decorators/require-permission.de
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { GetResponse, UpdatedResponse } from '../../common/responses/success.response';
 
-@ApiTags('Warehouse Manager - Inventory')
+@ApiTags('Warehouse Manager - Inventory (Collapsed)')
 @ApiBearerAuth()
 @Controller('warehouse-manager/inventory')
 @UseGuards(JwtAuthGuard, WarehouseManagerPermissionGuard)

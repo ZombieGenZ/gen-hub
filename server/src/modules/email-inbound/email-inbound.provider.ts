@@ -76,8 +76,13 @@ export class EmailInboundProvider implements OnModuleInit, OnModuleDestroy {
             await this.gmailApiService.watchMailbox();
         }
 
-        // Xử lý các email chưa đọc khi khởi động
-        await this.processUnreadEmails();
+        // Xử lý các email chưa đọc khi khởi động (non-blocking)
+        // Defer to prevent blocking server startup and quota exhaustion
+        setImmediate(() => {
+            this.processUnreadEmails().catch(error => {
+                this.logger.error('Error in deferred email processing:', error);
+            });
+        });
     }
 
     async onModuleDestroy() {
@@ -156,6 +161,11 @@ export class EmailInboundProvider implements OnModuleInit, OnModuleDestroy {
 
             for (const msg of unreadMessages) {
                 await this.processMessageById(msg.id);
+                // Add delay between processing to prevent quota exhaustion
+                // Wait 1 second between emails to avoid rapid API calls
+                if (unreadMessages.indexOf(msg) < unreadMessages.length - 1) {
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
             }
         } catch (error) {
             this.logger.error('Error processing unread emails:', error);

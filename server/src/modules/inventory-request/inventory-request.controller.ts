@@ -32,7 +32,7 @@ import { RequireOrgPermission } from '../../common/decorators/require-org-permis
 import { CurrentActor } from '../../common/decorators/current-actor.decorator';
 import { CreatedResponse, GetResponse } from '../../common/responses/success.response';
 
-@ApiTags('Inventory Request (Organization)')
+@ApiTags('Inventory Request (Organization) (Collapsed)')
 @ApiBearerAuth()
 @ApiSecurity('api-key')
 @Controller('organizations/:orgId/inventory')

@@ -1,6 +1,8 @@
 import {
     Controller,
     Get,
+    Post,
+    Body,
     Query,
     UseGuards,
 } from '@nestjs/common';
@@ -8,7 +10,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse, ApiQuery } from '@ne
 import { I18nLang } from 'nestjs-i18n';
 
 import { SepayService } from '../payment/sepay.service';
-import { QueryPaymentDto } from './dto';
+import { QueryPaymentDto, ManualAcceptPaymentDto, ManualRejectPaymentDto } from './dto';
 import { JwtAuthGuard, PermissionGuard } from '../../common/guards';
 import { RequirePermission, CurrentUser, ApiAuthResponses, ApiValidationErrorResponse } from '../../common/decorators';
 import { GetResponse, ResponseCode } from '../../common/responses';
@@ -105,4 +107,103 @@ export class PaymentAdminController {
             lang === 'vi' ? 'Lấy danh sách thanh toán thành công' : 'Payment list retrieved successfully',
         );
     }
+
+    /**
+     * Chủ động accept payment (Admin only)
+     * Thực hiện toàn bộ logic như khi payment thực sự được hoàn thành
+     */
+    @Post('accept')
+    @RequirePermission('payment.manual.accept')
+    @ApiOperation({
+        summary: 'Chủ động accept payment (Admin only)',
+        description: 'Admin chủ động đánh dấu payment là đã thanh toán thành công. Thực hiện toàn bộ logic như khi payment thực sự được hoàn thành (activate contract, nạp tiền vào balance, cancel conflicts, etc.). Yêu cầu quyền `payment.manual.accept`.',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Payment đã được accept thành công',
+        schema: {
+            type: 'object',
+            properties: {
+                code: { type: 'string', example: 'payment.manual.accept.success' },
+                message: { type: 'string', example: 'Payment đã được chủ động accept thành công' },
+                success: { type: 'boolean', example: true },
+                data: {
+                    type: 'object',
+                    properties: {
+                        paymentId: { type: 'string', example: '550e8400-e29b-41d4-a716-446655440001' },
+                        message: { type: 'string', example: 'Payment manually accepted successfully' },
+                    },
+                },
+            },
+        },
+    })
+    @ApiResponse({
+        status: 400,
+        description: 'Lỗi: Payment không tồn tại hoặc không ở trạng thái PENDING',
+    })
+    @ApiAuthResponses()
+    @ApiValidationErrorResponse()
+    async manualAcceptPayment(
+        @Body() dto: ManualAcceptPaymentDto,
+        @CurrentUser() user: { userId: string },
+        @I18nLang() lang: string,
+    ) {
+        const result = await this.sepayService.manualAcceptPayment(dto.paymentId, user.userId);
+
+        return new GetResponse(
+            ResponseCode.PAYMENT_MANUAL_ACCEPT_SUCCESS,
+            { paymentId: dto.paymentId, ...result },
+            lang === 'vi' ? 'Payment đã được chủ động accept thành công' : 'Payment manually accepted successfully',
+        );
+    }
+
+    /**
+     * Chủ động reject payment (Admin only)
+     * Thực hiện toàn bộ logic như khi payment bị hủy/từ chối
+     */
+    @Post('reject')
+    @RequirePermission('payment.manual.reject')
+    @ApiOperation({
+        summary: 'Chủ động reject payment (Admin only)',
+        description: 'Admin chủ động từ chối/hủy payment. Thực hiện toàn bộ logic như khi payment bị hủy thực tế (cancel payment, cancel contract nếu có, emit events, etc.). Yêu cầu quyền `payment.manual.reject`.',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Payment đã được reject thành công',
+        schema: {
+            type: 'object',
+            properties: {
+                code: { type: 'string', example: 'payment.manual.reject.success' },
+                message: { type: 'string', example: 'Payment đã được chủ động reject thành công' },
+                success: { type: 'boolean', example: true },
+                data: {
+                    type: 'object',
+                    properties: {
+                        paymentId: { type: 'string', example: '550e8400-e29b-41d4-a716-446655440001' },
+                        message: { type: 'string', example: 'Payment manually rejected successfully' },
+                    },
+                },
+            },
+        },
+    })
+    @ApiResponse({
+        status: 400,
+        description: 'Lỗi: Payment không tồn tại hoặc không ở trạng thái PENDING',
+    })
+    @ApiAuthResponses()
+    @ApiValidationErrorResponse()
+    async manualRejectPayment(
+        @Body() dto: ManualRejectPaymentDto,
+        @CurrentUser() user: { userId: string },
+        @I18nLang() lang: string,
+    ) {
+        const result = await this.sepayService.manualRejectPayment(dto.paymentId, user.userId);
+
+        return new GetResponse(
+            ResponseCode.PAYMENT_MANUAL_REJECT_SUCCESS,
+            { paymentId: dto.paymentId, ...result },
+            lang === 'vi' ? 'Payment đã được chủ động reject thành công' : 'Payment manually rejected successfully',
+        );
+    }
 }
+
