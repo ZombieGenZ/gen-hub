@@ -31,12 +31,15 @@ export class AmenitiesService {
         
         const url = `${API}/amenities?${query.toString()}`;
         
+        console.log('🌐 API Call:', { url, params });
+        
         try {
             const response = await fetch(url, {
                 headers: {
                     'Authorization': `Bearer ${access_token}`,
                     'Content-Type': 'application/json',
-                }
+                },
+                cache: 'no-store' // Disable browser cache
             });
             if (!response.ok) {
                 throw new Error('Failed to fetch amenities');

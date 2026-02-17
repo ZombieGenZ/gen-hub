@@ -71,14 +71,103 @@ export default function WarehouseEditPage() {
         const token = authStorage.getAccessToken();
         if (!token) return;
 
+        // Only send fields that are actually changed and valid
+        const cleanData: Record<string, any> = {};
+
+        // Required string fields
+        if (formData.name?.trim()) cleanData.name = formData.name.trim();
+
+        // Optional string fields
+        if (formData.description?.trim()) cleanData.description = formData.description.trim();
+        if (formData.address_detail?.trim()) cleanData.address_detail = formData.address_detail.trim();
+        if (formData.manager_name?.trim()) cleanData.manager_name = formData.manager_name.trim();
+        if (formData.manager_email?.trim()) cleanData.manager_email = formData.manager_email.trim();
+
+        // Manager phone - always include even if empty (set to null if not provided)
+        if (formData.manager_phone !== undefined) {
+            cleanData.manager_phone = formData.manager_phone?.trim() || null;
+        }
+
+        // Required numeric fields (must have valid value)
+        const requiredNumbers = ['length', 'width', 'block_length', 'block_width', 'price_per_month'];
+        for (const key of requiredNumbers) {
+            if (formData[key] !== undefined && formData[key] !== null && formData[key] !== '') {
+                const val = Number(formData[key]);
+                if (!isNaN(val) && val > 0) {
+                    cleanData[key] = val;
+                }
+            }
+        }
+
+        // Optional numeric fields
+        const optionalNumbers = ['ceiling_height', 'max_load_capacity', 'total_weight_capacity',
+            'min_temperature', 'max_temperature', 'min_humidity', 'max_humidity',
+            'latitude', 'longitude'];
+        for (const key of optionalNumbers) {
+            if (formData[key] !== undefined && formData[key] !== null && formData[key] !== '') {
+                const val = Number(formData[key]);
+                if (!isNaN(val)) {
+                    cleanData[key] = val;
+                }
+            }
+        }
+
+        // Boolean fields
+        if (typeof formData.is_cold_storage === 'boolean') {
+            cleanData.is_cold_storage = formData.is_cold_storage;
+        }
+        if (typeof formData.is_shared_warehouse === 'boolean') {
+            cleanData.is_shared_warehouse = formData.is_shared_warehouse;
+        }
+        if (typeof formData.is_active === 'boolean') {
+            cleanData.is_active = formData.is_active;
+        }
+
+        // UUID fields
+        if (formData.ward_id && formData.ward_id !== '' && formData.ward_id !== 'undefined') {
+            cleanData.ward_id = formData.ward_id;
+        }
+
+        // Validate required fields
+        if (!cleanData.name) {
+            toast.error("Tên kho không được để trống");
+            return;
+        }
+        if (!cleanData.length || cleanData.length <= 0) {
+            toast.error("Chiều dài phải lớn hơn 0");
+            return;
+        }
+        if (!cleanData.width || cleanData.width <= 0) {
+            toast.error("Chiều rộng phải lớn hơn 0");
+            return;
+        }
+        if (!cleanData.block_length || cleanData.block_length <= 0) {
+            toast.error("Chiều dài block phải lớn hơn 0");
+            return;
+        }
+        if (!cleanData.block_width || cleanData.block_width <= 0) {
+            toast.error("Chiều rộng block phải lớn hơn 0");
+            return;
+        }
+        if (!cleanData.price_per_month || cleanData.price_per_month <= 0) {
+            toast.error("Giá thuê phải lớn hơn 0");
+            return;
+        }
+
+        // Log để debug
+        console.log('[handleSave] Sending data:', JSON.stringify(cleanData, null, 2));
+
         setSaving(true);
         try {
-            await warehouseService.updateWarehouseTemplate(token, id, formData);
+            await warehouseService.updateWarehouseTemplate(token, id, cleanData);
             toast.success("Đã lưu thay đổi.");
             setIsDirty(false);
             fetchWarehouse();
-        } catch (err) {
-            toast.error("Lưu thất bại. Vui lòng thử lại.");
+        } catch (err: any) {
+            console.error('[handleSave] Full error:', err);
+            console.error('[handleSave] Error response:', err?.response);
+            const errorMsg = err?.response?.data?.message || err?.message || "Lỗi không xác định";
+            toast.error(`Lưu thất bại: ${errorMsg}`);
         } finally {
             setSaving(false);
         }

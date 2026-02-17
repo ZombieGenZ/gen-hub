@@ -122,6 +122,15 @@ export interface Warehouse extends BaseEntity {
     discount_configs: DiscountConfig[];
     images: WarehouseImage[];
     rows: Row_template[];
+    amenities: {
+        id: string;
+        amenity_id: string;
+        amenity: {
+            id: string;
+            name: string;
+            icon: string;
+        };
+    }[];
 }
 
 // Create warehouse template interface

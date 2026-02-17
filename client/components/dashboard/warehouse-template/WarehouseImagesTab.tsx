@@ -8,6 +8,7 @@ import {
     TrashIcon,
     ArrowUpTrayIcon,
     XMarkIcon,
+    ArrowsUpDownIcon,
 } from "@heroicons/react/24/outline";
 
 // ── shadcn/ui ──
@@ -26,6 +27,9 @@ export function WarehouseImagesTab({ warehouseId }: WarehouseImagesTabProps) {
     const [images, setImages] = useState<any[]>([]);
     const [uploading, setUploading] = useState(false);
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
+    const [reordering, setReordering] = useState(false);
+    const [dragIdx, setDragIdx] = useState<number | null>(null);
+    const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // ── Load images ──
@@ -34,7 +38,8 @@ export function WarehouseImagesTab({ warehouseId }: WarehouseImagesTabProps) {
         if (!token) return;
         try {
             const data = await warehouseService.getWarehouseTemplateById(token, warehouseId);
-            setImages(data?.images || []);
+            const imgs = (data?.images || []).sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0));
+            setImages(imgs);
         } catch { }
     }, [warehouseId]);
 
@@ -95,22 +100,93 @@ export function WarehouseImagesTab({ warehouseId }: WarehouseImagesTabProps) {
         }
     };
 
+    // ── Drag & Drop reorder ──
+    const handleDragStart = (idx: number) => {
+        setDragIdx(idx);
+    };
+
+    const handleDragOver = (e: React.DragEvent, idx: number) => {
+        e.preventDefault();
+        if (dragIdx === null || dragIdx === idx) return;
+        setDragOverIdx(idx);
+    };
+
+    const handleDragLeave = () => {
+        setDragOverIdx(null);
+    };
+
+    const handleDrop = (e: React.DragEvent, dropIdx: number) => {
+        e.preventDefault();
+        if (dragIdx === null || dragIdx === dropIdx) {
+            setDragIdx(null);
+            setDragOverIdx(null);
+            return;
+        }
+
+        const reordered = [...images];
+        const [moved] = reordered.splice(dragIdx, 1);
+        reordered.splice(dropIdx, 0, moved);
+        setImages(reordered);
+        setDragIdx(null);
+        setDragOverIdx(null);
+
+        // Save new order to API
+        saveReorder(reordered);
+    };
+
+    const handleDragEnd = () => {
+        setDragIdx(null);
+        setDragOverIdx(null);
+    };
+
+    const saveReorder = async (reordered: any[]) => {
+        const token = authStorage.getAccessToken();
+        if (!token) return;
+        setReordering(true);
+        try {
+            const orderPayload = reordered.map((img, idx) => ({
+                id: img.id,
+                order: idx + 1,
+            }));
+            await warehouseService.reorderImages(token, warehouseId, orderPayload);
+            toast.success("Đã cập nhật thứ tự ảnh.");
+        } catch {
+            toast.error("Cập nhật thứ tự thất bại.");
+            await fetchImages(); // rollback
+        } finally {
+            setReordering(false);
+        }
+    };
+
     return (
         <Card className="border-0 shadow-premium" style={{ borderRadius: "24px" }}>
             <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-lg">Images ({images.length})</CardTitle>
-                {selectedIds.length > 0 && (
-                    <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={handleBulkDelete}
-                        className="gap-1"
-                        style={{ borderRadius: "12px" }}
-                    >
-                        <TrashIcon className="w-4 h-4" />
-                        Xóa {selectedIds.length} ảnh
-                    </Button>
-                )}
+                <div className="flex items-center gap-3">
+                    <CardTitle className="text-lg">Images ({images.length})</CardTitle>
+                    {reordering && (
+                        <span className="text-xs text-muted-foreground animate-pulse">Đang lưu thứ tự...</span>
+                    )}
+                </div>
+                <div className="flex items-center gap-2">
+                    {images.length > 1 && (
+                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <ArrowsUpDownIcon className="w-4 h-4" />
+                            <span>Kéo thả để sắp xếp</span>
+                        </div>
+                    )}
+                    {selectedIds.length > 0 && (
+                        <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={handleBulkDelete}
+                            className="gap-1"
+                            style={{ borderRadius: "12px" }}
+                        >
+                            <TrashIcon className="w-4 h-4" />
+                            Xóa {selectedIds.length} ảnh
+                        </Button>
+                    )}
+                </div>
             </CardHeader>
             <CardContent className="space-y-6">
                 {/* Upload zone */}
@@ -134,21 +210,31 @@ export function WarehouseImagesTab({ warehouseId }: WarehouseImagesTabProps) {
                     />
                 </div>
 
-                {/* Gallery */}
+                {/* Gallery with drag-and-drop reorder */}
                 {images.length > 0 && (
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                         {images.map((img, idx) => (
                             <div
                                 key={img.id}
-                                className={`relative group rounded-xl overflow-hidden border-2 transition-all ${selectedIds.includes(img.id)
-                                        ? "border-primary ring-2 ring-primary/20"
-                                        : "border-transparent hover:border-muted-foreground/20"
+                                draggable
+                                onDragStart={() => handleDragStart(idx)}
+                                onDragOver={(e) => handleDragOver(e, idx)}
+                                onDragLeave={handleDragLeave}
+                                onDrop={(e) => handleDrop(e, idx)}
+                                onDragEnd={handleDragEnd}
+                                className={`relative group rounded-xl overflow-hidden border-2 transition-all cursor-grab active:cursor-grabbing ${dragIdx === idx
+                                        ? "opacity-40 scale-95"
+                                        : dragOverIdx === idx
+                                            ? "border-primary ring-2 ring-primary/30 scale-105"
+                                            : selectedIds.includes(img.id)
+                                                ? "border-primary ring-2 ring-primary/20"
+                                                : "border-transparent hover:border-muted-foreground/20"
                                     }`}
                             >
                                 <img
                                     src={img.url?.startsWith("http") ? img.url : `${IMG_API}${img.url}`}
                                     alt={img.original_name}
-                                    className="w-full aspect-square object-cover"
+                                    className="w-full aspect-square object-cover pointer-events-none"
                                 />
                                 {/* Order badge */}
                                 <div className="absolute top-2 left-2 bg-black/60 text-white text-xs px-2 py-0.5 rounded-full">

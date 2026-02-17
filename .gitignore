@@ -74,6 +74,7 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 app-config.json
 .agent/
 
+.agent-config.json
 PLAN.md
 IMPLEMENTATION_PLAN.md
 

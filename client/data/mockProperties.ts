@@ -67,6 +67,31 @@ export interface Property {
     amenities?: { id: string; name: string; icon?: string; description?: string }[];
     // Rental status
     rental_status?: string;
+
+    // Manager info
+    manager_name?: string;
+    manager_phone?: string;
+    manager_email?: string;
+
+    // Climate control (cold storage)
+    min_temperature?: number;
+    max_temperature?: number;
+    min_humidity?: number;
+    max_humidity?: number;
+    latitude?: number;
+    longitude?: number;
+
+    // Rows (for partial rental)
+    rows?: {
+        id: string;
+        name: string;
+        code: string;
+        description?: string;
+        is_rented: boolean;
+        price_per_month: number;
+        total_weight_capacity?: number;
+        is_active: boolean;
+    }[];
 }
 
 /**
@@ -126,5 +151,30 @@ export function mapWarehouseToProperty(w: any): Property {
         created_at: w.created_at,
         updated_at: w.updated_at,
         created_by: w.created_by,
+
+        // Manager
+        manager_name: w.manager_name,
+        manager_phone: w.manager_phone,
+        manager_email: w.manager_email,
+
+        // Climate
+        min_temperature: w.min_temperature != null ? Number(w.min_temperature) : undefined,
+        max_temperature: w.max_temperature != null ? Number(w.max_temperature) : undefined,
+        min_humidity: w.min_humidity != null ? Number(w.min_humidity) : undefined,
+        max_humidity: w.max_humidity != null ? Number(w.max_humidity) : undefined,
+        latitude: w.latitude != null ? Number(w.latitude) : undefined,
+        longitude: w.longitude != null ? Number(w.longitude) : undefined,
+
+        // Rows
+        rows: (w.rows || []).filter((r: any) => !r.is_deleted).map((r: any) => ({
+            id: r.id,
+            name: r.name,
+            code: r.code,
+            description: r.description,
+            is_rented: r.is_rented ?? false,
+            price_per_month: Number(r.price_per_month) || 0,
+            total_weight_capacity: r.total_weight_capacity != null ? Number(r.total_weight_capacity) : undefined,
+            is_active: r.is_active ?? true,
+        })),
     };
 }

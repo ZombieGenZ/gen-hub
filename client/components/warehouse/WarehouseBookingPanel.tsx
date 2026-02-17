@@ -33,10 +33,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import {
     QuotationBreakdown,
     RowTemplate,
-    MOCK_DURATION_TIERS,
-    MOCK_ADDONS,
-    MOCK_INSURANCES,
-    MOCK_ROWS
 } from '@/types/booking/booking.type';
 import { RentalDurationTier } from '@/types/rental-duration-tier/rental-duration-tier.type';
 import { AddonResponse } from '@/types/addon/addon.type';
@@ -49,6 +45,16 @@ interface WarehouseBookingPanelProps {
     warehouseName?: string;
     price: number;
     unit?: string;
+    rows?: {
+        id: string;
+        name: string;
+        code: string;
+        description?: string;
+        is_rented: boolean;
+        price_per_month: number;
+        total_weight_capacity?: number;
+        is_active: boolean;
+    }[];
 }
 
 // Extended types with discount info (from API or mock)
@@ -68,7 +74,8 @@ export function WarehouseBookingPanel({
     warehouseId,
     warehouseName,
     price,
-    unit = "tháng"
+    unit = "tháng",
+    rows: rowsProp,
 }: WarehouseBookingPanelProps) {
     const router = useRouter();
 
@@ -143,9 +150,9 @@ export function WarehouseBookingPanel({
                     const tiersArray = Array.isArray(tiersData.data) ? tiersData.data : (Array.isArray(tiersData) ? tiersData : []);
                     setDurationTiers(tiersArray);
                 } else {
-                    console.warn('[WarehouseBookingPanel] Duration Tiers API failed, using mock:',
+                    console.warn('[WarehouseBookingPanel] Duration Tiers API failed:',
                         tiersRes.status === 'rejected' ? tiersRes.reason : `Status: ${tiersRes.value?.status}`);
-                    setDurationTiers(MOCK_DURATION_TIERS);
+                    setDurationTiers([]);
                 }
 
                 // Debug: Addons
@@ -155,9 +162,9 @@ export function WarehouseBookingPanel({
                     const addonsArray = Array.isArray(addonsData.data) ? addonsData.data : (Array.isArray(addonsData) ? addonsData : []);
                     setAddons(addonsArray);
                 } else {
-                    console.warn('[WarehouseBookingPanel] Addons API failed, using mock:',
+                    console.warn('[WarehouseBookingPanel] Addons API failed:',
                         addonsRes.status === 'rejected' ? addonsRes.reason : `Status: ${addonsRes.value?.status}`);
-                    setAddons(MOCK_ADDONS as AddonResponse[]);
+                    setAddons([]);
                 }
 
                 // Debug: Insurances
@@ -167,20 +174,39 @@ export function WarehouseBookingPanel({
                     const insuranceArray = Array.isArray(insuranceData.data) ? insuranceData.data : (Array.isArray(insuranceData) ? insuranceData : []);
                     setInsurances(insuranceArray);
                 } else {
-                    console.warn('[WarehouseBookingPanel] Insurances API failed, using mock:',
+                    console.warn('[WarehouseBookingPanel] Insurances API failed:',
                         insuranceRes.status === 'rejected' ? insuranceRes.reason : `Status: ${insuranceRes.value?.status}`);
-                    setInsurances(MOCK_INSURANCES as unknown as Insurance[]);
+                    setInsurances([]);
                 }
 
-                setRows(MOCK_ROWS);
+                // Use rows from prop (fetched from warehouse detail API)
+                const mappedRows: RowTemplate[] = (rowsProp || []).map(r => ({
+                    id: r.id,
+                    name: r.name,
+                    description: r.description,
+                    price_per_month: r.price_per_month,
+                    area_sqm: undefined,
+                    is_available: r.is_active && !r.is_rented,
+                    position: r.code,
+                }));
+                setRows(mappedRows);
 
             } catch (error) {
                 console.error('[WarehouseBookingPanel] Error fetching booking data:', error);
-                setDataError('Không thể tải dữ liệu. Sử dụng dữ liệu mẫu.');
-                setDurationTiers(MOCK_DURATION_TIERS);
-                setAddons(MOCK_ADDONS as AddonResponse[]);
-                setInsurances(MOCK_INSURANCES as unknown as Insurance[]);
-                setRows(MOCK_ROWS);
+                setDataError('Không thể tải dữ liệu. Vui lòng thử lại sau.');
+                setDurationTiers([]);
+                setAddons([]);
+                setInsurances([]);
+                const mappedRows: RowTemplate[] = (rowsProp || []).map(r => ({
+                    id: r.id,
+                    name: r.name,
+                    description: r.description,
+                    price_per_month: r.price_per_month,
+                    area_sqm: undefined,
+                    is_available: r.is_active && !r.is_rented,
+                    position: r.code,
+                }));
+                setRows(mappedRows);
             } finally {
                 setIsLoading(false);
             }
@@ -469,145 +495,159 @@ export function WarehouseBookingPanel({
                     {/* Duration Select */}
                     <div className="space-y-2">
                         <Label className="text-slate-600 font-medium text-xs uppercase tracking-wide">Kỳ hạn thuê</Label>
-                        <Select value={selectedDurationId} onValueChange={setSelectedDurationId}>
-                            <SelectTrigger className="w-full h-12 rounded-xl border-slate-200">
-                                <SelectValue placeholder="Chọn kỳ hạn" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {durationTiers.map((tier) => (
-                                    <SelectItem key={tier.id} value={tier.id}>
-                                        <div className="flex items-center justify-between w-full gap-2">
-                                            <span>{tier.name}</span>
-                                            {(tier.discount_percent || 0) > 0 && (
-                                                <Badge variant="outline" className="text-xs text-orange-600 border-orange-200 ml-2">
-                                                    -{tier.discount_percent}%
-                                                </Badge>
-                                            )}
-                                        </div>
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                        {durationTiers.length > 0 ? (
+                            <Select value={selectedDurationId} onValueChange={setSelectedDurationId}>
+                                <SelectTrigger className="w-full h-12 rounded-xl border-slate-200">
+                                    <SelectValue placeholder="Chọn kỳ hạn" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {durationTiers.map((tier) => (
+                                        <SelectItem key={tier.id} value={tier.id}>
+                                            <div className="flex items-center justify-between w-full gap-2">
+                                                <span>{tier.name}</span>
+                                                {(tier.discount_percent || 0) > 0 && (
+                                                    <Badge variant="outline" className="text-xs text-orange-600 border-orange-200 ml-2">
+                                                        -{tier.discount_percent}%
+                                                    </Badge>
+                                                )}
+                                            </div>
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        ) : (
+                            <p className="text-xs text-slate-400 italic p-3 bg-slate-50 rounded-lg">Chưa có kỳ hạn thuê. Vui lòng liên hệ để được tư vấn.</p>
+                        )}
                     </div>
 
                     {/* Row Selection (for partial rental) */}
                     {rentalType === "row" && (
                         <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
                             <Label className="text-slate-600 font-medium text-xs uppercase tracking-wide">Chọn Dãy/Kệ</Label>
-                            <div className="space-y-2">
-                                {rows.map((row) => (
-                                    <div
-                                        key={row.id}
-                                        onClick={() => row.is_available && toggleRow(row.id)}
-                                        className={cn(
-                                            "flex items-center justify-between p-3 rounded-lg border transition-all",
-                                            !row.is_available && "opacity-50 cursor-not-allowed",
-                                            row.is_available && "cursor-pointer",
-                                            selectedRowIds.includes(row.id)
-                                                ? "border-[#0F766E] bg-teal-50/50"
-                                                : "border-slate-200 hover:bg-slate-100"
-                                        )}
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <Checkbox
-                                                checked={selectedRowIds.includes(row.id)}
-                                                disabled={!row.is_available}
-                                                className="data-[state=checked]:bg-[#0F766E] data-[state=checked]:border-[#0F766E]"
-                                            />
-                                            <div>
-                                                <p className="font-semibold text-slate-700">{row.name}</p>
-                                                <p className="text-xs text-slate-500">{row.description}</p>
+                            {rows.length > 0 ? (
+                                <>
+                                    <div className="space-y-2">
+                                        {rows.map((row) => (
+                                            <div
+                                                key={row.id}
+                                                onClick={() => row.is_available && toggleRow(row.id)}
+                                                className={cn(
+                                                    "flex items-center justify-between p-3 rounded-lg border transition-all",
+                                                    !row.is_available && "opacity-50 cursor-not-allowed",
+                                                    row.is_available && "cursor-pointer",
+                                                    selectedRowIds.includes(row.id)
+                                                        ? "border-[#0F766E] bg-teal-50/50"
+                                                        : "border-slate-200 hover:bg-slate-100"
+                                                )}
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <Checkbox
+                                                        checked={selectedRowIds.includes(row.id)}
+                                                        disabled={!row.is_available}
+                                                        className="data-[state=checked]:bg-[#0F766E] data-[state=checked]:border-[#0F766E]"
+                                                    />
+                                                    <div>
+                                                        <p className="font-semibold text-slate-700">{row.name}</p>
+                                                        <p className="text-xs text-slate-500">{row.description}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="font-bold text-[#0F766E]">
+                                                        {row.price_per_month.toLocaleString('vi-VN')}₫
+                                                    </p>
+                                                    <p className="text-xs text-slate-500">/tháng</p>
+                                                </div>
                                             </div>
-                                        </div>
-                                        <div className="text-right">
-                                            <p className="font-bold text-[#0F766E]">
-                                                {row.price_per_month.toLocaleString('vi-VN')}₫
-                                            </p>
-                                            <p className="text-xs text-slate-500">/tháng</p>
-                                        </div>
+                                        ))}
                                     </div>
-                                ))}
-                            </div>
-                            {selectedRowIds.length === 0 && (
-                                <p className="text-xs text-amber-600">Vui lòng chọn ít nhất 1 dãy để tiếp tục</p>
+                                    {selectedRowIds.length === 0 && (
+                                        <p className="text-xs text-amber-600">Vui lòng chọn ít nhất 1 dãy để tiếp tục</p>
+                                    )}
+                                </>
+                            ) : (
+                                <p className="text-xs text-slate-400 italic">Kho này chưa có dãy/kệ để cho thuê riêng.</p>
                             )}
                         </div>
                     )}
 
                     {/* Insurance Selection */}
-                    <div className="space-y-4 pt-4 border-t border-slate-100">
-                        <Label className="text-slate-600 font-medium text-xs uppercase tracking-wide">Gói Bảo Hiểm</Label>
-                        <RadioGroup value={selectedInsuranceId} onValueChange={setSelectedInsuranceId} className="grid grid-cols-1 gap-2">
-                            {insurances.map((ins) => {
-                                const insPrice = parseFloat(ins.price);
-                                const isSelected = selectedInsuranceId === ins.id;
+                    {insurances.length > 0 && (
+                        <div className="space-y-4 pt-4 border-t border-slate-100">
+                            <Label className="text-slate-600 font-medium text-xs uppercase tracking-wide">Gói Bảo Hiểm</Label>
+                            <RadioGroup value={selectedInsuranceId} onValueChange={setSelectedInsuranceId} className="grid grid-cols-1 gap-2">
+                                {insurances.map((ins) => {
+                                    const insPrice = parseFloat(ins.price);
+                                    const isSelected = selectedInsuranceId === ins.id;
 
-                                return (
-                                    <div
-                                        key={ins.id}
-                                        className={cn(
-                                            "flex items-start space-x-3 p-3 rounded-lg border transition-all cursor-pointer",
-                                            isSelected ? "border-[#0F766E] bg-teal-50/30" : "border-slate-100 hover:bg-slate-50"
-                                        )}
-                                        onClick={() => setSelectedInsuranceId(ins.id)}
-                                    >
-                                        <RadioGroupItem value={ins.id} id={`ins-${ins.id}`} className="mt-1" />
-                                        <div className="grid gap-0.5 leading-none flex-1">
-                                            <Label htmlFor={`ins-${ins.id}`} className="font-semibold text-slate-700 cursor-pointer">
-                                                {ins.name}
-                                            </Label>
-                                            <div className="flex justify-between items-center w-full gap-4">
-                                                <p className="text-xs text-slate-500">{ins.description}</p>
-                                                {insPrice > 0 && (
-                                                    <span className="text-xs font-bold text-[#0F766E] shrink-0">
-                                                        +{insPrice.toLocaleString('vi-VN')}đ/tháng
-                                                    </span>
-                                                )}
+                                    return (
+                                        <div
+                                            key={ins.id}
+                                            className={cn(
+                                                "flex items-start space-x-3 p-3 rounded-lg border transition-all cursor-pointer",
+                                                isSelected ? "border-[#0F766E] bg-teal-50/30" : "border-slate-100 hover:bg-slate-50"
+                                            )}
+                                            onClick={() => setSelectedInsuranceId(ins.id)}
+                                        >
+                                            <RadioGroupItem value={ins.id} id={`ins-${ins.id}`} className="mt-1" />
+                                            <div className="grid gap-0.5 leading-none flex-1">
+                                                <Label htmlFor={`ins-${ins.id}`} className="font-semibold text-slate-700 cursor-pointer">
+                                                    {ins.name}
+                                                </Label>
+                                                <div className="flex justify-between items-center w-full gap-4">
+                                                    <p className="text-xs text-slate-500">{ins.description}</p>
+                                                    {insPrice > 0 && (
+                                                        <span className="text-xs font-bold text-[#0F766E] shrink-0">
+                                                            +{insPrice.toLocaleString('vi-VN')}đ/tháng
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                );
-                            })}
-                        </RadioGroup>
-                    </div>
+                                    );
+                                })}
+                            </RadioGroup>
+                        </div>
+                    )}
 
                     <Separator className="bg-slate-100" />
 
                     {/* Addons Section */}
-                    <div className="space-y-3 pt-2">
-                        <Label className="text-slate-600 font-medium text-xs uppercase tracking-wide">Dịch vụ cộng thêm</Label>
-                        <div className="grid grid-cols-1 gap-2">
-                            {addons.map((addon) => {
-                                const isSelected = selectedAddons.includes(addon.id);
+                    {addons.length > 0 && (
+                        <div className="space-y-3 pt-2">
+                            <Label className="text-slate-600 font-medium text-xs uppercase tracking-wide">Dịch vụ cộng thêm</Label>
+                            <div className="grid grid-cols-1 gap-2">
+                                {addons.map((addon) => {
+                                    const isSelected = selectedAddons.includes(addon.id);
 
-                                return (
-                                    <div
-                                        key={addon.id}
-                                        className={cn(
-                                            "flex items-start space-x-3 p-3 rounded-lg border transition-colors cursor-pointer",
-                                            isSelected ? "border-[#0F766E] bg-teal-50/30" : "border-slate-100 hover:bg-slate-50"
-                                        )}
-                                        onClick={() => toggleAddon(addon.id)}
-                                    >
-                                        <Checkbox
-                                            id={`addon-${addon.id}`}
-                                            checked={isSelected}
-                                            onCheckedChange={() => toggleAddon(addon.id)}
-                                            className="data-[state=checked]:bg-[#0F766E] data-[state=checked]:border-[#0F766E]"
-                                        />
-                                        <div className="grid gap-1.5 leading-none flex-1">
-                                            <Label htmlFor={`addon-${addon.id}`} className="font-semibold text-slate-700 cursor-pointer">
-                                                {addon.name}
-                                            </Label>
-                                            <p className="text-xs text-slate-500">
-                                                +{addon.price.toLocaleString('vi-VN')}đ/{addon.is_monthly_payment ? 'tháng' : 'lần'}
-                                            </p>
+                                    return (
+                                        <div
+                                            key={addon.id}
+                                            className={cn(
+                                                "flex items-start space-x-3 p-3 rounded-lg border transition-colors cursor-pointer",
+                                                isSelected ? "border-[#0F766E] bg-teal-50/30" : "border-slate-100 hover:bg-slate-50"
+                                            )}
+                                            onClick={() => toggleAddon(addon.id)}
+                                        >
+                                            <Checkbox
+                                                id={`addon-${addon.id}`}
+                                                checked={isSelected}
+                                                onCheckedChange={() => toggleAddon(addon.id)}
+                                                className="data-[state=checked]:bg-[#0F766E] data-[state=checked]:border-[#0F766E]"
+                                            />
+                                            <div className="grid gap-1.5 leading-none flex-1">
+                                                <Label htmlFor={`addon-${addon.id}`} className="font-semibold text-slate-700 cursor-pointer">
+                                                    {addon.name}
+                                                </Label>
+                                                <p className="text-xs text-slate-500">
+                                                    +{addon.price.toLocaleString('vi-VN')}đ/{addon.is_monthly_payment ? 'tháng' : 'lần'}
+                                                </p>
+                                            </div>
                                         </div>
-                                    </div>
-                                );
-                            })}
+                                    );
+                                })}
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </div>
 
                 {/* Price Breakdown */}

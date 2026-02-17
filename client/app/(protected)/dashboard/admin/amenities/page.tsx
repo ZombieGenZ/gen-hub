@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { AmenitiesService } from "@/services/amenities/amenities.service";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
     Dialog,
     DialogContent,
@@ -15,13 +16,6 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
 import {
     MagnifyingGlassIcon,
     PlusIcon,
@@ -35,7 +29,6 @@ import {
     Squares2X2Icon,
     ListBulletIcon,
     CubeIcon,
-    ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
 import { AmenityRequest, AmenityResponse } from "@/types/amenities/amenities.type";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -58,7 +51,7 @@ export default function AmenitiesPage() {
 
     // --- Filters ---
     const [searchTerm, setSearchTerm] = useState("");
-    const [statusFilter, setStatusFilter] = useState("all");
+    const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
     const [viewMode, setViewMode] = useState<"list" | "grid">("list");
 
     // --- Stats for KPI ---
@@ -78,13 +71,13 @@ export default function AmenitiesPage() {
     // --- Delete Dialog ---
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
-    const fetchStats = async () => {
+const fetchStats = useCallback(async () => {
         try {
             const token = authStorage.getAccessToken();
             if (!token) return;
 
             const data: any = await amenitiesService.getAllAmenities(token, {
-                limit: 1000, 
+                limit: 1000,
             });
 
             let items: AmenityResponse[] = [];
@@ -99,9 +92,9 @@ export default function AmenitiesPage() {
         } catch (error) {
             console.error("Failed to fetch stats", error);
         }
-    };
+    }, []);
 
-    const fetchAmenities = async () => {
+    const fetchAmenities = useCallback(async () => {
         try {
             setLoading(true);
             const token = authStorage.getAccessToken();
@@ -139,21 +132,20 @@ export default function AmenitiesPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [currentPage, itemsPerPage, searchTerm, statusFilter, showToast]);
 
     useEffect(() => {
         fetchStats();
-    }, []);
+    }, [fetchStats]);
 
     useEffect(() => {
         fetchAmenities();
-    }, [currentPage, itemsPerPage, statusFilter]);
+    }, [fetchAmenities]);
 
-    // Debounce search
+    // Debounce search - no need to call fetchAmenities here since it's already in the dependency
     useEffect(() => {
         const timer = setTimeout(() => {
             setCurrentPage(1);
-            fetchAmenities();
         }, 500);
         return () => clearTimeout(timer);
     }, [searchTerm]);
@@ -254,11 +246,6 @@ export default function AmenitiesPage() {
         }
     };
 
-    const handleKpiClick = (filter: string) => {
-        setStatusFilter(filter);
-        setCurrentPage(1);
-    };
-
     const totalPages = Math.ceil(totalItems / itemsPerPage);
 
     return (
@@ -283,83 +270,60 @@ export default function AmenitiesPage() {
                 </Button>
             </div>
 
-            {/* KPI Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Total */}
-                <Card
-                    className={`border-0 shadow-premium cursor-pointer transition-all hover:shadow-lg ${statusFilter === "all" ? "ring-2 ring-primary" : ""
-                        }`}
-                    style={{ borderRadius: "24px" }}
-                    onClick={() => handleKpiClick("all")}
-                >
-                    <CardContent className="p-6">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-muted-foreground text-sm font-medium">Tổng số tiện ích</p>
-                                <p className="text-3xl font-bold mt-1">{stats.total}</p>
-                            </div>
-                            <div
-                                className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 flex items-center justify-center"
-                                style={{ borderRadius: "12px" }}
-                            >
-                                <CubeIcon className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* Active */}
-                <Card
-                    className={`border-0 shadow-premium cursor-pointer transition-all hover:shadow-lg ${statusFilter === "active" ? "ring-2 ring-primary" : ""
-                        }`}
-                    style={{ borderRadius: "24px" }}
-                    onClick={() => handleKpiClick("active")}
-                >
-                    <CardContent className="p-6">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-muted-foreground text-sm font-medium">Đang hoạt động</p>
-                                <p className="text-3xl font-bold mt-1 text-green-600">{stats.active}</p>
-                            </div>
-                            <div
-                                className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/30 flex items-center justify-center"
-                                style={{ borderRadius: "12px" }}
-                            >
-                                <CheckCircleIcon className="w-6 h-6 text-green-600 dark:text-green-400" />
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* Inactive */}
-                <Card
-                    className={`border-0 shadow-premium cursor-pointer transition-all hover:shadow-lg ${statusFilter === "inactive" ? "ring-2 ring-primary" : ""
-                        }`}
-                    style={{ borderRadius: "24px" }}
-                    onClick={() => handleKpiClick("inactive")}
-                >
-                    <CardContent className="p-6">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-muted-foreground text-sm font-medium">Chưa sử dụng</p>
-                                <p className="text-3xl font-bold mt-1 text-amber-600">{stats.inactive}</p>
-                                {stats.inactive > 0 && (
-                                    <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
-                                        <ExclamationTriangleIcon className="w-3 h-3" />
-                                        Click để xem
-                                    </p>
-                                )}
-                            </div>
-                            <div
-                                className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/30 dark:to-amber-800/30 flex items-center justify-center"
-                                style={{ borderRadius: "12px" }}
-                            >
-                                <XCircleIcon className="w-6 h-6 text-amber-600 dark:text-amber-400" />
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-            </div>
+            {/* Filter Tabs with Stats */}
+            <Tabs
+                value={statusFilter}
+                onValueChange={(value) => {
+                    setStatusFilter(value as "all" | "active" | "inactive");
+                    setCurrentPage(1);
+                }}
+                className="w-full"
+            >
+                <TabsList className="bg-muted/50 p-1.5 h-auto" style={{ borderRadius: "12.8px" }}>
+                    <TabsTrigger
+                        value="all"
+                        className="gap-2 px-4 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm"
+                        style={{ borderRadius: "12.8px" }}
+                    >
+                        <CubeIcon className="w-4 h-4" />
+                        Tất cả
+                        <Badge
+                            variant="secondary"
+                            className="ml-1 px-2 py-0.5 text-xs font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+                        >
+                            {stats.total}
+                        </Badge>
+                    </TabsTrigger>
+                    <TabsTrigger
+                        value="active"
+                        className="gap-2 px-4 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm"
+                        style={{ borderRadius: "12.8px" }}
+                    >
+                        <CheckCircleIcon className="w-4 h-4" />
+                        Đang hoạt động
+                        <Badge
+                            variant="secondary"
+                            className="ml-1 px-2 py-0.5 text-xs font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                        >
+                            {stats.active}
+                        </Badge>
+                    </TabsTrigger>
+                    <TabsTrigger
+                        value="inactive"
+                        className="gap-2 px-4 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm"
+                        style={{ borderRadius: "12.8px" }}
+                    >
+                        <XCircleIcon className="w-4 h-4" />
+                        Chưa sử dụng
+                        <Badge
+                            variant="secondary"
+                            className="ml-1 px-2 py-0.5 text-xs font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                        >
+                            {stats.inactive}
+                        </Badge>
+                    </TabsTrigger>
+                </TabsList>
+            </Tabs>
 
             {/* Filters */}
             <Card className="border-0 shadow-premium" style={{ borderRadius: "24px" }}>
@@ -376,22 +340,6 @@ export default function AmenitiesPage() {
                                     style={{ borderRadius: "12px" }}
                                 />
                             </div>
-                            <Select
-                                value={statusFilter}
-                                onValueChange={(value) => {
-                                    setStatusFilter(value);
-                                    setCurrentPage(1);
-                                }}
-                            >
-                                <SelectTrigger className="w-[180px]" style={{ borderRadius: "12px" }}>
-                                    <SelectValue placeholder="Trạng thái" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">Tất cả</SelectItem>
-                                    <SelectItem value="active">Đang hoạt động</SelectItem>
-                                    <SelectItem value="inactive">Không hoạt động</SelectItem>
-                                </SelectContent>
-                            </Select>
                         </div>
 
                         {/* View Mode Toggle */}

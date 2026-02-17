@@ -41,6 +41,7 @@ const adminNavGroups: SidebarGroup[] = [
             { href: "/dashboard/admin/amenities", icon: SparklesIcon, label: "Tiện ích" },
             { href: "/dashboard/admin/addons", icon: PuzzlePieceIcon, label: "Dịch vụ" },
             { href: "/dashboard/admin/insurances", icon: ShieldCheckIcon, label: "Bảo hiểm" },
+            { href: "/dashboard/admin/rental-duration-tiers", icon: ListBulletIcon, label: "Gói thời gian thuê" },
             { href: "/dashboard/admin/coupons", icon: TicketIcon, label: "Mã giảm giá" },
         ]
     },

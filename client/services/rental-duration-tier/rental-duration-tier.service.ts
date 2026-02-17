@@ -1,4 +1,4 @@
-import { RentalDurationTier } from "@/types/rental-duration-tier/rental-duration-tier.type";
+import { RentalDurationTierRequest } from "@/types/rental-duration-tier/rental-duration-tier.type";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 
@@ -93,15 +93,59 @@ export class RentalDurationTierService {
         }
     }
 
-
-    // Tạo gói thời gian thuê
-    async createRentalDurationTier(access_token: string, data: RentalDurationTier) {
-        
+    /**
+     * Tạo gói thời gian thuê
+     * @param access_token Token truy cập
+     * @param data Dữ liệu tạo mới
+     * @returns Gói thời gian thuê vừa tạo
+     */
+    async createRentalDurationTier(access_token: string, data: RentalDurationTierRequest) {
+        try {
+            const response = await fetch(`${API}/rental-duration-tiers`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${access_token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+            });
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Failed to create rental duration tier');
+            }
+            return await response.json();
+        } catch (error) {
+            console.error('Error creating rental duration tier:', error);
+            throw error;
+        }
     }
 
-    // Cập nhật gói thời gian thuê
-    async updateRentalDurationTier(access_token: string, id: string, data: RentalDurationTier) {
-        
+    /**
+     * Cập nhật gói thời gian thuê
+     * @param access_token Token truy cập
+     * @param id ID của gói thời gian thuê
+     * @param data Dữ liệu cập nhật
+     * @returns Gói thời gian thuê đã cập nhật
+     */
+    async updateRentalDurationTier(access_token: string, id: string, data: Partial<RentalDurationTierRequest>) {
+        try {
+            const response = await fetch(`${API}/rental-duration-tiers/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${access_token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+            });
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Failed to update rental duration tier');
+            }
+            return await response.json();
+        } catch (error) {
+            console.error('Error updating rental duration tier:', error);
+            throw error;
+        }
     }
 
     /**
@@ -111,7 +155,23 @@ export class RentalDurationTierService {
      * @returns Kết quả xoá
      */
     async deleteRentalDurationTier(access_token: string, id: string) {
-        
+        try {
+            const response = await fetch(`${API}/rental-duration-tiers/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${access_token}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Failed to delete rental duration tier');
+            }
+            return await response.json();
+        } catch (error) {
+            console.error('Error deleting rental duration tier:', error);
+            throw error;
+        }
     }
 
     /**
@@ -121,6 +181,23 @@ export class RentalDurationTierService {
      * @returns Kết quả xoá nhiều
      */
     async deleteMultipleRentalDurationTier(access_token: string, ids: string[]) {
-        
+        try {
+            const response = await fetch(`${API}/rental-duration-tiers/delete/many`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${access_token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ ids }),
+            });
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Failed to delete multiple rental duration tiers');
+            }
+            return await response.json();
+        } catch (error) {
+            console.error('Error deleting multiple rental duration tiers:', error);
+            throw error;
+        }
     }
 }
