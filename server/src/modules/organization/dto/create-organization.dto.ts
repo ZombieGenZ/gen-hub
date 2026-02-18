@@ -6,6 +6,7 @@ import {
     IsBoolean,
     MaxLength,
     IsEmail,
+    ValidateIf,
 } from 'class-validator';
 import { i18nValidationMessage } from 'nestjs-i18n';
 
@@ -154,8 +155,8 @@ export class CreateOrganizationDto {
     })
     google_refresh_token?: string;
 
-    @ApiPropertyOptional({ description: 'Địa chỉ email chính của tổ chức', example: 'contact@company.com' })
-    @IsOptional()
+    @ApiPropertyOptional({ description: 'Địa chỉ email chính của tổ chức (chỉ bắt buộc khi is_using_google_email = true)', example: 'contact@company.com' })
+    @ValidateIf((o) => o.is_using_google_email === true)
     @IsEmail(
         {},
         {

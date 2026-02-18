@@ -139,6 +139,9 @@ export class OrganizationService {
       dto.email_primary_address = this.cipherService.encrypt(
         dto.email_primary_address,
       );
+    } else {
+      // Khi không dùng Google Email, xóa email_primary_address để không lưu giá trị rác
+      dto.email_primary_address = undefined;
     }
 
     // Mã hóa các trường Gmail Pub/Sub (luôn mã hóa nếu có)
