@@ -129,6 +129,9 @@ export function ProfileDialog({ open = true, onOpenChange }: ProfileDialogProps 
         const userNotifs = userNotifsResponse?.items || [];
         setNotifications([...(getGlobalNotifications?.items || []), ...userNotifs]);
 
+        const listOrganization = await organizationService.getOrganizations(token);
+        console.log(listOrganization);
+
         // Fetch organization if user has one
         if (data?.organization_id) {
           try {
