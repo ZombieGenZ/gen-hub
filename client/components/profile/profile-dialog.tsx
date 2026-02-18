@@ -1210,7 +1210,7 @@ export function ProfileDialog({ open = true, onOpenChange }: ProfileDialogProps 
                                 Tạo hồ sơ doanh nghiệp
                               </Button>
                               <Button
-                                onClick={() => router.push('/')}
+                                onClick={() => router.push('/kho-bai')}
                                 variant="outline"
                                 className="w-full sm:w-auto border-slate-200 dark:border-slate-700"
                               >
