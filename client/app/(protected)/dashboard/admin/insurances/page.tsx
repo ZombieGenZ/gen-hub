@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { IsuranceService } from "@/services/Insurance/Insurance.service";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
     Dialog,
     DialogContent,
@@ -25,6 +26,7 @@ import {
     XMarkIcon,
     ChevronLeftIcon,
     ChevronRightIcon,
+    ShieldCheckIcon,
 } from "@heroicons/react/24/outline";
 import { Insurance } from "@/types/insurance/Insurance.types";
 import { InsuranceForm } from "./insurance-form";
@@ -49,6 +51,9 @@ export default function InsurancesPage() {
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
 
+    // --- Stats ---
+    const [stats, setStats] = useState({ total: 0, active: 0, inactive: 0 });
+
     // --- Selection & Actions ---
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
@@ -58,12 +63,32 @@ export default function InsurancesPage() {
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+    const [isDeleteLoading, setIsDeleteLoading] = useState(false);
 
     // --- Edit/Delete Targets ---
     const [targetInsurance, setTargetInsurance] = useState<Insurance | null>(null);
 
+    // --- Fetch Stats ---
+    const fetchStats = useCallback(async () => {
+        try {
+            const token = authStorage.getAccessToken();
+            if (!token) return;
+            const data: any = await insuranceService.getAllInsurance(token, { limit: 1000 });
+            let items: Insurance[] = [];
+            if (data?.data?.items) items = data.data.items;
+            else if (data?.items) items = data.items;
+            else if (Array.isArray(data?.data)) items = data.data;
+            else if (Array.isArray(data)) items = data;
+            const active = items.filter(a => a.is_active).length;
+            const inactive = items.filter(a => !a.is_active).length;
+            setStats({ total: items.length, active, inactive });
+        } catch (error) {
+            console.error("Failed to fetch stats", error);
+        }
+    }, []);
+
     // --- Fetch Data ---
-    const fetchInsurances = async () => {
+    const fetchInsurances = useCallback(async () => {
         try {
             setLoading(true);
             const token = authStorage.getAccessToken();
@@ -101,17 +126,15 @@ export default function InsurancesPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [currentPage, itemsPerPage, searchTerm, statusFilter, showToast]);
 
-    useEffect(() => {
-        fetchInsurances();
-    }, [currentPage, itemsPerPage, statusFilter]);
+    useEffect(() => { fetchStats(); }, [fetchStats]);
+    useEffect(() => { fetchInsurances(); }, [fetchInsurances]);
 
     // Debounce search
     useEffect(() => {
         const timer = setTimeout(() => {
             setCurrentPage(1);
-            fetchInsurances();
         }, 500);
         return () => clearTimeout(timer);
     }, [searchTerm]);
@@ -119,6 +142,7 @@ export default function InsurancesPage() {
     // --- Handlers ---
     const handleRefresh = () => {
         fetchInsurances();
+        fetchStats();
         setIsCreateOpen(false);
         setIsEditOpen(false);
         setIsDeleteOpen(false);
@@ -127,16 +151,19 @@ export default function InsurancesPage() {
     };
 
     const handleDelete = async () => {
+        setIsDeleteLoading(true);
         try {
             const token = authStorage.getAccessToken();
             if (!token || !targetInsurance) return;
 
             await insuranceService.deleteInsurance(token, targetInsurance.id);
-            showToast("Đã xóa gói bảo hiểm", "success");
+            showToast(`Đã xóa gói bảo hiểm "${targetInsurance.name}" 🗑️`, "success");
             handleRefresh();
         } catch (error) {
             console.error("Failed to delete insurance", error);
-            showToast("Xóa thất bại", "error");
+            showToast("Xóa thất bại, vui lòng thử lại", "error");
+        } finally {
+            setIsDeleteLoading(false);
         }
     };
 
@@ -147,7 +174,7 @@ export default function InsurancesPage() {
             if (!token) return;
 
             await insuranceService.deleteManyInsurances(token, selectedIds);
-            showToast(`Đã xóa ${selectedIds.length} gói bảo hiểm`, "success");
+            showToast(`Đã xóa ${selectedIds.length} gói bảo hiểm thành công! 🗑️`, "success");
             setIsBulkDeleteDialogOpen(false);
             handleRefresh();
         } catch (error) {
@@ -200,7 +227,7 @@ export default function InsurancesPage() {
                         setTargetInsurance(null);
                         setIsCreateOpen(true);
                     }}
-                    className="gap-2 bg-[#0F766E] hover:bg-[#0F766E]/90 text-white"
+                    className="gap-2 bg-[#0F766E] hover:bg-[#0F766E]/90 text-white transition-all duration-200 active:scale-[0.97] hover:shadow-md"
                     style={{ borderRadius: "12px" }}
                 >
                     <PlusIcon className="w-4 h-4" />
@@ -208,49 +235,46 @@ export default function InsurancesPage() {
                 </Button>
             </div>
 
-            {/* Filters */}
+            {/* Filter Tabs with Stats */}
+            <Tabs
+                value={statusFilter}
+                onValueChange={(value) => {
+                    setStatusFilter(value as "all" | "active" | "inactive");
+                    setCurrentPage(1);
+                }}
+                className="w-full"
+            >
+                <TabsList className="bg-muted/50 p-1.5 h-auto" style={{ borderRadius: "12px" }}>
+                    <TabsTrigger value="all" className="gap-2 px-4 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm" style={{ borderRadius: "8px" }}>
+                        <ShieldCheckIcon className="w-4 h-4" />
+                        Tất cả
+                        <Badge variant="secondary" className="ml-1 px-2 py-0.5 text-xs font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">{stats.total}</Badge>
+                    </TabsTrigger>
+                    <TabsTrigger value="active" className="gap-2 px-4 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm" style={{ borderRadius: "8px" }}>
+                        <CheckCircleIcon className="w-4 h-4" />
+                        Hoạt động
+                        <Badge variant="secondary" className="ml-1 px-2 py-0.5 text-xs font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">{stats.active}</Badge>
+                    </TabsTrigger>
+                    <TabsTrigger value="inactive" className="gap-2 px-4 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm" style={{ borderRadius: "8px" }}>
+                        <XCircleIcon className="w-4 h-4" />
+                        Đã tắt
+                        <Badge variant="secondary" className="ml-1 px-2 py-0.5 text-xs font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">{stats.inactive}</Badge>
+                    </TabsTrigger>
+                </TabsList>
+            </Tabs>
+
+            {/* Search */}
             <Card className="border-0 shadow-premium" style={{ borderRadius: "24px" }}>
                 <CardContent className="p-6">
-                    <div className="flex flex-wrap items-center gap-4">
-                        {/* Search */}
-                        <div className="relative flex-1 min-w-[250px]">
-                            <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                            <Input
-                                placeholder="Tìm kiếm theo tên hoặc mô tả..."
-                                className="pl-9"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                style={{ borderRadius: "12px" }}
-                            />
-                        </div>
-
-                        {/* Status Filters */}
-                        <div className="flex items-center gap-2">
-                            <Button
-                                variant={statusFilter === 'all' ? 'secondary' : 'ghost'}
-                                onClick={() => { setStatusFilter('all'); setCurrentPage(1); }}
-                                size="sm"
-                                className="rounded-full"
-                            >
-                                Tất cả
-                            </Button>
-                            <Button
-                                variant={statusFilter === 'active' ? 'secondary' : 'ghost'}
-                                onClick={() => { setStatusFilter('active'); setCurrentPage(1); }}
-                                size="sm"
-                                className="rounded-full gap-1"
-                            >
-                                <CheckCircleIcon className="w-4 h-4 text-green-600" /> hoạt động
-                            </Button>
-                            <Button
-                                variant={statusFilter === 'inactive' ? 'secondary' : 'ghost'}
-                                onClick={() => { setStatusFilter('inactive'); setCurrentPage(1); }}
-                                size="sm"
-                                className="rounded-full gap-1"
-                            >
-                                <XCircleIcon className="w-4 h-4 text-gray-400" /> Không hoạt động
-                            </Button>
-                        </div>
+                    <div className="relative flex-1">
+                        <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Input
+                            placeholder="Tìm kiếm theo tên hoặc mô tả..."
+                            className="pl-9"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            style={{ borderRadius: "12px" }}
+                        />
                     </div>
                 </CardContent>
             </Card>
@@ -292,8 +316,30 @@ export default function InsurancesPage() {
                             </table>
                         </div>
                     ) : insurances.length === 0 ? (
-                        <div className="p-12 text-center text-muted-foreground">
-                            Không tìm thấy gói bảo hiểm nào phù hợp
+                        <div className="p-16 text-center">
+                            <div className="flex flex-col items-center gap-3">
+                                <div className="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center">
+                                    <ShieldCheckIcon className="w-8 h-8 text-muted-foreground/50" />
+                                </div>
+                                <div>
+                                    <p className="text-muted-foreground font-medium">Không tìm thấy gói bảo hiểm nào</p>
+                                    <p className="text-sm text-muted-foreground/70 mt-1">
+                                        {searchTerm ? "Thử thay đổi từ khóa tìm kiếm" : "Bắt đầu bằng cách thêm gói bảo hiểm mới"}
+                                    </p>
+                                </div>
+                                {!searchTerm && (
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => { setTargetInsurance(null); setIsCreateOpen(true); }}
+                                        className="gap-2 mt-2 transition-all duration-200 active:scale-[0.97]"
+                                        style={{ borderRadius: "12px" }}
+                                    >
+                                        <PlusIcon className="w-4 h-4" />
+                                        Thêm gói đầu tiên
+                                    </Button>
+                                )}
+                            </div>
                         </div>
                     ) : (
                         <div className="overflow-x-auto">
@@ -358,26 +404,28 @@ export default function InsurancesPage() {
                                                 )}
                                             </td>
                                             <td className="py-4 px-4 text-right">
-                                                <div className="flex justify-end gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                                                <div className="flex justify-end gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-200">
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
-                                                        className="h-8 w-8 rounded-full hover:bg-muted"
+                                                        className="h-8 w-8 rounded-full hover:bg-blue-50 text-gray-400 hover:text-blue-600 transition-all duration-200 active:scale-90"
                                                         onClick={() => {
                                                             setTargetInsurance(item);
                                                             setIsEditOpen(true);
                                                         }}
+                                                        title="Chỉnh sửa"
                                                     >
-                                                        <PencilIcon className="w-4 h-4 text-gray-600" />
+                                                        <PencilIcon className="w-4 h-4" />
                                                     </Button>
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
-                                                        className="h-8 w-8 rounded-full hover:bg-red-50 text-gray-400 hover:text-red-600"
+                                                        className="h-8 w-8 rounded-full hover:bg-red-50 text-gray-400 hover:text-red-600 transition-all duration-200 active:scale-90"
                                                         onClick={() => {
                                                             setTargetInsurance(item);
                                                             setIsDeleteOpen(true);
                                                         }}
+                                                        title="Xóa"
                                                     >
                                                         <TrashIcon className="w-4 h-4" />
                                                     </Button>
@@ -502,35 +550,54 @@ export default function InsurancesPage() {
             </Dialog>
 
             {/* Delete Confirmation */}
-            <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-                <DialogContent style={{ borderRadius: "16px" }}>
+            <Dialog open={isDeleteOpen} onOpenChange={(open) => { if (!isDeleteLoading) setIsDeleteOpen(open); }}>
+                <DialogContent style={{ borderRadius: "16px" }} className="sm:max-w-md">
                     <DialogHeader>
-                        <DialogTitle>Xác nhận xóa</DialogTitle>
+                        <DialogTitle>🗑️ Xác nhận xóa</DialogTitle>
                         <DialogDescription>
-                            Bạn có chắc chắn muốn xóa gói bảo hiểm "{targetInsurance?.name}" không?
-                            Hành động này không thể hoàn tác.
+                            Bạn có chắc chắn muốn xóa gói bảo hiểm <strong className="text-foreground">&ldquo;{targetInsurance?.name}&rdquo;</strong> không?
+                            <br />
+                            <span className="text-red-500 text-xs mt-1 inline-block">⚠️ Hành động này không thể hoàn tác.</span>
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsDeleteOpen(false)} style={{ borderRadius: "12px" }}>Hủy</Button>
-                        <Button variant="destructive" onClick={handleDelete} style={{ borderRadius: "12px" }}>Xóa</Button>
+                        <Button variant="outline" onClick={() => setIsDeleteOpen(false)} disabled={isDeleteLoading} style={{ borderRadius: "12px" }} className="transition-all duration-200">Hủy</Button>
+                        <Button variant="destructive" onClick={handleDelete} disabled={isDeleteLoading} style={{ borderRadius: "12px" }} className="gap-2 min-w-[100px] transition-all duration-200">
+                            {isDeleteLoading ? (
+                                <span className="flex items-center gap-2">
+                                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+                                    Đang xóa...
+                                </span>
+                            ) : (
+                                <span className="flex items-center gap-2"><TrashIcon className="w-4 h-4" /> Xóa</span>
+                            )}
+                        </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
 
             {/* Bulk Delete Dialog */}
-            <Dialog open={isBulkDeleteDialogOpen} onOpenChange={setIsBulkDeleteDialogOpen}>
-                <DialogContent style={{ borderRadius: "16px" }}>
+            <Dialog open={isBulkDeleteDialogOpen} onOpenChange={(open) => { if (!isBulkActionLoading) setIsBulkDeleteDialogOpen(open); }}>
+                <DialogContent style={{ borderRadius: "16px" }} className="sm:max-w-md">
                     <DialogHeader>
-                        <DialogTitle>Xác nhận xóa nhiều</DialogTitle>
+                        <DialogTitle>🗑️ Xác nhận xóa nhiều</DialogTitle>
                         <DialogDescription>
-                            Bạn có chắc chắn muốn xóa {selectedIds.length} gói bảo hiểm đã chọn không?
+                            Bạn có chắc chắn muốn xóa <strong className="text-foreground">{selectedIds.length} gói bảo hiểm</strong> đã chọn không?
+                            <br />
+                            <span className="text-red-500 text-xs mt-1 inline-block">⚠️ Hành động này không thể hoàn tác.</span>
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsBulkDeleteDialogOpen(false)} disabled={isBulkActionLoading} style={{ borderRadius: "12px" }}>Hủy</Button>
-                        <Button variant="destructive" onClick={handleBulkDelete} disabled={isBulkActionLoading} style={{ borderRadius: "12px" }}>
-                            {isBulkActionLoading ? "Đang xóa..." : "Xóa tất cả"}
+                        <Button variant="outline" onClick={() => setIsBulkDeleteDialogOpen(false)} disabled={isBulkActionLoading} style={{ borderRadius: "12px" }} className="transition-all duration-200">Hủy</Button>
+                        <Button variant="destructive" onClick={handleBulkDelete} disabled={isBulkActionLoading} style={{ borderRadius: "12px" }} className="gap-2 min-w-[120px] transition-all duration-200">
+                            {isBulkActionLoading ? (
+                                <span className="flex items-center gap-2">
+                                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+                                    Đang xóa {selectedIds.length}...
+                                </span>
+                            ) : (
+                                <span className="flex items-center gap-2"><TrashIcon className="w-4 h-4" /> Xóa {selectedIds.length} mục</span>
+                            )}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

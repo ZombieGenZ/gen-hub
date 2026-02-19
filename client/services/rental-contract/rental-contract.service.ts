@@ -1,4 +1,9 @@
-import { CreateRentalContractRequest } from '../../types/rental-contracts/rental-contracts.type'
+import {
+    CreateRentalContractRequest,
+    UpdateRentalContractRequest,
+    CancelContractRequest,
+    CancelManyContractsRequest,
+} from '../../types/rental-contracts/rental-contracts.type'
 
 const API = process.env.NEXT_PUBLIC_API_URL
 
@@ -97,13 +102,94 @@ export class RentalContractService {
             })
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || 'Two-factor authentication failed');
+                throw new Error(errorData.message || 'Failed to get contract detail');
             }
 
             return response.json();
         } catch (error) {
             console.error('Get rental contract detail error:', error)
             throw error
+        }
+    }
+
+    /**
+     * Cập nhật hợp đồng (gia hạn, thay đổi addon/bảo hiểm, ghi chú...)
+     * PUT /rental-contracts/:id
+     */
+    async updateRentalContract(token: string, id: string, data: UpdateRentalContractRequest) {
+        try {
+            const response = await fetch(`${API}/rental-contracts/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Failed to update rental contract');
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('Update rental contract error:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Hủy hợp đồng
+     * DELETE /rental-contracts/:id
+     */
+    async cancelRentalContract(token: string, id: string, data: CancelContractRequest) {
+        try {
+            const response = await fetch(`${API}/rental-contracts/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Failed to cancel rental contract');
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('Cancel rental contract error:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Hủy nhiều hợp đồng cùng lúc
+     * DELETE /rental-contracts/delete/many
+     */
+    async cancelManyRentalContracts(token: string, data: CancelManyContractsRequest) {
+        try {
+            const response = await fetch(`${API}/rental-contracts/delete/many`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Failed to cancel contracts');
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('Cancel many rental contracts error:', error);
+            throw error;
         }
     }
 }

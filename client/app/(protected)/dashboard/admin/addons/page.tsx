@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { AddonsService } from "@/services/addons/addons.service";
 import { AddonsTypeService } from "@/services/addons/addonsType.service";
@@ -64,10 +64,15 @@ export default function AddonsPage() {
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+    const [isDeleteLoading, setIsDeleteLoading] = useState(false);
 
     // --- Edit/Delete Targets ---
     const [targetAddon, setTargetAddon] = useState<AddonResponse | null>(null);
     const [targetType, setTargetType] = useState<AddonType | null>(null);
+
+    // --- Stats ---
+    const [addonStats, setAddonStats] = useState({ total: 0, active: 0, inactive: 0 });
+    const [typeStats, setTypeStats] = useState({ total: 0, active: 0, inactive: 0 });
 
     // --- Bulk Actions ---
     const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
@@ -75,8 +80,24 @@ export default function AddonsPage() {
 
     const { showToast } = useToast();
 
+    // --- Fetch Stats ---
+    const fetchAddonStats = useCallback(async () => {
+        try {
+            const token = authStorage.getAccessToken();
+            if (!token) return;
+            const data: any = await addonsService.getAllAddons(token, { limit: 1000 });
+            let items: AddonResponse[] = [];
+            if (data?.items) items = data.items;
+            else if (data?.data?.items) items = data.data.items;
+            else if (Array.isArray(data)) items = data;
+            else if (Array.isArray(data?.data)) items = data.data;
+            const active = items.filter(a => a.is_active).length;
+            setAddonStats({ total: items.length, active, inactive: items.length - active });
+        } catch (e) { console.error(e); }
+    }, []);
+
     // --- Fetch Data ---
-    const fetchAddons = async () => {
+    const fetchAddons = useCallback(async () => {
         try {
             setLoading(true);
             const token = authStorage.getAccessToken();
@@ -117,9 +138,9 @@ export default function AddonsPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [currentPage, itemsPerPage, searchTerm, statusFilter, showToast]);
 
-    const fetchTypes = async () => {
+    const fetchTypes = useCallback(async () => {
         try {
             const token = authStorage.getAccessToken();
             if (!token) return;
@@ -128,32 +149,34 @@ export default function AddonsPage() {
             let items: AddonType[] = [];
             if (Array.isArray(typesData)) items = typesData;
             else if (Array.isArray(typesData?.data)) items = typesData.data;
-            else if (typesData?.items) items = typesData.items; // Just in case
+            else if (typesData?.items) items = typesData.items;
 
             setAddonTypes(items);
+            const active = items.filter(t => t.is_active).length;
+            setTypeStats({ total: items.length, active, inactive: items.length - active });
         } catch (error) {
             console.error("Failed to fetch types", error);
         }
-    };
+    }, []);
 
+    useEffect(() => { fetchAddonStats(); }, [fetchAddonStats]);
     useEffect(() => {
         if (activeTab === 'services') {
             fetchAddons();
         } else {
-            fetchTypes(); // Types might not redraw on every page change if handled client side, but safe to refetch or optimize later
+            fetchTypes();
         }
-    }, [activeTab, currentPage, itemsPerPage, statusFilter]);
+    }, [activeTab, fetchAddons, fetchTypes]);
 
     // Debounce search
     useEffect(() => {
         const timer = setTimeout(() => {
             if (activeTab === 'services') {
                 setCurrentPage(1);
-                fetchAddons();
             }
         }, 500);
         return () => clearTimeout(timer);
-    }, [searchTerm]);
+    }, [searchTerm, activeTab]);
 
 
     // --- Filtering Logic for Types (Client-side) ---
@@ -167,7 +190,7 @@ export default function AddonsPage() {
 
     // --- Handlers ---
     const handleRefresh = () => {
-        if (activeTab === 'services') fetchAddons();
+        if (activeTab === 'services') { fetchAddons(); fetchAddonStats(); }
         else fetchTypes();
 
         setIsCreateOpen(false);
@@ -180,25 +203,28 @@ export default function AddonsPage() {
     };
 
     const handleDelete = async () => {
+        setIsDeleteLoading(true);
         try {
             const token = authStorage.getAccessToken();
             if (!token) return;
 
             if (activeTab === "services" && targetAddon) {
                 await addonsService.deleteAddon(token, targetAddon.id);
-                showToast("Đã xóa dịch vụ", "success");
+                showToast(`Đã xóa dịch vụ "${targetAddon.name}" 🗑️`, "success");
             } else if (activeTab === "types" && targetType) {
                 if (targetType.addons && targetType.addons.length > 0) {
                     showToast(`Không thể xóa nhóm đang chứa ${targetType.addons.length} dịch vụ`, "error");
                     return;
                 }
                 await addonsTypeService.deleteAddonType(token, targetType.id);
-                showToast("Đã xóa nhóm dịch vụ", "success");
+                showToast(`Đã xóa nhóm dịch vụ "${targetType.name}" 🗑️`, "success");
             }
             handleRefresh();
         } catch (error) {
             console.error("Delete failed", error);
-            showToast("Xóa thất bại", "error");
+            showToast("Xóa thất bại, vui lòng thử lại", "error");
+        } finally {
+            setIsDeleteLoading(false);
         }
     };
 
@@ -210,10 +236,10 @@ export default function AddonsPage() {
 
             if (activeTab === "services") {
                 await addonsService.deleteManyAddons(token, selectedAddonIds);
-                showToast(`Đã xóa ${selectedAddonIds.length} dịch vụ`, "success");
+                showToast(`Đã xóa ${selectedAddonIds.length} dịch vụ thành công! 🗑️`, "success");
             } else {
                 await addonsTypeService.deleteManyAddonTypes(token, selectedTypeIds);
-                showToast(`Đã xóa ${selectedTypeIds.length} nhóm dịch vụ`, "success");
+                showToast(`Đã xóa ${selectedTypeIds.length} nhóm dịch vụ thành công! 🗑️`, "success");
             }
             setIsBulkDeleteDialogOpen(false);
             handleRefresh();
@@ -271,7 +297,7 @@ export default function AddonsPage() {
                         setTargetType(null);
                         setIsCreateOpen(true);
                     }}
-                    className="gap-2 bg-[#0F766E] hover:bg-[#0F766E]/90 text-white"
+                    className="gap-2 bg-[#0F766E] hover:bg-[#0F766E]/90 text-white transition-all duration-200 active:scale-[0.97] hover:shadow-md"
                     style={{ borderRadius: "12px" }}
                 >
                     <PlusIcon className="w-4 h-4" />
@@ -307,41 +333,42 @@ export default function AddonsPage() {
                                 />
                             </div>
 
-                            {/* Status Filters */}
+                            {/* Status Filters with stats */}
                             <div className="flex items-center gap-2">
-                                <Button
-                                    variant={statusFilter === 'all' ? 'secondary' : 'ghost'}
-                                    onClick={() => {
-                                        setStatusFilter('all');
-                                        if (activeTab === 'services') setCurrentPage(1);
-                                    }}
-                                    size="sm"
-                                    className="rounded-full"
-                                >
-                                    Tất cả
-                                </Button>
-                                <Button
-                                    variant={statusFilter === 'active' ? 'secondary' : 'ghost'}
-                                    onClick={() => {
-                                        setStatusFilter('active');
-                                        if (activeTab === 'services') setCurrentPage(1);
-                                    }}
-                                    size="sm"
-                                    className="rounded-full gap-1"
-                                >
-                                    <CheckCircleIcon className="w-4 h-4 text-green-600" /> Active
-                                </Button>
-                                <Button
-                                    variant={statusFilter === 'inactive' ? 'secondary' : 'ghost'}
-                                    onClick={() => {
-                                        setStatusFilter('inactive');
-                                        if (activeTab === 'services') setCurrentPage(1);
-                                    }}
-                                    size="sm"
-                                    className="rounded-full gap-1"
-                                >
-                                    <XCircleIcon className="w-4 h-4 text-gray-400" /> Inactive
-                                </Button>
+                                {(() => {
+                                    const s = activeTab === 'services' ? addonStats : typeStats;
+                                    return (
+                                        <>
+                                            <Button
+                                                variant={statusFilter === 'all' ? 'secondary' : 'ghost'}
+                                                onClick={() => { setStatusFilter('all'); if (activeTab === 'services') setCurrentPage(1); }}
+                                                size="sm"
+                                                className="rounded-full gap-1.5"
+                                            >
+                                                Tất cả
+                                                <Badge variant="secondary" className="px-1.5 py-0 text-xs bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">{s.total}</Badge>
+                                            </Button>
+                                            <Button
+                                                variant={statusFilter === 'active' ? 'secondary' : 'ghost'}
+                                                onClick={() => { setStatusFilter('active'); if (activeTab === 'services') setCurrentPage(1); }}
+                                                size="sm"
+                                                className="rounded-full gap-1.5"
+                                            >
+                                                <CheckCircleIcon className="w-4 h-4 text-green-600" /> Active
+                                                <Badge variant="secondary" className="px-1.5 py-0 text-xs bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">{s.active}</Badge>
+                                            </Button>
+                                            <Button
+                                                variant={statusFilter === 'inactive' ? 'secondary' : 'ghost'}
+                                                onClick={() => { setStatusFilter('inactive'); if (activeTab === 'services') setCurrentPage(1); }}
+                                                size="sm"
+                                                className="rounded-full gap-1.5"
+                                            >
+                                                <XCircleIcon className="w-4 h-4 text-gray-400" /> Inactive
+                                                <Badge variant="secondary" className="px-1.5 py-0 text-xs bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">{s.inactive}</Badge>
+                                            </Button>
+                                        </>
+                                    );
+                                })()}
                             </div>
                         </div>
                     </CardContent>
@@ -390,8 +417,30 @@ export default function AddonsPage() {
                                             ))
                                         ) : addons.length === 0 ? (
                                             <tr>
-                                                <td colSpan={7} className="py-12 text-center text-muted-foreground">
-                                                    Không tìm thấy dịch vụ nào phù hợp
+                                                <td colSpan={7} className="py-16 text-center">
+                                                    <div className="flex flex-col items-center gap-3">
+                                                        <div className="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center">
+                                                            <ListBulletIcon className="w-8 h-8 text-muted-foreground/50" />
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-muted-foreground font-medium">Không tìm thấy dịch vụ nào</p>
+                                                            <p className="text-sm text-muted-foreground/70 mt-1">
+                                                                {searchTerm ? "Thử thay đổi từ khóa tìm kiếm" : "Bắt đầu bằng cách thêm dịch vụ mới"}
+                                                            </p>
+                                                        </div>
+                                                        {!searchTerm && (
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                onClick={() => { setTargetAddon(null); setIsCreateOpen(true); }}
+                                                                className="gap-2 mt-2 transition-all duration-200 active:scale-[0.97]"
+                                                                style={{ borderRadius: "12px" }}
+                                                            >
+                                                                <PlusIcon className="w-4 h-4" />
+                                                                Thêm dịch vụ đầu tiên
+                                                            </Button>
+                                                        )}
+                                                    </div>
                                                 </td>
                                             </tr>
                                         ) : (
@@ -436,26 +485,28 @@ export default function AddonsPage() {
                                                         )}
                                                     </td>
                                                     <td className="py-4 px-4 text-right">
-                                                        <div className="flex justify-end gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                                                        <div className="flex justify-end gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-200">
                                                             <Button
                                                                 variant="ghost"
                                                                 size="icon"
-                                                                className="h-8 w-8 rounded-full hover:bg-muted"
+                                                                className="h-8 w-8 rounded-full hover:bg-blue-50 text-gray-400 hover:text-blue-600 transition-all duration-200 active:scale-90"
                                                                 onClick={() => {
                                                                     setTargetAddon(addon);
                                                                     setIsEditOpen(true);
                                                                 }}
+                                                                title="Chỉnh sửa"
                                                             >
-                                                                <PencilIcon className="w-4 h-4 text-gray-600" />
+                                                                <PencilIcon className="w-4 h-4" />
                                                             </Button>
                                                             <Button
                                                                 variant="ghost"
                                                                 size="icon"
-                                                                className="h-8 w-8 rounded-full hover:bg-red-50 text-gray-400 hover:text-red-600"
+                                                                className="h-8 w-8 rounded-full hover:bg-red-50 text-gray-400 hover:text-red-600 transition-all duration-200 active:scale-90"
                                                                 onClick={() => {
                                                                     setTargetAddon(addon);
                                                                     setIsDeleteOpen(true);
                                                                 }}
+                                                                title="Xóa"
                                                             >
                                                                 <TrashIcon className="w-4 h-4" />
                                                             </Button>
@@ -547,7 +598,33 @@ export default function AddonsPage() {
                                     </thead>
                                     <tbody className="divide-y">
                                         {filteredTypes.length === 0 ? (
-                                            <tr><td colSpan={6} className="text-center py-8 text-muted-foreground">Không tìm thấy nhóm dịch vụ nào</td></tr>
+                                            <tr>
+                                                <td colSpan={6} className="text-center py-16">
+                                                    <div className="flex flex-col items-center gap-3">
+                                                        <div className="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center">
+                                                            <Squares2X2Icon className="w-8 h-8 text-muted-foreground/50" />
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-muted-foreground font-medium">Không tìm thấy nhóm dịch vụ nào</p>
+                                                            <p className="text-sm text-muted-foreground/70 mt-1">
+                                                                {searchTerm ? "Thử thay đổi từ khóa tìm kiếm" : "Bắt đầu bằng cách thêm nhóm mới"}
+                                                            </p>
+                                                        </div>
+                                                        {!searchTerm && (
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                onClick={() => { setTargetType(null); setIsCreateOpen(true); }}
+                                                                className="gap-2 mt-2 transition-all duration-200 active:scale-[0.97]"
+                                                                style={{ borderRadius: "12px" }}
+                                                            >
+                                                                <PlusIcon className="w-4 h-4" />
+                                                                Thêm nhóm đầu tiên
+                                                            </Button>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                            </tr>
                                         ) : (
                                             filteredTypes.map(type => (
                                                 <tr key={type.id} className="hover:bg-muted/50 transition-colors">
@@ -586,22 +663,24 @@ export default function AddonsPage() {
                                                             <Button
                                                                 variant="ghost"
                                                                 size="icon"
-                                                                className="h-8 w-8 rounded-full"
+                                                                className="h-8 w-8 rounded-full hover:bg-blue-50 text-gray-400 hover:text-blue-600 transition-all duration-200 active:scale-90"
                                                                 onClick={() => {
                                                                     setTargetType(type);
                                                                     setIsEditOpen(true);
                                                                 }}
+                                                                title="Chỉnh sửa"
                                                             >
                                                                 <PencilIcon className="w-4 h-4" />
                                                             </Button>
                                                             <Button
                                                                 variant="ghost"
                                                                 size="icon"
-                                                                className="h-8 w-8 rounded-full text-destructive hover:text-destructive"
+                                                                className="h-8 w-8 rounded-full hover:bg-red-50 text-gray-400 hover:text-red-600 transition-all duration-200 active:scale-90"
                                                                 onClick={() => {
                                                                     setTargetType(type);
                                                                     setIsDeleteOpen(true);
                                                                 }}
+                                                                title="Xóa"
                                                             >
                                                                 <TrashIcon className="w-4 h-4" />
                                                             </Button>
@@ -694,35 +773,54 @@ export default function AddonsPage() {
             </Dialog>
 
             {/* Delete Confirmation */}
-            <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-                <DialogContent style={{ borderRadius: "16px" }}>
+            <Dialog open={isDeleteOpen} onOpenChange={(open) => { if (!isDeleteLoading) setIsDeleteOpen(open); }}>
+                <DialogContent style={{ borderRadius: "16px" }} className="sm:max-w-md">
                     <DialogHeader>
-                        <DialogTitle>Xác nhận xóa</DialogTitle>
+                        <DialogTitle>🗑️ Xác nhận xóa</DialogTitle>
                         <DialogDescription>
-                            Bạn có chắc chắn muốn xóa {activeTab === 'services' ? `dịch vụ "${targetAddon?.name}"` : `nhóm "${targetType?.name}"`} không?
-                            Hành động này không thể hoàn tác.
+                            Bạn có chắc chắn muốn xóa {activeTab === 'services' ? `dịch vụ` : `nhóm`} <strong className="text-foreground">&ldquo;{activeTab === 'services' ? targetAddon?.name : targetType?.name}&rdquo;</strong> không?
+                            <br />
+                            <span className="text-red-500 text-xs mt-1 inline-block">⚠️ Hành động này không thể hoàn tác.</span>
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsDeleteOpen(false)} style={{ borderRadius: "12px" }}>Hủy</Button>
-                        <Button variant="destructive" onClick={handleDelete} style={{ borderRadius: "12px" }}>Xóa</Button>
+                        <Button variant="outline" onClick={() => setIsDeleteOpen(false)} disabled={isDeleteLoading} style={{ borderRadius: "12px" }} className="transition-all duration-200">Hủy</Button>
+                        <Button variant="destructive" onClick={handleDelete} disabled={isDeleteLoading} style={{ borderRadius: "12px" }} className="gap-2 min-w-[100px] transition-all duration-200">
+                            {isDeleteLoading ? (
+                                <span className="flex items-center gap-2">
+                                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+                                    Đang xóa...
+                                </span>
+                            ) : (
+                                <span className="flex items-center gap-2"><TrashIcon className="w-4 h-4" /> Xóa</span>
+                            )}
+                        </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
 
             {/* Bulk Delete Dialog */}
-            <Dialog open={isBulkDeleteDialogOpen} onOpenChange={setIsBulkDeleteDialogOpen}>
-                <DialogContent style={{ borderRadius: "16px" }}>
+            <Dialog open={isBulkDeleteDialogOpen} onOpenChange={(open) => { if (!isBulkActionLoading) setIsBulkDeleteDialogOpen(open); }}>
+                <DialogContent style={{ borderRadius: "16px" }} className="sm:max-w-md">
                     <DialogHeader>
-                        <DialogTitle>Xác nhận xóa nhiều</DialogTitle>
+                        <DialogTitle>🗑️ Xác nhận xóa nhiều</DialogTitle>
                         <DialogDescription>
-                            Bạn có chắc chắn muốn xóa {activeTab === 'services' ? selectedAddonIds.length : selectedTypeIds.length} mục đã chọn không?
+                            Bạn có chắc chắn muốn xóa <strong className="text-foreground">{activeTab === 'services' ? selectedAddonIds.length : selectedTypeIds.length} mục</strong> đã chọn không?
+                            <br />
+                            <span className="text-red-500 text-xs mt-1 inline-block">⚠️ Hành động này không thể hoàn tác.</span>
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsBulkDeleteDialogOpen(false)} disabled={isBulkActionLoading} style={{ borderRadius: "12px" }}>Hủy</Button>
-                        <Button variant="destructive" onClick={handleBulkDelete} disabled={isBulkActionLoading} style={{ borderRadius: "12px" }}>
-                            {isBulkActionLoading ? "Đang xóa..." : "Xóa tất cả"}
+                        <Button variant="outline" onClick={() => setIsBulkDeleteDialogOpen(false)} disabled={isBulkActionLoading} style={{ borderRadius: "12px" }} className="transition-all duration-200">Hủy</Button>
+                        <Button variant="destructive" onClick={handleBulkDelete} disabled={isBulkActionLoading} style={{ borderRadius: "12px" }} className="gap-2 min-w-[120px] transition-all duration-200">
+                            {isBulkActionLoading ? (
+                                <span className="flex items-center gap-2">
+                                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+                                    Đang xóa...
+                                </span>
+                            ) : (
+                                <span className="flex items-center gap-2"><TrashIcon className="w-4 h-4" /> Xóa {activeTab === 'services' ? selectedAddonIds.length : selectedTypeIds.length} mục</span>
+                            )}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

@@ -77,6 +77,7 @@ export default function CouponsPage() {
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [isDeleteLoading, setIsDeleteLoading] = useState(false);
     const [selectedCoupon, setSelectedCoupon] = useState<Coupon | null>(null);
     const [selectedCouponIds, setSelectedCouponIds] = useState<string[]>([]);
 
@@ -265,16 +266,21 @@ export default function CouponsPage() {
     };
 
     const handleDelete = async () => {
+        setIsDeleteLoading(true);
         try {
             const token = authStorage.getAccessToken();
             if (!token || !selectedCoupon) return;
 
             await couponService.deleteCoupon(token, selectedCoupon.id);
+            showToast(`Đã xóa mã giảm giá "${selectedCoupon.name}" 🗑️`, "success");
             setIsDeleteDialogOpen(false);
             setSelectedCoupon(null);
             fetchCoupons();
         } catch (error) {
             console.error("Failed to delete coupon", error);
+            showToast("Xóa thất bại, vui lòng thử lại", "error");
+        } finally {
+            setIsDeleteLoading(false);
         }
     };
 
@@ -312,7 +318,7 @@ export default function CouponsPage() {
                 setBulkActionType(null);
                 setBulkActionSuccess(false);
                 setSelectedCouponIds([]);
-                showToast(`Đã xóa ${selectedCouponIds.length} mã giảm giá`, 'success');
+                showToast(`Đã xóa ${selectedCouponIds.length} mã giảm giá thành công! 🗑️`, 'success');
                 fetchCoupons();
             }, 800);
         } catch (error) {
@@ -860,8 +866,30 @@ export default function CouponsPage() {
                     {loading ? (
                         <div className="text-center py-8 text-muted-foreground">Đang tải...</div>
                     ) : filteredCoupons.length === 0 ? (
-                        <div className="text-center py-8 text-muted-foreground">
-                            Không tìm thấy mã giảm giá nào
+                        <div className="text-center py-16">
+                            <div className="flex flex-col items-center gap-3">
+                                <div className="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center">
+                                    <GiftIcon className="w-8 h-8 text-muted-foreground/50" />
+                                </div>
+                                <div>
+                                    <p className="text-muted-foreground font-medium">Không tìm thấy mã giảm giá nào</p>
+                                    <p className="text-sm text-muted-foreground/70 mt-1">
+                                        {searchTerm || hasActiveFilters ? "Thử thay đổi bộ lọc hoặc từ khóa" : "Bắt đầu bằng cách thêm mã giảm giá mới"}
+                                    </p>
+                                </div>
+                                {!searchTerm && !hasActiveFilters && (
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setIsCreateDialogOpen(true)}
+                                        className="gap-2 mt-2 transition-all duration-200 active:scale-[0.97]"
+                                        style={{ borderRadius: "12px" }}
+                                    >
+                                        <PlusIcon className="w-4 h-4" />
+                                        Thêm mã đầu tiên
+                                    </Button>
+                                )}
+                            </div>
                         </div>
                     ) : (
                         <>
@@ -1083,20 +1111,29 @@ export default function CouponsPage() {
             </Dialog>
 
             {/* Delete Confirmation Dialog */}
-            <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-                <DialogContent style={{ borderRadius: "16px" }}>
+            <Dialog open={isDeleteDialogOpen} onOpenChange={(open) => { if (!isDeleteLoading) setIsDeleteDialogOpen(open); }}>
+                <DialogContent style={{ borderRadius: "16px" }} className="sm:max-w-md">
                     <DialogHeader>
-                        <DialogTitle>Xác nhận xóa</DialogTitle>
+                        <DialogTitle>🗑️ Xác nhận xóa</DialogTitle>
                         <DialogDescription>
-                            Bạn có chắc chắn muốn xóa mã giảm giá "{selectedCoupon?.name}" không? Hành động này không thể hoàn tác.
+                            Bạn có chắc chắn muốn xóa mã giảm giá <strong className="text-foreground">&ldquo;{selectedCoupon?.name}&rdquo;</strong> không?
+                            <br />
+                            <span className="text-red-500 text-xs mt-1 inline-block">⚠️ Hành động này không thể hoàn tác.</span>
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)} style={{ borderRadius: "12px" }}>
+                        <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)} disabled={isDeleteLoading} style={{ borderRadius: "12px" }} className="transition-all duration-200">
                             Hủy
                         </Button>
-                        <Button variant="destructive" onClick={handleDelete} style={{ borderRadius: "12px" }}>
-                            Xóa
+                        <Button variant="destructive" onClick={handleDelete} disabled={isDeleteLoading} style={{ borderRadius: "12px" }} className="gap-2 min-w-[100px] transition-all duration-200">
+                            {isDeleteLoading ? (
+                                <span className="flex items-center gap-2">
+                                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+                                    Đang xóa...
+                                </span>
+                            ) : (
+                                <span className="flex items-center gap-2"><TrashIcon className="w-4 h-4" /> Xóa</span>
+                            )}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

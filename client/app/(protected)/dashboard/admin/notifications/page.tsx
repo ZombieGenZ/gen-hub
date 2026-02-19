@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { NotificationService } from "@/services/notification/notification.service";
 import { UserNotification, NotificationType } from "@/types/notification/notification.type";
@@ -12,15 +12,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-    Drawer,
-    DrawerContent,
-    DrawerHeader,
-    DrawerTitle,
-    DrawerBody,
-    DrawerFooter,
-    DrawerClose,
-} from "@/components/ui/drawer";
 import {
     Dialog,
     DialogContent,
@@ -171,7 +162,7 @@ export default function AdminNotificationsPage() {
 
             await notificationService.deleteMultipleGlobalNotifications(token, selectedIds);
 
-            showToast(`Đã xóa ${selectedIds.length} thông báo`, "success");
+            showToast(`Đã xóa ${selectedIds.length} thông báo thành công! 🗑️`, "success");
             setNotifications(prev => prev.filter(n => !selectedIds.includes(n.id)));
             setSelectedIds([]);
             setIsBulkDeleteDialogOpen(false);
@@ -205,7 +196,7 @@ export default function AdminNotificationsPage() {
                 </div>
                 <Button
                     onClick={() => setIsComposeOpen(true)}
-                    className="bg-[#0F766E] hover:bg-[#0D655D]"
+                    className="bg-[#0F766E] hover:bg-[#0D655D] transition-all duration-200 active:scale-[0.97] hover:shadow-md"
                 >
                     <PlusIcon className="w-4 h-4 mr-2" />
                     Tạo thông báo mới
@@ -310,18 +301,30 @@ export default function AdminNotificationsPage() {
                             {/* Empty State */}
                             {!isLoading && notifications.length === 0 && (
                                 <tr>
-                                    <td colSpan={6} className="px-4 py-12 text-center">
-                                        <BellAlertIcon className="w-12 h-12 mx-auto text-muted-foreground/50 mb-4" />
-                                        <p className="text-muted-foreground">Chưa có thông báo nào</p>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            className="mt-4"
-                                            onClick={() => setIsComposeOpen(true)}
-                                        >
-                                            <PlusIcon className="w-4 h-4 mr-2" />
-                                            Tạo thông báo đầu tiên
-                                        </Button>
+                                    <td colSpan={6} className="px-4 py-16 text-center">
+                                        <div className="flex flex-col items-center gap-3">
+                                            <div className="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center">
+                                                <BellAlertIcon className="w-8 h-8 text-muted-foreground/50" />
+                                            </div>
+                                            <div>
+                                                <p className="text-muted-foreground font-medium">Chưa có thông báo nào</p>
+                                                <p className="text-sm text-muted-foreground/70 mt-1">
+                                                    {searchKeyword ? "Thử thay đổi từ khóa tìm kiếm" : "Bắt đầu bằng cách tạo thông báo mới"}
+                                                </p>
+                                            </div>
+                                            {!searchKeyword && (
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="mt-2 gap-2 transition-all duration-200 active:scale-[0.97]"
+                                                    onClick={() => setIsComposeOpen(true)}
+                                                    style={{ borderRadius: "12px" }}
+                                                >
+                                                    <PlusIcon className="w-4 h-4" />
+                                                    Tạo thông báo đầu tiên
+                                                </Button>
+                                            )}
+                                        </div>
                                     </td>
                                 </tr>
                             )}
@@ -482,37 +485,46 @@ export default function AdminNotificationsPage() {
             )}
 
             {/* Bulk Delete Confirm Dialog */}
-            <Dialog open={isBulkDeleteDialogOpen} onOpenChange={setIsBulkDeleteDialogOpen}>
-                <DialogContent>
+            <Dialog open={isBulkDeleteDialogOpen} onOpenChange={(open) => { if (!isBulkActionLoading) setIsBulkDeleteDialogOpen(open); }}>
+                <DialogContent style={{ borderRadius: "16px" }} className="sm:max-w-md">
                     <DialogHeader>
-                        <DialogTitle>Xóa thông báo</DialogTitle>
+                        <DialogTitle>🗑️ Xóa thông báo</DialogTitle>
                         <DialogDescription>
-                            Bạn có chắc chắn muốn xóa {selectedIds.length} thông báo đã chọn? Hành động này không thể hoàn tác.
+                            Bạn có chắc chắn muốn xóa <strong className="text-foreground">{selectedIds.length} thông báo</strong> đã chọn không?
+                            <br />
+                            <span className="text-red-500 text-xs mt-1 inline-block">⚠️ Hành động này không thể hoàn tác.</span>
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsBulkDeleteDialogOpen(false)} disabled={isBulkActionLoading}>Hủy</Button>
-                        <Button variant="destructive" onClick={handleBulkDelete} disabled={isBulkActionLoading}>
-                            {isBulkActionLoading ? "Đang xóa..." : "Xóa"}
+                        <Button variant="outline" onClick={() => setIsBulkDeleteDialogOpen(false)} disabled={isBulkActionLoading} style={{ borderRadius: "12px" }} className="transition-all duration-200">Hủy</Button>
+                        <Button variant="destructive" onClick={handleBulkDelete} disabled={isBulkActionLoading} style={{ borderRadius: "12px" }} className="gap-2 min-w-[120px] transition-all duration-200">
+                            {isBulkActionLoading ? (
+                                <span className="flex items-center gap-2">
+                                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+                                    Đang xóa {selectedIds.length}...
+                                </span>
+                            ) : (
+                                <span className="flex items-center gap-2"><BellAlertIcon className="w-4 h-4" /> Xóa {selectedIds.length} mục</span>
+                            )}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
 
-            {/* Compose Drawer */}
-            <Drawer open={isComposeOpen} onOpenChange={setIsComposeOpen} direction="right">
-                <DrawerContent className="w-full sm:max-w-[800px]">
-                    <DrawerHeader>
-                        <DrawerTitle>Tạo thông báo mới</DrawerTitle>
-                    </DrawerHeader>
-                    <DrawerBody className="overflow-y-auto">
+            {/* Compose Dialog (was Drawer) */}
+            <Dialog open={isComposeOpen} onOpenChange={setIsComposeOpen}>
+                <DialogContent className="w-[95vw] max-w-3xl max-h-[90dvh] flex flex-col p-0 gap-0 overflow-hidden" style={{ borderRadius: "16px" }}>
+                    <DialogHeader className="p-6 pb-4 shrink-0 z-10 border-b bg-background">
+                        <DialogTitle>Tạo thông báo mới</DialogTitle>
+                    </DialogHeader>
+                    <div className="flex-1 overflow-y-auto p-6">
                         <NotificationWizard
                             onSuccess={handleComposeSuccess}
                             onCancel={() => setIsComposeOpen(false)}
                         />
-                    </DrawerBody>
-                </DrawerContent>
-            </Drawer>
+                    </div>
+                </DialogContent>
+            </Dialog>
 
             {/* Notification Detail Dialog */}
             <Dialog open={!!selectedNotification} onOpenChange={() => setSelectedNotification(null)}>

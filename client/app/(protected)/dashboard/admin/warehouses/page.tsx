@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { LocationService } from "@/services/location/location.service";
 import { Province } from "@/types/location/provinces.type";
-import { toast } from "sonner";
+import { useToast } from "@/contexts/ToastContext";
 
 // ── shadcn/ui components ──
 import { Card, CardContent } from "@/components/ui/card";
@@ -57,6 +57,7 @@ import {
     XMarkIcon,
     CheckCircleIcon,
     XCircleIcon,
+    BuildingStorefrontIcon,
 } from "@heroicons/react/24/outline";
 
 // ── Services & Constants ──
@@ -117,8 +118,10 @@ export default function WarehouseTemplatePage() {
     // ── Dialogs ──
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [deleteTarget, setDeleteTarget] = useState<Warehouse | null>(null);
+    const [isDeleteLoading, setIsDeleteLoading] = useState(false);
     const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
     const [isBulkActionLoading, setIsBulkActionLoading] = useState(false);
+    const { showToast } = useToast();
 
     // ── Create Modal ──
     const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -231,17 +234,20 @@ export default function WarehouseTemplatePage() {
     // ── Delete single ──
     const handleDeleteConfirm = async () => {
         if (!deleteTarget) return;
+        setIsDeleteLoading(true);
         try {
             const token = authStorage.getAccessToken();
             if (!token) return;
             await warehouseService.deleteWarehouseTemplate(token, deleteTarget.id);
-            toast.success(`Đã xóa "${deleteTarget.name}"`);
+            showToast(`Đã xóa "${deleteTarget.name}" 🗑️`, "success");
             setDeleteDialogOpen(false);
             setDeleteTarget(null);
             setSelectedIds([]);
             fetchWarehouses();
         } catch {
-            toast.error("Xóa thất bại. Vui lòng thử lại.");
+            showToast("Xóa thất bại, vui lòng thử lại", "error");
+        } finally {
+            setIsDeleteLoading(false);
         }
     };
 
@@ -252,12 +258,12 @@ export default function WarehouseTemplatePage() {
             const token = authStorage.getAccessToken();
             if (!token) return;
             await warehouseService.deleteManyWarehouseTemplates(token, selectedIds);
-            toast.success(`Đã xóa ${selectedIds.length} template`);
+            showToast(`Đã xóa ${selectedIds.length} template thành công! 🗑️`, "success");
             setIsBulkDeleteDialogOpen(false);
             setSelectedIds([]);
             fetchWarehouses();
         } catch {
-            toast.error("Xóa thất bại. Vui lòng thử lại.");
+            showToast("Xóa thất bại, vui lòng thử lại", "error");
         } finally {
             setIsBulkActionLoading(false);
         }
@@ -266,7 +272,7 @@ export default function WarehouseTemplatePage() {
     // ── Create handler ──
     const handleCreate = async () => {
         if (!createForm.name.trim()) {
-            toast.error("Vui lòng nhập tên kho.");
+            showToast("Vui lòng nhập tên kho.", "error");
             return;
         }
         const token = authStorage.getAccessToken();
@@ -280,7 +286,7 @@ export default function WarehouseTemplatePage() {
                 block_width: 1,
                 is_active: false,
             });
-            toast.success(`Đã tạo kho "${createForm.name}"`);
+            showToast(`Đã tạo kho "${createForm.name}" thành công! 🎉`, "success");
             setCreateDialogOpen(false);
             setCreateForm({ name: "", length: 0, width: 0, price_per_month: 0 });
             const newId = result?.data?.id || result?.id;
@@ -290,7 +296,7 @@ export default function WarehouseTemplatePage() {
                 fetchWarehouses();
             }
         } catch {
-            toast.error("Tạo kho thất bại. Vui lòng thử lại.");
+            showToast("Tạo kho thất bại, vui lòng thử lại", "error");
         } finally {
             setIsCreating(false);
         }
@@ -484,8 +490,30 @@ export default function WarehouseTemplatePage() {
                                     </tr>
                                 ) : sortedWarehouses.length === 0 ? (
                                     <tr>
-                                        <td colSpan={6} className="py-12 text-center text-muted-foreground">
-                                            Không tìm thấy kho nào phù hợp
+                                        <td colSpan={6} className="py-16 text-center">
+                                            <div className="flex flex-col items-center gap-3">
+                                                <div className="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center">
+                                                    <BuildingStorefrontIcon className="w-8 h-8 text-muted-foreground/50" />
+                                                </div>
+                                                <div>
+                                                    <p className="text-muted-foreground font-medium">Không tìm thấy kho nào</p>
+                                                    <p className="text-sm text-muted-foreground/70 mt-1">
+                                                        {searchTerm ? "Thử thay đổi từ khóa tìm kiếm" : "Bắt đầu bằng cách thêm kho mới"}
+                                                    </p>
+                                                </div>
+                                                {!searchTerm && (
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => setCreateDialogOpen(true)}
+                                                        className="gap-2 mt-2 transition-all duration-200 active:scale-[0.97]"
+                                                        style={{ borderRadius: "12px" }}
+                                                    >
+                                                        <PlusIcon className="w-4 h-4" />
+                                                        Thêm kho đầu tiên
+                                                    </Button>
+                                                )}
+                                            </div>
                                         </td>
                                     </tr>
                                 ) : (
@@ -678,42 +706,58 @@ export default function WarehouseTemplatePage() {
             )}
 
             {/* ── Delete Confirmation Dialog ── */}
-            <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-                <DialogContent style={{ borderRadius: "16px" }}>
+            <Dialog open={deleteDialogOpen} onOpenChange={(open) => { if (!isDeleteLoading) setDeleteDialogOpen(open); }}>
+                <DialogContent style={{ borderRadius: "16px" }} className="sm:max-w-md">
                     <DialogHeader>
-                        <DialogTitle>Xác nhận xóa</DialogTitle>
+                        <DialogTitle>🗑️ Xác nhận xóa</DialogTitle>
                         <DialogDescription>
-                            Bạn có chắc chắn muốn xóa kho &quot;{deleteTarget?.name}&quot; không?
-                            Hành động này không thể hoàn tác.
+                            Bạn có chắc chắn muốn xóa kho <strong className="text-foreground">&ldquo;{deleteTarget?.name}&rdquo;</strong> không?
+                            <br />
+                            <span className="text-red-500 text-xs mt-1 inline-block">⚠️ Hành động này không thể hoàn tác.</span>
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setDeleteDialogOpen(false)} style={{ borderRadius: "12px" }}>
+                        <Button variant="outline" onClick={() => setDeleteDialogOpen(false)} disabled={isDeleteLoading} style={{ borderRadius: "12px" }} className="transition-all duration-200">
                             Hủy
                         </Button>
-                        <Button variant="destructive" onClick={handleDeleteConfirm} style={{ borderRadius: "12px" }}>
-                            Xóa
+                        <Button variant="destructive" onClick={handleDeleteConfirm} disabled={isDeleteLoading} style={{ borderRadius: "12px" }} className="gap-2 min-w-[100px] transition-all duration-200">
+                            {isDeleteLoading ? (
+                                <span className="flex items-center gap-2">
+                                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+                                    Đang xóa...
+                                </span>
+                            ) : (
+                                <span className="flex items-center gap-2"><TrashIcon className="w-4 h-4" /> Xóa</span>
+                            )}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
 
             {/* ── Bulk Delete Dialog ── */}
-            <Dialog open={isBulkDeleteDialogOpen} onOpenChange={setIsBulkDeleteDialogOpen}>
-                <DialogContent style={{ borderRadius: "16px" }}>
+            <Dialog open={isBulkDeleteDialogOpen} onOpenChange={(open) => { if (!isBulkActionLoading) setIsBulkDeleteDialogOpen(open); }}>
+                <DialogContent style={{ borderRadius: "16px" }} className="sm:max-w-md">
                     <DialogHeader>
-                        <DialogTitle>Xác nhận xóa nhiều</DialogTitle>
+                        <DialogTitle>🗑️ Xác nhận xóa nhiều</DialogTitle>
                         <DialogDescription>
-                            Bạn có chắc chắn muốn xóa {selectedIds.length} template đã chọn không?
-                            Hành động này không thể hoàn tác.
+                            Bạn có chắc chắn muốn xóa <strong className="text-foreground">{selectedIds.length} template</strong> đã chọn không?
+                            <br />
+                            <span className="text-red-500 text-xs mt-1 inline-block">⚠️ Hành động này không thể hoàn tác.</span>
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsBulkDeleteDialogOpen(false)} disabled={isBulkActionLoading} style={{ borderRadius: "12px" }}>
+                        <Button variant="outline" onClick={() => setIsBulkDeleteDialogOpen(false)} disabled={isBulkActionLoading} style={{ borderRadius: "12px" }} className="transition-all duration-200">
                             Hủy
                         </Button>
-                        <Button variant="destructive" onClick={handleBulkDelete} disabled={isBulkActionLoading} style={{ borderRadius: "12px" }}>
-                            {isBulkActionLoading ? "Đang xóa..." : "Xóa tất cả"}
+                        <Button variant="destructive" onClick={handleBulkDelete} disabled={isBulkActionLoading} style={{ borderRadius: "12px" }} className="gap-2 min-w-[120px] transition-all duration-200">
+                            {isBulkActionLoading ? (
+                                <span className="flex items-center gap-2">
+                                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+                                    Đang xóa {selectedIds.length}...
+                                </span>
+                            ) : (
+                                <span className="flex items-center gap-2"><TrashIcon className="w-4 h-4" /> Xóa {selectedIds.length} mục</span>
+                            )}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

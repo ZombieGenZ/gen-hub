@@ -10,13 +10,6 @@ import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-    Sheet,
-    SheetContent,
-    SheetHeader,
-    SheetTitle,
-    SheetDescription,
-} from "@/components/ui/sheet";
-import {
     Dialog,
     DialogContent,
     DialogDescription,
@@ -99,9 +92,8 @@ function TierCard({
             className={`group transition-all duration-200 ${isDragging ? "opacity-40 scale-[0.98]" : "opacity-100"}`}
         >
             <div
-                className={`flex items-center gap-4 p-4 md:p-5 bg-white dark:bg-slate-900 border rounded-2xl shadow-sm hover:shadow-md transition-all ${
-                    !tier.is_active ? "bg-gray-50/50 dark:bg-slate-900/50" : ""
-                }`}
+                className={`flex items-center gap-4 p-4 md:p-5 bg-white dark:bg-slate-900 border rounded-2xl shadow-sm hover:shadow-md transition-all ${!tier.is_active ? "bg-gray-50/50 dark:bg-slate-900/50" : ""
+                    }`}
             >
                 {/* ── Drag Handle + Order Buttons ── */}
                 <div className="flex flex-col items-center gap-1 flex-shrink-0">
@@ -196,20 +188,22 @@ function TierCard({
                 </div>
 
                 {/* ── Actions ── */}
-                <div className="flex items-center gap-1 flex-shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                <div className="flex items-center gap-1 flex-shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-200">
                     <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 rounded-full hover:bg-muted"
+                        className="h-8 w-8 rounded-full hover:bg-blue-50 text-gray-400 hover:text-blue-600 transition-all duration-200 active:scale-90"
                         onClick={onEdit}
+                        title="Chỉnh sửa"
                     >
-                        <PencilIcon className="w-4 h-4 text-gray-600" />
+                        <PencilIcon className="w-4 h-4" />
                     </Button>
                     <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 rounded-full hover:bg-red-50 text-gray-400 hover:text-red-600"
+                        className="h-8 w-8 rounded-full hover:bg-red-50 text-gray-400 hover:text-red-600 transition-all duration-200 active:scale-90"
                         onClick={onDelete}
+                        title="Xóa"
                     >
                         <TrashIcon className="w-4 h-4" />
                     </Button>
@@ -231,14 +225,15 @@ export default function RentalDurationTiersPage() {
     const [stats, setStats] = useState({ total: 0, active: 0, inactive: 0 });
     const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
 
-    // ─── Sheet (Create/Edit) ────────────────────────────────────────────────────
-    const [isSheetOpen, setIsSheetOpen] = useState(false);
+    // ─── Dialog (Create/Edit) ────────────────────────────────────────────
+    const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
     const [sheetMode, setSheetMode] = useState<"create" | "edit">("create");
     const [selectedTier, setSelectedTier] = useState<RentalDurationTier | null>(null);
     const [isFormLoading, setIsFormLoading] = useState(false);
 
-    // ─── Delete Dialog ──────────────────────────────────────────────────────────
+    // ─── Delete Dialog ──────────────────────────────────────────────────
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+    const [isDeleteLoading, setIsDeleteLoading] = useState(false);
     const [deleteTier, setDeleteTier] = useState<RentalDurationTier | null>(null);
 
     // ─── Selection for bulk actions ──────────────────────────────────────────────
@@ -292,7 +287,7 @@ export default function RentalDurationTiersPage() {
     const openCreate = () => {
         setSheetMode("create");
         setSelectedTier(null);
-        setIsSheetOpen(true);
+        setIsFormDialogOpen(true);
     };
 
     const openEdit = async (tier: RentalDurationTier) => {
@@ -304,7 +299,7 @@ export default function RentalDurationTiersPage() {
             const detail = data?.data || data;
             setSheetMode("edit");
             setSelectedTier(detail);
-            setIsSheetOpen(true);
+            setIsFormDialogOpen(true);
         } catch (error) {
             console.error("Failed to fetch tier detail", error);
             showToast("Không thể tải chi tiết gói thuê", "error");
@@ -322,13 +317,13 @@ export default function RentalDurationTiersPage() {
                 const maxOrder = tiers.length > 0 ? Math.max(...tiers.map((t) => t.order)) : -1;
                 payload.order = maxOrder + 1;
                 await tierService.createRentalDurationTier(token, payload);
-                showToast("Đã tạo gói thuê mới", "success");
+                showToast("Đã tạo gói thuê mới thành công! 🎉", "success");
             } else if (selectedTier) {
                 await tierService.updateRentalDurationTier(token, selectedTier.id, payload);
-                showToast("Đã cập nhật gói thuê", "success");
+                showToast("Đã cập nhật gói thuê thành công! ✅", "success");
             }
 
-            setIsSheetOpen(false);
+            setIsFormDialogOpen(false);
             setSelectedTier(null);
             fetchTiers();
         } catch (error: any) {
@@ -341,18 +336,21 @@ export default function RentalDurationTiersPage() {
 
     // ─── Delete ──────────────────────────────────────────────────────────────────
     const handleDelete = async () => {
+        setIsDeleteLoading(true);
         try {
             const token = authStorage.getAccessToken();
             if (!token || !deleteTier) return;
 
             await tierService.deleteRentalDurationTier(token, deleteTier.id);
-            showToast("Đã xóa gói thuê", "success");
+            showToast(`Đã xóa gói thuê "${deleteTier.name}" 🗑️`, "success");
             setIsDeleteOpen(false);
             setDeleteTier(null);
             fetchTiers();
         } catch (error) {
             console.error("Failed to delete tier", error);
             showToast("Xóa gói thuê thất bại", "error");
+        } finally {
+            setIsDeleteLoading(false);
         }
     };
 
@@ -363,7 +361,7 @@ export default function RentalDurationTiersPage() {
             if (!token) return;
 
             await tierService.deleteMultipleRentalDurationTier(token, selectedIds);
-            showToast(`Đã xóa ${selectedIds.length} gói thuê`, "success");
+            showToast(`Đã xóa ${selectedIds.length} gói thuê thành công! 🗑️`, "success");
             setIsBulkDeleteOpen(false);
             setSelectedIds([]);
             fetchTiers();
@@ -391,7 +389,7 @@ export default function RentalDurationTiersPage() {
                 active: active ? prev.active + 1 : prev.active - 1,
                 inactive: active ? prev.inactive - 1 : prev.inactive + 1,
             }));
-            showToast(active ? "Đã kích hoạt gói" : "Đã tắt gói", "success");
+            showToast(active ? "Đã kích hoạt gói ✅" : "Đã tắt gói ⛔", "success");
         } catch (error) {
             console.error("Failed to toggle tier", error);
             showToast("Cập nhật trạng thái thất bại", "error");
@@ -418,11 +416,11 @@ export default function RentalDurationTiersPage() {
                 updated.map((tier, idx) =>
                     tier.order !== idx
                         ? tierService.updateRentalDurationTier(token, tier.id, {
-                              name: tier.name,
-                              duration_value: tier.duration_value,
-                              duration_unit: tier.duration_unit,
-                              order: idx,
-                          })
+                            name: tier.name,
+                            duration_value: tier.duration_value,
+                            duration_unit: tier.duration_unit,
+                            order: idx,
+                        })
                         : Promise.resolve()
                 )
             );
@@ -487,7 +485,7 @@ export default function RentalDurationTiersPage() {
                 </div>
                 <Button
                     onClick={openCreate}
-                    className="gap-2 bg-slate-900 hover:bg-slate-800 text-white"
+                    className="gap-2 bg-slate-900 hover:bg-slate-800 text-white transition-all duration-200 active:scale-[0.97] hover:shadow-md"
                     style={{ borderRadius: "12px" }}
                 >
                     <PlusIcon className="w-4 h-4" />
@@ -498,8 +496,8 @@ export default function RentalDurationTiersPage() {
             {/* ═══ Interactive Filter Tabs ═══ */}
             <Tabs value={statusFilter} onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}>
                 <TabsList className="inline-flex h-11 items-center justify-start rounded-xl bg-muted p-1 gap-1">
-                    <TabsTrigger 
-                        value="all" 
+                    <TabsTrigger
+                        value="all"
                         className="rounded-lg px-4 py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm"
                     >
                         <span className="font-medium">Tất cả</span>
@@ -507,8 +505,8 @@ export default function RentalDurationTiersPage() {
                             {stats.total}
                         </Badge>
                     </TabsTrigger>
-                    <TabsTrigger 
-                        value="active" 
+                    <TabsTrigger
+                        value="active"
                         className="rounded-lg px-4 py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm"
                     >
                         <CheckCircleIcon className="w-4 h-4 mr-1.5" />
@@ -517,8 +515,8 @@ export default function RentalDurationTiersPage() {
                             {stats.active}
                         </Badge>
                     </TabsTrigger>
-                    <TabsTrigger 
-                        value="inactive" 
+                    <TabsTrigger
+                        value="inactive"
                         className="rounded-lg px-4 py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm"
                     >
                         <XCircleIcon className="w-4 h-4 mr-1.5" />
@@ -536,11 +534,11 @@ export default function RentalDurationTiersPage() {
                     <div>
                         <h2 className="text-lg font-bold">Danh sách gói thuê</h2>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                            {statusFilter === "all" 
-                                ? `Hiển thị tất cả ${filteredTiers.length} gói · Kéo thả để sắp xếp thứ tự` 
+                            {statusFilter === "all"
+                                ? `Hiển thị tất cả ${filteredTiers.length} gói · Kéo thả để sắp xếp thứ tự`
                                 : statusFilter === "active"
-                                ? `Hiển thị ${filteredTiers.length} gói đang hoạt động`
-                                : `Hiển thị ${filteredTiers.length} gói chưa kích hoạt`
+                                    ? `Hiển thị ${filteredTiers.length} gói đang hoạt động`
+                                    : `Hiển thị ${filteredTiers.length} gói chưa kích hoạt`
                             }
                         </p>
                     </div>
@@ -601,26 +599,27 @@ export default function RentalDurationTiersPage() {
                             {filteredTiers.map((tier) => {
                                 const originalIndex = tiers.findIndex(t => t.id === tier.id);
                                 return (
-                                <TierCard
-                                    key={tier.id}
-                                    tier={tier}
-                                    index={originalIndex}
-                                    total={tiers.length}
-                                    onMoveUp={() => moveUp(originalIndex)}
-                                    onMoveDown={() => moveDown(originalIndex)}
-                                    onEdit={() => openEdit(tier)}
-                                    onDelete={() => {
-                                        setDeleteTier(tier);
-                                        setIsDeleteOpen(true);
-                                    }}
-                                    onToggleActive={(active) => handleToggleActive(tier, active)}
-                                    isDragging={dragIndex === originalIndex}
-                                    onDragStart={handleDragStart(originalIndex)}
-                                    onDragOver={handleDragOver(originalIndex)}
-                                    onDragEnd={handleDragEnd}
-                                    onDrop={handleDrop(originalIndex)}
-                                />
-                            );})}
+                                    <TierCard
+                                        key={tier.id}
+                                        tier={tier}
+                                        index={originalIndex}
+                                        total={tiers.length}
+                                        onMoveUp={() => moveUp(originalIndex)}
+                                        onMoveDown={() => moveDown(originalIndex)}
+                                        onEdit={() => openEdit(tier)}
+                                        onDelete={() => {
+                                            setDeleteTier(tier);
+                                            setIsDeleteOpen(true);
+                                        }}
+                                        onToggleActive={(active) => handleToggleActive(tier, active)}
+                                        isDragging={dragIndex === originalIndex}
+                                        onDragStart={handleDragStart(originalIndex)}
+                                        onDragOver={handleDragOver(originalIndex)}
+                                        onDragEnd={handleDragEnd}
+                                        onDrop={handleDrop(originalIndex)}
+                                    />
+                                );
+                            })}
                         </div>
                     )}
                 </CardContent>
@@ -655,88 +654,81 @@ export default function RentalDurationTiersPage() {
                 </div>
             )}
 
-            {/* ═══ Create/Edit Sheet (Slide-over) ═══ */}
-            <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-                <SheetContent
-                    side="right"
-                    className="w-full sm:max-w-xl md:max-w-2xl overflow-y-auto"
-                    style={{ borderRadius: "0" }}
-                >
-                    <SheetHeader className="mb-6">
-                        <SheetTitle className="text-xl font-bold">
+            {/* ═══ Create/Edit Dialog (was Sheet) ═══ */}
+            <Dialog open={isFormDialogOpen} onOpenChange={(open) => { if (!isFormLoading) setIsFormDialogOpen(open); }}>
+                <DialogContent className="w-[95vw] max-w-2xl max-h-[90dvh] flex flex-col p-0 gap-0 overflow-hidden" style={{ borderRadius: "16px" }}>
+                    <DialogHeader className="p-6 pb-4 shrink-0 z-10 border-b bg-background">
+                        <DialogTitle className="text-xl font-bold">
                             {sheetMode === "create" ? "Tạo gói thuê mới" : "Chỉnh sửa gói thuê"}
-                        </SheetTitle>
-                        <SheetDescription>
+                        </DialogTitle>
+                        <DialogDescription>
                             {sheetMode === "create"
                                 ? "Thêm mốc thời gian thuê mới với các ưu đãi kèm theo"
                                 : `Đang chỉnh sửa "${selectedTier?.name}"`}
-                        </SheetDescription>
-                    </SheetHeader>
-                    <TierForm
-                        key={selectedTier?.id || "create"}
-                        initialData={selectedTier}
-                        onSubmit={handleFormSubmit}
-                        onCancel={() => setIsSheetOpen(false)}
-                        isEdit={sheetMode === "edit"}
-                        loading={isFormLoading}
-                    />
-                </SheetContent>
-            </Sheet>
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="flex-1 overflow-y-auto p-6">
+                        <TierForm
+                            key={selectedTier?.id || "create"}
+                            initialData={selectedTier}
+                            onSubmit={handleFormSubmit}
+                            onCancel={() => setIsFormDialogOpen(false)}
+                            isEdit={sheetMode === "edit"}
+                            loading={isFormLoading}
+                        />
+                    </div>
+                </DialogContent>
+            </Dialog>
 
             {/* ═══ Delete Confirmation Dialog ═══ */}
-            <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-                <DialogContent style={{ borderRadius: "16px" }}>
+            <Dialog open={isDeleteOpen} onOpenChange={(open) => { if (!isDeleteLoading) setIsDeleteOpen(open); }}>
+                <DialogContent style={{ borderRadius: "16px" }} className="sm:max-w-md">
                     <DialogHeader>
-                        <DialogTitle>Xác nhận xóa</DialogTitle>
+                        <DialogTitle>🗑️ Xác nhận xóa</DialogTitle>
                         <DialogDescription>
-                            Bạn có chắc chắn muốn xóa gói &ldquo;{deleteTier?.name}&rdquo; không?
-                            Hành động này không thể hoàn tác.
+                            Bạn có chắc chắn muốn xóa gói <strong className="text-foreground">&ldquo;{deleteTier?.name}&rdquo;</strong> không?
+                            <br />
+                            <span className="text-red-500 text-xs mt-1 inline-block">⚠️ Hành động này không thể hoàn tác.</span>
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
-                        <Button
-                            variant="outline"
-                            onClick={() => setIsDeleteOpen(false)}
-                            style={{ borderRadius: "12px" }}
-                        >
-                            Hủy
-                        </Button>
-                        <Button
-                            variant="destructive"
-                            onClick={handleDelete}
-                            style={{ borderRadius: "12px" }}
-                        >
-                            Xóa
+                        <Button variant="outline" onClick={() => setIsDeleteOpen(false)} disabled={isDeleteLoading} style={{ borderRadius: "12px" }} className="transition-all duration-200">Hủy</Button>
+                        <Button variant="destructive" onClick={handleDelete} disabled={isDeleteLoading} style={{ borderRadius: "12px" }} className="gap-2 min-w-[100px] transition-all duration-200">
+                            {isDeleteLoading ? (
+                                <span className="flex items-center gap-2">
+                                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+                                    Đang xóa...
+                                </span>
+                            ) : (
+                                <span className="flex items-center gap-2"><TrashIcon className="w-4 h-4" /> Xóa</span>
+                            )}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
 
             {/* ═══ Bulk Delete Dialog ═══ */}
-            <Dialog open={isBulkDeleteOpen} onOpenChange={setIsBulkDeleteOpen}>
-                <DialogContent style={{ borderRadius: "16px" }}>
+            <Dialog open={isBulkDeleteOpen} onOpenChange={(open) => { if (!isBulkLoading) setIsBulkDeleteOpen(open); }}>
+                <DialogContent style={{ borderRadius: "16px" }} className="sm:max-w-md">
                     <DialogHeader>
-                        <DialogTitle>Xác nhận xóa nhiều</DialogTitle>
+                        <DialogTitle>🗑️ Xác nhận xóa nhiều</DialogTitle>
                         <DialogDescription>
-                            Bạn có chắc chắn muốn xóa {selectedIds.length} gói thuê đã chọn?
+                            Bạn có chắc chắn muốn xóa <strong className="text-foreground">{selectedIds.length} gói thuê</strong> đã chọn không?
+                            <br />
+                            <span className="text-red-500 text-xs mt-1 inline-block">⚠️ Hành động này không thể hoàn tác.</span>
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
-                        <Button
-                            variant="outline"
-                            onClick={() => setIsBulkDeleteOpen(false)}
-                            disabled={isBulkLoading}
-                            style={{ borderRadius: "12px" }}
-                        >
-                            Hủy
-                        </Button>
-                        <Button
-                            variant="destructive"
-                            onClick={handleBulkDelete}
-                            disabled={isBulkLoading}
-                            style={{ borderRadius: "12px" }}
-                        >
-                            {isBulkLoading ? "Đang xóa..." : "Xóa tất cả"}
+                        <Button variant="outline" onClick={() => setIsBulkDeleteOpen(false)} disabled={isBulkLoading} style={{ borderRadius: "12px" }} className="transition-all duration-200">Hủy</Button>
+                        <Button variant="destructive" onClick={handleBulkDelete} disabled={isBulkLoading} style={{ borderRadius: "12px" }} className="gap-2 min-w-[120px] transition-all duration-200">
+                            {isBulkLoading ? (
+                                <span className="flex items-center gap-2">
+                                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+                                    Đang xóa {selectedIds.length}...
+                                </span>
+                            ) : (
+                                <span className="flex items-center gap-2"><TrashIcon className="w-4 h-4" /> Xóa {selectedIds.length} mục</span>
+                            )}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

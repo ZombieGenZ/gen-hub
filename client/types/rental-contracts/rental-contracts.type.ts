@@ -9,6 +9,24 @@ export interface RentalTemplateItemDto {
 export type RentalContractPaymentType = 'TRANSFER' | 'CASH';
 export type RentalContractPaymentMethod = 'BALANCE' | 'TRANSFER' | 'HYBRID';
 
+export type ContractStatus =
+    | 'PENDING'
+    | 'ACTIVE'
+    | 'OVERDUE_LEVEL_1'
+    | 'OVERDUE_LEVEL_2'
+    | 'OVERDUE_LEVEL_3'
+    | 'SEALED'
+    | 'LIQUIDATED'
+    | 'CANCELLED'
+    | 'COMPLETED';
+
+export type ContractCancelType =
+    | 'CLIENT_REQUEST'
+    | 'ADMIN_REQUEST'
+    | 'VIOLATION'
+    | 'NON_PAYMENT'
+    | 'SYSTEM';
+
 export interface CreateRentalContractRequest {
     duration_tier_id: string;
     organization_id: string;
@@ -22,4 +40,101 @@ export interface CreateRentalContractRequest {
     payment_method?: RentalContractPaymentMethod;
     scheduled_start_at?: string;
     signature?: File | Blob;
+}
+
+export interface UpdateRentalContractRequest {
+    name?: string;
+    notes?: string;
+    extend_duration_tier_id?: string;
+    reduce_months?: number;
+    addon_ids?: string[];
+    insurance_ids?: string[];
+}
+
+export interface CancelContractRequest {
+    cancel_type: ContractCancelType;
+    cancel_reason: string;
+}
+
+export interface CancelManyItem {
+    id: string;
+    cancel_type: ContractCancelType;
+    cancel_reason: string;
+}
+
+export interface CancelManyContractsRequest {
+    items: CancelManyItem[];
+}
+
+/* ---------- Response types ---------- */
+
+export interface RentalContractListItem {
+    id: string;
+    code: string;
+    name: string;
+    status: ContractStatus;
+    total_price: number | string;
+    final_price: number | string;
+    started_at: string;
+    expired_at: string;
+    auto_renew: boolean;
+    created_at: string;
+    organization?: {
+        id: string;
+        name: string;
+        logo_url?: string;
+    };
+    warehouses?: {
+        id: string;
+        name: string;
+    }[];
+}
+
+export interface RentalContractDetail extends RentalContractListItem {
+    notes?: string;
+    cancel_type?: ContractCancelType;
+    cancel_reason?: string;
+    cancelled_at?: string;
+    discount_rate?: number;
+    payment_method?: RentalContractPaymentMethod;
+    addons?: { id: string; name: string; price?: number }[];
+    insurances?: { id: string; name: string; price?: number }[];
+    warehouses?: {
+        id: string;
+        name: string;
+        rows?: { id: string; name: string }[];
+    }[];
+    payments?: {
+        id: string;
+        amount: number;
+        status: string;
+        method: string;
+        transaction_code?: string;
+        paid_at?: string;
+        created_at: string;
+        description?: string;
+        qr_code_url?: string;
+    }[];
+    history?: {
+        id: string;
+        type: string;
+        description: string;
+        created_at: string;
+        actor?: { name: string; role?: string };
+        metadata?: Record<string, unknown>;
+    }[];
+    signers?: {
+        name: string;
+        role: string;
+        signed: boolean;
+        signedAt?: string;
+        avatar?: string;
+    }[];
+}
+
+export interface RentalContractListResponse {
+    items: RentalContractListItem[];
+    total: number;
+    limit: number;
+    offset: number;
 }

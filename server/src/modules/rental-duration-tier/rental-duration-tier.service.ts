@@ -173,8 +173,8 @@ export class RentalDurationTierService {
     }
 
     async findById(id: string, lang: string, ownerId?: string) {
-        // Check cache
-        const cacheKey = this.getCacheKey(id) + (ownerId ? `:user:${ownerId}` : '');
+        // Check cache - use separate key for detail (with gifts)
+        const cacheKey = this.getCacheKey(id) + ':detail' + (ownerId ? `:user:${ownerId}` : '');
         const cached = await this.redisService.get(cacheKey);
         if (cached) {
             return JSON.parse(cached);
@@ -186,8 +186,8 @@ export class RentalDurationTierService {
             where.created_by = ownerId;
         }
 
-        const tier = await this.repository.findFirst(where);
-        if (!tier) {
+        const tier = await this.repository.findByIdWithGifts(id);
+        if (!tier || (ownerId && tier.created_by !== ownerId)) {
             throw new NotFoundException(
                 this.i18n.t('rental-duration-tier.errors.not_found', { lang }),
             );
@@ -240,7 +240,12 @@ export class RentalDurationTierService {
         // Kiểm tra duration trùng nếu đang cập nhật
         const newDurationValue = dto.duration_value ?? tier.duration_value;
         const newDurationUnit = dto.duration_unit ?? tier.duration_unit;
-        if (dto.duration_value !== undefined || dto.duration_unit !== undefined) {
+        // Chỉ kiểm tra nếu duration thực sự thay đổi
+        const isDurationChanged = 
+            (dto.duration_value !== undefined && dto.duration_value !== tier.duration_value) ||
+            (dto.duration_unit !== undefined && dto.duration_unit !== tier.duration_unit);
+        
+        if (isDurationChanged) {
             const existingDuration = await this.repository.findByDuration(
                 newDurationValue,
                 newDurationUnit,
@@ -264,19 +269,26 @@ export class RentalDurationTierService {
             // Lấy danh sách addon_gifts hiện tại
             const existingGifts = await this.repository.findAddonGiftsByTierId(id);
             const existingGiftIds = existingGifts.map(g => g.id);
+            const existingAddonIds = existingGifts.map(g => g.addon_id);
             const incomingGiftIds = addon_gifts.filter(g => g.id).map(g => g.id!);
+            const incomingAddonIds = addon_gifts.map(g => g.addon_id);
 
-            // Xóa các gifts không còn trong danh sách mới
-            const toDelete = existingGiftIds.filter(giftId => !incomingGiftIds.includes(giftId));
-            for (const giftId of toDelete) {
-                await this.repository.softDeleteAddonGift(giftId, userId);
+            // Xóa các gifts không còn trong danh sách mới (theo addon_id)
+            const toDelete = existingGifts.filter(g => !incomingAddonIds.includes(g.addon_id));
+            for (const gift of toDelete) {
+                await this.repository.softDeleteAddonGift(gift.id, userId);
             }
 
             // Upsert các gifts
             for (const gift of addon_gifts) {
-                if (gift.id && existingGiftIds.includes(gift.id)) {
+                // Tìm gift hiện tại theo id HOẶC addon_id
+                const existingGift = existingGifts.find(g => 
+                    (gift.id && g.id === gift.id) || g.addon_id === gift.addon_id
+                );
+
+                if (existingGift) {
                     // Update
-                    await this.repository.updateAddonGift(gift.id, {
+                    await this.repository.updateAddonGift(existingGift.id, {
                         require_min_order_amount: gift.require_min_order_amount,
                         min_order_amount: gift.min_order_amount,
                         require_min_warehouses: gift.require_min_warehouses,
@@ -315,19 +327,26 @@ export class RentalDurationTierService {
             // Lấy danh sách insurance_gifts hiện tại
             const existingInsGifts = await this.repository.findInsuranceGiftsByTierId(id);
             const existingInsGiftIds = existingInsGifts.map(g => g.id);
+            const existingInsuranceIds = existingInsGifts.map(g => g.insurance_id);
             const incomingInsGiftIds = insurance_gifts.filter(g => g.id).map(g => g.id!);
+            const incomingInsuranceIds = insurance_gifts.map(g => g.insurance_id);
 
-            // Xóa các gifts không còn trong danh sách mới
-            const toDeleteIns = existingInsGiftIds.filter(giftId => !incomingInsGiftIds.includes(giftId));
-            for (const giftId of toDeleteIns) {
-                await this.repository.softDeleteInsuranceGift(giftId, userId);
+            // Xóa các gifts không còn trong danh sách mới (theo insurance_id)
+            const toDeleteIns = existingInsGifts.filter(g => !incomingInsuranceIds.includes(g.insurance_id));
+            for (const gift of toDeleteIns) {
+                await this.repository.softDeleteInsuranceGift(gift.id, userId);
             }
 
             // Upsert các gifts
             for (const gift of insurance_gifts) {
-                if (gift.id && existingInsGiftIds.includes(gift.id)) {
+                // Tìm gift hiện tại theo id HOẶC insurance_id
+                const existingInsGift = existingInsGifts.find(g => 
+                    (gift.id && g.id === gift.id) || g.insurance_id === gift.insurance_id
+                );
+
+                if (existingInsGift) {
                     // Update
-                    await this.repository.updateInsuranceGift(gift.id, {
+                    await this.repository.updateInsuranceGift(existingInsGift.id, {
                         require_min_order_amount: gift.require_min_order_amount,
                         min_order_amount: gift.min_order_amount,
                         require_min_warehouses: gift.require_min_warehouses,

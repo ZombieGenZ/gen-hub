@@ -33,7 +33,7 @@ import {
 import { AmenityRequest, AmenityResponse } from "@/types/amenities/amenities.type";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/contexts/ToastContext";
-import { AmenityDrawer, AmenityGridView, getIconComponent } from "@/components/amenities";
+import { AmenityDialog, AmenityGridView, getIconComponent } from "@/components/amenities";
 
 const amenitiesService = new AmenitiesService();
 
@@ -62,16 +62,17 @@ export default function AmenitiesPage() {
     const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
     const [isBulkActionLoading, setIsBulkActionLoading] = useState(false);
 
-    // --- Drawer States ---
-    const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-    const [drawerMode, setDrawerMode] = useState<"create" | "edit">("create");
+    // --- Dialog States ---
+    const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
+    const [formMode, setFormMode] = useState<"create" | "edit">("create");
     const [selectedAmenity, setSelectedAmenity] = useState<AmenityResponse | null>(null);
     const [isFormLoading, setIsFormLoading] = useState(false);
 
     // --- Delete Dialog ---
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [isDeleteLoading, setIsDeleteLoading] = useState(false);
 
-const fetchStats = useCallback(async () => {
+    const fetchStats = useCallback(async () => {
         try {
             const token = authStorage.getAccessToken();
             if (!token) return;
@@ -156,27 +157,29 @@ const fetchStats = useCallback(async () => {
             const token = authStorage.getAccessToken();
             if (!token) return;
 
-            if (drawerMode === "create") {
+            if (formMode === "create") {
                 await amenitiesService.createAmenity(token, data);
-                showToast("Đã thêm tiện ích mới", "success");
+                showToast("Đã thêm tiện ích mới thành công! 🎉", "success");
             } else if (selectedAmenity) {
                 await amenitiesService.updateAmenity(token, selectedAmenity.id, data);
-                showToast("Đã cập nhật tiện ích", "success");
+                showToast("Cập nhật tiện ích thành công! ✅", "success");
             }
 
-            setIsDrawerOpen(false);
+            setIsFormDialogOpen(false);
             setSelectedAmenity(null);
             fetchAmenities();
             fetchStats();
         } catch (error) {
             console.error("Failed to save amenity", error);
-            showToast(drawerMode === "create" ? "Thêm tiện ích thất bại" : "Cập nhật thất bại", "error");
+            showToast(formMode === "create" ? "Thêm tiện ích thất bại" : "Cập nhật thất bại", "error");
+            throw error; // Re-throw for dialog to handle state
         } finally {
             setIsFormLoading(false);
         }
     };
 
     const handleDelete = async () => {
+        setIsDeleteLoading(true);
         try {
             const token = authStorage.getAccessToken();
             if (!token || !selectedAmenity) return;
@@ -184,12 +187,14 @@ const fetchStats = useCallback(async () => {
             await amenitiesService.deleteAmenity(token, selectedAmenity.id);
             setIsDeleteDialogOpen(false);
             setSelectedAmenity(null);
-            showToast("Đã xóa tiện ích", "success");
+            showToast(`Đã xóa tiện ích "${selectedAmenity.name}" 🗑️`, "success");
             fetchAmenities();
             fetchStats();
         } catch (error) {
             console.error("Failed to delete amenity", error);
-            showToast("Xóa thất bại", "error");
+            showToast("Xóa thất bại, vui lòng thử lại", "error");
+        } finally {
+            setIsDeleteLoading(false);
         }
     };
 
@@ -200,7 +205,7 @@ const fetchStats = useCallback(async () => {
             if (!token) return;
 
             await amenitiesService.deleteMultipleAmenities(token, selectedIds);
-            showToast(`Đã xóa ${selectedIds.length} tiện ích`, "success");
+            showToast(`Đã xóa ${selectedIds.length} tiện ích thành công! 🗑️`, "success");
             setIsBulkDeleteDialogOpen(false);
             setSelectedIds([]);
             fetchAmenities();
@@ -213,16 +218,16 @@ const fetchStats = useCallback(async () => {
         }
     };
 
-    const openCreateDrawer = () => {
-        setDrawerMode("create");
+    const openCreateDialog = () => {
+        setFormMode("create");
         setSelectedAmenity(null);
-        setIsDrawerOpen(true);
+        setIsFormDialogOpen(true);
     };
 
-    const openEditDrawer = (amenity: AmenityResponse) => {
-        setDrawerMode("edit");
+    const openEditDialog = (amenity: AmenityResponse) => {
+        setFormMode("edit");
         setSelectedAmenity(amenity);
-        setIsDrawerOpen(true);
+        setIsFormDialogOpen(true);
     };
 
     const openDeleteDialog = (amenity: AmenityResponse) => {
@@ -261,8 +266,8 @@ const fetchStats = useCallback(async () => {
                     </p>
                 </div>
                 <Button
-                    onClick={openCreateDrawer}
-                    className="gap-2 bg-[#0F766E] hover:bg-[#0F766E]/90 text-white"
+                    onClick={openCreateDialog}
+                    className="gap-2 bg-[#0F766E] hover:bg-[#0F766E]/90 text-white transition-all duration-200 active:scale-[0.97] hover:shadow-md"
                     style={{ borderRadius: "12px" }}
                 >
                     <PlusIcon className="w-4 h-4" />
@@ -380,7 +385,7 @@ const fetchStats = useCallback(async () => {
                             amenities={amenities}
                             selectedIds={selectedIds}
                             onSelect={toggleSelection}
-                            onEdit={openEditDrawer}
+                            onEdit={openEditDialog}
                             onDelete={openDeleteDialog}
                             loading={loading}
                         />
@@ -445,8 +450,30 @@ const fetchStats = useCallback(async () => {
                                         ))
                                     ) : amenities.length === 0 ? (
                                         <tr>
-                                            <td colSpan={7} className="text-center py-12 text-muted-foreground">
-                                                Không tìm thấy tiện ích nào
+                                            <td colSpan={7} className="text-center py-16">
+                                                <div className="flex flex-col items-center gap-3">
+                                                    <div className="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center">
+                                                        <CubeIcon className="w-8 h-8 text-muted-foreground/50" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-muted-foreground font-medium">Không tìm thấy tiện ích nào</p>
+                                                        <p className="text-sm text-muted-foreground/70 mt-1">
+                                                            {searchTerm ? "Thử thay đổi từ khóa tìm kiếm" : "Bắt đầu bằng cách thêm tiện ích mới"}
+                                                        </p>
+                                                    </div>
+                                                    {!searchTerm && (
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={openCreateDialog}
+                                                            className="gap-2 mt-2 transition-all duration-200 active:scale-[0.97]"
+                                                            style={{ borderRadius: "12px" }}
+                                                        >
+                                                            <PlusIcon className="w-4 h-4" />
+                                                            Thêm tiện ích đầu tiên
+                                                        </Button>
+                                                    )}
+                                                </div>
                                             </td>
                                         </tr>
                                     ) : (
@@ -509,20 +536,22 @@ const fetchStats = useCallback(async () => {
                                                         </Badge>
                                                     </td>
                                                     <td className="py-4 px-4 text-right">
-                                                        <div className="flex justify-end gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                                                        <div className="flex justify-end gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-200">
                                                             <Button
                                                                 variant="ghost"
                                                                 size="icon"
-                                                                className="h-8 w-8 rounded-full hover:bg-muted"
-                                                                onClick={() => openEditDrawer(amenity)}
+                                                                className="h-8 w-8 rounded-full hover:bg-blue-50 text-gray-400 hover:text-blue-600 transition-all duration-200 active:scale-90"
+                                                                onClick={() => openEditDialog(amenity)}
+                                                                title="Chỉnh sửa"
                                                             >
-                                                                <PencilIcon className="w-4 h-4 text-gray-600" />
+                                                                <PencilIcon className="w-4 h-4" />
                                                             </Button>
                                                             <Button
                                                                 variant="ghost"
                                                                 size="icon"
-                                                                className="h-8 w-8 rounded-full hover:bg-red-50 text-gray-400 hover:text-red-600"
+                                                                className="h-8 w-8 rounded-full hover:bg-red-50 text-gray-400 hover:text-red-600 transition-all duration-200 active:scale-90"
                                                                 onClick={() => openDeleteDialog(amenity)}
+                                                                title="Xóa"
                                                             >
                                                                 <TrashIcon className="w-4 h-4" />
                                                             </Button>
@@ -618,44 +647,72 @@ const fetchStats = useCallback(async () => {
                 </div>
             )}
 
-            {/* Create/Edit Drawer */}
-            <AmenityDrawer
-                open={isDrawerOpen}
-                onOpenChange={setIsDrawerOpen}
-                mode={drawerMode}
+            {/* Create/Edit Dialog */}
+            <AmenityDialog
+                open={isFormDialogOpen}
+                onOpenChange={setIsFormDialogOpen}
+                mode={formMode}
                 amenity={selectedAmenity}
                 onSave={handleSave}
                 isLoading={isFormLoading}
             />
 
             {/* Delete Confirmation Dialog */}
-            <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-                <DialogContent style={{ borderRadius: "16px" }}>
+            <Dialog open={isDeleteDialogOpen} onOpenChange={(open) => { if (!isDeleteLoading) setIsDeleteDialogOpen(open); }}>
+                <DialogContent style={{ borderRadius: "16px" }} className="sm:max-w-md">
                     <DialogHeader>
-                        <DialogTitle>Xác nhận xóa</DialogTitle>
+                        <DialogTitle>🗑️ Xác nhận xóa</DialogTitle>
                         <DialogDescription>
-                            Bạn có chắc chắn muốn xóa tiện ích "{selectedAmenity?.name}" không? Hành động này không thể hoàn
-                            tác.
+                            Bạn có chắc chắn muốn xóa tiện ích <strong className="text-foreground">&ldquo;{selectedAmenity?.name}&rdquo;</strong> không?
+                            <br />
+                            <span className="text-red-500 text-xs mt-1 inline-block">⚠️ Hành động này không thể hoàn tác.</span>
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)} style={{ borderRadius: "12px" }}>
+                        <Button
+                            variant="outline"
+                            onClick={() => setIsDeleteDialogOpen(false)}
+                            disabled={isDeleteLoading}
+                            style={{ borderRadius: "12px" }}
+                            className="transition-all duration-200"
+                        >
                             Hủy
                         </Button>
-                        <Button variant="destructive" onClick={handleDelete} style={{ borderRadius: "12px" }}>
-                            Xóa
+                        <Button
+                            variant="destructive"
+                            onClick={handleDelete}
+                            disabled={isDeleteLoading}
+                            style={{ borderRadius: "12px" }}
+                            className="gap-2 min-w-[100px] transition-all duration-200"
+                        >
+                            {isDeleteLoading ? (
+                                <span className="flex items-center gap-2">
+                                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                    </svg>
+                                    Đang xóa...
+                                </span>
+                            ) : (
+                                <span className="flex items-center gap-2">
+                                    <TrashIcon className="w-4 h-4" />
+                                    Xóa
+                                </span>
+                            )}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
 
             {/* Bulk Delete Dialog */}
-            <Dialog open={isBulkDeleteDialogOpen} onOpenChange={setIsBulkDeleteDialogOpen}>
-                <DialogContent style={{ borderRadius: "16px" }}>
+            <Dialog open={isBulkDeleteDialogOpen} onOpenChange={(open) => { if (!isBulkActionLoading) setIsBulkDeleteDialogOpen(open); }}>
+                <DialogContent style={{ borderRadius: "16px" }} className="sm:max-w-md">
                     <DialogHeader>
-                        <DialogTitle>Xác nhận xóa nhiều</DialogTitle>
+                        <DialogTitle>🗑️ Xác nhận xóa nhiều</DialogTitle>
                         <DialogDescription>
-                            Bạn có chắc chắn muốn xóa {selectedIds.length} tiện ích đã chọn không?
+                            Bạn có chắc chắn muốn xóa <strong className="text-foreground">{selectedIds.length} tiện ích</strong> đã chọn không?
+                            <br />
+                            <span className="text-red-500 text-xs mt-1 inline-block">⚠️ Hành động này không thể hoàn tác.</span>
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
@@ -664,6 +721,7 @@ const fetchStats = useCallback(async () => {
                             onClick={() => setIsBulkDeleteDialogOpen(false)}
                             disabled={isBulkActionLoading}
                             style={{ borderRadius: "12px" }}
+                            className="transition-all duration-200"
                         >
                             Hủy
                         </Button>
@@ -672,8 +730,22 @@ const fetchStats = useCallback(async () => {
                             onClick={handleBulkDelete}
                             disabled={isBulkActionLoading}
                             style={{ borderRadius: "12px" }}
+                            className="gap-2 min-w-[120px] transition-all duration-200"
                         >
-                            {isBulkActionLoading ? "Đang xóa..." : "Xóa tất cả"}
+                            {isBulkActionLoading ? (
+                                <span className="flex items-center gap-2">
+                                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                    </svg>
+                                    Đang xóa {selectedIds.length}...
+                                </span>
+                            ) : (
+                                <span className="flex items-center gap-2">
+                                    <TrashIcon className="w-4 h-4" />
+                                    Xóa {selectedIds.length} mục
+                                </span>
+                            )}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
