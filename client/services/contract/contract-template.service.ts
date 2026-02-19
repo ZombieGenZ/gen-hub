@@ -80,6 +80,9 @@ export class ContractTemplateService {
 
     /**
      * Generate contract PDF from template
+     * @param contractData Dữ liệu hợp đồng
+     * @param options Tùy chọn tạo hợp đồng
+     * @returns Kết quả tạo hợp đồng
      */
     async generateContract(
         contractData: ContractData,
@@ -129,6 +132,8 @@ export class ContractTemplateService {
 
     /**
      * Fill PDF form fields with contract data
+     * @param form Form PDF
+     * @param fields Dữ liệu hợp đồng
      */
     private async fillFormFields(form: any, fields: ContractFieldMapping): Promise<void> {
         const fieldMappings: Record<string, string | number> = {
@@ -183,6 +188,8 @@ export class ContractTemplateService {
 
     /**
      * Add text overlay to PDF (fallback if no form fields)
+     * @param pdfDoc Document PDF
+     * @param fields Dữ liệu hợp đồng
      */
     private async addTextOverlay(pdfDoc: PDFDocument, fields: ContractFieldMapping): Promise<void> {
         const pages = pdfDoc.getPages();
@@ -215,6 +222,8 @@ export class ContractTemplateService {
 
     /**
      * Download contract as PDF file
+     * @param blob Blob của PDF
+     * @param filename Tên file
      */
     downloadContract(blob: Blob, filename: string = 'hop-dong-thue-kho.pdf'): void {
         const url = URL.createObjectURL(blob);

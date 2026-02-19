@@ -34,7 +34,12 @@ export class OrderService {
         }
     }
 
-    // Lấy thông tin đơn thuê theo ID
+    /**
+     * Lấy thông tin đơn thuê theo ID
+     * @param token Token truy cập
+     * @param orderId ID đơn thuê
+     * @returns Thông tin đơn thuê
+     */
     async getOrderById(token: string, orderId: string): Promise<Order> {
         try {
             const response = await fetch(`${API}/orders/${orderId}`, {
@@ -58,7 +63,12 @@ export class OrderService {
         }
     }
 
-    // Lấy danh sách đơn thuê của user
+    /**
+     * Lấy danh sách đơn thuê của user
+     * @param token Token truy cập
+     * @param params Tham số lọc
+     * @returns Danh sách đơn thuê
+     */
     async getMyOrders(token: string, params: {
         status?: string;
         page?: number;
@@ -91,7 +101,13 @@ export class OrderService {
         }
     }
 
-    // Hủy đơn thuê
+    /**
+     * Hủy đơn thuê
+     * @param token Token truy cập
+     * @param orderId ID đơn thuê
+     * @param reason Lý do hủy
+     * @returns Kết quả hủy đơn
+     */
     async cancelOrder(token: string, orderId: string, reason?: string): Promise<void> {
         try {
             const response = await fetch(`${API}/orders/${orderId}/cancel`, {

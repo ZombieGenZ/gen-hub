@@ -36,6 +36,12 @@ export interface PublicQuotationApiResult {
 }
 
 export class PublicQuotationService {
+
+    /**
+     * Tính toán báo giá thuê kho
+     * @param request Thông tin yêu cầu tính toán
+     * @returns Kết quả tính toán
+     */
     async calculateQuotation(request: CalculateQuotationRequest): Promise<QuotationApiResponse> {
         const response = await fetch(`${API}/public-quotation/calculate`, {
             method: 'POST',
