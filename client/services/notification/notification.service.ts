@@ -5,7 +5,8 @@ import {
     UnreadCountResponse, 
     NotificationQueryParams,
     SendNotificationRequest,
-    SendBulkNotificationRequest 
+    SendBulkNotificationRequest, 
+    GlobalNotification
 } from '@/types/notification/notification.type';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -368,7 +369,7 @@ export class NotificationService {
     async createGlobalNotification(
         access_token: string,
         data: { title: string; content: string; type?: string; starts_at?: string }
-    ): Promise<any> {
+    ): Promise<GlobalNotification> {
         try {
             const response = await fetch(`${API_URL}/global-notifications`, {
                 method: 'POST',

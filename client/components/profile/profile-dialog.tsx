@@ -134,11 +134,11 @@ export function ProfileDialog({ open = true, onOpenChange }: ProfileDialogProps 
         console.log(listOrganization.items);
 
         const organization = listOrganization.items.find((o: Organization) => o.owner.id == userID);
-        console.log(organization);
         // Fetch organization if user has one
         if (organization) {
           try {
             const org = await organizationService.getOrganizationById(token, organization.id);
+            console.log(org)
             setOrganizationData(org);
           } catch (error) {
             console.error("Failed to fetch organization", error);
@@ -152,7 +152,7 @@ export function ProfileDialog({ open = true, onOpenChange }: ProfileDialogProps 
       }
     }
 
-    fetchUser()
+    fetchUser();
   }, [router, open])
 
   const handleUpdateProfile = async (e: React.FormEvent) => {

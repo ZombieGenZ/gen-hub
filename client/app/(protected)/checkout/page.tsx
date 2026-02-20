@@ -32,6 +32,10 @@ import { organizationService } from '@/services/organization/organization.servic
 import { rentalContractService } from '@/services/rental-contract/rental-contract.service';
 import { CreateRentalContractRequest, RentalContractPaymentType, RentalContractPaymentMethod } from '@/types/rental-contracts/rental-contracts.type';
 
+import { Warehouse } from '@/types/warehoue_template/warehouse_template.type';
+import { AddonResponse } from '@/types/addon/addon.type';
+import { Organization } from '@/types/organization/organization.type';
+
 interface CompanyData {
     name: string;
     international_name: string;
@@ -81,9 +85,13 @@ function CheckoutContent() {
                 const token = authStorage.getAccessToken();
                 if (!token) return;
 
-                const user = await authStorage.getUser();
-                if (user?.organization_id) {
-                    const org = await organizationService.getOrganizationById(token, user.organization_id);
+                const userID = await authStorage.getUserID();
+                const listOrganization = await organizationService.getOrganizations(token);
+                console.log(listOrganization.items);
+                
+                const organization = listOrganization.items.find((o: Organization) => o.owner.id == userID);
+                if (organization) {
+                    const org = await organizationService.getOrganizationById(token, organization.id);
                     if (org) {
                         setCompanyData({
                             name: org.name,
@@ -100,7 +108,7 @@ function CheckoutContent() {
                             representative_email: org.representative_email || ''
                         });
                         setHasExistingOrg(true);
-                        setSession({ organization_id: user.organization_id });
+                        setSession({ organization_id: organization.id });
                     }
                 }
             } catch (error) {
@@ -412,7 +420,7 @@ function CheckoutContainer() {
                 const API = process.env.NEXT_PUBLIC_API_URL;
 
                 // Fetch Warehouse (API)
-                let property: any = null;
+                let property: Warehouse;
                 let warehouseAvailable = true;
                 try {
                     const data = await publicWarehouseService.getPublicWarehouseById(warehouseId || '');
@@ -459,13 +467,13 @@ function CheckoutContainer() {
                     }
                 }
 
-                let addons: any[] = [];
+                let addons: AddonResponse[] = [];
                 try {
                     const res = await fetch(`${API}/public/addons/active`);
                     if (res.ok) {
                         const data = await res.json();
                         const allAddons = data.data || data;
-                        addons = allAddons.filter((a: any) => addonIds.includes(String(a.id)));
+                        addons = allAddons.filter((a: AddonResponse) => addonIds.includes(String(a.id)));
                     }
                 } catch (e) {
                     console.warn("Error fetching addons, falling back to mock", e);
@@ -527,10 +535,10 @@ function CheckoutContainer() {
                 const durationDiscountAmount = totalBaseRental * (durationDiscountPercent / 100);
 
                 // Subtotal
-                let subtotal = totalBaseRental - durationDiscountAmount + addonsCost + insuranceCost + managementFee;
+                const subtotal = totalBaseRental - durationDiscountAmount + addonsCost + insuranceCost + managementFee;
 
                 const serviceFee = subtotal * 0.1; // 10%
-                let couponDiscount = 0;
+                const couponDiscount = 0;
                 const grandTotal = subtotal + serviceFee - couponDiscount;
 
                 const deposit_amount = Math.max(2000000, grandTotal * 0.1);

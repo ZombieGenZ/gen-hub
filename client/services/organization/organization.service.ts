@@ -65,7 +65,7 @@ export class OrganizationService {
                 throw new Error(errorData.message || 'Failed to fetch organization by id');
             }
             const data = await response.json();
-            return data;
+            return data.data; // Assuming API response has a 'data' field containing the organization details
         }
         catch(err) {
             console.error("Failed to fetch organization by id", err);
