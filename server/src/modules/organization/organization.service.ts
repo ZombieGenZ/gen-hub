@@ -70,11 +70,19 @@ export class OrganizationService {
     } = org as any;
 
     // Convert BigInt fields to Number to avoid JSON serialization error
-    if (safeOrg.api_key_logs_retention_ms) {
+    if (safeOrg.api_key_logs_retention_ms != null) {
       safeOrg.api_key_logs_retention_ms = Number(safeOrg.api_key_logs_retention_ms);
     }
-    if (safeOrg.org_audit_logs_retention_ms) {
+    if (safeOrg.org_audit_logs_retention_ms != null) {
       safeOrg.org_audit_logs_retention_ms = Number(safeOrg.org_audit_logs_retention_ms);
+    }
+
+    // Convert Decimal fields to Number to avoid JSON serialization error
+    if (safeOrg.min_loss_tolerance != null) {
+      safeOrg.min_loss_tolerance = Number(safeOrg.min_loss_tolerance);
+    }
+    if (safeOrg.max_loss_tolerance != null) {
+      safeOrg.max_loss_tolerance = Number(safeOrg.max_loss_tolerance);
     }
 
     return safeOrg as IOrganizationWithRelations;
@@ -315,11 +323,13 @@ export class OrganizationService {
       }
     }
 
-    // Cache result
-    await this.redisService.setOrganizationCache(id, org);
+    // Ẩn các trường nhạy cảm và convert BigInt/Decimal trước khi cache
+    const safeOrg = this.stripSensitiveFields(org);
 
-    // Ẩn các trường nhạy cảm khỏi response
-    return this.stripSensitiveFields(org);
+    // Cache result (sau khi đã strip và convert)
+    await this.redisService.setOrganizationCache(id, safeOrg);
+
+    return safeOrg;
   }
 
   async findMany(
