@@ -30,9 +30,9 @@ export default function SettingsPage() {
 
                 <div className="space-y-6">
                     {/* General Settings */}
-                    <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+                    <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
                         <div className="p-6 border-b border-border/50 flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-lg bg-brand-subtle flex items-center justify-center text-brand">
+                            <div className="w-10 h-10 rounded-xl bg-brand-subtle flex items-center justify-center text-brand">
                                 <Globe className="w-5 h-5" />
                             </div>
                             <div>
@@ -76,9 +76,9 @@ export default function SettingsPage() {
                     </div>
 
                     {/* Notifications */}
-                    <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+                    <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
                         <div className="p-6 border-b border-border/50 flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-lg bg-warning/10 flex items-center justify-center text-warning">
+                            <div className="w-10 h-10 rounded-xl bg-warning/10 flex items-center justify-center text-warning">
                                 <Bell className="w-5 h-5" />
                             </div>
                             <div>
@@ -112,9 +112,9 @@ export default function SettingsPage() {
                     </div>
 
                     {/* Security */}
-                    <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+                    <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
                         <div className="p-6 border-b border-border/50 flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-lg bg-success/10 flex items-center justify-center text-success">
+                            <div className="w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center text-success">
                                 <Shield className="w-5 h-5" />
                             </div>
                             <div>

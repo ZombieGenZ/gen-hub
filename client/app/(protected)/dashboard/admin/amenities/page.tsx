@@ -258,17 +258,16 @@ export default function AmenitiesPage() {
             {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight" style={{ fontSize: "32px", lineHeight: "130%" }}>
+                    <h1 className="text-3xl font-bold tracking-tight text-[32px] leading-[130%]">
                         Tiện ích
                     </h1>
-                    <p className="text-muted-foreground mt-1" style={{ fontSize: "16px", lineHeight: "150%" }}>
+                    <p className="text-muted-foreground mt-1 text-base">
                         Quản lý các tiện ích có sẵn tại kho
                     </p>
                 </div>
                 <Button
                     onClick={openCreateDialog}
-                    className="gap-2 bg-[#0F766E] hover:bg-[#0F766E]/90 text-white transition-all duration-200 active:scale-[0.97] hover:shadow-md"
-                    style={{ borderRadius: "12px" }}
+                    className="gap-2 bg-[#0F766E] hover:bg-[#0F766E]/90 text-white transition-all duration-200 active:scale-[0.97] hover:shadow-md rounded-xl"
                 >
                     <PlusIcon className="w-4 h-4" />
                     Thêm tiện ích
@@ -284,11 +283,10 @@ export default function AmenitiesPage() {
                 }}
                 className="w-full"
             >
-                <TabsList className="bg-muted/50 p-1.5 h-auto" style={{ borderRadius: "12.8px" }}>
+                <TabsList className="bg-muted/50 p-1.5 h-auto rounded-xl">
                     <TabsTrigger
                         value="all"
-                        className="gap-2 px-4 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm"
-                        style={{ borderRadius: "12.8px" }}
+                        className="gap-2 px-4 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-xl"
                     >
                         <CubeIcon className="w-4 h-4" />
                         Tất cả
@@ -301,8 +299,7 @@ export default function AmenitiesPage() {
                     </TabsTrigger>
                     <TabsTrigger
                         value="active"
-                        className="gap-2 px-4 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm"
-                        style={{ borderRadius: "12.8px" }}
+                        className="gap-2 px-4 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-xl"
                     >
                         <CheckCircleIcon className="w-4 h-4" />
                         Đang hoạt động
@@ -315,8 +312,7 @@ export default function AmenitiesPage() {
                     </TabsTrigger>
                     <TabsTrigger
                         value="inactive"
-                        className="gap-2 px-4 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm"
-                        style={{ borderRadius: "12.8px" }}
+                        className="gap-2 px-4 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-xl"
                     >
                         <XCircleIcon className="w-4 h-4" />
                         Chưa sử dụng
@@ -331,7 +327,7 @@ export default function AmenitiesPage() {
             </Tabs>
 
             {/* Filters */}
-            <Card className="border-0 shadow-premium" style={{ borderRadius: "24px" }}>
+            <Card className="border-0 shadow-premium rounded-3xl">
                 <CardContent className="p-6">
                     <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
                         <div className="flex flex-col md:flex-row gap-4 flex-1">
@@ -339,10 +335,9 @@ export default function AmenitiesPage() {
                                 <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                                 <Input
                                     placeholder="Tìm kiếm theo tên hoặc mô tả..."
-                                    className="pl-9"
+                                    className="pl-9 rounded-xl"
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    style={{ borderRadius: "12px" }}
                                 />
                             </div>
                         </div>
@@ -353,8 +348,7 @@ export default function AmenitiesPage() {
                                 variant={viewMode === "list" ? "default" : "ghost"}
                                 size="sm"
                                 onClick={() => setViewMode("list")}
-                                className={`gap-2 ${viewMode === "list" ? "" : "text-muted-foreground"}`}
-                                style={{ borderRadius: "16px" }}
+                                className={`gap-2 rounded-2xl ${viewMode === "list" ? "" : "text-muted-foreground"}`}
                             >
                                 <ListBulletIcon className="w-4 h-4" />
                             </Button>
@@ -362,8 +356,7 @@ export default function AmenitiesPage() {
                                 variant={viewMode === "grid" ? "default" : "ghost"}
                                 size="sm"
                                 onClick={() => setViewMode("grid")}
-                                className={`gap-2 ${viewMode === "grid" ? "" : "text-muted-foreground"}`}
-                                style={{ borderRadius: "16px" }}
+                                className={`gap-2 rounded-2xl ${viewMode === "grid" ? "" : "text-muted-foreground"}`}
                             >
                                 <Squares2X2Icon className="w-4 h-4" />
                             </Button>
@@ -373,9 +366,9 @@ export default function AmenitiesPage() {
             </Card>
 
             {/* Content - List or Grid View */}
-            <Card className="border-0 shadow-premium overflow-hidden" style={{ borderRadius: "24px" }}>
+            <Card className="border-0 shadow-premium overflow-hidden rounded-3xl">
                 <CardHeader>
-                    <CardTitle style={{ fontSize: "20px", lineHeight: "130%" }}>
+                    <CardTitle className="text-[20px] leading-[130%]">
                         Danh sách tiện ích ({totalItems})
                     </CardTitle>
                 </CardHeader>
@@ -466,8 +459,7 @@ export default function AmenitiesPage() {
                                                             variant="outline"
                                                             size="sm"
                                                             onClick={openCreateDialog}
-                                                            className="gap-2 mt-2 transition-all duration-200 active:scale-[0.97]"
-                                                            style={{ borderRadius: "12px" }}
+                                                            className="gap-2 mt-2 transition-all duration-200 active:scale-[0.97] rounded-xl"
                                                         >
                                                             <PlusIcon className="w-4 h-4" />
                                                             Thêm tiện ích đầu tiên
@@ -495,7 +487,6 @@ export default function AmenitiesPage() {
                                                                 ? "bg-gradient-to-br from-emerald-50 to-teal-100 dark:from-emerald-900/30 dark:to-teal-800/30"
                                                                 : "bg-gray-100 dark:bg-gray-700"
                                                                 }`}
-                                                            style={{ borderRadius: "12px" }}
                                                         >
                                                             {IconComponent ? (
                                                                 <IconComponent
@@ -622,8 +613,7 @@ export default function AmenitiesPage() {
             {selectedIds.length > 0 && (
                 <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50">
                     <div
-                        className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg border border-border shadow-2xl px-4 py-2 flex items-center gap-4 animate-in slide-in-from-bottom-4 fade-in"
-                        style={{ borderRadius: "24px" }}
+                        className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg border border-border shadow-2xl px-4 py-2 flex items-center gap-4 animate-in slide-in-from-bottom-4 fade-in rounded-3xl"
                     >
                         <span className="text-muted-foreground text-sm font-medium">{selectedIds.length} đã chọn</span>
                         <div className="h-4 w-px bg-border" />
@@ -659,7 +649,7 @@ export default function AmenitiesPage() {
 
             {/* Delete Confirmation Dialog */}
             <Dialog open={isDeleteDialogOpen} onOpenChange={(open) => { if (!isDeleteLoading) setIsDeleteDialogOpen(open); }}>
-                <DialogContent style={{ borderRadius: "16px" }} className="sm:max-w-md">
+                <DialogContent className="sm:max-w-md rounded-2xl">
                     <DialogHeader>
                         <DialogTitle>🗑️ Xác nhận xóa</DialogTitle>
                         <DialogDescription>
@@ -673,8 +663,7 @@ export default function AmenitiesPage() {
                             variant="outline"
                             onClick={() => setIsDeleteDialogOpen(false)}
                             disabled={isDeleteLoading}
-                            style={{ borderRadius: "12px" }}
-                            className="transition-all duration-200"
+                            className="transition-all duration-200 rounded-xl"
                         >
                             Hủy
                         </Button>
@@ -682,8 +671,7 @@ export default function AmenitiesPage() {
                             variant="destructive"
                             onClick={handleDelete}
                             disabled={isDeleteLoading}
-                            style={{ borderRadius: "12px" }}
-                            className="gap-2 min-w-[100px] transition-all duration-200"
+                            className="gap-2 min-w-[100px] transition-all duration-200 rounded-xl"
                         >
                             {isDeleteLoading ? (
                                 <span className="flex items-center gap-2">
@@ -706,7 +694,7 @@ export default function AmenitiesPage() {
 
             {/* Bulk Delete Dialog */}
             <Dialog open={isBulkDeleteDialogOpen} onOpenChange={(open) => { if (!isBulkActionLoading) setIsBulkDeleteDialogOpen(open); }}>
-                <DialogContent style={{ borderRadius: "16px" }} className="sm:max-w-md">
+                <DialogContent className="sm:max-w-md rounded-2xl">
                     <DialogHeader>
                         <DialogTitle>🗑️ Xác nhận xóa nhiều</DialogTitle>
                         <DialogDescription>
@@ -720,8 +708,7 @@ export default function AmenitiesPage() {
                             variant="outline"
                             onClick={() => setIsBulkDeleteDialogOpen(false)}
                             disabled={isBulkActionLoading}
-                            style={{ borderRadius: "12px" }}
-                            className="transition-all duration-200"
+                            className="transition-all duration-200 rounded-xl"
                         >
                             Hủy
                         </Button>
@@ -729,8 +716,7 @@ export default function AmenitiesPage() {
                             variant="destructive"
                             onClick={handleBulkDelete}
                             disabled={isBulkActionLoading}
-                            style={{ borderRadius: "12px" }}
-                            className="gap-2 min-w-[120px] transition-all duration-200"
+                            className="gap-2 min-w-[120px] transition-all duration-200 rounded-xl"
                         >
                             {isBulkActionLoading ? (
                                 <span className="flex items-center gap-2">

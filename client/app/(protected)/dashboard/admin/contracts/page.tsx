@@ -25,6 +25,7 @@ import {
     XMarkIcon,
     FunnelIcon,
     ChevronDownIcon,
+    CheckIcon,
 } from "@heroicons/react/24/outline";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -33,7 +34,6 @@ import { authStorage } from "@/services/auth/auth-storage.service";
 import { useRouter } from "next/navigation";
 import {
     DropdownMenu,
-    DropdownMenuCheckboxItem,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuLabel,
@@ -259,7 +259,7 @@ const ContractsPage = () => {
                             <ArrowDownTrayIcon className="w-4 h-4 mr-2" />
                             Xuất báo cáo
                         </Button>
-                        <Button className="gap-2" style={{ borderRadius: "12px" }} onClick={() => setIsCreateModalOpen(true)}>
+                        <Button className="gap-2 rounded-xl" onClick={() => setIsCreateModalOpen(true)}>
                             <PlusIcon className="w-4 h-4" />
                             <span className="hidden sm:inline">Tạo hợp đồng</span>
                             <span className="sm:hidden">Tạo</span>
@@ -268,7 +268,7 @@ const ContractsPage = () => {
                 </div>
 
                 {/* ─── Unified Toolbar ─── */}
-                <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+                <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
                     {/* Row: Underline Tabs + Filter Dropdown + Search */}
                     <div className="flex items-stretch border-b border-border">
                         {/* Underline Tabs */}
@@ -321,26 +321,39 @@ const ContractsPage = () => {
                                     </DropdownMenuLabel>
                                     <DropdownMenuSeparator />
                                     {EXTRA_STATUSES.map((s) => (
-                                        <DropdownMenuCheckboxItem
+                                        <DropdownMenuItem
                                             key={s.value}
-                                            checked={extraFilter === s.value}
-                                            onCheckedChange={(checked) => {
-                                                setExtraFilter(checked ? s.value : null);
+                                            className={cn(
+                                                "cursor-pointer",
+                                                extraFilter === s.value && "text-primary font-medium bg-primary/5"
+                                            )}
+                                            onClick={() => {
+                                                setExtraFilter(extraFilter === s.value ? null : s.value);
                                                 setPage(1);
                                             }}
                                         >
-                                            {s.label}
-                                        </DropdownMenuCheckboxItem>
+                                            <span className="inline-flex items-center gap-2 w-full">
+                                                <CheckIcon
+                                                    className={cn(
+                                                        "w-3.5 h-3.5 shrink-0",
+                                                        extraFilter === s.value ? "opacity-100 text-primary" : "opacity-0"
+                                                    )}
+                                                />
+                                                {s.label}
+                                            </span>
+                                        </DropdownMenuItem>
                                     ))}
                                     {extraFilter && (
                                         <>
                                             <DropdownMenuSeparator />
                                             <DropdownMenuItem
-                                                className="text-xs text-muted-foreground gap-1.5"
+                                                className="text-xs text-muted-foreground cursor-pointer"
                                                 onClick={() => setExtraFilter(null)}
                                             >
-                                                <XMarkIcon className="w-3.5 h-3.5" />
-                                                Xóa bộ lọc
+                                                <span className="inline-flex items-center gap-1.5">
+                                                    <XMarkIcon className="w-3.5 h-3.5" />
+                                                    Xóa bộ lọc
+                                                </span>
                                             </DropdownMenuItem>
                                         </>
                                     )}
@@ -388,7 +401,7 @@ const ContractsPage = () => {
                 </div>
 
                 {/* Table */}
-                <div className="bg-card rounded-xl border shadow-sm overflow-hidden">
+                <div className="bg-card rounded-2xl border shadow-sm overflow-hidden">
                     <Table>
                         <TableHeader>
                             <TableRow className="bg-muted/50 hover:bg-muted/50">
@@ -490,13 +503,17 @@ const ContractsPage = () => {
                                                     <DropdownMenuContent align="end">
                                                         <DropdownMenuLabel>Thao tác</DropdownMenuLabel>
                                                         <DropdownMenuItem onClick={() => router.push(`/dashboard/admin/contracts/${contract.id}`)}>
-                                                            <EyeIcon className="w-4 h-4 mr-2" />
-                                                            Xem chi tiết
+                                                            <span className="inline-flex items-center gap-2">
+                                                                <EyeIcon className="w-4 h-4 shrink-0" />
+                                                                Xem chi tiết
+                                                            </span>
                                                         </DropdownMenuItem>
                                                         <DropdownMenuSeparator />
                                                         <DropdownMenuItem className="text-red-600">
-                                                            <NoSymbolIcon className="w-4 h-4 mr-2" />
-                                                            Hủy hợp đồng
+                                                            <span className="inline-flex items-center gap-2">
+                                                                <NoSymbolIcon className="w-4 h-4 shrink-0" />
+                                                                Hủy hợp đồng
+                                                            </span>
                                                         </DropdownMenuItem>
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>

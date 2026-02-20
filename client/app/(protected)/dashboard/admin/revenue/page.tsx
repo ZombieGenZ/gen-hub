@@ -71,10 +71,10 @@ export default function RevenuePage() {
 
                 {/* Charts Area Placeholder */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
                         <div className="flex items-center justify-between mb-6">
                             <h3 className="font-bold text-slate-800">Biểu đồ doanh thu</h3>
-                            <select className="text-sm border-none bg-slate-50 rounded-lg px-2 py-1 text-slate-600 focus:ring-0">
+                            <select className="text-sm border-none bg-slate-50 rounded-xl px-2 py-1 text-slate-600 focus:ring-0">
                                 <option>6 tháng qua</option>
                                 <option>Năm nay</option>
                             </select>
@@ -98,7 +98,7 @@ export default function RevenuePage() {
                         </div>
                     </div>
 
-                    <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
                         <h3 className="font-bold text-slate-800 mb-6">Nguồn doanh thu</h3>
                         <div className="space-y-6">
                             {[

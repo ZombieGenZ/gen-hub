@@ -320,7 +320,7 @@ export default function WarehouseTemplatePage() {
             {/* ── Header ── */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight" style={{ fontSize: "32px", lineHeight: "130%" }}>
+                    <h1 className="text-3xl font-bold tracking-tight text-[32px] leading-[130%]">
                         Quản lý kho
                     </h1>
                     <p className="text-muted-foreground mt-1">
@@ -328,14 +328,13 @@ export default function WarehouseTemplatePage() {
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <Button variant="outline" className="gap-2" style={{ borderRadius: "12px" }}>
+                    <Button variant="outline" className="gap-2 rounded-xl">
                         <ArrowDownTrayIcon className="w-4 h-4" />
                         <span className="hidden sm:inline">Xuất Excel</span>
                     </Button>
                     <Button
                         onClick={() => setCreateDialogOpen(true)}
-                        className="gap-2 bg-[#0F766E] hover:bg-[#0F766E]/90 text-white"
-                        style={{ borderRadius: "12px" }}
+                        className="gap-2 bg-[#0F766E] hover:bg-[#0F766E]/90 text-white rounded-xl"
                     >
                         <PlusIcon className="w-4 h-4" />
                         Thêm kho mới
@@ -344,7 +343,7 @@ export default function WarehouseTemplatePage() {
             </div>
 
             {/* ── Filter Bar ── */}
-            <Card className="border-0 shadow-premium" style={{ borderRadius: "24px" }}>
+            <Card className="border-0 shadow-premium rounded-3xl">
                 <CardContent className="p-6">
                     <div className="flex flex-wrap items-center gap-4">
                         {/* Search */}
@@ -352,19 +351,18 @@ export default function WarehouseTemplatePage() {
                             <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                             <Input
                                 placeholder="Tìm kiếm kho..."
-                                className="pl-9"
+                                className="pl-9 rounded-xl"
                                 value={searchTerm}
                                 onChange={(e) => {
                                     setSearchTerm(e.target.value);
                                     setCurrentPage(1);
                                 }}
-                                style={{ borderRadius: "12px" }}
                             />
                         </div>
 
                         {/* Province filter */}
                         <Select value={provinceFilter} onValueChange={(v) => { setProvinceFilter(v); setCurrentPage(1); }}>
-                            <SelectTrigger className="w-[200px]" style={{ borderRadius: "12px" }}>
+                            <SelectTrigger className="w-[200px] rounded-xl">
                                 <SelectValue placeholder="Khu vực: Tất cả" />
                             </SelectTrigger>
                             <SelectContent>
@@ -415,7 +413,7 @@ export default function WarehouseTemplatePage() {
             </Card>
 
             {/* ── Table ── */}
-            <Card className="border-0 shadow-premium overflow-hidden" style={{ borderRadius: "24px" }}>
+            <Card className="border-0 shadow-premium overflow-hidden rounded-3xl">
                 <CardContent className="p-0">
                     <div className="overflow-x-auto">
                         <table className="w-full">
@@ -428,10 +426,10 @@ export default function WarehouseTemplatePage() {
                                         />
                                     </th>
                                     <th className="text-left py-3 px-4 font-semibold text-xs text-muted-foreground uppercase w-[30%]">
-                                        Template Info
+                                        Thông tin kho
                                     </th>
                                     <th className="text-left py-3 px-4 font-semibold text-xs text-muted-foreground uppercase">
-                                        Specs
+                                        Thông số
                                     </th>
                                     <th
                                         className="text-left py-3 px-4 font-semibold text-xs text-muted-foreground uppercase cursor-pointer select-none"
@@ -442,7 +440,7 @@ export default function WarehouseTemplatePage() {
                                         }
                                     >
                                         <div className="flex items-center gap-1">
-                                            <span>Price</span>
+                                            <span>Giá thuê</span>
                                             <ChevronUpDownIcon className="w-4 h-4" />
                                             {sortPriceDir && (
                                                 <span className="text-[10px] text-primary">
@@ -452,7 +450,7 @@ export default function WarehouseTemplatePage() {
                                         </div>
                                     </th>
                                     <th className="text-center py-3 px-4 font-semibold text-xs text-muted-foreground uppercase">
-                                        Status
+                                        Trạng thái
                                     </th>
                                     <th className="text-right py-3 px-4 font-semibold text-xs text-muted-foreground uppercase">
                                         Thao tác
@@ -506,8 +504,7 @@ export default function WarehouseTemplatePage() {
                                                         variant="outline"
                                                         size="sm"
                                                         onClick={() => setCreateDialogOpen(true)}
-                                                        className="gap-2 mt-2 transition-all duration-200 active:scale-[0.97]"
-                                                        style={{ borderRadius: "12px" }}
+                                                        className="gap-2 mt-2 transition-all duration-200 active:scale-[0.97] rounded-xl"
                                                     >
                                                         <PlusIcon className="w-4 h-4" />
                                                         Thêm kho đầu tiên
@@ -678,8 +675,7 @@ export default function WarehouseTemplatePage() {
             {selectedIds.length > 0 && (
                 <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50">
                     <div
-                        className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg border border-border shadow-2xl px-4 py-2 flex items-center gap-4 animate-in slide-in-from-bottom-4 fade-in"
-                        style={{ borderRadius: "24px" }}
+                        className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg border border-border shadow-2xl px-4 py-2 flex items-center gap-4 animate-in slide-in-from-bottom-4 fade-in rounded-3xl"
                     >
                         <span className="text-muted-foreground text-sm font-medium">
                             {selectedIds.length} đã chọn
@@ -707,7 +703,7 @@ export default function WarehouseTemplatePage() {
 
             {/* ── Delete Confirmation Dialog ── */}
             <Dialog open={deleteDialogOpen} onOpenChange={(open) => { if (!isDeleteLoading) setDeleteDialogOpen(open); }}>
-                <DialogContent style={{ borderRadius: "16px" }} className="sm:max-w-md">
+                <DialogContent className="sm:max-w-md rounded-2xl">
                     <DialogHeader>
                         <DialogTitle>🗑️ Xác nhận xóa</DialogTitle>
                         <DialogDescription>
@@ -717,10 +713,10 @@ export default function WarehouseTemplatePage() {
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setDeleteDialogOpen(false)} disabled={isDeleteLoading} style={{ borderRadius: "12px" }} className="transition-all duration-200">
+                        <Button variant="outline" onClick={() => setDeleteDialogOpen(false)} disabled={isDeleteLoading} className="transition-all duration-200 rounded-xl">
                             Hủy
                         </Button>
-                        <Button variant="destructive" onClick={handleDeleteConfirm} disabled={isDeleteLoading} style={{ borderRadius: "12px" }} className="gap-2 min-w-[100px] transition-all duration-200">
+                        <Button variant="destructive" onClick={handleDeleteConfirm} disabled={isDeleteLoading} className="gap-2 min-w-[100px] transition-all duration-200 rounded-xl">
                             {isDeleteLoading ? (
                                 <span className="flex items-center gap-2">
                                     <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
@@ -736,7 +732,7 @@ export default function WarehouseTemplatePage() {
 
             {/* ── Bulk Delete Dialog ── */}
             <Dialog open={isBulkDeleteDialogOpen} onOpenChange={(open) => { if (!isBulkActionLoading) setIsBulkDeleteDialogOpen(open); }}>
-                <DialogContent style={{ borderRadius: "16px" }} className="sm:max-w-md">
+                <DialogContent className="sm:max-w-md rounded-2xl">
                     <DialogHeader>
                         <DialogTitle>🗑️ Xác nhận xóa nhiều</DialogTitle>
                         <DialogDescription>
@@ -746,10 +742,10 @@ export default function WarehouseTemplatePage() {
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsBulkDeleteDialogOpen(false)} disabled={isBulkActionLoading} style={{ borderRadius: "12px" }} className="transition-all duration-200">
+                        <Button variant="outline" onClick={() => setIsBulkDeleteDialogOpen(false)} disabled={isBulkActionLoading} className="transition-all duration-200 rounded-xl">
                             Hủy
                         </Button>
-                        <Button variant="destructive" onClick={handleBulkDelete} disabled={isBulkActionLoading} style={{ borderRadius: "12px" }} className="gap-2 min-w-[120px] transition-all duration-200">
+                        <Button variant="destructive" onClick={handleBulkDelete} disabled={isBulkActionLoading} className="gap-2 min-w-[120px] transition-all duration-200 rounded-xl">
                             {isBulkActionLoading ? (
                                 <span className="flex items-center gap-2">
                                     <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
@@ -770,7 +766,7 @@ export default function WarehouseTemplatePage() {
                     setCreateForm({ name: "", length: 0, width: 0, price_per_month: 0 });
                 }
             }}>
-                <DialogContent style={{ borderRadius: "16px" }} className="max-w-md">
+                <DialogContent className="max-w-md rounded-2xl">
                     <DialogHeader>
                         <DialogTitle>Tạo kho mới</DialogTitle>
                         <DialogDescription>
@@ -785,7 +781,7 @@ export default function WarehouseTemplatePage() {
                                 value={createForm.name}
                                 onChange={(e) => setCreateForm(prev => ({ ...prev, name: e.target.value }))}
                                 placeholder="Nhập tên kho..."
-                                style={{ borderRadius: "12px" }}
+                                className="rounded-xl"
                                 autoFocus
                             />
                         </div>
@@ -824,15 +820,14 @@ export default function WarehouseTemplatePage() {
                                 setCreateForm({ name: "", length: 0, width: 0, price_per_month: 0 });
                             }}
                             disabled={isCreating}
-                            style={{ borderRadius: "12px" }}
+                            className="rounded-xl"
                         >
                             Hủy
                         </Button>
                         <Button
                             onClick={handleCreate}
                             disabled={isCreating || !createForm.name.trim()}
-                            className="bg-[#0F766E] hover:bg-[#0F766E]/90 text-white"
-                            style={{ borderRadius: "12px" }}
+                            className="bg-[#0F766E] hover:bg-[#0F766E]/90 text-white rounded-xl"
                         >
                             {isCreating ? "Đang tạo..." : "Tạo kho"}
                         </Button>

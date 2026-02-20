@@ -284,7 +284,7 @@ export default function AddonsPage() {
             {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight" style={{ fontSize: "32px", lineHeight: "130%" }}>
+                    <h1 className="text-3xl font-bold tracking-tight text-[32px] leading-[130%]">
                         Dịch vụ & Tiện ích
                     </h1>
                     <p className="text-muted-foreground mt-1">
@@ -297,8 +297,7 @@ export default function AddonsPage() {
                         setTargetType(null);
                         setIsCreateOpen(true);
                     }}
-                    className="gap-2 bg-[#0F766E] hover:bg-[#0F766E]/90 text-white transition-all duration-200 active:scale-[0.97] hover:shadow-md"
-                    style={{ borderRadius: "12px" }}
+                    className="gap-2 rounded-xl bg-[#0F766E] hover:bg-[#0F766E]/90 text-white transition-all duration-200 active:scale-[0.97] hover:shadow-md"
                 >
                     <PlusIcon className="w-4 h-4" />
                     {activeTab === 'services' ? "Thêm dịch vụ mới" : "Thêm nhóm mới"}
@@ -307,7 +306,7 @@ export default function AddonsPage() {
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                 <div className="flex items-center justify-between mb-4">
-                    <TabsList className="bg-muted/50 p-1" style={{ borderRadius: "12px" }}>
+                    <TabsList className="bg-muted/50 p-1 rounded-xl">
                         <TabsTrigger value="services" className="rounded-lg gap-2 px-4">
                             <ListBulletIcon className="w-4 h-4" /> Danh mục Dịch vụ
                         </TabsTrigger>
@@ -318,7 +317,7 @@ export default function AddonsPage() {
                 </div>
 
                 {/* Filters */}
-                <Card className="border-0 shadow-premium mb-6" style={{ borderRadius: "24px" }}>
+                <Card className="border-0 shadow-premium mb-6 rounded-3xl">
                     <CardContent className="p-6">
                         <div className="flex flex-wrap items-center gap-4">
                             {/* Search */}
@@ -326,10 +325,9 @@ export default function AddonsPage() {
                                 <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                                 <Input
                                     placeholder={activeTab === 'services' ? "Tìm dịch vụ..." : "Tìm nhóm dịch vụ..."}
-                                    className="pl-9"
+                                    className="pl-9 rounded-xl"
                                     value={searchTerm}
                                     onChange={handleSearchChange}
-                                    style={{ borderRadius: "12px" }}
                                 />
                             </div>
 
@@ -354,7 +352,7 @@ export default function AddonsPage() {
                                                 size="sm"
                                                 className="rounded-full gap-1.5"
                                             >
-                                                <CheckCircleIcon className="w-4 h-4 text-green-600" /> Active
+                                                <CheckCircleIcon className="w-4 h-4 text-green-600" /> Hoạt động
                                                 <Badge variant="secondary" className="px-1.5 py-0 text-xs bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">{s.active}</Badge>
                                             </Button>
                                             <Button
@@ -363,7 +361,7 @@ export default function AddonsPage() {
                                                 size="sm"
                                                 className="rounded-full gap-1.5"
                                             >
-                                                <XCircleIcon className="w-4 h-4 text-gray-400" /> Inactive
+                                                <XCircleIcon className="w-4 h-4 text-gray-400" /> Không hoạt động
                                                 <Badge variant="secondary" className="px-1.5 py-0 text-xs bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">{s.inactive}</Badge>
                                             </Button>
                                         </>
@@ -376,7 +374,7 @@ export default function AddonsPage() {
 
                 <TabsContent value="services" className="mt-0 space-y-6">
                     {/* Addons List Table */}
-                    <Card className="border-0 shadow-premium overflow-hidden" style={{ borderRadius: "24px" }}>
+                    <Card className="border-0 shadow-premium overflow-hidden rounded-3xl">
                         <CardContent className="p-0">
                             <div className="overflow-x-auto">
                                 <table className="w-full">
@@ -433,8 +431,7 @@ export default function AddonsPage() {
                                                                 variant="outline"
                                                                 size="sm"
                                                                 onClick={() => { setTargetAddon(null); setIsCreateOpen(true); }}
-                                                                className="gap-2 mt-2 transition-all duration-200 active:scale-[0.97]"
-                                                                style={{ borderRadius: "12px" }}
+                                                                className="gap-2 mt-2 rounded-xl transition-all duration-200 active:scale-[0.97]"
                                                             >
                                                                 <PlusIcon className="w-4 h-4" />
                                                                 Thêm dịch vụ đầu tiên
@@ -574,7 +571,7 @@ export default function AddonsPage() {
 
                 <TabsContent value="types" className="mt-0 space-y-4">
                     {/* Addon Types List */}
-                    <Card className="border-0 shadow-premium" style={{ borderRadius: "24px" }}>
+                    <Card className="border-0 shadow-premium rounded-3xl">
                         <CardContent className="p-0">
                             {/* Keep the client-side rendering for Types or implement custom loading there as well if needed */}
                             <div className="overflow-x-auto">
@@ -615,8 +612,7 @@ export default function AddonsPage() {
                                                                 variant="outline"
                                                                 size="sm"
                                                                 onClick={() => { setTargetType(null); setIsCreateOpen(true); }}
-                                                                className="gap-2 mt-2 transition-all duration-200 active:scale-[0.97]"
-                                                                style={{ borderRadius: "12px" }}
+                                                                className="gap-2 mt-2 rounded-xl transition-all duration-200 active:scale-[0.97]"
                                                             >
                                                                 <PlusIcon className="w-4 h-4" />
                                                                 Thêm nhóm đầu tiên
@@ -700,10 +696,7 @@ export default function AddonsPage() {
             {/* Floating Action Bar for Selections */}
             {(selectedAddonIds.length > 0 || selectedTypeIds.length > 0) && (
                 <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50">
-                    <div
-                        className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg border border-border shadow-2xl px-4 py-2 flex items-center gap-4 animate-in slide-in-from-bottom-4 fade-in"
-                        style={{ borderRadius: "24px" }}
-                    >
+                    <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg border border-border shadow-2xl px-4 py-2 flex items-center gap-4 animate-in slide-in-from-bottom-4 fade-in rounded-3xl">
                         <span className="text-muted-foreground text-sm font-medium">
                             {activeTab === 'services' ? selectedAddonIds.length : selectedTypeIds.length} đã chọn
                         </span>
@@ -740,7 +733,7 @@ export default function AddonsPage() {
                     setTargetType(null);
                 }
             }}>
-                <DialogContent className="w-[95vw] max-w-2xl max-h-[90dvh] flex flex-col p-0 gap-0 overflow-hidden" style={{ borderRadius: "16px" }}>
+                <DialogContent className="w-[95vw] max-w-2xl max-h-[90dvh] flex flex-col p-0 gap-0 overflow-hidden rounded-2xl">
                     <DialogHeader className="p-6 pb-4 shrink-0 z-10 border-b bg-background">
                         <DialogTitle>
                             {isEditOpen ? 'Chỉnh sửa' : 'Thêm mới'} {activeTab === 'services' ? 'dịch vụ' : 'nhóm dịch vụ'}
@@ -774,7 +767,7 @@ export default function AddonsPage() {
 
             {/* Delete Confirmation */}
             <Dialog open={isDeleteOpen} onOpenChange={(open) => { if (!isDeleteLoading) setIsDeleteOpen(open); }}>
-                <DialogContent style={{ borderRadius: "16px" }} className="sm:max-w-md">
+                <DialogContent className="sm:max-w-md rounded-2xl">
                     <DialogHeader>
                         <DialogTitle>🗑️ Xác nhận xóa</DialogTitle>
                         <DialogDescription>
@@ -784,8 +777,8 @@ export default function AddonsPage() {
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsDeleteOpen(false)} disabled={isDeleteLoading} style={{ borderRadius: "12px" }} className="transition-all duration-200">Hủy</Button>
-                        <Button variant="destructive" onClick={handleDelete} disabled={isDeleteLoading} style={{ borderRadius: "12px" }} className="gap-2 min-w-[100px] transition-all duration-200">
+                        <Button variant="outline" onClick={() => setIsDeleteOpen(false)} disabled={isDeleteLoading} className="rounded-xl transition-all duration-200">Hủy</Button>
+                        <Button variant="destructive" onClick={handleDelete} disabled={isDeleteLoading} className="gap-2 min-w-[100px] rounded-xl transition-all duration-200">
                             {isDeleteLoading ? (
                                 <span className="flex items-center gap-2">
                                     <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
@@ -801,7 +794,7 @@ export default function AddonsPage() {
 
             {/* Bulk Delete Dialog */}
             <Dialog open={isBulkDeleteDialogOpen} onOpenChange={(open) => { if (!isBulkActionLoading) setIsBulkDeleteDialogOpen(open); }}>
-                <DialogContent style={{ borderRadius: "16px" }} className="sm:max-w-md">
+                <DialogContent className="sm:max-w-md rounded-2xl">
                     <DialogHeader>
                         <DialogTitle>🗑️ Xác nhận xóa nhiều</DialogTitle>
                         <DialogDescription>
@@ -811,8 +804,8 @@ export default function AddonsPage() {
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsBulkDeleteDialogOpen(false)} disabled={isBulkActionLoading} style={{ borderRadius: "12px" }} className="transition-all duration-200">Hủy</Button>
-                        <Button variant="destructive" onClick={handleBulkDelete} disabled={isBulkActionLoading} style={{ borderRadius: "12px" }} className="gap-2 min-w-[120px] transition-all duration-200">
+                        <Button variant="outline" onClick={() => setIsBulkDeleteDialogOpen(false)} disabled={isBulkActionLoading} className="rounded-xl transition-all duration-200">Hủy</Button>
+                        <Button variant="destructive" onClick={handleBulkDelete} disabled={isBulkActionLoading} className="gap-2 min-w-[120px] rounded-xl transition-all duration-200">
                             {isBulkActionLoading ? (
                                 <span className="flex items-center gap-2">
                                     <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>

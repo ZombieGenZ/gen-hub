@@ -40,7 +40,7 @@ export default function StaffPage() {
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                         <Input
                             placeholder="Tìm kiếm nhân viên..."
-                            className="pl-9 h-9 bg-slate-50 border-slate-200 focus:bg-white focus:ring-brand/20 transition-all rounded-lg text-sm"
+                            className="pl-9 h-9 bg-slate-50 border-slate-200 focus:bg-white focus:ring-brand/20 transition-all rounded-xl text-sm"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
@@ -52,13 +52,13 @@ export default function StaffPage() {
                         <h1 className="text-2xl font-bold text-slate-900">Nhân viên</h1>
                         <p className="text-sm text-slate-500 mt-1">Quản lý nhân sự và phân quyền truy cập</p>
                     </div>
-                    <Button className="bg-brand hover:bg-brand-hover text-white gap-2 rounded-lg shadow-sm shadow-brand/20">
+                    <Button className="bg-brand hover:bg-brand-hover text-white gap-2 rounded-xl shadow-sm shadow-brand/20">
                         <Plus className="w-4 h-4" />
                         Thêm nhân viên
                     </Button>
                 </div>
 
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                     <Table>
                         <TableHeader className="bg-slate-50">
                             <TableRow>
@@ -111,7 +111,7 @@ export default function StaffPage() {
                                         )}
                                     </TableCell>
                                     <TableCell className="text-right">
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-900 rounded-lg">
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-900 rounded-xl">
                                             <MoreHorizontal className="w-4 h-4" />
                                         </Button>
                                     </TableCell>

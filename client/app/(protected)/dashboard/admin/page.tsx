@@ -26,10 +26,10 @@ export default function DashboardPage() {
                         <p className="text-slate-500 mt-1">Dưới đây là tóm tắt hoạt động của hệ thống ngày hôm nay.</p>
                     </div>
                     <div className="flex items-center gap-3">
-                        <button className="px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-all shadow-sm">
+                        <button className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 transition-all shadow-sm">
                             Xuất báo cáo
                         </button>
-                        <button className="px-4 py-2 bg-brand text-white rounded-lg text-sm font-medium hover:bg-brand-active transition-all shadow-md shadow-brand/20">
+                        <button className="px-4 py-2 bg-brand text-white rounded-xl text-sm font-medium hover:bg-brand-active transition-all shadow-md shadow-brand/20">
                             + Tạo mới
                         </button>
                     </div>
@@ -71,23 +71,23 @@ export default function DashboardPage() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
                     {/* Activity Feed / Placeholder for Charts */}
                     <div className="lg:col-span-2 space-y-6">
-                        <div className="bg-white p-6 rounded-xl border-0 shadow-premium">
+                        <div className="bg-white p-6 rounded-2xl border-0 shadow-premium">
                             <div className="flex items-center justify-between mb-6">
                                 <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                                     <Activity className="w-5 h-5 text-brand" />
                                     Biểu đồ hoạt động
                                 </h2>
-                                <select className="text-sm bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 outline-none">
+                                <select className="text-sm bg-slate-50 border border-slate-200 rounded-xl px-2 py-1 outline-none">
                                     <option>7 ngày qua</option>
                                     <option>30 ngày qua</option>
                                 </select>
                             </div>
-                            <div className="h-[300px] w-full bg-slate-50 rounded-lg flex items-center justify-center border border-dashed border-slate-300">
+                            <div className="h-[300px] w-full bg-slate-50 rounded-xl flex items-center justify-center border border-dashed border-slate-300">
                                 <p className="text-slate-400 text-sm italic">Biểu đồ sẽ hiển thị ở đây (Cần cài đặt Recharts)</p>
                             </div>
                         </div>
 
-                        <div className="bg-white rounded-xl border-0 shadow-premium overflow-hidden">
+                        <div className="bg-white rounded-2xl border-0 shadow-premium overflow-hidden">
                             <div className="p-6 border-b border-slate-100 flex items-center justify-between">
                                 <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                                     <Package className="w-5 h-5 text-brand" />
@@ -101,16 +101,16 @@ export default function DashboardPage() {
                                 {[1, 2, 3].map((i) => (
                                     <div key={i} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-all cursor-pointer">
                                         <div className="flex items-center gap-4">
-                                            <div className="w-10 h-10 rounded-lg bg-brand/10 flex items-center justify-center text-brand font-bold">
+                                            <div className="w-10 h-10 rounded-xl bg-brand/10 flex items-center justify-center text-brand font-bold">
                                                 W{i}
                                             </div>
                                             <div>
-                                                <p className="font-semibold text-slate-900">Warehouse Complex {i}</p>
+                                                <p className="font-semibold text-slate-900">Phức hợp Kho {i}</p>
                                                 <p className="text-xs text-slate-500">Lô B2, KCN Visip, Bình Dương</p>
                                             </div>
                                         </div>
                                         <div className="text-right">
-                                            <p className="text-sm font-medium text-slate-900">85% Capacity</p>
+                                            <p className="text-sm font-medium text-slate-900">85% Công suất</p>
                                             <div className="w-24 h-1.5 bg-slate-100 rounded-full mt-1 overflow-hidden">
                                                 <div className="bg-brand h-full" style={{ width: '85%' }}></div>
                                             </div>
@@ -123,7 +123,7 @@ export default function DashboardPage() {
 
                     {/* Sidebar/Recent Activity */}
                     <div className="space-y-6">
-                        <div className="bg-white p-6 rounded-xl border-0 shadow-premium">
+                        <div className="bg-white p-6 rounded-2xl border-0 shadow-premium">
                             <h2 className="text-lg font-bold text-slate-900 mb-6">Thông báo mới nhất</h2>
                             <div className="space-y-6">
                                 {[
@@ -145,7 +145,7 @@ export default function DashboardPage() {
                                     </div>
                                 ))}
                             </div>
-                            <button className="w-full mt-8 py-2 text-sm font-medium text-slate-500 hover:text-slate-900 hover:bg-slate-50 rounded-lg transition-all border border-transparent hover:border-slate-200">
+                            <button className="w-full mt-8 py-2 text-sm font-medium text-slate-500 hover:text-slate-900 hover:bg-slate-50 rounded-xl transition-all border border-transparent hover:border-slate-200">
                                 Xem tất cả hoạt động
                             </button>
                         </div>

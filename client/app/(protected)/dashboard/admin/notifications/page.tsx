@@ -245,7 +245,7 @@ export default function AdminNotificationsPage() {
             </div>
 
             {/* Data Table */}
-            <div className="admin-notifications-page__table bg-card rounded-xl border overflow-hidden">
+            <div className="admin-notifications-page__table bg-card rounded-2xl border overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full">
                         <thead className="bg-muted/50 border-b">
@@ -316,9 +316,8 @@ export default function AdminNotificationsPage() {
                                                 <Button
                                                     variant="outline"
                                                     size="sm"
-                                                    className="mt-2 gap-2 transition-all duration-200 active:scale-[0.97]"
+                                                    className="mt-2 gap-2 transition-all duration-200 active:scale-[0.97] rounded-xl"
                                                     onClick={() => setIsComposeOpen(true)}
-                                                    style={{ borderRadius: "12px" }}
                                                 >
                                                     <PlusIcon className="w-4 h-4" />
                                                     Tạo thông báo đầu tiên
@@ -457,8 +456,7 @@ export default function AdminNotificationsPage() {
             {selectedIds.length > 0 && (
                 <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50">
                     <div
-                        className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg border border-border shadow-2xl px-4 py-2 flex items-center gap-4 animate-in slide-in-from-bottom-4 fade-in"
-                        style={{ borderRadius: "24px" }}
+                        className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg border border-border shadow-2xl px-4 py-2 flex items-center gap-4 animate-in slide-in-from-bottom-4 fade-in rounded-3xl"
                     >
                         <span className="text-muted-foreground text-sm font-medium">
                             {selectedIds.length} đã chọn
@@ -486,7 +484,7 @@ export default function AdminNotificationsPage() {
 
             {/* Bulk Delete Confirm Dialog */}
             <Dialog open={isBulkDeleteDialogOpen} onOpenChange={(open) => { if (!isBulkActionLoading) setIsBulkDeleteDialogOpen(open); }}>
-                <DialogContent style={{ borderRadius: "16px" }} className="sm:max-w-md">
+                <DialogContent className="sm:max-w-md rounded-2xl">
                     <DialogHeader>
                         <DialogTitle>🗑️ Xóa thông báo</DialogTitle>
                         <DialogDescription>
@@ -496,8 +494,8 @@ export default function AdminNotificationsPage() {
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsBulkDeleteDialogOpen(false)} disabled={isBulkActionLoading} style={{ borderRadius: "12px" }} className="transition-all duration-200">Hủy</Button>
-                        <Button variant="destructive" onClick={handleBulkDelete} disabled={isBulkActionLoading} style={{ borderRadius: "12px" }} className="gap-2 min-w-[120px] transition-all duration-200">
+                        <Button variant="outline" onClick={() => setIsBulkDeleteDialogOpen(false)} disabled={isBulkActionLoading} className="transition-all duration-200 rounded-xl">Hủy</Button>
+                        <Button variant="destructive" onClick={handleBulkDelete} disabled={isBulkActionLoading} className="gap-2 min-w-[120px] transition-all duration-200 rounded-xl">
                             {isBulkActionLoading ? (
                                 <span className="flex items-center gap-2">
                                     <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
@@ -513,7 +511,7 @@ export default function AdminNotificationsPage() {
 
             {/* Compose Dialog (was Drawer) */}
             <Dialog open={isComposeOpen} onOpenChange={setIsComposeOpen}>
-                <DialogContent className="w-[95vw] max-w-3xl max-h-[90dvh] flex flex-col p-0 gap-0 overflow-hidden" style={{ borderRadius: "16px" }}>
+                <DialogContent className="w-[95vw] max-w-3xl max-h-[90dvh] flex flex-col p-0 gap-0 overflow-hidden rounded-2xl">
                     <DialogHeader className="p-6 pb-4 shrink-0 z-10 border-b bg-background">
                         <DialogTitle>Tạo thông báo mới</DialogTitle>
                     </DialogHeader>

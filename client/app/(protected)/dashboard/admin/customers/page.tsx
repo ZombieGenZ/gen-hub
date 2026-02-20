@@ -46,7 +46,7 @@ export default function CustomersPage() {
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                     <Input
                         placeholder="Tìm kiếm khách hàng..."
-                        className="pl-9 h-9 bg-slate-50 border-slate-200 focus:bg-white focus:ring-brand/20 transition-all rounded-lg text-sm"
+                        className="pl-9 h-9 bg-slate-50 border-slate-200 focus:bg-white focus:ring-brand/20 transition-all rounded-xl text-sm"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
@@ -56,13 +56,13 @@ export default function CustomersPage() {
                         <h1 className="text-2xl font-bold text-slate-900">Khách hàng</h1>
                         <p className="text-sm text-slate-500 mt-1">Quản lý thông tin khách hàng và đối tác</p>
                     </div>
-                    <Button className="bg-brand hover:bg-brand-hover text-white gap-2 rounded-lg">
+                    <Button className="bg-brand hover:bg-brand-hover text-white gap-2 rounded-xl">
                         <Filter className="w-4 h-4" />
                         Bộ lọc
                     </Button>
                 </div>
 
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                     <Table>
                         <TableHeader className="bg-slate-50">
                             <TableRow>
@@ -99,10 +99,10 @@ export default function CustomersPage() {
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex items-center justify-end gap-2">
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-brand hover:bg-brand/5 rounded-lg">
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-brand hover:bg-brand/5 rounded-xl">
                                                 <Eye className="w-4 h-4" />
                                             </Button>
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg">
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl">
                                                 <Lock className="w-4 h-4" />
                                             </Button>
                                         </div>

@@ -49,32 +49,32 @@ export default function OrganizationPage() {
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                         <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-3">
-                            <Users className="w-8 h-8 text-brand bg-brand-subtle p-1.5 rounded-lg" />
+                            <Users className="w-8 h-8 text-brand bg-brand-subtle p-1.5 rounded-xl" />
                             Quản lý Tổ chức
                         </h1>
                         <p className="text-slate-500 mt-1">Quản lý danh sách các công ty và đối tác trong hệ thống.</p>
                     </div>
-                    <button className="flex items-center gap-2 px-4 py-2 bg-brand text-white rounded-lg text-sm font-bold hover:bg-brand-active transition-all shadow-md shadow-brand/20">
+                    <button className="flex items-center gap-2 px-4 py-2 bg-brand text-white rounded-xl text-sm font-bold hover:bg-brand-active transition-all shadow-md shadow-brand/20">
                         <Plus className="w-4 h-4" />
                         Thêm Tổ chức
                     </button>
                 </div>
 
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                     <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div className="relative flex-1 max-w-sm">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                             <input
                                 type="text"
                                 placeholder="Tìm kiếm tổ chức..."
-                                className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand/20"
+                                className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand/20"
                             />
                         </div>
                         <div className="flex items-center gap-2">
-                            <button className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all">
+                            <button className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-all">
                                 <Filter className="w-4 h-4" />
                             </button>
-                            <button className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all">
+                            <button className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-all">
                                 <ArrowUpDown className="w-4 h-4" />
                             </button>
                         </div>
@@ -112,7 +112,7 @@ export default function OrganizationPage() {
                                     <tr key={org.id} className="hover:bg-slate-50 transition-colors group">
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-lg bg-brand-subtle flex items-center justify-center text-brand font-bold">
+                                                <div className="w-10 h-10 rounded-xl bg-brand-subtle flex items-center justify-center text-brand font-bold">
                                                     {org.name.charAt(0)}
                                                 </div>
                                                 <div>
@@ -139,7 +139,7 @@ export default function OrganizationPage() {
                                             {new Date(org.created_at).toLocaleDateString('vi-VN')}
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            <button className="p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-all">
+                                            <button className="p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all">
                                                 <MoreVertical className="w-4 h-4" />
                                             </button>
                                         </td>

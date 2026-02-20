@@ -215,7 +215,7 @@ export default function InsurancesPage() {
             {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight" style={{ fontSize: "32px", lineHeight: "130%" }}>
+                    <h1 className="text-[32px] leading-[130%] font-bold tracking-tight">
                         Bảo hiểm hàng hóa
                     </h1>
                     <p className="text-muted-foreground mt-1">
@@ -227,8 +227,7 @@ export default function InsurancesPage() {
                         setTargetInsurance(null);
                         setIsCreateOpen(true);
                     }}
-                    className="gap-2 bg-[#0F766E] hover:bg-[#0F766E]/90 text-white transition-all duration-200 active:scale-[0.97] hover:shadow-md"
-                    style={{ borderRadius: "12px" }}
+                    className="gap-2 rounded-xl bg-[#0F766E] hover:bg-[#0F766E]/90 text-white transition-all duration-200 active:scale-[0.97] hover:shadow-md"
                 >
                     <PlusIcon className="w-4 h-4" />
                     Thêm bảo hiểm
@@ -244,18 +243,18 @@ export default function InsurancesPage() {
                 }}
                 className="w-full"
             >
-                <TabsList className="bg-muted/50 p-1.5 h-auto" style={{ borderRadius: "12px" }}>
-                    <TabsTrigger value="all" className="gap-2 px-4 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm" style={{ borderRadius: "8px" }}>
+                <TabsList className="rounded-xl bg-muted/50 p-1.5 h-auto">
+                    <TabsTrigger value="all" className="rounded-lg gap-2 px-4 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm">
                         <ShieldCheckIcon className="w-4 h-4" />
                         Tất cả
                         <Badge variant="secondary" className="ml-1 px-2 py-0.5 text-xs font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">{stats.total}</Badge>
                     </TabsTrigger>
-                    <TabsTrigger value="active" className="gap-2 px-4 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm" style={{ borderRadius: "8px" }}>
+                    <TabsTrigger value="active" className="rounded-lg gap-2 px-4 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm">
                         <CheckCircleIcon className="w-4 h-4" />
                         Hoạt động
                         <Badge variant="secondary" className="ml-1 px-2 py-0.5 text-xs font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">{stats.active}</Badge>
                     </TabsTrigger>
-                    <TabsTrigger value="inactive" className="gap-2 px-4 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm" style={{ borderRadius: "8px" }}>
+                    <TabsTrigger value="inactive" className="rounded-lg gap-2 px-4 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm">
                         <XCircleIcon className="w-4 h-4" />
                         Đã tắt
                         <Badge variant="secondary" className="ml-1 px-2 py-0.5 text-xs font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">{stats.inactive}</Badge>
@@ -264,23 +263,22 @@ export default function InsurancesPage() {
             </Tabs>
 
             {/* Search */}
-            <Card className="border-0 shadow-premium" style={{ borderRadius: "24px" }}>
+            <Card className="border-0 shadow-premium rounded-3xl">
                 <CardContent className="p-6">
                     <div className="relative flex-1">
                         <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <Input
                             placeholder="Tìm kiếm theo tên hoặc mô tả..."
-                            className="pl-9"
+                            className="rounded-xl pl-9"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            style={{ borderRadius: "12px" }}
                         />
                     </div>
                 </CardContent>
             </Card>
 
             {/* List */}
-            <Card className="border-0 shadow-premium overflow-hidden" style={{ borderRadius: "24px" }}>
+            <Card className="border-0 shadow-premium rounded-3xl overflow-hidden">
                 <div className="bg-muted/30 px-6 py-4 border-b flex items-center justify-between">
                     <h3 className="font-bold text-lg text-primary">Danh sách gói bảo hiểm</h3>
                     <Badge variant="secondary" className="rounded-full bg-white shadow-sm hover:bg-white text-muted-foreground">
@@ -332,8 +330,7 @@ export default function InsurancesPage() {
                                         variant="outline"
                                         size="sm"
                                         onClick={() => { setTargetInsurance(null); setIsCreateOpen(true); }}
-                                        className="gap-2 mt-2 transition-all duration-200 active:scale-[0.97]"
-                                        style={{ borderRadius: "12px" }}
+                                        className="rounded-xl gap-2 mt-2 transition-all duration-200 active:scale-[0.97]"
                                     >
                                         <PlusIcon className="w-4 h-4" />
                                         Thêm gói đầu tiên
@@ -494,8 +491,7 @@ export default function InsurancesPage() {
             {selectedIds.length > 0 && (
                 <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50">
                     <div
-                        className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg border border-border shadow-2xl px-4 py-2 flex items-center gap-4 animate-in slide-in-from-bottom-4 fade-in"
-                        style={{ borderRadius: "24px" }}
+                        className="rounded-3xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg border border-border shadow-2xl px-4 py-2 flex items-center gap-4 animate-in slide-in-from-bottom-4 fade-in"
                     >
                         <span className="text-muted-foreground text-sm font-medium">
                             {selectedIds.length} đã chọn
@@ -529,7 +525,7 @@ export default function InsurancesPage() {
                     setTargetInsurance(null);
                 }
             }}>
-                <DialogContent className="w-[95vw] max-w-2xl max-h-[90dvh] flex flex-col p-0 gap-0 overflow-hidden" style={{ borderRadius: "16px" }}>
+                <DialogContent className="rounded-2xl w-[95vw] max-w-2xl max-h-[90dvh] flex flex-col p-0 gap-0 overflow-hidden">
                     <DialogHeader className="p-6 pb-4 shrink-0 z-10 border-b bg-background">
                         <DialogTitle>
                             {isEditOpen ? 'Chỉnh sửa' : 'Thêm mới'} gói bảo hiểm
@@ -551,7 +547,7 @@ export default function InsurancesPage() {
 
             {/* Delete Confirmation */}
             <Dialog open={isDeleteOpen} onOpenChange={(open) => { if (!isDeleteLoading) setIsDeleteOpen(open); }}>
-                <DialogContent style={{ borderRadius: "16px" }} className="sm:max-w-md">
+                <DialogContent className="rounded-2xl sm:max-w-md">
                     <DialogHeader>
                         <DialogTitle>🗑️ Xác nhận xóa</DialogTitle>
                         <DialogDescription>
@@ -561,8 +557,8 @@ export default function InsurancesPage() {
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsDeleteOpen(false)} disabled={isDeleteLoading} style={{ borderRadius: "12px" }} className="transition-all duration-200">Hủy</Button>
-                        <Button variant="destructive" onClick={handleDelete} disabled={isDeleteLoading} style={{ borderRadius: "12px" }} className="gap-2 min-w-[100px] transition-all duration-200">
+                        <Button variant="outline" onClick={() => setIsDeleteOpen(false)} disabled={isDeleteLoading} className="rounded-xl transition-all duration-200">Hủy</Button>
+                        <Button variant="destructive" onClick={handleDelete} disabled={isDeleteLoading} className="rounded-xl gap-2 min-w-[100px] transition-all duration-200">
                             {isDeleteLoading ? (
                                 <span className="flex items-center gap-2">
                                     <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
@@ -578,7 +574,7 @@ export default function InsurancesPage() {
 
             {/* Bulk Delete Dialog */}
             <Dialog open={isBulkDeleteDialogOpen} onOpenChange={(open) => { if (!isBulkActionLoading) setIsBulkDeleteDialogOpen(open); }}>
-                <DialogContent style={{ borderRadius: "16px" }} className="sm:max-w-md">
+                <DialogContent className="rounded-2xl sm:max-w-md">
                     <DialogHeader>
                         <DialogTitle>🗑️ Xác nhận xóa nhiều</DialogTitle>
                         <DialogDescription>
@@ -588,8 +584,8 @@ export default function InsurancesPage() {
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsBulkDeleteDialogOpen(false)} disabled={isBulkActionLoading} style={{ borderRadius: "12px" }} className="transition-all duration-200">Hủy</Button>
-                        <Button variant="destructive" onClick={handleBulkDelete} disabled={isBulkActionLoading} style={{ borderRadius: "12px" }} className="gap-2 min-w-[120px] transition-all duration-200">
+                        <Button variant="outline" onClick={() => setIsBulkDeleteDialogOpen(false)} disabled={isBulkActionLoading} className="rounded-xl transition-all duration-200">Hủy</Button>
+                        <Button variant="destructive" onClick={handleBulkDelete} disabled={isBulkActionLoading} className="rounded-xl gap-2 min-w-[120px] transition-all duration-200">
                             {isBulkActionLoading ? (
                                 <span className="flex items-center gap-2">
                                     <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>

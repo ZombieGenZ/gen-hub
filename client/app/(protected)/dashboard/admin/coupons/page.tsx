@@ -96,19 +96,15 @@ export default function CouponsPage() {
             setLoading(true);
             setError(null);
             const token = authStorage.getAccessToken();
-            console.log('Token:', token ? 'exists' : 'missing');
             if (!token) {
-                console.log('No token - returning early');
                 return;
             }
 
             const response = await couponService.getAllCoupons(token);
-            console.log('API Response:', response);
             if (response?.data?.items && Array.isArray(response.data.items)) {
                 setCoupons(response.data.items);
-                console.log('Coupons set:', response.data.items.length);
             } else {
-                console.log('Response structure unexpected:', response);
+                // no-op: unexpected structure
             }
         } catch (error: any) {
             console.error("Failed to fetch coupons", error);
@@ -119,7 +115,6 @@ export default function CouponsPage() {
     };
 
     useEffect(() => {
-        console.log('useEffect triggered - fetching coupons...');
         fetchCoupons();
     }, []);
 
@@ -224,7 +219,7 @@ export default function CouponsPage() {
         }
     };
 
-    // Type label mapping  
+    // Type label mapping
     const getTypeLabel = (type: string): string => {
         switch (type) {
             case 'PUBLIC': return 'Công khai';
@@ -549,14 +544,13 @@ export default function CouponsPage() {
             {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight" style={{ fontSize: "32px", lineHeight: "130%" }}>
+                    <h1 className="text-3xl font-bold tracking-tight text-[32px] leading-[130%]">
                         Mã giảm giá
                     </h1>
                 </div>
                 <Button
                     onClick={() => setIsCreateDialogOpen(true)}
-                    className="gap-2"
-                    style={{ borderRadius: "12px" }}
+                    className="gap-2 rounded-xl"
                 >
                     <PlusIcon className="w-4 h-4" />
                     Tạo mã giảm giá
@@ -573,20 +567,19 @@ export default function CouponsPage() {
             {/* Old toolbar removed - now using floating bottom action bar */}
 
             {/* Filters */}
-            <Card className="border-0 shadow-premium" style={{ borderRadius: "24px" }}>
+            <Card className="border-0 shadow-premium rounded-3xl">
                 <CardContent className="p-6">
                     <div className="flex flex-col gap-4">
                         {/* Row 1: Search + Quick Facets + Date Range */}
                         <div className="flex flex-wrap items-center gap-4">
                             {/* A. Search Area (300-400px) */}
-                            <div className="relative" style={{ width: '360px', minWidth: '300px', maxWidth: '400px' }}>
+                            <div className="relative w-[360px] min-w-[300px] max-w-[400px]">
                                 <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                                 <Input
                                     placeholder="Tìm theo mã (CODE), tên chương trình..."
-                                    className="pl-9"
+                                    className="pl-9 rounded-xl"
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    style={{ borderRadius: "12px" }}
                                 />
                             </div>
 
@@ -601,13 +594,12 @@ export default function CouponsPage() {
                                     onValueChange={(value: CouponFilterStatus) => setStatusFilter(value)}
                                 >
                                     <SelectTrigger
-                                        className="w-fit gap-2"
-                                        style={{ borderRadius: "12px" }}
+                                        className="w-fit gap-2 rounded-xl"
                                     >
                                         <ClockIcon className="w-4 h-4 text-muted-foreground" />
                                         <SelectValue placeholder="Trạng thái" />
                                     </SelectTrigger>
-                                    <SelectContent style={{ borderRadius: "12px" }}>
+                                    <SelectContent className="rounded-xl">
                                         <SelectItem value="all">Tất cả</SelectItem>
                                         <SelectItem value="active">
                                             <span className="flex items-center gap-2">
@@ -648,12 +640,11 @@ export default function CouponsPage() {
                                     onValueChange={(value: "all" | "PUBLIC" | "PRIVATE") => setTypeFilter(value)}
                                 >
                                     <SelectTrigger
-                                        className="w-fit gap-2"
-                                        style={{ borderRadius: "12px" }}
+                                        className="w-fit gap-2 rounded-xl"
                                     >
                                         <SelectValue placeholder="Loại mã" />
                                     </SelectTrigger>
-                                    <SelectContent style={{ borderRadius: "12px" }}>
+                                    <SelectContent className="rounded-xl">
                                         <SelectItem value="all">Tất cả</SelectItem>
                                         <SelectItem value="PUBLIC">Công khai</SelectItem>
                                         <SelectItem value="PRIVATE">Riêng tư</SelectItem>
@@ -666,13 +657,12 @@ export default function CouponsPage() {
                                     onValueChange={(value: "all" | "PERCENT" | "AMOUNT" | "FREE_MONTHS") => setDiscountFilter(value)}
                                 >
                                     <SelectTrigger
-                                        className="w-fit gap-2"
-                                        style={{ borderRadius: "12px" }}
+                                        className="w-fit gap-2 rounded-xl"
                                     >
                                         <PercentBadgeIcon className="w-4 h-4 text-muted-foreground" />
                                         <SelectValue placeholder="Loại giảm giá" />
                                     </SelectTrigger>
-                                    <SelectContent style={{ borderRadius: "12px" }}>
+                                    <SelectContent className="rounded-xl">
                                         <SelectItem value="all">Tất cả</SelectItem>
                                         <SelectItem value="PERCENT">
                                             <span className="flex items-center gap-2">
@@ -704,8 +694,7 @@ export default function CouponsPage() {
                                 <PopoverTrigger asChild>
                                     <Button
                                         variant="outline"
-                                        className="gap-2 min-w-[200px] justify-start font-normal"
-                                        style={{ borderRadius: "12px" }}
+                                        className="gap-2 min-w-[200px] justify-start font-normal rounded-xl"
                                     >
                                         <CalendarIcon className="w-4 h-4" />
                                         {startDateFilter || endDateFilter ? (
@@ -716,24 +705,23 @@ export default function CouponsPage() {
                                     </Button>
                                 </PopoverTrigger>
                                 <PopoverContent
-                                    className="w-auto p-4"
+                                    className="w-auto p-4 rounded-2xl"
                                     align="end"
                                     side="bottom"
-                                    style={{ borderRadius: "16px" }}
                                 >
                                     <div className="flex flex-col gap-4">
                                         {/* Date inputs row */}
                                         <div className="flex items-center gap-3">
                                             <div className="flex flex-col gap-1">
                                                 <label className="text-xs text-muted-foreground">Từ ngày</label>
-                                                <div className="px-3 py-2 border rounded-lg text-sm min-w-[120px]" style={{ borderRadius: "8px" }}>
+                                                <div className="px-3 py-2 border rounded-lg text-sm min-w-[120px]">
                                                     {startDateFilter ? startDateFilter.toLocaleDateString('vi-VN') : '-- / -- / ----'}
                                                 </div>
                                             </div>
                                             <span className="text-muted-foreground">→</span>
                                             <div className="flex flex-col gap-1">
                                                 <label className="text-xs text-muted-foreground">Đến ngày</label>
-                                                <div className="px-3 py-2 border rounded-lg text-sm min-w-[120px]" style={{ borderRadius: "8px" }}>
+                                                <div className="px-3 py-2 border rounded-lg text-sm min-w-[120px]">
                                                     {endDateFilter ? endDateFilter.toLocaleDateString('vi-VN') : '-- / -- / ----'}
                                                 </div>
                                             </div>
@@ -777,8 +765,7 @@ export default function CouponsPage() {
                                 {statusFilter !== "all" && (
                                     <Badge
                                         variant="secondary"
-                                        className="gap-1.5 px-3 py-1 cursor-pointer hover:bg-secondary/80"
-                                        style={{ borderRadius: "12px" }}
+                                        className="gap-1.5 px-3 py-1 cursor-pointer hover:bg-secondary/80 rounded-xl"
                                     >
                                         <ClockIcon className="w-3.5 h-3.5" />
                                         {getStatusLabel(statusFilter)}
@@ -794,8 +781,7 @@ export default function CouponsPage() {
                                 {typeFilter !== "all" && (
                                     <Badge
                                         variant="secondary"
-                                        className="gap-1.5 px-3 py-1 cursor-pointer hover:bg-secondary/80"
-                                        style={{ borderRadius: "12px" }}
+                                        className="gap-1.5 px-3 py-1 cursor-pointer hover:bg-secondary/80 rounded-xl"
                                     >
                                         {getTypeLabel(typeFilter)}
                                         <button
@@ -810,8 +796,7 @@ export default function CouponsPage() {
                                 {discountFilter !== "all" && (
                                     <Badge
                                         variant="secondary"
-                                        className="gap-1.5 px-3 py-1 cursor-pointer hover:bg-secondary/80"
-                                        style={{ borderRadius: "12px" }}
+                                        className="gap-1.5 px-3 py-1 cursor-pointer hover:bg-secondary/80 rounded-xl"
                                     >
                                         <PercentBadgeIcon className="w-3.5 h-3.5" />
                                         {getDiscountLabel(discountFilter)}
@@ -827,8 +812,7 @@ export default function CouponsPage() {
                                 {(startDateFilter || endDateFilter) && (
                                     <Badge
                                         variant="secondary"
-                                        className="gap-1.5 px-3 py-1 cursor-pointer hover:bg-secondary/80"
-                                        style={{ borderRadius: "12px" }}
+                                        className="gap-1.5 px-3 py-1 cursor-pointer hover:bg-secondary/80 rounded-xl"
                                     >
                                         <CalendarIcon className="w-3.5 h-3.5" />
                                         {formatDateRange()}
@@ -861,7 +845,7 @@ export default function CouponsPage() {
             </Card>
 
             {/* Table */}
-            <Card className="border-0 shadow-premium" style={{ borderRadius: "24px" }}>
+            <Card className="border-0 shadow-premium rounded-3xl">
                 <CardContent>
                     {loading ? (
                         <div className="text-center py-8 text-muted-foreground">Đang tải...</div>
@@ -882,8 +866,7 @@ export default function CouponsPage() {
                                         variant="outline"
                                         size="sm"
                                         onClick={() => setIsCreateDialogOpen(true)}
-                                        className="gap-2 mt-2 transition-all duration-200 active:scale-[0.97]"
-                                        style={{ borderRadius: "12px" }}
+                                        className="gap-2 mt-2 transition-all duration-200 active:scale-[0.97] rounded-xl"
                                     >
                                         <PlusIcon className="w-4 h-4" />
                                         Thêm mã đầu tiên
@@ -905,25 +888,25 @@ export default function CouponsPage() {
                                                     className="w-4 h-4 rounded border-gray-300 text-[#0F766E] focus:ring-[#0F766E] cursor-pointer"
                                                 />
                                             </th>
-                                            <th className="text-left py-3 px-4 font-medium text-muted-foreground" style={{ fontSize: "12px", lineHeight: "150%" }}>
+                                            <th className="text-left py-3 px-4 font-medium text-muted-foreground text-xs">
                                                 Mã
                                             </th>
-                                            <th className="text-left py-3 px-4 font-medium text-muted-foreground" style={{ fontSize: "12px", lineHeight: "150%" }}>
+                                            <th className="text-left py-3 px-4 font-medium text-muted-foreground text-xs">
                                                 Giảm giá
                                             </th>
-                                            <th className="text-left py-3 px-4 font-medium text-muted-foreground" style={{ fontSize: "12px", lineHeight: "150%" }}>
+                                            <th className="text-left py-3 px-4 font-medium text-muted-foreground text-xs">
                                                 Lượt dùng
                                             </th>
-                                            <th className="text-left py-3 px-4 font-medium text-muted-foreground" style={{ fontSize: "12px", lineHeight: "150%" }}>
+                                            <th className="text-left py-3 px-4 font-medium text-muted-foreground text-xs">
                                                 Ngày bắt đầu
                                             </th>
-                                            <th className="text-left py-3 px-4 font-medium text-muted-foreground" style={{ fontSize: "12px", lineHeight: "150%" }}>
+                                            <th className="text-left py-3 px-4 font-medium text-muted-foreground text-xs">
                                                 Ngày hết hạn
                                             </th>
-                                            <th className="text-left py-3 px-4 font-medium text-muted-foreground" style={{ fontSize: "12px", lineHeight: "150%" }}>
+                                            <th className="text-left py-3 px-4 font-medium text-muted-foreground text-xs">
                                                 Trạng thái
                                             </th>
-                                            <th className="text-right py-3 px-4 font-medium text-muted-foreground" style={{ fontSize: "12px", lineHeight: "150%" }}>
+                                            <th className="text-right py-3 px-4 font-medium text-muted-foreground text-xs">
                                                 Thao tác
                                             </th>
                                         </tr>
@@ -939,7 +922,7 @@ export default function CouponsPage() {
                                                         className="w-4 h-4 rounded border-gray-300 text-[#0F766E] focus:ring-[#0F766E] cursor-pointer"
                                                     />
                                                 </td>
-                                                <td className="py-3 px-4" style={{ fontSize: "16px", lineHeight: "150%" }}>
+                                                <td className="py-3 px-4 text-base">
                                                     <div className="flex flex-col">
                                                         <span className="font-medium">{coupon.name}</span>
                                                         <code className="text-sm text-primary bg-primary/10 px-2 py-0.5 rounded w-fit mt-1">
@@ -947,14 +930,14 @@ export default function CouponsPage() {
                                                         </code>
                                                     </div>
                                                 </td>
-                                                <td className="py-3 px-4 font-medium" style={{ fontSize: "16px", lineHeight: "150%" }}>
+                                                <td className="py-3 px-4 font-medium text-base">
                                                     {coupon.discount_type === 'PERCENT' ? (
                                                         <span>{coupon.discount_value}%</span>
                                                     ) : (
                                                         <span>{formatCurrency(coupon.discount_value)}</span>
                                                     )}
                                                 </td>
-                                                <td className="py-3 px-4 text-muted-foreground" style={{ fontSize: "16px", lineHeight: "150%" }}>
+                                                <td className="py-3 px-4 text-muted-foreground text-base">
                                                     {coupon.current_usage} / {coupon.max_usage > 0 ? coupon.max_usage : '∞'}
                                                 </td>
                                                 <td className="py-3 px-4 text-sm text-muted-foreground">
@@ -1006,8 +989,7 @@ export default function CouponsPage() {
                                                         return (
                                                             <Badge
                                                                 variant={config.variant}
-                                                                className={`gap-1 border ${config.className}`}
-                                                                style={{ borderRadius: "12px" }}
+                                                                className={`gap-1 border rounded-xl ${config.className}`}
                                                             >
                                                                 {config.icon}
                                                                 {config.label}
@@ -1021,7 +1003,7 @@ export default function CouponsPage() {
                                                             variant="ghost"
                                                             size="sm"
                                                             onClick={() => openEditDialog(coupon)}
-                                                            style={{ borderRadius: "12px" }}
+                                                            className="rounded-xl"
                                                         >
                                                             <PencilIcon className="w-4 h-4" />
                                                         </Button>
@@ -1029,8 +1011,7 @@ export default function CouponsPage() {
                                                             variant="ghost"
                                                             size="sm"
                                                             onClick={() => openDeleteDialog(coupon)}
-                                                            className="text-destructive"
-                                                            style={{ borderRadius: "12px" }}
+                                                            className="text-destructive rounded-xl"
                                                         >
                                                             <TrashIcon className="w-4 h-4" />
                                                         </Button>
@@ -1053,7 +1034,7 @@ export default function CouponsPage() {
                                             size="sm"
                                             onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                                             disabled={currentPage === 1}
-                                            style={{ borderRadius: "8px" }}
+                                            className="rounded-lg"
                                         >
                                             <ChevronLeftIcon className="w-4 h-4" />
                                         </Button>
@@ -1065,7 +1046,7 @@ export default function CouponsPage() {
                                             size="sm"
                                             onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                                             disabled={currentPage === totalPages}
-                                            style={{ borderRadius: "8px" }}
+                                            className="rounded-lg"
                                         >
                                             <ChevronRightIcon className="w-4 h-4" />
                                         </Button>
@@ -1079,7 +1060,7 @@ export default function CouponsPage() {
 
             {/* Create Dialog */}
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-                <DialogContent className="w-[95vw] max-w-7xl max-h-[90dvh] flex flex-col p-0 gap-0 overflow-hidden" style={{ borderRadius: "16px" }}>
+                <DialogContent className="w-[95vw] max-w-7xl max-h-[90dvh] flex flex-col p-0 gap-0 overflow-hidden rounded-2xl">
                     <DialogHeader className="p-4 pb-2 shrink-0 z-10 border-b">
                         <DialogTitle>Tạo mã giảm giá mới</DialogTitle>
                     </DialogHeader>
@@ -1093,7 +1074,7 @@ export default function CouponsPage() {
 
             {/* Edit Dialog */}
             <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-                <DialogContent className="w-[95vw] max-w-7xl max-h-[90dvh] flex flex-col p-0 gap-0 overflow-hidden" style={{ borderRadius: "16px" }}>
+                <DialogContent className="w-[95vw] max-w-7xl max-h-[90dvh] flex flex-col p-0 gap-0 overflow-hidden rounded-2xl">
                     <DialogHeader className="p-4 pb-2 shrink-0 z-10 border-b">
                         <DialogTitle>Chỉnh sửa mã giảm giá</DialogTitle>
                     </DialogHeader>
@@ -1112,7 +1093,7 @@ export default function CouponsPage() {
 
             {/* Delete Confirmation Dialog */}
             <Dialog open={isDeleteDialogOpen} onOpenChange={(open) => { if (!isDeleteLoading) setIsDeleteDialogOpen(open); }}>
-                <DialogContent style={{ borderRadius: "16px" }} className="sm:max-w-md">
+                <DialogContent className="sm:max-w-md rounded-2xl">
                     <DialogHeader>
                         <DialogTitle>🗑️ Xác nhận xóa</DialogTitle>
                         <DialogDescription>
@@ -1122,10 +1103,10 @@ export default function CouponsPage() {
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)} disabled={isDeleteLoading} style={{ borderRadius: "12px" }} className="transition-all duration-200">
+                        <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)} disabled={isDeleteLoading} className="transition-all duration-200 rounded-xl">
                             Hủy
                         </Button>
-                        <Button variant="destructive" onClick={handleDelete} disabled={isDeleteLoading} style={{ borderRadius: "12px" }} className="gap-2 min-w-[100px] transition-all duration-200">
+                        <Button variant="destructive" onClick={handleDelete} disabled={isDeleteLoading} className="gap-2 min-w-[100px] transition-all duration-200 rounded-xl">
                             {isDeleteLoading ? (
                                 <span className="flex items-center gap-2">
                                     <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
@@ -1149,7 +1130,7 @@ export default function CouponsPage() {
                     }
                 }
             }}>
-                <DialogContent style={{ borderRadius: "16px" }} className="max-w-md">
+                <DialogContent className="max-w-md rounded-2xl">
                     {isBulkActionLoading || bulkActionSuccess ? (
                         <div className="flex flex-col items-center justify-center py-8">
                             {bulkActionSuccess ? (
@@ -1181,15 +1162,14 @@ export default function CouponsPage() {
                                         setIsBulkActionDialogOpen(false);
                                         setBulkActionType(null);
                                     }}
-                                    style={{ borderRadius: "12px" }}
+                                    className="rounded-xl"
                                 >
                                     Hủy
                                 </Button>
                                 <Button
                                     variant={bulkActionType === 'delete' ? 'destructive' : 'default'}
                                     onClick={executeBulkAction}
-                                    style={{ borderRadius: "12px" }}
-                                    className={bulkActionType !== 'delete' ? 'bg-[#0F766E] hover:bg-[#0F766E]/90' : ''}
+                                    className={bulkActionType !== 'delete' ? 'bg-[#0F766E] hover:bg-[#0F766E]/90 rounded-xl' : 'rounded-xl'}
                                 >
                                     Xác nhận
                                 </Button>
@@ -1203,10 +1183,9 @@ export default function CouponsPage() {
             {selectedCouponIds.length > 0 && (
                 <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50">
                     <div
-                        className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg border border-border shadow-2xl px-4 py-2 flex items-center gap-4"
-                        style={{ borderRadius: "24px" }}
+                        className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg border border-border shadow-2xl px-4 py-2 flex items-center gap-4 rounded-3xl"
                     >
-                        <span className="text-muted-foreground font-rem" style={{ fontSize: "13px" }}>
+                        <span className="text-muted-foreground font-rem text-[13px]">
                             {selectedCouponIds.length} đã chọn
                         </span>
 
@@ -1215,14 +1194,13 @@ export default function CouponsPage() {
                             <DropdownMenuTrigger asChild>
                                 <Button
                                     variant="outline"
-                                    className="gap-2"
-                                    style={{ borderRadius: "12px " }}
+                                    className="gap-2 rounded-xl"
                                 >
                                     Hành động
                                     <ChevronDownIcon className="w-4 h-4" />
                                 </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="start" style={{ borderRadius: "12px" }} className="w-48">
+                            <DropdownMenuContent align="start" className="w-48 rounded-xl">
                                 <DropdownMenuItem
                                     onClick={() => openBulkActionDialog('activate')}
                                     className="cursor-pointer"
@@ -1258,8 +1236,7 @@ export default function CouponsPage() {
                             variant="ghost"
                             size="sm"
                             onClick={() => setSelectedCouponIds([])}
-                            className="text-muted-foreground hover:text-foreground"
-                            style={{ borderRadius: "12px" }}
+                            className="text-muted-foreground hover:text-foreground rounded-xl"
                         >
                             <XMarkIcon className="w-4 h-4" />
                         </Button>

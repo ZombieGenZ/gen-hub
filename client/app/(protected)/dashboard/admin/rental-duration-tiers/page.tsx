@@ -44,8 +44,8 @@ const tierService = new RentalDurationTierService();
 
 // ─── Helper: Duration label ──────────────────────────────────────────────────
 function durationLabel(value: number, unit: string) {
-    if (unit === "YEAR") return `${value} ${value > 1 ? "Years" : "Year"}`;
-    return `${value} ${value > 1 ? "Months" : "Month"}`;
+    if (unit === "YEAR") return `${value} ${value > 1 ? "Năm" : "Năm"}`;
+    return `${value} ${value > 1 ? "Tháng" : "Tháng"}`;
 }
 
 // ─── Sortable Tier Card ──────────────────────────────────────────────────────
@@ -167,7 +167,7 @@ function TierCard({
                             )}
                             <div className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
                                 <GiftIcon className="w-3.5 h-3.5" />
-                                <span className="font-medium">+{totalGifts} Gifts</span>
+                                <span className="font-medium">+{totalGifts} Quà tặng</span>
                             </div>
                         </div>
                     ) : (
@@ -183,7 +183,7 @@ function TierCard({
                         className="data-[state=checked]:bg-emerald-500"
                     />
                     <span className={`text-xs font-medium hidden sm:inline ${tier.is_active ? "text-emerald-600" : "text-muted-foreground"}`}>
-                        {tier.is_active ? "Active" : "Inactive"}
+                        {tier.is_active ? "Hoạt động" : "Không hoạt động"}
                     </span>
                 </div>
 
@@ -476,20 +476,19 @@ export default function RentalDurationTiersPage() {
             {/* ═══ Header ═══ */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight" style={{ fontSize: "32px", lineHeight: "130%" }}>
-                        Rental Tiers
+                    <h1 className="text-3xl font-bold tracking-tight text-[32px] leading-[130%]">
+                        Gói thuê
                     </h1>
-                    <p className="text-muted-foreground mt-1" style={{ fontSize: "16px", lineHeight: "150%" }}>
+                    <p className="text-muted-foreground mt-1 text-base">
                         Cấu hình các mốc thời gian thuê & ưu đãi kèm theo
                     </p>
                 </div>
                 <Button
                     onClick={openCreate}
-                    className="gap-2 bg-slate-900 hover:bg-slate-800 text-white transition-all duration-200 active:scale-[0.97] hover:shadow-md"
-                    style={{ borderRadius: "12px" }}
+                    className="gap-2 bg-slate-900 hover:bg-slate-800 text-white transition-all duration-200 active:scale-[0.97] hover:shadow-md rounded-xl"
                 >
                     <PlusIcon className="w-4 h-4" />
-                    New Tier
+                    Tạo gói
                 </Button>
             </div>
 
@@ -529,7 +528,7 @@ export default function RentalDurationTiersPage() {
             </Tabs>
 
             {/* ═══ Tier List (Sortable Cards) ═══ */}
-            <Card className="border-0 shadow-premium overflow-hidden" style={{ borderRadius: "24px" }}>
+            <Card className="border-0 shadow-premium overflow-hidden rounded-3xl">
                 <div className="p-6 pb-4 flex items-center justify-between">
                     <div>
                         <h2 className="text-lg font-bold">Danh sách gói thuê</h2>
@@ -571,8 +570,7 @@ export default function RentalDurationTiersPage() {
                                     <Button
                                         onClick={openCreate}
                                         variant="outline"
-                                        className="gap-2"
-                                        style={{ borderRadius: "12px" }}
+                                        className="gap-2 rounded-xl"
                                     >
                                         <PlusIcon className="w-4 h-4" />
                                         Tạo gói đầu tiên
@@ -629,8 +627,7 @@ export default function RentalDurationTiersPage() {
             {selectedIds.length > 0 && (
                 <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50">
                     <div
-                        className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg border border-border shadow-2xl px-4 py-2 flex items-center gap-4 animate-in slide-in-from-bottom-4 fade-in"
-                        style={{ borderRadius: "24px" }}
+                        className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg border border-border shadow-2xl px-4 py-2 flex items-center gap-4 animate-in slide-in-from-bottom-4 fade-in rounded-3xl"
                     >
                         <span className="text-muted-foreground text-sm font-medium">{selectedIds.length} đã chọn</span>
                         <div className="h-4 w-px bg-border" />
@@ -656,7 +653,7 @@ export default function RentalDurationTiersPage() {
 
             {/* ═══ Create/Edit Dialog (was Sheet) ═══ */}
             <Dialog open={isFormDialogOpen} onOpenChange={(open) => { if (!isFormLoading) setIsFormDialogOpen(open); }}>
-                <DialogContent className="w-[95vw] max-w-2xl max-h-[90dvh] flex flex-col p-0 gap-0 overflow-hidden" style={{ borderRadius: "16px" }}>
+                <DialogContent className="w-[95vw] max-w-2xl max-h-[90dvh] flex flex-col p-0 gap-0 overflow-hidden rounded-2xl">
                     <DialogHeader className="p-6 pb-4 shrink-0 z-10 border-b bg-background">
                         <DialogTitle className="text-xl font-bold">
                             {sheetMode === "create" ? "Tạo gói thuê mới" : "Chỉnh sửa gói thuê"}
@@ -682,7 +679,7 @@ export default function RentalDurationTiersPage() {
 
             {/* ═══ Delete Confirmation Dialog ═══ */}
             <Dialog open={isDeleteOpen} onOpenChange={(open) => { if (!isDeleteLoading) setIsDeleteOpen(open); }}>
-                <DialogContent style={{ borderRadius: "16px" }} className="sm:max-w-md">
+                <DialogContent className="sm:max-w-md rounded-2xl">
                     <DialogHeader>
                         <DialogTitle>🗑️ Xác nhận xóa</DialogTitle>
                         <DialogDescription>
@@ -692,8 +689,8 @@ export default function RentalDurationTiersPage() {
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsDeleteOpen(false)} disabled={isDeleteLoading} style={{ borderRadius: "12px" }} className="transition-all duration-200">Hủy</Button>
-                        <Button variant="destructive" onClick={handleDelete} disabled={isDeleteLoading} style={{ borderRadius: "12px" }} className="gap-2 min-w-[100px] transition-all duration-200">
+                        <Button variant="outline" onClick={() => setIsDeleteOpen(false)} disabled={isDeleteLoading} className="rounded-xl transition-all duration-200">Hủy</Button>
+                        <Button variant="destructive" onClick={handleDelete} disabled={isDeleteLoading} className="gap-2 min-w-[100px] rounded-xl transition-all duration-200">
                             {isDeleteLoading ? (
                                 <span className="flex items-center gap-2">
                                     <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
@@ -709,7 +706,7 @@ export default function RentalDurationTiersPage() {
 
             {/* ═══ Bulk Delete Dialog ═══ */}
             <Dialog open={isBulkDeleteOpen} onOpenChange={(open) => { if (!isBulkLoading) setIsBulkDeleteOpen(open); }}>
-                <DialogContent style={{ borderRadius: "16px" }} className="sm:max-w-md">
+                <DialogContent className="sm:max-w-md rounded-2xl">
                     <DialogHeader>
                         <DialogTitle>🗑️ Xác nhận xóa nhiều</DialogTitle>
                         <DialogDescription>
@@ -719,8 +716,8 @@ export default function RentalDurationTiersPage() {
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsBulkDeleteOpen(false)} disabled={isBulkLoading} style={{ borderRadius: "12px" }} className="transition-all duration-200">Hủy</Button>
-                        <Button variant="destructive" onClick={handleBulkDelete} disabled={isBulkLoading} style={{ borderRadius: "12px" }} className="gap-2 min-w-[120px] transition-all duration-200">
+                        <Button variant="outline" onClick={() => setIsBulkDeleteOpen(false)} disabled={isBulkLoading} className="rounded-xl transition-all duration-200">Hủy</Button>
+                        <Button variant="destructive" onClick={handleBulkDelete} disabled={isBulkLoading} className="gap-2 min-w-[120px] rounded-xl transition-all duration-200">
                             {isBulkLoading ? (
                                 <span className="flex items-center gap-2">
                                     <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
