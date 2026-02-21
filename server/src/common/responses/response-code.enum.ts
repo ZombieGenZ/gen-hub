@@ -33,6 +33,11 @@ export enum ResponseCode {
     // Analytics
     ANALYTICS_TRAFFIC_SUCCESS = 'analytics.traffic_success',
 
+    // Revenue Analytics
+    REVENUE_ANALYTICS_KPI_SUCCESS = 'revenue_analytics.kpi_success',
+    REVENUE_ANALYTICS_CHART_SUCCESS = 'revenue_analytics.chart_success',
+    REVENUE_ANALYTICS_TABLE_SUCCESS = 'revenue_analytics.table_success',
+
     ACCOUNT_GET_PROFILE_SUCCESS = 'account.get_profile_success',
     ACCOUNT_UPDATE_PROFILE_SUCCESS = 'account.update_profile_success',
     ACCOUNT_CHANGE_PASSWORD_SUCCESS = 'account.change_password_success',

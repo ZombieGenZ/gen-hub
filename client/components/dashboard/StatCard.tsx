@@ -2,7 +2,7 @@ import React from "react";
 import { LucideIcon, ArrowUp, ArrowDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type StatCardVariant = "default" | "blue" | "green" | "emerald" | "brand";
+type StatCardVariant = "default" | "blue" | "green" | "emerald" | "brand" | "orange" | "danger";
 
 interface StatCardProps {
     title: string;
@@ -15,6 +15,7 @@ interface StatCardProps {
     description?: string;
     className?: string;
     variant?: StatCardVariant;
+    onClick?: () => void;
 }
 
 const variantStyles: Record<StatCardVariant, {
@@ -58,6 +59,20 @@ const variantStyles: Record<StatCardVariant, {
         iconColor: "text-white",
         textColor: "text-primary",
         borderColor: "border-primary/10",
+    },
+    orange: {
+        bg: "bg-orange-50",
+        iconBg: "bg-orange-500",
+        iconColor: "text-white",
+        textColor: "text-orange-600",
+        borderColor: "border-orange-100",
+    },
+    danger: {
+        bg: "bg-red-50",
+        iconBg: "bg-red-700",
+        iconColor: "text-white",
+        textColor: "text-red-700",
+        borderColor: "border-red-100",
     }
 };
 
@@ -69,16 +84,24 @@ export function StatCard({
     description,
     className,
     variant = "default",
+    onClick,
 }: StatCardProps) {
     const styles = variantStyles[variant] || variantStyles.default;
 
     return (
-        <div className={cn(
-            "p-6 rounded-lg shadow-premium hover:shadow-2xl transition-all duration-300 border-0 bg-white",
-            styles.bg,
-            styles.borderColor,
-            className
-        )}>
+        <div
+            className={cn(
+                "p-6 rounded-lg shadow-premium hover:shadow-2xl transition-all duration-300 border-0 bg-white",
+                styles.bg,
+                styles.borderColor,
+                onClick && "cursor-pointer",
+                className
+            )}
+            onClick={onClick}
+            role={onClick ? "button" : undefined}
+            tabIndex={onClick ? 0 : undefined}
+            onKeyDown={onClick ? (e) => { if (e.key === 'Enter' || e.key === ' ') onClick(); } : undefined}
+        >
             <div className="flex items-start justify-between mb-4">
                 <div>
                     <p className={cn("text-sm font-medium mb-1", variant === 'default' ? "text-slate-500" : styles.textColor, "opacity-80")}>
