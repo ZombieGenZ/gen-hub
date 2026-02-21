@@ -1,11 +1,11 @@
 "use client";
 
-import { StatCard } from "@/components/dashboard/StatCard";
 import { DollarSign, Clock, AlertTriangle, RefreshCw } from "lucide-react";
 import { AreaChart, Area, ResponsiveContainer } from "recharts";
 import { formatCurrencyCompact, calcPercentChange } from "@/lib/format-currency";
 import type { KpiData } from "@/services/revenue-analytics/revenue-analytics.types";
 import { SkeletonKpiCards } from "./SkeletonKpiCards";
+import { cn } from "@/lib/utils";
 
 interface Props {
     data: KpiData | undefined;
@@ -69,69 +69,48 @@ export function RevenueKpiCards({ data, isLoading, onCardClick }: Props) {
                 const colors = SPARKLINE_COLORS[card.variant] ?? SPARKLINE_COLORS.default;
 
                 return (
-                    <div key={card.key} className="flex flex-col">
-                        <StatCard
-                            title={card.title}
-                            value={formatted.display}
-                            icon={card.icon}
-                            variant={card.variant}
-                            trend={{
-                                value: Math.abs(trend),
-                                isPositive: trend >= 0,
-                            }}
-                            description={
-                                card.item.count > 0
-                                    ? `${card.item.count} h\u1EE3p \u0111\u1ED3ng`
-                                    : undefined
-                            }
-                            onClick={
-                                card.clickType
-                                    ? () => onCardClick(card.clickType!)
-                                    : undefined
-                            }
-                            className="flex-1"
-                        />
-
-                        {sparklineData && sparklineData.length > 1 && (
-                            <div className="h-10 mt-1 px-1" title={formatted.exact}>
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <AreaChart
-                                        data={sparklineData}
-                                        margin={{ top: 2, right: 0, bottom: 0, left: 0 }}
-                                    >
-                                        <defs>
-                                            <linearGradient
-                                                id={`gradient-${card.key}`}
-                                                x1="0"
-                                                y1="0"
-                                                x2="0"
-                                                y2="1"
-                                            >
-                                                <stop
-                                                    offset="0%"
-                                                    stopColor={colors.fill}
-                                                    stopOpacity={0.3}
-                                                />
-                                                <stop
-                                                    offset="100%"
-                                                    stopColor={colors.fill}
-                                                    stopOpacity={0.05}
-                                                />
-                                            </linearGradient>
-                                        </defs>
-                                        <Area
-                                            type="monotone"
-                                            dataKey="total"
-                                            stroke={colors.stroke}
-                                            strokeWidth={1.5}
-                                            fill={`url(#gradient-${card.key})`}
-                                            dot={false}
-                                            isAnimationActive={false}
-                                        />
-                                    </AreaChart>
-                                </ResponsiveContainer>
-                            </div>
+                    <div
+                        key={card.key}
+                        onClick={card.clickType ? () => onCardClick(card.clickType!) : undefined}
+                        className={cn(
+                            "bg-card text-card-foreground border border-border rounded-2xl p-6 flex flex-col justify-between gap-4 shadow-sm hover:shadow-md transition-all",
+                            card.clickType && "cursor-pointer hover:bg-muted"
                         )}
+                    >
+                        <div className="flex justify-between items-center mb-1">
+                            <h3 className="text-muted-foreground text-sm font-medium">{card.title}</h3>
+                            <card.icon className="w-5 h-5 text-muted-foreground opacity-80" />
+                        </div>
+                        <div className="flex items-end justify-between">
+                            <div className="flex flex-col gap-1.5">
+                                <div className="text-2xl xl:text-3xl font-bold tracking-tight">{formatted.display}</div>
+                                <div className={cn("text-sm font-semibold flex items-center gap-1", trend >= 0 ? "text-emerald-500" : "text-rose-500")}>
+                                    <span>{trend > 0 ? "+" : ""}{trend}%</span>
+                                    {card.item.count > 0 && <span className="text-muted-foreground font-normal">({card.item.count})</span>}
+                                </div>
+                            </div>
+
+                            {sparklineData && sparklineData.length > 1 && (
+                                <div className="w-[90px] h-[45px] mb-1" title={formatted.exact}>
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <AreaChart
+                                            data={sparklineData}
+                                            margin={{ top: 2, right: 0, bottom: 2, left: 0 }}
+                                        >
+                                            <Area
+                                                type="monotone"
+                                                dataKey="total"
+                                                stroke={colors.stroke}
+                                                strokeWidth={2}
+                                                fill="transparent"
+                                                dot={false}
+                                                isAnimationActive={false}
+                                            />
+                                        </AreaChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 );
             })}

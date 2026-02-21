@@ -143,15 +143,20 @@ export function ContractStatusBadge({
 export function getContractStatusBanner(status: string): {
     message: string;
     className: string;
+    icon: LucideIcon;
 } {
+    const config = STATUS_MAP[status as ContractStatus] || DEFAULT_CONFIG;
+
     switch (status) {
         case "PENDING":
             return {
+                icon: config.icon,
                 message: "Hợp đồng đang chờ thanh toán",
                 className: "bg-amber-50 text-amber-800 border-b border-amber-200",
             };
         case "ACTIVE":
             return {
+                icon: config.icon,
                 message: "Hợp đồng đang hoạt động",
                 className: "bg-emerald-50 text-emerald-800 border-b border-emerald-200",
             };
@@ -159,31 +164,37 @@ export function getContractStatusBanner(status: string): {
         case "OVERDUE_LEVEL_2":
         case "OVERDUE_LEVEL_3":
             return {
+                icon: config.icon,
                 message: "Hợp đồng đã quá hạn thanh toán",
                 className: "bg-red-50 text-red-800 border-b border-red-200",
             };
         case "SEALED":
             return {
+                icon: config.icon,
                 message: "Kho đã bị niêm phong do không thanh toán",
                 className: "bg-slate-100 text-slate-800 border-b border-slate-300",
             };
         case "LIQUIDATED":
             return {
+                icon: config.icon,
                 message: "Kho đã bị thanh lý",
                 className: "bg-gray-100 text-gray-800 border-b border-gray-300",
             };
         case "CANCELLED":
             return {
+                icon: config.icon,
                 message: "Hợp đồng đã bị hủy",
                 className: "bg-rose-50 text-rose-800 border-b border-rose-200",
             };
         case "COMPLETED":
             return {
+                icon: config.icon,
                 message: "Hợp đồng đã hoàn thành",
                 className: "bg-blue-50 text-blue-800 border-b border-blue-200",
             };
         default:
             return {
+                icon: config.icon,
                 message: "Trạng thái không xác định",
                 className: "bg-gray-50 text-gray-600 border-b border-gray-200",
             };

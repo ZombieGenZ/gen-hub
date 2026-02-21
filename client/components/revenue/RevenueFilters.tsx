@@ -149,7 +149,7 @@ export default function RevenueFilters({
                             onClick={onExport}
                             loading={isExporting}
                             leftIcon={<Download className="w-4 h-4" />}
-                            className="rounded-xl"
+                            className="rounded-full px-4 h-9 bg-white hover:bg-slate-50 border-slate-200 text-slate-700 shadow-sm"
                         >
                             Xuất báo cáo
                         </Button>
@@ -159,7 +159,7 @@ export default function RevenueFilters({
                             onClick={onRefresh}
                             loading={isRefreshing}
                             leftIcon={<RefreshCw className="w-4 h-4" />}
-                            className="rounded-xl"
+                            className="rounded-full px-4 h-9 bg-white hover:bg-slate-50 border-slate-200 text-slate-700 shadow-sm"
                         >
                             Tải lại
                         </Button>

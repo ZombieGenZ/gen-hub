@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import { revenueAnalyticsService } from "@/services/revenue-analytics/revenue-analytics.service";
@@ -49,12 +50,12 @@ export function RevenueExportDialog({ filters, open, onOpenChange }: RevenueExpo
             const url = URL.createObjectURL(blob);
             const a = document.createElement("a");
             a.href = url;
-            a.download = `bao-cao-doanh-thu-${Date.now()}.${format === "pdf" ? "pdf" : "xlsx"}`;
+            a.download = `bao-cao-doanh-thu-${Date.now()}.${format === "pdf" ? "pdf" : "csv"}`;
             a.click();
             URL.revokeObjectURL(url);
             onOpenChange(false);
         } catch {
-            // Toast error handled by parent
+            toast.error("Xuất báo cáo thất bại. Vui lòng thử lại.");
         } finally {
             setIsExporting(false);
         }
