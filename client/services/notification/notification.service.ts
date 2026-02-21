@@ -5,15 +5,36 @@ import {
     UnreadCountResponse, 
     NotificationQueryParams,
     SendNotificationRequest,
-    SendBulkNotificationRequest 
+    SendBulkNotificationRequest, 
+    GlobalNotification
 } from '@/types/notification/notification.type';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
+/**
+ * Service quản lý các thao tác liên quan đến thông báo của người dùng
+ * Bao gồm lấy danh sách, đánh dấu đã đọc, gửi thông báo và các thao tác khác
+ */
 export class NotificationService {
-
     /**
-     * Lấy danh sách thông báo người dùng
+     * Lấy danh sách thông báo của người dùng hiện tại
+     * @param {string} access_token - Token xác thực người dùng
+     * @param {NotificationQueryParams} [params] - Tham số lọc và phân trang
+     * @param {number} [params.limit] - Số lượng thông báo mỗi trang
+     * @param {number} [params.offset] - Vị trí bắt đầu lấy dữ liệu
+     * @param {string} [params.keywords] - Từ khóa tìm kiếm
+     * @param {boolean} [params.is_read] - Lọc theo trạng thái đã đọc/chưa đọc
+     * @param {string} [params.type] - Loại thông báo
+     * @returns {Promise<NotificationResponse>} Danh sách thông báo và thông tin phân trang
+     * @throws {Error} 
+     *    - 401: Không có quyền truy cập
+     *    - 500: Lỗi server
+     * @example
+     * // Lấy 10 thông báo đầu tiên chưa đọc
+     * const notifications = await notificationService.getNotifications(token, {
+     *   limit: 10,
+     *   is_read: false
+     * });
      */
     async getNotifications(
         access_token: string, 
@@ -50,7 +71,14 @@ export class NotificationService {
     }
 
     /**
-     * Đếm số thông báo chưa đọc
+     * Đếm số lượng thông báo chưa đọc của người dùng hiện tại
+     * @param {string} access_token - Token xác thực người dùng
+     * @returns {Promise<number>} Số lượng thông báo chưa đọc
+     * @throws {Error}
+     *    - 401: Không có quyền truy cập
+     *    - 500: Lỗi server
+     * @example
+     * const unreadCount = await notificationService.getUnreadCount(token);
      */
     async getUnreadCount(access_token: string): Promise<number> {
         try {
@@ -74,7 +102,16 @@ export class NotificationService {
     }
 
     /**
-     * Đánh dấu một thông báo là đã đọc
+     * Đánh dấu một thông báo cụ thể là đã đọc
+     * @param {string} access_token - Token xác thực người dùng
+     * @param {string} notificationId - ID của thông báo cần đánh dấu
+     * @returns {Promise<UserNotification>} Thông tin thông báo đã được cập nhật
+     * @throws {Error}
+     *    - 401: Không có quyền thực hiện
+     *    - 404: Không tìm thấy thông báo
+     *    - 500: Lỗi server
+     * @example
+     * await notificationService.markAsRead(token, 'notification-123');
      */
     async markAsRead(access_token: string, notificationId: string): Promise<UserNotification> {
         try {
@@ -99,7 +136,14 @@ export class NotificationService {
     }
 
     /**
-     * Đánh dấu tất cả thông báo là đã đọc
+     * Đánh dấu tất cả thông báo của người dùng là đã đọc
+     * @param {string} access_token - Token xác thực người dùng
+     * @returns {Promise<number>} Số lượng thông báo đã được đánh dấu
+     * @throws {Error}
+     *    - 401: Không có quyền thực hiện
+     *    - 500: Lỗi server
+     * @example
+     * const updatedCount = await notificationService.markAllAsRead(token);
      */
     async markAllAsRead(access_token: string): Promise<number> {
         try {
@@ -124,7 +168,27 @@ export class NotificationService {
     }
 
     /**
-     * [Admin] Gửi thông báo cho một user
+     * [Admin] Gửi thông báo đến một người dùng cụ thể
+     * @param {string} access_token - Token xác thực quản trị viên
+     * @param {SendNotificationRequest} data - Dữ liệu thông báo
+     * @param {string} data.userId - ID người dùng nhận thông báo
+     * @param {string} data.title - Tiêu đề thông báo
+     * @param {string} data.content - Nội dung thông báo
+     * @param {string} [data.type] - Loại thông báo (tùy chọn)
+     * @param {object} [data.metadata] - Dữ liệu bổ sung (tùy chọn)
+     * @returns {Promise<UserNotification>} Thông tin thông báo đã gửi
+     * @throws {Error}
+     *    - 400: Dữ liệu không hợp lệ
+     *    - 401: Không có quyền thực hiện
+     *    - 404: Không tìm thấy người dùng
+     *    - 500: Lỗi server
+     * @example
+     * await notificationService.sendNotification(token, {
+     *   userId: 'user-123',
+     *   title: 'Thông báo quan trọng',
+     *   content: 'Đây là nội dung thông báo',
+     *   type: 'system'
+     * });
      */
     async sendNotification(
         access_token: string, 
@@ -153,7 +217,26 @@ export class NotificationService {
     }
 
     /**
-     * [Admin] Gửi thông báo hàng loạt
+     * [Admin] Gửi thông báo đến nhiều người dùng cùng lúc
+     * @param {string} access_token - Token xác thực quản trị viên
+     * @param {SendBulkNotificationRequest} data - Dữ liệu gửi hàng loạt
+     * @param {string[]} data.userIds - Danh sách ID người dùng nhận thông báo
+     * @param {string} data.title - Tiêu đề thông báo
+     * @param {string} data.content - Nội dung thông báo
+     * @param {string} [data.type] - Loại thông báo (tùy chọn)
+     * @param {object} [data.metadata] - Dữ liệu bổ sung (tùy chọn)
+     * @returns {Promise<{count: number}>} Số lượng thông báo đã gửi thành công
+     * @throws {Error}
+     *    - 400: Dữ liệu không hợp lệ
+     *    - 401: Không có quyền thực hiện
+     *    - 500: Lỗi server
+     * @example
+     * await notificationService.sendBulkNotification(token, {
+     *   userIds: ['user-1', 'user-2', 'user-3'],
+     *   title: 'Thông báo chung',
+     *   content: 'Nội dung thông báo cho nhiều người',
+     *   type: 'announcement'
+     * });
      */
     async sendBulkNotification(
         access_token: string, 
@@ -182,7 +265,26 @@ export class NotificationService {
     }
 
     /**
-     * [Admin] Lấy thông báo của user bất kỳ
+     * [Admin] Lấy danh sách thông báo của một người dùng bất kỳ
+     * @param {string} access_token - Token xác thực quản trị viên
+     * @param {string} userId - ID của người dùng cần lấy thông báo
+     * @param {NotificationQueryParams} [params] - Tham số lọc và phân trang
+     * @param {number} [params.limit] - Số lượng thông báo mỗi trang
+     * @param {number} [params.offset] - Vị trí bắt đầu lấy dữ liệu
+     * @param {string} [params.keywords] - Từ khóa tìm kiếm
+     * @param {boolean} [params.is_read] - Lọc theo trạng thái đã đọc/chưa đọc
+     * @param {string} [params.type] - Loại thông báo
+     * @returns {Promise<NotificationResponse>} Danh sách thông báo và thông tin phân trang
+     * @throws {Error}
+     *    - 401: Không có quyền thực hiện
+     *    - 404: Không tìm thấy người dùng
+     *    - 500: Lỗi server
+     * @example
+     * const notifications = await notificationService.getUserNotifications(
+     *   adminToken,
+     *   'user-123',
+     *   { limit: 20, is_read: false }
+     * );
      */
     async getUserNotifications(
         access_token: string, 
@@ -260,11 +362,14 @@ export class NotificationService {
 
     /**
      * [Admin] Tạo thông báo toàn hệ thống
+     * @param access_token Token truy cập
+     * @param data Dữ liệu thông báo
+     * @returns Thông báo đã tạo
      */
     async createGlobalNotification(
         access_token: string,
         data: { title: string; content: string; type?: string; starts_at?: string }
-    ): Promise<any> {
+    ): Promise<GlobalNotification> {
         try {
             const response = await fetch(`${API_URL}/global-notifications`, {
                 method: 'POST',
@@ -289,6 +394,9 @@ export class NotificationService {
 
     /**
      * [Admin] Xóa thông báo toàn hệ thống
+     * @param access_token Token truy cập
+     * @param id ID thông báo
+     * @returns Kết quả xóa
      */
     async deleteGlobalNotification(
         access_token: string,
@@ -316,6 +424,9 @@ export class NotificationService {
 
     /**
      * [Admin] Xóa nhiều thông báo toàn hệ thống
+     * @param access_token Token truy cập
+     * @param ids IDs thông báo
+     * @returns Kết quả xóa
      */
     async deleteMultipleGlobalNotifications(
         access_token: string,

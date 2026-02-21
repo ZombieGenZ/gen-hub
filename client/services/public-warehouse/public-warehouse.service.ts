@@ -38,6 +38,8 @@ export interface PublicWarehouseListParams {
 export class PublicWarehouseService {
     /**
      * Lấy danh sách kho (Public - không cần auth)
+     * @param params Tham số lọc
+     * @returns Danh sách kho
      */
     async getPublicWarehouses(params: PublicWarehouseListParams = {}) {
         const query = new URLSearchParams();
@@ -75,6 +77,8 @@ export class PublicWarehouseService {
 
     /**
      * Lấy chi tiết kho (Public - không cần auth)
+     * @param id ID kho
+     * @returns Chi tiết kho
      */
     async getPublicWarehouseById(id: string) {
         const response = await fetch(`${API}/warehouse-templates/${id}`, {
@@ -95,6 +99,8 @@ export class PublicWarehouseService {
 
     /**
      * Lấy danh sách ảnh kho (Public - không cần auth)
+     * @param id ID kho
+     * @returns Danh sách ảnh kho
      */
     async getWarehouseImages(id: string): Promise<WarehouseImage[]> {
         const response = await fetch(`${API}/warehouse-templates/${id}/images`, {

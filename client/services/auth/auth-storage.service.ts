@@ -12,6 +12,7 @@ class AuthStorageService {
   private readonly EMAIL_VERIFIED = process.env.NEXT_PUBLIC_EMAIL_VERIFIED
   private readonly REQUIES_2FA = process.env.NEXT_PUBLIC_REQUIES_2FA
   private readonly TEMP_TOKEN = process.env.NEXT_PUBLIC_TEMP_TOKEN
+  private readonly USER_ID = process.env.NEXT_PUBLIC_USER_ID
 
   private constructor() {}
 
@@ -72,6 +73,14 @@ class AuthStorageService {
   }
 
   /**
+   * Lấy ID người dùng
+   * @returns ID người dùng hoặc null
+   */
+  getUserID(): string | null {
+    return getCookie(this.USER_ID!);
+  }
+
+  /**
    * Đặt trạng thái yêu cầu 2FA
    * @param is_2fa Trạng thái 2FA
    */
@@ -111,6 +120,14 @@ class AuthStorageService {
    */
   setEmailVerified(is_verified: string) {
     setCookie(this.EMAIL_VERIFIED!, is_verified, 365)
+  }
+
+  /**
+   * Đặt ID người dùng
+   * @param user_id ID người dùng
+   */
+  setUserID(user_id: string) {
+    setCookie(this.USER_ID!, user_id, 365)
   }
 
   /**
@@ -189,6 +206,8 @@ class AuthStorageService {
       }
       
       const data = await response.json();
+      console.log('User profile data:', data);
+      await this.setUserID(data.data.user.id); // Lưu ID người dùng vào cookie
       return data.data;
     } catch (error) {
       console.error('Failed to fetch user profile:', error);

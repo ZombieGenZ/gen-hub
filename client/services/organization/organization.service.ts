@@ -3,6 +3,13 @@ import { OrganizationCreateRequest } from '../../types/organization/organization
 const API = process.env.NEXT_PUBLIC_API_URL;
 
 export class OrganizationService {
+
+    /**
+     * Lấy danh sách tổ chức với các tham số lọc
+     * @param token 
+     * @param params 
+     * @returns 
+     */
     async getOrganizations(token: string, params: {
         keywords?: string;
         is_active?: boolean;
@@ -31,14 +38,19 @@ export class OrganizationService {
             }
 
             const data = await response.json();
-            return data;
+            return data.data; // Assuming API response has a 'data' field containing the list of organizations
         }
         catch(err) {
             console.error("Failed to fetch organizations", err);
         }
     }
 
-    // Lấy thông tin organization theo ID
+    /**
+     * Lấy thông tin organization theo ID
+     * @param token 
+     * @param id 
+     * @returns 
+     */
     async getOrganizationById(token: string, id: string) {
         try {
             const response = await fetch(`${API}/organizations/${id}`, {
@@ -53,14 +65,19 @@ export class OrganizationService {
                 throw new Error(errorData.message || 'Failed to fetch organization by id');
             }
             const data = await response.json();
-            return data;
+            return data.data; // Assuming API response has a 'data' field containing the organization details
         }
         catch(err) {
             console.error("Failed to fetch organization by id", err);
         }
     }
 
-    // Tạo tổ chức mới
+    /**
+     * Tạo tổ chức mới
+     * @param token 
+     * @param data 
+     * @returns 
+     */
     async createOrganization(token: string, data: OrganizationCreateRequest) {
         try {
             const response = await fetch(`${API}/organizations`, {
@@ -85,7 +102,13 @@ export class OrganizationService {
         }
     }
 
-    // Cập nhật thông tin tổ chức
+    /**
+     * Cập nhật thông tin tổ chức
+     * @param token 
+     * @param id 
+     * @param data 
+     * @returns 
+     */
     async updateOrganization(token: string, id: string, data: {
         name?: string;
         international_name?: string;

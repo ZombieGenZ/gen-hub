@@ -110,6 +110,7 @@ export function ProfileDialog({ open = true, onOpenChange }: ProfileDialogProps 
 
         const token = authStorage.getAccessToken()
         const refreshToken = authStorage.getRefreshToken()
+        const userID = authStorage.getUserID()
 
         if (!token || !refreshToken) {
           setError('Vui lòng đăng nhập')
@@ -130,12 +131,14 @@ export function ProfileDialog({ open = true, onOpenChange }: ProfileDialogProps 
         setNotifications([...(getGlobalNotifications?.items || []), ...userNotifs]);
 
         const listOrganization = await organizationService.getOrganizations(token);
-        console.log(listOrganization);
+        console.log(listOrganization.items);
 
+        const organization = listOrganization.items.find((o: Organization) => o.owner.id == userID);
         // Fetch organization if user has one
-        if (data?.organization_id) {
+        if (organization) {
           try {
-            const org = await organizationService.getOrganizationById(token, data.organization_id);
+            const org = await organizationService.getOrganizationById(token, organization.id);
+            console.log(org)
             setOrganizationData(org);
           } catch (error) {
             console.error("Failed to fetch organization", error);
@@ -149,7 +152,7 @@ export function ProfileDialog({ open = true, onOpenChange }: ProfileDialogProps 
       }
     }
 
-    fetchUser()
+    fetchUser();
   }, [router, open])
 
   const handleUpdateProfile = async (e: React.FormEvent) => {

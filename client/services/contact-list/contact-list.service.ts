@@ -5,6 +5,9 @@ const API = process.env.NEXT_PUBLIC_API_URL;
 export class ContactListService {
     /**
      * Get all contact list entries with pagination and filtering
+     * @param access_token Token xác thực
+     * @param query Các tham số lọc
+     * @returns Danh sách entries
      */
     async getAll(access_token: string, query: QueryContactListDto = {}) {
         try {
@@ -38,6 +41,9 @@ export class ContactListService {
 
     /**
      * Get contact list entry by ID
+     * @param access_token Token xác thực
+     * @param id ID entry
+     * @returns Entry
      */
     async getById(access_token: string, id: string) {
         try {
@@ -61,6 +67,9 @@ export class ContactListService {
 
     /**
      * Create new contact list entry
+     * @param access_token Token xác thực
+     * @param data Dữ liệu entry
+     * @returns Entry đã tạo
      */
     async create(access_token: string, data: CreateContactListDto) {
         try {
@@ -89,6 +98,10 @@ export class ContactListService {
 
     /**
      * Update contact list entry
+     * @param access_token Token xác thực
+     * @param id ID entry
+     * @param data Dữ liệu entry
+     * @returns Entry đã cập nhật
      */
     async update(access_token: string, id: string, data: UpdateContactListDto) {
         try {
