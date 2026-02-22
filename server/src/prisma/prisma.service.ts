@@ -35,6 +35,7 @@ import {
   ContactListSeeder,
   CategorySeeder,
   WarehouseManagerRolesSeeder,
+  OrganizationSeeder,
 } from './seeders';
 
 @Injectable()
@@ -354,6 +355,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         new ContactListSeeder(this),
         new CategorySeeder(this),
         new WarehouseManagerRolesSeeder(this),
+        new OrganizationSeeder(this),
       ];
 
       // Set admin ID for data seeders

@@ -8,3 +8,4 @@ export * from './contact.seeder';
 export * from './contact-list.seeder';
 export * from './category.seeder';
 export * from './warehouse-manager-roles.seeder';
+export * from './organization.seeder';

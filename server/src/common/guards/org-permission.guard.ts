@@ -34,7 +34,8 @@ export class OrgPermissionGuard implements CanActivate {
         }
 
         const request = context.switchToHttp().getRequest();
-        const orgId = request.params.orgId;
+        // Support both :orgId (dedicated org routes) and :id (organization controller routes)
+        const orgId = request.params.orgId ?? request.params.id;
 
         if (!orgId) {
             throw new ForbiddenException('Không xác định được tổ chức');

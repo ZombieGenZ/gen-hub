@@ -43,7 +43,8 @@ import {
   ApiAuthResponses,
   ApiValidationErrorResponse,
 } from '../../common/decorators';
-import { PermissionGuard } from '../../common/guards';
+import { OrgPermissionGuard, PermissionGuard } from '../../common/guards';
+import { RequireOrgPermission } from '../../common/decorators/require-org-permission.decorator';
 import {
   CreatedResponse,
   GetResponse,
@@ -316,11 +317,13 @@ export class OrganizationController {
   }
 
   @Post(':id/update-request')
-  @RequirePermission('organization.update_request')
+  @RequirePermission('organization.read')
+  @UseGuards(OrgPermissionGuard)
+  @RequireOrgPermission('organization.update_request.create')
   @ApiOperation({
     summary: 'Gửi yêu cầu cập nhật thông tin tổ chức',
     description:
-      'Gửi yêu cầu cập nhật thông tin tổ chức để admin phê duyệt. Yêu cầu quyền `organization.update_request`.',
+      'Gửi yêu cầu cập nhật thông tin tổ chức để admin phê duyệt. Chỉ chủ sở hữu tổ chức hoặc thành viên có quyền `organization.update_request.create` mới được thực hiện.',
   })
   @ApiParam({ name: 'id', description: 'ID tổ chức (UUID)', type: 'string' })
   @ApiResponse({
