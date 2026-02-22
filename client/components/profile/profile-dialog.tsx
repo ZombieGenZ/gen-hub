@@ -81,6 +81,14 @@ export function ProfileDialog({ open = true, onOpenChange }: ProfileDialogProps 
   // Organization state
   const [organizationData, setOrganizationData] = useState<Organization | null>(null);
   const [isCreatingOrg, setIsCreatingOrg] = useState(false);
+  const [isEditingOrg, setIsEditingOrg] = useState(false);
+  const [editOrgData, setEditOrgData] = useState({
+    representative_email: '',
+    representative_name: '',
+    representative_phone: '',
+    representative_title: '',
+    tax_code: '',
+  });
 
   // Backup code
   const [backupCodes, setBackupCodes] = useState<string[]>([])
@@ -177,6 +185,45 @@ export function ProfileDialog({ open = true, onOpenChange }: ProfileDialogProps 
       setSaving(false)
     }
   }
+
+  const handleUpdateOrganization = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!organizationData) return;
+    setSaving(true);
+    try {
+      const token = authStorage.getAccessToken();
+      if (!token) {
+        showToast('Vui lòng đăng nhập lại', 'error');
+        router.push('/login');
+        return;
+      }
+
+      const response = await organizationService.updateOrganization(token, organizationData.id, editOrgData);
+      if (response) {
+        setOrganizationData({ ...organizationData, ...editOrgData });
+        showToast('Cập nhật thông tin doanh nghiệp thành công', 'success');
+        setIsEditingOrg(false);
+      }
+    } catch (error) {
+      console.error('Error updating organization:', error);
+      showToast('Có lỗi xảy ra khi cập nhật thông tin doanh nghiệp', 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const startEditing = () => {
+    if (organizationData) {
+      setEditOrgData({
+        representative_email: organizationData.representative_email || '',
+        representative_name: organizationData.representative_name || '',
+        representative_phone: organizationData.representative_phone || '',
+        representative_title: organizationData.representative_title || '',
+        tax_code: organizationData.tax_code || '',
+      });
+      setIsEditingOrg(true);
+    }
+  };
 
   // Add this handler function
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -409,7 +456,7 @@ export function ProfileDialog({ open = true, onOpenChange }: ProfileDialogProps 
               <Button
                 onClick={handleEnable2FA}
                 disabled={enabling2FA}
-                className="bg-brand dark:hover:bg-green-900/20 hover:bg-brand/90 border-green-200 dark:border-green-900/50 text-green-600 dark:text-green-400 hover:bg-green-50"
+                className="bg-brand dark:hover:bg-green-900/20 hover:bg-brand/90 border-green-200 dark:border-green-900/50 text-green-600 dark:text-green-400"
               >
                 {enabling2FA ? 'Đang bật...' : 'Bật xác thực 2 yếu tố'}
               </Button>
@@ -507,7 +554,7 @@ export function ProfileDialog({ open = true, onOpenChange }: ProfileDialogProps 
           <Button
             onClick={handleGenerateBackupCodes}
             disabled={generatingBackupCodes || showBackupCodes}
-            className="bg-brand hover:bg-brand/90 cursor-pointer border-green-200 dark:border-red-900/50 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20"
+            className="bg-brand hover:bg-brand/90 cursor-pointer border-green-200 dark:border-red-900/50 text-green-600 dark:text-green-400 dark:hover:bg-green-900/20"
           >
             {generatingBackupCodes ? (
               <>
@@ -1153,44 +1200,124 @@ export function ProfileDialog({ open = true, onOpenChange }: ProfileDialogProps 
                     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                       <div className="bg-white dark:bg-slate-900 rounded-xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-slate-200 dark:border-slate-800 p-5 md:p-8 space-y-6">
                         {organizationData ? (
-                          <>
-                            <div className="flex items-start justify-between">
-                              <div>
+                          isEditingOrg ? (
+                            <form onSubmit={handleUpdateOrganization} className="space-y-6">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Mã số thuế</label>
+                                  <Input 
+                                    value={editOrgData.tax_code} 
+                                    onChange={(e) => setEditOrgData({...editOrgData, tax_code: e.target.value})}
+                                    className="h-11 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800"
+                                    placeholder="Nhập mã số thuế"
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Tên người đại diện</label>
+                                  <Input 
+                                    value={editOrgData.representative_name} 
+                                    onChange={(e) => setEditOrgData({...editOrgData, representative_name: e.target.value})}
+                                    className="h-11 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800"
+                                    placeholder="Nhập tên người đại diện"
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Email người đại diện</label>
+                                  <Input 
+                                    value={editOrgData.representative_email} 
+                                    onChange={(e) => setEditOrgData({...editOrgData, representative_email: e.target.value})}
+                                    className="h-11 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800"
+                                    placeholder="Nhập email người đại diện"
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Số điện thoại người đại diện</label>
+                                  <Input 
+                                    value={editOrgData.representative_phone} 
+                                    onChange={(e) => setEditOrgData({...editOrgData, representative_phone: e.target.value})}
+                                    className="h-11 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800"
+                                    placeholder="Nhập số điện thoại"
+                                  />
+                                </div>
+                                <div className="space-y-2 col-span-1 md:col-span-2">
+                                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Chức vụ người đại diện</label>
+                                  <Input 
+                                    value={editOrgData.representative_title} 
+                                    onChange={(e) => setEditOrgData({...editOrgData, representative_title: e.target.value})}
+                                    className="h-11 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800"
+                                    placeholder="Nhập chức vụ (VD: Giám đốc)"
+                                  />
+                                </div>
+                              </div>
+                              <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+                                <Button type="button" variant="outline" onClick={() => setIsEditingOrg(false)} disabled={saving}>
+                                  Hủy bỏ
+                                </Button>
+                                <Button 
+                                  type="submit"
+                                  disabled={saving} 
+                                  className="bg-brand text-white min-w-35">
+                                    {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    Lưu thay đổi
+                                </Button>
+                              </div>
+                            </form>
+                          ) : (
+                            <>
+                              <div className="flex items-center justify-between mb-4">
                                 <h2 className="text-xl font-bold text-slate-900 dark:text-white uppercase">{organizationData.name}</h2>
+                                <Button variant="outline" size="sm" onClick={startEditing} className="gap-2 border-slate-200 dark:border-slate-700">
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+                                  Chỉnh sửa
+                                </Button>
+                              </div>
+                              <div className="flex justify-between items-center mb-6">
                                 <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{organizationData.international_name || "Tên quốc tế: Chưa cập nhật"}</p>
+                                <div className="bg-teal-50 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400 px-3 py-1 rounded-full text-xs font-semibold border border-teal-100 dark:border-teal-800 flex items-center">
+                                  Doanh nghiệp thân thiết
+                                </div>
                               </div>
-                              <div className="bg-teal-50 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400 px-3 py-1 rounded-full text-xs font-semibold border border-teal-100 dark:border-teal-800">
-                                Doanh nghiệp thân thiết
-                              </div>
-                            </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
-                              <div className="space-y-1">
-                                <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Mã số thuế</label>
-                                <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-800 font-mono font-medium text-slate-900 dark:text-white">
-                                  {organizationData.tax_code}
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+                                <div className="space-y-1">
+                                  <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Mã số thuế</label>
+                                  <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-800 font-mono font-medium text-slate-900 dark:text-white">
+                                    {organizationData.tax_code}
+                                  </div>
+                                </div>
+                                <div className="space-y-1">
+                                  <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Người đại diện</label>
+                                  <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-800 font-medium text-slate-900 dark:text-white">
+                                    {organizationData.representative_name || "Chưa cập nhật"}
+                                  </div>
+                                </div>
+                                <div className="space-y-1">
+                                  <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Chức vụ</label>
+                                  <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-800 font-medium text-slate-900 dark:text-white">
+                                    {organizationData.representative_title || "Chưa cập nhật"}
+                                  </div>
+                                </div>
+                                <div className="space-y-1">
+                                  <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Email liên hệ</label>
+                                  <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-800 font-medium text-slate-900 dark:text-white">
+                                    {organizationData.representative_email || "Chưa cập nhật"}
+                                  </div>
+                                </div>
+                                <div className="space-y-1">
+                                  <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Số điện thoại</label>
+                                  <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-800 font-medium text-slate-900 dark:text-white">
+                                    {organizationData.representative_phone || "Chưa cập nhật"}
+                                  </div>
+                                </div>
+                                <div className="col-span-1 md:col-span-2 space-y-1">
+                                  <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Địa chỉ trụ sở</label>
+                                  <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white">
+                                    {organizationData.headquarters_address}
+                                  </div>
                                 </div>
                               </div>
-                              <div className="space-y-1">
-                                <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Người đại diện</label>
-                                <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-800 font-medium text-slate-900 dark:text-white">
-                                  {organizationData.representative_name || "Chưa cập nhật"}
-                                </div>
-                              </div>
-                              <div className="col-span-1 md:col-span-2 space-y-1">
-                                <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Địa chỉ trụ sở</label>
-                                <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white">
-                                  {organizationData.headquarters_address}
-                                </div>
-                              </div>
-                              <div className="col-span-1 md:col-span-2 space-y-1">
-                                <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Địa chỉ xuất hóa đơn</label>
-                                <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white">
-                                  {organizationData.headquarters_address}
-                                </div>
-                              </div>
-                            </div>
-                          </>
+                            </>
+                          )
                         ) : isCreatingOrg ? (
                           <OrganizationCreationForm
                             onSuccess={(newOrg) => {

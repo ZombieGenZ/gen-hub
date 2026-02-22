@@ -121,8 +121,8 @@ export class OrganizationService {
         representative_email?: string;
     }) {
         try {
-            const response = await fetch(`${API}/organizations/${id}`, {
-                method: 'PUT',
+            const response = await fetch(`${API}/organizations/${id}/update-request`, {
+                method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',

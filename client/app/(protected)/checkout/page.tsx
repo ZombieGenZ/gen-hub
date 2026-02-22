@@ -420,14 +420,14 @@ function CheckoutContainer() {
                 const API = process.env.NEXT_PUBLIC_API_URL;
 
                 // Fetch Warehouse (API)
-                let property: Warehouse;
+                let property: Warehouse | null = null;
                 let warehouseAvailable = true;
                 try {
                     const data = await publicWarehouseService.getPublicWarehouseById(warehouseId || '');
                     property = data;
 
                     // Check warehouse availability
-                    if (property.is_rented === true || property.rental_status === 'RENTED' || property.rental_status === 'LOCKED') {
+                    if (property!.is_rented === true || property!.rental_status === 'RENTED' || property!.rental_status === 'LOCKED') {
                         warehouseAvailable = false;
                     }
                 } catch (e) {
