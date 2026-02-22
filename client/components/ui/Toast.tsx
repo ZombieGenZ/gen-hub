@@ -116,6 +116,7 @@ export const Toast: React.FC<ToastProps> = ({
   const Icon = toastIcons[type];
   const [isPaused, setIsPaused] = useState(false);
   const [progress, setProgress] = useState(100);
+  // eslint-disable-next-line react-hooks/purity
   const startTimeRef = useRef(Date.now());
   const remainingTimeRef = useRef(duration);
 

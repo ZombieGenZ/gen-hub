@@ -45,6 +45,10 @@ import {
 import { Calendar, RangeValue } from "@/components/ui/calendar-1";
 import { cn } from "@/lib/utils";
 import { DepositModal } from "@/components/modals/deposit-modal";
+import { OrganizationService } from "@/services/organization/organization.service";
+import { Organization } from "@/types/organization/organization.type";
+import { Toast } from "@/components/ui/Toast";
+import { useRouter } from "next/navigation";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -82,11 +86,14 @@ const formatCurrency = (val: number): string =>
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
+const organizationService = new OrganizationService();
+
 export default function FinancePage() {
     const [balance, setBalance] = useState<OrganizationBalance | null>(null);
     const [transactions, setTransactions] = useState<OrganizationBalanceTransaction[]>([]);
     const [loading, setLoading] = useState(true);
     const [txLoading, setTxLoading] = useState(false);
+    const router = useRouter();
 
     const [isDepositOpen, setIsDepositOpen] = useState(false);
 
@@ -107,15 +114,30 @@ export default function FinancePage() {
     // ── Init user ──────────────────────────────────────────────────────────────
     useEffect(() => {
         const initUser = async () => {
-            const user = await authStorage.getUser();
-            if (user?.organization_id) {
-                setOrgId(user.organization_id);
+            const userID = await authStorage.getUserID();
+            const token = authStorage.getAccessToken();
+            
+            if (!userID || !token) {
+                setLoading(false);
+                // Toast({
+                //     message: "Vui lòng đăng nhập lại để tiếp tục.",
+                //     type: "error",
+                // });
+                router.push("/login");
+                return;
+            }
+
+            const listOrgs = await organizationService.getOrganizations(userID!);
+            const organization = listOrgs.items.find((o: Organization) => o.owner.id == userID);
+            if (organization) {
+                const org = await organizationService.getOrganizationById(token, organization.id);
+                setOrgId(org.id);
             } else {
                 setLoading(false);
             }
         };
         initUser();
-    }, []);
+    }, [router]);
 
     // ── Data fetchers ──────────────────────────────────────────────────────────
 
