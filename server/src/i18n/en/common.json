@@ -9,7 +9,7 @@
     "rate_limit": "Too many requests. Please try again later",
     "jwt_expired": "Token has expired",
     "jwt_invalid": "Invalid token",
-    "jwt_malformed": "Malformed token",
+    "jwt_malformed": "Token is not in the correct format",
     "jwt_no_token": "No authentication token provided",
     "jwt_invalid_signature": "Invalid token signature"
   },
