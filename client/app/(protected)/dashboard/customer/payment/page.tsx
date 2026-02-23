@@ -47,7 +47,6 @@ import { cn } from "@/lib/utils";
 import { DepositModal } from "@/components/modals/deposit-modal";
 import { OrganizationService } from "@/services/organization/organization.service";
 import { Organization } from "@/types/organization/organization.type";
-import { Toast } from "@/components/ui/Toast";
 import { useRouter } from "next/navigation";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -114,7 +113,7 @@ export default function FinancePage() {
     // ── Init user ──────────────────────────────────────────────────────────────
     useEffect(() => {
         const initUser = async () => {
-            const userID = await authStorage.getUserID();
+            const userID = authStorage.getUserID();
             const token = authStorage.getAccessToken();
             
             if (!userID || !token) {
@@ -128,6 +127,7 @@ export default function FinancePage() {
             }
 
             const listOrgs = await organizationService.getOrganizations(userID!);
+            console.log("User's organizations:", listOrgs);
             const organization = listOrgs.items.find((o: Organization) => o.owner.id == userID);
             if (organization) {
                 const org = await organizationService.getOrganizationById(token, organization.id);
@@ -260,7 +260,7 @@ export default function FinancePage() {
     // ── Empty org state ───────────────────────────────────────────────────────
     if (!loading && !orgId) {
         return (
-            <div className="flex flex-col items-center justify-center py-[72px] text-center gap-4">
+            <div className="flex flex-col items-center justify-center py-18 text-center gap-4">
                 <Wallet className="w-10 h-10 text-muted-foreground/40" />
                 <p className="text-muted-foreground">Bạn chưa thuộc về tổ chức nào.</p>
             </div>
@@ -387,7 +387,7 @@ export default function FinancePage() {
                                 </button>
                             )}
                         </div>
-                        <div className="w-full lg:w-[180px]">
+                        <div className="w-full lg:w-45">
                             <Select value={filterType} onValueChange={(v) => setFilterType(v as FilterType)}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="Loại giao dịch" />
@@ -402,7 +402,7 @@ export default function FinancePage() {
                                 </SelectContent>
                             </Select>
                         </div>
-                        <div className="w-full lg:w-[180px]">
+                        <div className="w-full lg:w-45">
                             <Select value={filterStatus} onValueChange={(v) => setFilterStatus(v as FilterStatus)}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="Trạng thái" />
@@ -446,7 +446,7 @@ export default function FinancePage() {
                             ))}
                         </div>
                     ) : transactions.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-[48px] gap-4 text-center">
+                        <div className="flex flex-col items-center justify-center py-12 gap-4 text-center">
                             <History className="w-10 h-10 text-muted-foreground/30" />
                             <p className="font-medium text-muted-foreground">Chưa có giao dịch nào</p>
                             <p className="text-sm text-muted-foreground/70">Các giao dịch nạp tiền và thanh toán sẽ xuất hiện ở đây.</p>
@@ -457,13 +457,13 @@ export default function FinancePage() {
                                 <Table>
                                     <TableHeader>
                                         <TableRow className="bg-muted/30 hover:bg-muted/30">
-                                            <TableHead className="w-[110px]">Mã chứng từ</TableHead>
-                                            <TableHead className="w-[120px]">Loại</TableHead>
+                                            <TableHead className="w-27.5">Mã chứng từ</TableHead>
+                                            <TableHead className="w-30">Loại</TableHead>
                                             <TableHead className="text-right">Số tiền</TableHead>
                                             <TableHead className="text-right">Số dư trước</TableHead>
                                             <TableHead className="text-right">Số dư sau</TableHead>
                                             <TableHead>Mô tả</TableHead>
-                                            <TableHead className="w-[130px] text-right">Thời gian</TableHead>
+                                            <TableHead className="w-32.5 text-right">Thời gian</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -495,7 +495,7 @@ export default function FinancePage() {
                                                     <TableCell className="text-right text-muted-foreground text-sm tabular-nums">
                                                         {formatCurrency(tx.balance_after)}
                                                     </TableCell>
-                                                    <TableCell className="max-w-[200px]">
+                                                    <TableCell className="max-w-50">
                                                         <span className="truncate block text-sm" title={tx.description}>
                                                             {tx.description || <span className="text-muted-foreground/50 italic">—</span>}
                                                         </span>

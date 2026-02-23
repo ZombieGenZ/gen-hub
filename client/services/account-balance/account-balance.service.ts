@@ -32,7 +32,7 @@ export class AccountBalanceService {
      * @returns Thông tin số dư tổ chức
      */
     async getOrganizationBalance(token: string, orgId: string): Promise<OrganizationBalance> {
-        const response = await fetch(`${API}/organizations/${orgId}/balance`, {
+        const response = await fetch(`${API}/admin/organization-balances/${orgId}`, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,
