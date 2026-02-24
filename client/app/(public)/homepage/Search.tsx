@@ -52,7 +52,7 @@ export function PrimeNestSearch() {
             filters.push({ id: 'area', name: 'Diện tích', value: `${areaRange[0]} - ${areaRange[1]} m²` });
         }
         selectedTypes.forEach(type => {
-            const label = type === 'cold' ? 'Kho Mát' : type === 'shared' ? 'Fulfillment' : 'Kho Thường';
+            const label = type === 'shared' ? 'Fulfillment' : 'Kho Thường';
             filters.push({ id: `type-${type}`, name: 'Loại', value: label });
         });
         selectedCities.forEach(city => {
@@ -130,10 +130,9 @@ export function PrimeNestSearch() {
         // 4. Advanced Filters (Type & City)
         if (selectedTypes.length > 0) {
             result = result.filter(p => {
-                const isCold = selectedTypes.includes('cold') && p.is_cold_storage;
                 const isShared = selectedTypes.includes('shared') && p.is_shared_warehouse;
-                const isStandard = selectedTypes.includes('standard') && !p.is_cold_storage && !p.is_shared_warehouse;
-                return isCold || isShared || isStandard;
+                const isStandard = selectedTypes.includes('standard') && !p.is_shared_warehouse;
+                return isShared || isStandard;
             });
         }
 
@@ -141,13 +140,11 @@ export function PrimeNestSearch() {
             result = result.filter(p => selectedCities.some(city => p.province_name?.includes(city)));
         }
 
-        // 4. Advanced Filters (Type & City)
         if (selectedTypes.length > 0) {
             result = result.filter(p => {
-                const isCold = selectedTypes.includes('cold') && p.is_cold_storage;
                 const isShared = selectedTypes.includes('shared') && p.is_shared_warehouse;
-                const isStandard = selectedTypes.includes('standard') && !p.is_cold_storage && !p.is_shared_warehouse;
-                return isCold || isShared || isStandard;
+                const isStandard = selectedTypes.includes('standard') && !p.is_shared_warehouse;
+                return isShared || isStandard;
             });
         }
 
@@ -186,13 +183,11 @@ export function PrimeNestSearch() {
         // Area Filter (Range)
         result = result.filter((p: Property) => p.area >= areaRange[0] && p.area <= areaRange[1]);
 
-        // Advanced Filters (Type & City) - Apply to Map too
         if (selectedTypes.length > 0) {
             result = result.filter(p => {
-                const isCold = selectedTypes.includes('cold') && p.is_cold_storage;
                 const isShared = selectedTypes.includes('shared') && p.is_shared_warehouse;
-                const isStandard = selectedTypes.includes('standard') && !p.is_cold_storage && !p.is_shared_warehouse;
-                return isCold || isShared || isStandard;
+                const isStandard = selectedTypes.includes('standard') && !p.is_shared_warehouse;
+                return isShared || isStandard;
             });
         }
         if (selectedCities.length > 0) {
@@ -350,7 +345,6 @@ export function PrimeNestSearch() {
                                                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                                         {[
                                                             { id: 'standard', label: 'Kho Thường', icon: Package },
-                                                            { id: 'cold', label: 'Kho Mát / Lạnh', icon: Snowflake },
                                                             { id: 'shared', label: 'Fulfillment', icon: Truck },
                                                         ].map((type) => {
                                                             const isSelected = selectedTypes.includes(type.id);

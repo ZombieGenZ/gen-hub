@@ -111,8 +111,8 @@ export default function WarehouseDetailPage() {
                             onError={() => setImageError(true)}
                         />
                         <div className="absolute top-4 left-4">
-                            <Badge className={warehouse.is_cold_storage ? "bg-blue-500" : "bg-orange-500"}>
-                                {warehouse.is_cold_storage ? "Kho lạnh" : "Kho thường"}
+                            <Badge className="bg-orange-500">
+                                Kho thường
                             </Badge>
                         </div>
                     </div>
@@ -145,15 +145,7 @@ export default function WarehouseDetailPage() {
                                     </div>
                                     <p className="font-semibold text-lg">{warehouse.total_weight_capacity} tấn</p>
                                 </div>
-                                {warehouse.is_cold_storage && (
-                                    <div className="p-4 bg-muted/30 rounded-xl border border-border">
-                                        <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                                            <Thermometer className="w-4 h-4" />
-                                            <span className="text-sm">Nhiệt độ</span>
-                                        </div>
-                                        <p className="font-semibold text-lg">{warehouse.min_temperature}°C - {warehouse.max_temperature}°C</p>
-                                    </div>
-                                )}
+
                             </div>
                         </TabsContent>
 

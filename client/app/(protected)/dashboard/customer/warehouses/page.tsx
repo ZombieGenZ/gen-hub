@@ -124,7 +124,6 @@ export default function WarehouseListPage() {
                         <SelectContent>
                             <SelectItem value="all">Tất cả loại kho</SelectItem>
                             <SelectItem value="standard">Kho thường</SelectItem>
-                            <SelectItem value="cold">Kho lạnh/mát</SelectItem>
                         </SelectContent>
                     </Select>
                     <Button variant="outline" className="gap-2">
@@ -161,11 +160,7 @@ export default function WarehouseListPage() {
                                 />
                                 <div className="absolute top-3 left-3">
                                     <Badge variant="secondary" className="bg-background/90 backdrop-blur text-foreground shadow-sm">
-                                        {warehouse.is_cold_storage ? (
-                                            <span className="flex items-center gap-1"><Snowflake className="w-3 h-3 text-blue-500" /> Kho lạnh</span>
-                                        ) : (
-                                            <span className="flex items-center gap-1"><Box className="w-3 h-3 text-orange-500" /> Kho thường</span>
-                                        )}
+                                        <span className="flex items-center gap-1"><Box className="w-3 h-3 text-orange-500" /> Kho thường</span>
                                     </Badge>
                                 </div>
                             </div>

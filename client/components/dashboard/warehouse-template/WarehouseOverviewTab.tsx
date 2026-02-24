@@ -252,13 +252,7 @@ export function WarehouseOverviewTab({ data, onChange }: WarehouseOverviewTabPro
                                 onCheckedChange={(v) => handleChange("is_active", v)}
                             />
                         </div>
-                        <div className="flex items-center justify-between">
-                            <Label className="font-normal">Kho lạnh</Label>
-                            <Switch
-                                checked={!!data.is_cold_storage}
-                                onCheckedChange={(v) => handleChange("is_cold_storage", v)}
-                            />
-                        </div>
+
                         <div className="flex items-center justify-between">
                             <Label className="font-normal">Kho chia sẻ</Label>
                             <Switch
@@ -269,53 +263,7 @@ export function WarehouseOverviewTab({ data, onChange }: WarehouseOverviewTabPro
                     </CardContent>
                 </Card>
 
-                {/* Environmental — Grouped Range Inputs */}
-                <Card className="border-0 shadow-premium" style={{ borderRadius: "24px" }}>
-                    <CardHeader>
-                        <CardTitle className="text-lg">Môi trường</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        {/* Temperature Range */}
-                        <div className="space-y-2">
-                            <Label className="text-sm font-medium">Nhiệt độ</Label>
-                            <div className="flex items-center gap-2">
-                                <FormattedNumberInput
-                                    value={data.min_temperature}
-                                    onChange={(v) => handleChange("min_temperature", v)}
-                                    suffix="°C"
-                                    placeholder="Min"
-                                />
-                                <ArrowRightIcon className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                                <FormattedNumberInput
-                                    value={data.max_temperature}
-                                    onChange={(v) => handleChange("max_temperature", v)}
-                                    suffix="°C"
-                                    placeholder="Max"
-                                />
-                            </div>
-                        </div>
 
-                        {/* Humidity Range */}
-                        <div className="space-y-2">
-                            <Label className="text-sm font-medium">Độ ẩm</Label>
-                            <div className="flex items-center gap-2">
-                                <FormattedNumberInput
-                                    value={data.min_humidity}
-                                    onChange={(v) => handleChange("min_humidity", v)}
-                                    suffix="%"
-                                    placeholder="Min"
-                                />
-                                <ArrowRightIcon className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                                <FormattedNumberInput
-                                    value={data.max_humidity}
-                                    onChange={(v) => handleChange("max_humidity", v)}
-                                    suffix="%"
-                                    placeholder="Max"
-                                />
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
 
                 <Card className="border-0 shadow-premium" style={{ borderRadius: "24px" }}>
                     <CardHeader>

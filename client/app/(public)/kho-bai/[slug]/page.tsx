@@ -293,45 +293,7 @@ export default function WarehouseDynamicPage() {
                                     </ul>
                                 </div>
 
-                                {/* Climate Control Card - only for cold storage */}
-                                {property.is_cold_storage && (
-                                    <div className="p-4 rounded-xl bg-sky-50 dark:bg-sky-900/20 border border-sky-100 dark:border-sky-800 md:col-span-2">
-                                        <h4 className="font-semibold mb-3 flex items-center gap-2 text-sky-700 dark:text-sky-300">
-                                            <SunIcon className="w-4 h-4 text-sky-500" /> Nhiệt độ & Độ ẩm
-                                        </h4>
-                                        <ul className="space-y-2 text-sm text-slate-600 dark:text-slate-400">
-                                            {(property.min_temperature != null || property.max_temperature != null) && (
-                                                <li className="flex justify-between">
-                                                    <span>Nhiệt độ:</span>
-                                                    <span className="font-medium text-slate-900 dark:text-white">
-                                                        {property.min_temperature != null && property.max_temperature != null
-                                                            ? `${property.min_temperature}°C ~ ${property.max_temperature}°C`
-                                                            : property.min_temperature != null
-                                                                ? `Từ ${property.min_temperature}°C`
-                                                                : `Đến ${property.max_temperature}°C`
-                                                        }
-                                                    </span>
-                                                </li>
-                                            )}
-                                            {(property.min_humidity != null || property.max_humidity != null) && (
-                                                <li className="flex justify-between">
-                                                    <span>Độ ẩm:</span>
-                                                    <span className="font-medium text-slate-900 dark:text-white">
-                                                        {property.min_humidity != null && property.max_humidity != null
-                                                            ? `${property.min_humidity}% ~ ${property.max_humidity}%`
-                                                            : property.min_humidity != null
-                                                                ? `Từ ${property.min_humidity}%`
-                                                                : `Đến ${property.max_humidity}%`
-                                                        }
-                                                    </span>
-                                                </li>
-                                            )}
-                                            {property.min_temperature == null && property.max_temperature == null && property.min_humidity == null && property.max_humidity == null && (
-                                                <li className="text-sky-600 dark:text-sky-400 italic">Kho có hệ thống làm mát — liên hệ để biết thông số chi tiết</li>
-                                            )}
-                                        </ul>
-                                    </div>
-                                )}
+
                             </div>
                         </section>
 

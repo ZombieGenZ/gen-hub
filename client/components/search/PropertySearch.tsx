@@ -219,7 +219,7 @@ export default function PropertySearch({ initialLocationSlug }: PropertySearchPr
         // Restore Filters
         if (typeParam) {
             switch (typeParam) {
-                case 'kho-mat': case 'cold': setSelectedTypes(['cold']); break;
+
                 case 'kho-thuong': case 'standard': setSelectedTypes(['standard']); break;
                 case 'kho-ngoai-quan': case 'bonded': setSelectedTypes(['bonded']); break;
                 case 'shared': setSelectedTypes(['shared']); break;
@@ -268,11 +268,10 @@ export default function PropertySearch({ initialLocationSlug }: PropertySearchPr
 
         if (selectedTypes.length > 0) {
             result = result.filter(p => {
-                const isCold = selectedTypes.includes('cold') && p.is_cold_storage;
                 const isShared = selectedTypes.includes('shared') && p.is_shared_warehouse;
                 const isBonded = selectedTypes.includes('bonded') && p.type === 'Kho Ngoại Quan';
                 const isStandard = selectedTypes.includes('standard') && p.type === 'Kho Thường';
-                return isCold || isShared || isStandard || isBonded;
+                return isShared || isStandard || isBonded;
             });
         }
         if (selectedCities.length > 0) {

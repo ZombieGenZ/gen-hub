@@ -178,14 +178,11 @@ export function CreateWarehouseModal({ open, onOpenChange, onSuccess }: CreateWa
                         </div>
 
                         <div className="flex items-center gap-4">
-                             <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2">
                                 <Switch id="is_active" checked={formData.is_active} onCheckedChange={(checked) => handleSwitchChange('is_active', checked)} />
                                 <Label htmlFor="is_active">Hoạt động</Label>
                             </div>
-                             <div className="flex items-center gap-2">
-                                <Switch id="is_cold_storage" checked={formData.is_cold_storage} onCheckedChange={(checked) => handleSwitchChange('is_cold_storage', checked)} />
-                                <Label htmlFor="is_cold_storage">Kho lạnh</Label>
-                            </div>
+
                         </div>
                     </DialogBody>
                     <DialogFooter>
@@ -294,7 +291,7 @@ export function UpdateWarehouseModal({ open, onOpenChange, warehouse, onSuccess 
                             <Textarea id="edit-description" name="description" value={formData.description} onChange={handleChange} />
                         </div>
 
-                         <div className="grid grid-cols-4 gap-4">
+                        <div className="grid grid-cols-4 gap-4">
                             <div className="grid gap-2">
                                 <Label htmlFor="edit-length">Dài (m) *</Label>
                                 <Input id="edit-length" name="length" type="number" value={formData.length} onChange={handleChange} required />
@@ -339,15 +336,12 @@ export function UpdateWarehouseModal({ open, onOpenChange, warehouse, onSuccess 
                             </div>
                         </div>
 
-                         <div className="flex items-center gap-4">
-                             <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-2">
                                 <Switch id="edit-is_active" checked={formData.is_active} onCheckedChange={(checked) => handleSwitchChange('is_active', checked)} />
                                 <Label htmlFor="edit-is_active">Hoạt động</Label>
                             </div>
-                             <div className="flex items-center gap-2">
-                                <Switch id="edit-is_cold_storage" checked={formData.is_cold_storage} onCheckedChange={(checked) => handleSwitchChange('is_cold_storage', checked)} />
-                                <Label htmlFor="edit-is_cold_storage">Kho lạnh</Label>
-                            </div>
+
                         </div>
                     </DialogBody>
                     <DialogFooter>

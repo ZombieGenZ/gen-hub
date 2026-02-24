@@ -154,7 +154,7 @@ export function AmenityDrawer({
                                     id="name"
                                     value={formData.name}
                                     onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                                    placeholder="Ví dụ: WiFi tốc độ cao"
+                                    placeholder="WiFi tốc độ cao"
                                     style={{ borderRadius: '12px' }}
                                     className={errors.name ? 'border-red-500' : ''}
                                 />

@@ -79,13 +79,7 @@ function formatVND(value: string | number): string {
 // Helper: badge for warehouse type
 // ────────────────────────────────────────────────
 function WarehouseTypeBadge({ warehouse }: { warehouse: Warehouse }) {
-    if (warehouse.is_cold_storage) {
-        return (
-            <Badge variant="outline" className="rounded-md font-normal bg-sky-50 text-sky-700 border-sky-200">
-                Kho lạnh
-            </Badge>
-        );
-    }
+
     if (warehouse.is_shared_warehouse) {
         return (
             <Badge variant="outline" className="rounded-md font-normal bg-violet-50 text-violet-700 border-violet-200">

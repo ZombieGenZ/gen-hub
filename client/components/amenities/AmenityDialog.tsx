@@ -237,7 +237,7 @@ export function AmenityDialog({
                                     value={formData.name}
                                     onChange={(e) => handleFieldChange('name', e.target.value)}
                                     onBlur={() => handleBlur('name')}
-                                    placeholder="Ví dụ: WiFi tốc độ cao"
+                                    placeholder="WiFi tốc độ cao"
                                     style={{ borderRadius: '12px' }}
                                     className={`transition-all duration-200 ${errors.name
                                             ? 'border-red-400 focus:ring-red-200 bg-red-50/50'
