@@ -117,13 +117,12 @@ function PriceSparkline({ batches }: { batches: Batch[] }) {
                         <Minus className="w-3.5 h-3.5 text-slate-400" />
                     )}
                     <span
-                        className={`text-sm font-semibold ${
-                            change > 0
+                        className={`text-sm font-semibold ${change > 0
                                 ? "text-red-600"
                                 : change < 0
-                                ? "text-emerald-600"
-                                : "text-slate-500"
-                        }`}
+                                    ? "text-emerald-600"
+                                    : "text-slate-500"
+                            }`}
                     >
                         {change > 0 ? "+" : ""}
                         {change.toFixed(1)}%
@@ -211,8 +210,8 @@ function ExpiryBadge({
                 {status === "expired"
                     ? `Hết hạn ${Math.abs(daysLeft || 0)} ngày`
                     : status === "warning"
-                    ? `Còn ${daysLeft} ngày`
-                    : `Còn ${daysLeft} ngày`}
+                        ? `Còn ${daysLeft} ngày`
+                        : `Còn ${daysLeft} ngày`}
             </span>
         </div>
     );
@@ -442,8 +441,8 @@ function BatchFormDialog({
                         {saving
                             ? "Đang lưu..."
                             : isEdit
-                            ? "Cập nhật"
-                            : "Tạo lô hàng"}
+                                ? "Cập nhật"
+                                : "Tạo lô hàng"}
                     </Button>
                 </DialogFooter>
             </DialogContent>
@@ -547,41 +546,37 @@ export function BatchManagementTab({
                     {/* Expiry filter chips */}
                     <button
                         onClick={() => setExpiryFilter("all")}
-                        className={`px-3 py-1.5 text-xs rounded-lg border transition-colors ${
-                            expiryFilter === "all"
+                        className={`px-3 py-1.5 text-xs rounded-lg border transition-colors ${expiryFilter === "all"
                                 ? "bg-slate-900 text-white border-slate-900"
                                 : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
-                        }`}
+                            }`}
                     >
                         Tất cả ({stats.total})
                     </button>
                     <button
                         onClick={() => setExpiryFilter("expired")}
-                        className={`px-3 py-1.5 text-xs rounded-lg border transition-colors flex items-center gap-1 ${
-                            expiryFilter === "expired"
+                        className={`px-3 py-1.5 text-xs rounded-lg border transition-colors flex items-center gap-1 ${expiryFilter === "expired"
                                 ? "bg-red-500 text-white border-red-500"
                                 : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
-                        }`}
+                            }`}
                     >
                         🔴 Hết hạn ({stats.expired})
                     </button>
                     <button
                         onClick={() => setExpiryFilter("warning")}
-                        className={`px-3 py-1.5 text-xs rounded-lg border transition-colors flex items-center gap-1 ${
-                            expiryFilter === "warning"
+                        className={`px-3 py-1.5 text-xs rounded-lg border transition-colors flex items-center gap-1 ${expiryFilter === "warning"
                                 ? "bg-amber-500 text-white border-amber-500"
                                 : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
-                        }`}
+                            }`}
                     >
                         🟡 Sắp hết hạn ({stats.warning})
                     </button>
                     <button
                         onClick={() => setExpiryFilter("safe")}
-                        className={`px-3 py-1.5 text-xs rounded-lg border transition-colors flex items-center gap-1 ${
-                            expiryFilter === "safe"
+                        className={`px-3 py-1.5 text-xs rounded-lg border transition-colors flex items-center gap-1 ${expiryFilter === "safe"
                                 ? "bg-emerald-500 text-white border-emerald-500"
                                 : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
-                        }`}
+                            }`}
                     >
                         🟢 An toàn ({stats.safe})
                     </button>
@@ -679,13 +674,12 @@ export function BatchManagementTab({
                                         return (
                                             <TableRow
                                                 key={batch.id}
-                                                className={`transition-colors ${
-                                                    isExpired
+                                                className={`transition-colors ${isExpired
                                                         ? "bg-red-50/50"
                                                         : status === "warning"
-                                                        ? "bg-amber-50/30"
-                                                        : ""
-                                                }`}
+                                                            ? "bg-amber-50/30"
+                                                            : ""
+                                                    }`}
                                             >
                                                 {/* Code */}
                                                 <TableCell>
@@ -699,10 +693,10 @@ export function BatchManagementTab({
                                                     <span className="text-sm text-slate-600">
                                                         {batch.manufacturing_date
                                                             ? new Date(
-                                                                  batch.manufacturing_date
-                                                              ).toLocaleDateString(
-                                                                  "vi-VN"
-                                                              )
+                                                                batch.manufacturing_date
+                                                            ).toLocaleDateString(
+                                                                "vi-VN"
+                                                            )
                                                             : "—"}
                                                     </span>
                                                 </TableCell>
@@ -719,10 +713,10 @@ export function BatchManagementTab({
                                                     <span className="text-sm font-medium text-slate-900 tabular-nums">
                                                         {batch.import_price != null
                                                             ? new Intl.NumberFormat(
-                                                                  "vi-VN"
-                                                              ).format(
-                                                                  batch.import_price
-                                                              ) + " ₫"
+                                                                "vi-VN"
+                                                            ).format(
+                                                                batch.import_price
+                                                            ) + " ₫"
                                                             : "—"}
                                                     </span>
                                                 </TableCell>

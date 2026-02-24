@@ -1,0 +1,29 @@
+{
+  "success": {
+    "created": "Tạo đơn vị tính thành công",
+    "updated": "Cập nhật đơn vị tính thành công",
+    "deleted": "Xóa đơn vị tính thành công",
+    "list": "Lấy danh sách đơn vị tính thành công",
+    "get": "Lấy thông tin đơn vị tính thành công"
+  },
+  "errors": {
+    "not_found": "Không tìm thấy đơn vị tính",
+    "organization_not_found": "Không tìm thấy tổ chức",
+    "name_exists": "Tên đơn vị tính đã tồn tại trong tổ chức",
+    "in_use": "Đơn vị tính đang được sử dụng bởi sản phẩm, không thể xóa"
+  },
+  "validation": {
+    "name_required": "Tên đơn vị tính không được để trống",
+    "name_string": "Tên đơn vị tính phải là chuỗi ký tự",
+    "name_max_length": "Tên đơn vị tính không được quá 100 ký tự",
+    "description_string": "Mô tả phải là chuỗi ký tự",
+    "description_max_length": "Mô tả không được quá 500 ký tự",
+    "is_used_multiple_languages_boolean": "Giá trị is_used_multiple_languages phải là boolean",
+    "is_active_boolean": "Trạng thái hoạt động phải là boolean",
+    "limit_int": "Limit phải là số nguyên",
+    "limit_min": "Limit phải lớn hơn hoặc bằng 1",
+    "offset_int": "Offset phải là số nguyên",
+    "offset_min": "Offset phải lớn hơn hoặc bằng 0",
+    "keywords_string": "Từ khóa tìm kiếm phải là chuỗi ký tự"
+  }
+}

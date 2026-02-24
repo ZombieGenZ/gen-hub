@@ -203,7 +203,7 @@ export function StockLocationsTab({ productId }: StockLocationsTabProps) {
                                                                 {loc.shelf?.rack?.name
                                                                     ? `${loc.shelf.rack.name} › ${loc.shelf.name}`
                                                                     : loc.shelf?.name ||
-                                                                      "—"}
+                                                                    "—"}
                                                             </p>
                                                         </div>
                                                     </div>

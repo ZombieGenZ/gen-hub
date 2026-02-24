@@ -276,8 +276,8 @@ export function GeneralInfoTab({ product }: GeneralInfoTabProps) {
                             <p className="text-2xl font-bold text-[#0F766E]">
                                 {product.cost_price != null
                                     ? new Intl.NumberFormat("vi-VN").format(
-                                          product.cost_price
-                                      ) + " ₫"
+                                        product.cost_price
+                                    ) + " ₫"
                                     : "Chưa thiết lập"}
                             </p>
                         </div>

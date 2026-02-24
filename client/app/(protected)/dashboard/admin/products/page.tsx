@@ -323,32 +323,29 @@ export default function ProductMasterListPage() {
                             <div className="flex items-center gap-2 flex-wrap">
                                 <button
                                     onClick={() => setQuickFilter("all")}
-                                    className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${
-                                        quickFilter === "all"
+                                    className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${quickFilter === "all"
                                             ? "bg-[#0F766E] text-white border-[#0F766E]"
                                             : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
-                                    }`}
+                                        }`}
                                 >
                                     Tất cả
                                 </button>
                                 <button
                                     onClick={() => setQuickFilter("low_stock")}
-                                    className={`px-3 py-1.5 text-sm rounded-lg border transition-colors flex items-center gap-1.5 ${
-                                        quickFilter === "low_stock"
+                                    className={`px-3 py-1.5 text-sm rounded-lg border transition-colors flex items-center gap-1.5 ${quickFilter === "low_stock"
                                             ? "bg-amber-500 text-white border-amber-500"
                                             : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
-                                    }`}
+                                        }`}
                                 >
                                     <ExclamationTriangleIcon className="w-3.5 h-3.5" />
                                     Sắp hết hàng
                                 </button>
                                 <button
                                     onClick={() => setQuickFilter("expiring_soon")}
-                                    className={`px-3 py-1.5 text-sm rounded-lg border transition-colors flex items-center gap-1.5 ${
-                                        quickFilter === "expiring_soon"
+                                    className={`px-3 py-1.5 text-sm rounded-lg border transition-colors flex items-center gap-1.5 ${quickFilter === "expiring_soon"
                                             ? "bg-red-500 text-white border-red-500"
                                             : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
-                                    }`}
+                                        }`}
                                 >
                                     <ClockIcon className="w-3.5 h-3.5" />
                                     Lô sắp hết hạn
@@ -563,8 +560,8 @@ export default function ProductMasterListPage() {
                                                     <span className="text-sm font-medium text-slate-900 tabular-nums">
                                                         {product.cost_price != null
                                                             ? new Intl.NumberFormat("vi-VN").format(
-                                                                  product.cost_price
-                                                              ) + " ₫"
+                                                                product.cost_price
+                                                            ) + " ₫"
                                                             : "—"}
                                                     </span>
                                                 </TableCell>
@@ -703,11 +700,10 @@ export default function ProductMasterListPage() {
                                                             : "ghost"
                                                     }
                                                     size="icon"
-                                                    className={`h-8 w-8 text-xs ${
-                                                        page === currentPage
+                                                    className={`h-8 w-8 text-xs ${page === currentPage
                                                             ? "bg-[#0F766E] hover:bg-[#0D6B63] text-white"
                                                             : ""
-                                                    }`}
+                                                        }`}
                                                     onClick={() => setCurrentPage(page)}
                                                 >
                                                     {page}

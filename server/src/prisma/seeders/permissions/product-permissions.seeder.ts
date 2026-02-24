@@ -13,6 +13,7 @@ export class ProductPermissionsSeeder extends BaseSeeder {
     async run(): Promise<void> {
         await this.seedPartnerPermissions();
         await this.seedProductPermissions();
+        await this.seedUnitPermissions();
         await this.seedBatchPermissions();
         await this.seedInventoryPermissions();
     }
@@ -72,6 +73,35 @@ export class ProductPermissionsSeeder extends BaseSeeder {
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : String(error);
             this.logger.error(`❌ Failed to seed product permissions: ${errorMessage}`);
+        }
+    }
+
+    private async seedUnitPermissions() {
+        try {
+            const unitPermissions = [
+                { key: 'unit.create', name: 'Tạo đơn vị tính', description: 'Quyền tạo đơn vị tính mới' },
+                { key: 'unit.list', name: 'Xem danh sách đơn vị tính', description: 'Quyền xem danh sách đơn vị tính' },
+                { key: 'unit.read', name: 'Xem chi tiết đơn vị tính', description: 'Quyền xem chi tiết đơn vị tính' },
+                { key: 'unit.update', name: 'Cập nhật đơn vị tính', description: 'Quyền cập nhật đơn vị tính' },
+                { key: 'unit.delete', name: 'Xóa đơn vị tính', description: 'Quyền xóa đơn vị tính' },
+            ];
+
+            for (const perm of unitPermissions) {
+                const existing = await this.prisma.organizationPermission.findFirst({
+                    where: { key: perm.key, is_deleted: false },
+                });
+
+                if (!existing) {
+                    await this.prisma.organizationPermission.create({
+                        data: { key: perm.key, name: perm.name, description: perm.description, allow_api_key: true, is_active: true, is_deleted: false },
+                    });
+                }
+            }
+
+            this.logger.log('✅ Unit permissions seeded');
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            this.logger.error(`❌ Failed to seed unit permissions: ${errorMessage}`);
         }
     }
 

@@ -40,6 +40,7 @@ import { AmenityModule } from './modules/amenity/amenity.module';
 import { ProvinceModule } from './modules/province/province.module';
 import { WardModule } from './modules/ward/ward.module';
 import { PartnerModule } from './modules/partner/partner.module';
+import { UnitModule } from './modules/unit/unit.module';
 import { ProductModule } from './modules/product/product.module';
 import { BatchModule } from './modules/batch/batch.module';
 import { RentalDurationTierModule } from './modules/rental-duration-tier/rental-duration-tier.module';
@@ -186,6 +187,7 @@ import { AppDownloadModule } from './modules/app-download/app-download.module';
 
     // Organization-level modules
     PartnerModule,
+    UnitModule,
     ProductModule,
     BatchModule,
 

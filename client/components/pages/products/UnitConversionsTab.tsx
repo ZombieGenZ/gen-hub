@@ -211,7 +211,7 @@ function ConversionChain({
                                             maximumFractionDigits: 2,
                                         }).format(
                                             sortedUnits[0].conversion_rate /
-                                                sortedUnits[1].conversion_rate
+                                            sortedUnits[1].conversion_rate
                                         )}
                                     </span>{" "}
                                     <span className="font-medium">

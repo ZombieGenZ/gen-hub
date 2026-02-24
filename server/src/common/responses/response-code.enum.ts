@@ -165,6 +165,13 @@ export enum ResponseCode {
     PARTNER_UPDATE_SUCCESS = 'partner.update_success',
     PARTNER_DELETE_SUCCESS = 'partner.delete_success',
 
+    // Unit
+    UNIT_CREATE_SUCCESS = 'unit.create_success',
+    UNIT_LIST_SUCCESS = 'unit.list_success',
+    UNIT_GET_SUCCESS = 'unit.get_success',
+    UNIT_UPDATE_SUCCESS = 'unit.update_success',
+    UNIT_DELETE_SUCCESS = 'unit.delete_success',
+
     // Product
     PRODUCT_CREATE_SUCCESS = 'product.create_success',
     PRODUCT_LIST_SUCCESS = 'product.list_success',
