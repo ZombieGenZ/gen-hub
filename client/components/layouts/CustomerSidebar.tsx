@@ -6,30 +6,42 @@ import {
     DocumentTextIcon,
     ClockIcon,
     CreditCardIcon,
+    BellIcon,
 } from "@heroicons/react/24/outline";
 import { AppSidebar, AppSidebarContent, SidebarGroup } from "./AppSidebar";
 
 const customerNavGroups: SidebarGroup[] = [
     {
-        title: "Quản lý",
+        title: "Tổng quan",
         items: [
             { href: "/dashboard/customer", icon: Squares2X2Icon, label: "Tổng quan", exactMatch: true },
-            { href: "/dashboard/customer/warehouses", icon: HomeModernIcon, label: "Tìm & Đặt kho" },
-            { href: "/dashboard/customer/contracts", icon: DocumentTextIcon, label: "Hợp đồng" },
         ]
     },
     {
-        title: "Hoạt động",
+        title: "Kho bãi",
+        items: [
+            { href: "/kho-bai", icon: HomeModernIcon, label: "Tìm kiếm kho bãi" },
+        ]
+    },
+    {
+        title: "Quản lý",
         items: [
             { href: "/dashboard/customer/bookings", icon: ClockIcon, label: "Yêu cầu thuê" },
+            { href: "/dashboard/customer/contracts", icon: DocumentTextIcon, label: "Hợp đồng" },
         ]
     },
     {
         title: "Tài chính",
         items: [
-            { href: "/dashboard/customer/payment", icon: CreditCardIcon, label: "Tài chính " },
+            { href: "/dashboard/customer/payment", icon: CreditCardIcon, label: "Tài chính & Thanh toán" },
         ]
-    }
+    },
+    {
+        title: "Khác",
+        items: [
+            { href: "/dashboard/customer/notifications", icon: BellIcon, label: "Thông báo" },
+        ]
+    },
 ];
 
 const sidebarConfig = {
