@@ -346,7 +346,14 @@ export function PrimeNestChatbot() {
                             {message.sender_name}
                         </div>
                     )}
-                    <div className="leading-relaxed">{parseMarkdown(message.content)}</div>
+                    {/<[a-z][\s\S]*>/i.test(message.content) ? (
+                        <div
+                            className={`leading-relaxed prose prose-sm max-w-none [&_p]:mb-1 [&_p:last-child]:mb-0 ${isCustomer ? 'prose-invert text-white [&_p]:text-white' : ''}`}
+                            dangerouslySetInnerHTML={{ __html: message.content }}
+                        />
+                    ) : (
+                        <div className="leading-relaxed">{parseMarkdown(message.content)}</div>
+                    )}
                     <div className={`text-[10px] mt-1 ${isCustomer ? 'text-white/70' : 'text-slate-400'}`}>
                         {formatTime(message.created_at)}
                     </div>
@@ -659,9 +666,13 @@ export function PrimeNestChatbot() {
                             className="px-3 py-2.5 text-sm text-slate-700 leading-relaxed cursor-pointer hover:bg-slate-50 transition-colors"
                             onClick={handleOpen}
                         >
-                            <p className="line-clamp-3">
-                                {lastNewMessage.content}
-                            </p>
+                            <div className="line-clamp-3 overflow-hidden text-ellipsis [&_p]:inline [&_br]:content-[' ']">
+                                {/<[a-z][\s\S]*>/i.test(lastNewMessage.content) ? (
+                                    <span dangerouslySetInnerHTML={{ __html: lastNewMessage.content }} />
+                                ) : (
+                                    parseMarkdown(lastNewMessage.content)
+                                )}
+                            </div>
                         </div>
                         {/* Arrow */}
                         <div className="absolute -bottom-2 right-7 w-4 h-4 bg-white border-r border-b border-slate-100 rotate-45" />

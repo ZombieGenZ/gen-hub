@@ -121,7 +121,7 @@ export function NotificationList({ className }: NotificationListProps) {
             if (tab === 'unread') {
                 params.is_read = false;
             } else if (tab === 'warning') {
-                params.type = 'WARNING'; 
+                params.type = 'WARNING';
             }
 
             const [response, count] = await Promise.all([
@@ -270,9 +270,13 @@ export function NotificationList({ className }: NotificationListProps) {
                                                     {formatRelativeTime(notification.created_at)}
                                                 </span>
                                             </div>
-                                            <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2">
-                                                {formatContent(notification.content)}
-                                            </p>
+                                            <div className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2 [&_p]:inline [&_br]:content-[' ']">
+                                                {/<[a-z][\s\S]*>/i.test(formatContent(notification.content) || '') ? (
+                                                    <span dangerouslySetInnerHTML={{ __html: formatContent(notification.content) || '' }} />
+                                                ) : (
+                                                    formatContent(notification.content)
+                                                )}
+                                            </div>
                                         </div>
 
                                         {!notification.is_read && (
