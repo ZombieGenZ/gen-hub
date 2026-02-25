@@ -73,11 +73,11 @@ export function useLiveChat(): UseLiveChatReturn {
         }
 
         const socket = io(API_URL, {
-            transports: ['websocket', 'polling'],
+            transports: ['polling', 'websocket'],
             // Guest không cần auth
         });
 
-        socket.on('connected', () => {
+        socket.on('connect', () => {
             setIsConnected(true);
             // Join chat room
             socket.emit('chat:join', { sessionId: sid });
