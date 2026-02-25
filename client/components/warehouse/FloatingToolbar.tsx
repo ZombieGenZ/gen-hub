@@ -3,7 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
-  Sparkles, ScanBarcode, Users, Mic
+  Sparkles, ScanBarcode, Users
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -11,11 +11,9 @@ interface FloatingToolbarProps {
   onToggleAI: () => void;
   onToggleBarcode: () => void;
   onToggleRealtime: () => void;
-  onToggleVoice: () => void;
   aiOpen: boolean;
   barcodeOpen: boolean;
   realtimeConnected: boolean;
-  voiceListening: boolean;
   realtimeUserCount?: number;
 }
 
@@ -23,11 +21,9 @@ const FloatingToolbar = ({
   onToggleAI,
   onToggleBarcode,
   onToggleRealtime,
-  onToggleVoice,
   aiOpen,
   barcodeOpen,
   realtimeConnected,
-  voiceListening,
   realtimeUserCount = 0,
 }: FloatingToolbarProps) => {
   // Glass morphism button style - transparent with blur and subtle glow
@@ -74,17 +70,6 @@ const FloatingToolbar = ({
             {realtimeUserCount + 1}
           </Badge>
         )}
-      </button>
-
-      {/* Voice Command */}
-      <button
-        className={cn(
-          "h-12 w-12 rounded-full shadow-xl hover:scale-110 transition-all duration-200 flex items-center justify-center",
-          voiceListening ? cn(activeButtonStyle, "animate-pulse ring-2 ring-primary ring-offset-2 ring-offset-transparent") : glassButtonStyle
-        )}
-        onClick={onToggleVoice}
-      >
-        <Mic className="w-5 h-5" />
       </button>
     </div>
   );

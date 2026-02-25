@@ -22,6 +22,7 @@ const initialState: WarehouseState = {
   collisionWarnings: [],
   rackModalOpen: false,
   focusedRackId: null,
+  focusedBoxId: null,
   visibleRackIds: null,
   fillRateFilter: null,
 };
@@ -664,6 +665,37 @@ export const useWarehouse = () => {
       .map(r => r.id);
   }, [state.racks, state.boxes, state.fillRateFilter]);
 
+  // Focus on a specific box (for barcode scanning)
+  const focusOnBox = useCallback((boxId: string) => {
+    const box = state.boxes.find(b => b.id === boxId);
+    if (box) {
+      setState(prev => ({
+        ...prev,
+        focusedBoxId: boxId,
+        selectedBox: boxId,
+        selectedRack: box.rackId,
+        boxes: prev.boxes.map(b => ({
+          ...b,
+          selected: b.id === boxId,
+        })),
+      }));
+      toast.success(`Đang định vị: ${box.name}`);
+    }
+  }, [state.boxes]);
+
+  // Clear box focus
+  const clearBoxFocus = useCallback(() => {
+    setState(prev => ({
+      ...prev,
+      focusedBoxId: null,
+    }));
+  }, []);
+
+  // Get box by ID
+  const getBoxById = useCallback((boxId: string) => {
+    return state.boxes.find(b => b.id === boxId) || null;
+  }, [state.boxes]);
+
   return {
     state,
     stats,
@@ -702,5 +734,8 @@ export const useWarehouse = () => {
     setFillRateFilter,
     getVisibleRackIdsByFillRate,
     getRackPosition,
+    focusOnBox,
+    clearBoxFocus,
+    getBoxById,
   };
 };

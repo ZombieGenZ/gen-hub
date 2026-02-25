@@ -11,9 +11,11 @@ import StatsOverlay from './StatsOverlay';
 import FillRateLegend from './FillRateLegend';
 import HumanFigures from './HumanFigures';
 import WarehouseBuilding from './WarehouseBuilding';
+import UserAvatar3D from './UserAvatar3D';
 import { PerformanceOverlay, FPSTracker } from './PerformanceMonitor';
 import { WarehouseFloor, WarehouseLights, WarehouseProps } from './WarehouseEnvironment';
 import { RackConfig, BoxItem, BoxCategory, WarehouseStats, FillRateStatus } from '@/types/warehouse';
+import { UserPresence } from '@/hooks/useRealtimePresence';
 
 interface WarehouseSceneProps {
   showBackground: boolean;
@@ -41,7 +43,11 @@ interface WarehouseSceneProps {
   performanceMode?: boolean;
   showFPS?: boolean;
   focusedRackId?: string | null;
+  focusedBoxId?: string | null;
+  onClearBoxFocus?: () => void;
   isModalOpen?: boolean;
+  // Realtime multiplayer
+  realtimeUsers?: UserPresence[];
 }
 
 const AxesHelper = () => {
@@ -87,6 +93,7 @@ const AxesHelper = () => {
 // Camera controller with WASD movement and focus animation
 interface CameraControllerProps {
   focusTarget?: RackConfig | null;
+  focusBoxTarget?: BoxItem | null;
   onFocusComplete?: () => void;
   autoRotate?: boolean;
   autoRotateSpeed?: number;
@@ -94,6 +101,7 @@ interface CameraControllerProps {
 
 const CameraController = ({ 
   focusTarget, 
+  focusBoxTarget,
   onFocusComplete, 
   autoRotate = false, 
   autoRotateSpeed = 0.5 
@@ -219,6 +227,59 @@ const CameraController = ({
     
     animate();
   }, [focusTarget, camera, gl.domElement, onFocusComplete]);
+
+  // Animate to focus on a specific box (for barcode scanning)
+  useEffect(() => {
+    if (!focusBoxTarget || animatingRef.current) return;
+    
+    animatingRef.current = true;
+    
+    const controls = (gl.domElement as any).__controls;
+    
+    // Box position is its center
+    const boxCenter = new THREE.Vector3(
+      focusBoxTarget.position.x,
+      focusBoxTarget.position.y,
+      focusBoxTarget.position.z
+    );
+    
+    // Camera position: offset from box, close zoom (2-3 units away)
+    const distance = 3;
+    const targetPosition = new THREE.Vector3(
+      boxCenter.x + distance * 0.8,
+      boxCenter.y + distance * 0.6,
+      boxCenter.z + distance * 0.8
+    );
+    
+    const startPosition = camera.position.clone();
+    const startTarget = controls?.target?.clone() || new THREE.Vector3();
+    const startTime = performance.now();
+    const duration = 1000; // Slightly longer for smoother feel
+    
+    const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
+    
+    const animate = () => {
+      const elapsed = performance.now() - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = easeOutCubic(progress);
+      
+      camera.position.lerpVectors(startPosition, targetPosition, eased);
+      
+      if (controls) {
+        controls.target.lerpVectors(startTarget, boxCenter, eased);
+        controls.update();
+      }
+      
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        animatingRef.current = false;
+        onFocusComplete?.();
+      }
+    };
+    
+    animate();
+  }, [focusBoxTarget, camera, gl.domElement, onFocusComplete]);
   
   return null;
 };
@@ -248,7 +309,10 @@ const WarehouseScene = ({
   performanceMode = false,
   showFPS = false,
   focusedRackId,
+  focusedBoxId,
+  onClearBoxFocus,
   isModalOpen = false,
+  realtimeUsers = [],
 }: WarehouseSceneProps) => {
   const [hoveredRack, setHoveredRack] = useState<string | null>(null);
   const [currentFPS, setCurrentFPS] = useState(60);
@@ -268,6 +332,9 @@ const WarehouseScene = ({
   
   // Get focused rack for camera animation
   const focusedRack = focusedRackId ? racks.find(r => r.id === focusedRackId) || null : null;
+
+  // Get focused box for camera animation (barcode scanning)
+  const focusedBox = focusedBoxId ? boxes.find(b => b.id === focusedBoxId) || null : null;
 
   // Memoize visible racks and boxes for performance
   const visibleRacks = useMemo(() => {
@@ -324,6 +391,8 @@ const WarehouseScene = ({
         {/* Camera with focus animation */}
         <CameraController 
           focusTarget={isModalOpen ? focusedRack : null}
+          focusBoxTarget={focusedBox}
+          onFocusComplete={onClearBoxFocus}
           autoRotate={autoRotate}
         />
         
@@ -399,6 +468,11 @@ const WarehouseScene = ({
         {/* Human Figures for Scale */}
         <HumanFigures visible={showHumans && showBackground} />
 
+        {/* Realtime User Avatars */}
+        {realtimeUsers.map((user) => (
+          <UserAvatar3D key={user.id} user={user} showLabel={true} />
+        ))}
+
         {/* Axes Helper */}
         {showAxes && <AxesHelper />}
 
@@ -429,6 +503,7 @@ const WarehouseScene = ({
             onSelect={onSelectBox}
             viewMode={viewMode}
             isFiltered={isBoxFiltered(box)}
+            isFocused={box.id === focusedBoxId}
           />
         ))}
       </Canvas>

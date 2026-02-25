@@ -1,7 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { useWarehouse } from '@/hooks/useWarehouse';
 import { useRackKeyboardNav } from '@/hooks/useRackKeyboardNav';
 import { useInventory } from '@/hooks/useInventory';
@@ -18,6 +18,7 @@ import TransactionPanel from '@/components/warehouse/TransactionPanel';
 import AISuggestionPanel from '@/components/warehouse/AISuggestionPanel';
 import BarcodeScannerPanel from '@/components/warehouse/BarcodeScannerPanel';
 import VoiceCommandIndicator from '@/components/warehouse/VoiceCommandIndicator';
+import OnlineUsersList from '@/components/warehouse/OnlineUsersList';
 import { RealtimeUsersList } from '@/components/warehouse/RealtimeCursors';
 import { BoxCategory } from '@/types/warehouse';
 import { SearchResult } from '@/types/inventory';
@@ -76,6 +77,8 @@ export default function Warehouse3DPage() {
     setFillRateFilter,
     getVisibleRackIdsByFillRate,
     getRackPosition,
+    focusOnBox,
+    clearBoxFocus,
   } = useWarehouse();
 
   // New feature states
@@ -113,10 +116,15 @@ export default function Warehouse3DPage() {
   const {
     isConnected: realtimeConnected,
     users: realtimeUsers,
-    updateCursor,
+    onlineCount: realtimeOnlineCount,
+    currentUserId: realtimeCurrentUserId,
+    updatePosition: realtimeUpdatePosition,
+    updateSelection: realtimeUpdateSelection,
+    updateAction: realtimeUpdateAction,
   } = useRealtimePresence({
     enabled: realtimeEnabled,
     selectedRackId: state.selectedRack,
+    selectedBoxId: state.selectedBox,
   });
 
   // AI Voice commands hook - với tất cả chức năng
@@ -192,12 +200,26 @@ export default function Warehouse3DPage() {
     selectedBox: state.selectedBox,
   });
 
-  // Handle search locate
+  // Keyboard shortcut: Ctrl+M to toggle voice commands
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl+M or Cmd+M (on Mac)
+      if ((e.ctrlKey || e.metaKey) && e.key === 'm') {
+        e.preventDefault();
+        toggleVoice();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [toggleVoice]);
+
+  // Handle search/barcode locate - now uses focusOnBox for camera animation
   const handleLocateResult = useCallback((result: SearchResult) => {
-    selectRack(result.rackId);
-    highlightBox(result.boxId);
+    focusOnBox(result.boxId);
+    setBarcodeOpen(false);
     setSearchOpen(false);
-  }, [selectRack, highlightBox]);
+  }, [focusOnBox]);
 
   // Keyboard navigation for rack movement
   useRackKeyboardNav({
@@ -304,7 +326,22 @@ export default function Warehouse3DPage() {
           // Modal integration
           focusedRackId={state.focusedRackId}
           isModalOpen={state.rackModalOpen}
+          // Barcode scanning - focus on box
+          focusedBoxId={state.focusedBoxId}
+          onClearBoxFocus={clearBoxFocus}
+          // Realtime multiplayer
+          realtimeUsers={realtimeUsers}
         />
+
+        {/* Online Users List - Top Right */}
+        {realtimeEnabled && (
+          <OnlineUsersList
+            users={realtimeUsers}
+            currentUserId={realtimeCurrentUserId}
+            isConnected={realtimeConnected}
+            onlineCount={realtimeOnlineCount}
+          />
+        )}
 
         {/* Feature Toolbar - Top Left */}
         <FeatureToolbar
@@ -325,11 +362,9 @@ export default function Warehouse3DPage() {
           onToggleAI={() => setAiOpen(prev => !prev)}
           onToggleBarcode={() => setBarcodeOpen(prev => !prev)}
           onToggleRealtime={() => setRealtimeEnabled(prev => !prev)}
-          onToggleVoice={toggleVoice}
           aiOpen={aiOpen}
           barcodeOpen={barcodeOpen}
           realtimeConnected={realtimeConnected}
-          voiceListening={voiceListening}
           realtimeUserCount={realtimeUsers.length}
         />
 

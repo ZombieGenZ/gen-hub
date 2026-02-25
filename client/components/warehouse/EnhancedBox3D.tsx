@@ -11,6 +11,7 @@ interface EnhancedBox3DProps {
   onSelect: (id: string) => void;
   viewMode: 'default' | 'category' | 'heatmap';
   isFiltered: boolean;
+  isFocused?: boolean; // For barcode scanning - highlight and glow
 }
 
 const SelectedBoxAnimation = ({ meshRef }: { meshRef: RefObject<THREE.Mesh | null> }) => {
@@ -41,7 +42,26 @@ const PulseEffect = ({ color }: { color: number }) => {
   );
 };
 
-const EnhancedBox3D = ({ box, onSelect, viewMode, isFiltered }: EnhancedBox3DProps) => {
+// Focused box glow effect (for barcode scanning)
+const FocusedGlowEffect = () => {
+  const glowRef = useRef<THREE.Mesh>(null);
+  
+  useFrame((state) => {
+    if (!glowRef.current) return;
+    const scale = 1.15 + Math.sin(state.clock.elapsedTime * 4) * 0.05;
+    glowRef.current.scale.set(scale, scale, scale);
+    (glowRef.current.material as THREE.MeshBasicMaterial).opacity = 0.4 + Math.sin(state.clock.elapsedTime * 4) * 0.2;
+  });
+
+  return (
+    <mesh ref={glowRef}>
+      <boxGeometry args={[0.9, 0.7, 0.9]} />
+      <meshBasicMaterial color={0x2ea87e} transparent opacity={0.5} side={THREE.BackSide} />
+    </mesh>
+  );
+};
+
+const EnhancedBox3D = ({ box, onSelect, viewMode, isFiltered, isFocused = false }: EnhancedBox3DProps) => {
   const [hovered, setHovered] = useState(false);
   const meshRef = useRef<THREE.Mesh>(null);
   const outlineRef = useRef<THREE.Mesh>(null);
@@ -189,6 +209,9 @@ const EnhancedBox3D = ({ box, onSelect, viewMode, isFiltered }: EnhancedBox3DPro
           <meshBasicMaterial color={0xffd700} side={THREE.DoubleSide} transparent opacity={0.8} />
         </mesh>
       )}
+
+      {/* Focused glow effect (barcode scan result) */}
+      {isFocused && <FocusedGlowEffect />}
 
       {/* Hover outline glow */}
       {hovered && !box.selected && (

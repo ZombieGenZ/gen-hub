@@ -2,8 +2,6 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { X, Camera, CameraOff, Search, MapPin, Loader2 } from 'lucide-react';
 import { SearchResult } from '@/types/inventory';
@@ -128,34 +126,46 @@ const BarcodeScannerPanel = ({
   if (!isOpen) return null;
 
   return (
-    <Card className="absolute top-16 right-4 w-80 z-30 shadow-xl animate-in slide-in-from-right-5 duration-300">
-      <CardHeader className="pb-2">
+    <div 
+      className="absolute top-16 right-4 w-80 z-30 animate-in slide-in-from-right-5 duration-300 overflow-hidden"
+      style={{
+        backgroundColor: '#f8fafb',
+        border: '1px solid #e0ede8',
+        borderRadius: '12px',
+        boxShadow: '0 4px 24px rgba(0,0,0,0.10)',
+      }}
+    >
+      <div className="p-4" style={{ borderBottom: '1px solid #e0ede8' }}>
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Camera className="w-5 h-5 text-primary" />
+          <div className="text-base font-semibold flex items-center gap-2" style={{ color: '#1a2e25' }}>
+            <Camera className="w-5 h-5" style={{ color: '#2ea87e' }} />
             Quét Barcode/QR
-          </CardTitle>
+          </div>
           <Button variant="ghost" size="icon" onClick={onClose}>
-            <X className="w-4 h-4" />
+            <X className="w-4 h-4" style={{ color: '#4a5568' }} />
           </Button>
         </div>
-      </CardHeader>
+      </div>
       
-      <CardContent className="space-y-4">
+      <div className="p-4 space-y-4">
         {/* Camera Scanner */}
         <div className="relative">
           <div 
             id="barcode-scanner-container" 
             ref={containerRef}
             className={cn(
-              "w-full h-48 bg-muted rounded-lg overflow-hidden flex items-center justify-center",
-              isScanning && "border-2 border-primary"
+              "w-full h-48 rounded-lg overflow-hidden flex items-center justify-center",
+              isScanning ? "border-2" : ""
             )}
+            style={{ 
+              backgroundColor: '#e0ede8',
+              borderColor: isScanning ? '#2ea87e' : 'transparent'
+            }}
           >
             {!isScanning && (
-              <div className="text-center text-muted-foreground p-4">
-                <Camera className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">Nhấn nút bên dưới để bật camera</p>
+              <div className="text-center p-4">
+                <Camera className="w-12 h-12 mx-auto mb-2" style={{ color: '#2ea87e', opacity: 0.5 }} />
+                <p className="text-sm" style={{ color: '#4a5568' }}>Nhấn nút bên dưới để bật camera</p>
               </div>
             )}
           </div>
@@ -166,7 +176,7 @@ const BarcodeScannerPanel = ({
               <Button 
                 onClick={startScanning} 
                 className="flex-1"
-                variant="default"
+                style={{ backgroundColor: '#2ea87e', color: '#ffffff' }}
               >
                 <Camera className="w-4 h-4 mr-2" />
                 Bật Camera
@@ -186,15 +196,16 @@ const BarcodeScannerPanel = ({
 
         {/* Manual input */}
         <div className="space-y-2">
-          <p className="text-sm text-muted-foreground">Hoặc nhập mã thủ công:</p>
+          <p className="text-sm" style={{ color: '#4a5568' }}>Hoặc nhập mã thủ công:</p>
           <div className="flex gap-2">
             <Input
               placeholder="Nhập mã barcode/QR..."
               value={manualInput}
               onChange={(e) => setManualInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleManualSearch()}
+              style={{ backgroundColor: '#ffffff', border: '1px solid #e0ede8' }}
             />
-            <Button onClick={handleManualSearch} size="icon">
+            <Button onClick={handleManualSearch} size="icon" style={{ backgroundColor: '#2ea87e', color: '#ffffff' }}>
               <Search className="w-4 h-4" />
             </Button>
           </div>
@@ -202,15 +213,15 @@ const BarcodeScannerPanel = ({
 
         {/* Scan result */}
         {scanResult && (
-          <div className="p-2 bg-muted rounded-lg">
-            <p className="text-xs text-muted-foreground">Mã đã quét:</p>
-            <p className="font-mono text-sm font-medium">{scanResult}</p>
+          <div className="p-2 rounded-lg" style={{ backgroundColor: '#e0ede8' }}>
+            <p className="text-xs" style={{ color: '#4a5568' }}>Mã đã quét:</p>
+            <p className="font-mono text-sm font-medium" style={{ color: '#1a2e25' }}>{scanResult}</p>
           </div>
         )}
 
         {/* Error message */}
         {error && (
-          <div className="p-2 bg-destructive/10 text-destructive rounded-lg text-sm">
+          <div className="p-2 rounded-lg text-sm" style={{ backgroundColor: '#fee2e2', color: '#dc2626' }}>
             {error}
           </div>
         )}
@@ -218,25 +229,26 @@ const BarcodeScannerPanel = ({
         {/* Search results */}
         {searchResults.length > 0 && (
           <div className="space-y-2">
-            <p className="text-sm font-medium">
+            <p className="text-sm font-medium" style={{ color: '#1a2e25' }}>
               Tìm thấy {searchResults.length} kết quả:
             </p>
             <div className="max-h-40 overflow-y-auto space-y-1">
               {searchResults.map((result) => (
                 <div
                   key={result.boxId}
-                  className="p-2 bg-muted/50 rounded-lg flex items-center justify-between gap-2 hover:bg-muted transition-colors"
+                  className="p-2 rounded-lg flex items-center justify-between gap-2 transition-colors hover:bg-gray-50"
+                  style={{ backgroundColor: '#ffffff', border: '1px solid #e0ede8' }}
                 >
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm truncate">{result.boxName}</p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="font-medium text-sm truncate" style={{ color: '#1a2e25' }}>{result.boxName}</p>
+                    <p className="text-xs" style={{ color: '#4a5568' }}>
                       {result.rackName} • Tầng {result.level}
                     </p>
                   </div>
                   <Button
                     size="sm"
-                    variant="secondary"
                     onClick={() => handleLocate(result)}
+                    style={{ backgroundColor: '#2ea87e', color: '#ffffff' }}
                   >
                     <MapPin className="w-3 h-3 mr-1" />
                     Định vị
@@ -246,8 +258,8 @@ const BarcodeScannerPanel = ({
             </div>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 };
 

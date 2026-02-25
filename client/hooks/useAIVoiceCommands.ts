@@ -556,10 +556,14 @@ export const useAIVoiceCommands = (
 
     if (SpeechRecognitionAPI) {
       const recognition = new SpeechRecognitionAPI();
-      recognition.continuous = true;
+      // Use continuous: false to stop after each command, interimResults: true for real-time feedback
+      recognition.continuous = false;
       recognition.interimResults = true;
       recognition.lang = 'vi-VN';
       recognition.maxAlternatives = 3;
+
+      // Debounce timer for command processing
+      let debounceTimer: NodeJS.Timeout | null = null;
 
       recognition.onresult = (event: any) => {
         let finalTranscript = '';
@@ -582,7 +586,11 @@ export const useAIVoiceCommands = (
         setConfidence(maxConfidence);
 
         if (finalTranscript) {
-          processCommand(finalTranscript.toLowerCase().trim());
+          // Debounce command processing to avoid duplicate executions
+          if (debounceTimer) clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(() => {
+            processCommand(finalTranscript.toLowerCase().trim());
+          }, 300);
         }
       };
 
@@ -592,14 +600,30 @@ export const useAIVoiceCommands = (
           toast.error('Vui lòng cấp quyền microphone để sử dụng voice command');
         } else if (event.error === 'network') {
           toast.error('Lỗi kết nối mạng, vui lòng thử lại');
+        } else if (event.error === 'no-speech') {
+          // No speech detected, restart listening if still active
+          if (isListening) {
+            try {
+              recognition.start();
+            } catch (err) {
+              // Silently ignore
+            }
+          }
+          return;
         }
         setIsListening(false);
       };
 
       recognition.onend = () => {
+        // With continuous: false, restart listening after each command if still enabled
         if (isListening) {
           try {
-            recognition.start();
+            // Small delay before restarting to prevent rapid restarts
+            setTimeout(() => {
+              if (isListening && recognitionRef.current) {
+                recognition.start();
+              }
+            }, 500);
           } catch (err) {
             setIsListening(false);
           }

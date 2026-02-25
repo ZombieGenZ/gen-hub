@@ -97,6 +97,7 @@ export interface WarehouseState {
   collisionWarnings: string[];
   rackModalOpen: boolean;
   focusedRackId: string | null;
+  focusedBoxId: string | null; // For barcode scanning - animate camera to this box
   visibleRackIds: string[] | null; // null = show all, array = show only these
   fillRateFilter: FillRateStatus | null; // null = show all, otherwise filter by this status
 }

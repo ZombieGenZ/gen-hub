@@ -176,18 +176,138 @@ const VoiceCommandIndicator = memo(
       }
     };
 
-    if (!isListening) return null;
-
+    // Show indicator even when not listening - displays shortcut hint
     const currentSuggestion = allSuggestions[suggestionIndex];
 
     return (
-      <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center gap-3 animate-in fade-in slide-in-from-bottom-4 duration-300 max-w-2xl w-full px-4">
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center gap-3 animate-in fade-in slide-in-from-bottom-4 duration-300 max-w-md">
+        {/* Main listening indicator or shortcut hint */}
+        <div 
+          className={cn(
+            "flex items-center gap-3 px-4 py-2.5 rounded-xl shadow-lg transition-all duration-300",
+            isListening 
+              ? "bg-[#2ea87e] text-white"
+              : "bg-[#f8fafb] border border-[#e0ede8] text-[#1a2e25]"
+          )}
+          style={{ boxShadow: '0 4px 24px rgba(0,0,0,0.10)' }}
+        >
+          <div className="relative">
+            {isProcessing ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : isListening ? (
+              <>
+                <Mic className="w-5 h-5" />
+                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse" />
+              </>
+            ) : (
+              <Mic className="w-5 h-5 text-[#4a5568]" />
+            )}
+          </div>
+
+          <div className="flex flex-col">
+            {isListening ? (
+              <>
+                <span className="text-sm font-medium">
+                  {isProcessing ? 'Đang xử lý...' : 'Đang lắng nghe...'}
+                </span>
+                {confidence > 0 && (
+                  <span className="text-[10px] opacity-70">
+                    Độ tin cậy: {Math.round(confidence * 100)}%
+                  </span>
+                )}
+              </>
+            ) : (
+              <span className="text-sm font-medium">
+                Nhấn <kbd className="px-1.5 py-0.5 rounded bg-[#e0ede8] text-[#2ea87e] font-mono text-xs mx-1">Ctrl+M</kbd> để nói
+              </span>
+            )}
+          </div>
+
+          {isListening && <AudioWave isActive={!isProcessing} />}
+
+          {/* Help toggle button */}
+          {isListening && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 w-7 p-0 hover:bg-white/20 rounded-full"
+              onClick={() => setShowHelp(!showHelp)}
+            >
+              {showHelp ? (
+                <ChevronDown className="w-4 h-4" />
+              ) : (
+                <HelpCircle className="w-4 h-4" />
+              )}
+            </Button>
+          )}
+        </div>
+
+        {/* Transcript display */}
+        {isListening && transcript && (
+          <div 
+            className="px-4 py-2.5 rounded-xl shadow-lg max-w-md"
+            style={{ 
+              background: '#f8fafb', 
+              border: '1px solid #e0ede8',
+              boxShadow: '0 4px 24px rgba(0,0,0,0.10)' 
+            }}
+          >
+            <p className="text-sm">
+              <span style={{ color: '#4a5568' }}>Bạn nói: </span>
+              <span className="font-medium" style={{ color: '#1a2e25' }}>&quot;{transcript}&quot;</span>
+            </p>
+          </div>
+        )}
+
+        {/* Last command feedback */}
+        {isListening && lastCommand && !transcript && (
+          <div 
+            className="px-4 py-2 rounded-xl"
+            style={{ background: '#dcfce7', border: '1px solid #86efac' }}
+          >
+            <p className="text-xs text-green-700 flex items-center gap-2">
+              <Sparkles className="w-3 h-3" />
+              Đã thực hiện: {lastCommand.replace(/_/g, ' ')}
+            </p>
+          </div>
+        )}
+
+        {/* Dynamic suggestion when listening */}
+        {isListening && !showHelp && !transcript && (
+          <div className="flex flex-wrap items-center gap-2">
+            <span 
+              className="text-xs px-3 py-1.5 rounded-full"
+              style={{ background: '#f8fafb', border: '1px solid #e0ede8', color: '#4a5568' }}
+            >
+              💬 Thử nói: &quot;{currentSuggestion.text}&quot;
+            </span>
+            <button
+              onClick={() => setShowHelp(true)}
+              className="text-xs px-3 py-1.5 rounded-full flex items-center gap-1 transition-colors"
+              style={{ background: '#e0ede8', color: '#2ea87e' }}
+            >
+              <ChevronUp className="w-3 h-3" />
+              Xem lệnh
+            </button>
+          </div>
+        )}
+
         {/* Help panel */}
-        {showHelp && (
-          <div className="w-full bg-card/95 backdrop-blur-md border border-border rounded-xl shadow-2xl p-4 animate-in fade-in slide-in-from-bottom-2 duration-200">
+        {isListening && showHelp && (
+          <div 
+            className="w-full rounded-xl shadow-2xl p-4 animate-in fade-in slide-in-from-top-2 duration-200"
+            style={{ 
+              background: '#f8fafb', 
+              border: '1px solid #e0ede8',
+              boxShadow: '0 4px 24px rgba(0,0,0,0.10)',
+              maxWidth: '420px',
+              maxHeight: '60vh',
+              overflowY: 'auto'
+            }}
+          >
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-primary" />
+              <h3 className="text-sm font-semibold flex items-center gap-2" style={{ color: '#1a2e25' }}>
+                <Sparkles className="w-4 h-4" style={{ color: '#2ea87e' }} />
                 Lệnh giọng nói AI
               </h3>
               <Button
@@ -209,9 +329,12 @@ const VoiceCommandIndicator = memo(
                   className={cn(
                     'px-3 py-1 rounded-full text-xs whitespace-nowrap transition-all',
                     selectedCategory === idx
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-muted hover:bg-muted/80 text-muted-foreground'
+                      ? 'text-white'
+                      : 'text-[#4a5568]'
                   )}
+                  style={{ 
+                    background: selectedCategory === idx ? '#2ea87e' : '#e0ede8',
+                  }}
                 >
                   {cat.name}
                 </button>
@@ -219,7 +342,7 @@ const VoiceCommandIndicator = memo(
             </div>
 
             {/* Commands grid */}
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 gap-2">
               {COMMAND_CATEGORIES[selectedCategory].commands.map((cmd) => (
                 <QuickCommandButton
                   key={cmd.text}
@@ -229,86 +352,9 @@ const VoiceCommandIndicator = memo(
               ))}
             </div>
 
-            <p className="text-[10px] text-muted-foreground mt-3 text-center">
+            <p className="text-[10px] mt-3 text-center" style={{ color: '#4a5568' }}>
               💡 Nhấp vào lệnh hoặc nói trực tiếp để thực hiện
             </p>
-          </div>
-        )}
-
-        {/* Main listening indicator */}
-        <div className="flex items-center gap-3 bg-primary text-primary-foreground px-4 py-2.5 rounded-full shadow-lg">
-          <div className="relative">
-            {isProcessing ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
-              <>
-                <Mic className="w-5 h-5" />
-                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse" />
-              </>
-            )}
-          </div>
-
-          <div className="flex flex-col">
-            <span className="text-sm font-medium">
-              {isProcessing ? 'Đang xử lý...' : 'Đang lắng nghe...'}
-            </span>
-            {confidence > 0 && (
-              <span className="text-[10px] text-primary-foreground/70">
-                Độ tin cậy: {Math.round(confidence * 100)}%
-              </span>
-            )}
-          </div>
-
-          <AudioWave isActive={isListening && !isProcessing} />
-
-          {/* Help toggle button */}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 w-7 p-0 hover:bg-primary-foreground/20 rounded-full"
-            onClick={() => setShowHelp(!showHelp)}
-          >
-            {showHelp ? (
-              <ChevronDown className="w-4 h-4" />
-            ) : (
-              <HelpCircle className="w-4 h-4" />
-            )}
-          </Button>
-        </div>
-
-        {/* Transcript display */}
-        {transcript && (
-          <div className="bg-card/95 backdrop-blur-md border border-border px-4 py-2.5 rounded-lg shadow-lg max-w-md">
-            <p className="text-sm">
-              <span className="text-muted-foreground">Bạn nói: </span>
-              <span className="font-medium text-foreground">&quot;{transcript}&quot;</span>
-            </p>
-          </div>
-        )}
-
-        {/* Last command feedback */}
-        {lastCommand && !transcript && (
-          <div className="bg-green-500/10 border border-green-500/30 px-4 py-2 rounded-lg">
-            <p className="text-xs text-green-600 dark:text-green-400 flex items-center gap-2">
-              <Sparkles className="w-3 h-3" />
-              Đã thực hiện: {lastCommand.replace(/_/g, ' ')}
-            </p>
-          </div>
-        )}
-
-        {/* Dynamic suggestion */}
-        {!showHelp && !transcript && (
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            <span className="text-xs text-muted-foreground bg-card/80 px-3 py-1.5 rounded-full">
-              💬 Thử nói: &quot;{currentSuggestion.text}&quot;
-            </span>
-            <button
-              onClick={() => setShowHelp(true)}
-              className="text-xs text-primary hover:text-primary/80 bg-primary/10 px-3 py-1.5 rounded-full flex items-center gap-1 transition-colors"
-            >
-              <ChevronUp className="w-3 h-3" />
-              Xem tất cả lệnh
-            </button>
           </div>
         )}
       </div>
