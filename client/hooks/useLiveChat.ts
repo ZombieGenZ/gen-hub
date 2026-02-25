@@ -84,17 +84,21 @@ export function useLiveChat(): UseLiveChatReturn {
         });
 
         socket.on('connect', () => {
+            console.log('[LiveChat] Socket connected, socket.id:', socket.id);
             setIsConnected(true);
             // Join chat room
             socket.emit('chat:join', { sessionId: sid });
+            console.log('[LiveChat] Emitted chat:join with sessionId:', sid);
         });
 
-        socket.on('chat:joined', () => {
-            // Successfully joined room
+        socket.on('chat:joined', (data: unknown) => {
+            console.log('[LiveChat] chat:joined event received:', data);
         });
 
         socket.on('contact:messageCreated', (data: WsMessageCreatedPayload) => {
+            console.log('[LiveChat] contact:messageCreated event received:', JSON.stringify(data, null, 2));
             const msg = data.message;
+            console.log('[LiveChat] Message sender_type:', msg.sender_type, 'content:', msg.content);
             // Chỉ append tin nhắn từ STAFF hoặc AI (guest messages đã được thêm optimistically)
             if (msg.sender_type !== 'CUSTOMER') {
                 setMessages((prev) => {
@@ -107,16 +111,22 @@ export function useLiveChat(): UseLiveChatReturn {
         });
 
         socket.on('chat:error', (err: { code: string; message: string }) => {
-            console.error('[LiveChat] Chat error:', err);
+            console.error('[LiveChat] chat:error event received:', err);
         });
 
-        socket.on('disconnect', () => {
+        socket.on('disconnect', (reason: string) => {
+            console.log('[LiveChat] Socket disconnected, reason:', reason);
             setIsConnected(false);
         });
 
         socket.on('connect_error', (err: Error) => {
-            console.error('[LiveChat] Connection error:', err.message);
+            console.error('[LiveChat] connect_error:', err.message);
             setIsConnected(false);
+        });
+
+        // Log tất cả events nhận được từ server
+        socket.onAny((eventName: string, ...args: unknown[]) => {
+            console.log('[LiveChat] [onAny] Event:', eventName, 'Data:', args);
         });
 
         socketRef.current = socket;
@@ -250,6 +260,7 @@ export function useLiveChat(): UseLiveChatReturn {
                     sessionId,
                     content.trim()
                 );
+                console.log('[LiveChat] sendMessage REST response:', JSON.stringify(res, null, 2));
 
                 if (res.success && res.data) {
                     // Replace optimistic message with real one
