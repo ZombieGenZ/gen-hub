@@ -37,6 +37,8 @@ export interface SidebarLinkItem {
     href: string;
     icon: React.ElementType;
     exactMatch?: boolean;
+    badge?: string;
+    disabled?: boolean;
 }
 
 export interface SidebarGroup {
@@ -165,6 +167,8 @@ export function AppSidebarContent({
                                             label={item.label}
                                             isActive={isActive(item.href, item.exactMatch)}
                                             isCollapsed={isCollapsed}
+                                            badge={item.badge}
+                                            disabled={item.disabled}
                                         />
                                     ))}
                                 </div>

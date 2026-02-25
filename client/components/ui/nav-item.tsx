@@ -11,31 +11,48 @@ export interface NavItemProps {
     label: string;
     isActive?: boolean;
     isCollapsed?: boolean;
+    badge?: string;
+    disabled?: boolean;
 }
 
-export function NavItem({ href, icon: Icon, label, isActive, isCollapsed }: NavItemProps) {
-    const linkContent = (
-        <Link
-            href={href}
-            className={cn(
-                "flex items-center gap-3 py-2.5 rounded-full transition-all group outline-none",
-                isCollapsed ? "justify-center px-0 w-full" : "px-4",
-                isActive
-                    ? "bg-brand/10 text-brand font-medium"
-                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-            )}
-        >
+export function NavItem({ href, icon: Icon, label, isActive, isCollapsed, badge, disabled }: NavItemProps) {
+    const inner = (
+        <>
             <Icon className={cn(
                 "w-5 h-5 transition-colors flex-shrink-0",
-                isActive ? "text-brand" : "text-sidebar-foreground/60 group-hover:text-sidebar-foreground"
+                disabled
+                    ? "text-sidebar-foreground/30"
+                    : isActive ? "text-brand" : "text-sidebar-foreground/60 group-hover:text-sidebar-foreground"
             )} />
             <span className={cn(
                 "whitespace-nowrap transition-all duration-300 overflow-hidden text-[13px] font-medium leading-none",
-                isCollapsed ? "w-0 opacity-0 hidden" : "w-auto opacity-100 block"
+                isCollapsed ? "w-0 opacity-0 hidden" : "w-auto opacity-100 block",
+                disabled && "text-sidebar-foreground/40"
             )}>
                 {label}
             </span>
-        </Link>
+            {badge && !isCollapsed && (
+                <span className="ml-auto text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-slate-200 text-slate-500 leading-none">
+                    {badge}
+                </span>
+            )}
+        </>
+    );
+
+    const baseClass = cn(
+        "flex items-center gap-3 py-2.5 rounded-full transition-all group outline-none",
+        isCollapsed ? "justify-center px-0 w-full" : "px-4",
+        disabled
+            ? "opacity-50 cursor-not-allowed pointer-events-none"
+            : isActive
+                ? "bg-brand/10 text-brand font-medium"
+                : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+    );
+
+    const linkContent = disabled ? (
+        <span className={baseClass}>{inner}</span>
+    ) : (
+        <Link href={href} className={baseClass}>{inner}</Link>
     );
 
     if (isCollapsed) {

@@ -89,6 +89,12 @@ export default function ProductDetailPage() {
     const productId = params?.id as string;
     const { showToast } = useToast();
 
+    useEffect(() => {
+        if (productId === "create") {
+            router.replace("/dashboard/admin/products/create");
+        }
+    }, [productId, router]);
+
     // ── Data ──
     const [product, setProduct] = useState<Product | null>(null);
     const [batches, setBatches] = useState<Batch[]>([]);
@@ -221,7 +227,7 @@ export default function ProductDetailPage() {
     };
 
     useEffect(() => {
-        if (productId) {
+        if (productId && productId !== "create") {
             fetchProduct();
             fetchBatches();
         }

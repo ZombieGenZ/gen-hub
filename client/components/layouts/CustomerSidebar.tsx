@@ -7,6 +7,13 @@ import {
     ClockIcon,
     CreditCardIcon,
     BellIcon,
+    BuildingStorefrontIcon,
+    CubeIcon,
+    ArrowsRightLeftIcon,
+    BanknotesIcon,
+    ArrowUturnLeftIcon,
+    ExclamationTriangleIcon,
+    Cog6ToothIcon,
 } from "@heroicons/react/24/outline";
 import { AppSidebar, AppSidebarContent, SidebarGroup } from "./AppSidebar";
 
@@ -31,15 +38,27 @@ const customerNavGroups: SidebarGroup[] = [
         ]
     },
     {
+        title: "Nội bộ kho",
+        items: [
+            { href: "/dashboard/customer/warehouses", icon: BuildingStorefrontIcon, label: "Kho thuê của tôi", disabled: true, badge: "Sắp có" },
+            { href: "/dashboard/customer/products", icon: CubeIcon, label: "Hàng hóa", disabled: true, badge: "Sắp có" },
+            { href: "/dashboard/customer/inventory", icon: ArrowsRightLeftIcon, label: "Nhập / Xuất kho", disabled: true, badge: "Sắp có" },
+        ]
+    },
+    {
         title: "Tài chính",
         items: [
-            { href: "/dashboard/customer/payment", icon: CreditCardIcon, label: "Tài chính & Thanh toán" },
+            { href: "/dashboard/customer/payment", icon: CreditCardIcon, label: "Thanh toán" },
+            { href: "/dashboard/customer/balance", icon: BanknotesIcon, label: "Số dư tài khoản", disabled: true, badge: "Sắp có" },
+            { href: "/dashboard/customer/refund-requests", icon: ArrowUturnLeftIcon, label: "Yêu cầu hoàn tiền", disabled: true, badge: "Sắp có" },
         ]
     },
     {
         title: "Khác",
         items: [
             { href: "/dashboard/customer/notifications", icon: BellIcon, label: "Thông báo" },
+            { href: "/dashboard/customer/warnings", icon: ExclamationTriangleIcon, label: "Cảnh cáo", disabled: true, badge: "Sắp có" },
+            { href: "/dashboard/customer/settings", icon: Cog6ToothIcon, label: "Cài đặt tổ chức", disabled: true, badge: "Sắp có" },
         ]
     },
 ];

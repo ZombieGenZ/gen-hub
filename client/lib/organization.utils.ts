@@ -3,6 +3,7 @@ const API = process.env.NEXT_PUBLIC_API_URL;
 // ────────────────────────────────────────────────
 // In-memory cache cho organization_id
 // TTL: 60 giây — tránh gọi API liên tục
+// Cache phân biệt theo token để tránh nhầm lẫn giữa các user
 // ────────────────────────────────────────────────
 
 interface OrgCache {
@@ -11,14 +12,15 @@ interface OrgCache {
 }
 
 const CACHE_TTL_MS = 60_000; // 60 giây
-let cache: OrgCache | null = null;
+// Dùng Map với key là token để tránh cache nhầm giữa các user/role
+const cacheMap = new Map<string, OrgCache>();
 
 /**
  * Utility lấy organization_id của user hiện tại.
  *
  * Gọi GET /organizations?limit=1 (filter tự động theo userId từ backend),
  * lấy org đầu tiên trong danh sách,
- * cache kết quả trong bộ nhớ với TTL 60s.
+ * cache kết quả trong bộ nhớ với TTL 60s (per token).
  */
 export const orgHelper = {
     /**
@@ -28,9 +30,10 @@ export const orgHelper = {
      * @throws Error nếu không có token, không fetch được danh sách org, hoặc user chưa thuộc tổ chức nào
      */
     async getOrgId(token: string): Promise<string> {
-        // Trả về cache nếu còn hạn
-        if (cache && Date.now() < cache.expiresAt) {
-            return cache.orgId;
+        // Trả về cache nếu còn hạn (per token)
+        const cached = cacheMap.get(token);
+        if (cached && Date.now() < cached.expiresAt) {
+            return cached.orgId;
         }
 
         try {
@@ -59,8 +62,8 @@ export const orgHelper = {
                 throw new Error('Người dùng chưa thuộc tổ chức nào');
             }
 
-            // Lưu cache
-            cache = { orgId, expiresAt: Date.now() + CACHE_TTL_MS };
+            // Lưu cache theo token
+            cacheMap.set(token, { orgId, expiresAt: Date.now() + CACHE_TTL_MS });
             return orgId;
         } catch (error) {
             console.error('Lỗi khi lấy organization_id:', error);
@@ -69,9 +72,14 @@ export const orgHelper = {
     },
 
     /**
-     * Xóa cache (dùng khi user logout hoặc đổi tổ chức)
+     * Xóa cache của một token cụ thể (dùng khi user logout)
+     * Nếu không truyền token, xóa toàn bộ cache
      */
-    clearCache(): void {
-        cache = null;
+    clearCache(token?: string): void {
+        if (token) {
+            cacheMap.delete(token);
+        } else {
+            cacheMap.clear();
+        }
     },
 };
