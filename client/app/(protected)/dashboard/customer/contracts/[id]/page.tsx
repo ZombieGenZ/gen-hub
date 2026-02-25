@@ -21,7 +21,7 @@ import { rentalContractService } from "@/services/rental-contract/rental-contrac
 import { getContractStatusBanner } from "@/components/contract/ContractStatusBadge";
 import { ContractInfoSidebar } from "@/components/contract/ContractInfoSidebar";
 import { PaymentHistory } from "@/components/contract/PaymentHistory";
-import { StatusTimeline } from "@/components/contract/StatusTimeline";
+import { StatusTimeline, type TimelineEvent } from "@/components/contract/StatusTimeline";
 import type { RentalContractDetail } from "@/types/rental-contracts/rental-contracts.type";
 
 export default function CustomerContractDetailPage() {
@@ -223,11 +223,15 @@ export default function CustomerContractDetailPage() {
                                     events={
                                         contract.history?.map((h) => ({
                                             id: h.id,
-                                            type: h.type as any,
-                                            description: h.description,
-                                            created_at: h.created_at,
-                                            actor: h.actor,
-                                            metadata: h.metadata,
+                                            type: h.type as TimelineEvent["type"],
+                                            title: h.description,
+                                            date: h.created_at,
+                                            description: h.metadata
+                                                ? Object.entries(h.metadata)
+                                                    .map(([k, v]) => `${k}: ${v}`)
+                                                    .join(" · ")
+                                                : undefined,
+                                            actor: h.actor?.name,
                                         })) ?? []
                                     }
                                 />

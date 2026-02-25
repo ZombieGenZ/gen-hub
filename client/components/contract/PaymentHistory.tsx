@@ -56,7 +56,7 @@ const formatDate = (str: string) => {
     }
 };
 
-const STATUS_CONFIG: Record<PaymentStatus, { label: string; icon: React.ElementType; className: string }> = {
+const STATUS_CONFIG: Record<PaymentStatus, { label: string; icon: React.ComponentType<{ className?: string }>; className: string }> = {
     PAID: {
         label: "Đã thanh toán",
         icon: CheckCircle2,
@@ -84,7 +84,7 @@ const STATUS_CONFIG: Record<PaymentStatus, { label: string; icon: React.ElementT
     },
 };
 
-const METHOD_CONFIG: Record<PaymentMethod, { label: string; icon: React.ElementType }> = {
+const METHOD_CONFIG: Record<PaymentMethod, { label: string; icon: React.ComponentType<{ className?: string }> }> = {
     CASH: { label: "Tiền mặt", icon: BanknoteIcon },
     TRANSFER: { label: "Chuyển khoản", icon: QrCode },
     CARD: { label: "Thẻ", icon: CreditCard },

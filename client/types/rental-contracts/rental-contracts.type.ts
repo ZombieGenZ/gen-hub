@@ -107,8 +107,8 @@ export interface RentalContractDetail extends RentalContractListItem {
     payments?: {
         id: string;
         amount: number;
-        status: string;
-        method: string;
+        status: "PAID" | "PENDING" | "FAILED" | "REFUNDED" | "CANCELLED";
+        method: "CASH" | "TRANSFER" | "CARD" | "WALLET";
         transaction_code?: string;
         paid_at?: string;
         created_at: string;

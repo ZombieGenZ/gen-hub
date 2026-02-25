@@ -8,7 +8,7 @@ interface UserPresence {
   id: string;
   name: string;
   color: string;
-  cursorPosition: { x: number; y: number } | null;
+  cursorPosition?: { x: number; y: number } | null;
   selectedRackId: string | null;
   lastSeen: Date;
 }
@@ -39,7 +39,7 @@ const RealtimeCursors = memo(({ users, containerRef }: RealtimeCursorsProps) => 
               className="w-5 h-5 drop-shadow-lg"
               style={{ color: user.color, fill: user.color }}
             />
-            
+
             {/* User label */}
             <div
               className="absolute left-4 top-4 px-2 py-0.5 rounded text-xs font-medium text-white whitespace-nowrap shadow-lg"
