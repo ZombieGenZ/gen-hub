@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
     MessageCircle,
     X,
@@ -161,13 +161,38 @@ export function PrimeNestChatbot() {
         isSending,
         unreadCount,
         isAutoStarted,
+        lastNewMessage,
+        clearLastNewMessage,
         startChat,
         sendMessage,
         resetUnread,
     } = useLiveChat();
 
+    const [tooltipVisible, setTooltipVisible] = useState(false);
+    const tooltipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
+
+    // Hiển thị tooltip khi có tin nhắn mới và chat đang đóng
+    useEffect(() => {
+        if (!isOpen && lastNewMessage) {
+            setTooltipVisible(true);
+            // Tự ẩn sau 6 giây
+            if (tooltipTimerRef.current) clearTimeout(tooltipTimerRef.current);
+            tooltipTimerRef.current = setTimeout(() => {
+                setTooltipVisible(false);
+            }, 6000);
+        }
+        return () => {
+            if (tooltipTimerRef.current) clearTimeout(tooltipTimerRef.current);
+        };
+    }, [lastNewMessage, isOpen]);
+
+    const handleDismissTooltip = useCallback(() => {
+        setTooltipVisible(false);
+        clearLastNewMessage();
+        if (tooltipTimerRef.current) clearTimeout(tooltipTimerRef.current);
+    }, [clearLastNewMessage]);
 
     // Auto scroll to bottom
     useEffect(() => {
@@ -205,6 +230,10 @@ export function PrimeNestChatbot() {
     const handleOpen = () => {
         setIsOpen(true);
         resetUnread();
+        // Ẩn tooltip khi mở chat
+        setTooltipVisible(false);
+        clearLastNewMessage();
+        if (tooltipTimerRef.current) clearTimeout(tooltipTimerRef.current);
     };
 
     const handleSendMessage = async () => {
@@ -595,6 +624,51 @@ export function PrimeNestChatbot() {
 
     return (
         <>
+            {/* Tooltip thông báo tin nhắn mới khi chat đang đóng */}
+            {!isOpen && tooltipVisible && lastNewMessage && (
+                <div
+                    className="fixed bottom-24 right-6 z-50 max-w-[260px] animate-in fade-in slide-in-from-bottom-2 duration-300"
+                    style={{ animation: 'chatTooltipIn 0.3s ease-out' }}
+                >
+                    <div className="bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden">
+                        {/* Header */}
+                        <div className="bg-primary px-3 py-2 flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                                <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center shrink-0">
+                                    {lastNewMessage.sender_type === 'AI' ? (
+                                        <Bot className="w-3.5 h-3.5 text-white" />
+                                    ) : (
+                                        <UserRound className="w-3.5 h-3.5 text-white" />
+                                    )}
+                                </div>
+                                <span className="text-white text-xs font-medium truncate">
+                                    {lastNewMessage.sender_name ||
+                                        (lastNewMessage.sender_type === 'AI' ? 'GEN-HUB AI' : 'Staff')}
+                                </span>
+                            </div>
+                            <button
+                                onClick={handleDismissTooltip}
+                                className="w-5 h-5 hover:bg-white/20 rounded-full flex items-center justify-center transition-colors shrink-0"
+                                aria-label="Đóng thông báo"
+                            >
+                                <X className="w-3 h-3 text-white" />
+                            </button>
+                        </div>
+                        {/* Body */}
+                        <div
+                            className="px-3 py-2.5 text-sm text-slate-700 leading-relaxed cursor-pointer hover:bg-slate-50 transition-colors"
+                            onClick={handleOpen}
+                        >
+                            <p className="line-clamp-3">
+                                {lastNewMessage.content}
+                            </p>
+                        </div>
+                        {/* Arrow */}
+                        <div className="absolute -bottom-2 right-7 w-4 h-4 bg-white border-r border-b border-slate-100 rotate-45" />
+                    </div>
+                </div>
+            )}
+
             {/* Chat Button (FAB) */}
             <button
                 onClick={handleOpen}

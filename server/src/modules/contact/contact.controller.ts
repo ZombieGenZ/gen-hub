@@ -132,7 +132,8 @@ export class ContactController {
                 success: true,
                 data: {
                     session_id: 'uuid-session',
-                    token: 'guest-token...'
+                    code: 'TK-123456',
+                    // AI welcome message sẽ được push qua WebSocket sau khi tạo
                 }
             }
         }

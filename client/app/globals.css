@@ -8,44 +8,49 @@
 @variant dark (&:where(.dark, .dark *));
 
 :root {
-    --background: oklch(0.967 0.003 264.542);
-    --foreground: oklch(0.21 0.034 264.665);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.21 0.034 264.665);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.21 0.034 264.665);
-    --primary: oklch(0.71 0.121 186);
-    --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.551 0.027 264.364 / 0.075);
-    --secondary-foreground: oklch(0.21 0.034 264.665);
-    --muted: oklch(0.928 0.006 264.531);
-    --muted-foreground: oklch(0.21 0.034 264.665 / 0.7);
-    --accent: oklch(0.985 0.002 247.839);
-    --accent-foreground: oklch(0.21 0.034 264.665);
-    --destructive: oklch(0.808 0.114 19.571);
-    --destructive-foreground: oklch(0.577 0.245 27.325);
-    --border: oklch(0.707 0.022 261.325 / 0.125);
-    --input: oklch(0.21 0.034 264.665 / 0.15);
-    --ring: oklch(0.71 0.121 186);
-    --chart-1: oklch(0.78 0.11 193); /* Teal 400 - Imports */
-    --chart-2: oklch(0.69 0.19 15);  /* Rose 400 - Exports */
-    --chart-3: oklch(0.67 0.17 48);  /* Orange 500 - Warning */
-    --chart-4: oklch(0.63 0.22 291); /* Purple 500 - Analogous */
-    --chart-5: oklch(0.71 0.12 186); /* Brand Primary - Fallback */
-    --sidebar: oklch(0.967 0.003 264.542);
-    --sidebar-foreground: oklch(0.21 0.034 264.665);
-    --sidebar-primary: oklch(0 0 0 / 0.85);
-    --sidebar-primary-foreground: oklch(1 0 0 / 0.85);
-    --sidebar-accent: oklch(0.551 0.027 264.364 / 0.1);
-    --sidebar-accent-foreground: oklch(0.21 0.034 264.665);
-    --sidebar-border: oklch(0.21 0.034 264.665 / 0.125);
-    --sidebar-ring: oklch(0.6 0.103 188);
-    --radius: 1rem;
-    --font-sans: var(--font-rem), ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-    --font-serif: 'Playfair Display', serif;
-    --primary-light: oklch(0.79 0.131 185);
-    --primary-dark: oklch(0.71 0.121 186);
-    --primary-ring: oklch(0.6 0.103 188);
+  --background: oklch(0.967 0.003 264.542);
+  --foreground: oklch(0.21 0.034 264.665);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.21 0.034 264.665);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.21 0.034 264.665);
+  --primary: oklch(0.71 0.121 186);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.551 0.027 264.364 / 0.075);
+  --secondary-foreground: oklch(0.21 0.034 264.665);
+  --muted: oklch(0.928 0.006 264.531);
+  --muted-foreground: oklch(0.21 0.034 264.665 / 0.7);
+  --accent: oklch(0.985 0.002 247.839);
+  --accent-foreground: oklch(0.21 0.034 264.665);
+  --destructive: oklch(0.808 0.114 19.571);
+  --destructive-foreground: oklch(0.577 0.245 27.325);
+  --border: oklch(0.707 0.022 261.325 / 0.125);
+  --input: oklch(0.21 0.034 264.665 / 0.15);
+  --ring: oklch(0.71 0.121 186);
+  --chart-1: oklch(0.78 0.11 193);
+  /* Teal 400 - Imports */
+  --chart-2: oklch(0.69 0.19 15);
+  /* Rose 400 - Exports */
+  --chart-3: oklch(0.67 0.17 48);
+  /* Orange 500 - Warning */
+  --chart-4: oklch(0.63 0.22 291);
+  /* Purple 500 - Analogous */
+  --chart-5: oklch(0.71 0.12 186);
+  /* Brand Primary - Fallback */
+  --sidebar: oklch(0.967 0.003 264.542);
+  --sidebar-foreground: oklch(0.21 0.034 264.665);
+  --sidebar-primary: oklch(0 0 0 / 0.85);
+  --sidebar-primary-foreground: oklch(1 0 0 / 0.85);
+  --sidebar-accent: oklch(0.551 0.027 264.364 / 0.1);
+  --sidebar-accent-foreground: oklch(0.21 0.034 264.665);
+  --sidebar-border: oklch(0.21 0.034 264.665 / 0.125);
+  --sidebar-ring: oklch(0.6 0.103 188);
+  --radius: 1rem;
+  --font-sans: var(--font-rem), ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-serif: 'Playfair Display', serif;
+  --primary-light: oklch(0.79 0.131 185);
+  --primary-dark: oklch(0.71 0.121 186);
+  --primary-ring: oklch(0.6 0.103 188);
 
   /* Additional variables needed for custom classes */
   --shadow-premium: 0 12px 30px -10px rgba(0, 0, 0, 0.08), 0 4px 10px -4px rgba(0, 0, 0, 0.04);
@@ -79,11 +84,16 @@
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.78 0.11 193); /* Teal 400 */
-  --chart-2: oklch(0.69 0.19 15);  /* Rose 400 */
-  --chart-3: oklch(0.67 0.17 48);  /* Orange 500 */
-  --chart-4: oklch(0.63 0.22 291); /* Purple 500 */
-  --chart-5: oklch(0.71 0.12 186); /* Brand Primary */
+  --chart-1: oklch(0.78 0.11 193);
+  /* Teal 400 */
+  --chart-2: oklch(0.69 0.19 15);
+  /* Rose 400 */
+  --chart-3: oklch(0.67 0.17 48);
+  /* Orange 500 */
+  --chart-4: oklch(0.63 0.22 291);
+  /* Purple 500 */
+  --chart-5: oklch(0.71 0.12 186);
+  /* Brand Primary */
   --sidebar: oklch(0.205 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
   --sidebar-primary: oklch(0.488 0.243 264.376);
@@ -197,7 +207,7 @@
   --color-hu-border: hsl(var(--hu-border));
   --color-hu-input: hsl(var(--hu-input));
   --color-hu-ring: hsl(var(--hu-ring));
-  
+
   /* Custom */
   --font-sans: var(--font-sans);
   --font-serif: var(--font-serif);
@@ -212,6 +222,7 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   html {
     /* 
      * QUAN TRỌNG: Không đặt overflow-x: hidden trên html
@@ -220,6 +231,7 @@
      */
     scroll-behavior: smooth;
   }
+
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-sans);
@@ -227,7 +239,8 @@
      * Đặt overflow-x: hidden trên body thay vì html
      * Điều này cho phép sticky hoạt động đúng
      */
-    overflow-x: clip; /* Sử dụng clip thay vì hidden để không tạo scroll container mới */
+    overflow-x: clip;
+    /* Sử dụng clip thay vì hidden để không tạo scroll container mới */
     min-height: 100vh;
   }
 }
@@ -236,13 +249,16 @@
 html::-webkit-scrollbar {
   width: 8px;
 }
+
 html::-webkit-scrollbar-track {
   background: transparent;
 }
+
 html::-webkit-scrollbar-thumb {
   background: rgb(203 213 225);
   border-radius: 4px;
 }
+
 html::-webkit-scrollbar-thumb:hover {
   background: rgb(148 163 184);
 }
@@ -250,11 +266,14 @@ html::-webkit-scrollbar-thumb:hover {
 /* Custom Utilities */
 
 .scrollbar-hide {
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
 }
+
 .scrollbar-hide::-webkit-scrollbar {
-    display: none;
+  display: none;
 }
 
 .custom-map-popup .mapboxgl-popup-content {
@@ -264,7 +283,7 @@ html::-webkit-scrollbar-thumb:hover {
 }
 
 .custom-map-popup .mapboxgl-popup-tip {
-  display: none !important; 
+  display: none !important;
 }
 
 .notification-dropdown {
@@ -377,7 +396,7 @@ html::-webkit-scrollbar-thumb:hover {
   --ds-input-ring: 0 0 0 1px var(--ds-gray-alpha-600), 0 0 0 4px rgba(0, 0, 0, .16);
   --ds-input-error-ring: 0 0 0 1px var(--ds-red-900), 0 0 0 4px var(--ds-red-300);
   --ds-input-error-hover-ring: 0 0 0 1px var(--ds-red-900), 0 0 0 4px var(--ds-red-500);
-  --ds-red-900-alpha-160: hsla(358,66%,48%,.16);
+  --ds-red-900-alpha-160: hsla(358, 66%, 48%, .16);
   --geist-error: #ee0000;
 }
 
@@ -399,7 +418,7 @@ html::-webkit-scrollbar-thumb:hover {
   --ds-gray-1000-h: hsl(0, 0%, 80%);
   --ds-gray-alpha-200: hsla(0, 0%, 100%, 0.09);
   --ds-gray-alpha-400: hsla(0, 0%, 100%, 0.14);
-  --ds-background-100: hsla(0,0%,4%, 1);
+  --ds-background-100: hsla(0, 0%, 4%, 1);
   --ds-shadow-border: 0 0 0 1px rgba(255, 255, 255, 0.145);
   --ds-shadow-small: 0px 1px 2px rgba(0, 0, 0, 0.16);
   --ds-shadow-border-small: var(--ds-shadow-border), 0px 1px 2px rgba(0, 0, 0, 0.16);
@@ -419,7 +438,7 @@ html::-webkit-scrollbar-thumb:hover {
   --ds-background-200: hsla(0, 0%, 0%, 1);
   --geist-foreground: #fff;
   --ds-input-ring: 0 0 0 1px var(--ds-gray-alpha-600), 0 0 0 4px rgba(255, 255, 255, .24);
-  --ds-red-900-alpha-160: hsla(358,100%,69%,.16);
+  --ds-red-900-alpha-160: hsla(358, 100%, 69%, .16);
   --geist-error: #ff0000;
 }
 
@@ -431,7 +450,7 @@ html::-webkit-scrollbar-thumb:hover {
   border-radius: var(--radius-xl) !important;
   box-shadow: var(--ds-shadow-modal) !important;
   border: 0px solid var(--border) !important;
-  
+
   overflow: hidden !important;
 }
 
@@ -441,4 +460,25 @@ html::-webkit-scrollbar-thumb:hover {
     width: 98vw !important;
     height: 95vh !important;
   }
+}
+
+/* Chat message tooltip animation */
+@keyframes chatTooltipIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }

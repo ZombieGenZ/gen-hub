@@ -16,7 +16,7 @@ const CHAT_SESSION_KEY =
 const CHAT_AUTO_START_DELAY = Number(
     process.env.NEXT_PUBLIC_CHAT_AUTO_START_DELAY || '10000'
 );
-const CHAT_AUTO_STARTED_KEY = 'genhub_chat_auto_started';
+
 
 // Tạo hoặc lấy UID từ localStorage
 function getOrCreateUid(): string {
@@ -48,9 +48,24 @@ export interface UseLiveChatReturn {
     welcomeMessage: string | null;
     unreadCount: number;
     isAutoStarted: boolean;
+    lastNewMessage: LiveChatMessage | null;
+    clearLastNewMessage: () => void;
     startChat: (initialMessage?: string) => Promise<void>;
     sendMessage: (content: string) => Promise<void>;
     resetUnread: () => void;
+}
+
+// Phát âm thanh notification
+function playNotificationSound() {
+    try {
+        const audio = new Audio('/live-chat-notification.mp3');
+        audio.volume = 0.5;
+        audio.play().catch(() => {
+            // Bỏ qua lỗi nếu trình duyệt chặn autoplay
+        });
+    } catch {
+        // Ignore
+    }
 }
 
 export function useLiveChat(): UseLiveChatReturn {
@@ -62,6 +77,7 @@ export function useLiveChat(): UseLiveChatReturn {
     const [welcomeMessage, setWelcomeMessage] = useState<string | null>(null);
     const [unreadCount, setUnreadCount] = useState(0);
     const [isAutoStarted, setIsAutoStarted] = useState(false);
+    const [lastNewMessage, setLastNewMessage] = useState<LiveChatMessage | null>(null);
 
     const socketRef = useRef<Socket | null>(null);
     const sessionIdRef = useRef<string | null>(null);
@@ -107,6 +123,10 @@ export function useLiveChat(): UseLiveChatReturn {
                     return [...prev, msg];
                 });
                 setUnreadCount((prev) => prev + 1);
+                // Lưu tin nhắn mới nhất để hiển thị tooltip khi chat đang đóng
+                setLastNewMessage(msg);
+                // Phát âm thanh thông báo
+                playNotificationSound();
             }
         });
 
@@ -212,26 +232,24 @@ export function useLiveChat(): UseLiveChatReturn {
         [sessionId, connectWebSocket]
     );
 
-    // --- Auto-start chat after delay (first visit only) ---
+    // --- Auto-start chat after delay (nếu chưa có session trong localStorage) ---
     useEffect(() => {
         if (typeof window === 'undefined') return;
         // Disabled if delay is 0 or negative
         if (CHAT_AUTO_START_DELAY <= 0) return;
         // Already has a session (resumed or started)
         if (sessionId) return;
-        // Already auto-started in this browser before
-        if (localStorage.getItem(CHAT_AUTO_STARTED_KEY)) return;
+        // Nếu localStorage đã có session id thì không auto-start
+        if (getSavedSessionId()) return;
 
         const timer = setTimeout(async () => {
             // Double-check session hasn't been created while waiting
             if (sessionIdRef.current) return;
             try {
-                localStorage.setItem(CHAT_AUTO_STARTED_KEY, 'true');
                 await startChat();
                 setIsAutoStarted(true);
             } catch (err) {
                 console.error('[LiveChat] Auto-start failed:', err);
-                localStorage.removeItem(CHAT_AUTO_STARTED_KEY);
             }
         }, CHAT_AUTO_START_DELAY);
 
@@ -301,6 +319,10 @@ export function useLiveChat(): UseLiveChatReturn {
         setUnreadCount(0);
     }, []);
 
+    const clearLastNewMessage = useCallback(() => {
+        setLastNewMessage(null);
+    }, []);
+
     return {
         messages,
         sessionId,
@@ -310,6 +332,8 @@ export function useLiveChat(): UseLiveChatReturn {
         welcomeMessage,
         unreadCount,
         isAutoStarted,
+        lastNewMessage,
+        clearLastNewMessage,
         startChat,
         sendMessage,
         resetUnread,

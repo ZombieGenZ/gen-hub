@@ -1456,7 +1456,7 @@ export class ContactService implements OnModuleInit {
     async startChatSession(
         dto: StartChatDto,
         lang: string = 'vi',
-    ): Promise<{ sessionId: string; code: string; welcomeMessage?: string }> {
+    ): Promise<{ sessionId: string; code: string }> {
         // Tạo session_id unique
         const sessionId = require('crypto').randomUUID();
 
@@ -1490,31 +1490,7 @@ export class ContactService implements OnModuleInit {
             enable_ai_reply: enableAiReply,
         });
 
-        // Tạo welcome message từ AI nếu enabled
-        let welcomeMessage: string | undefined;
-        if (enableAiReply && this.cozeService.isEnabled()) {
-            const aiResult = await this.cozeService.chat(
-                dto.initialMessage || 'Xin chào',
-                conversation.id,
-                sessionId,
-            );
-            if (aiResult.success) {
-                welcomeMessage = aiResult.content;
-                // Lưu AI message vào database
-                await this.repository.createMessage({
-                    conversation_id: conversation.id,
-                    sender_type: MessageSender.AI,
-                    sender_name: 'GEN-HUB AI',
-                    content: welcomeMessage,
-                    message_type: MessageType.TEXT,
-                    is_ai_response: true,
-                    ai_model: aiResult.model,
-                    ai_confidence: aiResult.confidence,
-                });
-            }
-        }
-
-        // Nếu có initialMessage, lưu vào database
+        // Nếu có initialMessage, lưu vào database trước
         if (dto.initialMessage) {
             await this.repository.createMessage({
                 conversation_id: conversation.id,
@@ -1530,10 +1506,57 @@ export class ContactService implements OnModuleInit {
             metaData: { sessionId, code: conversation.code },
         });
 
+        // Gọi Coze AI để tạo welcome message bất đồng bộ (fire-and-forget)
+        // Không await để tránh block response và gây 503 timeout
+        if (enableAiReply && this.cozeService.isEnabled()) {
+            this.cozeService.chat(
+                dto.initialMessage || 'Xin chào',
+                conversation.id,
+                sessionId,
+            ).then(async (aiResult) => {
+                if (aiResult.success && aiResult.content) {
+                    try {
+                        // Lưu AI welcome message vào database
+                        const aiMessage = await this.repository.createMessage({
+                            conversation_id: conversation.id,
+                            sender_type: MessageSender.AI,
+                            sender_name: 'GEN-HUB AI',
+                            content: aiResult.content,
+                            message_type: MessageType.TEXT,
+                            is_ai_response: true,
+                            ai_model: aiResult.model,
+                            ai_confidence: aiResult.confidence,
+                        });
+
+                        // Emit WebSocket để client nhận welcome message sau khi session đã được tạo
+                        this.websocketGateway.emitContactMessageCreated(
+                            conversation.id,
+                            {
+                                id: aiMessage.id,
+                                sender_type: MessageSender.AI,
+                                sender_name: 'GEN-HUB AI',
+                                content: aiResult.content,
+                                is_internal: false,
+                                created_at: aiMessage.created_at,
+                            },
+                            sessionId,
+                        );
+                    } catch (err) {
+                        this.systemLogService.error('contact', 'ai_welcome_save', `Failed to save AI welcome message: ${err}`, {
+                            metaData: { sessionId, conversationId: conversation.id },
+                        });
+                    }
+                }
+            }).catch((err) => {
+                this.systemLogService.error('contact', 'ai_welcome', `AI welcome message failed for session ${sessionId}: ${err}`, {
+                    metaData: { sessionId, conversationId: conversation.id },
+                });
+            });
+        }
+
         return {
             sessionId,
             code: conversation.code,
-            welcomeMessage,
         };
     }
 
