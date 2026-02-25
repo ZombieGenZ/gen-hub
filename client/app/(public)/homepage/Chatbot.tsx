@@ -102,6 +102,7 @@ export function PrimeNestChatbot() {
         isLoading,
         isSending,
         unreadCount,
+        isAutoStarted,
         startChat,
         sendMessage,
         resetUnread,
@@ -135,6 +136,13 @@ export function PrimeNestChatbot() {
             setChatStarted(true);
         }
     }, [sessionId]);
+
+    // Auto-open chat khi auto-start hoàn tất
+    useEffect(() => {
+        if (isAutoStarted && sessionId) {
+            setIsOpen(true);
+        }
+    }, [isAutoStarted, sessionId]);
 
     const handleOpen = () => {
         setIsOpen(true);

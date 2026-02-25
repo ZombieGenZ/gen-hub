@@ -13,6 +13,10 @@ const CHAT_UID_KEY =
     process.env.NEXT_PUBLIC_CHAT_UID_KEY || 'genhub_chat_uid';
 const CHAT_SESSION_KEY =
     process.env.NEXT_PUBLIC_CHAT_SESSION_KEY || 'genhub_chat_session';
+const CHAT_AUTO_START_DELAY = Number(
+    process.env.NEXT_PUBLIC_CHAT_AUTO_START_DELAY || '10000'
+);
+const CHAT_AUTO_STARTED_KEY = 'genhub_chat_auto_started';
 
 // Tạo hoặc lấy UID từ localStorage
 function getOrCreateUid(): string {
@@ -43,6 +47,7 @@ export interface UseLiveChatReturn {
     isSending: boolean;
     welcomeMessage: string | null;
     unreadCount: number;
+    isAutoStarted: boolean;
     startChat: (initialMessage?: string) => Promise<void>;
     sendMessage: (content: string) => Promise<void>;
     resetUnread: () => void;
@@ -56,6 +61,7 @@ export function useLiveChat(): UseLiveChatReturn {
     const [isSending, setIsSending] = useState(false);
     const [welcomeMessage, setWelcomeMessage] = useState<string | null>(null);
     const [unreadCount, setUnreadCount] = useState(0);
+    const [isAutoStarted, setIsAutoStarted] = useState(false);
 
     const socketRef = useRef<Socket | null>(null);
     const sessionIdRef = useRef<string | null>(null);
@@ -196,6 +202,33 @@ export function useLiveChat(): UseLiveChatReturn {
         [sessionId, connectWebSocket]
     );
 
+    // --- Auto-start chat after delay (first visit only) ---
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        // Disabled if delay is 0 or negative
+        if (CHAT_AUTO_START_DELAY <= 0) return;
+        // Already has a session (resumed or started)
+        if (sessionId) return;
+        // Already auto-started in this browser before
+        if (localStorage.getItem(CHAT_AUTO_STARTED_KEY)) return;
+
+        const timer = setTimeout(async () => {
+            // Double-check session hasn't been created while waiting
+            if (sessionIdRef.current) return;
+            try {
+                localStorage.setItem(CHAT_AUTO_STARTED_KEY, 'true');
+                await startChat();
+                setIsAutoStarted(true);
+            } catch (err) {
+                console.error('[LiveChat] Auto-start failed:', err);
+                localStorage.removeItem(CHAT_AUTO_STARTED_KEY);
+            }
+        }, CHAT_AUTO_START_DELAY);
+
+        return () => clearTimeout(timer);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [sessionId, startChat]);
+
     // --- Send message ---
     const sendMessage = useCallback(
         async (content: string) => {
@@ -265,6 +298,7 @@ export function useLiveChat(): UseLiveChatReturn {
         isSending,
         welcomeMessage,
         unreadCount,
+        isAutoStarted,
         startChat,
         sendMessage,
         resetUnread,
