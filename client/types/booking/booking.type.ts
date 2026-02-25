@@ -1,4 +1,5 @@
 import { Coupon } from "@/types/coupons/coupon.type";
+import { DurationUnit } from "@/types/rental-duration-tier/rental-duration-tier.type";
 
 export interface QuotationBreakdown {
   basePrice: number;
@@ -56,49 +57,59 @@ export interface BookingConfiguration {
   quotation: QuotationBreakdown;
 }
 
-export const MOCK_DURATION_TIERS = [
-  {
-    id: "tier-1m",
-    name: "1 Tháng",
-    duration_value: 1,
-    duration_unit: "MONTH",
-    description: "Linh hoạt, phù hợp thử nghiệm",
-    order: 1,
-    discount_percent: 0,
-    is_active: true,
-  },
-  {
-    id: "tier-6m",
-    name: "6 Tháng",
-    duration_value: 6,
-    duration_unit: "MONTH",
-    description: "Gói tiêu chuẩn",
-    order: 2,
-    discount_percent: 0,
-    is_active: true,
-  },
-  {
-    id: "tier-12m",
-    name: "1 Năm",
-    duration_value: 12,
-    duration_unit: "MONTH",
-    description: "Giảm 5% tổng giá thuê",
-    order: 3,
-    discount_percent: 5,
-    is_active: true,
-  },
-  {
-    id: "tier-24m",
-    name: "2 Năm",
-    duration_value: 24,
-    duration_unit: "MONTH",
-    description: "Giảm 10% + Tặng Bảo hiểm cơ bản",
-    order: 4,
-    discount_percent: 10,
-    gift_insurance: true,
-    is_active: true,
-  },
-];
+export const MOCK_DURATION_TIERS: Array<{
+  id: string;
+  name: string;
+  duration_value: number;
+  duration_unit: DurationUnit;
+  description: string;
+  order: number;
+  discount_percent: number;
+  is_active: boolean;
+  gift_insurance?: boolean;
+}> = [
+    {
+      id: "tier-1m",
+      name: "1 Tháng",
+      duration_value: 1,
+      duration_unit: "MONTH",
+      description: "Linh hoạt, phù hợp thử nghiệm",
+      order: 1,
+      discount_percent: 0,
+      is_active: true,
+    },
+    {
+      id: "tier-6m",
+      name: "6 Tháng",
+      duration_value: 6,
+      duration_unit: "MONTH",
+      description: "Gói tiêu chuẩn",
+      order: 2,
+      discount_percent: 0,
+      is_active: true,
+    },
+    {
+      id: "tier-12m",
+      name: "1 Năm",
+      duration_value: 12,
+      duration_unit: "MONTH",
+      description: "Giảm 5% tổng giá thuê",
+      order: 3,
+      discount_percent: 5,
+      is_active: true,
+    },
+    {
+      id: "tier-24m",
+      name: "2 Năm",
+      duration_value: 24,
+      duration_unit: "MONTH",
+      description: "Giảm 10% + Tặng Bảo hiểm cơ bản",
+      order: 4,
+      discount_percent: 10,
+      gift_insurance: true,
+      is_active: true,
+    },
+  ];
 
 export const MOCK_ADDONS = [
   {
