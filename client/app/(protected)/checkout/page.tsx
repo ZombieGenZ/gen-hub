@@ -88,7 +88,7 @@ function CheckoutContent() {
                 const userID = await authStorage.getUserID();
                 const listOrganization = await organizationService.getOrganizations(token);
                 console.log(listOrganization.items);
-                
+
                 const organization = listOrganization.items.find((o: Organization) => o.owner.id == userID);
                 if (organization) {
                     const org = await organizationService.getOrganizationById(token, organization.id);
@@ -485,7 +485,7 @@ function CheckoutContainer() {
                     // Combine found API addons with fallback mocks (avoid duplicates)
                     const existingIds = addons.map(a => String(a.id));
                     const newMocks = mockAddons.filter(m => !existingIds.includes(m.id));
-                    addons = [...addons, ...newMocks];
+                    addons = [...addons, ...(newMocks as unknown as AddonResponse[])];
                 }
 
                 // Fetch Insurance (API with Mock Fallback)
@@ -510,7 +510,7 @@ function CheckoutContainer() {
                 }
 
                 // 3. Calculate Quotation 
-                const basePrice = Number(property.price_per_month || property.price) || 0;
+                const basePrice = Number(property.price_per_month) || 0;
                 const durationMonths = durationTier?.duration_value || 1;
 
                 const durationDiscountPercent = durationTier?.discount_percent || 0;
@@ -584,10 +584,10 @@ function CheckoutContainer() {
                 // 4. Construct Session
                 const newSession: Partial<CheckoutSession> = {
                     warehouse_template_id: warehouseId || property.id.toString(),
-                    warehouse_name: property.name || property.title,
+                    warehouse_name: property.name,
                     warehouse_details: {
-                        address: property.address || property.location,
-                        image: property.images?.[0] || property.image
+                        address: property.address_detail,
+                        image: property.images?.[0]?.url
                     },
                     rental_type: rentalType,
                     row_template_ids: rowIds,
