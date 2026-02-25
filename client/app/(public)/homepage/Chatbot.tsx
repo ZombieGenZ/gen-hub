@@ -15,19 +15,13 @@ import {
     Ruler,
     DollarSign,
     CheckCircle,
-    Loader2
+    Loader2,
+    UserRound,
+    Wifi,
+    WifiOff,
 } from "lucide-react";
-
-const CLAUDE_API_KEY = ""; // Thêm API key Claude của bạn vào đây
-const CLAUDE_API_URL = "https://api.anthropic.com/v1/messages";
-
-interface Message {
-    id: string;
-    type: 'user' | 'bot' | 'system';
-    content: string;
-    timestamp: Date;
-    isTyping?: boolean;
-}
+import { useLiveChat } from "@/hooks/useLiveChat";
+import { LiveChatMessage } from "@/types/live-chat/live-chat.type";
 
 interface QuickReply {
     id: string;
@@ -52,7 +46,7 @@ interface AppointmentForm {
     note: string;
 }
 
-type ChatMode = 'bot' | 'live' | 'appointment' | 'lead-form';
+type ChatMode = 'bot' | 'appointment' | 'lead-form';
 
 const quickReplies: QuickReply[] = [
     {
@@ -81,156 +75,37 @@ const quickReplies: QuickReply[] = [
     }
 ];
 
-const botResponses: Record<string, string> = {
-    'diện tích': `Chúng tôi có nhiều lựa chọn diện tích kho:
-• **Kho nhỏ:** 50 - 100m² (phù hợp startup, hàng nhẹ)
-• **Kho vừa:** 100 - 500m² (phù hợp SME)
-• **Kho lớn:** 500 - 2000m² (phù hợp doanh nghiệp lớn)
-• **Kho siêu lớn:** Trên 2000m² (theo yêu cầu)
-
-Bạn cần diện tích khoảng bao nhiêu ạ?`,
-
-    'giá': `Giá thuê kho phụ thuộc vào nhiều yếu tố:
-• **Vị trí:** Khu vực trung tâm/ngoại thành
-• **Loại kho:** Kho thường/kho mát/kho lạnh
-• **Diện tích:** Thuê nhiều có ưu đãi
-• **Thời hạn:** Thuê dài hạn giá tốt hơn
-
-**Giá tham khảo:**
-• Kho thường: từ 80.000đ/m²/tháng
-• Kho mát: từ 150.000đ/m²/tháng
-• Kho lạnh: từ 250.000đ/m²/tháng
-
-Bạn muốn tìm hiểu loại kho nào?`,
-
-    'vị trí': `Hệ thống kho của chúng tôi phân bố tại:
-
-**TP. Hồ Chí Minh:**
-• Quận 7, Quận 9, Thủ Đức
-• Bình Tân, Bình Chánh, Củ Chi
-
-**Hà Nội:**
-• Long Biên, Gia Lâm
-• Thanh Trì, Hoàng Mai
-
-**Các tỉnh:**
-• Bình Dương, Đồng Nai, Long An
-
-Bạn đang tìm kho ở khu vực nào?`,
-
-    'thời gian': `Thời gian thuê kho linh hoạt:
-• **Tối thiểu:** 1 tháng
-• **Ngắn hạn:** 1-6 tháng
-• **Trung hạn:** 6-12 tháng
-• **Dài hạn:** Trên 12 tháng (ưu đãi đặc biệt)
-
-Thuê dài hạn sẽ được hưởng:
-✓ Giảm giá 5-15%
-✓ Miễn phí setup ban đầu
-✓ Hỗ trợ vận hành 24/7
-
-Bạn dự định thuê trong bao lâu?`,
-
-    'default': `Cảm ơn bạn đã liên hệ! 
-
-Tôi có thể hỗ trợ bạn về:
-• Thông tin diện tích kho
-• Báo giá thuê kho
-• Vị trí các kho
-• Thời gian & điều khoản thuê
-
-Hoặc bạn có thể:
-• Đặt lịch xem kho trực tiếp
-• Chat với nhân viên tư vấn
-• Để lại thông tin để được gọi lại
-
-Bạn cần hỗ trợ gì ạ?`
-};
-
-async function getAIResponse(userMessage: string, conversationHistory: Message[]): Promise<string> {
-    // Nếu không có API key, sử dụng responses có sẵn
-    if (!CLAUDE_API_KEY) {
-        return getFallbackResponse(userMessage);
-    }
-
+function formatTime(dateStr: string) {
     try {
-        const messages = conversationHistory
-            .filter(m => m.type !== 'system' && !m.isTyping)
-            .map(m => ({
-                role: m.type === 'user' ? 'user' : 'assistant',
-                content: m.content
-            }));
-
-        messages.push({ role: 'user', content: userMessage });
-
-        const response = await fetch(CLAUDE_API_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-api-key': CLAUDE_API_KEY,
-                'anthropic-version': '2023-06-01'
-            },
-            body: JSON.stringify({
-                model: 'claude-3-haiku-20240307',
-                max_tokens: 1024,
-                system: `Bạn là trợ lý tư vấn kho bãi của GenHub - nền tảng cho thuê kho chuyên nghiệp.
-Nhiệm vụ: Tư vấn khách hàng về thuê kho (diện tích, giá, vị trí, thời gian).
-Phong cách: Thân thiện, chuyên nghiệp, ngắn gọn, dễ hiểu.
-Luôn trả lời bằng tiếng Việt.
-Khi khách hỏi giá cụ thể, khuyến khích để lại thông tin hoặc đặt lịch xem kho.`,
-                messages: messages
-            })
-        });
-
-        if (!response.ok) {
-            throw new Error('API request failed');
-        }
-
-        const data = await response.json();
-        return data.content[0].text;
-    } catch (error) {
-        console.error('AI API Error:', error);
-        return getFallbackResponse(userMessage);
+        const d = new Date(dateStr);
+        return d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+    } catch {
+        return '';
     }
-}
-
-function getFallbackResponse(message: string): string {
-    const lowerMessage = message.toLowerCase();
-
-    if (lowerMessage.includes('diện tích') || lowerMessage.includes('m2') || lowerMessage.includes('mét vuông')) {
-        return botResponses['diện tích'];
-    }
-    if (lowerMessage.includes('giá') || lowerMessage.includes('phí') || lowerMessage.includes('bao nhiêu')) {
-        return botResponses['giá'];
-    }
-    if (lowerMessage.includes('vị trí') || lowerMessage.includes('ở đâu') || lowerMessage.includes('địa chỉ')) {
-        return botResponses['vị trí'];
-    }
-    if (lowerMessage.includes('thời gian') || lowerMessage.includes('bao lâu') || lowerMessage.includes('tháng')) {
-        return botResponses['thời gian'];
-    }
-
-    return botResponses['default'];
 }
 
 export function PrimeNestChatbot() {
     const [isOpen, setIsOpen] = useState(false);
     const [mode, setMode] = useState<ChatMode>('bot');
-    const [messages, setMessages] = useState<Message[]>([
-        {
-            id: '1',
-            type: 'bot',
-            content: 'Xin chào! 👋 Tôi là trợ lý tư vấn kho bãi của GenHub. Tôi có thể giúp bạn tìm kiếm kho phù hợp với nhu cầu. Bạn cần hỗ trợ gì ạ?',
-            timestamp: new Date()
-        }
-    ]);
     const [inputValue, setInputValue] = useState('');
-    const [isTyping, setIsTyping] = useState(false);
     const [leadForm, setLeadForm] = useState<LeadForm>({ name: '', phone: '', email: '', note: '' });
     const [appointmentForm, setAppointmentForm] = useState<AppointmentForm>({
         name: '', phone: '', date: '', time: '', warehouseType: '', note: ''
     });
     const [formSubmitted, setFormSubmitted] = useState(false);
+    const [chatStarted, setChatStarted] = useState(false);
+
+    const {
+        messages,
+        sessionId,
+        isConnected,
+        isLoading,
+        isSending,
+        unreadCount,
+        startChat,
+        sendMessage,
+        resetUnread,
+    } = useLiveChat();
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
@@ -247,46 +122,70 @@ export function PrimeNestChatbot() {
         }
     }, [isOpen, mode]);
 
-    const generateId = () => Math.random().toString(36).substr(2, 9);
+    // Reset unread khi mở chat
+    useEffect(() => {
+        if (isOpen) {
+            resetUnread();
+        }
+    }, [isOpen, resetUnread]);
 
-    const addMessage = (type: Message['type'], content: string) => {
-        const newMessage: Message = {
-            id: generateId(),
-            type,
-            content,
-            timestamp: new Date()
-        };
-        setMessages(prev => [...prev, newMessage]);
-        return newMessage;
-    };
+    // Nếu đã có session từ trước → mark as started
+    useEffect(() => {
+        if (sessionId) {
+            setChatStarted(true);
+        }
+    }, [sessionId]);
 
-    const simulateTyping = async (response: string) => {
-        setIsTyping(true);
-
-        // Simulate typing delay (50-100ms per character, max 3s)
-        const typingDelay = Math.min(response.length * 30, 3000);
-        await new Promise(resolve => setTimeout(resolve, typingDelay));
-
-        setIsTyping(false);
-        addMessage('bot', response);
+    const handleOpen = () => {
+        setIsOpen(true);
+        resetUnread();
     };
 
     const handleSendMessage = async () => {
-        if (!inputValue.trim()) return;
+        if (!inputValue.trim() || isSending) return;
 
-        const userMessage = inputValue.trim();
+        const content = inputValue.trim();
         setInputValue('');
-        addMessage('user', userMessage);
 
-        // Get AI or fallback response
-        const response = await getAIResponse(userMessage, messages);
-        await simulateTyping(response);
+        // Nếu chưa start session → start với initialMessage
+        if (!chatStarted || !sessionId) {
+            setChatStarted(true);
+            try {
+                await startChat(content);
+            } catch (err) {
+                console.error('Failed to start chat:', err);
+                setChatStarted(false);
+            }
+            return;
+        }
+
+        // Đã có session → gửi message bình thường
+        try {
+            await sendMessage(content);
+        } catch (err) {
+            console.error('Failed to send message:', err);
+        }
     };
 
     const handleQuickReply = async (reply: QuickReply) => {
-        addMessage('user', reply.message);
-        const response = await getAIResponse(reply.message, messages);
-        await simulateTyping(response);
+        setInputValue('');
+
+        if (!chatStarted || !sessionId) {
+            setChatStarted(true);
+            try {
+                await startChat(reply.message);
+            } catch (err) {
+                console.error('Failed to start chat:', err);
+                setChatStarted(false);
+            }
+            return;
+        }
+
+        try {
+            await sendMessage(reply.message);
+        } catch (err) {
+            console.error('Failed to send message:', err);
+        }
     };
 
     const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -296,14 +195,6 @@ export function PrimeNestChatbot() {
         }
     };
 
-    const switchToLiveChat = () => {
-        setMode('live');
-        addMessage('system', '🔄 Đang kết nối với nhân viên tư vấn...');
-        setTimeout(() => {
-            addMessage('bot', 'Xin chào! Tôi là Minh - nhân viên tư vấn của GenHub. Tôi có thể hỗ trợ gì cho bạn ạ?');
-        }, 2000);
-    };
-
     const handleLeadFormSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         console.log('Lead form submitted:', leadForm);
@@ -311,7 +202,6 @@ export function PrimeNestChatbot() {
         setTimeout(() => {
             setFormSubmitted(false);
             setMode('bot');
-            addMessage('system', '✅ Thông tin của bạn đã được ghi nhận. Chúng tôi sẽ liên hệ trong vòng 24h!');
             setLeadForm({ name: '', phone: '', email: '', note: '' });
         }, 2000);
     };
@@ -323,10 +213,6 @@ export function PrimeNestChatbot() {
         setTimeout(() => {
             setFormSubmitted(false);
             setMode('bot');
-            addMessage('system', `✅ Đã đặt lịch xem kho thành công!
-📅 Ngày: ${appointmentForm.date}
-⏰ Giờ: ${appointmentForm.time}
-Chúng tôi sẽ gọi xác nhận lịch hẹn sớm nhất!`);
             setAppointmentForm({ name: '', phone: '', date: '', time: '', warehouseType: '', note: '' });
         }, 2000);
     };
@@ -336,38 +222,38 @@ Chúng tôi sẽ gọi xác nhận lịch hẹn sớm nhất!`);
         setFormSubmitted(false);
     };
 
-    const renderMessage = (message: Message) => {
-        const isUser = message.type === 'user';
-        const isSystem = message.type === 'system';
-
-        if (isSystem) {
-            return (
-                <div key={message.id} className="flex justify-center my-2">
-                    <div className="bg-slate-100 text-slate-600 text-xs px-3 py-1.5 rounded-full">
-                        {message.content}
-                    </div>
-                </div>
-            );
-        }
+    const renderMessage = (message: LiveChatMessage) => {
+        const isCustomer = message.sender_type === 'CUSTOMER';
+        const isAI = message.sender_type === 'AI';
 
         return (
-            <div key={message.id} className={`flex gap-2 mb-3 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
+            <div key={message.id} className={`flex gap-2 mb-3 ${isCustomer ? 'flex-row-reverse' : 'flex-row'}`}>
                 {/* Avatar */}
-                <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${isUser ? 'bg-primary text-white' : 'bg-slate-100 text-primary'
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${isCustomer
+                    ? 'bg-primary text-white'
+                    : isAI
+                        ? 'bg-violet-100 text-violet-600'
+                        : 'bg-blue-100 text-blue-600'
                     }`}>
-                    {isUser ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
+                    {isCustomer ? <User className="w-4 h-4" /> : isAI ? <Bot className="w-4 h-4" /> : <UserRound className="w-4 h-4" />}
                 </div>
 
                 {/* Message Bubble */}
-                <div className={`max-w-[75%] px-3 py-2 rounded-2xl text-sm ${isUser
-                        ? 'bg-primary text-white rounded-tr-sm'
-                        : 'bg-slate-100 text-slate-800 rounded-tl-sm'
+                <div className={`max-w-[75%] px-3 py-2 rounded-2xl text-sm ${isCustomer
+                    ? 'bg-primary text-white rounded-tr-sm'
+                    : isAI
+                        ? 'bg-violet-50 text-slate-800 rounded-tl-sm border border-violet-100'
+                        : 'bg-blue-50 text-slate-800 rounded-tl-sm border border-blue-100'
                     }`}>
-                    <div className="whitespace-pre-line" dangerouslySetInnerHTML={{
-                        __html: message.content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                    }} />
-                    <div className={`text-[10px] mt-1 ${isUser ? 'text-white/70' : 'text-slate-400'}`}>
-                        {message.timestamp.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                    {/* Sender label for AI/Staff */}
+                    {!isCustomer && (
+                        <div className={`text-[10px] font-medium mb-0.5 ${isAI ? 'text-violet-500' : 'text-blue-500'}`}>
+                            {message.sender_name}
+                        </div>
+                    )}
+                    <div className="whitespace-pre-line">{message.content}</div>
+                    <div className={`text-[10px] mt-1 ${isCustomer ? 'text-white/70' : 'text-slate-400'}`}>
+                        {formatTime(message.created_at)}
                     </div>
                 </div>
             </div>
@@ -376,10 +262,10 @@ Chúng tôi sẽ gọi xác nhận lịch hẹn sớm nhất!`);
 
     const renderTypingIndicator = () => (
         <div className="flex gap-2 mb-3">
-            <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center">
-                <Bot className="w-4 h-4 text-primary" />
+            <div className="w-7 h-7 rounded-full bg-violet-100 flex items-center justify-center">
+                <Bot className="w-4 h-4 text-violet-600" />
             </div>
-            <div className="bg-slate-100 px-4 py-3 rounded-2xl rounded-tl-sm">
+            <div className="bg-violet-50 border border-violet-100 px-4 py-3 rounded-2xl rounded-tl-sm">
                 <div className="flex gap-1">
                     <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                     <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
@@ -542,13 +428,38 @@ Chúng tôi sẽ gọi xác nhận lịch hẹn sớm nhất!`);
         <>
             {/* Messages Area */}
             <div className="flex-1 overflow-y-auto p-4 space-y-1">
+                {/* Greeting khi chưa có message nào */}
+                {messages.length === 0 && !isLoading && (
+                    <div className="flex gap-2 mb-3">
+                        <div className="w-7 h-7 rounded-full bg-violet-100 flex items-center justify-center shrink-0">
+                            <Bot className="w-4 h-4 text-violet-600" />
+                        </div>
+                        <div className="max-w-[75%] px-3 py-2 rounded-2xl rounded-tl-sm bg-violet-50 text-slate-800 text-sm border border-violet-100">
+                            <div className="text-[10px] font-medium mb-0.5 text-violet-500">
+                                GEN-HUB AI
+                            </div>
+                            <div className="whitespace-pre-line">
+                                Xin chào! 👋 Tôi là trợ lý tư vấn kho bãi của GenHub. Tôi có thể giúp bạn tìm kiếm kho phù hợp với nhu cầu. Bạn cần hỗ trợ gì ạ?
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Loading history */}
+                {isLoading && messages.length === 0 && (
+                    <div className="flex items-center justify-center py-8">
+                        <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                        <span className="ml-2 text-sm text-slate-500">Đang tải lịch sử...</span>
+                    </div>
+                )}
+
                 {messages.map(renderMessage)}
-                {isTyping && renderTypingIndicator()}
+                {isSending && renderTypingIndicator()}
                 <div ref={messagesEndRef} />
             </div>
 
-            {/* Quick Replies */}
-            {messages.length <= 2 && !isTyping && (
+            {/* Quick Replies - chỉ hiện khi chưa chat */}
+            {messages.length <= 1 && !isSending && !isLoading && (
                 <div className="px-4 pb-2">
                     <p className="text-xs text-slate-500 mb-2">Câu hỏi phổ biến:</p>
                     <div className="flex flex-wrap gap-1.5">
@@ -556,7 +467,8 @@ Chúng tôi sẽ gọi xác nhận lịch hẹn sớm nhất!`);
                             <button
                                 key={reply.id}
                                 onClick={() => handleQuickReply(reply)}
-                                className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs rounded-full transition-colors"
+                                disabled={isSending || isLoading}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs rounded-full transition-colors disabled:opacity-50"
                             >
                                 {reply.icon}
                                 {reply.label}
@@ -594,56 +506,48 @@ Chúng tôi sẽ gọi xác nhận lịch hẹn sớm nhất!`);
                         type="text"
                         value={inputValue}
                         onChange={e => setInputValue(e.target.value)}
-                        onKeyPress={handleKeyPress}
-                        placeholder="Nhập tin nhắn..."
-                        disabled={isTyping}
+                        onKeyDown={handleKeyPress}
+                        placeholder={chatStarted ? "Nhập tin nhắn..." : "Nhập để bắt đầu chat..."}
+                        disabled={isSending || isLoading}
                         className="flex-1 px-4 py-2.5 bg-slate-100 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
                     />
                     <button
                         onClick={handleSendMessage}
-                        disabled={!inputValue.trim() || isTyping}
+                        disabled={!inputValue.trim() || isSending || isLoading}
                         className="w-10 h-10 bg-primary text-white rounded-full flex items-center justify-center hover:bg-primary-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        {isTyping ? (
+                        {isSending || isLoading ? (
                             <Loader2 className="w-4 h-4 animate-spin" />
                         ) : (
                             <Send className="w-4 h-4" />
                         )}
                     </button>
                 </div>
-
-                {/* Live Chat Option */}
-                {mode === 'bot' && (
-                    <button
-                        onClick={switchToLiveChat}
-                        className="w-full mt-2 text-xs text-slate-500 hover:text-primary transition-colors"
-                    >
-                        💬 Chat với nhân viên tư vấn
-                    </button>
-                )}
             </div>
         </>
     );
 
     return (
         <>
-            {/* Chat Button */}
+            {/* Chat Button (FAB) */}
             <button
-                onClick={() => setIsOpen(true)}
+                onClick={handleOpen}
                 className={`fixed bottom-6 right-6 z-50 w-14 h-14 bg-primary text-white rounded-full shadow-lg flex items-center justify-center hover:bg-primary-dark transition-all duration-300 ${isOpen ? 'scale-0 opacity-0' : 'scale-100 opacity-100'
                     }`}
             >
                 <MessageCircle className="w-6 h-6" />
                 {/* Notification Badge */}
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-                    1
-                </span>
+                {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                        {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                )}
             </button>
 
             {/* Chat Window */}
             <div className={`fixed bottom-6 right-6 z-50 w-[380px] max-w-[calc(100vw-48px)] bg-white rounded-2xl shadow-2xl overflow-hidden transition-all duration-300 ${isOpen
-                    ? 'opacity-100 translate-y-0 scale-100'
-                    : 'opacity-0 translate-y-4 scale-95 pointer-events-none'
+                ? 'opacity-100 translate-y-0 scale-100'
+                : 'opacity-0 translate-y-4 scale-95 pointer-events-none'
                 }`}
                 style={{
                     height: 'min(600px, calc(100vh - 100px))',
@@ -657,12 +561,25 @@ Chúng tôi sẽ gọi xác nhận lịch hẹn sớm nhất!`);
                             <Bot className="w-5 h-5" />
                         </div>
                         <div>
-                            <h4 className="font-semibold text-sm">
-                                {mode === 'live' ? 'Nhân viên tư vấn' : 'Tư vấn kho bãi'}
-                            </h4>
+                            <h4 className="font-semibold text-sm">Tư vấn kho bãi</h4>
                             <p className="text-xs text-white/80 flex items-center gap-1">
-                                <span className="w-1.5 h-1.5 bg-green-400 rounded-full" />
-                                {mode === 'live' ? 'Đang online' : 'Bot tự động'}
+                                {isConnected ? (
+                                    <>
+                                        <Wifi className="w-3 h-3" />
+                                        <span className="w-1.5 h-1.5 bg-green-400 rounded-full" />
+                                        Đang kết nối
+                                    </>
+                                ) : chatStarted ? (
+                                    <>
+                                        <WifiOff className="w-3 h-3" />
+                                        Đang kết nối lại...
+                                    </>
+                                ) : (
+                                    <>
+                                        <span className="w-1.5 h-1.5 bg-green-400 rounded-full" />
+                                        Bot tự động
+                                    </>
+                                )}
                             </p>
                         </div>
                     </div>
@@ -678,7 +595,7 @@ Chúng tôi sẽ gọi xác nhận lịch hẹn sớm nhất!`);
                 <div className="flex flex-col" style={{ height: 'calc(100% - 60px)' }}>
                     {mode === 'lead-form' && renderLeadForm()}
                     {mode === 'appointment' && renderAppointmentForm()}
-                    {(mode === 'bot' || mode === 'live') && renderChatContent()}
+                    {mode === 'bot' && renderChatContent()}
                 </div>
             </div>
         </>

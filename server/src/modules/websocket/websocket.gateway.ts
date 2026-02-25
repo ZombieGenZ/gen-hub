@@ -1000,6 +1000,65 @@ export class WebsocketGateway
     socket.emit('pong', { timestamp: new Date().toISOString() });
   }
 
+  /**
+   * Guest join vào room chat của phiên live chat
+   * Client emit: { sessionId: '<uuid>' }
+   * Server response: chat:joined hoặc chat:error
+   */
+  @SubscribeMessage('chat:join')
+  handleChatJoin(
+    @ConnectedSocket() socket: Socket,
+    @MessageBody() payload: { sessionId: string },
+  ) {
+    const { sessionId } = payload || {};
+
+    if (!sessionId || typeof sessionId !== 'string' || sessionId.trim() === '') {
+      socket.emit('chat:error', {
+        code: 'INVALID_SESSION',
+        message: 'sessionId is required',
+      });
+      return;
+    }
+
+    const roomName = `chat:${sessionId.trim()}`;
+    socket.join(roomName);
+
+    this.logger.log(`💬 Socket ${socket.id} joined chat room: ${roomName}`);
+
+    socket.emit('chat:joined', {
+      sessionId: sessionId.trim(),
+      room: roomName,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  /**
+   * Guest rời khỏi room chat
+   * Client emit: { sessionId: '<uuid>' }
+   */
+  @SubscribeMessage('chat:leave')
+  handleChatLeave(
+    @ConnectedSocket() socket: Socket,
+    @MessageBody() payload: { sessionId: string },
+  ) {
+    const { sessionId } = payload || {};
+
+    if (!sessionId || typeof sessionId !== 'string') {
+      return;
+    }
+
+    const roomName = `chat:${sessionId.trim()}`;
+    socket.leave(roomName);
+
+    this.logger.log(`💬 Socket ${socket.id} left chat room: ${roomName}`);
+
+    socket.emit('chat:left', {
+      sessionId: sessionId.trim(),
+      room: roomName,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
   @SubscribeMessage('subscribe')
   handleSubscribe(
     @ConnectedSocket() socket: Socket,
@@ -1239,14 +1298,24 @@ export class WebsocketGateway
 
   /**
    * Emit event khi có message mới trong conversation
+   * @param conversationId - UUID của conversation
+   * @param message - Nội dung message
+   * @param sessionId - (Optional) session_id của LIVE_CHAT để emit realtime cho guest
    */
-  emitContactMessageCreated(conversationId: string, message: any) {
-    // Gửi cho tất cả clients (admin/staff)
-    this.server.to('admin_room').emit('contact:messageCreated', {
+  emitContactMessageCreated(conversationId: string, message: any, sessionId?: string) {
+    const payload = {
       conversationId,
       message,
       timestamp: new Date().toISOString(),
-    });
+    };
+
+    // Gửi cho admin/staff
+    this.server.to('admin_room').emit('contact:messageCreated', payload);
+
+    // Nếu là LIVE_CHAT, gửi thêm vào room của guest để nhận realtime
+    if (sessionId) {
+      this.server.to(`chat:${sessionId}`).emit('contact:messageCreated', payload);
+    }
   }
 
   /**

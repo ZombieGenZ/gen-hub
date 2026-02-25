@@ -1,0 +1,272 @@
+'use client';
+
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { io, Socket } from 'socket.io-client';
+import { liveChatService } from '@/services/live-chat/live-chat.service';
+import {
+    LiveChatMessage,
+    WsMessageCreatedPayload,
+} from '@/types/live-chat/live-chat.type';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
+const CHAT_UID_KEY =
+    process.env.NEXT_PUBLIC_CHAT_UID_KEY || 'genhub_chat_uid';
+const CHAT_SESSION_KEY =
+    process.env.NEXT_PUBLIC_CHAT_SESSION_KEY || 'genhub_chat_session';
+
+// Tạo hoặc lấy UID từ localStorage
+function getOrCreateUid(): string {
+    if (typeof window === 'undefined') return '';
+    let uid = localStorage.getItem(CHAT_UID_KEY);
+    if (!uid) {
+        uid = crypto.randomUUID();
+        localStorage.setItem(CHAT_UID_KEY, uid);
+    }
+    return uid;
+}
+
+function getSavedSessionId(): string | null {
+    if (typeof window === 'undefined') return null;
+    return localStorage.getItem(CHAT_SESSION_KEY);
+}
+
+function saveSessionId(sessionId: string): void {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(CHAT_SESSION_KEY, sessionId);
+}
+
+export interface UseLiveChatReturn {
+    messages: LiveChatMessage[];
+    sessionId: string | null;
+    isConnected: boolean;
+    isLoading: boolean;
+    isSending: boolean;
+    welcomeMessage: string | null;
+    unreadCount: number;
+    startChat: (initialMessage?: string) => Promise<void>;
+    sendMessage: (content: string) => Promise<void>;
+    resetUnread: () => void;
+}
+
+export function useLiveChat(): UseLiveChatReturn {
+    const [messages, setMessages] = useState<LiveChatMessage[]>([]);
+    const [sessionId, setSessionId] = useState<string | null>(null);
+    const [isConnected, setIsConnected] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [isSending, setIsSending] = useState(false);
+    const [welcomeMessage, setWelcomeMessage] = useState<string | null>(null);
+    const [unreadCount, setUnreadCount] = useState(0);
+
+    const socketRef = useRef<Socket | null>(null);
+    const sessionIdRef = useRef<string | null>(null);
+
+    // Sync ref with state
+    useEffect(() => {
+        sessionIdRef.current = sessionId;
+    }, [sessionId]);
+
+    // --- WebSocket setup ---
+    const connectWebSocket = useCallback((sid: string) => {
+        // Disconnect existing
+        if (socketRef.current) {
+            socketRef.current.disconnect();
+        }
+
+        const socket = io(API_URL, {
+            transports: ['websocket', 'polling'],
+            // Guest không cần auth
+        });
+
+        socket.on('connected', () => {
+            setIsConnected(true);
+            // Join chat room
+            socket.emit('chat:join', { sessionId: sid });
+        });
+
+        socket.on('chat:joined', () => {
+            // Successfully joined room
+        });
+
+        socket.on('contact:messageCreated', (data: WsMessageCreatedPayload) => {
+            const msg = data.message;
+            // Chỉ append tin nhắn từ STAFF hoặc AI (guest messages đã được thêm optimistically)
+            if (msg.sender_type !== 'CUSTOMER') {
+                setMessages((prev) => {
+                    // Tránh duplicate
+                    if (prev.some((m) => m.id === msg.id)) return prev;
+                    return [...prev, msg];
+                });
+                setUnreadCount((prev) => prev + 1);
+            }
+        });
+
+        socket.on('chat:error', (err: { code: string; message: string }) => {
+            console.error('[LiveChat] Chat error:', err);
+        });
+
+        socket.on('disconnect', () => {
+            setIsConnected(false);
+        });
+
+        socket.on('connect_error', (err: Error) => {
+            console.error('[LiveChat] Connection error:', err.message);
+            setIsConnected(false);
+        });
+
+        socketRef.current = socket;
+    }, []);
+
+    // --- Resume session on mount ---
+    useEffect(() => {
+        const savedSessionId = getSavedSessionId();
+        if (savedSessionId) {
+            setIsLoading(true);
+            liveChatService
+                .getChatHistory(savedSessionId)
+                .then((res) => {
+                    if (res.success && res.data) {
+                        setSessionId(savedSessionId);
+                        setMessages(res.data.messages || []);
+                        connectWebSocket(savedSessionId);
+                    }
+                })
+                .catch((err) => {
+                    console.error('[LiveChat] Failed to resume session:', err);
+                    // Session invalid, clear it
+                    localStorage.removeItem(CHAT_SESSION_KEY);
+                })
+                .finally(() => {
+                    setIsLoading(false);
+                });
+        }
+
+        return () => {
+            if (socketRef.current) {
+                const sid = sessionIdRef.current;
+                if (sid) {
+                    socketRef.current.emit('chat:leave', { sessionId: sid });
+                }
+                socketRef.current.disconnect();
+                socketRef.current = null;
+            }
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // --- Start a new chat session ---
+    const startChat = useCallback(
+        async (initialMessage?: string) => {
+            if (sessionId) return; // Already has a session
+
+            setIsLoading(true);
+            try {
+                const uid = getOrCreateUid();
+                const res = await liveChatService.startChatSession(
+                    uid,
+                    initialMessage
+                );
+
+                if (res.success && res.data) {
+                    const sid = res.data.sessionId;
+                    setSessionId(sid);
+                    saveSessionId(sid);
+
+                    if (res.data.welcomeMessage) {
+                        setWelcomeMessage(res.data.welcomeMessage);
+                        // Add welcome message as first message
+                        const welcomeMsg: LiveChatMessage = {
+                            id: `welcome-${Date.now()}`,
+                            sender_type: 'AI',
+                            sender_name: 'GEN-HUB AI',
+                            content: res.data.welcomeMessage,
+                            created_at: new Date().toISOString(),
+                        };
+                        setMessages([welcomeMsg]);
+                    }
+
+                    connectWebSocket(sid);
+                }
+            } catch (err) {
+                console.error('[LiveChat] Failed to start chat:', err);
+                throw err;
+            } finally {
+                setIsLoading(false);
+            }
+        },
+        [sessionId, connectWebSocket]
+    );
+
+    // --- Send message ---
+    const sendMessage = useCallback(
+        async (content: string) => {
+            if (!sessionId || !content.trim()) return;
+
+            // Optimistic: thêm tin nhắn vào UI ngay
+            const optimisticMsg: LiveChatMessage = {
+                id: `temp-${Date.now()}`,
+                sender_type: 'CUSTOMER',
+                sender_name: 'Bạn',
+                content: content.trim(),
+                created_at: new Date().toISOString(),
+            };
+            setMessages((prev) => [...prev, optimisticMsg]);
+
+            setIsSending(true);
+            try {
+                const res = await liveChatService.sendMessage(
+                    sessionId,
+                    content.trim()
+                );
+
+                if (res.success && res.data) {
+                    // Replace optimistic message with real one
+                    setMessages((prev) =>
+                        prev.map((m) =>
+                            m.id === optimisticMsg.id ? res.data.message : m
+                        )
+                    );
+
+                    // Nếu có aiResponse trong REST response (AI sync reply)
+                    if (res.data.aiResponse) {
+                        setMessages((prev) => {
+                            if (
+                                prev.some(
+                                    (m) => m.id === res.data.aiResponse!.id
+                                )
+                            )
+                                return prev;
+                            return [...prev, res.data.aiResponse!];
+                        });
+                    }
+                }
+            } catch (err) {
+                console.error('[LiveChat] Failed to send message:', err);
+                // Remove optimistic message on error
+                setMessages((prev) =>
+                    prev.filter((m) => m.id !== optimisticMsg.id)
+                );
+                throw err;
+            } finally {
+                setIsSending(false);
+            }
+        },
+        [sessionId]
+    );
+
+    const resetUnread = useCallback(() => {
+        setUnreadCount(0);
+    }, []);
+
+    return {
+        messages,
+        sessionId,
+        isConnected,
+        isLoading,
+        isSending,
+        welcomeMessage,
+        unreadCount,
+        startChat,
+        sendMessage,
+        resetUnread,
+    };
+}

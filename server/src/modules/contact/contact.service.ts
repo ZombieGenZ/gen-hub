@@ -739,7 +739,7 @@ export class ContactService implements OnModuleInit {
             metaData: { conversationId: id, isInternal: dto.is_internal, actor: actorName },
         });
 
-        // WebSocket
+        // WebSocket - emit đến admin_room và cả guest room nếu là LIVE_CHAT
         this.websocketGateway.emitContactMessageCreated(
             id,
             {
@@ -750,6 +750,7 @@ export class ContactService implements OnModuleInit {
                 is_internal: dto.is_internal || false,
                 created_at: message.created_at,
             },
+            conversation.session_id ?? undefined, // guest nhận realtime nếu là LIVE_CHAT
         );
 
         // Sync to Discord (if NOT from Discord)
@@ -1475,7 +1476,8 @@ export class ContactService implements OnModuleInit {
         const customerName = `${guestPrefix} ${dateStr}${indexStr}`;
 
         // Lấy giá trị mặc định enable_ai_reply từ config
-        const enableAiReply = this.appConfigService.get('enableAiAutoReply');
+        const enableAiReplyConfig = this.appConfigService.get('enableAiAutoReply') as unknown;
+        const enableAiReply = enableAiReplyConfig === true || enableAiReplyConfig === 'true';
 
         // Tạo conversation với channel LIVE_CHAT
         const code = await this.repository.generateTicketCode(this.TICKET_PREFIX);
@@ -1566,6 +1568,20 @@ export class ContactService implements OnModuleInit {
             last_activity_at: new Date(),
         });
 
+        // Emit realtime - thông báo admin/staff có tin nhắn mới từ guest
+        this.websocketGateway.emitContactMessageCreated(
+            conversation.id,
+            {
+                id: message.id,
+                sender_type: MessageSender.CUSTOMER,
+                sender_name: conversation.customer_name,
+                content: dto.content,
+                is_internal: false,
+                created_at: message.created_at,
+            },
+            conversation.session_id ?? undefined,
+        );
+
         // Kiểm tra AI auto-reply
         let aiResponse: any = undefined;
         const shouldAiReply = conversation.enable_ai_reply ?? this.appConfigService.get('enableAiAutoReply');
@@ -1590,7 +1606,19 @@ export class ContactService implements OnModuleInit {
                     ai_confidence: aiResult.confidence,
                 });
 
-                // Emit realtime event cho AI response
+                // Emit realtime AI response về cho guest và admin
+                this.websocketGateway.emitContactMessageCreated(
+                    conversation.id,
+                    {
+                        id: aiResponse.id,
+                        sender_type: MessageSender.AI,
+                        sender_name: 'GEN-HUB AI',
+                        content: aiResult.content,
+                        is_internal: false,
+                        created_at: aiResponse.created_at,
+                    },
+                    conversation.session_id ?? undefined,
+                );
             }
         }
 
