@@ -1,46 +1,20 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsEmail, IsOptional, MaxLength } from 'class-validator';
+import { IsString, IsOptional, MaxLength } from 'class-validator';
 import { i18nValidationMessage } from 'nestjs-i18n';
 
 /**
  * DTO khởi tạo phiên chat live (Guest không cần đăng nhập)
+ * Client truyền uid (session ID) để định danh guest
  */
 export class StartChatDto {
     @ApiProperty({
-        description: 'Tên khách hàng',
-        example: 'Nguyễn Văn A',
-        maxLength: 100,
-    })
-    @IsString({ message: i18nValidationMessage('common.validation.string') })
-    @MaxLength(100, { message: i18nValidationMessage('common.validation.max_length') })
-    name: string;
-
-    @ApiProperty({
-        description: 'Email khách hàng',
-        example: 'customer@example.com',
-    })
-    @IsEmail({}, { message: i18nValidationMessage('common.validation.email') })
-    email: string;
-
-    @ApiPropertyOptional({
-        description: 'Số điện thoại khách hàng',
-        example: '0912345678',
-        maxLength: 20,
-    })
-    @IsOptional()
-    @IsString({ message: i18nValidationMessage('common.validation.string') })
-    @MaxLength(20, { message: i18nValidationMessage('common.validation.max_length') })
-    phone?: string;
-
-    @ApiPropertyOptional({
-        description: 'Tên công ty (nếu có)',
-        example: 'Công ty ABC',
+        description: 'UID (session ID) để định danh guest',
+        example: 'session-abc-123',
         maxLength: 200,
     })
-    @IsOptional()
     @IsString({ message: i18nValidationMessage('common.validation.string') })
     @MaxLength(200, { message: i18nValidationMessage('common.validation.max_length') })
-    company?: string;
+    uid: string;
 
     @ApiPropertyOptional({
         description: 'Tin nhắn đầu tiên',

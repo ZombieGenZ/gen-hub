@@ -118,7 +118,7 @@ export class ContactController {
         examples: {
             guest: {
                 summary: 'Khách mới',
-                value: { name: 'Guest User', email: 'guest@example.com' }
+                value: { uid: 'session-abc-123' }
             }
         }
     })

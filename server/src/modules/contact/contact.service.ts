@@ -1459,6 +1459,21 @@ export class ContactService implements OnModuleInit {
         // Tạo session_id unique
         const sessionId = require('crypto').randomUUID();
 
+        // Tạo customer_name dạng "Guest 20260225001"
+        const guestPrefix = this.configService.get<string>('GUEST_NAME_PREFIX') || 'Guest';
+        const now = new Date();
+        const dateStr = now.getFullYear().toString()
+            + (now.getMonth() + 1).toString().padStart(2, '0')
+            + now.getDate().toString().padStart(2, '0');
+        const counterKey = `contact:guest_chat_index:${dateStr}`;
+        const dailyIndex = await this.redisService.incr(counterKey);
+        // Tự động hết hạn sau 48h để dọn key cũ
+        if (dailyIndex === 1) {
+            await this.redisService.expire(counterKey, 48 * 60 * 60);
+        }
+        const indexStr = dailyIndex.toString().padStart(3, '0');
+        const customerName = `${guestPrefix} ${dateStr}${indexStr}`;
+
         // Lấy giá trị mặc định enable_ai_reply từ config
         const enableAiReply = this.appConfigService.get('enableAiAutoReply');
 
@@ -1467,10 +1482,8 @@ export class ContactService implements OnModuleInit {
         const conversation = await this.repository.createConversation({
             code,
             session_id: sessionId,
-            customer_name: dto.name,
-            customer_email: dto.email,
-            customer_phone: dto.phone,
-            customer_company: dto.company,
+            customer_name: customerName,
+            customer_email: '',
             channel: ContactChannel.LIVE_CHAT,
             enable_ai_reply: enableAiReply,
         });
@@ -1504,8 +1517,7 @@ export class ContactService implements OnModuleInit {
             await this.repository.createMessage({
                 conversation_id: conversation.id,
                 sender_type: MessageSender.CUSTOMER,
-                sender_name: dto.name,
-                sender_email: dto.email,
+                sender_name: customerName,
                 content: dto.initialMessage,
                 message_type: MessageType.TEXT,
             });
