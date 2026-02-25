@@ -9,7 +9,8 @@ import {
     BellIcon,
     BuildingStorefrontIcon,
     CubeIcon,
-    ArrowsRightLeftIcon,
+    ArrowDownTrayIcon,
+    ArrowUpTrayIcon,
     BanknotesIcon,
     ArrowUturnLeftIcon,
     ExclamationTriangleIcon,
@@ -41,8 +42,9 @@ const customerNavGroups: SidebarGroup[] = [
         title: "Nội bộ kho",
         items: [
             { href: "/dashboard/customer/warehouses", icon: BuildingStorefrontIcon, label: "Kho thuê của tôi", disabled: true, badge: "Sắp có" },
-            { href: "/dashboard/customer/products", icon: CubeIcon, label: "Hàng hóa", disabled: true, badge: "Sắp có" },
-            { href: "/dashboard/customer/inventory", icon: ArrowsRightLeftIcon, label: "Nhập / Xuất kho", disabled: true, badge: "Sắp có" },
+            { href: "/dashboard/customer/products", icon: CubeIcon, label: "Hàng hóa" },
+            { href: "/dashboard/customer/inbound", icon: ArrowDownTrayIcon, label: "Phiếu nhập" },
+            { href: "/dashboard/customer/outbound", icon: ArrowUpTrayIcon, label: "Phiếu xuất" },
         ]
     },
     {

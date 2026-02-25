@@ -63,7 +63,6 @@ const routeGroups: RouteGroup[] = [
             { path: "/dashboard/admin", label: "Overview", description: "Main admin dashboard" },
             { path: "/dashboard/admin/revenue", label: "Revenue", description: "Financial reports" },
             { path: "/dashboard/admin/warehouses", label: "Warehouses", description: "Manage warehouse locations" },
-            { path: "/dashboard/admin/products", label: "Products", description: "Product catalog management" },
             { path: "/dashboard/admin/contracts", label: "Contracts", description: "Manage all contracts" },
             { path: "/dashboard/admin/coupons", label: "Coupons", description: "Discount codes & offers" },
             { path: "/dashboard/admin/rental-duration-tiers", label: "Rental Tiers", description: "Rental package configuration" },

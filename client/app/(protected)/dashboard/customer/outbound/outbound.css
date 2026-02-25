@@ -1,0 +1,199 @@
+/* ────────────────────────────────────────────────
+   Outbound Module Styles (BEM Convention)
+   ──────────────────────────────────────────────── */
+
+/* Status Badges */
+.outbound-status--pending {
+    background-color: #fef9c3;
+    color: #a16207;
+    border-color: #fde68a;
+}
+.outbound-status--picking {
+    background-color: #dbeafe;
+    color: #1d4ed8;
+    border-color: #bfdbfe;
+}
+.outbound-status--packed {
+    background-color: #e0e7ff;
+    color: #4338ca;
+    border-color: #c7d2fe;
+}
+.outbound-status--shipped {
+    background-color: #dcfce7;
+    color: #15803d;
+    border-color: #bbf7d0;
+}
+.outbound-status--cancelled {
+    background-color: #fee2e2;
+    color: #b91c1c;
+    border-color: #fecaca;
+}
+
+/* Priority highlight */
+.outbound-row--urgent {
+    background-color: rgba(254, 243, 199, 0.3);
+    border-left: 3px solid #f59e0b;
+}
+
+/* Timeline */
+.outbound-timeline {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    padding: 24px 32px;
+}
+
+.outbound-timeline__step {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.outbound-timeline__dot {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.outbound-timeline__dot--active {
+    background: linear-gradient(135deg, #0F766E, #14b8a6);
+    color: white;
+    box-shadow: 0 0 0 4px rgba(15, 118, 110, 0.15);
+}
+
+.outbound-timeline__dot--completed {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.outbound-timeline__dot--pending {
+    background: #f1f5f9;
+    color: #94a3b8;
+}
+
+.outbound-timeline__label {
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 150%;
+    white-space: nowrap;
+}
+
+.outbound-timeline__label--active {
+    color: #0F766E;
+    font-weight: 600;
+}
+
+.outbound-timeline__label--completed {
+    color: #15803d;
+}
+
+.outbound-timeline__label--pending {
+    color: #94a3b8;
+}
+
+.outbound-timeline__connector {
+    flex: 1;
+    height: 2px;
+    min-width: 32px;
+    margin: 0 8px;
+    border-radius: 1px;
+}
+
+.outbound-timeline__connector--completed {
+    background: #15803d;
+}
+
+.outbound-timeline__connector--pending {
+    background: #e2e8f0;
+}
+
+/* Strategy selector */
+.outbound-strategy {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.outbound-strategy__option {
+    flex: 1;
+    padding: 12px 16px;
+    border: 2px solid #e2e8f0;
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+}
+
+.outbound-strategy__option:hover {
+    border-color: #0F766E;
+    background-color: rgba(15, 118, 110, 0.04);
+}
+
+.outbound-strategy__option--active {
+    border-color: #0F766E;
+    background-color: rgba(15, 118, 110, 0.08);
+}
+
+.outbound-strategy__option-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #0f172a;
+}
+
+.outbound-strategy__option-desc {
+    font-size: 11px;
+    color: #64748b;
+    margin-top: 4px;
+    line-height: 150%;
+}
+
+/* Drawer product row */
+.outbound-drawer__product-row {
+    display: grid;
+    grid-template-columns: 1fr 100px 140px 48px;
+    gap: 8px;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.outbound-drawer__product-row:last-child {
+    border-bottom: none;
+}
+
+/* Pick list grouping */
+.outbound-picklist__group {
+    margin-bottom: 16px;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.outbound-picklist__group-header {
+    background: #f8fafc;
+    padding: 8px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #475569;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+/* Package row */
+.outbound-package__row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 100px 100px 48px;
+    gap: 8px;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #f1f5f9;
+}

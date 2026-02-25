@@ -259,7 +259,7 @@ export default function ProductMasterListPage() {
 
     // ── Navigate to detail ──
     const handleViewDetail = (id: string) =>
-        router.push(`/dashboard/admin/products/${id}`);
+        router.push(`/dashboard/customer/products/${id}`);
 
     // ── Show barcode ──
     const handleShowBarcode = (barcode: string, name: string) => {
@@ -293,7 +293,7 @@ export default function ProductMasterListPage() {
                             variant="outline"
                             className="rounded-xl"
                             onClick={() =>
-                                router.push("/dashboard/admin/products/create")
+                                router.push("/dashboard/customer/products/create")
                             }
                         >
                             <PlusIcon className="w-4 h-4 mr-2" />
@@ -457,7 +457,7 @@ export default function ProductMasterListPage() {
                                                             className="mt-2 bg-[#0F766E] hover:bg-[#0D6B63] text-white rounded-xl"
                                                             onClick={() =>
                                                                 router.push(
-                                                                    "/dashboard/admin/products/create"
+                                                                    "/dashboard/customer/products/create"
                                                                 )
                                                             }
                                                         >

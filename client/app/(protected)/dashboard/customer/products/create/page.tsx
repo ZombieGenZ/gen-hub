@@ -164,7 +164,7 @@ export default function CreateProductPage() {
             const result = await productService.create(token, payload);
             if (result?.data) {
                 showToast(`Đã tạo sản phẩm "${name}" thành công! 🎉`, "success");
-                router.push(`/dashboard/admin/products/${result.data.id}`);
+                router.push(`/dashboard/customer/products/${result.data.id}`);
             }
         } catch (err) {
             const msg = err instanceof Error ? err.message : "Tạo sản phẩm thất bại";
@@ -211,7 +211,7 @@ export default function CreateProductPage() {
                                 size="icon"
                                 className="rounded-xl h-10 w-10 shrink-0"
                                 onClick={() =>
-                                    router.push("/dashboard/admin/products")
+                                    router.push("/dashboard/customer/products")
                                 }
                             >
                                 <ArrowLeftIcon className="w-5 h-5" />
@@ -231,7 +231,7 @@ export default function CreateProductPage() {
                                 variant="outline"
                                 className="rounded-xl"
                                 onClick={() =>
-                                    router.push("/dashboard/admin/products")
+                                    router.push("/dashboard/customer/products")
                                 }
                             >
                                 Hủy
