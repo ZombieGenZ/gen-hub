@@ -135,10 +135,10 @@ export function BookingWidget({ warehouseId, price, unit = "tháng" }: BookingWi
                 if (tiersRes.status === 'fulfilled' && tiersRes.value.ok) {
                     const tiersData = await tiersRes.value.json();
                     const tiersArray = Array.isArray(tiersData.data) ? tiersData.data : (Array.isArray(tiersData) ? tiersData : []);
-                    setDurationTiers(tiersArray);
+                    setDurationTiers(tiersArray as DurationTierWithDiscount[]);
                 } else {
                     console.warn('Using mock duration tiers');
-                    setDurationTiers(MOCK_DURATION_TIERS);
+                    setDurationTiers(MOCK_DURATION_TIERS as DurationTierWithDiscount[]);
                 }
 
                 // Process addons
@@ -168,7 +168,7 @@ export function BookingWidget({ warehouseId, price, unit = "tháng" }: BookingWi
                 console.error('Error fetching booking data:', error);
                 setDataError('Không thể tải dữ liệu. Sử dụng dữ liệu mẫu.');
                 // Use all mock data as fallback
-                setDurationTiers(MOCK_DURATION_TIERS);
+                setDurationTiers(MOCK_DURATION_TIERS as DurationTierWithDiscount[]);
                 setAddons(MOCK_ADDONS as AddonResponse[]);
                 setInsurances(MOCK_INSURANCES as unknown as Insurance[]);
                 setRows(MOCK_ROWS);
