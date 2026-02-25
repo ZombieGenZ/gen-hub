@@ -150,6 +150,9 @@ ${insuranceInfo || 'Chưa có gói bảo hiểm.'}
         const decoder = new TextDecoder();
         let buffer = '';
         let finalContent = '';
+        // Giữ currentEvent ngoài vòng lặp while để persist across chunks
+        let currentEvent = '';
+        const receivedEvents: string[] = [];
 
         try {
             while (true) {
@@ -162,16 +165,24 @@ ${insuranceInfo || 'Chưa có gói bảo hiểm.'}
                 const lines = buffer.split('\n');
                 buffer = lines.pop() || ''; // Giữ lại dòng chưa hoàn chỉnh
 
-                let currentEvent = '';
                 for (const line of lines) {
-                    if (line.startsWith('event:')) {
-                        currentEvent = line.slice(6).trim();
-                    } else if (line.startsWith('data:')) {
-                        const dataStr = line.slice(5).trim();
+                    const trimmedLine = line.trim();
+                    if (trimmedLine.startsWith('event:')) {
+                        currentEvent = trimmedLine.slice(6).trim();
+                        receivedEvents.push(currentEvent);
+                    } else if (trimmedLine.startsWith('data:')) {
+                        const dataStr = trimmedLine.slice(5).trim();
                         if (dataStr === '[DONE]') continue;
 
                         try {
                             const data = JSON.parse(dataStr);
+
+                            // Log để debug: ghi nhận event + data type/role
+                            if (data.role || data.type) {
+                                this.logger.debug(
+                                    `SSE event="${currentEvent}" role="${data.role}" type="${data.type}" hasContent=${!!data.content}`,
+                                );
+                            }
 
                             // Coze trả về nhiều loại event, ta quan tâm đến message với type = 'answer'
                             if (currentEvent === 'conversation.message.completed') {
@@ -179,8 +190,8 @@ ${insuranceInfo || 'Chưa có gói bảo hiểm.'}
                                     finalContent = data.content || '';
                                 }
                             }
-                            // Fallback: check trong data trực tiếp
-                            else if (data.type === 'answer' && data.role === 'assistant' && data.content) {
+                            // Fallback: check trong data trực tiếp (bất kể event name)
+                            if (!finalContent && data.type === 'answer' && data.role === 'assistant' && data.content) {
                                 finalContent = data.content;
                             }
                         } catch {
@@ -191,6 +202,13 @@ ${insuranceInfo || 'Chưa có gói bảo hiểm.'}
             }
         } finally {
             reader.releaseLock();
+        }
+
+        // Log tất cả events nhận được để debug
+        if (!finalContent) {
+            this.logger.warn(
+                `No assistant answer found. Received events: [${receivedEvents.join(', ')}]`,
+            );
         }
 
         return finalContent;
@@ -292,19 +310,21 @@ ${insuranceInfo || 'Chưa có gói bảo hiểm.'}
             }
 
             // Ghi log khi không có response
+            const noMsgError = `No assistant message in stream response. Status: ${response.status}, Content-Type: ${response.headers.get('content-type')}`;
+            this.logger.warn(noMsgError);
             this.logAiMetadata({
                 purpose: options?.discordChannelId ? 'COZE_DISCORD' : 'COZE_API',
                 inputText: userMessage,
                 durationMs: totalTime,
                 isSuccess: false,
-                errorMessage: 'No assistant message in stream response',
+                errorMessage: noMsgError,
             });
 
             return {
                 success: false,
                 content: '',
                 model: 'coze',
-                error: 'No assistant message in stream response',
+                error: noMsgError,
             };
         } catch (error) {
             const responseTime = Date.now() - startTime;

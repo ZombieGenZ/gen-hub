@@ -1587,38 +1587,48 @@ export class ContactService implements OnModuleInit {
         const shouldAiReply = conversation.enable_ai_reply ?? this.appConfigService.get('enableAiAutoReply');
 
         if (shouldAiReply && this.cozeService.isEnabled()) {
-            const aiResult = await this.cozeService.chat(
-                dto.content,
-                conversation.id,
-                sessionId,
-            );
-
-            if (aiResult.success) {
-                // Lưu AI message
-                aiResponse = await this.repository.createMessage({
-                    conversation_id: conversation.id,
-                    sender_type: MessageSender.AI,
-                    sender_name: 'GEN-HUB AI',
-                    content: aiResult.content,
-                    message_type: MessageType.TEXT,
-                    is_ai_response: true,
-                    ai_model: aiResult.model,
-                    ai_confidence: aiResult.confidence,
-                });
-
-                // Emit realtime AI response về cho guest và admin
-                this.websocketGateway.emitContactMessageCreated(
+            try {
+                const aiResult = await this.cozeService.chat(
+                    dto.content,
                     conversation.id,
-                    {
-                        id: aiResponse.id,
+                    sessionId,
+                );
+
+                if (aiResult.success) {
+                    // Lưu AI message
+                    aiResponse = await this.repository.createMessage({
+                        conversation_id: conversation.id,
                         sender_type: MessageSender.AI,
                         sender_name: 'GEN-HUB AI',
                         content: aiResult.content,
-                        is_internal: false,
-                        created_at: aiResponse.created_at,
-                    },
-                    conversation.session_id ?? undefined,
-                );
+                        message_type: MessageType.TEXT,
+                        is_ai_response: true,
+                        ai_model: aiResult.model,
+                        ai_confidence: aiResult.confidence,
+                    });
+
+                    // Emit realtime AI response về cho guest và admin
+                    this.websocketGateway.emitContactMessageCreated(
+                        conversation.id,
+                        {
+                            id: aiResponse.id,
+                            sender_type: MessageSender.AI,
+                            sender_name: 'GEN-HUB AI',
+                            content: aiResult.content,
+                            is_internal: false,
+                            created_at: aiResponse.created_at,
+                        },
+                        conversation.session_id ?? undefined,
+                    );
+                } else {
+                    this.systemLogService.error('contact', 'ai_reply_failed', `AI reply failed for live chat: ${aiResult.error}`, {
+                        metaData: { conversationId: conversation.id, sessionId },
+                    });
+                }
+            } catch (error) {
+                this.systemLogService.error('contact', 'ai_reply_failed', `AI reply exception for live chat: ${error}`, {
+                    metaData: { conversationId: conversation.id, sessionId },
+                });
             }
         }
 
