@@ -84,6 +84,64 @@ function formatTime(dateStr: string) {
     }
 }
 
+// Parse markdown-like syntax to React elements
+function parseMarkdown(text: string): React.ReactNode[] {
+    // Split by newlines first, then process each line
+    const lines = text.split('\n');
+    const result: React.ReactNode[] = [];
+
+    lines.forEach((line, lineIndex) => {
+        if (lineIndex > 0) {
+            result.push(<br key={`br-${lineIndex}`} />);
+        }
+
+        // Regex to match: **bold**, *italic*, `code`, ~~strikethrough~~
+        const pattern = /(\*\*(.+?)\*\*|\*(.+?)\*|`(.+?)`|~~(.+?)~~)/g;
+        let lastIndex = 0;
+        let match: RegExpExecArray | null;
+        const lineNodes: React.ReactNode[] = [];
+
+        while ((match = pattern.exec(line)) !== null) {
+            // Push text before match
+            if (match.index > lastIndex) {
+                lineNodes.push(line.slice(lastIndex, match.index));
+            }
+
+            if (match[2] !== undefined) {
+                // **bold**
+                lineNodes.push(<strong key={`${lineIndex}-${match.index}-b`}>{match[2]}</strong>);
+            } else if (match[3] !== undefined) {
+                // *italic*
+                lineNodes.push(<em key={`${lineIndex}-${match.index}-i`}>{match[3]}</em>);
+            } else if (match[4] !== undefined) {
+                // `code`
+                lineNodes.push(
+                    <code
+                        key={`${lineIndex}-${match.index}-c`}
+                        className="bg-black/10 rounded px-1 py-0.5 font-mono text-[0.85em]"
+                    >
+                        {match[4]}
+                    </code>
+                );
+            } else if (match[5] !== undefined) {
+                // ~~strikethrough~~
+                lineNodes.push(<s key={`${lineIndex}-${match.index}-s`}>{match[5]}</s>);
+            }
+
+            lastIndex = match.index + match[0].length;
+        }
+
+        // Push remaining text
+        if (lastIndex < line.length) {
+            lineNodes.push(line.slice(lastIndex));
+        }
+
+        result.push(...lineNodes);
+    });
+
+    return result;
+}
+
 export function PrimeNestChatbot() {
     const [isOpen, setIsOpen] = useState(false);
     const [mode, setMode] = useState<ChatMode>('bot');
@@ -259,7 +317,7 @@ export function PrimeNestChatbot() {
                             {message.sender_name}
                         </div>
                     )}
-                    <div className="whitespace-pre-line">{message.content}</div>
+                    <div className="leading-relaxed">{parseMarkdown(message.content)}</div>
                     <div className={`text-[10px] mt-1 ${isCustomer ? 'text-white/70' : 'text-slate-400'}`}>
                         {formatTime(message.created_at)}
                     </div>
@@ -446,8 +504,8 @@ export function PrimeNestChatbot() {
                             <div className="text-[10px] font-medium mb-0.5 text-violet-500">
                                 GEN-HUB AI
                             </div>
-                            <div className="whitespace-pre-line">
-                                Xin chào! 👋 Tôi là trợ lý tư vấn kho bãi của GenHub. Tôi có thể giúp bạn tìm kiếm kho phù hợp với nhu cầu. Bạn cần hỗ trợ gì ạ?
+                            <div className="leading-relaxed">
+                                {parseMarkdown('Xin chào! 👋 Tôi là trợ lý tư vấn kho bãi của **GenHub**. Tôi có thể giúp bạn tìm kiếm kho phù hợp với nhu cầu. Bạn cần hỗ trợ gì ạ?')}
                             </div>
                         </div>
                     </div>
