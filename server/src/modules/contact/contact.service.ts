@@ -1506,6 +1506,29 @@ export class ContactService implements OnModuleInit {
             metaData: { sessionId, code: conversation.code },
         });
 
+        // Tạo Discord channel (fire-and-forget)
+        this.discordService.createContactChannel(
+            code,
+            customerName,
+            '', // email chưa có khi khởi tạo live chat
+            'Live Chat', // subject mặc định
+            false, // chưa xác định priority
+            dto.initialMessage || '', // nội dung tin nhắn đầu tiên (nếu có)
+        ).then(async (discordResult) => {
+            if (discordResult.success && discordResult.channelId) {
+                await this.repository.update(conversation.id, {
+                    discord_channel_id: discordResult.channelId,
+                });
+                this.systemLogService.info('contact', 'discord', `Discord channel created for live chat: ${code}`, {
+                    metaData: { sessionId, conversationId: conversation.id, channelId: discordResult.channelId },
+                });
+            }
+        }).catch((error) => {
+            this.systemLogService.error('contact', 'discord', `Failed to create Discord channel for live chat: ${error}`, {
+                metaData: { sessionId, conversationId: conversation.id, code },
+            });
+        });
+
         // Gọi Coze AI để tạo welcome message bất đồng bộ (fire-and-forget)
         // Không await để tránh block response và gây 503 timeout
         if (enableAiReply && this.cozeService.isEnabled()) {
