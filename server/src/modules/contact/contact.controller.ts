@@ -10,6 +10,8 @@ import {
     UseGuards,
     HttpCode,
     HttpStatus,
+    BadRequestException,
+    Req,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse, ApiBody, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { I18nLang } from 'nestjs-i18n';
@@ -33,6 +35,7 @@ import {
     OkResponse,
 } from '../../common/responses/success.response';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../../common/guards/optional-jwt-auth.guard';
 import { PermissionGuard } from '../../common/guards/permission.guard';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -102,24 +105,24 @@ export class ContactController {
     }
 
     /**
-     * Khởi tạo phiên live chat (Guest không cần đăng nhập)
+     * Khởi tạo phiên live chat.
+     * Có JWT: không cần truyền session. Không JWT: bắt buộc truyền session (hoặc uid).
      */
     @Post('contact/chat/start')
     @Public()
+    @UseGuards(OptionalJwtAuthGuard)
     @HttpCode(HttpStatus.CREATED)
     @ApiOperation({
         summary: 'Khởi tạo Live Chat (Public)',
-        description: 'Bắt đầu một phiên chat mới cho khách vãng lai.'
+        description: 'Bắt đầu phiên chat. Có JWT: session tùy chọn. Không JWT: bắt buộc truyền session hoặc uid.'
     })
     @ApiValidationErrorResponse()
     @ApiBody({
         type: StartChatDto,
-        description: 'Thông tin khách hàng',
+        description: 'session/uid bắt buộc khi không gửi JWT',
         examples: {
-            guest: {
-                summary: 'Khách mới',
-                value: { uid: 'session-abc-123' }
-            }
+            guest: { summary: 'Khách (không JWT)', value: { session: 'session-abc-123' } },
+            withJwt: { summary: 'Có JWT', value: {} }
         }
     })
     @ApiResponse({
@@ -130,19 +133,30 @@ export class ContactController {
                 code: 'contact.live_chat.session_created',
                 message: 'Đã tạo phiên chat',
                 success: true,
-                data: {
-                    session_id: 'uuid-session',
-                    code: 'TK-123456',
-                    // AI welcome message sẽ được push qua WebSocket sau khi tạo
-                }
+                data: { session_id: 'uuid-session', code: 'TK-123456' }
             }
         }
     })
     async startChatSession(
         @Body() dto: StartChatDto,
         @I18nLang() lang: string,
+        @CurrentUser() user: { userId: string; email?: string } | null,
+        @Req() req: { ip?: string; headers?: { 'x-forwarded-for'?: string; 'x-real-ip'?: string } },
     ) {
-        const result = await this.contactService.startChatSession(dto, lang);
+        const hasSession = !!(dto.session?.trim() || dto.uid?.trim());
+        if (!user && !hasSession) {
+            throw new BadRequestException(
+                this.contactService.requireSessionMessage(lang),
+            );
+        }
+        const ip = req?.headers?.['x-forwarded-for']?.split(',')[0]?.trim()
+            || req?.headers?.['x-real-ip']
+            || req?.ip
+            || undefined;
+        const result = await this.contactService.startChatSession(dto, lang, {
+            userId: user?.userId,
+            ip,
+        });
         return new CreatedResponse('contact.live_chat.session_created', result);
     }
 
@@ -207,6 +221,34 @@ export class ContactController {
     ) {
         const result = await this.contactService.getChatSession(sessionId, lang);
         return new GetResponse('contact.live_chat.session', result);
+    }
+
+    /**
+     * Lấy lịch sử đoạn chat (live chat) của user đăng nhập
+     */
+    @Get('contact/chat/history')
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({
+        summary: 'Lấy lịch sử live chat của user',
+        description: 'Trả về danh sách phiên live chat của user hiện tại (có user_id), mỗi phiên kèm tin nhắn.',
+    })
+    @ApiAuthResponses()
+    @ApiResponse({
+        status: 200,
+        description: 'Lấy lịch sử thành công',
+        schema: {
+            example: {
+                code: 'contact.live_chat.history',
+                message: 'Lấy lịch sử thành công',
+                success: true,
+                data: [{ id: '...', code: '...', session_id: '...', messages: [] }],
+            },
+        },
+    })
+    async getChatHistory(@CurrentUser() user: { userId: string }) {
+        const result = await this.contactService.getChatHistoryByUserId(user.userId);
+        return new GetResponse('contact.live_chat.history', result);
     }
 
     /**

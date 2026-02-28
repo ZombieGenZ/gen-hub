@@ -100,7 +100,9 @@
     "live_chat": {
         "session_created": "Phiên chat đã được khởi tạo",
         "session_not_found": "Không tìm thấy phiên chat",
+        "session_required": "Khi không đăng nhập, vui lòng truyền session hoặc uid.",
         "message_sent": "Tin nhắn đã được gửi",
+        "history": "Lấy lịch sử thành công",
         "ai_welcome": "Xin chào! Tôi là trợ lý AI của GEN-HUB. Tôi có thể giúp gì cho bạn?",
         "ai_unavailable": "Xin lỗi, hệ thống AI đang bận. Vui lòng chờ nhân viên hỗ trợ."
     }

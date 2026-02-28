@@ -3281,6 +3281,11 @@ model ContactConversation {
   is_skipped   Boolean @default(false)
   skip_reason  String?
 
+  user_id        String?   @db.Uuid
+  guest_ip       String?
+  guest_country  String?
+  guest_region   String?
+
   assigned_staff User? @relation("AssignedStaff", fields: [assigned_staff_id], references: [id])
   organization  Organization? @relation("ContactConversations", fields: [organization_id], references: [id])
 

@@ -100,7 +100,9 @@
     "live_chat": {
         "session_created": "Chat session has been created",
         "session_not_found": "Chat session not found",
+        "session_required": "When not logged in, please provide session or uid.",
         "message_sent": "Message has been sent",
+        "history": "History retrieved successfully",
         "ai_welcome": "Hello! I am GEN-HUB AI assistant. How can I help you?",
         "ai_unavailable": "Sorry, AI is currently unavailable. Please wait for staff support."
     }

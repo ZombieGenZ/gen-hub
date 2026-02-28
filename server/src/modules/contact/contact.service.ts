@@ -45,6 +45,7 @@ import { CozeService } from '../coze/coze.service';
 import { GeminiService } from '../../common/services/gemini.service';
 import { ContactListService } from '../contact-list/contact-list.service';
 import { ContactCacheKeysHelper } from './helpers/contact-cache-keys.helper';
+import { IpInfoService } from '../../common/services/ipinfo.service';
 
 /**
  * Service xử lý business logic cho Contact module
@@ -68,6 +69,7 @@ export class ContactService implements OnModuleInit {
         private readonly geminiService: GeminiService,
         private readonly contactListService: ContactListService,
         private readonly cacheKeys: ContactCacheKeysHelper,
+        private readonly ipinfoService: IpInfoService,
     ) {
         this.TICKET_PREFIX = this.configService.get<string>('CONTACT_TICKET_PREFIX') || 'TICKET';
     }
@@ -409,6 +411,10 @@ export class ContactService implements OnModuleInit {
         // Tạo Discord channel (fire-and-forget)
         let discordChannelId: string | undefined;
         try {
+            const extraFields: Array<{ name: string; value: string; inline?: boolean }> = [];
+            if (dto.phone) extraFields.push({ name: 'Số điện thoại', value: dto.phone, inline: true });
+            if (dto.company) extraFields.push({ name: 'Công ty', value: dto.company, inline: true });
+
             const discordResult = await this.discordService.createContactChannel(
                 code,
                 dto.name,
@@ -416,6 +422,7 @@ export class ContactService implements OnModuleInit {
                 dto.subject,
                 isPotentialCustomer, // Tạo trong priority category nếu là khách hàng tiềm năng
                 dto.message, // Nội dung tin nhắn để hiển thị trong Discord embed
+                extraFields,
             );
             if (discordResult.success && discordResult.channelId) {
                 discordChannelId = discordResult.channelId;
@@ -1396,7 +1403,7 @@ export class ContactService implements OnModuleInit {
             metaData: { conversationId: conversation.id, messageId: message.id, staffDiscordId },
         });
 
-        // WebSocket - thông báo có reply mới
+        // WebSocket - thông báo admin và guest (live chat) có reply mới
         this.websocketGateway.emitContactMessageCreated(
             conversation.id,
             {
@@ -1407,6 +1414,7 @@ export class ContactService implements OnModuleInit {
                 is_internal: false,
                 created_at: message.created_at,
             },
+            conversation.session_id ?? undefined,
         );
 
         // Gửi email cho khách hàng - nằm trong thread email xác nhận (fire-and-forget)
@@ -1451,16 +1459,36 @@ export class ContactService implements OnModuleInit {
     }
 
     /**
-     * Khởi tạo phiên live chat (Guest)
+     * Message khi thiếu session (không JWT)
+     */
+    requireSessionMessage(lang: string = 'vi'): string {
+        return this.i18n.t('contact.live_chat.session_required', { lang }) as string;
+    }
+
+    /**
+     * Khởi tạo phiên live chat (Guest hoặc User có JWT)
+     * Có JWT: sessionId tạo mới, lưu user_id. Không JWT: dùng session/uid làm session_id.
      */
     async startChatSession(
         dto: StartChatDto,
         lang: string = 'vi',
+        options?: { userId?: string; ip?: string },
     ): Promise<{ sessionId: string; code: string }> {
-        // Tạo session_id unique
-        const sessionId = require('crypto').randomUUID();
+        const clientSession = (dto.session?.trim() || dto.uid?.trim()) || undefined;
+        const sessionId = options?.userId
+            ? require('crypto').randomUUID()
+            : (clientSession || require('crypto').randomUUID());
 
-        // Tạo customer_name dạng "Guest 20260225001"
+        // Lấy country, region từ IP qua ipinfo.io (không cần client truyền)
+        let country: string | undefined;
+        let region: string | undefined;
+        if (options?.ip) {
+            const geo = await this.ipinfoService.lookup(options.ip);
+            country = geo.country;
+            region = geo.region ?? geo.city;
+        }
+
+        // Tạo customer_name dạng "Guest 20260225001" hoặc lấy từ user nếu có
         const guestPrefix = this.configService.get<string>('GUEST_NAME_PREFIX') || 'Guest';
         const now = new Date();
         const dateStr = now.getFullYear().toString()
@@ -1468,18 +1496,15 @@ export class ContactService implements OnModuleInit {
             + now.getDate().toString().padStart(2, '0');
         const counterKey = `contact:guest_chat_index:${dateStr}`;
         const dailyIndex = await this.redisService.incr(counterKey);
-        // Tự động hết hạn sau 48h để dọn key cũ
         if (dailyIndex === 1) {
             await this.redisService.expire(counterKey, 48 * 60 * 60);
         }
         const indexStr = dailyIndex.toString().padStart(3, '0');
         const customerName = `${guestPrefix} ${dateStr}${indexStr}`;
 
-        // Lấy giá trị mặc định enable_ai_reply từ config
         const enableAiReplyConfig = this.appConfigService.get('enableAiAutoReply') as unknown;
         const enableAiReply = enableAiReplyConfig === true || enableAiReplyConfig === 'true';
 
-        // Tạo conversation với channel LIVE_CHAT
         const code = await this.repository.generateTicketCode(this.TICKET_PREFIX);
         const conversation = await this.repository.createConversation({
             code,
@@ -1488,6 +1513,10 @@ export class ContactService implements OnModuleInit {
             customer_email: '',
             channel: ContactChannel.LIVE_CHAT,
             enable_ai_reply: enableAiReply,
+            user_id: options?.userId ?? undefined,
+            guest_ip: options?.ip ?? undefined,
+            guest_country: country,
+            guest_region: region,
         });
 
         // Nếu có initialMessage, lưu vào database trước
@@ -1507,6 +1536,11 @@ export class ContactService implements OnModuleInit {
         });
 
         // Tạo Discord channel (fire-and-forget)
+        const extraFields: Array<{ name: string; value: string; inline?: boolean }> = [];
+        if (options?.ip) extraFields.push({ name: 'IP', value: options.ip, inline: true });
+        if (country) extraFields.push({ name: 'Quốc gia', value: country, inline: true });
+        if (region) extraFields.push({ name: 'Khu vực', value: region, inline: true });
+
         this.discordService.createContactChannel(
             code,
             customerName,
@@ -1514,6 +1548,7 @@ export class ContactService implements OnModuleInit {
             'Live Chat', // subject mặc định
             false, // chưa xác định priority
             dto.initialMessage || '', // nội dung tin nhắn đầu tiên (nếu có)
+            extraFields,
         ).then(async (discordResult) => {
             if (discordResult.success && discordResult.channelId) {
                 await this.repository.update(conversation.id, {
@@ -1628,6 +1663,16 @@ export class ContactService implements OnModuleInit {
             conversation.session_id ?? undefined,
         );
 
+        // Gửi tin nhắn khách lên Discord để staff thấy
+        if (conversation.discord_channel_id) {
+            this.discordService.sendMessageToTicket(
+                conversation.discord_channel_id,
+                dto.content,
+                true,
+                conversation.customer_name,
+            );
+        }
+
         // Kiểm tra AI auto-reply
         let aiResponse: any = undefined;
         const shouldAiReply = conversation.enable_ai_reply ?? this.appConfigService.get('enableAiAutoReply');
@@ -1705,6 +1750,19 @@ export class ContactService implements OnModuleInit {
             ...conversation,
             messages,
         } as IContactConversationWithMessages;
+    }
+
+    /**
+     * Lấy lịch sử đoạn chat (live chat) của user theo user_id
+     */
+    async getChatHistoryByUserId(userId: string): Promise<IContactConversationWithMessages[]> {
+        const conversations = await this.repository.findLiveChatConversationsByUserId(userId);
+        const result: IContactConversationWithMessages[] = [];
+        for (const conv of conversations) {
+            const messages = await this.repository.getMessages(conv.id);
+            result.push({ ...conv, messages } as IContactConversationWithMessages);
+        }
+        return result;
     }
 
     /**

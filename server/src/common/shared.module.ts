@@ -16,6 +16,7 @@ import { ImageUploadService } from './services/image-upload.service';
 import { CipherService } from './services/cipher.service';
 import { TurnstileService } from './services/turnstile.service';
 import { HunterService } from './services/hunter.service';
+import { IpInfoService } from './services/ipinfo.service';
 
 /**
  * Shared Module
@@ -63,6 +64,7 @@ import { HunterService } from './services/hunter.service';
     CipherService,
     TurnstileService,
     HunterService,
+    IpInfoService,
   ],
   exports: [
     ConfigModule,
@@ -80,6 +82,7 @@ import { HunterService } from './services/hunter.service';
     CipherService,
     TurnstileService,
     HunterService,
+    IpInfoService,
   ],
 })
 export class SharedModule { }

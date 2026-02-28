@@ -443,6 +443,7 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
         subject?: string,
         isPriority: boolean = false,
         message?: string,
+        extraFields?: Array<{ name: string; value: string; inline?: boolean }>,
     ): Promise<IDiscordChannelResult> {
         if (!this.enabled || !this.guild || !this.category) {
             return { success: false, error: 'Tích hợp Discord không khả dụng' };
@@ -473,9 +474,16 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
                 .addFields(
                     { name: 'Code', value: contactCode, inline: true },
                     { name: 'Khách hàng', value: customerName, inline: true },
-                    { name: 'Email', value: customerEmail, inline: true },
                 )
                 .setTimestamp();
+
+            if (customerEmail) {
+                embed.addFields({ name: 'Email', value: customerEmail, inline: true });
+            }
+
+            if (extraFields && extraFields.length > 0) {
+                embed.addFields(extraFields);
+            }
 
             if (subject) {
                 embed.addFields({ name: 'Tiêu đề', value: subject });

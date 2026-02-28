@@ -4,6 +4,7 @@ import {
     ContactConversation,
     ContactMessage,
     ContactStatus,
+    ContactChannel,
     MessageType,
     Prisma,
     ContactActionType,
@@ -161,6 +162,20 @@ export class ContactRepository {
     async findBySessionId(sessionId: string): Promise<ContactConversation | null> {
         return this.prisma.contactConversation.findFirst({
             where: { session_id: sessionId, is_deleted: false },
+        });
+    }
+
+    /**
+     * Lấy danh sách phiên live chat của user (theo user_id)
+     */
+    async findLiveChatConversationsByUserId(userId: string): Promise<ContactConversation[]> {
+        return this.prisma.contactConversation.findMany({
+            where: {
+                user_id: userId,
+                channel: ContactChannel.LIVE_CHAT,
+                is_deleted: false,
+            },
+            orderBy: { last_activity_at: 'desc' },
         });
     }
 
