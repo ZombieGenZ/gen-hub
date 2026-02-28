@@ -111,18 +111,19 @@ export class ContactController {
     @Post('contact/chat/start')
     @Public()
     @UseGuards(OptionalJwtAuthGuard)
+    @ApiBearerAuth('JWT-auth')
     @HttpCode(HttpStatus.CREATED)
     @ApiOperation({
         summary: 'Khởi tạo Live Chat (Public)',
-        description: 'Bắt đầu phiên chat. Có JWT: session tùy chọn. Không JWT: bắt buộc truyền session hoặc uid.'
+        description: 'Bắt đầu phiên chat.\n- **Có JWT (đã đăng nhập)**: Không bắt buộc truyền trường `session` hay `uid`. Hệ thống sẽ tự tạo `session_id` và gắn với user.\n- **Không JWT (khách vãng lai)**: Bắt buộc truyền `session` (có thể dùng uuid hoặc chuỗi ngẫu nhiên ở client) để định danh và duy trì phiên chat cho khách.\n- **Tin nhắn đầu tiên**: Có thể đính kèm qua trường `initialMessage`.'
     })
     @ApiValidationErrorResponse()
     @ApiBody({
         type: StartChatDto,
-        description: 'session/uid bắt buộc khi không gửi JWT',
+        description: 'Dữ liệu khởi tạo phiên chat. Bắt buộc truyền `session` nếu không có JWT.',
         examples: {
-            guest: { summary: 'Khách (không JWT)', value: { session: 'session-abc-123' } },
-            withJwt: { summary: 'Có JWT', value: {} }
+            guest: { summary: 'Khách vãng lai (không JWT)', value: { session: 'random-uuid-for-guest', initialMessage: 'Xin chào, tôi cần hỗ trợ.' } },
+            withJwt: { summary: 'User đã đăng nhập (Có JWT)', value: { initialMessage: 'Tôi muốn hỏi về sản phẩm.' } }
         }
     })
     @ApiResponse({
