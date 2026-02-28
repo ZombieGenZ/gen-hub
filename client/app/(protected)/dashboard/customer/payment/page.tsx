@@ -126,7 +126,7 @@ export default function FinancePage() {
                 return;
             }
 
-            const listOrgs = await organizationService.getOrganizations(userID!);
+            const listOrgs = await organizationService.getOrganizations(token!);
             console.log("User's organizations:", listOrgs);
             const organization = listOrgs.items.find((o: Organization) => o.owner.id == userID);
             if (organization) {

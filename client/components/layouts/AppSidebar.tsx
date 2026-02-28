@@ -195,7 +195,7 @@ export function AppSidebarContent({
                                         : "bg-transparent text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                                 )}
                             >
-                                <div className="relative flex-shrink-0">
+                                <div className="relative shrink-0">
                                     <BellIcon className={cn(
                                         "w-5 h-5 transition-colors",
                                         showNotifications ? "text-sidebar-primary" : "text-sidebar-foreground/50 group-hover:text-sidebar-foreground"
@@ -206,7 +206,7 @@ export function AppSidebarContent({
                                 </div>
                                 <span className={cn(
                                     "whitespace-nowrap transition-all duration-300 overflow-hidden",
-                                    isCollapsed ? "w-0 opacity-0 hidden" : "w-0 w-auto opacity-100 block"
+                                    isCollapsed ? "w-0 opacity-0 hidden" : "w-auto opacity-100 block"
                                 )}>
                                     Thông báo
                                 </span>

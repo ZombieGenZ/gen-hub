@@ -1,3 +1,6 @@
+import { Organization } from "@/types/organization/organization.type";
+import { authStorage } from "@/services/auth/auth-storage.service";
+
 const API = process.env.NEXT_PUBLIC_API_URL;
 
 // ────────────────────────────────────────────────
@@ -32,6 +35,7 @@ export const orgHelper = {
     async getOrgId(token: string): Promise<string> {
         // Trả về cache nếu còn hạn (per token)
         const cached = cacheMap.get(token);
+        const userID = authStorage.getUserID();
         if (cached && Date.now() < cached.expiresAt) {
             return cached.orgId;
         }
@@ -55,8 +59,8 @@ export const orgHelper = {
             const json = await response.json();
 
             // API trả về paginated: { data: { items: [ { id, name, ... }, ... ], total, ... } }
-            const items: Array<{ id: string }> = json?.data?.items ?? [];
-            const orgId = items[0]?.id;
+            const items: Organization[] = json?.data?.items ?? [];
+            const orgId = items.find((o) => o.owner.id == userID)?.id;
 
             if (!orgId) {
                 throw new Error('Người dùng chưa thuộc tổ chức nào');

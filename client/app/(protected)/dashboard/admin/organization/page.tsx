@@ -29,6 +29,7 @@ export default function OrganizationPage() {
             if (!Array.isArray(response.items)) {
                 throw new Error('Expected an array of organizations');
             }
+            console.log(response.items);
             setOrganizations(response.items);
         } catch (err: any) {
             setError(err.message);

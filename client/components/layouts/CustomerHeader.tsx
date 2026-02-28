@@ -79,7 +79,7 @@ export function CustomerHeader({ children }: CustomerHeaderProps) {
                                 const isLast = index === breadcrumbs.length - 1;
                                 return (
                                     <li key={crumb.href} className="flex items-center">
-                                        {index > 0 && <ChevronRightIcon className="w-4 h-4 text-muted-foreground mx-2 flex-shrink-0" />}
+                                        {index > 0 && <ChevronRightIcon className="w-4 h-4 text-muted-foreground mx-2 shrink-0" />}
                                         <Link
                                             href={crumb.href}
                                             className={cn(
