@@ -7,7 +7,15 @@ export interface OrganizationBalance {
     total_deposited: number;
     total_spent: number;
     total_refunded: number;
+    is_active: boolean;
+    created_at: string;
     updated_at: string;
+    is_deleted: boolean;
+    deleted_at: string | null;
+    organization: {
+        id: string;
+        name: string;
+    };
 }
 
 export interface OrganizationBalanceTransaction {
@@ -32,7 +40,7 @@ export class AccountBalanceService {
      * @returns Thông tin số dư tổ chức
      */
     async getOrganizationBalance(token: string, orgId: string): Promise<OrganizationBalance> {
-        const response = await fetch(`${API}/admin/organization-balances/${orgId}`, {
+        const response = await fetch(`${API}/organizations/${orgId}/balance`, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -53,26 +61,20 @@ export class AccountBalanceService {
      * Lấy lịch sử giao dịch của tổ chức
      * @param token Token truy cập
      * @param orgId ID của tổ chức
-     * @param params Các tham số lọc giao dịch (trang, giới hạn, loại, ngày,...)
+     * @param params Các tham số lọc giao dịch (limit, offset, type, keywords,...)
      * @returns Danh sách lịch sử giao dịch
      */
     async getTransactions(token: string, orgId: string, params: {
-        page?: number;
         limit?: number;
-        type?: string;
-        from_date?: string;
-        to_date?: string;
-        description?: string;
-        status?: string;
+        offset?: number;
+        type?: 'DEPOSIT' | 'PAYMENT' | 'REFUND' | 'ADJUSTMENT';
+        keywords?: string;
     } = {}) {
         const query = new URLSearchParams();
-        if (params.page) query.append('page', String(params.page));
         if (params.limit) query.append('limit', String(params.limit));
+        if (params.offset !== undefined) query.append('offset', String(params.offset));
         if (params.type) query.append('type', params.type);
-        if (params.from_date) query.append('from_date', params.from_date);
-        if (params.to_date) query.append('to_date', params.to_date);
-        if (params.description) query.append('description', params.description);
-        if (params.status) query.append('status', params.status);
+        if (params.keywords) query.append('keywords', params.keywords);
 
         const response = await fetch(`${API}/organizations/${orgId}/balance/transactions?${query.toString()}`, {
             method: 'GET',

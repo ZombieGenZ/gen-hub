@@ -146,7 +146,7 @@ export default function FinancePage() {
             const data = await accountBalanceService.getOrganizationBalance(token, id);
             setBalance(data);
         } catch {
-            // Keep existing balance on failure — UI stays usable
+            console.error("Failed to fetch balance");
         }
     }, []);
 

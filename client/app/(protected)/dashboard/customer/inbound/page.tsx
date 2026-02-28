@@ -412,7 +412,7 @@ export default function InboundListPage() {
             {
                 product,
                 expected_qty: 1,
-                unit_id: (product as any).base_unit_id || "",
+                unit_id: (product as Product).base_unit_id || "",
             },
         ]);
         setProductSearch("");

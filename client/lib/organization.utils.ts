@@ -41,7 +41,7 @@ export const orgHelper = {
         }
 
         try {
-            const response = await fetch(`${API}/organizations?limit=1`, {
+            const response = await fetch(`${API}/organizations`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -65,6 +65,8 @@ export const orgHelper = {
             if (!orgId) {
                 throw new Error('Người dùng chưa thuộc tổ chức nào');
             }
+
+            console.log(`Lấy organization_id: ${orgId} (cache miss)`);
 
             // Lưu cache theo token
             cacheMap.set(token, { orgId, expiresAt: Date.now() + CACHE_TTL_MS });
