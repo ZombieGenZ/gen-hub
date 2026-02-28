@@ -184,16 +184,23 @@ ${insuranceInfo || 'Chưa có gói bảo hiểm.'}
                                 );
                             }
 
-                            // Coze trả về nhiều loại event, ta quan tâm đến message với type = 'answer'
-                            if (currentEvent === 'conversation.message.completed') {
-                                if (data.type === 'answer' && data.role === 'assistant') {
-                                    finalContent = data.content || '';
+                            // Ghi lại nội dung từng chunk (delta)
+                            if (currentEvent === 'conversation.message.delta') {
+                                if (data.type === 'answer' && data.role === 'assistant' && data.content) {
+                                    finalContent += data.content;
                                 }
                             }
-                            // Fallback: check trong data trực tiếp (bất kể event name)
-                            if (!finalContent && data.type === 'answer' && data.role === 'assistant' && data.content) {
-                                finalContent = data.content;
+                            // Khi gửi xong (completed), nếu có full text thì ưu tiên dùng (lỡ delta bị thiếu)
+                            else if (currentEvent === 'conversation.message.completed') {
+                                if (data.type === 'answer' && data.role === 'assistant' && data.content) {
+                                    finalContent = data.content;
+                                }
                             }
+                            // Fallback: check trong data trực tiếp nếu có nội dung
+                            else if (!finalContent && data.type === 'answer' && data.role === 'assistant' && data.content) {
+                                finalContent += data.content;
+                            }
+
                         } catch {
                             // Ignore JSON parse errors for incomplete data
                         }
