@@ -234,6 +234,15 @@ export function PrimeNestChatbot() {
         setTooltipVisible(false);
         clearLastNewMessage();
         if (tooltipTimerRef.current) clearTimeout(tooltipTimerRef.current);
+
+        // Tự động startChat nếu chưa có session và chưa start
+        if (!chatStarted && !sessionId && !isLoading) {
+            setChatStarted(true);
+            startChat().catch(err => {
+                console.error('Failed to start chat:', err);
+                setChatStarted(false);
+            });
+        }
     };
 
     const handleSendMessage = async () => {
@@ -530,23 +539,6 @@ export function PrimeNestChatbot() {
         <>
             {/* Messages Area */}
             <div className="flex-1 overflow-y-auto p-4 space-y-1">
-                {/* Greeting khi chưa có message nào */}
-                {messages.length === 0 && !isLoading && (
-                    <div className="flex gap-2 mb-3">
-                        <div className="w-7 h-7 rounded-full bg-violet-100 flex items-center justify-center shrink-0">
-                            <Bot className="w-4 h-4 text-violet-600" />
-                        </div>
-                        <div className="max-w-[75%] px-3 py-2 rounded-2xl rounded-tl-sm bg-violet-50 text-slate-800 text-sm border border-violet-100">
-                            <div className="text-[10px] font-medium mb-0.5 text-violet-500">
-                                GEN-HUB AI
-                            </div>
-                            <div className="leading-relaxed">
-                                {parseMarkdown('Xin chào! 👋 Tôi là trợ lý tư vấn kho bãi của **GenHub**. Tôi có thể giúp bạn tìm kiếm kho phù hợp với nhu cầu. Bạn cần hỗ trợ gì ạ?')}
-                            </div>
-                        </div>
-                    </div>
-                )}
-
                 {/* Loading history */}
                 {isLoading && messages.length === 0 && (
                     <div className="flex items-center justify-center py-8">

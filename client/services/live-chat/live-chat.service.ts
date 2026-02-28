@@ -14,16 +14,22 @@ class LiveChatService {
      */
     async startChatSession(
         uid: string,
-        initialMessage?: string
+        initialMessage?: string,
+        token?: string
     ): Promise<StartChatResponse> {
         const body: Record<string, string> = { uid };
         if (initialMessage) {
             body.initialMessage = initialMessage;
         }
 
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
         const response = await fetch(`${API}/contact/chat/start`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers,
             body: JSON.stringify(body),
         });
 
@@ -42,13 +48,19 @@ class LiveChatService {
      */
     async sendMessage(
         sessionId: string,
-        content: string
+        content: string,
+        token?: string
     ): Promise<SendMessageResponse> {
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
         const response = await fetch(
             `${API}/contact/chat/${sessionId}/message`,
             {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers,
                 body: JSON.stringify({ content }),
             }
         );
@@ -66,12 +78,17 @@ class LiveChatService {
     /**
      * Lấy lịch sử chat của session
      */
-    async getChatHistory(sessionId: string): Promise<ChatSessionResponse> {
+    async getChatHistory(sessionId: string, token?: string): Promise<ChatSessionResponse> {
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
         const response = await fetch(
             `${API}/contact/chat/${sessionId}`,
             {
                 method: 'GET',
-                headers: { 'Content-Type': 'application/json' },
+                headers,
             }
         );
 

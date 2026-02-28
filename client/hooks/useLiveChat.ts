@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { liveChatService } from '@/services/live-chat/live-chat.service';
+import { authStorage } from '@/services/auth/auth-storage.service';
 import {
     LiveChatMessage,
     WsMessageCreatedPayload,
@@ -157,8 +158,9 @@ export function useLiveChat(): UseLiveChatReturn {
         const savedSessionId = getSavedSessionId();
         if (savedSessionId) {
             setIsLoading(true);
+            const token = authStorage.getAccessToken() || undefined;
             liveChatService
-                .getChatHistory(savedSessionId)
+                .getChatHistory(savedSessionId, token)
                 .then((res) => {
                     if (res.success && res.data) {
                         setSessionId(savedSessionId);
@@ -197,9 +199,11 @@ export function useLiveChat(): UseLiveChatReturn {
             setIsLoading(true);
             try {
                 const uid = getOrCreateUid();
+                const token = authStorage.getAccessToken() || undefined;
                 const res = await liveChatService.startChatSession(
                     uid,
-                    initialMessage
+                    initialMessage,
+                    token
                 );
 
                 if (res.success && res.data) {
@@ -209,15 +213,6 @@ export function useLiveChat(): UseLiveChatReturn {
 
                     if (res.data.welcomeMessage) {
                         setWelcomeMessage(res.data.welcomeMessage);
-                        // Add welcome message as first message
-                        const welcomeMsg: LiveChatMessage = {
-                            id: `welcome-${Date.now()}`,
-                            sender_type: 'AI',
-                            sender_name: 'GEN-HUB AI',
-                            content: res.data.welcomeMessage,
-                            created_at: new Date().toISOString(),
-                        };
-                        setMessages([welcomeMsg]);
                     }
 
                     connectWebSocket(sid);
@@ -274,9 +269,11 @@ export function useLiveChat(): UseLiveChatReturn {
 
             setIsSending(true);
             try {
+                const token = authStorage.getAccessToken() || undefined;
                 const res = await liveChatService.sendMessage(
                     sessionId,
-                    content.trim()
+                    content.trim(),
+                    token
                 );
                 console.log('[LiveChat] sendMessage REST response:', JSON.stringify(res, null, 2));
 
