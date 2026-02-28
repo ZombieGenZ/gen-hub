@@ -150,8 +150,6 @@ ${insuranceInfo || 'Chưa có gói bảo hiểm.'}
         const decoder = new TextDecoder();
         let buffer = '';
         let finalContent = '';
-        // Giữ currentEvent ngoài vòng lặp while để persist across chunks
-        let currentEvent = '';
         const receivedEvents: string[] = [];
 
         try {
@@ -161,49 +159,58 @@ ${insuranceInfo || 'Chưa có gói bảo hiểm.'}
 
                 buffer += decoder.decode(value, { stream: true });
 
-                // Parse các SSE events trong buffer
-                const lines = buffer.split('\n');
-                buffer = lines.pop() || ''; // Giữ lại dòng chưa hoàn chỉnh
+                // SSE events được phân tách bởi '\n\n' (double newline)
+                // Tách ra từng event block hoàn chỉnh
+                const eventBlocks = buffer.split('\n\n');
+                // Giữ lại block cuối có thể chưa hoàn chỉnh
+                buffer = eventBlocks.pop() || '';
 
-                for (const line of lines) {
-                    const trimmedLine = line.trim();
-                    if (trimmedLine.startsWith('event:')) {
-                        currentEvent = trimmedLine.slice(6).trim();
-                        receivedEvents.push(currentEvent);
-                    } else if (trimmedLine.startsWith('data:')) {
-                        const dataStr = trimmedLine.slice(5).trim();
-                        if (dataStr === '[DONE]') continue;
+                for (const block of eventBlocks) {
+                    if (!block.trim()) continue;
 
-                        try {
-                            const data = JSON.parse(dataStr);
+                    // Parse từng dòng trong event block
+                    const lines = block.split('\n');
+                    let currentEvent = '';
+                    let dataStr = '';
 
-                            // Log để debug: ghi nhận event + data type/role
-                            if (data.role || data.type) {
-                                this.logger.debug(
-                                    `SSE event="${currentEvent}" role="${data.role}" type="${data.type}" hasContent=${!!data.content}`,
-                                );
+                    for (const line of lines) {
+                        if (line.startsWith('event:')) {
+                            currentEvent = line.slice(6).trim();
+                            receivedEvents.push(currentEvent);
+                        } else if (line.startsWith('data:')) {
+                            dataStr = line.slice(5).trim();
+                        }
+                    }
+
+                    if (!dataStr || dataStr === '[DONE]') continue;
+
+                    try {
+                        const data = JSON.parse(dataStr);
+
+                        // Log để debug
+                        this.logger.debug(
+                            `SSE event="${currentEvent}" role="${data.role ?? '-'}" type="${data.type ?? '-'}" hasContent=${!!data.content}`,
+                        );
+
+                        // Ưu tiên event completed để lấy full text (tránh mất chunk)
+                        if (currentEvent === 'conversation.message.completed') {
+                            if (data.type === 'answer' && data.content) {
+                                finalContent = data.content;
                             }
-
-                            // Ghi lại nội dung từng chunk (delta)
-                            if (currentEvent === 'conversation.message.delta') {
-                                if (data.type === 'answer' && data.role === 'assistant' && data.content) {
-                                    finalContent += data.content;
-                                }
-                            }
-                            // Khi gửi xong (completed), nếu có full text thì ưu tiên dùng (lỡ delta bị thiếu)
-                            else if (currentEvent === 'conversation.message.completed') {
-                                if (data.type === 'answer' && data.role === 'assistant' && data.content) {
-                                    finalContent = data.content;
-                                }
-                            }
-                            // Fallback: check trong data trực tiếp nếu có nội dung
-                            else if (!finalContent && data.type === 'answer' && data.role === 'assistant' && data.content) {
+                        }
+                        // Accumulate từng delta chunk
+                        else if (currentEvent === 'conversation.message.delta') {
+                            if (data.type === 'answer' && data.content) {
                                 finalContent += data.content;
                             }
-
-                        } catch {
-                            // Ignore JSON parse errors for incomplete data
                         }
+                        // Fallback: check trực tiếp trong data nếu không có event label
+                        else if (!finalContent && data.type === 'answer' && data.content) {
+                            finalContent += data.content;
+                        }
+
+                    } catch {
+                        // Ignore JSON parse errors for incomplete data
                     }
                 }
             }
@@ -250,6 +257,7 @@ ${insuranceInfo || 'Chưa có gói bảo hiểm.'}
                 body: JSON.stringify({
                     bot_id: this.config.botId,
                     user_id: userId || 'anonymous',
+                    ...(conversationId ? { conversation_id: conversationId } : {}),
                     stream: true,
                     auto_save_history: true,
                     additional_messages: [
