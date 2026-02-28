@@ -412,6 +412,7 @@ export class ContactService implements OnModuleInit {
         let discordChannelId: string | undefined;
         try {
             const extraFields: Array<{ name: string; value: string; inline?: boolean }> = [];
+            extraFields.push({ name: 'ID', value: conversation.id, inline: true });
             if (dto.phone) extraFields.push({ name: 'Số điện thoại', value: dto.phone, inline: true });
             if (dto.company) extraFields.push({ name: 'Công ty', value: dto.company, inline: true });
 
@@ -1537,6 +1538,7 @@ export class ContactService implements OnModuleInit {
 
         // Tạo Discord channel (fire-and-forget)
         const extraFields: Array<{ name: string; value: string; inline?: boolean }> = [];
+        extraFields.push({ name: 'ID', value: conversation.id, inline: true });
         if (options?.ip) extraFields.push({ name: 'IP', value: options.ip, inline: true });
         if (country) extraFields.push({ name: 'Quốc gia', value: country, inline: true });
         if (region) extraFields.push({ name: 'Khu vực', value: region, inline: true });
