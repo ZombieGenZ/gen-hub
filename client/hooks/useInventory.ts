@@ -9,7 +9,10 @@ import {
   DailyStats,
   CategoryStats,
   RackUtilization,
-  SearchResult
+  SearchResult,
+  BarcodeScanResult,
+  BarcodeScanLocation,
+  STOCK_THRESHOLDS
 } from '@/types/inventory';
 import { BoxItem, RackConfig, BoxCategory, categoryLabels, categoryColors, getFillRateStatus } from '@/types/warehouse';
 
@@ -186,6 +189,104 @@ export const useInventory = ({ boxes, racks }: UseInventoryProps) => {
       .slice(0, 20); // Limit results
   }, [boxes, racks]);
 
+  // Scan barcode to check remaining inventory - Quét barcode kiểm tra tồn kho
+  const scanBarcode = useCallback((barcode: string): BarcodeScanResult | null => {
+    if (!barcode.trim()) return null;
+    
+    const lowerBarcode = barcode.toLowerCase().trim();
+    
+    // Find all boxes matching the barcode/product code
+    const matchingBoxes = boxes.filter(box => {
+      // Match by box name, category, or partial match
+      const boxName = box.name.toLowerCase();
+      const boxCategory = box.category.toLowerCase();
+      
+      return boxName.includes(lowerBarcode) || 
+             boxCategory.includes(lowerBarcode) ||
+             box.id.toLowerCase().includes(lowerBarcode);
+    });
+    
+    if (matchingBoxes.length === 0) return null;
+    
+    // Group boxes by rack
+    const rackGroups = new Map<string, BoxItem[]>();
+    matchingBoxes.forEach(box => {
+      const existing = rackGroups.get(box.rackId) || [];
+      existing.push(box);
+      rackGroups.set(box.rackId, existing);
+    });
+    
+    // Build location breakdown
+    const locations: BarcodeScanLocation[] = [];
+    rackGroups.forEach((rackBoxes, rackId) => {
+      const rack = racks.find(r => r.id === rackId);
+      if (!rack) return;
+      
+      const capacity = rack.rows * rack.columns * rack.levels;
+      const totalRackBoxes = boxes.filter(b => b.rackId === rackId).length;
+      
+      const locationQuantity = rackBoxes.reduce((sum, b) => sum + (b.quantity || 1), 0);
+      const locationWeight = rackBoxes.reduce((sum, b) => sum + (b.weight || 0), 0);
+      
+      locations.push({
+        rackId,
+        rackName: rack.name,
+        boxCount: rackBoxes.length,
+        quantity: locationQuantity,
+        weight: locationWeight,
+        fillRate: capacity > 0 ? totalRackBoxes / capacity : 0,
+        boxes: rackBoxes.map(box => ({
+          boxId: box.id,
+          boxName: box.name,
+          rackId: box.rackId,
+          rackName: rack.name,
+          category: box.category,
+          position: box.position,
+          level: box.level,
+          row: box.row,
+          column: box.column,
+          weight: box.weight,
+          quantity: box.quantity,
+        })),
+      });
+    });
+    
+    // Sort locations by box count descending
+    locations.sort((a, b) => b.boxCount - a.boxCount);
+    
+    // Calculate totals
+    const totalBoxes = matchingBoxes.length;
+    const totalQuantity = matchingBoxes.reduce((sum, b) => sum + (b.quantity || 1), 0);
+    const totalWeight = matchingBoxes.reduce((sum, b) => sum + (b.weight || 0), 0);
+    
+    // Determine stock status
+    let stockStatus: BarcodeScanResult['stockStatus'];
+    if (totalBoxes === STOCK_THRESHOLDS.outOfStock) {
+      stockStatus = 'out_of_stock';
+    } else if (totalBoxes <= STOCK_THRESHOLDS.lowStock) {
+      stockStatus = 'low_stock';
+    } else if (totalBoxes > STOCK_THRESHOLDS.overstock) {
+      stockStatus = 'overstocked';
+    } else {
+      stockStatus = 'in_stock';
+    }
+    
+    // Get product name and category from first match
+    const primaryBox = matchingBoxes[0];
+    
+    return {
+      barcode,
+      productName: primaryBox.name,
+      category: categoryLabels[primaryBox.category as BoxCategory] || primaryBox.category,
+      totalBoxes,
+      totalQuantity,
+      totalWeight,
+      locations,
+      stockStatus,
+      lastUpdated: new Date(),
+    };
+  }, [boxes, racks]);
+
   // Highlight a box and focus camera
   const highlightBox = useCallback((boxId: string | null) => {
     setHighlightedBoxId(boxId);
@@ -267,6 +368,7 @@ export const useInventory = ({ boxes, racks }: UseInventoryProps) => {
     dismissAlert,
     clearDismissedAlerts,
     searchBoxes,
+    scanBarcode,
     highlightBox,
     
     // Statistics
