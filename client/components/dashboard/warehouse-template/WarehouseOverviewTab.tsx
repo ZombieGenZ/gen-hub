@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { ArrowRightIcon, XMarkIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, MagnifyingGlassIcon, MapPinIcon } from "@heroicons/react/24/outline";
 
 // ── shadcn/ui ──
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,11 +16,14 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 // ── Service & types ──
 import { UserService } from "@/services/user/user.service";
+import { LocationService } from "@/services/location/location.service";
 import { authStorage } from "@/services/auth/auth-storage.service";
 import type { User } from "@/types/user/user.type";
+import type { Ward } from "@/types/location/wards.type";
 import { useDebounce } from "@/hooks/use-debounce";
 
 const userService = new UserService();
+const locationService = new LocationService();
 
 interface WarehouseOverviewTabProps {
     data: Record<string, any>;
@@ -33,15 +36,108 @@ export function WarehouseOverviewTab({ data, onChange }: WarehouseOverviewTabPro
         onChange({ [field]: value });
     };
 
-    const handleLocationChange = (locationData: LocationData) => {
+    // ── Ward Picker state (declared early — used in handleLocationChange below) ──
+    const [wardSearch, setWardSearch] = useState("");
+    const [wardResults, setWardResults] = useState<Ward[]>([]);
+    const [isSearchingWard, setIsSearchingWard] = useState(false);
+    const [showWardDropdown, setShowWardDropdown] = useState(false);
+    const debouncedWardSearch = useDebounce(wardSearch, 400);
+
+    const currentWard: { id: string; name: string; province?: { name: string } } | null =
+        data.ward_selected || data.ward || null;
+
+    const handleLocationChange = async (locationData: LocationData) => {
+        // 1. Immediately update coord + address text fields
         onChange({
             latitude: locationData.latitude,
             longitude: locationData.longitude,
-            address_detail: locationData.address_detail,
+            address_detail: locationData.full_address || locationData.address_detail,
             province_name: locationData.province_name,
             district_name: locationData.district_name,
             ward_name: locationData.ward_name,
         });
+
+        // 2. Auto-lookup ward_id from DB — try sequential strategies
+        // Strategy A: ward_name from Mapbox neighborhood/locality context (best case)
+        let wardKeyword = locationData.ward_name?.trim() || "";
+
+        // Strategy B: Parse full_address for "Phường X / Xã X / Thị trấn X" pattern
+        if (!wardKeyword && locationData.full_address) {
+            const wardMatch = locationData.full_address.match(
+                /\b(Phường|Xã|Thị tr[aă]n|Thị xã)\s+([^,]+)/i
+            );
+            if (wardMatch) wardKeyword = wardMatch[0].trim();
+        }
+
+        // Strategy C: Vietnamese address format is usually "street, ward_name, postal, city..."
+        // Grab the second segment (index 1) after splitting by comma
+        if (!wardKeyword && locationData.full_address) {
+            const parts = locationData.full_address.split(",").map((s) => s.trim()).filter(Boolean);
+            if (parts.length >= 2) {
+                const candidate = parts[1]; // e.g. "Bến Nghé", "Phường 14"
+                // Only use if it's not a number (postal code) and not too long
+                if (candidate && isNaN(Number(candidate)) && candidate.length < 40) {
+                    wardKeyword = candidate;
+                }
+            }
+        }
+
+        if (wardKeyword) {
+            try {
+                const list: Ward[] = await locationService.getWards({ keywords: wardKeyword });
+
+                // Match: exact → contains-either-way → first result
+                const match =
+                    list.find((w) => w.name.toLowerCase() === wardKeyword.toLowerCase()) ||
+                    list.find(
+                        (w) =>
+                            w.name.toLowerCase().includes(wardKeyword.toLowerCase()) ||
+                            wardKeyword.toLowerCase().includes(w.name.toLowerCase())
+                    ) ||
+                    list[0];
+
+                if (match) {
+                    onChange({ ward_id: match.id, ward_selected: match });
+                    return;
+                }
+            } catch { /* silently ignore */ }
+        }
+
+        // Fallback: pre-fill search box so dropdown opens for manual pick
+        if (wardKeyword) {
+            setWardSearch(wardKeyword);
+        }
+    };
+    useEffect(() => {
+        if (!debouncedWardSearch.trim()) {
+            setWardResults([]);
+            setShowWardDropdown(false);
+            return;
+        }
+        const search = async () => {
+            setIsSearchingWard(true);
+            try {
+                const list: Ward[] = await locationService.getWards({ keywords: debouncedWardSearch });
+                setWardResults(list);
+                setShowWardDropdown(true);
+            } catch {
+                setWardResults([]);
+            } finally {
+                setIsSearchingWard(false);
+            }
+        };
+        search();
+    }, [debouncedWardSearch]);
+
+    const handleSelectWard = (ward: Ward) => {
+        onChange({ ward_id: ward.id, ward_selected: ward });
+        setWardSearch("");
+        setWardResults([]);
+        setShowWardDropdown(false);
+    };
+
+    const handleClearWard = () => {
+        onChange({ ward_id: "", ward_selected: null });
     };
 
     // ── Manager User Selector ──
@@ -52,8 +148,12 @@ export function WarehouseOverviewTab({ data, onChange }: WarehouseOverviewTabPro
     const [isLoadingInitialUsers, setIsLoadingInitialUsers] = useState(true);
     const debouncedManagerSearch = useDebounce(managerSearch, 400);
 
-    // Selected manager (from data or selection)
-    const selectedManager: User | null = data.manager_user || null;
+    // Selected manager: from data.managers[0].user (API) or freshly picked via UI
+    type ManagerUser = Pick<User, 'id' | 'name' | 'email'> & { avatar?: string };
+    const selectedManager: ManagerUser | null =
+        (data.manager_user as ManagerUser | undefined) ||
+        (data.managers?.[0]?.user as ManagerUser | undefined) ||
+        null;
 
     // Load initial list of users on mount
     useEffect(() => {
@@ -164,6 +264,17 @@ export function WarehouseOverviewTab({ data, onChange }: WarehouseOverviewTabPro
                             />
                         </div>
 
+                        <div className="space-y-2">
+                            <Label htmlFor="address_detail">Địa chỉ chi tiết</Label>
+                            <Input
+                                id="address_detail"
+                                value={data.address_detail || ""}
+                                onChange={(e) => handleChange("address_detail", e.target.value)}
+                                placeholder="Tự điền khi chọn trên bản đồ, hoặc nhập tay..."
+                                style={{ borderRadius: "12px" }}
+                            />
+                        </div>
+
                         {/* Dimensions — 3 columns */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div className="space-y-2">
@@ -192,8 +303,8 @@ export function WarehouseOverviewTab({ data, onChange }: WarehouseOverviewTabPro
                             </div>
                         </div>
 
-                        {/* Block size + Price — 3 columns */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {/* Block size + Price + Max Load — 4 columns */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             <div className="space-y-2">
                                 <Label>Block dài</Label>
                                 <FormattedNumberInput
@@ -208,6 +319,14 @@ export function WarehouseOverviewTab({ data, onChange }: WarehouseOverviewTabPro
                                     value={data.block_width}
                                     onChange={(v) => handleChange("block_width", v)}
                                     suffix="m"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Tải trọng tối đa</Label>
+                                <FormattedNumberInput
+                                    value={data.max_load_capacity}
+                                    onChange={(v) => handleChange("max_load_capacity", v)}
+                                    suffix="tấn"
                                 />
                             </div>
                             <div className="space-y-2">
@@ -227,7 +346,67 @@ export function WarehouseOverviewTab({ data, onChange }: WarehouseOverviewTabPro
                     <CardHeader>
                         <CardTitle className="text-lg">Vị trí</CardTitle>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="space-y-4">
+                        {/* Ward Picker */}
+                        <div className="space-y-2">
+                            <Label>Phường / Xã</Label>
+
+                            {/* Current ward badge */}
+                            {currentWard && (
+                                <div className="flex items-center gap-2 px-3 py-2 rounded-xl border border-[#0F766E]/20 bg-[#0F766E]/5">
+                                    <MapPinIcon className="w-4 h-4 text-[#0F766E] flex-shrink-0" />
+                                    <div className="flex-1 min-w-0">
+                                        <span className="text-sm font-medium truncate">{currentWard.name}</span>
+                                        {currentWard.province && (
+                                            <span className="text-xs text-muted-foreground ml-1">— {currentWard.province.name}</span>
+                                        )}
+                                    </div>
+                                    <Button
+                                        variant="ghost" size="icon"
+                                        className="h-6 w-6 rounded-full flex-shrink-0"
+                                        onClick={handleClearWard}
+                                    >
+                                        <XMarkIcon className="w-3.5 h-3.5 text-muted-foreground" />
+                                    </Button>
+                                </div>
+                            )}
+
+                            {/* Search input */}
+                            <div className="relative">
+                                <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                                <Input
+                                    placeholder="Tìm phường/xã..."
+                                    value={wardSearch}
+                                    onChange={(e) => setWardSearch(e.target.value)}
+                                    className="pl-9"
+                                    style={{ borderRadius: "12px" }}
+                                />
+                            </div>
+
+                            {/* Dropdown results */}
+                            {showWardDropdown && (
+                                <div className="rounded-xl border divide-y max-h-[200px] overflow-y-auto">
+                                    {isSearchingWard ? (
+                                        <div className="px-4 py-3 text-sm text-muted-foreground text-center">Đang tìm...</div>
+                                    ) : wardResults.length === 0 ? (
+                                        <div className="px-4 py-3 text-sm text-muted-foreground text-center">Không tìm thấy kết quả</div>
+                                    ) : (
+                                        wardResults.map((ward) => (
+                                            <button
+                                                key={ward.id}
+                                                className="flex items-center gap-2 w-full px-3 py-2.5 text-left text-sm hover:bg-muted/50 transition-colors"
+                                                onClick={() => handleSelectWard(ward)}
+                                            >
+                                                <MapPinIcon className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                                                <span className="font-medium">{ward.name}</span>
+                                            </button>
+                                        ))
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Map */}
                         <LocationMapPicker
                             latitude={data.latitude}
                             longitude={data.longitude}

@@ -36,6 +36,7 @@ const adminNavGroups: SidebarGroup[] = [
         title: "Vận hành",
         items: [
             { href: "/dashboard/admin/warehouses", icon: HomeModernIcon, label: "Kho bãi" },
+            { href: "/dashboard/admin/approval", icon: ClipboardDocumentCheckIcon, label: "Duyệt phiếu Nhập/Xuất" },
             { href: "/dashboard/admin/contracts", icon: DocumentTextIcon, label: "Hợp đồng" },
             { href: "/dashboard/admin/coupons", icon: TicketIcon, label: "Mã giảm giá" },
             { href: "/dashboard/admin/warehouse-visits", icon: CalendarDaysIcon, label: "Lịch thăm kho", disabled: true, badge: "Sắp có" },

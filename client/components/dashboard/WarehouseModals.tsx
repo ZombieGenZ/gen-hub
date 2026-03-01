@@ -35,7 +35,6 @@ type WarehouseFormData = {
     manager_phone: string;
     manager_email: string;
     is_active: boolean;
-    is_cold_storage: boolean;
     min_temperature?: number;
     max_temperature?: number;
     min_humidity?: number;
@@ -56,7 +55,6 @@ const initialFormData: WarehouseFormData = {
     manager_phone: "",
     manager_email: "",
     is_active: true,
-    is_cold_storage: false,
     min_temperature: 0,
     max_temperature: 10,
     min_humidity: 0,
@@ -222,7 +220,6 @@ export function UpdateWarehouseModal({ open, onOpenChange, warehouse, onSuccess 
                 manager_phone: warehouse.manager_phone || "",
                 manager_email: warehouse.manager_email || "",
                 is_active: warehouse.is_active || false,
-                is_cold_storage: warehouse.is_cold_storage || false,
                 min_temperature: Number(warehouse.min_temperature) || 0,
                 max_temperature: Number(warehouse.max_temperature) || 0,
                 min_humidity: Number(warehouse.min_humidity) || 0,

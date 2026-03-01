@@ -96,7 +96,6 @@ export interface Warehouse extends BaseEntity {
     ward_id: string;
   
   // Status and type flags
-    is_cold_storage: boolean;
     is_rented: boolean;
     is_shared_warehouse: boolean;
     rental_status: string;
@@ -156,7 +155,6 @@ export interface WarehouseRequest {
   manager_email: string;
   ceiling_height: number;
   amenity_ids: string[];
-  is_cold_storage: boolean;
   min_temperature: number;
   max_temperature: number;
   min_humidity: number;

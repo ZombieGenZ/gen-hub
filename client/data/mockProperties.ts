@@ -73,14 +73,6 @@ export interface Property {
     manager_phone?: string;
     manager_email?: string;
 
-    // Climate control (cold storage)
-    min_temperature?: number;
-    max_temperature?: number;
-    min_humidity?: number;
-    max_humidity?: number;
-    latitude?: number;
-    longitude?: number;
-
     // Rows (for partial rental)
     rows?: {
         id: string;
@@ -136,7 +128,6 @@ export function mapWarehouseToProperty(w: any): Property {
         max_load_capacity: Number(w.max_load_capacity) || undefined,
         total_weight_capacity: Number(w.total_weight_capacity) || undefined,
         is_active: w.is_active,
-        is_cold_storage: w.is_cold_storage,
         is_shared_warehouse: w.is_shared_warehouse,
         ward_id: w.ward_id,
         ward: w.ward,
@@ -157,13 +148,6 @@ export function mapWarehouseToProperty(w: any): Property {
         manager_phone: w.manager_phone,
         manager_email: w.manager_email,
 
-        // Climate
-        min_temperature: w.min_temperature != null ? Number(w.min_temperature) : undefined,
-        max_temperature: w.max_temperature != null ? Number(w.max_temperature) : undefined,
-        min_humidity: w.min_humidity != null ? Number(w.min_humidity) : undefined,
-        max_humidity: w.max_humidity != null ? Number(w.max_humidity) : undefined,
-        latitude: w.latitude != null ? Number(w.latitude) : undefined,
-        longitude: w.longitude != null ? Number(w.longitude) : undefined,
 
         // Rows
         rows: (w.rows || []).filter((r: any) => !r.is_deleted).map((r: any) => ({

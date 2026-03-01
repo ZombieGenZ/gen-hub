@@ -97,6 +97,20 @@ export class WarehouseTemplateRepository {
                 insurance: true,
             },
         },
+        managers: {
+            where: { is_deleted: false, is_active: true },
+            orderBy: { created_at: 'asc' as const },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                        avatar: true,
+                    },
+                },
+            },
+        },
     };
 
     /** Lightweight include for list queries - không load nested rows */

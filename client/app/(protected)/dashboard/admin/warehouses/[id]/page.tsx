@@ -47,7 +47,12 @@ export default function WarehouseEditPage() {
             setLoading(true);
             const data = await warehouseService.getWarehouseTemplateById(token, id);
             setWarehouse(data);
-            setFormData(data);
+            // Normalize: ensure ward_id scalar is populated from relation if missing
+            const normalized = {
+                ...data,
+                ward_id: data.ward_id || data.ward?.id || "",
+            };
+            setFormData(normalized);
         } catch (err) {
             toast.error("Không thể tải dữ liệu kho.");
             router.push("/dashboard/admin/warehouses");
@@ -80,13 +85,8 @@ export default function WarehouseEditPage() {
         // Optional string fields
         if (formData.description?.trim()) cleanData.description = formData.description.trim();
         if (formData.address_detail?.trim()) cleanData.address_detail = formData.address_detail.trim();
-        if (formData.manager_name?.trim()) cleanData.manager_name = formData.manager_name.trim();
-        if (formData.manager_email?.trim()) cleanData.manager_email = formData.manager_email.trim();
-
-        // Manager phone - always include even if empty (set to null if not provided)
-        if (formData.manager_phone !== undefined) {
-            cleanData.manager_phone = formData.manager_phone?.trim() || null;
-        }
+        // NOTE: manager_name / manager_email / manager_phone are NOT columns on warehouse_templates table.
+        // Manager assignment uses a separate join table (WarehouseTemplateManager) via /warehouse-managers/assign API.
 
         // Required numeric fields (must have valid value)
         const requiredNumbers = ['length', 'width', 'block_length', 'block_width', 'price_per_month'];
@@ -113,9 +113,6 @@ export default function WarehouseEditPage() {
         }
 
         // Boolean fields
-        if (typeof formData.is_cold_storage === 'boolean') {
-            cleanData.is_cold_storage = formData.is_cold_storage;
-        }
         if (typeof formData.is_shared_warehouse === 'boolean') {
             cleanData.is_shared_warehouse = formData.is_shared_warehouse;
         }
@@ -154,20 +151,35 @@ export default function WarehouseEditPage() {
             return;
         }
 
-        // Log để debug
-        console.log('[handleSave] Sending data:', JSON.stringify(cleanData, null, 2));
-
         setSaving(true);
         try {
+            // 1. Update warehouse template basic info
             await warehouseService.updateWarehouseTemplate(token, id, cleanData);
+
+            // 2. Assign manager via separate API if a new manager_user was selected
+            // (manager is stored in WarehouseTemplateManager join table, not on warehouse_templates)
+            if (formData.manager_user?.id) {
+                const API = process.env.NEXT_PUBLIC_API_URL;
+                await fetch(`${API}/warehouse-managers/assign`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        warehouse_template_id: id,
+                        user_id: formData.manager_user.id,
+                    }),
+                });
+                // Note: 409 Conflict (already assigned) is acceptable — ignore silently
+            }
+
             toast.success("Đã lưu thay đổi.");
             setIsDirty(false);
             fetchWarehouse();
         } catch (err: any) {
-            console.error('[handleSave] Full error:', err);
-            console.error('[handleSave] Error response:', err?.response);
-            const errorMsg = err?.response?.data?.message || err?.message || "Lỗi không xác định";
-            toast.error(`Lưu thất bại: ${errorMsg}`);
+            const msg = err?.message || "Lỗi không xác định";
+            toast.error(`Lưu thất bại: ${msg}`);
         } finally {
             setSaving(false);
         }

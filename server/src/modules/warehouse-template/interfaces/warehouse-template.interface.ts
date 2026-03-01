@@ -39,15 +39,23 @@ export interface IWarehouseTemplateWithRelations extends WarehouseTemplate {
     ward?: {
         id: string;
         name: string;
-        district?: {
+        province?: {
             id: string;
             name: string;
-            province?: {
-                id: string;
-                name: string;
-            };
         };
     };
+    managers?: {
+        id: string;
+        user_id: string;
+        phone?: string | null;
+        notes?: string | null;
+        user: {
+            id: string;
+            name: string;
+            email?: string | null;
+            avatar?: string | null;
+        };
+    }[];
 }
 
 /**

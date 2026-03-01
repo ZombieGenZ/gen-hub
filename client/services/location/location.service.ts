@@ -39,8 +39,9 @@ export class LocationService {
                 throw new Error('Failed to fetch provinces');
             }
             
-            const data = await response.json();
-            return data;
+            const json = await response.json();
+            // API returns { success, data: Province[], ... }
+            return Array.isArray(json) ? json : (json?.data ?? []);
         } catch (error) {
             console.error('Error fetching provinces:', error);
             throw error;
@@ -68,38 +69,30 @@ export class LocationService {
 
     /**
      * Lấy danh sách phường/xã
-     * @param params Tham số truy vấn
-     * @returns Danh sách phường/xã
+     * Chỉ hỗ trợ: keywords, type, province_id (theo QueryWardDto)
      */
     async getWards(params: {
         keywords?: string;
-        is_active?: boolean;
-        rental_status?: string;
         province_id?: string;
-        page?: number;
-        limit?: number;
         type?: string;
     } = {}): Promise<Ward[]> {
         const query = new URLSearchParams();
-        
+
         if (params.keywords) query.append('keywords', params.keywords);
-        if (params.is_active !== undefined) query.append('is_active', String(params.is_active));
-        if (params.rental_status) query.append('rental_status', params.rental_status);
         if (params.province_id) query.append('province_id', params.province_id);
-        if (params.page) query.append('page', String(params.page));
-        if (params.limit) query.append('limit', String(params.limit));
         if (params.type) query.append('type', params.type);
-        
+
         const queryString = query.toString();
         const url = queryString ? `${API}/wards?${queryString}` : `${API}/wards`;
-        
+
         try {
             const response = await fetch(url);
             if (!response.ok) {
                 throw new Error('Failed to fetch wards');
             }
-            const data = await response.json();
-            return data;
+            const json = await response.json();
+            // API returns { success, data: Ward[], ... }
+            return Array.isArray(json) ? json : (json?.data ?? []);
         } catch (error) {
             console.error('Error fetching wards:', error);
             throw error;
