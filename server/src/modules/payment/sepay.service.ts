@@ -43,7 +43,7 @@ export class SepayService {
         this.bankName = this.configService.get<string>('SEPAY_BANK_NAME') || '';
         this.accountHolder = this.configService.get<string>('SEPAY_ACCOUNT_HOLDER') || '';
         this.apiKey = this.configService.get<string>('SEPAY_API_KEY') || '';
-        this.paymentCodePrefix = this.configService.get<string>('PAYMENT_CODE_PREFIX') || 'GENHUB';
+        this.paymentCodePrefix = this.configService.get<string>('PAYMENT_CODE_PREFIX') || 'GH';
         this.paymentCodeLength = this.configService.get<number>('PAYMENT_CODE_LENGTH') || 8;
         this.lockDurationSeconds = this.configService.get<number>('RENTAL_LOCK_DURATION_SECONDS') || 3600;
     }
