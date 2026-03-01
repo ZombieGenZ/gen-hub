@@ -131,13 +131,6 @@ ${insuranceInfo || 'Chưa có gói bảo hiểm.'}
     }
 
     /**
-     * Gửi tin nhắn đến Coze AI và nhận phản hồi
-     * @param userMessage - Tin nhắn từ người dùng
-     * @param conversationId - ID session để nhóm conversation
-     * @param userId - ID user (optional)
-     * @param options - Options cho Discord logging
-     */
-    /**
      * Parse SSE stream response từ Coze API
      * SSE format: event: xxx\ndata: {...}\n\n
      */
@@ -160,7 +153,6 @@ ${insuranceInfo || 'Chưa có gói bảo hiểm.'}
                 buffer += decoder.decode(value, { stream: true });
 
                 // SSE events được phân tách bởi '\n\n' (double newline)
-                // Tách ra từng event block hoàn chỉnh
                 const eventBlocks = buffer.split('\n\n');
                 // Giữ lại block cuối có thể chưa hoàn chỉnh
                 buffer = eventBlocks.pop() || '';
@@ -192,6 +184,12 @@ ${insuranceInfo || 'Chưa có gói bảo hiểm.'}
                             `SSE event="${currentEvent}" role="${data.role ?? '-'}" type="${data.type ?? '-'}" hasContent=${!!data.content}`,
                         );
 
+                        if (currentEvent === 'conversation.chat.failed' || currentEvent === 'conversation.message.failed') {
+                            const errorMsg = data.last_error?.msg || data.error?.message || 'Unknown error from Coze AI';
+                            const errorCode = data.last_error?.code || data.error?.code || 'UNKNOWN_CODE';
+                            throw new Error(`Coze Chat Failed [Code: ${errorCode}]: ${errorMsg}`);
+                        }
+
                         // Ưu tiên event completed để lấy full text (tránh mất chunk)
                         if (currentEvent === 'conversation.message.completed') {
                             if (data.type === 'answer' && data.content) {
@@ -209,7 +207,11 @@ ${insuranceInfo || 'Chưa có gói bảo hiểm.'}
                             finalContent += data.content;
                         }
 
-                    } catch {
+                    } catch (err) {
+                        // Nếu là lỗi chủ động ném ra từ Coze Failed, thì throw tiếp ra ngoài
+                        if (err instanceof Error && err.message.includes('Coze Chat Failed')) {
+                            throw err;
+                        }
                         // Ignore JSON parse errors for incomplete data
                     }
                 }
@@ -218,7 +220,7 @@ ${insuranceInfo || 'Chưa có gói bảo hiểm.'}
             reader.releaseLock();
         }
 
-        // Log tất cả events nhận được để debug
+        // Log tất cả events nhận được để debug nếu không có content
         if (!finalContent) {
             this.logger.warn(
                 `No assistant answer found. Received events: [${receivedEvents.join(', ')}]`,
@@ -228,6 +230,9 @@ ${insuranceInfo || 'Chưa có gói bảo hiểm.'}
         return finalContent;
     }
 
+    /**
+     * Gửi tin nhắn đến Coze AI và nhận phản hồi
+     */
     async chat(
         userMessage: string,
         conversationId?: string,
@@ -293,7 +298,7 @@ ${insuranceInfo || 'Chưa có gói bảo hiểm.'}
                 };
             }
 
-            // Parse SSE stream để lấy response
+            // Parse SSE stream để lấy response (NẾU CÓ LỖI BÊN TRONG STREAM SẼ THROW ERROR TẠI ĐÂY)
             const assistantContent = await this.parseSSEStream(response);
             const totalTime = Date.now() - startTime;
 
@@ -324,7 +329,7 @@ ${insuranceInfo || 'Chưa có gói bảo hiểm.'}
                 };
             }
 
-            // Ghi log khi không có response
+            // Ghi log khi không có response (Vẫn giữ lại cho case mảng rỗng bất thường)
             const noMsgError = `No assistant message in stream response. Status: ${response.status}, Content-Type: ${response.headers.get('content-type')}`;
             this.logger.warn(noMsgError);
             this.logAiMetadata({
@@ -344,6 +349,8 @@ ${insuranceInfo || 'Chưa có gói bảo hiểm.'}
         } catch (error) {
             const responseTime = Date.now() - startTime;
             const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+
+            this.logger.error(`[Coze AI Error] ${errorMsg}`);
 
             // Ghi log lỗi vào AILog
             this.logAiMetadata({
