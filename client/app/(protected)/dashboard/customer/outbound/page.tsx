@@ -260,14 +260,26 @@ export default function OutboundListPage() {
         }
     };
 
-    const addProduct = (product: Product) => {
+    const addProduct = (product: Product, scannedBarcode?: string) => {
         if (formItems.find((i) => i.product.id === product.id)) return;
+
+        // Smart barcode detection: auto-select unit based on scanned barcode
+        let autoUnitId = product.base_unit_id || "";
+        if (scannedBarcode && product.units) {
+            const matchedUnit = product.units.find(
+                (pu) => pu.barcode === scannedBarcode
+            );
+            if (matchedUnit) {
+                autoUnitId = matchedUnit.unit_id;
+            }
+        }
+
         setFormItems((prev) => [
             ...prev,
             {
                 product,
                 quantity: 1,
-                unit_id: (product as any).base_unit_id || "",
+                unit_id: autoUnitId,
             },
         ]);
         setProductSearch("");
@@ -275,6 +287,12 @@ export default function OutboundListPage() {
 
     const removeItem = (idx: number) => {
         setFormItems((prev) => prev.filter((_, i) => i !== idx));
+    };
+
+    const updateItemUnit = (idx: number, unitId: string) => {
+        setFormItems((prev) =>
+            prev.map((item, i) => (i === idx ? { ...item, unit_id: unitId } : item))
+        );
     };
 
     const updateItemQty = (idx: number, qty: number) => {
@@ -723,14 +741,43 @@ export default function OutboundListPage() {
                     <div className="p-6 border-b">
                         <h3 className="text-[16px] font-semibold leading-[150%] mb-4">3. Chi tiết hàng hóa</h3>
 
-                        {/* Product search */}
+                        {/* Product search + barcode scanner */}
                         <div className="relative mb-4">
                             <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                             <Input
-                                placeholder="Tìm sản phẩm theo tên, SKU..."
+                                placeholder="Tìm sản phẩm theo tên, SKU hoặc quét barcode..."
                                 className="pl-9 rounded-xl"
                                 value={productSearch}
                                 onChange={(e) => setProductSearch(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === "Enter" && productSearch.trim()) {
+                                        const barcode = productSearch.trim();
+                                        // Check product's own barcode
+                                        const directMatch = products.find(
+                                            (p) => p.barcode === barcode
+                                        );
+                                        if (directMatch) {
+                                            addProduct(directMatch, barcode);
+                                            return;
+                                        }
+                                        // Check unit barcodes across products
+                                        for (const p of products) {
+                                            if (p.units) {
+                                                const unitMatch = p.units.find(
+                                                    (pu) => pu.barcode === barcode
+                                                );
+                                                if (unitMatch) {
+                                                    addProduct(p, barcode);
+                                                    return;
+                                                }
+                                            }
+                                        }
+                                        // Fallback: add first filtered product
+                                        if (filteredProducts.length === 1) {
+                                            addProduct(filteredProducts[0]);
+                                        }
+                                    }
+                                }}
                             />
                             {productSearch && filteredProducts.length > 0 && (
                                 <div className="absolute z-10 top-full mt-1 w-full bg-white border rounded-2xl shadow-lg max-h-48 overflow-y-auto">
@@ -757,10 +804,37 @@ export default function OutboundListPage() {
                                 <div className="outbound-drawer__product-row text-xs font-semibold text-muted-foreground uppercase border-b pb-2">
                                     <span>Sản phẩm</span>
                                     <span>Số lượng</span>
+                                    <span>Đơn vị</span>
                                     <span>Tồn kho</span>
                                     <span></span>
                                 </div>
-                                {formItems.map((item, idx) => (
+                                {formItems.map((item, idx) => {
+                                    // Build available units for this product
+                                    const availableUnits: { id: string; name: string; conversion_rate: number }[] = [];
+                                    if (item.product.base_unit) {
+                                        availableUnits.push({
+                                            id: item.product.base_unit_id,
+                                            name: item.product.base_unit.name || "Đơn vị cơ bản",
+                                            conversion_rate: 1,
+                                        });
+                                    }
+                                    if (item.product.units) {
+                                        for (const pu of item.product.units) {
+                                            if (pu.is_active && pu.unit) {
+                                                availableUnits.push({
+                                                    id: pu.unit_id,
+                                                    name: pu.unit.name || "—",
+                                                    conversion_rate: pu.conversion_rate,
+                                                });
+                                            }
+                                        }
+                                    }
+                                    const currentUnit = availableUnits.find((u) => u.id === item.unit_id);
+                                    const conversionRate = currentUnit?.conversion_rate ?? 1;
+                                    const baseUnitName = item.product.base_unit?.name || "đv";
+                                    const convertedQty = item.quantity * conversionRate;
+
+                                    return (
                                     <div key={item.product.id} className="outbound-drawer__product-row">
                                         <div className="min-w-0">
                                             <p className="text-sm font-medium truncate">{item.product.name}</p>
@@ -775,9 +849,36 @@ export default function OutboundListPage() {
                                                 className={`rounded-xl h-9 text-sm ${item.stockError ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                                                 placeholder="SL"
                                             />
+                                            {conversionRate > 1 && (
+                                                <p className="text-[10px] text-muted-foreground mt-0.5 tabular-nums">
+                                                    = {convertedQty.toLocaleString("vi-VN")} {baseUnitName}
+                                                </p>
+                                            )}
                                             {item.stockError && (
                                                 <p className="text-xs text-red-500 mt-1">{item.stockError}</p>
                                             )}
+                                        </div>
+                                        <div>
+                                            <Select
+                                                value={item.unit_id}
+                                                onValueChange={(v) => updateItemUnit(idx, v)}
+                                            >
+                                                <SelectTrigger className="rounded-xl h-9 text-xs">
+                                                    <SelectValue placeholder="Đơn vị" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {availableUnits.map((u) => (
+                                                        <SelectItem key={u.id} value={u.id}>
+                                                            <span>{u.name}</span>
+                                                            {u.conversion_rate > 1 && (
+                                                                <span className="text-muted-foreground ml-1">
+                                                                    (×{u.conversion_rate})
+                                                                </span>
+                                                            )}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
                                         </div>
                                         <div className="text-sm text-muted-foreground">
                                             {(item.product as any).quantity_available != null
@@ -793,7 +894,8 @@ export default function OutboundListPage() {
                                             <TrashIcon className="w-4 h-4" />
                                         </Button>
                                     </div>
-                                ))}
+                                    );
+                                })}
                             </>
                         )}
 

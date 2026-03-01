@@ -145,7 +145,7 @@ export default function CreateProductPage() {
 
             if (barcode.trim()) payload.barcode = barcode.trim();
             if (description.trim()) payload.description = description.trim();
-            if (costPrice) payload.cost_price = Number(costPrice);
+            if (costPrice) payload.cost_price = Number(costPrice.replace(/\./g, "").replace(/,/g, ""));
             if (weight) payload.weight = Number(weight);
             if (length) payload.length = Number(length);
             if (width) payload.width = Number(width);
@@ -192,6 +192,14 @@ export default function CreateProductPage() {
         setUnitRows((prev) =>
             prev.map((row, idx) => (idx === i ? { ...row, [field]: value } : row))
         );
+
+    const toDecimalStr = (v: string) => {
+        const normalized = v.replace(/,/g, ".").replace(/[^0-9.]/g, "");
+        const parts = normalized.split(".");
+        return parts.length > 1
+            ? parts[0] + "." + parts.slice(1).join("")
+            : parts[0];
+    };
 
     // ── Available units for conversion (exclude base unit) ──
     const availableConversionUnits = orgUnits.filter(
@@ -269,7 +277,7 @@ export default function CreateProductPage() {
                                             placeholder="Nhập tên sản phẩm"
                                             value={name}
                                             onChange={(e) => setName(e.target.value)}
-                                            className={`rounded-xl ${errors.name ? "border-red-400" : ""}`}
+                                            className={`bg-slate-50 border-slate-200 rounded-xl px-4 focus-visible:bg-white ${errors.name ? "border-red-400" : ""}`}
                                         />
                                         {errors.name && (
                                             <p className="text-xs text-red-500">{errors.name}</p>
@@ -288,7 +296,7 @@ export default function CreateProductPage() {
                                                 placeholder="SP-001"
                                                 value={sku}
                                                 onChange={(e) => setSku(e.target.value)}
-                                                className={`rounded-xl font-mono ${errors.sku ? "border-red-400" : ""}`}
+                                                className={`bg-slate-50 border-slate-200 rounded-xl px-4 font-mono focus-visible:bg-white ${errors.sku ? "border-red-400" : ""}`}
                                             />
                                             {errors.sku && (
                                                 <p className="text-xs text-red-500">{errors.sku}</p>
@@ -301,7 +309,7 @@ export default function CreateProductPage() {
                                                 placeholder="8934563012345"
                                                 value={barcode}
                                                 onChange={(e) => setBarcode(e.target.value)}
-                                                className="rounded-xl font-mono"
+                                                className="bg-slate-50 border-slate-200 rounded-xl px-4 font-mono focus-visible:bg-white"
                                             />
                                         </div>
                                     </div>
@@ -314,7 +322,7 @@ export default function CreateProductPage() {
                                             placeholder="Mô tả ngắn về sản phẩm..."
                                             value={description}
                                             onChange={(e) => setDescription(e.target.value)}
-                                            className="rounded-xl resize-none"
+                                            className="bg-slate-50 border-slate-200 rounded-xl px-4 py-3 resize-none focus-visible:bg-white"
                                             rows={3}
                                         />
                                     </div>
@@ -360,15 +368,14 @@ export default function CreateProductPage() {
                                                 </Label>
                                                 <Input
                                                     id={field.id}
-                                                    type="number"
-                                                    min="0"
-                                                    step="0.01"
+                                                    type="text"
+                                                    inputMode="decimal"
                                                     placeholder="0"
                                                     value={field.val}
                                                     onChange={(e) =>
-                                                        field.setter(e.target.value)
+                                                        field.setter(toDecimalStr(e.target.value))
                                                     }
-                                                    className="rounded-xl"
+                                                    className="bg-slate-50 border-slate-200 rounded-xl px-4 focus-visible:bg-white"
                                                 />
                                             </div>
                                         ))}
@@ -379,15 +386,14 @@ export default function CreateProductPage() {
                                         </Label>
                                         <Input
                                             id="maxWeight"
-                                            type="number"
-                                            min="0"
-                                            step="0.01"
+                                            type="text"
+                                            inputMode="decimal"
                                             placeholder="0"
                                             value={maxWeightCapacity}
                                             onChange={(e) =>
-                                                setMaxWeightCapacity(e.target.value)
+                                                setMaxWeightCapacity(toDecimalStr(e.target.value))
                                             }
-                                            className="rounded-xl"
+                                            className="bg-slate-50 border-slate-200 rounded-xl px-4 focus-visible:bg-white"
                                         />
                                     </div>
                                 </CardContent>
@@ -444,7 +450,7 @@ export default function CreateProductPage() {
                                                     }
                                                 >
                                                     <SelectTrigger
-                                                        className={`rounded-xl h-9 text-sm ${errors[`unit_id_${i}`] ? "border-red-400" : ""}`}
+                                                        className={`bg-slate-50 border-slate-200 rounded-xl px-4 h-10 text-sm focus:bg-white ${errors[`unit_id_${i}`] ? "border-red-400" : ""}`}
                                                     >
                                                         <SelectValue placeholder="Chọn đơn vị" />
                                                     </SelectTrigger>
@@ -485,19 +491,18 @@ export default function CreateProductPage() {
                                                     )
                                                 </Label>
                                                 <Input
-                                                    type="number"
-                                                    min="0.001"
-                                                    step="0.001"
+                                                    type="text"
+                                                    inputMode="decimal"
                                                     placeholder="1"
                                                     value={row.conversion_rate}
                                                     onChange={(e) =>
                                                         updateUnitRow(
                                                             i,
                                                             "conversion_rate",
-                                                            e.target.value
+                                                            toDecimalStr(e.target.value)
                                                         )
                                                     }
-                                                    className={`rounded-xl h-9 text-sm ${errors[`conversion_rate_${i}`] ? "border-red-400" : ""}`}
+                                                    className={`bg-slate-50 border-slate-200 rounded-xl h-10 px-4 text-sm focus-visible:bg-white ${errors[`conversion_rate_${i}`] ? "border-red-400" : ""}`}
                                                 />
                                                 {errors[`conversion_rate_${i}`] && (
                                                     <p className="text-xs text-red-500">
@@ -519,7 +524,7 @@ export default function CreateProductPage() {
                                                             e.target.value
                                                         )
                                                     }
-                                                    className="rounded-xl h-9 text-sm font-mono"
+                                                    className="bg-slate-50 border-slate-200 rounded-xl h-10 px-4 text-sm font-mono focus-visible:bg-white"
                                                 />
                                             </div>
 
@@ -551,13 +556,19 @@ export default function CreateProductPage() {
                                         <Label htmlFor="costPrice">Giá vốn (₫)</Label>
                                         <Input
                                             id="costPrice"
-                                            type="number"
-                                            min="0"
-                                            step="1000"
+                                            type="text"
+                                            inputMode="numeric"
                                             placeholder="0"
                                             value={costPrice}
-                                            onChange={(e) => setCostPrice(e.target.value)}
-                                            className="rounded-xl"
+                                            onChange={(e) => {
+                                                const raw = e.target.value.replace(/\D/g, "");
+                                                setCostPrice(
+                                                    raw === ""
+                                                        ? ""
+                                                        : new Intl.NumberFormat("vi-VN").format(Number(raw))
+                                                );
+                                            }}
+                                            className="bg-slate-50 border-slate-200 rounded-xl px-4 focus-visible:bg-white"
                                         />
                                         <p className="text-xs text-slate-400">
                                             Giá nhập kho bình quân của sản phẩm
@@ -593,7 +604,7 @@ export default function CreateProductPage() {
                                                 }}
                                             >
                                                 <SelectTrigger
-                                                    className={`rounded-xl ${errors.baseUnitId ? "border-red-400" : ""}`}
+                                                    className={`bg-slate-50 border-slate-200 rounded-xl px-4 h-10 focus:bg-white ${errors.baseUnitId ? "border-red-400" : ""}`}
                                                 >
                                                     <SelectValue placeholder="Chọn đơn vị cơ bản" />
                                                 </SelectTrigger>
@@ -674,7 +685,7 @@ export default function CreateProductPage() {
                                         <span>
                                             {costPrice
                                                 ? new Intl.NumberFormat("vi-VN").format(
-                                                    Number(costPrice)
+                                                    Number(costPrice.replace(/\./g, "").replace(/,/g, ""))
                                                 ) + " ₫"
                                                 : "—"}
                                         </span>

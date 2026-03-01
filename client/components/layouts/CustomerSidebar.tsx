@@ -15,6 +15,7 @@ import {
     ArrowUturnLeftIcon,
     ExclamationTriangleIcon,
     Cog6ToothIcon,
+    ScaleIcon,
 } from "@heroicons/react/24/outline";
 import { AppSidebar, AppSidebarContent, SidebarGroup } from "./AppSidebar";
 
@@ -42,6 +43,7 @@ const customerNavGroups: SidebarGroup[] = [
         title: "Nội bộ kho",
         items: [
             { href: "/dashboard/customer/warehouses", icon: BuildingStorefrontIcon, label: "Kho thuê của tôi", disabled: true, badge: "Sắp có" },
+            { href: "/dashboard/customer/units", icon: ScaleIcon, label: "Đơn vị tính" },
             { href: "/dashboard/customer/products", icon: CubeIcon, label: "Hàng hóa" },
             { href: "/dashboard/customer/inbound", icon: ArrowDownTrayIcon, label: "Phiếu nhập" },
             { href: "/dashboard/customer/outbound", icon: ArrowUpTrayIcon, label: "Phiếu xuất" },

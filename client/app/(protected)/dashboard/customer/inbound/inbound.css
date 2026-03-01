@@ -136,7 +136,7 @@
 
 .inbound-drawer__product-row {
     display: grid;
-    grid-template-columns: 1fr 120px 120px 120px 48px;
+    grid-template-columns: 1fr 100px 100px 120px 120px 48px;
     gap: 8px;
     align-items: center;
     padding: 8px 0;

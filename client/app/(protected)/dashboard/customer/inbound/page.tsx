@@ -169,6 +169,38 @@ function CreateItemRow({
         }
     }, [token, item.product.id]);
 
+    // ── Build available units: base unit + product conversion units ──
+    const availableUnits = useMemo(() => {
+        const list: { id: string; name: string; conversion_rate: number }[] = [];
+        // Base unit (conversion_rate = 1)
+        if (item.product.base_unit) {
+            list.push({
+                id: item.product.base_unit_id,
+                name: item.product.base_unit.name || "Đơn vị cơ bản",
+                conversion_rate: 1,
+            });
+        }
+        // Conversion units from ProductUnit
+        if (item.product.units && item.product.units.length > 0) {
+            for (const pu of item.product.units) {
+                if (pu.is_active && pu.unit) {
+                    list.push({
+                        id: pu.unit_id,
+                        name: pu.unit.name || "—",
+                        conversion_rate: pu.conversion_rate,
+                    });
+                }
+            }
+        }
+        return list;
+    }, [item.product]);
+
+    // ── Find current unit's conversion rate ──
+    const currentUnit = availableUnits.find((u) => u.id === item.unit_id);
+    const conversionRate = currentUnit?.conversion_rate ?? 1;
+    const baseUnitName = item.product.base_unit?.name || "đv";
+    const convertedQty = item.expected_qty * conversionRate;
+
     return (
         <div className="inbound-drawer__product-row">
             <div className="flex items-center gap-2 min-w-0">
@@ -177,16 +209,47 @@ function CreateItemRow({
                     <p className="text-xs text-muted-foreground">{item.product.sku}</p>
                 </div>
             </div>
-            <Input
-                type="number"
-                min={1}
-                value={item.expected_qty}
-                onChange={(e) =>
-                    onUpdate({ expected_qty: parseInt(e.target.value) || 1 })
-                }
-                className="rounded-xl h-9 text-sm"
-                placeholder="SL"
-            />
+            <div>
+                <Input
+                    type="number"
+                    min={1}
+                    value={item.expected_qty}
+                    onChange={(e) =>
+                        onUpdate({ expected_qty: parseInt(e.target.value) || 1 })
+                    }
+                    className="rounded-xl h-9 text-sm"
+                    placeholder="SL"
+                />
+                {/* Auto-calculation hint */}
+                {conversionRate > 1 && (
+                    <p className="text-[10px] text-muted-foreground mt-0.5 tabular-nums">
+                        = {convertedQty.toLocaleString("vi-VN")} {baseUnitName}
+                    </p>
+                )}
+            </div>
+            {/* ── Smart unit dropdown ── */}
+            <div>
+                <Select
+                    value={item.unit_id}
+                    onValueChange={(v) => onUpdate({ unit_id: v })}
+                >
+                    <SelectTrigger className="rounded-xl h-9 text-xs">
+                        <SelectValue placeholder="Đơn vị" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {availableUnits.map((u) => (
+                            <SelectItem key={u.id} value={u.id}>
+                                <span>{u.name}</span>
+                                {u.conversion_rate > 1 && (
+                                    <span className="text-muted-foreground ml-1">
+                                        (×{u.conversion_rate})
+                                    </span>
+                                )}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
             <div>
                 <Select
                     value={item.batch_id || "__new__"}
@@ -373,11 +436,11 @@ export default function InboundListPage() {
             ]);
             const pList = Array.isArray(partnerRes)
                 ? partnerRes
-                : (partnerRes as any)?.data?.items || [];
+                : (partnerRes as any)?.data || [];
             setPartners(pList);
             const prList = Array.isArray(productRes)
                 ? productRes
-                : (productRes as any)?.data?.items || [];
+                : (productRes as any)?.data || [];
             setProducts(prList);
         } catch {
             /* silent */
@@ -405,14 +468,26 @@ export default function InboundListPage() {
         }
     };
 
-    const addProduct = (product: Product) => {
+    const addProduct = (product: Product, scannedBarcode?: string) => {
         if (formItems.find((i) => i.product.id === product.id)) return;
+
+        // Smart barcode detection: auto-select unit based on scanned barcode
+        let autoUnitId = product.base_unit_id || "";
+        if (scannedBarcode && product.units) {
+            const matchedUnit = product.units.find(
+                (pu) => pu.barcode === scannedBarcode
+            );
+            if (matchedUnit) {
+                autoUnitId = matchedUnit.unit_id;
+            }
+        }
+
         setFormItems((prev) => [
             ...prev,
             {
                 product,
                 expected_qty: 1,
-                unit_id: (product as Product).base_unit_id || "",
+                unit_id: autoUnitId,
             },
         ]);
         setProductSearch("");
@@ -947,7 +1022,7 @@ export default function InboundListPage() {
                         <h3 className="inbound-drawer__section-title">
                             2. Chi tiết hàng hóa
                         </h3>
-                        {/* Product search */}
+                        {/* Product search + barcode scanner */}
                         <div className="relative mb-4">
                             <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                             <Input
@@ -955,6 +1030,36 @@ export default function InboundListPage() {
                                 className="pl-9 rounded-xl"
                                 value={productSearch}
                                 onChange={(e) => setProductSearch(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === "Enter" && productSearch.trim()) {
+                                        // Barcode scan: try to match product barcode or unit barcode
+                                        const barcode = productSearch.trim();
+                                        // Check product's own barcode
+                                        const directMatch = products.find(
+                                            (p) => p.barcode === barcode
+                                        );
+                                        if (directMatch) {
+                                            addProduct(directMatch, barcode);
+                                            return;
+                                        }
+                                        // Check unit barcodes across products
+                                        for (const p of products) {
+                                            if (p.units) {
+                                                const unitMatch = p.units.find(
+                                                    (pu) => pu.barcode === barcode
+                                                );
+                                                if (unitMatch) {
+                                                    addProduct(p, barcode);
+                                                    return;
+                                                }
+                                            }
+                                        }
+                                        // Fallback: add first filtered product
+                                        if (filteredProducts.length === 1) {
+                                            addProduct(filteredProducts[0]);
+                                        }
+                                    }
+                                }}
                             />
                             {productSearch && filteredProducts.length > 0 && (
                                 <div className="absolute z-10 top-full mt-1 w-full bg-white border rounded-2xl shadow-lg max-h-48 overflow-y-auto">
@@ -983,6 +1088,7 @@ export default function InboundListPage() {
                                 <div className="inbound-drawer__product-row text-xs font-semibold text-muted-foreground uppercase border-b pb-2">
                                     <span>Sản phẩm</span>
                                     <span>Số lượng</span>
+                                    <span>Đơn vị</span>
                                     <span>Lô hàng</span>
                                     <span>Lô mới</span>
                                     <span></span>
