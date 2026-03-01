@@ -65,18 +65,29 @@ export class AccountBalanceService {
      * @returns Danh sách lịch sử giao dịch
      */
     async getTransactions(token: string, orgId: string, params: {
+        page?: number;
         limit?: number;
         offset?: number;
-        type?: 'DEPOSIT' | 'PAYMENT' | 'REFUND' | 'ADJUSTMENT';
+        type?: 'DEPOSIT' | 'WITHDRAW' | 'PAYMENT' | 'REFUND' | 'ADJUSTMENT';
+        description?: string;
+        status?: 'PENDING' | 'COMPLETED' | 'FAILED';
+        from_date?: string; // ISO date string
+        to_date?: string;   // ISO date string
         keywords?: string;
     } = {}) {
         const query = new URLSearchParams();
+        if (params.page) query.append('page', String(params.page));
         if (params.limit) query.append('limit', String(params.limit));
         if (params.offset !== undefined) query.append('offset', String(params.offset));
         if (params.type) query.append('type', params.type);
         if (params.keywords) query.append('keywords', params.keywords);
+        if (params.description) query.append('description', params.description);
+        if (params.status) query.append('status', params.status);
+        if (params.from_date) query.append('from_date', params.from_date);
+        if (params.to_date) query.append('to_date', params.to_date);
 
-        const response = await fetch(`${API}/organizations/${orgId}/balance/transactions?${query.toString()}`, {
+        // ?${query.toString()}
+        const response = await fetch(`${API}/organizations/${orgId}/balance/transactions`, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,

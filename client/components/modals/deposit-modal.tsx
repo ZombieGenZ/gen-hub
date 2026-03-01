@@ -4,7 +4,6 @@ import {
     DialogContent,
     DialogHeader,
     DialogTitle,
-    DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +21,7 @@ import { accountBalanceService } from "@/services/account-balance/account-balanc
 import { useToast } from "@/contexts/ToastContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { PaymentResponse } from "@/types/payment/payment.type";
 
 interface DepositModalProps {
     open: boolean;
@@ -95,15 +95,15 @@ export function DepositModal({ open, onOpenChange, onSuccess, orgId, currentBala
             }
 
             // Call API to create deposit
-            const res = await accountBalanceService.createDeposit(token, orgId, value, "Nạp tiền vào ví");
+            const res: PaymentResponse = await accountBalanceService.createDeposit(token, orgId, value, "Nạp tiền vào ví");
 
             const qrData = {
                 ...res,
                 // Fallback/Mock data
-                bankId: res.bankId || "MB",
-                accountNo: res.accountNo || "0000123456789",
-                accountName: res.accountName || "FINTRACK SYSTEM",
-                content: res.code || `NAP ${value} ${res.id ? res.id.slice(-6) : 'TX123'}`,
+                bankId: res.bankInfo?.bankName || "MB",
+                accountNo: res.bankInfo?.accountNumber || "0000123456789",
+                accountName: res.bankInfo?.accountHolder || "FINTRACK SYSTEM",
+                content: res.bankInfo?.transferContent || `NAP ${value} ${res.paymentId ? res.paymentId.slice(-6) : 'TX123'}`,
                 amount: value
             };
 
@@ -301,7 +301,7 @@ export function DepositModal({ open, onOpenChange, onSuccess, orgId, currentBala
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[420px] p-0 overflow-hidden bg-background border shadow-lg transition-all duration-300">
+            <DialogContent className="sm:max-w-105 p-0 overflow-hidden bg-background border shadow-lg transition-all duration-300">
                 <DialogHeader className={cn("p-6 pb-2", currentStepIndex === 2 && "hidden")}>
                     <DialogTitle className="flex items-center gap-2 text-xl">
                         {currentStepIndex === 0 ? <WalletIcon className="w-5 h-5 text-primary" /> : <QrCodeIcon className="w-5 h-5 text-primary" />}

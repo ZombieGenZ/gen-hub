@@ -373,11 +373,11 @@ export default function InboundListPage() {
             ]);
             const pList = Array.isArray(partnerRes)
                 ? partnerRes
-                : (partnerRes as any)?.data || [];
+                : (partnerRes as any)?.data?.items || [];
             setPartners(pList);
             const prList = Array.isArray(productRes)
                 ? productRes
-                : (productRes as any)?.data || [];
+                : (productRes as any)?.data?.items || [];
             setProducts(prList);
         } catch {
             /* silent */
