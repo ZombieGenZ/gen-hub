@@ -79,14 +79,24 @@ export default function ContractManagementPage() {
             if (!token) { router.push("/login"); return; }
             setLoading(true);
 
-            const params: any = {
+            const params = {
                 page,
                 limit,
                 keywords: searchTerm || undefined,
                 status: activeTab !== "all" ? activeTab : undefined,
             };
 
-            const data: any = await rentalContractService.getRentalContracts(token, params);
+            const data = await rentalContractService.getRentalContracts(token, params);
+            
+            if(!data) {
+                showToast("Không thể tải hợp đồng", "error");
+                setContracts([]);
+                setTotal(0);
+                return;
+            }
+
+            showToast("Hợp đồng đã được tải", "success");
+
             if (data && data.items) {
                 setContracts(data.items);
                 setTotal(data.total || 0);
@@ -166,7 +176,7 @@ export default function ContractManagementPage() {
                     <Table>
                         <TableHeader className="bg-muted/50">
                             <TableRow>
-                                <TableHead className="w-[50px]">#</TableHead>
+                                <TableHead className="w-12.5">#</TableHead>
                                 <TableHead>Mã hợp đồng</TableHead>
                                 <TableHead>Kho</TableHead>
                                 <TableHead>Thời hạn</TableHead>
@@ -188,7 +198,7 @@ export default function ContractManagementPage() {
                                     <TableCell>
                                         <div className="flex flex-col">
                                             <span className="font-semibold font-mono text-sm">{contract.code}</span>
-                                            <span className="text-xs text-muted-foreground truncate max-w-[160px]">{contract.name}</span>
+                                            <span className="text-xs text-muted-foreground truncate max-w-40">{contract.name}</span>
                                         </div>
                                     </TableCell>
                                     <TableCell className="text-sm">
