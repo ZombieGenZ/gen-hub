@@ -835,65 +835,65 @@ export default function OutboundListPage() {
                                     const convertedQty = item.quantity * conversionRate;
 
                                     return (
-                                    <div key={item.product.id} className="outbound-drawer__product-row">
-                                        <div className="min-w-0">
-                                            <p className="text-sm font-medium truncate">{item.product.name}</p>
-                                            <p className="text-xs text-muted-foreground">{item.product.sku}</p>
-                                        </div>
-                                        <div>
-                                            <Input
-                                                type="number"
-                                                min={1}
-                                                value={item.quantity}
-                                                onChange={(e) => updateItemQty(idx, parseInt(e.target.value) || 1)}
-                                                className={`rounded-xl h-9 text-sm ${item.stockError ? "border-red-500 focus-visible:ring-red-500" : ""}`}
-                                                placeholder="SL"
-                                            />
-                                            {conversionRate > 1 && (
-                                                <p className="text-[10px] text-muted-foreground mt-0.5 tabular-nums">
-                                                    = {convertedQty.toLocaleString("vi-VN")} {baseUnitName}
-                                                </p>
-                                            )}
-                                            {item.stockError && (
-                                                <p className="text-xs text-red-500 mt-1">{item.stockError}</p>
-                                            )}
-                                        </div>
-                                        <div>
-                                            <Select
-                                                value={item.unit_id}
-                                                onValueChange={(v) => updateItemUnit(idx, v)}
+                                        <div key={item.product.id} className="outbound-drawer__product-row">
+                                            <div className="min-w-0">
+                                                <p className="text-sm font-medium truncate">{item.product.name}</p>
+                                                <p className="text-xs text-muted-foreground">{item.product.sku}</p>
+                                            </div>
+                                            <div>
+                                                <Input
+                                                    type="number"
+                                                    min={1}
+                                                    value={item.quantity}
+                                                    onChange={(e) => updateItemQty(idx, parseInt(e.target.value) || 1)}
+                                                    className={`rounded-xl h-9 text-sm ${item.stockError ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                                                    placeholder="SL"
+                                                />
+                                                {conversionRate > 1 && (
+                                                    <p className="text-[10px] text-muted-foreground mt-0.5 tabular-nums">
+                                                        = {convertedQty.toLocaleString("vi-VN")} {baseUnitName}
+                                                    </p>
+                                                )}
+                                                {item.stockError && (
+                                                    <p className="text-xs text-red-500 mt-1">{item.stockError}</p>
+                                                )}
+                                            </div>
+                                            <div>
+                                                <Select
+                                                    value={item.unit_id}
+                                                    onValueChange={(v) => updateItemUnit(idx, v)}
+                                                >
+                                                    <SelectTrigger className="rounded-xl h-9 text-xs">
+                                                        <SelectValue placeholder="Đơn vị" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {availableUnits.map((u) => (
+                                                            <SelectItem key={u.id} value={u.id}>
+                                                                <span>{u.name}</span>
+                                                                {u.conversion_rate > 1 && (
+                                                                    <span className="text-muted-foreground ml-1">
+                                                                        (×{u.conversion_rate})
+                                                                    </span>
+                                                                )}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                            <div className="text-sm text-muted-foreground">
+                                                {(item.product as any).quantity_available != null
+                                                    ? `${(item.product as any).quantity_available}`
+                                                    : "—"}
+                                            </div>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-8 w-8 rounded-full text-muted-foreground hover:text-destructive"
+                                                onClick={() => removeItem(idx)}
                                             >
-                                                <SelectTrigger className="rounded-xl h-9 text-xs">
-                                                    <SelectValue placeholder="Đơn vị" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {availableUnits.map((u) => (
-                                                        <SelectItem key={u.id} value={u.id}>
-                                                            <span>{u.name}</span>
-                                                            {u.conversion_rate > 1 && (
-                                                                <span className="text-muted-foreground ml-1">
-                                                                    (×{u.conversion_rate})
-                                                                </span>
-                                                            )}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
+                                                <TrashIcon className="w-4 h-4" />
+                                            </Button>
                                         </div>
-                                        <div className="text-sm text-muted-foreground">
-                                            {(item.product as any).quantity_available != null
-                                                ? `${(item.product as any).quantity_available}`
-                                                : "—"}
-                                        </div>
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="h-8 w-8 rounded-full text-muted-foreground hover:text-destructive"
-                                            onClick={() => removeItem(idx)}
-                                        >
-                                            <TrashIcon className="w-4 h-4" />
-                                        </Button>
-                                    </div>
                                     );
                                 })}
                             </>

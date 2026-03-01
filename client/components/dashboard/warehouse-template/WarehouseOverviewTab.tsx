@@ -303,8 +303,8 @@ export function WarehouseOverviewTab({ data, onChange }: WarehouseOverviewTabPro
                             </div>
                         </div>
 
-                        {/* Block size + Price + Max Load — 4 columns */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {/* Block size + Price — 3 columns */}
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                             <div className="space-y-2">
                                 <Label>Block dài</Label>
                                 <FormattedNumberInput
@@ -319,14 +319,6 @@ export function WarehouseOverviewTab({ data, onChange }: WarehouseOverviewTabPro
                                     value={data.block_width}
                                     onChange={(v) => handleChange("block_width", v)}
                                     suffix="m"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Tải trọng tối đa</Label>
-                                <FormattedNumberInput
-                                    value={data.max_load_capacity}
-                                    onChange={(v) => handleChange("max_load_capacity", v)}
-                                    suffix="tấn"
                                 />
                             </div>
                             <div className="space-y-2">

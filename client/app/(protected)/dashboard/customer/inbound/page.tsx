@@ -436,11 +436,19 @@ export default function InboundListPage() {
             ]);
             const pList = Array.isArray(partnerRes)
                 ? partnerRes
-                : (partnerRes as any)?.data || [];
+                : Array.isArray((partnerRes as any)?.data?.items)
+                    ? (partnerRes as any).data.items
+                    : Array.isArray((partnerRes as any)?.data)
+                        ? (partnerRes as any).data
+                        : [];
             setPartners(pList);
             const prList = Array.isArray(productRes)
                 ? productRes
-                : (productRes as any)?.data || [];
+                : Array.isArray((productRes as any)?.data?.items)
+                    ? (productRes as any).data.items
+                    : Array.isArray((productRes as any)?.data)
+                        ? (productRes as any).data
+                        : [];
             setProducts(prList);
         } catch {
             /* silent */
@@ -471,7 +479,6 @@ export default function InboundListPage() {
     const addProduct = (product: Product, scannedBarcode?: string) => {
         if (formItems.find((i) => i.product.id === product.id)) return;
 
-        // Smart barcode detection: auto-select unit based on scanned barcode
         let autoUnitId = product.base_unit_id || "";
         if (scannedBarcode && product.units) {
             const matchedUnit = product.units.find(

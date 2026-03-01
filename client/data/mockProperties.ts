@@ -39,7 +39,6 @@ export interface Property {
     block_width?: number;
     
     ceiling_height?: number;
-    max_load_capacity?: number;
     total_weight_capacity?: number;
     
     price_per_month?: number;
@@ -125,7 +124,6 @@ export function mapWarehouseToProperty(w: any): Property {
         block_length: Number(w.block_length) || 0,
         block_width: Number(w.block_width) || 0,
         ceiling_height: Number(w.ceiling_height) || undefined,
-        max_load_capacity: Number(w.max_load_capacity) || undefined,
         total_weight_capacity: Number(w.total_weight_capacity) || undefined,
         is_active: w.is_active,
         is_shared_warehouse: w.is_shared_warehouse,

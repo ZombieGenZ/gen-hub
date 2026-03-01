@@ -30,44 +30,38 @@ import { WarehouseBookingPanel } from '@/components/warehouse/WarehouseBookingPa
 
 const PRIMARY_COLOR = "#0F766E"; // GenHub Teal
 
-export default function WarehouseDynamicPage() {
-    const params = useParams();
+// ── Slug (location search) mode ──
+function WarehouseSlugPage({ slug }: { slug: string }) {
+    return (
+        <div className="kho-bai-page">
+            <PrimeNestHeader isLogin={false} />
+            <Suspense fallback={<div className="p-10 text-center">Đang tải...</div>}>
+                <PropertySearch initialLocationSlug={slug} />
+            </Suspense>
+            <PrimeNestFooter />
+        </div>
+    );
+}
+
+// ── Detail (ID) mode ──
+function WarehouseDetailPage({ id }: { id: string }) {
     const router = useRouter();
-
-    const slug = params.slug as string;
-    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    const isId = !isNaN(Number(slug)) || UUID_REGEX.test(slug);
-
-    if (!isId) {
-        return (
-            <div className="kho-bai-page">
-                <PrimeNestHeader isLogin={false} />
-                <Suspense fallback={<div className="p-10 text-center">Đang tải...</div>}>
-                    <PropertySearch initialLocationSlug={slug} />
-                </Suspense>
-                <PrimeNestFooter />
-            </div>
-        );
-    }
-
-    // --- DETAIL MODE (Numeric ID) ---
-    const id = slug;
     const [property, setProperty] = useState<Property | null>(null);
     const [loading, setLoading] = useState(true);
     const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
 
     const handleDetailSearch = (filters: SearchFilters) => {
-        const params = new URLSearchParams();
+        const searchParams = new URLSearchParams();
         if (filters.areaRange) {
-            params.set('areaMin', filters.areaRange.min.toString());
-            params.set('areaMax', filters.areaRange.max.toString());
+            searchParams.set('areaMin', filters.areaRange.min.toString());
+            searchParams.set('areaMax', filters.areaRange.max.toString());
         }
-        if (filters.rentalType) params.set('type', filters.rentalType);
+        if (filters.rentalType) searchParams.set('type', filters.rentalType);
 
         if (filters.location) {
-            router.push(`/kho-bai/${filters.location}?${params.toString()}`);
+            router.push(`/kho-bai/${filters.location}?${searchParams.toString()}`);
         } else {
-            router.push(`/kho-bai?${params.toString()}`);
+            router.push(`/kho-bai?${searchParams.toString()}`);
         }
     };
 
@@ -175,12 +169,6 @@ export default function WarehouseDynamicPage() {
                             <BuildingOffice2Icon className="w-4 h-4 text-slate-500" />
                             <span>{property.area.toLocaleString()} m²</span>
                         </div>
-                        {property.max_load_capacity && (
-                            <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm font-medium">
-                                <CubeIcon className="w-4 h-4 text-slate-500" />
-                                <span>{property.max_load_capacity} Tấn/m²</span>
-                            </div>
-                        )}
                         {property.ceiling_height && (
                             <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm font-medium">
                                 <ArrowUpIcon className="w-4 h-4 text-slate-500" />
@@ -271,9 +259,6 @@ export default function WarehouseDynamicPage() {
                                     <ul className="space-y-2 text-sm text-slate-600 dark:text-slate-400">
                                         <li className="flex justify-between"><span>Diện tích:</span> <span className="font-medium text-slate-900 dark:text-white">{property.area.toLocaleString()} m²</span></li>
                                         <li className="flex justify-between"><span>Kích thước:</span> <span className="font-medium text-slate-900 dark:text-white">{property.length} x {property.width} m</span></li>
-                                        {property.max_load_capacity && (
-                                            <li className="flex justify-between"><span>Tải trọng sàn:</span> <span className="font-medium text-slate-900 dark:text-white">{property.max_load_capacity} Tấn/m²</span></li>
-                                        )}
                                         {property.total_weight_capacity && (
                                             <li className="flex justify-between"><span>Tổng tải trọng:</span> <span className="font-medium text-slate-900 dark:text-white">{property.total_weight_capacity} Tấn</span></li>
                                         )}
@@ -357,4 +342,19 @@ export default function WarehouseDynamicPage() {
             <PrimeNestFooter />
         </div >
     );
+}
+
+// ── Entry point: routes to slug mode or detail mode ──
+export default function WarehouseDynamicPage() {
+    const params = useParams();
+    const slug = params.slug as string;
+
+    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const isId = !isNaN(Number(slug)) || UUID_REGEX.test(slug);
+
+    if (!isId) {
+        return <WarehouseSlugPage slug={slug} />;
+    }
+
+    return <WarehouseDetailPage id={slug} />;
 }

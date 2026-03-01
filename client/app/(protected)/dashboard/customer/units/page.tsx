@@ -462,11 +462,10 @@ export default function UnitManagementPage() {
                                                 key={page}
                                                 variant={currentPage === page ? "default" : "outline"}
                                                 size="icon"
-                                                className={`h-8 w-8 rounded-lg text-xs ${
-                                                    currentPage === page
+                                                className={`h-8 w-8 rounded-lg text-xs ${currentPage === page
                                                         ? "bg-[#0F766E] hover:bg-[#0D6B63] text-white"
                                                         : ""
-                                                }`}
+                                                    }`}
                                                 onClick={() => setCurrentPage(page)}
                                             >
                                                 {page}
@@ -521,14 +520,14 @@ export default function UnitManagementPage() {
                 {/* CREATE DIALOG */}
                 {/* ════════════════════════════════════════════════ */}
                 <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-                    <DialogContent className="sm:max-w-md">
+                    <DialogContent className="sm:max-w-md p-4">
                         <DialogHeader>
                             <DialogTitle className="flex items-center gap-2">
                                 <Ruler className="w-5 h-5 text-[#0F766E]" />
                                 Thêm đơn vị tính mới
                             </DialogTitle>
                             <DialogDescription>
-                                Khai báo đơn vị tính dùng chung cho toàn bộ tổ chức (Ví dụ: Cái, Hộp, Thùng, Lít, Kg, Pallet)
+                                Khai báo đơn vị tính dùng chung cho toàn bộ tổ chức
                             </DialogDescription>
                         </DialogHeader>
                         <div className="space-y-4 py-2">
@@ -539,7 +538,7 @@ export default function UnitManagementPage() {
                                 </Label>
                                 <Input
                                     id="unit-name"
-                                    placeholder="Ví dụ: Cái, Hộp, Thùng, Lít, Kg..."
+                                    placeholder="Nhập tên đơn vị..."
                                     value={formName}
                                     onChange={(e) => setFormName(e.target.value)}
                                     className={`rounded-xl ${formErrors.name ? "border-red-400" : ""}`}
@@ -618,7 +617,7 @@ export default function UnitManagementPage() {
                 {/* EDIT DIALOG */}
                 {/* ════════════════════════════════════════════════ */}
                 <Dialog open={editOpen} onOpenChange={setEditOpen}>
-                    <DialogContent className="sm:max-w-md">
+                    <DialogContent className="sm:max-w-md p-4">
                         <DialogHeader>
                             <DialogTitle className="flex items-center gap-2">
                                 <PencilSquareIcon className="w-5 h-5 text-[#0F766E]" />
@@ -635,7 +634,7 @@ export default function UnitManagementPage() {
                                 </Label>
                                 <Input
                                     id="edit-unit-name"
-                                    placeholder="Ví dụ: Cái, Hộp, Thùng..."
+                                    placeholder="Nhập tên đơn vị..."
                                     value={formName}
                                     onChange={(e) => setFormName(e.target.value)}
                                     className={`rounded-xl ${formErrors.name ? "border-red-400" : ""}`}

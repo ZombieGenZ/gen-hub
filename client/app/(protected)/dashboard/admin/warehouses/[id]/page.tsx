@@ -47,7 +47,6 @@ export default function WarehouseEditPage() {
             setLoading(true);
             const data = await warehouseService.getWarehouseTemplateById(token, id);
             setWarehouse(data);
-            // Normalize: ensure ward_id scalar is populated from relation if missing
             const normalized = {
                 ...data,
                 ward_id: data.ward_id || data.ward?.id || "",
@@ -100,7 +99,7 @@ export default function WarehouseEditPage() {
         }
 
         // Optional numeric fields
-        const optionalNumbers = ['ceiling_height', 'max_load_capacity', 'total_weight_capacity',
+        const optionalNumbers = ['ceiling_height', 'total_weight_capacity',
             'min_temperature', 'max_temperature', 'min_humidity', 'max_humidity',
             'latitude', 'longitude'];
         for (const key of optionalNumbers) {

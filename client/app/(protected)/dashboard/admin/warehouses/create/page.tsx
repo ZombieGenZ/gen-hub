@@ -43,7 +43,6 @@ export default function WarehouseCreatePage() {
         ceiling_height: 0,
         block_length: 0,
         block_width: 0,
-        max_load_capacity: 0,
         is_shared_warehouse: false,
         is_active: true,
         ward_id: "",

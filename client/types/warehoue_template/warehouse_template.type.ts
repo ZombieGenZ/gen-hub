@@ -105,7 +105,6 @@ export interface Warehouse extends BaseEntity {
     min_humidity: string;
     max_temperature: string;
     min_temperature: string;
-    max_load_capacity: number | null;
     total_weight_capacity: number | null;
   
   // Pricing

@@ -86,6 +86,38 @@ export class RentalContractService {
     }
 
     /**
+     * Khách hàng tạo hợp đồng mới (Dùng Org endpoint)
+     * @param token Token truy cập
+     * @param orgId ID tổ chức
+     * @param data Dữ liệu hợp đồng
+     * @returns Kết quả tạo hợp đồng
+     */
+    async createOrgRentalContract(token: string, orgId: string, data: any) {
+        try {
+            const { organization_id, type, ...payload } = data; // Bỏ organization_id và type vì endpoint này ko cần
+            
+            const response = await fetch(`${API}/organizations/${orgId}/rental-contracts`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Failed to create org rental contract');
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('Create org rental contract error:', error);
+            throw error;
+        }
+    }
+
+    /**
      * Lấy chi tiết hợp đồng theo ID
      * @param token Token truy cập
      * @param id ID của hợp đồng

@@ -116,7 +116,6 @@ export class WarehouseManagerViewController {
                         ward_id: { type: 'string', format: 'uuid' },
                         latitude: { type: 'number' },
                         longitude: { type: 'number' },
-                        max_load_capacity: { type: 'number' },
                         is_active: { type: 'boolean' }
                     }
                 }

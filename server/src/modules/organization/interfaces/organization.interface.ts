@@ -87,6 +87,17 @@ export interface IOrganizationMember {
         role: {
             id: string;
             name: string;
+            permissions?: {
+                id: string;
+                organization_permission_id: string;
+                is_active?: boolean;
+                is_deleted?: boolean;
+                permission: {
+                    id: string;
+                    name: string;
+                    key: string;
+                };
+            }[];
         };
     }[];
     permissions?: {

@@ -57,6 +57,7 @@ import {
     ClockIcon,
 } from "@heroicons/react/24/outline";
 import { Barcode, Package, ScanLine, Eye } from "lucide-react";
+import BarcodeScannerQuickAdd from "@/components/products/BarcodeScannerQuickAdd";
 
 // ── Services ──
 const productService = new ProductService();
@@ -142,6 +143,9 @@ export default function ProductMasterListPage() {
     // ── Barcode dialog ──
     const [barcodeDialogOpen, setBarcodeDialogOpen] = useState(false);
     const [selectedBarcode, setSelectedBarcode] = useState({ code: "", name: "" });
+
+    // ── Barcode scanner quick add ──
+    const [scannerOpen, setScannerOpen] = useState(false);
 
     // ── Filters ──
     const [searchTerm, setSearchTerm] = useState("");
@@ -291,6 +295,14 @@ export default function ProductMasterListPage() {
                     <div className="flex items-center gap-3">
                         <Button
                             variant="outline"
+                            className="rounded-xl border-[#0F766E] text-[#0F766E] hover:bg-[#0F766E]/5"
+                            onClick={() => setScannerOpen(true)}
+                        >
+                            <ScanLine className="w-4 h-4 mr-2" />
+                            Quét để thêm
+                        </Button>
+                        <Button
+                            variant="outline"
                             className="rounded-xl"
                             onClick={() =>
                                 router.push("/dashboard/customer/products/create")
@@ -324,8 +336,8 @@ export default function ProductMasterListPage() {
                                 <button
                                     onClick={() => setQuickFilter("all")}
                                     className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${quickFilter === "all"
-                                            ? "bg-[#0F766E] text-white border-[#0F766E]"
-                                            : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
+                                        ? "bg-[#0F766E] text-white border-[#0F766E]"
+                                        : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
                                         }`}
                                 >
                                     Tất cả
@@ -333,8 +345,8 @@ export default function ProductMasterListPage() {
                                 <button
                                     onClick={() => setQuickFilter("low_stock")}
                                     className={`px-3 py-1.5 text-sm rounded-lg border transition-colors flex items-center gap-1.5 ${quickFilter === "low_stock"
-                                            ? "bg-amber-500 text-white border-amber-500"
-                                            : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
+                                        ? "bg-amber-500 text-white border-amber-500"
+                                        : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
                                         }`}
                                 >
                                     <ExclamationTriangleIcon className="w-3.5 h-3.5" />
@@ -343,8 +355,8 @@ export default function ProductMasterListPage() {
                                 <button
                                     onClick={() => setQuickFilter("expiring_soon")}
                                     className={`px-3 py-1.5 text-sm rounded-lg border transition-colors flex items-center gap-1.5 ${quickFilter === "expiring_soon"
-                                            ? "bg-red-500 text-white border-red-500"
-                                            : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
+                                        ? "bg-red-500 text-white border-red-500"
+                                        : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
                                         }`}
                                 >
                                     <ClockIcon className="w-3.5 h-3.5" />
@@ -701,8 +713,8 @@ export default function ProductMasterListPage() {
                                                     }
                                                     size="icon"
                                                     className={`h-8 w-8 text-xs ${page === currentPage
-                                                            ? "bg-[#0F766E] hover:bg-[#0D6B63] text-white"
-                                                            : ""
+                                                        ? "bg-[#0F766E] hover:bg-[#0D6B63] text-white"
+                                                        : ""
                                                         }`}
                                                     onClick={() => setCurrentPage(page)}
                                                 >
@@ -831,6 +843,13 @@ export default function ProductMasterListPage() {
                     onClose={() => setBarcodeDialogOpen(false)}
                     barcode={selectedBarcode.code}
                     productName={selectedBarcode.name}
+                />
+
+                {/* ── Barcode Scanner Quick Add ── */}
+                <BarcodeScannerQuickAdd
+                    open={scannerOpen}
+                    onClose={() => setScannerOpen(false)}
+                    onProductCreated={fetchProducts}
                 />
             </main>
         </div>

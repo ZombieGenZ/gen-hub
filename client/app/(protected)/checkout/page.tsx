@@ -218,8 +218,8 @@ function CheckoutContent() {
                 scheduled_start_at: session.start_date || new Date().toISOString(),
             };
 
-            // 3. Submit Order
-            const result = await rentalContractService.createRentalContract(token, payload);
+            // 3. Submit Order using customer endpoint
+            const result = await rentalContractService.createOrgRentalContract(token, orgId, payload);
 
             console.log('Order created successfully:', result);
 
@@ -451,10 +451,11 @@ function CheckoutContainer() {
                 let durationTier: any = null;
                 if (durationId) {
                     try {
-                        const res = await fetch(`${API}/public/rental-duration-tiers/${durationId}`);
+                        const res = await fetch(`${API}/public/rental-duration-tiers/active`);
                         if (res.ok) {
                             const data = await res.json();
-                            durationTier = data.data || data;
+                            const allTiers = data.data || data;
+                            durationTier = allTiers.find((t: any) => String(t.id) === durationId);
                         }
                     } catch (e) {
                         console.warn("Error fetching tier, falling back to mock", e);
