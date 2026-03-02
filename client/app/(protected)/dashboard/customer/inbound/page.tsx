@@ -18,6 +18,7 @@ import type {
 import type { Product } from "@/services/product/product.types";
 import type { Partner } from "@/services/partner/partner.types";
 import type { Batch } from "@/services/batch/batch.types";
+import { MOCK_RENTED_WAREHOUSES } from "@/data/mockMyWarehouses";
 
 // ── shadcn/ui ──
 import { Card, CardContent } from "@/components/ui/card";
@@ -382,7 +383,9 @@ export default function InboundListPage() {
     const [formItems, setFormItems] = useState<DrawerItem[]>([]);
 
     // Form data
-    const [warehouses, setWarehouses] = useState<{ id: string; name: string }[]>([]);
+    const [warehouses] = useState(() =>
+        MOCK_RENTED_WAREHOUSES.map((w) => ({ id: w.id, name: w.name }))
+    );
     const [partners, setPartners] = useState<Partner[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
     const [productSearch, setProductSearch] = useState("");

@@ -43,7 +43,7 @@ const customerNavGroups: SidebarGroup[] = [
     {
         title: "Nội bộ kho",
         items: [
-            { href: "/dashboard/customer/warehouses", icon: BuildingStorefrontIcon, label: "Kho thuê của tôi", disabled: true, badge: "Sắp có" },
+            { href: "/dashboard/customer/warehouses", icon: BuildingStorefrontIcon, label: "Kho của tôi" },
             { href: "/dashboard/customer/partners", icon: UserGroupIcon, label: "Đối tác" },
             { href: "/dashboard/customer/units", icon: ScaleIcon, label: "Đơn vị tính" },
             { href: "/dashboard/customer/products", icon: CubeIcon, label: "Hàng hóa" },

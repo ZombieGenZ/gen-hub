@@ -41,7 +41,7 @@ export class InventoryService {
             return result;
         } catch (error) {
             console.error('Lỗi khi tạo yêu cầu nhập kho:', error);
-            throw error;
+            throw error;    
         }
     }
 

@@ -17,6 +17,7 @@ import type {
 } from "@/services/inventory/inventory.types";
 import type { Product } from "@/services/product/product.types";
 import type { Partner } from "@/services/partner/partner.types";
+import { MOCK_RENTED_WAREHOUSES } from "@/data/mockMyWarehouses";
 
 // ── shadcn/ui ──
 import { Card, CardContent } from "@/components/ui/card";
@@ -212,7 +213,8 @@ export default function OutboundListPage() {
             });
 
             if (res) {
-                const data = Array.isArray(res) ? res : (res as any)?.data || [];
+                const raw = Array.isArray(res) ? res : (res as any)?.data ?? (res as any)?.items ?? [];
+                const data = Array.isArray(raw) ? raw : [];
                 const total = (res as any)?.total || (res as any)?.meta?.total || data.length;
                 setItems(data);
                 setTotalItems(total);
@@ -237,8 +239,10 @@ export default function OutboundListPage() {
                 partnerService.list(token, { limit: 100 }),
                 productService.list(token, { limit: 20, keywords: debouncedProductSearch || undefined }),
             ]);
-            setPartners(Array.isArray(partnerRes) ? partnerRes : (partnerRes as any)?.data || []);
-            setProducts(Array.isArray(productRes) ? productRes : (productRes as any)?.data || []);
+            const pData = Array.isArray(partnerRes) ? partnerRes : (partnerRes as any)?.data;
+            setPartners(Array.isArray(pData) ? pData : []);
+            const prData = Array.isArray(productRes) ? productRes : (productRes as any)?.data;
+            setProducts(Array.isArray(prData) ? prData : []);
         } catch { /* silent */ }
     }, [debouncedProductSearch]);
 
@@ -516,7 +520,7 @@ export default function OutboundListPage() {
                                         </td>
                                     </tr>
                                 ) : (
-                                    items.map((item) => {
+                                    (Array.isArray(items) ? items : []).map((item) => {
                                         // Simulate priority — in real app, check SLA deadline
                                         const isUrgent = false;
                                         return (
@@ -694,7 +698,9 @@ export default function OutboundListPage() {
                                 <Select value={formWarehouse} onValueChange={setFormWarehouse}>
                                     <SelectTrigger className="rounded-xl"><SelectValue placeholder="Chọn kho" /></SelectTrigger>
                                     <SelectContent>
-                                        {/* Warehouses to be loaded */}
+                                        {MOCK_RENTED_WAREHOUSES.map((w) => (
+                                            <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
+                                        ))}
                                     </SelectContent>
                                 </Select>
                             </div>
