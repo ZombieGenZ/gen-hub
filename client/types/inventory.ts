@@ -81,3 +81,40 @@ export interface SearchResult {
   weight?: number;
   quantity?: number;
 }
+
+// Barcode scan result with inventory information
+export interface BarcodeScanResult {
+  // Basic info
+  barcode: string;
+  productName: string;
+  category: string;
+  
+  // Inventory statistics
+  totalBoxes: number;           // Tổng số thùng
+  totalQuantity: number;        // Tổng số lượng trong kho
+  totalWeight: number;          // Tổng trọng lượng
+  
+  // Location breakdown
+  locations: BarcodeScanLocation[];
+  
+  // Status
+  stockStatus: 'out_of_stock' | 'low_stock' | 'in_stock' | 'overstocked';
+  lastUpdated: Date;
+}
+
+export interface BarcodeScanLocation {
+  rackId: string;
+  rackName: string;
+  boxCount: number;
+  quantity: number;
+  weight: number;
+  fillRate: number;
+  boxes: SearchResult[];
+}
+
+// Stock status thresholds
+export const STOCK_THRESHOLDS = {
+  outOfStock: 0,
+  lowStock: 5,
+  overstock: 50,
+};

@@ -106,6 +106,7 @@ export default function Warehouse3DPage() {
     dismissAlert,
     clearDismissedAlerts,
     searchBoxes,
+    scanBarcode,
     highlightBox,
     categoryStats,
     rackUtilization,
@@ -424,6 +425,7 @@ export default function Warehouse3DPage() {
           isOpen={barcodeOpen}
           onClose={() => setBarcodeOpen(false)}
           onSearch={searchBoxes}
+          onScanBarcode={scanBarcode}
           onLocate={handleLocateResult}
         />
 

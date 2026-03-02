@@ -3,131 +3,259 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { X, Camera, CameraOff, Search, MapPin, Loader2 } from 'lucide-react';
-import { SearchResult } from '@/types/inventory';
+import { Badge } from '@/components/ui/badge';
+import { X, Camera, CameraOff, Search, MapPin, Package, Layers, Weight, AlertTriangle, CheckCircle, AlertCircle, TrendingDown, ChevronDown, ChevronUp } from 'lucide-react';
+import { SearchResult, BarcodeScanResult, BarcodeScanLocation } from '@/types/inventory';
 import { cn } from '@/lib/utils';
 
 interface BarcodeScannerPanelProps {
   isOpen: boolean;
   onClose: () => void;
   onSearch: (query: string) => SearchResult[];
+  onScanBarcode: (barcode: string) => BarcodeScanResult | null;
   onLocate: (result: SearchResult) => void;
 }
+
+// Stock status display configuration
+const stockStatusConfig = {
+  out_of_stock: {
+    label: 'Hết hàng',
+    color: '#ef4444',
+    bgColor: '#fee2e2',
+    icon: AlertCircle,
+  },
+  low_stock: {
+    label: 'Tồn kho thấp',
+    color: '#f97316',
+    bgColor: '#ffedd5',
+    icon: AlertTriangle,
+  },
+  in_stock: {
+    label: 'Còn hàng',
+    color: '#22c55e',
+    bgColor: '#dcfce7',
+    icon: CheckCircle,
+  },
+  overstocked: {
+    label: 'Tồn nhiều',
+    color: '#3b82f6',
+    bgColor: '#dbeafe',
+    icon: TrendingDown,
+  },
+};
 
 const BarcodeScannerPanel = ({
   isOpen,
   onClose,
   onSearch,
+  onScanBarcode,
   onLocate,
 }: BarcodeScannerPanelProps) => {
   const [isScanning, setIsScanning] = useState(false);
   const [scanResult, setScanResult] = useState<string>('');
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [inventoryResult, setInventoryResult] = useState<BarcodeScanResult | null>(null);
   const [error, setError] = useState<string>('');
   const [manualInput, setManualInput] = useState('');
+  const [hasBarcodeDetector, setHasBarcodeDetector] = useState(false);
+  const [expandedRacks, setExpandedRacks] = useState<Set<string>>(new Set());
   
-  const scannerRef = useRef<any>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const detectorRef = useRef<any>(null);
+  const animationRef = useRef<number | null>(null);
+  const isMountedRef = useRef(true);
 
-  // Cleanup scanner on unmount
+  // Check if BarcodeDetector is supported
   useEffect(() => {
+    isMountedRef.current = true;
+    // @ts-ignore - BarcodeDetector may not be in TypeScript types
+    if ('BarcodeDetector' in window) {
+      setHasBarcodeDetector(true);
+    }
     return () => {
-      if (scannerRef.current) {
-        scannerRef.current.stop?.().catch(console.error);
-      }
+      isMountedRef.current = false;
     };
   }, []);
 
-  // Stop scanner when panel closes
-  useEffect(() => {
-    if (!isOpen && isScanning) {
-      stopScanning();
+  const stopCamera = useCallback(() => {
+    // Cancel animation frame
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current);
+      animationRef.current = null;
     }
-  }, [isOpen, isScanning]);
+    
+    // Stop all tracks
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => {
+        track.stop();
+      });
+      streamRef.current = null;
+    }
+    
+    // Clear video source
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    
+    if (isMountedRef.current) {
+      setIsScanning(false);
+    }
+  }, []);
 
-  const startScanning = useCallback(async () => {
+  // Stop camera when panel closes or component unmounts
+  useEffect(() => {
+    if (!isOpen) {
+      stopCamera();
+      // Reset state when closing
+      setScanResult('');
+      setSearchResults([]);
+      setInventoryResult(null);
+      setError('');
+      setManualInput('');
+      setExpandedRacks(new Set());
+    }
+    return () => {
+      stopCamera();
+    };
+  }, [isOpen, stopCamera]);
+
+  const processBarcode = useCallback((code: string) => {
+    setScanResult(code);
+    setError('');
+    
+    // First try inventory scan
+    const invResult = onScanBarcode(code);
+    if (invResult) {
+      setInventoryResult(invResult);
+      setSearchResults([]);
+      return true;
+    }
+    
+    // Fallback to simple search
+    const results = onSearch(code);
+    if (results.length > 0) {
+      setSearchResults(results);
+      setInventoryResult(null);
+      return true;
+    }
+    
+    setError(`Không tìm thấy thùng hàng với mã: ${code}`);
+    setInventoryResult(null);
+    setSearchResults([]);
+    return false;
+  }, [onSearch, onScanBarcode]);
+
+  const detectBarcode = useCallback(async () => {
+    if (!videoRef.current || !detectorRef.current || !isMountedRef.current) return;
+    
+    try {
+      const barcodes = await detectorRef.current.detect(videoRef.current);
+      
+      if (barcodes.length > 0 && isMountedRef.current) {
+        const code = barcodes[0].rawValue;
+        processBarcode(code);
+        stopCamera();
+        return;
+      }
+    } catch (err) {
+      // Ignore detection errors
+    }
+    
+    // Continue detection loop
+    if (isMountedRef.current && streamRef.current) {
+      animationRef.current = requestAnimationFrame(detectBarcode);
+    }
+  }, [processBarcode, stopCamera]);
+
+  const startCamera = useCallback(async () => {
     setError('');
     setScanResult('');
     setSearchResults([]);
+    setInventoryResult(null);
 
     try {
-      // Dynamic import for html5-qrcode (client-side only)
-      // Note: You need to install html5-qrcode: npm install html5-qrcode
-      let Html5Qrcode: any;
-      try {
-        const module = await import('html5-qrcode');
-        Html5Qrcode = module.Html5Qrcode;
-      } catch {
-        setError('Thư viện quét barcode chưa được cài đặt. Chạy: npm install html5-qrcode');
+      // Request camera permission
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { 
+          facingMode: 'environment',
+          width: { ideal: 640 },
+          height: { ideal: 480 }
+        }
+      });
+
+      if (!isMountedRef.current) {
+        stream.getTracks().forEach(track => track.stop());
         return;
       }
-      
-      if (!scannerRef.current) {
-        scannerRef.current = new Html5Qrcode('barcode-scanner-container');
-      }
 
-      await scannerRef.current.start(
-        { facingMode: 'environment' },
-        {
-          fps: 10,
-          qrbox: { width: 250, height: 250 },
-        },
-        (decodedText: string) => {
-          // On successful scan
-          setScanResult(decodedText);
-          handleScanResult(decodedText);
-          // Stop after successful scan
-          stopScanning();
-        },
-        () => {
-          // Ignore scan errors (no QR code found)
-        }
-      );
+      streamRef.current = stream;
+
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+      }
 
       setIsScanning(true);
-    } catch (err) {
-      console.error('Failed to start scanner:', err);
-      setError('Không thể truy cập camera. Vui lòng cấp quyền camera.');
-    }
-  }, []);
 
-  const stopScanning = useCallback(async () => {
-    if (scannerRef.current) {
-      try {
-        await scannerRef.current.stop();
-      } catch (err) {
-        console.error('Error stopping scanner:', err);
+      // Start barcode detection if supported
+      if (hasBarcodeDetector) {
+        // @ts-ignore
+        detectorRef.current = new BarcodeDetector({ 
+          formats: ['qr_code', 'ean_13', 'ean_8', 'code_128', 'code_39', 'upc_a', 'upc_e'] 
+        });
+        detectBarcode();
+      }
+
+    } catch (err: any) {
+      console.error('Camera error:', err);
+      if (!isMountedRef.current) return;
+      
+      if (err.name === 'NotAllowedError') {
+        setError('Quyền camera bị từ chối. Vui lòng cho phép truy cập camera.');
+      } else if (err.name === 'NotFoundError') {
+        setError('Không tìm thấy camera. Vui lòng kiểm tra thiết bị.');
+      } else {
+        setError(`Lỗi camera: ${err.message || 'Không xác định'}`);
       }
     }
-    setIsScanning(false);
-  }, []);
-
-  const handleScanResult = useCallback((code: string) => {
-    const results = onSearch(code);
-    setSearchResults(results);
-    
-    if (results.length === 0) {
-      setError(`Không tìm thấy thùng hàng với mã: ${code}`);
-    }
-  }, [onSearch]);
+  }, [hasBarcodeDetector, detectBarcode]);
 
   const handleManualSearch = useCallback(() => {
     if (!manualInput.trim()) return;
-    
-    setScanResult(manualInput);
-    handleScanResult(manualInput);
-  }, [manualInput, handleScanResult]);
+    processBarcode(manualInput.trim());
+  }, [manualInput, processBarcode]);
 
   const handleLocate = useCallback((result: SearchResult) => {
+    stopCamera();
     onLocate(result);
     onClose();
-  }, [onLocate, onClose]);
+  }, [onLocate, onClose, stopCamera]);
+
+  const handleClose = useCallback(() => {
+    stopCamera();
+    onClose();
+  }, [stopCamera, onClose]);
+
+  const toggleRackExpand = useCallback((rackId: string) => {
+    setExpandedRacks(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(rackId)) {
+        newSet.delete(rackId);
+      } else {
+        newSet.add(rackId);
+      }
+      return newSet;
+    });
+  }, []);
 
   if (!isOpen) return null;
 
+  const StatusIcon = inventoryResult ? stockStatusConfig[inventoryResult.stockStatus].icon : null;
+
   return (
     <div 
-      className="absolute top-16 right-4 w-80 z-30 animate-in slide-in-from-right-5 duration-300 overflow-hidden"
+      className="absolute top-16 right-4 w-96 z-30 animate-in slide-in-from-right-5 duration-300 overflow-hidden max-h-[calc(100vh-100px)]"
       style={{
         backgroundColor: '#f8fafb',
         border: '1px solid #e0ede8',
@@ -135,26 +263,25 @@ const BarcodeScannerPanel = ({
         boxShadow: '0 4px 24px rgba(0,0,0,0.10)',
       }}
     >
+      {/* Header */}
       <div className="p-4" style={{ borderBottom: '1px solid #e0ede8' }}>
         <div className="flex items-center justify-between">
           <div className="text-base font-semibold flex items-center gap-2" style={{ color: '#1a2e25' }}>
             <Camera className="w-5 h-5" style={{ color: '#2ea87e' }} />
-            Quét Barcode/QR
+            Quét Barcode - Kiểm Tồn Kho
           </div>
-          <Button variant="ghost" size="icon" onClick={onClose}>
+          <Button variant="ghost" size="icon" onClick={handleClose}>
             <X className="w-4 h-4" style={{ color: '#4a5568' }} />
           </Button>
         </div>
       </div>
       
-      <div className="p-4 space-y-4">
+      <div className="p-4 space-y-4 overflow-y-auto max-h-[calc(100vh-200px)]">
         {/* Camera Scanner */}
         <div className="relative">
           <div 
-            id="barcode-scanner-container" 
-            ref={containerRef}
             className={cn(
-              "w-full h-48 rounded-lg overflow-hidden flex items-center justify-center",
+              "w-full h-40 rounded-lg overflow-hidden flex items-center justify-center",
               isScanning ? "border-2" : ""
             )}
             style={{ 
@@ -162,10 +289,21 @@ const BarcodeScannerPanel = ({
               borderColor: isScanning ? '#2ea87e' : 'transparent'
             }}
           >
-            {!isScanning && (
+            {isScanning ? (
+              <video 
+                ref={videoRef}
+                className="w-full h-full object-cover"
+                playsInline
+                muted
+              />
+            ) : (
               <div className="text-center p-4">
-                <Camera className="w-12 h-12 mx-auto mb-2" style={{ color: '#2ea87e', opacity: 0.5 }} />
-                <p className="text-sm" style={{ color: '#4a5568' }}>Nhấn nút bên dưới để bật camera</p>
+                <Camera className="w-10 h-10 mx-auto mb-2" style={{ color: '#2ea87e', opacity: 0.5 }} />
+                <p className="text-sm" style={{ color: '#4a5568' }}>
+                  {hasBarcodeDetector 
+                    ? 'Nhấn nút bên dưới để bật camera' 
+                    : 'Camera preview (nhập mã thủ công)'}
+                </p>
               </div>
             )}
           </div>
@@ -174,7 +312,7 @@ const BarcodeScannerPanel = ({
           <div className="flex gap-2 mt-2">
             {!isScanning ? (
               <Button 
-                onClick={startScanning} 
+                onClick={startCamera} 
                 className="flex-1"
                 style={{ backgroundColor: '#2ea87e', color: '#ffffff' }}
               >
@@ -183,7 +321,7 @@ const BarcodeScannerPanel = ({
               </Button>
             ) : (
               <Button 
-                onClick={stopScanning} 
+                onClick={stopCamera} 
                 className="flex-1"
                 variant="destructive"
               >
@@ -192,14 +330,22 @@ const BarcodeScannerPanel = ({
               </Button>
             )}
           </div>
+          
+          {!hasBarcodeDetector && isScanning && (
+            <p className="text-xs mt-1 text-center" style={{ color: '#4a5568' }}>
+              Trình duyệt không hỗ trợ quét tự động. Vui lòng nhập mã thủ công.
+            </p>
+          )}
         </div>
 
         {/* Manual input */}
         <div className="space-y-2">
-          <p className="text-sm" style={{ color: '#4a5568' }}>Hoặc nhập mã thủ công:</p>
+          <p className="text-sm" style={{ color: '#4a5568' }}>
+            {hasBarcodeDetector ? 'Hoặc nhập mã thủ công:' : 'Nhập mã barcode/QR:'}
+          </p>
           <div className="flex gap-2">
             <Input
-              placeholder="Nhập mã barcode/QR..."
+              placeholder="VD: ELE-ABC123, electronics..."
               value={manualInput}
               onChange={(e) => setManualInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleManualSearch()}
@@ -211,23 +357,188 @@ const BarcodeScannerPanel = ({
           </div>
         </div>
 
-        {/* Scan result */}
+        {/* Scan result summary */}
         {scanResult && (
           <div className="p-2 rounded-lg" style={{ backgroundColor: '#e0ede8' }}>
-            <p className="text-xs" style={{ color: '#4a5568' }}>Mã đã quét:</p>
+            <p className="text-xs" style={{ color: '#4a5568' }}>Mã đã tìm:</p>
             <p className="font-mono text-sm font-medium" style={{ color: '#1a2e25' }}>{scanResult}</p>
           </div>
         )}
 
         {/* Error message */}
         {error && (
-          <div className="p-2 rounded-lg text-sm" style={{ backgroundColor: '#fee2e2', color: '#dc2626' }}>
+          <div className="p-3 rounded-lg text-sm flex items-center gap-2" style={{ backgroundColor: '#fee2e2', color: '#dc2626' }}>
+            <AlertCircle className="w-4 h-4 shrink-0" />
             {error}
           </div>
         )}
 
-        {/* Search results */}
-        {searchResults.length > 0 && (
+        {/* Inventory Result - Enhanced View */}
+        {inventoryResult && (
+          <div className="space-y-3">
+            {/* Product Info Header */}
+            <div className="p-3 rounded-lg" style={{ backgroundColor: '#ffffff', border: '1px solid #e0ede8' }}>
+              <div className="flex items-start justify-between gap-2 mb-2">
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-base truncate" style={{ color: '#1a2e25' }}>
+                    {inventoryResult.productName}
+                  </h3>
+                  <p className="text-xs" style={{ color: '#4a5568' }}>
+                    {inventoryResult.category}
+                  </p>
+                </div>
+                <Badge 
+                  className="flex items-center gap-1 text-xs px-2 py-1"
+                  style={{ 
+                    backgroundColor: stockStatusConfig[inventoryResult.stockStatus].bgColor,
+                    color: stockStatusConfig[inventoryResult.stockStatus].color,
+                  }}
+                >
+                  {StatusIcon && <StatusIcon className="w-3 h-3" />}
+                  {stockStatusConfig[inventoryResult.stockStatus].label}
+                </Badge>
+              </div>
+
+              {/* Statistics Grid */}
+              <div className="grid grid-cols-3 gap-2 mt-3">
+                <div className="text-center p-2 rounded-lg" style={{ backgroundColor: '#f0fdf4' }}>
+                  <div className="flex items-center justify-center gap-1 mb-1">
+                    <Package className="w-3.5 h-3.5" style={{ color: '#22c55e' }} />
+                  </div>
+                  <p className="text-lg font-bold" style={{ color: '#166534' }}>
+                    {inventoryResult.totalBoxes}
+                  </p>
+                  <p className="text-[10px]" style={{ color: '#4a5568' }}>Thùng</p>
+                </div>
+                <div className="text-center p-2 rounded-lg" style={{ backgroundColor: '#eff6ff' }}>
+                  <div className="flex items-center justify-center gap-1 mb-1">
+                    <Layers className="w-3.5 h-3.5" style={{ color: '#3b82f6' }} />
+                  </div>
+                  <p className="text-lg font-bold" style={{ color: '#1e40af' }}>
+                    {inventoryResult.totalQuantity}
+                  </p>
+                  <p className="text-[10px]" style={{ color: '#4a5568' }}>Số lượng</p>
+                </div>
+                <div className="text-center p-2 rounded-lg" style={{ backgroundColor: '#fefce8' }}>
+                  <div className="flex items-center justify-center gap-1 mb-1">
+                    <Weight className="w-3.5 h-3.5" style={{ color: '#ca8a04' }} />
+                  </div>
+                  <p className="text-lg font-bold" style={{ color: '#854d0e' }}>
+                    {inventoryResult.totalWeight.toFixed(1)}
+                  </p>
+                  <p className="text-[10px]" style={{ color: '#4a5568' }}>kg</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Location Breakdown */}
+            <div className="space-y-2">
+              <p className="text-sm font-medium flex items-center gap-2" style={{ color: '#1a2e25' }}>
+                <MapPin className="w-4 h-4" style={{ color: '#2ea87e' }} />
+                Vị trí trong kho ({inventoryResult.locations.length} kệ)
+              </p>
+              
+              <div className="max-h-48 overflow-y-auto space-y-2 pr-1">
+                {inventoryResult.locations.map((location) => (
+                  <div
+                    key={location.rackId}
+                    className="rounded-lg overflow-hidden"
+                    style={{ backgroundColor: '#ffffff', border: '1px solid #e0ede8' }}
+                  >
+                    {/* Rack Header - Clickable */}
+                    <button
+                      onClick={() => toggleRackExpand(location.rackId)}
+                      className="w-full p-3 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <div 
+                          className="w-2 h-2 rounded-full"
+                          style={{
+                            backgroundColor: location.fillRate > 0.9 
+                              ? '#ef4444' 
+                              : location.fillRate > 0.5 
+                                ? '#eab308' 
+                                : '#22c55e'
+                          }}
+                        />
+                        <span className="font-medium text-sm" style={{ color: '#1a2e25' }}>
+                          {location.rackName}
+                        </span>
+                        <span className="text-xs px-1.5 py-0.5 rounded" style={{ backgroundColor: '#e0ede8', color: '#4a5568' }}>
+                          {location.boxCount} thùng
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs" style={{ color: '#4a5568' }}>
+                          {Math.round(location.fillRate * 100)}% đầy
+                        </span>
+                        {expandedRacks.has(location.rackId) 
+                          ? <ChevronUp className="w-4 h-4" style={{ color: '#4a5568' }} />
+                          : <ChevronDown className="w-4 h-4" style={{ color: '#4a5568' }} />
+                        }
+                      </div>
+                    </button>
+
+                    {/* Expanded Box List */}
+                    {expandedRacks.has(location.rackId) && (
+                      <div className="px-3 pb-3 space-y-1.5" style={{ borderTop: '1px solid #e0ede8' }}>
+                        <div className="pt-2 text-xs flex items-center justify-between" style={{ color: '#4a5568' }}>
+                          <span>Tổng: {location.quantity} sản phẩm, {location.weight.toFixed(1)}kg</span>
+                        </div>
+                        {location.boxes.map((box) => (
+                          <div
+                            key={box.boxId}
+                            className="p-2 rounded flex items-center justify-between gap-2"
+                            style={{ backgroundColor: '#f8fafb' }}
+                          >
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-medium truncate" style={{ color: '#1a2e25' }}>
+                                {box.boxName}
+                              </p>
+                              <p className="text-[10px]" style={{ color: '#4a5568' }}>
+                                Hàng {box.row + 1}, Cột {box.column + 1}, Tầng {box.level + 1}
+                              </p>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 px-2"
+                              onClick={() => handleLocate(box)}
+                              style={{ color: '#2ea87e' }}
+                            >
+                              <MapPin className="w-3 h-3 mr-1" />
+                              Xem
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="flex gap-2 pt-2">
+              <Button
+                className="flex-1"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (inventoryResult.locations[0]?.boxes[0]) {
+                    handleLocate(inventoryResult.locations[0].boxes[0]);
+                  }
+                }}
+              >
+                <MapPin className="w-3.5 h-3.5 mr-1" />
+                Xem trên 3D
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Simple Search results (fallback) */}
+        {searchResults.length > 0 && !inventoryResult && (
           <div className="space-y-2">
             <p className="text-sm font-medium" style={{ color: '#1a2e25' }}>
               Tìm thấy {searchResults.length} kết quả:
@@ -242,7 +553,7 @@ const BarcodeScannerPanel = ({
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm truncate" style={{ color: '#1a2e25' }}>{result.boxName}</p>
                     <p className="text-xs" style={{ color: '#4a5568' }}>
-                      {result.rackName} • Tầng {result.level}
+                      {result.rackName} • Tầng {result.level + 1}
                     </p>
                   </div>
                   <Button
@@ -257,6 +568,13 @@ const BarcodeScannerPanel = ({
               ))}
             </div>
           </div>
+        )}
+
+        {/* Timestamp */}
+        {inventoryResult && (
+          <p className="text-[10px] text-center" style={{ color: '#9ca3af' }}>
+            Cập nhật: {new Date(inventoryResult.lastUpdated).toLocaleString('vi-VN')}
+          </p>
         )}
       </div>
     </div>
