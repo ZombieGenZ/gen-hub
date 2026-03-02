@@ -237,7 +237,7 @@ export default function DashboardPage() {
                             return (
                                 <Link
                                     key={table.name}
-                                    href={`/dashboard/${table.name}`}
+                                    href={`/${table.name}`}
                                     className="flex items-center justify-between px-4 py-3 rounded-lg bg-[var(--background-tertiary)] hover:bg-[var(--accent-primary-muted)] hover:border-[var(--accent-primary)] border border-transparent text-[var(--text-secondary)] text-sm transition-all group"
                                 >
                                     <div className="flex items-center gap-2 min-w-0">
