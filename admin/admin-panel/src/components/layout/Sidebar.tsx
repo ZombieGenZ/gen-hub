@@ -167,7 +167,7 @@ export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
                             <div className="px-4 py-2 flex items-center justify-between mt-4">
                                 <button
                                     onClick={() => setIsTablesExpanded(!isTablesExpanded)}
-                                    className="flex items-center gap-2 text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider hover:text-white transition-colors"
+                                    className="flex items-center gap-2 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider hover:text-white transition-colors"
                                 >
                                     <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isTablesExpanded ? '' : '-rotate-90'}`} />
                                     {t('sidebar.tables')} ({filteredTables.length})
@@ -175,7 +175,7 @@ export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
                                 <button
                                     onClick={refreshTables}
                                     disabled={isLoading}
-                                    className="p-1 text-[var(--text-muted)] hover:text-[var(--accent-primary)] hover:bg-[var(--background-tertiary)] rounded transition-all"
+                                    className="p-1 text-[var(--text-secondary)] hover:text-[var(--accent-primary)] hover:bg-[var(--background-tertiary)] rounded transition-all"
                                     title={t('dashboard.tables.refresh')}
                                 >
                                     <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
@@ -211,14 +211,14 @@ export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
                                                     prefetch={true}
                                                     className={`block px-4 py-2 rounded-lg text-sm transition-all ${isTableActive(table.name)
                                                         ? 'bg-[var(--accent-primary-muted)] text-[var(--accent-primary)]'
-                                                        : 'text-[var(--text-muted)] hover:bg-[var(--background-tertiary)] hover:text-white'
+                                                        : 'text-[var(--text-secondary)] hover:bg-[var(--background-tertiary)] hover:text-white'
                                                         }`}
                                                 >
                                                     {table.displayName}
                                                 </Link>
                                             ))}
                                             {filteredTables.length === 0 && (
-                                                <p className="px-4 py-2 text-sm text-[var(--text-muted)]">
+                                                <p className="px-4 py-2 text-sm text-[var(--text-secondary)]">
                                                     {t('table.noData')}
                                                 </p>
                                             )}

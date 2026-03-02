@@ -276,15 +276,15 @@ export default function SystemLogsTablePage() {
                     </div>
                     <div className="bg-[var(--background-secondary)] rounded-xl p-4 border border-[var(--border-primary)]">
                         <p className="text-[var(--text-muted)] text-sm flex items-center gap-1"><Info className="w-3 h-3 text-blue-400" /> INFO</p>
-                        <p className="text-2xl font-bold text-blue-400">{stats.byLevel.INFO?.toLocaleString() || 0}</p>
+                        <p className="text-2xl font-bold text-blue-400">{stats.byLevel?.INFO?.toLocaleString() || 0}</p>
                     </div>
                     <div className="bg-[var(--background-secondary)] rounded-xl p-4 border border-[var(--border-primary)]">
                         <p className="text-[var(--text-muted)] text-sm flex items-center gap-1"><AlertTriangle className="w-3 h-3 text-yellow-400" /> WARN</p>
-                        <p className="text-2xl font-bold text-yellow-400">{stats.byLevel.WARN?.toLocaleString() || 0}</p>
+                        <p className="text-2xl font-bold text-yellow-400">{stats.byLevel?.WARN?.toLocaleString() || 0}</p>
                     </div>
                     <div className="bg-[var(--background-secondary)] rounded-xl p-4 border border-[var(--border-primary)]">
                         <p className="text-[var(--text-muted)] text-sm flex items-center gap-1"><AlertCircle className="w-3 h-3 text-red-400" /> ERROR</p>
-                        <p className="text-2xl font-bold text-red-400">{stats.byLevel.ERROR?.toLocaleString() || 0}</p>
+                        <p className="text-2xl font-bold text-red-400">{stats.byLevel?.ERROR?.toLocaleString() || 0}</p>
                     </div>
                 </div>
             )}

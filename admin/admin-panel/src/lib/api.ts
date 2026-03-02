@@ -532,6 +532,62 @@ export interface SystemLogsStats {
     byLevel: Record<string, number>;
 }
 
+const normalizeSystemLogsResponse = (
+    payload: unknown
+): { data: SystemLog[]; meta: { total: number; page: number; limit: number; totalPages: number } } => {
+    const source = (payload && typeof payload === 'object' && 'data' in payload && payload.data && typeof payload.data === 'object')
+        ? payload.data as Record<string, unknown>
+        : payload as Record<string, unknown> | undefined;
+
+    const logs = Array.isArray(source?.data)
+        ? source.data as SystemLog[]
+        : Array.isArray(source?.items)
+            ? source.items as SystemLog[]
+            : Array.isArray(payload)
+                ? payload as SystemLog[]
+                : [];
+
+    const rawMeta = (source?.meta && typeof source.meta === 'object' ? source.meta : {}) as Record<string, unknown>;
+    const total = typeof rawMeta.total === 'number' ? rawMeta.total : logs.length;
+    const page = typeof rawMeta.page === 'number' ? rawMeta.page : 1;
+    const limit = typeof rawMeta.limit === 'number' ? rawMeta.limit : logs.length;
+    const totalPages = typeof rawMeta.totalPages === 'number'
+        ? rawMeta.totalPages
+        : Math.max(1, Math.ceil(total / Math.max(1, limit)));
+
+    return {
+        data: logs,
+        meta: { total, page, limit, totalPages },
+    };
+};
+
+const normalizeSystemLogsStats = (payload: unknown): SystemLogsStats => {
+    const source = (payload && typeof payload === 'object' && 'data' in payload && payload.data && typeof payload.data === 'object')
+        ? payload.data as Record<string, unknown>
+        : payload as Record<string, unknown> | undefined;
+
+    const byLevelRaw = (source?.byLevel && typeof source.byLevel === 'object') ? source.byLevel as Record<string, unknown> : {};
+
+    return {
+        total: typeof source?.total === 'number' ? source.total : 0,
+        recentCount: typeof source?.recentCount === 'number' ? source.recentCount : 0,
+        byLevel: {
+            INFO: typeof byLevelRaw.INFO === 'number' ? byLevelRaw.INFO : 0,
+            WARN: typeof byLevelRaw.WARN === 'number' ? byLevelRaw.WARN : 0,
+            ERROR: typeof byLevelRaw.ERROR === 'number' ? byLevelRaw.ERROR : 0,
+            DEBUG: typeof byLevelRaw.DEBUG === 'number' ? byLevelRaw.DEBUG : 0,
+        },
+    };
+};
+
+const normalizeSystemLogsStringList = (payload: unknown): string[] => {
+    if (Array.isArray(payload)) return payload.filter((item): item is string => typeof item === 'string');
+    if (payload && typeof payload === 'object' && Array.isArray((payload as { data?: unknown }).data)) {
+        return (payload as { data: unknown[] }).data.filter((item): item is string => typeof item === 'string');
+    }
+    return [];
+};
+
 export const systemLogsApi = {
     getAll: async (options?: {
         page?: number;
@@ -552,22 +608,22 @@ export const systemLogsApi = {
         if (options?.endDate) params.append('endDate', options.endDate);
 
         const { data } = await api.get(`/admin/system-logs?${params.toString()}`);
-        return data;
+        return normalizeSystemLogsResponse(data);
     },
 
     getStats: async (): Promise<SystemLogsStats> => {
         const { data } = await api.get('/admin/system-logs/stats');
-        return data;
+        return normalizeSystemLogsStats(data);
     },
 
     getModules: async (): Promise<string[]> => {
         const { data } = await api.get('/admin/system-logs/modules');
-        return data;
+        return normalizeSystemLogsStringList(data);
     },
 
     getLevels: async (): Promise<string[]> => {
         const { data } = await api.get('/admin/system-logs/levels');
-        return data;
+        return normalizeSystemLogsStringList(data);
     },
 };
 

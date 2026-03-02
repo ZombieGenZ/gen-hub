@@ -47,7 +47,7 @@ export default function SystemLogsPage() {
         try {
             const response = await systemLogsApi.getAll({ page: 1, limit: 100 });
             // Reverse to show oldest first (like terminal)
-            setLogs(response.data.reverse());
+            setLogs([...response.data].reverse());
         } catch (error) {
             console.error('Failed to fetch logs:', error);
         } finally {
@@ -251,13 +251,13 @@ export default function SystemLogsPage() {
                     {stats && (
                         <div className="hidden lg:flex items-center gap-2 mr-4">
                             <span className="px-2 py-1 rounded text-xs bg-cyan-500/20 text-cyan-400">
-                                INFO: {stats.byLevel.INFO || 0}
+                                INFO: {stats.byLevel?.INFO || 0}
                             </span>
                             <span className="px-2 py-1 rounded text-xs bg-yellow-500/20 text-yellow-400">
-                                WARN: {stats.byLevel.WARN || 0}
+                                WARN: {stats.byLevel?.WARN || 0}
                             </span>
                             <span className="px-2 py-1 rounded text-xs bg-red-500/20 text-red-400">
-                                ERROR: {stats.byLevel.ERROR || 0}
+                                ERROR: {stats.byLevel?.ERROR || 0}
                             </span>
                         </div>
                     )}
