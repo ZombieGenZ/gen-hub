@@ -3,6 +3,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { DatabaseLogService } from './services/database-log.service';
 import { SystemLogService } from '../system-log/system-log.service';
 import { Prisma } from '@prisma/client';
+import * as PrismaClientEnums from '@prisma/client';
 import { FilterCondition, BatchChanges } from './database-admin.controller';
 
 // Các tables nhạy cảm cần ẩn một số fields
@@ -704,13 +705,6 @@ export class DatabaseAdminService implements OnModuleInit {
                 };
             }
 
-            // Get enum definitions from DMMF
-            const enums = dmmf.datamodel.enums || [];
-            const enumMap = new Map<string, string[]>();
-            enums.forEach((e) => {
-                enumMap.set(e.name, e.values.map((v) => v.name));
-            });
-
             const fields = model.fields.map((field) => {
                 const fieldDef: any = {
                     name: field.name,
@@ -723,9 +717,13 @@ export class DatabaseAdminService implements OnModuleInit {
                     isRelation: !!field.relationName,
                 };
 
-                // Add enumValues if field type is an enum
-                if (enumMap.has(field.type)) {
-                    fieldDef.enumValues = enumMap.get(field.type);
+                // Prisma runtime may not expose user enums in dmmf.datamodel.enums.
+                // Fallback: read enum object exported by @prisma/client (e.g. LogLevel).
+                if (field.kind === 'enum') {
+                    const enumObject = (PrismaClientEnums as any)[field.type];
+                    if (enumObject && typeof enumObject === 'object') {
+                        fieldDef.enumValues = Object.values(enumObject);
+                    }
                 }
 
                 return fieldDef;
