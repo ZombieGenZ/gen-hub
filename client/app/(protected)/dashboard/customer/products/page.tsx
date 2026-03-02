@@ -286,7 +286,7 @@ export default function ProductMasterListPage() {
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                         <h1 className="text-2xl font-bold text-slate-900">
-                            Quản lý Sản phẩm
+                            Quản lý Hàng Hoá
                         </h1>
                         <p className="text-slate-500 mt-1">
                             Danh sách tổng hợp tất cả hàng hóa trong hệ thống kho
