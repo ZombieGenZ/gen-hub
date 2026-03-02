@@ -1507,6 +1507,18 @@ export class ContactService implements OnModuleInit {
         const enableAiReply = enableAiReplyConfig === true || enableAiReplyConfig === 'true';
 
         const code = await this.repository.generateTicketCode(this.TICKET_PREFIX);
+
+        // Kiểm tra conversation đã tồn tại với session_id này chưa (tránh P2002 unique constraint)
+        if (!options?.userId && clientSession) {
+            const existing = await this.repository.findBySessionId(sessionId);
+            if (existing) {
+                return {
+                    sessionId: existing.session_id!,
+                    code: existing.code,
+                };
+            }
+        }
+
         const conversation = await this.repository.createConversation({
             code,
             session_id: sessionId,
