@@ -400,6 +400,7 @@ export const useWarehouse = () => {
       collisionWarnings: [],
       rackModalOpen: false,
       focusedRackId: null,
+      focusedBoxId: null,
       visibleRackIds: null,
       fillRateFilter: null,
     });

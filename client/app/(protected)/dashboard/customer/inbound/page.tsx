@@ -163,7 +163,7 @@ function CreateItemRow({
             batchService
                 .listByProduct(token, item.product.id, { limit: 50 })
                 .then((res) => {
-                    const items = Array.isArray(res) ? res : res?.data || [];
+                    const items = Array.isArray(res) ? res : res?.data?.items || [];
                     setBatches(items);
                 })
                 .catch(() => setBatches([]));

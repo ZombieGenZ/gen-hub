@@ -75,7 +75,7 @@ export class BatchService {
             }
 
             const result = await response.json();
-            return result.data;
+            return result;
         } catch (error) {
             console.error('Lỗi khi lấy danh sách lô hàng:', error);
             throw error;

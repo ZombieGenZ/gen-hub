@@ -34,7 +34,7 @@ import {
     QuotationBreakdown,
     RowTemplate,
 } from '@/types/booking/booking.type';
-import { RentalDurationTier } from '@/types/rental-duration-tier/rental-duration-tier.type';
+import { DurationUnit, RentalDurationTier } from '@/types/rental-duration-tier/rental-duration-tier.type';
 import { AddonResponse } from '@/types/addon/addon.type';
 import { Insurance } from '@/types/insurance/Insurance.types';
 import { authStorage } from '@/services/auth/auth-storage.service';
@@ -62,7 +62,7 @@ interface DurationTierWithDiscount extends Partial<RentalDurationTier> {
     id: string;
     name: string;
     duration_value: number;
-    duration_unit: string;
+    duration_unit: DurationUnit;
     description?: string;
     discount_percent?: number;
     gift_insurance?: boolean;
