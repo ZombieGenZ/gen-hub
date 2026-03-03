@@ -12,7 +12,7 @@ import { I18nLang } from 'nestjs-i18n';
 import { RefundRequestService } from './refund-request.service';
 import { QueryRefundRequestDto } from './dto';
 import { CombinedAuthGuard, OrgPermissionGuard } from '../../common/guards';
-import { CurrentUser, RequireOrgPermission } from '../../common/decorators';
+import { CurrentActor, RequireOrgPermission } from '../../common/decorators';
 import { GetResponse, ResponseCode } from '../../common/responses';
 
 /**
@@ -28,7 +28,7 @@ import { GetResponse, ResponseCode } from '../../common/responses';
     required: false,
 })
 @Controller('organizations/:orgId/refund-requests')
-@UseGuards(CombinedAuthGuard)
+@UseGuards(CombinedAuthGuard, OrgPermissionGuard)
 export class OrgRefundRequestController {
     constructor(private readonly refundRequestService: RefundRequestService) { }
 
@@ -42,7 +42,7 @@ export class OrgRefundRequestController {
     async findMany(
         @Param('orgId', ParseUUIDPipe) orgId: string,
         @Query() query: QueryRefundRequestDto,
-        @CurrentUser('userId') userId: string,
+        @CurrentActor() userId: string,
         @I18nLang() lang: string,
     ) {
         const data = await this.refundRequestService.findByOrganization(query, userId, orgId, lang);
@@ -60,7 +60,7 @@ export class OrgRefundRequestController {
     async findById(
         @Param('orgId', ParseUUIDPipe) orgId: string,
         @Param('id', ParseUUIDPipe) id: string,
-        @CurrentUser('userId') userId: string,
+        @CurrentActor() userId: string,
         @I18nLang() lang: string,
     ) {
         const data = await this.refundRequestService.findByIdByOrg(id, userId, orgId, lang);
