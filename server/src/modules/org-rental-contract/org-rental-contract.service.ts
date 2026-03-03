@@ -129,7 +129,7 @@ export class OrgRentalContractService {
         lang: string,
         signatureFile?: Express.Multer.File,
     ): Promise<ICreateContractResult> {
-        await this.checkOrgPermission(organizationId, userId, 'org.rental-contract.create', lang);
+        await this.checkOrgPermission(organizationId, userId, 'rental-contract.create', lang);
 
         if (dto.addon_ids) dto.addon_ids = [...new Set(dto.addon_ids)];
         if (dto.coupon_codes) dto.coupon_codes = [...new Set(dto.coupon_codes)];
@@ -329,7 +329,7 @@ export class OrgRentalContractService {
         organizationId: string,
         lang: string,
     ): Promise<IPaginatedResponse<IRentalContractWithRelations>> {
-        await this.checkOrgPermission(organizationId, userId, 'org.rental-contract.list', lang);
+        await this.checkOrgPermission(organizationId, userId, 'rental-contract.list', lang);
         query.organization_id = organizationId;
 
         const queryParams: Record<string, unknown> = {
@@ -370,7 +370,7 @@ export class OrgRentalContractService {
             throw new ForbiddenException(this.i18n.t('rental-contract.errors.no_permission', { lang }));
         }
 
-        await this.checkOrgPermission(organizationId, userId, 'org.rental-contract.read', lang);
+        await this.checkOrgPermission(organizationId, userId, 'rental-contract.read', lang);
         return contract;
     }
 
@@ -389,7 +389,7 @@ export class OrgRentalContractService {
             throw new ForbiddenException(this.i18n.t('rental-contract.errors.no_permission', { lang }));
         }
 
-        await this.checkOrgPermission(organizationId, userId, 'org.rental-contract.read', lang);
+        await this.checkOrgPermission(organizationId, userId, 'rental-contract.read', lang);
         return contract;
     }
 
@@ -413,7 +413,7 @@ export class OrgRentalContractService {
             throw new ForbiddenException(this.i18n.t('rental-contract.errors.no_permission', { lang }));
         }
 
-        await this.checkOrgPermission(organizationId, userId, 'org.rental-contract.renew', lang);
+        await this.checkOrgPermission(organizationId, userId, 'rental-contract.update', lang);
 
         if (existing.status !== ContractStatus.ACTIVE) {
             throw new BadRequestException(this.i18n.t('rental-contract.errors.cannot_renew', { lang }));
@@ -496,7 +496,7 @@ export class OrgRentalContractService {
             throw new ForbiddenException(this.i18n.t('rental-contract.errors.no_permission', { lang }));
         }
 
-        await this.checkOrgPermission(organizationId, userId, 'org.rental-contract.delete', lang);
+        await this.checkOrgPermission(organizationId, userId, 'rental-contract.delete', lang);
 
         if (([ContractStatus.COMPLETED, ContractStatus.LIQUIDATED] as ContractStatus[]).includes(existing.status)) {
             throw new BadRequestException(this.i18n.t('rental-contract.errors.cannot_cancel', { lang }));
@@ -525,7 +525,7 @@ export class OrgRentalContractService {
             throw new NotFoundException(this.i18n.t('rental-contract.errors.not_found', { lang }));
         }
 
-        await this.checkOrgPermission(organizationId, userId, 'org.rental-contract.delete', lang);
+        await this.checkOrgPermission(organizationId, userId, 'rental-contract.delete', lang);
 
         if (contracts.some(c => c.organization_id !== organizationId)) {
             throw new ForbiddenException(this.i18n.t('rental-contract.errors.no_permission', { lang }));
@@ -578,7 +578,7 @@ export class OrgRentalContractService {
             throw new ForbiddenException(this.i18n.t('rental-contract.errors.no_permission', { lang }));
         }
 
-        await this.checkOrgPermission(organizationId, userId, 'org.rental-contract.update', lang);
+        await this.checkOrgPermission(organizationId, userId, 'rental-contract.update', lang);
 
         if (contract.status !== ContractStatus.PENDING) {
             throw new BadRequestException(this.i18n.t('rental-contract.errors.cannot_retry_non_pending', { lang }));
@@ -631,17 +631,17 @@ export class OrgRentalContractService {
     }
 
     async getContractAddons(contractId: string, userId: string, organizationId: string, lang: string) {
-        const contract = await this.checkAccess(contractId, userId, organizationId, 'org.rental-contract.read', lang);
+        const contract = await this.checkAccess(contractId, userId, organizationId, 'rental-contract.read', lang);
         return this.repository.findContractAddons(contractId);
     }
 
     async getContractInsurances(contractId: string, userId: string, organizationId: string, lang: string) {
-        const contract = await this.checkAccess(contractId, userId, organizationId, 'org.rental-contract.read', lang);
+        const contract = await this.checkAccess(contractId, userId, organizationId, 'rental-contract.read', lang);
         return this.repository.findContractInsurances(contractId);
     }
 
     async getContractLogs(contractId: string, userId: string, organizationId: string, lang: string) {
-        const contract = await this.checkAccess(contractId, userId, organizationId, 'org.rental-contract.read', lang);
+        const contract = await this.checkAccess(contractId, userId, organizationId, 'rental-contract.read', lang);
         return this.repository.findContractLogs(contractId);
     }
 
@@ -829,3 +829,4 @@ export class OrgRentalContractService {
         });
     }
 }
+

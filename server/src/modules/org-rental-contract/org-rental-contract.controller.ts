@@ -40,8 +40,8 @@ import {
     ApplyCouponsDto,
     ValidateCouponsDto,
 } from './dto';
-import { JwtAuthGuard, PermissionGuard } from '../../common/guards';
-import { RequirePermission, CurrentUser, ApiAuthResponses, ApiValidationErrorResponse } from '../../common/decorators';
+import { JwtAuthGuard, OrgPermissionGuard } from '../../common/guards';
+import { RequireOrgPermission, CurrentUser, ApiAuthResponses, ApiValidationErrorResponse } from '../../common/decorators';
 import { GetResponse, CreatedResponse, UpdatedResponse, DeletedResponse } from '../../common/responses';
 
 /**
@@ -52,7 +52,7 @@ import { GetResponse, CreatedResponse, UpdatedResponse, DeletedResponse } from '
 @ApiTags('Organization Rental Contracts')
 @ApiBearerAuth('JWT-auth')
 @Controller('organizations/:orgId/rental-contracts')
-@UseGuards(JwtAuthGuard, PermissionGuard)
+@UseGuards(JwtAuthGuard, OrgPermissionGuard)
 export class OrgRentalContractController {
     constructor(private readonly rentalContractService: OrgRentalContractService) { }
 
@@ -60,10 +60,10 @@ export class OrgRentalContractController {
      * Tạo hợp đồng thuê mới
      */
     @Post()
-    @RequirePermission('org.rental-contract.create')
+    @RequireOrgPermission('rental-contract.create')
     @ApiOperation({
         summary: 'Tạo hợp đồng thuê mới (Organization)',
-        description: 'Tạo hợp đồng thuê kho mới cho tổ chức. Có thể thuê nhiều kho trong cùng một hợp đồng, chọn gói thời hạn, thêm addons/bảo hiểm, và áp dụng coupon. Hỗ trợ upload chữ ký điện tử. Yêu cầu quyền `org.rental-contract.create`.',
+        description: 'Tạo hợp đồng thuê kho mới cho tổ chức. Có thể thuê nhiều kho trong cùng một hợp đồng, chọn gói thời hạn, thêm addons/bảo hiểm, và áp dụng coupon. Hỗ trợ upload chữ ký điện tử. Yêu cầu quyền `rental-contract.create`.',
     })
     @ApiParam({
         name: 'orgId',
@@ -161,10 +161,10 @@ export class OrgRentalContractController {
      * Lấy danh sách hợp đồng của tổ chức
      */
     @Get()
-    @RequirePermission('org.rental-contract.list')
+    @RequireOrgPermission('rental-contract.list')
     @ApiOperation({
         summary: 'Lấy danh sách hợp đồng của tổ chức',
-        description: 'Lấy danh sách hợp đồng thuê kho của tổ chức với phân trang và bộ lọc theo trạng thái, từ khóa. Yêu cầu quyền `org.rental-contract.list`.',
+        description: 'Lấy danh sách hợp đồng thuê kho của tổ chức với phân trang và bộ lọc theo trạng thái, từ khóa. Yêu cầu quyền `rental-contract.list`.',
     })
     @ApiParam({
         name: 'orgId',
@@ -213,10 +213,10 @@ export class OrgRentalContractController {
      * Lấy chi tiết hợp đồng
      */
     @Get(':id')
-    @RequirePermission('org.rental-contract.read')
+    @RequireOrgPermission('rental-contract.read')
     @ApiOperation({
         summary: 'Lấy chi tiết hợp đồng',
-        description: 'Lấy thông tin chi tiết của một hợp đồng thuê theo ID. Yêu cầu quyền `org.rental-contract.read`.',
+        description: 'Lấy thông tin chi tiết của một hợp đồng thuê theo ID. Yêu cầu quyền `rental-contract.read`.',
     })
     @ApiParam({ name: 'orgId', description: 'ID của tổ chức (UUID)', type: 'string', example: '550e8400-e29b-41d4-a716-446655440000' })
     @ApiParam({ name: 'id', description: 'ID của hợp đồng (UUID)', type: 'string', example: '550e8400-e29b-41d4-a716-446655440010' })
@@ -237,10 +237,10 @@ export class OrgRentalContractController {
      * Lấy chi tiết hợp đồng đầy đủ (có addons, logs, coupons)
      */
     @Get(':id/full')
-    @RequirePermission('org.rental-contract.read')
+    @RequireOrgPermission('rental-contract.read')
     @ApiOperation({
         summary: 'Lấy chi tiết hợp đồng đầy đủ',
-        description: 'Lấy thông tin chi tiết đầy đủ của hợp đồng bao gồm: addons đã đăng ký, bảo hiểm, coupons đã áp dụng, và lịch sử logs. Yêu cầu quyền `org.rental-contract.read`.',
+        description: 'Lấy thông tin chi tiết đầy đủ của hợp đồng bao gồm: addons đã đăng ký, bảo hiểm, coupons đã áp dụng, và lịch sử logs. Yêu cầu quyền `rental-contract.read`.',
     })
     @ApiParam({ name: 'orgId', description: 'ID của tổ chức (UUID)', type: 'string', example: '550e8400-e29b-41d4-a716-446655440000' })
     @ApiParam({ name: 'id', description: 'ID của hợp đồng (UUID)', type: 'string', example: '550e8400-e29b-41d4-a716-446655440010' })
@@ -261,10 +261,10 @@ export class OrgRentalContractController {
      * Gia hạn hợp đồng
      */
     @Put(':id/renew')
-    @RequirePermission('org.rental-contract.renew')
+    @RequireOrgPermission('rental-contract.update')
     @ApiOperation({
         summary: 'Gia hạn hợp đồng',
-        description: 'Gia hạn hợp đồng thuê đang hoạt động hoặc sắp hết hạn. Có thể thay đổi addons và áp dụng coupon mới cho đợt gia hạn. Yêu cầu quyền `org.rental-contract.renew`.',
+        description: 'Gia hạn hợp đồng thuê đang hoạt động hoặc sắp hết hạn. Có thể thay đổi addons và áp dụng coupon mới cho đợt gia hạn. Yêu cầu quyền `rental-contract.update`.',
     })
     @ApiParam({ name: 'orgId', description: 'ID của tổ chức (UUID)', type: 'string', example: '550e8400-e29b-41d4-a716-446655440000' })
     @ApiParam({ name: 'id', description: 'ID của hợp đồng (UUID)', type: 'string', example: '550e8400-e29b-41d4-a716-446655440010' })
@@ -302,17 +302,17 @@ export class OrgRentalContractController {
         @UploadedFile() signatureFile: Express.Multer.File,
     ) {
         const data = await this.rentalContractService.renew(id, dto, userId, orgId, lang, signatureFile);
-        return new UpdatedResponse('rental-contract.renew.success', data, 'Gia hạn hợp đồng thành công');
+        return new UpdatedResponse('rental-contract.update.success', data, 'Gia hạn hợp đồng thành công');
     }
 
     /**
      * Tạo lại link thanh toán (cho contract PENDING)
      */
     @Post(':id/retry-payment')
-    @RequirePermission('org.rental-contract.update')
+    @RequireOrgPermission('rental-contract.update')
     @ApiOperation({
         summary: 'Tạo lại link thanh toán',
-        description: 'Tạo lại link thanh toán cho hợp đồng đang chờ thanh toán (PENDING). Dùng khi link thanh toán cũ đã hết hạn. Yêu cầu quyền `org.rental-contract.update`.',
+        description: 'Tạo lại link thanh toán cho hợp đồng đang chờ thanh toán (PENDING). Dùng khi link thanh toán cũ đã hết hạn. Yêu cầu quyền `rental-contract.update`.',
     })
     @ApiParam({ name: 'orgId', description: 'ID của tổ chức (UUID)', type: 'string', example: '550e8400-e29b-41d4-a716-446655440000' })
     @ApiParam({ name: 'id', description: 'ID của hợp đồng (UUID)', type: 'string', example: '550e8400-e29b-41d4-a716-446655440010' })
@@ -351,10 +351,10 @@ export class OrgRentalContractController {
      * Lấy danh sách addons của hợp đồng
      */
     @Get(':id/addons')
-    @RequirePermission('org.rental-contract.read')
+    @RequireOrgPermission('rental-contract.read')
     @ApiOperation({
         summary: 'Lấy các addons của hợp đồng',
-        description: 'Lấy danh sách các addon đã đăng ký cho hợp đồng. Yêu cầu quyền `org.rental-contract.read`.',
+        description: 'Lấy danh sách các addon đã đăng ký cho hợp đồng. Yêu cầu quyền `rental-contract.read`.',
     })
     @ApiParam({ name: 'orgId', description: 'ID của tổ chức (UUID)', type: 'string', example: '550e8400-e29b-41d4-a716-446655440000' })
     @ApiParam({ name: 'id', description: 'ID của hợp đồng (UUID)', type: 'string', example: '550e8400-e29b-41d4-a716-446655440010' })
@@ -375,10 +375,10 @@ export class OrgRentalContractController {
      * Lấy danh sách insurances của hợp đồng
      */
     @Get(':id/insurances')
-    @RequirePermission('org.rental-contract.read')
+    @RequireOrgPermission('rental-contract.read')
     @ApiOperation({
         summary: 'Lấy các insurances của hợp đồng',
-        description: 'Lấy danh sách các gói bảo hiểm đã đăng ký cho hợp đồng. Yêu cầu quyền `org.rental-contract.read`.',
+        description: 'Lấy danh sách các gói bảo hiểm đã đăng ký cho hợp đồng. Yêu cầu quyền `rental-contract.read`.',
     })
     @ApiParam({ name: 'orgId', description: 'ID của tổ chức (UUID)', type: 'string', example: '550e8400-e29b-41d4-a716-446655440000' })
     @ApiParam({ name: 'id', description: 'ID của hợp đồng (UUID)', type: 'string', example: '550e8400-e29b-41d4-a716-446655440010' })
@@ -399,10 +399,10 @@ export class OrgRentalContractController {
      * Lấy logs của hợp đồng
      */
     @Get(':id/logs')
-    @RequirePermission('org.rental-contract.read')
+    @RequireOrgPermission('rental-contract.read')
     @ApiOperation({
         summary: 'Lấy logs của hợp đồng',
-        description: 'Lấy lịch sử thao tác trên hợp đồng: tạo mới, gia hạn, thay đổi addon, thanh toán, hủy, v.v. Yêu cầu quyền `org.rental-contract.read`.',
+        description: 'Lấy lịch sử thao tác trên hợp đồng: tạo mới, gia hạn, thay đổi addon, thanh toán, hủy, v.v. Yêu cầu quyền `rental-contract.read`.',
     })
     @ApiParam({ name: 'orgId', description: 'ID của tổ chức (UUID)', type: 'string', example: '550e8400-e29b-41d4-a716-446655440000' })
     @ApiParam({ name: 'id', description: 'ID của hợp đồng (UUID)', type: 'string', example: '550e8400-e29b-41d4-a716-446655440010' })
@@ -423,10 +423,10 @@ export class OrgRentalContractController {
      * Hủy nhiều hợp đồng (phải đặt trước delete/:id để tránh conflict route)
      */
     @Delete('delete/many')
-    @RequirePermission('org.rental-contract.delete')
+    @RequireOrgPermission('rental-contract.delete')
     @ApiOperation({
         summary: 'Hủy nhiều hợp đồng',
-        description: 'Hủy nhiều hợp đồng cùng lúc với lý do cho từng hợp đồng. Chỉ có thể hủy hợp đồng PENDING hoặc ACTIVE. Yêu cầu quyền `org.rental-contract.delete`.',
+        description: 'Hủy nhiều hợp đồng cùng lúc với lý do cho từng hợp đồng. Chỉ có thể hủy hợp đồng PENDING hoặc ACTIVE. Yêu cầu quyền `rental-contract.delete`.',
     })
     @ApiParam({ name: 'orgId', description: 'ID của tổ chức (UUID)', type: 'string', example: '550e8400-e29b-41d4-a716-446655440000' })
     @ApiBody({
@@ -463,10 +463,10 @@ export class OrgRentalContractController {
      * Hủy hợp đồng
      */
     @Delete(':id')
-    @RequirePermission('org.rental-contract.delete')
+    @RequireOrgPermission('rental-contract.delete')
     @ApiOperation({
         summary: 'Hủy hợp đồng',
-        description: 'Hủy một hợp đồng thuê. Chỉ có thể hủy hợp đồng PENDING hoặc ACTIVE. Nếu đã thanh toán, sẽ tính toán hoàn tiền theo chính sách. Yêu cầu quyền `org.rental-contract.delete`.',
+        description: 'Hủy một hợp đồng thuê. Chỉ có thể hủy hợp đồng PENDING hoặc ACTIVE. Nếu đã thanh toán, sẽ tính toán hoàn tiền theo chính sách. Yêu cầu quyền `rental-contract.delete`.',
     })
     @ApiParam({ name: 'orgId', description: 'ID của tổ chức (UUID)', type: 'string', example: '550e8400-e29b-41d4-a716-446655440000' })
     @ApiParam({ name: 'id', description: 'ID của hợp đồng (UUID)', type: 'string', example: '550e8400-e29b-41d4-a716-446655440010' })
@@ -493,3 +493,4 @@ export class OrgRentalContractController {
         return new DeletedResponse('rental-contract.delete.success', null, 'Hủy hợp đồng thành công');
     }
 }
+
