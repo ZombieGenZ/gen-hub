@@ -178,9 +178,9 @@ export function ProfileDialog({ open = true, onOpenChange }: ProfileDialogProps 
       if (updatedUser) {
         showToast('Cập nhật thông tin thành công', 'success')
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating profile:', error)
-      showToast('Có lỗi xảy ra khi cập nhật thông tin', 'error')
+      showToast(error.message || 'Có lỗi xảy ra khi cập nhật thông tin', 'error')
     } finally {
       setSaving(false)
     }
@@ -204,9 +204,9 @@ export function ProfileDialog({ open = true, onOpenChange }: ProfileDialogProps 
         showToast('Cập nhật thông tin doanh nghiệp thành công', 'success');
         setIsEditingOrg(false);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating organization:', error);
-      showToast('Có lỗi xảy ra khi cập nhật thông tin doanh nghiệp', 'error');
+      showToast(error.message || 'Có lỗi xảy ra khi cập nhật thông tin doanh nghiệp', 'error');
     } finally {
       setSaving(false);
     }
@@ -294,9 +294,9 @@ export function ProfileDialog({ open = true, onOpenChange }: ProfileDialogProps 
       } else {
         showToast(response.message || 'Đổi mật khẩu thất bại', 'error')
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error changing password:', error)
-      showToast('Có lỗi xảy ra khi đổi mật khẩu', 'error')
+      showToast(error.message || 'Có lỗi xảy ra khi đổi mật khẩu', 'error')
     } finally {
       setLoading(false)
     }
@@ -320,9 +320,9 @@ export function ProfileDialog({ open = true, onOpenChange }: ProfileDialogProps 
         showToast('Vui lòng đăng nhập lại', 'error')
         router.push('/login')
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e)
-      showToast('Có lỗi xảy ra khi bật 2FA', 'error')
+      showToast(e.message || 'Có lỗi xảy ra khi bật 2FA', 'error')
     } finally {
       setEnabling2FA(false)
     }
@@ -349,9 +349,9 @@ export function ProfileDialog({ open = true, onOpenChange }: ProfileDialogProps 
         } else {
           showToast('Tắt xác thực 2 yếu tố thất bại', 'error')
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error disabling 2FA:', error)
-        showToast('Có lỗi xảy ra khi tắt xác thực 2 yếu tố', 'error')
+        showToast(error.message || 'Có lỗi xảy ra khi tắt xác thực 2 yếu tố', 'error')
       }
     }
   }
@@ -415,9 +415,9 @@ export function ProfileDialog({ open = true, onOpenChange }: ProfileDialogProps 
         showToast('Tạo mã dự phòng không thành công', 'error')
       }
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error generating backup codes:', error)
-      showToast('Có lỗi xảy ra khi tạo mã dự phòng', 'error')
+      showToast(error.message || 'Có lỗi xảy ra khi tạo mã dự phòng', 'error')
     } finally {
       setGeneratingBackupCodes(false)
     }
@@ -772,9 +772,9 @@ export function ProfileDialog({ open = true, onOpenChange }: ProfileDialogProps 
       } else {
         showToast(response.message, 'error')
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('2FA verification failed:', error)
-      // Show error message
+      showToast(error.message || 'Xác thực 2FA thất bại', 'error')
     } finally {
       setIsSubmitting2FA(false)
     }

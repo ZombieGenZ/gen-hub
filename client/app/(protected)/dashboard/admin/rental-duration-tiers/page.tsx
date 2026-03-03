@@ -271,9 +271,9 @@ export default function RentalDurationTiersPage() {
                 active,
                 inactive: items.length - active,
             });
-        } catch (error) {
+        } catch (error: any) {
             console.error("Failed to fetch tiers", error);
-            showToast("Không thể tải danh sách gói thuê", "error");
+            showToast(error.message || "Không thể tải danh sách gói thuê", "error");
         } finally {
             setLoading(false);
         }
@@ -300,9 +300,9 @@ export default function RentalDurationTiersPage() {
             setSheetMode("edit");
             setSelectedTier(detail);
             setIsFormDialogOpen(true);
-        } catch (error) {
+        } catch (error: any) {
             console.error("Failed to fetch tier detail", error);
-            showToast("Không thể tải chi tiết gói thuê", "error");
+            showToast(error.message || "Không thể tải chi tiết gói thuê", "error");
         }
     };
 
@@ -346,9 +346,9 @@ export default function RentalDurationTiersPage() {
             setIsDeleteOpen(false);
             setDeleteTier(null);
             fetchTiers();
-        } catch (error) {
+        } catch (error: any) {
             console.error("Failed to delete tier", error);
-            showToast("Xóa gói thuê thất bại", "error");
+            showToast(error.message || "Xóa gói thuê thất bại", "error");
         } finally {
             setIsDeleteLoading(false);
         }
@@ -365,9 +365,9 @@ export default function RentalDurationTiersPage() {
             setIsBulkDeleteOpen(false);
             setSelectedIds([]);
             fetchTiers();
-        } catch (error) {
+        } catch (error: any) {
             console.error("Bulk delete failed", error);
-            showToast("Xóa nhiều gói thuê thất bại", "error");
+            showToast(error.message || "Xóa nhiều gói thuê thất bại", "error");
         } finally {
             setIsBulkLoading(false);
         }
@@ -390,9 +390,9 @@ export default function RentalDurationTiersPage() {
                 inactive: active ? prev.inactive - 1 : prev.inactive + 1,
             }));
             showToast(active ? "Đã kích hoạt gói ✅" : "Đã tắt gói ⛔", "success");
-        } catch (error) {
+        } catch (error: any) {
             console.error("Failed to toggle tier", error);
-            showToast("Cập nhật trạng thái thất bại", "error");
+            showToast(error.message || "Cập nhật trạng thái thất bại", "error");
         }
     };
 
@@ -426,9 +426,9 @@ export default function RentalDurationTiersPage() {
             );
 
             setTiers(updated.map((t, idx) => ({ ...t, order: idx })));
-        } catch (error) {
+        } catch (error: any) {
             console.error("Failed to reorder", error);
-            showToast("Sắp xếp thứ tự thất bại", "error");
+            showToast(error.message || "Sắp xếp thứ tự thất bại", "error");
             fetchTiers(); // Revert
         }
     };

@@ -55,9 +55,9 @@ export default function RegisterPage() {
       } else {
         showToast('Đăng ký thất bại!', 'error')
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Register error:', error)
-      showToast('Có lỗi xảy ra!', 'error')
+      showToast(error.message || 'Có lỗi xảy ra!', 'error')
     } finally {
       setLoading(false)
     }

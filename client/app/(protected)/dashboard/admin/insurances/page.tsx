@@ -120,9 +120,9 @@ export default function InsurancesPage() {
 
             setInsurances(items);
             setTotalItems(total);
-        } catch (error) {
+        } catch (error: any) {
             console.error("Failed to fetch insurances", error);
-            showToast("Không thể tải danh sách bảo hiểm", "error");
+            showToast(error.message || "Không thể tải danh sách bảo hiểm", "error");
         } finally {
             setLoading(false);
         }
@@ -159,9 +159,9 @@ export default function InsurancesPage() {
             await insuranceService.deleteInsurance(token, targetInsurance.id);
             showToast(`Đã xóa gói bảo hiểm "${targetInsurance.name}" 🗑️`, "success");
             handleRefresh();
-        } catch (error) {
+        } catch (error: any) {
             console.error("Failed to delete insurance", error);
-            showToast("Xóa thất bại, vui lòng thử lại", "error");
+            showToast(error.message || "Xóa thất bại, vui lòng thử lại", "error");
         } finally {
             setIsDeleteLoading(false);
         }
@@ -177,9 +177,9 @@ export default function InsurancesPage() {
             showToast(`Đã xóa ${selectedIds.length} gói bảo hiểm thành công! 🗑️`, "success");
             setIsBulkDeleteDialogOpen(false);
             handleRefresh();
-        } catch (error) {
+        } catch (error: any) {
             console.error("Bulk delete failed", error);
-            showToast("Xóa nhiều thất bại", "error");
+            showToast(error.message || "Xóa nhiều thất bại", "error");
         } finally {
             setIsBulkActionLoading(false);
         }

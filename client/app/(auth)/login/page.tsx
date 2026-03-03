@@ -65,9 +65,9 @@ export default function LoginPage() {
       } else {
         showToast("Đăng nhập thất bại!", 'error')
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Login error:", error)
-      showToast("Có lỗi xảy ra!", 'error')
+      showToast(error.message || "Có lỗi xảy ra!", 'error')
     } finally {
       setLoading(false)
     }
@@ -83,9 +83,9 @@ export default function LoginPage() {
       } else {
         showToast("Đăng nhập thất bại!", 'error')
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Login error:", error)
-      showToast("Có lỗi xảy ra!", 'error')
+      showToast(error.message || "Có lỗi xảy ra!", 'error')
     } finally {
       setLoading(false)
     }

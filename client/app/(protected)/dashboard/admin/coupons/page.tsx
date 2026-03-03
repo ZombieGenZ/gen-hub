@@ -271,9 +271,9 @@ export default function CouponsPage() {
             setIsDeleteDialogOpen(false);
             setSelectedCoupon(null);
             fetchCoupons();
-        } catch (error) {
+        } catch (error: any) {
             console.error("Failed to delete coupon", error);
-            showToast("Xóa thất bại, vui lòng thử lại", "error");
+            showToast(error.message || "Xóa thất bại, vui lòng thử lại", "error");
         } finally {
             setIsDeleteLoading(false);
         }
@@ -316,9 +316,9 @@ export default function CouponsPage() {
                 showToast(`Đã xóa ${selectedCouponIds.length} mã giảm giá thành công! 🗑️`, 'success');
                 fetchCoupons();
             }, 800);
-        } catch (error) {
+        } catch (error: any) {
             console.error("Failed to bulk delete coupons", error);
-            showToast('Không thể xóa mã giảm giá', 'error');
+            showToast(error.message || 'Không thể xóa mã giảm giá', 'error');
             setIsBulkActionDialogOpen(false);
         } finally {
             setIsBulkActionLoading(false);
@@ -391,9 +391,9 @@ export default function CouponsPage() {
                 showToast(`Đã bật ${selectedCouponIds.length} mã giảm giá`, 'success');
                 fetchCoupons();
             }, 800);
-        } catch (error) {
+        } catch (error: any) {
             console.error("Failed to bulk activate coupons", error);
-            showToast('Không thể bật mã giảm giá', 'error');
+            showToast(error.message || 'Không thể bật mã giảm giá', 'error');
             setIsBulkActionDialogOpen(false);
         } finally {
             setIsBulkActionLoading(false);
@@ -466,9 +466,9 @@ export default function CouponsPage() {
                 showToast(`Đã tắt ${selectedCouponIds.length} mã giảm giá`, 'success');
                 fetchCoupons();
             }, 800);
-        } catch (error) {
+        } catch (error: any) {
             console.error("Failed to bulk deactivate coupons", error);
-            showToast('Không thể tắt mã giảm giá', 'error');
+            showToast(error.message || 'Không thể tắt mã giảm giá', 'error');
             setIsBulkActionDialogOpen(false);
         } finally {
             setIsBulkActionLoading(false);

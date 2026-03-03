@@ -238,8 +238,8 @@ export default function WarehouseTemplatePage() {
             setDeleteTarget(null);
             setSelectedIds([]);
             fetchWarehouses();
-        } catch {
-            showToast("Xóa thất bại, vui lòng thử lại", "error");
+        } catch (err: any) {
+            showToast(err.message || "Xóa thất bại, vui lòng thử lại", "error");
         } finally {
             setIsDeleteLoading(false);
         }
@@ -256,8 +256,8 @@ export default function WarehouseTemplatePage() {
             setIsBulkDeleteDialogOpen(false);
             setSelectedIds([]);
             fetchWarehouses();
-        } catch {
-            showToast("Xóa thất bại, vui lòng thử lại", "error");
+        } catch (err: any) {
+            showToast(err.message || "Xóa thất bại, vui lòng thử lại", "error");
         } finally {
             setIsBulkActionLoading(false);
         }
@@ -289,8 +289,8 @@ export default function WarehouseTemplatePage() {
             } else {
                 fetchWarehouses();
             }
-        } catch {
-            showToast("Tạo kho thất bại, vui lòng thử lại", "error");
+        } catch (err: any) {
+            showToast(err.message || "Tạo kho thất bại, vui lòng thử lại", "error");
         } finally {
             setIsCreating(false);
         }

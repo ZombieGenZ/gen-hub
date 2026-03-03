@@ -92,17 +92,15 @@ export class RentalContractService {
      * @param data Dữ liệu hợp đồng
      * @returns Kết quả tạo hợp đồng
      */
-    async createOrgRentalContract(token: string, orgId: string, data: any) {
-        try {
-            const { organization_id, type, ...payload } = data; // Bỏ organization_id và type vì endpoint này ko cần
-            
+    async createOrgRentalContract(token: string, orgId: string, data: CreateRentalContractRequest) {
+        try {            
             const response = await fetch(`${API}/organizations/${orgId}/rental-contracts`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(payload),
+                body: JSON.stringify(data),
             });
 
             if (!response.ok) {

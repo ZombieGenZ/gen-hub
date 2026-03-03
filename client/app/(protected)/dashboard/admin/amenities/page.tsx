@@ -127,9 +127,9 @@ export default function AmenitiesPage() {
 
             setAmenities(items);
             setTotalItems(total);
-        } catch (error) {
+        } catch (error: any) {
             console.error("Failed to fetch amenities", error);
-            showToast("Không thể tải danh sách tiện ích", "error");
+            showToast(error.message || "Không thể tải danh sách tiện ích", "error");
         } finally {
             setLoading(false);
         }
@@ -190,9 +190,9 @@ export default function AmenitiesPage() {
             showToast(`Đã xóa tiện ích "${selectedAmenity.name}" 🗑️`, "success");
             fetchAmenities();
             fetchStats();
-        } catch (error) {
+        } catch (error: any) {
             console.error("Failed to delete amenity", error);
-            showToast("Xóa thất bại, vui lòng thử lại", "error");
+            showToast(error.message || "Xóa thất bại, vui lòng thử lại", "error");
         } finally {
             setIsDeleteLoading(false);
         }
@@ -210,9 +210,9 @@ export default function AmenitiesPage() {
             setSelectedIds([]);
             fetchAmenities();
             fetchStats();
-        } catch (error) {
+        } catch (error: any) {
             console.error("Bulk delete failed", error);
-            showToast("Xóa nhiều thất bại", "error");
+            showToast(error.message || "Xóa nhiều thất bại", "error");
         } finally {
             setIsBulkActionLoading(false);
         }
