@@ -17,6 +17,7 @@ export class OrganizationService {
         limit?: number;
     } = {}) {
         try {
+            console.log("[OrganizationService] Fetching organizations with params:", params);
             const query = new URLSearchParams();
 
             if (params.keywords) query.append('keywords', params.keywords);
@@ -34,14 +35,16 @@ export class OrganizationService {
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
+                console.error("[OrganizationService] Failed to fetch organizations:", errorData);
                 throw new Error(errorData.message || 'Failed to fetch organizations');
             }
 
             const data = await response.json();
-            return data.data; // Assuming API response has a 'data' field containing the list of organizations
+            return data.data; 
         }
         catch(err) {
-            console.error("Failed to fetch organizations", err);
+            console.error("[OrganizationService] Error in getOrganizations:", err);
+            throw err;
         }
     }
 
@@ -53,6 +56,7 @@ export class OrganizationService {
      */
     async getOrganizationById(token: string, id: string) {
         try {
+            console.log(`[OrganizationService] Fetching organization by id: ${id}`);
             const response = await fetch(`${API}/organizations/${id}`, {
                 method: 'GET',
                 headers: {
@@ -62,13 +66,15 @@ export class OrganizationService {
             });
             if(!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
+                console.error(`[OrganizationService] Failed to fetch organization ${id}:`, errorData);
                 throw new Error(errorData.message || 'Failed to fetch organization by id');
             }
             const data = await response.json();
-            return data.data; // Assuming API response has a 'data' field containing the organization details
+            return data.data; 
         }
         catch(err) {
-            console.error("Failed to fetch organization by id", err);
+            console.error(`[OrganizationService] Error in getOrganizationById for ${id}:`, err);
+            throw err;
         }
     }
 
@@ -80,6 +86,7 @@ export class OrganizationService {
      */
     async createOrganization(token: string, data: OrganizationCreateRequest) {
         try {
+            console.log("[OrganizationService] Creating organization:", data);
             const response = await fetch(`${API}/organizations`, {
                 method: 'POST',
                 headers: {
@@ -91,13 +98,14 @@ export class OrganizationService {
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
+                console.error("[OrganizationService] Failed to create organization:", errorData);
                 throw new Error(errorData.message || 'Không thể tạo tổ chức');
             }
 
             const result = await response.json();
             return result;
         } catch (err) {
-            console.error("Lỗi khi tạo tổ chức:", err);
+            console.error("[OrganizationService] Error in createOrganization:", err);
             throw err;
         }
     }
@@ -109,18 +117,9 @@ export class OrganizationService {
      * @param data 
      * @returns 
      */
-    async updateOrganization(token: string, id: string, data: {
-        name?: string;
-        international_name?: string;
-        tax_code?: string;
-        headquarters_address?: string;
-        invoice_address?: string;
-        representative_name?: string;
-        representative_title?: string;
-        representative_phone?: string;
-        representative_email?: string;
-    }) {
+    async updateOrganization(token: string, id: string, data: Partial<OrganizationCreateRequest>) {
         try {
+            console.log(`[OrganizationService] Requesting update for organization: ${id}`, data);
             const response = await fetch(`${API}/organizations/${id}/update-request`, {
                 method: 'POST',
                 headers: {
@@ -132,13 +131,14 @@ export class OrganizationService {
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
+                console.error(`[OrganizationService] Failed to update organization ${id}:`, errorData);
                 throw new Error(errorData.message || 'Không thể cập nhật tổ chức');
             }
 
             const result = await response.json();
             return result;
         } catch (err) {
-            console.error("Lỗi khi cập nhật tổ chức:", err);
+            console.error(`[OrganizationService] Error in updateOrganization for ${id}:`, err);
             throw err;
         }
     }

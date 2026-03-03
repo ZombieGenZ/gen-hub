@@ -181,6 +181,7 @@ export default function ProductMasterListPage() {
             if (result?.data) {
                 setProducts(result.data.items || []);
                 setTotalItems(result.data.total || 0);
+                showToast("Đã cập nhật danh sách sản phẩm.", "success");
             }
         } catch (err) {
             const error = err instanceof Error ? err : new Error(String(err));
@@ -189,6 +190,7 @@ export default function ProductMasterListPage() {
                 return;
             }
             setError("Không thể tải danh sách sản phẩm. Vui lòng thử lại sau.");
+            showToast("Lỗi khi tải danh sách sản phẩm.", "error");
         } finally {
             setLoading(false);
         }

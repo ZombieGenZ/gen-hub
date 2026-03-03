@@ -53,24 +53,24 @@ export interface OrganizationResponse {
  * Request payload cho tạo/cập nhật tổ chức
  */
 export interface OrganizationCreateRequest {
-    name: string;                    // Tên công ty
-    international_name?: string;     // Tên quốc tế (tuỳ chọn)
     tax_code: string;               // Mã số thuế (10 hoặc 13 số)
-    headquarters_address: string;    // Địa chỉ trụ sở chính
+    name?: string;                  // Tên công ty
+    international_name?: string;     // Tên quốc tế (tuỳ chọn)
+    headquarters_address?: string;    // Địa chỉ trụ sở chính
     invoice_address?: string;        // Địa chỉ xuất hoá đơn (mặc định = headquarters_address)
     representative_name: string;     // Tên người đại diện
     representative_title: string;    // Chức danh (VD: Giám đốc, Chủ tịch HĐQT)
     representative_phone: string;    // Số điện thoại liên hệ
     representative_email: string;    // Email liên hệ
-    email_primary_address?: string;
-    gmail_pubsub_subscription?: string;
-    gmail_pubsub_topic?: string;
-    gmail_webhook_secret?: string;
+    is_active?: boolean;
+    is_using_google_email?: boolean;
     google_client_id?: string;
     google_client_secret?: string;
     google_refresh_token?: string;
-    is_active?: boolean;
-    is_using_google_email?: boolean;
+    email_primary_address?: string;
+    gmail_pubsub_topic?: string;
+    gmail_pubsub_subscription?: string;
+    gmail_webhook_secret?: string;
 }
 
 export type OrganizationRequest = OrganizationCreateRequest;

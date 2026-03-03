@@ -35,16 +35,21 @@ export class OrganizationBalanceAdminService {
         offset?: number;
         keywords?: string;
     } = {}): Promise<OrgBalanceListResponse> {
+        console.log("[OrganizationBalanceAdminService] Fetching all balances with params:", params);
         const query = new URLSearchParams();
         if (params.limit !== undefined) query.append('limit', String(params.limit));
         if (params.offset !== undefined) query.append('offset', String(params.offset));
         if (params.keywords) query.append('keywords', params.keywords);
 
         const response = await fetch(`${API}/admin/organization-balances?${query}`, {
-            headers: { 'Authorization': `Bearer ${token}` },
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
         });
         if (!response.ok) {
             const err = await response.json().catch(() => ({}));
+            console.error("[OrganizationBalanceAdminService] Failed to fetch organization balances:", err);
             throw new Error(err.message || 'Failed to fetch organization balances');
         }
         const data = await response.json();
@@ -52,11 +57,16 @@ export class OrganizationBalanceAdminService {
     }
 
     async getByOrganizationId(token: string, organizationId: string): Promise<OrgBalance> {
+        console.log(`[OrganizationBalanceAdminService] Fetching balance for org: ${organizationId}`);
         const response = await fetch(`${API}/admin/organization-balances/${organizationId}`, {
-            headers: { 'Authorization': `Bearer ${token}` },
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
         });
         if (!response.ok) {
             const err = await response.json().catch(() => ({}));
+            console.error(`[OrganizationBalanceAdminService] Failed to fetch organization balance for ${organizationId}:`, err);
             throw new Error(err.message || 'Failed to fetch organization balance');
         }
         const data = await response.json();
@@ -68,6 +78,7 @@ export class OrganizationBalanceAdminService {
         type: 'CREDIT' | 'DEBIT';
         description?: string;
     }): Promise<{ balance: OrgBalance; transaction: OrgBalanceTransaction }> {
+        console.log(`[OrganizationBalanceAdminService] Adjusting balance for org: ${organizationId}`, body);
         const response = await fetch(`${API}/admin/organization-balances/${organizationId}/adjust`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -75,6 +86,7 @@ export class OrganizationBalanceAdminService {
         });
         if (!response.ok) {
             const err = await response.json().catch(() => ({}));
+            console.error(`[OrganizationBalanceAdminService] Failed to adjust balance for ${organizationId}:`, err);
             throw new Error(err.message || 'Failed to adjust balance');
         }
         const data = await response.json();

@@ -152,39 +152,31 @@ export default function ApprovalQueuePage() {
             setLoading(true);
             setError(null);
 
+            console.log("[ApprovalQueuePage] Fetching inbound and outbound requests...");
             const [inboundRes, outboundRes] = await Promise.all([
                 inventoryService.listInbound(token, { limit: 50 }),
                 inventoryService.listOutbound(token, { limit: 50 }),
             ]);
 
-            const inData = Array.isArray(inboundRes)
-                ? inboundRes
-                : Array.isArray((inboundRes as any)?.data?.items)
-                    ? (inboundRes as any).data.items
-                    : Array.isArray((inboundRes as any)?.data)
-                        ? (inboundRes as any).data
-                        : [];
-            const outData = Array.isArray(outboundRes)
-                ? outboundRes
-                : Array.isArray((outboundRes as any)?.data?.items)
-                    ? (outboundRes as any).data.items
-                    : Array.isArray((outboundRes as any)?.data)
-                        ? (outboundRes as any).data
-                        : [];
+            const inData = inboundRes.data?.items ?? [];
+            const outData = outboundRes.data?.items ?? [];
 
             setInboundItems(inData);
             setOutboundItems(outData);
+            showToast("Đã cập nhật danh sách phiếu phê duyệt.", "success");
         } catch (err) {
             const e = err instanceof Error ? err : new Error(String(err));
+            console.error("[ApprovalQueuePage] Error fetching data:", e);
             if (e.message === "Unauthorized") {
                 router.push("/login");
                 return;
             }
             setError("Không thể tải danh sách phiếu. Vui lòng thử lại.");
+            showToast("Lỗi khi tải danh sách phiếu phê duyệt.", "error");
         } finally {
             setLoading(false);
         }
-    }, [router]);
+    }, [router, showToast]);
 
     useEffect(() => {
         fetchData();

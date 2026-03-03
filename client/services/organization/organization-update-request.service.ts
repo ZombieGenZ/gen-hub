@@ -41,6 +41,7 @@ export class OrganizationUpdateRequestService {
         status?: 'PENDING' | 'APPROVED' | 'REJECTED';
         keyword?: string;
     } = {}): Promise<OrgUpdateRequestListResponse> {
+        console.log("[OrganizationUpdateRequestService] Fetching all update requests with params:", params);
         const query = new URLSearchParams();
         if (params.limit !== undefined) query.append('limit', String(params.limit));
         if (params.offset !== undefined) query.append('offset', String(params.offset));
@@ -48,10 +49,14 @@ export class OrganizationUpdateRequestService {
         if (params.keyword) query.append('keyword', params.keyword);
 
         const response = await fetch(`${API}/organization-update-requests?${query}`, {
-            headers: { 'Authorization': `Bearer ${token}` },
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
         });
         if (!response.ok) {
             const err = await response.json().catch(() => ({}));
+            console.error("[OrganizationUpdateRequestService] Failed to fetch organization update requests:", err);
             throw new Error(err.message || 'Failed to fetch organization update requests');
         }
         const data = await response.json();
@@ -59,11 +64,16 @@ export class OrganizationUpdateRequestService {
     }
 
     async getById(token: string, id: string): Promise<OrgUpdateRequest> {
+        console.log(`[OrganizationUpdateRequestService] Fetching update request by id: ${id}`);
         const response = await fetch(`${API}/organization-update-requests/${id}`, {
-            headers: { 'Authorization': `Bearer ${token}` },
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
         });
         if (!response.ok) {
             const err = await response.json().catch(() => ({}));
+            console.error(`[OrganizationUpdateRequestService] Failed to fetch update request ${id}:`, err);
             throw new Error(err.message || 'Failed to fetch update request');
         }
         const data = await response.json();
@@ -71,12 +81,17 @@ export class OrganizationUpdateRequestService {
     }
 
     async approve(token: string, id: string): Promise<OrgUpdateRequest> {
+        console.log(`[OrganizationUpdateRequestService] Approving update request: ${id}`);
         const response = await fetch(`${API}/organization-update-requests/${id}/approve`, {
             method: 'PATCH',
-            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            headers: { 
+                'Authorization': `Bearer ${token}`, 
+                'Content-Type': 'application/json' 
+            },
         });
         if (!response.ok) {
             const err = await response.json().catch(() => ({}));
+            console.error(`[OrganizationUpdateRequestService] Failed to approve update request ${id}:`, err);
             throw new Error(err.message || 'Failed to approve update request');
         }
         const data = await response.json();
@@ -84,13 +99,18 @@ export class OrganizationUpdateRequestService {
     }
 
     async reject(token: string, id: string, reject_reason: string): Promise<OrgUpdateRequest> {
+        console.log(`[OrganizationUpdateRequestService] Rejecting update request: ${id} with reason: ${reject_reason}`);
         const response = await fetch(`${API}/organization-update-requests/${id}/reject`, {
             method: 'PATCH',
-            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            headers: { 
+                'Authorization': `Bearer ${token}`, 
+                'Content-Type': 'application/json' 
+            },
             body: JSON.stringify({ reject_reason }),
         });
         if (!response.ok) {
             const err = await response.json().catch(() => ({}));
+            console.error(`[OrganizationUpdateRequestService] Failed to reject update request ${id}:`, err);
             throw new Error(err.message || 'Failed to reject update request');
         }
         const data = await response.json();

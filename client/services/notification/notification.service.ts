@@ -41,6 +41,7 @@ export class NotificationService {
         params?: NotificationQueryParams
     ): Promise<NotificationResponse> {
         try {
+            console.log("[NotificationService] Fetching notifications with params:", params);
             const searchParams = new URLSearchParams();
             if (params?.limit) searchParams.append('limit', params.limit.toString());
             if (params?.offset) searchParams.append('offset', params.offset.toString());
@@ -60,12 +61,14 @@ export class NotificationService {
             
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
+                console.error("[NotificationService] Failed to fetch notifications:", errorData);
                 throw new Error(errorData.message || 'Failed to fetch notifications');
             }
             const data = await response.json();
             return data.data;
         }
         catch (error) {
+            console.error("[NotificationService] Error in getNotifications:", error);
             throw error;
         }
     }
@@ -82,6 +85,7 @@ export class NotificationService {
      */
     async getUnreadCount(access_token: string): Promise<number> {
         try {
+            console.log("[NotificationService] Fetching unread count...");
             const response = await fetch(`${API_URL}/user-notifications/unread-count`, {
                 headers: {
                     'Authorization': `Bearer ${access_token}`,
@@ -91,12 +95,14 @@ export class NotificationService {
             
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
+                console.error("[NotificationService] Failed to fetch unread count:", errorData);
                 throw new Error(errorData.message || 'Failed to fetch unread count');
             }
             const data = await response.json();
             return data.data.count;
         }
         catch (error) {
+            console.error("[NotificationService] Error in getUnreadCount:", error);
             throw error;
         }
     }
