@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { createPortal } from "react-dom";
 import { NotificationList, useNotifications } from "@/components/ui/notification-inbox-popover";
 import { authStorage } from "@/services/auth/auth-storage.service";
+import { AuthService } from "@/services/auth/auth.service";
 import { Badge } from "@/components/ui/badge";
 import {
     DropdownMenu,
@@ -30,6 +31,8 @@ import {
 import { NavItem } from "@/components/ui/nav-item";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useProfileModal } from "@/contexts/ProfileModalContext";
+import { UserService } from "@/services/user/user.service";
+import { UserData } from "@/types/user/user.type";
 
 // --- Types ---
 export interface SidebarLinkItem {
@@ -56,6 +59,9 @@ export interface AppSidebarProps {
     logoLink?: string;
 }
 
+const userService = new UserService();
+const authService = new AuthService();
+
 export function AppSidebarContent({
     groups,
     defaultUserInitials,
@@ -69,7 +75,7 @@ export function AppSidebarContent({
 }: AppSidebarProps & { isCollapsed?: boolean; onToggleCollapse?: () => void }) {
     const pathname = usePathname();
     const [showNotifications, setShowNotifications] = useState(false);
-    const [user, setUser] = useState<any>(null);
+    const [user, setUser] = useState<UserData | null>(null);
     const { unreadCount } = useNotifications();
     const { openModal } = useProfileModal();
     const [expandedGroups, setExpandedGroups] = useState<Record<number, boolean>>({});
@@ -79,7 +85,7 @@ export function AppSidebarContent({
         const stored = localStorage.getItem("sidebar:groups-state");
         if (stored) {
             try {
-                setExpandedGroups(JSON.parse(stored));
+                // setExpandedGroups(JSON.parse(stored));
             } catch (e) {
                 console.error("Failed to parse sidebar groups state", e);
             }
@@ -99,15 +105,41 @@ export function AppSidebarContent({
 
     // Load User Data
     useEffect(() => {
-        const userData = authStorage.getUser();
-        if (userData) {
-            setUser(userData);
+        const loadUserData = async () => {
+            const token = authStorage.getAccessToken()
+            const refreshToken = authStorage.getRefreshToken()
+
+            if (!token || !refreshToken) return;
+
+            try {
+                const data = await userService.getUser(token, refreshToken)
+                if (data) {
+                    setUser(data)
+                }
+            } catch (error) {
+                console.error("Failed to load user data:", error);
+            }
         }
+        loadUserData();
     }, []);
 
-    const userInitials = user?.name
-        ? user.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase()
-        : defaultUserInitials;
+    const userInitials = user?.user.name
+        ? user.user.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase()
+        : defaultUserInitials || "U";
+
+    const handleLogout = async () => {
+        const token = authStorage.getAccessToken();
+        const refresh_token = authStorage.getRefreshToken();
+        if (token && refresh_token) {
+            try {
+                await authService.logout(token, refresh_token);
+            } catch (error) {
+                console.error("Logout error:", error);
+            }
+        }
+        authStorage.clearTokens();
+        window.location.href = "/login";
+    };
 
     // Helper to determine active link
     const isActive = (path: string, exact?: boolean) => {
@@ -119,7 +151,7 @@ export function AppSidebarContent({
         <TooltipProvider>
             <div className="flex flex-col h-full bg-sidebar text-sidebar-foreground transition-all duration-300">
                 {/* Logo Section */}
-                <div className={cn("h-[72px] flex items-center py-2 transition-all", isCollapsed ? "justify-center px-2" : "px-2")}>
+                <div className={cn("h-18 flex items-center py-2 transition-all", isCollapsed ? "justify-center px-2" : "px-2")}>
                     <Link href={logoLink || "/"} className={cn("flex items-center gap-2 overflow-hidden", isCollapsed ? "w-8 h-8 justify-center" : "pl-2")}>
                         <div className={cn("relative transition-all duration-300", isCollapsed ? "w-8 h-8" : "w-32 h-8")}>
                             <Image
@@ -157,7 +189,7 @@ export function AppSidebarContent({
                                 </button>
                                 <div className={cn(
                                     "space-y-1 transition-all duration-300 overflow-hidden",
-                                    !isCollapsed && !isGroupExpanded ? "max-h-0 opacity-0" : "max-h-[500px] opacity-100" // Simple collapse
+                                    !isCollapsed && !isGroupExpanded ? "max-h-0 opacity-0" : "max-h-125 opacity-100" // Simple collapse
                                 )}>
                                     {group.items.map((item, itemIndex) => (
                                         <NavItem
@@ -228,7 +260,7 @@ export function AppSidebarContent({
                                 "flex items-center gap-2 p-2 rounded-2xl hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all cursor-pointer group outline-none ring-0 focus:ring-0",
                                 isCollapsed ? "justify-center px-0 py-2" : ""
                             )}>
-                                <div className="w-8 h-8 flex-shrink-0 rounded-full bg-secondary flex items-center justify-center text-foreground text-xs font-semibold shadow-sm ring-2 ring-sidebar-ring group-hover:ring-sidebar-ring/80">
+                                <div className="w-8 h-8 shrink-0 rounded-full bg-secondary flex items-center justify-center text-foreground text-xs font-semibold shadow-sm ring-2 ring-sidebar-ring group-hover:ring-sidebar-ring/80">
                                     {userInitials}
                                 </div>
 
@@ -237,28 +269,28 @@ export function AppSidebarContent({
                                     isCollapsed ? "hidden opacity-0 w-0" : "flex flex-col gap-0.5"
                                 )}>
                                     <p className="text-sm font-medium text-sidebar-foreground truncate">
-                                        {user?.name || defaultUserName}
+                                        {user?.user.name || defaultUserName}
                                     </p>
                                     <div className="flex flex-col gap-1">
                                         <p className="text-xs text-sidebar-foreground/70 truncate">
-                                            {user?.email || defaultUserEmail}
+                                            {user?.user.email || defaultUserEmail}
                                         </p>
-                                        <div className="flex items-center gap-2 ">
+                                        {/* <div className="flex items-center gap-2 ">
                                             <WalletIcon className="w-3.5 h-3.5 text-primary/80" />
                                             <span className="text-xs font-semibold text-primary/90">
                                                 {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(user?.balance || 0)}
                                             </span>
-                                        </div>
+                                        </div> */}
                                     </div>
                                 </div>
 
                                 {!isCollapsed && (
-                                    <EllipsisVerticalIcon className="w-4 h-4 text-sidebar-foreground/50 group-hover:text-sidebar-foreground flex-shrink-0" />
+                                    <EllipsisVerticalIcon className="w-4 h-4 text-sidebar-foreground/50 group-hover:text-sidebar-foreground shrink-0" />
                                 )}
                             </div>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align={isCollapsed ? "start" : "end"} side="right" className="w-56 mb-2 p-2 bg-sidebar border-sidebar-border shadow-md rounded-lg">
-                            <DropdownMenuItem className="group flex flex-col items-start gap-2 p-2 focus:bg-sidebar-accent focus:text-sidebar-accent-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus:shadow-none focus:outline-none focus:ring-0 my-1 border-none cursor-pointer">
+                            {/* <DropdownMenuItem className="group flex flex-col items-start gap-2 p-2 focus:bg-sidebar-accent focus:text-sidebar-accent-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus:shadow-none focus:outline-none focus:ring-0 my-1 border-none cursor-pointer">
                                 <div className="flex items-center justify-between w-full">
                                     <p className="text-[10px] uppercase tracking-wider font-semibold text-sidebar-foreground/60 ml-0.5">Số dư khả dụng</p>
                                     <div className="opacity-0 group-hover:opacity-100 transition-all duration-200 bg-primary/10 hover:bg-primary/20 text-primary rounded-full p-1" title="Nạp tiền">
@@ -271,7 +303,7 @@ export function AppSidebarContent({
                                         {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(user?.balance || 0)}
                                     </span>
                                 </div>
-                            </DropdownMenuItem>
+                            </DropdownMenuItem> */}
                             <DropdownMenuItem
                                 className="cursor-pointer rounded-sm p-2 focus:bg-sidebar-accent focus:text-sidebar-accent-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus:shadow-none focus:outline-none focus:ring-0 my-1 border-none group"
                                 onClick={openModal}
@@ -288,7 +320,10 @@ export function AppSidebarContent({
                                 </Link>
                             </DropdownMenuItem>
                             <DropdownMenuSeparator className="my-1 bg-sidebar-border" />
-                            <DropdownMenuItem className="cursor-pointer rounded-sm p-2 focus:bg-sidebar-foreground/10 hover:bg-sidebar-foreground/10 focus:text-sidebar-foreground hover:text-sidebar-foreground focus:shadow-none focus:outline-none focus:ring-0 my-1 border-none text-sidebar-foreground">
+                            <DropdownMenuItem 
+                                className="cursor-pointer rounded-sm p-2 focus:bg-sidebar-foreground/10 hover:bg-sidebar-foreground/10 focus:text-sidebar-foreground hover:text-sidebar-foreground focus:shadow-none focus:outline-none focus:ring-0 my-1 border-none text-sidebar-foreground"
+                                onClick={handleLogout}
+                            >
                                 <ArrowLeftOnRectangleIcon className="mr-3 h-4 w-4" />
                                 <span className="font-medium">Đăng xuất</span>
                             </DropdownMenuItem>
@@ -307,13 +342,13 @@ export function AppSidebarContent({
                 {showNotifications && createPortal(
                     <>
                         <div
-                            className="fixed inset-0 z-[49] bg-transparent"
+                            className="fixed inset-0 z-49 bg-transparent"
                             onClick={() => setShowNotifications(false)}
                         />
                         <div
                             className={cn(
-                                "fixed top-5 bottom-5 z-[50] w-[450px] bg-background border-l shadow-2xl transition-all duration-300 rounded-3xl overflow-hidden",
-                                isCollapsed ? "left-[72px]" : "left-72"
+                                "fixed top-5 bottom-5 z-50 w-112.5 bg-background border-l shadow-2xl transition-all duration-300 rounded-3xl overflow-hidden",
+                                isCollapsed ? "left-18" : "left-72"
                             )}
                             style={{
                                 left: isCollapsed ? '72px' : '288px'
@@ -336,7 +371,7 @@ export function AppSidebar(props: AppSidebarProps) {
     const isCollapsed = !isOpen;
 
     // Refs for hover tooltip
-    const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const coordsRef = useRef<{ x: number; y: number } | null>(null);
 
     const handleMouseMove = (e: React.MouseEvent) => {
@@ -367,7 +402,7 @@ export function AppSidebar(props: AppSidebarProps) {
     return (
         <aside className={cn(
             "hidden lg:flex bg-sidebar border-r border-sidebar-border flex-col fixed h-full z-10 transition-all duration-300 ease-in-out shadow-sm",
-            isOpen ? "w-72" : "w-[72px]"
+            isOpen ? "w-72" : "w-18"
         )}>
 
             <AppSidebarContent {...props} isCollapsed={isCollapsed} />
@@ -379,13 +414,13 @@ export function AppSidebar(props: AppSidebarProps) {
                 onMouseEnter={handleMouseEnter}
                 onMouseLeave={handleMouseLeave}
             >
-                <div className="absolute inset-y-0 left-1/2 -translate-x-[0.5px] w-[2px] h-full bg-transparent group-hover:bg-sidebar-primary/18 transition-colors duration-200" />
+                <div className="absolute inset-y-0 left-1/2 -translate-x-[0.5px] w-0.5 h-full bg-transparent group-hover:bg-sidebar-primary/18 transition-colors duration-200" />
             </div>
 
             {/* Hover Tooltip for Sidebar Handle */}
             {mousePos && createPortal(
                 <div
-                    className="fixed z-[9999] overflow-hidden rounded-md border bg-popover-foreground px-3 py-1.5 text-sm text-primary-foreground shadow-md animate-in fade-in-0 zoom-in-95 pointer-events-none"
+                    className="fixed z-9999 overflow-hidden rounded-md border bg-popover-foreground px-3 py-1.5 text-sm text-primary-foreground shadow-md animate-in fade-in-0 zoom-in-95 pointer-events-none"
                     style={{
                         left: isOpen ? 300 : 84,
                         top: mousePos.y + 20,
