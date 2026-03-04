@@ -17,6 +17,8 @@ import {
 export class CozeService implements OnModuleInit {
     private readonly logger = new Logger(CozeService.name);
     private config: ICozeConfig;
+    private credentials: Array<{ apiKey: string; botId: string }> = [];
+    private currentCredentialIndex = 0;
     private contextCache: IAiContext | null = null;
     private contextCacheTime: number = 0;
     private readonly CONTEXT_CACHE_TTL = 5 * 60 * 1000; // 5 phút
@@ -26,19 +28,32 @@ export class CozeService implements OnModuleInit {
         private readonly cozeRepository: CozeRepository,
         private readonly prisma: PrismaService,
     ) {
+        const apiKeys = this.parseCsvConfigValue(
+            this.configService.get<string>('COZE_API_KEYS'),
+            this.configService.get<string>('COZE_API_KEY'),
+        );
+        const botIds = this.parseCsvConfigValue(
+            this.configService.get<string>('COZE_BOT_IDS'),
+            this.configService.get<string>('COZE_BOT_ID'),
+        );
+
         this.config = {
             enabled: this.configService.get<boolean>('COZE_ENABLED') ?? false,
-            apiKey: this.configService.get<string>('COZE_API_KEY') ?? '',
-            botId: this.configService.get<string>('COZE_BOT_ID') ?? '',
+            apiKeys,
+            botIds,
             apiBaseUrl:
                 this.configService.get<string>('COZE_API_BASE_URL') ??
                 'https://api.coze.com',
         };
+
+        this.credentials = this.buildCredentials(apiKeys, botIds);
     }
 
     async onModuleInit(): Promise<void> {
         if (this.config.enabled) {
-            this.logger.log('🤖 Coze AI Service initialized');
+            this.logger.log(
+                `🤖 Coze AI Service initialized with ${this.credentials.length} credential set(s)`,
+            );
             // Preload context khi khởi động
             await this.getAiContext();
         } else {
@@ -50,7 +65,83 @@ export class CozeService implements OnModuleInit {
      * Kiểm tra Coze có được bật không
      */
     isEnabled(): boolean {
-        return this.config.enabled && !!this.config.apiKey && !!this.config.botId;
+        return this.config.enabled && this.credentials.length > 0;
+    }
+
+    private parseCsvConfigValue(
+        preferredValue?: string,
+        fallbackValue?: string,
+    ): string[] {
+        const raw = preferredValue || fallbackValue || '';
+        return raw
+            .split(',')
+            .map((item) => item.trim())
+            .filter((item) => item.length > 0);
+    }
+
+    private buildCredentials(
+        apiKeys: string[],
+        botIds: string[],
+    ): Array<{ apiKey: string; botId: string }> {
+        if (apiKeys.length === 0 || botIds.length === 0) {
+            return [];
+        }
+
+        if (apiKeys.length === botIds.length) {
+            return apiKeys.map((apiKey, index) => ({ apiKey, botId: botIds[index] }));
+        }
+
+        if (botIds.length === 1) {
+            return apiKeys.map((apiKey) => ({ apiKey, botId: botIds[0] }));
+        }
+
+        if (apiKeys.length === 1) {
+            return botIds.map((botId) => ({ apiKey: apiKeys[0], botId }));
+        }
+
+        const minLength = Math.min(apiKeys.length, botIds.length);
+        this.logger.warn(
+            `COZE_API_KEYS (${apiKeys.length}) and COZE_BOT_IDS (${botIds.length}) length mismatch. Using first ${minLength} pair(s) by index.`,
+        );
+        return apiKeys
+            .slice(0, minLength)
+            .map((apiKey, index) => ({ apiKey, botId: botIds[index] }));
+    }
+
+    private getCurrentCredential(): { apiKey: string; botId: string } | null {
+        return this.credentials[this.currentCredentialIndex] ?? null;
+    }
+
+    private rotateToNextCredential(): void {
+        if (this.credentials.length <= 1) {
+            return;
+        }
+
+        this.currentCredentialIndex =
+            (this.currentCredentialIndex + 1) % this.credentials.length;
+        this.logger.warn(
+            `Rotated Coze credential to ${this.currentCredentialIndex + 1}/${this.credentials.length}`,
+        );
+    }
+
+    private shouldRotateOnHttpStatus(status: number): boolean {
+        return status === 401 || status === 403 || status === 429 || status >= 500;
+    }
+
+    private shouldRotateOnError(errorMessage: string): boolean {
+        const msg = errorMessage.toLowerCase();
+        return (
+            msg.includes('quota') ||
+            msg.includes('rate') ||
+            msg.includes('limit') ||
+            msg.includes('exceed') ||
+            msg.includes('429') ||
+            msg.includes('401') ||
+            msg.includes('403') ||
+            msg.includes('unauthorized') ||
+            msg.includes('invalid token') ||
+            msg.includes('coze chat failed')
+        );
     }
 
     /**
@@ -250,124 +341,122 @@ ${insuranceInfo || 'Chưa có gói bảo hiểm.'}
             };
         }
 
-        try {
-            // Gọi Coze API với stream: true
-            const response = await fetch(`${this.config.apiBaseUrl}/v3/chat`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${this.config.apiKey}`,
-                    Accept: 'text/event-stream',
-                },
-                body: JSON.stringify({
-                    bot_id: this.config.botId,
-                    user_id: userId || 'anonymous',
-                    ...(conversationId ? { conversation_id: conversationId } : {}),
-                    stream: true,
-                    auto_save_history: true,
-                    additional_messages: [
-                        {
-                            role: 'user',
-                            content: userMessage,
-                            content_type: 'text',
-                        },
-                    ],
-                }),
-            });
+        let lastErrorMsg = 'Unknown error';
 
-            const responseTime = Date.now() - startTime;
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                const errorMsg = `API error: ${response.status} - ${errorText}`;
-
-                // Ghi log lỗi vào AILog
-                this.logAiMetadata({
-                    purpose: options?.discordChannelId ? 'COZE_DISCORD' : 'COZE_API',
-                    inputText: userMessage,
-                    durationMs: responseTime,
-                    isSuccess: false,
-                    errorMessage: errorMsg,
-                });
-
-                return {
-                    success: false,
-                    content: '',
-                    model: 'coze',
-                    error: errorMsg,
-                };
+        for (let attempt = 0; attempt < this.credentials.length; attempt++) {
+            const credential = this.getCurrentCredential();
+            if (!credential) {
+                break;
             }
 
-            // Parse SSE stream để lấy response (NẾU CÓ LỖI BÊN TRONG STREAM SẼ THROW ERROR TẠI ĐÂY)
-            const assistantContent = await this.parseSSEStream(response);
-            const totalTime = Date.now() - startTime;
-
-            if (assistantContent) {
-                // Ghi log metadata vào AILog
-                this.logAiMetadata({
-                    purpose: options?.discordChannelId ? 'COZE_DISCORD' : 'COZE_API',
-                    inputText: userMessage,
-                    outputText: assistantContent,
-                    durationMs: totalTime,
-                    isSuccess: true,
+            try {
+                const response = await fetch(`${this.config.apiBaseUrl}/v3/chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${credential.apiKey}`,
+                        Accept: 'text/event-stream',
+                    },
+                    body: JSON.stringify({
+                        bot_id: credential.botId,
+                        user_id: userId || 'anonymous',
+                        ...(conversationId ? { conversation_id: conversationId } : {}),
+                        stream: true,
+                        auto_save_history: true,
+                        additional_messages: [
+                            {
+                                role: 'user',
+                                content: userMessage,
+                                content_type: 'text',
+                            },
+                        ],
+                    }),
                 });
 
-                // Ghi conversation vào CozeConversation
-                this.logConversation({
-                    sessionId: conversationId || `session-${Date.now()}`,
-                    userInput: userMessage,
-                    botResponse: assistantContent,
-                    discordChannelId: options?.discordChannelId,
-                    discordUserId: options?.discordUserId,
-                });
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    const errorMsg = `API error: ${response.status} - ${errorText}`;
+                    lastErrorMsg = errorMsg;
 
-                return {
-                    success: true,
-                    content: assistantContent,
-                    model: 'coze-gpt-4o-mini',
-                    confidence: 1.0,
-                };
+                    if (
+                        this.shouldRotateOnHttpStatus(response.status) &&
+                        attempt < this.credentials.length - 1
+                    ) {
+                        this.logger.warn(
+                            `Coze API failed with status ${response.status}, rotating credential...`,
+                        );
+                        this.rotateToNextCredential();
+                        continue;
+                    }
+
+                    break;
+                }
+
+                const assistantContent = await this.parseSSEStream(response);
+                const totalTime = Date.now() - startTime;
+
+                if (assistantContent) {
+                    this.logAiMetadata({
+                        purpose: options?.discordChannelId ? 'COZE_DISCORD' : 'COZE_API',
+                        inputText: userMessage,
+                        outputText: assistantContent,
+                        durationMs: totalTime,
+                        isSuccess: true,
+                    });
+
+                    this.logConversation({
+                        sessionId: conversationId || `session-${Date.now()}`,
+                        userInput: userMessage,
+                        botResponse: assistantContent,
+                        discordChannelId: options?.discordChannelId,
+                        discordUserId: options?.discordUserId,
+                    });
+
+                    return {
+                        success: true,
+                        content: assistantContent,
+                        model: 'coze-gpt-4o-mini',
+                        confidence: 1.0,
+                    };
+                }
+
+                lastErrorMsg = `No assistant message in stream response. Status: ${response.status}, Content-Type: ${response.headers.get('content-type')}`;
+                break;
+            } catch (error) {
+                const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+                lastErrorMsg = errorMsg;
+
+                if (
+                    this.shouldRotateOnError(errorMsg) &&
+                    attempt < this.credentials.length - 1
+                ) {
+                    this.logger.warn(
+                        `Coze request failed (attempt ${attempt + 1}), rotating credential...`,
+                    );
+                    this.rotateToNextCredential();
+                    continue;
+                }
+
+                break;
             }
-
-            // Ghi log khi không có response (Vẫn giữ lại cho case mảng rỗng bất thường)
-            const noMsgError = `No assistant message in stream response. Status: ${response.status}, Content-Type: ${response.headers.get('content-type')}`;
-            this.logger.warn(noMsgError);
-            this.logAiMetadata({
-                purpose: options?.discordChannelId ? 'COZE_DISCORD' : 'COZE_API',
-                inputText: userMessage,
-                durationMs: totalTime,
-                isSuccess: false,
-                errorMessage: noMsgError,
-            });
-
-            return {
-                success: false,
-                content: '',
-                model: 'coze',
-                error: noMsgError,
-            };
-        } catch (error) {
-            const responseTime = Date.now() - startTime;
-            const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-
-            this.logger.error(`[Coze AI Error] ${errorMsg}`);
-
-            // Ghi log lỗi vào AILog
-            this.logAiMetadata({
-                purpose: options?.discordChannelId ? 'COZE_DISCORD' : 'COZE_API',
-                inputText: userMessage,
-                durationMs: responseTime,
-                isSuccess: false,
-                errorMessage: errorMsg,
-            });
-
-            return {
-                success: false,
-                content: '',
-                model: 'coze',
-                error: errorMsg,
-            };
         }
+
+        const responseTime = Date.now() - startTime;
+        this.logger.error(`[Coze AI Error] ${lastErrorMsg}`);
+        this.logAiMetadata({
+            purpose: options?.discordChannelId ? 'COZE_DISCORD' : 'COZE_API',
+            inputText: userMessage,
+            durationMs: responseTime,
+            isSuccess: false,
+            errorMessage: lastErrorMsg,
+        });
+
+        return {
+            success: false,
+            content: '',
+            model: 'coze',
+            error: lastErrorMsg,
+        };
     }
 
     /**
@@ -419,3 +508,4 @@ ${insuranceInfo || 'Chưa có gói bảo hiểm.'}
         });
     }
 }
+

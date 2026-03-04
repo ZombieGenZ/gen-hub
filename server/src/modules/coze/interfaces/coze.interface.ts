@@ -8,8 +8,8 @@
  */
 export interface ICozeConfig {
     enabled: boolean;
-    apiKey: string;
-    botId: string;
+    apiKeys: string[];
+    botIds: string[];
     apiBaseUrl: string;
 }
 
