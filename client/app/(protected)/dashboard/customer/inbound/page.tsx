@@ -412,11 +412,13 @@ export default function InboundListPage() {
                 const total = (res as any)?.data?.total ?? (res as any)?.total ?? (res as any)?.meta?.total ?? data.length;
                 setItems(data);
                 setTotalItems(total);
+                showToast("Đã cập nhật danh sách phiếu nhập kho.", "success");
             }
         } catch (err) {
             const error = err instanceof Error ? err : new Error(String(err));
             if (error.message === "Unauthorized") { router.push("/login"); return; }
             setError("Không thể tải danh sách phiếu nhập. Vui lòng thử lại sau.");
+            showToast("Lỗi khi tải danh sách phiếu nhập kho.", "error");
         } finally {
             setLoading(false);
         }

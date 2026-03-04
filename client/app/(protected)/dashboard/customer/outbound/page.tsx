@@ -218,11 +218,13 @@ export default function OutboundListPage() {
                 const total = (res as any)?.total || (res as any)?.meta?.total || data.length;
                 setItems(data);
                 setTotalItems(total);
+                showToast("Đã cập nhật danh sách phiếu xuất kho.", "success");
             }
         } catch (err) {
             const e = err instanceof Error ? err : new Error(String(err));
             if (e.message === "Unauthorized") { router.push("/login"); return; }
             setError("Không thể tải danh sách phiếu xuất. Vui lòng thử lại sau.");
+            showToast("Lỗi khi tải danh sách phiếu xuất kho.", "error");
         } finally {
             setLoading(false);
         }

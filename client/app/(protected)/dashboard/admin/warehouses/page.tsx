@@ -177,11 +177,13 @@ export default function WarehouseTemplatePage() {
                 }
                 setWarehouses(items);
                 setTotalItems(total);
+                showToast("Đã cập nhật danh sách kho hàng.", "success");
             }
         } catch (err) {
             const error = err instanceof Error ? err : new Error(String(err));
             if (error.message === "Unauthorized") { router.push("/login"); return; }
             setError("Không thể tải dữ liệu kho. Vui lòng thử lại sau.");
+            showToast("Lỗi khi tải dữ liệu kho.", "error");
         } finally {
             setLoading(false);
         }

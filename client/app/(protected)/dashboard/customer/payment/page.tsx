@@ -5,7 +5,8 @@ import { authStorage } from "@/services/auth/auth-storage.service";
 import {
     accountBalanceService,
     OrganizationBalance,
-    OrganizationBalanceTransaction
+    OrganizationBalanceTransaction,
+    TransactionListResponse
 } from "@/services/account-balance/account-balance.service";
 import { Button } from "@/components/ui/button";
 import {
@@ -45,8 +46,11 @@ import {
 import { Calendar, RangeValue } from "@/components/ui/calendar-1";
 import { cn } from "@/lib/utils";
 import { DepositModal } from "@/components/modals/deposit-modal";
+import { orgHelper } from "@/lib/organization.utils";
 import { OrganizationService } from "@/services/organization/organization.service";
-import { Organization } from "@/types/organization/organization.type";
+import { useToast } from "@/contexts/ToastContext";
+
+// ─── Constants ────────────────────────────────────────────────────────────────
 import { useRouter } from "next/navigation";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -60,11 +64,6 @@ type TxType = 'DEPOSIT' | 'WITHDRAW' | 'PAYMENT' | 'REFUND' | 'ADJUSTMENT';
 type FilterType = 'all' | TxType;
 
 type FilterStatus = 'all' | 'COMPLETED' | 'PENDING' | 'FAILED';
-
-interface TransactionListResponse {
-    items: OrganizationBalanceTransaction[];
-    total: number;
-}
 
 // ─── Config Maps ──────────────────────────────────────────────────────────────
 
@@ -88,6 +87,7 @@ const formatCurrency = (val: number): string =>
 const organizationService = new OrganizationService();
 
 export default function FinancePage() {
+    const { showToast } = useToast();
     const [balance, setBalance] = useState<OrganizationBalance | null>(null);
     const [transactions, setTransactions] = useState<OrganizationBalanceTransaction[]>([]);
     const [loading, setLoading] = useState(true);
@@ -113,31 +113,25 @@ export default function FinancePage() {
     // ── Init user ──────────────────────────────────────────────────────────────
     useEffect(() => {
         const initUser = async () => {
-            const userID = authStorage.getUserID();
             const token = authStorage.getAccessToken();
             
-            if (!userID || !token) {
+            if (!token) {
                 setLoading(false);
-                // Toast({
-                //     message: "Vui lòng đăng nhập lại để tiếp tục.",
-                //     type: "error",
-                // });
                 router.push("/login");
                 return;
             }
 
-            const listOrgs = await organizationService.getOrganizations(token!);
-            console.log("User's organizations:", listOrgs);
-            const organization = listOrgs.items.find((o: Organization) => o.owner.id == userID);
-            if (organization) {
-                const org = await organizationService.getOrganizationById(token, organization.id);
-                setOrgId(org.id);
-            } else {
+            try {
+                const id = await orgHelper.getOrgId(token);
+                setOrgId(id);
+            } catch (error) {
+                console.error("Failed to initialize organization:", error);
                 setLoading(false);
+                showToast("Không thể xác thực thông tin tổ chức. Vui lòng thử lại sau.", "error");
             }
         };
         initUser();
-    }, [router]);
+    }, [router, showToast]);
 
     // ── Data fetchers ──────────────────────────────────────────────────────────
 
@@ -147,8 +141,9 @@ export default function FinancePage() {
             setBalance(data);
         } catch {
             console.error("Failed to fetch balance");
+            showToast("Không thể lấy thông tin số dư.", "error");
         }
-    }, []);
+    }, [showToast]);
 
     const fetchTransactions = useCallback(async (
         token: string,
@@ -166,9 +161,7 @@ export default function FinancePage() {
                 limit: LIMIT,
                 description: desc || undefined,
                 type: type !== "all" ? type : undefined,
-                status: status !== "all" ? status : undefined,
-                from_date: dateRange?.start ? format(dateRange.start, "yyyy-MM-dd") : undefined,
-                to_date: dateRange?.end ? format(dateRange.end, "yyyy-MM-dd") : undefined,
+                keywords: status !== "all" ? status : undefined,
             });
 
             const typed = result as TransactionListResponse | OrganizationBalanceTransaction[];
@@ -182,10 +175,11 @@ export default function FinancePage() {
         } catch {
             setTransactions([]);
             setTotal(0);
+            showToast("Không thể tải lịch sử giao dịch.", "error");
         } finally {
             setTxLoading(false);
         }
-    }, []);
+    }, [showToast]);
 
     // ── Initial load ──────────────────────────────────────────────────────────
     useEffect(() => {

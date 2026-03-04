@@ -32,6 +32,14 @@ export interface OrganizationBalanceTransaction {
     reference_id?: string;
 }
 
+export interface TransactionListResponse {
+    items: OrganizationBalanceTransaction[];
+    total: number;
+    limit?: number;
+    offset?: number;
+    page?: number;
+}
+
 export class AccountBalanceService {
     /**
      * Lấy số dư của tổ chức
@@ -40,6 +48,7 @@ export class AccountBalanceService {
      * @returns Thông tin số dư tổ chức
      */
     async getOrganizationBalance(token: string, orgId: string): Promise<OrganizationBalance> {
+        console.log(`[AccountBalanceService] Fetching balance for org: ${orgId}`);
         const response = await fetch(`${API}/organizations/${orgId}/balance`, {
             method: 'GET',
             headers: {
@@ -49,7 +58,8 @@ export class AccountBalanceService {
         });
 
         if (!response.ok) {
-            const error = await response.json();
+            const error = await response.json().catch(() => ({}));
+            console.error(`[AccountBalanceService] Failed to fetch balance for org: ${orgId}`, error);
             throw new Error(error.message || 'Failed to fetch balance');
         }
 
@@ -61,7 +71,7 @@ export class AccountBalanceService {
      * Lấy lịch sử giao dịch của tổ chức
      * @param token Token truy cập
      * @param orgId ID của tổ chức
-     * @param params Các tham số lọc giao dịch (limit, offset, type, keywords,...)
+     * @param params Các tham số lọc giao dịch (limit, offset, page, type, keywords)
      * @returns Danh sách lịch sử giao dịch
      */
     async getTransactions(token: string, orgId: string, params: {
@@ -69,25 +79,39 @@ export class AccountBalanceService {
         limit?: number;
         offset?: number;
         type?: 'DEPOSIT' | 'WITHDRAW' | 'PAYMENT' | 'REFUND' | 'ADJUSTMENT';
-        description?: string;
-        status?: 'PENDING' | 'COMPLETED' | 'FAILED';
-        from_date?: string; // ISO date string
-        to_date?: string;   // ISO date string
         keywords?: string;
+        description?: string; // mapped to keywords
     } = {}) {
         const query = new URLSearchParams();
-        if (params.page) query.append('page', String(params.page));
-        if (params.limit) query.append('limit', String(params.limit));
-        if (params.offset !== undefined) query.append('offset', String(params.offset));
-        if (params.type) query.append('type', params.type);
-        if (params.keywords) query.append('keywords', params.keywords);
-        if (params.description) query.append('description', params.description);
-        if (params.status) query.append('status', params.status);
-        if (params.from_date) query.append('from_date', params.from_date);
-        if (params.to_date) query.append('to_date', params.to_date);
+        
+        // 1. Calculate pagination (Backend strictly uses limit & offset)
+        const limit = params.limit || 20;
+        let offset = 0;
+        if (params.offset !== undefined) {
+            offset = params.offset;
+        } else if (params.page !== undefined) {
+            offset = (params.page - 1) * limit;
+        }
 
-        // ?${query.toString()}
-        const response = await fetch(`${API}/organizations/${orgId}/balance/transactions`, {
+        query.append('limit', String(limit));
+        query.append('offset', String(offset));
+        
+        // 2. Filter by type (ensure it matches backend enum)
+        if (params.type) {
+            query.append('type', params.type);
+        }
+        
+        // 3. Search keywords (backend uses 'keywords')
+        const searchStr = params.keywords || params.description;
+        if (searchStr) {
+            query.append('keywords', searchStr);
+        }
+
+        // 4. Construct final URL (Ensure NO 'page' parameter is sent)
+        const finalUrl = `${API}/organizations/${orgId}/balance/transactions?${query.toString()}`;
+        console.log(`[AccountBalanceService] GET ${finalUrl}`);
+
+        const response = await fetch(finalUrl, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -96,7 +120,8 @@ export class AccountBalanceService {
         });
 
         if (!response.ok) {
-            const error = await response.json();
+            const error = await response.json().catch(() => ({}));
+            console.error(`[AccountBalanceService] Failed to fetch transactions for org: ${orgId}`, error);
             throw new Error(error.message || 'Failed to fetch transactions');
         }
 

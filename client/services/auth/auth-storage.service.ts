@@ -14,6 +14,11 @@ class AuthStorageService {
   private readonly TEMP_TOKEN = process.env.NEXT_PUBLIC_TEMP_TOKEN
   private readonly USER_ID = process.env.NEXT_PUBLIC_USER_ID
 
+  // In-memory cache for organization_id
+  private cachedOrgId: string | null = null;
+  private orgIdExpiresAt: number = 0;
+  private readonly ORG_ID_TTL = 60_000; // 60 seconds
+
   private constructor() {}
 
   static getInstance(): AuthStorageService {
@@ -21,6 +26,32 @@ class AuthStorageService {
       AuthStorageService.instance = new AuthStorageService();
     }
     return AuthStorageService.instance;
+  }
+
+  /**
+   * Lấy organization_id từ cache nếu còn hạn
+   */
+  getOrgId(): string | null {
+    if (this.cachedOrgId && Date.now() < this.orgIdExpiresAt) {
+      return this.cachedOrgId;
+    }
+    return null;
+  }
+
+  /**
+   * Lưu organization_id vào cache với TTL
+   */
+  setOrgId(orgId: string): void {
+    this.cachedOrgId = orgId;
+    this.orgIdExpiresAt = Date.now() + this.ORG_ID_TTL;
+  }
+
+  /**
+   * Xóa cache organization_id
+   */
+  clearOrgId(): void {
+    this.cachedOrgId = null;
+    this.orgIdExpiresAt = 0;
   }
 
   /**
@@ -148,6 +179,7 @@ class AuthStorageService {
     removeCookie(this.THEME_KEY!);
     removeCookie(this.VERIFICATION_TOKEN_KEY!);
     removeCookie(this.REQUIES_2FA!)
+    this.clearOrgId();
   }
 
   // Theme methods
