@@ -21,13 +21,28 @@ export interface WarehouseManager {
     };
 }
 
+export interface WarehouseManagerPermission {
+    id: string;
+    name: string;
+    description: string | null;
+    key: string;
+    category: string;
+}
+
+export interface WarehouseManagerRolePermission {
+    id: string;
+    role_id: string;
+    permission_id: string;
+    permission: WarehouseManagerPermission;
+}
+
 export interface WarehouseManagerRole {
     id: string;
     name: string;
-    description: string;
-    organization_id: string;
-    permissions: string[];
-    is_system_role: boolean;
+    description: string | null;
+    is_default: boolean;
+    is_active: boolean;
+    permissions: WarehouseManagerRolePermission[];
     created_at: string;
 }
 
@@ -40,8 +55,11 @@ export interface AssignWarehouseManagerPayload {
 export interface CreateWarehouseManagerRolePayload {
     name: string;
     description?: string;
-    permissions: string[];
+    permission_ids: string[];
 }
+
+// export interface UpdateWarehouseManagerRolePayload extends Partial<CreateWarehouseManagerRolePayload> {
+// }
 
 export interface WarehouseManagerInventoryRequest {
     id: string;
@@ -50,5 +68,5 @@ export interface WarehouseManagerInventoryRequest {
     warehouse_id: string;
     organization_id: string;
     created_at: string;
-    items: any[];
+    items: unknown[];
 }
