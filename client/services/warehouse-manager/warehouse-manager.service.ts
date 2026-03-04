@@ -3,6 +3,7 @@ import type { ApiResponse, PaginatedResponse } from '@/services/common.types';
 import type { 
     WarehouseManager, 
     WarehouseManagerRole, 
+    WarehouseManagerPermission,
     AssignWarehouseManagerPayload, 
     CreateWarehouseManagerRolePayload,
     WarehouseManagerInventoryRequest
@@ -101,6 +102,36 @@ export class WarehouseManagerService {
             body: JSON.stringify(data),
         });
         if (!response.ok) throw new Error('Không thể tạo vai trò mới');
+        return await response.json();
+    }
+
+    async updateRole(token: string, id: string, data: Partial<CreateWarehouseManagerRolePayload>): Promise<ApiResponse<WarehouseManagerRole>> {
+        const response = await fetch(`${API}/warehouse-manager-roles/${id}`, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        });
+        if (!response.ok) throw new Error('Không thể cập nhật vai trò');
+        return await response.json();
+    }
+
+    async deleteRole(token: string, id: string): Promise<ApiResponse<void>> {
+        const response = await fetch(`${API}/warehouse-manager-roles/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` },
+        });
+        if (!response.ok) throw new Error('Không thể xóa vai trò');
+        return await response.json();
+    }
+
+    async listPermissions(token: string): Promise<ApiResponse<WarehouseManagerPermission[]>> {
+        const response = await fetch(`${API}/warehouse-manager-roles/permissions`, {
+            headers: { 'Authorization': `Bearer ${token}` },
+        });
+        if (!response.ok) throw new Error('Không thể lấy danh sách quyền');
         return await response.json();
     }
 }
