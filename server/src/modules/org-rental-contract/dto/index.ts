@@ -1,6 +1,6 @@
 import { IsOptional, IsString, IsInt, Min, IsUUID, IsArray, IsEnum, IsNotEmpty, ValidateNested, MaxLength, IsBoolean, IsDate } from 'class-validator';
-import { Type } from 'class-transformer';
-import { ApiProperty, ApiPropertyOptional, OmitType } from '@nestjs/swagger';
+import { Type, Transform } from 'class-transformer';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { i18nValidationMessage } from 'nestjs-i18n';
 import { PaymentMethod } from '@prisma/client';
 import { RentalTemplateItemDto } from '../../rental-contract-shared/dto';
@@ -108,8 +108,99 @@ export class CreateRentalContractDto {
 /**
  * DTO để tổ chức tạo hợp đồng thuê (không cần truyền organization_id)
  * POST /organizations/:orgId/rental-contracts
+ *
+ * Standalone class (không dùng OmitType) để tránh conflict metadata khi
+ * class-transformer kế thừa @Transform từ parent qua OmitType.
+ * Khi endpoint dùng multipart/form-data, tất cả field đều đến dưới dạng
+ * string — @Transform cần được khai báo trực tiếp trên class này.
  */
-export class OrgCreateRentalContractDto extends OmitType(CreateRentalContractDto, ['organization_id'] as const) { }
+export class OrgCreateRentalContractDto {
+    @ApiProperty({
+        description: 'Danh sách templates cần thuê (JSON string hoặc array)',
+        type: [RentalTemplateItemDto],
+    })
+    @Transform(({ value }) => {
+        if (typeof value === 'string') {
+            try { return JSON.parse(value); } catch { return value; }
+        }
+        return value;
+    })
+    @IsNotEmpty({ message: i18nValidationMessage('rental-contract.validation.templates_required') })
+    @IsArray({ message: i18nValidationMessage('rental-contract.validation.templates_array') })
+    @ValidateNested({ each: true })
+    @Type(() => RentalTemplateItemDto)
+    templates: RentalTemplateItemDto[];
+
+    @ApiProperty({
+        description: 'ID của gói thời hạn thuê',
+        example: '550e8400-e29b-41d4-a716-446655440005',
+    })
+    @IsNotEmpty({ message: i18nValidationMessage('rental-contract.validation.duration_tier_id_required') })
+    @IsUUID('4', { message: i18nValidationMessage('rental-contract.validation.duration_tier_id_uuid') })
+    duration_tier_id: string;
+
+    @ApiPropertyOptional({ description: 'Phương thức thanh toán', enum: PaymentMethod, example: 'TRANSFER' })
+    @IsOptional()
+    @IsEnum(PaymentMethod, { message: i18nValidationMessage('rental-contract.validation.payment_method_invalid') })
+    payment_method?: PaymentMethod;
+
+    @ApiPropertyOptional({ description: 'Tự động gia hạn', example: false })
+    @Transform(({ value }) => {
+        if (value === 'true') return true;
+        if (value === 'false') return false;
+        return value;
+    })
+    @IsOptional()
+    @IsBoolean()
+    auto_renew?: boolean;
+
+    @ApiPropertyOptional({ description: 'Danh sách ID addon', type: [String] })
+    @Transform(({ value }) => {
+        if (value === undefined || value === null) return undefined;
+        return Array.isArray(value) ? value : [value];
+    })
+    @IsOptional()
+    @IsArray({ message: i18nValidationMessage('rental-contract.validation.addon_ids_array') })
+    @IsUUID('4', { each: true, message: i18nValidationMessage('rental-contract.validation.addon_id_uuid') })
+    addon_ids?: string[];
+
+    @ApiPropertyOptional({ description: 'Danh sách ID bảo hiểm', type: [String] })
+    @Transform(({ value }) => {
+        if (value === undefined || value === null) return undefined;
+        return Array.isArray(value) ? value : [value];
+    })
+    @IsOptional()
+    @IsArray({ message: i18nValidationMessage('rental-contract.validation.insurance_ids_array') })
+    @IsUUID('4', { each: true, message: i18nValidationMessage('rental-contract.validation.insurance_id_uuid') })
+    insurance_ids?: string[];
+
+    @ApiPropertyOptional({ description: 'Danh sách mã coupon', type: [String] })
+    @Transform(({ value }) => {
+        if (value === undefined || value === null) return undefined;
+        return Array.isArray(value) ? value : [value];
+    })
+    @IsOptional()
+    @IsArray({ message: i18nValidationMessage('rental-contract.validation.coupon_codes_array') })
+    @IsString({ each: true, message: i18nValidationMessage('rental-contract.validation.coupon_code_string') })
+    coupon_codes?: string[];
+
+    @ApiPropertyOptional({ description: 'Ghi chú cho hợp đồng' })
+    @IsOptional()
+    @IsString({ message: i18nValidationMessage('rental-contract.validation.notes_string') })
+    notes?: string;
+
+    @ApiPropertyOptional({
+        description: 'Ngày bắt đầu thuê (ISO string)',
+        example: '2025-01-07T00:00:00.000Z',
+    })
+    @Transform(({ value }) => {
+        if (typeof value === 'string' && value) return new Date(value);
+        return value;
+    })
+    @IsOptional()
+    @IsDate({ message: i18nValidationMessage('rental-contract.validation.scheduled_start_at_date') })
+    scheduled_start_at?: Date;
+}
 
 /**
  * DTO để gia hạn hợp đồng

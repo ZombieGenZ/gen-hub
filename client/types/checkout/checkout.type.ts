@@ -84,6 +84,14 @@ export interface CheckoutSession {
     signature_data?: string;
     signature_date?: string;
     
+    // Kết quả tạo hợp đồng (sau khi submit)
+    contract_id?: string;
+    contract_code?: string;
+    payment_id?: string;
+    payment_code?: string;
+    payment_qr_url?: string;
+    payment_expired_at?: string;
+    
     // Báo giá
     quotation: QuotationBreakdown;
 }

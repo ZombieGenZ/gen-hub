@@ -30,7 +30,7 @@ import { MOCK_ADDONS, MOCK_INSURANCES, MOCK_DURATION_TIERS } from '@/types/booki
 import { authStorage } from '@/services/auth/auth-storage.service';
 import { organizationService } from '@/services/organization/organization.service';
 import { rentalContractService } from '@/services/rental-contract/rental-contract.service';
-import { CreateRentalContractRequest, RentalContractPaymentType, RentalContractPaymentMethod } from '@/types/rental-contracts/rental-contracts.type';
+import { CreateRentalContractRequest, RentalContractPaymentMethod } from '@/types/rental-contracts/rental-contracts.type';
 
 import { Warehouse } from '@/types/warehoue_template/warehouse_template.type';
 import { AddonResponse } from '@/types/addon/addon.type';
@@ -144,11 +144,11 @@ function CheckoutContent() {
             signature_date: new Date().toISOString()
         });
 
-        // Now submit the order with signature
-        await handleSubmitOrder();
-
-        // Proceed to confirmation
-        nextStep();
+        try {
+            await handleSubmitOrder(signatureData);
+            nextStep();
+        } catch {
+        }
     };
 
     // Handle coupon applied
@@ -166,7 +166,6 @@ function CheckoutContent() {
                 } : undefined
             });
         } else {
-            // Remove coupon from session
             setSession({
                 ...session,
                 coupon_code: undefined,
@@ -181,7 +180,7 @@ function CheckoutContent() {
 
 
     // Handle order submission
-    const handleSubmitOrder = async () => {
+    const handleSubmitOrder = async (signatureData?: string) => {
         setIsSubmitting(true);
         try {
             const token = authStorage.getAccessToken();
@@ -196,36 +195,67 @@ function CheckoutContent() {
                     ...representativeData
                 });
                 orgId = newOrg.id;
+                setSession({ ...session, organization_id: orgId });
             }
 
             if (!orgId) throw new Error("Missing organization ID");
 
-            // 2. Prepare Order Data
+            let signatureBlob: Blob | null = null;
+            const rawSig = signatureData || session.signature_data;
+            if (rawSig) {
+                try {
+                    const base64Data = rawSig.replace(/^data:image\/\w+;base64,/, '');
+                    const binary = atob(base64Data);
+                    const bytes = new Uint8Array(binary.length);
+                    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+                    signatureBlob = new Blob([bytes], { type: 'image/png' });
+                } catch (e) {
+                    console.warn('Could not convert signature to blob:', e);
+                }
+            }
+
+            // 3. Prepare Order Data
+            if (!session.duration_tier_id) throw new Error('Missing duration tier');
+            if (!session.warehouse_template_id) throw new Error('Missing warehouse template');
+
             const payload: CreateRentalContractRequest = {
                 organization_id: orgId,
-                duration_tier_id: session.duration_tier_id || '',
+                duration_tier_id: session.duration_tier_id,
                 templates: [{
-                    template_id: session.warehouse_template_id || '',
+                    template_id: session.warehouse_template_id,
                     warehouse_name: session.warehouse_name || '',
                     warehouse_description: session.warehouse_details?.address,
-                    row_template_ids: session.row_template_ids,
+                    row_template_ids: session.rental_type === 'row' ? session.row_template_ids : undefined,
                 }],
-                type: 'TRANSFER' as RentalContractPaymentType,
-                addon_ids: session.addon_ids || [],
+                addon_ids: (session.addon_ids || []).filter(Boolean),
                 insurance_ids: session.insurance_id ? [session.insurance_id] : undefined,
                 coupon_codes: session.coupon_code ? [session.coupon_code] : undefined,
                 payment_method: 'TRANSFER' as RentalContractPaymentMethod,
                 scheduled_start_at: session.start_date || new Date().toISOString(),
             };
 
-            // 3. Submit Order using customer endpoint
-            const result = await rentalContractService.createOrgRentalContract(token, orgId, payload);
+            // 4. Submit Order using customer endpoint (multipart/form-data with optional signature)
+            const response = await rentalContractService.createOrgRentalContract(token, orgId, payload, signatureBlob);
+            const result = response?.data;
 
             console.log('Order created successfully:', result);
+
+            // 5. Save contract + payment info to session for confirmation page
+            const contract = result?.contract;
+            const payment = result?.payment;
+            setSession({
+                contract_id: contract?.id,
+                contract_code: contract?.code || contract?.contract_number,
+                payment_id: payment?.paymentId,
+                payment_code: payment?.paymentCode,
+                payment_qr_url: payment?.qrCode,
+                payment_expired_at: payment?.expiredAt ? new Date(payment.expiredAt).toISOString() : undefined,
+            });
 
         } catch (error) {
             console.error('Failed to create order:', error);
             alert("Lỗi khi tạo đơn hàng. Vui lòng thử lại.");
+            throw error; // Re-throw so signature step doesn't advance
         } finally {
             setIsSubmitting(false);
         }
