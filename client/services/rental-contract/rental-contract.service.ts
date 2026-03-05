@@ -90,22 +90,50 @@ export class RentalContractService {
      * @param token Token truy cập
      * @param orgId ID tổ chức
      * @param data Dữ liệu hợp đồng
+     * @param signatureBlob Chữ ký điện tử dưới dạng Blob (optional)
      * @returns Kết quả tạo hợp đồng
      */
-    async createOrgRentalContract(token: string, orgId: string, data: CreateRentalContractRequest) {
-        try {            
+    async createOrgRentalContract(token: string, orgId: string, data: CreateRentalContractRequest, signatureBlob?: Blob | null) {
+        try {
+            // Build multipart/form-data because the endpoint uses FileInterceptor('signature')
+            const formData = new FormData();
+
+            // Append all scalar fields
+            formData.append('duration_tier_id', data.duration_tier_id);
+            // Note: organization_id is read from the URL path (:orgId), not the body
+            if (data.payment_method) formData.append('payment_method', data.payment_method);
+            if (data.auto_renew !== undefined) formData.append('auto_renew', String(data.auto_renew));
+            if (data.notes) formData.append('notes', data.notes);
+            if (data.scheduled_start_at) formData.append('scheduled_start_at', data.scheduled_start_at);
+
+            // Serialize templates as a JSON string so the server can JSON.parse it
+            if (data.templates?.length) {
+                formData.append('templates', JSON.stringify(data.templates));
+            }
+
+            // Append simple arrays as repeated keys (no [] suffix so names match DTO fields)
+            data.addon_ids?.forEach(id => formData.append('addon_ids', id));
+            data.insurance_ids?.forEach(id => formData.append('insurance_ids', id));
+            data.coupon_codes?.forEach(code => formData.append('coupon_codes', code));
+
+            // Attach signature file if provided
+            if (signatureBlob) {
+                formData.append('signature', signatureBlob, 'signature.png');
+            }
+
             const response = await fetch(`${API}/organizations/${orgId}/rental-contracts`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
+                    // Do NOT set Content-Type — browser will set multipart boundary automatically
                 },
-                body: JSON.stringify(data),
+                body: formData,
             });
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || 'Failed to create org rental contract');
+                const detail = errorData.errors?.map((e: { field: string; message: string }) => `${e.field}: ${e.message}`).join('; ');
+                throw new Error(detail ? `${errorData.message} (${detail})` : errorData.message || 'Failed to create org rental contract');
             }
 
             return await response.json();

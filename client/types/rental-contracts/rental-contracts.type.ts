@@ -31,7 +31,7 @@ export interface CreateRentalContractRequest {
     duration_tier_id: string;
     organization_id: string;
     templates: RentalTemplateItemDto[];
-    type: RentalContractPaymentType;
+    type?: RentalContractPaymentType;
     addon_ids?: string[];
     auto_renew?: boolean;
     coupon_codes?: string[];

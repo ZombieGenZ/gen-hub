@@ -29,12 +29,16 @@ export function PaymentMethodSelector({
     disabled = false,
     className
 }: PaymentMethodSelectorProps) {
-    const { setCanProceed } = useCheckout();
+    const { setCanProceed, session } = useCheckout();
 
     // Enable "Xác nhận & Tạo đơn" button when a payment method is selected
     useEffect(() => {
         setCanProceed(!!value);
     }, [value, setCanProceed]);
+
+    const grandTotal = session.quotation?.grandTotal || 0;
+    const depositAmount = session.deposit_amount || Math.max(2_000_000, grandTotal * 0.1);
+    const durationLabel = session.duration_tier_name || (session.duration_months ? `${session.duration_months} tháng` : '—');
 
     // Render icon theo loại
     const renderIcon = (iconName: string) => {
@@ -56,16 +60,16 @@ export function PaymentMethodSelector({
                 <div className="space-y-3 text-sm">
                     <div className="flex justify-between">
                         <span className="text-slate-600">Tổng giá trị hợp đồng</span>
-                        <span className="font-semibold text-slate-900">{formatCurrency(450000000)}đ</span>
+                        <span className="font-semibold text-slate-900">{formatCurrency(grandTotal)}đ</span>
                     </div>
                     <div className="flex justify-between">
                         <span className="text-slate-600">Thời gian thuê</span>
-                        <span className="text-slate-700">6 tháng</span>
+                        <span className="text-slate-700">{durationLabel}</span>
                     </div>
                     <div className="pt-3 border-t border-slate-200">
                         <div className="flex justify-between items-center">
                             <span className="font-semibold text-slate-900">Số tiền đặt cọc</span>
-                            <span className="text-lg font-bold text-[#0F766E]">{formatCurrency(45000000)}đ</span>
+                            <span className="text-lg font-bold text-[#0F766E]">{formatCurrency(depositAmount)}đ</span>
                         </div>
                         <p className="text-xs text-slate-500 mt-1">10% giá trị hợp đồng</p>
                     </div>

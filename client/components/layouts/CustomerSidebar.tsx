@@ -17,6 +17,7 @@ import {
     Cog6ToothIcon,
     ScaleIcon,
     UserGroupIcon,
+    ShieldCheckIcon,
 } from "@heroicons/react/24/outline";
 import { AppSidebar, AppSidebarContent, SidebarGroup } from "./AppSidebar";
 
@@ -45,6 +46,7 @@ const customerNavGroups: SidebarGroup[] = [
         items: [
             { href: "/dashboard/customer/warehouses", icon: BuildingStorefrontIcon, label: "Kho của tôi" },
             { href: "/dashboard/customer/partners", icon: UserGroupIcon, label: "Đối tác" },
+            { href: "/dashboard/customer/roles", icon: ShieldCheckIcon, label: "Vai trò" },
             { href: "/dashboard/customer/units", icon: ScaleIcon, label: "Đơn vị tính" },
             { href: "/dashboard/customer/products", icon: CubeIcon, label: "Hàng hóa" },
             { href: "/dashboard/customer/inbound", icon: ArrowDownTrayIcon, label: "Phiếu nhập" },

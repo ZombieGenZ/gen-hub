@@ -21,13 +21,43 @@ export class OrganizationApiKeyService {
          })
          if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.message || 'Two-factor authentication failed');
+            throw new Error(errorData.message || 'Lỗi khi lấy API key');
          }
          
-         return response.json();
+         const data = await response.json();
+         return data.data;
       } catch (error) {
          console.error('Get organization api key error:', error)
          throw error
       }
+   }
+
+   /**
+    * Tạo mới hoặc làm mới API Key cho tổ chức
+    */
+   async generateApiKey(access_token: string, organization_id: string): Promise<OrganizationApiKeyData> {
+      const response = await fetch(`${API}/organizations/${organization_id}/api-key`, {
+         method: 'POST',
+         headers: {
+            'Authorization': `Bearer ${access_token}`,
+            'Content-Type': 'application/json'
+         }
+      });
+      if (!response.ok) throw new Error('Không thể tạo API key mới');
+      const data = await response.json();
+      return data.data;
+   }
+
+   /**
+    * Thu hồi (vô hiệu hóa) API Key
+    */
+   async revokeApiKey(access_token: string, organization_id: string): Promise<void> {
+      const response = await fetch(`${API}/organizations/${organization_id}/api-key`, {
+         method: 'DELETE',
+         headers: {
+            'Authorization': `Bearer ${access_token}`,
+         }
+      });
+      if (!response.ok) throw new Error('Không thể thu hồi API key');
    }
 }
