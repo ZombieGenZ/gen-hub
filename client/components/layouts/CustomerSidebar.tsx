@@ -18,6 +18,7 @@ import {
     ScaleIcon,
     UserGroupIcon,
     ShieldCheckIcon,
+    ClipboardDocumentCheckIcon,
 } from "@heroicons/react/24/outline";
 import { AppSidebar, AppSidebarContent, SidebarGroup } from "./AppSidebar";
 
@@ -51,6 +52,12 @@ const customerNavGroups: SidebarGroup[] = [
             { href: "/dashboard/customer/products", icon: CubeIcon, label: "Hàng hóa" },
             { href: "/dashboard/customer/inbound", icon: ArrowDownTrayIcon, label: "Phiếu nhập" },
             { href: "/dashboard/customer/outbound", icon: ArrowUpTrayIcon, label: "Phiếu xuất" },
+        ]
+    },
+    {
+        title: "Kiểm soát kho thực",
+        items: [
+            { href: "/warehouse-3d", icon: ClipboardDocumentCheckIcon, label: "Kiểm soát kho" },
         ]
     },
     {
