@@ -71,10 +71,19 @@ model User {
   email_confirmed      Boolean   @default(false)
   email_verify_token   String?
   email_verify_expired DateTime?
-  // phone                String?
-  // phone_confirmed      Boolean   @default(false)
-  // phone_verify_token   String?
-  // phone_verify_expired DateTime?
+  phone_code_id        String?   @db.Uuid
+  phone                String?
+  phone_confirmed      Boolean   @default(false)
+
+  avatar_url      String?
+  cover_url       String?
+  avatar_image_id String? @db.Uuid
+  cover_image_id  String? @db.Uuid
+
+  total_deposited      Decimal @default(0) @db.Decimal(19, 4)
+  loyalty_points       Int     @default(0)
+  total_loyalty_amount Decimal @default(0) @db.Decimal(19, 4)
+  rank_id              String? @db.Uuid
 
   is_verified             Boolean?  @default(false)
   is_banned               Boolean?  @default(false)
@@ -125,8 +134,96 @@ model User {
 
   warnings UserWarning[]
   warehouse_managers WarehouseTemplateManager[]
+  phone_code_ref     PhoneCode?   @relation(fields: [phone_code_id], references: [id])
+  avatar_image       AvatarImage? @relation(fields: [avatar_image_id], references: [id])
+  cover_image        CoverImage?  @relation(fields: [cover_image_id], references: [id])
+  rank               Rank?        @relation(fields: [rank_id], references: [id])
 
   @@map("users")
+}
+
+model AvatarImage {
+  id          String  @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  name        String
+  description String?
+  image_url   String
+  is_default  Boolean @default(false)
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean   @default(false)
+  deleted_at DateTime?
+  created_by String?
+  updated_by String?
+  deleted_by String?
+
+  users User[]
+
+  @@map("avatar_images")
+}
+
+model CoverImage {
+  id          String  @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  name        String
+  description String?
+  image_url   String
+  is_default  Boolean @default(false)
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean   @default(false)
+  deleted_at DateTime?
+  created_by String?
+  updated_by String?
+  deleted_by String?
+
+  users User[]
+
+  @@map("cover_images")
+}
+
+model Rank {
+  id                 String  @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  name               String
+  description        String?
+  is_default         Boolean @default(false)
+  min_loyalty_points Int     @default(0)
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean   @default(false)
+  deleted_at DateTime?
+  created_by String?
+  updated_by String?
+  deleted_by String?
+
+  users User[]
+
+  @@map("ranks")
+}
+
+model PhoneCode {
+  id          String  @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  name        String
+  description String?
+  code        String
+  flag_url    String?
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean   @default(false)
+  deleted_at DateTime?
+  created_by String?
+  updated_by String?
+  deleted_by String?
+
+  users User[]
+
+  @@map("phone_codes")
 }
 
 model RefreshToken {
@@ -1136,6 +1233,7 @@ model RowTemplate {
 
   coupon_targets          CouponTargetRow[]
   coupon_schedule_targets CouponScheduleTargetRow[]
+  rental_contract_detail_rows RentalContractDetailRow[]
 
   generated_rows Row[] @relation("GeneratedRows")
 
@@ -1301,7 +1399,6 @@ model RentalContractDetail {
   warehouse_template_id String   @db.Uuid
   warehouse_name        String
   warehouse_description String?
-  row_template_ids      String[] @default([])
   is_whole_warehouse    Boolean  @default(true)
   warehouse_id          String?  @db.Uuid
   row_id                String?  @db.Uuid
@@ -1328,12 +1425,30 @@ model RentalContractDetail {
   warehouse_template WarehouseTemplate @relation(fields: [warehouse_template_id], references: [id])
   warehouse          Warehouse?        @relation(fields: [warehouse_id], references: [id])
   row                Row?              @relation(fields: [row_id], references: [id])
+  detail_rows        RentalContractDetailRow[]
 
   @@index([rental_contract_id])
   @@index([warehouse_template_id])
   @@index([warehouse_id])
   @@index([row_id])
   @@map("rental_contract_details")
+}
+
+model RentalContractDetailRow {
+  id                        String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  rental_contract_detail_id String @db.Uuid
+  row_template_id           String @db.Uuid
+
+  created_at DateTime @default(now())
+  created_by String?
+
+  rental_contract_detail RentalContractDetail @relation(fields: [rental_contract_detail_id], references: [id], onDelete: Cascade)
+  row_template           RowTemplate          @relation(fields: [row_template_id], references: [id])
+
+  @@unique([rental_contract_detail_id, row_template_id])
+  @@index([rental_contract_detail_id])
+  @@index([row_template_id])
+  @@map("rental_contract_detail_rows")
 }
 
 model RentalContractAddon {

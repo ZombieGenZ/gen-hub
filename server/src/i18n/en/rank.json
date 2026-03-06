@@ -1,0 +1,26 @@
+{
+  "success": {
+    "created": "Rank created successfully",
+    "updated": "Rank updated successfully",
+    "deleted": "Rank deleted successfully"
+  },
+  "errors": {
+    "not_found": "Rank not found",
+    "name_exists": "Rank name already exists",
+    "cannot_remove_default": "Cannot unset default. Set another record as default first.",
+    "cannot_delete_default": "Cannot delete default record. Set another record as default first."
+  },
+  "validation": {
+    "name_required": "Rank name is required",
+    "name_string": "Rank name must be a string",
+    "name_max_length": "Rank name must not exceed 255 characters",
+    "description_string": "Description must be a string",
+    "is_default_boolean": "is_default must be a boolean",
+    "is_active_boolean": "is_active must be a boolean",
+    "min_loyalty_points_number": "Min loyalty points must be an integer",
+    "min_loyalty_points_min": "Min loyalty points must be >= 0",
+    "limit_positive": "Limit must be positive",
+    "offset_min": "Offset must be >= 0",
+    "keywords_string": "Keywords must be a string"
+  }
+}

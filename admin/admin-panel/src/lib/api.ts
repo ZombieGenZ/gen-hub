@@ -600,7 +600,10 @@ export const systemLogsApi = {
     }): Promise<{ data: SystemLog[]; meta: { total: number; page: number; limit: number; totalPages: number } }> => {
         const params = new URLSearchParams();
         if (options?.page) params.append('page', String(options.page));
-        if (options?.limit) params.append('limit', String(options.limit));
+        if (options?.limit) {
+            const normalizedLimit = Math.max(1, Math.min(100, options.limit));
+            params.append('limit', String(normalizedLimit));
+        }
         if (options?.level) params.append('level', options.level);
         if (options?.module) params.append('module', options.module);
         if (options?.search) params.append('search', options.search);
@@ -609,6 +612,51 @@ export const systemLogsApi = {
 
         const { data } = await api.get(`/admin/system-logs?${params.toString()}`);
         return normalizeSystemLogsResponse(data);
+    },
+
+    exportAll: async (options?: {
+        level?: 'INFO' | 'WARN' | 'ERROR' | 'DEBUG';
+        module?: string;
+        search?: string;
+        startDate?: string;
+        endDate?: string;
+        maxLogs?: number;
+    }): Promise<SystemLog[]> => {
+        const pageSize = 100;
+        const requestedMax = typeof options?.maxLogs === 'number' && options.maxLogs > 0
+            ? Math.floor(options.maxLogs)
+            : undefined;
+
+        let page = 1;
+        let totalPages = 1;
+        const allLogs: SystemLog[] = [];
+
+        do {
+            const response = await systemLogsApi.getAll({
+                page,
+                limit: pageSize,
+                level: options?.level,
+                module: options?.module,
+                search: options?.search,
+                startDate: options?.startDate,
+                endDate: options?.endDate,
+            });
+
+            if (!Array.isArray(response.data) || response.data.length === 0) {
+                break;
+            }
+
+            allLogs.push(...response.data);
+
+            if (requestedMax && allLogs.length >= requestedMax) {
+                return allLogs.slice(0, requestedMax);
+            }
+
+            totalPages = response.meta?.totalPages ?? page;
+            page += 1;
+        } while (page <= totalPages);
+
+        return allLogs;
     },
 
     getStats: async (): Promise<SystemLogsStats> => {

@@ -17,6 +17,14 @@ export interface IRentalContractWithRelations extends RentalContract {
 }
 
 export interface IRentalContractDetailWithRelations extends RentalContractDetail {
+    detail_rows?: {
+        row_template_id: string;
+        row_template?: {
+            id: string;
+            name: string;
+            code: string;
+        } | null;
+    }[];
     warehouse_template?: {
         id: string;
         name: string;

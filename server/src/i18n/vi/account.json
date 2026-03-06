@@ -1,39 +1,53 @@
 {
-    "profile": {
-        "get_success": "Lấy thông tin tài khoản thành công"
-    },
-    "change_password": {
-        "success": "Thay đổi mật khẩu thành công",
-        "incorrect_current_password": "Mật khẩu hiện tại không đúng",
-        "cannot_change_social_account": "Tài khoản đăng ký bằng Google/Facebook không thể đổi mật khẩu",
-        "password_mismatch": "Xác nhận mật khẩu không khớp"
-    },
-    "update_profile": {
-        "success": "Cập nhật thông tin thành công"
-    },
-    "platform_auth": {
-        "google_success": "Đăng nhập bằng Google thành công",
-        "facebook_success": "Đăng nhập bằng Facebook thành công",
-        "link_google_success": "Đã liên kết tài khoản Google thành công",
-        "link_facebook_success": "Đã liên kết tài khoản Facebook thành công",
-        "unlink_success": "Đã gỡ liên kết thành công",
-        "already_linked_google": "Tài khoản đã liên kết với Google",
-        "already_linked_facebook": "Tài khoản đã liên kết với Facebook",
-        "cannot_unlink_primary": "Không thể gỡ liên kết chính",
-        "primary_required_for_2fa": "Chỉ liên kết chính mới có thể thiết lập 2FA",
-        "primary_required_for_unlink": "Chỉ đăng nhập bằng liên kết chính mới có thể gỡ liên kết"
-    },
-    "download_data": {
-        "success": "Tải xuống dữ liệu thành công"
-    },
-    "delete_account": {
-        "success": "Xóa tài khoản thành công. Tài khoản của bạn đã được xóa.",
-        "invalid_confirmation": "Xác nhận không hợp lệ. Vui lòng nhập 'XÓA TÀI KHOẢN' hoặc 'DELETE ACCOUNT' để xác nhận."
-    },
-    "validation": {
-        "reason_string": "Lý do phải là chuỗi ký tự",
-        "reason_max_length": "Lý do không được vượt quá 500 ký tự",
-        "confirmation_required": "Xác nhận xóa tài khoản là bắt buộc",
-        "confirmation_string": "Xác nhận phải là chuỗi ký tự"
-    }
+  "profile": {
+    "get_success": "Lấy thông tin tài khoản thành công"
+  },
+  "change_password": {
+    "success": "Thay đổi mật khẩu thành công",
+    "incorrect_current_password": "Mật khẩu hiện tại không đúng",
+    "cannot_change_social_account": "Tài khoản đăng ký bằng Google/Facebook không thể đổi mật khẩu",
+    "password_mismatch": "Xác nhận mật khẩu không khớp"
+  },
+  "update_profile": {
+    "success": "Cập nhật thông tin thành công"
+  },
+  "platform_auth": {
+    "google_success": "Đăng nhập bằng Google thành công",
+    "facebook_success": "Đăng nhập bằng Facebook thành công",
+    "link_google_success": "Đã liên kết tài khoản Google thành công",
+    "link_facebook_success": "Đã liên kết tài khoản Facebook thành công",
+    "unlink_success": "Đã gỡ liên kết thành công",
+    "already_linked_google": "Tài khoản đã liên kết với Google",
+    "already_linked_facebook": "Tài khoản đã liên kết với Facebook",
+    "cannot_unlink_primary": "Không thể gỡ liên kết chính",
+    "primary_required_for_2fa": "Chỉ liên kết chính mới có thể thiết lập 2FA",
+    "primary_required_for_unlink": "Chỉ đăng nhập bằng liên kết chính mới có thể gỡ liên kết"
+  },
+  "download_data": {
+    "success": "Tải xuống dữ liệu thành công"
+  },
+  "delete_account": {
+    "success": "Xóa tài khoản thành công. Tài khoản của bạn đã được xóa.",
+    "invalid_confirmation": "Xác nhận không hợp lệ. Vui lòng nhập 'XÓA TÀI KHOẢN' hoặc 'DELETE ACCOUNT' để xác nhận."
+  },
+  "avatar_cover": {
+    "avatar_uploaded": "Tải avatar lên thành công",
+    "cover_uploaded": "Tải cover lên thành công",
+    "default_avatar_not_configured": "Hệ thống chưa cấu hình avatar mặc định",
+    "default_cover_not_configured": "Hệ thống chưa cấu hình cover mặc định",
+    "default_avatar_not_found": "Avatar mặc định không tồn tại hoặc không hoạt động",
+    "default_cover_not_found": "Cover mặc định không tồn tại hoặc không hoạt động",
+    "avatar_default_set": "Đã đặt avatar mặc định",
+    "cover_default_set": "Đã đặt cover mặc định",
+    "avatar_not_found": "Không tìm thấy avatar được chọn",
+    "cover_not_found": "Không tìm thấy cover được chọn",
+    "avatar_selected": "Đã chọn avatar thành công",
+    "cover_selected": "Đã chọn cover thành công"
+  },
+  "validation": {
+    "reason_string": "Lý do phải là chuỗi ký tự",
+    "reason_max_length": "Lý do không được vượt quá 500 ký tự",
+    "confirmation_required": "Xác nhận xóa tài khoản là bắt buộc",
+    "confirmation_string": "Xác nhận phải là chuỗi ký tự"
+  }
 }

@@ -1,0 +1,28 @@
+{
+  "success": {
+    "created": "Tạo phone code thành công",
+    "updated": "Cập nhật phone code thành công",
+    "deleted": "Xóa phone code thành công"
+  },
+  "errors": {
+    "not_found": "Không tìm thấy phone code",
+    "name_exists": "Tên hoặc mã phone code đã tồn tại",
+    "cannot_remove_default": "Không hỗ trợ trường này",
+    "cannot_delete_default": "Không hỗ trợ trường này"
+  },
+  "validation": {
+    "name_required": "Tên quốc gia không được để trống",
+    "name_string": "Tên quốc gia phải là chuỗi",
+    "name_max_length": "Tên quốc gia không được quá 255 ký tự",
+    "description_string": "Mô tả phải là chuỗi",
+    "code_required": "Mã đầu số là bắt buộc",
+    "code_string": "Mã đầu số phải là chuỗi",
+    "code_format": "Mã đầu số phải có dạng +84",
+    "flag_url_string": "Flag URL phải là chuỗi",
+    "flag_url_url": "Flag URL không hợp lệ",
+    "is_active_boolean": "is_active phải là boolean",
+    "limit_positive": "Limit phải là số dương",
+    "offset_min": "Offset phải >= 0",
+    "keywords_string": "Keywords phải là chuỗi"
+  }
+}

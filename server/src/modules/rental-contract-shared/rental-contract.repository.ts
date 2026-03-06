@@ -5,6 +5,10 @@ import { PaginationConfigService } from '../../common/config/pagination-config.s
 import { QueryRentalContractDto } from './dto';
 import { IRentalContractWithRelations, IPaginatedResponse } from './interfaces';
 
+type CreateRentalContractDetailData = Omit<Prisma.RentalContractDetailCreateManyInput, 'rental_contract_id'> & {
+    rowTemplateIds?: string[];
+};
+
 /**
  * Repository xử lý database operations cho RentalContract
  */
@@ -42,6 +46,17 @@ export class RentalContractRepository {
                         id: true,
                         name: true,
                         code: true,
+                    },
+                },
+                detail_rows: {
+                    include: {
+                        row_template: {
+                            select: {
+                                id: true,
+                                name: true,
+                                code: true,
+                            },
+                        },
                     },
                 },
             },
@@ -85,6 +100,17 @@ export class RentalContractRepository {
                         code: true,
                     },
                 },
+                detail_rows: {
+                    include: {
+                        row_template: {
+                            select: {
+                                id: true,
+                                name: true,
+                                code: true,
+                            },
+                        },
+                    },
+                },
             },
         },
     };
@@ -112,19 +138,32 @@ export class RentalContractRepository {
 
     async createWithDetails(
         contractData: Prisma.RentalContractCreateInput,
-        detailsData: any[],
+        detailsData: CreateRentalContractDetailData[],
     ): Promise<IRentalContractWithRelations> {
         return this.prisma.$transaction(async (tx) => {
             const contract = await tx.rentalContract.create({
                 data: contractData,
             });
 
-            if (detailsData.length > 0) {
-                await tx.rentalContractDetail.createMany({
-                    data: detailsData.map(d => ({
-                        ...d,
+            for (const detail of detailsData) {
+                const { rowTemplateIds = [], ...detailData } = detail;
+                const uniqueRowTemplateIds = [...new Set(rowTemplateIds)];
+                await tx.rentalContractDetail.create({
+                    data: {
+                        ...detailData,
                         rental_contract_id: contract.id,
-                    })),
+                        ...(uniqueRowTemplateIds.length > 0 && {
+                            detail_rows: {
+                                createMany: {
+                                    data: uniqueRowTemplateIds.map((rowTemplateId) => ({
+                                        row_template_id: rowTemplateId,
+                                        created_by: detail.created_by,
+                                    })),
+                                    skipDuplicates: true,
+                                },
+                            },
+                        }),
+                    },
                 });
             }
 
@@ -389,8 +428,12 @@ export class RentalContractRepository {
                             // Xung đột: thuê row trùng với row đang thuê
                             {
                                 is_whole_warehouse: false,
-                                row_template_ids: { hasSome: rowTemplateIds },
-                            },
+                                detail_rows: {
+                                    some: {
+                                        row_template_id: { in: rowTemplateIds },
+                                    },
+                                },
+                            } as Prisma.RentalContractDetailWhereInput,
                             // Xung đột: thuê cả kho nhưng có row của kho đó đang được thuê
                             {
                                 is_whole_warehouse: true,

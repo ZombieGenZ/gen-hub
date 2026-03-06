@@ -1,0 +1,28 @@
+{
+  "success": {
+    "created": "Phone code created successfully",
+    "updated": "Phone code updated successfully",
+    "deleted": "Phone code deleted successfully"
+  },
+  "errors": {
+    "not_found": "Phone code not found",
+    "name_exists": "Phone code name or code already exists",
+    "cannot_remove_default": "Not supported",
+    "cannot_delete_default": "Not supported"
+  },
+  "validation": {
+    "name_required": "Country name is required",
+    "name_string": "Country name must be a string",
+    "name_max_length": "Country name must not exceed 255 characters",
+    "description_string": "Description must be a string",
+    "code_required": "Phone code is required",
+    "code_string": "Phone code must be a string",
+    "code_format": "Phone code must be in +84 format",
+    "flag_url_string": "Flag URL must be a string",
+    "flag_url_url": "Flag URL must be valid",
+    "is_active_boolean": "is_active must be a boolean",
+    "limit_positive": "Limit must be positive",
+    "offset_min": "Offset must be >= 0",
+    "keywords_string": "Keywords must be a string"
+  }
+}

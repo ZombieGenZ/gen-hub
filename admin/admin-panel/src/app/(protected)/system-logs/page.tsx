@@ -27,6 +27,7 @@ export default function SystemLogsPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isConnected, setIsConnected] = useState(false);
     const [isPaused, setIsPaused] = useState(false);
+    const isPausedRef = useRef(false);
     const [autoScroll, setAutoScroll] = useState(true);
     const consoleRef = useRef<HTMLDivElement>(null);
     const [stats, setStats] = useState<{ total: number; recentCount: number; byLevel: Record<string, number> } | null>(null);
@@ -47,9 +48,11 @@ export default function SystemLogsPage() {
         try {
             const response = await systemLogsApi.getAll({ page: 1, limit: 100 });
             // Reverse to show oldest first (like terminal)
-            setLogs([...response.data].reverse());
+            const normalizedLogs = Array.isArray(response.data) ? response.data : [];
+            setLogs([...normalizedLogs].reverse());
         } catch (error) {
             console.error('Failed to fetch logs:', error);
+            setLogs([]);
         } finally {
             setIsLoading(false);
         }
@@ -67,24 +70,34 @@ export default function SystemLogsPage() {
     const fetchModules = useCallback(async () => {
         try {
             const response = await systemLogsApi.getModules();
-            setModules(response);
+            setModules(Array.isArray(response) ? response : []);
         } catch (error) {
             console.error('Failed to fetch modules:', error);
+            setModules([]);
         }
     }, []);
 
     useEffect(() => {
         fetchInitialLogs();
+    }, [fetchInitialLogs]);
+
+    useEffect(() => {
         fetchStats();
         fetchModules();
+    }, [fetchStats, fetchModules]);
 
+    useEffect(() => {
+        isPausedRef.current = isPaused;
+    }, [isPaused]);
+
+    useEffect(() => {
         // Connect to WebSocket for realtime updates
         const socket = systemLogsSocket.connect();
 
         socket.on('connect', () => {
             setIsConnected(true);
             systemLogsSocket.subscribe((newLog) => {
-                if (!isPaused) {
+                if (!isPausedRef.current) {
                     // Add new logs to bottom (oldest first, newest last like terminal)
                     setLogs((prev) => [...prev, newLog].slice(-200)); // Keep max 200 logs
 
@@ -114,7 +127,7 @@ export default function SystemLogsPage() {
             systemLogsSocket.unsubscribe();
             systemLogsSocket.disconnect();
         };
-    }, [fetchInitialLogs, fetchStats, fetchModules, isPaused]);
+    }, []);
 
     // Auto-scroll to bottom when new logs arrive (terminal style)
     useEffect(() => {
@@ -161,22 +174,20 @@ export default function SystemLogsPage() {
     const handleExport = async () => {
         setIsExporting(true);
         try {
-            // Fetch all logs with filters (up to 10000)
-            const response = await systemLogsApi.getAll({
-                page: 1,
-                limit: exportMaxLogs || 10000000,
+            const exportedLogs = await systemLogsApi.exportAll({
                 level: exportLevel || undefined,
                 module: exportModule || undefined,
                 startDate: exportStartDate || undefined,
                 endDate: exportEndDate || undefined,
+                maxLogs: typeof exportMaxLogs === 'number' ? exportMaxLogs : undefined,
             });
 
-            if (response.data.length === 0) {
+            if (exportedLogs.length === 0) {
                 toast.warning(t('systemLogs.export.noData') || 'No logs found with selected filters');
                 return;
             }
 
-            const logText = response.data.map(log =>
+            const logText = exportedLogs.map(log =>
                 `[${new Date(log.created_at).toISOString()}] [${log.level}] [${log.module}:${log.action}] ${log.message}`
             ).join('\n');
 

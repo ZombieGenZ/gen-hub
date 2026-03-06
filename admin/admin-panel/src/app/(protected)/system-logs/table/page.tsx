@@ -63,11 +63,17 @@ export default function SystemLogsTablePage() {
                 module: moduleFilter || undefined,
                 search: searchQuery || undefined,
             });
-            setLogs(response.data);
-            setTotalPages(response.meta.totalPages);
-            setTotal(response.meta.total);
+            const normalizedLogs = Array.isArray(response.data) ? response.data : [];
+            const normalizedMeta = response.meta ?? { total: 0, page: 1, limit: 50, totalPages: 1 };
+
+            setLogs(normalizedLogs);
+            setTotalPages(typeof normalizedMeta.totalPages === 'number' ? normalizedMeta.totalPages : 1);
+            setTotal(typeof normalizedMeta.total === 'number' ? normalizedMeta.total : normalizedLogs.length);
         } catch (error) {
             console.error('Failed to fetch logs:', error);
+            setLogs([]);
+            setTotalPages(1);
+            setTotal(0);
         } finally {
             setIsLoading(false);
         }
@@ -85,21 +91,21 @@ export default function SystemLogsTablePage() {
     const fetchModules = useCallback(async () => {
         try {
             const response = await systemLogsApi.getModules();
-            setModules(response);
+            setModules(Array.isArray(response) ? response : []);
         } catch (error) {
             console.error('Failed to fetch modules:', error);
+            setModules([]);
         }
     }, []);
 
     useEffect(() => {
-        fetchLogs();
         fetchStats();
         fetchModules();
-    }, [fetchLogs, fetchStats, fetchModules]);
+    }, [fetchStats, fetchModules]);
 
     useEffect(() => {
         fetchLogs();
-    }, [page, levelFilter, moduleFilter, searchQuery, fetchLogs]);
+    }, [fetchLogs]);
 
     // Alt + scroll to scroll horizontally in the table
     useEffect(() => {
@@ -178,21 +184,20 @@ export default function SystemLogsTablePage() {
     const handleExport = async () => {
         setIsExporting(true);
         try {
-            const response = await systemLogsApi.getAll({
-                page: 1,
-                limit: exportMaxLogs || 10000000,
+            const exportedLogs = await systemLogsApi.exportAll({
                 level: exportLevel || undefined,
                 module: exportModule || undefined,
                 startDate: exportStartDate || undefined,
                 endDate: exportEndDate || undefined,
+                maxLogs: typeof exportMaxLogs === 'number' ? exportMaxLogs : undefined,
             });
 
-            if (response.data.length === 0) {
+            if (exportedLogs.length === 0) {
                 toast.warning(t('systemLogs.export.noData') || 'No logs found with selected filters');
                 return;
             }
 
-            const logText = response.data.map(log =>
+            const logText = exportedLogs.map(log =>
                 `[${new Date(log.created_at).toISOString()}] [${log.level}] [${log.module}:${log.action}] ${log.message}`
             ).join('\n');
 

@@ -543,7 +543,7 @@ export default function CustomerDashboardOverview() {
                     <Card className="h-full border-0 shadow-premium">
                         <CardHeader className="flex flex-row items-center justify-between pb-2">
                             <CardTitle className="text-base font-semibold">Tiến độ vận đơn</CardTitle>
-                            <Link href="#" className="text-[10px] text-primary hover:underline flex items-center gap-1 font-medium">
+                            <Link href="/warehouse-3d" className="text-[10px] text-primary hover:underline flex items-center gap-1 font-medium">
                                 Xem chi tiết <ArrowUpRightIcon className="w-2.5 h-2.5" />
                             </Link>
                         </CardHeader>

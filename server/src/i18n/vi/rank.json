@@ -1,0 +1,26 @@
+{
+  "success": {
+    "created": "Tạo hạng thành công",
+    "updated": "Cập nhật hạng thành công",
+    "deleted": "Xóa hạng thành công"
+  },
+  "errors": {
+    "not_found": "Không tìm thấy hạng",
+    "name_exists": "Tên hạng đã tồn tại",
+    "cannot_remove_default": "Không thể bỏ mặc định. Hãy đặt bản ghi khác làm mặc định trước.",
+    "cannot_delete_default": "Không thể xóa bản ghi mặc định. Hãy đặt bản ghi khác làm mặc định trước."
+  },
+  "validation": {
+    "name_required": "Tên hạng không được để trống",
+    "name_string": "Tên hạng phải là chuỗi",
+    "name_max_length": "Tên hạng không được quá 255 ký tự",
+    "description_string": "Mô tả phải là chuỗi",
+    "is_default_boolean": "is_default phải là boolean",
+    "is_active_boolean": "is_active phải là boolean",
+    "min_loyalty_points_number": "Mốc điểm tích lũy tối thiểu phải là số nguyên",
+    "min_loyalty_points_min": "Mốc điểm tích lũy tối thiểu phải >= 0",
+    "limit_positive": "Limit phải là số dương",
+    "offset_min": "Offset phải >= 0",
+    "keywords_string": "Keywords phải là chuỗi"
+  }
+}

@@ -187,12 +187,11 @@ export class RentalContractService {
       };
 
       const detailsData = allPriceDetails.map((d) => ({
-        rental_contract_id: '',
         warehouse_template_id: d.templateId,
         warehouse_name: d.warehouseName,
         warehouse_description: d.warehouseDescription || null,
         contents_description: d.contentsDescription || null,
-        row_template_ids: d.rowTemplateIds,
+        rowTemplateIds: d.rowTemplateIds,
         is_whole_warehouse: d.isWholeWarehouse,
         price_per_month: new Decimal(d.pricePerMonth),
         discount_rate: new Decimal(d.discountRate),
@@ -647,9 +646,8 @@ export class RentalContractService {
 
     for (const detail of contract.details) {
       if (detail.warehouse_template_id) templateIds.push(detail.warehouse_template_id);
-      if (detail.row_template_ids && detail.row_template_ids.length > 0) {
-        // row_template_ids could be null or empty
-        detail.row_template_ids.forEach(id => rowTemplateIds.push(id));
+      if (detail.detail_rows && detail.detail_rows.length > 0) {
+        detail.detail_rows.forEach((relation) => rowTemplateIds.push(relation.row_template_id));
       }
     }
 
