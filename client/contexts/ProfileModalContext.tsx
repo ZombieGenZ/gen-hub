@@ -4,27 +4,34 @@ interface ProfileModalContextType {
     isOpen: boolean
     openModal: () => void
     closeModal: () => void
+    // Deposit modal
+    isDepositOpen: boolean
+    opendepositModal: () => void
+    closedepositModal: () => void
 }
 
 const ProfileModalContext = createContext<ProfileModalContextType | undefined>(undefined)
 
 export function ProfileModalProvider({ children }: { children: React.ReactNode }) {
     const [isOpen, setIsOpen] = useState(false)
-
-    // Debug logging
-    React.useEffect(() => {
-        console.log('ProfileModalProvider mounted')
-        return () => console.log('ProfileModalProvider unmounted')
-    }, [])
+    const [isDepositOpen, setIsDepositOpen] = useState(false)
 
     const openModal = useCallback(() => {
-        console.log('openModal called')
         setIsOpen(true)
     }, [])
 
     const closeModal = useCallback(() => setIsOpen(false), [])
 
-    const value = useMemo(() => ({ isOpen, openModal, closeModal }), [isOpen, openModal, closeModal])
+    const opendepositModal = useCallback(() => {
+        setIsDepositOpen(true)
+    }, [])
+
+    const closedepositModal = useCallback(() => setIsDepositOpen(false), [])
+
+    const value = useMemo(
+        () => ({ isOpen, openModal, closeModal, isDepositOpen, opendepositModal, closedepositModal }),
+        [isOpen, openModal, closeModal, isDepositOpen, opendepositModal, closedepositModal],
+    )
 
     return (
         <ProfileModalContext.Provider value={value}>

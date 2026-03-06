@@ -1,0 +1,281 @@
+"use client";
+
+import React, { useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { OrganizationService } from "@/services/organization/organization.service";
+import { OrganizationMemberService } from "@/services/organization/organization_member.service";
+import { OrganizationRoleService } from "@/services/organization/organization_role.service";
+import { Organization } from "@/types/organization/organization.type";
+import { OrganizationMember } from "@/types/organization/organization_member.type";
+import { OrganizationRole, OrganizationPermission } from "@/types/organization/organization_role.type";
+import { authStorage } from "@/services/auth/auth-storage.service";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { OrgProfileTab } from "@/components/organization/OrgProfileTab";
+import { OrgMembersTab } from "@/components/organization/OrgMembersTab";
+import { OrgRolesTab } from "@/components/organization/OrgRolesTab";
+import { OrgDangerTab } from "@/components/organization/OrgDangerTab";
+import { Loader2, Building2 } from "lucide-react";
+
+const organizationService = new OrganizationService();
+const memberService = new OrganizationMemberService();
+const roleService = new OrganizationRoleService();
+
+export default function CustomerOrganizationSettingsPage() {
+    const router = useRouter();
+    const [organization, setOrganization] = useState<Organization | null>(null);
+    const [members, setMembers] = useState<OrganizationMember[]>([]);
+    const [roles, setRoles] = useState<OrganizationRole[]>([]);
+    const [permissions, setPermissions] = useState<OrganizationPermission[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    const getToken = () => {
+        const token = authStorage.getAccessToken();
+        if (!token) {
+            router.push("/login");
+            return null;
+        }
+        return token;
+    };
+
+    const fetchOrganization = useCallback(async () => {
+        const token = getToken();
+        if (!token) return null;
+        try {
+            // Fetch user's organizations and use the first one (customer is typically in 1 org)
+            const response = await organizationService.getOrganizations(token, { limit: 1 });
+            if (response.items?.length > 0) {
+                setOrganization(response.items[0]);
+                return response.items[0];
+            }
+            return null;
+        } catch (err: any) {
+            setError(err.message);
+            return null;
+        }
+    }, []);
+
+    const fetchMembers = useCallback(async (orgId: string) => {
+        const token = getToken();
+        if (!token) return;
+        try {
+            const data = await memberService.getMembers(token, orgId, { limit: 100 });
+            setMembers(data.items || []);
+        } catch (err: any) {
+            console.error("Failed to fetch members:", err);
+            setMembers([]);
+        }
+    }, []);
+
+    const fetchRoles = useCallback(async (orgId: string) => {
+        const token = getToken();
+        if (!token) return;
+        try {
+            const data = await roleService.getRoles(token, orgId, { limit: 100 });
+            setRoles(data.items || []);
+        } catch (err: any) {
+            console.error("Failed to fetch roles:", err);
+            setRoles([]);
+        }
+    }, []);
+
+    useEffect(() => {
+        const init = async () => {
+            setLoading(true);
+            const org = await fetchOrganization();
+            if (org) {
+                await Promise.all([fetchMembers(org.id), fetchRoles(org.id)]);
+            }
+            setLoading(false);
+        };
+        init();
+    }, [fetchOrganization, fetchMembers, fetchRoles]);
+
+    // --- Organization Owner has FULL control ---
+
+    const handleUpdateOrg = async (data: Partial<Organization>) => {
+        if (!organization) return;
+        const token = getToken();
+        if (!token) return;
+        await organizationService.updateOrganization(token, organization.id, data as any);
+        await fetchOrganization();
+    };
+
+    const handleDeleteOrg = async () => {
+        if (!organization) return;
+        console.log("Deleting organization:", organization.id);
+        router.push("/dashboard/customer");
+    };
+
+    // --- Members (Owner can invite, remove, assign roles) ---
+    const handleInviteMembers = async (emails: string[]) => {
+        if (!organization) return;
+        const token = getToken();
+        if (!token) return;
+        await memberService.inviteMembers(token, organization.id, emails);
+        await fetchMembers(organization.id);
+    };
+
+    const handleRemoveMember = async (memberId: string) => {
+        if (!organization) return;
+        const token = getToken();
+        if (!token) return;
+        await memberService.removeMember(token, organization.id, memberId);
+        await fetchMembers(organization.id);
+    };
+
+    const handleAssignRoles = async (memberId: string, roleIds: string[]) => {
+        if (!organization) return;
+        const token = getToken();
+        if (!token) return;
+        await memberService.assignRoles(token, organization.id, memberId, roleIds);
+        await fetchMembers(organization.id);
+    };
+
+    const handleCancelInvite = async (memberId: string) => {
+        if (!organization) return;
+        const token = getToken();
+        if (!token) return;
+        await memberService.cancelInvite(token, organization.id, memberId);
+        await fetchMembers(organization.id);
+    };
+
+    // --- Roles (Owner can create, edit, delete custom roles) ---
+    const handleCreateRole = async (data: { name: string; description: string; permission_ids: string[] }) => {
+        if (!organization) return;
+        const token = getToken();
+        if (!token) return;
+        await roleService.createRole(token, organization.id, data);
+        await fetchRoles(organization.id);
+    };
+
+    const handleUpdateRole = async (roleId: string, data: { name?: string; description?: string; permission_ids?: string[] }) => {
+        if (!organization) return;
+        const token = getToken();
+        if (!token) return;
+        await roleService.updateRole(token, organization.id, roleId, data);
+        await fetchRoles(organization.id);
+    };
+
+    const handleDeleteRole = async (roleId: string) => {
+        if (!organization) return;
+        const token = getToken();
+        if (!token) return;
+        await roleService.deleteRole(token, organization.id, roleId);
+        await fetchRoles(organization.id);
+    };
+
+    if (loading) {
+        return (
+            <div className="flex-1 flex items-center justify-center py-24">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+        );
+    }
+
+    if (error || !organization) {
+        return (
+            <div className="flex-1 flex flex-col items-center justify-center py-24 space-y-4">
+                <Building2 className="w-12 h-12 text-muted-foreground/30" />
+                <p className="text-lg font-medium text-foreground">
+                    {error || "Bạn chưa thuộc tổ chức nào"}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                    Liên hệ quản trị viên để được thêm vào tổ chức
+                </p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="flex-1">
+            <main className="p-4 md:p-8 max-w-5xl mx-auto space-y-6">
+                {/* Organization Header */}
+                <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center text-primary text-2xl font-bold">
+                        {organization.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                        <h1 className="text-2xl font-bold text-foreground">
+                            {organization.name}
+                        </h1>
+                        {organization.international_name && (
+                            <p className="text-sm text-muted-foreground mt-0.5">
+                                {organization.international_name}
+                            </p>
+                        )}
+                    </div>
+                </div>
+
+                {/* Tabs - Organization Owner has full control */}
+                <Tabs defaultValue="profile" className="w-full">
+                    <TabsList className="bg-transparent border-b border-border rounded-none p-0 h-auto w-full justify-start gap-0">
+                        <TabsTrigger
+                            value="profile"
+                            className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-2.5 text-sm font-medium"
+                        >
+                            Hồ sơ
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="members"
+                            className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-2.5 text-sm font-medium"
+                        >
+                            Thành viên ({members.length})
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="roles"
+                            className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-2.5 text-sm font-medium"
+                        >
+                            Vai trò ({roles.length})
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="danger"
+                            className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-2.5 text-sm font-medium"
+                        >
+                            Nguy hiểm
+                        </TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="profile" className="mt-6">
+                        <OrgProfileTab
+                            organization={organization}
+                            onUpdate={handleUpdateOrg}
+                        />
+                    </TabsContent>
+
+                    <TabsContent value="members" className="mt-6">
+                        <OrgMembersTab
+                            members={members}
+                            orgRoles={roles}
+                            onInviteMembers={handleInviteMembers}
+                            onRemoveMember={handleRemoveMember}
+                            onAssignRoles={handleAssignRoles}
+                            onCancelInvite={handleCancelInvite}
+                            isAdminView={false}
+                        />
+                    </TabsContent>
+
+                    <TabsContent value="roles" className="mt-6">
+                        <OrgRolesTab
+                            orgId={organization.id}
+                            roles={roles}
+                            permissions={permissions}
+                            onCreateRole={handleCreateRole}
+                            onUpdateRole={handleUpdateRole}
+                            onDeleteRole={handleDeleteRole}
+                            onRefresh={() => fetchRoles(organization.id)}
+                            isAdminView={false}
+                        />
+                    </TabsContent>
+
+                    <TabsContent value="danger" className="mt-6">
+                        <OrgDangerTab
+                            organizationName={organization.name}
+                            onDelete={handleDeleteOrg}
+                        />
+                    </TabsContent>
+                </Tabs>
+            </main>
+        </div>
+    );
+}

@@ -120,6 +120,13 @@ export class OrganizationRepository {
         return !!existing;
     }
 
+    async findByTaxCodeWithName(taxCode: string): Promise<{ name: string } | null> {
+        return this.prisma.organization.findFirst({
+            where: { tax_code: taxCode, is_deleted: false },
+            select: { name: true },
+        });
+    }
+
     async findMany(
         query: QueryOrganizationDto,
         userId?: string,

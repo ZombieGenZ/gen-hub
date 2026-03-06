@@ -72,6 +72,7 @@ export function AppSidebarContent({
     const [user, setUser] = useState<any>(null);
     const { unreadCount } = useNotifications();
     const { openModal } = useProfileModal();
+    const { opendepositModal } = useProfileModal();
     const [expandedGroups, setExpandedGroups] = useState<Record<number, boolean>>({});
 
     // Load persisted state
@@ -258,19 +259,25 @@ export function AppSidebarContent({
                             </div>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align={isCollapsed ? "start" : "end"} side="right" className="w-56 mb-2 p-2 bg-sidebar border-sidebar-border shadow-md rounded-lg">
-                            <DropdownMenuItem className="group flex flex-col items-start gap-2 p-2 focus:bg-sidebar-accent focus:text-sidebar-accent-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus:shadow-none focus:outline-none focus:ring-0 my-1 border-none cursor-pointer">
-                                <div className="flex items-center justify-between w-full">
-                                    <p className="text-[10px] uppercase tracking-wider font-semibold text-sidebar-foreground/60 ml-0.5">Số dư khả dụng</p>
-                                    <div className="opacity-0 group-hover:opacity-100 transition-all duration-200 bg-primary/10 hover:bg-primary/20 text-primary rounded-full p-1" title="Nạp tiền">
+                            <DropdownMenuItem className="group flex flex-col items-stretch gap-2 p-2 focus:bg-sidebar-accent focus:text-sidebar-accent-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus:shadow-none focus:outline-none focus:ring-0 my-1 border-none cursor-pointer" asChild>
+                                <Link href="/dashboard/customer/payment" className="flex flex-col items-stretch gap-2 w-full no-underline relative">
+                                    <div className="flex items-center w-full">
+                                        <p className="text-[10px] uppercase tracking-wider font-semibold text-sidebar-foreground/60 ml-0.5">Số dư khả dụng</p>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <WalletIcon className="w-4 h-4 text-primary" />
+                                        <span className="font-bold text-sm text-primary">
+                                            {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(user?.balance || 0)}
+                                        </span>
+                                    </div>
+                                    <div
+                                        className="opacity-0 group-hover:opacity-100 transition-all duration-200 bg-primary/10 hover:bg-primary/20 text-primary rounded-full p-1 cursor-pointer absolute top-0 right-0"
+                                        title="Nạp tiền"
+                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); opendepositModal(); }}
+                                    >
                                         <PlusIcon className="w-3 h-3" />
                                     </div>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <WalletIcon className="w-4 h-4 text-primary" />
-                                    <span className="font-bold text-sm text-primary">
-                                        {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(user?.balance || 0)}
-                                    </span>
-                                </div>
+                                </Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem
                                 className="cursor-pointer rounded-sm p-2 focus:bg-sidebar-accent focus:text-sidebar-accent-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus:shadow-none focus:outline-none focus:ring-0 my-1 border-none group"
@@ -288,9 +295,11 @@ export function AppSidebarContent({
                                 </Link>
                             </DropdownMenuItem>
                             <DropdownMenuSeparator className="my-1 bg-sidebar-border" />
-                            <DropdownMenuItem className="cursor-pointer rounded-sm p-2 focus:bg-sidebar-foreground/10 hover:bg-sidebar-foreground/10 focus:text-sidebar-foreground hover:text-sidebar-foreground focus:shadow-none focus:outline-none focus:ring-0 my-1 border-none text-sidebar-foreground">
-                                <ArrowLeftOnRectangleIcon className="mr-3 h-4 w-4" />
-                                <span className="font-medium">Đăng xuất</span>
+                            <DropdownMenuItem className="cursor-pointer rounded-sm p-2 focus:bg-sidebar-foreground/10 hover:bg-sidebar-foreground/10 focus:text-sidebar-foreground hover:text-sidebar-foreground focus:shadow-none focus:outline-none focus:ring-0 my-1 border-none text-sidebar-foreground group">
+                                <div className="flex items-center w-full">
+                                    <ArrowLeftOnRectangleIcon className="mr-3 h-4 w-4 text-sidebar-foreground/70 group-hover:text-sidebar-foreground" />
+                                    <span className="font-medium">Đăng xuất</span>
+                                </div>
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>

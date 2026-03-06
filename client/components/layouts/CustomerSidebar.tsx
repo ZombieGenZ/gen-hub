@@ -57,7 +57,6 @@ const customerNavGroups: SidebarGroup[] = [
         title: "Tài chính",
         items: [
             { href: "/dashboard/customer/payment", icon: CreditCardIcon, label: "Thanh toán" },
-            { href: "/dashboard/customer/balance", icon: BanknotesIcon, label: "Số dư tài khoản", disabled: true, badge: "Sắp có" },
             { href: "/dashboard/customer/refund-requests", icon: ArrowUturnLeftIcon, label: "Yêu cầu hoàn tiền", disabled: true, badge: "Sắp có" },
         ]
     },
@@ -66,7 +65,7 @@ const customerNavGroups: SidebarGroup[] = [
         items: [
             { href: "/dashboard/customer/notifications", icon: BellIcon, label: "Thông báo" },
             { href: "/dashboard/customer/warnings", icon: ExclamationTriangleIcon, label: "Cảnh cáo", disabled: true, badge: "Sắp có" },
-            { href: "/dashboard/customer/settings", icon: Cog6ToothIcon, label: "Cài đặt tổ chức", disabled: true, badge: "Sắp có" },
+            { href: "/dashboard/customer/organization-settings", icon: Cog6ToothIcon, label: "Cài đặt tổ chức" },
         ]
     },
 ];

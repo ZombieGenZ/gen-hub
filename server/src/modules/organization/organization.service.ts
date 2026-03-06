@@ -1629,10 +1629,11 @@ export class OrganizationService {
     if (hasDirectPermission) return;
 
     // Kiểm tra role permissions
-    const hasRolePermission = member.roles?.some((r) => {
-      // Cần fetch role permissions - tạm thời skip vì đã include trong memberInclude
-      return false; // TODO: implement full check
-    });
+    const hasRolePermission = member.roles?.some((r) =>
+      r.role?.permissions?.some(
+        (rp) => rp.permission?.key === permissionKey,
+      ),
+    );
 
     if (!hasRolePermission) {
       throw new ForbiddenException(

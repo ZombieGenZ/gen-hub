@@ -6,6 +6,7 @@ import {
     DocumentTextIcon,
     UsersIcon,
     BuildingOffice2Icon,
+    UserGroupIcon,
     UserCircleIcon,
     ChartBarIcon,
     Cog6ToothIcon,
@@ -57,7 +58,7 @@ const adminNavGroups: SidebarGroup[] = [
         title: "Người dùng",
         items: [
             { href: "/dashboard/admin/customers", icon: UsersIcon, label: "Khách hàng" },
-            { href: "/dashboard/admin/organization", icon: BuildingOffice2Icon, label: "Đối tác", exactMatch: true },
+            { href: "/dashboard/admin/organization", icon: UserGroupIcon, label: "Tổ chức" },
             { href: "/dashboard/admin/organization/update-requests", icon: ClipboardDocumentCheckIcon, label: "Yêu cầu cập nhật" },
             { href: "/dashboard/admin/organization/balance", icon: BanknotesIcon, label: "Số dư tổ chức" },
             { href: "/dashboard/admin/users", icon: UserCircleIcon, label: "Nhân viên" },

@@ -1,4 +1,5 @@
 import { OrganizationCreateRequest } from '../../types/organization/organization.type';
+import { OrganizationPermission } from '../../types/organization/organization_role.type';
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 
@@ -167,6 +168,129 @@ export class OrganizationService {
         } catch (err) {
             console.error("Lỗi khi kiểm tra mã số thuế:", err);
             return { exists: false };
+        }
+    }
+
+    /**
+     * Xóa một tổ chức
+     * @param token 
+     * @param id ID tổ chức
+     * @returns 
+     */
+    async deleteOrganization(token: string, id: string) {
+        try {
+            console.log(`[OrganizationService] Deleting organization: ${id}`);
+            const response = await fetch(`${API}/organizations/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                console.error(`[OrganizationService] Failed to delete organization ${id}:`, errorData);
+                throw new Error(errorData.message || 'Không thể xóa tổ chức');
+            }
+
+            const result = await response.json();
+            return result;
+        } catch (err) {
+            console.error(`[OrganizationService] Error in deleteOrganization for ${id}:`, err);
+            throw err;
+        }
+    }
+
+    /**
+     * Xóa nhiều tổ chức cùng lúc
+     * @param token 
+     * @param ids Danh sách ID tổ chức
+     * @returns 
+     */
+    async deleteMany(token: string, ids: string[]) {
+        try {
+            console.log(`[OrganizationService] Deleting multiple organizations:`, ids);
+            const response = await fetch(`${API}/organizations/delete/many`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ ids }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                console.error(`[OrganizationService] Failed to delete organizations:`, errorData);
+                throw new Error(errorData.message || 'Không thể xóa tổ chức');
+            }
+
+            const result = await response.json();
+            return result;
+        } catch (err) {
+            console.error(`[OrganizationService] Error in deleteMany:`, err);
+            throw err;
+        }
+    }
+
+    /**
+     * Lấy danh sách quyền của tổ chức
+     * @param token 
+     * @param orgId ID tổ chức
+     * @returns Danh sách permissions
+     */
+    async getPermissions(token: string, orgId: string): Promise<OrganizationPermission[]> {
+        try {
+            console.log(`[OrganizationService] Fetching permissions for org: ${orgId}`);
+            const response = await fetch(`${API}/organizations/${orgId}/permissions`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                console.error(`[OrganizationService] Failed to fetch permissions for org ${orgId}:`, errorData);
+                throw new Error(errorData.message || 'Không thể lấy danh sách quyền');
+            }
+
+            const data = await response.json();
+            return data.data;
+        } catch (err) {
+            console.error(`[OrganizationService] Error in getPermissions for ${orgId}:`, err);
+            throw err;
+        }
+    }
+
+    /**
+     * Lấy danh sách permissions cho phép API key (public)
+     * @returns Danh sách permissions hỗ trợ API key
+     */
+    async getApiKeyEnabledPermissions(token: string): Promise<OrganizationPermission[]> {
+        try {
+            console.log(`[OrganizationService] Fetching API key enabled permissions`);
+            const response = await fetch(`${API}/organizations/permissions/api-key-enabled`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                console.error(`[OrganizationService] Failed to fetch API key enabled permissions:`, errorData);
+                throw new Error(errorData.message || 'Không thể lấy danh sách permissions');
+            }
+
+            const data = await response.json();
+            return data.data;
+        } catch (err) {
+            console.error(`[OrganizationService] Error in getApiKeyEnabledPermissions:`, err);
+            throw err;
         }
     }
 }

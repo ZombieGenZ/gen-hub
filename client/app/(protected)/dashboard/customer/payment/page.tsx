@@ -52,9 +52,6 @@ import { useToast } from "@/contexts/ToastContext";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 import { useRouter } from "next/navigation";
-
-// ─── Constants ────────────────────────────────────────────────────────────────
-
 const LIMIT = 20;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -68,11 +65,11 @@ type FilterStatus = 'all' | 'COMPLETED' | 'PENDING' | 'FAILED';
 // ─── Config Maps ──────────────────────────────────────────────────────────────
 
 const TYPE_MAP: Record<TxType, { label: string; color: string; sign: '+' | '-' }> = {
-    DEPOSIT:    { label: 'Nạp tiền',   color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',     sign: '+' },
-    REFUND:     { label: 'Hoàn tiền',  color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',         sign: '+' },
-    PAYMENT:    { label: 'Thanh toán', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',             sign: '-' },
-    WITHDRAW:   { label: 'Rút tiền',   color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400', sign: '-' },
-    ADJUSTMENT: { label: 'Điều chỉnh', color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400',            sign: '+' },
+    DEPOSIT: { label: 'Nạp tiền', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400', sign: '+' },
+    REFUND: { label: 'Hoàn tiền', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400', sign: '+' },
+    PAYMENT: { label: 'Thanh toán', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400', sign: '-' },
+    WITHDRAW: { label: 'Rút tiền', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400', sign: '-' },
+    ADJUSTMENT: { label: 'Điều chỉnh', color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400', sign: '+' },
 };
 
 const isCredit = (type: string): boolean => type === 'DEPOSIT' || type === 'REFUND';
@@ -114,7 +111,7 @@ export default function FinancePage() {
     useEffect(() => {
         const initUser = async () => {
             const token = authStorage.getAccessToken();
-            
+
             if (!token) {
                 setLoading(false);
                 router.push("/login");
@@ -365,21 +362,17 @@ export default function FinancePage() {
 
                     {/* Filters */}
                     <div className="flex flex-col lg:flex-row gap-4">
-                        <div className="relative flex-1">
-                            <Input
-                                placeholder="Tìm kiếm nội dung giao dịch..."
-                                value={searchDescription}
-                                onChange={(e) => setSearchDescription(e.target.value)}
-                                className="pr-8"
+                        <div className="w-full lg:w-auto">
+                            <Calendar
+                                allowClear
+                                isDocsPage={true}
+                                onChange={setDate}
+                                value={date}
+                                horizontalLayout={true}
+                                showTimeInput={false}
+                                popoverAlignment="start"
+                                compact
                             />
-                            {searchDescription && (
-                                <button
-                                    onClick={() => setSearchDescription("")}
-                                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                                >
-                                    <X className="w-3.5 h-3.5" />
-                                </button>
-                            )}
                         </div>
                         <div className="w-full lg:w-45">
                             <Select value={filterType} onValueChange={(v) => setFilterType(v as FilterType)}>
@@ -409,17 +402,21 @@ export default function FinancePage() {
                                 </SelectContent>
                             </Select>
                         </div>
-                        <div className="w-full lg:w-auto">
-                            <Calendar
-                                allowClear
-                                isDocsPage={true}
-                                onChange={setDate}
-                                value={date}
-                                horizontalLayout={true}
-                                showTimeInput={false}
-                                popoverAlignment="center"
-                                compact
+                        <div className="relative flex-1">
+                            <Input
+                                placeholder="Tìm kiếm nội dung giao dịch..."
+                                value={searchDescription}
+                                onChange={(e) => setSearchDescription(e.target.value)}
+                                className="pr-8"
                             />
+                            {searchDescription && (
+                                <button
+                                    onClick={() => setSearchDescription("")}
+                                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                >
+                                    <X className="w-3.5 h-3.5" />
+                                </button>
+                            )}
                         </div>
                         <Button
                             variant="outline"
