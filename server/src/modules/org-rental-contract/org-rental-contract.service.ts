@@ -242,12 +242,11 @@ export class OrgRentalContractService {
             };
 
             const detailsData = allPriceDetails.map((d) => ({
-                rental_contract_id: '',
                 warehouse_template_id: d.templateId,
                 warehouse_name: d.warehouseName,
                 warehouse_description: d.warehouseDescription || null,
                 contents_description: d.contentsDescription || null,
-                row_template_ids: d.rowTemplateIds,
+                rowTemplateIds: d.rowTemplateIds,
                 is_whole_warehouse: d.isWholeWarehouse,
                 price_per_month: new Decimal(d.pricePerMonth),
                 discount_rate: new Decimal(d.discountRate),
@@ -595,8 +594,9 @@ export class OrgRentalContractService {
             for (const detail of contract.details) {
                 if (detail.is_whole_warehouse) {
                     lockKeys.push(`rental:lock:template:${detail.warehouse_template_id}`);
-                } else if (detail.row_template_ids) {
-                    for (const rowId of detail.row_template_ids) {
+                } else if (detail.detail_rows) {
+                    for (const detailRow of detail.detail_rows) {
+                        const rowId = detailRow.row_template_id;
                         lockKeys.push(`rental:lock:row:${rowId}`);
                     }
                 }

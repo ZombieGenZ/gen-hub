@@ -1136,6 +1136,7 @@ model RowTemplate {
 
   coupon_targets          CouponTargetRow[]
   coupon_schedule_targets CouponScheduleTargetRow[]
+  rental_contract_detail_rows RentalContractDetailRow[]
 
   generated_rows Row[] @relation("GeneratedRows")
 
@@ -1301,7 +1302,6 @@ model RentalContractDetail {
   warehouse_template_id String   @db.Uuid
   warehouse_name        String
   warehouse_description String?
-  row_template_ids      String[] @default([])
   is_whole_warehouse    Boolean  @default(true)
   warehouse_id          String?  @db.Uuid
   row_id                String?  @db.Uuid
@@ -1328,12 +1328,30 @@ model RentalContractDetail {
   warehouse_template WarehouseTemplate @relation(fields: [warehouse_template_id], references: [id])
   warehouse          Warehouse?        @relation(fields: [warehouse_id], references: [id])
   row                Row?              @relation(fields: [row_id], references: [id])
+  detail_rows        RentalContractDetailRow[]
 
   @@index([rental_contract_id])
   @@index([warehouse_template_id])
   @@index([warehouse_id])
   @@index([row_id])
   @@map("rental_contract_details")
+}
+
+model RentalContractDetailRow {
+  id                        String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  rental_contract_detail_id String @db.Uuid
+  row_template_id           String @db.Uuid
+
+  created_at DateTime @default(now())
+  created_by String?
+
+  rental_contract_detail RentalContractDetail @relation(fields: [rental_contract_detail_id], references: [id], onDelete: Cascade)
+  row_template           RowTemplate          @relation(fields: [row_template_id], references: [id])
+
+  @@unique([rental_contract_detail_id, row_template_id])
+  @@index([rental_contract_detail_id])
+  @@index([row_template_id])
+  @@map("rental_contract_detail_rows")
 }
 
 model RentalContractAddon {
