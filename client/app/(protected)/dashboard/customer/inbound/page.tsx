@@ -83,7 +83,10 @@ const ITEMS_PER_PAGE = 10;
 // ────────────────────────────────────────────────
 const STATUS_CONFIG: Record<ReceiptStatus, { label: string; className: string }> = {
     PENDING: { label: "Chờ xử lý", className: "inbound-status--pending" },
+    APPROVED: { label: "Đã duyệt", className: "inbound-status--approved" },
+    RECEIVING: { label: "Đang kiểm đếm", className: "inbound-status--receiving" },
     PROCESSING: { label: "Đang nhập kho", className: "inbound-status--processing" },
+    PUTAWAY: { label: "Đang cất hàng", className: "inbound-status--putaway" },
     COMPLETED: { label: "Hoàn thành", className: "inbound-status--completed" },
     CANCELLED: { label: "Đã hủy", className: "inbound-status--cancelled" },
 };
@@ -106,7 +109,10 @@ function StatusBadge({ status }: { status: ReceiptStatus }) {
 const FILTER_TABS: { label: string; value: ReceiptStatus | "ALL" }[] = [
     { label: "Tất cả", value: "ALL" },
     { label: "Chờ xử lý", value: "PENDING" },
+    { label: "Đã duyệt", value: "APPROVED" },
+    { label: "Đang kiểm đếm", value: "RECEIVING" },
     { label: "Đang nhập kho", value: "PROCESSING" },
+    { label: "Đang cất hàng", value: "PUTAWAY" },
 ];
 
 // ────────────────────────────────────────────────

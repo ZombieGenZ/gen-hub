@@ -124,6 +124,22 @@ export class CreateInboundRequestDto {
     @IsString({ message: i18nValidationMessage('inventory-request.validation.notes_string') })
     notes?: string;
 
+    @ApiPropertyOptional({
+        description: 'Ngày dự kiến hàng đến',
+        example: '2026-03-15T10:00:00Z',
+    })
+    @IsOptional()
+    @IsDateString({}, { message: i18nValidationMessage('inventory-request.validation.expected_arrival_date') })
+    expected_arrival?: string;
+
+    @ApiPropertyOptional({
+        description: 'Thông tin xe vận chuyển',
+        example: 'Xe tải 5 tấn - BKS 51A-12345',
+    })
+    @IsOptional()
+    @IsString()
+    vehicle_info?: string;
+
     @ApiProperty({
         description: 'Danh sách chi tiết sản phẩm nhập',
         type: [InboundDetailDto],

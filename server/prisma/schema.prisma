@@ -2373,7 +2373,10 @@ model InventoryTransaction {
 
 enum ReceiptStatus {
   PENDING
+  APPROVED
+  RECEIVING
   PROCESSING
+  PUTAWAY
   COMPLETED
   CANCELLED
 }
@@ -2387,6 +2390,15 @@ model Receipt {
   purchase_order_code String?
   status              ReceiptStatus @default(PENDING)
   notes               String?
+  expected_arrival    DateTime?
+  vehicle_info        String?
+  approved_by         String?
+  approved_at         DateTime?
+  checker_id          String?
+  receiving_started_at  DateTime?
+  receiving_completed_at DateTime?
+  putaway_started_at  DateTime?
+  putaway_completed_at DateTime?
   is_active           Boolean       @default(true)
   created_at          DateTime      @default(now())
   updated_at          DateTime      @updatedAt
@@ -2400,6 +2412,7 @@ model Receipt {
   warehouse Warehouse       @relation(fields: [warehouse_id], references: [id])
   partner   Partner?        @relation(fields: [partner_id], references: [id])
   details   ReceiptDetail[]
+  putaways  ReceiptPutaway[]
 
   @@map("receipts")
 }
@@ -2432,9 +2445,76 @@ model ReceiptDetail {
   @@map("receipt_details")
 }
 
+enum PutawayStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+model ReceiptPutaway {
+  id              String        @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  receipt_id      String        @db.Uuid
+  organization_id String        @db.Uuid
+  warehouse_id    String        @db.Uuid
+  code            String
+  status          PutawayStatus @default(PENDING)
+  worker_id       String?
+  started_at      DateTime?
+  completed_at    DateTime?
+  notes           String?
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean?  @default(false)
+  deleted_at DateTime?
+
+  created_by String?
+  updated_by String?
+  deleted_by String?
+
+  receipt Receipt              @relation(fields: [receipt_id], references: [id], onDelete: Cascade)
+  details ReceiptPutawayDetail[]
+
+  @@index([receipt_id])
+  @@index([organization_id])
+  @@index([warehouse_id])
+  @@map("receipt_putaways")
+}
+
+model ReceiptPutawayDetail {
+  id                String  @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  putaway_id        String  @db.Uuid
+  receipt_detail_id String  @db.Uuid
+  product_id        String  @db.Uuid
+  batch_id          String? @db.Uuid
+  block_id          String  @db.Uuid
+
+  expected_qty Decimal @db.Decimal(19, 4)
+  actual_qty   Decimal @default(0) @db.Decimal(19, 4)
+
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean?  @default(false)
+  deleted_at DateTime?
+
+  created_by String?
+  updated_by String?
+  deleted_by String?
+
+  putaway ReceiptPutaway @relation(fields: [putaway_id], references: [id], onDelete: Cascade)
+
+  @@index([putaway_id])
+  @@index([receipt_detail_id])
+  @@map("receipt_putaway_details")
+}
+
 enum ExportStatus {
   PENDING
   PICKING
+  CHECKING
   PACKED
   SHIPPED
   CANCELLED
@@ -2448,6 +2528,17 @@ model Export {
   code             String
   sales_order_code String?
   status           ExportStatus @default(PENDING)
+  notes            String?
+  approved_by      String?
+  approved_at      DateTime?
+  picker_id        String?
+  checker_id       String?
+  picking_started_at   DateTime?
+  picking_completed_at DateTime?
+  checking_started_at  DateTime?
+  checking_completed_at DateTime?
+  shipped_at       DateTime?
+  tracking_number  String?
   is_active        Boolean      @default(true)
   created_at       DateTime     @default(now())
   updated_at       DateTime     @updatedAt

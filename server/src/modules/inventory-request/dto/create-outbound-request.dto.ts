@@ -10,6 +10,7 @@ import {
     IsNumber,
     Min,
     IsEnum,
+    IsDateString,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { i18nValidationMessage } from 'nestjs-i18n';
@@ -89,6 +90,21 @@ export class CreateOutboundRequestDto {
     @IsOptional()
     @IsString({ message: i18nValidationMessage('inventory-request.validation.notes_string') })
     notes?: string;
+
+    @ApiPropertyOptional({
+        description: 'Ngày cần lấy hàng',
+        example: '2026-03-15',
+    })
+    @IsOptional()
+    @IsDateString()
+    required_date?: string;
+
+    @ApiPropertyOptional({
+        description: 'Thông tin xe đến nhận',
+    })
+    @IsOptional()
+    @IsString()
+    vehicle_info?: string;
 
     @ApiPropertyOptional({
         description: 'Chiến lược xuất kho (FEFO: First Expired First Out, FIFO: First In First Out)',

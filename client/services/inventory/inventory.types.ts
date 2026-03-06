@@ -5,12 +5,12 @@
 /**
  * Trạng thái phiếu nhập kho
  */
-export type ReceiptStatus = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'CANCELLED';
+export type ReceiptStatus = 'PENDING' | 'APPROVED' | 'RECEIVING' | 'PROCESSING' | 'PUTAWAY' | 'COMPLETED' | 'CANCELLED';
 
 /**
  * Trạng thái phiếu xuất kho
  */
-export type ExportStatus = 'PENDING' | 'PICKING' | 'PACKED' | 'SHIPPED' | 'CANCELLED';
+export type ExportStatus = 'PENDING' | 'PICKING' | 'CHECKING' | 'PACKED' | 'SHIPPED' | 'CANCELLED';
 
 /**
  * Chiến lược xuất kho
@@ -60,6 +60,11 @@ export interface InboundRequest {
     purchase_order_code?: string | null;
     status: ReceiptStatus;
     notes?: string | null;
+    expected_arrival?: string | null;
+    vehicle_info?: string | null;
+    approved_by?: string | null;
+    approved_at?: string | null;
+    checker_id?: string | null;
     is_active: boolean;
     created_at: string;
     updated_at: string;
@@ -158,6 +163,11 @@ export interface OutboundRequest {
     code: string;
     sales_order_code?: string | null;
     status: ExportStatus;
+    approved_by?: string | null;
+    approved_at?: string | null;
+    picker_id?: string | null;
+    checker_id?: string | null;
+    tracking_number?: string | null;
     is_active: boolean;
     created_at: string;
     updated_at: string;
@@ -210,4 +220,47 @@ export interface QueryOutboundParams {
     keywords?: string;
     status?: ExportStatus;
     warehouse_id?: string;
+}
+
+// ── Warehouse Manager Inventory Payload Types ──
+
+export interface ApproveInboundPayload {
+    actual_quantities?: { detail_id: string; actual_qty: number }[];
+    notes?: string;
+}
+
+export interface StartReceivingPayload {
+    checker_id?: string;
+}
+
+export interface ConfirmReceivingPayload {
+    details: { detail_id: string; actual_qty: number }[];
+    notes?: string;
+}
+
+export interface ConfirmPutawayPayload {
+    details?: { putaway_detail_id: string; actual_qty: number }[];
+    notes?: string;
+}
+
+export interface ApproveOutboundPayload {
+    picking_strategy?: PickingStrategy;
+    notes?: string;
+}
+
+export interface ConfirmPickingPayload {
+    details: { pick_list_detail_id: string; picked_qty: number }[];
+}
+
+export interface ConfirmCheckingPayload {
+    details: {
+        export_detail_id: string;
+        checked_qty: number;
+        passed?: boolean;
+    }[];
+}
+
+export interface CompleteShipmentPayload {
+    notes?: string;
+    tracking_number?: string;
 }

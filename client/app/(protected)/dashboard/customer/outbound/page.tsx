@@ -79,6 +79,7 @@ const ITEMS_PER_PAGE = 10;
 const STATUS_CONFIG: Record<ExportStatus, { label: string; className: string }> = {
     PENDING: { label: "Chờ xử lý", className: "outbound-status--pending" },
     PICKING: { label: "Đang nhặt hàng", className: "outbound-status--picking" },
+    CHECKING: { label: "Đang kiểm tra", className: "outbound-status--checking" },
     PACKED: { label: "Đã đóng gói", className: "outbound-status--packed" },
     SHIPPED: { label: "Đã xuất kho", className: "outbound-status--shipped" },
     CANCELLED: { label: "Đã hủy", className: "outbound-status--cancelled" },
@@ -102,7 +103,9 @@ function StatusBadge({ status }: { status: ExportStatus }) {
 const FILTER_TABS: { label: string; value: ExportStatus | "ALL" }[] = [
     { label: "Tất cả", value: "ALL" },
     { label: "Chờ xử lý", value: "PENDING" },
-    { label: "Đang nhặt hàng", value: "PICKING" },
+    { label: "Đang lấy hàng", value: "PICKING" },
+    { label: "Đang kiểm tra", value: "CHECKING" },
+    { label: "Đã đóng gói", value: "PACKED" },
 ];
 
 // ────────────────────────────────────────────────

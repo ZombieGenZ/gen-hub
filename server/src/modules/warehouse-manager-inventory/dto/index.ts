@@ -191,3 +191,140 @@ export class RejectOutboundDto {
     @IsString({ message: i18nValidationMessage('inventory-request.validation.reject_reason_string') })
     reason: string;
 }
+
+// ── Receiving (Kiểm đếm) ──
+
+export class StartReceivingDto {
+    @ApiPropertyOptional({ description: 'ID checker thực hiện' })
+    @IsOptional()
+    @IsUUID('4')
+    checker_id?: string;
+}
+
+export class ConfirmReceivingDetailDto {
+    @ApiProperty({ description: 'ID chi tiết phiếu nhập' })
+    @IsUUID('4')
+    detail_id: string;
+
+    @ApiProperty({ description: 'Số lượng thực tế đã kiểm đếm', minimum: 0 })
+    @IsNumber()
+    @Min(0)
+    actual_qty: number;
+}
+
+export class ConfirmReceivingDto {
+    @ApiProperty({ type: [ConfirmReceivingDetailDto] })
+    @IsArray()
+    @ArrayMinSize(1)
+    @ValidateNested({ each: true })
+    @Type(() => ConfirmReceivingDetailDto)
+    details: ConfirmReceivingDetailDto[];
+
+    @ApiPropertyOptional({ description: 'Ghi chú kiểm đếm' })
+    @IsOptional()
+    @IsString()
+    notes?: string;
+}
+
+// ── Putaway (Cất hàng) ──
+
+export class ConfirmPutawayDetailDto {
+    @ApiProperty({ description: 'ID chi tiết phiếu cất hàng' })
+    @IsUUID('4')
+    putaway_detail_id: string;
+
+    @ApiProperty({ description: 'Số lượng thực tế đã cất', minimum: 0 })
+    @IsNumber()
+    @Min(0)
+    actual_qty: number;
+}
+
+export class ConfirmPutawayDto {
+    @ApiPropertyOptional({ type: [ConfirmPutawayDetailDto] })
+    @IsOptional()
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => ConfirmPutawayDetailDto)
+    details?: ConfirmPutawayDetailDto[];
+
+    @ApiPropertyOptional({ description: 'Ghi chú cất hàng' })
+    @IsOptional()
+    @IsString()
+    notes?: string;
+}
+
+// ── Picking Confirm (Nhặt hàng) ──
+
+export class ConfirmPickingDetailDto {
+    @ApiProperty({ description: 'ID chi tiết pick list' })
+    @IsUUID('4')
+    pick_list_detail_id: string;
+
+    @ApiProperty({ description: 'Số lượng đã nhặt', minimum: 0 })
+    @IsNumber()
+    @Min(0)
+    picked_qty: number;
+}
+
+export class ConfirmPickingDto {
+    @ApiProperty({ type: [ConfirmPickingDetailDto] })
+    @IsArray()
+    @ArrayMinSize(1)
+    @ValidateNested({ each: true })
+    @Type(() => ConfirmPickingDetailDto)
+    details: ConfirmPickingDetailDto[];
+}
+
+// ── Checking (Kiểm tra xuất) ──
+
+export class ConfirmCheckingDetailDto {
+    @ApiProperty({ description: 'ID chi tiết phiếu xuất' })
+    @IsUUID('4')
+    export_detail_id: string;
+
+    @ApiProperty({ description: 'Số lượng đã kiểm tra', minimum: 0 })
+    @IsNumber()
+    @Min(0)
+    checked_qty: number;
+
+    @ApiPropertyOptional({ description: 'Đạt hay không?', default: true })
+    @IsOptional()
+    passed?: boolean;
+}
+
+export class ConfirmCheckingDto {
+    @ApiProperty({ type: [ConfirmCheckingDetailDto] })
+    @IsArray()
+    @ArrayMinSize(1)
+    @ValidateNested({ each: true })
+    @Type(() => ConfirmCheckingDetailDto)
+    details: ConfirmCheckingDetailDto[];
+}
+
+// ── Complete Shipment (Hoàn tất xuất) ──
+
+export class CompleteShipmentDto {
+    @ApiPropertyOptional({ description: 'Ghi chú bàn giao' })
+    @IsOptional()
+    @IsString()
+    notes?: string;
+
+    @ApiPropertyOptional({ description: 'Mã vận đơn' })
+    @IsOptional()
+    @IsString()
+    tracking_number?: string;
+}
+
+// ── Assign Workers ──
+
+export class AssignWorkersDto {
+    @ApiPropertyOptional({ description: 'ID checker' })
+    @IsOptional()
+    @IsUUID('4')
+    checker_id?: string;
+
+    @ApiPropertyOptional({ description: 'ID worker cất hàng' })
+    @IsOptional()
+    @IsUUID('4')
+    worker_id?: string;
+}

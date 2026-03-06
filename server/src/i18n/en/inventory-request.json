@@ -9,7 +9,15 @@
         "approve_inbound": "Inbound approved successfully",
         "reject_inbound": "Inbound request rejected successfully",
         "approve_outbound": "Outbound approved successfully",
-        "reject_outbound": "Outbound request rejected successfully"
+        "reject_outbound": "Outbound request rejected successfully",
+        "approve_receipt": "Receipt approved successfully",
+        "start_receiving": "Receiving started successfully",
+        "confirm_receiving": "Receiving confirmed successfully",
+        "confirm_putaway": "Putaway confirmed successfully",
+        "create_pick_list": "Pick list created successfully",
+        "confirm_picking": "Picking confirmed successfully",
+        "confirm_checking": "Checking confirmed successfully",
+        "complete_shipment": "Shipment completed successfully"
     },
     "errors": {
         "receipt_not_found": "Receipt not found",
@@ -24,7 +32,13 @@
         "partner_not_found": "Partner not found",
         "unit_not_found": "Unit not found",
         "invalid_status": "Invalid status for this operation",
-        "no_permission": "You do not have permission to perform this action"
+        "no_permission": "You do not have permission to perform this action",
+        "invalid_status_transition": "Invalid status transition",
+        "receipt_not_approved": "Receipt has not been approved",
+        "receiving_not_completed": "Receiving has not been completed",
+        "picking_not_completed": "Picking has not been completed",
+        "checking_not_passed": "Checking has not passed",
+        "pick_list_not_found": "Pick list not found"
     },
     "validation": {
         "warehouse_id_required": "Please select a warehouse",

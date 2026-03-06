@@ -3,6 +3,7 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { InventoryService } from "@/services/inventory/inventory.service";
+import { WarehouseManagerInventoryService } from "@/services/inventory/warehouse-manager-inventory.service";
 import { useToast } from "@/contexts/ToastContext";
 import type { InboundRequest } from "@/services/inventory/inventory.types";
 
@@ -30,6 +31,7 @@ import {
 import RejectReasonDialog from "./RejectReasonDialog";
 
 const inventoryService = new InventoryService();
+const wmInventoryService = new WarehouseManagerInventoryService();
 
 // ────────────────────────────────────────────────
 // Putaway suggestion helper (simulated algorithm)
@@ -120,8 +122,26 @@ export default function InboundApprovalDetail({
         return "approval-reconciliation__row--critical";
     };
 
-    const handleApproveProcess = () => {
-        showToast("Đã duyệt phiếu — chuyển sang trạng thái Đang xử lý", "success");
+    const handleApproveProcess = async () => {
+        try {
+            const token = authStorage.getAccessToken();
+            if (!token) return;
+
+            // Build actual_quantities from editing state
+            const actual_quantities = Object.entries(editingQty).map(([detail_id, actual_qty]) => ({
+                detail_id,
+                actual_qty,
+            }));
+
+            await wmInventoryService.approveInbound(token, ticketId, {
+                actual_quantities,
+            });
+
+            showToast("Đã duyệt phiếu — chuyển sang trạng thái Đã duyệt", "success");
+            fetchData(); // Refresh data
+        } catch (err: any) {
+            showToast(err.message || "Không thể duyệt phiếu nhập", "error");
+        }
     };
 
     const handleQuarantine = (detailId: string, productName: string) => {
@@ -131,9 +151,18 @@ export default function InboundApprovalDetail({
         );
     };
 
-    const handleRejectConfirm = (category: string, reason: string) => {
-        showToast(`Đã từ chối phiếu — Lý do: ${reason}`, "success");
-        setRejectOpen(false);
+    const handleRejectConfirm = async (category: string, reason: string) => {
+        try {
+            const token = authStorage.getAccessToken();
+            if (!token) return;
+
+            await wmInventoryService.rejectInbound(token, ticketId, reason);
+            showToast(`Đã từ chối phiếu — Lý do: ${reason}`, "success");
+            setRejectOpen(false);
+            fetchData();
+        } catch (err: any) {
+            showToast(err.message || "Không thể từ chối phiếu nhập", "error");
+        }
     };
 
     // ── Loading state ──

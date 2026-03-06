@@ -105,6 +105,7 @@ const TYPE_FILTERS: { label: string; value: TypeFilter }[] = [
 // Kanban columns
 const KANBAN_COLUMNS = [
     { key: "PENDING", title: "Chờ duyệt", cssModifier: "pending" },
+    { key: "APPROVED", title: "Đã duyệt", cssModifier: "approved" },
     { key: "PROCESSING", title: "Đang xử lý", cssModifier: "processing" },
     { key: "COMPLETED", title: "Hoàn tất", cssModifier: "completed" },
 ];
@@ -112,7 +113,11 @@ const KANBAN_COLUMNS = [
 // Map statuses to kanban columns
 function getKanbanColumn(status: string): string {
     if (status === "PENDING") return "PENDING";
-    if (["PROCESSING", "PICKING", "PACKED"].includes(status)) return "PROCESSING";
+    if (status === "APPROVED") return "APPROVED";
+    if (
+        ["RECEIVING", "PROCESSING", "PUTAWAY", "PICKING", "CHECKING", "PACKED"].includes(status)
+    )
+        return "PROCESSING";
     if (["COMPLETED", "SHIPPED"].includes(status)) return "COMPLETED";
     return "PENDING";
 }

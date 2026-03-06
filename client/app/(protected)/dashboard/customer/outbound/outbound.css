@@ -29,6 +29,12 @@
     border-color: #fecaca;
 }
 
+.outbound-status--checking {
+    background-color: #fef3c7;
+    color: #92400e;
+    border-color: #fde68a;
+}
+
 /* Priority highlight */
 .outbound-row--urgent {
     background-color: rgba(254, 243, 199, 0.3);
