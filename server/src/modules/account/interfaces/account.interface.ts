@@ -15,6 +15,10 @@ export interface IAccountProfile {
         is_verified: boolean | null;
         two_factor_enabled: boolean;
         language: string | null;
+        avatar_url: string | null;
+        cover_url: string | null;
+        avatar_image_id: string | null;
+        cover_image_id: string | null;
         created_at: Date;
     };
     roles: Array<{

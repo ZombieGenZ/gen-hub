@@ -1,39 +1,53 @@
 {
-    "profile": {
-        "get_success": "Profile retrieved successfully"
-    },
-    "change_password": {
-        "success": "Password changed successfully",
-        "incorrect_current_password": "Current password is incorrect",
-        "cannot_change_social_account": "Cannot change password for Google/Facebook accounts",
-        "password_mismatch": "Password confirmation does not match"
-    },
-    "update_profile": {
-        "success": "Profile updated successfully"
-    },
-    "platform_auth": {
-        "google_success": "Google login successful",
-        "facebook_success": "Facebook login successful",
-        "link_google_success": "Google account linked successfully",
-        "link_facebook_success": "Facebook account linked successfully",
-        "unlink_success": "Account unlinked successfully",
-        "already_linked_google": "Account already linked with Google",
-        "already_linked_facebook": "Account already linked with Facebook",
-        "cannot_unlink_primary": "Cannot unlink primary account",
-        "primary_required_for_2fa": "Only primary login can setup 2FA",
-        "primary_required_for_unlink": "Only primary login can unlink accounts"
-    },
-    "download_data": {
-        "success": "Data downloaded successfully"
-    },
-    "delete_account": {
-        "success": "Account deleted successfully. Your account has been deleted.",
-        "invalid_confirmation": "Invalid confirmation. Please enter 'XÓA TÀI KHOẢN' or 'DELETE ACCOUNT' to confirm."
-    },
-    "validation": {
-        "reason_string": "Reason must be a string",
-        "reason_max_length": "Reason must not exceed 500 characters",
-        "confirmation_required": "Deletion confirmation is required",
-        "confirmation_string": "Confirmation must be a string"
-    }
+  "profile": {
+    "get_success": "Profile retrieved successfully"
+  },
+  "change_password": {
+    "success": "Password changed successfully",
+    "incorrect_current_password": "Current password is incorrect",
+    "cannot_change_social_account": "Cannot change password for Google/Facebook accounts",
+    "password_mismatch": "Password confirmation does not match"
+  },
+  "update_profile": {
+    "success": "Profile updated successfully"
+  },
+  "platform_auth": {
+    "google_success": "Google login successful",
+    "facebook_success": "Facebook login successful",
+    "link_google_success": "Google account linked successfully",
+    "link_facebook_success": "Facebook account linked successfully",
+    "unlink_success": "Account unlinked successfully",
+    "already_linked_google": "Account already linked with Google",
+    "already_linked_facebook": "Account already linked with Facebook",
+    "cannot_unlink_primary": "Cannot unlink primary account",
+    "primary_required_for_2fa": "Only primary login can setup 2FA",
+    "primary_required_for_unlink": "Only primary login can unlink accounts"
+  },
+  "download_data": {
+    "success": "Data downloaded successfully"
+  },
+  "delete_account": {
+    "success": "Account deleted successfully. Your account has been deleted.",
+    "invalid_confirmation": "Invalid confirmation. Please enter 'XOA TAI KHOAN' or 'DELETE ACCOUNT' to confirm."
+  },
+  "avatar_cover": {
+    "avatar_uploaded": "Avatar uploaded successfully",
+    "cover_uploaded": "Cover uploaded successfully",
+    "default_avatar_not_configured": "Default avatar is not configured",
+    "default_cover_not_configured": "Default cover is not configured",
+    "default_avatar_not_found": "Default avatar is not available",
+    "default_cover_not_found": "Default cover is not available",
+    "avatar_default_set": "Default avatar applied successfully",
+    "cover_default_set": "Default cover applied successfully",
+    "avatar_not_found": "Selected avatar image not found",
+    "cover_not_found": "Selected cover image not found",
+    "avatar_selected": "Avatar selected successfully",
+    "cover_selected": "Cover selected successfully"
+  },
+  "validation": {
+    "reason_string": "Reason must be a string",
+    "reason_max_length": "Reason must not exceed 500 characters",
+    "confirmation_required": "Deletion confirmation is required",
+    "confirmation_string": "Confirmation must be a string"
+  }
 }

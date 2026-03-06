@@ -1,0 +1,27 @@
+﻿{
+  "success": {
+    "created": "Tạo cover mặc định thành công",
+    "updated": "Cập nhật cover mặc định thành công",
+    "deleted": "Xóa cover mặc định thành công"
+  },
+  "errors": {
+    "not_found": "Không tìm thấy cover",
+    "name_exists": "Tên cover đã tồn tại",
+    "cannot_remove_default": "Không thể bỏ mặc định. Hãy đặt bản ghi khác làm mặc định trước.",
+    "cannot_delete_default": "Không thể xóa bản ghi mặc định. Hãy đặt bản ghi khác làm mặc định trước."
+  },
+  "validation": {
+    "name_required": "Tên cover không được để trống",
+    "name_string": "Tên cover phải là chuỗi",
+    "name_max_length": "Tên cover không được quá 255 ký tự",
+    "description_string": "Mô tả phải là chuỗi",
+    "image_url_required": "URL ảnh là bắt buộc",
+    "image_url_string": "URL ảnh phải là chuỗi",
+    "image_url_url": "URL ảnh không hợp lệ",
+    "is_default_boolean": "is_default phải là boolean",
+    "is_active_boolean": "is_active phải là boolean",
+    "limit_positive": "Limit phải là số dương",
+    "offset_min": "Offset phải >= 0",
+    "keywords_string": "Keywords phải là chuỗi"
+  }
+}

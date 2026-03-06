@@ -7,6 +7,8 @@ import { ConfigService } from '@nestjs/config';
 import * as argon2 from '@node-rs/argon2';
 import { I18nService } from 'nestjs-i18n';
 
+import { AppConfigService } from '../../common/config/app-config.service';
+import { ImageUploadService } from '../../common/services/image-upload.service';
 import { AccountRepository } from './account.repository';
 import { EmailService } from '../notification/email.service';
 import { SystemLogService } from '../system-log/system-log.service';
@@ -55,6 +57,8 @@ export class AccountService {
     private readonly configService: ConfigService,
     private readonly i18n: I18nService,
     private readonly accountRepository: AccountRepository,
+    private readonly appConfigService: AppConfigService,
+    private readonly imageUploadService: ImageUploadService,
     private readonly emailService: EmailService,
     private readonly systemLogService: SystemLogService,
     private readonly refreshTokenRepository: RefreshTokenRepository,
@@ -156,6 +160,10 @@ export class AccountService {
         is_verified: user.is_verified,
         two_factor_enabled: user.two_factor_enabled,
         language: user.language,
+        avatar_url: user.avatar_url,
+        cover_url: user.cover_url,
+        avatar_image_id: user.avatar_image_id,
+        cover_image_id: user.cover_image_id,
         created_at: user.created_at,
       },
       roles,
@@ -469,6 +477,212 @@ export class AccountService {
 
     return {
       message: await this.i18n.t('account.delete_account.success', { lang }),
+    };
+  }
+
+  async uploadAvatar(
+    userId: string,
+    file: Express.Multer.File,
+    lang = DEFAULT_LANGUAGE,
+  ) {
+    const user = await this.accountRepository.findById(userId);
+    if (!user) {
+      throw new BadRequestException(
+        await this.i18n.t('common.error.user_not_found', { lang }),
+      );
+    }
+
+    const uploadResult = await this.imageUploadService.processAndUpload(
+      file.buffer,
+      file.originalname,
+      '/avatars',
+    );
+
+    await this.accountRepository.updateAvatarCover(userId, {
+      avatar_url: uploadResult.url,
+      avatar_image_id: null,
+    });
+
+    await Promise.all([
+      this.redisService.invalidateAccountProfileCache(userId),
+      this.redisService.invalidateUserCache(userId),
+    ]);
+
+    return {
+      message: await this.i18n.t('account.avatar_cover.avatar_uploaded', { lang }),
+      avatar_url: uploadResult.url,
+    };
+  }
+
+  async uploadCover(
+    userId: string,
+    file: Express.Multer.File,
+    lang = DEFAULT_LANGUAGE,
+  ) {
+    const user = await this.accountRepository.findById(userId);
+    if (!user) {
+      throw new BadRequestException(
+        await this.i18n.t('common.error.user_not_found', { lang }),
+      );
+    }
+
+    const uploadResult = await this.imageUploadService.processAndUpload(
+      file.buffer,
+      file.originalname,
+      '/covers',
+    );
+
+    await this.accountRepository.updateAvatarCover(userId, {
+      cover_url: uploadResult.url,
+      cover_image_id: null,
+    });
+
+    await Promise.all([
+      this.redisService.invalidateAccountProfileCache(userId),
+      this.redisService.invalidateUserCache(userId),
+    ]);
+
+    return {
+      message: await this.i18n.t('account.avatar_cover.cover_uploaded', { lang }),
+      cover_url: uploadResult.url,
+    };
+  }
+
+  async setAvatarDefault(userId: string, lang = DEFAULT_LANGUAGE) {
+    const user = await this.accountRepository.findById(userId);
+    if (!user) {
+      throw new BadRequestException(
+        await this.i18n.t('common.error.user_not_found', { lang }),
+      );
+    }
+
+    const defaultAvatarId = this.appConfigService.get('defaultAvatarId');
+    if (!defaultAvatarId) {
+      throw new BadRequestException(
+        await this.i18n.t('account.avatar_cover.default_avatar_not_configured', { lang }),
+      );
+    }
+
+    const avatarExists = await this.accountRepository.findAvatarImageById(defaultAvatarId);
+    if (!avatarExists) {
+      throw new BadRequestException(
+        await this.i18n.t('account.avatar_cover.default_avatar_not_found', { lang }),
+      );
+    }
+
+    await this.accountRepository.updateAvatarCover(userId, {
+      avatar_url: null,
+      avatar_image_id: defaultAvatarId,
+    });
+
+    await Promise.all([
+      this.redisService.invalidateAccountProfileCache(userId),
+      this.redisService.invalidateUserCache(userId),
+    ]);
+
+    return {
+      message: await this.i18n.t('account.avatar_cover.avatar_default_set', { lang }),
+      avatar_image_id: defaultAvatarId,
+    };
+  }
+
+  async setCoverDefault(userId: string, lang = DEFAULT_LANGUAGE) {
+    const user = await this.accountRepository.findById(userId);
+    if (!user) {
+      throw new BadRequestException(
+        await this.i18n.t('common.error.user_not_found', { lang }),
+      );
+    }
+
+    const defaultCoverId = this.appConfigService.get('defaultCoverId');
+    if (!defaultCoverId) {
+      throw new BadRequestException(
+        await this.i18n.t('account.avatar_cover.default_cover_not_configured', { lang }),
+      );
+    }
+
+    const coverExists = await this.accountRepository.findCoverImageById(defaultCoverId);
+    if (!coverExists) {
+      throw new BadRequestException(
+        await this.i18n.t('account.avatar_cover.default_cover_not_found', { lang }),
+      );
+    }
+
+    await this.accountRepository.updateAvatarCover(userId, {
+      cover_url: null,
+      cover_image_id: defaultCoverId,
+    });
+
+    await Promise.all([
+      this.redisService.invalidateAccountProfileCache(userId),
+      this.redisService.invalidateUserCache(userId),
+    ]);
+
+    return {
+      message: await this.i18n.t('account.avatar_cover.cover_default_set', { lang }),
+      cover_image_id: defaultCoverId,
+    };
+  }
+
+  async selectAvatarImage(userId: string, avatarImageId: string, lang = DEFAULT_LANGUAGE) {
+    const user = await this.accountRepository.findById(userId);
+    if (!user) {
+      throw new BadRequestException(
+        await this.i18n.t('common.error.user_not_found', { lang }),
+      );
+    }
+
+    const avatarExists = await this.accountRepository.findAvatarImageById(avatarImageId);
+    if (!avatarExists) {
+      throw new BadRequestException(
+        await this.i18n.t('account.avatar_cover.avatar_not_found', { lang }),
+      );
+    }
+
+    await this.accountRepository.updateAvatarCover(userId, {
+      avatar_url: null,
+      avatar_image_id: avatarImageId,
+    });
+
+    await Promise.all([
+      this.redisService.invalidateAccountProfileCache(userId),
+      this.redisService.invalidateUserCache(userId),
+    ]);
+
+    return {
+      message: await this.i18n.t('account.avatar_cover.avatar_selected', { lang }),
+      avatar_image_id: avatarImageId,
+    };
+  }
+
+  async selectCoverImage(userId: string, coverImageId: string, lang = DEFAULT_LANGUAGE) {
+    const user = await this.accountRepository.findById(userId);
+    if (!user) {
+      throw new BadRequestException(
+        await this.i18n.t('common.error.user_not_found', { lang }),
+      );
+    }
+
+    const coverExists = await this.accountRepository.findCoverImageById(coverImageId);
+    if (!coverExists) {
+      throw new BadRequestException(
+        await this.i18n.t('account.avatar_cover.cover_not_found', { lang }),
+      );
+    }
+
+    await this.accountRepository.updateAvatarCover(userId, {
+      cover_url: null,
+      cover_image_id: coverImageId,
+    });
+
+    await Promise.all([
+      this.redisService.invalidateAccountProfileCache(userId),
+      this.redisService.invalidateUserCache(userId),
+    ]);
+
+    return {
+      message: await this.i18n.t('account.avatar_cover.cover_selected', { lang }),
+      cover_image_id: coverImageId,
     };
   }
 }

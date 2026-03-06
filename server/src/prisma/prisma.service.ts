@@ -25,6 +25,7 @@ import {
   WarehouseManagerPermissionsSeeder,
   PaymentPermissionsSeeder,
   AppDownloadPermissionsSeeder,
+  AvatarCoverRankPermissionsSeeder,
   AdministrativeSeeder,
   WarningSeeder,
   AmenitySeeder,
@@ -36,6 +37,10 @@ import {
   CategorySeeder,
   WarehouseManagerRolesSeeder,
   OrganizationSeeder,
+  AvatarImageSeeder,
+  CoverImageSeeder,
+  RankSeeder,
+  PhoneCodeSeeder,
 } from './seeders';
 
 @Injectable()
@@ -335,6 +340,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         new WarehouseManagerPermissionsSeeder(this),
         new PaymentPermissionsSeeder(this),
         new AppDownloadPermissionsSeeder(this),
+        new AvatarCoverRankPermissionsSeeder(this),
       ];
 
       // Run permission seeders in batches of 3
@@ -356,6 +362,10 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         new CategorySeeder(this),
         new WarehouseManagerRolesSeeder(this),
         new OrganizationSeeder(this),
+        new AvatarImageSeeder(this),
+        new CoverImageSeeder(this),
+        new RankSeeder(this),
+        new PhoneCodeSeeder(this),
       ];
 
       // Set admin ID for data seeders

@@ -125,6 +125,44 @@ export class AccountRepository {
         });
     }
 
+    async updateAvatarCover(
+        userId: string,
+        data: {
+            avatar_url?: string | null;
+            cover_url?: string | null;
+            avatar_image_id?: string | null;
+            cover_image_id?: string | null;
+        },
+    ) {
+        return this.prisma.user.update({
+            where: { id: userId },
+            data,
+            select: accountBasicSelect,
+        });
+    }
+
+    async findAvatarImageById(id: string) {
+        return this.prisma.avatarImage.findFirst({
+            where: {
+                id,
+                is_deleted: false,
+                is_active: true,
+            },
+            select: { id: true },
+        });
+    }
+
+    async findCoverImageById(id: string) {
+        return this.prisma.coverImage.findFirst({
+            where: {
+                id,
+                is_deleted: false,
+                is_active: true,
+            },
+            select: { id: true },
+        });
+    }
+
     /**
      * Soft delete user
      */

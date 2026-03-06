@@ -9,3 +9,7 @@ export * from './contact-list.seeder';
 export * from './category.seeder';
 export * from './warehouse-manager-roles.seeder';
 export * from './organization.seeder';
+export * from './avatar-image.seeder';
+export * from './cover-image.seeder';
+export * from './rank.seeder';
+export * from './phone-code.seeder';

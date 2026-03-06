@@ -17,6 +17,10 @@ export const accountProfileSelect = {
     is_verified: true,
     two_factor_enabled: true,
     language: true,
+    avatar_url: true,
+    cover_url: true,
+    avatar_image_id: true,
+    cover_image_id: true,
     created_at: true,
 } satisfies Prisma.UserSelect;
 
@@ -29,6 +33,10 @@ export const accountBasicSelect = {
     name: true,
     email: true,
     language: true,
+    avatar_url: true,
+    cover_url: true,
+    avatar_image_id: true,
+    cover_image_id: true,
 } satisfies Prisma.UserSelect;
 
 /**

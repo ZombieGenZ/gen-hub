@@ -10,6 +10,12 @@ import {
   HttpCode,
   HttpStatus,
   Req,
+  UseInterceptors,
+  UploadedFile,
+  Put,
+  ParseUUIDPipe,
+  Param,
+  BadRequestException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -18,7 +24,9 @@ import {
   ApiBearerAuth,
   ApiBody,
   ApiHeader,
+  ApiConsumes,
 } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
 import type { Request } from 'express';
 import { UpdateProfileDto, ChangePasswordDto } from '../auth/dto';
 import { JwtAuthGuard, AccessVerificationGuard } from '../../common/guards';
@@ -29,6 +37,7 @@ import {
   ApiValidationErrorResponse,
 } from '../../common/decorators';
 import {
+  CreatedResponse,
   OkResponse,
   GetResponse,
   UpdatedResponse,
@@ -61,6 +70,15 @@ function getDeviceInfo(req: Request) {
 @ApiBearerAuth('JWT-auth')
 export class AccountController {
   constructor(private readonly accountService: AccountService) { }
+
+  private static readonly AVATAR_MAX_FILE_SIZE = parseInt(
+    process.env.UPLOAD_AVATAR_MAX_SIZE || '2097152',
+    10,
+  );
+
+  private static readonly AVATAR_ALLOWED_MIME_TYPES = (
+    process.env.UPLOAD_AVATAR_ALLOWED_TYPES || 'image/jpeg,image/png,image/webp'
+  ).split(',');
 
   @ApiOperation({
     summary: 'Lấy thông tin tài khoản',
@@ -628,5 +646,125 @@ export class AccountController {
       null,
       result.message,
     );
+  }
+
+  @ApiOperation({ summary: 'Upload avatar' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBearerAuth('JWT-auth')
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: AccountController.AVATAR_MAX_FILE_SIZE },
+      fileFilter: (req, file, cb) => {
+        if (AccountController.AVATAR_ALLOWED_MIME_TYPES.includes(file.mimetype)) {
+          cb(null, true);
+          return;
+        }
+        cb(new BadRequestException('Invalid file type'), false);
+      },
+    }),
+  )
+  @Post('avatar/upload')
+  async uploadAvatar(
+    @CurrentUser() user: IJwtPayload,
+    @UploadedFile() file: Express.Multer.File,
+    @Headers('accept-language') lang?: string,
+  ) {
+    if (!file) {
+      throw new BadRequestException('File is required');
+    }
+
+    const result = await this.accountService.uploadAvatar(
+      user.userId,
+      file,
+      lang || 'vi',
+    );
+
+    return new CreatedResponse('account.avatar.upload_success', result, result.message);
+  }
+
+  @ApiOperation({ summary: 'Upload cover' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBearerAuth('JWT-auth')
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: AccountController.AVATAR_MAX_FILE_SIZE },
+      fileFilter: (req, file, cb) => {
+        if (AccountController.AVATAR_ALLOWED_MIME_TYPES.includes(file.mimetype)) {
+          cb(null, true);
+          return;
+        }
+        cb(new BadRequestException('Invalid file type'), false);
+      },
+    }),
+  )
+  @Post('cover/upload')
+  async uploadCover(
+    @CurrentUser() user: IJwtPayload,
+    @UploadedFile() file: Express.Multer.File,
+    @Headers('accept-language') lang?: string,
+  ) {
+    if (!file) {
+      throw new BadRequestException('File is required');
+    }
+
+    const result = await this.accountService.uploadCover(
+      user.userId,
+      file,
+      lang || 'vi',
+    );
+
+    return new CreatedResponse('account.cover.upload_success', result, result.message);
+  }
+
+  @ApiOperation({ summary: 'Set avatar default system image' })
+  @ApiBearerAuth('JWT-auth')
+  @UseGuards(JwtAuthGuard)
+  @Put('avatar/default')
+  async setAvatarDefault(
+    @CurrentUser() user: IJwtPayload,
+    @Headers('accept-language') lang?: string,
+  ) {
+    const result = await this.accountService.setAvatarDefault(user.userId, lang || 'vi');
+    return new UpdatedResponse('account.avatar.default_success', result, result.message);
+  }
+
+  @ApiOperation({ summary: 'Set cover default system image' })
+  @ApiBearerAuth('JWT-auth')
+  @UseGuards(JwtAuthGuard)
+  @Put('cover/default')
+  async setCoverDefault(
+    @CurrentUser() user: IJwtPayload,
+    @Headers('accept-language') lang?: string,
+  ) {
+    const result = await this.accountService.setCoverDefault(user.userId, lang || 'vi');
+    return new UpdatedResponse('account.cover.default_success', result, result.message);
+  }
+
+  @ApiOperation({ summary: 'Select avatar image from defaults' })
+  @ApiBearerAuth('JWT-auth')
+  @UseGuards(JwtAuthGuard)
+  @Put('avatar/select/:id')
+  async selectAvatar(
+    @CurrentUser() user: IJwtPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Headers('accept-language') lang?: string,
+  ) {
+    const result = await this.accountService.selectAvatarImage(user.userId, id, lang || 'vi');
+    return new UpdatedResponse('account.avatar.select_success', result, result.message);
+  }
+
+  @ApiOperation({ summary: 'Select cover image from defaults' })
+  @ApiBearerAuth('JWT-auth')
+  @UseGuards(JwtAuthGuard)
+  @Put('cover/select/:id')
+  async selectCover(
+    @CurrentUser() user: IJwtPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Headers('accept-language') lang?: string,
+  ) {
+    const result = await this.accountService.selectCoverImage(user.userId, id, lang || 'vi');
+    return new UpdatedResponse('account.cover.select_success', result, result.message);
   }
 }

@@ -59,4 +59,7 @@ export interface IAppConfig {
     colors: IAppColors;
     pagination: IPaginationConfig;
     enableAiAutoReply: boolean;
+    defaultAvatarId?: string | null;
+    defaultCoverId?: string | null;
+    defaultRankId?: string | null;
 }

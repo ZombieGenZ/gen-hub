@@ -37,6 +37,10 @@ import { RentalSchedulerModule } from './modules/rental-scheduler/rental-schedul
 import { PaymentModule } from './modules/payment/payment.module';
 import { PaymentAdminModule } from './modules/payment-admin/payment-admin.module';
 import { AmenityModule } from './modules/amenity/amenity.module';
+import { AvatarImageModule } from './modules/avatar-image/avatar-image.module';
+import { CoverImageModule } from './modules/cover-image/cover-image.module';
+import { RankModule } from './modules/rank/rank.module';
+import { PhoneCodeModule } from './modules/phone-code/phone-code.module';
 import { ProvinceModule } from './modules/province/province.module';
 import { WardModule } from './modules/ward/ward.module';
 import { PartnerModule } from './modules/partner/partner.module';
@@ -135,6 +139,10 @@ import { AppDownloadModule } from './modules/app-download/app-download.module';
 
     // Amenities
     AmenityModule,
+    AvatarImageModule,
+    CoverImageModule,
+    RankModule,
+    PhoneCodeModule,
 
     // Addon Types
     AddonTypeModule,

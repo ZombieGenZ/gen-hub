@@ -102,6 +102,9 @@ export class AppConfigService implements OnModuleInit {
       },
       enableAiAutoReply:
         this.configService.get<boolean>('ENABLE_AI_AUTO_REPLY') ?? true,
+      defaultAvatarId: null,
+      defaultCoverId: null,
+      defaultRankId: null,
     };
   }
 
