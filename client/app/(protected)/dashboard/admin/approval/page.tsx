@@ -163,7 +163,6 @@ export default function ApprovalQueuePage() {
 
             setInboundItems(inData);
             setOutboundItems(outData);
-            showToast("Đã cập nhật danh sách phiếu phê duyệt.", "success");
         } catch (err) {
             const e = err instanceof Error ? err : new Error(String(err));
             console.error("[ApprovalQueuePage] Error fetching data:", e);
@@ -172,7 +171,6 @@ export default function ApprovalQueuePage() {
                 return;
             }
             setError("Không thể tải danh sách phiếu. Vui lòng thử lại.");
-            showToast("Lỗi khi tải danh sách phiếu phê duyệt.", "error");
         } finally {
             setLoading(false);
         }

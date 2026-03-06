@@ -159,10 +159,10 @@ export default function AmenitiesPage() {
 
             if (formMode === "create") {
                 await amenitiesService.createAmenity(token, data);
-                showToast("Đã thêm tiện ích mới thành công! 🎉", "success");
+                showToast("Đã thêm tiện ích mới thành công!", "success");
             } else if (selectedAmenity) {
                 await amenitiesService.updateAmenity(token, selectedAmenity.id, data);
-                showToast("Cập nhật tiện ích thành công! ✅", "success");
+                showToast("Cập nhật tiện ích thành công!", "success");
             }
 
             setIsFormDialogOpen(false);

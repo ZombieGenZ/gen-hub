@@ -43,6 +43,26 @@ export class InventoryRequestController {
         private readonly i18n: I18nService,
     ) { }
 
+    @Get('warehouses')
+    @RequireOrgPermission('org.inventory.inbound.list')
+    @ApiOperation({
+        summary: 'Danh sách kho của tổ chức',
+        description: 'Lấy danh sách kho mà tổ chức đang có hợp đồng thuê đang hoạt động.',
+    })
+    @ApiParam({ name: 'orgId', description: 'ID của tổ chức', type: 'string', format: 'uuid' })
+    @ApiResponse({ status: 200, description: 'Lấy danh sách kho thành công' })
+    async listOrgWarehouses(
+        @Param('orgId', ParseUUIDPipe) orgId: string,
+        @I18nLang() lang: string,
+    ) {
+        const warehouses = await this.inventoryRequestService.listOrgWarehouses(orgId);
+        return new GetResponse(
+            'inventory-request.list_warehouses',
+            warehouses,
+            await this.i18n.translate('inventory-request.success.list_inbound', { lang }),
+        );
+    }
+
     @Post('inbound')
     @RequireOrgPermission('org.inventory.inbound.create')
     @ApiOperation({

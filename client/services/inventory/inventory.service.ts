@@ -46,6 +46,29 @@ export class InventoryService {
     }
 
     /**
+     * Lấy danh sách kho mà tổ chức đang có hợp đồng thuê
+     * @param token Access token
+     * @returns Danh sách kho { id, name }[]
+     */
+    async listWarehouses(token: string): Promise<{ id: string; name: string }[]> {
+        try {
+            const orgId = await orgHelper.getOrgId(token);
+            const response = await fetch(`${API}/organizations/${orgId}/inventory/warehouses`, {
+                headers: { 'Authorization': `Bearer ${token}` },
+            });
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Không thể lấy danh sách kho');
+            }
+            const result = await response.json();
+            return result?.data ?? result ?? [];
+        } catch (error) {
+            console.error('Lỗi khi lấy danh sách kho:', error);
+            return [];
+        }
+    }
+
+    /**
      * Lấy danh sách phiếu nhập kho (có phân trang)
      * @param token Access token
      * @param query Tham số lọc & phân trang

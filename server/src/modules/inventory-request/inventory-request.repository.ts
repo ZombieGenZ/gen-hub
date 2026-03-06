@@ -315,6 +315,33 @@ export class InventoryRequestRepository {
     }
 
     /**
+     * Lấy danh sách kho mà tổ chức có quyền sử dụng (có hợp đồng thuê)
+     */
+    async listOrgWarehouses(orgId: string): Promise<{ id: string; name: string }[]> {
+        return this.prisma.warehouse.findMany({
+            where: {
+                is_deleted: false,
+                rows: {
+                    some: {
+                        is_rented: true,
+                        rental_contract_details: {
+                            some: {
+                                rental_contract: {
+                                    organization_id: orgId,
+                                    is_deleted: false,
+                                    status: { in: ['ACTIVE', 'OVERDUE_LEVEL_1', 'OVERDUE_LEVEL_2', 'OVERDUE_LEVEL_3'] },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+            select: { id: true, name: true },
+            orderBy: { name: 'asc' },
+        });
+    }
+
+    /**
      * Sinh mã phiếu nhập
      */
     async generateInboundCode(orgId: string): Promise<string> {

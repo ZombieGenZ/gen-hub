@@ -26,7 +26,7 @@ function ResetPasswordContent() {
     if (!t) {
       // Không có token -> chuyển sang trang 404
       router.replace('/error')
-      showToast('token không hợp lệ hoặc không có token!', 'error')
+      console.error('token không hợp lệ hoặc không có token!', 'error')
       return
     }
     try {

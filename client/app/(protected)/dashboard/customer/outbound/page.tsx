@@ -17,7 +17,7 @@ import type {
 } from "@/services/inventory/inventory.types";
 import type { Product } from "@/services/product/product.types";
 import type { Partner } from "@/services/partner/partner.types";
-import { MOCK_RENTED_WAREHOUSES } from "@/data/mockMyWarehouses";
+
 
 // ── shadcn/ui ──
 import { Card, CardContent } from "@/components/ui/card";
@@ -192,6 +192,7 @@ export default function OutboundListPage() {
     const [formItems, setFormItems] = useState<DrawerItem[]>([]);
 
     // Form data
+    const [warehouses, setWarehouses] = useState<{ id: string; name: string }[]>([]);
     const [partners, setPartners] = useState<Partner[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
     const [productSearch, setProductSearch] = useState("");
@@ -213,12 +214,10 @@ export default function OutboundListPage() {
             });
 
             if (res) {
-                const raw = Array.isArray(res) ? res : (res as any)?.data ?? (res as any)?.items ?? [];
-                const data = Array.isArray(raw) ? raw : [];
-                const total = (res as any)?.total || (res as any)?.meta?.total || data.length;
+                const data = Array.isArray(res) ? res : Array.isArray((res as any)?.data?.items) ? (res as any).data.items : Array.isArray((res as any)?.data) ? (res as any).data : [];
+                const total = (res as any)?.data?.total ?? (res as any)?.total ?? (res as any)?.meta?.total ?? data.length;
                 setItems(data);
                 setTotalItems(total);
-                showToast("Đã cập nhật danh sách phiếu xuất kho.", "success");
             }
         } catch (err) {
             const e = err instanceof Error ? err : new Error(String(err));
@@ -237,14 +236,28 @@ export default function OutboundListPage() {
         const token = authStorage.getAccessToken();
         if (!token) return;
         try {
-            const [partnerRes, productRes] = await Promise.all([
+            const [warehouseRes, partnerRes, productRes] = await Promise.all([
+                inventoryService.listWarehouses(token),
                 partnerService.list(token, { limit: 100 }),
                 productService.list(token, { limit: 20, keywords: debouncedProductSearch || undefined }),
             ]);
-            const pData = Array.isArray(partnerRes) ? partnerRes : (partnerRes as any)?.data;
-            setPartners(Array.isArray(pData) ? pData : []);
-            const prData = Array.isArray(productRes) ? productRes : (productRes as any)?.data;
-            setProducts(Array.isArray(prData) ? prData : []);
+            setWarehouses(Array.isArray(warehouseRes) ? warehouseRes : []);
+            const pList = Array.isArray(partnerRes)
+                ? partnerRes
+                : Array.isArray((partnerRes as any)?.data?.items)
+                    ? (partnerRes as any).data.items
+                    : Array.isArray((partnerRes as any)?.data)
+                        ? (partnerRes as any).data
+                        : [];
+            setPartners(pList);
+            const prList = Array.isArray(productRes)
+                ? productRes
+                : Array.isArray((productRes as any)?.data?.items)
+                    ? (productRes as any).data.items
+                    : Array.isArray((productRes as any)?.data)
+                        ? (productRes as any).data
+                        : [];
+            setProducts(prList);
         } catch { /* silent */ }
     }, [debouncedProductSearch]);
 
@@ -700,7 +713,7 @@ export default function OutboundListPage() {
                                 <Select value={formWarehouse} onValueChange={setFormWarehouse}>
                                     <SelectTrigger className="rounded-xl"><SelectValue placeholder="Chọn kho" /></SelectTrigger>
                                     <SelectContent>
-                                        {MOCK_RENTED_WAREHOUSES.map((w) => (
+                                        {warehouses.map((w) => (
                                             <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
                                         ))}
                                     </SelectContent>

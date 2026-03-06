@@ -73,6 +73,13 @@ export class InventoryRequestService {
     /**
      * Tạo yêu cầu nhập kho
      */
+    /**
+     * Lấy danh sách kho mà tổ chức có quyền sử dụng
+     */
+    async listOrgWarehouses(orgId: string): Promise<{ id: string; name: string }[]> {
+        return this.repository.listOrgWarehouses(orgId);
+    }
+
     async createInbound(
         orgId: string,
         dto: CreateInboundRequestDto,

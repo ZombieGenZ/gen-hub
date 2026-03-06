@@ -277,8 +277,12 @@ export default function InboundDetailPage() {
                                 value={data.warehouse?.name || "—"}
                             />
                             <InfoRow
-                                label="Đối tác"
-                                value={data.partner?.name || "—"}
+                                label="NCC"
+                                value={
+                                    data.partner
+                                        ? `${data.partner.name}${data.partner.code ? ` (${data.partner.code})` : ""}`
+                                        : "—"
+                                }
                             />
                             <InfoRow
                                 label="Ngày tạo"

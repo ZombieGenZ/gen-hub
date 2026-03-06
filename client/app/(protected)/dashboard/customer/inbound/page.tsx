@@ -18,7 +18,6 @@ import type {
 import type { Product } from "@/services/product/product.types";
 import type { Partner } from "@/services/partner/partner.types";
 import type { Batch } from "@/services/batch/batch.types";
-import { MOCK_RENTED_WAREHOUSES } from "@/data/mockMyWarehouses";
 
 // ── shadcn/ui ──
 import { Card, CardContent } from "@/components/ui/card";
@@ -383,9 +382,7 @@ export default function InboundListPage() {
     const [formItems, setFormItems] = useState<DrawerItem[]>([]);
 
     // Form data
-    const [warehouses] = useState(() =>
-        MOCK_RENTED_WAREHOUSES.map((w) => ({ id: w.id, name: w.name }))
-    );
+    const [warehouses, setWarehouses] = useState<{ id: string; name: string }[]>([]);
     const [partners, setPartners] = useState<Partner[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
     const [productSearch, setProductSearch] = useState("");
@@ -412,7 +409,6 @@ export default function InboundListPage() {
                 const total = (res as any)?.data?.total ?? (res as any)?.total ?? (res as any)?.meta?.total ?? data.length;
                 setItems(data);
                 setTotalItems(total);
-                showToast("Đã cập nhật danh sách phiếu nhập kho.", "success");
             }
         } catch (err) {
             const error = err instanceof Error ? err : new Error(String(err));
@@ -432,13 +428,17 @@ export default function InboundListPage() {
         if (!token) return;
 
         try {
-            const [partnerRes, productRes] = await Promise.all([
+            const [warehouseList, partnerRes, productRes] = await Promise.all([
+                inventoryService.listWarehouses(token),
                 partnerService.list(token, { limit: 100 }),
                 productService.list(token, {
                     limit: 20,
                     keywords: debouncedProductSearch || undefined,
                 }),
             ]);
+
+            setWarehouses(Array.isArray(warehouseList) ? warehouseList : []);
+
             const pList = Array.isArray(partnerRes)
                 ? partnerRes
                 : Array.isArray((partnerRes as any)?.data?.items)

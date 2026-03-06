@@ -12,3 +12,4 @@ export * from './warehouse-manager-permissions.seeder';
 export * from './payment-permissions.seeder';
 export * from './app-download-permissions.seeder';
 export * from './avatar-cover-rank-permissions.seeder';
+export * from './inventory-permissions.seeder';

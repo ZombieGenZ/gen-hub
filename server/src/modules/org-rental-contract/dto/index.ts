@@ -1,5 +1,5 @@
 import { IsOptional, IsString, IsInt, Min, IsUUID, IsArray, IsEnum, IsNotEmpty, ValidateNested, MaxLength, IsBoolean, IsDate } from 'class-validator';
-import { Type, Transform } from 'class-transformer';
+import { Type, Transform, plainToInstance } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { i18nValidationMessage } from 'nestjs-i18n';
 import { PaymentMethod } from '@prisma/client';
@@ -120,15 +120,18 @@ export class OrgCreateRentalContractDto {
         type: [RentalTemplateItemDto],
     })
     @Transform(({ value }) => {
+        let arr: unknown = value;
         if (typeof value === 'string') {
-            try { return JSON.parse(value); } catch { return value; }
+            try { arr = JSON.parse(value); } catch { return value; }
         }
-        return value;
+        if (Array.isArray(arr)) {
+            return arr.map((item: unknown) => plainToInstance(RentalTemplateItemDto, item));
+        }
+        return arr;
     })
     @IsNotEmpty({ message: i18nValidationMessage('rental-contract.validation.templates_required') })
     @IsArray({ message: i18nValidationMessage('rental-contract.validation.templates_array') })
     @ValidateNested({ each: true })
-    @Type(() => RentalTemplateItemDto)
     templates: RentalTemplateItemDto[];
 
     @ApiProperty({

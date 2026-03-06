@@ -177,7 +177,6 @@ export default function WarehouseTemplatePage() {
                 }
                 setWarehouses(items);
                 setTotalItems(total);
-                showToast("Đã cập nhật danh sách kho hàng.", "success");
             }
         } catch (err) {
             const error = err instanceof Error ? err : new Error(String(err));

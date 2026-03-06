@@ -57,7 +57,7 @@ export function OrderConfirmation({
     const [qrExpired, setQrExpired] = useState(false);
 
     const contractCode = session.contract_code || orderResponse?.order_code || '—';
-    const depositAmount = session.deposit_amount || session.quotation?.grandTotal * 0.1 || 0;
+    const depositAmount = session.deposit_amount || (session.quotation?.grandTotal || 0) * 0.1 || 0;
     const qrUrl = session.payment_qr_url;
     const paymentCode = session.payment_code;
 
