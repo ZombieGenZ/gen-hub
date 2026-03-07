@@ -38,6 +38,7 @@ export interface UpdateBlockTemplateRequest {
     shelf_template_id: string;
     block_template_id: string;
     name: string;
+    description: string
 }
 
 // Delete block template

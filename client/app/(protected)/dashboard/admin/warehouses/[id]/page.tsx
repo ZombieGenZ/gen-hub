@@ -286,7 +286,7 @@ export default function WarehouseEditPage() {
                     <WarehouseLayoutTab warehouseId={id} data={formData} onChange={handleFormChange} />
                 </TabsContent>
                 <TabsContent value="3d" className="mt-6">
-                    <div className="flex items-center justify-center h-[300px] rounded-2xl bg-muted/30 border border-dashed border-muted-foreground/30">
+                    <div className="flex items-center justify-center h-75 rounded-2xl bg-muted/30 border border-dashed border-muted-foreground/30">
                         <p className="text-muted-foreground">🚧 3D Layout Editor — sẽ được tích hợp ở Phase 5</p>
                     </div>
                 </TabsContent>

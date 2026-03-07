@@ -35,6 +35,7 @@ export interface UpdateShelfTemplateRequest {
     rack_template_id: string;
     shelf_template_id: string;
     name: string;
+    description: string;
 }
 
 // Delete shelf template
