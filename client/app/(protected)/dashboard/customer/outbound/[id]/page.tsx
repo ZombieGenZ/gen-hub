@@ -37,6 +37,7 @@ const inventoryService = new InventoryService();
 const STATUS_CONFIG: Record<ExportStatus, { label: string; className: string }> = {
     PENDING: { label: "Chờ xử lý", className: "outbound-status--pending" },
     PICKING: { label: "Đang nhặt hàng", className: "outbound-status--picking" },
+    CHECKING: { label: "Đang kiểm tra", className: "outbound-status--checking" },
     PACKED: { label: "Đã đóng gói", className: "outbound-status--packed" },
     SHIPPED: { label: "Đã xuất kho", className: "outbound-status--shipped" },
     CANCELLED: { label: "Đã hủy", className: "outbound-status--cancelled" },
@@ -48,11 +49,12 @@ const STATUS_CONFIG: Record<ExportStatus, { label: string; className: string }> 
 const TIMELINE_STEPS = [
     { key: "PENDING", label: "Khởi tạo" },
     { key: "PICKING", label: "Đang nhặt hàng" },
+    { key: "CHECKING", label: "Đang kiểm tra" },
     { key: "PACKED", label: "Đã đóng gói" },
     { key: "SHIPPED", label: "Đã xuất kho" },
 ];
 
-const STATUS_ORDER: ExportStatus[] = ["PENDING", "PICKING", "PACKED", "SHIPPED"];
+const STATUS_ORDER: ExportStatus[] = ["PENDING", "PICKING", "CHECKING", "PACKED", "SHIPPED"];
 
 function getStepState(stepKey: string, currentStatus: ExportStatus): "completed" | "active" | "pending" {
     if (currentStatus === "CANCELLED") {

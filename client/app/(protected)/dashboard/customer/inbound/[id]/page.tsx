@@ -31,7 +31,10 @@ const inventoryService = new InventoryService();
 // ────────────────────────────────────────────────
 const STATUS_CONFIG: Record<ReceiptStatus, { label: string; className: string }> = {
     PENDING: { label: "Chờ xử lý", className: "inbound-status--pending" },
+    APPROVED: { label: "Đã duyệt", className: "inbound-status--approved" },
+    RECEIVING: { label: "Đang kiểm đếm", className: "inbound-status--receiving" },
     PROCESSING: { label: "Đang nhập kho", className: "inbound-status--processing" },
+    PUTAWAY: { label: "Đang cất hàng", className: "inbound-status--putaway" },
     COMPLETED: { label: "Hoàn thành", className: "inbound-status--completed" },
     CANCELLED: { label: "Đã hủy", className: "inbound-status--cancelled" },
 };

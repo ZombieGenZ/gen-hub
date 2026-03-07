@@ -117,6 +117,14 @@ async function bootstrap() {
     'Two-Factor Authentication',
     'Provinces',
     'Wards',
+    'Avatar Images',
+    'Cover Images',
+    'Ranks',
+    'Phone Codes',
+    'Public Catalog',
+    'Public Organizations',
+    'Units',
+    'Revenue Analytics',
     'Amenities',
     'Addon Types',
     'Addons',
@@ -474,3 +482,4 @@ async function bootstrap() {
   });
 }
 bootstrap();
+

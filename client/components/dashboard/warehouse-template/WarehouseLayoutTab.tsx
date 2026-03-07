@@ -521,6 +521,7 @@ export function WarehouseLayoutTab({ warehouseId, data, onChange }: WarehouseLay
                 rack_template_id: rack.id,
                 shelf_template_id: shelf.id,
                 name: updates.name || shelf.name,
+                description: updates.description || shelf.description || "",
             });
             setRows(prev => {
                 const updated = [...prev];
@@ -599,6 +600,7 @@ export function WarehouseLayoutTab({ warehouseId, data, onChange }: WarehouseLay
                 shelf_template_id: shelf.id,
                 block_template_id: block.id,
                 name: updates.name || block.name,
+                description: updates.description || block.description || "",
             });
             setRows(prev => {
                 const updated = [...prev];
