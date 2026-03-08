@@ -385,12 +385,10 @@ export default function WarehouseDetailPage() {
                             Sơ đồ kho
                         </TabsTrigger>
                     )}
-                    {warehouse.inventory.length > 0 && (
-                        <TabsTrigger value="inventory" className="text-xs gap-1.5">
-                            <Package className="w-3.5 h-3.5" />
-                            Tồn kho ({warehouse.inventory.length})
-                        </TabsTrigger>
-                    )}
+                    <TabsTrigger value="inventory" className="text-xs gap-1.5">
+                        <Package className="w-3.5 h-3.5" />
+                        Tồn kho
+                    </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="contract" className="mt-4">
@@ -401,11 +399,9 @@ export default function WarehouseDetailPage() {
                         <FloorPlanTab warehouse={warehouse} />
                     </TabsContent>
                 )}
-                {warehouse.inventory.length > 0 && (
-                    <TabsContent value="inventory" className="mt-4">
-                        <InventoryTab warehouse={warehouse} />
-                    </TabsContent>
-                )}
+                <TabsContent value="inventory" className="mt-4">
+                    <InventoryTab warehouseId={contract.warehouses?.[0]?.id ?? ''} />
+                </TabsContent>
             </Tabs>
         </div>
     );

@@ -77,8 +77,80 @@ export class InventoryRequestService {
     }
 
     /**
-     * Tạo yêu cầu nhập kho
+     * Lấy danh sách tồn kho thực tế
      */
+    async listInventoryStock(
+        orgId: string,
+        warehouseId?: string,
+        keywords?: string,
+    ) {
+        const items = await this.prisma.inventory.findMany({
+            where: {
+                organization_id: orgId,
+                is_deleted: false,
+                quantity: { gt: 0 },
+                ...(warehouseId && { warehouse_id: warehouseId }),
+                ...(keywords && {
+                    product: {
+                        OR: [
+                            { name: { contains: keywords, mode: 'insensitive' as const } },
+                            { sku: { contains: keywords, mode: 'insensitive' as const } },
+                        ],
+                    },
+                }),
+            },
+            include: {
+                product: { select: { id: true, name: true, sku: true, image_url: true } },
+                batch: { select: { id: true, code: true, expiry_date: true } },
+                block: {
+                    select: {
+                        id: true, code: true,
+                        shelf: {
+                            select: {
+                                id: true, code: true,
+                                rack: {
+                                    select: {
+                                        id: true, code: true,
+                                        row: { select: { id: true, code: true, name: true } },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+                warehouse: { select: { id: true, name: true } },
+            },
+            orderBy: [{ product: { name: 'asc' } }, { created_at: 'asc' }],
+        });
+
+        return items.map(inv => ({
+            id: inv.id,
+            product_id: inv.product.id,
+            product_name: inv.product.name,
+            sku: inv.product.sku,
+            image_url: inv.product.image_url,
+            batch_code: inv.batch?.code || null,
+            expiry_date: inv.batch?.expiry_date?.toISOString() || null,
+            quantity: inv.quantity.toNumber(),
+            quantity_on_hand: inv.quantity_on_hand.toNumber(),
+            quantity_allocated: inv.quantity_allocated.toNumber(),
+            quantity_available: inv.quantity_available.toNumber(),
+            warehouse_id: inv.warehouse.id,
+            warehouse_name: inv.warehouse.name,
+            block_id: inv.block.id,
+            location: [
+                inv.block.shelf?.rack?.row?.name || inv.block.shelf?.rack?.row?.code,
+                inv.block.shelf?.rack?.code,
+                inv.block.shelf?.code,
+                inv.block.code,
+            ].filter(Boolean).join(' > '),
+            row_code: inv.block.shelf?.rack?.row?.code || '',
+            rack_code: inv.block.shelf?.rack?.code || '',
+            days_in_storage: Math.floor((Date.now() - new Date(inv.created_at).getTime()) / (1000 * 60 * 60 * 24)),
+            created_at: inv.created_at.toISOString(),
+        }));
+    }
+
     /**
      * Lấy danh sách kho mà tổ chức có quyền sử dụng.
      * Nếu không có kho nào, thử backfill từ hợp đồng ACTIVE (lazy activation).
@@ -1415,6 +1487,87 @@ export class InventoryRequestService {
         return updated as unknown as IOutboundRequest;
     }
 
+    /**
+     * Bổ sung tồn kho cho phiếu nhập COMPLETED nhưng chưa có inventory
+     * (do thiếu block tại thời điểm confirmPutaway)
+     */
+    async refillInventory(
+        orgId: string,
+        id: string,
+        actorId: string,
+        lang: string,
+    ) {
+        const receipt = await this.prisma.receipt.findFirst({
+            where: { id, organization_id: orgId, is_deleted: false },
+            include: {
+                details: {
+                    where: { is_deleted: false },
+                    include: {
+                        product: { select: { id: true, name: true, sku: true, image_url: true } },
+                        batch: { select: { id: true, code: true, expiry_date: true } },
+                    },
+                },
+                warehouse: true,
+            },
+        });
+        if (!receipt) {
+            throw new NotFoundException(
+                await this.i18n.translate('inventory-request.errors.receipt_not_found', { lang }),
+            );
+        }
+        if (receipt.status !== ReceiptStatus.COMPLETED) {
+            throw new BadRequestException(
+                lang === 'vi'
+                    ? 'Chỉ có thể bổ sung tồn kho cho phiếu nhập đã hoàn tất'
+                    : 'Only completed receipts can be refilled',
+            );
+        }
+
+        // Kiểm tra đã có inventory cho phiếu này chưa
+        const existingCount = await this.prisma.inventoryTransaction.count({
+            where: {
+                organization_id: orgId,
+                reference_code: receipt.code,
+                type: TransactionType.INBOUND,
+            },
+        });
+        if (existingCount > 0) {
+            throw new BadRequestException(
+                lang === 'vi'
+                    ? 'Phiếu nhập này đã có tồn kho rồi'
+                    : 'This receipt already has inventory records',
+            );
+        }
+
+        return this.prisma.$transaction(async (tx) => {
+            for (const detail of receipt.details) {
+                const actualQty = detail.actual_qty.toNumber() || detail.expected_qty.toNumber();
+                if (actualQty > 0) {
+                    await this.fillInventory(
+                        tx, orgId, receipt.warehouse_id,
+                        detail.product_id, detail.batch_id,
+                        actualQty, detail.conversion_rate.toNumber(),
+                        receipt.code, actorId,
+                    );
+                }
+            }
+
+            return this.prisma.receipt.findFirst({
+                where: { id },
+                include: {
+                    warehouse: { select: { id: true, name: true } },
+                    details: {
+                        where: { is_deleted: false },
+                        include: {
+                            product: { select: { id: true, name: true, sku: true, image_url: true } },
+                            batch: { select: { id: true, code: true, expiry_date: true } },
+                        },
+                    },
+                },
+            });
+        });
+    }
+
     // ==================== FILL INVENTORY ALGORITHM ====================
 
     private async fillInventory(
@@ -1430,7 +1583,8 @@ export class InventoryRequestService {
     ): Promise<void> {
         const baseQuantity = quantity * conversionRate;
 
-        const availableBlocks = await tx.block.findMany({
+        // 1. Ưu tiên blocks trên rows đã thuê (is_rented = true)
+        let availableBlocks = await tx.block.findMany({
             where: {
                 is_deleted: false,
                 is_active: true,
@@ -1459,6 +1613,87 @@ export class InventoryRequestService {
                 { code: 'asc' },
             ],
         });
+
+        // 2. Fallback: nếu không có rented blocks, thử tất cả blocks trong warehouse
+        if (availableBlocks.length === 0) {
+            availableBlocks = await tx.block.findMany({
+                where: {
+                    is_deleted: false,
+                    is_active: true,
+                    shelf: {
+                        is_deleted: false,
+                        is_active: true,
+                        rack: {
+                            is_deleted: false,
+                            is_active: true,
+                            row: {
+                                warehouse_id: warehouseId,
+                                is_deleted: false,
+                                is_active: true,
+                            },
+                        },
+                    },
+                },
+                include: {
+                    shelf: { include: { rack: { include: { row: true } } } },
+                },
+                orderBy: [
+                    { shelf: { rack: { row: { code: 'asc' } } } },
+                    { shelf: { rack: { code: 'asc' } } },
+                    { shelf: { code: 'desc' } },
+                    { code: 'asc' },
+                ],
+            });
+        }
+
+        // 3. Nếu vẫn không có blocks, tạo cấu trúc mặc định (Row > Rack > Shelf > Block)
+        if (availableBlocks.length === 0) {
+            const defaultRow = await tx.row.create({
+                data: {
+                    warehouse_id: warehouseId,
+                    name: 'Dãy mặc định',
+                    code: 'R-DEFAULT',
+                    is_rented: true,
+                    is_active: true,
+                    created_by: actorId,
+                },
+            });
+
+            const defaultRack = await tx.rack.create({
+                data: {
+                    row_id: defaultRow.id,
+                    name: 'Kệ mặc định',
+                    code: 'RK-DEFAULT',
+                    is_active: true,
+                    created_by: actorId,
+                },
+            });
+
+            const defaultShelf = await tx.shelf.create({
+                data: {
+                    rack_id: defaultRack.id,
+                    name: 'Tầng mặc định',
+                    code: 'SH-DEFAULT',
+                    is_active: true,
+                    created_by: actorId,
+                },
+            });
+
+            const defaultBlock = await tx.block.create({
+                data: {
+                    shelf_id: defaultShelf.id,
+                    name: 'Ô mặc định',
+                    code: 'BL-DEFAULT',
+                    is_active: true,
+                    created_by: actorId,
+                },
+                include: {
+                    shelf: { include: { rack: { include: { row: true } } } },
+                },
+            });
+
+            availableBlocks = [defaultBlock];
+        }
 
         const assignedBlocks = availableBlocks.filter(b => b.shelf.assigned_product_id === productId);
         const unassignedBlocks = availableBlocks.filter(b => !b.shelf.assigned_product_id);

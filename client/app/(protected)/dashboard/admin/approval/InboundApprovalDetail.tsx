@@ -201,6 +201,18 @@ export default function InboundApprovalDetail({
         } finally { setSubmitting(false); }
     };
 
+    const handleRefillInventory = async () => {
+        const token = getToken(); if (!token) return;
+        setSubmitting(true);
+        try {
+            await inventoryService.refillInventory(token, ticketId);
+            showToast("Đã bổ sung tồn kho thành công!", "success");
+            fetchData();
+        } catch (err: any) {
+            showToast(err.message || "Không thể bổ sung tồn kho", "error");
+        } finally { setSubmitting(false); }
+    };
+
     // ── Loading state ──
     if (loading) {
         return (
@@ -432,6 +444,15 @@ export default function InboundApprovalDetail({
                             <p className="font-bold text-[16px] text-green-700">Phiếu nhập hoàn tất!</p>
                             <p className="text-sm text-muted-foreground mt-1">Hàng đã được nhập kho và lưu vào hệ thống tồn kho.</p>
                         </div>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={submitting}
+                            onClick={handleRefillInventory}
+                            className="gap-2 text-[#0F766E] border-[#0F766E]/30 hover:bg-[#0F766E]/5"
+                        >
+                            {submitting ? "Đang xử lý..." : "Bổ sung tồn kho (nếu thiếu)"}
+                        </Button>
                         <div className="overflow-x-auto w-full mt-2">
                             <table className="w-full">
                                 <thead className="bg-muted/30 border-b">

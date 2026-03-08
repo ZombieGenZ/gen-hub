@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -28,9 +28,38 @@ import {
     Package,
     MapPin,
     TrendingDown,
+    Loader2,
+    RefreshCw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { MockRentedWarehouse, MockInventoryItem } from "@/data/mockMyWarehouses";
+import { Button } from "@/components/ui/button";
+import { authStorage } from "@/services/auth/auth-storage.service";
+import { InventoryService } from "@/services/inventory/inventory.service";
+
+const inventoryService = new InventoryService();
+
+// ── Stock item type (from API) ──
+interface StockItem {
+    id: string;
+    product_id: string;
+    product_name: string;
+    sku: string;
+    image_url?: string | null;
+    batch_code: string | null;
+    expiry_date: string | null;
+    quantity: number;
+    quantity_on_hand: number;
+    quantity_allocated: number;
+    quantity_available: number;
+    warehouse_id: string;
+    warehouse_name: string;
+    block_id: string;
+    location: string;
+    row_code: string;
+    rack_code: string;
+    days_in_storage: number;
+    created_at: string;
+}
 
 // ── Helpers ──
 
@@ -68,11 +97,11 @@ const GROUP_OPTIONS: { value: GroupBy; label: string }[] = [
 
 // ── Inventory Row ──
 
-function InventoryRow({ item }: { item: MockInventoryItem }) {
+function InventoryRow({ item }: { item: StockItem }) {
     const expiryDays = daysUntilExpiry(item.expiry_date);
     const isExpiringSoon = expiryDays !== null && expiryDays <= 60 && expiryDays > 0;
     const isExpired = expiryDays !== null && expiryDays <= 0;
-    const isDeadStock = item.days_in_storage > 60 && item.avg_daily_out < 1;
+    const isDeadStock = item.days_in_storage > 60;
 
     return (
         <TableRow className={cn(
@@ -92,14 +121,17 @@ function InventoryRow({ item }: { item: MockInventoryItem }) {
                 </div>
             </TableCell>
             <TableCell className="text-xs">
-                <Badge variant="outline" className="text-[10px] font-mono">{item.batch_code}</Badge>
+                {item.batch_code ? (
+                    <Badge variant="outline" className="text-[10px] font-mono">{item.batch_code}</Badge>
+                ) : (
+                    <span className="text-muted-foreground">—</span>
+                )}
             </TableCell>
             <TableCell className="text-xs font-medium text-right">{item.quantity_on_hand}</TableCell>
-            <TableCell className="text-xs text-muted-foreground">{item.unit}</TableCell>
             <TableCell className="text-xs">
                 <div className="flex items-center gap-1">
                     <MapPin className="w-3 h-3 text-muted-foreground" />
-                    <span className="text-muted-foreground">{item.location}</span>
+                    <span className="text-muted-foreground">{item.location || '—'}</span>
                 </div>
             </TableCell>
             <TableCell className="text-xs">
@@ -121,12 +153,6 @@ function InventoryRow({ item }: { item: MockInventoryItem }) {
                 <span className={cn(item.days_in_storage > 60 && "text-orange-600 font-medium")}>
                     {item.days_in_storage}
                 </span>
-            </TableCell>
-            <TableCell className="text-xs text-right">
-                {item.avg_daily_out.toFixed(1)}
-            </TableCell>
-            <TableCell className="text-xs text-right text-muted-foreground">
-                {(item.weight_kg / 1000).toFixed(2)}T
             </TableCell>
             <TableCell>
                 <div className="flex gap-1">
@@ -150,12 +176,32 @@ function InventoryRow({ item }: { item: MockInventoryItem }) {
 
 // ── Main ──
 
-export function InventoryTab({ warehouse }: { warehouse: MockRentedWarehouse }) {
+export function InventoryTab({ warehouseId }: { warehouseId: string }) {
     const [filter, setFilter] = useState<FilterType>("ALL");
     const [groupBy, setGroupBy] = useState<GroupBy>("NONE");
     const [search, setSearch] = useState("");
+    const [inventory, setInventory] = useState<StockItem[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-    const inventory = warehouse.inventory;
+    const fetchStock = useCallback(async () => {
+        const token = authStorage.getAccessToken();
+        if (!token) return;
+        setIsLoading(true);
+        setError(null);
+        try {
+            const res = await inventoryService.listStock(token, warehouseId);
+            setInventory(res?.data ?? []);
+        } catch (err: any) {
+            setError(err.message || 'Không thể tải tồn kho');
+        } finally {
+            setIsLoading(false);
+        }
+    }, [warehouseId]);
+
+    useEffect(() => {
+        fetchStock();
+    }, [fetchStock]);
 
     const filtered = useMemo(() => {
         let items = [...inventory];
@@ -165,7 +211,7 @@ export function InventoryTab({ warehouse }: { warehouse: MockRentedWarehouse }) 
                 (i) =>
                     i.product_name.toLowerCase().includes(q) ||
                     i.sku.toLowerCase().includes(q) ||
-                    i.batch_code.toLowerCase().includes(q)
+                    (i.batch_code && i.batch_code.toLowerCase().includes(q))
             );
         }
         if (filter === "EXPIRING_SOON") {
@@ -175,7 +221,7 @@ export function InventoryTab({ warehouse }: { warehouse: MockRentedWarehouse }) 
             });
         }
         if (filter === "DEAD_STOCK") {
-            items = items.filter((i) => i.days_in_storage > 60 && i.avg_daily_out < 1);
+            items = items.filter((i) => i.days_in_storage > 60);
         }
         return items;
     }, [inventory, search, filter]);
@@ -183,9 +229,9 @@ export function InventoryTab({ warehouse }: { warehouse: MockRentedWarehouse }) 
     const grouped = useMemo(() => {
         if (groupBy === "NONE") return { "": filtered };
         const key = groupBy === "ROW" ? "row_code" : "rack_code";
-        const map: Record<string, MockInventoryItem[]> = {};
+        const map: Record<string, StockItem[]> = {};
         filtered.forEach((item) => {
-            const k = item[key];
+            const k = item[key] || "Không xác định";
             if (!map[k]) map[k] = [];
             map[k].push(item);
         });
@@ -199,13 +245,51 @@ export function InventoryTab({ warehouse }: { warehouse: MockRentedWarehouse }) 
         const d = daysUntilExpiry(i.expiry_date);
         return d !== null && d <= 60 && d > 0;
     }).length;
-    const deadStock = inventory.filter((i) => i.days_in_storage > 60 && i.avg_daily_out < 1).length;
-    const totalWeight = inventory.reduce((s, i) => s + i.weight_kg, 0);
+    const deadStock = inventory.filter((i) => i.days_in_storage > 60).length;
+
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center py-16">
+                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                <span className="ml-2 text-sm text-muted-foreground">Đang tải tồn kho...</span>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="flex flex-col items-center justify-center py-16 gap-3">
+                <p className="text-sm text-muted-foreground">{error}</p>
+                <Button variant="outline" size="sm" onClick={fetchStock}>
+                    <RefreshCw className="w-4 h-4 mr-1" /> Thử lại
+                </Button>
+            </div>
+        );
+    }
+
+    if (inventory.length === 0) {
+        return (
+            <div className="flex flex-col items-center justify-center py-16 gap-3">
+                <Package className="w-10 h-10 text-muted-foreground/50" />
+                <p className="text-sm text-muted-foreground">Chưa có hàng tồn kho trong kho này.</p>
+                <Button variant="outline" size="sm" onClick={fetchStock}>
+                    <RefreshCw className="w-4 h-4 mr-1" /> Tải lại
+                </Button>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-5">
+            {/* Refresh button */}
+            <div className="flex justify-end">
+                <Button variant="ghost" size="sm" onClick={fetchStock} className="text-xs">
+                    <RefreshCw className="w-3.5 h-3.5 mr-1" /> Làm mới
+                </Button>
+            </div>
+
             {/* Summary */}
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <Card className="border">
                     <CardContent className="p-3 text-center">
                         <Package className="w-4 h-4 mx-auto mb-1 text-brand" />
@@ -219,12 +303,6 @@ export function InventoryTab({ warehouse }: { warehouse: MockRentedWarehouse }) 
                         <p className="text-[10px] text-muted-foreground">Tổng SL tồn kho</p>
                     </CardContent>
                 </Card>
-                <Card className="border">
-                    <CardContent className="p-3 text-center">
-                        <p className="text-lg font-bold">{(totalWeight / 1000).toFixed(1)}T</p>
-                        <p className="text-[10px] text-muted-foreground">Tổng trọng lượng</p>
-                    </CardContent>
-                </Card>
                 <Card className={cn("border", expiringSoon > 0 && "border-yellow-300 bg-yellow-50/50 dark:bg-yellow-950/20")}>
                     <CardContent className="p-3 text-center">
                         <AlertTriangle className={cn("w-4 h-4 mx-auto mb-1", expiringSoon > 0 ? "text-yellow-600" : "text-muted-foreground")} />
@@ -236,7 +314,7 @@ export function InventoryTab({ warehouse }: { warehouse: MockRentedWarehouse }) 
                     <CardContent className="p-3 text-center">
                         <Clock className={cn("w-4 h-4 mx-auto mb-1", deadStock > 0 ? "text-orange-600" : "text-muted-foreground")} />
                         <p className={cn("text-lg font-bold", deadStock > 0 && "text-orange-600")}>{deadStock}</p>
-                        <p className="text-[10px] text-muted-foreground">Dead stock</p>
+                        <p className="text-[10px] text-muted-foreground">Tồn lâu (&gt;60 ngày)</p>
                     </CardContent>
                 </Card>
             </div>
@@ -292,19 +370,16 @@ export function InventoryTab({ warehouse }: { warehouse: MockRentedWarehouse }) 
                                         <TableHead className="text-xs">Sản phẩm</TableHead>
                                         <TableHead className="text-xs">Lô hàng</TableHead>
                                         <TableHead className="text-xs text-right">SL tồn</TableHead>
-                                        <TableHead className="text-xs">ĐVT</TableHead>
                                         <TableHead className="text-xs">Vị trí</TableHead>
                                         <TableHead className="text-xs">HSD</TableHead>
                                         <TableHead className="text-xs text-right">Ngày lưu</TableHead>
-                                        <TableHead className="text-xs text-right">TB xuất/ngày</TableHead>
-                                        <TableHead className="text-xs text-right">Trọng lượng</TableHead>
                                         <TableHead className="text-xs">Cảnh báo</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {items.length === 0 ? (
                                         <TableRow>
-                                            <TableCell colSpan={10} className="text-center text-muted-foreground py-8 text-sm">
+                                            <TableCell colSpan={7} className="text-center text-muted-foreground py-8 text-sm">
                                                 Không tìm thấy hàng hóa nào phù hợp.
                                             </TableCell>
                                         </TableRow>

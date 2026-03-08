@@ -273,6 +273,40 @@ export class InventoryService {
         return response.json();
     }
 
+    // ==================== STOCK (TỒN KHO) ====================
+
+    async listStock(token: string, warehouseId?: string, keywords?: string): Promise<ApiResponse<any[]>> {
+        const orgId = await orgHelper.getOrgId(token);
+        const params = new URLSearchParams();
+        if (warehouseId) params.append('warehouse_id', warehouseId);
+        if (keywords) params.append('keywords', keywords);
+        const qs = params.toString();
+        const response = await fetch(`${API}/organizations/${orgId}/inventory/stock${qs ? `?${qs}` : ''}`, {
+            method: 'GET',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        });
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Không thể lấy danh sách tồn kho');
+        }
+        return response.json();
+    }
+
+    async refillInventory(token: string, id: string): Promise<ApiResponse<InboundRequest>> {
+        const orgId = await orgHelper.getOrgId(token);
+        const response = await fetch(`${API}/organizations/${orgId}/inventory/inbound/${id}/refill-inventory`, {
+            method: 'PATCH',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        });
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Không thể bổ sung tồn kho');
+        }
+        return response.json();
+    }
+
+    // ==================== APPROVE/REJECT ====================
+
     async approveOutbound(token: string, id: string, notes?: string, picking_strategy?: string): Promise<ApiResponse<OutboundRequest>> {
         const orgId = await orgHelper.getOrgId(token);
         const response = await fetch(`${API}/organizations/${orgId}/inventory/outbound/${id}/approve`, {

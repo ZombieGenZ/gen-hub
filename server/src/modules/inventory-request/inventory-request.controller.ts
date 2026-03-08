@@ -72,6 +72,28 @@ export class InventoryRequestController {
         );
     }
 
+    @Get('stock')
+    @RequireOrgPermission('org.inventory.inbound.list')
+    @ApiOperation({
+        summary: 'Danh sách tồn kho',
+        description: 'Lấy danh sách tồn kho thực tế của tổ chức, có thể lọc theo kho.',
+    })
+    @ApiParam({ name: 'orgId', description: 'ID của tổ chức', type: 'string', format: 'uuid' })
+    @ApiResponse({ status: 200, description: 'Lấy danh sách tồn kho thành công' })
+    async listStock(
+        @Param('orgId', ParseUUIDPipe) orgId: string,
+        @Query('warehouse_id') warehouseId: string | undefined,
+        @Query('keywords') keywords: string | undefined,
+        @I18nLang() lang: string,
+    ) {
+        const items = await this.inventoryRequestService.listInventoryStock(orgId, warehouseId, keywords);
+        return new GetResponse(
+            'inventory-request.list_stock',
+            items,
+            lang === 'vi' ? 'Lấy danh sách tồn kho thành công' : 'Stock list retrieved',
+        );
+    }
+
     @Post('inbound')
     @RequireOrgPermission('org.inventory.inbound.create')
     @ApiOperation({
@@ -512,6 +534,25 @@ Từ chối phiếu xuất kho từ trạng thái \`PENDING\` sang \`CANCELLED\`
         const result = await this.inventoryRequestService.confirmPutaway(orgId, id, actorId, lang, dto);
         return new UpdatedResponse('inventory-request.confirm_putaway', result,
             lang === 'vi' ? 'Đã xác nhận cất hàng — hoàn tất nhập kho' : 'Putaway confirmed — inbound completed');
+    }
+
+    @Patch('inbound/:id/refill-inventory')
+    @RequireOrgPermission('org.inventory.inbound.approve')
+    @ApiOperation({
+        summary: 'Bổ sung tồn kho cho phiếu nhập đã hoàn tất',
+        description: 'Dùng khi phiếu nhập đã COMPLETED nhưng tồn kho chưa được tạo (do thiếu cấu trúc kho tại thời điểm xử lý)',
+    })
+    @ApiParam({ name: 'orgId', type: 'string', format: 'uuid' })
+    @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
+    async refillInventory(
+        @Param('orgId', ParseUUIDPipe) orgId: string,
+        @Param('id', ParseUUIDPipe) id: string,
+        @CurrentActor() actorId: string,
+        @I18nLang() lang: string,
+    ) {
+        const result = await this.inventoryRequestService.refillInventory(orgId, id, actorId, lang);
+        return new UpdatedResponse('inventory-request.refill_inventory', result,
+            lang === 'vi' ? 'Đã bổ sung tồn kho thành công' : 'Inventory refilled successfully');
     }
 
     // ==================== OUTBOUND WORKFLOW STEPS ====================
