@@ -1,13 +1,19 @@
 import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { I18nService } from 'nestjs-i18n';
-import { ReceiptStatus, Prisma } from '@prisma/client';
+import { ReceiptStatus, ExportStatus, TransactionType, Prisma, PickListStatus } from '@prisma/client';
 import { InventoryRequestRepository } from './inventory-request.repository';
 import {
     CreateInboundRequestDto,
     CreateOutboundRequestDto,
     QueryInboundRequestDto,
     QueryOutboundRequestDto,
+    StartReceivingDto,
+    ConfirmReceivingDto,
+    ConfirmPutawayDto,
+    ConfirmPickingDto,
+    ConfirmCheckingDto,
+    CompleteShipmentDto,
 } from './dto';
 import {
     IInboundRequest,
@@ -793,5 +799,625 @@ export class InventoryRequestService {
         );
 
         return updated as unknown as IOutboundRequest;
+    }
+
+    // ==================== INBOUND WORKFLOW STEPS ====================
+
+    /**
+     * Bắt đầu kiểm đếm: APPROVED → RECEIVING
+     */
+    async startReceiving(
+        orgId: string,
+        id: string,
+        actorId: string,
+        lang: string,
+        dto?: StartReceivingDto,
+    ): Promise<IInboundRequest> {
+        const receipt = await this.prisma.receipt.findFirst({
+            where: { id, organization_id: orgId, is_deleted: false },
+        });
+        if (!receipt) {
+            throw new NotFoundException(
+                await this.i18n.translate('inventory-request.errors.receipt_not_found', { lang }),
+            );
+        }
+        if (receipt.status !== ReceiptStatus.APPROVED) {
+            throw new BadRequestException(
+                await this.i18n.translate('inventory-request.errors.invalid_status', { lang }),
+            );
+        }
+
+        const updated = await this.prisma.receipt.update({
+            where: { id },
+            data: {
+                status: ReceiptStatus.RECEIVING,
+                checker_id: dto?.checker_id || null,
+                receiving_started_at: new Date(),
+                updated_by: actorId,
+            },
+            include: {
+                warehouse: { select: { id: true, name: true } },
+                partner: { select: { id: true, name: true, code: true } },
+                details: {
+                    where: { is_deleted: false },
+                    include: {
+                        product: { select: { id: true, name: true, sku: true, image_url: true } },
+                        batch: { select: { id: true, code: true, expiry_date: true } },
+                        unit: { select: { id: true, name: true } },
+                    },
+                },
+            },
+        });
+
+        await Promise.all([
+            this.redisService.del(this.getInboundDetailCacheKey(id)),
+            this.redisService.delByPattern(this.cacheKeys.inboundList(orgId, '*')),
+        ]);
+
+        this.websocketGateway.emitToOrganization(orgId, 'inbound:receiving-started', {
+            receiptId: id, code: updated.code, startedBy: actorId,
+            timestamp: new Date().toISOString(),
+        });
+
+        return updated as unknown as IInboundRequest;
+    }
+
+    /**
+     * Xác nhận kiểm đếm: RECEIVING → PROCESSING
+     */
+    async confirmReceiving(
+        orgId: string,
+        id: string,
+        actorId: string,
+        lang: string,
+        dto: ConfirmReceivingDto,
+    ): Promise<IInboundRequest> {
+        const receipt = await this.prisma.receipt.findFirst({
+            where: { id, organization_id: orgId, is_deleted: false },
+            include: { details: { where: { is_deleted: false } } },
+        });
+        if (!receipt) {
+            throw new NotFoundException(
+                await this.i18n.translate('inventory-request.errors.receipt_not_found', { lang }),
+            );
+        }
+        if (receipt.status !== ReceiptStatus.RECEIVING) {
+            throw new BadRequestException(
+                await this.i18n.translate('inventory-request.errors.invalid_status', { lang }),
+            );
+        }
+
+        const updated = await this.prisma.$transaction(async (tx) => {
+            for (const item of dto.details) {
+                await tx.receiptDetail.update({
+                    where: { id: item.detail_id },
+                    data: { actual_qty: item.actual_qty },
+                });
+            }
+            return tx.receipt.update({
+                where: { id },
+                data: {
+                    status: ReceiptStatus.PROCESSING,
+                    receiving_completed_at: new Date(),
+                    notes: dto.notes || receipt.notes,
+                    updated_by: actorId,
+                },
+                include: {
+                    warehouse: { select: { id: true, name: true } },
+                    partner: { select: { id: true, name: true, code: true } },
+                    details: {
+                        where: { is_deleted: false },
+                        include: {
+                            product: { select: { id: true, name: true, sku: true, image_url: true } },
+                            batch: { select: { id: true, code: true, expiry_date: true } },
+                            unit: { select: { id: true, name: true } },
+                        },
+                    },
+                },
+            });
+        });
+
+        await Promise.all([
+            this.redisService.del(this.getInboundDetailCacheKey(id)),
+            this.redisService.delByPattern(this.cacheKeys.inboundList(orgId, '*')),
+        ]);
+
+        this.websocketGateway.emitToOrganization(orgId, 'inbound:receiving-confirmed', {
+            receiptId: id, code: updated.code, confirmedBy: actorId,
+            timestamp: new Date().toISOString(),
+        });
+
+        return updated as unknown as IInboundRequest;
+    }
+
+    /**
+     * Xác nhận cất hàng: PROCESSING → COMPLETED (gọi fillInventory)
+     */
+    async confirmPutaway(
+        orgId: string,
+        id: string,
+        actorId: string,
+        lang: string,
+        dto?: ConfirmPutawayDto,
+    ): Promise<IInboundRequest> {
+        const receipt = await this.prisma.receipt.findFirst({
+            where: { id, organization_id: orgId, is_deleted: false },
+            include: {
+                details: {
+                    where: { is_deleted: false },
+                    include: {
+                        product: { select: { id: true, name: true, weight: true } },
+                        batch: true,
+                    },
+                },
+                warehouse: true,
+            },
+        });
+        if (!receipt) {
+            throw new NotFoundException(
+                await this.i18n.translate('inventory-request.errors.receipt_not_found', { lang }),
+            );
+        }
+        if (receipt.status !== ReceiptStatus.PROCESSING) {
+            throw new BadRequestException(
+                await this.i18n.translate('inventory-request.errors.invalid_status', { lang }),
+            );
+        }
+
+        const updated = await this.prisma.$transaction(async (tx) => {
+            // Fill inventory cho từng detail
+            for (const detail of receipt.details) {
+                const actualQty = detail.actual_qty.toNumber() || detail.expected_qty.toNumber();
+                if (actualQty > 0) {
+                    await this.fillInventory(
+                        tx, orgId, receipt.warehouse_id,
+                        detail.product_id, detail.batch_id,
+                        actualQty, detail.conversion_rate.toNumber(),
+                        receipt.code, actorId,
+                    );
+                }
+            }
+
+            // Tạo ReceiptPutaway record
+            await tx.receiptPutaway.create({
+                data: {
+                    receipt_id: id,
+                    organization_id: orgId,
+                    warehouse_id: receipt.warehouse_id,
+                    code: `PA-${receipt.code}`,
+                    status: 'COMPLETED',
+                    worker_id: actorId,
+                    started_at: receipt.putaway_started_at || new Date(),
+                    completed_at: new Date(),
+                    notes: dto?.notes || null,
+                    created_by: actorId,
+                    details: {
+                        create: receipt.details.map(d => ({
+                            receipt_detail_id: d.id,
+                            product_id: d.product_id,
+                            batch_id: d.batch_id,
+                            block_id: receipt.warehouse_id,
+                            expected_qty: d.actual_qty.toNumber() || d.expected_qty.toNumber(),
+                            actual_qty: d.actual_qty.toNumber() || d.expected_qty.toNumber(),
+                            created_by: actorId,
+                        })),
+                    },
+                },
+            });
+
+            return tx.receipt.update({
+                where: { id },
+                data: {
+                    status: ReceiptStatus.COMPLETED,
+                    putaway_completed_at: new Date(),
+                    updated_by: actorId,
+                },
+                include: {
+                    warehouse: { select: { id: true, name: true } },
+                    partner: { select: { id: true, name: true, code: true } },
+                    details: {
+                        where: { is_deleted: false },
+                        include: {
+                            product: { select: { id: true, name: true, sku: true, image_url: true } },
+                            batch: { select: { id: true, code: true, expiry_date: true } },
+                            unit: { select: { id: true, name: true } },
+                        },
+                    },
+                },
+            });
+        });
+
+        await Promise.all([
+            this.redisService.del(this.getInboundDetailCacheKey(id)),
+            this.redisService.delByPattern(this.cacheKeys.inboundList(orgId, '*')),
+        ]);
+
+        this.websocketGateway.emitToOrganization(orgId, 'inbound:putaway-confirmed', {
+            receiptId: id, code: updated.code, confirmedBy: actorId,
+            totalProducts: receipt.details.length,
+            timestamp: new Date().toISOString(),
+        });
+
+        this.auditLogService.logUpdate(
+            orgId, 'Receipt', id,
+            { status: ReceiptStatus.PROCESSING } as Record<string, unknown>,
+            { status: ReceiptStatus.COMPLETED } as Record<string, unknown>,
+            { userId: actorId, description: `Putaway confirmed: ${receipt.code}` },
+        );
+
+        return updated as unknown as IInboundRequest;
+    }
+
+    // ==================== OUTBOUND WORKFLOW STEPS ====================
+
+    /**
+     * Xác nhận nhặt hàng: PICKING → CHECKING
+     */
+    async confirmPicking(
+        orgId: string,
+        id: string,
+        actorId: string,
+        lang: string,
+        dto: ConfirmPickingDto,
+    ): Promise<IOutboundRequest> {
+        const exportRecord = await this.prisma.export.findFirst({
+            where: { id, organization_id: orgId, is_deleted: false },
+            include: {
+                pick_lists: {
+                    where: { is_deleted: false },
+                    include: { details: { where: { is_deleted: false } } },
+                },
+            },
+        });
+        if (!exportRecord) {
+            throw new NotFoundException(
+                await this.i18n.translate('inventory-request.errors.export_not_found', { lang }),
+            );
+        }
+        if (exportRecord.status !== ExportStatus.PICKING) {
+            throw new BadRequestException(
+                await this.i18n.translate('inventory-request.errors.invalid_status', { lang }),
+            );
+        }
+
+        const updated = await this.prisma.$transaction(async (tx) => {
+            for (const item of dto.details) {
+                await tx.exportPickListDetail.update({
+                    where: { id: item.pick_list_detail_id },
+                    data: { picked_qty: item.picked_qty },
+                });
+            }
+            for (const pickList of exportRecord.pick_lists) {
+                await tx.exportPickList.update({
+                    where: { id: pickList.id },
+                    data: { status: PickListStatus.COMPLETED, completed_at: new Date(), updated_by: actorId },
+                });
+            }
+            return tx.export.update({
+                where: { id },
+                data: {
+                    status: ExportStatus.CHECKING,
+                    picking_completed_at: new Date(),
+                    updated_by: actorId,
+                },
+                include: {
+                    warehouse: { select: { id: true, name: true } },
+                    partner: { select: { id: true, name: true, code: true } },
+                    details: {
+                        where: { is_deleted: false },
+                        include: {
+                            product: { select: { id: true, name: true, sku: true, image_url: true } },
+                            batch: { select: { id: true, code: true, expiry_date: true } },
+                            unit: { select: { id: true, name: true } },
+                        },
+                    },
+                },
+            });
+        });
+
+        await Promise.all([
+            this.redisService.del(this.getOutboundDetailCacheKey(id)),
+            this.redisService.delByPattern(this.cacheKeys.outboundList(orgId, '*')),
+        ]);
+
+        this.websocketGateway.emitToOrganization(orgId, 'outbound:picking-confirmed', {
+            exportId: id, code: updated.code, confirmedBy: actorId,
+            timestamp: new Date().toISOString(),
+        });
+
+        return updated as unknown as IOutboundRequest;
+    }
+
+    /**
+     * Xác nhận kiểm tra xuất: CHECKING → PACKED
+     */
+    async confirmChecking(
+        orgId: string,
+        id: string,
+        actorId: string,
+        lang: string,
+        dto: ConfirmCheckingDto,
+    ): Promise<IOutboundRequest> {
+        const exportRecord = await this.prisma.export.findFirst({
+            where: { id, organization_id: orgId, is_deleted: false },
+        });
+        if (!exportRecord) {
+            throw new NotFoundException(
+                await this.i18n.translate('inventory-request.errors.export_not_found', { lang }),
+            );
+        }
+        if (exportRecord.status !== ExportStatus.CHECKING) {
+            throw new BadRequestException(
+                await this.i18n.translate('inventory-request.errors.invalid_status', { lang }),
+            );
+        }
+
+        const updated = await this.prisma.export.update({
+            where: { id },
+            data: {
+                status: ExportStatus.PACKED,
+                checking_completed_at: new Date(),
+                updated_by: actorId,
+            },
+            include: {
+                warehouse: { select: { id: true, name: true } },
+                partner: { select: { id: true, name: true, code: true } },
+                details: {
+                    where: { is_deleted: false },
+                    include: {
+                        product: { select: { id: true, name: true, sku: true, image_url: true } },
+                        batch: { select: { id: true, code: true, expiry_date: true } },
+                        unit: { select: { id: true, name: true } },
+                    },
+                },
+            },
+        });
+
+        await Promise.all([
+            this.redisService.del(this.getOutboundDetailCacheKey(id)),
+            this.redisService.delByPattern(this.cacheKeys.outboundList(orgId, '*')),
+        ]);
+
+        this.websocketGateway.emitToOrganization(orgId, 'outbound:checking-confirmed', {
+            exportId: id, code: updated.code, confirmedBy: actorId,
+            timestamp: new Date().toISOString(),
+        });
+
+        return updated as unknown as IOutboundRequest;
+    }
+
+    /**
+     * Hoàn tất xuất kho: PACKED → SHIPPED (trừ inventory thật)
+     */
+    async completeShipment(
+        orgId: string,
+        id: string,
+        actorId: string,
+        lang: string,
+        dto?: CompleteShipmentDto,
+    ): Promise<IOutboundRequest> {
+        const exportRecord = await this.prisma.export.findFirst({
+            where: { id, organization_id: orgId, is_deleted: false },
+            include: {
+                details: {
+                    where: { is_deleted: false },
+                    include: { product: { select: { id: true, name: true } }, batch: true },
+                },
+                pick_lists: {
+                    where: { is_deleted: false },
+                    include: { details: { where: { is_deleted: false } } },
+                },
+                warehouse: true,
+            },
+        });
+        if (!exportRecord) {
+            throw new NotFoundException(
+                await this.i18n.translate('inventory-request.errors.export_not_found', { lang }),
+            );
+        }
+        if (exportRecord.status !== ExportStatus.PACKED) {
+            throw new BadRequestException(
+                await this.i18n.translate('inventory-request.errors.invalid_status', { lang }),
+            );
+        }
+
+        const updated = await this.prisma.$transaction(async (tx) => {
+            // Trừ inventory thật dựa trên pick list details
+            for (const pickList of exportRecord.pick_lists) {
+                for (const plDetail of pickList.details) {
+                    const pickedQty = plDetail.picked_qty.toNumber() || plDetail.required_qty.toNumber();
+                    if (pickedQty > 0) {
+                        const inv = await tx.inventory.findFirst({
+                            where: {
+                                organization_id: orgId,
+                                warehouse_id: exportRecord.warehouse_id,
+                                block_id: plDetail.block_id,
+                                product_id: plDetail.product_id,
+                                batch_id: plDetail.batch_id,
+                                is_deleted: false,
+                            },
+                        });
+                        if (inv) {
+                            await tx.inventory.update({
+                                where: { id: inv.id },
+                                data: {
+                                    quantity: { decrement: pickedQty },
+                                    quantity_on_hand: { decrement: pickedQty },
+                                    quantity_allocated: { decrement: pickedQty },
+                                    updated_by: actorId,
+                                },
+                            });
+                            await tx.inventoryTransaction.create({
+                                data: {
+                                    organization_id: orgId,
+                                    warehouse_id: exportRecord.warehouse_id,
+                                    product_id: plDetail.product_id,
+                                    batch_id: plDetail.batch_id,
+                                    from_block_id: plDetail.block_id,
+                                    type: TransactionType.OUTBOUND,
+                                    quantity: pickedQty,
+                                    reference_code: exportRecord.code,
+                                    created_by: actorId,
+                                },
+                            });
+                        }
+                    }
+                }
+            }
+
+            return tx.export.update({
+                where: { id },
+                data: {
+                    status: ExportStatus.SHIPPED,
+                    shipped_at: new Date(),
+                    tracking_number: dto?.tracking_number || null,
+                    updated_by: actorId,
+                },
+                include: {
+                    warehouse: { select: { id: true, name: true } },
+                    partner: { select: { id: true, name: true, code: true } },
+                    details: {
+                        where: { is_deleted: false },
+                        include: {
+                            product: { select: { id: true, name: true, sku: true, image_url: true } },
+                            batch: { select: { id: true, code: true, expiry_date: true } },
+                            unit: { select: { id: true, name: true } },
+                        },
+                    },
+                },
+            });
+        });
+
+        await Promise.all([
+            this.redisService.del(this.getOutboundDetailCacheKey(id)),
+            this.redisService.delByPattern(this.cacheKeys.outboundList(orgId, '*')),
+        ]);
+
+        this.websocketGateway.emitToOrganization(orgId, 'outbound:shipment-completed', {
+            exportId: id, code: updated.code, completedBy: actorId,
+            trackingNumber: dto?.tracking_number,
+            timestamp: new Date().toISOString(),
+        });
+
+        this.auditLogService.logUpdate(
+            orgId, 'Export', id,
+            { status: ExportStatus.PACKED } as Record<string, unknown>,
+            { status: ExportStatus.SHIPPED } as Record<string, unknown>,
+            { userId: actorId, description: `Shipment completed: ${updated.code}` },
+        );
+
+        return updated as unknown as IOutboundRequest;
+    }
+
+    // ==================== FILL INVENTORY ALGORITHM ====================
+
+    private async fillInventory(
+        tx: Prisma.TransactionClient,
+        orgId: string,
+        warehouseId: string,
+        productId: string,
+        batchId: string | null,
+        quantity: number,
+        conversionRate: number,
+        referenceCode: string,
+        actorId: string,
+    ): Promise<void> {
+        const baseQuantity = quantity * conversionRate;
+
+        const availableBlocks = await tx.block.findMany({
+            where: {
+                is_deleted: false,
+                is_active: true,
+                shelf: {
+                    is_deleted: false,
+                    is_active: true,
+                    rack: {
+                        is_deleted: false,
+                        is_active: true,
+                        row: {
+                            warehouse_id: warehouseId,
+                            is_deleted: false,
+                            is_active: true,
+                            is_rented: true,
+                        },
+                    },
+                },
+            },
+            include: {
+                shelf: { include: { rack: { include: { row: true } } } },
+            },
+            orderBy: [
+                { shelf: { rack: { row: { code: 'asc' } } } },
+                { shelf: { rack: { code: 'asc' } } },
+                { shelf: { code: 'desc' } },
+                { code: 'asc' },
+            ],
+        });
+
+        const assignedBlocks = availableBlocks.filter(b => b.shelf.assigned_product_id === productId);
+        const unassignedBlocks = availableBlocks.filter(b => !b.shelf.assigned_product_id);
+        const sortedBlocks = [...assignedBlocks, ...unassignedBlocks];
+
+        let remainingQty = baseQuantity;
+
+        for (const block of sortedBlocks) {
+            if (remainingQty <= 0) break;
+
+            const existingInventory = await tx.inventory.findFirst({
+                where: {
+                    organization_id: orgId,
+                    warehouse_id: warehouseId,
+                    block_id: block.id,
+                    product_id: productId,
+                    batch_id: batchId,
+                    is_deleted: false,
+                },
+            });
+
+            const fillQty = remainingQty;
+
+            if (existingInventory) {
+                await tx.inventory.update({
+                    where: { id: existingInventory.id },
+                    data: {
+                        quantity: { increment: fillQty },
+                        quantity_on_hand: { increment: fillQty },
+                        quantity_available: { increment: fillQty },
+                        updated_by: actorId,
+                    },
+                });
+            } else {
+                await tx.inventory.create({
+                    data: {
+                        organization_id: orgId,
+                        warehouse_id: warehouseId,
+                        block_id: block.id,
+                        product_id: productId,
+                        batch_id: batchId,
+                        quantity: fillQty,
+                        quantity_on_hand: fillQty,
+                        quantity_allocated: 0,
+                        quantity_available: fillQty,
+                        created_by: actorId,
+                    },
+                });
+            }
+
+            await tx.inventoryTransaction.create({
+                data: {
+                    organization_id: orgId,
+                    warehouse_id: warehouseId,
+                    product_id: productId,
+                    batch_id: batchId,
+                    to_block_id: block.id,
+                    type: TransactionType.INBOUND,
+                    quantity: fillQty,
+                    reference_code: referenceCode,
+                    created_by: actorId,
+                },
+            });
+
+            remainingQty = 0;
+        }
     }
 }

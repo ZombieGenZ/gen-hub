@@ -245,12 +245,41 @@ export default function ApprovalQueuePage() {
         });
     };
 
-    const handleBulkApprove = () => {
-        showToast(
-            `Đã duyệt hàng loạt ${selectedIds.size} phiếu — Wave Picking List đã được tạo`,
-            "success"
+    const handleBulkApprove = async () => {
+        const token = authStorage.getAccessToken();
+        if (!token) return;
+
+        const selectedTickets = allTickets.filter((t) => selectedIds.has(t.id));
+        let successCount = 0;
+        let failCount = 0;
+
+        await Promise.allSettled(
+            selectedTickets.map(async (ticket) => {
+                try {
+                    if (ticket.type === "inbound") {
+                        await inventoryService.approveInbound(token, ticket.id);
+                    } else {
+                        await inventoryService.approveOutbound(token, ticket.id);
+                    }
+                    successCount++;
+                } catch {
+                    failCount++;
+                }
+            })
         );
+
         setSelectedIds(new Set());
+
+        if (failCount === 0) {
+            showToast(`Đã duyệt thành công ${successCount} phiếu`, "success");
+        } else {
+            showToast(
+                `Duyệt ${successCount} thành công, ${failCount} thất bại`,
+                failCount === selectedTickets.length ? "error" : "success"
+            );
+        }
+
+        fetchData();
     };
 
     // ── Kanban drag handlers ──

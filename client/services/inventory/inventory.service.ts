@@ -242,4 +242,150 @@ export class InventoryService {
             throw error;
         }
     }
+
+    // ==================== APPROVE / REJECT ====================
+
+    async approveInbound(token: string, id: string, notes?: string): Promise<ApiResponse<InboundRequest>> {
+        const orgId = await orgHelper.getOrgId(token);
+        const response = await fetch(`${API}/organizations/${orgId}/inventory/inbound/${id}/approve`, {
+            method: 'PATCH',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ notes }),
+        });
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Không thể duyệt phiếu nhập');
+        }
+        return response.json();
+    }
+
+    async rejectInbound(token: string, id: string, reason?: string): Promise<ApiResponse<InboundRequest>> {
+        const orgId = await orgHelper.getOrgId(token);
+        const response = await fetch(`${API}/organizations/${orgId}/inventory/inbound/${id}/reject`, {
+            method: 'PATCH',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ reason }),
+        });
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Không thể từ chối phiếu nhập');
+        }
+        return response.json();
+    }
+
+    async approveOutbound(token: string, id: string, notes?: string): Promise<ApiResponse<OutboundRequest>> {
+        const orgId = await orgHelper.getOrgId(token);
+        const response = await fetch(`${API}/organizations/${orgId}/inventory/outbound/${id}/approve`, {
+            method: 'PATCH',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ notes }),
+        });
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Không thể duyệt phiếu xuất');
+        }
+        return response.json();
+    }
+
+    async rejectOutbound(token: string, id: string, reason?: string): Promise<ApiResponse<OutboundRequest>> {
+        const orgId = await orgHelper.getOrgId(token);
+        const response = await fetch(`${API}/organizations/${orgId}/inventory/outbound/${id}/reject`, {
+            method: 'PATCH',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ reason }),
+        });
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Không thể từ chối phiếu xuất');
+        }
+        return response.json();
+    }
+
+    // ==================== INBOUND WORKFLOW STEPS ====================
+
+    async startReceiving(token: string, id: string, data?: { checker_id?: string }): Promise<ApiResponse<InboundRequest>> {
+        const orgId = await orgHelper.getOrgId(token);
+        const response = await fetch(`${API}/organizations/${orgId}/inventory/inbound/${id}/start-receiving`, {
+            method: 'PATCH',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify(data || {}),
+        });
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Không thể bắt đầu kiểm đếm');
+        }
+        return response.json();
+    }
+
+    async confirmReceiving(token: string, id: string, data: { details: { detail_id: string; actual_qty: number }[]; notes?: string }): Promise<ApiResponse<InboundRequest>> {
+        const orgId = await orgHelper.getOrgId(token);
+        const response = await fetch(`${API}/organizations/${orgId}/inventory/inbound/${id}/confirm-receiving`, {
+            method: 'PATCH',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+        });
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Không thể xác nhận kiểm đếm');
+        }
+        return response.json();
+    }
+
+    async confirmPutaway(token: string, id: string, data?: { notes?: string }): Promise<ApiResponse<InboundRequest>> {
+        const orgId = await orgHelper.getOrgId(token);
+        const response = await fetch(`${API}/organizations/${orgId}/inventory/inbound/${id}/confirm-putaway`, {
+            method: 'PATCH',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify(data || {}),
+        });
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Không thể xác nhận cất hàng');
+        }
+        return response.json();
+    }
+
+    // ==================== OUTBOUND WORKFLOW STEPS ====================
+
+    async confirmPicking(token: string, id: string, data: { details: { pick_list_detail_id: string; picked_qty: number }[] }): Promise<ApiResponse<OutboundRequest>> {
+        const orgId = await orgHelper.getOrgId(token);
+        const response = await fetch(`${API}/organizations/${orgId}/inventory/outbound/${id}/confirm-picking`, {
+            method: 'PATCH',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+        });
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Không thể xác nhận nhặt hàng');
+        }
+        return response.json();
+    }
+
+    async confirmChecking(token: string, id: string, data: { details: { export_detail_id: string; checked_qty: number; passed?: boolean }[] }): Promise<ApiResponse<OutboundRequest>> {
+        const orgId = await orgHelper.getOrgId(token);
+        const response = await fetch(`${API}/organizations/${orgId}/inventory/outbound/${id}/confirm-checking`, {
+            method: 'PATCH',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+        });
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Không thể xác nhận kiểm tra');
+        }
+        return response.json();
+    }
+
+    async completeShipment(token: string, id: string, data?: { notes?: string; tracking_number?: string }): Promise<ApiResponse<OutboundRequest>> {
+        const orgId = await orgHelper.getOrgId(token);
+        const response = await fetch(`${API}/organizations/${orgId}/inventory/outbound/${id}/complete-shipment`, {
+            method: 'PATCH',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify(data || {}),
+        });
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Không thể hoàn tất xuất kho');
+        }
+        return response.json();
+    }
 }

@@ -3,21 +3,15 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { InventoryService } from "@/services/inventory/inventory.service";
-import { WarehouseManagerInventoryService } from "@/services/inventory/warehouse-manager-inventory.service";
 import { useToast } from "@/contexts/ToastContext";
 import type { OutboundRequest, PickingStrategy } from "@/services/inventory/inventory.types";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
     CheckCircleIcon,
     PrinterIcon,
@@ -25,15 +19,16 @@ import {
     BoltIcon,
     ScissorsIcon,
     XCircleIcon,
+    ArrowRightIcon,
+    TruckIcon,
 } from "@heroicons/react/24/outline";
 
 import RejectReasonDialog from "./RejectReasonDialog";
 
 const inventoryService = new InventoryService();
-const wmInventoryService = new WarehouseManagerInventoryService();
 
 // ────────────────────────────────────────────────
-// Strategy options
+// Strategy options (for PENDING step)
 // ────────────────────────────────────────────────
 const STRATEGY_OPTIONS: {
     value: PickingStrategy | "NEAREST";
@@ -45,18 +40,63 @@ const STRATEGY_OPTIONS: {
         { value: "NEAREST", title: "Gần nhất", desc: "Gần cửa nhất, tiết kiệm thời gian" },
     ];
 
-function formatDate(dateStr: string) {
+const STATUS_LABELS: Record<string, { label: string; color: string }> = {
+    PENDING:   { label: "Chờ duyệt",    color: "bg-yellow-50 text-yellow-700 border-yellow-200" },
+    PICKING:   { label: "Đang nhặt",    color: "bg-indigo-50 text-indigo-700 border-indigo-200" },
+    CHECKING:  { label: "Đang kiểm",    color: "bg-purple-50 text-purple-700 border-purple-200" },
+    PACKED:    { label: "Đã đóng gói",  color: "bg-orange-50 text-orange-700 border-orange-200" },
+    SHIPPED:   { label: "Đã xuất kho",  color: "bg-green-50 text-green-700 border-green-200" },
+    CANCELLED: { label: "Đã huỷ",       color: "bg-red-50 text-red-700 border-red-200" },
+};
+
+const OUTBOUND_STEPS = [
+    { key: "PENDING",  label: "Chờ duyệt" },
+    { key: "PICKING",  label: "Nhặt hàng" },
+    { key: "CHECKING", label: "Kiểm tra" },
+    { key: "PACKED",   label: "Đóng gói" },
+    { key: "SHIPPED",  label: "Xuất kho" },
+];
+
+const STEP_ORDER = ["PENDING", "PICKING", "CHECKING", "PACKED", "SHIPPED"];
+
+function StepBar({ status }: { status: string }) {
+    const current = STEP_ORDER.indexOf(status);
+    return (
+        <div className="flex items-center gap-1 px-6 py-4 border-b bg-muted/20 overflow-x-auto">
+            {OUTBOUND_STEPS.map((step, idx) => {
+                const done = idx < current;
+                const active = idx === current;
+                return (
+                    <React.Fragment key={step.key}>
+                        <div className="flex flex-col items-center min-w-[64px]">
+                            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-colors
+                                ${done ? "bg-[#0F766E] border-[#0F766E] text-white" :
+                                  active ? "bg-white border-[#0F766E] text-[#0F766E]" :
+                                  "bg-white border-muted-foreground/30 text-muted-foreground/50"}`}>
+                                {done ? <CheckCircleIcon className="w-4 h-4" /> : idx + 1}
+                            </div>
+                            <span className={`text-[10px] mt-1 text-center ${active ? "font-semibold text-[#0F766E]" : done ? "text-[#0F766E]" : "text-muted-foreground/50"}`}>
+                                {step.label}
+                            </span>
+                        </div>
+                        {idx < OUTBOUND_STEPS.length - 1 && (
+                            <div className={`flex-1 h-0.5 mt-[-10px] ${idx < current ? "bg-[#0F766E]" : "bg-muted-foreground/20"}`} />
+                        )}
+                    </React.Fragment>
+                );
+            })}
+        </div>
+    );
+}
+
+function formatDate(dateStr?: string | null) {
+    if (!dateStr) return "—";
     try {
         return new Intl.DateTimeFormat("vi-VN", {
-            day: "2-digit",
-            month: "2-digit",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
+            day: "2-digit", month: "2-digit", year: "numeric",
+            hour: "2-digit", minute: "2-digit",
         }).format(new Date(dateStr));
-    } catch {
-        return "—";
-    }
+    } catch { return "—"; }
 }
 
 // ════════════════════════════════════════════════
@@ -73,7 +113,17 @@ export default function OutboundApprovalDetail({
 
     const [data, setData] = useState<OutboundRequest | null>(null);
     const [loading, setLoading] = useState(true);
+    const [submitting, setSubmitting] = useState(false);
+
+    // PENDING: picking strategy selection
     const [strategy, setStrategy] = useState<PickingStrategy | "NEAREST">("FEFO");
+
+    // PICKING: picked qty per pick_list_detail
+    const [pickedQty, setPickedQty] = useState<Record<string, number>>({});
+
+    // CHECKING: per export_detail { checked_qty, passed }
+    const [checkingData, setCheckingData] = useState<Record<string, { checked_qty: number; passed: boolean }>>({});
+
     const [rejectOpen, setRejectOpen] = useState(false);
 
     const fetchData = useCallback(async () => {
@@ -82,8 +132,19 @@ export default function OutboundApprovalDetail({
             if (!token) return;
             setLoading(true);
             const res = await inventoryService.getOutboundById(token, ticketId);
-            const item = (res as any)?.data || res;
+            const item = (res as any)?.data ?? res;
             setData(item);
+            // Init picking data if available
+            if (item?.pick_list?.details) {
+                const map: Record<string, number> = {};
+                item.pick_list.details.forEach((d: any) => { map[d.id] = d.picked_qty ?? 0; });
+                setPickedQty(map);
+            }
+            if (item?.details) {
+                const map: Record<string, { checked_qty: number; passed: boolean }> = {};
+                item.details.forEach((d: any) => { map[d.id] = { checked_qty: d.checked_qty ?? d.quantity ?? 0, passed: d.passed ?? true }; });
+                setCheckingData(map);
+            }
         } catch {
             showToast("Không thể tải chi tiết phiếu xuất", "error");
         } finally {
@@ -91,69 +152,106 @@ export default function OutboundApprovalDetail({
         }
     }, [ticketId, showToast]);
 
-    useEffect(() => {
-        fetchData();
-    }, [fetchData]);
+    useEffect(() => { fetchData(); }, [fetchData]);
 
-    // Simulated stock availability check
+    const getToken = () => {
+        const t = authStorage.getAccessToken();
+        if (!t) { showToast("Phiên đăng nhập hết hạn", "error"); return null; }
+        return t;
+    };
+
+    // Stock availability check (from product data)
     const getStockInfo = (detail: any) => {
-        // In production, this comes from the API
         const requested = detail.quantity || 0;
-        const available = (detail.product as any)?.quantity_available ?? Math.floor(requested * (0.6 + Math.random() * 0.6));
-        const ratio = requested > 0 ? Math.min(available / requested, 1) : 0;
+        const available = (detail.product as any)?.quantity_available ?? requested;
         const sufficient = available >= requested;
-
+        const ratio = requested > 0 ? Math.min(available / requested, 1) : 0;
         let barClass = "approval-stock-bar__fill--ok";
         if (ratio < 1) barClass = "approval-stock-bar__fill--danger";
         else if (ratio < 1.2) barClass = "approval-stock-bar__fill--warning";
-
         return { requested, available, ratio, sufficient, barClass };
     };
 
-    const hasInsufficientStock = data?.details?.some((d) => {
-        const info = getStockInfo(d);
-        return !info.sufficient;
-    });
+    const hasInsufficientStock = data?.details?.some(d => !getStockInfo(d).sufficient);
 
+    // ── PENDING: Approve ──
     const handleApproveOutbound = async () => {
+        const token = getToken(); if (!token) return;
+        setSubmitting(true);
         try {
-            const token = authStorage.getAccessToken();
-            if (!token) return;
-
             const pickingStrategy = strategy === "NEAREST" ? "FEFO" : strategy;
-            await wmInventoryService.approveOutbound(token, ticketId, {
-                picking_strategy: pickingStrategy as "FEFO" | "FIFO",
-            });
-
-            showToast(
-                "Đã duyệt lệnh xuất — Lệnh lấy hàng (Pick List) đã được tạo và gửi cho nhân viên",
-                "success"
-            );
+            await inventoryService.approveOutbound(token, ticketId);
+            showToast("Đã duyệt lệnh xuất — chuyển sang Đang nhặt hàng", "success");
             fetchData();
         } catch (err: any) {
             showToast(err.message || "Không thể duyệt phiếu xuất", "error");
-        }
+        } finally { setSubmitting(false); }
     };
 
-    const handleSplitOrder = () => {
-        showToast(
-            "Đã tách phiếu — Chỉ xuất những sản phẩm đủ tồn kho",
-            "success"
-        );
-    };
-
-    const handleRejectConfirm = async (category: string, reason: string) => {
+    // ── PENDING: Reject ──
+    const handleRejectConfirm = async (_cat: string, reason: string) => {
+        const token = getToken(); if (!token) return;
+        setSubmitting(true);
         try {
-            const token = authStorage.getAccessToken();
-            if (!token) return;
-
-            await wmInventoryService.rejectOutbound(token, ticketId, reason);
-            showToast(`Đã từ chối phiếu — Lý do: ${reason}`, "success");
+            await inventoryService.rejectOutbound(token, ticketId, reason);
+            showToast(`Đã từ chối phiếu xuất — Lý do: ${reason}`, "success");
             setRejectOpen(false);
             fetchData();
         } catch (err: any) {
             showToast(err.message || "Không thể từ chối phiếu xuất", "error");
-        }
+        } finally { setSubmitting(false); }
+    };
+
+    // ── PICKING: Confirm picking ──
+    const handleConfirmPicking = async () => {
+        const token = getToken(); if (!token) return;
+        setSubmitting(true);
+        try {
+            const details = Object.entries(pickedQty).map(([pick_list_detail_id, qty]) => ({
+                pick_list_detail_id,
+                picked_qty: qty,
+            }));
+            await inventoryService.confirmPicking(token, ticketId, { details });
+            showToast("Đã xác nhận nhặt hàng — chuyển sang Đang kiểm tra", "success");
+            fetchData();
+        } catch (err: any) {
+            showToast(err.message || "Không thể xác nhận nhặt hàng", "error");
+        } finally { setSubmitting(false); }
+    };
+
+    // ── CHECKING: Confirm checking ──
+    const handleConfirmChecking = async () => {
+        const token = getToken(); if (!token) return;
+        setSubmitting(true);
+        try {
+            const details = Object.entries(checkingData).map(([export_detail_id, d]) => ({
+                export_detail_id,
+                checked_qty: d.checked_qty,
+                passed: d.passed,
+            }));
+            await inventoryService.confirmChecking(token, ticketId, { details });
+            showToast("Đã xác nhận kiểm tra — chuyển sang Đóng gói", "success");
+            fetchData();
+        } catch (err: any) {
+            showToast(err.message || "Không thể xác nhận kiểm tra", "error");
+        } finally { setSubmitting(false); }
+    };
+
+    // ── PACKED: Complete shipment ──
+    const handleCompleteShipment = async () => {
+        const token = getToken(); if (!token) return;
+        setSubmitting(true);
+        try {
+            await inventoryService.completeShipment(token, ticketId, {});
+            showToast("Hoàn tất xuất kho! Hàng đã được giao cho vận chuyển.", "success");
+            fetchData();
+        } catch (err: any) {
+            showToast(err.message || "Không thể hoàn tất xuất kho", "error");
+        } finally { setSubmitting(false); }
+    };
+
+    const handleSplitOrder = () => {
+        showToast("Đã tách phiếu — Chỉ xuất những sản phẩm đang có sẵn", "success");
     };
 
     // ── Loading ──
@@ -178,252 +276,321 @@ export default function OutboundApprovalDetail({
         );
     }
 
+    const statusInfo = STATUS_LABELS[data.status] ?? { label: data.status, color: "bg-muted text-muted-foreground" };
+
     return (
         <div className="flex flex-col h-full">
             {/* ── Header ── */}
             <div className="p-6 border-b">
                 <div className="flex items-center justify-between gap-4">
                     <div>
-                        <div className="flex items-center gap-3">
-                            <h2 className="text-[20px] font-bold leading-[130%]">
-                                {data.code}
-                            </h2>
-                            <Badge
-                                variant="outline"
-                                className="rounded-full px-3 py-0.5 text-xs font-normal approval-type--outbound"
-                            >
+                        <div className="flex items-center gap-3 flex-wrap">
+                            <h2 className="text-[20px] font-bold leading-[130%]">{data.code}</h2>
+                            <Badge variant="outline" className="rounded-full px-3 py-0.5 text-xs font-normal approval-type--outbound">
                                 Xuất kho
+                            </Badge>
+                            <Badge variant="outline" className={`rounded-full px-3 py-0.5 text-xs font-normal ${statusInfo.color}`}>
+                                {statusInfo.label}
                             </Badge>
                         </div>
                         <p className="text-sm text-muted-foreground mt-1">
-                            {data.warehouse?.name || "—"} • {data.partner?.name || "—"} •{" "}
-                            {formatDate(data.created_at)}
+                            {data.warehouse?.name || "—"} • {data.partner?.name || "—"} • {formatDate(data.created_at)}
                         </p>
                     </div>
                     <Button variant="outline" size="sm" className="gap-2 rounded-xl">
-                        <PrinterIcon className="w-4 h-4" />
-                        In phiếu
+                        <PrinterIcon className="w-4 h-4" />In phiếu
                     </Button>
                 </div>
                 {data.sales_order_code && (
-                    <p className="text-xs text-muted-foreground mt-2">
-                        Mã SO: <strong>{data.sales_order_code}</strong>
-                    </p>
+                    <p className="text-xs text-muted-foreground mt-2">Mã SO: <strong>{data.sales_order_code}</strong></p>
                 )}
             </div>
 
-            {/* ── Strategy Selector ── */}
-            <div className="px-6 pt-6">
-                <h3 className="text-[16px] font-semibold leading-[150%] mb-3">
-                    Chiến lược xuất hàng
-                </h3>
-                <div className="approval-strategy">
-                    {STRATEGY_OPTIONS.map((opt) => (
-                        <button
-                            key={opt.value}
-                            className={`approval-strategy__option ${strategy === opt.value
-                                    ? "approval-strategy__option--active"
-                                    : ""
-                                }`}
-                            onClick={() => setStrategy(opt.value)}
-                        >
-                            <div className="approval-strategy__option-title">
-                                {opt.title}
-                            </div>
-                            <div className="approval-strategy__option-desc">
-                                {opt.desc}
-                            </div>
-                        </button>
-                    ))}
-                </div>
-            </div>
+            {/* ── Stepper (hide for cancelled/shipped) ── */}
+            {data.status !== "CANCELLED" && <StepBar status={data.status} />}
 
-            {/* ── Inventory Check Table ── */}
-            <div className="flex-1 overflow-y-auto p-6">
-                <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-[16px] font-semibold leading-[150%]">
-                        Kiểm tra tồn kho
-                    </h3>
-                    {hasInsufficientStock && (
-                        <Badge className="bg-red-50 text-red-700 border-red-200 rounded-full shadow-none font-normal text-xs gap-1">
-                            <ExclamationTriangleIcon className="w-3 h-3" />
-                            Tồn kho không đủ
-                        </Badge>
-                    )}
-                </div>
+            {/* ── Body ── */}
+            <div className="flex-1 overflow-y-auto">
 
-                <div className="overflow-x-auto">
-                    <table className="w-full">
-                        <thead className="bg-muted/30 border-b">
-                            <tr>
-                                <th className="text-left py-3 px-4 font-semibold text-xs text-muted-foreground uppercase">
-                                    Sản phẩm
-                                </th>
-                                <th className="text-left py-3 px-4 font-semibold text-xs text-muted-foreground uppercase">
-                                    SKU
-                                </th>
-                                <th className="text-center py-3 px-4 font-semibold text-xs text-muted-foreground uppercase">
-                                    Yêu cầu
-                                </th>
-                                <th className="text-center py-3 px-4 font-semibold text-xs text-muted-foreground uppercase">
-                                    Khả dụng
-                                </th>
-                                <th className="text-center py-3 px-4 font-semibold text-xs text-muted-foreground uppercase w-36">
-                                    Tiến trình
-                                </th>
-                                <th className="text-left py-3 px-4 font-semibold text-xs text-muted-foreground uppercase">
-                                    Trạng thái
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y">
-                            {data.details && data.details.length > 0 ? (
-                                data.details.map((detail) => {
-                                    const stock = getStockInfo(detail);
-                                    return (
-                                        <tr
-                                            key={detail.id}
-                                            className={`transition-colors ${!stock.sufficient
-                                                    ? "approval-reconciliation__row--insufficient"
-                                                    : ""
-                                                }`}
-                                        >
-                                            <td className="py-3 px-4">
-                                                <p className="font-medium text-sm">
-                                                    {detail.product?.name || "—"}
-                                                </p>
-                                            </td>
-                                            <td className="py-3 px-4 text-sm text-muted-foreground">
-                                                {detail.product?.sku || "—"}
-                                            </td>
-                                            <td className="py-3 px-4 text-center font-semibold text-sm">
-                                                {stock.requested}
-                                            </td>
-                                            <td className="py-3 px-4 text-center text-sm">
-                                                <span
-                                                    className={
-                                                        stock.sufficient
-                                                            ? "text-green-600 font-medium"
-                                                            : "text-red-600 font-semibold"
-                                                    }
-                                                >
-                                                    {stock.available}
-                                                </span>
-                                            </td>
-                                            <td className="py-3 px-4">
-                                                <div className="space-y-1">
-                                                    <div className="approval-stock-bar">
-                                                        <div
-                                                            className={`approval-stock-bar__fill ${stock.barClass}`}
-                                                            style={{
-                                                                width: `${Math.min(stock.ratio * 100, 100)}%`,
-                                                            }}
-                                                        />
-                                                    </div>
-                                                    <p className="text-[10px] text-muted-foreground text-center">
-                                                        {Math.round(stock.ratio * 100)}%
-                                                    </p>
-                                                </div>
-                                            </td>
-                                            <td className="py-3 px-4">
-                                                {stock.sufficient ? (
-                                                    <Badge className="bg-green-50 text-green-700 border-green-200 gap-1 rounded-full shadow-none font-normal text-xs">
-                                                        <CheckCircleIcon className="w-3 h-3" />
-                                                        Đủ hàng
-                                                    </Badge>
-                                                ) : (
-                                                    <div className="space-y-1">
-                                                        <Badge className="bg-red-50 text-red-700 border-red-200 rounded-full shadow-none font-normal text-xs">
-                                                            Thiếu{" "}
-                                                            {stock.requested - stock.available}
-                                                        </Badge>
-                                                    </div>
-                                                )}
+                {/* ─── PENDING ─── */}
+                {data.status === "PENDING" && (
+                    <div className="flex flex-col gap-0">
+                        {/* Strategy selector */}
+                        <div className="px-6 pt-6">
+                            <h3 className="text-[15px] font-semibold mb-3">Chiến lược xuất hàng</h3>
+                            <div className="approval-strategy">
+                                {STRATEGY_OPTIONS.map(opt => (
+                                    <button key={opt.value}
+                                        className={`approval-strategy__option ${strategy === opt.value ? "approval-strategy__option--active" : ""}`}
+                                        onClick={() => setStrategy(opt.value)}>
+                                        <div className="approval-strategy__option-title">{opt.title}</div>
+                                        <div className="approval-strategy__option-desc">{opt.desc}</div>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Stock check table */}
+                        <div className="p-6">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-[15px] font-semibold">Kiểm tra tồn kho</h3>
+                                {hasInsufficientStock && (
+                                    <Badge className="bg-red-50 text-red-700 border-red-200 rounded-full shadow-none font-normal text-xs gap-1">
+                                        <ExclamationTriangleIcon className="w-3 h-3" />Tồn kho không đủ
+                                    </Badge>
+                                )}
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="w-full">
+                                    <thead className="bg-muted/30 border-b">
+                                        <tr>
+                                            <th className="text-left py-3 px-4 text-xs font-semibold text-muted-foreground uppercase">Sản phẩm</th>
+                                            <th className="text-left py-3 px-4 text-xs font-semibold text-muted-foreground uppercase">SKU</th>
+                                            <th className="text-center py-3 px-4 text-xs font-semibold text-muted-foreground uppercase">Yêu cầu</th>
+                                            <th className="text-center py-3 px-4 text-xs font-semibold text-muted-foreground uppercase">Khả dụng</th>
+                                            <th className="text-left py-3 px-4 text-xs font-semibold text-muted-foreground uppercase">Trạng thái</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y">
+                                        {data.details?.length ? data.details.map(detail => {
+                                            const stock = getStockInfo(detail);
+                                            return (
+                                                <tr key={detail.id} className={`transition-colors ${!stock.sufficient ? "approval-reconciliation__row--insufficient" : ""}`}>
+                                                    <td className="py-3 px-4 text-sm font-medium">{detail.product?.name || "—"}</td>
+                                                    <td className="py-3 px-4 text-sm text-muted-foreground">{detail.product?.sku || "—"}</td>
+                                                    <td className="py-3 px-4 text-center font-semibold text-sm">{stock.requested}</td>
+                                                    <td className="py-3 px-4 text-center text-sm">
+                                                        <span className={stock.sufficient ? "text-green-600 font-medium" : "text-red-600 font-semibold"}>{stock.available}</span>
+                                                    </td>
+                                                    <td className="py-3 px-4">
+                                                        {stock.sufficient ? (
+                                                            <Badge className="bg-green-50 text-green-700 border-green-200 gap-1 rounded-full shadow-none font-normal text-xs">
+                                                                <CheckCircleIcon className="w-3 h-3" />Đủ hàng
+                                                            </Badge>
+                                                        ) : (
+                                                            <Badge className="bg-red-50 text-red-700 border-red-200 rounded-full shadow-none font-normal text-xs">
+                                                                Thiếu {stock.requested - stock.available}
+                                                            </Badge>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        }) : (
+                                            <tr><td colSpan={5} className="py-10 text-center text-muted-foreground text-sm">Chưa có chi tiết</td></tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {hasInsufficientStock && (
+                                <Card className="border border-amber-200 bg-amber-50/50 rounded-2xl mt-4">
+                                    <CardContent className="p-4 flex items-start gap-3">
+                                        <BoltIcon className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                                        <div className="space-y-2">
+                                            <p className="text-sm font-medium text-amber-800">Tồn kho không đủ</p>
+                                            <p className="text-xs text-amber-700">Bạn có thể tách phiếu để chỉ xuất sản phẩm đủ tồn kho.</p>
+                                            <Button size="sm" variant="outline"
+                                                className="gap-1 rounded-xl text-xs h-7 border-amber-300 text-amber-700 hover:bg-amber-100"
+                                                onClick={handleSplitOrder}>
+                                                <ScissorsIcon className="w-3.5 h-3.5" />Tách phiếu xuất
+                                            </Button>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* ─── PICKING ─── */}
+                {data.status === "PICKING" && (
+                    <div className="p-6">
+                        <h3 className="text-[15px] font-semibold mb-1">Nhặt hàng theo phiếu</h3>
+                        <p className="text-xs text-muted-foreground mb-4">Nhập số lượng thực tế nhặt được cho từng dòng hàng.</p>
+                        <div className="overflow-x-auto">
+                            <table className="w-full">
+                                <thead className="bg-muted/30 border-b">
+                                    <tr>
+                                        <th className="text-left py-3 px-4 text-xs font-semibold text-muted-foreground uppercase">Sản phẩm</th>
+                                        <th className="text-left py-3 px-4 text-xs font-semibold text-muted-foreground uppercase">Vị trí</th>
+                                        <th className="text-center py-3 px-4 text-xs font-semibold text-muted-foreground uppercase">SL yêu cầu</th>
+                                        <th className="text-center py-3 px-4 text-xs font-semibold text-muted-foreground uppercase">SL nhặt</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y">
+                                    {(data as any).pick_list?.details?.length ? (data as any).pick_list.details.map((d: any) => (
+                                        <tr key={d.id}>
+                                            <td className="py-3 px-4 text-sm font-medium">{d.product?.name || d.export_detail?.product?.name || "—"}</td>
+                                            <td className="py-3 px-4 text-sm text-muted-foreground">{d.location?.code || "—"}</td>
+                                            <td className="py-3 px-4 text-center text-sm font-semibold">{d.quantity || d.required_qty || 0}</td>
+                                            <td className="py-3 px-4 text-center">
+                                                <Input type="number" min={0}
+                                                    value={pickedQty[d.id] ?? 0}
+                                                    onChange={e => setPickedQty(p => ({ ...p, [d.id]: parseInt(e.target.value) || 0 }))}
+                                                    className="w-20 h-8 rounded-xl text-center text-sm mx-auto" />
                                             </td>
                                         </tr>
-                                    );
-                                })
-                            ) : (
-                                <tr>
-                                    <td
-                                        colSpan={6}
-                                        className="py-12 text-center text-muted-foreground"
-                                    >
-                                        Chưa có chi tiết hàng hóa
-                                    </td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
-                </div>
+                                    )) : (
+                                        <tr><td colSpan={4} className="py-10 text-center text-muted-foreground text-sm">Chưa có danh sách nhặt hàng</td></tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
 
-                {/* Suggestion when stock insufficient */}
-                {hasInsufficientStock && (
-                    <Card className="border border-amber-200 bg-amber-50/50 rounded-2xl mt-4">
-                        <CardContent className="p-4 flex items-start gap-3">
-                            <BoltIcon className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                            <div className="space-y-2">
-                                <p className="text-sm font-medium text-amber-800">
-                                    Tồn kho không đủ cho một số sản phẩm
-                                </p>
-                                <p className="text-xs text-amber-700">
-                                    Bạn có thể tách phiếu để chỉ xuất những sản phẩm đang có sẵn,
-                                    hoặc hủy toàn bộ yêu cầu.
-                                </p>
-                                <div className="flex gap-2">
-                                    <Button
-                                        size="sm"
-                                        variant="outline"
-                                        className="gap-1 rounded-xl text-xs h-7 border-amber-300 text-amber-700 hover:bg-amber-100"
-                                        onClick={handleSplitOrder}
-                                    >
-                                        <ScissorsIcon className="w-3.5 h-3.5" />
-                                        Tách phiếu xuất
-                                    </Button>
-                                    <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        className="gap-1 rounded-xl text-xs h-7 text-red-600 hover:bg-red-50"
-                                        onClick={() => setRejectOpen(true)}
-                                    >
-                                        <XCircleIcon className="w-3.5 h-3.5" />
-                                        Hủy yêu cầu
-                                    </Button>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
+                {/* ─── CHECKING ─── */}
+                {data.status === "CHECKING" && (
+                    <div className="p-6">
+                        <h3 className="text-[15px] font-semibold mb-1">Kiểm tra chất lượng</h3>
+                        <p className="text-xs text-muted-foreground mb-4">Kiểm tra từng sản phẩm và đánh dấu đạt/không đạt.</p>
+                        <div className="overflow-x-auto">
+                            <table className="w-full">
+                                <thead className="bg-muted/30 border-b">
+                                    <tr>
+                                        <th className="text-left py-3 px-4 text-xs font-semibold text-muted-foreground uppercase">Sản phẩm</th>
+                                        <th className="text-center py-3 px-4 text-xs font-semibold text-muted-foreground uppercase">SL đặt</th>
+                                        <th className="text-center py-3 px-4 text-xs font-semibold text-muted-foreground uppercase">SL kiểm</th>
+                                        <th className="text-center py-3 px-4 text-xs font-semibold text-muted-foreground uppercase">Đạt</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y">
+                                    {data.details?.length ? data.details.map(d => {
+                                        const cd = checkingData[d.id] ?? { checked_qty: d.quantity || 0, passed: true };
+                                        return (
+                                            <tr key={d.id} className={`transition-colors ${!cd.passed ? "approval-reconciliation__row--shortage" : ""}`}>
+                                                <td className="py-3 px-4 text-sm font-medium">{d.product?.name || "—"}</td>
+                                                <td className="py-3 px-4 text-center text-sm font-semibold">{d.quantity}</td>
+                                                <td className="py-3 px-4 text-center">
+                                                    <Input type="number" min={0}
+                                                        value={cd.checked_qty}
+                                                        onChange={e => setCheckingData(p => ({ ...p, [d.id]: { ...cd, checked_qty: parseInt(e.target.value) || 0 } }))}
+                                                        className="w-20 h-8 rounded-xl text-center text-sm mx-auto" />
+                                                </td>
+                                                <td className="py-3 px-4 text-center">
+                                                    <Checkbox
+                                                        checked={cd.passed}
+                                                        onCheckedChange={v => setCheckingData(p => ({ ...p, [d.id]: { ...cd, passed: !!v } }))}
+                                                    />
+                                                </td>
+                                            </tr>
+                                        );
+                                    }) : (
+                                        <tr><td colSpan={4} className="py-10 text-center text-muted-foreground text-sm">Chưa có chi tiết</td></tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
+
+                {/* ─── PACKED ─── */}
+                {data.status === "PACKED" && (
+                    <div className="p-6 flex flex-col items-center gap-4 text-center min-h-[200px] justify-center">
+                        <div className="w-14 h-14 rounded-full bg-orange-50 flex items-center justify-center">
+                            <TruckIcon className="w-7 h-7 text-orange-600" />
+                        </div>
+                        <div>
+                            <p className="font-semibold text-[15px]">Hàng đã đóng gói xong</p>
+                            <p className="text-sm text-muted-foreground mt-1">
+                                Nhấn bên dưới để hoàn tất xuất kho và bàn giao cho vận chuyển.
+                            </p>
+                        </div>
+                        <div className="overflow-x-auto w-full mt-2">
+                            <table className="w-full">
+                                <thead className="bg-muted/30 border-b">
+                                    <tr>
+                                        <th className="text-left py-2 px-4 text-xs font-semibold text-muted-foreground uppercase">Sản phẩm</th>
+                                        <th className="text-center py-2 px-4 text-xs font-semibold text-muted-foreground uppercase">SL xuất</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y">
+                                    {data.details?.map(d => (
+                                        <tr key={d.id}>
+                                            <td className="py-2 px-4 text-sm">{d.product?.name || "—"}</td>
+                                            <td className="py-2 px-4 text-center font-semibold text-sm text-[#0F766E]">{d.quantity}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
+
+                {/* ─── SHIPPED ─── */}
+                {data.status === "SHIPPED" && (
+                    <div className="p-6 flex flex-col items-center gap-4 text-center min-h-[200px] justify-center">
+                        <div className="w-16 h-16 rounded-full bg-green-50 flex items-center justify-center">
+                            <CheckCircleIcon className="w-8 h-8 text-green-600" />
+                        </div>
+                        <div>
+                            <p className="font-bold text-[16px] text-green-700">Xuất kho hoàn tất!</p>
+                            <p className="text-sm text-muted-foreground mt-1">Hàng đã xuất kho và bàn giao cho vận chuyển.</p>
+                        </div>
+                    </div>
+                )}
+
+                {/* ─── CANCELLED ─── */}
+                {data.status === "CANCELLED" && (
+                    <div className="p-6 flex flex-col items-center gap-4 text-center min-h-[200px] justify-center">
+                        <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center">
+                            <XCircleIcon className="w-8 h-8 text-red-500" />
+                        </div>
+                        <p className="font-bold text-[16px] text-red-600">Phiếu xuất đã bị huỷ</p>
+                    </div>
                 )}
             </div>
 
             {/* ── Action Bar ── */}
-            <div className="approval-actions">
-                <Button
-                    variant="outline"
-                    className="gap-2 rounded-xl text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
-                    onClick={() => setRejectOpen(true)}
-                >
-                    Từ chối
-                </Button>
-                {hasInsufficientStock && (
-                    <Button
-                        variant="outline"
-                        className="gap-2 rounded-xl"
-                        onClick={handleSplitOrder}
-                    >
-                        <ScissorsIcon className="w-4 h-4" />
-                        Tách phiếu
-                    </Button>
-                )}
-                <Button
-                    className="gap-2 rounded-xl bg-[#0F766E] hover:bg-[#0F766E]/90 text-white"
-                    onClick={handleApproveOutbound}
-                    disabled={!!hasInsufficientStock}
-                >
-                    <CheckCircleIcon className="w-4 h-4" />
-                    Duyệt lệnh xuất
-                </Button>
-            </div>
+            {data.status !== "SHIPPED" && data.status !== "CANCELLED" && (
+                <div className="approval-actions">
+                    {data.status === "PENDING" && (
+                        <>
+                            <Button variant="outline" disabled={submitting}
+                                className="gap-2 rounded-xl text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
+                                onClick={() => setRejectOpen(true)}>
+                                Từ chối
+                            </Button>
+                            {hasInsufficientStock && (
+                                <Button variant="outline" disabled={submitting}
+                                    className="gap-2 rounded-xl"
+                                    onClick={handleSplitOrder}>
+                                    <ScissorsIcon className="w-4 h-4" />Tách phiếu
+                                </Button>
+                            )}
+                            <Button disabled={submitting || !!hasInsufficientStock}
+                                className="gap-2 rounded-xl bg-[#0F766E] hover:bg-[#0F766E]/90 text-white"
+                                onClick={handleApproveOutbound}>
+                                <CheckCircleIcon className="w-4 h-4" />
+                                {submitting ? "Đang duyệt..." : "Duyệt lệnh xuất"}
+                            </Button>
+                        </>
+                    )}
+                    {data.status === "PICKING" && (
+                        <Button disabled={submitting}
+                            className="gap-2 rounded-xl bg-[#0F766E] hover:bg-[#0F766E]/90 text-white ml-auto"
+                            onClick={handleConfirmPicking}>
+                            <ArrowRightIcon className="w-4 h-4" />
+                            {submitting ? "Đang xử lý..." : "Xác nhận nhặt hàng"}
+                        </Button>
+                    )}
+                    {data.status === "CHECKING" && (
+                        <Button disabled={submitting}
+                            className="gap-2 rounded-xl bg-[#0F766E] hover:bg-[#0F766E]/90 text-white ml-auto"
+                            onClick={handleConfirmChecking}>
+                            <CheckCircleIcon className="w-4 h-4" />
+                            {submitting ? "Đang xử lý..." : "Xác nhận kiểm tra"}
+                        </Button>
+                    )}
+                    {data.status === "PACKED" && (
+                        <Button disabled={submitting}
+                            className="gap-2 rounded-xl bg-[#0F766E] hover:bg-[#0F766E]/90 text-white ml-auto"
+                            onClick={handleCompleteShipment}>
+                            <TruckIcon className="w-4 h-4" />
+                            {submitting ? "Đang xuất kho..." : "Hoàn tất xuất kho"}
+                        </Button>
+                    )}
+                </div>
+            )}
 
             {/* ── Reject Dialog ── */}
             <RejectReasonDialog

@@ -28,12 +28,18 @@ import {
     QueryOutboundRequestDto,
     ApproveRequestDto,
     RejectRequestDto,
+    StartReceivingDto,
+    ConfirmReceivingDto,
+    ConfirmPutawayDto,
+    ConfirmPickingDto,
+    ConfirmCheckingDto,
+    CompleteShipmentDto,
 } from './dto';
 import { CombinedAuthGuard } from '../../common/guards/combined-auth.guard';
 import { OrgPermissionGuard } from '../../common/guards/org-permission.guard';
 import { RequireOrgPermission } from '../../common/decorators/require-org-permission.decorator';
 import { CurrentActor } from '../../common/decorators/current-actor.decorator';
-import { CreatedResponse, GetResponse } from '../../common/responses/success.response';
+import { CreatedResponse, GetResponse, UpdatedResponse } from '../../common/responses/success.response';
 
 @ApiTags('Inventory Request (Organization) (Collapsed)')
 @ApiBearerAuth()
@@ -450,5 +456,117 @@ Từ chối phiếu xuất kho từ trạng thái \`PENDING\` sang \`CANCELLED\`
             exportRecord,
             await this.i18n.translate('inventory-request.success.reject_outbound', { lang }),
         );
+    }
+
+    // ==================== INBOUND WORKFLOW STEPS ====================
+
+    @Patch('inbound/:id/start-receiving')
+    @RequireOrgPermission('org.inventory.inbound.approve')
+    @ApiOperation({ summary: 'Bắt đầu kiểm đếm phiếu nhập (APPROVED → RECEIVING)' })
+    @ApiParam({ name: 'orgId', type: 'string', format: 'uuid' })
+    @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
+    @ApiBody({ type: StartReceivingDto })
+    async startReceiving(
+        @Param('orgId', ParseUUIDPipe) orgId: string,
+        @Param('id', ParseUUIDPipe) id: string,
+        @Body() dto: StartReceivingDto,
+        @CurrentActor() actorId: string,
+        @I18nLang() lang: string,
+    ) {
+        const result = await this.inventoryRequestService.startReceiving(orgId, id, actorId, lang, dto);
+        return new UpdatedResponse('inventory-request.start_receiving', result,
+            lang === 'vi' ? 'Đã bắt đầu kiểm đếm' : 'Receiving started');
+    }
+
+    @Patch('inbound/:id/confirm-receiving')
+    @RequireOrgPermission('org.inventory.inbound.approve')
+    @ApiOperation({ summary: 'Xác nhận kiểm đếm (RECEIVING → PROCESSING)' })
+    @ApiParam({ name: 'orgId', type: 'string', format: 'uuid' })
+    @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
+    @ApiBody({ type: ConfirmReceivingDto })
+    async confirmReceiving(
+        @Param('orgId', ParseUUIDPipe) orgId: string,
+        @Param('id', ParseUUIDPipe) id: string,
+        @Body() dto: ConfirmReceivingDto,
+        @CurrentActor() actorId: string,
+        @I18nLang() lang: string,
+    ) {
+        const result = await this.inventoryRequestService.confirmReceiving(orgId, id, actorId, lang, dto);
+        return new UpdatedResponse('inventory-request.confirm_receiving', result,
+            lang === 'vi' ? 'Đã xác nhận kiểm đếm' : 'Receiving confirmed');
+    }
+
+    @Patch('inbound/:id/confirm-putaway')
+    @RequireOrgPermission('org.inventory.inbound.approve')
+    @ApiOperation({ summary: 'Xác nhận cất hàng — hoàn tất phiếu nhập (PROCESSING → COMPLETED)' })
+    @ApiParam({ name: 'orgId', type: 'string', format: 'uuid' })
+    @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
+    @ApiBody({ type: ConfirmPutawayDto })
+    async confirmPutaway(
+        @Param('orgId', ParseUUIDPipe) orgId: string,
+        @Param('id', ParseUUIDPipe) id: string,
+        @Body() dto: ConfirmPutawayDto,
+        @CurrentActor() actorId: string,
+        @I18nLang() lang: string,
+    ) {
+        const result = await this.inventoryRequestService.confirmPutaway(orgId, id, actorId, lang, dto);
+        return new UpdatedResponse('inventory-request.confirm_putaway', result,
+            lang === 'vi' ? 'Đã xác nhận cất hàng — hoàn tất nhập kho' : 'Putaway confirmed — inbound completed');
+    }
+
+    // ==================== OUTBOUND WORKFLOW STEPS ====================
+
+    @Patch('outbound/:id/confirm-picking')
+    @RequireOrgPermission('org.inventory.outbound.approve')
+    @ApiOperation({ summary: 'Xác nhận nhặt hàng (PICKING → CHECKING)' })
+    @ApiParam({ name: 'orgId', type: 'string', format: 'uuid' })
+    @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
+    @ApiBody({ type: ConfirmPickingDto })
+    async confirmPicking(
+        @Param('orgId', ParseUUIDPipe) orgId: string,
+        @Param('id', ParseUUIDPipe) id: string,
+        @Body() dto: ConfirmPickingDto,
+        @CurrentActor() actorId: string,
+        @I18nLang() lang: string,
+    ) {
+        const result = await this.inventoryRequestService.confirmPicking(orgId, id, actorId, lang, dto);
+        return new UpdatedResponse('inventory-request.confirm_picking', result,
+            lang === 'vi' ? 'Đã xác nhận nhặt hàng' : 'Picking confirmed');
+    }
+
+    @Patch('outbound/:id/confirm-checking')
+    @RequireOrgPermission('org.inventory.outbound.approve')
+    @ApiOperation({ summary: 'Xác nhận kiểm tra xuất (CHECKING → PACKED)' })
+    @ApiParam({ name: 'orgId', type: 'string', format: 'uuid' })
+    @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
+    @ApiBody({ type: ConfirmCheckingDto })
+    async confirmChecking(
+        @Param('orgId', ParseUUIDPipe) orgId: string,
+        @Param('id', ParseUUIDPipe) id: string,
+        @Body() dto: ConfirmCheckingDto,
+        @CurrentActor() actorId: string,
+        @I18nLang() lang: string,
+    ) {
+        const result = await this.inventoryRequestService.confirmChecking(orgId, id, actorId, lang, dto);
+        return new UpdatedResponse('inventory-request.confirm_checking', result,
+            lang === 'vi' ? 'Đã xác nhận kiểm tra' : 'Checking confirmed');
+    }
+
+    @Patch('outbound/:id/complete-shipment')
+    @RequireOrgPermission('org.inventory.outbound.approve')
+    @ApiOperation({ summary: 'Hoàn tất xuất kho (PACKED → SHIPPED)' })
+    @ApiParam({ name: 'orgId', type: 'string', format: 'uuid' })
+    @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
+    @ApiBody({ type: CompleteShipmentDto })
+    async completeShipment(
+        @Param('orgId', ParseUUIDPipe) orgId: string,
+        @Param('id', ParseUUIDPipe) id: string,
+        @Body() dto: CompleteShipmentDto,
+        @CurrentActor() actorId: string,
+        @I18nLang() lang: string,
+    ) {
+        const result = await this.inventoryRequestService.completeShipment(orgId, id, actorId, lang, dto);
+        return new UpdatedResponse('inventory-request.complete_shipment', result,
+            lang === 'vi' ? 'Hoàn tất xuất kho' : 'Shipment completed');
     }
 }
