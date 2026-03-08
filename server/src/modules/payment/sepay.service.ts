@@ -290,11 +290,17 @@ export class SepayService {
             // Hủy các contracts PENDING xung đột
             await this.rentalContractService.cancelConflictingContracts(payment.rental_contract_id);
 
-            // Emit socket contract:activated
+            // Tạo Warehouse thực cho khách hàng
             const contract = await this.prisma.rentalContract.findUnique({
                 where: { id: payment.rental_contract_id },
+                select: { id: true, code: true, organization_id: true },
             });
             if (contract) {
+                await this.rentalContractService.activateContractWarehouses(
+                    contract.id,
+                    contract.organization_id,
+                    payment.created_by,
+                );
                 this.websocketGateway.server.to(`user:${payment.created_by}`).emit('contract:activated', {
                     contractId: contract.id,
                     code: contract.code,
@@ -518,11 +524,17 @@ export class SepayService {
             // Hủy các contracts PENDING xung đột
             await this.rentalContractService.cancelConflictingContracts(payment.rental_contract_id);
 
-            // Emit socket contract:activated
+            // Tạo Warehouse thực cho khách hàng
             const contract = await this.prisma.rentalContract.findUnique({
                 where: { id: payment.rental_contract_id },
+                select: { id: true, code: true, organization_id: true },
             });
             if (contract) {
+                await this.rentalContractService.activateContractWarehouses(
+                    contract.id,
+                    contract.organization_id,
+                    adminUserId,
+                );
                 this.websocketGateway.server.to(`user:${payment.created_by}`).emit('contract:activated', {
                     contractId: contract.id,
                     code: contract.code,

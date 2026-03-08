@@ -74,10 +74,68 @@ export class InventoryRequestService {
      * Tạo yêu cầu nhập kho
      */
     /**
-     * Lấy danh sách kho mà tổ chức có quyền sử dụng
+     * Lấy danh sách kho mà tổ chức có quyền sử dụng.
+     * Nếu không có kho nào, thử backfill từ hợp đồng ACTIVE (lazy activation).
      */
     async listOrgWarehouses(orgId: string): Promise<{ id: string; name: string }[]> {
-        return this.repository.listOrgWarehouses(orgId);
+        let warehouses = await this.repository.listOrgWarehouses(orgId);
+
+        if (warehouses.length === 0) {
+            // Lazy backfill: tạo Warehouse cho các hợp đồng ACTIVE chưa được generate
+            const activeStatuses = ['ACTIVE', 'OVERDUE_LEVEL_1', 'OVERDUE_LEVEL_2', 'OVERDUE_LEVEL_3'];
+            const details = await this.prisma.rentalContractDetail.findMany({
+                where: {
+                    is_deleted: false,
+                    warehouse_id: null,
+                    is_whole_warehouse: true,
+                    rental_contract: {
+                        organization_id: orgId,
+                        is_deleted: false,
+                        status: { in: activeStatuses as any },
+                    },
+                },
+                include: { warehouse_template: true },
+            });
+
+            for (const detail of details) {
+                const template = detail.warehouse_template;
+                if (!template) continue;
+
+                const warehouse = await this.prisma.warehouse.create({
+                    data: {
+                        name: detail.warehouse_name || template.name,
+                        description: detail.warehouse_description || template.description || null,
+                        organization_id: orgId,
+                        length: template.length,
+                        width: template.width,
+                        block_length: template.block_length,
+                        block_width: template.block_width,
+                        ceiling_height: template.ceiling_height ?? null,
+                        max_load_capacity: template.max_load_capacity ?? null,
+                        total_weight_capacity: template.total_weight_capacity ?? null,
+                        ward_id: template.ward_id ?? null,
+                        address_detail: template.address_detail ?? null,
+                        latitude: template.latitude ?? null,
+                        longitude: template.longitude ?? null,
+                        warehouse_template_id: template.id,
+                        is_active: true,
+                        is_deleted: false,
+                        created_by: 'SYSTEM_BACKFILL',
+                    },
+                });
+
+                await this.prisma.rentalContractDetail.update({
+                    where: { id: detail.id },
+                    data: { warehouse_id: warehouse.id },
+                });
+            }
+
+            if (details.length > 0) {
+                warehouses = await this.repository.listOrgWarehouses(orgId);
+            }
+        }
+
+        return warehouses;
     }
 
     async createInbound(

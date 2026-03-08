@@ -255,20 +255,8 @@ export class InventoryRequestRepository {
         const count = await this.prisma.warehouse.count({
             where: {
                 id: warehouseId,
+                organization_id: orgId,
                 is_deleted: false,
-                rows: {
-                    some: {
-                        is_rented: true,
-                        rental_contract_details: {
-                            some: {
-                                rental_contract: {
-                                    organization_id: orgId,
-                                    is_deleted: false,
-                                },
-                            },
-                        },
-                    },
-                },
             },
         });
         return count > 0;
@@ -320,21 +308,9 @@ export class InventoryRequestRepository {
     async listOrgWarehouses(orgId: string): Promise<{ id: string; name: string }[]> {
         return this.prisma.warehouse.findMany({
             where: {
+                organization_id: orgId,
                 is_deleted: false,
-                rows: {
-                    some: {
-                        is_rented: true,
-                        rental_contract_details: {
-                            some: {
-                                rental_contract: {
-                                    organization_id: orgId,
-                                    is_deleted: false,
-                                    status: { in: ['ACTIVE', 'OVERDUE_LEVEL_1', 'OVERDUE_LEVEL_2', 'OVERDUE_LEVEL_3'] },
-                                },
-                            },
-                        },
-                    },
-                },
+                is_active: true,
             },
             select: { id: true, name: true },
             orderBy: { name: 'asc' },

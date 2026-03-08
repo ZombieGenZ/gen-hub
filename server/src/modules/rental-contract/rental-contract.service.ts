@@ -203,8 +203,7 @@ export class RentalContractService {
       const contract = await this.repository.createWithDetails(contractData, detailsData);
 
       if (status === ContractStatus.ACTIVE) {
-        // TODO: Activate logic (create real warehouses/rows)
-        this.systemLogService.info('rental-contract', 'activate_todo', `TODO: Copy warehouses for contract ${contract.code}`, { userId, metaData: { contractId: contract.id } });
+        await this.activateContractWarehouses(contract.id, dto.organization_id, userId);
       }
 
       this.systemLogService.info(
@@ -488,6 +487,64 @@ export class RentalContractService {
     }
   }
 
+
+  // --- Activation Logic ---
+
+  /**
+   * Sau khi hợp đồng chuyển sang ACTIVE:
+   * Tạo Warehouse thực từ WarehouseTemplate cho từng chi tiết hợp đồng
+   * (is_whole_warehouse = true). Cập nhật RentalContractDetail.warehouse_id.
+   */
+  async activateContractWarehouses(contractId: string, orgId: string, userId: string): Promise<void> {
+    const details = await this.prisma.rentalContractDetail.findMany({
+      where: { rental_contract_id: contractId, is_deleted: false },
+      include: {
+        warehouse_template: true,
+      },
+    });
+
+    for (const detail of details) {
+      if (!detail.is_whole_warehouse || detail.warehouse_id) continue;
+
+      const template = detail.warehouse_template;
+      if (!template) continue;
+
+      const warehouse = await this.prisma.warehouse.create({
+        data: {
+          name: detail.warehouse_name || template.name,
+          description: detail.warehouse_description || template.description || null,
+          organization_id: orgId,
+          length: template.length,
+          width: template.width,
+          block_length: template.block_length,
+          block_width: template.block_width,
+          ceiling_height: template.ceiling_height ?? null,
+          max_load_capacity: template.max_load_capacity ?? null,
+          total_weight_capacity: template.total_weight_capacity ?? null,
+          ward_id: template.ward_id ?? null,
+          address_detail: template.address_detail ?? null,
+          latitude: template.latitude ?? null,
+          longitude: template.longitude ?? null,
+          warehouse_template_id: template.id,
+          is_active: true,
+          is_deleted: false,
+          created_by: userId,
+        },
+      });
+
+      await this.prisma.rentalContractDetail.update({
+        where: { id: detail.id },
+        data: { warehouse_id: warehouse.id },
+      });
+
+      this.systemLogService.info(
+        'rental-contract',
+        'activate_warehouse',
+        `Created warehouse ${warehouse.id} for org ${orgId} from template ${template.id}`,
+        { userId, metaData: { contractId, warehouseId: warehouse.id } },
+      );
+    }
+  }
 
   // --- Shared Helper Methods (Duplicated) ---
 
