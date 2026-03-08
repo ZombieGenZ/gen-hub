@@ -273,12 +273,12 @@ export class InventoryService {
         return response.json();
     }
 
-    async approveOutbound(token: string, id: string, notes?: string): Promise<ApiResponse<OutboundRequest>> {
+    async approveOutbound(token: string, id: string, notes?: string, picking_strategy?: string): Promise<ApiResponse<OutboundRequest>> {
         const orgId = await orgHelper.getOrgId(token);
         const response = await fetch(`${API}/organizations/${orgId}/inventory/outbound/${id}/approve`, {
             method: 'PATCH',
             headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ notes }),
+            body: JSON.stringify({ notes, picking_strategy }),
         });
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));

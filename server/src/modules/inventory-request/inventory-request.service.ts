@@ -662,6 +662,7 @@ export class InventoryRequestService {
 
     /**
      * Duyệt phiếu xuất kho (PENDING → PICKING)
+     * Tạo ExportPickList + reserve inventory (giống WM flow)
      */
     async approveOutbound(
         orgId: string,
@@ -669,8 +670,22 @@ export class InventoryRequestService {
         actorId: string,
         lang: string,
         notes?: string,
+        pickingStrategy: 'FEFO' | 'FIFO' = 'FEFO',
     ): Promise<IOutboundRequest> {
-        const exportRecord = await this.repository.findOutboundById(id, orgId);
+        const exportRecord = await this.prisma.export.findFirst({
+            where: { id, organization_id: orgId, is_deleted: false },
+            include: {
+                details: {
+                    where: { is_deleted: false },
+                    include: {
+                        product: { select: { id: true, name: true } },
+                        batch: true,
+                    },
+                },
+                warehouse: true,
+            },
+        });
+
         if (!exportRecord) {
             throw new NotFoundException(
                 await this.i18n.translate('inventory-request.errors.export_not_found', { lang }),
@@ -682,25 +697,115 @@ export class InventoryRequestService {
             );
         }
 
-        const updated = await this.prisma.export.update({
-            where: { id },
-            data: {
-                status: 'PICKING',
-                updated_by: actorId,
-                ...(notes && { notes }),
-            },
-            include: {
-                warehouse: { select: { id: true, name: true } },
-                partner: { select: { id: true, name: true, code: true } },
-                details: {
-                    where: { is_deleted: false },
-                    include: {
-                        product: { select: { id: true, name: true, sku: true, image_url: true } },
-                        batch: { select: { id: true, code: true, expiry_date: true } },
-                        unit: { select: { id: true, name: true } },
+        // Transaction: Reserve inventory + tạo ExportPickList + cập nhật status
+        const result = await this.prisma.$transaction(async (tx) => {
+            // 1. Reserve inventory (tăng allocated, giảm available)
+            const pickListDetails: {
+                export_detail_id: string;
+                product_id: string;
+                batch_id: string | null;
+                block_id: string;
+                required_qty: number;
+            }[] = [];
+
+            for (const detail of exportRecord.details) {
+                const quantityToReserve = detail.quantity.toNumber() * detail.conversion_rate.toNumber();
+
+                const inventories = await tx.inventory.findMany({
+                    where: {
+                        organization_id: orgId,
+                        warehouse_id: exportRecord.warehouse_id,
+                        product_id: detail.product_id,
+                        ...(detail.required_batch_id && { batch_id: detail.required_batch_id }),
+                        quantity_available: { gt: 0 },
+                        is_deleted: false,
+                    },
+                    include: { batch: true },
+                    orderBy: pickingStrategy === 'FEFO'
+                        ? [{ batch: { expiry_date: 'asc' } }, { created_at: 'asc' }]
+                        : [{ created_at: 'asc' }],
+                });
+
+                let remaining = quantityToReserve;
+                for (const inv of inventories) {
+                    if (remaining <= 0) break;
+                    const available = inv.quantity_available.toNumber();
+                    const reserveQty = Math.min(remaining, available);
+
+                    await tx.inventory.update({
+                        where: { id: inv.id },
+                        data: {
+                            quantity_allocated: { increment: reserveQty },
+                            quantity_available: { decrement: reserveQty },
+                            updated_by: actorId,
+                        },
+                    });
+
+                    pickListDetails.push({
+                        export_detail_id: detail.id,
+                        product_id: detail.product_id,
+                        batch_id: inv.batch_id,
+                        block_id: inv.block_id,
+                        required_qty: reserveQty,
+                    });
+
+                    remaining -= reserveQty;
+                }
+
+                if (remaining > 0) {
+                    throw new BadRequestException(
+                        await this.i18n.translate('inventory-request.errors.insufficient_stock', { lang }),
+                    );
+                }
+            }
+
+            // 2. Tạo ExportPickList
+            const pickListCode = `PL-${exportRecord.code}`;
+            await tx.exportPickList.create({
+                data: {
+                    export_id: id,
+                    organization_id: orgId,
+                    warehouse_id: exportRecord.warehouse_id,
+                    code: pickListCode,
+                    status: 'PENDING',
+                    notes: notes || null,
+                    created_by: actorId,
+                    details: {
+                        create: pickListDetails.map(d => ({
+                            export_detail_id: d.export_detail_id,
+                            product_id: d.product_id,
+                            batch_id: d.batch_id,
+                            block_id: d.block_id,
+                            required_qty: d.required_qty,
+                            picked_qty: 0,
+                            created_by: actorId,
+                        })),
                     },
                 },
-            },
+            });
+
+            // 3. Cập nhật status → PICKING
+            return tx.export.update({
+                where: { id },
+                data: {
+                    status: ExportStatus.PICKING,
+                    approved_by: actorId,
+                    approved_at: new Date(),
+                    updated_by: actorId,
+                },
+                include: {
+                    warehouse: { select: { id: true, name: true } },
+                    partner: { select: { id: true, name: true, code: true } },
+                    details: {
+                        where: { is_deleted: false },
+                        include: {
+                            product: { select: { id: true, name: true, sku: true, image_url: true } },
+                            batch: { select: { id: true, code: true, expiry_date: true } },
+                            unit: { select: { id: true, name: true } },
+                        },
+                    },
+                },
+            });
         });
 
         // Invalidate cache
@@ -712,8 +817,9 @@ export class InventoryRequestService {
         // Emit realtime event
         this.websocketGateway.emitToOrganization(orgId, 'outbound:approved', {
             exportId: id,
-            code: updated.code,
+            code: result.code,
             approvedBy: actorId,
+            pickingStrategy,
             timestamp: new Date().toISOString(),
         });
 
@@ -724,10 +830,10 @@ export class InventoryRequestService {
             id,
             { status: 'PENDING' },
             { status: 'PICKING' },
-            { userId: actorId, description: `Approved outbound request: ${updated.code}` },
+            { userId: actorId, description: `Approved outbound request: ${result.code}` },
         );
 
-        return updated as unknown as IOutboundRequest;
+        return result as unknown as IOutboundRequest;
     }
 
     /**

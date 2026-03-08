@@ -181,7 +181,7 @@ export default function OutboundApprovalDetail({
         setSubmitting(true);
         try {
             const pickingStrategy = strategy === "NEAREST" ? "FEFO" : strategy;
-            await inventoryService.approveOutbound(token, ticketId);
+            await inventoryService.approveOutbound(token, ticketId, undefined, pickingStrategy);
             showToast("Đã duyệt lệnh xuất — chuyển sang Đang nhặt hàng", "success");
             fetchData();
         } catch (err: any) {

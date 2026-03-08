@@ -421,7 +421,7 @@ Duyệt phiếu xuất kho từ trạng thái \`PENDING\` sang \`PICKING\`.
         @CurrentActor() actorId: string,
         @I18nLang() lang: string,
     ) {
-        const exportRecord = await this.inventoryRequestService.approveOutbound(orgId, id, actorId, lang, dto.notes);
+        const exportRecord = await this.inventoryRequestService.approveOutbound(orgId, id, actorId, lang, dto.notes, dto.picking_strategy || 'FEFO');
         return new GetResponse(
             'inventory-request.approve_outbound',
             exportRecord,

@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsOptional, IsString, IsEnum, MaxLength } from 'class-validator';
 import { i18nValidationMessage } from 'nestjs-i18n';
 
 export class RejectRequestDto {
@@ -10,10 +10,20 @@ export class RejectRequestDto {
     reason?: string;
 }
 
+export enum ApprovePickingStrategy {
+    FEFO = 'FEFO',
+    FIFO = 'FIFO',
+}
+
 export class ApproveRequestDto {
     @ApiPropertyOptional({ description: 'Ghi chú khi duyệt', example: 'Đã kiểm tra, hợp lệ' })
     @IsOptional()
     @IsString()
     @MaxLength(500)
     notes?: string;
+
+    @ApiPropertyOptional({ description: 'Chiến lược nhặt hàng', enum: ApprovePickingStrategy, default: ApprovePickingStrategy.FEFO })
+    @IsOptional()
+    @IsEnum(ApprovePickingStrategy)
+    picking_strategy?: ApprovePickingStrategy;
 }
