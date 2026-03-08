@@ -169,6 +169,18 @@ export class InventoryRequestRepository {
                         unit: { select: { id: true, name: true } },
                     },
                 },
+                pick_lists: {
+                    where: { is_deleted: false },
+                    include: {
+                        details: {
+                            where: { is_deleted: false },
+                            include: {
+                                pick_list: { select: { id: true, code: true, status: true } },
+                            },
+                        },
+                    },
+                    orderBy: { created_at: 'desc' },
+                },
             },
         }) as unknown as IOutboundRequest | null;
     }

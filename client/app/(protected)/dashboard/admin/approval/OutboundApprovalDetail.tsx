@@ -135,9 +135,10 @@ export default function OutboundApprovalDetail({
             const item = (res as any)?.data ?? res;
             setData(item);
             // Init picking data if available
-            if (item?.pick_list?.details) {
+            const pickListDetails = item?.pick_lists?.[0]?.details ?? [];
+            if (pickListDetails.length) {
                 const map: Record<string, number> = {};
-                item.pick_list.details.forEach((d: any) => { map[d.id] = d.picked_qty ?? 0; });
+                pickListDetails.forEach((d: any) => { map[d.id] = Number(d.picked_qty) || 0; });
                 setPickedQty(map);
             }
             if (item?.details) {
@@ -417,7 +418,7 @@ export default function OutboundApprovalDetail({
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y">
-                                    {(data as any).pick_list?.details?.length ? (data as any).pick_list.details.map((d: any) => (
+                                    {(data as any).pick_lists?.[0]?.details?.length ? (data as any).pick_lists[0].details.map((d: any) => (
                                         <tr key={d.id}>
                                             <td className="py-3 px-4 text-sm font-medium">{d.product?.name || d.export_detail?.product?.name || "—"}</td>
                                             <td className="py-3 px-4 text-sm text-muted-foreground">{d.location?.code || "—"}</td>
