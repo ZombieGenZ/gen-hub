@@ -510,4 +510,288 @@ export class InventoryRequestService {
 
         return exportRecord;
     }
+
+    /**
+     * Duyệt phiếu nhập kho (PENDING → APPROVED)
+     */
+    async approveInbound(
+        orgId: string,
+        id: string,
+        actorId: string,
+        lang: string,
+        notes?: string,
+    ): Promise<IInboundRequest> {
+        const receipt = await this.repository.findInboundById(id, orgId);
+        if (!receipt) {
+            throw new NotFoundException(
+                await this.i18n.translate('inventory-request.errors.receipt_not_found', { lang }),
+            );
+        }
+        if (receipt.status !== ReceiptStatus.PENDING) {
+            throw new ConflictException(
+                await this.i18n.translate('inventory-request.errors.invalid_status', { lang }),
+            );
+        }
+
+        const updated = await this.prisma.receipt.update({
+            where: { id },
+            data: {
+                status: ReceiptStatus.APPROVED,
+                approved_by: actorId,
+                approved_at: new Date(),
+                updated_by: actorId,
+                ...(notes && { notes }),
+            },
+            include: {
+                warehouse: { select: { id: true, name: true } },
+                partner: { select: { id: true, name: true, code: true } },
+                details: {
+                    where: { is_deleted: false },
+                    include: {
+                        product: { select: { id: true, name: true, sku: true, image_url: true } },
+                        batch: { select: { id: true, code: true, expiry_date: true } },
+                        unit: { select: { id: true, name: true } },
+                    },
+                },
+            },
+        });
+
+        // Invalidate cache
+        await Promise.all([
+            this.redisService.del(this.getInboundDetailCacheKey(id)),
+            this.redisService.delByPattern(this.cacheKeys.inboundList(orgId, '*')),
+        ]);
+
+        // Emit realtime event
+        this.websocketGateway.emitToOrganization(orgId, 'inbound:approved', {
+            receiptId: id,
+            code: updated.code,
+            approvedBy: actorId,
+            timestamp: new Date().toISOString(),
+        });
+
+        // Audit log
+        this.auditLogService.logUpdate(
+            orgId,
+            'Receipt',
+            id,
+            { status: ReceiptStatus.PENDING },
+            { status: ReceiptStatus.APPROVED },
+            { userId: actorId, description: `Approved inbound request: ${updated.code}` },
+        );
+
+        return updated as unknown as IInboundRequest;
+    }
+
+    /**
+     * Từ chối phiếu nhập kho (PENDING → CANCELLED)
+     */
+    async rejectInbound(
+        orgId: string,
+        id: string,
+        actorId: string,
+        lang: string,
+        reason?: string,
+    ): Promise<IInboundRequest> {
+        const receipt = await this.repository.findInboundById(id, orgId);
+        if (!receipt) {
+            throw new NotFoundException(
+                await this.i18n.translate('inventory-request.errors.receipt_not_found', { lang }),
+            );
+        }
+        if (receipt.status !== ReceiptStatus.PENDING) {
+            throw new ConflictException(
+                await this.i18n.translate('inventory-request.errors.invalid_status', { lang }),
+            );
+        }
+
+        const updated = await this.prisma.receipt.update({
+            where: { id },
+            data: {
+                status: ReceiptStatus.CANCELLED,
+                updated_by: actorId,
+                ...(reason && { notes: reason }),
+            },
+            include: {
+                warehouse: { select: { id: true, name: true } },
+                partner: { select: { id: true, name: true, code: true } },
+                details: {
+                    where: { is_deleted: false },
+                    include: {
+                        product: { select: { id: true, name: true, sku: true, image_url: true } },
+                        batch: { select: { id: true, code: true, expiry_date: true } },
+                        unit: { select: { id: true, name: true } },
+                    },
+                },
+            },
+        });
+
+        // Invalidate cache
+        await Promise.all([
+            this.redisService.del(this.getInboundDetailCacheKey(id)),
+            this.redisService.delByPattern(this.cacheKeys.inboundList(orgId, '*')),
+        ]);
+
+        // Emit realtime event
+        this.websocketGateway.emitToOrganization(orgId, 'inbound:rejected', {
+            receiptId: id,
+            code: updated.code,
+            rejectedBy: actorId,
+            reason,
+            timestamp: new Date().toISOString(),
+        });
+
+        // Audit log
+        this.auditLogService.logUpdate(
+            orgId,
+            'Receipt',
+            id,
+            { status: ReceiptStatus.PENDING },
+            { status: ReceiptStatus.CANCELLED, reason },
+            { userId: actorId, description: `Rejected inbound request: ${updated.code}` },
+        );
+
+        return updated as unknown as IInboundRequest;
+    }
+
+    /**
+     * Duyệt phiếu xuất kho (PENDING → PICKING)
+     */
+    async approveOutbound(
+        orgId: string,
+        id: string,
+        actorId: string,
+        lang: string,
+        notes?: string,
+    ): Promise<IOutboundRequest> {
+        const exportRecord = await this.repository.findOutboundById(id, orgId);
+        if (!exportRecord) {
+            throw new NotFoundException(
+                await this.i18n.translate('inventory-request.errors.export_not_found', { lang }),
+            );
+        }
+        if (exportRecord.status !== 'PENDING') {
+            throw new ConflictException(
+                await this.i18n.translate('inventory-request.errors.invalid_status', { lang }),
+            );
+        }
+
+        const updated = await this.prisma.export.update({
+            where: { id },
+            data: {
+                status: 'PICKING',
+                updated_by: actorId,
+                ...(notes && { notes }),
+            },
+            include: {
+                warehouse: { select: { id: true, name: true } },
+                partner: { select: { id: true, name: true, code: true } },
+                details: {
+                    where: { is_deleted: false },
+                    include: {
+                        product: { select: { id: true, name: true, sku: true, image_url: true } },
+                        batch: { select: { id: true, code: true, expiry_date: true } },
+                        unit: { select: { id: true, name: true } },
+                    },
+                },
+            },
+        });
+
+        // Invalidate cache
+        await Promise.all([
+            this.redisService.del(this.getOutboundDetailCacheKey(id)),
+            this.redisService.delByPattern(this.cacheKeys.outboundList(orgId, '*')),
+        ]);
+
+        // Emit realtime event
+        this.websocketGateway.emitToOrganization(orgId, 'outbound:approved', {
+            exportId: id,
+            code: updated.code,
+            approvedBy: actorId,
+            timestamp: new Date().toISOString(),
+        });
+
+        // Audit log
+        this.auditLogService.logUpdate(
+            orgId,
+            'Export',
+            id,
+            { status: 'PENDING' },
+            { status: 'PICKING' },
+            { userId: actorId, description: `Approved outbound request: ${updated.code}` },
+        );
+
+        return updated as unknown as IOutboundRequest;
+    }
+
+    /**
+     * Từ chối phiếu xuất kho (PENDING → CANCELLED)
+     */
+    async rejectOutbound(
+        orgId: string,
+        id: string,
+        actorId: string,
+        lang: string,
+        reason?: string,
+    ): Promise<IOutboundRequest> {
+        const exportRecord = await this.repository.findOutboundById(id, orgId);
+        if (!exportRecord) {
+            throw new NotFoundException(
+                await this.i18n.translate('inventory-request.errors.export_not_found', { lang }),
+            );
+        }
+        if (exportRecord.status !== 'PENDING') {
+            throw new ConflictException(
+                await this.i18n.translate('inventory-request.errors.invalid_status', { lang }),
+            );
+        }
+
+        const updated = await this.prisma.export.update({
+            where: { id },
+            data: {
+                status: 'CANCELLED',
+                updated_by: actorId,
+                ...(reason && { notes: reason }),
+            },
+            include: {
+                warehouse: { select: { id: true, name: true } },
+                partner: { select: { id: true, name: true, code: true } },
+                details: {
+                    where: { is_deleted: false },
+                    include: {
+                        product: { select: { id: true, name: true, sku: true, image_url: true } },
+                        batch: { select: { id: true, code: true, expiry_date: true } },
+                        unit: { select: { id: true, name: true } },
+                    },
+                },
+            },
+        });
+
+        // Invalidate cache
+        await Promise.all([
+            this.redisService.del(this.getOutboundDetailCacheKey(id)),
+            this.redisService.delByPattern(this.cacheKeys.outboundList(orgId, '*')),
+        ]);
+
+        // Emit realtime event
+        this.websocketGateway.emitToOrganization(orgId, 'outbound:rejected', {
+            exportId: id,
+            code: updated.code,
+            rejectedBy: actorId,
+            reason,
+            timestamp: new Date().toISOString(),
+        });
+
+        // Audit log
+        this.auditLogService.logUpdate(
+            orgId,
+            'Export',
+            id,
+            { status: 'PENDING' },
+            { status: 'CANCELLED', reason },
+            { userId: actorId, description: `Rejected outbound request: ${updated.code}` },
+        );
+
+        return updated as unknown as IOutboundRequest;
+    }
 }

@@ -2,6 +2,7 @@ import {
     Controller,
     Get,
     Post,
+    Patch,
     Body,
     Param,
     Query,
@@ -25,6 +26,8 @@ import {
     CreateOutboundRequestDto,
     QueryInboundRequestDto,
     QueryOutboundRequestDto,
+    ApproveRequestDto,
+    RejectRequestDto,
 } from './dto';
 import { CombinedAuthGuard } from '../../common/guards/combined-auth.guard';
 import { OrgPermissionGuard } from '../../common/guards/org-permission.guard';
@@ -330,6 +333,122 @@ Lấy chi tiết một phiếu xuất kho.
             'inventory-request.get_outbound',
             exportRecord,
             await this.i18n.translate('inventory-request.success.get_outbound', { lang }),
+        );
+    }
+
+    @Patch('inbound/:id/approve')
+    @RequireOrgPermission('org.inventory.inbound.approve')
+    @ApiOperation({
+        summary: 'Duyệt phiếu nhập kho',
+        description: `
+Duyệt phiếu nhập kho từ trạng thái \`PENDING\` sang \`APPROVED\`.
+
+**Permissions:** \`org.inventory.inbound.approve\`
+        `,
+    })
+    @ApiParam({ name: 'orgId', description: 'ID của tổ chức', type: 'string', format: 'uuid' })
+    @ApiParam({ name: 'id', description: 'ID của phiếu nhập', type: 'string', format: 'uuid' })
+    @ApiBody({ type: ApproveRequestDto })
+    @ApiResponse({ status: 200, description: 'Duyệt phiếu nhập thành công' })
+    async approveInbound(
+        @Param('orgId', ParseUUIDPipe) orgId: string,
+        @Param('id', ParseUUIDPipe) id: string,
+        @Body() dto: ApproveRequestDto,
+        @CurrentActor() actorId: string,
+        @I18nLang() lang: string,
+    ) {
+        const receipt = await this.inventoryRequestService.approveInbound(orgId, id, actorId, lang, dto.notes);
+        return new GetResponse(
+            'inventory-request.approve_receipt',
+            receipt,
+            await this.i18n.translate('inventory-request.success.approve_receipt', { lang }),
+        );
+    }
+
+    @Patch('inbound/:id/reject')
+    @RequireOrgPermission('org.inventory.inbound.approve')
+    @ApiOperation({
+        summary: 'Từ chối phiếu nhập kho',
+        description: `
+Từ chối phiếu nhập kho từ trạng thái \`PENDING\` sang \`CANCELLED\`.
+
+**Permissions:** \`org.inventory.inbound.approve\`
+        `,
+    })
+    @ApiParam({ name: 'orgId', description: 'ID của tổ chức', type: 'string', format: 'uuid' })
+    @ApiParam({ name: 'id', description: 'ID của phiếu nhập', type: 'string', format: 'uuid' })
+    @ApiBody({ type: RejectRequestDto })
+    @ApiResponse({ status: 200, description: 'Từ chối phiếu nhập thành công' })
+    async rejectInbound(
+        @Param('orgId', ParseUUIDPipe) orgId: string,
+        @Param('id', ParseUUIDPipe) id: string,
+        @Body() dto: RejectRequestDto,
+        @CurrentActor() actorId: string,
+        @I18nLang() lang: string,
+    ) {
+        const receipt = await this.inventoryRequestService.rejectInbound(orgId, id, actorId, lang, dto.reason);
+        return new GetResponse(
+            'inventory-request.reject_inbound',
+            receipt,
+            await this.i18n.translate('inventory-request.success.reject_inbound', { lang }),
+        );
+    }
+
+    @Patch('outbound/:id/approve')
+    @RequireOrgPermission('org.inventory.outbound.approve')
+    @ApiOperation({
+        summary: 'Duyệt phiếu xuất kho',
+        description: `
+Duyệt phiếu xuất kho từ trạng thái \`PENDING\` sang \`PICKING\`.
+
+**Permissions:** \`org.inventory.outbound.approve\`
+        `,
+    })
+    @ApiParam({ name: 'orgId', description: 'ID của tổ chức', type: 'string', format: 'uuid' })
+    @ApiParam({ name: 'id', description: 'ID của phiếu xuất', type: 'string', format: 'uuid' })
+    @ApiBody({ type: ApproveRequestDto })
+    @ApiResponse({ status: 200, description: 'Duyệt phiếu xuất thành công' })
+    async approveOutbound(
+        @Param('orgId', ParseUUIDPipe) orgId: string,
+        @Param('id', ParseUUIDPipe) id: string,
+        @Body() dto: ApproveRequestDto,
+        @CurrentActor() actorId: string,
+        @I18nLang() lang: string,
+    ) {
+        const exportRecord = await this.inventoryRequestService.approveOutbound(orgId, id, actorId, lang, dto.notes);
+        return new GetResponse(
+            'inventory-request.approve_outbound',
+            exportRecord,
+            await this.i18n.translate('inventory-request.success.approve_outbound', { lang }),
+        );
+    }
+
+    @Patch('outbound/:id/reject')
+    @RequireOrgPermission('org.inventory.outbound.approve')
+    @ApiOperation({
+        summary: 'Từ chối phiếu xuất kho',
+        description: `
+Từ chối phiếu xuất kho từ trạng thái \`PENDING\` sang \`CANCELLED\`.
+
+**Permissions:** \`org.inventory.outbound.approve\`
+        `,
+    })
+    @ApiParam({ name: 'orgId', description: 'ID của tổ chức', type: 'string', format: 'uuid' })
+    @ApiParam({ name: 'id', description: 'ID của phiếu xuất', type: 'string', format: 'uuid' })
+    @ApiBody({ type: RejectRequestDto })
+    @ApiResponse({ status: 200, description: 'Từ chối phiếu xuất thành công' })
+    async rejectOutbound(
+        @Param('orgId', ParseUUIDPipe) orgId: string,
+        @Param('id', ParseUUIDPipe) id: string,
+        @Body() dto: RejectRequestDto,
+        @CurrentActor() actorId: string,
+        @I18nLang() lang: string,
+    ) {
+        const exportRecord = await this.inventoryRequestService.rejectOutbound(orgId, id, actorId, lang, dto.reason);
+        return new GetResponse(
+            'inventory-request.reject_outbound',
+            exportRecord,
+            await this.i18n.translate('inventory-request.success.reject_outbound', { lang }),
         );
     }
 }
