@@ -190,9 +190,23 @@ export function InventoryTab({ warehouseId }: { warehouseId: string }) {
         setIsLoading(true);
         setError(null);
         try {
-            const res = await inventoryService.listStock(token, warehouseId);
-            setInventory(res?.data ?? []);
+            // Nếu warehouseId rỗng, gọi không filter theo warehouse
+            const wId = warehouseId || undefined;
+            const res = await inventoryService.listStock(token, wId);
+            console.log('[InventoryTab] warehouseId:', warehouseId, 'raw API response:', res);
+            // Hỗ trợ nhiều response format: { data: [...] }, { data: { items: [...] } }, hoặc trực tiếp [...]
+            let items: StockItem[] = [];
+            if (Array.isArray(res?.data)) {
+                items = res.data;
+            } else if (Array.isArray(res?.data?.items)) {
+                items = res.data.items;
+            } else if (Array.isArray(res)) {
+                items = res;
+            }
+            console.log('[InventoryTab] parsed items:', items.length, items);
+            setInventory(items);
         } catch (err: any) {
+            console.error('[InventoryTab] Error:', err);
             setError(err.message || 'Không thể tải tồn kho');
         } finally {
             setIsLoading(false);

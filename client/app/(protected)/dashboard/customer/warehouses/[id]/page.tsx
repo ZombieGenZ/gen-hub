@@ -261,6 +261,7 @@ export default function WarehouseDetailPage() {
     const warehouse = mapContractToWarehouse(contract);
     const status = STATUS_CFG[warehouse.contract_status];
     const primaryWarehouse = contract.warehouses?.[0];
+    console.log('[WarehouseDetail] contract.warehouses:', JSON.stringify(contract.warehouses), 'primaryWarehouse?.id:', primaryWarehouse?.id);
     const days = daysUntil(contract.expired_at);
     const finalPrice = typeof contract.final_price === "string"
         ? parseFloat(contract.final_price)

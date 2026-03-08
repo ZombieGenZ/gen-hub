@@ -59,9 +59,11 @@ import {
 } from "@heroicons/react/24/outline";
 import { Barcode, Package, ScanLine, Eye } from "lucide-react";
 import BarcodeScannerQuickAdd from "@/components/products/BarcodeScannerQuickAdd";
+import { InventoryService } from "@/services/inventory/inventory.service";
 
 // ── Services ──
 const productService = new ProductService();
+const inventoryService = new InventoryService();
 const ITEMS_PER_PAGE = 15;
 const IMG_API = process.env.NEXT_PUBLIC_API_URL;
 
@@ -175,6 +177,9 @@ export default function ProductMasterListPage() {
     // ── Barcode scanner quick add ──
     const [scannerOpen, setScannerOpen] = useState(false);
 
+    // ── Stock map (product_id → total quantity) ──
+    const [stockMap, setStockMap] = useState<Record<string, number>>({});
+
     // ── Filters ──
     const [searchTerm, setSearchTerm] = useState("");
     const [quickFilter, setQuickFilter] = useState<ProductQuickFilter>("all");
@@ -223,9 +228,30 @@ export default function ProductMasterListPage() {
         }
     }, [debouncedKeywords, currentPage, router]);
 
+    // ── Fetch stock for all products ──
+    const fetchStock = useCallback(async () => {
+        try {
+            const token = authStorage.getAccessToken();
+            if (!token) return;
+            const res = await inventoryService.listStock(token);
+            const items: { product_id: string; quantity_on_hand: number }[] =
+                Array.isArray(res?.data) ? res.data
+                : Array.isArray(res?.data?.items) ? res.data.items
+                : Array.isArray(res) ? res : [];
+            const map: Record<string, number> = {};
+            items.forEach((item) => {
+                map[item.product_id] = (map[item.product_id] || 0) + (item.quantity_on_hand ?? 0);
+            });
+            setStockMap(map);
+        } catch (err) {
+            console.error('Failed to fetch stock:', err);
+        }
+    }, []);
+
     useEffect(() => {
         fetchProducts();
-    }, [fetchProducts]);
+        fetchStock();
+    }, [fetchProducts, fetchStock]);
 
     // Reset page when search changes
     useEffect(() => {
@@ -607,10 +633,12 @@ export default function ProductMasterListPage() {
                                                     </span>
                                                 </TableCell>
 
-                                                {/* Total stock (placeholder — would need aggregate API) */}
+                                                {/* Total stock */}
                                                 <TableCell className="text-right">
                                                     <span className="text-sm font-semibold text-slate-900 tabular-nums">
-                                                        —
+                                                        {stockMap[product.id] != null
+                                                            ? new Intl.NumberFormat("vi-VN").format(stockMap[product.id])
+                                                            : "0"}
                                                     </span>
                                                 </TableCell>
 
