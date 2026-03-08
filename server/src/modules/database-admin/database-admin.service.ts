@@ -34,19 +34,18 @@ export class DatabaseAdminService implements OnModuleInit {
     ) { }
 
     /**
-     * Khởi tạo danh sách tables khi module được load
+     * Initialize available tables when module starts
      */
     async onModuleInit() {
-        this.discoverTables();
+        await this.discoverTables();
     }
 
     /**
-     * Tự động discover tables từ Prisma DMMF (Data Model Meta Format)
-     * Sử dụng tên bảng thực sự trong DB (từ @@map) thay vì tên model
+     * Discover tables from Prisma DMMF and keep only tables that exist in current DB
      */
-    private discoverTables() {
+    private async discoverTables() {
         try {
-            // Lấy tất cả model names từ Prisma DMMF
+            const existingTables = await this.getExistingTableNames();
             const dmmf = Prisma.dmmf;
             const models = dmmf.datamodel.models;
 
@@ -55,27 +54,34 @@ export class DatabaseAdminService implements OnModuleInit {
             this.tableNameToDmmfName.clear();
 
             models.forEach((model) => {
-                // Sử dụng dbName (từ @@map) nếu có, nếu không dùng tên model
                 const dbName = (model as { dbName?: string }).dbName;
-                // Prisma client dùng camelCase của model name
                 const prismaModelName = model.name.charAt(0).toLowerCase() + model.name.slice(1);
-
                 const tableName = dbName || prismaModelName;
+                const tableExistsInDb = existingTables.has(tableName);
 
-                if (!PROTECTED_TABLES.includes(tableName)) {
+                if (!PROTECTED_TABLES.includes(tableName) && tableExistsInDb) {
                     this.availableTables.push(tableName);
-                    // Lưu mapping: DB table name -> Prisma model name (cho Prisma Client)
                     this.tableNameToModelName.set(tableName, prismaModelName);
-                    // Lưu mapping: DB table name -> DMMF model name (cho Schema lookup)
                     this.tableNameToDmmfName.set(tableName, model.name);
                 }
             });
 
-            this.logger.log(`📊 Discovered ${this.availableTables.length} tables from Prisma schema`);
+            this.logger.log(`Discovered ${this.availableTables.length} tables available in current database`);
         } catch (error) {
             this.logger.error('Failed to discover tables from Prisma DMMF', error);
             this.availableTables = [];
         }
+    }
+
+    private async getExistingTableNames(): Promise<Set<string>> {
+        const rows = await this.prisma.$queryRaw<Array<{ table_name: string }>>`
+            SELECT table_name
+            FROM information_schema.tables
+            WHERE table_schema = 'public'
+              AND table_type = 'BASE TABLE'
+        `;
+
+        return new Set(rows.map((row) => row.table_name));
     }
 
     /**
@@ -1144,3 +1150,4 @@ export class DatabaseAdminService implements OnModuleInit {
         return 'OTHER';
     }
 }
+
