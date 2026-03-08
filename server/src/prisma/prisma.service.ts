@@ -4,7 +4,7 @@ import {
   Logger,
   OnModuleInit,
 } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { execSync } from 'child_process';
 import { Client, Pool } from 'pg';
@@ -240,6 +240,13 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
 
       try {
         await this.$queryRaw`SELECT 1 FROM roles LIMIT 1`;
+        const missingTables = await this.getMissingTablesFromPrismaSchema();
+        if (missingTables.length > 0) {
+          this.logger.warn(
+            `Missing ${missingTables.length} table(s) in current database, syncing schema: ${missingTables.join(', ')}`,
+          );
+          needsSchemaSync = true;
+        }
       } catch {
         this.logger.warn('⚠️ Tables not found, syncing schema...');
         needsSchemaSync = true;
@@ -288,6 +295,26 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
   /**
    * Seed các roles mặc định nếu chưa tồn tại
    */
+  private async getMissingTablesFromPrismaSchema(): Promise<string[]> {
+    const rows = await this.$queryRaw<Array<{ table_name: string }>>`
+      SELECT table_name
+      FROM information_schema.tables
+      WHERE table_schema = 'public'
+        AND table_type = 'BASE TABLE'
+    `;
+
+    const existingTables = new Set(rows.map((row) => row.table_name));
+
+    return Prisma.dmmf.datamodel.models
+      .map((model) => (model as { dbName?: string }).dbName || this.toCamelCaseModelName(model.name))
+      .filter((tableName) => tableName !== '_prisma_migrations')
+      .filter((tableName) => !existingTables.has(tableName));
+  }
+
+  private toCamelCaseModelName(modelName: string): string {
+    return modelName.charAt(0).toLowerCase() + modelName.slice(1);
+  }
+
   private async seedDefaultRoles() {
     try {
       const existingRoles = await this.role.count();
