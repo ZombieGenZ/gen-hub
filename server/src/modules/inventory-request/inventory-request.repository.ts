@@ -275,6 +275,25 @@ export class InventoryRequestRepository {
     }
 
     /**
+     * Kiểm tra warehouse có hợp đồng thuê ACTIVE (chưa hết hạn)
+     */
+    async warehouseHasActiveContract(warehouseId: string, orgId: string): Promise<boolean> {
+        const activeStatuses = ['ACTIVE', 'OVERDUE_LEVEL_1', 'OVERDUE_LEVEL_2', 'OVERDUE_LEVEL_3'];
+        const count = await this.prisma.rentalContractDetail.count({
+            where: {
+                warehouse_id: warehouseId,
+                is_deleted: false,
+                rental_contract: {
+                    organization_id: orgId,
+                    is_deleted: false,
+                    status: { in: activeStatuses as any },
+                },
+            },
+        });
+        return count > 0;
+    }
+
+    /**
      * Kiểm tra product thuộc org
      */
     async productExistsInOrg(productId: string, orgId: string): Promise<boolean> {

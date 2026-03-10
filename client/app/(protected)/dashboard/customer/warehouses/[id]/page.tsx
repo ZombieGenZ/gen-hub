@@ -380,7 +380,7 @@ export default function WarehouseDetailPage() {
                         <FileText className="w-3.5 h-3.5" />
                         Hợp đồng & Thanh toán
                     </TabsTrigger>
-                    {warehouse.floor_rows.length > 0 && (
+                    {primaryWarehouse?.id && (
                         <TabsTrigger value="floor-plan" className="text-xs gap-1.5">
                             <LayoutGrid className="w-3.5 h-3.5" />
                             Sơ đồ kho
@@ -395,9 +395,9 @@ export default function WarehouseDetailPage() {
                 <TabsContent value="contract" className="mt-4">
                     <ContractBillingTabReal contract={contract} warehouse={warehouse} />
                 </TabsContent>
-                {warehouse.floor_rows.length > 0 && (
+                {primaryWarehouse?.id && (
                     <TabsContent value="floor-plan" className="mt-4">
-                        <FloorPlanTab warehouse={warehouse} />
+                        <FloorPlanTab warehouseId={primaryWarehouse.id} />
                     </TabsContent>
                 )}
                 <TabsContent value="inventory" className="mt-4">

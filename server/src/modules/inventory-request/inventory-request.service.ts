@@ -230,6 +230,16 @@ export class InventoryRequestService {
             );
         }
 
+        // Validate hợp đồng thuê còn hiệu lực
+        const hasActiveContract = await this.repository.warehouseHasActiveContract(dto.warehouse_id, orgId);
+        if (!hasActiveContract) {
+            throw new BadRequestException(
+                lang === 'vi'
+                    ? 'Kho này chưa có hợp đồng thuê đang hoạt động. Vui lòng kiểm tra lại hợp đồng.'
+                    : 'This warehouse does not have an active rental contract.',
+            );
+        }
+
         // Validate partner nếu có
         if (dto.partner_id) {
             const partnerValid = await this.repository.partnerExistsInOrg(dto.partner_id, orgId);
@@ -424,6 +434,16 @@ export class InventoryRequestService {
         if (!warehouseValid) {
             throw new NotFoundException(
                 await this.i18n.translate('inventory-request.errors.warehouse_not_rented', { lang }),
+            );
+        }
+
+        // Validate hợp đồng thuê còn hiệu lực
+        const hasActiveContract = await this.repository.warehouseHasActiveContract(dto.warehouse_id, orgId);
+        if (!hasActiveContract) {
+            throw new BadRequestException(
+                lang === 'vi'
+                    ? 'Kho này chưa có hợp đồng thuê đang hoạt động. Vui lòng kiểm tra lại hợp đồng.'
+                    : 'This warehouse does not have an active rental contract.',
             );
         }
 
@@ -1695,14 +1715,48 @@ export class InventoryRequestService {
             availableBlocks = [defaultBlock];
         }
 
+        // Ưu tiên: (1) shelf đã assigned đúng product, (2) shelf chưa assigned
         const assignedBlocks = availableBlocks.filter(b => b.shelf.assigned_product_id === productId);
         const unassignedBlocks = availableBlocks.filter(b => !b.shelf.assigned_product_id);
-        const sortedBlocks = [...assignedBlocks, ...unassignedBlocks];
+        const otherBlocks = availableBlocks.filter(
+            b => b.shelf.assigned_product_id && b.shelf.assigned_product_id !== productId,
+        );
+        const sortedBlocks = [...assignedBlocks, ...unassignedBlocks, ...otherBlocks];
+
+        // Tính remaining capacity cho từng block (dựa trên max_weight_capacity)
+        const blockCapacities = new Map<string, number>();
+        for (const block of sortedBlocks) {
+            const maxCapacity = block.max_weight_capacity ? Number(block.max_weight_capacity) : null;
+            if (maxCapacity === null) {
+                // Block không có giới hạn → capacity vô hạn (dùng Number.MAX_SAFE_INTEGER)
+                blockCapacities.set(block.id, Number.MAX_SAFE_INTEGER);
+                continue;
+            }
+            // Tính tổng quantity đã có trong block
+            const existingTotal = await tx.inventory.aggregate({
+                where: {
+                    block_id: block.id,
+                    is_deleted: false,
+                },
+                _sum: { quantity_on_hand: true },
+            });
+            const currentWeight = existingTotal._sum.quantity_on_hand
+                ? Number(existingTotal._sum.quantity_on_hand)
+                : 0;
+            const remaining = maxCapacity - currentWeight;
+            blockCapacities.set(block.id, Math.max(remaining, 0));
+        }
 
         let remainingQty = baseQuantity;
 
         for (const block of sortedBlocks) {
             if (remainingQty <= 0) break;
+
+            const blockRemaining = blockCapacities.get(block.id) ?? 0;
+            if (blockRemaining <= 0) continue; // Block đã đầy, skip
+
+            // Chỉ fill tối đa bằng capacity còn lại của block
+            const fillQty = Math.min(remainingQty, blockRemaining);
 
             const existingInventory = await tx.inventory.findFirst({
                 where: {
@@ -1714,8 +1768,6 @@ export class InventoryRequestService {
                     is_deleted: false,
                 },
             });
-
-            const fillQty = remainingQty;
 
             if (existingInventory) {
                 await tx.inventory.update({
@@ -1758,7 +1810,33 @@ export class InventoryRequestService {
                 },
             });
 
-            remainingQty = 0;
+            // Cập nhật is_overloaded nếu block đã đầy
+            const maxCapacity = block.max_weight_capacity ? Number(block.max_weight_capacity) : null;
+            if (maxCapacity !== null) {
+                const newRemaining = (blockCapacities.get(block.id) ?? 0) - fillQty;
+                const overloadThreshold = block.shelf?.rack?.overload_threshold_percent
+                    ? Number(block.shelf.rack.overload_threshold_percent)
+                    : 10;
+                const overloadLimit = maxCapacity * (1 + overloadThreshold / 100);
+                const newTotal = maxCapacity - newRemaining;
+
+                if (newTotal >= overloadLimit) {
+                    await tx.block.update({
+                        where: { id: block.id },
+                        data: { is_overloaded: true },
+                    });
+                }
+            }
+
+            remainingQty -= fillQty;
+        }
+
+        // Nếu vẫn còn hàng chưa xếp hết → cảnh báo nhưng không throw (tránh rollback)
+        if (remainingQty > 0) {
+            console.warn(
+                `[fillInventory] Không đủ chỗ: còn ${remainingQty} đơn vị cho product ${productId} ` +
+                `trong warehouse ${warehouseId}. Đã xếp ${baseQuantity - remainingQty}/${baseQuantity}.`,
+            );
         }
     }
 }

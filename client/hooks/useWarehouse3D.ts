@@ -1,0 +1,492 @@
+'use client';
+
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { io, Socket } from 'socket.io-client';
+import { authStorage } from '@/services/auth/auth-storage.service';
+import { warehouseService } from '@/services/warehouse/warehouse.service';
+import type { WarehouseLayout, InventoryStockItem, LayoutRack, LayoutShelf } from '@/services/warehouse/warehouse.types';
+import {
+    RackConfig, BoxItem, WarehouseState, BoxCategory,
+    categoryColors, WarehouseStats, FillRateStatus, getFillRateStatus,
+} from '@/types/warehouse';
+import { toast } from 'sonner';
+
+// ────────────────────────────────────────────────
+// Query Keys
+// ────────────────────────────────────────────────
+
+export const warehouseKeys = {
+    all: ['warehouse-3d'] as const,
+    layout: (id: string) => [...warehouseKeys.all, 'layout', id] as const,
+    stock: (id: string) => [...warehouseKeys.all, 'stock', id] as const,
+    warehouses: () => [...warehouseKeys.all, 'list'] as const,
+};
+
+// ────────────────────────────────────────────────
+// Helper: get token
+// ────────────────────────────────────────────────
+
+function getToken(): string {
+    return authStorage.getAccessToken() || '';
+}
+
+// ────────────────────────────────────────────────
+// Transform: DB Layout + Stock → 3D types
+// ────────────────────────────────────────────────
+
+const RACK_COLORS = ['#0066ff', '#0088ff', '#00aaff', '#0044dd', '#0055cc'];
+
+// Defaults khi DB chưa có dimension data
+const DEFAULT_RACK_WIDTH = 2.8;
+const DEFAULT_RACK_DEPTH = 1.1;
+const DEFAULT_RACK_HEIGHT = 1.2;
+
+/**
+ * Phân loại product theo tên/sku → BoxCategory (dùng để tô màu 3D)
+ */
+function inferCategory(productName: string, sku: string): BoxCategory {
+    const text = `${productName} ${sku}`.toLowerCase();
+    if (text.match(/điện|electronic|phone|laptop|máy|cable|pin/)) return 'electronics';
+    if (text.match(/thực phẩm|food|đồ ăn|nước|rice|milk|snack/)) return 'food';
+    if (text.match(/quần|áo|clothing|vải|giày|dép|fashion/)) return 'clothing';
+    if (text.match(/kính|glass|fragile|dễ vỡ|gốm|sứ/)) return 'fragile';
+    if (text.match(/sắt|thép|heavy|nặng|cement|xi\s?măng|gạch/)) return 'heavy';
+    return 'standard';
+}
+
+/**
+ * Transform layout + stock → { racks: RackConfig[], boxes: BoxItem[] }
+ */
+export function transformLayoutTo3D(
+    layout: WarehouseLayout,
+    stock: InventoryStockItem[],
+): { racks: RackConfig[]; boxes: BoxItem[] } {
+    const racks: RackConfig[] = [];
+    const boxes: BoxItem[] = [];
+
+    // Index: block_id → inventory items
+    const stockByBlock = new Map<string, InventoryStockItem[]>();
+    for (const item of stock) {
+        const list = stockByBlock.get(item.block_id) || [];
+        list.push(item);
+        stockByBlock.set(item.block_id, list);
+    }
+
+    let rackIndex = 0;
+
+    for (const row of layout.rows) {
+        const rowX = row.position_x ?? 0;
+        const rowZ = row.position_y ?? 0;
+
+        for (const rack of row.racks) {
+            const shelfCount = rack.shelves.length || 1;
+            const maxBlocksPerShelf = Math.max(
+                ...rack.shelves.map(s => s.blocks.length),
+                1,
+            );
+
+            const rackW = rack.dimensions_width ?? DEFAULT_RACK_WIDTH * maxBlocksPerShelf;
+            const rackH = rack.dimensions_height ?? DEFAULT_RACK_HEIGHT * shelfCount;
+            const rackD = rack.dimensions_depth ?? DEFAULT_RACK_DEPTH;
+
+            const cellW = rackW / maxBlocksPerShelf;
+            const cellH = rackH / shelfCount;
+
+            const rackConfig: RackConfig = {
+                id: rack.id,
+                name: rack.name || `Kệ ${rack.code}`,
+                position: {
+                    x: rowX + (rack.position_x ?? rackIndex * 12),
+                    y: 0,
+                    z: rowZ + (rack.position_y ?? 0),
+                },
+                rows: 1,         // depth = 1 row deep
+                columns: maxBlocksPerShelf,
+                levels: shelfCount,
+                cellWidth: cellW,
+                cellHeight: cellH,
+                cellDepth: rackD,
+                color: RACK_COLORS[rackIndex % RACK_COLORS.length],
+            };
+
+            racks.push(rackConfig);
+
+            // Map shelves → levels (bottom-up), blocks → columns
+            rack.shelves.forEach((shelf: LayoutShelf, shelfIdx: number) => {
+                shelf.blocks.forEach((block, blockIdx: number) => {
+                    const items = stockByBlock.get(block.id);
+                    if (!items || items.length === 0) return;
+
+                    for (const inv of items) {
+                        const category = inferCategory(inv.product_name, inv.sku);
+                        const box: BoxItem = {
+                            id: inv.id,
+                            name: `${inv.sku || inv.product_name}${inv.batch_code ? ` #${inv.batch_code}` : ''}`,
+                            rackId: rack.id,
+                            row: 0,
+                            column: blockIdx,
+                            level: shelfIdx,
+                            position: {
+                                x: rackConfig.position.x + blockIdx * cellW + cellW / 2,
+                                y: shelfIdx * cellH + cellH / 2,
+                                z: rackConfig.position.z + rackD / 2,
+                            },
+                            color: categoryColors[category],
+                            category,
+                            weight: inv.quantity_on_hand,
+                            quantity: inv.quantity_on_hand,
+                            createdAt: new Date(inv.created_at),
+                        };
+                        boxes.push(box);
+                    }
+                });
+            });
+
+            rackIndex++;
+        }
+    }
+
+    return { racks, boxes };
+}
+
+// ────────────────────────────────────────────────
+// Hook interface
+// ────────────────────────────────────────────────
+
+interface UseWarehouse3DOptions {
+    warehouseId: string | null;
+    /** Bật WebSocket realtime updates (default true) */
+    realtime?: boolean;
+}
+
+/**
+ * Hook kết nối 3D warehouse visualization với backend API.
+ *
+ * Thay thế useWarehouse (local-only) khi có warehouseId thực.
+ * - Fetch layout (rows → racks → shelves → blocks) via React Query
+ * - Fetch inventory stock → transform thành boxes 3D
+ * - WebSocket listener tự invalidate khi có thay đổi
+ * - Giữ nguyên API tương thích với WarehouseScene props
+ */
+export function useWarehouse3D({ warehouseId, realtime = true }: UseWarehouse3DOptions) {
+    const queryClient = useQueryClient();
+    const socketRef = useRef<Socket | null>(null);
+
+    // ─── UI-only state (ko cần persist) ─────────
+    const [uiState, setUiState] = useState({
+        showBackground: true,
+        showAxes: true,
+        showGrid: true,
+        selectedBox: null as string | null,
+        selectedRack: null as string | null,
+        viewMode: 'default' as 'default' | 'category' | 'heatmap',
+        searchQuery: '',
+        filterCategory: 'all' as BoxCategory | 'all',
+        isDragMode: false,
+        rackModalOpen: false,
+        focusedRackId: null as string | null,
+        focusedBoxId: null as string | null,
+        visibleRackIds: null as string[] | null,
+        fillRateFilter: null as FillRateStatus | null,
+    });
+
+    // ─── Data queries ───────────────────────────
+
+    const {
+        data: layout,
+        isLoading: layoutLoading,
+        error: layoutError,
+    } = useQuery<WarehouseLayout>({
+        queryKey: warehouseKeys.layout(warehouseId || ''),
+        queryFn: async () => {
+            const token = getToken();
+            if (!token || !warehouseId) throw new Error('Chưa đăng nhập hoặc chưa chọn kho');
+            return warehouseService.getLayout(token, warehouseId);
+        },
+        enabled: !!warehouseId,
+        staleTime: 5 * 60 * 1000,       // 5 phút
+        refetchOnWindowFocus: false,
+    });
+
+    const {
+        data: stock,
+        isLoading: stockLoading,
+        error: stockError,
+    } = useQuery<InventoryStockItem[]>({
+        queryKey: warehouseKeys.stock(warehouseId || ''),
+        queryFn: async () => {
+            const token = getToken();
+            if (!token || !warehouseId) return [];
+            return warehouseService.getInventoryStock(token, warehouseId);
+        },
+        enabled: !!warehouseId,
+        staleTime: 2 * 60 * 1000,       // 2 phút
+        refetchOnWindowFocus: false,
+    });
+
+    // ─── Transform DB → 3D ──────────────────────
+
+    const { racks, boxes } = useMemo(() => {
+        if (!layout) return { racks: [], boxes: [] };
+        return transformLayoutTo3D(layout, stock ?? []);
+    }, [layout, stock]);
+
+    // ─── Stats ──────────────────────────────────
+
+    const stats: WarehouseStats = useMemo(() => {
+        const totalCapacity = racks.reduce(
+            (sum, rack) => sum + rack.rows * rack.columns * rack.levels,
+            0,
+        );
+
+        const categoryBreakdown = boxes.reduce((acc, box) => {
+            acc[box.category] = (acc[box.category] || 0) + 1;
+            return acc;
+        }, {} as Record<BoxCategory, number>);
+
+        return {
+            totalRacks: racks.length,
+            totalBoxes: boxes.length,
+            totalCapacity,
+            usedCapacity: boxes.length,
+            categoryBreakdown,
+        };
+    }, [racks, boxes]);
+
+    // ─── WebSocket realtime invalidation ────────
+
+    useEffect(() => {
+        if (!realtime || !warehouseId) return;
+
+        const wsUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+        const token = getToken();
+
+        const socket = io(wsUrl, {
+            transports: ['websocket'],
+            auth: { token },
+            autoConnect: true,
+        });
+
+        socketRef.current = socket;
+
+        // Khi có bất kỳ inventory/warehouse thay đổi → refetch
+        const invalidateAll = () => {
+            queryClient.invalidateQueries({ queryKey: warehouseKeys.layout(warehouseId) });
+            queryClient.invalidateQueries({ queryKey: warehouseKeys.stock(warehouseId) });
+        };
+
+        socket.on('inbound:putaway-confirmed', invalidateAll);
+        socket.on('outbound:shipped', invalidateAll);
+        socket.on('warehouse:updated', invalidateAll);
+        socket.on(`warehouse:${warehouseId}:inventory-updated`, invalidateAll);
+        socket.on('shelf:updated', invalidateAll);
+        socket.on('rack:updated', invalidateAll);
+        socket.on('row:updated', invalidateAll);
+
+        return () => {
+            socket.off('inbound:putaway-confirmed', invalidateAll);
+            socket.off('outbound:shipped', invalidateAll);
+            socket.off('warehouse:updated', invalidateAll);
+            socket.off(`warehouse:${warehouseId}:inventory-updated`, invalidateAll);
+            socket.off('shelf:updated', invalidateAll);
+            socket.off('rack:updated', invalidateAll);
+            socket.off('row:updated', invalidateAll);
+            socket.disconnect();
+            socketRef.current = null;
+        };
+    }, [realtime, warehouseId, queryClient]);
+
+    // ─── UI actions (giữ tương thích với useWarehouse) ──────
+
+    const selectBox = useCallback((id: string) => {
+        setUiState(prev => ({
+            ...prev,
+            selectedBox: prev.selectedBox === id ? null : id,
+        }));
+    }, []);
+
+    const selectRack = useCallback((id: string) => {
+        setUiState(prev => ({
+            ...prev,
+            selectedRack: prev.selectedRack === id ? null : id,
+        }));
+    }, []);
+
+    const clearSelection = useCallback(() => {
+        setUiState(prev => ({ ...prev, selectedBox: null, selectedRack: null }));
+    }, []);
+
+    const setViewMode = useCallback((mode: 'default' | 'category' | 'heatmap') => {
+        setUiState(prev => ({ ...prev, viewMode: mode }));
+        toast.success(`Chế độ xem: ${mode === 'default' ? 'Mặc định' : mode === 'category' ? 'Theo loại' : 'Nhiệt'}`);
+    }, []);
+
+    const setSearchQuery = useCallback((query: string) => {
+        setUiState(prev => ({ ...prev, searchQuery: query }));
+    }, []);
+
+    const setFilterCategory = useCallback((cat: BoxCategory | 'all') => {
+        setUiState(prev => ({ ...prev, filterCategory: cat }));
+    }, []);
+
+    const toggleAxes = useCallback(() => {
+        setUiState(prev => ({ ...prev, showAxes: !prev.showAxes }));
+    }, []);
+
+    const toggleGrid = useCallback(() => {
+        setUiState(prev => ({ ...prev, showGrid: !prev.showGrid }));
+    }, []);
+
+    const toggleDragMode = useCallback(() => {
+        setUiState(prev => ({ ...prev, isDragMode: !prev.isDragMode }));
+    }, []);
+
+    const openRackModal = useCallback((rackId: string) => {
+        setUiState(prev => ({ ...prev, rackModalOpen: true, focusedRackId: rackId }));
+    }, []);
+
+    const closeRackModal = useCallback(() => {
+        setUiState(prev => ({ ...prev, rackModalOpen: false, focusedRackId: null }));
+    }, []);
+
+    const showOnlyRack = useCallback((rackId: string) => {
+        setUiState(prev => ({ ...prev, visibleRackIds: [rackId] }));
+    }, []);
+
+    const showAllRacks = useCallback(() => {
+        setUiState(prev => ({ ...prev, visibleRackIds: null }));
+    }, []);
+
+    const setFillRateFilter = useCallback((status: FillRateStatus | null) => {
+        setUiState(prev => ({ ...prev, fillRateFilter: status }));
+    }, []);
+
+    const focusOnBox = useCallback((boxId: string) => {
+        setUiState(prev => ({ ...prev, focusedBoxId: boxId }));
+    }, []);
+
+    const clearBoxFocus = useCallback(() => {
+        setUiState(prev => ({ ...prev, focusedBoxId: null }));
+    }, []);
+
+    const createBackground = useCallback(() => {
+        setUiState(prev => ({ ...prev, showBackground: true }));
+    }, []);
+
+    const removeBackground = useCallback(() => {
+        setUiState(prev => ({ ...prev, showBackground: false }));
+    }, []);
+
+    // ─── Computed helpers ────────────────────────
+
+    const getRackStats = useCallback((rackId: string) => {
+        const rack = racks.find(r => r.id === rackId);
+        if (!rack) return null;
+
+        const rackBoxes = boxes.filter(b => b.rackId === rackId);
+        const capacity = rack.rows * rack.columns * rack.levels;
+        const fillRate = capacity > 0 ? rackBoxes.length / capacity : 0;
+
+        const categories: Partial<Record<BoxCategory, number>> = {};
+        let totalWeight = 0;
+        for (const b of rackBoxes) {
+            categories[b.category] = (categories[b.category] || 0) + 1;
+            totalWeight += b.weight || 0;
+        }
+
+        return {
+            capacity,
+            boxCount: rackBoxes.length,
+            fillRate,
+            status: getFillRateStatus(fillRate),
+            categories,
+            totalWeight,
+        };
+    }, [racks, boxes]);
+
+    const getVisibleRackIdsByFillRate = useCallback(() => {
+        if (!uiState.fillRateFilter) return null;
+        return racks
+            .filter(r => {
+                const s = getRackStats(r.id);
+                return s && s.status === uiState.fillRateFilter;
+            })
+            .map(r => r.id);
+    }, [racks, uiState.fillRateFilter, getRackStats]);
+
+    const getRackPosition = useCallback((rackId: string) => {
+        return racks.find(r => r.id === rackId)?.position ?? null;
+    }, [racks]);
+
+    const getBoxById = useCallback((boxId: string) => {
+        return boxes.find(b => b.id === boxId) ?? null;
+    }, [boxes]);
+
+    // ─── Force refresh ──────────────────────────
+
+    const refresh = useCallback(() => {
+        if (!warehouseId) return;
+        queryClient.invalidateQueries({ queryKey: warehouseKeys.layout(warehouseId) });
+        queryClient.invalidateQueries({ queryKey: warehouseKeys.stock(warehouseId) });
+        toast.success('Đang làm mới dữ liệu kho...');
+    }, [warehouseId, queryClient]);
+
+    // ─── Compose state (tương thích với WarehouseState) ─────
+
+    const state: WarehouseState = useMemo(() => ({
+        ...uiState,
+        racks,
+        boxes,
+        collisionWarnings: [],
+    }), [uiState, racks, boxes]);
+
+    // ─── Loading & Error ────────────────────────
+
+    const isLoading = layoutLoading || stockLoading;
+    const error = layoutError || stockError;
+
+    return {
+        // State tương thích với useWarehouse
+        state,
+        stats,
+        isLoading,
+        error,
+        warehouseInfo: layout ? { id: layout.id, name: layout.name, description: layout.description } : null,
+
+        // Selection & UI
+        selectBox,
+        selectRack,
+        clearSelection,
+        setViewMode,
+        setSearchQuery,
+        setFilterCategory,
+        toggleAxes,
+        toggleGrid,
+        toggleDragMode,
+        createBackground,
+        removeBackground,
+
+        // Rack modal
+        openRackModal,
+        closeRackModal,
+
+        // Visibility
+        showOnlyRack,
+        showAllRacks,
+        setFillRateFilter,
+        getVisibleRackIdsByFillRate,
+
+        // Focus
+        focusOnBox,
+        clearBoxFocus,
+
+        // Computed
+        getRackStats,
+        getRackPosition,
+        getBoxById,
+
+        // Data
+        refresh,
+    };
+}
