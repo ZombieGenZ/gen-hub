@@ -26,6 +26,7 @@ import {
   ApiHeader,
   ApiConsumes,
 } from '@nestjs/swagger';
+import type { SchemaObject } from '@nestjs/swagger/dist/interfaces/open-api-spec.interface';
 import { FileInterceptor } from '@nestjs/platform-express';
 import type { Request } from 'express';
 import { UpdateProfileDto, ChangePasswordDto } from '../auth/dto';
@@ -60,6 +61,115 @@ function getDeviceInfo(req: Request) {
     os: req.headers['sec-ch-ua-platform']?.toString() || 'unknown',
   };
 }
+
+const avatarCoverUploadRequestSchema: SchemaObject = {
+  type: 'object',
+  required: ['file'],
+  properties: {
+    file: {
+      type: 'string',
+      format: 'binary',
+      description: 'Image file to upload',
+    },
+  },
+};
+
+function createAvatarCoverResponseSchema(options: {
+  code: string;
+  message: string;
+  data: NonNullable<SchemaObject['properties']>;
+}): SchemaObject {
+  return {
+    type: 'object',
+    properties: {
+      code: { type: 'string', example: options.code },
+      message: { type: 'string', example: options.message },
+      success: { type: 'boolean', example: true },
+      data: {
+        type: 'object',
+        properties: options.data,
+      },
+    },
+  };
+}
+
+const uploadAvatarResponseSchema = createAvatarCoverResponseSchema({
+  code: 'account.avatar.upload_success',
+  message: 'Avatar uploaded successfully',
+  data: {
+    message: { type: 'string', example: 'Avatar uploaded successfully' },
+    avatar_url: {
+      type: 'string',
+      format: 'uri',
+      example: 'https://cdn.genhub.dev/avatars/avatar-123.webp',
+    },
+  },
+});
+
+const uploadCoverResponseSchema = createAvatarCoverResponseSchema({
+  code: 'account.cover.upload_success',
+  message: 'Cover uploaded successfully',
+  data: {
+    message: { type: 'string', example: 'Cover uploaded successfully' },
+    cover_url: {
+      type: 'string',
+      format: 'uri',
+      example: 'https://cdn.genhub.dev/covers/cover-123.webp',
+    },
+  },
+});
+
+const setAvatarDefaultResponseSchema = createAvatarCoverResponseSchema({
+  code: 'account.avatar.default_success',
+  message: 'Default avatar applied successfully',
+  data: {
+    message: { type: 'string', example: 'Default avatar applied successfully' },
+    avatar_image_id: {
+      type: 'string',
+      format: 'uuid',
+      example: '550e8400-e29b-41d4-a716-446655440000',
+    },
+  },
+});
+
+const setCoverDefaultResponseSchema = createAvatarCoverResponseSchema({
+  code: 'account.cover.default_success',
+  message: 'Default cover applied successfully',
+  data: {
+    message: { type: 'string', example: 'Default cover applied successfully' },
+    cover_image_id: {
+      type: 'string',
+      format: 'uuid',
+      example: '550e8400-e29b-41d4-a716-446655440001',
+    },
+  },
+});
+
+const selectAvatarResponseSchema = createAvatarCoverResponseSchema({
+  code: 'account.avatar.select_success',
+  message: 'Avatar selected successfully',
+  data: {
+    message: { type: 'string', example: 'Avatar selected successfully' },
+    avatar_image_id: {
+      type: 'string',
+      format: 'uuid',
+      example: '550e8400-e29b-41d4-a716-446655440000',
+    },
+  },
+});
+
+const selectCoverResponseSchema = createAvatarCoverResponseSchema({
+  code: 'account.cover.select_success',
+  message: 'Cover selected successfully',
+  data: {
+    message: { type: 'string', example: 'Cover selected successfully' },
+    cover_image_id: {
+      type: 'string',
+      format: 'uuid',
+      example: '550e8400-e29b-41d4-a716-446655440001',
+    },
+  },
+});
 
 /**
  * Account Controller
@@ -650,6 +760,15 @@ export class AccountController {
 
   @ApiOperation({ summary: 'Upload avatar' })
   @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    description: 'Avatar upload payload',
+    schema: avatarCoverUploadRequestSchema,
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Upload avatar thành công',
+    schema: uploadAvatarResponseSchema,
+  })
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(
@@ -685,6 +804,15 @@ export class AccountController {
 
   @ApiOperation({ summary: 'Upload cover' })
   @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    description: 'Cover upload payload',
+    schema: avatarCoverUploadRequestSchema,
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Upload cover thành công',
+    schema: uploadCoverResponseSchema,
+  })
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(
@@ -719,6 +847,11 @@ export class AccountController {
   }
 
   @ApiOperation({ summary: 'Set avatar default system image' })
+  @ApiResponse({
+    status: 200,
+    description: 'Đặt avatar mặc định thành công',
+    schema: setAvatarDefaultResponseSchema,
+  })
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard)
   @Put('avatar/default')
@@ -731,6 +864,11 @@ export class AccountController {
   }
 
   @ApiOperation({ summary: 'Set cover default system image' })
+  @ApiResponse({
+    status: 200,
+    description: 'Đặt cover mặc định thành công',
+    schema: setCoverDefaultResponseSchema,
+  })
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard)
   @Put('cover/default')
@@ -743,6 +881,11 @@ export class AccountController {
   }
 
   @ApiOperation({ summary: 'Select avatar image from defaults' })
+  @ApiResponse({
+    status: 200,
+    description: 'Chọn avatar mặc định thành công',
+    schema: selectAvatarResponseSchema,
+  })
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard)
   @Put('avatar/select/:id')
@@ -756,6 +899,11 @@ export class AccountController {
   }
 
   @ApiOperation({ summary: 'Select cover image from defaults' })
+  @ApiResponse({
+    status: 200,
+    description: 'Chọn cover mặc định thành công',
+    schema: selectCoverResponseSchema,
+  })
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard)
   @Put('cover/select/:id')

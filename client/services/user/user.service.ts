@@ -9,6 +9,34 @@ export interface TokenResponse {
 
 const API = process.env.NEXT_PUBLIC_API_URL
 
+let cachedProfile: UserData | null = null;
+let cachedAccessToken: string | null = null;
+let cachedRefreshToken: string | null = null;
+let inFlightProfilePromise: Promise<UserData> | null = null;
+let inFlightAccessToken: string | null = null;
+let inFlightRefreshToken: string | null = null;
+
+function cacheUserProfile(profile: UserData, accessToken: string, refreshToken: string) {
+  cachedProfile = profile;
+  cachedAccessToken = accessToken;
+  cachedRefreshToken = refreshToken;
+  authStorage.setUserID(profile.user.id);
+}
+
+function clearUserProfileCache() {
+  cachedProfile = null;
+  cachedAccessToken = null;
+  cachedRefreshToken = null;
+}
+
+function hasMatchingCache(accessToken: string, refreshToken: string) {
+  return cachedProfile && cachedAccessToken === accessToken && cachedRefreshToken === refreshToken;
+}
+
+export function invalidateUserProfileCache() {
+  clearUserProfileCache();
+}
+
 export class UserService {
    private readonly authService = new AuthService();
 
@@ -19,36 +47,61 @@ export class UserService {
     * @returns Thông tin user
     */
    async getUser(access_token: string, refresh_token: string): Promise<UserData> {
-      const response = await fetch(`${API}/account/profile`, {
-         headers: {
-            'Authorization': `Bearer ${access_token}`,
-            'x-refresh-token': refresh_token
-         }
-      });
-
-      if (!response.ok) {
-         if (response.status === 401) {
-            try {
-               await this.authService.getNewToken(refresh_token);
-               const newAccess = authStorage.getAccessToken();
-               const newRefresh = authStorage.getRefreshToken();
-               if (newAccess && newRefresh) {
-                  return this.getUser(newAccess, newRefresh);
-               }
-            } catch {
-               console.error('Failed to refresh token, falling through to throw error');
-            }
-         }
-         const errorData = await response.json().catch(() => ({}));
-         throw new Error(errorData.message || 'Failed to fetch user data');
+      if (hasMatchingCache(access_token, refresh_token)) {
+         return cachedProfile!;
       }
-      
-      const data = await response.json();
 
-      // kiểm tra xác minh
-      await authStorage.setEmailVerified(data.data.user.email_confirmed);
-      console.log(data)
-      return data.data;
+      if (
+         inFlightProfilePromise &&
+         inFlightAccessToken === access_token &&
+         inFlightRefreshToken === refresh_token
+      ) {
+         return inFlightProfilePromise;
+      }
+
+      inFlightAccessToken = access_token;
+      inFlightRefreshToken = refresh_token;
+      inFlightProfilePromise = (async () => {
+         const response = await fetch(`${API}/account/profile`, {
+            headers: {
+               'Authorization': `Bearer ${access_token}`,
+               'x-refresh-token': refresh_token
+            }
+         });
+
+         if (!response.ok) {
+            if (response.status === 401) {
+               clearUserProfileCache();
+               try {
+                  await this.authService.getNewToken(refresh_token);
+                  const newAccess = authStorage.getAccessToken();
+                  const newRefresh = authStorage.getRefreshToken();
+                  if (newAccess && newRefresh) {
+                     return this.getUser(newAccess, newRefresh);
+                  }
+               } catch {
+                  console.error('Failed to refresh token, falling through to throw error');
+               }
+            }
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Failed to fetch user data');
+         }
+
+         const data = await response.json();
+         const profile = data.data as UserData;
+
+         authStorage.setEmailVerified(profile.user.email_confirmed);
+         cacheUserProfile(profile, access_token, refresh_token);
+         return profile;
+      })();
+
+      try {
+         return await inFlightProfilePromise;
+      } finally {
+         inFlightProfilePromise = null;
+         inFlightAccessToken = null;
+         inFlightRefreshToken = null;
+      }
    }
 
    // Cập nhật thông tin user
@@ -66,11 +119,21 @@ export class UserService {
          const errorData = await response.json().catch(() => ({}));
          throw new Error(errorData.message || 'Failed to update user profile');
       }
-      
-      return response.json();
+
+      const data = await response.json();
+      const updatedProfile = (data.data ?? data) as UserData;
+      const refreshToken = authStorage.getRefreshToken();
+
+      if (refreshToken) {
+         cacheUserProfile(updatedProfile, token, refreshToken);
+      } else {
+         clearUserProfileCache();
+      }
+
+      return updatedProfile;
    }
 
-   //Thay đổi mật khẩu
+   // Thay đổi mật khẩu
    async change_password(token: string, newInfo: ChangePasswordRequest) {
       const response = await fetch(`${API}/account/change-password`, {
          method: 'POST',
@@ -85,18 +148,18 @@ export class UserService {
          const errorData = await response.json().catch(() => ({}));
          throw new Error(errorData.message || 'Failed to change password');
       }
-      
+
       const data = await response.json();
-      
-      // If logging out all devices, clear the current session as well
+
       if (newInfo.logout_all_devices) {
+         clearUserProfileCache();
          authStorage.clearTokens();
       }
-      
+
       return data;
    }
-   
-   // Bật xác thực 2fa
+
+   // Bật xác thực 2FA
    async enableTwoFactor(token: string, access_verification_token: string) {
       const response = await fetch(`${API}/2fa/setup`, {
          method: 'POST',
@@ -111,12 +174,12 @@ export class UserService {
          const errorData = await response.json().catch(() => ({}));
          throw new Error(errorData.message || 'Failed to enable 2FA');
       }
-      
+
       return response.json();
    }
 
    /**
-    * Xác minh secret code verify set up
+    * Xác minh secret code verify setup
     * @param access_token Token truy cập
     * @param access_verification_token Token xác minh truy cập
     * @param twoFactorCode Mã 2FA
@@ -137,12 +200,12 @@ export class UserService {
          const errorData = await response.json().catch(() => ({}));
          throw new Error(errorData.message || 'Failed to verify 2FA');
       }
-      
+
       return response.json();
    }
 
    /**
-    * Tắt xác thực 2fa
+    * Tắt xác thực 2FA
     * @param token Token truy cập
     * @param access_verification_token Token xác minh truy cập
     * @returns Kết quả tắt 2FA
@@ -161,9 +224,10 @@ export class UserService {
          const errorData = await response.json().catch(() => ({}));
          throw new Error(errorData.message || 'Failed to disable 2FA');
       }
-      
+
       return response.json();
    }
+
    /**
     * Tìm kiếm user
     */
@@ -171,8 +235,8 @@ export class UserService {
       const searchParams = new URLSearchParams();
       searchParams.append('keywords', keyword);
       // Giới hạn kết quả trả về
-      searchParams.append('limit', '20'); 
-      
+      searchParams.append('limit', '20');
+
       const response = await fetch(`${API}/admin/users?${searchParams.toString()}`, {
          headers: {
             'Authorization': `Bearer ${token}`
@@ -180,11 +244,10 @@ export class UserService {
       });
 
       if (!response.ok) {
-         // Fallback to empty list if endpoint doesn't allow search or fails
          console.warn('Search users failed');
          return [];
       }
-      
+
       const data = await response.json();
       return data.data.items || data.data || [];
    }
@@ -194,8 +257,6 @@ export class UserService {
     * Tạm thời dùng search
     */
    async getUsersByRole(token: string, role: string): Promise<User[]> {
-       // TODO: Implement real endpoint if available. 
-       // For now, we return empty or implement a filter if search supports it.
        return [];
    }
 }

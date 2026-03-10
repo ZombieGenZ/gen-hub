@@ -16,6 +16,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { authService } from "@/services/auth/auth.service";
+import { UserService } from "@/services/user/user.service";
 import { useToast } from "@/contexts/ToastContext";
 import {
   DropdownMenu,
@@ -34,6 +35,8 @@ interface UserDropdownProps {
   onLogout?: () => void;
   children?: React.ReactNode;
 }
+
+const userService = new UserService();
 
 const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout, children }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -55,13 +58,13 @@ const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout, children })
   
   useEffect(() => {
     const fetchUserData = async () => {
-      if (token && !user) {
+      const refreshToken = authStorage.getRefreshToken();
+      if (token && refreshToken && !user) {
         try {
-          const data = await authStorage.getUser();
-          console.log('User data from token:', data);
+          const data = await userService.getUser(token, refreshToken);
           setUserDataFromToken(data);
         } catch (error) {
-          console.error('Failed to parse user from token:', error);
+          console.error('Failed to fetch user profile:', error);
         }
       }
     };

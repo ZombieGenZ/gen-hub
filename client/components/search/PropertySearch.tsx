@@ -32,8 +32,10 @@ import {
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { Menu, MenuItem, HoveredLink } from "@/components/ui/navbar-menu";
+import { UserService } from "@/services/user/user.service";
 
 const HEADER_HEIGHT = 80;
+const userService = new UserService();
 
 interface PropertySearchProps {
     initialLocationSlug?: string;
@@ -77,9 +79,18 @@ export default function PropertySearch({ initialLocationSlug }: PropertySearchPr
 
     useEffect(() => {
         const initAuth = async () => {
-            setIsLogin(authStorage.isAuthenticated());
+            const isAuthenticated = authStorage.isAuthenticated();
+            setIsLogin(isAuthenticated);
             try {
-                const userData = await authStorage.getUser();
+                const accessToken = authStorage.getAccessToken();
+                const refreshToken = authStorage.getRefreshToken();
+
+                if (!isAuthenticated || !accessToken || !refreshToken) {
+                    setUser(null);
+                    return;
+                }
+
+                const userData = await userService.getUser(accessToken, refreshToken);
                 setUser(userData);
             } catch (error) {
                 console.error('Failed to get user data:', error);

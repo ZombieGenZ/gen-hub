@@ -31,8 +31,6 @@ const userService = new UserService();
 const notificationService = new NotificationService();
 const authService = new AuthService();
 
-const FIVE_MINUTES_MS = 1 * 60 * 1000;
-
 export default function Home() {
     const router = useRouter();
     const [isLogin, setIsLogin] = useState(false);
@@ -48,7 +46,6 @@ export default function Home() {
 
     useEffect(() => {
         let isMounted = true;
-        let intervalId: number | undefined;
 
         const fetchUserData = async () => {
             if (isFetchingRef.current) return;
@@ -64,7 +61,7 @@ export default function Home() {
                     return;
                 }
 
-                // Nếu thiếu access token nhưng còn refresh token -> refresh ngay để lấy token mới
+                // Nếu thiếu access token nhưng còn refresh token thì refresh ngay
                 let accessToken = authStorage.getAccessToken();
                 if (!accessToken) {
                     try {
@@ -76,7 +73,7 @@ export default function Home() {
                     }
                 }
 
-                // Nếu access token có nhưng hết hạn -> lấy token hợp lệ (tự refresh nếu cần)
+                // Nếu access token hết hạn thì lấy token hợp lệ
                 if (accessToken && !authStorage.isAuthenticated()) {
                     accessToken = await authService.getValidAccessToken();
                 }
@@ -111,14 +108,10 @@ export default function Home() {
             }
         };
 
-        // gọi ngay khi mount
         fetchUserData();
-        // gọi lại mỗi 1 phút
-        intervalId = window.setInterval(fetchUserData, FIVE_MINUTES_MS);
 
         return () => {
             isMounted = false;
-            if (intervalId) window.clearInterval(intervalId);
         };
     }, [router, showToast]);
 
@@ -138,7 +131,6 @@ export default function Home() {
                 if (!isMounted) return;
                 const userNotifs = userNotifsResponse?.items || [];
                 const globalNotifs = globalNotifsResponse?.items || [];
-                // Cast global notifications to any to merge with user notifications for now
                 setNotifications([...(globalNotifs as any[]), ...userNotifs]);
 
                 const total = (userNotifs?.length || 0) + (globalNotifs?.length || 0);
@@ -154,7 +146,6 @@ export default function Home() {
             }
         };
 
-        // Chỉ fetch notifications khi user đã đăng nhập
         if (isLogin) {
             fetchNotifications();
         }
@@ -169,9 +160,9 @@ export default function Home() {
             setIsScrolled(scrollTop > 100);
         };
 
-        window.addEventListener('scroll', handleScroll);
+        window.addEventListener("scroll", handleScroll);
         return () => {
-            window.removeEventListener('scroll', handleScroll);
+            window.removeEventListener("scroll", handleScroll);
         };
     }, []);
 
@@ -182,68 +173,58 @@ export default function Home() {
 
     return (
         <div className="relatisve min-h-screen bg-slate-50 text-slate-900 overflow-x-hidden">
-            {/* Navbar - Always visible with scroll effect */}
             <div
                 className={`fixed top-0 left-0 right-0 z-40 transition-all duration-500 ${isScrolled
-                    ? 'bg-white/95 backdrop-blur-md shadow-lg'
-                    : 'bg-transparent'
+                    ? "bg-white/95 backdrop-blur-md shadow-lg"
+                    : "bg-transparent"
                     }`}
             >
                 <PrimeNestHeader isLogin={isLogin} user={user} onLogout={handleLogout} />
             </div>
 
             <main className="z-10 h-full w-full">
-                {/* 1. Hero */}
                 <section className="mt-20 flex items-center justify-center">
                     <ScrollReveal animation="fade-up" duration={800}>
                         <PrimeNestHero />
                     </ScrollReveal>
                 </section>
 
-                {/* 2. About */}
                 <section className="bg-white">
                     <ScrollReveal animation="fade-up" duration={700}>
                         <PrimeNestAbout />
                     </ScrollReveal>
                 </section>
 
-                {/* 3. Featured */}
                 <section className="bg-white">
                     <ScrollReveal animation="zoom-in" duration={700}>
                         <PrimeNestFeatured />
                     </ScrollReveal>
                 </section>
 
-                {/* 5. Testimonials */}
                 <section className="bg-slate-50">
                     <ScrollReveal animation="fade-left" duration={700}>
                         <PrimeNestTestimonials />
                     </ScrollReveal>
                 </section>
 
-                {/* 6. FAQ */}
                 <section className="bg-white">
                     <ScrollReveal animation="fade-up" duration={700}>
                         <PrimeNestFAQ />
                     </ScrollReveal>
                 </section>
 
-                {/* 7. Contact */}
                 <section className="bg-slate-50">
                     <ScrollReveal animation="fade-up" duration={700}>
                         <PrimeNestContact />
                     </ScrollReveal>
                 </section>
 
-                {/* Footer */}
                 <ScrollReveal animation="fade-up" duration={600}>
                     <PrimeNestFooter />
                 </ScrollReveal>
             </main>
 
-            {/* Chatbot Widget */}
             <PrimeNestChatbot />
         </div>
     );
 }
-
