@@ -1,6 +1,6 @@
 ---
 name: UI/UX Pro Max - Frontend Developer (GEN-HUB)
-description: Skill toàn diện để phát triển giao diện frontend (Next.js, TailwindCSS, shadcn/ui) và tích hợp với NestJS backend cho dự án GEN-HUB. Bao gồm design system, component patterns, API integration, realtime, state management.
+description: Skill phát triển giao diện frontend (Next.js, TailwindCSS, shadcn/ui) cho dự án GEN-HUB. Tự động đọc Swagger API docs để lấy thông tin API trước khi implement.
 ---
 
 # 🎨 UI/UX PRO MAX - Frontend Developer (GEN-HUB)
@@ -50,7 +50,98 @@ Bạn là **Senior Frontend Engineer** chuyên gia Next.js, React, TailwindCSS v
 
 ---
 
-## 🛠️ II. TECH STACK & CÔNG CỤ
+## 🚀 II. QUY TRÌNH TỰ ĐỘNG ĐỌC SWAGGER API (BẮT BUỘC)
+
+### 2.1. Khi nào kích hoạt
+
+Khi user cung cấp một API endpoint dưới dạng:
+```
+<METHOD> <PATH>
+```
+
+**Ví dụ:**
+- `delete /account/delete-account`
+- `post /rental-contract/create`
+- `get /user/list`
+- `patch /user/update/{id}`
+
+### 2.2. Quy trình thực hiện (PHẢI THEO ĐÚNG THỨ TỰ)
+
+#### Bước 1: Đọc Swagger JSON
+
+Sử dụng tool `read_url_content` để đọc Swagger/OpenAPI JSON:
+
+```
+read_url_content("https://api.gen-hub.dev/api-docs-json")
+```
+
+#### Bước 2: Trích xuất thông tin API
+
+Từ Swagger JSON trả về, tìm endpoint theo `<METHOD>` và `<PATH>` mà user cung cấp. Trích xuất các thông tin sau:
+
+| Thông tin | Vị trí trong Swagger JSON |
+|-----------|---------------------------|
+| **Summary / Description** | `paths[<path>][<method>].summary` và `.description` |
+| **Parameters** (query, path) | `paths[<path>][<method>].parameters` |
+| **Request Body** (nếu có) | `paths[<path>][<method>].requestBody.content["application/json"].schema` |
+| **Response schema** | `paths[<path>][<method>].responses["200"].content["application/json"].schema` |
+| **Security** (auth required?) | `paths[<path>][<method>].security` |
+| **Tags** | `paths[<path>][<method>].tags` (xác định module) |
+
+> **LƯU Ý:** Nếu schema sử dụng `$ref`, phải resolve reference từ `components.schemas` trong cùng Swagger JSON.
+
+#### Bước 3: Tóm tắt cho user
+
+Trình bày cho user thông tin đã trích xuất:
+
+```markdown
+## 📡 API: [METHOD] [PATH]
+- **Mô tả:** [summary/description từ Swagger]
+- **Authentication:** [Có/Không — dựa trên security]
+- **Tags/Module:** [tags]
+- **Parameters:** [liệt kê params nếu có]
+- **Request Body:** [liệt kê fields + types + required]
+- **Response:** [mô tả response schema]
+```
+
+#### Bước 4: Lập kế hoạch implementation
+
+Dựa trên thông tin API đã trích xuất, lập kế hoạch chi tiết gồm:
+
+1. **Service function** — tạo/sửa file `services/<module>/<module>.service.ts`
+2. **TypeScript types** — tạo/sửa types cho request/response
+3. **React Query hook** — tạo/sửa `hooks/use<Module>.ts`
+4. **Zod schema** (nếu có form) — validation dựa trên request body schema
+5. **UI Component** — component giao diện phù hợp (form, button, dialog, table, etc.)
+
+**→ Trình bày kế hoạch → đợi user duyệt → mới code.**
+
+#### Bước 5: Implement
+
+Sau khi user duyệt kế hoạch, triển khai code theo đúng các patterns ở mục III, IV, V...
+
+### 2.3. Xử lý nhiều API cùng lúc
+
+Nếu user cung cấp nhiều API:
+```
+get /rental-contract/list
+post /rental-contract/create
+patch /rental-contract/update/{id}
+delete /rental-contract/delete/{id}
+```
+
+→ Đọc Swagger JSON **MỘT LẦN**, trích xuất tất cả endpoints liên quan, rồi lập kế hoạch tổng thể.
+
+### 2.4. Khi Swagger không có endpoint
+
+Nếu không tìm thấy endpoint trong Swagger JSON → **thông báo cho user** và hỏi:
+- Endpoint đã đổi path chưa?
+- Endpoint đã deploy lên API chưa?
+- User có muốn cung cấp spec thủ công không?
+
+---
+
+## 🛠️ III. TECH STACK & CÔNG CỤ
 
 | Thành phần | Công nghệ | Version |
 |-----------|-----------|---------|
@@ -69,7 +160,7 @@ Bạn là **Senior Frontend Engineer** chuyên gia Next.js, React, TailwindCSS v
 
 ---
 
-## 📂 III. CẤU TRÚC DỰ ÁN CLIENT
+## 📂 IV. CẤU TRÚC DỰ ÁN CLIENT
 
 ```
 client/
@@ -95,9 +186,9 @@ client/
 
 ---
 
-## 🎨 IV. DESIGN SYSTEM & AESTHETICS
+## 🎨 V. DESIGN SYSTEM & AESTHETICS
 
-### 4.1. Theme Colors (GEN-HUB Brand)
+### 5.1. Theme Colors (GEN-HUB Brand)
 
 ```
 Primary:      #0F766E (Teal 700)
@@ -112,30 +203,7 @@ Info:         Dùng CSS var (--chart-4)
 
 Sử dụng CSS variables đã define trong `globals.css` — **KHÔNG hardcode màu**.
 
-### 4.2. Typography (REM font)
-
-```
-Display:      3rem - 3.75rem (heading cỡ lớn)
-Headline LG:  2rem / font-weight 700
-Headline MD:  1.5rem / font-weight 600
-Body:         1rem / line-height 1.5
-Body SM:      0.875rem
-Caption:      0.75rem
-```
-
-Dùng Tailwind classes: `text-display`, `text-headline-lg`, `text-body`, v.v.
-
-### 4.3. Border Radius (Rounded Design)
-
-```
-xl:      32px
-lg:      24px
-md:      16px
-sm/default: 12px
-full:    9999px
-```
-
-### 4.4. Nguyên tắc thiết kế PREMIUM
+### 5.2. Nguyên tắc thiết kế PREMIUM
 
 - **Glassmorphism** cho cards/modals khi phù hợp
 - **Smooth gradients** thay vì solid colors cho backgrounds
@@ -147,9 +215,9 @@ full:    9999px
 
 ---
 
-## 🔗 V. TÍCH HỢP BACKEND (API Integration)
+## 🔗 VI. PATTERNS IMPLEMENTATION (Tham chiếu khi code)
 
-### 5.1. Service Layer Pattern
+### 6.1. Service Layer Pattern
 
 Mỗi module tạo file service riêng trong `services/<module>/`:
 
@@ -160,61 +228,8 @@ import { ApiResponse, PaginatedResponse } from '../common.types';
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export const <module>Service = {
-  // GET ALL
-  getAll: async (params: {
-    limit?: number;
-    offset?: number;
-    keywords?: string;
-    status?: string;
-  }): Promise<PaginatedResponse<ItemType>> => {
-    const searchParams = new URLSearchParams();
-    if (params.limit) searchParams.set('limit', String(params.limit));
-    if (params.offset) searchParams.set('offset', String(params.offset));
-    if (params.keywords) searchParams.set('keywords', params.keywords);
-    if (params.status) searchParams.set('status', params.status);
-
-    const res = await fetch(`${API_URL}/<module>?${searchParams}`, {
-      headers: getAuthHeaders(),
-    });
-    return res.json();
-  },
-
-  // GET BY ID
-  getById: async (id: string): Promise<ApiResponse<ItemType>> => {
-    const res = await fetch(`${API_URL}/<module>/${id}`, {
-      headers: getAuthHeaders(),
-    });
-    return res.json();
-  },
-
-  // CREATE
-  create: async (data: CreateDto): Promise<ApiResponse<ItemType>> => {
-    const res = await fetch(`${API_URL}/<module>`, {
-      method: 'POST',
-      headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
-    return res.json();
-  },
-
-  // UPDATE
-  update: async (id: string, data: UpdateDto): Promise<ApiResponse<ItemType>> => {
-    const res = await fetch(`${API_URL}/<module>/${id}`, {
-      method: 'PATCH',
-      headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
-    return res.json();
-  },
-
-  // DELETE
-  delete: async (id: string): Promise<ApiResponse<null>> => {
-    const res = await fetch(`${API_URL}/<module>/${id}`, {
-      method: 'DELETE',
-      headers: getAuthHeaders(),
-    });
-    return res.json();
-  },
+  // Các method được generate dựa trên Swagger API spec
+  // Method name, params, body, return type → lấy từ Swagger JSON
 };
 
 function getAuthHeaders(): HeadersInit {
@@ -228,7 +243,7 @@ function getAuthHeaders(): HeadersInit {
 }
 ```
 
-### 5.2. React Query Integration
+### 6.2. React Query Integration
 
 ```typescript
 // hooks/use<Module>.ts
@@ -242,95 +257,44 @@ const QUERY_KEYS = {
   detail: (id: string) => ['<module>', 'detail', id] as const,
 };
 
-// GET ALL Hook
-export function use<Module>List(params?: QueryParams) {
-  return useQuery({
-    queryKey: QUERY_KEYS.list(params),
-    queryFn: () => <module>Service.getAll(params ?? {}),
-    staleTime: 5 * 60 * 1000, // 5 phút
-  });
-}
-
-// GET BY ID Hook
-export function use<Module>Detail(id: string) {
-  return useQuery({
-    queryKey: QUERY_KEYS.detail(id),
-    queryFn: () => <module>Service.getById(id),
-    enabled: !!id,
-  });
-}
-
-// CREATE Mutation
-export function useCreate<Module>() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: <module>Service.create,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.all });
-    },
-  });
-}
-
-// UPDATE Mutation
-export function useUpdate<Module>() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateDto }) =>
-      <module>Service.update(id, data),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.all });
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.detail(variables.id) });
-    },
-  });
-}
-
-// DELETE Mutation
-export function useDelete<Module>() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: <module>Service.delete,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.all });
-    },
-  });
-}
+// GET → useQuery
+// POST/PATCH/PUT/DELETE → useMutation + invalidateQueries
 ```
 
-### 5.3. Form Integration (React Hook Form + Zod)
+### 6.3. Form Integration (React Hook Form + Zod)
 
 ```typescript
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 
-// Schema validation
-const createSchema = z.object({
-  name: z.string().min(1, 'Tên không được để trống').max(255),
-  description: z.string().optional(),
-  status: z.enum(['active', 'inactive']).default('active'),
+// Zod schema → generate từ Swagger request body schema
+// Required fields, types, min/max → map từ Swagger validation
+// Message validation → tiếng Việt có dấu
+```
+
+### 6.4. Toast Notifications (Sonner)
+
+```typescript
+import { toast } from 'sonner';
+
+// Success
+toast.success('Tạo thành công!');
+
+// Error
+toast.error('Có lỗi xảy ra. Vui lòng thử lại.');
+
+// Promise
+toast.promise(mutation.mutateAsync(data), {
+  loading: 'Đang xử lý...',
+  success: 'Thao tác thành công!',
+  error: 'Có lỗi xảy ra.',
 });
-
-type CreateFormValues = z.infer<typeof createSchema>;
-
-// Trong component
-const form = useForm<CreateFormValues>({
-  resolver: zodResolver(createSchema),
-  defaultValues: { name: '', status: 'active' },
-});
-
-const createMutation = useCreate<Module>();
-
-const onSubmit = (values: CreateFormValues) => {
-  createMutation.mutate(values, {
-    onSuccess: () => toast.success('Tạo thành công!'),
-    onError: (error) => toast.error(error.message),
-  });
-};
 ```
 
 ---
 
-## 📡 VI. REALTIME (Socket.io Client)
+## 📡 VII. REALTIME (Socket.io Client)
 
 ### Connection Pattern
 
@@ -383,61 +347,6 @@ useEffect(() => {
 
 ---
 
-## 🧩 VII. COMPONENT PATTERNS
-
-### 7.1. Data Table (TanStack Table + shadcn)
-
-```typescript
-// Pattern cho DataTable component
-- Columns definition file riêng: columns.tsx
-- Hỗ trợ sorting, filtering, pagination
-- Loading skeleton
-- Empty state với message
-- Responsive (collapse columns trên mobile)
-```
-
-### 7.2. Form Component Pattern
-
-```typescript
-// Pattern chuẩn cho form
-- shadcn Form component (FormField, FormItem, FormLabel, FormMessage)
-- Zod schema validation
-- Loading state trên submit button
-- Error handling với toast (sonner)
-- Reset form sau khi thành công
-```
-
-### 7.3. Modal/Dialog Pattern
-
-```typescript
-// Dùng shadcn Dialog
-- Controlled open/close state
-- Confirmation dialog cho delete actions
-- Form dialog cho create/edit
-- Loading overlay khi submitting
-```
-
-### 7.4. Toast Notifications (Sonner)
-
-```typescript
-import { toast } from 'sonner';
-
-// Success
-toast.success('Tạo thành công!');
-
-// Error
-toast.error('Có lỗi xảy ra. Vui lòng thử lại.');
-
-// Promise
-toast.promise(mutation.mutateAsync(data), {
-  loading: 'Đang xử lý...',
-  success: 'Thao tác thành công!',
-  error: 'Có lỗi xảy ra.',
-});
-```
-
----
-
 ## 🔒 VIII. AUTHENTICATION & AUTHORIZATION (FE)
 
 ### Token Management
@@ -482,16 +391,11 @@ function ActionButtons() {
 
 ---
 
-## 🌍 IX. ĐA NGÔN NGỮ (FE)
+## ✅ IX. CHECKLIST TRƯỚC KHI HOÀN THÀNH
 
-- Header `Accept-Language: vi | en` gửi kèm mọi request
-- UI text hardcode minimal, ưu tiên lấy message từ API response
-- Date/time format theo locale: `date-fns` với locale tương ứng
-
----
-
-## ✅ X. CHECKLIST TRƯỚC KHI HOÀN THÀNH
-
+- [ ] Đã đọc Swagger JSON và trích xuất đúng API spec
+- [ ] Service function match đúng method/path/params/body từ Swagger
+- [ ] TypeScript types khớp với Swagger schema
 - [ ] Component responsive (mobile/tablet/desktop)
 - [ ] Dark mode support
 - [ ] Loading states (skeleton/spinner)
@@ -500,31 +404,7 @@ function ActionButtons() {
 - [ ] Permission-based UI rendering
 - [ ] React Query hooks tách file riêng
 - [ ] Service layer tách file riêng
-- [ ] Zod validation schema
-- [ ] TypeScript types đầy đủ (không `any`)
+- [ ] Zod validation schema (nếu có form)
 - [ ] Framer Motion transitions/animations
 - [ ] Accessibility (ARIA labels, keyboard nav)
-- [ ] SEO (title, meta, semantic HTML)
 - [ ] API integration hoạt động đúng
-- [ ] Realtime events handled (nếu có)
-
----
-
-## 📚 REFERENCE: SERVICES & TYPES PATTERN
-
-```
-client/services/
-├── common.types.ts               # ApiResponse, PaginatedResponse
-├── auth/
-│   ├── auth.service.ts
-│   └── auth.types.ts
-├── <module>/
-│   ├── <module>.service.ts       # API calls
-│   └── <module>.types.ts         # Module-specific types (nếu cần)
-
-client/types/
-├── <module>.ts                   # Shared type definitions
-
-client/hooks/
-├── use<Module>.ts                # React Query hooks
-```
