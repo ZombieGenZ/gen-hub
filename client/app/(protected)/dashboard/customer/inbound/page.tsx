@@ -475,13 +475,15 @@ export default function InboundListPage() {
         if (!cancelTarget) return;
         setIsCancelling(true);
         try {
-            // For now, just refresh since cancel endpoint may not exist
+            const token = authStorage.getAccessToken();
+            if (!token) { router.push("/login"); return; }
+            await inventoryService.rejectInbound(token, cancelTarget.id, "Người tạo phiếu tự hủy");
             showToast(`Phiếu ${cancelTarget.code} đã được hủy`, "success");
             setCancelDialogOpen(false);
             setCancelTarget(null);
             fetchItems();
-        } catch {
-            showToast("Hủy phiếu thất bại", "error");
+        } catch (err: any) {
+            showToast(err.message || "Hủy phiếu thất bại", "error");
         } finally {
             setIsCancelling(false);
         }

@@ -10,6 +10,9 @@ import {
     ValidateNested,
     IsUUID,
     IsNumber,
+    IsNotEmpty,
+    IsBoolean,
+    MaxLength,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { i18nValidationMessage } from 'nestjs-i18n';
@@ -154,7 +157,9 @@ export class RejectInboundDto {
         description: 'Lý do từ chối',
         example: 'Hàng không đúng chất lượng',
     })
+    @IsNotEmpty({ message: i18nValidationMessage('inventory-request.validation.reject_reason_required') })
     @IsString({ message: i18nValidationMessage('inventory-request.validation.reject_reason_string') })
+    @MaxLength(500, { message: i18nValidationMessage('inventory-request.validation.reject_reason_max_length') })
     reason: string;
 }
 
@@ -188,7 +193,9 @@ export class RejectOutboundDto {
         description: 'Lý do từ chối',
         example: 'Không đủ tồn kho',
     })
+    @IsNotEmpty({ message: i18nValidationMessage('inventory-request.validation.reject_reason_required') })
     @IsString({ message: i18nValidationMessage('inventory-request.validation.reject_reason_string') })
+    @MaxLength(500, { message: i18nValidationMessage('inventory-request.validation.reject_reason_max_length') })
     reason: string;
 }
 
@@ -203,12 +210,13 @@ export class StartReceivingDto {
 
 export class ConfirmReceivingDetailDto {
     @ApiProperty({ description: 'ID chi tiết phiếu nhập' })
-    @IsUUID('4')
+    @IsNotEmpty({ message: i18nValidationMessage('inventory-request.validation.detail_id_required') })
+    @IsUUID('4', { message: i18nValidationMessage('inventory-request.validation.detail_id_uuid') })
     detail_id: string;
 
     @ApiProperty({ description: 'Số lượng thực tế đã kiểm đếm', minimum: 0 })
-    @IsNumber()
-    @Min(0)
+    @IsNumber({}, { message: i18nValidationMessage('inventory-request.validation.quantity_positive') })
+    @Min(0, { message: i18nValidationMessage('inventory-request.validation.quantity_min_zero') })
     actual_qty: number;
 }
 
@@ -230,12 +238,13 @@ export class ConfirmReceivingDto {
 
 export class ConfirmPutawayDetailDto {
     @ApiProperty({ description: 'ID chi tiết phiếu cất hàng' })
-    @IsUUID('4')
+    @IsNotEmpty({ message: i18nValidationMessage('inventory-request.validation.detail_id_required') })
+    @IsUUID('4', { message: i18nValidationMessage('inventory-request.validation.detail_id_uuid') })
     putaway_detail_id: string;
 
     @ApiProperty({ description: 'Số lượng thực tế đã cất', minimum: 0 })
-    @IsNumber()
-    @Min(0)
+    @IsNumber({}, { message: i18nValidationMessage('inventory-request.validation.quantity_positive') })
+    @Min(0, { message: i18nValidationMessage('inventory-request.validation.quantity_min_zero') })
     actual_qty: number;
 }
 
@@ -257,12 +266,13 @@ export class ConfirmPutawayDto {
 
 export class ConfirmPickingDetailDto {
     @ApiProperty({ description: 'ID chi tiết pick list' })
-    @IsUUID('4')
+    @IsNotEmpty({ message: i18nValidationMessage('inventory-request.validation.detail_id_required') })
+    @IsUUID('4', { message: i18nValidationMessage('inventory-request.validation.detail_id_uuid') })
     pick_list_detail_id: string;
 
     @ApiProperty({ description: 'Số lượng đã nhặt', minimum: 0 })
-    @IsNumber()
-    @Min(0)
+    @IsNumber({}, { message: i18nValidationMessage('inventory-request.validation.quantity_positive') })
+    @Min(0, { message: i18nValidationMessage('inventory-request.validation.quantity_min_zero') })
     picked_qty: number;
 }
 
@@ -279,16 +289,18 @@ export class ConfirmPickingDto {
 
 export class ConfirmCheckingDetailDto {
     @ApiProperty({ description: 'ID chi tiết phiếu xuất' })
-    @IsUUID('4')
+    @IsNotEmpty({ message: i18nValidationMessage('inventory-request.validation.detail_id_required') })
+    @IsUUID('4', { message: i18nValidationMessage('inventory-request.validation.detail_id_uuid') })
     export_detail_id: string;
 
     @ApiProperty({ description: 'Số lượng đã kiểm tra', minimum: 0 })
-    @IsNumber()
-    @Min(0)
+    @IsNumber({}, { message: i18nValidationMessage('inventory-request.validation.quantity_positive') })
+    @Min(0, { message: i18nValidationMessage('inventory-request.validation.quantity_min_zero') })
     checked_qty: number;
 
     @ApiPropertyOptional({ description: 'Đạt hay không?', default: true })
     @IsOptional()
+    @IsBoolean()
     passed?: boolean;
 }
 
@@ -306,12 +318,14 @@ export class ConfirmCheckingDto {
 export class CompleteShipmentDto {
     @ApiPropertyOptional({ description: 'Ghi chú bàn giao' })
     @IsOptional()
-    @IsString()
+    @IsString({ message: i18nValidationMessage('inventory-request.validation.notes_string') })
+    @MaxLength(1000, { message: i18nValidationMessage('inventory-request.validation.notes_max_length') })
     notes?: string;
 
     @ApiPropertyOptional({ description: 'Mã vận đơn' })
     @IsOptional()
-    @IsString()
+    @IsString({ message: i18nValidationMessage('inventory-request.validation.tracking_number_string') })
+    @MaxLength(100, { message: i18nValidationMessage('inventory-request.validation.tracking_number_max_length') })
     tracking_number?: string;
 }
 
