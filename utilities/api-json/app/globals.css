@@ -1,0 +1,150 @@
+@import "tailwindcss";
+
+:root {
+  --background: #071118;
+  --background-elevated: rgba(12, 24, 34, 0.92);
+  --foreground: #f4f7fb;
+  --muted: #97a6ba;
+  --border: rgba(148, 163, 184, 0.18);
+  --panel: rgba(10, 19, 29, 0.78);
+  --panel-strong: rgba(10, 19, 29, 0.94);
+  --teal: #14b8a6;
+  --teal-soft: rgba(20, 184, 166, 0.15);
+  --amber-soft: rgba(245, 158, 11, 0.16);
+  --rose-soft: rgba(244, 63, 94, 0.16);
+  --violet-soft: rgba(139, 92, 246, 0.18);
+  --emerald-soft: rgba(34, 197, 94, 0.18);
+  --get: #22c55e;
+  --post: #f59e0b;
+  --put: #f97316;
+  --delete: #ef4444;
+  --patch: #8b5cf6;
+  --json-key: #93c5fd;
+  --json-string: #86efac;
+  --json-number: #f9a8d4;
+  --json-boolean: #fcd34d;
+  --json-null: #c4b5fd;
+  --json-brace: #cbd5e1;
+  --shadow-panel: 0 26px 80px rgba(2, 6, 23, 0.45);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+}
+
+* {
+  box-sizing: border-box;
+  border-color: var(--border);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  color: var(--foreground);
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  background:
+    radial-gradient(circle at top left, rgba(20, 184, 166, 0.18), transparent 28%),
+    radial-gradient(circle at top right, rgba(59, 130, 246, 0.14), transparent 30%),
+    linear-gradient(180deg, #081019 0%, #050a11 100%);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+::selection {
+  background: rgba(20, 184, 166, 0.3);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.46);
+}
+
+::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.26);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.42);
+}
+
+.hero-panel {
+  position: relative;
+  background:
+    linear-gradient(135deg, rgba(8, 15, 26, 0.94), rgba(7, 18, 29, 0.8)),
+    rgba(10, 19, 29, 0.84);
+  box-shadow: var(--shadow-panel);
+  backdrop-filter: blur(24px);
+}
+
+.glass-card {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02));
+  backdrop-filter: blur(18px);
+}
+
+.panel {
+  background: linear-gradient(180deg, rgba(10, 19, 29, 0.92), rgba(10, 19, 29, 0.72));
+  box-shadow: var(--shadow-panel);
+}
+
+.method-badge {
+  border: 1px solid currentColor;
+}
+
+.json-scroll {
+  scrollbar-color: rgba(148, 163, 184, 0.34) transparent;
+}
+
+.json-view code {
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, monospace;
+}
+
+.json-line {
+  display: block;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.json-brace {
+  color: var(--json-brace);
+}
+
+.json-key {
+  color: var(--json-key);
+}
+
+.json-string {
+  color: var(--json-string);
+}
+
+.json-number {
+  color: var(--json-number);
+}
+
+.json-boolean {
+  color: var(--json-boolean);
+}
+
+.json-null {
+  color: var(--json-null);
+}
