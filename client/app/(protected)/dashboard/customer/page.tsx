@@ -33,8 +33,10 @@ import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import { Egg, Droplet, Package, Wheat, Milk, AlertCircle, Calendar } from "lucide-react";
+import { UserService } from "@/services/user/user.service";
 
 export default function CustomerDashboardOverview() {
+    const userService = new UserService();
     const router = useRouter();
     const [dateFilter, setDateFilter] = useState("week");
     const [stats, setStats] = useState({
@@ -62,8 +64,10 @@ export default function CustomerDashboardOverview() {
         const fetchData = async () => {
             try {
                 const token = authStorage.getAccessToken();
-                const user = await authStorage.getUser();
-                if (!token) return;
+                const refreshToken = authStorage.getRefreshToken();
+                if (!token || !refreshToken) return;
+
+                const user = await userService.getUser(token, refreshToken);
                 const balanceRes = user?.organization_id
                     ? await accountBalanceService.getOrganizationBalance(token, user.organization_id).catch(() => ({ balance: 0 }))
                     : { balance: 0 };

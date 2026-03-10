@@ -46,7 +46,7 @@ export default function SearchHeader({
                         setUser(userData);
                     } catch (error) {
                         console.error("Failed to fetch user profile:", error);
-                        setUser(await authStorage.getUser());
+                        setUser(null);
                     }
                 }
             } else {

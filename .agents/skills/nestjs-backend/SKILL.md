@@ -16,6 +16,37 @@ Bạn là **Senior Backend Engineer** chuyên gia NestJS, Prisma, Redis và Real
 - **BỎ QUA giai đoạn Test Build** — user sẽ tự thực hiện
 - Khi schema database thay đổi → cập nhật module liên quan, dùng `npx prisma db push`
 
+### ⚠️ QUY TẮC XỬ LÝ KÝ TỰ TIẾNG VIỆT (BẮT BUỘC)
+
+> **TUYỆT ĐỐI KHÔNG** được làm hỏng, mất dấu, hoặc sai ký tự tiếng Việt trong bất kỳ file nào.
+
+1. **Encoding:** Tất cả file PHẢI sử dụng **UTF-8 (không BOM)**. Khi tạo file mới, đảm bảo encoding là UTF-8.
+2. **String literals tiếng Việt:** Khi viết chuỗi tiếng Việt trong code TypeScript (DTO description, Swagger, seed data, v.v.), **PHẢI giữ nguyên** toàn bộ ký tự có dấu. **KHÔNG ĐƯỢC** thay thế bằng ký tự ASCII, escape sequence, hoặc Unicode escape (`\uXXXX`).
+   ```typescript
+   // ✅ ĐÚNG
+   description: 'Quyền xem danh sách hợp đồng thuê'
+   summary: 'Lấy danh sách đơn hàng'
+   message: 'Tạo mới thành công'
+   
+   // ❌ SAI — bị mất dấu hoặc ký tự lạ
+   description: 'Quyen xem danh sach hop dong thue'
+   summary: 'L\u1EA5y danh s\u00E1ch \u0111\u01A1n h\u00E0ng'
+   message: 'T???o m???i th??nh c??ng'
+   ```
+3. **File i18n (JSON):** Các file `src/i18n/vi/*.json` và `src/i18n/en/*.json` **PHẢI** lưu đúng ký tự tiếng Việt. **KHÔNG** dùng Unicode escape trong JSON.
+   ```json
+   // ✅ ĐÚNG
+   { "create_success": "Tạo mới thành công" }
+   
+   // ❌ SAI
+   { "create_success": "T\u1EA1o m\u1EDBi th\u00E0nh c\u00F4ng" }
+   ```
+4. **Comment tiếng Việt:** Khi viết comment bằng tiếng Việt, giữ nguyên dấu. Nếu không chắc chắn cách gõ đúng → viết bằng tiếng Anh thay vì viết tiếng Việt không dấu.
+5. **Swagger documentation:** Tất cả `summary`, `description`, `example` trong Swagger decorators phải hiển thị đúng tiếng Việt có dấu.
+6. **Seed data / Permission names:** Các `name`, `description` trong permission seeder PHẢI có dấu tiếng Việt đầy đủ.
+7. **Khi sửa file có sẵn:** **KHÔNG ĐƯỢC** thay đổi nội dung tiếng Việt đã có trong file trừ khi user yêu cầu sửa nội dung đó. Đặc biệt cẩn thận khi copy-paste hoặc rewrite — phải so sánh lại ký tự tiếng Việt trước và sau khi sửa.
+8. **File `.env` và `.env.example`:** Comment tiếng Việt trong file `.env` phải giữ nguyên dấu.
+
 ---
 
 ## 🏗️ II. QUY TẮC PHÂN QUYỀN DỮ LIỆU (DATA SCOPING)

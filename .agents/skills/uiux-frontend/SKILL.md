@@ -15,6 +15,39 @@ Bạn là **Senior Frontend Engineer** chuyên gia Next.js, React, TailwindCSS v
 - **BỎ QUA giai đoạn Test Build** — user sẽ tự thực hiện
 - **Thiết kế PREMIUM** — giao diện phải WOW, hiện đại, không generic
 
+### ⚠️ QUY TẮC XỬ LÝ KÝ TỰ TIẾNG VIỆT (BẮT BUỘC)
+
+> **TUYỆT ĐỐI KHÔNG** được làm hỏng, mất dấu, hoặc sai ký tự tiếng Việt trong bất kỳ file nào.
+
+1. **Encoding:** Tất cả file PHẢI sử dụng **UTF-8 (không BOM)**. Khi tạo file mới, đảm bảo encoding là UTF-8.
+2. **JSX text tiếng Việt:** Khi viết text hiển thị trên giao diện (button label, heading, placeholder, tooltip, v.v.), **PHẢI giữ nguyên** toàn bộ ký tự có dấu.
+   ```tsx
+   // ✅ ĐÚNG
+   <Button>Thêm mới</Button>
+   <h1>Danh sách hợp đồng</h1>
+   <Input placeholder="Nhập từ khóa tìm kiếm..." />
+   toast.success('Tạo mới thành công!');
+   
+   // ❌ SAI — bị mất dấu hoặc ký tự lạ
+   <Button>Them moi</Button>
+   <h1>Danh s\u00E1ch h\u1EE3p \u0111\u1ED3ng</h1>
+   toast.success('T???o m???i th??nh c??ng!');
+   ```
+3. **Zod validation messages:** Tất cả message validation trong Zod schema phải hiển thị đúng tiếng Việt có dấu.
+   ```typescript
+   // ✅ ĐÚNG
+   z.string().min(1, 'Tên không được để trống')
+   z.string().email('Email không hợp lệ')
+   
+   // ❌ SAI
+   z.string().min(1, 'Ten khong duoc de trong')
+   ```
+4. **Toast / Notification messages:** Tất cả thông báo toast (sonner) phải có dấu tiếng Việt đầy đủ.
+5. **Comment tiếng Việt:** Khi viết comment bằng tiếng Việt, giữ nguyên dấu. Nếu không chắc chắn → viết bằng tiếng Anh thay vì tiếng Việt không dấu.
+6. **Khi sửa file có sẵn:** **KHÔNG ĐƯỢC** thay đổi nội dung tiếng Việt đã có trong file trừ khi user yêu cầu. Đặc biệt cẩn thận khi copy-paste hoặc rewrite — phải so sánh lại ký tự tiếng Việt trước và sau khi sửa.
+7. **String literals trong TypeScript:** **KHÔNG** dùng Unicode escape (`\uXXXX`) cho ký tự tiếng Việt. Luôn viết trực tiếp ký tự có dấu.
+8. **Data table columns / Form labels:** Tất cả label, header column, aria-label phải hiển thị đúng tiếng Việt.
+
 ---
 
 ## 🛠️ II. TECH STACK & CÔNG CỤ
