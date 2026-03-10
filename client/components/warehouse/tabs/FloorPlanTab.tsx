@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,8 +21,131 @@ import {
     Bookmark,
     Info,
     Layers,
+    Loader2,
+    AlertCircle,
 } from "lucide-react";
-import type { MockRentedWarehouse, FloorBlock, BlockStatus } from "@/data/mockMyWarehouses";
+import { authStorage } from "@/services/auth/auth-storage.service";
+import { warehouseService } from "@/services/warehouse/warehouse.service";
+import type {
+    WarehouseLayout,
+    InventoryStockItem,
+} from "@/services/warehouse/warehouse.types";
+
+// ── Display types (decoupled from mock) ──
+
+type BlockStatus = "empty" | "occupied" | "reserved" | "locked";
+
+interface FloorBlock {
+    id: string;
+    col: number;
+    row: number;
+    status: BlockStatus;
+    product_name?: string;
+    batch_code?: string;
+    quantity?: number;
+    fill_pct: number;
+    access_freq: number;
+}
+
+interface FloorRack {
+    id: string;
+    code: string;
+    name: string;
+    blocks: FloorBlock[];
+    cols: number;
+    rows: number;
+}
+
+interface FloorRow {
+    id: string;
+    code: string;
+    name: string;
+    is_mine: boolean;
+    racks: FloorRack[];
+    total_items: number;
+}
+
+// ── Transform API → display ──
+
+function transformLayoutToFloorPlan(
+    layout: WarehouseLayout,
+    stock: InventoryStockItem[],
+): FloorRow[] {
+    const stockByBlock = new Map<string, InventoryStockItem[]>();
+    for (const item of stock) {
+        const list = stockByBlock.get(item.block_id) || [];
+        list.push(item);
+        stockByBlock.set(item.block_id, list);
+    }
+
+    return layout.rows.map((row) => {
+        let rowTotalItems = 0;
+
+        const racks: FloorRack[] = row.racks.map((rack) => {
+            const shelfCount = rack.shelves.length || 1;
+            const maxBlocksPerShelf = Math.max(
+                ...rack.shelves.map((s) => s.blocks.length),
+                1,
+            );
+
+            const blocks: FloorBlock[] = [];
+            rack.shelves.forEach((shelf, shelfIdx) => {
+                shelf.blocks.forEach((block, blockIdx) => {
+                    const items = stockByBlock.get(block.id) || [];
+                    const totalQty = items.reduce((s, i) => s + i.quantity_on_hand, 0);
+                    rowTotalItems += totalQty;
+
+                    const hasStock = items.length > 0;
+                    const primary = items[0];
+
+                    // Estimate access frequency from days_in_storage
+                    const minDays = hasStock
+                        ? Math.min(...items.map((i) => i.days_in_storage))
+                        : 999;
+                    const accessFreq = hasStock
+                        ? Math.max(0, Math.round(60 - minDays * 0.9))
+                        : 0;
+
+                    blocks.push({
+                        id: block.id,
+                        col: blockIdx,
+                        row: shelfIdx,
+                        status: hasStock ? "occupied" : "empty",
+                        product_name: hasStock
+                            ? items.length > 1
+                                ? `${primary.product_name} (+${items.length - 1})`
+                                : primary.product_name
+                            : undefined,
+                        batch_code: primary?.batch_code ?? undefined,
+                        quantity: hasStock ? totalQty : undefined,
+                        fill_pct: hasStock
+                            ? Math.min(100, Math.round((totalQty / 50) * 100))
+                            : 0,
+                        access_freq: accessFreq,
+                    });
+                });
+            });
+
+            return {
+                id: rack.id,
+                code: rack.code,
+                name: rack.name || `Kệ ${rack.code}`,
+                blocks,
+                cols: maxBlocksPerShelf,
+                rows: shelfCount,
+            };
+        });
+
+        return {
+            id: row.id,
+            code: row.code,
+            name: row.name || `Dãy ${row.code}`,
+            is_mine: row.is_rented,
+            racks,
+            total_items: rowTotalItems,
+        };
+    });
+}
 
 // ── Block colors ──
 
@@ -114,19 +238,99 @@ function BlockCell({
 
 // ── Main Component ──
 
-export function FloorPlanTab({ warehouse }: { warehouse: MockRentedWarehouse }) {
+export function FloorPlanTab({ warehouseId }: { warehouseId: string }) {
     const [showHeatmap, setShowHeatmap] = useState(false);
     const [selectedRow, setSelectedRow] = useState<string | null>(null);
 
-    // For shared warehouses, only highlight user's rows
-    const isShared = !warehouse.is_whole_warehouse;
+    // ─── Fetch layout ───
+    const {
+        data: layout,
+        isLoading: layoutLoading,
+        error: layoutError,
+    } = useQuery<WarehouseLayout>({
+        queryKey: ['floor-plan', 'layout', warehouseId],
+        queryFn: async () => {
+            const token = authStorage.getAccessToken();
+            if (!token) throw new Error('Chưa đăng nhập');
+            return warehouseService.getLayout(token, warehouseId);
+        },
+        enabled: !!warehouseId,
+        staleTime: 5 * 60 * 1000,
+        refetchOnWindowFocus: false,
+    });
+
+    // ─── Fetch stock ───
+    const {
+        data: stock,
+        isLoading: stockLoading,
+    } = useQuery<InventoryStockItem[]>({
+        queryKey: ['floor-plan', 'stock', warehouseId],
+        queryFn: async () => {
+            const token = authStorage.getAccessToken();
+            if (!token) return [];
+            return warehouseService.getInventoryStock(token, warehouseId);
+        },
+        enabled: !!warehouseId,
+        staleTime: 2 * 60 * 1000,
+        refetchOnWindowFocus: false,
+    });
+
+    // ─── Transform ───
+    const floorRows = useMemo(() => {
+        if (!layout) return [];
+        return transformLayoutToFloorPlan(layout, stock ?? []);
+    }, [layout, stock]);
+
+    // For shared warehouses, detect if any row is not rented by current user
+    const isShared = floorRows.some((r) => !r.is_mine);
 
     const visibleRows = useMemo(() => {
-        if (selectedRow) return warehouse.floor_rows.filter((r) => r.id === selectedRow);
-        return warehouse.floor_rows;
-    }, [selectedRow, warehouse.floor_rows]);
+        if (selectedRow) return floorRows.filter((r) => r.id === selectedRow);
+        return floorRows;
+    }, [selectedRow, floorRows]);
 
+    // ─── Loading state ───
+    const isLoading = layoutLoading || stockLoading;
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center py-20 gap-3 text-muted-foreground">
+                <Loader2 className="w-5 h-5 animate-spin" />
+                <span className="text-sm">Đang tải sơ đồ kho...</span>
+            </div>
+        );
+    }
 
+    // ─── Error state ───
+    if (layoutError) {
+        return (
+            <div className="flex flex-col items-center justify-center py-20 gap-3 text-muted-foreground">
+                <AlertCircle className="w-6 h-6 text-red-500" />
+                <p className="text-sm">Không thể tải sơ đồ kho.</p>
+                <p className="text-xs">{(layoutError as Error).message}</p>
+            </div>
+        );
+    }
+
+    // ─── Empty state ───
+    if (floorRows.length === 0) {
+        return (
+            <div className="flex flex-col items-center justify-center py-20 gap-2 text-muted-foreground">
+                <Layers className="w-8 h-8" />
+                <p className="text-sm">Kho chưa có cấu trúc dãy / kệ / ô.</p>
+            </div>
+        );
+    }
+
+    // ─── Heatmap insight: find top accessed products ───
+    const hotBlocks = floorRows
+        .flatMap((r) => r.racks.flatMap((rack) => rack.blocks))
+        .filter((b) => b.status === "occupied" && b.access_freq >= 35)
+        .sort((a, b) => b.access_freq - a.access_freq)
+        .slice(0, 2);
+
+    const heatmapInsight = hotBlocks.length > 0
+        ? `Các ô màu đỏ/cam có tần suất xuất nhập cao nhất. Cân nhắc di chuyển hàng bán chạy ra gần cửa kho để giảm thời gian pick hàng. Hiện tại ${hotBlocks.map((b) => b.product_name).join(" và ")} có lượng truy xuất cao nhất.`
+        : "Bật bản đồ nhiệt để xem phân bố tần suất truy xuất các ô hàng. Ô càng đỏ = tần suất xuất nhập càng cao.";
 
     return (
         <div className="space-y-5">
@@ -156,7 +360,7 @@ export function FloorPlanTab({ warehouse }: { warehouse: MockRentedWarehouse }) 
                         >
                             Tất cả
                         </Button>
-                        {warehouse.floor_rows.map((row) => (
+                        {floorRows.map((row) => (
                             <Button
                                 key={row.id}
                                 variant={selectedRow === row.id ? "default" : "outline"}
@@ -208,8 +412,7 @@ export function FloorPlanTab({ warehouse }: { warehouse: MockRentedWarehouse }) 
                         <div>
                             <p className="font-medium text-orange-800 dark:text-orange-300">AI Insight</p>
                             <p className="text-orange-700 dark:text-orange-400 mt-0.5">
-                                Các ô màu đỏ/cam có tần suất xuất nhập cao nhất. Cân nhắc di chuyển hàng bán chạy ra gần cửa kho để giảm thời gian pick hàng.
-                                Hiện tại <strong>Mì Hảo Hảo</strong> và <strong>Sữa TH True Milk</strong> có lượng truy xuất cao nhất nhưng đang nằm sâu bên trong.
+                                {heatmapInsight}
                             </p>
                         </div>
                     </CardContent>
@@ -250,7 +453,7 @@ export function FloorPlanTab({ warehouse }: { warehouse: MockRentedWarehouse }) 
                                     </div>
                                     <div className="text-xs text-muted-foreground">
                                         {occupiedBlocks}/{totalBlocks} ô • {rowOccupancy}% lấp đầy •{" "}
-                                        {(row.current_weight / 1000).toFixed(1)}T/{(row.total_weight_capacity / 1000).toFixed(1)}T
+                                        {row.total_items} SP
                                     </div>
                                 </div>
                             </CardHeader>
