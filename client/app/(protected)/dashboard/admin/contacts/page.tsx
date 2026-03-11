@@ -38,7 +38,8 @@ function getRelativeTime(dateStr: string): string {
 }
 
 export default function ContactsDashboardPage() {
-    const { data: contacts = [], isLoading: loading } = useContacts();
+    const { data, isLoading: loading } = useContacts();
+    const contacts = data?.items ?? [];
     const [timeRange, setTimeRange] = useState<"hourly" | "daily">("daily");
 
     // KPI calculations

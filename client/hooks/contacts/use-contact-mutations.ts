@@ -10,7 +10,6 @@ function getToken() {
     return authStorage.getAccessToken() || "";
 }
 
-// ─── Reply to a ticket ──────────────────────────────────────
 export function useReplyContact(ticketId: string) {
     const queryClient = useQueryClient();
 
@@ -20,14 +19,13 @@ export function useReplyContact(ticketId: string) {
             return contactService.replyContact(token, ticketId, { content, is_internal });
         },
         onSuccess: () => {
-            // Refresh messages after reply
             queryClient.invalidateQueries({ queryKey: contactKeys.messages(ticketId) });
             queryClient.invalidateQueries({ queryKey: contactKeys.detail(ticketId) });
+            queryClient.invalidateQueries({ queryKey: contactKeys.all });
         },
     });
 }
 
-// ─── Update ticket (status, priority, etc.) ─────────────────
 export function useUpdateContact(ticketId: string) {
     const queryClient = useQueryClient();
 
@@ -43,7 +41,6 @@ export function useUpdateContact(ticketId: string) {
     });
 }
 
-// ─── Close ticket ───────────────────────────────────────────
 export function useCloseContact(ticketId: string) {
     const queryClient = useQueryClient();
 
@@ -59,7 +56,6 @@ export function useCloseContact(ticketId: string) {
     });
 }
 
-// ─── Reopen ticket ──────────────────────────────────────────
 export function useReopenContact(ticketId: string) {
     const queryClient = useQueryClient();
 
@@ -70,6 +66,34 @@ export function useReopenContact(ticketId: string) {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: contactKeys.detail(ticketId) });
+            queryClient.invalidateQueries({ queryKey: contactKeys.all });
+        },
+    });
+}
+
+export function useDeleteContact() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (ticketId: string) => {
+            const token = getToken();
+            return contactService.deleteContact(token, ticketId);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: contactKeys.all });
+        },
+    });
+}
+
+export function useDeleteManyContacts() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (ids: string[]) => {
+            const token = getToken();
+            return contactService.deleteManyContacts(token, ids);
+        },
+        onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: contactKeys.all });
         },
     });
