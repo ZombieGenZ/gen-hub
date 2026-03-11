@@ -852,7 +852,12 @@ export class ContactService implements OnModuleInit {
         });
 
         // WebSocket
-        this.websocketGateway.emitContactConversationClosed(id, conversation.code, userId);
+        this.websocketGateway.emitContactConversationClosed(
+            id,
+            conversation.code,
+            userId,
+            conversation.session_id ?? undefined,
+        );
 
         return { message: await this.i18n.t('contact.success.closed', { lang }) };
     }
@@ -935,7 +940,12 @@ export class ContactService implements OnModuleInit {
             metaData: { conversationId: id },
         });
 
-        this.websocketGateway.emitContactConversationReopened(id, conversation.code, userId);
+        this.websocketGateway.emitContactConversationReopened(
+            id,
+            conversation.code,
+            userId,
+            conversation.session_id ?? undefined,
+        );
 
         return { message: await this.i18n.t('contact.success.reopened', { lang }) };
     }
@@ -1001,6 +1011,9 @@ export class ContactService implements OnModuleInit {
             userId,
             metaData: { ids },
         });
+
+        // WebSocket
+        this.websocketGateway.emitContactConversationsDeletedMany(ids, count, userId);
 
         return { count };
     }
@@ -1533,8 +1546,9 @@ export class ContactService implements OnModuleInit {
         });
 
         // Nếu có initialMessage, lưu vào database trước
+        let initialMessageRecord: Awaited<ReturnType<typeof this.repository.createMessage>> | null = null;
         if (dto.initialMessage) {
-            await this.repository.createMessage({
+            initialMessageRecord = await this.repository.createMessage({
                 conversation_id: conversation.id,
                 sender_type: MessageSender.CUSTOMER,
                 sender_name: customerName,
@@ -1547,6 +1561,24 @@ export class ContactService implements OnModuleInit {
         this.systemLogService.info('contact', 'live_chat_start', `Session ${sessionId} started`, {
             metaData: { sessionId, code: conversation.code },
         });
+
+        // Emit WebSocket - thông báo admin có phiên LIVE_CHAT mới
+        this.websocketGateway.emitContactConversationCreated(conversation.id, code, '');
+
+        if (initialMessageRecord) {
+            this.websocketGateway.emitContactMessageCreated(
+                conversation.id,
+                {
+                    id: initialMessageRecord.id,
+                    sender_type: MessageSender.CUSTOMER,
+                    sender_name: customerName,
+                    content: dto.initialMessage!,
+                    is_internal: false,
+                    created_at: initialMessageRecord.created_at,
+                },
+                sessionId,
+            );
+        }
 
         // Tạo Discord channel (fire-and-forget)
         const extraFields: Array<{ name: string; value: string; inline?: boolean }> = [];
@@ -1956,7 +1988,17 @@ export class ContactService implements OnModuleInit {
         });
 
         // Invalidate cache
-        await this.invalidateCache(conversation.id);
+        await Promise.all([
+            this.invalidateCache(conversation.id),
+            this.invalidateListCache(),
+        ]);
+
+        this.websocketGateway.emitContactConversationUpdated(
+            conversation.id,
+            conversation.code,
+            ['priority'],
+            `[Discord] ${performerName}`,
+        );
     }
 
     /**
@@ -1984,7 +2026,17 @@ export class ContactService implements OnModuleInit {
         });
 
         // Invalidate cache
-        await this.invalidateCache(conversation.id);
+        await Promise.all([
+            this.invalidateCache(conversation.id),
+            this.invalidateListCache(),
+        ]);
+
+        this.websocketGateway.emitContactConversationUpdated(
+            conversation.id,
+            conversation.code,
+            ['is_skipped', 'skip_reason'],
+            `[Discord] ${performerName}`,
+        );
     }
 
     /**
@@ -2010,6 +2062,16 @@ export class ContactService implements OnModuleInit {
         });
 
         // Invalidate cache
-        await this.invalidateCache(conversation.id);
+        await Promise.all([
+            this.invalidateCache(conversation.id),
+            this.invalidateListCache(),
+        ]);
+
+        this.websocketGateway.emitContactConversationUpdated(
+            conversation.id,
+            conversation.code,
+            ['is_skipped', 'skip_reason'],
+            `[Discord] ${performerName}`,
+        );
     }
 }

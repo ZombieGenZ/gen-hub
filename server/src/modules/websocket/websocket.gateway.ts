@@ -1321,23 +1321,47 @@ export class WebsocketGateway
   /**
    * Emit event khi conversation bị đóng
    */
-  emitContactConversationClosed(conversationId: string, code: string, closedBy: string) {
-    this.server.to('admin_room').emit('contact:closed', {
+  emitContactConversationClosed(conversationId: string, code: string, closedBy: string, sessionId?: string) {
+    const payload = {
       conversationId,
       code,
       closedBy,
       timestamp: new Date().toISOString(),
-    });
+    };
+
+    this.server.to('admin_room').emit('contact:closed', payload);
+
+    if (sessionId) {
+      this.server.to(`chat:${sessionId}`).emit('contact:closed', payload);
+    }
   }
 
   /**
    * Emit event khi conversation được mở lại
    */
-  emitContactConversationReopened(conversationId: string, code: string, reopenedBy: string) {
-    this.server.to('admin_room').emit('contact:reopened', {
+  emitContactConversationReopened(conversationId: string, code: string, reopenedBy: string, sessionId?: string) {
+    const payload = {
       conversationId,
       code,
       reopenedBy,
+      timestamp: new Date().toISOString(),
+    };
+
+    this.server.to('admin_room').emit('contact:reopened', payload);
+
+    if (sessionId) {
+      this.server.to(`chat:${sessionId}`).emit('contact:reopened', payload);
+    }
+  }
+
+  /**
+   * Emit event khi xóa nhiều conversations
+   */
+  emitContactConversationsDeletedMany(requestedIds: string[], count: number, deletedBy: string) {
+    this.server.to('admin_room').emit('contact:deletedMany', {
+      requestedIds,
+      count,
+      deletedBy,
       timestamp: new Date().toISOString(),
     });
   }
