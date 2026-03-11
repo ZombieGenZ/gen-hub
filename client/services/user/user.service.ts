@@ -90,7 +90,7 @@ export class UserService {
          const data = await response.json();
          const profile = data.data as UserData;
 
-         authStorage.setEmailVerified(profile.user.email_confirmed);
+         authStorage.setEmailVerified(String(profile.user.email_confirmed));
          cacheUserProfile(profile, access_token, refresh_token);
          return profile;
       })();
