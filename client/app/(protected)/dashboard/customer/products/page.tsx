@@ -236,8 +236,8 @@ export default function ProductMasterListPage() {
             const res = await inventoryService.listStock(token);
             const items: { product_id: string; quantity_on_hand: number }[] =
                 Array.isArray(res?.data) ? res.data
-                    : Array.isArray(res?.data?.items) ? res.data.items
-                        : Array.isArray(res) ? res : [];
+                    : Array.isArray((res?.data as any)?.items) ? (res.data as any).items
+                        : Array.isArray(res) ? (res as any) : [];
             const map: Record<string, number> = {};
             items.forEach((item) => {
                 map[item.product_id] = (map[item.product_id] || 0) + (item.quantity_on_hand ?? 0);
