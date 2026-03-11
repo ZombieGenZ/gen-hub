@@ -236,8 +236,8 @@ export default function ProductMasterListPage() {
             const res = await inventoryService.listStock(token);
             const items: { product_id: string; quantity_on_hand: number }[] =
                 Array.isArray(res?.data) ? res.data
-                : Array.isArray(res?.data?.items) ? res.data.items
-                : Array.isArray(res) ? res : [];
+                    : Array.isArray(res?.data?.items) ? res.data.items
+                        : Array.isArray(res) ? res : [];
             const map: Record<string, number> = {};
             items.forEach((item) => {
                 map[item.product_id] = (map[item.product_id] || 0) + (item.quantity_on_hand ?? 0);
@@ -327,9 +327,18 @@ export default function ProductMasterListPage() {
     };
 
     // ── Quick filter client-side ──
-    // Note: In production, these filters would be server-side.
-    // For now we apply them client-side as enhancement hints.
-    const filteredProducts = products;
+    const filteredProducts = (() => {
+        if (quickFilter === "low_stock") {
+            // Sắp hết hàng: tổng tồn kho <= 10 hoặc chưa có stock
+            return products.filter((p) => (stockMap[p.id] ?? 0) <= 10);
+        }
+        if (quickFilter === "expiring_soon") {
+            // Lô sắp hết hạn: cần dữ liệu batch — tạm thời giữ nguyên danh sách,
+            // sẽ filter server-side khi có API batch-summary
+            return products;
+        }
+        return products; // "all"
+    })();
 
     // ════════════════════════════════════════════════
     // RENDER
@@ -690,7 +699,7 @@ export default function ProductMasterListPage() {
                                                             <DropdownMenuItem
                                                                 onClick={() =>
                                                                     router.push(
-                                                                        `/dashboard/admin/products/${product.id}`
+                                                                        `/dashboard/customer/products/${product.id}`
                                                                     )
                                                                 }
                                                             >

@@ -362,7 +362,7 @@ function BatchFormDialog({
                                 setFormData({ ...formData, code: e.target.value })
                             }
                             placeholder="VD: 20260224-SKU001-01"
-                            className="rounded-xl font-mono"
+                            className="bg-slate-50 border-slate-200 rounded-xl px-4 font-mono focus-visible:bg-white"
                         />
                         <p className="text-xs text-slate-400">
                             Gợi ý: {suggestBatchCode(product.sku, batchCount)}
@@ -384,7 +384,7 @@ function BatchFormDialog({
                                         manufacturing_date: e.target.value,
                                     })
                                 }
-                                className="rounded-xl"
+                                className="bg-slate-50 border-slate-200 rounded-xl px-4 focus-visible:bg-white"
                             />
                         </div>
                         <div className="space-y-2">
@@ -400,7 +400,7 @@ function BatchFormDialog({
                                         expiry_date: e.target.value,
                                     })
                                 }
-                                className="rounded-xl"
+                                className="bg-slate-50 border-slate-200 rounded-xl px-4 focus-visible:bg-white"
                             />
                         </div>
                     </div>
@@ -420,7 +420,7 @@ function BatchFormDialog({
                                 })
                             }
                             placeholder="0"
-                            className="rounded-xl"
+                            className="bg-slate-50 border-slate-200 rounded-xl px-4 focus-visible:bg-white"
                         />
                     </div>
                 </div>

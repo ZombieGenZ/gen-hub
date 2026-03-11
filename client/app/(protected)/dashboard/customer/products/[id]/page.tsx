@@ -91,7 +91,7 @@ export default function ProductDetailPage() {
 
     useEffect(() => {
         if (productId === "create") {
-            router.replace("/dashboard/admin/products/create");
+            router.replace("/dashboard/customer/products/create");
         }
     }, [productId, router]);
 
@@ -272,7 +272,7 @@ export default function ProductDetailPage() {
                         <Button
                             variant="outline"
                             className="rounded-xl"
-                            onClick={() => router.push("/dashboard/admin/products")}
+                            onClick={() => router.push("/dashboard/customer/products")}
                         >
                             <ArrowLeftIcon className="w-4 h-4 mr-2" />
                             Quay lại danh sách
@@ -293,7 +293,7 @@ export default function ProductDetailPage() {
                             variant="ghost"
                             size="icon"
                             className="rounded-xl h-10 w-10 shrink-0"
-                            onClick={() => router.push("/dashboard/admin/products")}
+                            onClick={() => router.push("/dashboard/customer/products")}
                         >
                             <ArrowLeftIcon className="w-5 h-5" />
                         </Button>
