@@ -205,12 +205,14 @@ Sử dụng CSS variables đã define trong `globals.css` — **KHÔNG hardcode 
 
 ### 5.2. Nguyên tắc thiết kế PREMIUM
 
-- **Glassmorphism** cho cards/modals khi phù hợp
-- **Smooth gradients** thay vì solid colors cho backgrounds
+- **Ưu tiên nền solid, sạch, bám brand** thay vì gradient
+- **Chỉ dùng gradient hoặc neon khi user yêu cầu rõ ràng** hoặc khi hệ design hiện có đã dùng sẵn pattern đó
+- **Glassmorphism** chỉ dùng khi thực sự phù hợp với ngữ cảnh và không làm giảm độ rõ ràng
 - **Micro-animations** (hover, focus, transition) — dùng Framer Motion
 - **Dark mode support** — CSS variables cho light/dark
 - **Responsive design** — Mobile-first approach
 - **Spacing nhất quán** — dùng Tailwind spacing scale
+- **Tránh aesthetic neon/glow mặc định** vì dễ làm lệch brand và giảm tính thực dụng
 - Không dùng placeholder images — tạo ảnh thật bằng công cụ generate_image
 
 ---
