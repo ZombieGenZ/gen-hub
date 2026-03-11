@@ -118,10 +118,10 @@ function PriceSparkline({ batches }: { batches: Batch[] }) {
                     )}
                     <span
                         className={`text-sm font-semibold ${change > 0
-                                ? "text-red-600"
-                                : change < 0
-                                    ? "text-emerald-600"
-                                    : "text-slate-500"
+                            ? "text-red-600"
+                            : change < 0
+                                ? "text-emerald-600"
+                                : "text-slate-500"
                             }`}
                     >
                         {change > 0 ? "+" : ""}
@@ -547,8 +547,8 @@ export function BatchManagementTab({
                     <button
                         onClick={() => setExpiryFilter("all")}
                         className={`px-3 py-1.5 text-xs rounded-lg border transition-colors ${expiryFilter === "all"
-                                ? "bg-slate-900 text-white border-slate-900"
-                                : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                            ? "bg-slate-900 text-white border-slate-900"
+                            : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
                             }`}
                     >
                         Tất cả ({stats.total})
@@ -556,8 +556,8 @@ export function BatchManagementTab({
                     <button
                         onClick={() => setExpiryFilter("expired")}
                         className={`px-3 py-1.5 text-xs rounded-lg border transition-colors flex items-center gap-1 ${expiryFilter === "expired"
-                                ? "bg-red-500 text-white border-red-500"
-                                : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                            ? "bg-red-500 text-white border-red-500"
+                            : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
                             }`}
                     >
                         🔴 Hết hạn ({stats.expired})
@@ -565,8 +565,8 @@ export function BatchManagementTab({
                     <button
                         onClick={() => setExpiryFilter("warning")}
                         className={`px-3 py-1.5 text-xs rounded-lg border transition-colors flex items-center gap-1 ${expiryFilter === "warning"
-                                ? "bg-amber-500 text-white border-amber-500"
-                                : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                            ? "bg-amber-500 text-white border-amber-500"
+                            : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
                             }`}
                     >
                         🟡 Sắp hết hạn ({stats.warning})
@@ -574,8 +574,8 @@ export function BatchManagementTab({
                     <button
                         onClick={() => setExpiryFilter("safe")}
                         className={`px-3 py-1.5 text-xs rounded-lg border transition-colors flex items-center gap-1 ${expiryFilter === "safe"
-                                ? "bg-emerald-500 text-white border-emerald-500"
-                                : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                            ? "bg-emerald-500 text-white border-emerald-500"
+                            : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
                             }`}
                     >
                         🟢 An toàn ({stats.safe})
@@ -675,10 +675,10 @@ export function BatchManagementTab({
                                             <TableRow
                                                 key={batch.id}
                                                 className={`transition-colors ${isExpired
-                                                        ? "bg-red-50/50"
-                                                        : status === "warning"
-                                                            ? "bg-amber-50/30"
-                                                            : ""
+                                                    ? "bg-red-50/50"
+                                                    : status === "warning"
+                                                        ? "bg-amber-50/30"
+                                                        : ""
                                                     }`}
                                             >
                                                 {/* Code */}
