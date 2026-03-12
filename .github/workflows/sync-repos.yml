@@ -92,6 +92,8 @@ jobs:
             }]
           }' \
           ${{ secrets.DISCORD_WEBHOOK }}
+      - name: Remove client node_modules before sync
+        run: rm -rf client/node_modules
       - name: Push Client folder
         uses: cpina/github-action-push-to-another-repository@main
         env:
@@ -143,6 +145,8 @@ jobs:
             }]
           }' \
           ${{ secrets.DISCORD_WEBHOOK }}
+      - name: Remove server node_modules before sync
+        run: rm -rf server/node_modules
       - name: Push Server folder
         uses: cpina/github-action-push-to-another-repository@main
         env:
@@ -193,6 +197,8 @@ jobs:
             }]
           }' \
           ${{ secrets.DISCORD_WEBHOOK }}
+      - name: Remove status node_modules before sync
+        run: rm -rf status/node_modules
       - name: Push status folder
         uses: cpina/github-action-push-to-another-repository@main
         env:
@@ -221,6 +227,8 @@ jobs:
           cd admin/database-panel
           npm install
           npm run build
+      - name: Remove database-panel node_modules before sync
+        run: rm -rf admin/database-panel/node_modules
       - name: Push database-panel folder
         uses: cpina/github-action-push-to-another-repository@main
         env:
@@ -249,6 +257,8 @@ jobs:
           cd admin/feature-flag-panel
           npm install
           npm run build
+      - name: Remove feature-flag-panel node_modules before sync
+        run: rm -rf admin/feature-flag-panel/node_modules
       - name: Push feature-flag-panel folder
         uses: cpina/github-action-push-to-another-repository@main
         env:
@@ -277,6 +287,8 @@ jobs:
           cd admin/resources-panel
           npm install
           npm run build
+      - name: Remove resources-panel node_modules before sync
+        run: rm -rf admin/resources-panel/node_modules
       - name: Push resources-panel folder
         uses: cpina/github-action-push-to-another-repository@main
         env:
@@ -305,6 +317,8 @@ jobs:
           cd admin/admin-panel
           npm install
           npm run build
+      - name: Remove admin-panel node_modules before sync
+        run: rm -rf admin/admin-panel/node_modules
       - name: Push admin-panel folder
         uses: cpina/github-action-push-to-another-repository@main
         env:
