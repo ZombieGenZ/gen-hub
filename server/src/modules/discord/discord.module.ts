@@ -1,6 +1,6 @@
 import { Module, Global, forwardRef } from '@nestjs/common';
 import { DiscordService } from './discord.service';
-import { CozeModule } from '../coze/coze.module';
+import { AiHubModule } from '../ai-hub';
 import { DatabaseBackupModule } from '../database-backup/database-backup.module';
 import { BackblazeB2Module } from '../backblaze-b2/backblaze-b2.module';
 
@@ -12,7 +12,7 @@ import { BackblazeB2Module } from '../backblaze-b2/backblaze-b2.module';
 @Global()
 @Module({
     imports: [
-        CozeModule,
+        AiHubModule,
         forwardRef(() => DatabaseBackupModule),
         BackblazeB2Module,
     ],

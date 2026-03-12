@@ -1,7 +1,7 @@
 ﻿# Hướng Dẫn Cấu Hình Dify AI cho GEN-HUB
 
 > [!NOTE]
-> Tài liệu này hướng dẫn cách cấu hình `DIFY_API_KEY`, `DIFY_APP_ID`, `DIFY_API_BASE_URL` và `AI_PLUGIN_API_KEY` để sử dụng Dify cho tính năng **AI Auto-Reply** của GEN-HUB.
+> Tài liệu này hướng dẫn cách cấu hình `DIFY_API_KEYS`, `DIFY_APP_IDS`, `DIFY_API_KEY`, `DIFY_APP_ID`, `DIFY_API_BASE_URL` và `AI_PLUGIN_API_KEY` để sử dụng Dify cho tính năng **AI Auto-Reply** của GEN-HUB.
 
 > [!IMPORTANT]
 > Backend hiện đã dùng route `/ai-plugin/*`. Khi cấu hình tool trong Dify, không dùng lại route cũ `/coze-plugin/*`.
@@ -48,8 +48,10 @@
 | Biến | Mô tả |
 |------|-------|
 | `DIFY_ENABLED` | Bật/tắt tích hợp Dify |
-| `DIFY_API_KEY` | API key để backend gọi Dify |
-| `DIFY_APP_ID` | ID của app Dify |
+| `DIFY_API_KEYS` | Danh sách API key, phân tách bằng dấu phẩy |
+| `DIFY_APP_IDS` | Danh sách App ID, phân tách bằng dấu phẩy |
+| `DIFY_API_KEY` | API key đơn cho backward compatibility |
+| `DIFY_APP_ID` | App ID đơn cho backward compatibility |
 | `DIFY_API_BASE_URL` | Base URL API Dify, thường là `https://api.dify.ai/v1` |
 | `AI_PLUGIN_API_KEY` | API key để Dify gọi các endpoint `/ai-plugin/*` của GEN-HUB |
 | `ENABLE_AI_AUTO_REPLY` | Bật phản hồi tự động trong backend |
@@ -565,6 +567,10 @@ code server\\.env
 ```env
 # Dify AI Configuration
 DIFY_ENABLED=true
+# Preferred: comma-separated lists (same index = same credential pair)
+DIFY_API_KEYS=your_dify_secret_key_1,your_dify_secret_key_2
+DIFY_APP_IDS=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx,yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy
+# Backward compatibility (single credential)
 DIFY_API_KEY=your_dify_secret_key_here
 DIFY_APP_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 DIFY_API_BASE_URL=https://api.dify.ai/v1
@@ -581,8 +587,10 @@ ENABLE_AI_AUTO_REPLY=true
 | Biến | Giá trị | Mô tả |
 |------|---------|-------|
 | `DIFY_ENABLED` | `true` | Bật tích hợp Dify |
-| `DIFY_API_KEY` | secret key | Key backend dùng để gọi Dify |
-| `DIFY_APP_ID` | UUID | ID app Dify |
+| `DIFY_API_KEYS` | danh sách secret key | Danh sách key backend dùng để gọi Dify |
+| `DIFY_APP_IDS` | danh sách UUID | Danh sách App ID ghép cặp theo index với `DIFY_API_KEYS` |
+| `DIFY_API_KEY` | secret key | Key đơn để tương thích ngược |
+| `DIFY_APP_ID` | UUID | App ID đơn để tương thích ngược |
 | `DIFY_API_BASE_URL` | `https://api.dify.ai/v1` | Base URL API |
 | `AI_PLUGIN_API_KEY` | random key | Key để Dify gọi AI Plugin của GEN-HUB |
 | `ENABLE_AI_AUTO_REPLY` | `true` | Bật phản hồi tự động |

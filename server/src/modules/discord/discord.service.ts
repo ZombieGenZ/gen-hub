@@ -28,7 +28,7 @@ import {
     ModalSubmitInteraction,
 } from 'discord.js';
 import { PrismaService } from '../../prisma/prisma.service';
-import { CozeService } from '../coze/coze.service';
+import { AiHubService } from '../ai-hub';
 import { IDiscordChannelResult, DiscordReplyCallback, IDiscordActionCallback } from './interfaces';
 import { DatabaseBackupService } from '../database-backup/database-backup.service';
 import { BackblazeB2Service } from '../backblaze-b2/backblaze-b2.service';
@@ -68,7 +68,7 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
     constructor(
         private readonly configService: ConfigService,
         private readonly prismaService: PrismaService,
-        private readonly cozeService: CozeService,
+        private readonly aiHubService: AiHubService,
         @Inject(forwardRef(() => DatabaseBackupService))
         private readonly databaseBackupService: DatabaseBackupService,
         private readonly backblazeB2Service: BackblazeB2Service,
@@ -2024,7 +2024,7 @@ export class DiscordService implements OnModuleInit, OnModuleDestroy {
             await channel.sendTyping();
 
             // Gọi Coze AI để lấy response
-            const result = await this.cozeService.chat(
+            const result = await this.aiHubService.chat(
                 message.content,
                 `discord-${channel.id}`, // sessionId theo channel
                 `discord-${message.author.id}`, // userId

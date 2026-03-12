@@ -41,8 +41,7 @@ import { SystemLogService } from '../system-log/system-log.service';
 import { EmailService } from '../notification/email.service';
 import { DiscordService } from '../discord/discord.service';
 import { AppConfigService } from '../../common/config/app-config.service';
-import { CozeService } from '../coze/coze.service';
-import { GeminiService } from '../../common/services/gemini.service';
+import { AiHubService } from '../ai-hub';
 import { ContactListService } from '../contact-list/contact-list.service';
 import { ContactCacheKeysHelper } from './helpers/contact-cache-keys.helper';
 import { IpInfoService } from '../../common/services/ipinfo.service';
@@ -65,8 +64,7 @@ export class ContactService implements OnModuleInit {
         private readonly i18n: I18nService,
         private readonly discordService: DiscordService,
         private readonly appConfigService: AppConfigService,
-        private readonly cozeService: CozeService,
-        private readonly geminiService: GeminiService,
+        private readonly aiHubService: AiHubService,
         private readonly contactListService: ContactListService,
         private readonly cacheKeys: ContactCacheKeysHelper,
         private readonly ipinfoService: IpInfoService,
@@ -269,9 +267,9 @@ export class ContactService implements OnModuleInit {
         // Bước 1: Phân loại spam bằng Gemini (nếu Gemini được bật và QUAN TRỌNG: không nằm trong whitelist)
         // Nếu đã blacklist -> skip AI
         // Nếu đã whitelist -> skip spam check (nhưng vẫn có thể chạy để analyze nếu cần, ở đây ta skip spam check cho whitelist để tối ưu)
-        if (enableAiReply && this.geminiService.enabled && !isSkippedByBlacklist) {
+        if (enableAiReply && this.aiHubService.isGeminiEnabled() && !isSkippedByBlacklist) {
             try {
-                const classification = await this.geminiService.classifyWebform(
+                const classification = await this.aiHubService.classifyWebform(
                     dto.email,
                     dto.name,
                     dto.company,
@@ -303,9 +301,9 @@ export class ContactService implements OnModuleInit {
         }
 
         // Bước 2: Gọi Coze AI để tư vấn tự động (nếu không phải spam và Coze được bật)
-        if (enableAiReply && !isSpam && this.cozeService.isEnabled()) {
+        if (enableAiReply && !isSpam && this.aiHubService.isChatAvailable()) {
             try {
-                const aiResult = await this.cozeService.chat(
+                const aiResult = await this.aiHubService.chat(
                     dto.message,
                     conversation.id,
                     dto.email,
@@ -1117,9 +1115,9 @@ export class ContactService implements OnModuleInit {
         const enableAiReplyConfigRaw = this.appConfigService.get('enableAiAutoReply') as unknown;
         const defaultAiReply = enableAiReplyConfigRaw === true || enableAiReplyConfigRaw === 'true';
         const shouldAiReply = conversation.enable_ai_reply ?? defaultAiReply;
-        if (shouldAiReply && this.cozeService.isEnabled()) {
+        if (shouldAiReply && this.aiHubService.isChatAvailable()) {
             try {
-                const aiResult = await this.cozeService.chat(
+                const aiResult = await this.aiHubService.chat(
                     content,
                     conversation.id,
                     senderEmail,
@@ -1262,9 +1260,9 @@ export class ContactService implements OnModuleInit {
 
         // Coze AI auto-reply cho inbound email
         let aiReplyContent: string | undefined;
-        if (enableAiReply && this.cozeService.isEnabled()) {
+        if (enableAiReply && this.aiHubService.isChatAvailable()) {
             try {
-                const aiResult = await this.cozeService.chat(
+                const aiResult = await this.aiHubService.chat(
                     content,
                     conversation.id,
                     senderEmail,
@@ -1546,7 +1544,7 @@ export class ContactService implements OnModuleInit {
         });
 
         // Nếu có initialMessage, lưu vào database trước
-        let initialMessageRecord: Awaited<ReturnType<typeof this.repository.createMessage>> | null = null;
+        let initialMessageRecord: any | null = null;
         if (dto.initialMessage) {
             initialMessageRecord = await this.repository.createMessage({
                 conversation_id: conversation.id,
@@ -1612,8 +1610,8 @@ export class ContactService implements OnModuleInit {
 
         // Gọi Coze AI để tạo welcome message bất đồng bộ (fire-and-forget)
         // Không await để tránh block response và gây 503 timeout
-        if (enableAiReply && this.cozeService.isEnabled()) {
-            this.cozeService.chat(
+        if (enableAiReply && this.aiHubService.isChatAvailable()) {
+            this.aiHubService.chat(
                 dto.initialMessage || 'Xin chào',
                 conversation.id,
                 sessionId,
@@ -1723,9 +1721,9 @@ export class ContactService implements OnModuleInit {
         let aiResponse: any = undefined;
         const shouldAiReply = conversation.enable_ai_reply ?? this.appConfigService.get('enableAiAutoReply');
 
-        if (shouldAiReply && this.cozeService.isEnabled()) {
+        if (shouldAiReply && this.aiHubService.isChatAvailable()) {
             try {
-                const aiResult = await this.cozeService.chat(
+                const aiResult = await this.aiHubService.chat(
                     dto.content,
                     conversation.id,
                     sessionId,

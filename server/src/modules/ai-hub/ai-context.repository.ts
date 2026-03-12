@@ -6,14 +6,14 @@ import {
     IAddonSummary,
     IInsuranceSummary,
     IAiContext,
-} from './interfaces/coze.interface';
+} from './interfaces/ai.interface';
 
 /**
  * Repository lấy dữ liệu từ database để cung cấp context cho Coze AI
  * Dữ liệu bao gồm: Warehouse Templates, Row Templates, Addons, Insurances
  */
 @Injectable()
-export class CozeRepository {
+export class AiContextRepository {
     constructor(private readonly prisma: PrismaService) { }
 
     /**

@@ -9,8 +9,7 @@ import { SystemLogModule } from '../system-log/system-log.module';
 import { NotificationModule } from '../notification/notification.module';
 import { UserModule } from '../user/user.module';
 import { SharedModule } from '../../common/shared.module';
-import { CozeModule } from '../coze/coze.module';
-import { GeminiService } from '../../common/services/gemini.service';
+import { AiHubModule } from '../ai-hub';
 import { ContactListModule } from '../contact-list/contact-list.module';
 import { ContactCacheKeysHelper } from './helpers/contact-cache-keys.helper';
 
@@ -23,11 +22,11 @@ import { ContactCacheKeysHelper } from './helpers/contact-cache-keys.helper';
         NotificationModule,
         UserModule,
         SharedModule,
-        CozeModule,
+        AiHubModule,
         ContactListModule,
     ],
     controllers: [ContactController],
-    providers: [ContactService, ContactRepository, GeminiService, ContactCacheKeysHelper],
+    providers: [ContactService, ContactRepository, ContactCacheKeysHelper],
     exports: [ContactService, ContactRepository, ContactCacheKeysHelper],
 })
 export class ContactModule { }

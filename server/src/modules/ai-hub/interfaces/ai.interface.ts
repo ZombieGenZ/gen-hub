@@ -1,11 +1,41 @@
-/**
- * Coze AI Module Interfaces
- * Định nghĩa các types cho việc tích hợp Coze API
- */
+export interface IEmailClassification {
+    isUserContact: boolean;
+    isSpamOrAdvertising: boolean;
+    category: 'contact' | 'spam' | 'advertising' | 'newsletter' | 'unknown';
+    confidence: number;
+    reason?: string;
+}
 
-/**
- * Cấu hình Coze từ environment
- */
+export interface IAILogData {
+    model: string;
+    purpose: string;
+    inputText: string;
+    outputText?: string;
+    inputTokens?: number;
+    outputTokens?: number;
+    totalTokens?: number;
+    durationMs?: number;
+    isSuccess: boolean;
+    errorMessage?: string;
+    metadata?: Record<string, any>;
+}
+
+export interface IEmailClassificationRequest {
+    senderEmail: string;
+    senderName: string;
+    subject: string;
+    content: string;
+}
+
+export interface IWebformClassification {
+    isUserContact: boolean;
+    isSpamOrAdvertising: boolean;
+    category: 'inquiry' | 'support' | 'spam' | 'advertising' | 'unknown';
+    confidence: number;
+    reason?: string;
+    isPotentialCustomer?: boolean;
+}
+
 export interface ICozeConfig {
     enabled: boolean;
     apiKeys: string[];
@@ -13,40 +43,13 @@ export interface ICozeConfig {
     apiBaseUrl: string;
 }
 
-/**
- * Request gửi đến Coze Chat API
- */
-export interface ICozeChatRequest {
-    botId: string;
-    userId: string;
-    query: string;
-    conversationId?: string;
-    additionalMessages?: ICozeChatMessage[];
+export interface IDifyConfig {
+    enabled: boolean;
+    apiKeys: string[];
+    appIds: string[];
+    apiBaseUrl: string;
 }
 
-/**
- * Message trong conversation
- */
-export interface ICozeChatMessage {
-    role: 'user' | 'assistant';
-    content: string;
-    contentType?: 'text' | 'object_string';
-}
-
-/**
- * Response từ Coze Chat API
- */
-export interface ICozeChatResponse {
-    conversationId: string;
-    botId: string;
-    messages: ICozeChatMessage[];
-    code?: number;
-    msg?: string;
-}
-
-/**
- * Kết quả AI response đã được xử lý
- */
 export interface IAiChatResult {
     success: boolean;
     content: string;
@@ -55,41 +58,30 @@ export interface IAiChatResult {
     error?: string;
 }
 
-/**
- * Tóm tắt thông tin Warehouse Template cho AI context
- */
 export interface IWarehouseTemplateSummary {
     id: string;
     name: string;
     description: string | null;
-    area: number; // length * width
+    area: number;
     pricePerMonth: number;
     address: string | null;
     isSharedWarehouse: boolean;
     isColdStorage: boolean;
-    // Thống kê
     totalRows: number;
     totalRacks: number;
     totalShelves: number;
     totalBlocks: number;
-    // Addon gifts đi kèm
     addonGifts: { name: string; description: string | null }[];
-    // Insurance gifts đi kèm
     insuranceGifts: { name: string; description: string | null }[];
-    // Giá theo tier
     discountConfigs: {
         tierName: string;
         durationValue: number;
         durationUnit: string;
         discountPercent: number;
     }[];
-    // Ảnh (chỉ URL)
     images: string[];
 }
 
-/**
- * Tóm tắt thông tin Row Template cho AI context
- */
 export interface IRowTemplateSummary {
     id: string;
     warehouseTemplateId: string;
@@ -97,15 +89,11 @@ export interface IRowTemplateSummary {
     code: string;
     description: string | null;
     pricePerMonth: number;
-    // Thống kê
     totalRacks: number;
     totalShelves: number;
     totalBlocks: number;
-    // Addon gifts đi kèm
     addonGifts: { name: string; description: string | null }[];
-    // Insurance gifts đi kèm
     insuranceGifts: { name: string; description: string | null }[];
-    // Giá theo tier
     discountConfigs: {
         tierName: string;
         durationValue: number;
@@ -114,9 +102,6 @@ export interface IRowTemplateSummary {
     }[];
 }
 
-/**
- * Tóm tắt thông tin Addon cho AI context
- */
 export interface IAddonSummary {
     id: string;
     name: string;
@@ -126,9 +111,6 @@ export interface IAddonSummary {
     types: string[];
 }
 
-/**
- * Tóm tắt thông tin Insurance cho AI context
- */
 export interface IInsuranceSummary {
     id: string;
     name: string;
@@ -139,9 +121,6 @@ export interface IInsuranceSummary {
     managementFeeValue: number | null;
 }
 
-/**
- * Full context cho AI
- */
 export interface IAiContext {
     warehouseTemplates: IWarehouseTemplateSummary[];
     rowTemplates: IRowTemplateSummary[];
@@ -149,10 +128,7 @@ export interface IAiContext {
     insurances: IInsuranceSummary[];
 }
 
-/**
- * Options cho việc ghi log AI interaction
- */
-export interface ICozeLogOptions {
+export interface IAiChatOptions {
     discordChannelId?: string;
     discordUserId?: string;
 }

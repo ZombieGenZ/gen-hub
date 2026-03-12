@@ -8,7 +8,7 @@ import { DiscordModule } from '../discord/discord.module';
 import { EmailInboundProvider } from './email-inbound.provider';
 import { GmailApiService } from './gmail-api.service';
 import { GmailWebhookController } from './gmail-webhook.controller';
-import { GeminiService } from '../../common/services/gemini.service';
+import { AiHubModule } from '../ai-hub';
 
 /**
  * Email Inbound Module
@@ -23,9 +23,10 @@ import { GeminiService } from '../../common/services/gemini.service';
         NotificationModule,
         forwardRef(() => ContactModule),
         DiscordModule,
+        AiHubModule,
     ],
     controllers: [GmailWebhookController],
-    providers: [GmailApiService, EmailInboundProvider, GeminiService],
+    providers: [GmailApiService, EmailInboundProvider],
     exports: [GmailApiService, EmailInboundProvider],
 })
 export class EmailInboundModule { }

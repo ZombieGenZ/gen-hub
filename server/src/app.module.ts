@@ -81,7 +81,6 @@ import { OrgRefundRequestModule } from './modules/org-refund-request/org-refund-
 import { CategoryModule } from './modules/category/category.module';
 import { ArticleModule } from './modules/article/article.module';
 import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
-import { CozeModule } from './modules/coze/coze.module';
 import { AiPluginModule } from './modules/ai-plugin/ai-plugin.module';
 import { ConsultationRequestModule } from './modules/consultation-request/consultation-request.module';
 import { OrgChatModule } from './modules/org-chat/org-chat.module';
@@ -259,9 +258,6 @@ import { AppDownloadModule } from './modules/app-download/app-download.module';
 
     // Article Module
     ArticleModule,
-
-    // Coze AI Module
-    CozeModule,
 
     // Coze AI Plugin APIs (Public)
     AiPluginModule,

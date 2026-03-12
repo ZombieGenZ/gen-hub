@@ -1,9 +1,9 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { GoogleGenerativeAI, GenerativeModel, GenerateContentResult } from '@google/generative-ai';
-import { PrismaService } from '../../prisma/prisma.service';
-import { IEmailClassification, IAILogData, IWebformClassification } from '../interfaces';
-import { buildEmailClassificationPrompt, buildWebformClassificationPrompt } from '../prompts';
+import { PrismaService } from '../../../prisma/prisma.service';
+import { IEmailClassification, IAILogData, IWebformClassification } from '../interfaces/ai.interface';
+import { buildEmailClassificationPrompt, buildWebformClassificationPrompt } from '../prompts/ai.prompts';
 
 /**
  * GeminiService

@@ -1,13 +1,13 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { PrismaService } from '../../prisma/prisma.service';
-import { CozeRepository } from './coze.repository';
+import { PrismaService } from '../../../prisma/prisma.service';
+import { AiContextRepository } from '../ai-context.repository';
 import {
     ICozeConfig,
     IAiChatResult,
     IAiContext,
-    ICozeLogOptions,
-} from './interfaces/coze.interface';
+    IAiChatOptions,
+} from '../interfaces/ai.interface';
 
 /**
  * Service tích hợp Coze AI
@@ -25,7 +25,7 @@ export class CozeService implements OnModuleInit {
 
     constructor(
         private readonly configService: ConfigService,
-        private readonly cozeRepository: CozeRepository,
+        private readonly aiContextRepository: AiContextRepository,
         private readonly prisma: PrismaService,
     ) {
         const apiKeys = this.parseCsvConfigValue(
@@ -156,7 +156,7 @@ export class CozeService implements OnModuleInit {
             return this.contextCache;
         }
 
-        this.contextCache = await this.cozeRepository.getFullContext();
+        this.contextCache = await this.aiContextRepository.getFullContext();
         this.contextCacheTime = now;
         return this.contextCache;
     }
@@ -328,7 +328,7 @@ ${insuranceInfo || 'Chưa có gói bảo hiểm.'}
         userMessage: string,
         conversationId?: string,
         userId?: string,
-        options?: ICozeLogOptions,
+        options?: IAiChatOptions,
     ): Promise<IAiChatResult> {
         const startTime = Date.now();
 

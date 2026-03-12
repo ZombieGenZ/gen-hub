@@ -11,7 +11,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { EmailService } from '../notification/email.service';
 import { ContactService } from '../contact/contact.service';
 import { GmailApiService } from './gmail-api.service';
-import { GeminiService } from '../../common/services/gemini.service';
+import { AiHubService } from '../ai-hub';
 import { DiscordService } from '../discord/discord.service';
 import { IGmailMessage, IGmailPubSubNotification, IUnlockTokenData } from './interfaces';
 
@@ -39,7 +39,7 @@ export class EmailInboundProvider implements OnModuleInit, OnModuleDestroy {
         private readonly emailService: EmailService,
         private readonly contactService: ContactService,
         private readonly gmailApiService: GmailApiService,
-        private readonly geminiService: GeminiService,
+        private readonly aiHubService: AiHubService,
         private readonly discordService: DiscordService,
     ) { }
 
@@ -215,7 +215,7 @@ export class EmailInboundProvider implements OnModuleInit, OnModuleDestroy {
                 const bodyText = this.extractNewReplyContent(message.body.text || message.body.html || '');
 
                 try {
-                    const classification = await this.geminiService.classifyEmail(
+                    const classification = await this.aiHubService.classifyEmail(
                         senderEmail,
                         senderName,
                         subject,
