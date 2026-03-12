@@ -92,12 +92,17 @@ jobs:
             }]
           }' \
           ${{ secrets.DISCORD_WEBHOOK }}
+      - name: Prepare client sync directory
+        run: |
+          rm -rf .sync
+          mkdir -p .sync
+          git -c core.quotepath=false ls-files -z --cached --others --exclude-standard -- client | tar --null -T - -cf - | tar -xf - -C .sync
       - name: Push Client folder
         uses: cpina/github-action-push-to-another-repository@main
         env:
           API_TOKEN_GITHUB: ${{ secrets.API_TOKEN_GITHUB }}
         with:
-          source-directory: 'client'
+          source-directory: '.sync/client'
           destination-github-username: ${{ secrets.GH_USERNAME }}
           destination-repository-name: ${{ secrets.REPO_CLIENT }}
           user-email: ${{ secrets.GH_EMAIL }}
@@ -143,12 +148,17 @@ jobs:
             }]
           }' \
           ${{ secrets.DISCORD_WEBHOOK }}
+      - name: Prepare server sync directory
+        run: |
+          rm -rf .sync
+          mkdir -p .sync
+          git -c core.quotepath=false ls-files -z --cached --others --exclude-standard -- server | tar --null -T - -cf - | tar -xf - -C .sync
       - name: Push Server folder
         uses: cpina/github-action-push-to-another-repository@main
         env:
           API_TOKEN_GITHUB: ${{ secrets.API_TOKEN_GITHUB }}
         with:
-          source-directory: 'server'
+          source-directory: '.sync/server'
           destination-github-username: ${{ secrets.GH_USERNAME }}
           destination-repository-name: ${{ secrets.REPO_SERVER }}
           user-email: ${{ secrets.GH_EMAIL }}
@@ -193,12 +203,17 @@ jobs:
             }]
           }' \
           ${{ secrets.DISCORD_WEBHOOK }}
+      - name: Prepare status sync directory
+        run: |
+          rm -rf .sync
+          mkdir -p .sync
+          git -c core.quotepath=false ls-files -z --cached --others --exclude-standard -- status | tar --null -T - -cf - | tar -xf - -C .sync
       - name: Push status folder
         uses: cpina/github-action-push-to-another-repository@main
         env:
           API_TOKEN_GITHUB: ${{ secrets.API_TOKEN_GITHUB }}
         with:
-          source-directory: 'status'
+          source-directory: '.sync/status'
           destination-github-username: ${{ secrets.GH_USERNAME }}
           destination-repository-name: ${{ secrets.REPO_STATUS }}
           user-email: ${{ secrets.GH_EMAIL }}
@@ -221,12 +236,17 @@ jobs:
           cd admin/database-panel
           npm install
           npm run build
+      - name: Prepare database-panel sync directory
+        run: |
+          rm -rf .sync
+          mkdir -p .sync
+          git -c core.quotepath=false ls-files -z --cached --others --exclude-standard -- admin/database-panel | tar --null -T - -cf - | tar -xf - -C .sync
       - name: Push database-panel folder
         uses: cpina/github-action-push-to-another-repository@main
         env:
           API_TOKEN_GITHUB: ${{ secrets.API_TOKEN_GITHUB }}
         with:
-          source-directory: 'admin/database-panel'
+          source-directory: '.sync/admin/database-panel'
           destination-github-username: ${{ secrets.GH_USERNAME }}
           destination-repository-name: ${{ secrets.REPO_DATABASE_PANEL }}
           user-email: ${{ secrets.GH_EMAIL }}
@@ -249,12 +269,17 @@ jobs:
           cd admin/feature-flag-panel
           npm install
           npm run build
+      - name: Prepare feature-flag-panel sync directory
+        run: |
+          rm -rf .sync
+          mkdir -p .sync
+          git -c core.quotepath=false ls-files -z --cached --others --exclude-standard -- admin/feature-flag-panel | tar --null -T - -cf - | tar -xf - -C .sync
       - name: Push feature-flag-panel folder
         uses: cpina/github-action-push-to-another-repository@main
         env:
           API_TOKEN_GITHUB: ${{ secrets.API_TOKEN_GITHUB }}
         with:
-          source-directory: 'admin/feature-flag-panel'
+          source-directory: '.sync/admin/feature-flag-panel'
           destination-github-username: ${{ secrets.GH_USERNAME }}
           destination-repository-name: ${{ secrets.REPO_FEATURE_FLAG_PANEL }}
           user-email: ${{ secrets.GH_EMAIL }}
@@ -277,12 +302,17 @@ jobs:
           cd admin/resources-panel
           npm install
           npm run build
+      - name: Prepare resources-panel sync directory
+        run: |
+          rm -rf .sync
+          mkdir -p .sync
+          git -c core.quotepath=false ls-files -z --cached --others --exclude-standard -- admin/resources-panel | tar --null -T - -cf - | tar -xf - -C .sync
       - name: Push resources-panel folder
         uses: cpina/github-action-push-to-another-repository@main
         env:
           API_TOKEN_GITHUB: ${{ secrets.API_TOKEN_GITHUB }}
         with:
-          source-directory: 'admin/resources-panel'
+          source-directory: '.sync/admin/resources-panel'
           destination-github-username: ${{ secrets.GH_USERNAME }}
           destination-repository-name: ${{ secrets.REPO_RESOURCES_PANEL }}
           user-email: ${{ secrets.GH_EMAIL }}
@@ -305,12 +335,17 @@ jobs:
           cd admin/admin-panel
           npm install
           npm run build
+      - name: Prepare admin-panel sync directory
+        run: |
+          rm -rf .sync
+          mkdir -p .sync
+          git -c core.quotepath=false ls-files -z --cached --others --exclude-standard -- admin/admin-panel | tar --null -T - -cf - | tar -xf - -C .sync
       - name: Push admin-panel folder
         uses: cpina/github-action-push-to-another-repository@main
         env:
           API_TOKEN_GITHUB: ${{ secrets.API_TOKEN_GITHUB }}
         with:
-          source-directory: 'admin/admin-panel'
+          source-directory: '.sync/admin/admin-panel'
           destination-github-username: ${{ secrets.GH_USERNAME }}
           destination-repository-name: ${{ secrets.REPO_ADMIN_PANEL }}
           user-email: ${{ secrets.GH_EMAIL }}
