@@ -1,4 +1,4 @@
-import {
+﻿import {
   Injectable,
   OnModuleInit,
   OnModuleDestroy,
@@ -1014,4 +1014,68 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     );
     await this.delByPattern(`${listPrefix}:*`);
   }
+
+  getConsultationRequestCacheKey(id: string): string {
+    const prefix = this.configService.get<string>(
+      'REDIS_CONSULTATION_REQUEST_KEY_PREFIX',
+      'consultation-request',
+    );
+    return `${prefix}:${id}`;
+  }
+
+  getConsultationRequestListCacheKey(query: Record<string, unknown>): string {
+    const prefix = this.configService.get<string>(
+      'REDIS_CONSULTATION_REQUEST_LIST_KEY_PREFIX',
+      'consultation-request:list',
+    );
+    return `${prefix}:${JSON.stringify(query)}`;
+  }
+
+  async getConsultationRequestCache<T>(id: string): Promise<T | null> {
+    const data = await this.get(this.getConsultationRequestCacheKey(id));
+    if (!data) return null;
+    try {
+      return JSON.parse(data) as T;
+    } catch {
+      return null;
+    }
+  }
+
+  async setConsultationRequestCache<T>(id: string, data: T, ttlSeconds?: number): Promise<void> {
+    const ttl =
+      ttlSeconds ||
+      this.configService.get<number>('REDIS_CONSULTATION_REQUEST_CACHE_TTL', 300);
+    await this.set(this.getConsultationRequestCacheKey(id), JSON.stringify(data), ttl);
+  }
+
+  async invalidateConsultationRequestCache(id: string): Promise<void> {
+    await this.del(this.getConsultationRequestCacheKey(id));
+    await this.invalidateConsultationRequestListCache();
+  }
+
+  async getConsultationRequestListCache<T>(cacheKey: string): Promise<T | null> {
+    const data = await this.get(cacheKey);
+    if (!data) return null;
+    try {
+      return JSON.parse(data) as T;
+    } catch {
+      return null;
+    }
+  }
+
+  async setConsultationRequestListCache<T>(cacheKey: string, data: T, ttlSeconds?: number): Promise<void> {
+    const ttl =
+      ttlSeconds ||
+      this.configService.get<number>('REDIS_CONSULTATION_REQUEST_LIST_CACHE_TTL', 60);
+    await this.set(cacheKey, JSON.stringify(data), ttl);
+  }
+
+  async invalidateConsultationRequestListCache(): Promise<void> {
+    const prefix = this.configService.get<string>(
+      'REDIS_CONSULTATION_REQUEST_LIST_KEY_PREFIX',
+      'consultation-request:list',
+    );
+    await this.delByPattern(`${prefix}:*`);
+  }
 }
+

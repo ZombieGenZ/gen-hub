@@ -1,0 +1,25 @@
+{
+  "errors": {
+    "booking_not_found": "Warehouse visit booking not found",
+    "booking_must_be_pending": "Only pending bookings can be approved or rejected"
+  },
+  "email": {
+    "approved": {
+      "subject": "Warehouse visit {{bookingCode}} approved",
+      "title": "Warehouse visit approved",
+      "greeting": "Hello {{visitorName}},",
+      "message": "Your warehouse visit request has been approved.",
+      "warehouse": "Warehouse",
+      "date": "Date",
+      "time": "Time",
+      "booking_code": "Booking code"
+    },
+    "rejected": {
+      "subject": "Warehouse visit {{bookingCode}} rejected",
+      "title": "Warehouse visit rejected",
+      "greeting": "Hello {{visitorName}},",
+      "message": "Your warehouse visit request has been rejected.",
+      "reason": "Reason"
+    }
+  }
+}

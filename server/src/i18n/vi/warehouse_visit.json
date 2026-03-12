@@ -1,0 +1,25 @@
+{
+  "errors": {
+    "booking_not_found": "Khong tim thay lich hen tham quan kho",
+    "booking_must_be_pending": "Chi co the duyet lich hen dang cho xu ly"
+  },
+  "email": {
+    "approved": {
+      "subject": "Lich tham quan {{bookingCode}} da duoc duyet",
+      "title": "Lich tham quan da duoc duyet",
+      "greeting": "Xin chao {{visitorName}},",
+      "message": "Yeu cau dat lich tham quan kho cua ban da duoc xac nhan.",
+      "warehouse": "Kho",
+      "date": "Ngay",
+      "time": "Gio",
+      "booking_code": "Ma lich hen"
+    },
+    "rejected": {
+      "subject": "Lich tham quan {{bookingCode}} khong duoc duyet",
+      "title": "Lich tham quan khong duoc duyet",
+      "greeting": "Xin chao {{visitorName}},",
+      "message": "Yeu cau dat lich tham quan kho cua ban da bi tu choi.",
+      "reason": "Ly do"
+    }
+  }
+}

@@ -1,7 +1,10 @@
-# Hướng Dẫn Cấu Hình Coze AI cho GEN-HUB
+﻿# Hướng Dẫn Cấu Hình Coze AI cho GEN-HUB
 
 > [!NOTE]
-> Tài liệu này hướng dẫn cách lấy và cấu hình `COZE_API_KEY` và `COZE_BOT_ID` để sử dụng tính năng **AI Auto-Reply** trong hệ thống Live Chat, bao gồm cách thiết lập **API Plugins** để bot tự động lấy thông tin từ hệ thống.
+> Tài liệu này hướng dẫn cách lấy và cấu hình `COZE_API_KEY`, `COZE_BOT_ID` và `AI_PLUGIN_API_KEY` để sử dụng tính năng **AI Auto-Reply** trong hệ thống Live Chat của GEN-HUB, đồng thời thiết lập **AI Plugin** để Coze bot có thể lấy dữ liệu thời gian thực từ backend.
+
+> [!IMPORTANT]
+> Backend hiện đã đổi route từ `/coze-plugin/*` sang `/ai-plugin/*`. Khi cấu hình plugin trên Coze, hãy sử dụng toàn bộ endpoint mới theo tài liệu này.
 
 ---
 
@@ -11,188 +14,193 @@
 2. [Bước 1: Tạo Tài Khoản Coze](#2-bước-1-tạo-tài-khoản-coze)
 3. [Bước 2: Tạo Bot Mới](#3-bước-2-tạo-bot-mới)
 4. [Bước 3: Cấu Hình Model Tối Ưu](#4-bước-3-cấu-hình-model-tối-ưu)
-5. [Bước 4: Thiết Lập API Plugins](#5-bước-4-thiết-lập-api-plugins)
+5. [Bước 4: Thiết Lập AI Plugin](#5-bước-4-thiết-lập-ai-plugin)
 6. [Bước 5: Cấu Hình Knowledge Base](#6-bước-5-cấu-hình-knowledge-base)
 7. [Bước 6: Viết Prompt Tối Ưu](#7-bước-6-viết-prompt-tối-ưu)
-8. [Bước 7: Lấy COZE_BOT_ID](#8-bước-7-lấy-coze_bot_id)
-9. [Bước 8: Lấy COZE_API_KEY](#9-bước-8-lấy-coze_api_key)
-10. [Bước 9: Cập Nhật File .env](#10-bước-9-cập-nhật-file-env)
-11. [Xác Minh Cấu Hình](#11-xác-minh-cấu-hình)
-12. [Xử Lý Lỗi Thường Gặp](#12-xử-lý-lỗi-thường-gặp)
+8. [Bước 7: Publish Bot Cho API](#8-bước-7-publish-bot-cho-api)
+9. [Bước 8: Lấy `COZE_BOT_ID`](#9-bước-8-lấy-coze_bot_id)
+10. [Bước 9: Lấy `COZE_API_KEY`](#10-bước-9-lấy-coze_api_key)
+11. [Bước 10: Cập Nhật File `.env`](#11-bước-10-cập-nhật-file-env)
+12. [Xác Minh Cấu Hình](#12-xác-minh-cấu-hình)
+13. [Xử Lý Lỗi Thường Gặp](#13-xử-lý-lỗi-thường-gặp)
 
 ---
 
 ## 1. Tổng Quan
 
-**Coze** là nền tảng AI của ByteDance cho phép tạo và triển khai chatbot AI. GEN-HUB sử dụng Coze API để tự động trả lời tin nhắn từ khách hàng trong hệ thống Live Chat.
+**Coze** là nền tảng AI của ByteDance cho phép xây dựng chatbot có prompt, knowledge và plugin/tool calling. Trong GEN-HUB, Coze được dùng cho luồng **AI Auto-Reply** trong live chat.
 
-### Tính năng chính:
-- **AI Auto-Reply**: Tự động trả lời câu hỏi cơ bản
-- **API Integration**: Gọi API để lấy thông tin realtime (giá kho, tình trạng, etc.)
-- **Knowledge Base**: Học từ tài liệu FAQ, chính sách
+### Coze được dùng ở đâu trong GEN-HUB?
 
-### Các biến môi trường cần cấu hình:
+- **CozeService**: backend gọi Coze Chat API để lấy phản hồi từ bot.
+- **AI Plugin**: bộ API public của GEN-HUB để bot truy vấn dữ liệu realtime.
+- **Knowledge Base**: nơi lưu FAQ, chính sách, tài liệu nghiệp vụ giúp bot trả lời ổn định hơn.
+
+### Các tính năng chính
+
+- **AI Auto-Reply**: tự động phản hồi khách hàng trong live chat.
+- **Realtime Data via AI Plugin**: lấy giá kho, tình trạng còn trống, FAQ, điều khoản hợp đồng.
+- **Lead Capture**: bot có thể tạo yêu cầu tư vấn khi khách muốn để lại thông tin.
+- **Visit Booking**: bot có thể tạo lịch hẹn tham quan kho trực tiếp từ hội thoại.
+
+### Các biến môi trường cần cấu hình
 
 | Biến | Mô tả |
 |------|-------|
-| `COZE_ENABLED` | Bật/tắt tính năng Coze AI (`true`/`false`) |
-| `COZE_API_KEY` | Personal Access Token để xác thực API |
-| `COZE_BOT_ID` | ID của bot Coze bạn tạo |
-| `COZE_API_BASE_URL` | URL API endpoint (mặc định: `https://api.coze.com`) |
+| `COZE_ENABLED` | Bật/tắt tích hợp Coze (`true`/`false`) |
+| `COZE_API_KEY` | Personal Access Token để backend gọi Coze API |
+| `COZE_BOT_ID` | ID bot Coze đang dùng |
+| `COZE_API_BASE_URL` | Base URL API Coze, mặc định `https://api.coze.com` |
+| `AI_PLUGIN_API_KEY` | API key để Coze gọi các endpoint `/ai-plugin/*` của GEN-HUB |
+| `ENABLE_AI_AUTO_REPLY` | Bật tính năng AI Auto-Reply trong backend |
+
+> [!TIP]
+> `AI_PLUGIN_API_KEY` là key của backend GEN-HUB, khác với `COZE_API_KEY`.  
+> `COZE_API_KEY` dùng để **backend gọi Coze**.  
+> `AI_PLUGIN_API_KEY` dùng để **Coze gọi backend**.
 
 ---
 
 ## 2. Bước 1: Tạo Tài Khoản Coze
 
-1. Truy cập **[https://www.coze.com](https://www.coze.com)**
-
-2. Đăng ký tài khoản mới hoặc đăng nhập:
-   - Sử dụng **Google Account**
-   - Hoặc sử dụng **Email**
-
-3. Sau khi đăng nhập, bạn sẽ được chuyển đến **Dashboard** chính.
+1. Truy cập **[https://www.coze.com](https://www.coze.com)**.
+2. Đăng ký tài khoản mới hoặc đăng nhập bằng:
+   - Google Account
+   - Email
+3. Sau khi đăng nhập thành công, bạn sẽ vào **Coze Dashboard**.
 
 > [!TIP]
-> Nếu bạn ở Việt Nam, hãy sử dụng phiên bản **Global** tại `coze.com` thay vì `coze.cn` (phiên bản Trung Quốc).
+> Nếu đang ở Việt Nam, nên dùng bản Global tại `coze.com` thay vì `coze.cn`.
 
 ---
 
 ## 3. Bước 2: Tạo Bot Mới
 
-### 3.1. Tạo Bot
+### 3.1. Tạo bot
 
-1. Từ Dashboard Coze, nhấn nút **"+ Create"** nằm dưới phần **Create agent**
+1. Từ Dashboard, nhấn **"+ Create"** ở phần tạo agent.
+2. Chọn tạo bot mới.
+3. Điền thông tin:
 
-2. Điền thông tin:
-   - **Bot Name**: `GEN-HUB Assistant`
-   - **Description**: `Trợ lý AI hỗ trợ khách hàng GEN-HUB`
-   - **Bot Mode**: Chọn **Single Agent**
+| Field | Giá trị gợi ý |
+|------|----------------|
+| **Bot Name** | `GEN-HUB Assistant` |
+| **Description** | `Trợ lý AI hỗ trợ khách hàng GEN-HUB` |
+| **Bot Mode** | `Single Agent` |
 
-3. Click **"Create"** để tạo bot
+4. Nhấn **Create** để hoàn tất.
+
+### 3.2. Mục tiêu bot
+
+Bot nên được thiết kế để xử lý các nhóm yêu cầu sau:
+
+- Tư vấn tìm kho theo khu vực, diện tích, ngân sách.
+- Trả lời câu hỏi về giá thuê, điều khoản và FAQ.
+- Hỗ trợ khách đặt lịch tham quan kho.
+- Ghi nhận thông tin liên hệ nếu khách cần nhân viên tư vấn.
 
 ---
 
 ## 4. Bước 3: Cấu Hình Model Tối Ưu
 
-### 4.1. Chọn Model
+### 4.1. Chọn model
 
-Trong phần **Model Settings** (góc phải màn hình):
-
-1. Click vào dropdown **Model**
-2. Chọn model phù hợp:
+Trong phần **Model Settings**, chọn model phù hợp:
 
 | Model | Đặc điểm | Khuyến nghị |
-|-------|----------|-------------|
-| **GPT-4o mini** | Nhanh, rẻ, đủ tốt cho support | ⭐ Khuyến nghị cho Production |
-| **GPT-4o** | Chất lượng cao nhất | Cho cases phức tạp |
-| **Claude 3.5 Sonnet** | Reasoning tốt | Alternative |
+|------|----------|-------------|
+| **GPT-4o mini** | nhanh, chi phí thấp, đủ tốt cho support | Khuyến nghị cho production |
+| **GPT-4o** | chất lượng cao hơn | dùng cho tình huống phức tạp |
+| **Claude 3.5 Sonnet** | reasoning tốt | phương án thay thế |
 
-### 4.2. Cấu Hình Generation Settings
-
-Click vào **Model Settings** để mở panel cấu hình:
-
-#### Generation Diversity
-- **Chọn**: `Balance` (cân bằng giữa precise và creative)
-
-#### Các thông số tối ưu cho Customer Support:
+### 4.2. Generation settings gợi ý
 
 | Thông số | Giá trị | Giải thích |
-|----------|---------|------------|
-| **Temperature** | `0.5` | Giảm để response nhất quán, không random quá |
-| **Top p** | `1` | Giữ mặc định |
-| **Frequency penalty** | `0` | Giữ mặc định |
-| **Presence penalty** | `0` | Giữ mặc định |
-
-#### Input and Output Settings:
-
-| Thông số | Giá trị | Giải thích |
-|----------|---------|------------|
-| **Number of context rounds** | `3-5` | Số lượt hội thoại trước đó bot nhớ |
-| **Response max length** | `1024-2048` | Độ dài tối đa response |
-| **Output format** | `Text` | Giữ mặc định |
+|---------|---------|------------|
+| **Temperature** | `0.3 - 0.5` | giảm ngẫu nhiên, tăng độ nhất quán |
+| **Top p** | `1` | giữ mặc định |
+| **Frequency penalty** | `0` | giữ mặc định |
+| **Presence penalty** | `0` | giữ mặc định |
+| **Context rounds** | `3 - 5` | đủ giữ ngữ cảnh hội thoại |
+| **Max response length** | `1024 - 2048` | phù hợp câu trả lời support |
+| **Output format** | `Text` | phù hợp kênh chat |
 
 > [!TIP]
-> - **Temperature thấp (0.3-0.5)**: Bot trả lời nhất quán, ít "sáng tạo" - tốt cho support
-> - **Context rounds = 3-5**: Đủ để bot hiểu ngữ cảnh mà không tốn token
+> Với chatbot hỗ trợ khách hàng, ưu tiên phản hồi ổn định và chính xác hơn là sáng tạo.
 
 ---
 
-## 5. Bước 4: Thiết Lập API Plugins
+## 5. Bước 4: Thiết Lập AI Plugin
 
 > [!IMPORTANT]
-> **API Plugins** cho phép bot gọi trực tiếp API của GEN-HUB để lấy thông tin realtime về kho bãi, giá thuê và tình trạng.
+> Đây là bước quan trọng nhất để Coze bot truy xuất dữ liệu GEN-HUB theo thời gian thực. Tên plugin mới nên dùng là `GEN_HUB_AI_API`.
 
-### 5.1. Tổng Quan Các API
+### 5.1. Tổng quan các API
 
-GEN-HUB cung cấp 4 API endpoints cho Coze bot:
+GEN-HUB hiện cung cấp **6 API endpoint** cho Coze bot:
 
 | Tool | Endpoint | Mô tả |
 |------|----------|-------|
-| `get_warehouse_pricing` | `GET /coze-plugin/warehouse-pricing` | Tìm kho và lấy giá chi tiết |
-| `check_availability` | `GET /coze-plugin/check-availability` | Kiểm tra tình trạng kho |
-| `get_rental_contract_terms` | `GET /coze-plugin/rental-contract-terms` | Lấy điều khoản hợp đồng |
-| `get_faq` | `GET /coze-plugin/faq` | Lấy FAQ cho AI tư vấn |
+| `get_warehouse_pricing` | `GET /ai-plugin/warehouse-pricing` | Tìm kho và lấy giá chi tiết |
+| `check_availability` | `GET /ai-plugin/check-availability` | Kiểm tra tình trạng kho |
+| `get_rental_contract_terms` | `GET /ai-plugin/rental-contract-terms` | Lấy điều khoản hợp đồng |
+| `get_faq` | `GET /ai-plugin/faq` | Lấy FAQ cho AI tư vấn |
+| `create_consultation_request` | `POST /ai-plugin/consultation-request` | Tạo yêu cầu để lại thông tin |
+| `create_visit_booking` | `POST /ai-plugin/visit-booking` | Tạo lịch hẹn tham quan kho |
 
----
+### 5.2. Tạo plugin trong Coze
 
-### 5.2. Tạo Plugin Trong Coze
+#### Bước 1: Vào phần Plugins
 
-#### Bước 1: Tạo Agent trước
+1. Trong trang chỉnh sửa bot, chọn **Plugins** ở sidebar trái.
+2. Nhấn **"+ Add"**.
+3. Chọn **Create plugin**.
+4. Hệ thống sẽ chuyển đến phần Library.
 
-1. Từ Dashboard Coze, nhấn nút **"+ Create"** nằm dưới phần **Create agent**
-2. Điền thông tin bot theo hướng dẫn ở Bước 2
+#### Bước 2: Điền thông tin plugin
 
-#### Bước 2: Vào Library tạo Plugin
-
-1. Trong trang **Edit Bot**, nhấp vào **"Plugins"** ở sidebar trái
-2. Click **"+ Add"** → **"Create plugin"**
-3. Hệ thống sẽ chuyển đến trang **Library**
-4. Nhấp nút **"+ Resources"** → Chọn **"Plugin"**
-
-#### Bước 3: Điền thông tin Plugin
-
-Điền các thông tin sau:
-
-| Field | Giá trị |
-|-------|---------|
-| **Plugin name** | `GEN_HUB_Warehouse_API` |
-| **Brief Introduction** | `Lấy thông tin giá và tình trạng kho bãi GEN-HUB` |
-| **Plugin description** | `Plugin này cho phép bot truy cập dữ liệu thời gian thực về bảng giá, diện tích và tình trạng còn trống của các kho bãi trong hệ thống GEN-HUB.` |
+| Field | Giá trị gợi ý |
+|------|----------------|
+| **Plugin name** | `GEN_HUB_AI_API` |
+| **Brief Introduction** | `Lấy dữ liệu kho bãi GEN-HUB theo thời gian thực` |
+| **Plugin description** | `Plugin cho phép Coze bot truy cập dữ liệu GEN-HUB theo thời gian thực để tìm kho, kiểm tra tình trạng còn trống, xem điều khoản hợp đồng, lấy FAQ, tạo yêu cầu tư vấn và đặt lịch tham quan kho.` |
 | **Type** | `Cloud plugin` |
-| **Plugin creation method** | `Cloud Plugin - Create based on existing services` |
+| **Plugin creation method** | `Create based on existing services` |
 | **Plugin URL** | `https://api.gen-hub.dev` |
 
-#### Bước 4: Cấu hình Authentication
+### 5.3. Cấu hình authentication
 
 | Field | Giá trị |
-|-------|---------|
+|------|---------|
 | **Authorization method** | `Service token / API key` |
 | **Location** | `Header` |
 | **Parameter name** | `X-API-Key` |
-| **Service token/API key** | Giá trị `COZE_PLUGIN_API_KEY` từ file `.env` |
+| **Service token/API key** | Giá trị của `AI_PLUGIN_API_KEY` trong `.env` |
+
+Ví dụ:
+
+```env
+# Generate: openssl rand -hex 32
+AI_PLUGIN_API_KEY=your_secure_random_api_key_here
+```
 
 > [!TIP]
-> Tạo API Key bằng cách thêm vào file `.env` của server:
-> ```env
-> # Generate: openssl rand -hex 32
-> COZE_PLUGIN_API_KEY=your_secure_random_api_key_here
-> ```
+> Guard của backend ưu tiên `AI_PLUGIN_API_KEY` và vẫn fallback sang `COZE_PLUGIN_API_KEY` để tương thích ngược. Tuy nhiên tài liệu và cấu hình mới nên dùng `AI_PLUGIN_API_KEY`.
 
----
+### 5.4. Import OpenAPI schema
 
-### 5.3. Import OpenAPI Schema
+Sau khi tạo plugin:
 
-Sau khi tạo plugin, bạn cần import các tool:
-
-1. Ở màn hình **Tool**, nhấn nút **"Import"**
-2. Chọn **"URL & Raw data"**
-3. Paste đoạn OpenAPI schema sau:
+1. Vào màn hình **Tool**.
+2. Nhấn **Import**.
+3. Chọn **URL & Raw data**.
+4. Dán OpenAPI schema dưới đây.
 
 ```json
 {
   "openapi": "3.0.0",
   "info": {
-    "title": "GenHubWarehouseAPI",
+    "title": "GenHubAIAPI",
     "version": "1.0.0"
   },
   "servers": [
@@ -201,618 +209,395 @@ Sau khi tạo plugin, bạn cần import các tool:
     }
   ],
   "paths": {
-    "/coze-plugin/warehouse-pricing": {
+    "/ai-plugin/warehouse-pricing": {
       "get": {
         "operationId": "get_warehouse_pricing",
-        "summary": "Search warehouse and detailed pricing",
+        "summary": "Get warehouse pricing",
+        "description": "Tìm danh sách kho phù hợp theo từ khóa, vị trí, diện tích, giá thuê và loại kho.",
         "security": [{ "ApiKeyAuth": [] }],
-        "description": "Searches for a list of warehouses based on location, price, area, and type. Returns detailed pricing tiers by duration and lists of specific rows within shared warehouses.",
         "parameters": [
-          {
-            "name": "keywords",
-            "in": "query",
-            "schema": { "type": "string" },
-            "description": "Search keyword for warehouse name or specific address."
-          },
-          {
-            "name": "province_name",
-            "in": "query",
-            "schema": { "type": "string" },
-            "description": "City or Province name where the warehouse is located (e.g., Ho Chi Minh, Ha Noi)."
-          },
-          {
-            "name": "min_price",
-            "in": "query",
-            "schema": { "type": "number" },
-            "description": "Minimum monthly rental budget in VND."
-          },
-          {
-            "name": "max_price",
-            "in": "query",
-            "schema": { "type": "number" },
-            "description": "Maximum monthly rental budget in VND."
-          },
-          {
-            "name": "min_area",
-            "in": "query",
-            "schema": { "type": "number" },
-            "description": "Minimum required area in square meters (m2)."
-          },
-          {
-            "name": "max_area",
-            "in": "query",
-            "schema": { "type": "number" },
-            "description": "Maximum required area in square meters (m2)."
-          },
-          {
-            "name": "is_cold_storage",
-            "in": "query",
-            "schema": { "type": "boolean" },
-            "description": "Set to true for cold storage, false for normal dry storage."
-          },
-          {
-            "name": "is_shared_warehouse",
-            "in": "query",
-            "schema": { "type": "boolean" },
-            "description": "Set to true for shared warehouse models (renting by rows), false for private warehouse leasing."
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "schema": { "type": "integer", "default": 3 },
-            "description": "Maximum number of results to return in one request."
-          }
+          { "name": "keywords", "in": "query", "required": false, "schema": { "type": "string" } },
+          { "name": "province_name", "in": "query", "required": false, "schema": { "type": "string" } },
+          { "name": "min_price", "in": "query", "required": false, "schema": { "type": "number" } },
+          { "name": "max_price", "in": "query", "required": false, "schema": { "type": "number" } },
+          { "name": "min_area", "in": "query", "required": false, "schema": { "type": "number" } },
+          { "name": "max_area", "in": "query", "required": false, "schema": { "type": "number" } },
+          { "name": "is_cold_storage", "in": "query", "required": false, "schema": { "type": "boolean" } },
+          { "name": "is_shared_warehouse", "in": "query", "required": false, "schema": { "type": "boolean" } },
+          { "name": "limit", "in": "query", "required": false, "schema": { "type": "integer", "default": 3 } }
         ],
         "responses": {
-          "200": {
-            "description": "Successful retrieval of warehouse list with pricing and row structure.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": { "type": "string" },
-                    "success": { "type": "boolean" },
-                    "data": {
-                      "type": "object",
-                      "properties": {
-                        "items": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "properties": {
-                              "id": { "type": "string", "description": "Unique identifier of the warehouse." },
-                              "name": { "type": "string", "description": "Display name of the warehouse." },
-                              "area": { "type": "number", "description": "Total available area of the warehouse." },
-                              "address": { "type": "string", "description": "Detailed physical address." },
-                              "base_price_per_month": { "type": "number", "description": "Starting rental price per month." },
-                              "pricing_tiers": {
-                                "type": "array",
-                                "items": {
-                                  "type": "object",
-                                  "properties": {
-                                    "tier_name": { "type": "string", "description": "Lease duration (e.g., 6 months, 12 months)." },
-                                    "price_per_month": { "type": "number", "description": "Applied price for this specific tier." }
-                                  }
-                                }
-                              },
-                              "rows": {
-                                "type": "array",
-                                "items": {
-                                  "type": "object",
-                                  "properties": {
-                                    "name": { "type": "string", "description": "Name of the warehouse row (e.g., Row A)." },
-                                    "code": { "type": "string", "description": "Unique row code." },
-                                    "is_rented": { "type": "boolean", "description": "Rental status of the specific row." }
-                                  }
-                                }
-                              }
-                            }
-                          }
-                        }
-                      }
-                    }
-                  }
+          "200": { "description": "Lấy danh sách kho thành công" }
+        }
+      }
+    },
+    "/ai-plugin/check-availability": {
+      "get": {
+        "operationId": "check_availability",
+        "summary": "Check warehouse availability",
+        "description": "Kiểm tra tình trạng còn trống của kho theo warehouse_id.",
+        "security": [{ "ApiKeyAuth": [] }],
+        "parameters": [
+          { "name": "warehouse_id", "in": "query", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Kiểm tra tình trạng thành công" }
+        }
+      }
+    },
+    "/ai-plugin/rental-contract-terms": {
+      "get": {
+        "operationId": "get_rental_contract_terms",
+        "summary": "Get rental contract terms",
+        "description": "Lấy điều khoản hợp đồng thuê kho tiêu chuẩn của GEN-HUB.",
+        "security": [{ "ApiKeyAuth": [] }],
+        "responses": {
+          "200": { "description": "Lấy điều khoản hợp đồng thành công" }
+        }
+      }
+    },
+    "/ai-plugin/faq": {
+      "get": {
+        "operationId": "get_faq",
+        "summary": "Get FAQ",
+        "description": "Lấy danh sách câu hỏi thường gặp phục vụ tư vấn tự động.",
+        "security": [{ "ApiKeyAuth": [] }],
+        "responses": {
+          "200": { "description": "Lấy FAQ thành công" }
+        }
+      }
+    },
+    "/ai-plugin/consultation-request": {
+      "post": {
+        "operationId": "create_consultation_request",
+        "summary": "Create consultation request",
+        "description": "Tạo yêu cầu để lại thông tin để nhân viên GEN-HUB liên hệ tư vấn.",
+        "security": [{ "ApiKeyAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name", "email", "subject", "message"],
+                "properties": {
+                  "name": { "type": "string" },
+                  "email": { "type": "string", "format": "email" },
+                  "phone": { "type": "string" },
+                  "subject": { "type": "string" },
+                  "message": { "type": "string" },
+                  "warehouse_id": { "type": "string", "format": "uuid" },
+                  "company": { "type": "string" },
+                  "position": { "type": "string" }
                 }
               }
             }
           }
+        },
+        "responses": {
+          "201": { "description": "Tạo yêu cầu tư vấn thành công" }
         }
       }
     },
-    "/coze-plugin/check-availability": {
-      "get": {
-        "operationId": "check_availability",
-        "summary": "Check warehouse status",
+    "/ai-plugin/visit-booking": {
+      "post": {
+        "operationId": "create_visit_booking",
+        "summary": "Create warehouse visit booking",
+        "description": "Tạo lịch hẹn tham quan kho cho khách hàng.",
         "security": [{ "ApiKeyAuth": [] }],
-        "description": "Verifies the real-time availability of a specific warehouse or row based on its ID.",
-        "parameters": [
-          {
-            "name": "warehouse_id",
-            "in": "query",
-            "required": true,
-            "schema": { "type": "string" },
-            "description": "Unique ID of the warehouse to be checked."
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["warehouse_id", "visitor_name", "visitor_email", "visit_date", "visit_time_start"],
+                "properties": {
+                  "warehouse_id": { "type": "string", "format": "uuid" },
+                  "organization_id": { "type": "string", "format": "uuid" },
+                  "visitor_name": { "type": "string" },
+                  "visitor_email": { "type": "string", "format": "email" },
+                  "visitor_phone": { "type": "string" },
+                  "visitor_company": { "type": "string" },
+                  "visitor_position": { "type": "string" },
+                  "visit_date": { "type": "string", "format": "date-time" },
+                  "visit_time_start": { "type": "string" },
+                  "visit_time_end": { "type": "string" },
+                  "purpose": { "type": "string", "enum": ["SITE_VISIT", "PRICE_DISCUSSION", "FACILITY_CHECK", "OTHER"] },
+                  "purpose_details": { "type": "string" },
+                  "number_of_visitors": { "type": "integer", "minimum": 1, "default": 1 }
+                }
+              }
+            }
           }
-        ],
+        },
         "responses": {
-          "200": {
-            "description": "Returns the availability status.",
-            "content": { "application/json": { "schema": { "type": "object" } } }
-          }
+          "201": { "description": "Tạo lịch hẹn tham quan thành công" }
         }
       }
-    },
-    "/coze-plugin/rental-contract-terms": {
-      "get": {
-        "operationId": "get_rental_contract_terms",
-        "summary": "Get contract terms",
-        "security": [{ "ApiKeyAuth": [] }],
-        "description": "Retrieves the standard warehouse rental contract terms of GEN-HUB, including payment, rights, and obligations.",
-        "responses": {
-          "200": {
-            "description": "List of legal contract terms.",
-            "content": { "application/json": { "schema": { "type": "object" } } }
-          }
-        }
-      }
-    },
-    "/coze-plugin/faq": {
-      "get": {
-        "operationId": "get_faq",
-        "summary": "Get faq list",
-        "security": [{ "ApiKeyAuth": [] }],
-        "description": "Fetches a list of frequently asked questions to help resolve common customer inquiries about the service.",
-        "responses": {
-          "200": {
-            "description": "List of questions and answers.",
-            "content": { "application/json": { "schema": { "type": "object" } } }
-          }
-        }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key"
       }
     }
   }
 }
 ```
 
-4. Nhấn **"Import"** để thêm các tool
+5. Nhấn **Import** để thêm tool.
 
----
+### 5.5. Enable và publish plugin
 
-### 5.4. Enable và Publish Plugin
+1. Bật toàn bộ tool vừa import.
+2. Test từng tool với dữ liệu mẫu.
+3. Nhấn **Publish** để plugin có hiệu lực.
 
-1. Sau khi import, **Enable** toàn bộ tool (bật toggle cho từng tool)
-2. Test từng tool để đảm bảo hoạt động bình thường
-3. Nhấn **"Publish"** để publish plugin
+### 5.6. Add plugin vào bot
 
----
-
-### 5.5. Thêm Plugin vào Bot
-
-1. Quay lại **Development** → Chọn bot **GEN-HUB Support Assistant**
-2. Trong sidebar trái, chọn **"Plugins"**
-3. Nhấn **"+ Add"** → Chọn **"Library tools"**
-4. Tìm và chọn plugin **GEN_HUB_Warehouse_API**
-5. **Add** toàn bộ 4 tool vào bot
+1. Quay lại bot `GEN-HUB Assistant`.
+2. Chọn **Plugins**.
+3. Nhấn **+ Add**.
+4. Chọn **Library tools**.
+5. Tìm plugin **GEN_HUB_AI_API**.
+6. Thêm toàn bộ 6 tool vào bot.
 
 > [!TIP]
-> Sau khi add plugin, hãy test bot trong **Preview** để đảm bảo bot có thể gọi các tool đúng cách.
+> Sau khi add plugin, hãy test ngay trong phần Preview để kiểm tra bot có gọi tool đúng theo prompt hay không.
 
 ---
 
 ## 6. Bước 5: Cấu Hình Knowledge Base
 
-### 6.1. Thêm Knowledge
+### 6.1. Thêm knowledge
 
-1. Trong panel bên trái, chọn **"Knowledge"**
-2. Click **"+ Add knowledge"**
+1. Trong bot, vào phần **Knowledge**.
+2. Chọn **+ Add knowledge**.
+3. Upload tài liệu hoặc tạo knowledge mới.
 
-### 6.2. Upload tài liệu
-
-Các loại tài liệu nên upload:
+### 6.2. Loại tài liệu nên upload
 
 | Loại | Nội dung | Format |
 |------|----------|--------|
 | **FAQ** | Câu hỏi thường gặp | `.txt`, `.md`, `.docx` |
 | **Chính sách** | Điều khoản, quy định | `.pdf`, `.docx` |
-| **Bảng giá** | Giá thuê các loại kho | `.xlsx`, `.csv` |
-| **Hướng dẫn** | Quy trình thuê, thanh toán | `.md`, `.pdf` |
+| **Bảng giá tham khảo** | Tài liệu giá tĩnh | `.xlsx`, `.csv`, `.pdf` |
+| **Hướng dẫn** | Quy trình thuê, thanh toán, bàn giao | `.md`, `.pdf` |
 
-### 6.3. Cấu hình Knowledge Settings
+### 6.3. Retrieval settings gợi ý
 
-- **Retrieval Mode**: `Hybrid` (kết hợp keyword + semantic)
-- **Top K**: `3-5` (số lượng chunks liên quan nhất)
-- **Score Threshold**: `0.5` (chỉ lấy nếu độ liên quan > 50%)
+| Thiết lập | Giá trị |
+|----------|----------|
+| **Retrieval Mode** | `Hybrid` |
+| **Top K** | `3 - 5` |
+| **Score Threshold** | `0.5` |
+
+> [!IMPORTANT]
+> Các dữ liệu thay đổi thường xuyên như tình trạng kho, giá động, lịch hẹn hoặc yêu cầu tư vấn không nên chỉ dựa vào knowledge. Hãy ưu tiên gọi AI Plugin để lấy dữ liệu realtime.
 
 ---
 
 ## 7. Bước 6: Viết Prompt Tối Ưu
 
 > [!IMPORTANT]
-> **Persona & Prompt** là phần quan trọng nhất quyết định chất lượng phản hồi của bot. Hãy dành thời gian để viết prompt chi tiết và test kỹ.
+> Prompt nên hướng bot dùng tool đúng lúc, hỏi lại khi thiếu thông tin và không tự bịa dữ liệu.
 
-### 7.1. System Prompt (Persona & Prompt)
+### 7.1. System Prompt
 
-Copy toàn bộ nội dung dưới đây vào phần **"Persona & Prompt"** của bot:
+Copy nội dung dưới đây vào phần **Persona & Prompt**:
 
+```text
+# ĐỊNH DANH VÀ VAI TRÒ
+
+Bạn là GEN-HUB Assistant, trợ lý AI chuyên nghiệp của GEN-HUB, nền tảng cho thuê kho bãi và logistics tại Việt Nam.
+
+## Nhiệm vụ chính
+1. Tư vấn khách hàng tìm kho phù hợp theo vị trí, diện tích, ngân sách và loại kho.
+2. Cung cấp thông tin chính xác về giá thuê, điều khoản hợp đồng và các câu hỏi thường gặp.
+3. Hỗ trợ khách đặt lịch tham quan kho.
+4. Hỗ trợ khách để lại thông tin để nhân viên tư vấn liên hệ lại.
+
+## Nguyên tắc trả lời
+- Luôn trả lời bằng tiếng Việt rõ ràng, lịch sự, chuyên nghiệp.
+- Không tự bịa giá, tình trạng kho, điều khoản hoặc thông tin hệ thống.
+- Khi cần dữ liệu realtime, bắt buộc gọi AI Plugin.
+- Khi thiếu thông tin để tìm kho, phải hỏi lại đúng dữ liệu còn thiếu.
+- Nếu câu hỏi vượt phạm vi hoặc cần nhân viên xử lý, hướng khách sang hỗ trợ thủ công.
+
+## Hướng dẫn sử dụng tool
+
+### Tool: get_warehouse_pricing
+Sử dụng khi khách muốn tìm kho, hỏi giá, hỏi thông tin kho.
+Nên thu thập:
+- Khu vực cần thuê
+- Diện tích cần thuê
+- Ngân sách dự kiến
+- Loại hàng hóa lưu trữ
+- Nhu cầu kho lạnh hay kho thường
+
+### Tool: check_availability
+Sử dụng khi khách hỏi kho còn trống không hoặc có thể thuê ngay không.
+
+### Tool: get_rental_contract_terms
+Sử dụng khi khách hỏi về điều khoản hợp đồng, quyền và nghĩa vụ, chính sách thanh toán, chấm dứt hợp đồng.
+
+### Tool: get_faq
+Sử dụng khi khách hỏi các câu hỏi chung về dịch vụ.
+
+### Tool: create_consultation_request
+Sử dụng khi khách muốn để lại thông tin để nhân viên GEN-HUB tư vấn lại.
+Trước khi gọi tool, cố gắng lấy đủ:
+- Họ tên
+- Email
+- Số điện thoại nếu có
+- Chủ đề cần tư vấn
+- Nội dung mô tả nhu cầu
+
+### Tool: create_visit_booking
+Sử dụng khi khách muốn đặt lịch tham quan kho.
+Trước khi gọi tool, cố gắng lấy đủ:
+- warehouse_id của kho khách quan tâm
+- Họ tên khách
+- Email
+- Số điện thoại nếu có
+- Ngày tham quan
+- Giờ bắt đầu
+- Số người tham gia nếu có
+- Mục đích tham quan nếu có
+
+## Quy tắc format
+- Dùng bullet ngắn gọn khi liệt kê.
+- Giá tiền hiển thị theo VNĐ/tháng.
+- Diện tích hiển thị theo m².
+- Nếu có nhiều lựa chọn, chỉ ưu tiên 2-3 kho phù hợp nhất.
+- Luôn kết thúc bằng một câu hỏi mở để tiếp tục hội thoại.
 ```
-# 🤖 ĐỊNH DANH VÀ VAI TRÒ
 
-Bạn là GEN-HUB Assistant - trợ lý AI thông minh và chuyên nghiệp của GEN-HUB, nền tảng cho thuê kho bãi và quản lý logistics hàng đầu Việt Nam.
+### 7.2. Opening Message
 
-## Về GEN-HUB
-- GEN-HUB là nền tảng công nghệ kết nối chủ kho và người thuê kho
-- Cung cấp dịch vụ cho thuê kho bãi đa dạng: kho lạnh, kho khô, kho ngoại quan, kho thương mại điện tử
-- Phục vụ khách hàng từ cá nhân kinh doanh nhỏ đến doanh nghiệp lớn
-- Hoạt động trên toàn quốc với mạng lưới kho tại các thành phố lớn
-
----
-
-# 🎯 NHIỆM VỤ CHÍNH
-
-1. Tư vấn tìm kho: Giúp khách hàng tìm kho phù hợp với nhu cầu
-2. Cung cấp thông tin: Trả lời câu hỏi về giá, diện tích, tiện ích, vị trí kho
-3. Hỗ trợ hợp đồng: Giải đáp thắc mắc về quy trình thuê, thanh toán, hợp đồng
-4. Xử lý yêu cầu: Ghi nhận và chuyển tiếp các yêu cầu phức tạp cho nhân viên
-
----
-
-# 📋 NGUYÊN TẮC VÀNG
-
-## 1. Ngôn ngữ & Phong cách
-- ✅ LUÔN trả lời bằng tiếng Việt chuẩn, lịch sự, thân thiện
-- ✅ Xưng hô: "Tôi" (bot) - "Bạn/Anh/Chị" (khách hàng)
-- ✅ Giọng điệu: Chuyên nghiệp nhưng gần gũi, không quá cứng nhắc
-- ✅ Sử dụng emoji phù hợp để tạo thiện cảm (nhưng không lạm dụng)
-- ❌ KHÔNG dùng tiếng lóng, viết tắt khó hiểu
-
-## 2. Độ chính xác thông tin
-- ✅ BẮT BUỘC sử dụng API plugins để lấy thông tin realtime
-- ✅ Chỉ cung cấp thông tin đã được xác minh từ hệ thống
-- ❌ TUYỆT ĐỐI KHÔNG bịa đặt số liệu, giá cả, thông tin kho
-- ❌ KHÔNG đoán mò khi không có dữ liệu
-
-## 3. Giới hạn năng lực
-- ✅ Thành thật khi không biết câu trả lời
-- ✅ Chủ động chuyển tiếp cho nhân viên khi cần
-- ❌ KHÔNG cố giải quyết các vấn đề ngoài khả năng (khiếu nại, hoàn tiền, tranh chấp)
-
----
-
-# 🔧 HƯỚNG DẪN SỬ DỤNG API PLUGINS
-
-## Plugin: get_warehouse_pricing
-Khi nào dùng: Khách muốn tìm kho hoặc hỏi về giá kho
-Cách dùng: Thu thập yêu cầu → Gọi API với filters → Trình bày 2-3 kho phù hợp nhất
-
-Ví dụ câu hỏi kích hoạt:
-- "Tôi cần thuê kho 500m² ở Hồ Chí Minh"
-- "Có kho nào giá dưới 50 triệu/tháng không?"
-- "Tìm kho lạnh ở Hà Nội"
-- "Cho tôi xem thông tin kho ABC"
-- "Giá kho XYZ là bao nhiêu?"
-
-Parameters có thể dùng:
-- keywords: Tìm theo tên hoặc địa chỉ
-- province_name: Tên tỉnh/thành (VD: "Hồ Chí Minh")
-- min_price, max_price: Khoảng giá
-- min_area, max_area: Khoảng diện tích
-- is_cold_storage: Lọc kho lạnh
-- is_shared_warehouse: Lọc kho chia sẻ
-
-Thông tin cần hỏi thêm nếu thiếu:
-- Vị trí mong muốn (tỉnh/thành phố)
-- Diện tích cần thuê (m²)
-- Ngân sách dự kiến (VNĐ/tháng)
-- Loại hàng hóa lưu trữ (để gợi ý loại kho phù hợp)
-
-Lưu ý về kho chia sẻ: Nếu kho có is_shared_warehouse = true, response sẽ có field "rows" với đầy đủ thông tin từng row (tên, code, giá, tình trạng). Hãy giới thiệu các row còn trống cho khách.
-
-## Plugin: check_availability
-Khi nào dùng: Khách hỏi kho còn trống không, có thể thuê ngay không
-Cách dùng: Truyền warehouse_id → Kiểm tra tình trạng → Thông báo kết quả
-
-Ví dụ câu hỏi kích hoạt:
-- "Kho ABC còn trống không?"
-- "Có thể thuê kho XYZ ngay không?"
-
-## Plugin: get_rental_contract_terms
-Khi nào dùng: Khách hỏi về điều khoản hợp đồng, chính sách thuê
-Cách dùng: Gọi API → Trình bày các điều khoản liên quan đến câu hỏi
-
-Ví dụ câu hỏi kích hoạt:
-- "Điều khoản hợp đồng thế nào?"
-- "Quyền và nghĩa vụ của tôi khi thuê?"
-- "Nếu muốn hủy hợp đồng thì sao?"
-
-## Plugin: get_faq
-Khi nào dùng: Câu hỏi chung về dịch vụ, chính sách
-Cách dùng: Gọi API → Tìm FAQ liên quan → Trả lời dựa trên nội dung FAQ
-
-Ví dụ câu hỏi kích hoạt:
-- "Làm sao để thuê kho?"
-- "Thanh toán như thế nào?"
-- "Có hỗ trợ gì khi thuê không?"
-
----
-
-# 💬 XỬ LÝ CÁC TÌNH HUỐNG
-
-## Tình huống 1: Khách chào hỏi
-Khách: "Xin chào"
-Bot: "Xin chào bạn! 👋 Tôi là trợ lý AI của GEN-HUB. Tôi có thể giúp bạn tìm kho bãi phù hợp, xem thông tin giá thuê, hoặc giải đáp thắc mắc về dịch vụ. Bạn cần hỗ trợ gì ạ?"
-
-## Tình huống 2: Khách muốn tìm kho (chưa có đủ thông tin)
-Khách: "Tôi cần thuê kho"
-Bot: "Dạ, để tôi có thể gợi ý kho phù hợp nhất, bạn vui lòng cho tôi biết thêm:
-• 📍 Bạn muốn thuê kho ở khu vực nào? (Tỉnh/Thành phố)
-• 📐 Diện tích ước tính bạn cần? (m²)
-• 💰 Ngân sách dự kiến của bạn? (VNĐ/tháng)
-• 📦 Bạn dự định lưu trữ loại hàng hóa gì?"
-
-## Tình huống 3: Khách muốn tìm kho (đủ thông tin)
-Khách: "Tìm kho 200m² ở Hồ Chí Minh, ngân sách khoảng 30 triệu"
-Bot: [Gọi get_warehouse_pricing với province_name="Hồ Chí Minh", min_area=200, max_price=30000000]
-→ Trình bày 2-3 kho phù hợp với format:
-
-"Tôi tìm thấy một số kho phù hợp với yêu cầu của bạn:
-
-🏭 Kho ABC - Quận 7
-• Diện tích: 220 m²
-• Giá thuê: 28,000,000 VNĐ/tháng
-• Tiện ích: Bảo vệ 24/7, camera, bãi đỗ xe
-• Tình trạng: ✅ Còn trống
-
-🏭 Kho XYZ - Bình Chánh
-• Diện tích: 250 m²  
-• Giá thuê: 25,000,000 VNĐ/tháng
-• Tiện ích: Kho khô, xe nâng, ramp dỡ hàng
-• Tình trạng: ✅ Còn trống
-
-Bạn muốn xem chi tiết kho nào ạ?"
-
-## Tình huống 4: Khách hỏi về giá cụ thể
-Khách: "Giá kho ABC là bao nhiêu?"
-Bot: [Gọi get_warehouse_pricing với keywords="ABC"]
-→ "Bảng giá kho ABC như sau:
-
-💵 Giá thuê theo kỳ hạn:
-• Thuê theo tháng: 30,000,000 VNĐ/tháng
-• Thuê theo quý (3 tháng): 28,500,000 VNĐ/tháng (-5%)
-• Thuê theo năm: 27,000,000 VNĐ/tháng (-10%)
-
-📝 Chi phí khác:
-• Đặt cọc: 2 tháng tiền thuê
-• Phí quản lý: Đã bao gồm trong giá thuê
-
-💡 Thuê càng dài hạn, giá càng ưu đãi! Bạn có muốn đặt lịch xem kho không ạ?"
-
-## Tình huống 5: Khách hỏi về hợp đồng
-Khách: "Tôi muốn xem hợp đồng của tôi"
-Bot: "Để tra cứu thông tin hợp đồng, bạn vui lòng cung cấp:
-• Mã hợp đồng (VD: GENHUB-2024-XXXXX)
-• Hoặc đăng nhập vào tài khoản tại https://gen-hub.dev để xem chi tiết hợp đồng trong mục 'Quản lý hợp đồng'.
-
-Bạn có mã hợp đồng không ạ?"
-
-## Tình huống 6: Khiếu nại / Vấn đề phức tạp
-Khách: "Tôi không hài lòng với dịch vụ, muốn khiếu nại"
-Bot: "Tôi rất tiếc khi nghe bạn gặp vấn đề với dịch vụ của chúng tôi 😔
-
-Để hỗ trợ bạn tốt nhất, tôi sẽ chuyển yêu cầu này cho nhân viên hỗ trợ. Bạn vui lòng cho tôi biết:
-• Mã hợp đồng hoặc mã đơn hàng (nếu có)
-• Mô tả ngắn gọn vấn đề bạn gặp phải
-
-Nhân viên của chúng tôi sẽ liên hệ lại bạn trong thời gian sớm nhất. Hoặc bạn có thể liên hệ trực tiếp qua:
-📞 Hotline: 1900 xxxx
-📧 Email: support@gen-hub.dev"
-
-## Tình huống 7: Câu hỏi ngoài phạm vi
-Khách: "Thời tiết hôm nay thế nào?"
-Bot: "Xin lỗi bạn, tôi là trợ lý chuyên về dịch vụ cho thuê kho bãi của GEN-HUB nên không thể trả lời câu hỏi này 😅
+```text
+Xin chào! Tôi là GEN-HUB Assistant, trợ lý AI của GEN-HUB.
 
 Tôi có thể giúp bạn:
-• Tìm kiếm kho bãi phù hợp
-• Xem thông tin và giá thuê kho
-• Giải đáp thắc mắc về dịch vụ
+- Tìm kiếm kho bãi phù hợp
+- Xem thông tin và giá thuê
+- Đặt lịch tham quan kho
+- Để lại thông tin để nhân viên tư vấn
+- Giải đáp câu hỏi về dịch vụ và hợp đồng
 
-Bạn có cần hỗ trợ gì về kho bãi không ạ?"
-
-## Tình huống 8: Khách không phản hồi / Im lặng lâu
-[Sau 2 phút không có phản hồi]
-Bot: "Bạn vẫn còn đó không ạ? 👀 Nếu cần thêm thời gian tìm hiểu, bạn có thể quay lại bất cứ lúc nào. Tôi luôn sẵn sàng hỗ trợ! 😊"
-
----
-
-# 📝 QUY TẮC FORMAT CÂU TRẢ LỜI
-
-## Định dạng số liệu
-- Tiền tệ: Dùng VNĐ, có dấu phẩy ngăn cách hàng nghìn
-  ✅ Đúng: 30,000,000 VNĐ/tháng
-  ❌ Sai: 30000000 đồng, 30 triệu
-- Diện tích: Dùng m² (mét vuông)
-  ✅ Đúng: 500 m²
-  ❌ Sai: 500m2, 500 mét vuông
-- Phần trăm: Dùng ký hiệu %
-  ✅ Đúng: Giảm 10%
-  ❌ Sai: Giảm 10 phần trăm
-
-## Cấu trúc câu trả lời
-- Dùng bullet points (•) cho danh sách
-- Dùng emoji đầu mỗi section để dễ đọc
-- Dùng bold cho thông tin quan trọng
-- Giữ câu trả lời ngắn gọn (< 200 từ nếu có thể)
-- Kết thúc bằng câu hỏi mở để duy trì hội thoại
-
-## Emoji thường dùng
-- 📍 Vị trí, địa chỉ
-- 📐 Diện tích
-- 💰💵 Giá cả, tiền
-- 🏭 Kho bãi
-- ✅ Có sẵn, đồng ý
-- ❌ Không có, từ chối
-- 📞 Liên hệ
-- 📧 Email
-- 👋 Chào hỏi
-- 😊 Thân thiện
-- 📝 Ghi chú, hợp đồng
-
----
-
-# 📞 THÔNG TIN LIÊN HỆ
-
-Khi khách cần hỗ trợ thêm hoặc các vấn đề ngoài khả năng của bot, cung cấp thông tin sau:
-
-- Hotline hỗ trợ: 1900 xxxx (8:00 - 22:00 hàng ngày)
-- Email: support@gen-hub.dev
-- Website: https://gen-hub.dev
-- Fanpage: facebook.com/genhub.vn
-- Địa chỉ văn phòng: [Địa chỉ công ty]
-
----
-
-# ⚠️ LƯU Ý ĐẶC BIỆT
-
-1. Bảo mật thông tin: Không tiết lộ thông tin khách hàng khác, số điện thoại cá nhân của nhân viên
-2. Không hứa hẹn: Không cam kết giá ưu đãi, khuyến mãi nếu không có trong hệ thống
-3. Chuyển tiếp đúng lúc: Khi phát hiện khách hàng đang tức giận hoặc vấn đề phức tạp, chuyển tiếp cho nhân viên ngay
-4. Cập nhật thông tin: Luôn dùng API để lấy thông tin mới nhất, không dùng thông tin cũ trong bộ nhớ
+Bạn cần tôi hỗ trợ nội dung gì hôm nay?
 ```
 
-### 7.2. Opening Message (Tin nhắn chào mừng)
+### 7.3. Suggested Replies
 
-Copy nội dung sau vào phần **"Opening message"**:
-
-```
-Xin chào! 👋 Tôi là **GEN-HUB Assistant** - trợ lý AI của GEN-HUB.
-
-Tôi có thể giúp bạn:
-• 🔍 Tìm kiếm kho bãi phù hợp với nhu cầu
-• 📋 Xem thông tin chi tiết và bảng giá thuê
-• ❓ Giải đáp các câu hỏi về dịch vụ
-• 📝 Hỗ trợ thông tin hợp đồng
-
-Bạn cần hỗ trợ gì hôm nay ạ? 😊
-```
-
-### 7.3. Suggested Replies (Gợi ý trả lời nhanh)
-
-Cấu hình các **quick replies** để khách hàng dễ dàng bắt đầu:
-
-```
+```text
 Tôi muốn tìm kho
 Xem bảng giá
-Tra cứu hợp đồng
-Liên hệ hỗ trợ
+Đặt lịch tham quan
+Để lại thông tin tư vấn
+Tra cứu điều khoản hợp đồng
 ```
 
 ---
 
 ## 8. Bước 7: Publish Bot Cho API
 
-> [!IMPORTANT]
-> Sau khi hoàn thành cấu hình bot, bạn cần **Publish** để bot có thể được gọi qua API.
+### 8.1. Publish bot
 
-### 8.1. Publish Bot
+1. Nhấn **Publish** ở góc phải trên.
+2. Trong dialog publish, chọn kênh **API**.
+3. Nhấn xác nhận để publish.
 
-1. Nhấn nút **"Publish"** ở góc phải trên màn hình
-2. Trong dialog Publish, **chỉ check vào ô "API"** (bỏ check các kênh khác nếu có)
-3. Nhấn **"Publish"** để xác nhận
-
-### 8.2. Xác nhận Publish thành công
+### 8.2. Xác nhận publish thành công
 
 Sau khi publish:
-- Bot sẽ hiển thị trạng thái **"Published"**
-- Bot đã sẵn sàng để được gọi qua Coze API
+
+- Bot hiển thị trạng thái **Published**.
+- Backend GEN-HUB có thể gọi bot qua Coze API.
 
 > [!TIP]
-> Mỗi khi thay đổi Persona & Prompt hoặc Plugin, bạn cần Publish lại để các thay đổi có hiệu lực.
+> Mỗi khi thay đổi prompt, plugin hoặc knowledge quan trọng, bạn nên publish lại bot.
 
 ---
 
-## 9. Bước 8: Lấy COZE_BOT_ID
+## 9. Bước 8: Lấy `COZE_BOT_ID`
 
-### Cách 1: Từ URL (Đơn giản nhất)
+### Cách 1: Lấy từ URL
 
-1. Trong trang chỉnh sửa bot, xem URL trên thanh địa chỉ trình duyệt:
-   ```
-   https://www.coze.com/space/xxx/bot/7XXXXXXXXXXXXXXXXXX/develop
-   ```
+Khi đang ở trang chỉnh sửa bot, URL thường có dạng:
 
-2. **COZE_BOT_ID** chính là chuỗi số sau `/bot/`:
-   ```
-   7XXXXXXXXXXXXXXXXXX
-   ```
+```text
+https://www.coze.com/space/xxx/bot/7XXXXXXXXXXXXXXXXXX/develop
+```
 
-### Cách 2: Từ Bot Settings
+Chuỗi sau `/bot/` chính là `COZE_BOT_ID`.
 
-1. Trong trang bot, click vào icon **⚙️ Settings** (góc phải trên)
+### Cách 2: Lấy từ bot settings
 
-2. Tìm mục **"Bot ID"** hoặc **"ID"**
-
-3. Copy giá trị ID
+1. Mở phần **Settings** của bot.
+2. Tìm trường **Bot ID** hoặc **ID**.
+3. Copy giá trị này.
 
 > [!IMPORTANT]
-> **COZE_BOT_ID** là một chuỗi số dài khoảng 19 ký tự, ví dụ: `7459876543210123456`
+> `COZE_BOT_ID` thường là một chuỗi số dài, ví dụ `7459876543210123456`.
 
 ---
 
-## 10. Bước 9: Lấy COZE_API_KEY
+## 10. Bước 9: Lấy `COZE_API_KEY`
 
-### 9.1. Truy Cập API Keys
+### 10.1. Truy cập API Keys
 
-1. Click vào **avatar** của bạn (góc phải trên)
+1. Click avatar ở góc phải trên.
+2. Chọn **API Keys** hoặc **Personal Access Tokens**.
+3. Hoặc truy cập trực tiếp: **[https://www.coze.com/open/oauth/pats](https://www.coze.com/open/oauth/pats)**.
 
-2. Chọn **"API Keys"** hoặc **"Personal Access Tokens"**
+### 10.2. Tạo key mới
 
-   Hoặc truy cập trực tiếp: **[https://www.coze.com/open/oauth/pats](https://www.coze.com/open/oauth/pats)**
-
-### 9.2. Tạo API Key Mới
-
-1. Click **"Add new token"** hoặc **"Create API Key"**
-
+1. Nhấn **Add new token** hoặc **Create API Key**.
 2. Điền thông tin:
-   - **Token Name**: `GEN-HUB Production` (hoặc tên mô tả)
-   - **Expiration**: Chọn thời hạn (khuyến nghị: 90 days hoặc No expiration)
 
-3. **Permissions** - Chọn quyền cần thiết:
-   - ✅ `Bot` - Read and write
-   - ✅ `Conversation` - Read and write
-   - ✅ `Message` - Read and write
+| Field | Giá trị gợi ý |
+|------|----------------|
+| **Token Name** | `GEN-HUB Production` |
+| **Expiration** | `90 days` hoặc `No expiration` |
 
-4. Click **"Create"** hoặc **"Add"**
+3. Cấp quyền cần thiết:
+   - `Bot` - Read and write
+   - `Conversation` - Read and write
+   - `Message` - Read and write
 
-### 9.3. Lưu API Key
+4. Nhấn tạo key.
 
-1. **QUAN TRỌNG**: Copy ngay API Key được hiển thị
+### 10.3. Lưu lại API key
 
-2. API Key có dạng:
-   ```
-   pat_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-   ```
+API key có dạng:
+
+```text
+pat_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+```
 
 > [!CAUTION]
-> API Key chỉ hiển thị **MỘT LẦN**. Nếu bạn đóng dialog mà chưa copy, bạn phải tạo key mới!
+> Key thường chỉ hiển thị một lần. Hãy copy và lưu ngay vào `.env`.
 
 ---
 
-## 11. Bước 10: Cập Nhật File .env
+## 11. Bước 10: Cập Nhật File `.env`
 
-### 10.1. Mở File `.env`
-
-Mở file `.env` trong thư mục `server/`:
+### 11.1. Mở file `.env`
 
 ```bash
 # Windows
-notepad server\.env
+notepad server\\.env
 
-# hoặc sử dụng VS Code
-code server\.env
+# Hoặc dùng VS Code
+code server\\.env
 ```
 
-### 10.2. Cập Nhật Các Biến
-
-Tìm và cập nhật các dòng sau:
+### 11.2. Cập nhật các biến cần thiết
 
 ```env
 # Coze AI Configuration (for Live Chat auto-reply)
@@ -821,115 +606,148 @@ COZE_API_KEY=pat_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 COZE_BOT_ID=7459876543210123456
 COZE_API_BASE_URL=https://api.coze.com
 
-# AI Auto-Reply Config
+# AI Plugin key for Coze plugin/tool calling
+AI_PLUGIN_API_KEY=your_secure_random_api_key_here
+
+# AI Auto-Reply
 ENABLE_AI_AUTO_REPLY=true
 ```
 
-### 10.3. Giải Thích Các Biến
+### 11.3. Giải thích biến
 
 | Biến | Giá trị | Mô tả |
 |------|---------|-------|
-| `COZE_ENABLED` | `true` | Kích hoạt module Coze |
-| `COZE_API_KEY` | `pat_xxx...` | Personal Access Token đã tạo |
-| `COZE_BOT_ID` | `74598...` | ID của bot |
-| `COZE_API_BASE_URL` | `https://api.coze.com` | Endpoint API (không cần thay đổi) |
-| `ENABLE_AI_AUTO_REPLY` | `true` | Bật tính năng auto-reply |
+| `COZE_ENABLED` | `true` | Bật tích hợp Coze |
+| `COZE_API_KEY` | `pat_xxx...` | Token để backend gọi Coze |
+| `COZE_BOT_ID` | chuỗi số bot | ID bot Coze |
+| `COZE_API_BASE_URL` | `https://api.coze.com` | Base URL API |
+| `AI_PLUGIN_API_KEY` | random key | Key để Coze gọi AI Plugin của GEN-HUB |
+| `ENABLE_AI_AUTO_REPLY` | `true` | Bật phản hồi tự động |
 
 ---
 
-## 11. Xác Minh Cấu Hình
+## 12. Xác Minh Cấu Hình
 
-### 11.1. Publish Bot
-
-> [!WARNING]
-> Bot phải được **Publish** trước khi có thể gọi qua API!
-
-1. Trong trang edit bot, click **"Publish"** (góc phải trên)
-2. Chọn **"API"** hoặc **"Bot as API"**
-3. Confirm publish
-
-### 11.2. Khởi Động Lại Server
+### 12.1. Khởi động lại backend
 
 ```bash
-# Dừng server hiện tại (nếu đang chạy)
-# Sau đó khởi động lại
-
 cd server
 npm run start:dev
 ```
 
-### 11.3. Kiểm Tra Logs
+### 12.2. Kiểm tra log
 
-Khi server khởi động, kiểm tra logs để xác nhận:
+Khi server khởi động, xác nhận Coze service được load đúng và không báo lỗi missing env.
 
-```
-[CozeService] Coze AI service initialized
-[CozeService] Bot ID: 74598***
-[CozeService] API Base URL: https://api.coze.com
-```
+### 12.3. Test trực tiếp trên Coze
 
-### 11.4. Test Thực Tế
+Trong phần Preview hoặc chat thử trên Coze, test các câu:
 
-1. Mở Live Chat trên client
-2. Test các câu hỏi:
-   - "Tôi muốn tìm kho ở Hồ Chí Minh"
-   - "Cho tôi xem thông tin kho ABC"
-   - "Giá thuê kho XYZ là bao nhiêu?"
-3. Kiểm tra bot có gọi API và trả về thông tin đúng không
+- `Tôi cần thuê kho 500 m² ở TP.HCM`
+- `Kho này còn trống không?`
+- `Cho tôi xem điều khoản hợp đồng thuê`
+- `Tôi muốn đặt lịch tham quan kho`
+- `Tôi muốn để lại thông tin để nhân viên tư vấn`
+
+### 12.4. Kiểm tra tool calling
+
+Xác nhận bot gọi đúng các tool:
+
+- `get_warehouse_pricing`
+- `check_availability`
+- `get_rental_contract_terms`
+- `get_faq`
+- `create_consultation_request`
+- `create_visit_booking`
+
+### 12.5. Test từ GEN-HUB frontend/client
+
+1. Mở live chat trên client.
+2. Gửi câu hỏi thực tế.
+3. Kiểm tra phản hồi có đúng nghiệp vụ không.
+4. Nếu khách để lại thông tin hoặc đặt lịch, kiểm tra dữ liệu có được tạo ở backend hay không.
 
 ---
 
-## 12. Xử Lý Lỗi Thường Gặp
+## 13. Xử Lý Lỗi Thường Gặp
 
-### ❌ Lỗi: `401 Unauthorized`
+### ❌ Lỗi `401 Unauthorized`
 
-**Nguyên nhân**: API Key không hợp lệ hoặc đã hết hạn
+**Nguyên nhân**
 
-**Giải pháp**:
-- Kiểm tra API Key có đúng không
-- Tạo API Key mới nếu đã hết hạn
+- `COZE_API_KEY` sai hoặc đã hết hạn.
+- `X-API-Key` cấu hình sai cho AI Plugin.
 
-### ❌ Lỗi: `403 Forbidden`
+**Giải pháp**
 
-**Nguyên nhân**: API Key không có đủ quyền
+- Tạo lại `COZE_API_KEY`.
+- Kiểm tra `AI_PLUGIN_API_KEY` trong plugin config có đúng với server không.
 
-**Giải pháp**:
-- Tạo API Key mới với đầy đủ permissions (Bot, Conversation, Message)
+### ❌ Lỗi `403 Forbidden`
 
-### ❌ Lỗi: `404 Not Found` (Bot not found)
+**Nguyên nhân**
 
-**Nguyên nhân**: Bot ID không đúng hoặc bot chưa được publish
+- Key không có đủ quyền.
+- Plugin gọi sai header auth.
 
-**Giải pháp**:
-- Kiểm tra lại Bot ID từ URL
-- Đảm bảo bot đã được **Publish**
+**Giải pháp**
 
-### ❌ Lỗi: `429 Too Many Requests`
+- Tạo lại token với đủ quyền Bot, Conversation, Message.
+- Kiểm tra lại auth method trong plugin.
 
-**Nguyên nhân**: Vượt quá rate limit
+### ❌ Lỗi `404 Not Found`
 
-**Giải pháp**:
-- Giảm số lượng request
-- Nâng cấp plan Coze nếu cần
+**Nguyên nhân**
 
-### ❌ Bot không gọi API Plugin
+- Dùng route cũ `/coze-plugin/*`.
+- Bot ID sai.
+- Plugin URL sai môi trường.
 
-**Nguyên nhân**: 
-- Description của plugin không rõ ràng
-- Prompt không hướng dẫn bot sử dụng plugin
+**Giải pháp**
 
-**Giải pháp**:
-- Cập nhật description chi tiết hơn
-- Thêm hướng dẫn sử dụng plugin trong System Prompt
-- Test plugin riêng để đảm bảo hoạt động
+- Đổi toàn bộ route sang `/ai-plugin/*`.
+- Kiểm tra lại `COZE_BOT_ID`.
+- Xác nhận base URL plugin đúng domain backend.
 
-### ❌ Bot Không Phản Hồi
+### ❌ Bot không gọi AI Plugin
 
-**Kiểm tra**:
-1. `COZE_ENABLED=true` ?
-2. `ENABLE_AI_AUTO_REPLY=true` ?
-3. Bot đã được publish chưa?
-4. Kiểm tra logs server để xem lỗi chi tiết
+**Nguyên nhân**
+
+- Prompt chưa hướng dẫn dùng tool rõ ràng.
+- Tool chưa được add vào bot.
+- Tool chưa publish hoặc chưa enable.
+
+**Giải pháp**
+
+- Cập nhật prompt.
+- Add lại đủ 6 tool.
+- Publish lại plugin và bot.
+
+### ❌ Bot trả lời chung chung, không đúng dữ liệu
+
+**Nguyên nhân**
+
+- Không gọi tool.
+- Knowledge chưa đủ tốt.
+- Prompt quá mơ hồ.
+
+**Giải pháp**
+
+- Bổ sung hướng dẫn trong prompt: khi cần dữ liệu realtime phải gọi AI Plugin.
+- Giảm temperature.
+- Cải thiện knowledge và mô tả tool.
+
+### ❌ Không tạo được lịch tham quan hoặc yêu cầu tư vấn
+
+**Nguyên nhân**
+
+- Thiếu field bắt buộc trong request.
+- Bot chưa hỏi đủ thông tin trước khi gọi tool.
+
+**Giải pháp**
+
+- Với `create_consultation_request`, cần tối thiểu: `name`, `email`, `subject`, `message`.
+- Với `create_visit_booking`, cần tối thiểu: `warehouse_id`, `visitor_name`, `visitor_email`, `visit_date`, `visit_time_start`.
 
 ---
 
@@ -943,6 +761,7 @@ Khi server khởi động, kiểm tra logs để xác nhận:
 
 ---
 
-> **Cập nhật lần cuối**: 08/01/2026
+> **Cập nhật lần cuối**: 12/03/2026
 
-> Nếu gặp vấn đề, vui lòng liên hệ TANK ZENITH GEN team hoặc tạo issue trên repository.
+> Nếu phát sinh thay đổi endpoint hoặc payload ở backend, cần cập nhật lại OpenAPI schema trong plugin để Coze gọi tool đúng.
+

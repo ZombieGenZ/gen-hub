@@ -1,9 +1,3 @@
-/**
- * Interfaces cho Coze Plugin Module
- * Định nghĩa cấu trúc response cho các API public phục vụ Coze AI
- */
-
-// Pricing tier cho warehouse hoặc row
 export interface IPricingTier {
     tier_id: string;
     tier_name: string;
@@ -13,7 +7,6 @@ export interface IPricingTier {
     total_price: number;
 }
 
-// Cấu trúc kho (rows/racks/shelves/blocks)
 export interface IWarehouseStructure {
     total_rows: number;
     total_racks: number;
@@ -21,14 +14,12 @@ export interface IWarehouseStructure {
     total_blocks: number;
 }
 
-// Cấu trúc row
 export interface IRowStructure {
     total_racks: number;
     total_shelves: number;
     total_blocks: number;
 }
 
-// Addon/Insurance gift
 export interface IGiftInfo {
     id: string;
     name: string;
@@ -37,13 +28,11 @@ export interface IGiftInfo {
     gift_duration: string;
 }
 
-// Amenity
 export interface IAmenityInfo {
     name: string;
     description: string | null;
 }
 
-// Thông tin row (cho kho chung)
 export interface IRowPricing {
     id: string;
     name: string;
@@ -57,7 +46,6 @@ export interface IRowPricing {
     insurance_gifts: IGiftInfo[];
 }
 
-// Response cho warehouse pricing
 export interface IWarehousePricingItem {
     id: string;
     name: string;
@@ -70,7 +58,6 @@ export interface IWarehousePricingItem {
     structure: IWarehouseStructure;
     is_shared_warehouse: boolean;
     is_cold_storage: boolean;
-    // Chỉ có khi is_shared_warehouse = true
     rows?: IRowPricing[];
     addon_gifts: IGiftInfo[];
     insurance_gifts: IGiftInfo[];
@@ -84,7 +71,6 @@ export interface IWarehousePricingResponse {
     limit: number;
 }
 
-// Response cho check availability
 export interface IAvailableRow {
     id: string;
     name: string;
@@ -108,7 +94,6 @@ export interface IAvailabilityResponse {
     rows_summary?: IRowsSummary;
 }
 
-// Response cho contract terms
 export interface ITermsSection {
     title: string;
     content: string;
@@ -120,7 +105,6 @@ export interface IRentalContractTermsResponse {
     last_updated: string;
 }
 
-// Response cho FAQ
 export interface IFaqItem {
     id: string;
     question: string;

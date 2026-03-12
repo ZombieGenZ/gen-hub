@@ -1,4 +1,4 @@
-import { BaseSeeder } from '../base.seeder';
+﻿import { BaseSeeder } from '../base.seeder';
 import { PrismaClient } from '@prisma/client';
 
 /**
@@ -103,9 +103,20 @@ export class WarehouseManagerPermissionsSeeder extends BaseSeeder {
                 { key: 'warehouse-visit.read.all', name: 'Xem chi tiết tất cả lịch tham quan', description: 'Quyền xem chi tiết thông tin lịch tham quan của bất kỳ ai' },
                 { key: 'warehouse-visit.update', name: 'Cập nhật lịch tham quan (của mình)', description: 'Quyền cập nhật trạng thái hoặc thông tin lịch tham quan do chính mình tạo' },
                 { key: 'warehouse-visit.update.all', name: 'Cập nhật tất cả lịch tham quan', description: 'Quyền cập nhật lịch tham quan của bất kỳ ai' },
+                { key: 'warehouse-visit.approve', name: 'Duyệt lịch tham quan', description: 'Quyền duyệt hoặc từ chối yêu cầu đặt lịch tham quan kho' },
                 { key: 'warehouse-visit.reschedule', name: 'Dời lịch tham quan', description: 'Quyền thay đổi thời gian tham quan kho hàng' },
                 { key: 'warehouse-visit.delete', name: 'Hủy lịch tham quan (của mình)', description: 'Quyền hủy hoặc xóa lịch tham quan kho do chính mình tạo' },
                 { key: 'warehouse-visit.delete.all', name: 'Hủy tất cả lịch tham quan', description: 'Quyền hủy hoặc xóa lịch tham quan của bất kỳ ai' },
+                { key: 'consultation-request.create', name: 'Tạo yêu cầu tư vấn', description: 'Quyền tạo mới yêu cầu để lại thông tin tư vấn' },
+                { key: 'consultation-request.list', name: 'Xem danh sách yêu cầu tư vấn (của mình)', description: 'Quyền xem danh sách yêu cầu tư vấn do chính mình tạo' },
+                { key: 'consultation-request.list.all', name: 'Xem tất cả yêu cầu tư vấn', description: 'Quyền xem toàn bộ danh sách yêu cầu tư vấn trên hệ thống' },
+                { key: 'consultation-request.read', name: 'Xem chi tiết yêu cầu tư vấn (của mình)', description: 'Quyền xem chi tiết yêu cầu tư vấn do chính mình tạo' },
+                { key: 'consultation-request.read.all', name: 'Xem chi tiết tất cả yêu cầu tư vấn', description: 'Quyền xem chi tiết yêu cầu tư vấn của bất kỳ ai' },
+                { key: 'consultation-request.update', name: 'Cập nhật yêu cầu tư vấn (của mình)', description: 'Quyền cập nhật yêu cầu tư vấn do chính mình tạo' },
+                { key: 'consultation-request.update.all', name: 'Cập nhật tất cả yêu cầu tư vấn', description: 'Quyền cập nhật yêu cầu tư vấn của bất kỳ ai' },
+                { key: 'consultation-request.assign', name: 'Phân công yêu cầu tư vấn', description: 'Quyền gán nhân viên xử lý yêu cầu tư vấn' },
+                { key: 'consultation-request.delete', name: 'Xóa yêu cầu tư vấn (của mình)', description: 'Quyền xóa mềm yêu cầu tư vấn do chính mình tạo' },
+                { key: 'consultation-request.delete.all', name: 'Xóa tất cả yêu cầu tư vấn', description: 'Quyền xóa mềm yêu cầu tư vấn của bất kỳ ai' },
             ];
 
             for (const perm of warehouseVisitPermissions) {
@@ -162,3 +173,4 @@ export class WarehouseManagerPermissionsSeeder extends BaseSeeder {
         }
     }
 }
+

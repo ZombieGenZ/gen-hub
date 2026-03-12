@@ -1,0 +1,33 @@
+{
+  "success": {
+    "warehouse_pricing_fetched": "Warehouse pricing fetched successfully",
+    "availability_checked": "Availability checked successfully",
+    "terms_fetched": "Contract terms fetched successfully",
+    "faq_fetched": "FAQ fetched successfully",
+    "consultation_created": "Consultation request created successfully",
+    "visit_booking_created": "Warehouse visit booking created successfully"
+  },
+  "errors": {
+    "warehouse_not_found": "Warehouse not found",
+    "terms_file_not_found": "Contract terms file not found"
+  },
+  "validation": {
+    "keywords_string": "Search keywords must be a string",
+    "province_name_string": "Province name must be a string",
+    "province_code_string": "Province code must be a string",
+    "min_price_number": "Minimum price must be a number",
+    "min_price_positive": "Minimum price must be greater than or equal to 0",
+    "max_price_number": "Maximum price must be a number",
+    "max_price_positive": "Maximum price must be greater than or equal to 0",
+    "min_area_number": "Minimum area must be a number",
+    "min_area_positive": "Minimum area must be greater than or equal to 0",
+    "max_area_number": "Maximum area must be a number",
+    "max_area_positive": "Maximum area must be greater than or equal to 0",
+    "is_cold_storage_boolean": "Cold storage must be a boolean",
+    "is_shared_warehouse_boolean": "Shared warehouse must be a boolean",
+    "warehouse_id_uuid": "Warehouse ID must be a valid UUID",
+    "row_id_uuid": "Row ID must be a valid UUID",
+    "limit_number": "Limit must be a number",
+    "limit_positive": "Limit must be greater than or equal to 1"
+  }
+}

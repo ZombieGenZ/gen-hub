@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+﻿import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -82,7 +82,8 @@ import { CategoryModule } from './modules/category/category.module';
 import { ArticleModule } from './modules/article/article.module';
 import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
 import { CozeModule } from './modules/coze/coze.module';
-import { CozePluginModule } from './modules/coze-plugin/coze-plugin.module';
+import { AiPluginModule } from './modules/ai-plugin/ai-plugin.module';
+import { ConsultationRequestModule } from './modules/consultation-request/consultation-request.module';
 import { OrgChatModule } from './modules/org-chat/org-chat.module';
 import { BackblazeB2Module } from './modules/backblaze-b2/backblaze-b2.module';
 import { DatabaseBackupModule } from './modules/database-backup/database-backup.module';
@@ -263,7 +264,8 @@ import { AppDownloadModule } from './modules/app-download/app-download.module';
     CozeModule,
 
     // Coze AI Plugin APIs (Public)
-    CozePluginModule,
+    AiPluginModule,
+    ConsultationRequestModule,
 
     // User Warning & Account Management
     WarningCategoryModule,
@@ -321,3 +323,4 @@ import { AppDownloadModule } from './modules/app-download/app-download.module';
   ],
 })
 export class AppModule { }
+

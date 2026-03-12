@@ -4,9 +4,12 @@ import { I18nService } from 'nestjs-i18n';
 import * as fs from 'fs';
 import * as path from 'path';
 
-import { CozePluginRepository } from './coze-plugin.repository';
 import { RedisService } from '../redis/redis.service';
-import { GetWarehousePricingDto, CheckAvailabilityDto } from './dto';
+import { WarehouseVisitService } from '../warehouse-visit/warehouse-visit.service';
+import { ConsultationRequestService } from '../consultation-request/consultation-request.service';
+import { CreateWarehouseVisitBookingDto } from '../warehouse-visit/dto';
+import { AiPluginRepository } from './ai-plugin.repository';
+import { GetWarehousePricingDto, CheckAvailabilityDto, CreateAiConsultationRequestDto, CreateAiVisitBookingDto } from './dto';
 import {
     IWarehousePricingResponse,
     IAvailabilityResponse,
@@ -15,157 +18,123 @@ import {
     ITermsSection,
 } from './interfaces';
 
-/**
- * Service xử lý business logic cho Coze Plugin APIs
- * Tích hợp Redis caching để tối ưu hiệu suất
- */
 @Injectable()
-export class CozePluginService {
+export class AiPluginService {
     private readonly pricingCacheTTL: number;
     private readonly availabilityCacheTTL: number;
     private readonly termsCacheTTL: number;
     private readonly faqCacheTTL: number;
 
     constructor(
-        private readonly repository: CozePluginRepository,
+        private readonly repository: AiPluginRepository,
         private readonly redisService: RedisService,
         private readonly configService: ConfigService,
         private readonly i18n: I18nService,
+        private readonly consultationRequestService: ConsultationRequestService,
+        private readonly warehouseVisitService: WarehouseVisitService,
     ) {
-        this.pricingCacheTTL = this.configService.get<number>('REDIS_COZE_PRICING_TTL', 300); // 5 phút
-        this.availabilityCacheTTL = this.configService.get<number>('REDIS_COZE_AVAILABILITY_TTL', 60); // 1 phút
-        this.termsCacheTTL = this.configService.get<number>('REDIS_COZE_TERMS_TTL', 86400); // 24 giờ
-        this.faqCacheTTL = this.configService.get<number>('REDIS_COZE_FAQ_TTL', 300); // 5 phút
+        this.pricingCacheTTL = this.configService.get<number>('REDIS_COZE_PRICING_TTL', 300);
+        this.availabilityCacheTTL = this.configService.get<number>('REDIS_COZE_AVAILABILITY_TTL', 60);
+        this.termsCacheTTL = this.configService.get<number>('REDIS_COZE_TERMS_TTL', 86400);
+        this.faqCacheTTL = this.configService.get<number>('REDIS_COZE_FAQ_TTL', 300);
     }
 
-    /**
-     * Lấy danh sách warehouse với pricing đầy đủ
-     */
     async getWarehousePricing(dto: GetWarehousePricingDto): Promise<IWarehousePricingResponse> {
-        // Tạo cache key từ query
         const cacheKey = this.getPricingCacheKey(dto);
         const cached = await this.redisService.get(cacheKey);
-        if (cached) {
-            return JSON.parse(cached);
-        }
+        if (cached) return JSON.parse(cached);
 
         const { items, total } = await this.repository.getWarehousePricing(dto);
-
-        const result: IWarehousePricingResponse = {
-            items,
-            total,
-            limit: dto.limit || 3,
-        };
-
-        // Cache nếu có kết quả
+        const result: IWarehousePricingResponse = { items, total, limit: dto.limit || 3 };
         if (items.length > 0) {
             await this.redisService.set(cacheKey, JSON.stringify(result), this.pricingCacheTTL);
         }
-
         return result;
     }
 
-    /**
-     * Kiểm tra tình trạng có sẵn của warehouse
-     */
     async checkAvailability(dto: CheckAvailabilityDto, lang: string): Promise<IAvailabilityResponse> {
-        const cacheKey = `coze:availability:${dto.warehouse_id}`;
+        const cacheKey = `ai-plugin:availability:${dto.warehouse_id}`;
         const cached = await this.redisService.get(cacheKey);
-        if (cached) {
-            return JSON.parse(cached);
-        }
+        if (cached) return JSON.parse(cached);
 
         const result = await this.repository.checkAvailability(dto.warehouse_id);
-
         if (!result) {
-            throw new NotFoundException(
-                this.i18n.t('coze-plugin.errors.warehouse_not_found', { lang }),
-            );
+            throw new NotFoundException(this.i18n.t('ai-plugin.errors.warehouse_not_found', { lang }));
         }
 
         await this.redisService.set(cacheKey, JSON.stringify(result), this.availabilityCacheTTL);
-
         return result;
     }
 
-    /**
-     * Lấy điều khoản hợp đồng từ file markdown
-     */
     async getRentalContractTerms(lang: string): Promise<IRentalContractTermsResponse> {
-        const cacheKey = 'coze:terms';
+        const cacheKey = 'ai-plugin:terms';
         const cached = await this.redisService.get(cacheKey);
-        if (cached) {
-            return JSON.parse(cached);
-        }
+        if (cached) return JSON.parse(cached);
 
-        // Đọc file terms.md
         const termsPath = path.join(process.cwd(), 'documents', 'contract', 'terms.md');
-
         if (!fs.existsSync(termsPath)) {
-            throw new NotFoundException(
-                this.i18n.t('coze-plugin.errors.terms_file_not_found', { lang }),
-            );
+            throw new NotFoundException(this.i18n.t('ai-plugin.errors.terms_file_not_found', { lang }));
         }
 
         const content = fs.readFileSync(termsPath, 'utf-8');
-        const sections = this.parseMarkdownSections(content);
-
-        const result: IRentalContractTermsResponse = {
+        const result = {
             content,
-            sections,
+            sections: this.parseMarkdownSections(content),
             last_updated: this.getFileLastModified(termsPath),
         };
-
         await this.redisService.set(cacheKey, JSON.stringify(result), this.termsCacheTTL);
-
         return result;
     }
 
-    /**
-     * Lấy danh sách FAQ cho AI tư vấn
-     */
     async getFaq(): Promise<IFaqForAiResponse> {
-        const cacheKey = 'coze:faq';
+        const cacheKey = 'ai-plugin:faq';
         const cached = await this.redisService.get(cacheKey);
-        if (cached) {
-            return JSON.parse(cached);
-        }
+        if (cached) return JSON.parse(cached);
 
         const items = await this.repository.getFaqs();
-
-        const result: IFaqForAiResponse = {
-            items,
-            total: items.length,
-        };
-
+        const result = { items, total: items.length };
         await this.redisService.set(cacheKey, JSON.stringify(result), this.faqCacheTTL);
-
         return result;
     }
 
-    /**
-     * Parse markdown thành các sections
-     */
+    async createConsultationRequest(dto: CreateAiConsultationRequestDto) {
+        return this.consultationRequestService.createRequest({
+            ...dto,
+            warehouse_template_id: dto.warehouse_id,
+            source: 'AI_CHATBOT',
+        }, null);
+    }
+
+    async createVisitBooking(dto: CreateAiVisitBookingDto) {
+        const payload: CreateWarehouseVisitBookingDto = {
+            warehouse_template_id: dto.warehouse_id,
+            organization_id: dto.organization_id,
+            visitor_name: dto.visitor_name,
+            visitor_email: dto.visitor_email,
+            visitor_phone: dto.visitor_phone,
+            visitor_company: dto.visitor_company,
+            visitor_position: dto.visitor_position,
+            visit_date: dto.visit_date,
+            visit_time_start: dto.visit_time_start,
+            visit_time_end: dto.visit_time_end,
+            purpose: dto.purpose,
+            purpose_details: dto.purpose_details,
+            number_of_visitors: dto.number_of_visitors,
+        };
+
+        return this.warehouseVisitService.createBooking(payload, null);
+    }
+
     private parseMarkdownSections(content: string): ITermsSection[] {
         const sections: ITermsSection[] = [];
         const lines = content.split('\n');
-
         let currentTitle = '';
         let currentContent: string[] = [];
 
         for (const line of lines) {
-            // Detect heading (### **ĐIỀU X:...**)
-            // Matches patterns like: "### **ĐIỀU 1: PHẠM VI DỊCH VỤ**"
-            const headingMatch = line.match(/^#{1,3}\s+\*{0,2}(ĐIỀU\s+\d+:.+?)\*{0,2}\s*$/);
-
+            const headingMatch = line.match(/^#{1,3}\s+\*{0,2}(.+?)\*{0,2}\s*$/);
             if (headingMatch) {
-                // Lưu section trước đó
-                if (currentTitle) {
-                    sections.push({
-                        title: currentTitle,
-                        content: currentContent.join('\n').trim(),
-                    });
-                }
+                if (currentTitle) sections.push({ title: currentTitle, content: currentContent.join('\n').trim() });
                 currentTitle = headingMatch[1].replace(/\*+/g, '').trim();
                 currentContent = [];
             } else if (currentTitle) {
@@ -173,20 +142,10 @@ export class CozePluginService {
             }
         }
 
-        // Lưu section cuối cùng
-        if (currentTitle) {
-            sections.push({
-                title: currentTitle,
-                content: currentContent.join('\n').trim(),
-            });
-        }
-
+        if (currentTitle) sections.push({ title: currentTitle, content: currentContent.join('\n').trim() });
         return sections;
     }
 
-    /**
-     * Lấy ngày sửa đổi file
-     */
     private getFileLastModified(filePath: string): string {
         try {
             const stats = fs.statSync(filePath);
@@ -196,9 +155,6 @@ export class CozePluginService {
         }
     }
 
-    /**
-     * Tạo cache key cho pricing query
-     */
     private getPricingCacheKey(dto: GetWarehousePricingDto): string {
         const key = {
             k: dto.keywords,
@@ -213,6 +169,6 @@ export class CozePluginService {
             wid: dto.warehouse_id,
             l: dto.limit,
         };
-        return `coze:pricing:${JSON.stringify(key)}`;
+        return `ai-plugin:pricing:${JSON.stringify(key)}`;
     }
 }

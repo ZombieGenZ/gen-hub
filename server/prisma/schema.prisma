@@ -1,4 +1,4 @@
-generator client {
+﻿generator client {
   provider        = "prisma-client-js"
   previewFeatures = ["postgresqlExtensions"]
 }
@@ -131,6 +131,7 @@ model User {
 
   assigned_contact_conversations ContactConversation[]      @relation("AssignedStaff")
   contact_staff_assignments      ContactConversationStaff[] @relation("ContactStaff")
+  assigned_consultation_requests ConsultationRequest[]      @relation("ConsultationAssignedStaff")
 
   warnings UserWarning[]
   warehouse_managers WarehouseTemplateManager[]
@@ -589,6 +590,7 @@ model WarehouseTemplate {
 
   managers          WarehouseTemplateManager[]
   visit_bookings    WarehouseVisitBooking[]
+  consultation_requests ConsultationRequest[]
   generated_warehouses Warehouse[] @relation("GeneratedWarehouses")
 
   @@map("warehouse_templates")
@@ -4158,6 +4160,21 @@ enum WarehouseVisitPurpose {
   OTHER
 }
 
+enum ConsultationRequestStatus {
+  PENDING
+  IN_PROGRESS
+  CONTACTED
+  COMPLETED
+  CANCELLED
+}
+
+enum ConsultationRequestSource {
+  WEB_FORM
+  AI_CHATBOT
+  PHONE
+  OTHER
+}
+
 model WarehouseVisitBooking {
   id                    String @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   code                  String @unique
@@ -4229,17 +4246,46 @@ model WarehouseVisitBooking {
   @@map("warehouse_visit_bookings")
 }
 
+model ConsultationRequest {
+  id                    String @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  code                  String @unique
+  name                  String
+  email                 String
+  phone                 String?
+  company               String?
+  position              String?
+  subject               String
+  message               String @db.Text
+  warehouse_template_id String? @db.Uuid
+  source                ConsultationRequestSource @default(WEB_FORM)
+  status                ConsultationRequestStatus @default(PENDING)
+  assigned_to           String? @db.Uuid
+  assigned_at           DateTime?
+  staff_notes           String? @db.Text
+  contacted_at          DateTime?
+  completed_at          DateTime?
 
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean   @default(false)
+  deleted_at DateTime?
 
+  created_by String?
+  updated_by String?
+  deleted_by String?
 
+  warehouse_template WarehouseTemplate? @relation(fields: [warehouse_template_id], references: [id])
+  assigned_staff     User?              @relation("ConsultationAssignedStaff", fields: [assigned_to], references: [id])
 
-
-
-
-
-
-
-
+  @@index([code])
+  @@index([email])
+  @@index([status])
+  @@index([source])
+  @@index([assigned_to])
+  @@index([warehouse_template_id])
+  @@map("consultation_requests")
+}
 
 model CozeConversation {
   id         String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
@@ -4583,3 +4629,4 @@ model AppDownloadInvite {
   @@index([email])
   @@map("app_download_invites")
 }
+

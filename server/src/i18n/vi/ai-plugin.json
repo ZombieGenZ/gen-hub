@@ -1,0 +1,33 @@
+{
+  "success": {
+    "warehouse_pricing_fetched": "Lay thong tin gia kho thanh cong",
+    "availability_checked": "Kiem tra tinh trang thanh cong",
+    "terms_fetched": "Lay dieu khoan hop dong thanh cong",
+    "faq_fetched": "Lay FAQ thanh cong",
+    "consultation_created": "Tao yeu cau tu van thanh cong",
+    "visit_booking_created": "Tao lich tham quan kho thanh cong"
+  },
+  "errors": {
+    "warehouse_not_found": "Khong tim thay kho",
+    "terms_file_not_found": "Khong tim thay file dieu khoan hop dong"
+  },
+  "validation": {
+    "keywords_string": "Tu khoa tim kiem phai la chuoi",
+    "province_name_string": "Ten tinh thanh phai la chuoi",
+    "province_code_string": "Ma tinh thanh phai la chuoi",
+    "min_price_number": "Gia toi thieu phai la so",
+    "min_price_positive": "Gia toi thieu phai lon hon hoac bang 0",
+    "max_price_number": "Gia toi da phai la so",
+    "max_price_positive": "Gia toi da phai lon hon hoac bang 0",
+    "min_area_number": "Dien tich toi thieu phai la so",
+    "min_area_positive": "Dien tich toi thieu phai lon hon hoac bang 0",
+    "max_area_number": "Dien tich toi da phai la so",
+    "max_area_positive": "Dien tich toi da phai lon hon hoac bang 0",
+    "is_cold_storage_boolean": "Kho lanh phai la boolean",
+    "is_shared_warehouse_boolean": "Kho chia se phai la boolean",
+    "warehouse_id_uuid": "ID kho phai la UUID hop le",
+    "row_id_uuid": "ID row phai la UUID hop le",
+    "limit_number": "Limit phai la so",
+    "limit_positive": "Limit phai lon hon hoac bang 1"
+  }
+}

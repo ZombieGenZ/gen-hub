@@ -1,0 +1,6 @@
+{
+  "errors": {
+    "not_found": "Khong tim thay yeu cau tu van",
+    "assigned_to_required": "Can cung cap nhan vien duoc phan cong"
+  }
+}

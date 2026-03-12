@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+﻿import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 import { google } from 'googleapis';
@@ -1556,5 +1556,77 @@ export class EmailService {
       html: await this.createEmailTemplate(content, appName, lang),
     });
   }
+
+  async sendVisitBookingApprovedEmail(
+    to: string,
+    visitorName: string,
+    bookingCode: string,
+    warehouseName: string,
+    visitDate: Date,
+    visitTimeStart: string,
+    lang: string = 'vi',
+  ): Promise<boolean> {
+    const appName = this.appConfigService.get('brandName');
+    const colors = this.appConfigService.get('colors');
+    const subject = await this.i18n.t('warehouse_visit.email.approved.subject', { lang, args: { bookingCode } });
+    const title = await this.i18n.t('warehouse_visit.email.approved.title', { lang });
+    const greeting = await this.i18n.t('warehouse_visit.email.approved.greeting', { lang, args: { visitorName } });
+    const message = await this.i18n.t('warehouse_visit.email.approved.message', { lang });
+    const warehouseLabel = await this.i18n.t('warehouse_visit.email.approved.warehouse', { lang });
+    const dateLabel = await this.i18n.t('warehouse_visit.email.approved.date', { lang });
+    const timeLabel = await this.i18n.t('warehouse_visit.email.approved.time', { lang });
+    const bookingCodeLabel = await this.i18n.t('warehouse_visit.email.approved.booking_code', { lang });
+
+    const content = `
+      <h2 style="margin:0 0 20px;color:${colors.gray900};text-align:center;">${title}</h2>
+      <p style="margin:0 0 16px;color:${colors.gray700};text-align:center;">${greeting}</p>
+      <p style="margin:0 0 24px;color:${colors.gray700};text-align:center;">${message}</p>
+      <div style="background:${colors.gray100};border-radius:8px;padding:20px;">
+        <p><strong>${bookingCodeLabel}:</strong> ${bookingCode}</p>
+        <p><strong>${warehouseLabel}:</strong> ${warehouseName}</p>
+        <p><strong>${dateLabel}:</strong> ${new Date(visitDate).toISOString().split('T')[0]}</p>
+        <p><strong>${timeLabel}:</strong> ${visitTimeStart}</p>
+      </div>
+    `;
+
+    return this.sendEmail({
+      to,
+      subject,
+      html: await this.createEmailTemplate(content, appName, lang),
+    });
+  }
+
+  async sendVisitBookingRejectedEmail(
+    to: string,
+    visitorName: string,
+    bookingCode: string,
+    rejectionReason?: string,
+    lang: string = 'vi',
+  ): Promise<boolean> {
+    const appName = this.appConfigService.get('brandName');
+    const colors = this.appConfigService.get('colors');
+    const subject = await this.i18n.t('warehouse_visit.email.rejected.subject', { lang, args: { bookingCode } });
+    const title = await this.i18n.t('warehouse_visit.email.rejected.title', { lang });
+    const greeting = await this.i18n.t('warehouse_visit.email.rejected.greeting', { lang, args: { visitorName } });
+    const message = await this.i18n.t('warehouse_visit.email.rejected.message', { lang });
+    const reasonLabel = await this.i18n.t('warehouse_visit.email.rejected.reason', { lang });
+
+    const content = `
+      <h2 style="margin:0 0 20px;color:${colors.gray900};text-align:center;">${title}</h2>
+      <p style="margin:0 0 16px;color:${colors.gray700};text-align:center;">${greeting}</p>
+      <p style="margin:0 0 24px;color:${colors.gray700};text-align:center;">${message}</p>
+      <div style="background:${colors.gray100};border-radius:8px;padding:20px;">
+        <p><strong>Code:</strong> ${bookingCode}</p>
+        ${rejectionReason ? `<p><strong>${reasonLabel}:</strong> ${rejectionReason}</p>` : ''}
+      </div>
+    `;
+
+    return this.sendEmail({
+      to,
+      subject,
+      html: await this.createEmailTemplate(content, appName, lang),
+    });
+  }
 }
+
 

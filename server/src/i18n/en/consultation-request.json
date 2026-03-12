@@ -1,0 +1,6 @@
+{
+  "errors": {
+    "not_found": "Consultation request not found",
+    "assigned_to_required": "Assigned staff is required"
+  }
+}

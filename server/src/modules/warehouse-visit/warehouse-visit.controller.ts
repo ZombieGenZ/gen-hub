@@ -1,8 +1,9 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, Request, UseGuards, ParseUUIDPipe } from '@nestjs/common';
+﻿import { Controller, Get, Post, Body, Patch, Param, Delete, Query, Request, UseGuards, ParseUUIDPipe } from '@nestjs/common';
 import { WarehouseVisitService } from './warehouse-visit.service';
 import { CreateWarehouseVisitBookingDto } from './dto/create-warehouse-visit-booking.dto';
 import { UpdateWarehouseVisitBookingDto } from './dto/update-warehouse-visit-booking.dto';
 import { RescheduleWarehouseVisitBookingDto } from './dto/reschedule-warehouse-visit-booking.dto';
+import { ApproveWarehouseVisitBookingDto } from './dto/approve-warehouse-visit-booking.dto';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiBody, ApiResponse, ApiQuery, ApiParam } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { PermissionGuard } from '../../common/guards/permission.guard';
@@ -309,6 +310,26 @@ export class WarehouseVisitController {
         return this.warehouseVisitService.updateBooking(id, dto, userId, lang, hasUpdateAll ? undefined : userId);
     }
 
+    @Patch(':id/approve')
+    @UseGuards(JwtAuthGuard, PermissionGuard)
+    @ApiBearerAuth('JWT-auth')
+    @RequirePermission('warehouse-visit.approve')
+    @ApiOperation({
+        summary: 'Approve or reject warehouse visit booking',
+        description: 'Approve or reject a pending warehouse visit booking.',
+    })
+    @ApiBody({ type: ApproveWarehouseVisitBookingDto })
+    @ApiResponse({ status: 200, description: 'Booking approval processed successfully' })
+    async approve(
+        @Param('id', ParseUUIDPipe) id: string,
+        @Body() dto: ApproveWarehouseVisitBookingDto,
+        @CurrentUser('userId') userId: string,
+        @Request() req: any,
+    ) {
+        const lang = req.headers['accept-language'] || 'vi';
+        return this.warehouseVisitService.approveBooking(id, dto, userId, lang);
+    }
+
     @Delete(':id')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @ApiBearerAuth('JWT-auth')
@@ -435,3 +456,4 @@ export class WarehouseVisitController {
         );
     }
 }
+

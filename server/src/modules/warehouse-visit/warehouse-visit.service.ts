@@ -1,12 +1,14 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+﻿import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { RedisService } from '../redis/redis.service';
 import { WarehouseVisitRepository } from './warehouse-visit.repository';
 import { CreateWarehouseVisitBookingDto } from './dto/create-warehouse-visit-booking.dto';
 import { UpdateWarehouseVisitBookingDto } from './dto/update-warehouse-visit-booking.dto';
+import { ApproveWarehouseVisitBookingDto, WarehouseVisitApprovalAction } from './dto/approve-warehouse-visit-booking.dto';
 import { WarehouseVisitBooking, Prisma } from '@prisma/client';
 import { IPaginatedResponse } from '../../common/interfaces/pagination.interface';
 import { I18nService } from 'nestjs-i18n';
+import { EmailService } from '../notification/email.service';
 
 @Injectable()
 export class WarehouseVisitService {
@@ -15,6 +17,7 @@ export class WarehouseVisitService {
         private readonly i18n: I18nService,
         private readonly configService: ConfigService,
         private readonly redisService: RedisService,
+        private readonly emailService: EmailService,
     ) { }
 
     async createBooking(dto: CreateWarehouseVisitBookingDto, userId: string | null): Promise<WarehouseVisitBooking> {
@@ -113,6 +116,57 @@ export class WarehouseVisitService {
         return updated;
     }
 
+    async approveBooking(id: string, dto: ApproveWarehouseVisitBookingDto, userId: string, lang: string): Promise<WarehouseVisitBooking> {
+        const booking = await this.findBookingById(id, lang);
+        if (booking.status !== 'PENDING') {
+            throw new BadRequestException(await this.i18n.translate('warehouse_visit.errors.booking_must_be_pending', { lang }));
+        }
+
+        let updated: WarehouseVisitBooking;
+        if (dto.action === WarehouseVisitApprovalAction.APPROVE) {
+            updated = await this.warehouseVisitRepository.updateBooking(id, {
+                status: 'CONFIRMED',
+                confirmed_at: new Date(),
+                confirmed_by: userId,
+                confirmation_notes: dto.confirmation_notes,
+                updated_by: userId,
+            });
+
+            if (updated.visitor_email) {
+                await this.emailService.sendVisitBookingApprovedEmail(
+                    updated.visitor_email,
+                    updated.visitor_name,
+                    updated.code,
+                    (updated as any).warehouse_template?.name || '',
+                    updated.visit_date,
+                    updated.visit_time_start,
+                    lang,
+                );
+            }
+        } else {
+            updated = await this.warehouseVisitRepository.updateBooking(id, {
+                status: 'CANCELLED',
+                cancelled_at: new Date(),
+                cancelled_by: userId,
+                cancel_reason: dto.rejection_reason,
+                updated_by: userId,
+            });
+
+            if (updated.visitor_email) {
+                await this.emailService.sendVisitBookingRejectedEmail(
+                    updated.visitor_email,
+                    updated.visitor_name,
+                    updated.code,
+                    dto.rejection_reason,
+                    lang,
+                );
+            }
+        }
+
+        await this.redisService.invalidateWarehouseVisitCache(id);
+        return updated;
+    }
+
     async rescheduleBooking(id: string, newDate: string, newTimeStart: string, newTimeEnd: string | undefined, userId: string, lang: string, reason?: string, ownerId?: string): Promise<WarehouseVisitBooking> {
         const oldBooking = await this.findBookingById(id, lang, ownerId);
 
@@ -180,3 +234,4 @@ export class WarehouseVisitService {
         await this.redisService.delByPattern(`${listPrefix}:*`);
     }
 }
+
