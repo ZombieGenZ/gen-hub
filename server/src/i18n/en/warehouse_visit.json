@@ -3,6 +3,11 @@
     "booking_not_found": "Warehouse visit booking not found",
     "booking_must_be_pending": "Only pending bookings can be approved or rejected"
   },
+  "validation": {
+    "action_enum": "Booking approval action is invalid",
+    "confirmation_notes_string": "Confirmation notes must be a string",
+    "rejection_reason_string": "Rejection reason must be a string"
+  },
   "email": {
     "approved": {
       "subject": "Warehouse visit {{bookingCode}} approved",

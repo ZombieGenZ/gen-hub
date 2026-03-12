@@ -314,12 +314,84 @@ export class WarehouseVisitController {
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @ApiBearerAuth('JWT-auth')
     @RequirePermission('warehouse-visit.approve')
+    @ApiAuthResponses()
+    @ApiValidationErrorResponse()
     @ApiOperation({
-        summary: 'Approve or reject warehouse visit booking',
-        description: 'Approve or reject a pending warehouse visit booking.',
+        summary: 'Duyệt hoặc từ chối lịch hẹn tham quan',
+        description: 'Xử lý một lịch hẹn đang ở trạng thái chờ duyệt. Khi duyệt, hệ thống sẽ chuyển trạng thái sang `CONFIRMED`; khi từ chối, hệ thống sẽ chuyển sang `CANCELLED` và có thể gửi email thông báo cho khách.',
     })
-    @ApiBody({ type: ApproveWarehouseVisitBookingDto })
-    @ApiResponse({ status: 200, description: 'Booking approval processed successfully' })
+    @ApiParam({
+        name: 'id',
+        type: 'string',
+        description: 'ID của lịch hẹn cần duyệt hoặc từ chối.',
+        example: 'b2f76b83-ce55-49bc-955c-4ddf49bc955c'
+    })
+    @ApiBody({
+        type: ApproveWarehouseVisitBookingDto,
+        description: 'Thông tin xử lý lịch hẹn tham quan.',
+        examples: {
+            approve: {
+                summary: 'Duyệt lịch hẹn',
+                value: {
+                    action: 'APPROVE',
+                    confirmation_notes: 'Đã xác nhận lịch tham quan với khách vào 09:00 ngày 20/03.'
+                }
+            },
+            reject: {
+                summary: 'Từ chối lịch hẹn',
+                value: {
+                    action: 'REJECT',
+                    rejection_reason: 'Khung giờ khách chọn đã kín, vui lòng chọn lịch khác.'
+                }
+            }
+        }
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Xử lý duyệt hoặc từ chối lịch hẹn thành công.',
+        schema: {
+            type: 'object',
+            properties: {
+                code: { type: 'string', example: 'warehouse_visit.update_success' },
+                message: { type: 'string', example: 'Xử lý lịch hẹn tham quan thành công' },
+                success: { type: 'boolean', example: true },
+                data: {
+                    type: 'object',
+                    properties: {
+                        id: { type: 'string', example: 'b2f76b83-ce55-49bc-955c-4ddf49bc955c' },
+                        status: { type: 'string', example: 'CONFIRMED' },
+                        confirmation_notes: { type: 'string', example: 'Đã xác nhận lịch tham quan với khách vào 09:00 ngày 20/03.' },
+                        cancel_reason: { type: 'string', example: null, nullable: true },
+                        updated_at: { type: 'string', format: 'date-time' },
+                    }
+                }
+            },
+            example: {
+                code: 'warehouse_visit.update_success',
+                message: 'Xử lý lịch hẹn tham quan thành công',
+                success: true,
+                data: {
+                    id: 'b2f76b83-ce55-49bc-955c-4ddf49bc955c',
+                    status: 'CONFIRMED',
+                    confirmation_notes: 'Đã xác nhận lịch tham quan với khách vào 09:00 ngày 20/03.',
+                    cancel_reason: null,
+                    updated_at: '2026-03-12T09:30:00.000Z'
+                }
+            }
+        }
+    })
+    @ApiResponse({
+        status: 404,
+        description: 'Không tìm thấy lịch hẹn cần xử lý.',
+        schema: {
+            type: 'object',
+            properties: {
+                statusCode: { type: 'number', example: 404 },
+                message: { type: 'string', example: 'Không tìm thấy lịch hẹn tham quan kho' },
+                error: { type: 'string', example: 'Not Found' },
+            },
+        },
+    })
     async approve(
         @Param('id', ParseUUIDPipe) id: string,
         @Body() dto: ApproveWarehouseVisitBookingDto,

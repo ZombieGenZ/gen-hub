@@ -1,6 +1,33 @@
 {
+  "success": {
+    "create_success": "Tạo yêu cầu tư vấn thành công",
+    "list_success": "Lấy danh sách yêu cầu tư vấn thành công",
+    "get_success": "Lấy chi tiết yêu cầu tư vấn thành công",
+    "update_success": "Cập nhật yêu cầu tư vấn thành công",
+    "assign_success": "Phân công yêu cầu tư vấn thành công",
+    "delete_success": "Xóa yêu cầu tư vấn thành công"
+  },
   "errors": {
-    "not_found": "Khong tim thay yeu cau tu van",
-    "assigned_to_required": "Can cung cap nhan vien duoc phan cong"
+    "not_found": "Không tìm thấy yêu cầu tư vấn",
+    "assigned_to_required": "Cần cung cấp nhân viên được phân công"
+  },
+  "validation": {
+    "name_string": "Họ tên phải là chuỗi",
+    "email_invalid": "Email không hợp lệ",
+    "phone_string": "Số điện thoại phải là chuỗi",
+    "company_string": "Tên công ty phải là chuỗi",
+    "position_string": "Chức vụ phải là chuỗi",
+    "subject_string": "Chủ đề phải là chuỗi",
+    "message_string": "Nội dung phải là chuỗi",
+    "warehouse_template_id_uuid": "ID kho mẫu phải là UUID hợp lệ",
+    "source_enum": "Nguồn yêu cầu tư vấn không hợp lệ",
+    "page_min": "Trang hiện tại phải lớn hơn hoặc bằng 1",
+    "limit_min": "Giới hạn bản ghi phải lớn hơn hoặc bằng 1",
+    "search_string": "Từ khóa tìm kiếm phải là chuỗi",
+    "status_enum": "Trạng thái yêu cầu tư vấn không hợp lệ",
+    "assigned_to_uuid": "ID nhân viên phụ trách phải là UUID hợp lệ",
+    "sort_by_string": "Trường sắp xếp phải là chuỗi",
+    "sort_order_string": "Thứ tự sắp xếp phải là chuỗi",
+    "staff_notes_string": "Ghi chú nội bộ phải là chuỗi"
   }
 }

@@ -1,25 +1,30 @@
 {
   "errors": {
-    "booking_not_found": "Khong tim thay lich hen tham quan kho",
-    "booking_must_be_pending": "Chi co the duyet lich hen dang cho xu ly"
+    "booking_not_found": "Không tìm thấy lịch hẹn tham quan kho",
+    "booking_must_be_pending": "Chỉ có thể duyệt hoặc từ chối lịch hẹn đang chờ xử lý"
+  },
+  "validation": {
+    "action_enum": "Hành động xử lý lịch hẹn không hợp lệ",
+    "confirmation_notes_string": "Ghi chú xác nhận phải là chuỗi",
+    "rejection_reason_string": "Lý do từ chối phải là chuỗi"
   },
   "email": {
     "approved": {
-      "subject": "Lich tham quan {{bookingCode}} da duoc duyet",
-      "title": "Lich tham quan da duoc duyet",
-      "greeting": "Xin chao {{visitorName}},",
-      "message": "Yeu cau dat lich tham quan kho cua ban da duoc xac nhan.",
+      "subject": "Lịch tham quan {{bookingCode}} đã được duyệt",
+      "title": "Lịch tham quan đã được duyệt",
+      "greeting": "Xin chào {{visitorName}},",
+      "message": "Yêu cầu đặt lịch tham quan kho của bạn đã được xác nhận.",
       "warehouse": "Kho",
-      "date": "Ngay",
-      "time": "Gio",
-      "booking_code": "Ma lich hen"
+      "date": "Ngày",
+      "time": "Giờ",
+      "booking_code": "Mã lịch hẹn"
     },
     "rejected": {
-      "subject": "Lich tham quan {{bookingCode}} khong duoc duyet",
-      "title": "Lich tham quan khong duoc duyet",
-      "greeting": "Xin chao {{visitorName}},",
-      "message": "Yeu cau dat lich tham quan kho cua ban da bi tu choi.",
-      "reason": "Ly do"
+      "subject": "Lịch tham quan {{bookingCode}} không được duyệt",
+      "title": "Lịch tham quan không được duyệt",
+      "greeting": "Xin chào {{visitorName}},",
+      "message": "Yêu cầu đặt lịch tham quan kho của bạn đã bị từ chối.",
+      "reason": "Lý do"
     }
   }
 }

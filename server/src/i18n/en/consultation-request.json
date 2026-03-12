@@ -1,6 +1,33 @@
 {
+  "success": {
+    "create_success": "Consultation request created successfully",
+    "list_success": "Consultation requests fetched successfully",
+    "get_success": "Consultation request details fetched successfully",
+    "update_success": "Consultation request updated successfully",
+    "assign_success": "Consultation request assigned successfully",
+    "delete_success": "Consultation request deleted successfully"
+  },
   "errors": {
     "not_found": "Consultation request not found",
     "assigned_to_required": "Assigned staff is required"
+  },
+  "validation": {
+    "name_string": "Name must be a string",
+    "email_invalid": "Email is invalid",
+    "phone_string": "Phone number must be a string",
+    "company_string": "Company name must be a string",
+    "position_string": "Position must be a string",
+    "subject_string": "Subject must be a string",
+    "message_string": "Message must be a string",
+    "warehouse_template_id_uuid": "Warehouse template ID must be a valid UUID",
+    "source_enum": "Consultation request source is invalid",
+    "page_min": "Page must be greater than or equal to 1",
+    "limit_min": "Limit must be greater than or equal to 1",
+    "search_string": "Search keyword must be a string",
+    "status_enum": "Consultation request status is invalid",
+    "assigned_to_uuid": "Assigned staff ID must be a valid UUID",
+    "sort_by_string": "Sort field must be a string",
+    "sort_order_string": "Sort order must be a string",
+    "staff_notes_string": "Staff notes must be a string"
   }
 }

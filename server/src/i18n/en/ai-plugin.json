@@ -28,6 +28,26 @@
     "warehouse_id_uuid": "Warehouse ID must be a valid UUID",
     "row_id_uuid": "Row ID must be a valid UUID",
     "limit_number": "Limit must be a number",
-    "limit_positive": "Limit must be greater than or equal to 1"
+    "limit_positive": "Limit must be greater than or equal to 1",
+    "name_string": "Name must be a string",
+    "email_invalid": "Email is invalid",
+    "phone_string": "Phone number must be a string",
+    "subject_string": "Subject must be a string",
+    "message_string": "Message must be a string",
+    "company_string": "Company name must be a string",
+    "position_string": "Position must be a string",
+    "organization_id_uuid": "Organization ID must be a valid UUID",
+    "visitor_name_string": "Visitor name must be a string",
+    "visitor_email_invalid": "Visitor email is invalid",
+    "visitor_phone_string": "Visitor phone number must be a string",
+    "visitor_company_string": "Visitor company must be a string",
+    "visitor_position_string": "Visitor position must be a string",
+    "visit_date_date_string": "Visit date must be a valid date string",
+    "visit_time_start_string": "Visit start time must be a string",
+    "visit_time_end_string": "Visit end time must be a string",
+    "purpose_enum": "Visit purpose is invalid",
+    "purpose_details_string": "Purpose details must be a string",
+    "number_of_visitors_int": "Number of visitors must be an integer",
+    "number_of_visitors_min": "Number of visitors must be greater than or equal to 1"
   }
 }
