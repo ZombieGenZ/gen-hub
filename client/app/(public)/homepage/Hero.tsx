@@ -11,7 +11,7 @@ export function PrimeNestHero() {
     return (
         <section className="relative max-w-[1440px] pt-12 mx-auto w-full flex flex-col">
             {/* Main Content Wrapper */}
-            <div className="relative w-full overflow-hidden min-h-[700px] flex flex-col md:block rounded-xl border-white">
+            <div className="relative w-full overflow-hidden min-h-[500px] md:min-h-[700px] flex flex-col md:block rounded-xl border-white">
 
                 {/* Background Image & Overlay */}
                 <div className="absolute inset-0 z-0">
@@ -48,7 +48,7 @@ export function PrimeNestHero() {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: ANIMATION_DURATION, delay: 0.1 }}
-                        className="text-4xl md:text-6xl lg:text-7xl !text-white mb-6 leading-[1.1] tracking-tight drop-shadow-md"
+                        className="text-[32px] md:text-6xl lg:text-7xl !text-white mb-6 leading-[130%] md:leading-[1.1] tracking-tight drop-shadow-md"
                     >
                         Nền Tảng Thuê Kho & Fulfillment Toàn Diện
                     </motion.h1>
@@ -71,7 +71,7 @@ export function PrimeNestHero() {
                         transition={{ duration: ANIMATION_DURATION, delay: 0.3 }}
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
-                        className="w-fit px-8 py-4 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-lg rounded-full shadow-lg transition-colors flex items-center gap-2"
+                        className="w-full sm:w-fit px-8 py-4 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-lg rounded-full shadow-lg transition-colors flex justify-center items-center gap-2"
                     >
                         Nhận Tư Vấn Ngay
                     </motion.button>
@@ -80,7 +80,7 @@ export function PrimeNestHero() {
                 {/* Stats Block (The Scoop) */}
                 <div className="flex w-full relative lg:absolute right-0 bottom-0 flex-col overflow-hidden rounded-tl-[2rem] sm:w-auto sm:flex-row md:flex-wrap mt-8 lg:mt-0 z-20">
 
-                    <div className="flex z-10 w-full flex-col gap-[2rem] px-[3rem] py-[2rem] sm:flex-row lg:gap-[4rem] lg:px-[5rem]">
+                    <div className="flex z-10 w-full flex-col gap-6 px-6 py-6 md:gap-[2rem] md:px-[3rem] md:py-[2rem] sm:flex-row lg:gap-[4rem] lg:px-[5rem]">
                         <div className="flex w-auto flex-col gap-[0.5rem]">
                             <div className="flex w-auto">
                                 <h3 className="text-3xl md:text-4xl font-bold"><span className="text-primary">100,000+</span></h3>

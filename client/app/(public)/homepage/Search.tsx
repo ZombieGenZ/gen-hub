@@ -213,8 +213,8 @@ export function PrimeNestSearch() {
         <section className="py-12 text-foreground border-b border-border">
             <div className="max-w-[1440px] mx-auto px-4 md:px-6">
 
-                <div className="mb-8 text-center">
-                    <h2 className="text-3xl md:text-4xl font-bold mb-2">
+                <div className="mb-8 text-center pt-8 sm:pt-0">
+                    <h2 className="text-[32px] leading-[130%] md:text-4xl font-bold mb-2">
                         {filteredProperties.length} Kho Tìm Thấy
                     </h2>
                     <p className="text-slate-600">
@@ -223,10 +223,10 @@ export function PrimeNestSearch() {
                 </div>
 
                 {/* Main Content: Map & List */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[700px] mb-12">
+                <div className="flex flex-col lg:grid lg:grid-cols-3 gap-6 h-auto lg:h-[700px] mb-12">
 
                     {/* Map Area (2/3) */}
-                    <div className="lg:col-span-2 bg-card rounded-3xl overflow-hidden border border-border shadow-sm relative z-0 h-full flex flex-col">
+                    <div className="lg:col-span-2 bg-card rounded-3xl overflow-hidden border border-border shadow-sm relative z-0 h-[500px] lg:h-full flex flex-col shrink-0">
 
                         {/* Search & Filter Bar Floating on Map */}
                         <div className="absolute top-4 left-4 right-4 z-10 flex flex-col pointer-events-none">
@@ -245,12 +245,12 @@ export function PrimeNestSearch() {
                                 </div>
 
                                 {/* 2. Filters Group */}
-                                <div className="flex gap-2 items-center overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
+                                <div className="flex gap-2 items-center overflow-x-auto overflow-y-hidden pb-2 md:pb-0 scrollbar-hide">
 
                                     {/* Price Filter */}
                                     <Popover>
                                         <PopoverTrigger asChild>
-                                            <Button variant="outline" className="rounded-xl bg-white border-slate-200 shadow-sm hover:bg-slate-50 min-w-[100px] justify-between h-12 px-4 whitespace-nowrap">
+                                            <Button variant="outline" className="rounded-xl bg-white border-slate-200 shadow-sm hover:bg-slate-50 min-w-[max-content] md:min-w-[100px] justify-between h-12 px-4 whitespace-nowrap">
                                                 <span className="truncate">
                                                     {priceRange[0] === 0 && priceRange[1] === 500
                                                         ? "Giá"
@@ -460,8 +460,7 @@ export function PrimeNestSearch() {
                     </div>
 
                     {/* List Area (1/3) - Scrollable */}
-                    {/* List Area (1/3) - Scrollable */}
-                    <div className="lg:col-span-1 bg-card rounded-3xl border border-border shadow-sm overflow-hidden flex flex-col h-full">
+                    <div className="lg:col-span-1 bg-card rounded-3xl border border-border shadow-sm overflow-hidden flex flex-col h-[500px] lg:h-full shrink-0">
                         <div className="overflow-y-auto flex-1 p-4">
                             <PropertyList
                                 properties={filteredProperties}

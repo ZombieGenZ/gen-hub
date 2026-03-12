@@ -4,7 +4,7 @@ import React, { useState } from "react";
 
 import { Square2StackIcon, HomeModernIcon, BuildingOfficeIcon, BoltIcon, MapPinIcon, TruckIcon } from "@heroicons/react/24/outline";
 
-const filters = ["Kho Lạnh", "Kho Thường", "Fulfillment"];
+const filters = ["Kho Thường", "Kho Chung"];
 
 const propertyDetails = [
     { icon: Square2StackIcon, label: "500m2" },
@@ -16,14 +16,14 @@ const propertyDetails = [
 ];
 
 export function PrimeNestFeatured() {
-    const [activeFilter, setActiveFilter] = useState("Kho Lạnh");
+    const [activeFilter, setActiveFilter] = useState("Kho Thường");
 
     return (
-        <section id="properties" className="py-24 bg-background text-foreground">
+        <section id="properties" className="py-12 md:py-24 bg-background text-foreground">
             <div className="max-w-[1440px] mx-auto px-4">
                 {/* Header */}
                 <div className="text-center mb-10">
-                    <h2 className="text-3xl md:text-4xl font-bold mb-3">Kho Nổi Bật</h2>
+                    <h2 className="text-[32px] leading-[130%] md:text-4xl font-bold mb-3">Kho Nổi Bật</h2>
                     <p className="text-slate-600 max-w-xl mx-auto text-sm">
                         Khám phá các kho bãi hàng đầu hiện có trên GenHub, phù hợp với mọi quy mô doanh nghiệp
                     </p>
@@ -49,13 +49,13 @@ export function PrimeNestFeatured() {
                 <div className="grid lg:grid-cols-2 gap-8 items-start">
                     {/* Images */}
                     <div className="grid grid-cols-2 gap-3">
-                        <div className="col-span-2 h-64 rounded-2xl bg-slate-100 border border-slate-200 overflow-hidden relative">
+                        <div className="col-span-2 h-48 md:h-64 rounded-2xl bg-slate-100 border border-slate-200 overflow-hidden relative">
                             <img src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=2670&auto=format&fit=crop" className="w-full h-full object-cover" alt="Warehouse Main" />
                         </div>
-                        <div className="h-36 rounded-2xl bg-slate-100 border border-slate-200 overflow-hidden relative">
+                        <div className="h-28 md:h-36 rounded-2xl bg-slate-100 border border-slate-200 overflow-hidden relative">
                             <img src="https://images.unsplash.com/photo-1553413077-190dd305871c?q=80&w=2535&auto=format&fit=crop" className="w-full h-full object-cover" alt="Warehouse Detail 1" />
                         </div>
-                        <div className="h-36 rounded-2xl bg-slate-100 border border-slate-200 overflow-hidden relative">
+                        <div className="h-28 md:h-36 rounded-2xl bg-slate-100 border border-slate-200 overflow-hidden relative">
                             <img src="https://images.unsplash.com/photo-1565610222536-ef125c59da2e?q=80&w=2670&auto=format&fit=crop" className="w-full h-full object-cover" alt="Warehouse Detail 2" />
                         </div>
                     </div>
@@ -88,14 +88,14 @@ export function PrimeNestFeatured() {
                         </div>
 
                         {/* CTA */}
-                        <div className="flex flex-wrap gap-3 items-center">
-                            <button className="px-5 py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl transition-colors">
+                        <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:items-center">
+                            <button className="w-full sm:w-auto px-5 py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl transition-colors">
                                 Xem Chi Tiết
                             </button>
-                            <button className="px-5 py-3 border border-border text-foreground rounded-xl hover:border-primary hover:text-primary transition-colors">
+                            <button className="w-full sm:w-auto px-5 py-3 border border-border text-foreground rounded-xl hover:border-primary hover:text-primary transition-colors">
                                 Tham Quan 3D
                             </button>
-                            <div className="flex items-center gap-2 text-muted-foreground">
+                            <div className="flex items-center gap-2 text-muted-foreground w-full sm:w-auto justify-center sm:justify-start mt-2 sm:mt-0">
                                 <span className="w-2 h-2 bg-green-500 rounded-full" />
                                 <span className="text-sm">Đang Trống</span>
                             </div>

@@ -47,9 +47,9 @@ const socialIcons = [
 
 export function PrimeNestFooter() {
     return (
-        <footer className="full-width mx-6 py-6 rounded-lg bg-muted border-t border-border">
-            <div className="full-width mx-6 px-6 py-6">
-                <div className="grid grid-cols-2 md:grid-cols-6 gap-8">
+        <footer className="w-full bg-muted border-t border-border mt-12 md:mx-6 md:w-auto md:rounded-lg md:mb-6">
+            <div className="w-full max-w-[1440px] mx-auto px-6 py-12 md:py-8">
+                <div className="grid grid-cols-2 md:grid-cols-6 gap-x-4 gap-y-12 md:gap-8">
                     {/* Brand Column */}
                     <div className="col-span-2">
                         {/* Logo */}
@@ -101,7 +101,7 @@ export function PrimeNestFooter() {
                 </div>
 
                 {/* Bottom Bar */}
-                <div className="mt-16 pt-8 border-t border-border">
+                <div className="mt-12 pt-8 border-t border-border/50">
                     <p className="text-center text-muted-foreground text-sm">
                         © 2026 GenHub. All rights reserved.
                     </p>

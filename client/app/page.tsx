@@ -172,7 +172,7 @@ export default function Home() {
     };
 
     return (
-        <div className="relatisve min-h-screen bg-slate-50 text-slate-900 overflow-x-hidden">
+        <div className="relative min-h-screen bg-slate-50 text-slate-900 overflow-x-hidden">
             <div
                 className={`fixed top-0 left-0 right-0 z-40 transition-all duration-500 ${isScrolled
                     ? "bg-white/95 backdrop-blur-md shadow-lg"
@@ -212,13 +212,6 @@ export default function Home() {
                         <PrimeNestFAQ />
                     </ScrollReveal>
                 </section>
-
-                <section className="bg-slate-50">
-                    <ScrollReveal animation="fade-up" duration={700}>
-                        <PrimeNestContact />
-                    </ScrollReveal>
-                </section>
-
                 <ScrollReveal animation="fade-up" duration={600}>
                     <PrimeNestFooter />
                 </ScrollReveal>

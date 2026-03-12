@@ -34,9 +34,9 @@ const FEATURES: Feature[] = [
 
 export function PrimeNestAbout() {
     return (
-        <section id="about" className="py-20 bg-background text-foreground">
-            <div className="max-w-[1440px] mx-auto px-6">
-                <div className="grid lg:grid-cols-2 gap-12 items-center">
+        <section id="about" className="py-12 md:py-20 bg-background text-foreground">
+            <div className="max-w-[1440px] mx-auto px-4 md:px-6">
+                <div className="grid lg:grid-cols-2 gap-8 md:gap-12 items-center">
                     {/* Image Section */}
                     <div className="relative">
                         <div className="relative rounded-3xl overflow-hidden bg-muted border border-border h-90 min-h-[500px]">
@@ -51,11 +51,11 @@ export function PrimeNestAbout() {
                     {/* Content Section */}
                     <div className="space-y-8">
                         <div>
-                            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+                            <h2 className="text-[32px] leading-[130%] md:text-4xl font-bold mb-4">
                                 Cam Kết Của Chúng Tôi Về{" "}
                                 <span className="text-primary">Dịch Vụ Kho Bãi</span>
                             </h2>
-                            <p className="text-muted-foreground leading-relaxed">
+                            <p className="text-muted-foreground leading-relaxed text-sm md:text-base">
                                 Tại GenHub, chúng tôi đơn giản hóa quy trình tìm kiếm và vận hành kho bãi.
                                 Đội ngũ chuyên gia của chúng tôi luôn đồng hành và hỗ trợ bạn trong mọi bước đi,
                                 đảm bảo sự an tâm tuyệt đối.
@@ -63,7 +63,7 @@ export function PrimeNestAbout() {
                         </div>
 
                         {/* Features Grid */}
-                        <div className="grid md:grid-cols-3 gap-4">
+                        <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-4">
                             {FEATURES.map((feature, index) => (
                                 <div
                                     key={feature.title}
