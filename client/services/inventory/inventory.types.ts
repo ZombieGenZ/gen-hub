@@ -183,9 +183,40 @@ export interface OutboundRequest {
         code: string;
     } | null;
     details?: OutboundDetail[];
+    pick_lists?: ExportPickList[];
     _count?: {
         details: number;
     };
+}
+
+/**
+ * Chi tiết dòng trong pick list (khi fetch phiếu xuất đầy đủ)
+ */
+export interface PickListDetail {
+    id: string;
+    pick_list_id: string;
+    export_detail_id: string;
+    product_id: string;
+    batch_id?: string | null;
+    block_id: string;
+    required_qty: number;
+    picked_qty: number;
+    pick_list?: {
+        id: string;
+        code: string;
+        status: string;
+    };
+}
+
+/**
+ * Pick list trong phiếu xuất kho
+ */
+export interface ExportPickList {
+    id: string;
+    export_id: string;
+    code: string;
+    status: string;
+    details: PickListDetail[];
 }
 
 /**

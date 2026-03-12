@@ -100,12 +100,11 @@ const routeGroups: RouteGroup[] = [
             { path: "/dashboard/customer/products", label: "Products", description: "Internal product management" },
             { path: "/dashboard/customer/inbound", label: "Inbound Requests", description: "Inbound operations (ASN, Putaway)" },
             { path: "/dashboard/customer/outbound", label: "Outbound Requests", description: "Outbound operations (Picking, Verification)" },
-            { path: "/dashboard/customer/inventory", label: "Inventory", description: "Stock intake & export" },
             { path: "/dashboard/customer/balance", label: "Account Balance", description: "Check account balance" },
+            { path: "/dashboard/customer/organization-settings", label: "Organization Settings", description: "Organization settings & profile" },
             { path: "/dashboard/customer/refund-requests", label: "[Coming Soon] Refund Requests", description: "Request refunds" },
             { path: "/dashboard/customer/notifications", label: "Notifications", description: "Account notifications" },
             { path: "/dashboard/customer/warnings", label: "[Coming Soon] Warnings", description: "Account warnings & notices" },
-            { path: "/dashboard/customer/settings", label: "[Coming Soon] Organization Settings", description: "Organization settings & profile" },
             { path: "/user/profile", label: "Profile", description: "Personal account settings" },
         ]
     },
@@ -128,6 +127,11 @@ const routeGroups: RouteGroup[] = [
             { path: "/error", label: "Error 404", description: "Not found page" },
             { path: "/dev/routes", label: "Route Explorer", description: "You are here" },
             { path: "/warehouse-3d", label: "3D-Warehouse", description: "Interactive 3D warehouse visualization" },
+            { path: "/warehouse-floor", label: "Warehouse Floor Hub", description: "Floor operations role selector" },
+            { path: "/warehouse-floor/counter", label: "Warehouse Floor Counter", description: "Barcode-first inventory counting" },
+            { path: "/warehouse-floor/putaway", label: "Warehouse Floor Putaway", description: "Block + product scan putaway flow" },
+            { path: "/warehouse-floor/picking", label: "Warehouse Floor Picking", description: "Swipe-based picking workflow" },
+            { path: "/warehouse-floor/qc", label: "Warehouse Floor QC", description: "QC inspection and quarantine flow" },
         ]
     }
 ];

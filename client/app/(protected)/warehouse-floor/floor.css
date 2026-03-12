@@ -1,0 +1,276 @@
+/* ─── Warehouse Floor UX – Shared Styles ─── */
+
+/* 
+   Border-flash overlay for multi-sensory feedback.
+   Sits as a fixed overlay on the entire viewport.
+*/
+.floor-flash-overlay {
+    pointer-events: none;
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    border: 6px solid transparent;
+    border-radius: 0;
+    opacity: 0;
+    transition: none;
+}
+
+.floor-flash-overlay.flash-success {
+    border-color: #22c55e;
+    opacity: 1;
+    animation: floor-flash 0.5s ease-out forwards;
+}
+
+.floor-flash-overlay.flash-error {
+    border-color: #ef4444;
+    opacity: 1;
+    animation: floor-flash-error 0.8s ease-out forwards;
+}
+
+.floor-flash-overlay.flash-warning {
+    border-color: #f59e0b;
+    opacity: 1;
+    animation: floor-flash 0.5s ease-out forwards;
+}
+
+@keyframes floor-flash {
+    0% { opacity: 1; }
+    60% { opacity: 0.7; }
+    100% { opacity: 0; }
+}
+
+@keyframes floor-flash-error {
+    0% { opacity: 1; }
+    20% { opacity: 0.3; }
+    40% { opacity: 1; }
+    60% { opacity: 0.3; }
+    80% { opacity: 0.7; }
+    100% { opacity: 0; }
+}
+
+/*
+   Lock-screen red overlay when wrong barcode scanned
+*/
+.floor-lockscreen {
+    position: fixed;
+    inset: 0;
+    z-index: 9998;
+    background: rgba(220, 38, 38, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 1rem;
+    animation: floor-lock-in 0.2s ease-out;
+}
+
+@keyframes floor-lock-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/*
+   Fat-finger buttons — minimum 56px touch target
+*/
+.floor-btn {
+    min-height: 56px;
+    min-width: 56px;
+    font-size: 1.125rem;
+    font-weight: 700;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1.5rem;
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.floor-btn:active {
+    transform: scale(0.97);
+}
+
+.floor-btn-giant {
+    min-height: 80px;
+    font-size: 1.5rem;
+    border-radius: 20px;
+    padding: 1rem 2rem;
+}
+
+/*
+   Counter display — giant readable numbers
+*/
+.floor-counter {
+    font-variant-numeric: tabular-nums;
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: -0.02em;
+}
+
+.floor-counter-sm { font-size: 2.5rem; }
+.floor-counter-md { font-size: 4rem; }
+.floor-counter-lg { font-size: 5rem; }
+
+/*
+   Pick-card — swipeable card styling
+*/
+.floor-pick-card {
+    border-radius: 24px;
+    padding: 1.5rem;
+    touch-action: pan-y;
+    transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                opacity 0.3s ease;
+}
+
+.floor-pick-card.swiping-right {
+    transform: translateX(120%) rotate(8deg);
+    opacity: 0;
+}
+
+.floor-pick-card.swiping-left {
+    transform: translateX(-120%) rotate(-8deg);
+    opacity: 0;
+}
+
+/*
+   Navigation direction indicator
+*/
+.floor-direction {
+    font-size: 1.25rem;
+    font-weight: 800;
+    padding: 1rem 1.5rem;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    letter-spacing: 0.02em;
+}
+
+/*
+   Product image in counter mode
+*/
+.floor-product-image {
+    width: 100%;
+    max-width: 200px;
+    aspect-ratio: 1;
+    object-fit: contain;
+    border-radius: 16px;
+    background: #f1f5f9;
+}
+
+/*
+   Completed item collapse animation
+*/
+.floor-item-collapse {
+    animation: floor-collapse 0.4s ease-out forwards;
+    overflow: hidden;
+}
+
+@keyframes floor-collapse {
+    from {
+        max-height: 200px;
+        opacity: 1;
+        margin-bottom: 1rem;
+    }
+    to {
+        max-height: 0;
+        opacity: 0;
+        margin-bottom: 0;
+        padding-top: 0;
+        padding-bottom: 0;
+    }
+}
+
+/*
+   QC giant buttons
+*/
+.floor-qc-pass {
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: white;
+    box-shadow: 0 4px 20px rgba(34, 197, 94, 0.4);
+}
+
+.floor-qc-pass:active {
+    background: linear-gradient(135deg, #16a34a, #15803d);
+}
+
+.floor-qc-fail {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+    box-shadow: 0 4px 20px rgba(239, 68, 68, 0.4);
+}
+
+.floor-qc-fail:active {
+    background: linear-gradient(135deg, #dc2626, #b91c1c);
+}
+
+/*
+   Defect tag buttons
+*/
+.floor-defect-tag {
+    min-height: 48px;
+    padding: 0.5rem 1rem;
+    border-radius: 12px;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    border: 2px solid #e2e8f0;
+    background: white;
+    color: #334155;
+    touch-action: manipulation;
+    transition: all 0.15s;
+}
+
+.floor-defect-tag.selected {
+    border-color: #ef4444;
+    background: #fef2f2;
+    color: #dc2626;
+}
+
+/*
+   Quarantine banner
+*/
+.floor-quarantine-banner {
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    color: #78350f;
+    padding: 1rem 1.5rem;
+    border-radius: 16px;
+    font-weight: 700;
+    font-size: 1.125rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+/*
+   Verification step indicator
+*/
+.floor-step-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 1rem;
+}
+
+.floor-step-indicator.step-active {
+    background: #dbeafe;
+    color: #1d4ed8;
+    border: 2px solid #3b82f6;
+}
+
+.floor-step-indicator.step-done {
+    background: #dcfce7;
+    color: #15803d;
+    border: 2px solid #22c55e;
+}
+
+.floor-step-indicator.step-pending {
+    background: #f1f5f9;
+    color: #94a3b8;
+    border: 2px solid #e2e8f0;
+}
