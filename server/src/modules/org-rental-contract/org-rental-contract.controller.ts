@@ -44,6 +44,18 @@ import { JwtAuthGuard, OrgPermissionGuard } from '../../common/guards';
 import { RequireOrgPermission, CurrentUser, ApiAuthResponses, ApiValidationErrorResponse } from '../../common/decorators';
 import { GetResponse, CreatedResponse, UpdatedResponse, DeletedResponse } from '../../common/responses';
 
+const CONTRACT_ID_EXAMPLE = '550e8400-e29b-41d4-a716-446655440010';
+const CONTRACT_BASE_SCHEMA = {
+    type: 'object',
+    properties: {
+        id: { type: 'string', example: CONTRACT_ID_EXAMPLE },
+        contract_number: { type: 'string', example: 'RC-2026-00001' },
+        status: { type: 'string', example: 'ACTIVE' },
+        organization_id: { type: 'string', example: '550e8400-e29b-41d4-a716-446655440000' },
+        total_amount: { type: 'number', example: 5000000 },
+    },
+};
+
 /**
  * Controller xử lý các endpoints cấp tổ chức cho Rental Contract
  * Route: /organizations/:orgId/rental-contracts
@@ -220,8 +232,24 @@ export class OrgRentalContractController {
     })
     @ApiParam({ name: 'orgId', description: 'ID của tổ chức (UUID)', type: 'string', example: '550e8400-e29b-41d4-a716-446655440000' })
     @ApiParam({ name: 'id', description: 'ID của hợp đồng (UUID)', type: 'string', example: '550e8400-e29b-41d4-a716-446655440010' })
-    @ApiResponse({ status: 200, description: 'Lấy chi tiết hợp đồng thành công' })
-    @ApiResponse({ status: 404, description: 'Không tìm thấy hợp đồng' })
+    @ApiResponse({
+        status: 200,
+        description: 'Lấy chi tiết hợp đồng thành công',
+        schema: {
+            type: 'object',
+            properties: {
+                code: { type: 'string', example: 'rental-contract.read.success' },
+                message: { type: 'string', example: 'Lấy thông tin hợp đồng thành công' },
+                success: { type: 'boolean', example: true },
+                data: CONTRACT_BASE_SCHEMA,
+            },
+        },
+    })
+    @ApiResponse({
+        status: 404,
+        description: 'Không tìm thấy hợp đồng',
+        schema: { type: 'object', properties: { code: { type: 'string', example: 'rental-contract.not_found' }, message: { type: 'string', example: 'Không tìm thấy hợp đồng' }, success: { type: 'boolean', example: false } } },
+    })
     @ApiAuthResponses()
     async findById(
         @Param('orgId', ParseUUIDPipe) orgId: string,
@@ -244,8 +272,33 @@ export class OrgRentalContractController {
     })
     @ApiParam({ name: 'orgId', description: 'ID của tổ chức (UUID)', type: 'string', example: '550e8400-e29b-41d4-a716-446655440000' })
     @ApiParam({ name: 'id', description: 'ID của hợp đồng (UUID)', type: 'string', example: '550e8400-e29b-41d4-a716-446655440010' })
-    @ApiResponse({ status: 200, description: 'Lấy chi tiết đầy đủ thành công' })
-    @ApiResponse({ status: 404, description: 'Không tìm thấy hợp đồng' })
+    @ApiResponse({
+        status: 200,
+        description: 'Lấy chi tiết đầy đủ thành công',
+        schema: {
+            type: 'object',
+            properties: {
+                code: { type: 'string', example: 'rental-contract.read.success' },
+                message: { type: 'string', example: 'Lấy thông tin hợp đồng đầy đủ thành công' },
+                success: { type: 'boolean', example: true },
+                data: {
+                    type: 'object',
+                    properties: {
+                        ...CONTRACT_BASE_SCHEMA.properties,
+                        addons: { type: 'array', items: { type: 'object', example: { id: 'addon-uuid-1', name: 'Camera giám sát', amount: 200000 } } },
+                        insurances: { type: 'array', items: { type: 'object', example: { id: 'insurance-uuid-1', name: 'Bảo hiểm cháy nổ', amount: 150000 } } },
+                        coupons: { type: 'array', items: { type: 'object', example: { code: 'RENEW20', discount_amount: 200000 } } },
+                        logs: { type: 'array', items: { type: 'object', example: { action: 'CREATE', created_at: '2026-03-01T10:00:00.000Z' } } },
+                    },
+                },
+            },
+        },
+    })
+    @ApiResponse({
+        status: 404,
+        description: 'Không tìm thấy hợp đồng',
+        schema: { type: 'object', properties: { code: { type: 'string', example: 'rental-contract.not_found' }, message: { type: 'string', example: 'Không tìm thấy hợp đồng' }, success: { type: 'boolean', example: false } } },
+    })
     @ApiAuthResponses()
     async findByIdFull(
         @Param('orgId', ParseUUIDPipe) orgId: string,
@@ -288,9 +341,42 @@ export class OrgRentalContractController {
             },
         },
     })
-    @ApiResponse({ status: 200, description: 'Gia hạn hợp đồng thành công' })
-    @ApiResponse({ status: 400, description: 'Hợp đồng không thể gia hạn (đã hủy/terminated)' })
-    @ApiResponse({ status: 404, description: 'Không tìm thấy hợp đồng' })
+    @ApiResponse({
+        status: 200,
+        description: 'Gia hạn hợp đồng thành công',
+        schema: {
+            type: 'object',
+            properties: {
+                code: { type: 'string', example: 'rental-contract.update.success' },
+                message: { type: 'string', example: 'Gia hạn hợp đồng thành công' },
+                success: { type: 'boolean', example: true },
+                data: {
+                    type: 'object',
+                    properties: {
+                        ...CONTRACT_BASE_SCHEMA.properties,
+                        status: { type: 'string', example: 'ACTIVE' },
+                        expired_at: { type: 'string', format: 'date-time', example: '2026-12-31T23:59:59.000Z' },
+                        payment_url: { type: 'string', example: 'https://payment.example.com/renew/abc123' },
+                    },
+                },
+            },
+        },
+    })
+    @ApiResponse({
+        status: 400,
+        description: 'Hợp đồng không thể gia hạn hoặc dữ liệu gia hạn không hợp lệ',
+        schema: { type: 'object', properties: { code: { type: 'string', example: 'rental-contract.cannot_renew' }, message: { type: 'string', example: 'Hợp đồng không thể gia hạn' }, success: { type: 'boolean', example: false } } },
+    })
+    @ApiResponse({
+        status: 404,
+        description: 'Không tìm thấy hợp đồng',
+        schema: { type: 'object', properties: { code: { type: 'string', example: 'rental-contract.not_found' }, message: { type: 'string', example: 'Không tìm thấy hợp đồng' }, success: { type: 'boolean', example: false } } },
+    })
+    @ApiResponse({
+        status: 409,
+        description: 'Xung đột dữ liệu khi gia hạn, ví dụ template đang bị khóa',
+        schema: { type: 'object', properties: { code: { type: 'string', example: 'warehouse.template_locked' }, message: { type: 'string', example: 'Kho đang được giữ bởi hợp đồng khác' }, success: { type: 'boolean', example: false } } },
+    })
     @ApiAuthResponses()
     @ApiValidationErrorResponse()
     async renew(
@@ -358,8 +444,24 @@ export class OrgRentalContractController {
     })
     @ApiParam({ name: 'orgId', description: 'ID của tổ chức (UUID)', type: 'string', example: '550e8400-e29b-41d4-a716-446655440000' })
     @ApiParam({ name: 'id', description: 'ID của hợp đồng (UUID)', type: 'string', example: '550e8400-e29b-41d4-a716-446655440010' })
-    @ApiResponse({ status: 200, description: 'Lấy danh sách addon thành công' })
-    @ApiResponse({ status: 404, description: 'Không tìm thấy hợp đồng' })
+    @ApiResponse({
+        status: 200,
+        description: 'Lấy danh sách addon thành công',
+        schema: {
+            type: 'object',
+            properties: {
+                code: { type: 'string', example: 'rental-contract.addons.list.success' },
+                message: { type: 'string', example: 'Lấy danh sách addon thành công' },
+                success: { type: 'boolean', example: true },
+                data: { type: 'array', items: { type: 'object', example: { id: 'addon-uuid-1', name: 'Camera giám sát', amount: 200000, status: 'ACTIVE' } } },
+            },
+        },
+    })
+    @ApiResponse({
+        status: 404,
+        description: 'Không tìm thấy hợp đồng',
+        schema: { type: 'object', properties: { code: { type: 'string', example: 'rental-contract.not_found' }, message: { type: 'string', example: 'Không tìm thấy hợp đồng' }, success: { type: 'boolean', example: false } } },
+    })
     @ApiAuthResponses()
     async getAddons(
         @Param('orgId', ParseUUIDPipe) orgId: string,
@@ -382,8 +484,24 @@ export class OrgRentalContractController {
     })
     @ApiParam({ name: 'orgId', description: 'ID của tổ chức (UUID)', type: 'string', example: '550e8400-e29b-41d4-a716-446655440000' })
     @ApiParam({ name: 'id', description: 'ID của hợp đồng (UUID)', type: 'string', example: '550e8400-e29b-41d4-a716-446655440010' })
-    @ApiResponse({ status: 200, description: 'Lấy danh sách bảo hiểm thành công' })
-    @ApiResponse({ status: 404, description: 'Không tìm thấy hợp đồng' })
+    @ApiResponse({
+        status: 200,
+        description: 'Lấy danh sách bảo hiểm thành công',
+        schema: {
+            type: 'object',
+            properties: {
+                code: { type: 'string', example: 'rental-contract.insurances.list.success' },
+                message: { type: 'string', example: 'Lấy danh sách bảo hiểm thành công' },
+                success: { type: 'boolean', example: true },
+                data: { type: 'array', items: { type: 'object', example: { id: 'insurance-uuid-1', name: 'Bảo hiểm cháy nổ', amount: 150000, status: 'ACTIVE' } } },
+            },
+        },
+    })
+    @ApiResponse({
+        status: 404,
+        description: 'Không tìm thấy hợp đồng',
+        schema: { type: 'object', properties: { code: { type: 'string', example: 'rental-contract.not_found' }, message: { type: 'string', example: 'Không tìm thấy hợp đồng' }, success: { type: 'boolean', example: false } } },
+    })
     @ApiAuthResponses()
     async getInsurances(
         @Param('orgId', ParseUUIDPipe) orgId: string,
@@ -406,8 +524,24 @@ export class OrgRentalContractController {
     })
     @ApiParam({ name: 'orgId', description: 'ID của tổ chức (UUID)', type: 'string', example: '550e8400-e29b-41d4-a716-446655440000' })
     @ApiParam({ name: 'id', description: 'ID của hợp đồng (UUID)', type: 'string', example: '550e8400-e29b-41d4-a716-446655440010' })
-    @ApiResponse({ status: 200, description: 'Lấy logs thành công' })
-    @ApiResponse({ status: 404, description: 'Không tìm thấy hợp đồng' })
+    @ApiResponse({
+        status: 200,
+        description: 'Lấy logs thành công',
+        schema: {
+            type: 'object',
+            properties: {
+                code: { type: 'string', example: 'rental-contract.logs.list.success' },
+                message: { type: 'string', example: 'Lấy danh sách logs thành công' },
+                success: { type: 'boolean', example: true },
+                data: { type: 'array', items: { type: 'object', example: { action: 'RENEW', actor_name: 'Nguyễn Văn A', description: 'Gia hạn hợp đồng 3 tháng', created_at: '2026-03-13T08:00:00.000Z' } } },
+            },
+        },
+    })
+    @ApiResponse({
+        status: 404,
+        description: 'Không tìm thấy hợp đồng',
+        schema: { type: 'object', properties: { code: { type: 'string', example: 'rental-contract.not_found' }, message: { type: 'string', example: 'Không tìm thấy hợp đồng' }, success: { type: 'boolean', example: false } } },
+    })
     @ApiAuthResponses()
     async getLogs(
         @Param('orgId', ParseUUIDPipe) orgId: string,
@@ -444,9 +578,29 @@ export class OrgRentalContractController {
             },
         },
     })
-    @ApiResponse({ status: 200, description: 'Hủy nhiều hợp đồng thành công' })
-    @ApiResponse({ status: 400, description: 'Một hoặc nhiều hợp đồng không thể hủy' })
-    @ApiResponse({ status: 404, description: 'Không tìm thấy một hoặc nhiều hợp đồng' })
+    @ApiResponse({
+        status: 200,
+        description: 'Hủy nhiều hợp đồng thành công',
+        schema: {
+            type: 'object',
+            properties: {
+                code: { type: 'string', example: 'rental-contract.delete.success' },
+                message: { type: 'string', example: 'Hủy nhiều hợp đồng thành công' },
+                success: { type: 'boolean', example: true },
+                data: { type: 'null', example: null },
+            },
+        },
+    })
+    @ApiResponse({
+        status: 400,
+        description: 'Một hoặc nhiều hợp đồng không thể hủy',
+        schema: { type: 'object', properties: { code: { type: 'string', example: 'rental-contract.cannot_cancel' }, message: { type: 'string', example: 'Một hoặc nhiều hợp đồng không thể hủy' }, success: { type: 'boolean', example: false } } },
+    })
+    @ApiResponse({
+        status: 404,
+        description: 'Không tìm thấy một hoặc nhiều hợp đồng',
+        schema: { type: 'object', properties: { code: { type: 'string', example: 'rental-contract.not_found' }, message: { type: 'string', example: 'Không tìm thấy một hoặc nhiều hợp đồng' }, success: { type: 'boolean', example: false } } },
+    })
     @ApiAuthResponses()
     @ApiValidationErrorResponse()
     async deleteMany(
@@ -477,9 +631,29 @@ export class OrgRentalContractController {
             cancel: { summary: 'Hủy do không sử dụng', value: { cancel_reason: 'Không còn nhu cầu sử dụng dịch vụ' } },
         },
     })
-    @ApiResponse({ status: 200, description: 'Hủy hợp đồng thành công' })
-    @ApiResponse({ status: 400, description: 'Hợp đồng không thể hủy (đã hủy/terminated)' })
-    @ApiResponse({ status: 404, description: 'Không tìm thấy hợp đồng' })
+    @ApiResponse({
+        status: 200,
+        description: 'Hủy hợp đồng thành công',
+        schema: {
+            type: 'object',
+            properties: {
+                code: { type: 'string', example: 'rental-contract.delete.success' },
+                message: { type: 'string', example: 'Hủy hợp đồng thành công' },
+                success: { type: 'boolean', example: true },
+                data: { type: 'null', example: null },
+            },
+        },
+    })
+    @ApiResponse({
+        status: 400,
+        description: 'Hợp đồng không thể hủy',
+        schema: { type: 'object', properties: { code: { type: 'string', example: 'rental-contract.cannot_cancel' }, message: { type: 'string', example: 'Hợp đồng không thể hủy' }, success: { type: 'boolean', example: false } } },
+    })
+    @ApiResponse({
+        status: 404,
+        description: 'Không tìm thấy hợp đồng',
+        schema: { type: 'object', properties: { code: { type: 'string', example: 'rental-contract.not_found' }, message: { type: 'string', example: 'Không tìm thấy hợp đồng' }, success: { type: 'boolean', example: false } } },
+    })
     @ApiAuthResponses()
     @ApiValidationErrorResponse()
     async delete(

@@ -4,19 +4,32 @@ import {
     Query,
     UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
+import {
+    ApiBearerAuth,
+    ApiOperation,
+    ApiQuery,
+    ApiResponse,
+    ApiTags,
+} from '@nestjs/swagger';
 import { I18nLang } from 'nestjs-i18n';
 
 import { RevenueAnalyticsService } from './revenue-analytics.service';
-import { QueryRevenueDto, QueryRevenueChartDto, QueryRevenueTableDto } from './dto';
+import {
+    ChartGranularity,
+    DatePreset,
+    QueryRevenueChartDto,
+    QueryRevenueDto,
+    QueryRevenueTableDto,
+    RevenueTableTab,
+} from './dto';
 import { JwtAuthGuard, PermissionGuard } from '../../common/guards';
-import { RequirePermission, ApiAuthResponses, ApiValidationErrorResponse } from '../../common/decorators';
+import {
+    ApiAuthResponses,
+    ApiValidationErrorResponse,
+    RequirePermission,
+} from '../../common/decorators';
 import { GetResponse, ResponseCode } from '../../common/responses';
 
-/**
- * Revenue Analytics Controller
- * API endpoints cho báo cáo doanh thu & dòng tiền (Admin)
- */
 @ApiTags('Revenue Analytics')
 @Controller('admin/revenue-analytics')
 @ApiBearerAuth('JWT-auth')
@@ -24,14 +37,47 @@ import { GetResponse, ResponseCode } from '../../common/responses';
 export class RevenueAnalyticsController {
     constructor(private readonly service: RevenueAnalyticsService) { }
 
-    /**
-     * Lấy dữ liệu 4 KPI cards + sparkline
-     */
     @Get('kpis')
     @RequirePermission('revenue.analytics.view')
     @ApiOperation({
         summary: 'Lấy dữ liệu KPI doanh thu',
-        description: 'Trả về 4 thẻ KPI: Doanh thu thuần, Chờ thanh toán, Tiền phạt trả chậm, Tổng hoàn trả. Kèm sparkline 14 ngày gần nhất và % thay đổi so với kỳ trước.',
+        description:
+            'Trả về 4 thẻ KPI doanh thu gồm doanh thu thuần, khoản chờ thanh toán, tiền phạt trả chậm và tổng hoàn trả. API hỗ trợ lọc theo preset thời gian hoặc khoảng ngày tùy chỉnh, đồng thời kèm sparkline để hiển thị xu hướng gần nhất. Yêu cầu quyền `revenue.analytics.view`.',
+    })
+    @ApiQuery({
+        name: 'preset',
+        required: false,
+        enum: DatePreset,
+        description: 'Preset khoảng thời gian cần thống kê.',
+        example: DatePreset.THIS_MONTH,
+    })
+    @ApiQuery({
+        name: 'from_date',
+        required: false,
+        type: String,
+        description: 'Ngày bắt đầu theo ISO 8601, dùng khi `preset=CUSTOM`.',
+        example: '2026-01-01',
+    })
+    @ApiQuery({
+        name: 'to_date',
+        required: false,
+        type: String,
+        description: 'Ngày kết thúc theo ISO 8601, dùng khi `preset=CUSTOM`.',
+        example: '2026-01-31',
+    })
+    @ApiQuery({
+        name: 'province_id',
+        required: false,
+        type: String,
+        description: 'Lọc theo tỉnh/thành.',
+        example: '550e8400-e29b-41d4-a716-446655440001',
+    })
+    @ApiQuery({
+        name: 'warehouse_template_id',
+        required: false,
+        type: String,
+        description: 'Lọc theo kho hoặc warehouse template cụ thể.',
+        example: '550e8400-e29b-41d4-a716-446655440002',
     })
     @ApiResponse({
         status: 200,
@@ -40,6 +86,7 @@ export class RevenueAnalyticsController {
             type: 'object',
             properties: {
                 code: { type: 'string', example: 'revenue_analytics.kpi_success' },
+                message: { type: 'string', example: 'Lấy KPI doanh thu thành công' },
                 success: { type: 'boolean', example: true },
                 data: {
                     type: 'object',
@@ -89,6 +136,21 @@ export class RevenueAnalyticsController {
                     },
                 },
             },
+            example: {
+                code: 'revenue_analytics.kpi_success',
+                message: 'Lấy KPI doanh thu thành công',
+                success: true,
+                data: {
+                    netRevenue: { value: 2400000000, count: 150, previousValue: 2100000000 },
+                    pending: { value: 350000000, count: 12, previousValue: 200000000 },
+                    overdue: { value: 50000000, count: 3, previousValue: 30000000 },
+                    refunded: { value: 80000000, count: 5, previousValue: 60000000 },
+                    sparkline: [
+                        { day: '2026-02-01', total: 150000000 },
+                        { day: '2026-02-02', total: 178000000 },
+                    ],
+                },
+            },
         },
     })
     @ApiAuthResponses()
@@ -105,18 +167,137 @@ export class RevenueAnalyticsController {
         );
     }
 
-    /**
-     * Lấy dữ liệu biểu đồ (time series + payment method breakdown)
-     */
     @Get('charts')
     @RequirePermission('revenue.analytics.view')
     @ApiOperation({
         summary: 'Lấy dữ liệu biểu đồ doanh thu',
-        description: 'Trả về dữ liệu biểu đồ dòng tiền theo thời gian (stacked bar), addon/insurance, payment method breakdown (doughnut), và coupon discount (tùy chọn).',
+        description:
+            'Trả về dữ liệu biểu đồ dòng tiền theo thời gian, cơ cấu doanh thu addon hoặc bảo hiểm, breakdown phương thức thanh toán và tùy chọn hiển thị coupon discount. API phù hợp cho stacked bar chart, doughnut chart và các dashboard tổng hợp doanh thu. Yêu cầu quyền `revenue.analytics.view`.',
+    })
+    @ApiQuery({
+        name: 'preset',
+        required: false,
+        enum: DatePreset,
+        description: 'Preset khoảng thời gian cần thống kê.',
+        example: DatePreset.THIS_MONTH,
+    })
+    @ApiQuery({
+        name: 'from_date',
+        required: false,
+        type: String,
+        description: 'Ngày bắt đầu theo ISO 8601, dùng khi `preset=CUSTOM`.',
+        example: '2026-01-01',
+    })
+    @ApiQuery({
+        name: 'to_date',
+        required: false,
+        type: String,
+        description: 'Ngày kết thúc theo ISO 8601, dùng khi `preset=CUSTOM`.',
+        example: '2026-01-31',
+    })
+    @ApiQuery({
+        name: 'province_id',
+        required: false,
+        type: String,
+        description: 'Lọc theo tỉnh/thành.',
+        example: '550e8400-e29b-41d4-a716-446655440001',
+    })
+    @ApiQuery({
+        name: 'warehouse_template_id',
+        required: false,
+        type: String,
+        description: 'Lọc theo kho hoặc warehouse template cụ thể.',
+        example: '550e8400-e29b-41d4-a716-446655440002',
+    })
+    @ApiQuery({
+        name: 'granularity',
+        required: false,
+        enum: ChartGranularity,
+        description: 'Độ chi tiết của trục thời gian trên biểu đồ.',
+        example: ChartGranularity.MONTH,
+    })
+    @ApiQuery({
+        name: 'include_coupon_discount',
+        required: false,
+        type: Boolean,
+        description: 'Bao gồm dữ liệu giảm giá coupon dưới dạng cột âm trong biểu đồ.',
+        example: false,
     })
     @ApiResponse({
         status: 200,
         description: 'Lấy dữ liệu biểu đồ thành công',
+        schema: {
+            type: 'object',
+            properties: {
+                code: { type: 'string', example: 'revenue_analytics.chart_success' },
+                message: { type: 'string', example: 'Lấy biểu đồ doanh thu thành công' },
+                success: { type: 'boolean', example: true },
+                data: {
+                    type: 'object',
+                    properties: {
+                        cashflow: {
+                            type: 'array',
+                            items: {
+                                type: 'object',
+                                properties: {
+                                    label: { type: 'string', example: '2026-01' },
+                                    rentalRevenue: { type: 'number', example: 820000000 },
+                                    addonRevenue: { type: 'number', example: 120000000 },
+                                    insuranceRevenue: { type: 'number', example: 45000000 },
+                                    couponDiscount: { type: 'number', example: -15000000 },
+                                },
+                            },
+                        },
+                        paymentMethodBreakdown: {
+                            type: 'array',
+                            items: {
+                                type: 'object',
+                                properties: {
+                                    method: { type: 'string', example: 'BANK_TRANSFER' },
+                                    amount: { type: 'number', example: 650000000 },
+                                    percentage: { type: 'number', example: 72.5 },
+                                },
+                            },
+                        },
+                        addonInsuranceBreakdown: {
+                            type: 'array',
+                            items: {
+                                type: 'object',
+                                properties: {
+                                    type: { type: 'string', example: 'ADDON' },
+                                    name: { type: 'string', example: 'Camera giám sát' },
+                                    amount: { type: 'number', example: 22000000 },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+            example: {
+                code: 'revenue_analytics.chart_success',
+                message: 'Lấy biểu đồ doanh thu thành công',
+                success: true,
+                data: {
+                    cashflow: [
+                        {
+                            label: '2026-01',
+                            rentalRevenue: 820000000,
+                            addonRevenue: 120000000,
+                            insuranceRevenue: 45000000,
+                            couponDiscount: -15000000,
+                        },
+                    ],
+                    paymentMethodBreakdown: [
+                        { method: 'BANK_TRANSFER', amount: 650000000, percentage: 72.5 },
+                        { method: 'BALANCE', amount: 247000000, percentage: 27.5 },
+                    ],
+                    addonInsuranceBreakdown: [
+                        { type: 'ADDON', name: 'Camera giám sát', amount: 22000000 },
+                        { type: 'INSURANCE', name: 'Bảo hiểm cháy nổ', amount: 18000000 },
+                    ],
+                },
+            },
+        },
     })
     @ApiAuthResponses()
     @ApiValidationErrorResponse()
@@ -132,18 +313,120 @@ export class RevenueAnalyticsController {
         );
     }
 
-    /**
-     * Lấy dữ liệu bảng theo tab (Top Orgs / Top Warehouses / Recent Transactions)
-     */
     @Get('tables')
     @RequirePermission('revenue.analytics.view')
     @ApiOperation({
         summary: 'Lấy dữ liệu bảng phân tích chi tiết',
-        description: 'Trả về dữ liệu bảng theo tab: Top Organizations, Top Warehouses, hoặc Recent Transactions. Hỗ trợ phân trang.',
+        description:
+            'Trả về dữ liệu dạng bảng cho từng tab phân tích gồm top tổ chức, top kho hoặc giao dịch gần đây. API hỗ trợ phân trang, lọc theo thời gian và kho để phục vụ các bảng dashboard quản trị doanh thu. Yêu cầu quyền `revenue.analytics.view`.',
+    })
+    @ApiQuery({
+        name: 'preset',
+        required: false,
+        enum: DatePreset,
+        description: 'Preset khoảng thời gian cần thống kê.',
+        example: DatePreset.THIS_MONTH,
+    })
+    @ApiQuery({
+        name: 'from_date',
+        required: false,
+        type: String,
+        description: 'Ngày bắt đầu theo ISO 8601, dùng khi `preset=CUSTOM`.',
+        example: '2026-01-01',
+    })
+    @ApiQuery({
+        name: 'to_date',
+        required: false,
+        type: String,
+        description: 'Ngày kết thúc theo ISO 8601, dùng khi `preset=CUSTOM`.',
+        example: '2026-01-31',
+    })
+    @ApiQuery({
+        name: 'province_id',
+        required: false,
+        type: String,
+        description: 'Lọc theo tỉnh/thành.',
+        example: '550e8400-e29b-41d4-a716-446655440001',
+    })
+    @ApiQuery({
+        name: 'warehouse_template_id',
+        required: false,
+        type: String,
+        description: 'Lọc theo kho hoặc warehouse template cụ thể.',
+        example: '550e8400-e29b-41d4-a716-446655440002',
+    })
+    @ApiQuery({
+        name: 'tab',
+        required: false,
+        enum: RevenueTableTab,
+        description: 'Tab dữ liệu cần hiển thị.',
+        example: RevenueTableTab.TOP_ORGANIZATIONS,
+    })
+    @ApiQuery({
+        name: 'limit',
+        required: false,
+        type: Number,
+        description: 'Số bản ghi trên mỗi trang.',
+        example: 20,
+    })
+    @ApiQuery({
+        name: 'offset',
+        required: false,
+        type: Number,
+        description: 'Vị trí bắt đầu của phân trang.',
+        example: 0,
     })
     @ApiResponse({
         status: 200,
         description: 'Lấy dữ liệu bảng thành công',
+        schema: {
+            type: 'object',
+            properties: {
+                code: { type: 'string', example: 'revenue_analytics.table_success' },
+                message: { type: 'string', example: 'Lấy dữ liệu bảng thành công' },
+                success: { type: 'boolean', example: true },
+                data: {
+                    type: 'object',
+                    properties: {
+                        tab: { type: 'string', example: 'TOP_ORGANIZATIONS' },
+                        items: {
+                            type: 'array',
+                            items: {
+                                type: 'object',
+                                properties: {
+                                    id: { type: 'string', example: '550e8400-e29b-41d4-a716-446655440100' },
+                                    name: { type: 'string', example: 'Công ty ABC Logistics' },
+                                    totalRevenue: { type: 'number', example: 980000000 },
+                                    totalContracts: { type: 'number', example: 18 },
+                                },
+                            },
+                        },
+                        total: { type: 'number', example: 35 },
+                        limit: { type: 'number', example: 20 },
+                        offset: { type: 'number', example: 0 },
+                    },
+                },
+            },
+            example: {
+                code: 'revenue_analytics.table_success',
+                message: 'Lấy dữ liệu bảng thành công',
+                success: true,
+                data: {
+                    tab: 'TOP_ORGANIZATIONS',
+                    items: [
+                        {
+                            id: '550e8400-e29b-41d4-a716-446655440100',
+                            name: 'Công ty ABC Logistics',
+                            totalRevenue: 980000000,
+                            totalContracts: 18,
+                        },
+                    ],
+                    total: 35,
+                    limit: 20,
+                    offset: 0,
+                },
+            },
+        },
     })
     @ApiAuthResponses()
     @ApiValidationErrorResponse()
