@@ -9,11 +9,13 @@ import {
     BadRequestException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { ApiTags, ApiOperation, ApiExcludeEndpoint } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiExcludeEndpoint, ApiResponse } from '@nestjs/swagger';
 import { EmailInboundProvider } from './email-inbound.provider';
 import { IGmailPubSubNotification } from './interfaces';
 import type { IPubSubMessage } from './interfaces';
 import { Public } from '../../common/decorators/public.decorator';
+import { OkResponse } from '../../common/responses/success.response';
+import { buildSuccessResponseSchema } from '../../common/swagger/swagger-response.helper';
 
 /**
  * Gmail Webhook Controller
@@ -81,11 +83,42 @@ export class GmailWebhookController {
     @Post('gmail/health')
     @Public()
     @HttpCode(HttpStatus.OK)
-    @ApiOperation({ summary: 'Gmail webhook health check' })
-    async healthCheck(): Promise<{ status: string; timestamp: string }> {
-        return {
+    @ApiOperation({
+        summary: 'Kiểm tra trạng thái webhook Gmail',
+        description: 'Endpoint public dùng để kiểm tra nhanh webhook Gmail có hoạt động hay không. Không yêu cầu xác thực và thường được dùng cho health check từ hệ thống giám sát.',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Webhook Gmail đang hoạt động bình thường',
+        schema: buildSuccessResponseSchema({
+            code: 'webhooks.gmail.health',
+            message: 'Webhook Gmail hoạt động bình thường',
+            dataSchema: {
+                type: 'object',
+                properties: {
+                    status: {
+                        type: 'string',
+                        description: 'Trạng thái hiện tại của webhook',
+                        example: 'ok',
+                    },
+                    timestamp: {
+                        type: 'string',
+                        format: 'date-time',
+                        description: 'Thời điểm hệ thống phản hồi health check',
+                        example: '2026-03-13T10:30:00.000Z',
+                    },
+                },
+            },
+            dataExample: {
+                status: 'ok',
+                timestamp: '2026-03-13T10:30:00.000Z',
+            },
+        }),
+    })
+    async healthCheck() {
+        return new OkResponse('webhooks.gmail.health', {
             status: 'ok',
             timestamp: new Date().toISOString(),
-        };
+        }, 'Webhook Gmail hoạt động bình thường');
     }
 }

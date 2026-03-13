@@ -1,4 +1,4 @@
-import {
+﻿import {
     Controller,
     Get,
     Post,
@@ -128,7 +128,7 @@ const warningItemSchema = {
     type: 'object',
     properties: {
         id: { type: 'string', format: 'uuid', example: WARNING_ID },
-        reason: { type: 'string', example: 'Sử dụng ngôn ngữ không phù hợp' },
+        reason: { type: 'string', example: 'Sá»­ dá»¥ng ngĂ´n ngá»¯ khĂ´ng phĂ¹ há»£p' },
         status: { type: 'string', example: 'active' },
         is_permanent: { type: 'boolean', example: false },
         expires_at: { type: 'string', format: 'date-time', nullable: true, example: '2026-03-20T08:00:00.000Z' },
@@ -145,8 +145,152 @@ const simpleActionSchema = (code: string, message: string, data: unknown = null)
 
 const userNotFoundSchema = buildErrorResponseSchema({
     code: 'user-management.user_not_found',
-    message: 'Không tìm thấy user',
+    message: 'KhĂ´ng tĂ¬m tháº¥y user',
 });
+
+const paginatedUsersSchema = buildSuccessResponseSchema({
+    code: 'user-management.list',
+    message: 'Láº¥y danh sĂ¡ch users thĂ nh cĂ´ng',
+    dataSchema: buildPaginationDataSchema(userItemSchema),
+    dataExample: {
+        items: [
+            {
+                id: USER_ID,
+                email: 'user@genhub.vn',
+                full_name: 'Nguyen Van A',
+                is_banned: false,
+                is_verified: true,
+                warning_count: 1,
+                created_at: '2026-03-13T08:00:00.000Z',
+            },
+        ],
+        total: 150,
+        limit: 20,
+        offset: 0,
+        hasMore: true,
+    },
+});
+
+const statsSchema = buildSuccessResponseSchema({
+    code: 'user-management.stats',
+    message: 'Láº¥y thá»‘ng kĂª users thĂ nh cĂ´ng',
+    dataSchema: {
+        type: 'object',
+        properties: {
+            total: { type: 'number', example: 2500 },
+            online: { type: 'number', example: 138 },
+            active: { type: 'number', example: 2310 },
+            warned: { type: 'number', example: 42 },
+            banned: { type: 'number', example: 17 },
+        },
+    },
+    dataExample: {
+        total: 2500,
+        online: 138,
+        active: 2310,
+        warned: 42,
+        banned: 17,
+    },
+});
+
+const userWarningsSchema = buildSuccessResponseSchema({
+    code: 'user-management.warnings.list',
+    message: 'Láº¥y danh sĂ¡ch cáº£nh cĂ¡o thĂ nh cĂ´ng',
+    dataSchema: buildPaginationDataSchema(warningItemSchema),
+    dataExample: {
+        items: [
+            {
+                id: WARNING_ID,
+                reason: 'Sá»­ dá»¥ng ngĂ´n ngá»¯ khĂ´ng phĂ¹ há»£p',
+                status: 'active',
+                is_permanent: false,
+                expires_at: '2026-03-20T08:00:00.000Z',
+                created_at: '2026-03-13T08:00:00.000Z',
+            },
+        ],
+        total: 1,
+        limit: 10,
+        offset: 0,
+        hasMore: false,
+    },
+});
+
+const userSessionsSchema = buildSuccessResponseSchema({
+    code: 'user-management.sessions.list',
+    message: 'Láº¥y danh sĂ¡ch sessions thĂ nh cĂ´ng',
+    dataSchema: buildPaginationDataSchema(sessionItemSchema),
+    dataExample: {
+        items: [
+            {
+                id: SESSION_ID,
+                device_name: 'Chrome on Windows',
+                ip_address: '203.113.10.20',
+                last_active_at: '2026-03-13T09:30:00.000Z',
+                is_current: true,
+            },
+        ],
+        total: 1,
+        limit: 10,
+        offset: 0,
+        hasMore: false,
+    },
+});
+
+const rolesPermissionsSchema = buildSuccessResponseSchema({
+    code: 'user-management.roles_permissions.get',
+    message: 'Láº¥y roles vĂ  permissions thĂ nh cĂ´ng',
+    dataSchema: {
+        type: 'object',
+        properties: {
+            roles: {
+                type: 'array',
+                items: {
+                    type: 'object',
+                    properties: {
+                        id: { type: 'string', format: 'uuid', example: ROLE_ID },
+                        name: { type: 'string', example: 'Support Staff' },
+                    },
+                },
+            },
+            permissions: {
+                type: 'array',
+                items: {
+                    type: 'object',
+                    properties: {
+                        id: { type: 'string', format: 'uuid', example: PERMISSION_ID },
+                        key: { type: 'string', example: 'user-management.read' },
+                    },
+                },
+            },
+        },
+    },
+    dataExample: {
+        roles: [{ id: ROLE_ID, name: 'Support Staff' }],
+        permissions: [{ id: PERMISSION_ID, key: 'user-management.read' }],
+    },
+});
+
+const countResultSchema = {
+    type: 'object',
+    properties: {
+        count: { type: 'number', example: 2 },
+    },
+};
+
+const exportResultSchema = {
+    type: 'object',
+    properties: {
+        data: {
+            type: 'array',
+            items: {
+                type: 'object',
+                additionalProperties: true,
+            },
+        },
+        count: { type: 'number', example: 2, nullable: true },
+        filename: { type: 'string', example: 'users-export-2026-03-13.json' },
+    },
+};
 
 @ApiTags('User Management')
 @ApiBearerAuth('JWT-auth')
@@ -158,32 +302,14 @@ export class UserManagementController {
     @Get()
     @RequirePermission('user-management.list')
     @ApiOperation({
-        summary: 'Lấy danh sách users',
-        description: 'Lấy danh sách tất cả users trong hệ thống với phân trang, tìm kiếm, và bộ lọc. Yêu cầu quyền `user-management.list`.',
+        summary: 'Láº¥y danh sĂ¡ch users',
+        description: 'Láº¥y danh sĂ¡ch táº¥t cáº£ users trong há»‡ thá»‘ng vá»›i phĂ¢n trang, tĂ¬m kiáº¿m, vĂ  bá»™ lá»c. YĂªu cáº§u quyá»n `user-management.list`.',
     })
-    @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Số lượng tối đa', example: 20 })
-    @ApiQuery({ name: 'offset', required: false, type: Number, description: 'Vị trí bắt đầu', example: 0 })
-    @ApiQuery({ name: 'keywords', required: false, type: String, description: 'Tìm theo tên, email' })
-    @ApiQuery({ name: 'is_banned', required: false, type: Boolean, description: 'Lọc theo trạng thái ban' })
-    @ApiQuery({ name: 'is_verified', required: false, type: Boolean, description: 'Lọc theo trạng thái xác thực' })
-    @ApiResponse({
-        status: 200,
-        description: 'Danh sách users',
-        schema: {
-            type: 'object',
-            properties: {
-                code: { type: 'string', example: 'user-management.list' },
-                success: { type: 'boolean', example: true },
-                data: {
-                    type: 'object',
-                    properties: {
-                        items: { type: 'array', items: { type: 'object' } },
-                        total: { type: 'number', example: 150 },
-                    },
-                },
-            },
-        },
-    })
+    @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Sá»‘ lÆ°á»£ng tá»‘i Ä‘a', example: 20 })
+    @ApiQuery({ name: 'offset', required: false, type: Number, description: 'Vá»‹ trĂ­ báº¯t Ä‘áº§u', example: 0 })
+    @ApiQuery({ name: 'keywords', required: false, type: String, description: 'Từ khóa tìm kiếm theo họ tên hoặc email', example: 'user@genhub.vn' })
+    @ApiQuery({ name: 'status', required: false, enum: ['active', 'banned', 'verified', 'unverified'], description: 'Lọc danh sách theo trạng thái tổng quát của user', example: 'active' })
+    @ApiResponse({ status: 200, description: 'Lấy danh sách users thành công', schema: paginatedUsersSchema })
     @ApiAuthResponses()
     async findMany(
         @Query() query: QueryUsersDto,
@@ -196,10 +322,10 @@ export class UserManagementController {
     @Get('stats')
     @RequirePermission('user-management.list')
     @ApiOperation({
-        summary: 'Lấy thống kê users',
-        description: 'Lấy thống kê tổng quan về users: tổng số, active, banned, verified. Yêu cầu quyền `user-management.list`.',
+        summary: 'Láº¥y thá»‘ng kĂª users',
+        description: 'Láº¥y thá»‘ng kĂª tá»•ng quan vá» users: tá»•ng sá»‘, active, banned, verified. YĂªu cáº§u quyá»n `user-management.list`.',
     })
-    @ApiResponse({ status: 200, description: 'Thống kê users' })
+    @ApiResponse({ status: 200, description: 'Lấy thống kê users thành công', schema: statsSchema })
     @ApiAuthResponses()
     async getStats() {
         const stats = await this.service.getStats();
@@ -209,10 +335,25 @@ export class UserManagementController {
     @Get('download/all')
     @RequirePermission('user-management.download')
     @ApiOperation({
-        summary: 'Tải dữ liệu tất cả users (có filter)',
-        description: 'Export dữ liệu tất cả users theo filter. Trả về CSV/Excel. Yêu cầu quyền `user-management.download`.',
+        summary: 'Táº£i dá»¯ liá»‡u táº¥t cáº£ users (cĂ³ filter)',
+        description: 'Export dá»¯ liá»‡u táº¥t cáº£ users theo filter. Tráº£ vá» CSV/Excel. YĂªu cáº§u quyá»n `user-management.download`.',
     })
-    @ApiResponse({ status: 200, description: 'Dữ liệu export thành công' })
+    @ApiQuery({ name: 'keywords', required: false, type: String, description: 'Từ khóa lọc dữ liệu export', example: 'support@genhub.vn' })
+    @ApiQuery({ name: 'status', required: false, enum: ['active', 'banned', 'verified', 'unverified', 'deleted'], description: 'Lọc dữ liệu export theo trạng thái user', example: 'active' })
+    @ApiResponse({
+        status: 200,
+        description: 'Tải dữ liệu tất cả users thành công',
+        schema: buildSuccessResponseSchema({
+            code: 'user-management.download_all_users_data',
+            message: 'Tải dữ liệu tất cả users thành công',
+            dataSchema: exportResultSchema,
+            dataExample: {
+                data: [{ id: USER_ID, email: 'user@genhub.vn', full_name: 'Nguyen Van A' }],
+                count: 1,
+                filename: 'all-users-export-2026-03-13.json',
+            },
+        }),
+    })
     @ApiAuthResponses()
     async downloadAllUsersData(
         @Query() query: DownloadAllUsersDto,
@@ -230,12 +371,33 @@ export class UserManagementController {
     @Get(':id')
     @RequirePermission('user-management.read')
     @ApiOperation({
-        summary: 'Lấy chi tiết user',
-        description: 'Lấy thông tin chi tiết của một user bao gồm: profile, roles, permissions, ban status, warning count. Yêu cầu quyền `user-management.read`.',
+        summary: 'Láº¥y chi tiáº¿t user',
+        description: 'Láº¥y thĂ´ng tin chi tiáº¿t cá»§a má»™t user bao gá»“m: profile, roles, permissions, ban status, warning count. YĂªu cáº§u quyá»n `user-management.read`.',
     })
-    @ApiParam({ name: 'id', description: 'ID của user (UUID)', example: '550e8400-e29b-41d4-a716-446655440001' })
-    @ApiResponse({ status: 200, description: 'Chi tiết user' })
-    @ApiResponse({ status: 404, description: 'Không tìm thấy user' })
+    @ApiParam({ name: 'id', description: 'ID cá»§a user (UUID)', example: '550e8400-e29b-41d4-a716-446655440001' })
+    @ApiResponse({
+        status: 200,
+        description: 'Lấy chi tiết user thành công',
+        schema: buildSuccessResponseSchema({
+            code: 'user-management.read',
+            message: 'Lấy chi tiết user thành công',
+            dataSchema: userDetailSchema,
+            dataExample: {
+                id: USER_ID,
+                email: 'user@genhub.vn',
+                full_name: 'Nguyen Van A',
+                phone: '0901234567',
+                is_banned: false,
+                is_verified: true,
+                warning_count: 1,
+                roles: [{ id: ROLE_ID, name: 'Support Staff' }],
+                permissions: [{ id: PERMISSION_ID, key: 'user-management.read' }],
+                created_at: '2026-03-13T08:00:00.000Z',
+                updated_at: '2026-03-13T09:00:00.000Z',
+            },
+        }),
+    })
+    @ApiResponse({ status: 404, description: 'Không tìm thấy user', schema: userNotFoundSchema })
     @ApiAuthResponses()
     async findById(
         @Param('id', ParseUUIDPipe) id: string,
@@ -249,19 +411,19 @@ export class UserManagementController {
     @RequirePermission('user-management.ban')
     @ApiOperation({
         summary: 'Ban user',
-        description: 'Cấm user khỏi hệ thống. Có thể ban vĩnh viễn hoặc tạm thời với thời hạn. Yêu cầu quyền `user-management.ban`.',
+        description: 'Cáº¥m user khá»i há»‡ thá»‘ng. CĂ³ thá»ƒ ban vÄ©nh viá»…n hoáº·c táº¡m thá»i vá»›i thá»i háº¡n. YĂªu cáº§u quyá»n `user-management.ban`.',
     })
-    @ApiParam({ name: 'id', description: 'ID của user cần ban', example: '550e8400-e29b-41d4-a716-446655440001' })
+    @ApiParam({ name: 'id', description: 'ID cá»§a user cáº§n ban', example: '550e8400-e29b-41d4-a716-446655440001' })
     @ApiBody({
         type: BanUserDto,
         examples: {
-            permanent_ban: { summary: 'Ban vĩnh viễn', value: { reason: 'Vi phạm điều khoản nghiêm trọng', is_permanent: true } },
-            temporary_ban: { summary: 'Ban tạm thời', value: { reason: 'Spam', is_permanent: false, duration_value: 7, duration_type: 'days' } },
+            permanent_ban: { summary: 'Ban vÄ©nh viá»…n', value: { reason: 'Vi pháº¡m Ä‘iá»u khoáº£n nghiĂªm trá»ng', is_permanent: true } },
+            temporary_ban: { summary: 'Ban táº¡m thá»i', value: { reason: 'Spam', is_permanent: false, duration_value: 7, duration_type: 'days' } },
         },
     })
-    @ApiResponse({ status: 200, description: 'Ban thành công' })
-    @ApiResponse({ status: 400, description: 'User đã bị ban' })
-    @ApiResponse({ status: 404, description: 'Không tìm thấy user' })
+    @ApiResponse({ status: 200, description: 'Ban user thành công', schema: buildSuccessResponseSchema({ code: 'user-management.ban', message: 'Ban user thành công', dataSchema: userDetailSchema, dataExample: userDetailSchema.properties }) })
+    @ApiResponse({ status: 400, description: 'User Ä‘Ă£ bá»‹ ban' })
+    @ApiResponse({ status: 404, description: 'KhĂ´ng tĂ¬m tháº¥y user' })
     @ApiAuthResponses()
     @ApiValidationErrorResponse()
     async banUser(
@@ -282,11 +444,11 @@ export class UserManagementController {
     @RequirePermission('user-management.unban')
     @ApiOperation({
         summary: 'Unban user',
-        description: 'Gỡ lệnh cấm cho user. Yêu cầu quyền `user-management.unban`.',
+        description: 'Gá»¡ lá»‡nh cáº¥m cho user. YĂªu cáº§u quyá»n `user-management.unban`.',
     })
-    @ApiParam({ name: 'id', description: 'ID của user cần unban' })
-    @ApiBody({ type: UnbanUserDto, examples: { unban: { summary: 'Unban', value: { note: 'Đã xem xét lại' } } } })
-    @ApiResponse({ status: 200, description: 'Unban thành công' })
+    @ApiParam({ name: 'id', description: 'ID cá»§a user cáº§n unban' })
+    @ApiBody({ type: UnbanUserDto, examples: { unban: { summary: 'Unban', value: { note: 'ÄĂ£ xem xĂ©t láº¡i' } } } })
+    @ApiResponse({ status: 200, description: 'Unban user thành công', schema: buildSuccessResponseSchema({ code: 'user-management.unban', message: 'Unban user thành công', dataSchema: userDetailSchema, dataExample: userDetailSchema.properties }) })
     @ApiAuthResponses()
     @ApiValidationErrorResponse()
     async unbanUser(
@@ -306,11 +468,14 @@ export class UserManagementController {
     @Get(':id/warnings')
     @RequirePermission('user-management.warn')
     @ApiOperation({
-        summary: 'Lấy danh sách warnings của user',
-        description: 'Lấy lịch sử cảnh cáo của user với phân trang. Yêu cầu quyền `user-management.warn`.',
+        summary: 'Láº¥y danh sĂ¡ch warnings cá»§a user',
+        description: 'Láº¥y lá»‹ch sá»­ cáº£nh cĂ¡o cá»§a user vá»›i phĂ¢n trang. YĂªu cáº§u quyá»n `user-management.warn`.',
     })
-    @ApiParam({ name: 'id', description: 'ID của user' })
-    @ApiResponse({ status: 200, description: 'Danh sách warnings' })
+    @ApiParam({ name: 'id', description: 'ID của user', example: '550e8400-e29b-41d4-a716-446655440001' })
+    @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Số lượng cảnh cáo tối đa trả về', example: 10 })
+    @ApiQuery({ name: 'offset', required: false, type: Number, description: 'Vị trí bắt đầu của danh sách cảnh cáo', example: 0 })
+    @ApiQuery({ name: 'status', required: false, enum: ['active', 'removed', 'expired'], description: 'Lọc cảnh cáo theo trạng thái', example: 'active' })
+    @ApiResponse({ status: 200, description: 'Lấy danh sách cảnh cáo thành công', schema: userWarningsSchema })
     @ApiAuthResponses()
     async findUserWarnings(
         @Param('id', ParseUUIDPipe) id: string,
@@ -324,12 +489,12 @@ export class UserManagementController {
     @Post(':id/warn')
     @RequirePermission('user-management.warn')
     @ApiOperation({
-        summary: 'Cảnh báo user',
-        description: 'Thêm cảnh cáo cho user. Có thể vĩnh viễn hoặc tạm thời. Yêu cầu quyền `user-management.warn`.',
+        summary: 'Cáº£nh bĂ¡o user',
+        description: 'ThĂªm cáº£nh cĂ¡o cho user. CĂ³ thá»ƒ vÄ©nh viá»…n hoáº·c táº¡m thá»i. YĂªu cáº§u quyá»n `user-management.warn`.',
     })
-    @ApiParam({ name: 'id', description: 'ID của user' })
+    @ApiParam({ name: 'id', description: 'ID cá»§a user' })
     @ApiBody({ type: WarnUserDto })
-    @ApiResponse({ status: 201, description: 'Cảnh cáo thành công' })
+    @ApiResponse({ status: 201, description: 'Cáº£nh cĂ¡o thĂ nh cĂ´ng' })
     @ApiAuthResponses()
     @ApiValidationErrorResponse()
     async warnUser(
@@ -350,13 +515,13 @@ export class UserManagementController {
     @RequirePermission('user-management.unwarn')
     @HttpCode(HttpStatus.OK)
     @ApiOperation({
-        summary: 'Gỡ cảnh báo user',
-        description: 'Gỡ một cảnh cáo cụ thể của user. Yêu cầu quyền `user-management.unwarn`.',
+        summary: 'Gá»¡ cáº£nh bĂ¡o user',
+        description: 'Gá»¡ má»™t cáº£nh cĂ¡o cá»¥ thá»ƒ cá»§a user. YĂªu cáº§u quyá»n `user-management.unwarn`.',
     })
-    @ApiParam({ name: 'id', description: 'ID của user' })
-    @ApiParam({ name: 'warningId', description: 'ID của warning cần gỡ' })
+    @ApiParam({ name: 'id', description: 'ID cá»§a user' })
+    @ApiParam({ name: 'warningId', description: 'ID cá»§a warning cáº§n gá»¡' })
     @ApiBody({ type: UnwarnUserDto })
-    @ApiResponse({ status: 200, description: 'Gỡ cảnh báo thành công' })
+    @ApiResponse({ status: 200, description: 'Gá»¡ cáº£nh bĂ¡o thĂ nh cĂ´ng' })
     @ApiAuthResponses()
     async unwarnUser(
         @Param('id', ParseUUIDPipe) id: string,
@@ -376,11 +541,13 @@ export class UserManagementController {
     @Get(':id/sessions')
     @RequirePermission('user-management.sessions')
     @ApiOperation({
-        summary: 'Lấy danh sách sessions của user',
-        description: 'Lấy danh sách phiên đăng nhập của user. Yêu cầu quyền `user-management.sessions`.',
+        summary: 'Láº¥y danh sĂ¡ch sessions cá»§a user',
+        description: 'Láº¥y danh sĂ¡ch phiĂªn Ä‘Äƒng nháº­p cá»§a user. YĂªu cáº§u quyá»n `user-management.sessions`.',
     })
-    @ApiParam({ name: 'id', description: 'ID của user' })
-    @ApiResponse({ status: 200, description: 'Danh sách sessions' })
+    @ApiParam({ name: 'id', description: 'ID của user', example: '550e8400-e29b-41d4-a716-446655440001' })
+    @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Số lượng session tối đa trả về', example: 10 })
+    @ApiQuery({ name: 'offset', required: false, type: Number, description: 'Vị trí bắt đầu của danh sách session', example: 0 })
+    @ApiResponse({ status: 200, description: 'Lấy danh sách sessions thành công', schema: userSessionsSchema })
     @ApiAuthResponses()
     async findUserSessions(
         @Param('id', ParseUUIDPipe) id: string,
@@ -395,12 +562,12 @@ export class UserManagementController {
     @RequirePermission('user-management.sessions')
     @HttpCode(HttpStatus.OK)
     @ApiOperation({
-        summary: 'Đăng xuất một session',
-        description: 'Hủy một phiên đăng nhập cụ thể. Yêu cầu quyền `user-management.sessions`.',
+        summary: 'ÄÄƒng xuáº¥t má»™t session',
+        description: 'Há»§y má»™t phiĂªn Ä‘Äƒng nháº­p cá»¥ thá»ƒ. YĂªu cáº§u quyá»n `user-management.sessions`.',
     })
-    @ApiParam({ name: 'id', description: 'ID của user' })
-    @ApiParam({ name: 'sessionId', description: 'ID của session cần hủy' })
-    @ApiResponse({ status: 200, description: 'Đăng xuất thành công' })
+    @ApiParam({ name: 'id', description: 'ID cá»§a user' })
+    @ApiParam({ name: 'sessionId', description: 'ID cá»§a session cáº§n há»§y' })
+    @ApiResponse({ status: 200, description: 'ÄÄƒng xuáº¥t thĂ nh cĂ´ng' })
     @ApiAuthResponses()
     async revokeSession(
         @Param('id', ParseUUIDPipe) id: string,
@@ -420,11 +587,11 @@ export class UserManagementController {
     @RequirePermission('user-management.sessions')
     @HttpCode(HttpStatus.OK)
     @ApiOperation({
-        summary: 'Đăng xuất tất cả sessions',
-        description: 'Hủy tất cả phiên đăng nhập của user. Yêu cầu quyền `user-management.sessions`.',
+        summary: 'ÄÄƒng xuáº¥t táº¥t cáº£ sessions',
+        description: 'Há»§y táº¥t cáº£ phiĂªn Ä‘Äƒng nháº­p cá»§a user. YĂªu cáº§u quyá»n `user-management.sessions`.',
     })
-    @ApiParam({ name: 'id', description: 'ID của user' })
-    @ApiResponse({ status: 200, description: 'Đăng xuất thành công' })
+    @ApiParam({ name: 'id', description: 'ID cá»§a user' })
+    @ApiResponse({ status: 200, description: 'ÄÄƒng xuáº¥t thĂ nh cĂ´ng' })
     @ApiAuthResponses()
     async revokeAllSessions(
         @Param('id', ParseUUIDPipe) id: string,
@@ -442,11 +609,12 @@ export class UserManagementController {
     @Get(':id/roles-permissions')
     @RequirePermission('user-management.read')
     @ApiOperation({
-        summary: 'Lấy roles và permissions của user',
-        description: 'Lấy danh sách roles và permissions được gán cho user. Yêu cầu quyền `user-management.read`.',
+        summary: 'Láº¥y roles vĂ  permissions cá»§a user',
+        description: 'Láº¥y danh sĂ¡ch roles vĂ  permissions Ä‘Æ°á»£c gĂ¡n cho user. YĂªu cáº§u quyá»n `user-management.read`.',
     })
-    @ApiParam({ name: 'id', description: 'ID của user' })
-    @ApiResponse({ status: 200, description: 'Roles và permissions' })
+    @ApiParam({ name: 'id', description: 'ID của user', example: '550e8400-e29b-41d4-a716-446655440001' })
+    @ApiResponse({ status: 200, description: 'Lấy roles và permissions thành công', schema: rolesPermissionsSchema })
+    @ApiResponse({ status: 404, description: 'Không tìm thấy user', schema: userNotFoundSchema })
     @ApiAuthResponses()
     async getUserRolesAndPermissions(
         @Param('id', ParseUUIDPipe) id: string,
@@ -459,12 +627,48 @@ export class UserManagementController {
     @Put(':id/roles-permissions')
     @RequirePermission('user-management.update')
     @ApiOperation({
-        summary: 'Gán roles và permissions cho user',
-        description: 'Cập nhật roles và permissions cho user. Yêu cầu quyền `user-management.update`.',
+        summary: 'GĂ¡n roles vĂ  permissions cho user',
+        description: 'Cáº­p nháº­t roles vĂ  permissions cho user. YĂªu cáº§u quyá»n `user-management.update`.',
     })
-    @ApiParam({ name: 'id', description: 'ID của user' })
+    @ApiParam({ name: 'id', description: 'ID cá»§a user' })
     @ApiBody({ type: AssignUserRolesPermissionsDto })
-    @ApiResponse({ status: 200, description: 'Gán thành công' })
+    @ApiResponse({
+        status: 200,
+        description: 'Gán roles và permissions thành công',
+        schema: buildSuccessResponseSchema({
+            code: 'user-management.roles_permissions.assign',
+            message: 'Gán roles và permissions thành công',
+            dataSchema: {
+                type: 'object',
+                properties: {
+                    roles: {
+                        type: 'array',
+                        items: {
+                            type: 'object',
+                            properties: {
+                                id: { type: 'string', format: 'uuid', example: ROLE_ID },
+                                name: { type: 'string', example: 'Support Staff' },
+                            },
+                        },
+                    },
+                    permissions: {
+                        type: 'array',
+                        items: {
+                            type: 'object',
+                            properties: {
+                                id: { type: 'string', format: 'uuid', example: PERMISSION_ID },
+                                key: { type: 'string', example: 'user-management.read' },
+                            },
+                        },
+                    },
+                },
+            },
+            dataExample: {
+                roles: [{ id: ROLE_ID, name: 'Support Staff' }],
+                permissions: [{ id: PERMISSION_ID, key: 'user-management.read' }],
+            },
+        }),
+    })
     @ApiAuthResponses()
     @ApiValidationErrorResponse()
     async assignUserRolesPermissions(
@@ -484,11 +688,11 @@ export class UserManagementController {
     @Post('bulk/ban')
     @RequirePermission('user-management.ban')
     @ApiOperation({
-        summary: 'Ban nhiều users cùng lúc',
-        description: 'Ban hàng loạt users với cùng lý do. Yêu cầu quyền `user-management.ban`.',
+        summary: 'Ban nhiá»u users cĂ¹ng lĂºc',
+        description: 'Ban hĂ ng loáº¡t users vá»›i cĂ¹ng lĂ½ do. YĂªu cáº§u quyá»n `user-management.ban`.',
     })
     @ApiBody({ type: BulkBanUsersDto })
-    @ApiResponse({ status: 200, description: 'Ban thành công' })
+    @ApiResponse({ status: 200, description: 'Ban user thành công', schema: buildSuccessResponseSchema({ code: 'user-management.ban', message: 'Ban user thành công', dataSchema: userDetailSchema, dataExample: userDetailSchema.properties }) })
     @ApiAuthResponses()
     @ApiValidationErrorResponse()
     async bulkBanUsers(
@@ -507,9 +711,9 @@ export class UserManagementController {
 
     @Post('bulk/unban')
     @RequirePermission('user-management.unban')
-    @ApiOperation({ summary: 'Unban nhiều users cùng lúc' })
+    @ApiOperation({ summary: 'Unban nhiá»u users cĂ¹ng lĂºc' })
     @ApiBody({ type: BulkUnbanUsersDto })
-    @ApiResponse({ status: 200, description: 'Unban thành công' })
+    @ApiResponse({ status: 200, description: 'Unban user thành công', schema: buildSuccessResponseSchema({ code: 'user-management.unban', message: 'Unban user thành công', dataSchema: userDetailSchema, dataExample: userDetailSchema.properties }) })
     @ApiAuthResponses()
     @ApiValidationErrorResponse()
     async bulkUnbanUsers(
@@ -527,9 +731,9 @@ export class UserManagementController {
 
     @Post('bulk/warn')
     @RequirePermission('user-management.warn')
-    @ApiOperation({ summary: 'Cảnh cáo nhiều users cùng lúc' })
+    @ApiOperation({ summary: 'Cáº£nh cĂ¡o nhiá»u users cĂ¹ng lĂºc' })
     @ApiBody({ type: BulkWarnUsersDto })
-    @ApiResponse({ status: 201, description: 'Cảnh cáo thành công' })
+    @ApiResponse({ status: 201, description: 'Cáº£nh cĂ¡o thĂ nh cĂ´ng' })
     @ApiAuthResponses()
     @ApiValidationErrorResponse()
     async bulkWarnUsers(
@@ -549,10 +753,10 @@ export class UserManagementController {
     @Delete(':id/warnings')
     @RequirePermission('user-management.unwarn')
     @HttpCode(HttpStatus.OK)
-    @ApiOperation({ summary: 'Xóa tất cả cảnh cáo của user' })
-    @ApiParam({ name: 'id', description: 'ID của user' })
+    @ApiOperation({ summary: 'XĂ³a táº¥t cáº£ cáº£nh cĂ¡o cá»§a user' })
+    @ApiParam({ name: 'id', description: 'ID cá»§a user' })
     @ApiBody({ type: ClearAllWarningsDto })
-    @ApiResponse({ status: 200, description: 'Xóa thành công' })
+    @ApiResponse({ status: 200, description: 'XĂ³a thĂ nh cĂ´ng' })
     @ApiAuthResponses()
     async clearAllWarnings(
         @Param('id', ParseUUIDPipe) id: string,
@@ -570,9 +774,9 @@ export class UserManagementController {
     @Delete('bulk/warnings')
     @RequirePermission('user-management.unwarn')
     @HttpCode(HttpStatus.OK)
-    @ApiOperation({ summary: 'Xóa tất cả cảnh cáo của nhiều users' })
+    @ApiOperation({ summary: 'XĂ³a táº¥t cáº£ cáº£nh cĂ¡o cá»§a nhiá»u users' })
     @ApiBody({ type: BulkClearAllWarningsDto })
-    @ApiResponse({ status: 200, description: 'Xóa thành công' })
+    @ApiResponse({ status: 200, description: 'XĂ³a thĂ nh cĂ´ng' })
     @ApiAuthResponses()
     async bulkClearAllWarnings(
         @Body() dto: BulkClearAllWarningsDto,
@@ -590,12 +794,12 @@ export class UserManagementController {
     @RequirePermission('user-management.delete')
     @HttpCode(HttpStatus.OK)
     @ApiOperation({
-        summary: 'Xóa 1 user (soft delete)',
-        description: 'Soft delete user - đánh dấu is_deleted. Yêu cầu quyền `user-management.delete`.',
+        summary: 'XĂ³a 1 user (soft delete)',
+        description: 'Soft delete user - Ä‘Ă¡nh dáº¥u is_deleted. YĂªu cáº§u quyá»n `user-management.delete`.',
     })
-    @ApiParam({ name: 'id', description: 'ID của user' })
+    @ApiParam({ name: 'id', description: 'ID cá»§a user' })
     @ApiBody({ type: DeleteUserDto })
-    @ApiResponse({ status: 200, description: 'Xóa thành công' })
+    @ApiResponse({ status: 200, description: 'XĂ³a thĂ nh cĂ´ng' })
     @ApiAuthResponses()
     @ApiValidationErrorResponse()
     async deleteUser(
@@ -614,9 +818,9 @@ export class UserManagementController {
     @Delete('bulk/delete')
     @RequirePermission('user-management.delete')
     @HttpCode(HttpStatus.OK)
-    @ApiOperation({ summary: 'Xóa nhiều users cùng lúc (soft delete)' })
+    @ApiOperation({ summary: 'XĂ³a nhiá»u users cĂ¹ng lĂºc (soft delete)' })
     @ApiBody({ type: BulkDeleteUsersDto })
-    @ApiResponse({ status: 200, description: 'Xóa thành công' })
+    @ApiResponse({ status: 200, description: 'XĂ³a thĂ nh cĂ´ng' })
     @ApiAuthResponses()
     @ApiValidationErrorResponse()
     async bulkDeleteUsers(
@@ -633,9 +837,9 @@ export class UserManagementController {
 
     @Get(':id/download')
     @RequirePermission('user-management.download')
-    @ApiOperation({ summary: 'Tải dữ liệu 1 user' })
-    @ApiParam({ name: 'id', description: 'ID của user' })
-    @ApiResponse({ status: 200, description: 'Tải thành công' })
+    @ApiOperation({ summary: 'Táº£i dá»¯ liá»‡u 1 user' })
+    @ApiParam({ name: 'id', description: 'ID cá»§a user' })
+    @ApiResponse({ status: 200, description: 'Táº£i thĂ nh cĂ´ng' })
     @ApiAuthResponses()
     async downloadUserData(
         @Param('id', ParseUUIDPipe) id: string,
@@ -652,9 +856,9 @@ export class UserManagementController {
     @Post('bulk/download')
     @RequirePermission('user-management.download')
     @HttpCode(HttpStatus.OK)
-    @ApiOperation({ summary: 'Tải dữ liệu nhiều users' })
+    @ApiOperation({ summary: 'Táº£i dá»¯ liá»‡u nhiá»u users' })
     @ApiBody({ type: BulkDownloadUsersDto })
-    @ApiResponse({ status: 200, description: 'Tải thành công' })
+    @ApiResponse({ status: 200, description: 'Táº£i thĂ nh cĂ´ng' })
     @ApiAuthResponses()
     async bulkDownloadUsersData(
         @Body() dto: BulkDownloadUsersDto,
@@ -668,3 +872,6 @@ export class UserManagementController {
         return new GetResponse('user-management.bulk_download_users_data', result);
     }
 }
+
+
+
