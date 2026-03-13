@@ -1,27 +1,53 @@
 import {
-    Controller,
-    Get,
-    Patch,
-    Delete,
     Body,
+    Controller,
+    Delete,
+    Get,
     Param,
-    Query,
     ParseUUIDPipe,
+    Patch,
+    Query,
     UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam, ApiBody, ApiQuery, ApiResponse } from '@nestjs/swagger';
-import { I18nLang } from 'nestjs-i18n';
-
-import { RefundRequestService } from './refund-request.service';
 import {
-    QueryRefundRequestDto,
-    AcceptRefundRequestDto,
-    RejectRefundRequestDto,
-    ChangeRefundStatusDto,
-} from './dto';
+    ApiBearerAuth,
+    ApiBody,
+    ApiOperation,
+    ApiParam,
+    ApiQuery,
+    ApiResponse,
+    ApiTags,
+} from '@nestjs/swagger';
+import { I18nLang } from 'nestjs-i18n';
+import { ApiAuthResponses, ApiValidationErrorResponse, CurrentUser, RequirePermission } from '../../common/decorators';
 import { JwtAuthGuard } from '../../common/guards';
-import { CurrentUser, RequirePermission, ApiAuthResponses, ApiValidationErrorResponse } from '../../common/decorators';
-import { GetResponse, UpdatedResponse, DeletedResponse, ResponseCode } from '../../common/responses';
+import { DeletedResponse, GetResponse, ResponseCode, UpdatedResponse } from '../../common/responses';
+import {
+    buildErrorResponseSchema,
+    buildPaginationDataSchema,
+    buildSuccessResponseSchema,
+} from '../../common/swagger/swagger-response.helper';
+import {
+    AcceptRefundRequestDto,
+    ChangeRefundStatusDto,
+    QueryRefundRequestDto,
+    RejectRefundRequestDto,
+} from './dto';
+import { RefundRequestService } from './refund-request.service';
+
+const refundRequestSchema = {
+    type: 'object',
+    properties: {
+        id: { type: 'string', format: 'uuid', example: '550e8400-e29b-41d4-a716-446655440010' },
+        status: { type: 'string', example: 'PENDING' },
+        requested_amount: { type: 'number', example: 1500000 },
+        reject_reason: { type: 'string', nullable: true, example: null },
+        process_notes: { type: 'string', nullable: true, example: 'Đang chờ kiểm tra hồ sơ hoàn tiền' },
+        organization_id: { type: 'string', format: 'uuid', example: '550e8400-e29b-41d4-a716-446655440001' },
+        created_at: { type: 'string', format: 'date-time', example: '2026-03-13T09:30:00.000Z' },
+        updated_at: { type: 'string', format: 'date-time', example: '2026-03-13T10:00:00.000Z' },
+    },
+};
 
 @ApiTags('Admin Refund Requests')
 @ApiBearerAuth('JWT-auth')
@@ -34,7 +60,8 @@ export class RefundRequestController {
     @RequirePermission('refund-request.list')
     @ApiOperation({
         summary: 'Lấy danh sách tất cả yêu cầu hoàn tiền',
-        description: 'Lấy danh sách tất cả yêu cầu hoàn tiền với phân trang, tìm kiếm theo từ khóa, trạng thái và tổ chức. Yêu cầu quyền `refund-request.list`.',
+        description:
+            'Lấy danh sách tất cả yêu cầu hoàn tiền với phân trang, tìm kiếm theo từ khóa, trạng thái và tổ chức. Yêu cầu quyền `refund-request.list`.',
     })
     @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Số lượng kết quả tối đa', example: 10 })
     @ApiQuery({ name: 'offset', required: false, type: Number, description: 'Vị trí bắt đầu', example: 0 })
@@ -44,35 +71,29 @@ export class RefundRequestController {
     @ApiResponse({
         status: 200,
         description: 'Lấy danh sách yêu cầu hoàn tiền thành công',
-        schema: {
-            type: 'object',
-            properties: {
-                code: { type: 'string', example: 'refund_request.list.success' },
-                message: { type: 'string', example: 'Lấy danh sách yêu cầu hoàn tiền thành công' },
-                success: { type: 'boolean', example: true },
-                data: {
-                    type: 'object',
-                    properties: {
-                        items: {
-                            type: 'array',
-                            items: {
-                                type: 'object',
-                                properties: {
-                                    id: { type: 'string', format: 'uuid', example: '550e8400-e29b-41d4-a716-446655440010' },
-                                    status: { type: 'string', example: 'PENDING' },
-                                    requested_amount: { type: 'number', example: 1500000 },
-                                    organization_id: { type: 'string', format: 'uuid', example: '550e8400-e29b-41d4-a716-446655440001' },
-                                    created_at: { type: 'string', format: 'date-time', example: '2026-03-13T09:30:00.000Z' },
-                                },
-                            },
-                        },
-                        total: { type: 'number', example: 12 },
-                        limit: { type: 'number', example: 10 },
-                        offset: { type: 'number', example: 0 },
+        schema: buildSuccessResponseSchema({
+            code: 'refund_request.list.success',
+            message: 'Lấy danh sách yêu cầu hoàn tiền thành công',
+            dataSchema: buildPaginationDataSchema(refundRequestSchema),
+            dataExample: {
+                items: [
+                    {
+                        id: '550e8400-e29b-41d4-a716-446655440010',
+                        status: 'PENDING',
+                        requested_amount: 1500000,
+                        reject_reason: null,
+                        process_notes: 'Đang chờ kiểm tra hồ sơ hoàn tiền',
+                        organization_id: '550e8400-e29b-41d4-a716-446655440001',
+                        created_at: '2026-03-13T09:30:00.000Z',
+                        updated_at: '2026-03-13T10:00:00.000Z',
                     },
-                },
+                ],
+                total: 1,
+                limit: 10,
+                offset: 0,
+                hasMore: false,
             },
-        },
+        }),
     })
     @ApiAuthResponses()
     @ApiValidationErrorResponse()
@@ -89,39 +110,53 @@ export class RefundRequestController {
     @RequirePermission('refund-request.read')
     @ApiOperation({
         summary: 'Lấy chi tiết yêu cầu hoàn tiền',
-        description: 'Lấy thông tin chi tiết một yêu cầu hoàn tiền theo ID. Yêu cầu quyền `refund-request.read`.',
+        description:
+            'Lấy thông tin chi tiết một yêu cầu hoàn tiền theo ID. Yêu cầu quyền `refund-request.read`.',
     })
     @ApiParam({ name: 'id', description: 'ID của yêu cầu hoàn tiền', type: 'string', example: '550e8400-e29b-41d4-a716-446655440010' })
     @ApiResponse({
         status: 200,
         description: 'Lấy chi tiết yêu cầu hoàn tiền thành công',
-        schema: {
-            type: 'object',
-            properties: {
-                code: { type: 'string', example: 'refund_request.read.success' },
-                message: { type: 'string', example: 'Lấy thông tin yêu cầu hoàn tiền thành công' },
-                success: { type: 'boolean', example: true },
-                data: {
-                    type: 'object',
-                    properties: {
-                        id: { type: 'string', format: 'uuid' },
-                        status: { type: 'string', example: 'PENDING' },
-                        requested_amount: { type: 'number', example: 1500000 },
-                        reject_reason: { type: 'string', nullable: true, example: null },
-                        process_notes: { type: 'string', nullable: true, example: 'Đang chờ kiểm tra hồ sơ hoàn tiền' },
-                        organization: {
-                            type: 'object',
-                            properties: {
-                                id: { type: 'string', format: 'uuid', example: '550e8400-e29b-41d4-a716-446655440001' },
-                                name: { type: 'string', example: 'GEN-HUB Logistics' },
-                            },
+        schema: buildSuccessResponseSchema({
+            code: 'refund_request.read.success',
+            message: 'Lấy thông tin yêu cầu hoàn tiền thành công',
+            dataSchema: {
+                type: 'object',
+                properties: {
+                    ...refundRequestSchema.properties,
+                    organization: {
+                        type: 'object',
+                        properties: {
+                            id: { type: 'string', format: 'uuid', example: '550e8400-e29b-41d4-a716-446655440001' },
+                            name: { type: 'string', example: 'GEN-HUB Logistics' },
                         },
                     },
                 },
             },
-        },
+            dataExample: {
+                id: '550e8400-e29b-41d4-a716-446655440010',
+                status: 'PENDING',
+                requested_amount: 1500000,
+                reject_reason: null,
+                process_notes: 'Đang chờ kiểm tra hồ sơ hoàn tiền',
+                organization_id: '550e8400-e29b-41d4-a716-446655440001',
+                created_at: '2026-03-13T09:30:00.000Z',
+                updated_at: '2026-03-13T10:00:00.000Z',
+                organization: {
+                    id: '550e8400-e29b-41d4-a716-446655440001',
+                    name: 'GEN-HUB Logistics',
+                },
+            },
+        }),
     })
-    @ApiResponse({ status: 404, description: 'Không tìm thấy yêu cầu hoàn tiền' })
+    @ApiResponse({
+        status: 404,
+        description: 'Không tìm thấy yêu cầu hoàn tiền',
+        schema: buildErrorResponseSchema({
+            code: 'refund_request.not_found',
+            message: 'Không tìm thấy yêu cầu hoàn tiền',
+        }),
+    })
     @ApiAuthResponses()
     async findById(
         @Param('id', ParseUUIDPipe) id: string,
@@ -136,7 +171,8 @@ export class RefundRequestController {
     @RequirePermission('refund-request.accept')
     @ApiOperation({
         summary: 'Duyệt yêu cầu hoàn tiền',
-        description: 'Duyệt yêu cầu hoàn tiền và ghi nhận thông tin xử lý nếu có. Yêu cầu quyền `refund-request.accept`.',
+        description:
+            'Duyệt yêu cầu hoàn tiền và ghi nhận thông tin xử lý nếu có. Yêu cầu quyền `refund-request.accept`.',
     })
     @ApiParam({ name: 'id', description: 'ID của yêu cầu hoàn tiền', type: 'string', example: '550e8400-e29b-41d4-a716-446655440010' })
     @ApiBody({
@@ -145,20 +181,61 @@ export class RefundRequestController {
         examples: {
             simple_accept: {
                 summary: 'Duyệt không ghi chú',
+                description: 'Duyệt yêu cầu mà không cần lưu thêm process_notes',
                 value: {},
             },
             accept_with_note: {
                 summary: 'Duyệt có ghi chú',
+                description: 'Duyệt yêu cầu và ghi chú quá trình xử lý',
                 value: {
                     process_notes: 'Đã duyệt và chuyển lệnh hoàn tiền sang bộ phận kế toán',
                 },
             },
         },
     })
-    @ApiResponse({ status: 200, description: 'Duyệt yêu cầu hoàn tiền thành công' })
-    @ApiResponse({ status: 400, description: 'Yêu cầu hoàn tiền không ở trạng thái có thể duyệt' })
-    @ApiResponse({ status: 404, description: 'Không tìm thấy yêu cầu hoàn tiền' })
-    @ApiResponse({ status: 409, description: 'Yêu cầu hoàn tiền đã được xử lý trước đó' })
+    @ApiResponse({
+        status: 200,
+        description: 'Duyệt yêu cầu hoàn tiền thành công',
+        schema: buildSuccessResponseSchema({
+            code: 'refund_request.accept.success',
+            message: 'Duyệt yêu cầu hoàn tiền thành công',
+            dataSchema: refundRequestSchema,
+            dataExample: {
+                id: '550e8400-e29b-41d4-a716-446655440010',
+                status: 'APPROVED',
+                requested_amount: 1500000,
+                reject_reason: null,
+                process_notes: 'Đã duyệt và chuyển lệnh hoàn tiền sang bộ phận kế toán',
+                organization_id: '550e8400-e29b-41d4-a716-446655440001',
+                created_at: '2026-03-13T09:30:00.000Z',
+                updated_at: '2026-03-13T10:00:00.000Z',
+            },
+        }),
+    })
+    @ApiResponse({
+        status: 400,
+        description: 'Yêu cầu hoàn tiền không ở trạng thái có thể duyệt',
+        schema: buildErrorResponseSchema({
+            code: 'refund_request.invalid_status',
+            message: 'Yêu cầu hoàn tiền không ở trạng thái có thể duyệt',
+        }),
+    })
+    @ApiResponse({
+        status: 404,
+        description: 'Không tìm thấy yêu cầu hoàn tiền',
+        schema: buildErrorResponseSchema({
+            code: 'refund_request.not_found',
+            message: 'Không tìm thấy yêu cầu hoàn tiền',
+        }),
+    })
+    @ApiResponse({
+        status: 409,
+        description: 'Yêu cầu hoàn tiền đã được xử lý trước đó',
+        schema: buildErrorResponseSchema({
+            code: 'refund_request.conflict',
+            message: 'Yêu cầu hoàn tiền đã được xử lý trước đó',
+        }),
+    })
     @ApiAuthResponses()
     @ApiValidationErrorResponse()
     async accept(
@@ -175,7 +252,8 @@ export class RefundRequestController {
     @RequirePermission('refund-request.reject')
     @ApiOperation({
         summary: 'Từ chối yêu cầu hoàn tiền',
-        description: 'Từ chối yêu cầu hoàn tiền với lý do rõ ràng và ghi chú xử lý nếu có. Yêu cầu quyền `refund-request.reject`.',
+        description:
+            'Từ chối yêu cầu hoàn tiền với lý do rõ ràng và ghi chú xử lý nếu có. Yêu cầu quyền `refund-request.reject`.',
     })
     @ApiParam({ name: 'id', description: 'ID của yêu cầu hoàn tiền', type: 'string', example: '550e8400-e29b-41d4-a716-446655440010' })
     @ApiBody({
@@ -184,6 +262,7 @@ export class RefundRequestController {
         examples: {
             reject_by_policy: {
                 summary: 'Từ chối do không đủ điều kiện',
+                description: 'Từ chối vì yêu cầu không đáp ứng điều kiện chính sách',
                 value: {
                     reject_reason: 'Không đủ điều kiện hoàn tiền theo chính sách hiện hành',
                     process_notes: 'Đã liên hệ khách hàng để giải thích chi tiết',
@@ -191,10 +270,49 @@ export class RefundRequestController {
             },
         },
     })
-    @ApiResponse({ status: 200, description: 'Từ chối yêu cầu hoàn tiền thành công' })
-    @ApiResponse({ status: 400, description: 'Yêu cầu hoàn tiền không ở trạng thái có thể từ chối' })
-    @ApiResponse({ status: 404, description: 'Không tìm thấy yêu cầu hoàn tiền' })
-    @ApiResponse({ status: 409, description: 'Yêu cầu hoàn tiền đã được xử lý trước đó' })
+    @ApiResponse({
+        status: 200,
+        description: 'Từ chối yêu cầu hoàn tiền thành công',
+        schema: buildSuccessResponseSchema({
+            code: 'refund_request.reject.success',
+            message: 'Từ chối yêu cầu hoàn tiền thành công',
+            dataSchema: refundRequestSchema,
+            dataExample: {
+                id: '550e8400-e29b-41d4-a716-446655440010',
+                status: 'REJECTED',
+                requested_amount: 1500000,
+                reject_reason: 'Không đủ điều kiện hoàn tiền theo chính sách hiện hành',
+                process_notes: 'Đã liên hệ khách hàng để giải thích chi tiết',
+                organization_id: '550e8400-e29b-41d4-a716-446655440001',
+                created_at: '2026-03-13T09:30:00.000Z',
+                updated_at: '2026-03-13T10:00:00.000Z',
+            },
+        }),
+    })
+    @ApiResponse({
+        status: 400,
+        description: 'Yêu cầu hoàn tiền không ở trạng thái có thể từ chối',
+        schema: buildErrorResponseSchema({
+            code: 'refund_request.invalid_status',
+            message: 'Yêu cầu hoàn tiền không ở trạng thái có thể từ chối',
+        }),
+    })
+    @ApiResponse({
+        status: 404,
+        description: 'Không tìm thấy yêu cầu hoàn tiền',
+        schema: buildErrorResponseSchema({
+            code: 'refund_request.not_found',
+            message: 'Không tìm thấy yêu cầu hoàn tiền',
+        }),
+    })
+    @ApiResponse({
+        status: 409,
+        description: 'Yêu cầu hoàn tiền đã được xử lý trước đó',
+        schema: buildErrorResponseSchema({
+            code: 'refund_request.conflict',
+            message: 'Yêu cầu hoàn tiền đã được xử lý trước đó',
+        }),
+    })
     @ApiAuthResponses()
     @ApiValidationErrorResponse()
     async reject(
@@ -211,7 +329,8 @@ export class RefundRequestController {
     @RequirePermission('refund-request.change')
     @ApiOperation({
         summary: 'Thay đổi trạng thái yêu cầu hoàn tiền',
-        description: 'Thay đổi trạng thái yêu cầu hoàn tiền sang trạng thái mới theo luồng xử lý nghiệp vụ. Yêu cầu quyền `refund-request.change`.',
+        description:
+            'Thay đổi trạng thái yêu cầu hoàn tiền sang trạng thái mới theo luồng xử lý nghiệp vụ. Yêu cầu quyền `refund-request.change`.',
     })
     @ApiParam({ name: 'id', description: 'ID của yêu cầu hoàn tiền', type: 'string', example: '550e8400-e29b-41d4-a716-446655440010' })
     @ApiBody({
@@ -220,6 +339,7 @@ export class RefundRequestController {
         examples: {
             approve_after_review: {
                 summary: 'Chuyển sang APPROVED',
+                description: 'Thay đổi trạng thái sau khi xem xét lại hồ sơ',
                 value: {
                     new_status: 'APPROVED',
                     change_reason: 'Xem xét lại hồ sơ và quyết định duyệt',
@@ -228,6 +348,7 @@ export class RefundRequestController {
             },
             complete_refund: {
                 summary: 'Chuyển sang COMPLETED',
+                description: 'Đánh dấu yêu cầu đã hoàn tiền xong',
                 value: {
                     new_status: 'COMPLETED',
                     process_notes: 'Đã hoàn tiền thành công qua chuyển khoản',
@@ -235,10 +356,49 @@ export class RefundRequestController {
             },
         },
     })
-    @ApiResponse({ status: 200, description: 'Thay đổi trạng thái yêu cầu hoàn tiền thành công' })
-    @ApiResponse({ status: 400, description: 'Trạng thái mới không hợp lệ theo quy trình' })
-    @ApiResponse({ status: 404, description: 'Không tìm thấy yêu cầu hoàn tiền' })
-    @ApiResponse({ status: 409, description: 'Xung đột trạng thái khi cập nhật yêu cầu hoàn tiền' })
+    @ApiResponse({
+        status: 200,
+        description: 'Thay đổi trạng thái yêu cầu hoàn tiền thành công',
+        schema: buildSuccessResponseSchema({
+            code: 'refund_request.change.success',
+            message: 'Thay đổi trạng thái thành công',
+            dataSchema: refundRequestSchema,
+            dataExample: {
+                id: '550e8400-e29b-41d4-a716-446655440010',
+                status: 'COMPLETED',
+                requested_amount: 1500000,
+                reject_reason: null,
+                process_notes: 'Đã hoàn tiền thành công qua chuyển khoản',
+                organization_id: '550e8400-e29b-41d4-a716-446655440001',
+                created_at: '2026-03-13T09:30:00.000Z',
+                updated_at: '2026-03-13T10:00:00.000Z',
+            },
+        }),
+    })
+    @ApiResponse({
+        status: 400,
+        description: 'Trạng thái mới không hợp lệ theo quy trình',
+        schema: buildErrorResponseSchema({
+            code: 'refund_request.invalid_transition',
+            message: 'Trạng thái mới không hợp lệ theo quy trình xử lý',
+        }),
+    })
+    @ApiResponse({
+        status: 404,
+        description: 'Không tìm thấy yêu cầu hoàn tiền',
+        schema: buildErrorResponseSchema({
+            code: 'refund_request.not_found',
+            message: 'Không tìm thấy yêu cầu hoàn tiền',
+        }),
+    })
+    @ApiResponse({
+        status: 409,
+        description: 'Xung đột trạng thái khi cập nhật yêu cầu hoàn tiền',
+        schema: buildErrorResponseSchema({
+            code: 'refund_request.conflict',
+            message: 'Xung đột trạng thái khi cập nhật yêu cầu hoàn tiền',
+        }),
+    })
     @ApiAuthResponses()
     @ApiValidationErrorResponse()
     async changeStatus(
@@ -261,17 +421,19 @@ export class RefundRequestController {
     @ApiResponse({
         status: 200,
         description: 'Xóa yêu cầu hoàn tiền thành công',
-        schema: {
-            type: 'object',
-            properties: {
-                code: { type: 'string', example: 'refund_request.delete.success' },
-                message: { type: 'string', example: 'Xóa yêu cầu hoàn tiền thành công' },
-                success: { type: 'boolean', example: true },
-                data: { type: 'null', example: null },
-            },
-        },
+        schema: buildSuccessResponseSchema({
+            code: 'refund_request.delete.success',
+            message: 'Xóa yêu cầu hoàn tiền thành công',
+        }),
     })
-    @ApiResponse({ status: 404, description: 'Không tìm thấy yêu cầu hoàn tiền' })
+    @ApiResponse({
+        status: 404,
+        description: 'Không tìm thấy yêu cầu hoàn tiền',
+        schema: buildErrorResponseSchema({
+            code: 'refund_request.not_found',
+            message: 'Không tìm thấy yêu cầu hoàn tiền',
+        }),
+    })
     @ApiAuthResponses()
     async delete(
         @Param('id', ParseUUIDPipe) id: string,

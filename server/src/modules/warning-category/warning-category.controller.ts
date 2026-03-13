@@ -1,44 +1,65 @@
 import {
-    Controller,
-    Get,
-    Post,
-    Put,
-    Delete,
     Body,
-    Param,
-    Query,
-    ParseUUIDPipe,
-    UseGuards,
-    Req,
+    Controller,
+    Delete,
+    Get,
     HttpCode,
     HttpStatus,
+    Param,
+    ParseUUIDPipe,
+    Post,
+    Put,
+    Query,
+    Req,
+    UseGuards,
 } from '@nestjs/common';
 import {
-    ApiTags,
-    ApiOperation,
-    ApiResponse,
     ApiBearerAuth,
-    ApiParam,
     ApiBody,
+    ApiOperation,
+    ApiParam,
     ApiQuery,
+    ApiResponse,
+    ApiTags,
 } from '@nestjs/swagger';
+import type { Request } from 'express';
 import { I18nLang } from 'nestjs-i18n';
+import { ApiAuthResponses, ApiValidationErrorResponse, CurrentUser, RequirePermission } from '../../common/decorators';
 import { JwtAuthGuard, PermissionGuard } from '../../common/guards';
-import { RequirePermission, CurrentUser, ApiAuthResponses, ApiValidationErrorResponse } from '../../common/decorators';
-import { WarningCategoryService } from './warning-category.service';
-import {
-    CreateWarningCategoryDto,
-    UpdateWarningCategoryDto,
-    QueryWarningCategoryDto,
-    DeleteManyWarningCategoryDto,
-} from './dto';
 import {
     CreatedResponse,
+    DeletedResponse,
     GetResponse,
     UpdatedResponse,
-    DeletedResponse,
 } from '../../common/responses/success.response';
-import type { Request } from 'express';
+import {
+    buildErrorResponseSchema,
+    buildPaginationDataSchema,
+    buildSuccessResponseSchema,
+} from '../../common/swagger/swagger-response.helper';
+import {
+    CreateWarningCategoryDto,
+    DeleteManyWarningCategoryDto,
+    QueryWarningCategoryDto,
+    UpdateWarningCategoryDto,
+} from './dto';
+import { WarningCategoryService } from './warning-category.service';
+
+const warningCategorySchema = {
+    type: 'object',
+    properties: {
+        id: { type: 'string', format: 'uuid', example: '550e8400-e29b-41d4-a716-446655440001' },
+        name: { type: 'string', example: 'Vi phạm chính sách' },
+        description: {
+            type: 'string',
+            example: 'Danh mục cho các vi phạm liên quan đến chính sách sử dụng',
+        },
+        severity: { type: 'number', example: 5 },
+        is_active: { type: 'boolean', example: true },
+        created_at: { type: 'string', format: 'date-time', example: '2026-03-13T09:30:00.000Z' },
+        updated_at: { type: 'string', format: 'date-time', example: '2026-03-13T10:00:00.000Z' },
+    },
+};
 
 @ApiTags('Warning Category')
 @ApiBearerAuth('JWT-auth')
@@ -51,7 +72,8 @@ export class WarningCategoryController {
     @RequirePermission('warning-category.create')
     @ApiOperation({
         summary: 'Tạo danh mục cảnh báo mới',
-        description: 'Tạo một danh mục cảnh báo mới để phân loại các loại vi phạm hoặc cảnh báo trong hệ thống. Yêu cầu quyền `warning-category.create`.',
+        description:
+            'Tạo một danh mục cảnh báo mới để phân loại các vi phạm hoặc trường hợp cần cảnh báo trong hệ thống. Yêu cầu quyền `warning-category.create`.',
     })
     @ApiBody({
         type: CreateWarningCategoryDto,
@@ -59,14 +81,16 @@ export class WarningCategoryController {
         examples: {
             policy_violation: {
                 summary: 'Danh mục vi phạm chính sách',
+                description: 'Tạo danh mục mức độ nghiêm trọng cao cho các vi phạm chính sách',
                 value: {
                     name: 'Vi phạm chính sách',
-                    description: 'Danh mục dành cho các vi phạm liên quan đến chính sách sử dụng',
+                    description: 'Danh mục cho các vi phạm liên quan đến chính sách sử dụng',
                     severity: 5,
                 },
             },
             warning_reminder: {
                 summary: 'Danh mục nhắc nhở',
+                description: 'Tạo danh mục nhẹ để ghi nhận các trường hợp cần nhắc nhở',
                 value: {
                     name: 'Nhắc nhở',
                     description: 'Danh mục dành cho các cảnh báo nhẹ cần ghi nhận',
@@ -78,27 +102,37 @@ export class WarningCategoryController {
     @ApiResponse({
         status: 201,
         description: 'Tạo danh mục cảnh báo thành công',
-        schema: {
-            type: 'object',
-            properties: {
-                code: { type: 'string', example: 'warning-category.create' },
-                message: { type: 'string', example: 'Tạo danh mục cảnh báo thành công' },
-                success: { type: 'boolean', example: true },
-                data: {
-                    type: 'object',
-                    properties: {
-                        id: { type: 'string', format: 'uuid', example: '550e8400-e29b-41d4-a716-446655440001' },
-                        name: { type: 'string', example: 'Vi phạm chính sách' },
-                        description: { type: 'string', example: 'Danh mục dành cho các vi phạm liên quan đến chính sách sử dụng' },
-                        severity: { type: 'number', example: 5 },
-                        is_active: { type: 'boolean', example: true },
-                    },
-                },
+        schema: buildSuccessResponseSchema({
+            code: 'warning-category.create',
+            message: 'Tạo danh mục cảnh báo thành công',
+            dataSchema: warningCategorySchema,
+            dataExample: {
+                id: '550e8400-e29b-41d4-a716-446655440001',
+                name: 'Vi phạm chính sách',
+                description: 'Danh mục cho các vi phạm liên quan đến chính sách sử dụng',
+                severity: 5,
+                is_active: true,
+                created_at: '2026-03-13T09:30:00.000Z',
+                updated_at: '2026-03-13T10:00:00.000Z',
             },
-        },
+        }),
     })
-    @ApiResponse({ status: 400, description: 'Dữ liệu gửi lên không hợp lệ hoặc không thể tạo danh mục cảnh báo' })
-    @ApiResponse({ status: 409, description: 'Danh mục cảnh báo đã tồn tại' })
+    @ApiResponse({
+        status: 400,
+        description: 'Dữ liệu gửi lên không hợp lệ hoặc không thể tạo danh mục cảnh báo',
+        schema: buildErrorResponseSchema({
+            code: 'warning-category.create_invalid',
+            message: 'Không thể tạo danh mục cảnh báo với dữ liệu đã cung cấp',
+        }),
+    })
+    @ApiResponse({
+        status: 409,
+        description: 'Danh mục cảnh báo đã tồn tại',
+        schema: buildErrorResponseSchema({
+            code: 'warning-category.name_conflict',
+            message: 'Tên danh mục cảnh báo đã tồn tại trong hệ thống',
+        }),
+    })
     @ApiAuthResponses()
     @ApiValidationErrorResponse()
     async create(
@@ -118,14 +152,40 @@ export class WarningCategoryController {
     @RequirePermission('warning-category.list')
     @ApiOperation({
         summary: 'Lấy danh sách danh mục cảnh báo',
-        description: 'Lấy danh sách tất cả danh mục cảnh báo với phân trang, tìm kiếm và lọc trạng thái. Yêu cầu quyền `warning-category.list`.',
+        description:
+            'Lấy danh sách tất cả danh mục cảnh báo với phân trang, tìm kiếm và lọc trạng thái. Yêu cầu quyền `warning-category.list`.',
     })
     @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Giới hạn số lượng bản ghi', example: 20 })
     @ApiQuery({ name: 'offset', required: false, type: Number, description: 'Vị trí bắt đầu', example: 0 })
     @ApiQuery({ name: 'keywords', required: false, type: String, description: 'Từ khóa tìm kiếm theo tên danh mục', example: 'vi phạm' })
     @ApiQuery({ name: 'status', required: false, type: String, description: 'Lọc theo trạng thái chữ', example: 'active' })
     @ApiQuery({ name: 'is_active', required: false, type: Boolean, description: 'Lọc theo trạng thái kích hoạt', example: true })
-    @ApiResponse({ status: 200, description: 'Lấy danh sách danh mục cảnh báo thành công' })
+    @ApiResponse({
+        status: 200,
+        description: 'Lấy danh sách danh mục cảnh báo thành công',
+        schema: buildSuccessResponseSchema({
+            code: 'warning-category.list',
+            message: 'Lấy danh sách danh mục cảnh báo thành công',
+            dataSchema: buildPaginationDataSchema(warningCategorySchema),
+            dataExample: {
+                items: [
+                    {
+                        id: '550e8400-e29b-41d4-a716-446655440001',
+                        name: 'Vi phạm chính sách',
+                        description: 'Danh mục cho các vi phạm liên quan đến chính sách sử dụng',
+                        severity: 5,
+                        is_active: true,
+                        created_at: '2026-03-13T09:30:00.000Z',
+                        updated_at: '2026-03-13T10:00:00.000Z',
+                    },
+                ],
+                total: 1,
+                limit: 20,
+                offset: 0,
+                hasMore: false,
+            },
+        }),
+    })
     @ApiAuthResponses()
     async findMany(
         @Query() query: QueryWarningCategoryDto,
@@ -139,9 +199,32 @@ export class WarningCategoryController {
     @RequirePermission('warning-category.list')
     @ApiOperation({
         summary: 'Lấy tất cả danh mục active cho dropdown',
-        description: 'Lấy toàn bộ danh mục cảnh báo đang active để hiển thị trong dropdown hoặc form lựa chọn. Yêu cầu quyền `warning-category.list`.',
+        description:
+            'Lấy toàn bộ danh mục cảnh báo đang active để hiển thị trong dropdown hoặc form lựa chọn. Yêu cầu quyền `warning-category.list`.',
     })
-    @ApiResponse({ status: 200, description: 'Lấy danh sách danh mục active thành công' })
+    @ApiResponse({
+        status: 200,
+        description: 'Lấy danh sách danh mục active thành công',
+        schema: buildSuccessResponseSchema({
+            code: 'warning-category.list.all',
+            message: 'Lấy danh sách danh mục active thành công',
+            dataSchema: {
+                type: 'array',
+                items: warningCategorySchema,
+            },
+            dataExample: [
+                {
+                    id: '550e8400-e29b-41d4-a716-446655440001',
+                    name: 'Vi phạm chính sách',
+                    description: 'Danh mục cho các vi phạm liên quan đến chính sách sử dụng',
+                    severity: 5,
+                    is_active: true,
+                    created_at: '2026-03-13T09:30:00.000Z',
+                    updated_at: '2026-03-13T10:00:00.000Z',
+                },
+            ],
+        }),
+    })
     @ApiAuthResponses()
     async findAllActive(@I18nLang() lang: string) {
         const items = await this.service.findAllActive(lang);
@@ -152,11 +235,36 @@ export class WarningCategoryController {
     @RequirePermission('warning-category.list')
     @ApiOperation({
         summary: 'Lấy chi tiết danh mục cảnh báo',
-        description: 'Lấy thông tin chi tiết của một danh mục cảnh báo theo ID. Yêu cầu quyền `warning-category.list`.',
+        description:
+            'Lấy thông tin chi tiết của một danh mục cảnh báo theo ID. Yêu cầu quyền `warning-category.list`.',
     })
     @ApiParam({ name: 'id', description: 'ID danh mục cảnh báo', example: '550e8400-e29b-41d4-a716-446655440001' })
-    @ApiResponse({ status: 200, description: 'Lấy chi tiết danh mục cảnh báo thành công' })
-    @ApiResponse({ status: 404, description: 'Không tìm thấy danh mục cảnh báo' })
+    @ApiResponse({
+        status: 200,
+        description: 'Lấy chi tiết danh mục cảnh báo thành công',
+        schema: buildSuccessResponseSchema({
+            code: 'warning-category.read',
+            message: 'Lấy chi tiết danh mục cảnh báo thành công',
+            dataSchema: warningCategorySchema,
+            dataExample: {
+                id: '550e8400-e29b-41d4-a716-446655440001',
+                name: 'Vi phạm chính sách',
+                description: 'Danh mục cho các vi phạm liên quan đến chính sách sử dụng',
+                severity: 5,
+                is_active: true,
+                created_at: '2026-03-13T09:30:00.000Z',
+                updated_at: '2026-03-13T10:00:00.000Z',
+            },
+        }),
+    })
+    @ApiResponse({
+        status: 404,
+        description: 'Không tìm thấy danh mục cảnh báo',
+        schema: buildErrorResponseSchema({
+            code: 'warning-category.not_found',
+            message: 'Không tìm thấy danh mục cảnh báo',
+        }),
+    })
     @ApiAuthResponses()
     async findById(
         @Param('id', ParseUUIDPipe) id: string,
@@ -170,7 +278,8 @@ export class WarningCategoryController {
     @RequirePermission('warning-category.update')
     @ApiOperation({
         summary: 'Cập nhật danh mục cảnh báo',
-        description: 'Cập nhật một phần hoặc toàn bộ thông tin danh mục cảnh báo. Yêu cầu quyền `warning-category.update`.',
+        description:
+            'Cập nhật một phần hoặc toàn bộ thông tin danh mục cảnh báo. Chỉ các trường được gửi trong request body mới được thay đổi. Yêu cầu quyền `warning-category.update`.',
     })
     @ApiParam({ name: 'id', description: 'ID danh mục cảnh báo', example: '550e8400-e29b-41d4-a716-446655440001' })
     @ApiBody({
@@ -179,12 +288,14 @@ export class WarningCategoryController {
         examples: {
             rename_category: {
                 summary: 'Đổi tên danh mục',
+                description: 'Chỉ cập nhật tên danh mục',
                 value: {
                     name: 'Vi phạm nội quy kho',
                 },
             },
             update_full: {
                 summary: 'Cập nhật đầy đủ',
+                description: 'Cập nhật tên, mô tả, mức độ nghiêm trọng và trạng thái active',
                 value: {
                     name: 'Vi phạm chính sách',
                     description: 'Danh mục cho các trường hợp vi phạm nghiêm trọng',
@@ -194,9 +305,40 @@ export class WarningCategoryController {
             },
         },
     })
-    @ApiResponse({ status: 200, description: 'Cập nhật danh mục cảnh báo thành công' })
-    @ApiResponse({ status: 404, description: 'Không tìm thấy danh mục cảnh báo' })
-    @ApiResponse({ status: 409, description: 'Tên danh mục cảnh báo bị trùng' })
+    @ApiResponse({
+        status: 200,
+        description: 'Cập nhật danh mục cảnh báo thành công',
+        schema: buildSuccessResponseSchema({
+            code: 'warning-category.update',
+            message: 'Cập nhật danh mục cảnh báo thành công',
+            dataSchema: warningCategorySchema,
+            dataExample: {
+                id: '550e8400-e29b-41d4-a716-446655440001',
+                name: 'Vi phạm nội quy kho',
+                description: 'Danh mục cho các trường hợp vi phạm nghiêm trọng',
+                severity: 4,
+                is_active: true,
+                created_at: '2026-03-13T09:30:00.000Z',
+                updated_at: '2026-03-13T10:00:00.000Z',
+            },
+        }),
+    })
+    @ApiResponse({
+        status: 404,
+        description: 'Không tìm thấy danh mục cảnh báo',
+        schema: buildErrorResponseSchema({
+            code: 'warning-category.not_found',
+            message: 'Không tìm thấy danh mục cảnh báo',
+        }),
+    })
+    @ApiResponse({
+        status: 409,
+        description: 'Tên danh mục cảnh báo bị trùng',
+        schema: buildErrorResponseSchema({
+            code: 'warning-category.name_conflict',
+            message: 'Tên danh mục cảnh báo đã tồn tại trong hệ thống',
+        }),
+    })
     @ApiAuthResponses()
     @ApiValidationErrorResponse()
     async update(
@@ -221,8 +363,22 @@ export class WarningCategoryController {
         description: 'Soft delete một danh mục cảnh báo theo ID. Yêu cầu quyền `warning-category.delete`.',
     })
     @ApiParam({ name: 'id', description: 'ID danh mục cảnh báo', example: '550e8400-e29b-41d4-a716-446655440001' })
-    @ApiResponse({ status: 200, description: 'Xóa danh mục cảnh báo thành công' })
-    @ApiResponse({ status: 404, description: 'Không tìm thấy danh mục cảnh báo' })
+    @ApiResponse({
+        status: 200,
+        description: 'Xóa danh mục cảnh báo thành công',
+        schema: buildSuccessResponseSchema({
+            code: 'warning-category.delete',
+            message: 'Xóa danh mục cảnh báo thành công',
+        }),
+    })
+    @ApiResponse({
+        status: 404,
+        description: 'Không tìm thấy danh mục cảnh báo',
+        schema: buildErrorResponseSchema({
+            code: 'warning-category.not_found',
+            message: 'Không tìm thấy danh mục cảnh báo',
+        }),
+    })
     @ApiAuthResponses()
     async delete(
         @Param('id', ParseUUIDPipe) id: string,
@@ -242,7 +398,8 @@ export class WarningCategoryController {
     @HttpCode(HttpStatus.OK)
     @ApiOperation({
         summary: 'Xóa nhiều danh mục cảnh báo',
-        description: 'Xóa mềm nhiều danh mục cảnh báo cùng lúc theo danh sách ID. Yêu cầu quyền `warning-category.delete`.',
+        description:
+            'Xóa mềm nhiều danh mục cảnh báo cùng lúc theo danh sách ID. Yêu cầu quyền `warning-category.delete`.',
     })
     @ApiBody({
         type: DeleteManyWarningCategoryDto,
@@ -250,6 +407,7 @@ export class WarningCategoryController {
         examples: {
             delete_many: {
                 summary: 'Xóa nhiều danh mục',
+                description: 'Ví dụ xóa 2 danh mục cảnh báo cùng lúc',
                 value: {
                     ids: [
                         '550e8400-e29b-41d4-a716-446655440001',
@@ -259,7 +417,23 @@ export class WarningCategoryController {
             },
         },
     })
-    @ApiResponse({ status: 200, description: 'Xóa nhiều danh mục cảnh báo thành công' })
+    @ApiResponse({
+        status: 200,
+        description: 'Xóa nhiều danh mục cảnh báo thành công',
+        schema: buildSuccessResponseSchema({
+            code: 'warning-category.delete-many',
+            message: 'Xóa nhiều danh mục cảnh báo thành công',
+            dataSchema: {
+                type: 'object',
+                properties: {
+                    count: { type: 'number', example: 2 },
+                },
+            },
+            dataExample: {
+                count: 2,
+            },
+        }),
+    })
     @ApiAuthResponses()
     @ApiValidationErrorResponse()
     async deleteMany(

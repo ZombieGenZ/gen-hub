@@ -44,6 +44,11 @@ import {
     ApiUnauthorizedResponses,
     ApiValidationErrorResponse,
 } from '../../common/decorators/api-common-responses.decorator';
+import {
+    buildErrorResponseSchema,
+    buildPaginationDataSchema,
+    buildSuccessResponseSchema,
+} from '../../common/swagger/swagger-response.helper';
 
 @ApiTags('Contact & Live Chat')
 @Controller()
@@ -52,6 +57,33 @@ export class ContactController {
         private readonly contactService: ContactService,
         private readonly userRepository: UserRepository,
     ) { }
+
+    private static readonly ticketSchema = {
+        type: 'object',
+        properties: {
+            id: { type: 'string', format: 'uuid', example: '550e8400-e29b-41d4-a716-446655440081' },
+            ticket_number: { type: 'string', example: 'TK-123456' },
+            subject: { type: 'string', example: 'Hỗ trợ kỹ thuật' },
+            status: { type: 'string', example: 'OPEN' },
+            priority: { type: 'string', example: 'HIGH' },
+            customer_name: { type: 'string', example: 'Nguyễn Văn A' },
+            customer_email: { type: 'string', example: 'nguyenvana@example.com' },
+            enable_ai_reply: { type: 'boolean', example: false },
+            created_at: { type: 'string', format: 'date-time', example: '2026-03-13T09:30:00.000Z' },
+            updated_at: { type: 'string', format: 'date-time', example: '2026-03-13T10:00:00.000Z' },
+        },
+    };
+
+    private static readonly messageSchema = {
+        type: 'object',
+        properties: {
+            id: { type: 'string', format: 'uuid', example: '550e8400-e29b-41d4-a716-446655440091' },
+            content: { type: 'string', example: 'Chúng tôi đã tiếp nhận yêu cầu và sẽ phản hồi thêm trong hôm nay.' },
+            sender_type: { type: 'string', example: 'STAFF' },
+            is_internal: { type: 'boolean', example: false },
+            created_at: { type: 'string', format: 'date-time', example: '2026-03-13T10:05:00.000Z' },
+        },
+    };
 
     @Post('contact')
     @Public()
@@ -253,7 +285,35 @@ export class ContactController {
     @ApiQuery({ name: 'assigned_staff_id', required: false, type: String, example: '550e8400-e29b-41d4-a716-446655440088', description: 'Lọc theo nhân viên được gán xử lý' })
     @ApiQuery({ name: 'is_priority_customer', required: false, type: Boolean, description: 'Lọc theo khách hàng ưu tiên' })
     @ApiQuery({ name: 'is_skipped', required: false, type: Boolean, description: 'Lọc theo ticket bị bỏ qua/spam' })
-    @ApiResponse({ status: 200, description: 'Lấy danh sách tickets thành công' })
+    @ApiResponse({
+        status: 200,
+        description: 'Lấy danh sách tickets thành công',
+        schema: buildSuccessResponseSchema({
+            code: 'contact.list',
+            message: 'Lấy danh sách tickets thành công',
+            dataSchema: buildPaginationDataSchema(ContactController.ticketSchema),
+            dataExample: {
+                items: [
+                    {
+                        id: '550e8400-e29b-41d4-a716-446655440081',
+                        ticket_number: 'TK-123456',
+                        subject: 'Hỗ trợ kỹ thuật',
+                        status: 'OPEN',
+                        priority: 'HIGH',
+                        customer_name: 'Nguyễn Văn A',
+                        customer_email: 'nguyenvana@example.com',
+                        enable_ai_reply: false,
+                        created_at: '2026-03-13T09:30:00.000Z',
+                        updated_at: '2026-03-13T10:00:00.000Z',
+                    },
+                ],
+                total: 1,
+                limit: 10,
+                offset: 0,
+                hasMore: false,
+            },
+        }),
+    })
     @ApiAuthResponses()
     @ApiValidationErrorResponse()
     async findAll(
@@ -327,8 +387,35 @@ export class ContactController {
         description: 'Lấy thông tin chi tiết của một ticket theo ID. Yêu cầu quyền `contact.read`.',
     })
     @ApiParam({ name: 'id', description: 'ID ticket', example: '550e8400-e29b-41d4-a716-446655440081' })
-    @ApiResponse({ status: 200, description: 'Lấy chi tiết ticket thành công' })
-    @ApiResponse({ status: 404, description: 'Không tìm thấy ticket' })
+    @ApiResponse({
+        status: 200,
+        description: 'Lấy chi tiết ticket thành công',
+        schema: buildSuccessResponseSchema({
+            code: 'contact.read',
+            message: 'Lấy chi tiết ticket thành công',
+            dataSchema: ContactController.ticketSchema,
+            dataExample: {
+                id: '550e8400-e29b-41d4-a716-446655440081',
+                ticket_number: 'TK-123456',
+                subject: 'Hỗ trợ kỹ thuật',
+                status: 'OPEN',
+                priority: 'HIGH',
+                customer_name: 'Nguyễn Văn A',
+                customer_email: 'nguyenvana@example.com',
+                enable_ai_reply: false,
+                created_at: '2026-03-13T09:30:00.000Z',
+                updated_at: '2026-03-13T10:00:00.000Z',
+            },
+        }),
+    })
+    @ApiResponse({
+        status: 404,
+        description: 'Không tìm thấy ticket',
+        schema: buildErrorResponseSchema({
+            code: 'contact.not_found',
+            message: 'Không tìm thấy ticket',
+        }),
+    })
     @ApiAuthResponses()
     async findOne(
         @Param('id') id: string,
@@ -347,8 +434,35 @@ export class ContactController {
         description: 'Lấy toàn bộ nội dung trao đổi của ticket, bao gồm phản hồi của nhân viên và tin nhắn từ khách hàng. Yêu cầu quyền `contact.read`.',
     })
     @ApiParam({ name: 'id', description: 'ID ticket', example: '550e8400-e29b-41d4-a716-446655440081' })
-    @ApiResponse({ status: 200, description: 'Lấy nội dung trao đổi của ticket thành công' })
-    @ApiResponse({ status: 404, description: 'Không tìm thấy ticket hoặc lịch sử trao đổi' })
+    @ApiResponse({
+        status: 200,
+        description: 'Lấy nội dung trao đổi của ticket thành công',
+        schema: buildSuccessResponseSchema({
+            code: 'contact.messages',
+            message: 'Lấy nội dung trao đổi của ticket thành công',
+            dataSchema: {
+                type: 'array',
+                items: ContactController.messageSchema,
+            },
+            dataExample: [
+                {
+                    id: '550e8400-e29b-41d4-a716-446655440091',
+                    content: 'Chúng tôi đã tiếp nhận yêu cầu và sẽ phản hồi thêm trong hôm nay.',
+                    sender_type: 'STAFF',
+                    is_internal: false,
+                    created_at: '2026-03-13T10:05:00.000Z',
+                },
+            ],
+        }),
+    })
+    @ApiResponse({
+        status: 404,
+        description: 'Không tìm thấy ticket hoặc lịch sử trao đổi',
+        schema: buildErrorResponseSchema({
+            code: 'contact.messages_not_found',
+            message: 'Không tìm thấy ticket hoặc lịch sử trao đổi',
+        }),
+    })
     @ApiAuthResponses()
     async findMessages(
         @Param('id') id: string,
@@ -388,8 +502,35 @@ export class ContactController {
             },
         },
     })
-    @ApiResponse({ status: 200, description: 'Cập nhật ticket thành công' })
-    @ApiResponse({ status: 404, description: 'Không tìm thấy ticket' })
+    @ApiResponse({
+        status: 200,
+        description: 'Cập nhật ticket thành công',
+        schema: buildSuccessResponseSchema({
+            code: 'contact.updated',
+            message: 'Cập nhật ticket thành công',
+            dataSchema: ContactController.ticketSchema,
+            dataExample: {
+                id: '550e8400-e29b-41d4-a716-446655440081',
+                ticket_number: 'TK-123456',
+                subject: 'Hỗ trợ kỹ thuật',
+                status: 'PENDING',
+                priority: 'HIGH',
+                customer_name: 'Nguyễn Văn A',
+                customer_email: 'nguyenvana@example.com',
+                enable_ai_reply: false,
+                created_at: '2026-03-13T09:30:00.000Z',
+                updated_at: '2026-03-13T10:00:00.000Z',
+            },
+        }),
+    })
+    @ApiResponse({
+        status: 404,
+        description: 'Không tìm thấy ticket',
+        schema: buildErrorResponseSchema({
+            code: 'contact.not_found',
+            message: 'Không tìm thấy ticket',
+        }),
+    })
     @ApiAuthResponses()
     @ApiValidationErrorResponse()
     async update(
@@ -431,8 +572,22 @@ export class ContactController {
             },
         },
     })
-    @ApiResponse({ status: 200, description: 'Phản hồi ticket thành công' })
-    @ApiResponse({ status: 404, description: 'Không tìm thấy ticket để phản hồi' })
+    @ApiResponse({
+        status: 200,
+        description: 'Phản hồi ticket thành công',
+        schema: buildSuccessResponseSchema({
+            code: 'contact.replied',
+            message: 'Phản hồi ticket thành công',
+        }),
+    })
+    @ApiResponse({
+        status: 404,
+        description: 'Không tìm thấy ticket để phản hồi',
+        schema: buildErrorResponseSchema({
+            code: 'contact.not_found',
+            message: 'Không tìm thấy ticket để phản hồi',
+        }),
+    })
     @ApiAuthResponses()
     @ApiValidationErrorResponse()
     async reply(
@@ -467,9 +622,30 @@ export class ContactController {
         description: 'Đóng ticket khi quá trình hỗ trợ đã hoàn tất. Yêu cầu quyền `contact.update`.',
     })
     @ApiParam({ name: 'id', description: 'ID ticket', example: '550e8400-e29b-41d4-a716-446655440081' })
-    @ApiResponse({ status: 200, description: 'Đóng ticket thành công' })
-    @ApiResponse({ status: 404, description: 'Không tìm thấy ticket' })
-    @ApiResponse({ status: 409, description: 'Ticket không ở trạng thái có thể đóng' })
+    @ApiResponse({
+        status: 200,
+        description: 'Đóng ticket thành công',
+        schema: buildSuccessResponseSchema({
+            code: 'contact.closed',
+            message: 'Đóng ticket thành công',
+        }),
+    })
+    @ApiResponse({
+        status: 404,
+        description: 'Không tìm thấy ticket',
+        schema: buildErrorResponseSchema({
+            code: 'contact.not_found',
+            message: 'Không tìm thấy ticket',
+        }),
+    })
+    @ApiResponse({
+        status: 409,
+        description: 'Ticket không ở trạng thái có thể đóng',
+        schema: buildErrorResponseSchema({
+            code: 'contact.invalid_close_status',
+            message: 'Ticket không ở trạng thái có thể đóng',
+        }),
+    })
     @ApiAuthResponses()
     async close(
         @Param('id') id: string,
@@ -489,9 +665,30 @@ export class ContactController {
         description: 'Mở lại ticket đã đóng để tiếp tục xử lý. Yêu cầu quyền `contact.update`.',
     })
     @ApiParam({ name: 'id', description: 'ID ticket', example: '550e8400-e29b-41d4-a716-446655440081' })
-    @ApiResponse({ status: 200, description: 'Mở lại ticket thành công' })
-    @ApiResponse({ status: 404, description: 'Không tìm thấy ticket' })
-    @ApiResponse({ status: 409, description: 'Ticket không ở trạng thái có thể mở lại' })
+    @ApiResponse({
+        status: 200,
+        description: 'Mở lại ticket thành công',
+        schema: buildSuccessResponseSchema({
+            code: 'contact.reopened',
+            message: 'Mở lại ticket thành công',
+        }),
+    })
+    @ApiResponse({
+        status: 404,
+        description: 'Không tìm thấy ticket',
+        schema: buildErrorResponseSchema({
+            code: 'contact.not_found',
+            message: 'Không tìm thấy ticket',
+        }),
+    })
+    @ApiResponse({
+        status: 409,
+        description: 'Ticket không ở trạng thái có thể mở lại',
+        schema: buildErrorResponseSchema({
+            code: 'contact.invalid_reopen_status',
+            message: 'Ticket không ở trạng thái có thể mở lại',
+        }),
+    })
     @ApiAuthResponses()
     async reopen(
         @Param('id') id: string,
@@ -511,8 +708,22 @@ export class ContactController {
         description: 'Xóa mềm một ticket theo ID. Yêu cầu quyền `contact.delete`.',
     })
     @ApiParam({ name: 'id', description: 'ID ticket', example: '550e8400-e29b-41d4-a716-446655440081' })
-    @ApiResponse({ status: 200, description: 'Xóa ticket thành công' })
-    @ApiResponse({ status: 404, description: 'Không tìm thấy ticket' })
+    @ApiResponse({
+        status: 200,
+        description: 'Xóa ticket thành công',
+        schema: buildSuccessResponseSchema({
+            code: 'contact.deleted',
+            message: 'Xóa ticket thành công',
+        }),
+    })
+    @ApiResponse({
+        status: 404,
+        description: 'Không tìm thấy ticket',
+        schema: buildErrorResponseSchema({
+            code: 'contact.not_found',
+            message: 'Không tìm thấy ticket',
+        }),
+    })
     @ApiAuthResponses()
     async delete(
         @Param('id') id: string,
@@ -548,7 +759,23 @@ export class ContactController {
             },
         },
     })
-    @ApiResponse({ status: 200, description: 'Xóa nhiều ticket thành công' })
+    @ApiResponse({
+        status: 200,
+        description: 'Xóa nhiều ticket thành công',
+        schema: buildSuccessResponseSchema({
+            code: 'contact.deleted_many',
+            message: 'Xóa nhiều ticket thành công',
+            dataSchema: {
+                type: 'object',
+                properties: {
+                    count: { type: 'number', example: 2 },
+                },
+            },
+            dataExample: {
+                count: 2,
+            },
+        }),
+    })
     @ApiAuthResponses()
     @ApiValidationErrorResponse()
     async deleteMany(
