@@ -135,7 +135,7 @@ export function Toolbar({
             onToggle={onToggleAllTagsOpen}
           />
           <ToggleChip
-            label="Hiện alert thiếu res thực tế"
+            label="Hiện alert thiếu response thực tế"
             checked={showMissingActualResponseAlert}
             onToggle={onToggleMissingActualResponseAlert}
           />
