@@ -53,6 +53,100 @@ import {
     UpdatedResponse,
     DeletedResponse,
 } from '../../common/responses/success.response';
+import {
+    buildErrorResponseSchema,
+    buildPaginationDataSchema,
+    buildSuccessResponseSchema,
+} from '../../common/swagger/swagger-response.helper';
+
+const USER_ID = '550e8400-e29b-41d4-a716-446655440001';
+const SESSION_ID = '550e8400-e29b-41d4-a716-446655440101';
+const WARNING_ID = '550e8400-e29b-41d4-a716-446655440201';
+const ROLE_ID = '550e8400-e29b-41d4-a716-446655440301';
+const PERMISSION_ID = '550e8400-e29b-41d4-a716-446655440401';
+
+const userItemSchema = {
+    type: 'object',
+    properties: {
+        id: { type: 'string', format: 'uuid', example: USER_ID },
+        email: { type: 'string', example: 'user@genhub.vn' },
+        full_name: { type: 'string', example: 'Nguyen Van A' },
+        is_banned: { type: 'boolean', example: false },
+        is_verified: { type: 'boolean', example: true },
+        warning_count: { type: 'number', example: 1 },
+        created_at: { type: 'string', format: 'date-time', example: '2026-03-13T08:00:00.000Z' },
+    },
+};
+
+const userDetailSchema = {
+    type: 'object',
+    properties: {
+        id: { type: 'string', format: 'uuid', example: USER_ID },
+        email: { type: 'string', example: 'user@genhub.vn' },
+        full_name: { type: 'string', example: 'Nguyen Van A' },
+        phone: { type: 'string', example: '0901234567' },
+        is_banned: { type: 'boolean', example: false },
+        is_verified: { type: 'boolean', example: true },
+        warning_count: { type: 'number', example: 1 },
+        roles: {
+            type: 'array',
+            items: {
+                type: 'object',
+                properties: {
+                    id: { type: 'string', format: 'uuid', example: ROLE_ID },
+                    name: { type: 'string', example: 'Support Staff' },
+                },
+            },
+        },
+        permissions: {
+            type: 'array',
+            items: {
+                type: 'object',
+                properties: {
+                    id: { type: 'string', format: 'uuid', example: PERMISSION_ID },
+                    key: { type: 'string', example: 'user-management.read' },
+                },
+            },
+        },
+        created_at: { type: 'string', format: 'date-time', example: '2026-03-13T08:00:00.000Z' },
+        updated_at: { type: 'string', format: 'date-time', example: '2026-03-13T09:00:00.000Z' },
+    },
+};
+
+const sessionItemSchema = {
+    type: 'object',
+    properties: {
+        id: { type: 'string', format: 'uuid', example: SESSION_ID },
+        device_name: { type: 'string', example: 'Chrome on Windows' },
+        ip_address: { type: 'string', example: '203.113.10.20' },
+        last_active_at: { type: 'string', format: 'date-time', example: '2026-03-13T09:30:00.000Z' },
+        is_current: { type: 'boolean', example: true },
+    },
+};
+
+const warningItemSchema = {
+    type: 'object',
+    properties: {
+        id: { type: 'string', format: 'uuid', example: WARNING_ID },
+        reason: { type: 'string', example: 'Sử dụng ngôn ngữ không phù hợp' },
+        status: { type: 'string', example: 'active' },
+        is_permanent: { type: 'boolean', example: false },
+        expires_at: { type: 'string', format: 'date-time', nullable: true, example: '2026-03-20T08:00:00.000Z' },
+        created_at: { type: 'string', format: 'date-time', example: '2026-03-13T08:00:00.000Z' },
+    },
+};
+
+const simpleActionSchema = (code: string, message: string, data: unknown = null) => buildSuccessResponseSchema({
+    code,
+    message,
+    dataSchema: data === null ? { type: 'null', nullable: true } : { type: 'object' },
+    dataExample: data,
+});
+
+const userNotFoundSchema = buildErrorResponseSchema({
+    code: 'user-management.user_not_found',
+    message: 'Không tìm thấy user',
+});
 
 @ApiTags('User Management')
 @ApiBearerAuth('JWT-auth')
