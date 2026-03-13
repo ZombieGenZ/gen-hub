@@ -15,10 +15,16 @@ const METHOD_STYLES: Record<ApiEndpoint["method"], string> = {
 interface ApiItemProps {
   endpoint: ApiEndpoint;
   checked: boolean;
+  showMissingActualResponseAlert: boolean;
   onToggle: (endpointId: string) => void;
 }
 
-export function ApiItem({ endpoint, checked, onToggle }: ApiItemProps) {
+export function ApiItem({
+  endpoint,
+  checked,
+  showMissingActualResponseAlert,
+  onToggle,
+}: ApiItemProps) {
   return (
     <label className="group flex cursor-pointer items-start gap-3 rounded-lg px-3 py-2 transition hover:bg-white/[0.04]">
       <input
@@ -36,6 +42,11 @@ export function ApiItem({ endpoint, checked, onToggle }: ApiItemProps) {
             {endpoint.method}
           </span>
           <code className="truncate text-[15px] font-medium text-cyan-300">{endpoint.path}</code>
+          {showMissingActualResponseAlert && endpoint.hasMissingActualResponseAlert ? (
+            <span className="rounded-full border border-amber-400/30 bg-amber-500/10 px-2.5 py-1 text-[11px] font-medium text-amber-200">
+              Thiếu response thực tế trong docs
+            </span>
+          ) : null}
         </div>
 
         {endpoint.summary && endpoint.summary !== "Không có mô tả" ? (

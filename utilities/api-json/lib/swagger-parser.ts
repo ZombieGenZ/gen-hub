@@ -2,9 +2,12 @@ import type {
   ApiEndpoint,
   ExtractedSwaggerJson,
   HttpMethod,
+  SwaggerMediaType,
   SwaggerComponents,
+  SwaggerOperation,
   SwaggerPathItem,
   SwaggerReference,
+  SwaggerResponse,
   SwaggerSpec,
   TagGroup,
 } from "@/types/swagger";
@@ -46,6 +49,7 @@ export function parseEndpoints(spec: SwaggerSpec): ApiEndpoint[] {
         description: operation.description,
         tags: operation.tags?.length ? operation.tags : ["Untagged"],
         operationId: operation.operationId,
+        hasMissingActualResponseAlert: hasMissingActualResponseAlert(spec, operation),
         operation,
       });
     }
@@ -155,6 +159,28 @@ export function createEndpointKey(method: HttpMethod, path: string) {
   return `${method}:${path}`;
 }
 
+function hasMissingActualResponseAlert(spec: SwaggerSpec, operation: SwaggerOperation) {
+  const successResponseEntries = Object.entries(operation.responses ?? {}).filter(([statusCode]) =>
+    isSuccessStatusCode(statusCode),
+  );
+
+  if (successResponseEntries.length === 0) {
+    return true;
+  }
+
+  return successResponseEntries.every(([, response]) => {
+    const resolvedResponse = resolveResponse(spec, response);
+
+    if (!resolvedResponse?.content) {
+      return true;
+    }
+
+    return Object.values(resolvedResponse.content).every(
+      (mediaType) => !hasActualResponseShape(mediaType),
+    );
+  });
+}
+
 function resolveReferencedComponents(
   spec: SwaggerSpec,
   refsToResolve: Set<string>,
@@ -230,6 +256,53 @@ function collectSelectedTags(spec: SwaggerSpec, selectedEndpoints: ApiEndpoint[]
   }
 
   return ordered;
+}
+
+function resolveResponse(
+  spec: SwaggerSpec,
+  response: SwaggerResponse | SwaggerReference,
+): SwaggerResponse | null {
+  if (!isReference(response)) {
+    return response;
+  }
+
+  const resolved = getReferencedValue(spec, response.$ref);
+  return isSwaggerResponse(resolved) ? resolved : null;
+}
+
+function getReferencedValue(spec: SwaggerSpec, ref: string): unknown {
+  const parts = ref.replace(/^#\//, "").split("/");
+  let current: unknown = spec;
+
+  for (const part of parts) {
+    if (!current || typeof current !== "object" || !(part in current)) {
+      return null;
+    }
+
+    current = current[part as keyof typeof current];
+  }
+
+  return current;
+}
+
+function isSwaggerResponse(value: unknown): value is SwaggerResponse {
+  return typeof value === "object" && value !== null;
+}
+
+function isSuccessStatusCode(statusCode: string) {
+  return statusCode === "default" || /^[23]\d{2}$/.test(statusCode);
+}
+
+function hasActualResponseShape(mediaType: SwaggerMediaType | undefined) {
+  if (!mediaType) {
+    return false;
+  }
+
+  if (mediaType.schema || mediaType.example) {
+    return true;
+  }
+
+  return Boolean(mediaType.examples && Object.keys(mediaType.examples).length > 0);
 }
 
 function collectRefs(value: unknown, refs: Set<string>) {

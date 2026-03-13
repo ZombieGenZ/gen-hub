@@ -106,6 +106,7 @@ export interface ApiEndpoint {
   description?: string;
   tags: string[];
   operationId?: string;
+  hasMissingActualResponseAlert: boolean;
   operation: SwaggerOperation;
 }
 

@@ -8,6 +8,7 @@ interface TagGroupProps {
   group: TagGroupType;
   selectedIds: Set<string>;
   open: boolean;
+  showMissingActualResponseAlert: boolean;
   onToggleOpen: (tag: string) => void;
   onToggleEndpoint: (endpointId: string) => void;
   onToggleGroup: (tag: string, endpointIds: string[], checked: boolean) => void;
@@ -17,6 +18,7 @@ export function TagGroup({
   group,
   selectedIds,
   open,
+  showMissingActualResponseAlert,
   onToggleOpen,
   onToggleEndpoint,
   onToggleGroup,
@@ -74,6 +76,7 @@ export function TagGroup({
                 key={endpoint.id}
                 endpoint={endpoint}
                 checked={selectedIds.has(endpoint.id)}
+                showMissingActualResponseAlert={showMissingActualResponseAlert}
                 onToggle={onToggleEndpoint}
               />
             ))}

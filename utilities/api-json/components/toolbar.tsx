@@ -11,11 +11,13 @@ interface ToolbarProps {
   disabled: boolean;
   apiDocsUrl: string;
   allTagsOpen: boolean;
+  showMissingActualResponseAlert: boolean;
   onSearchChange: (value: string) => void;
   onSelectAll: () => void;
   onClearAll: () => void;
   onExtract: () => void;
   onToggleAllTagsOpen: (checked: boolean) => void;
+  onToggleMissingActualResponseAlert: (checked: boolean) => void;
   onOpenSettings: () => void;
   onDisconnect: () => void;
 }
@@ -50,6 +52,32 @@ function ToolbarButton({
   );
 }
 
+function ToggleChip({
+  label,
+  checked,
+  onToggle,
+}: {
+  label: string;
+  checked: boolean;
+  onToggle: (checked: boolean) => void;
+}) {
+  return (
+    <label className="flex w-fit items-center gap-3 rounded-full border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-slate-200">
+      <span>{label}</span>
+      <button
+        type="button"
+        onClick={() => onToggle(!checked)}
+        className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${checked ? "bg-teal-400" : "bg-white/[0.14]"}`}
+        aria-pressed={checked}
+      >
+        <span
+          className={`inline-block h-4 w-4 rounded-full bg-white transition ${checked ? "translate-x-6" : "translate-x-1"}`}
+        />
+      </button>
+    </label>
+  );
+}
+
 export function Toolbar({
   searchQuery,
   selectedCount,
@@ -58,11 +86,13 @@ export function Toolbar({
   disabled,
   apiDocsUrl,
   allTagsOpen,
+  showMissingActualResponseAlert,
   onSearchChange,
   onSelectAll,
   onClearAll,
   onExtract,
   onToggleAllTagsOpen,
+  onToggleMissingActualResponseAlert,
   onOpenSettings,
   onDisconnect,
 }: ToolbarProps) {
@@ -98,19 +128,18 @@ export function Toolbar({
           </div>
         </div>
 
-        <label className="flex w-fit items-center gap-3 rounded-full border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-slate-200">
-          <span>Tự mở tất cả dropdown</span>
-          <button
-            type="button"
-            onClick={() => onToggleAllTagsOpen(!allTagsOpen)}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${allTagsOpen ? "bg-teal-400" : "bg-white/[0.14]"}`}
-            aria-pressed={allTagsOpen}
-          >
-            <span
-              className={`inline-block h-4 w-4 rounded-full bg-white transition ${allTagsOpen ? "translate-x-6" : "translate-x-1"}`}
-            />
-          </button>
-        </label>
+        <div className="flex flex-wrap gap-3">
+          <ToggleChip
+            label="Tự mở tất cả dropdown"
+            checked={allTagsOpen}
+            onToggle={onToggleAllTagsOpen}
+          />
+          <ToggleChip
+            label="Hiện alert thiếu res thực tế"
+            checked={showMissingActualResponseAlert}
+            onToggle={onToggleMissingActualResponseAlert}
+          />
+        </div>
       </div>
 
       <div className="flex flex-col gap-4 xl:flex-row xl:items-center">

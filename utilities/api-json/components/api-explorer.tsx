@@ -16,7 +16,10 @@ import type { ApiEndpoint, SwaggerSpec, TagGroup as TagGroupType } from "@/types
 
 const STORAGE_API_DOCS_URL_KEY = "genhub-api-json.api-docs-url";
 const STORAGE_ALL_TAGS_OPEN_KEY = "genhub-api-json.all-tags-open";
+const STORAGE_SHOW_MISSING_ACTUAL_RESPONSE_ALERT_KEY =
+  "genhub-api-json.show-missing-actual-response-alert";
 const DEFAULT_ALL_TAGS_OPEN = false;
+const DEFAULT_SHOW_MISSING_ACTUAL_RESPONSE_ALERT = false;
 const DEFAULT_API_DOCS_URL = "https://api.gen-hub.dev/api-docs-json";
 
 export function ApiExplorer() {
@@ -33,6 +36,9 @@ export function ApiExplorer() {
   const [apiDocsUrl, setApiDocsUrl] = useState("");
   const [draftApiDocsUrl, setDraftApiDocsUrl] = useState(DEFAULT_API_DOCS_URL);
   const [allTagsOpen, setAllTagsOpen] = useState(DEFAULT_ALL_TAGS_OPEN);
+  const [showMissingActualResponseAlert, setShowMissingActualResponseAlert] = useState(
+    DEFAULT_SHOW_MISSING_ACTUAL_RESPONSE_ALERT,
+  );
   const [isConfigOpen, setIsConfigOpen] = useState(true);
   const [configError, setConfigError] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -40,10 +46,18 @@ export function ApiExplorer() {
   useEffect(() => {
     const savedApiDocsUrl = window.localStorage.getItem(STORAGE_API_DOCS_URL_KEY) ?? "";
     const savedAllTagsOpen = window.localStorage.getItem(STORAGE_ALL_TAGS_OPEN_KEY);
+    const savedShowMissingActualResponseAlert = window.localStorage.getItem(
+      STORAGE_SHOW_MISSING_ACTUAL_RESPONSE_ALERT_KEY,
+    );
     const initialAllTagsOpen =
       savedAllTagsOpen === null ? DEFAULT_ALL_TAGS_OPEN : savedAllTagsOpen === "true";
+    const initialShowMissingActualResponseAlert =
+      savedShowMissingActualResponseAlert === null
+        ? DEFAULT_SHOW_MISSING_ACTUAL_RESPONSE_ALERT
+        : savedShowMissingActualResponseAlert === "true";
 
     setAllTagsOpen(initialAllTagsOpen);
+    setShowMissingActualResponseAlert(initialShowMissingActualResponseAlert);
 
     if (savedApiDocsUrl) {
       setApiDocsUrl(savedApiDocsUrl);
@@ -187,6 +201,14 @@ export function ApiExplorer() {
     setOpenTags(checked ? new Set(tagGroups.map((group) => group.tag)) : new Set());
   }
 
+  function handleToggleMissingActualResponseAlert(checked: boolean) {
+    setShowMissingActualResponseAlert(checked);
+    window.localStorage.setItem(
+      STORAGE_SHOW_MISSING_ACTUAL_RESPONSE_ALERT_KEY,
+      String(checked),
+    );
+  }
+
   async function handleSaveApiDocsUrl() {
     const normalizedUrl = draftApiDocsUrl.trim();
     if (!normalizedUrl) {
@@ -265,11 +287,13 @@ export function ApiExplorer() {
             disabled={selectedEndpointIds.size === 0 || !spec}
             apiDocsUrl={apiDocsUrl}
             allTagsOpen={allTagsOpen}
+            showMissingActualResponseAlert={showMissingActualResponseAlert}
             onSearchChange={setSearchQuery}
             onSelectAll={handleSelectAllVisible}
             onClearAll={handleClearAll}
             onExtract={handleExtract}
             onToggleAllTagsOpen={handleToggleAllTagsOpen}
+            onToggleMissingActualResponseAlert={handleToggleMissingActualResponseAlert}
             onOpenSettings={handleOpenSettings}
             onDisconnect={handleDisconnect}
           />
@@ -310,6 +334,7 @@ export function ApiExplorer() {
                   group={group}
                   selectedIds={selectedEndpointIds}
                   open={openTags.has(group.tag)}
+                  showMissingActualResponseAlert={showMissingActualResponseAlert}
                   onToggleOpen={handleToggleOpen}
                   onToggleEndpoint={handleToggleEndpoint}
                   onToggleGroup={handleToggleGroup}
