@@ -17,6 +17,7 @@ import {
     ApiBearerAuth,
     ApiSecurity,
     ApiResponse,
+    ApiQuery,
 } from '@nestjs/swagger';
 import { I18nLang, I18nService } from 'nestjs-i18n';
 
@@ -39,10 +40,11 @@ import { CombinedAuthGuard } from '../../common/guards/combined-auth.guard';
 import { OrgPermissionGuard } from '../../common/guards/org-permission.guard';
 import { RequireOrgPermission } from '../../common/decorators/require-org-permission.decorator';
 import { CurrentActor } from '../../common/decorators/current-actor.decorator';
+import { ApiAuthResponses, ApiValidationErrorResponse } from '../../common/decorators';
 import { CreatedResponse, GetResponse, UpdatedResponse } from '../../common/responses/success.response';
 
 @ApiTags('Inventory Request (Organization) (Collapsed)')
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 @ApiSecurity('api-key')
 @Controller('organizations/:orgId/inventory')
 @UseGuards(CombinedAuthGuard, OrgPermissionGuard)
@@ -60,6 +62,7 @@ export class InventoryRequestController {
     })
     @ApiParam({ name: 'orgId', description: 'ID của tổ chức', type: 'string', format: 'uuid' })
     @ApiResponse({ status: 200, description: 'Lấy danh sách kho thành công' })
+    @ApiAuthResponses()
     async listOrgWarehouses(
         @Param('orgId', ParseUUIDPipe) orgId: string,
         @I18nLang() lang: string,
@@ -80,6 +83,9 @@ export class InventoryRequestController {
     })
     @ApiParam({ name: 'orgId', description: 'ID của tổ chức', type: 'string', format: 'uuid' })
     @ApiResponse({ status: 200, description: 'Lấy danh sách tồn kho thành công' })
+    @ApiQuery({ name: 'warehouse_id', required: false, type: String, description: 'ID kho cần lọc', example: '550e8400-e29b-41d4-a716-446655440003' })
+    @ApiQuery({ name: 'keywords', required: false, type: String, description: 'Từ khóa tìm kiếm tồn kho', example: 'SP-001' })
+    @ApiAuthResponses()
     async listStock(
         @Param('orgId', ParseUUIDPipe) orgId: string,
         @Query('warehouse_id') warehouseId: string | undefined,
@@ -115,7 +121,19 @@ Tạo phiếu yêu cầu nhập kho mới cho tổ chức.
         `,
     })
     @ApiParam({ name: 'orgId', description: 'ID của tổ chức', type: 'string', format: 'uuid' })
-    @ApiBody({ type: CreateInboundRequestDto })
+    @ApiBody({
+        type: CreateInboundRequestDto,
+        description: 'Dữ liệu tạo phiếu nhập kho',
+        examples: {
+            create_inbound: {
+                summary: 'Tạo phiếu nhập kho cơ bản',
+                value: {
+                    warehouse_id: '550e8400-e29b-41d4-a716-446655440003',
+                    note: 'Nhập hàng bổ sung tháng 3',
+                },
+            },
+        },
+    })
     @ApiResponse({
         status: 201,
         description: 'Tạo yêu cầu nhập kho thành công',
@@ -154,6 +172,11 @@ Tạo phiếu yêu cầu nhập kho mới cho tổ chức.
             },
         },
     })
+    @ApiResponse({ status: 400, description: 'Dữ liệu tạo phiếu nhập không hợp lệ' })
+    @ApiResponse({ status: 404, description: 'Không tìm thấy kho hoặc dữ liệu liên quan' })
+    @ApiResponse({ status: 409, description: 'Phiếu nhập bị xung đột dữ liệu nghiệp vụ' })
+    @ApiAuthResponses()
+    @ApiValidationErrorResponse()
     async createInbound(
         @Param('orgId', ParseUUIDPipe) orgId: string,
         @Body() dto: CreateInboundRequestDto,
@@ -205,6 +228,13 @@ Lấy danh sách phiếu nhập kho của tổ chức.
             },
         },
     })
+    @ApiQuery({ name: 'warehouse_id', required: false, type: String, description: 'ID kho cần lọc', example: '550e8400-e29b-41d4-a716-446655440003' })
+    @ApiQuery({ name: 'keywords', required: false, type: String, description: 'Từ khóa tìm theo mã phiếu hoặc đơn mua', example: 'PN-2026' })
+    @ApiQuery({ name: 'status', required: false, enum: ['PENDING', 'APPROVED', 'RECEIVING', 'PROCESSING', 'COMPLETED', 'CANCELLED'], description: 'Lọc theo trạng thái phiếu nhập', example: 'PENDING' })
+    @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Số lượng bản ghi trên trang', example: 10 })
+    @ApiQuery({ name: 'offset', required: false, type: Number, description: 'Vị trí bắt đầu', example: 0 })
+    @ApiAuthResponses()
+    @ApiValidationErrorResponse()
     async findAllInbound(
         @Param('orgId', ParseUUIDPipe) orgId: string,
         @Query() query: QueryInboundRequestDto,
@@ -234,6 +264,8 @@ Lấy chi tiết một phiếu nhập kho.
         status: 200,
         description: 'Lấy chi tiết thành công',
     })
+    @ApiResponse({ status: 404, description: 'Không tìm thấy phiếu nhập kho' })
+    @ApiAuthResponses()
     async findInboundById(
         @Param('orgId', ParseUUIDPipe) orgId: string,
         @Param('id', ParseUUIDPipe) id: string,
@@ -267,7 +299,19 @@ Tạo phiếu yêu cầu xuất kho mới cho tổ chức.
         `,
     })
     @ApiParam({ name: 'orgId', description: 'ID của tổ chức', type: 'string', format: 'uuid' })
-    @ApiBody({ type: CreateOutboundRequestDto })
+    @ApiBody({
+        type: CreateOutboundRequestDto,
+        description: 'Dữ liệu tạo phiếu xuất kho',
+        examples: {
+            create_outbound: {
+                summary: 'Tạo phiếu xuất kho cơ bản',
+                value: {
+                    warehouse_id: '550e8400-e29b-41d4-a716-446655440003',
+                    note: 'Xuất hàng giao khách tháng 3',
+                },
+            },
+        },
+    })
     @ApiResponse({
         status: 201,
         description: 'Tạo yêu cầu xuất kho thành công',
@@ -288,6 +332,11 @@ Tạo phiếu yêu cầu xuất kho mới cho tổ chức.
             },
         },
     })
+    @ApiResponse({ status: 400, description: 'Dữ liệu tạo phiếu xuất không hợp lệ' })
+    @ApiResponse({ status: 404, description: 'Không tìm thấy kho hoặc sản phẩm cần xuất' })
+    @ApiResponse({ status: 409, description: 'Tồn kho không đủ hoặc phiếu xuất bị xung đột dữ liệu' })
+    @ApiAuthResponses()
+    @ApiValidationErrorResponse()
     async createOutbound(
         @Param('orgId', ParseUUIDPipe) orgId: string,
         @Body() dto: CreateOutboundRequestDto,
@@ -322,6 +371,13 @@ Lấy danh sách phiếu xuất kho của tổ chức.
         status: 200,
         description: 'Lấy danh sách thành công',
     })
+    @ApiQuery({ name: 'warehouse_id', required: false, type: String, description: 'ID kho cần lọc', example: '550e8400-e29b-41d4-a716-446655440003' })
+    @ApiQuery({ name: 'keywords', required: false, type: String, description: 'Từ khóa tìm theo mã phiếu hoặc đơn bán', example: 'PX-2026' })
+    @ApiQuery({ name: 'status', required: false, enum: ['PENDING', 'PICKING', 'CHECKING', 'PACKED', 'SHIPPED', 'CANCELLED'], description: 'Lọc theo trạng thái phiếu xuất', example: 'PENDING' })
+    @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Số lượng bản ghi trên trang', example: 10 })
+    @ApiQuery({ name: 'offset', required: false, type: Number, description: 'Vị trí bắt đầu', example: 0 })
+    @ApiAuthResponses()
+    @ApiValidationErrorResponse()
     async findAllOutbound(
         @Param('orgId', ParseUUIDPipe) orgId: string,
         @Query() query: QueryOutboundRequestDto,
@@ -351,6 +407,8 @@ Lấy chi tiết một phiếu xuất kho.
         status: 200,
         description: 'Lấy chi tiết thành công',
     })
+    @ApiResponse({ status: 404, description: 'Không tìm thấy phiếu xuất kho' })
+    @ApiAuthResponses()
     async findOutboundById(
         @Param('orgId', ParseUUIDPipe) orgId: string,
         @Param('id', ParseUUIDPipe) id: string,
@@ -378,6 +436,8 @@ Duyệt phiếu nhập kho từ trạng thái \`PENDING\` sang \`APPROVED\`.
     @ApiParam({ name: 'id', description: 'ID của phiếu nhập', type: 'string', format: 'uuid' })
     @ApiBody({ type: ApproveRequestDto })
     @ApiResponse({ status: 200, description: 'Duyệt phiếu nhập thành công' })
+    @ApiAuthResponses()
+    @ApiValidationErrorResponse()
     async approveInbound(
         @Param('orgId', ParseUUIDPipe) orgId: string,
         @Param('id', ParseUUIDPipe) id: string,
@@ -407,6 +467,8 @@ Từ chối phiếu nhập kho từ trạng thái \`PENDING\` sang \`CANCELLED\`
     @ApiParam({ name: 'id', description: 'ID của phiếu nhập', type: 'string', format: 'uuid' })
     @ApiBody({ type: RejectRequestDto })
     @ApiResponse({ status: 200, description: 'Từ chối phiếu nhập thành công' })
+    @ApiAuthResponses()
+    @ApiValidationErrorResponse()
     async rejectInbound(
         @Param('orgId', ParseUUIDPipe) orgId: string,
         @Param('id', ParseUUIDPipe) id: string,
@@ -436,6 +498,8 @@ Duyệt phiếu xuất kho từ trạng thái \`PENDING\` sang \`PICKING\`.
     @ApiParam({ name: 'id', description: 'ID của phiếu xuất', type: 'string', format: 'uuid' })
     @ApiBody({ type: ApproveRequestDto })
     @ApiResponse({ status: 200, description: 'Duyệt phiếu xuất thành công' })
+    @ApiAuthResponses()
+    @ApiValidationErrorResponse()
     async approveOutbound(
         @Param('orgId', ParseUUIDPipe) orgId: string,
         @Param('id', ParseUUIDPipe) id: string,
@@ -465,6 +529,8 @@ Từ chối phiếu xuất kho từ trạng thái \`PENDING\` sang \`CANCELLED\`
     @ApiParam({ name: 'id', description: 'ID của phiếu xuất', type: 'string', format: 'uuid' })
     @ApiBody({ type: RejectRequestDto })
     @ApiResponse({ status: 200, description: 'Từ chối phiếu xuất thành công' })
+    @ApiAuthResponses()
+    @ApiValidationErrorResponse()
     async rejectOutbound(
         @Param('orgId', ParseUUIDPipe) orgId: string,
         @Param('id', ParseUUIDPipe) id: string,
@@ -488,6 +554,8 @@ Từ chối phiếu xuất kho từ trạng thái \`PENDING\` sang \`CANCELLED\`
     @ApiParam({ name: 'orgId', type: 'string', format: 'uuid' })
     @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
     @ApiBody({ type: StartReceivingDto })
+    @ApiAuthResponses()
+    @ApiValidationErrorResponse()
     async startReceiving(
         @Param('orgId', ParseUUIDPipe) orgId: string,
         @Param('id', ParseUUIDPipe) id: string,
@@ -506,6 +574,8 @@ Từ chối phiếu xuất kho từ trạng thái \`PENDING\` sang \`CANCELLED\`
     @ApiParam({ name: 'orgId', type: 'string', format: 'uuid' })
     @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
     @ApiBody({ type: ConfirmReceivingDto })
+    @ApiAuthResponses()
+    @ApiValidationErrorResponse()
     async confirmReceiving(
         @Param('orgId', ParseUUIDPipe) orgId: string,
         @Param('id', ParseUUIDPipe) id: string,
@@ -524,6 +594,8 @@ Từ chối phiếu xuất kho từ trạng thái \`PENDING\` sang \`CANCELLED\`
     @ApiParam({ name: 'orgId', type: 'string', format: 'uuid' })
     @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
     @ApiBody({ type: ConfirmPutawayDto })
+    @ApiAuthResponses()
+    @ApiValidationErrorResponse()
     async confirmPutaway(
         @Param('orgId', ParseUUIDPipe) orgId: string,
         @Param('id', ParseUUIDPipe) id: string,
@@ -544,6 +616,7 @@ Từ chối phiếu xuất kho từ trạng thái \`PENDING\` sang \`CANCELLED\`
     })
     @ApiParam({ name: 'orgId', type: 'string', format: 'uuid' })
     @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
+    @ApiAuthResponses()
     async refillInventory(
         @Param('orgId', ParseUUIDPipe) orgId: string,
         @Param('id', ParseUUIDPipe) id: string,
@@ -563,6 +636,8 @@ Từ chối phiếu xuất kho từ trạng thái \`PENDING\` sang \`CANCELLED\`
     @ApiParam({ name: 'orgId', type: 'string', format: 'uuid' })
     @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
     @ApiBody({ type: ConfirmPickingDto })
+    @ApiAuthResponses()
+    @ApiValidationErrorResponse()
     async confirmPicking(
         @Param('orgId', ParseUUIDPipe) orgId: string,
         @Param('id', ParseUUIDPipe) id: string,
@@ -581,6 +656,8 @@ Từ chối phiếu xuất kho từ trạng thái \`PENDING\` sang \`CANCELLED\`
     @ApiParam({ name: 'orgId', type: 'string', format: 'uuid' })
     @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
     @ApiBody({ type: ConfirmCheckingDto })
+    @ApiAuthResponses()
+    @ApiValidationErrorResponse()
     async confirmChecking(
         @Param('orgId', ParseUUIDPipe) orgId: string,
         @Param('id', ParseUUIDPipe) id: string,
@@ -599,6 +676,8 @@ Từ chối phiếu xuất kho từ trạng thái \`PENDING\` sang \`CANCELLED\`
     @ApiParam({ name: 'orgId', type: 'string', format: 'uuid' })
     @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
     @ApiBody({ type: CompleteShipmentDto })
+    @ApiAuthResponses()
+    @ApiValidationErrorResponse()
     async completeShipment(
         @Param('orgId', ParseUUIDPipe) orgId: string,
         @Param('id', ParseUUIDPipe) id: string,

@@ -53,26 +53,31 @@ export class RoleController {
     @RequirePermission('role.create')
     @ApiOperation({
         summary: 'Tạo role mới',
-        description: 'Tạo một role (vai trò) mới trong hệ thống với tên, mô tả và danh sách permissions. Yêu cầu quyền `role.create`.',
+        description: 'Tạo một role mới trong hệ thống với tên, mô tả và danh sách permission IDs. Yêu cầu quyền `role.create`.',
     })
     @ApiBody({
         type: CreateRoleDto,
         description: 'Thông tin role cần tạo',
         examples: {
-            basic_role: {
-                summary: 'Role cơ bản',
+            warehouse_staff: {
+                summary: 'Role nhân viên kho',
                 value: {
                     name: 'Nhân viên kho',
-                    description: 'Role cho nhân viên quản lý kho hàng',
-                    permissions: ['warehouse.read', 'warehouse.update'],
+                    description: 'Role cho nhân viên thực hiện nghiệp vụ kho',
+                    is_default: false,
+                    permission_ids: [
+                        '550e8400-e29b-41d4-a716-446655440101',
+                        '550e8400-e29b-41d4-a716-446655440102',
+                    ],
                 },
             },
-            admin_role: {
-                summary: 'Role quản trị',
+            default_member: {
+                summary: 'Role mặc định cho user mới',
                 value: {
-                    name: 'Quản lý',
-                    description: 'Role cho quản lý với nhiều quyền hơn',
-                    permissions: ['user.read', 'user.create', 'role.read', 'warehouse.admin'],
+                    name: 'Thành viên mặc định',
+                    description: 'Role gán tự động cho user mới',
+                    is_default: true,
+                    permission_ids: [],
                 },
             },
         },
@@ -89,17 +94,19 @@ export class RoleController {
                 data: {
                     type: 'object',
                     properties: {
-                        id: { type: 'string', example: '550e8400-e29b-41d4-a716-446655440001' },
+                        id: { type: 'string', format: 'uuid', example: '550e8400-e29b-41d4-a716-446655440001' },
                         name: { type: 'string', example: 'Nhân viên kho' },
-                        description: { type: 'string', example: 'Role cho nhân viên quản lý kho hàng' },
+                        description: { type: 'string', example: 'Role cho nhân viên thực hiện nghiệp vụ kho' },
                         is_system: { type: 'boolean', example: false },
-                        created_at: { type: 'string', format: 'date-time' },
+                        is_default: { type: 'boolean', example: false },
+                        created_at: { type: 'string', format: 'date-time', example: '2026-03-13T09:30:00.000Z' },
                     },
                 },
             },
         },
     })
     @ApiResponse({ status: 400, description: 'Dữ liệu không hợp lệ hoặc tên role đã tồn tại' })
+    @ApiResponse({ status: 409, description: 'Role bị xung đột tên hoặc thiết lập mặc định' })
     @ApiAuthResponses()
     @ApiValidationErrorResponse()
     async create(
@@ -121,29 +128,12 @@ export class RoleController {
     @RequirePermission('role.read')
     @ApiOperation({
         summary: 'Lấy danh sách roles',
-        description: 'Lấy danh sách tất cả roles trong hệ thống với phân trang và tìm kiếm. Yêu cầu quyền `role.read`.',
+        description: 'Lấy danh sách roles với phân trang và tìm kiếm theo từ khóa. Yêu cầu quyền `role.read`.',
     })
-    @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Số lượng tối đa', example: 20 })
+    @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Số lượng role tối đa', example: 20 })
     @ApiQuery({ name: 'offset', required: false, type: Number, description: 'Vị trí bắt đầu', example: 0 })
-    @ApiQuery({ name: 'keywords', required: false, type: String, description: 'Tìm kiếm theo tên role' })
-    @ApiResponse({
-        status: 200,
-        description: 'Danh sách roles',
-        schema: {
-            type: 'object',
-            properties: {
-                code: { type: 'string', example: 'role.list.success' },
-                success: { type: 'boolean', example: true },
-                data: {
-                    type: 'object',
-                    properties: {
-                        items: { type: 'array', items: { type: 'object' } },
-                        total: { type: 'number', example: 10 },
-                    },
-                },
-            },
-        },
-    })
+    @ApiQuery({ name: 'keywords', required: false, type: String, description: 'Tìm kiếm theo tên hoặc mô tả role', example: 'quản lý' })
+    @ApiResponse({ status: 200, description: 'Lấy danh sách roles thành công' })
     @ApiAuthResponses()
     async findMany(
         @Query() query: QueryRoleDto,
@@ -161,8 +151,8 @@ export class RoleController {
         summary: 'Lấy chi tiết role',
         description: 'Lấy thông tin chi tiết của một role bao gồm danh sách permissions được gán. Yêu cầu quyền `role.read`.',
     })
-    @ApiParam({ name: 'id', description: 'ID của role (UUID)', type: 'string', example: '550e8400-e29b-41d4-a716-446655440001' })
-    @ApiResponse({ status: 200, description: 'Chi tiết role với danh sách permissions' })
+    @ApiParam({ name: 'id', description: 'ID của role', type: 'string', example: '550e8400-e29b-41d4-a716-446655440001' })
+    @ApiResponse({ status: 200, description: 'Lấy chi tiết role thành công' })
     @ApiResponse({ status: 404, description: 'Không tìm thấy role' })
     @ApiAuthResponses()
     async findById(
@@ -179,19 +169,34 @@ export class RoleController {
     @RequirePermission('role.update')
     @ApiOperation({
         summary: 'Cập nhật role',
-        description: 'Cập nhật thông tin role và danh sách permissions. Role hệ thống (is_system=true) không thể xóa nhưng có thể cập nhật permissions. Yêu cầu quyền `role.update`.',
+        description: 'Cập nhật thông tin role và danh sách permission IDs. Role hệ thống không thể xóa nhưng vẫn có thể cập nhật thông tin hợp lệ. Yêu cầu quyền `role.update`.',
     })
-    @ApiParam({ name: 'id', description: 'ID của role (UUID)', type: 'string', example: '550e8400-e29b-41d4-a716-446655440001' })
+    @ApiParam({ name: 'id', description: 'ID của role', type: 'string', example: '550e8400-e29b-41d4-a716-446655440001' })
     @ApiBody({
         type: UpdateRoleDto,
-        description: 'Thông tin cập nhật (partial update)',
+        description: 'Thông tin role cần cập nhật',
         examples: {
-            update_name: { summary: 'Cập nhật tên', value: { name: 'Tên role mới' } },
-            update_permissions: { summary: 'Cập nhật permissions', value: { permissions: ['warehouse.read', 'warehouse.create', 'warehouse.update'] } },
+            update_name: {
+                summary: 'Cập nhật tên role',
+                value: {
+                    name: 'Quản lý vận hành',
+                },
+            },
+            update_permissions: {
+                summary: 'Cập nhật permission IDs',
+                value: {
+                    permission_ids: [
+                        '550e8400-e29b-41d4-a716-446655440101',
+                        '550e8400-e29b-41d4-a716-446655440103',
+                    ],
+                    is_active: true,
+                },
+            },
         },
     })
-    @ApiResponse({ status: 200, description: 'Cập nhật thành công' })
+    @ApiResponse({ status: 200, description: 'Cập nhật role thành công' })
     @ApiResponse({ status: 404, description: 'Không tìm thấy role' })
+    @ApiResponse({ status: 409, description: 'Role cập nhật bị xung đột dữ liệu' })
     @ApiAuthResponses()
     @ApiValidationErrorResponse()
     async update(
@@ -214,20 +219,25 @@ export class RoleController {
     @RequirePermission('role.delete')
     @ApiOperation({
         summary: 'Xóa nhiều roles',
-        description: 'Xóa nhiều roles cùng lúc. Không thể xóa role hệ thống (is_system=true). Yêu cầu quyền `role.delete`.',
+        description: 'Xóa nhiều role cùng lúc theo danh sách ID. Không thể xóa role hệ thống. Yêu cầu quyền `role.delete`.',
     })
     @ApiBody({
         type: DeleteManyDto,
-        description: 'Danh sách ID roles cần xóa',
+        description: 'Danh sách ID role cần xóa',
         examples: {
             delete_multiple: {
-                summary: 'Xóa 2 roles',
-                value: { ids: ['550e8400-e29b-41d4-a716-446655440001', '550e8400-e29b-41d4-a716-446655440002'] },
+                summary: 'Xóa hai role',
+                value: {
+                    ids: [
+                        '550e8400-e29b-41d4-a716-446655440001',
+                        '550e8400-e29b-41d4-a716-446655440002',
+                    ],
+                },
             },
         },
     })
-    @ApiResponse({ status: 200, description: 'Xóa thành công' })
-    @ApiResponse({ status: 400, description: 'Không thể xóa role hệ thống' })
+    @ApiResponse({ status: 200, description: 'Xóa nhiều role thành công' })
+    @ApiResponse({ status: 400, description: 'Không thể xóa role hệ thống hoặc role đang được sử dụng' })
     @ApiAuthResponses()
     @ApiValidationErrorResponse()
     async deleteMany(
@@ -249,10 +259,10 @@ export class RoleController {
     @RequirePermission('role.delete')
     @ApiOperation({
         summary: 'Xóa role',
-        description: 'Xóa một role theo ID. Không thể xóa role hệ thống (is_system=true) hoặc role đang được gán cho users. Yêu cầu quyền `role.delete`.',
+        description: 'Xóa một role theo ID. Không thể xóa role hệ thống hoặc role đang được gán cho người dùng. Yêu cầu quyền `role.delete`.',
     })
-    @ApiParam({ name: 'id', description: 'ID của role (UUID)', type: 'string', example: '550e8400-e29b-41d4-a716-446655440001' })
-    @ApiResponse({ status: 200, description: 'Xóa thành công' })
+    @ApiParam({ name: 'id', description: 'ID của role', type: 'string', example: '550e8400-e29b-41d4-a716-446655440001' })
+    @ApiResponse({ status: 200, description: 'Xóa role thành công' })
     @ApiResponse({ status: 400, description: 'Không thể xóa role hệ thống hoặc role đang được sử dụng' })
     @ApiResponse({ status: 404, description: 'Không tìm thấy role' })
     @ApiAuthResponses()

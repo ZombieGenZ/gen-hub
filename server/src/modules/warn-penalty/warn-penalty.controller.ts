@@ -47,45 +47,48 @@ export class WarnPenaltyController {
     @RequirePermission('warn-penalty.create')
     @ApiOperation({
         summary: 'Tạo quy tắc phạt warn mới',
-        description: 'Tạo quy tắc xử phạt tự động khi user đạt đến số lượng warning nhất định. Ví dụ: 3 warning = ban 7 ngày. Yêu cầu quyền `warn-penalty.create`.',
+        description: 'Tạo một quy tắc xử phạt tự động dựa trên số lượng warning tích lũy của người dùng. Yêu cầu quyền `warn-penalty.create`.',
     })
     @ApiBody({
         type: CreateWarnPenaltyDto,
+        description: 'Thông tin quy tắc phạt warn cần tạo',
         examples: {
-            auto_ban: {
-                summary: 'Auto ban khi đạt 3 warnings',
+            temporary_ban: {
+                summary: 'Khóa tạm thời khi đạt 3 warn',
                 value: {
-                    name: 'Ban 7 ngày - 3 warnings',
-                    warning_count: 3,
-                    penalty_type: 'BAN',
-                    penalty_duration: 7,
-                    penalty_duration_unit: 'days',
-                    is_active: true,
+                    min_warn_count: 3,
+                    max_warn_count: 4,
+                    is_permanent_ban: false,
+                    duration_value: 7,
+                    duration_unit: 'DAY',
+                    description: 'Khóa tài khoản 7 ngày khi người dùng đạt từ 3 đến 4 cảnh báo',
                 },
             },
             permanent_ban: {
-                summary: 'Ban vĩnh viễn khi đạt 5 warnings',
+                summary: 'Khóa vĩnh viễn khi đạt 5 warn',
                 value: {
-                    name: 'Ban vĩnh viễn - 5 warnings',
-                    warning_count: 5,
-                    penalty_type: 'PERMANENT_BAN',
-                    is_active: true,
+                    min_warn_count: 5,
+                    is_permanent_ban: true,
+                    description: 'Khóa vĩnh viễn khi số cảnh báo vượt ngưỡng nghiêm trọng',
                 },
             },
         },
     })
     @ApiResponse({
         status: 201,
-        description: 'Tạo quy tắc thành công',
+        description: 'Tạo quy tắc phạt warn thành công',
         schema: {
             type: 'object',
             properties: {
                 code: { type: 'string', example: 'warn-penalty.create' },
+                message: { type: 'string', example: 'Tạo quy tắc phạt warn thành công' },
                 success: { type: 'boolean', example: true },
                 data: { type: 'object' },
             },
         },
     })
+    @ApiResponse({ status: 400, description: 'Dữ liệu gửi lên không hợp lệ theo quy tắc xử phạt' })
+    @ApiResponse({ status: 409, description: 'Quy tắc phạt warn bị trùng điều kiện' })
     @ApiAuthResponses()
     @ApiValidationErrorResponse()
     async create(
@@ -105,13 +108,13 @@ export class WarnPenaltyController {
     @RequirePermission('warn-penalty.list')
     @ApiOperation({
         summary: 'Lấy danh sách quy tắc phạt warn',
-        description: 'Lấy danh sách tất cả quy tắc xử phạt với phân trang. Yêu cầu quyền `warn-penalty.list`.',
+        description: 'Lấy danh sách tất cả quy tắc xử phạt warn với phân trang và bộ lọc. Yêu cầu quyền `warn-penalty.list`.',
     })
-    @ApiQuery({ name: 'limit', required: false, type: Number, example: 20 })
-    @ApiQuery({ name: 'offset', required: false, type: Number, example: 0 })
-    @ApiQuery({ name: 'keywords', required: false, type: String })
-    @ApiQuery({ name: 'is_active', required: false, type: Boolean })
-    @ApiResponse({ status: 200, description: 'Danh sách quy tắc' })
+    @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Số lượng kết quả tối đa', example: 20 })
+    @ApiQuery({ name: 'offset', required: false, type: Number, description: 'Vị trí bắt đầu', example: 0 })
+    @ApiQuery({ name: 'keywords', required: false, type: String, description: 'Từ khóa tìm kiếm', example: '7 ngày' })
+    @ApiQuery({ name: 'is_active', required: false, type: Boolean, description: 'Lọc theo trạng thái kích hoạt', example: true })
+    @ApiResponse({ status: 200, description: 'Lấy danh sách quy tắc phạt warn thành công' })
     @ApiAuthResponses()
     async findMany(
         @Query() query: QueryWarnPenaltyDto,
@@ -125,9 +128,9 @@ export class WarnPenaltyController {
     @RequirePermission('warn-penalty.list')
     @ApiOperation({
         summary: 'Lấy tất cả quy tắc phạt warn đang active',
-        description: 'Lấy danh sách tất cả quy tắc đang active để áp dụng. Yêu cầu quyền `warn-penalty.list`.',
+        description: 'Lấy toàn bộ quy tắc xử phạt đang hoạt động để áp dụng trong nghiệp vụ cảnh báo. Yêu cầu quyền `warn-penalty.list`.',
     })
-    @ApiResponse({ status: 200, description: 'Danh sách quy tắc active' })
+    @ApiResponse({ status: 200, description: 'Lấy danh sách quy tắc phạt warn active thành công' })
     @ApiAuthResponses()
     async findAllActive(@I18nLang() lang: string) {
         const items = await this.service.findAllActive(lang);
@@ -138,11 +141,11 @@ export class WarnPenaltyController {
     @RequirePermission('warn-penalty.read')
     @ApiOperation({
         summary: 'Lấy chi tiết quy tắc phạt warn',
-        description: 'Lấy thông tin chi tiết của một quy tắc xử phạt. Yêu cầu quyền `warn-penalty.read`.',
+        description: 'Lấy thông tin chi tiết của một quy tắc phạt warn theo ID. Yêu cầu quyền `warn-penalty.read`.',
     })
-    @ApiParam({ name: 'id', description: 'ID quy tắc (UUID)' })
-    @ApiResponse({ status: 200, description: 'Chi tiết quy tắc' })
-    @ApiResponse({ status: 404, description: 'Không tìm thấy' })
+    @ApiParam({ name: 'id', description: 'ID quy tắc phạt warn', example: '550e8400-e29b-41d4-a716-446655440050' })
+    @ApiResponse({ status: 200, description: 'Lấy chi tiết quy tắc phạt warn thành công' })
+    @ApiResponse({ status: 404, description: 'Không tìm thấy quy tắc phạt warn' })
     @ApiAuthResponses()
     async findById(
         @Param('id', ParseUUIDPipe) id: string,
@@ -156,11 +159,32 @@ export class WarnPenaltyController {
     @RequirePermission('warn-penalty.update')
     @ApiOperation({
         summary: 'Cập nhật quy tắc phạt warn',
-        description: 'Cập nhật thông tin quy tắc xử phạt. Yêu cầu quyền `warn-penalty.update`.',
+        description: 'Cập nhật một phần hoặc toàn bộ thông tin quy tắc phạt warn. Yêu cầu quyền `warn-penalty.update`.',
     })
-    @ApiParam({ name: 'id', description: 'ID quy tắc (UUID)' })
-    @ApiBody({ type: UpdateWarnPenaltyDto })
-    @ApiResponse({ status: 200, description: 'Cập nhật thành công' })
+    @ApiParam({ name: 'id', description: 'ID quy tắc phạt warn', example: '550e8400-e29b-41d4-a716-446655440050' })
+    @ApiBody({
+        type: UpdateWarnPenaltyDto,
+        description: 'Dữ liệu cập nhật quy tắc phạt warn',
+        examples: {
+            disable_rule: {
+                summary: 'Ngưng kích hoạt quy tắc',
+                value: {
+                    is_active: false,
+                },
+            },
+            update_duration: {
+                summary: 'Cập nhật thời lượng xử phạt',
+                value: {
+                    duration_value: 14,
+                    duration_unit: 'DAY',
+                    description: 'Tăng thời gian khóa lên 14 ngày',
+                },
+            },
+        },
+    })
+    @ApiResponse({ status: 200, description: 'Cập nhật quy tắc phạt warn thành công' })
+    @ApiResponse({ status: 404, description: 'Không tìm thấy quy tắc phạt warn' })
+    @ApiResponse({ status: 409, description: 'Quy tắc phạt warn cập nhật bị xung đột dữ liệu' })
     @ApiAuthResponses()
     @ApiValidationErrorResponse()
     async update(
@@ -182,10 +206,11 @@ export class WarnPenaltyController {
     @HttpCode(HttpStatus.OK)
     @ApiOperation({
         summary: 'Xóa quy tắc phạt warn',
-        description: 'Soft delete quy tắc xử phạt. Yêu cầu quyền `warn-penalty.delete`.',
+        description: 'Soft delete một quy tắc phạt warn theo ID. Yêu cầu quyền `warn-penalty.delete`.',
     })
-    @ApiParam({ name: 'id', description: 'ID quy tắc (UUID)' })
-    @ApiResponse({ status: 200, description: 'Xóa thành công' })
+    @ApiParam({ name: 'id', description: 'ID quy tắc phạt warn', example: '550e8400-e29b-41d4-a716-446655440050' })
+    @ApiResponse({ status: 200, description: 'Xóa quy tắc phạt warn thành công' })
+    @ApiResponse({ status: 404, description: 'Không tìm thấy quy tắc phạt warn' })
     @ApiAuthResponses()
     async delete(
         @Param('id', ParseUUIDPipe) id: string,
@@ -205,12 +230,26 @@ export class WarnPenaltyController {
     @HttpCode(HttpStatus.OK)
     @ApiOperation({
         summary: 'Xóa nhiều quy tắc phạt warn',
-        description: 'Xóa nhiều quy tắc cùng lúc. Yêu cầu quyền `warn-penalty.delete`.',
+        description: 'Xóa mềm nhiều quy tắc phạt warn cùng lúc theo danh sách ID. Yêu cầu quyền `warn-penalty.delete`.',
     })
     @ApiBody({
-        schema: { type: 'object', properties: { ids: { type: 'array', items: { type: 'string' } } } },
+        schema: {
+            type: 'object',
+            properties: {
+                ids: {
+                    type: 'array',
+                    items: { type: 'string', format: 'uuid' },
+                },
+            },
+            example: {
+                ids: [
+                    '550e8400-e29b-41d4-a716-446655440050',
+                    '550e8400-e29b-41d4-a716-446655440051',
+                ],
+            },
+        },
     })
-    @ApiResponse({ status: 200, description: 'Xóa thành công' })
+    @ApiResponse({ status: 200, description: 'Xóa nhiều quy tắc phạt warn thành công' })
     @ApiAuthResponses()
     @ApiValidationErrorResponse()
     async deleteMany(

@@ -39,12 +39,12 @@ import { OptionalJwtAuthGuard } from '../../common/guards/optional-jwt-auth.guar
 import { PermissionGuard } from '../../common/guards/permission.guard';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { ApiAuthResponses, ApiValidationErrorResponse } from '../../common/decorators/api-common-responses.decorator';
+import {
+    ApiAuthResponses,
+    ApiUnauthorizedResponses,
+    ApiValidationErrorResponse,
+} from '../../common/decorators/api-common-responses.decorator';
 
-/**
- * Controller cho Contact module
- * Bao gồm public endpoint và admin endpoints
- */
 @ApiTags('Contact & Live Chat')
 @Controller()
 export class ContactController {
@@ -53,49 +53,50 @@ export class ContactController {
         private readonly userRepository: UserRepository,
     ) { }
 
-    /**
-     * Tạo ticket từ form website (public - không cần auth)
-     */
     @Post('contact')
     @Public()
     @HttpCode(HttpStatus.CREATED)
     @ApiOperation({
         summary: 'Gửi yêu cầu liên hệ (Public)',
-        description: 'API dành cho form liên hệ trên website. Khách vãng lai có thể gửi yêu cầu hỗ trợ.'
+        description: 'API dành cho form liên hệ công khai trên website. Khách vãng lai có thể gửi yêu cầu hỗ trợ hoặc liên hệ tư vấn.',
     })
-    @ApiValidationErrorResponse()
     @ApiBody({
         type: CreateContactDto,
-        description: 'Thông tin liên hệ',
+        description: 'Thông tin liên hệ từ khách hàng',
         examples: {
-            support: {
-                summary: 'Yêu cầu hỗ trợ',
+            contact_support: {
+                summary: 'Yêu cầu hỗ trợ kỹ thuật',
                 value: {
                     name: 'Nguyễn Văn A',
                     email: 'nguyenvana@example.com',
                     phone: '0901234567',
+                    company: 'Công ty ABC',
                     subject: 'Hỗ trợ kỹ thuật',
-                    message: 'Tôi gặp lỗi khi đăng nhập...',
-                    type: 'SUPPORT'
-                }
-            }
-        }
+                    message: 'Tôi cần hỗ trợ xử lý lỗi khi đăng nhập vào hệ thống.',
+                },
+            },
+        },
     })
     @ApiResponse({
         status: 201,
-        description: 'Gửi liên hệ thành công',
+        description: 'Gửi yêu cầu liên hệ thành công',
         schema: {
-            example: {
-                code: 'contact.created',
-                message: 'Gửi yêu cầu thành công, chúng tôi sẽ phản hồi sớm nhất.',
-                success: true,
+            type: 'object',
+            properties: {
+                code: { type: 'string', example: 'contact.created' },
+                message: { type: 'string', example: 'Gửi yêu cầu thành công, chúng tôi sẽ phản hồi sớm nhất.' },
+                success: { type: 'boolean', example: true },
                 data: {
-                    id: '...',
-                    ticket_number: 'TK-123456'
-                }
-            }
-        }
+                    type: 'object',
+                    properties: {
+                        id: { type: 'string', format: 'uuid', example: '550e8400-e29b-41d4-a716-446655440081' },
+                        ticket_number: { type: 'string', example: 'TK-123456' },
+                    },
+                },
+            },
+        },
     })
+    @ApiValidationErrorResponse()
     async createPublic(
         @Body() dto: CreateContactDto,
         @I18nLang() lang: string,
@@ -104,10 +105,6 @@ export class ContactController {
         return new CreatedResponse('contact.created', result, result.message);
     }
 
-    /**
-     * Khởi tạo phiên live chat.
-     * Có JWT: không cần truyền session. Không JWT: bắt buộc truyền session (hoặc uid).
-     */
     @Post('contact/chat/start')
     @Public()
     @UseGuards(OptionalJwtAuthGuard)
@@ -115,29 +112,47 @@ export class ContactController {
     @HttpCode(HttpStatus.CREATED)
     @ApiOperation({
         summary: 'Khởi tạo Live Chat (Public)',
-        description: 'Bắt đầu phiên chat.\n- **Có JWT (đã đăng nhập)**: Không bắt buộc truyền trường `session` hay `uid`. Hệ thống sẽ tự tạo `session_id` và gắn với user.\n- **Không JWT (khách vãng lai)**: Bắt buộc truyền `session` (có thể dùng uuid hoặc chuỗi ngẫu nhiên ở client) để định danh và duy trì phiên chat cho khách.\n- **Tin nhắn đầu tiên**: Có thể đính kèm qua trường `initialMessage`.'
+        description: 'Bắt đầu một phiên live chat. Nếu đã đăng nhập thì hệ thống tự gắn user vào phiên chat; nếu là khách vãng lai thì cần truyền `session` hoặc `uid` để duy trì phiên.',
     })
-    @ApiValidationErrorResponse()
     @ApiBody({
         type: StartChatDto,
-        description: 'Dữ liệu khởi tạo phiên chat. Bắt buộc truyền `session` nếu không có JWT.',
+        description: 'Dữ liệu khởi tạo phiên chat',
         examples: {
-            guest: { summary: 'Khách vãng lai (không JWT)', value: { session: 'random-uuid-for-guest', initialMessage: 'Xin chào, tôi cần hỗ trợ.' } },
-            withJwt: { summary: 'User đã đăng nhập (Có JWT)', value: { initialMessage: 'Tôi muốn hỏi về sản phẩm.' } }
-        }
+            guest_chat: {
+                summary: 'Khởi tạo chat cho khách vãng lai',
+                value: {
+                    session: 'session-guest-001',
+                    initialMessage: 'Xin chào, tôi cần tư vấn dịch vụ thuê kho.',
+                },
+            },
+            logged_in_user: {
+                summary: 'Khởi tạo chat cho user đã đăng nhập',
+                value: {
+                    initialMessage: 'Tôi muốn hỏi về giá thuê kho hiện tại.',
+                },
+            },
+        },
     })
     @ApiResponse({
         status: 201,
-        description: 'Session chat được tạo',
+        description: 'Khởi tạo phiên chat thành công',
         schema: {
-            example: {
-                code: 'contact.live_chat.session_created',
-                message: 'Đã tạo phiên chat',
-                success: true,
-                data: { session_id: 'uuid-session', code: 'TK-123456' }
-            }
-        }
+            type: 'object',
+            properties: {
+                code: { type: 'string', example: 'contact.live_chat.session_created' },
+                message: { type: 'string', example: 'Đã tạo phiên chat' },
+                success: { type: 'boolean', example: true },
+                data: {
+                    type: 'object',
+                    properties: {
+                        session_id: { type: 'string', format: 'uuid', example: '550e8400-e29b-41d4-a716-446655440082' },
+                        code: { type: 'string', example: 'TK-123456' },
+                    },
+                },
+            },
+        },
     })
+    @ApiValidationErrorResponse()
     async startChatSession(
         @Body() dto: StartChatDto,
         @I18nLang() lang: string,
@@ -161,27 +176,28 @@ export class ContactController {
         return new CreatedResponse('contact.live_chat.session_created', result);
     }
 
-    /**
-     * Gửi tin nhắn trong live chat (Guest)
-     */
     @Post('contact/chat/:sessionId/message')
     @Public()
     @HttpCode(HttpStatus.OK)
     @ApiOperation({
         summary: 'Guest gửi tin nhắn (Public)',
-        description: 'Khách gửi tin nhắn trong phiên chat đã tạo.'
+        description: 'Khách gửi tin nhắn trong một phiên chat đã được khởi tạo trước đó.',
     })
-    @ApiParam({ name: 'sessionId', description: 'ID phiên chat (UUID)' })
+    @ApiParam({ name: 'sessionId', description: 'ID phiên chat', example: '550e8400-e29b-41d4-a716-446655440082' })
     @ApiBody({
         type: SendMessageDto,
-        description: 'Nội dung tin nhắn',
+        description: 'Nội dung tin nhắn khách gửi',
         examples: {
-            text: {
+            text_message: {
                 summary: 'Tin nhắn văn bản',
-                value: { content: 'Xin chào, tôi cần giúp đỡ.' }
-            }
-        }
+                value: {
+                    content: 'Xin chào, tôi cần giúp đỡ về hợp đồng thuê kho.',
+                },
+            },
+        },
     })
+    @ApiResponse({ status: 200, description: 'Gửi tin nhắn thành công' })
+    @ApiValidationErrorResponse()
     async sendGuestMessage(
         @Param('sessionId') sessionId: string,
         @Body() dto: SendMessageDto,
@@ -191,31 +207,14 @@ export class ContactController {
         return new OkResponse('contact.live_chat.message_sent', result);
     }
 
-    /**
-     * Lấy conversation của session (Guest)
-     */
     @Get('contact/chat/:sessionId')
     @Public()
     @ApiOperation({
         summary: 'Lấy nội dung đoạn chat (Public)',
-        description: 'Lấy lịch sử tin nhắn của phiên chat cho khách.'
+        description: 'Lấy lịch sử tin nhắn của một phiên chat cho khách hoặc người dùng đang theo dõi cuộc trò chuyện.',
     })
-    @ApiParam({ name: 'sessionId', description: 'ID phiên chat (UUID)' })
-    @ApiResponse({
-        status: 200,
-        description: 'Lấy lịch sử thành công',
-        schema: {
-            example: {
-                code: 'contact.live_chat.session',
-                message: 'Lấy thông tin thành công',
-                success: true,
-                data: {
-                    id: '...',
-                    messages: []
-                }
-            }
-        }
-    })
+    @ApiParam({ name: 'sessionId', description: 'ID phiên chat', example: '550e8400-e29b-41d4-a716-446655440082' })
+    @ApiResponse({ status: 200, description: 'Lấy nội dung đoạn chat thành công' })
     async getChatSession(
         @Param('sessionId') sessionId: string,
         @I18nLang() lang: string,
@@ -224,62 +223,39 @@ export class ContactController {
         return new GetResponse('contact.live_chat.session', result);
     }
 
-    /**
-     * Lấy lịch sử đoạn chat (live chat) của user đăng nhập
-     */
     @Get('contact/chat/history')
     @UseGuards(JwtAuthGuard)
     @ApiBearerAuth('JWT-auth')
     @ApiOperation({
         summary: 'Lấy lịch sử live chat của user',
-        description: 'Trả về danh sách phiên live chat của user hiện tại (có user_id), mỗi phiên kèm tin nhắn.',
+        description: 'Trả về danh sách các phiên live chat của người dùng hiện tại. Endpoint này chỉ yêu cầu xác thực tài khoản.',
     })
-    @ApiAuthResponses()
-    @ApiResponse({
-        status: 200,
-        description: 'Lấy lịch sử thành công',
-        schema: {
-            example: {
-                code: 'contact.live_chat.history',
-                message: 'Lấy lịch sử thành công',
-                success: true,
-                data: [{ id: '...', code: '...', session_id: '...', messages: [] }],
-            },
-        },
-    })
+    @ApiUnauthorizedResponses()
+    @ApiResponse({ status: 200, description: 'Lấy lịch sử live chat thành công' })
     async getChatHistory(@CurrentUser() user: { userId: string }) {
         const result = await this.contactService.getChatHistoryByUserId(user.userId);
         return new GetResponse('contact.live_chat.history', result);
     }
 
-    /**
-     * Lấy danh sách tickets - OPTIMIZED
-     */
     @Get('admin/contacts')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact.list')
     @ApiBearerAuth('JWT-auth')
     @ApiOperation({
         summary: 'Lấy danh sách tickets (Admin)',
-        description: 'API lấy danh sách yêu cầu liên hệ với bộ lọc nâng cao.'
+        description: 'Lấy danh sách yêu cầu liên hệ với đầy đủ bộ lọc phân trang, từ khóa, trạng thái, ưu tiên và nhân viên phụ trách. Yêu cầu quyền `contact.list`.',
     })
+    @ApiQuery({ name: 'limit', required: false, type: Number, example: 10, description: 'Số lượng ticket tối đa trên một trang' })
+    @ApiQuery({ name: 'offset', required: false, type: Number, example: 0, description: 'Vị trí bắt đầu của trang hiện tại' })
+    @ApiQuery({ name: 'keywords', required: false, type: String, example: 'đăng nhập', description: 'Từ khóa tìm kiếm theo mã ticket, tên, email hoặc nội dung' })
+    @ApiQuery({ name: 'status', required: false, enum: ['OPEN', 'PENDING', 'RESOLVED', 'CLOSED', 'SPAM'], description: 'Lọc theo trạng thái ticket' })
+    @ApiQuery({ name: 'priority', required: false, enum: ['LOW', 'MEDIUM', 'HIGH', 'URGENT'], description: 'Lọc theo mức độ ưu tiên' })
+    @ApiQuery({ name: 'assigned_staff_id', required: false, type: String, example: '550e8400-e29b-41d4-a716-446655440088', description: 'Lọc theo nhân viên được gán xử lý' })
+    @ApiQuery({ name: 'is_priority_customer', required: false, type: Boolean, description: 'Lọc theo khách hàng ưu tiên' })
+    @ApiQuery({ name: 'is_skipped', required: false, type: Boolean, description: 'Lọc theo ticket bị bỏ qua/spam' })
+    @ApiResponse({ status: 200, description: 'Lấy danh sách tickets thành công' })
     @ApiAuthResponses()
-    @ApiQuery({ name: 'limit', required: false, example: 10 })
-    @ApiQuery({ name: 'offset', required: false, example: 0 })
-    @ApiQuery({ name: 'status', required: false, enum: ['PENDING', 'PROCESSING', 'RESOLVED', 'CLOSED'] })
-    @ApiQuery({ name: 'type', required: false, enum: ['SUPPORT', 'SALES', 'PARTNERSHIP'] })
-    @ApiResponse({
-        status: 200,
-        description: 'Lấy danh sách thành công',
-        schema: {
-            example: {
-                code: 'contact.list',
-                message: 'Lấy danh sách thành công',
-                success: true,
-                data: { items: [], total: 0 }
-            }
-        }
-    })
+    @ApiValidationErrorResponse()
     async findAll(
         @Query() query: QueryContactDto,
         @I18nLang() lang: string,
@@ -288,15 +264,16 @@ export class ContactController {
         return new GetResponse('contact.list', result);
     }
 
-    /**
-     * Lấy danh sách tickets ưu tiên (is_priority_customer = true)
-     */
     @Get('admin/contacts/priority')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact.list')
     @ApiBearerAuth('JWT-auth')
-    @ApiOperation({ summary: 'Lấy danh sách tickets ưu tiên' })
+    @ApiOperation({
+        summary: 'Lấy danh sách tickets ưu tiên',
+        description: 'Lấy danh sách ticket của nhóm khách hàng ưu tiên. Yêu cầu quyền `contact.list`.',
+    })
     @ApiAuthResponses()
+    @ApiValidationErrorResponse()
     async findPriority(
         @Query() query: QueryContactDto,
         @I18nLang() lang: string,
@@ -305,15 +282,16 @@ export class ContactController {
         return new GetResponse('contact.list_priority', result);
     }
 
-    /**
-     * Lấy danh sách tickets bình thường (is_priority_customer = false, is_skipped = false)
-     */
     @Get('admin/contacts/normal')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact.list')
     @ApiBearerAuth('JWT-auth')
-    @ApiOperation({ summary: 'Lấy danh sách tickets thường' })
+    @ApiOperation({
+        summary: 'Lấy danh sách tickets thường',
+        description: 'Lấy danh sách ticket không thuộc nhóm ưu tiên và chưa bị bỏ qua. Yêu cầu quyền `contact.list`.',
+    })
     @ApiAuthResponses()
+    @ApiValidationErrorResponse()
     async findNormal(
         @Query() query: QueryContactDto,
         @I18nLang() lang: string,
@@ -322,15 +300,16 @@ export class ContactController {
         return new GetResponse('contact.list_normal', result);
     }
 
-    /**
-     * Lấy danh sách tickets bị bỏ qua (is_skipped = true)
-     */
     @Get('admin/contacts/skipped')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact.list')
     @ApiBearerAuth('JWT-auth')
-    @ApiOperation({ summary: 'Lấy danh sách tickets bị bỏ qua (Spam/Skipped)' })
+    @ApiOperation({
+        summary: 'Lấy danh sách tickets bị bỏ qua (Spam/Skipped)',
+        description: 'Lấy danh sách ticket đã bị đánh dấu bỏ qua hoặc spam. Yêu cầu quyền `contact.list`.',
+    })
     @ApiAuthResponses()
+    @ApiValidationErrorResponse()
     async findSkipped(
         @Query() query: QueryContactDto,
         @I18nLang() lang: string,
@@ -339,15 +318,17 @@ export class ContactController {
         return new GetResponse('contact.list_skipped', result);
     }
 
-    /**
-     * Lấy chi tiết ticket
-     */
     @Get('admin/contacts/:id')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact.read')
     @ApiBearerAuth('JWT-auth')
-    @ApiOperation({ summary: 'Lấy chi tiết ticket' })
-    @ApiParam({ name: 'id', description: 'ID ticket (UUID)' })
+    @ApiOperation({
+        summary: 'Lấy chi tiết ticket',
+        description: 'Lấy thông tin chi tiết của một ticket theo ID. Yêu cầu quyền `contact.read`.',
+    })
+    @ApiParam({ name: 'id', description: 'ID ticket', example: '550e8400-e29b-41d4-a716-446655440081' })
+    @ApiResponse({ status: 200, description: 'Lấy chi tiết ticket thành công' })
+    @ApiResponse({ status: 404, description: 'Không tìm thấy ticket' })
     @ApiAuthResponses()
     async findOne(
         @Param('id') id: string,
@@ -357,15 +338,17 @@ export class ContactController {
         return new GetResponse('contact.read', result);
     }
 
-    /**
-     * Lấy messages của ticket
-     */
     @Get('admin/contacts/:id/messages')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact.read')
     @ApiBearerAuth('JWT-auth')
-    @ApiOperation({ summary: 'Lấy nội dung trao đổi của ticket' })
-    @ApiParam({ name: 'id', description: 'ID ticket (UUID)' })
+    @ApiOperation({
+        summary: 'Lấy nội dung trao đổi của ticket',
+        description: 'Lấy toàn bộ nội dung trao đổi của ticket, bao gồm phản hồi của nhân viên và tin nhắn từ khách hàng. Yêu cầu quyền `contact.read`.',
+    })
+    @ApiParam({ name: 'id', description: 'ID ticket', example: '550e8400-e29b-41d4-a716-446655440081' })
+    @ApiResponse({ status: 200, description: 'Lấy nội dung trao đổi của ticket thành công' })
+    @ApiResponse({ status: 404, description: 'Không tìm thấy ticket hoặc lịch sử trao đổi' })
     @ApiAuthResponses()
     async findMessages(
         @Param('id') id: string,
@@ -375,20 +358,40 @@ export class ContactController {
         return new GetResponse('contact.messages', result);
     }
 
-    /**
-     * Cập nhật ticket
-     */
     @Patch('admin/contacts/:id')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact.update')
     @ApiBearerAuth('JWT-auth')
     @ApiOperation({
         summary: 'Cập nhật thông tin ticket',
-        description: 'Cập nhật trạng thái, độ ưu tiên, gán nhân viên...'
+        description: 'Cập nhật trạng thái, độ ưu tiên, tags, nhân viên phụ trách hoặc cài đặt AI trả lời cho ticket. Yêu cầu quyền `contact.update`.',
     })
-    @ApiParam({ name: 'id', description: 'ID ticket (UUID)' })
-    @ApiBody({ type: UpdateContactDto })
+    @ApiParam({ name: 'id', description: 'ID ticket', example: '550e8400-e29b-41d4-a716-446655440081' })
+    @ApiBody({
+        type: UpdateContactDto,
+        description: 'Dữ liệu cập nhật ticket',
+        examples: {
+            update_status: {
+                summary: 'Cập nhật trạng thái và mức ưu tiên',
+                value: {
+                    status: 'PENDING',
+                    priority: 'HIGH',
+                },
+            },
+            assign_staff: {
+                summary: 'Gán nhân viên và tag',
+                value: {
+                    staff_ids: ['550e8400-e29b-41d4-a716-446655440088'],
+                    tags: ['550e8400-e29b-41d4-a716-446655440089'],
+                    enable_ai_reply: false,
+                },
+            },
+        },
+    })
+    @ApiResponse({ status: 200, description: 'Cập nhật ticket thành công' })
+    @ApiResponse({ status: 404, description: 'Không tìm thấy ticket' })
     @ApiAuthResponses()
+    @ApiValidationErrorResponse()
     async update(
         @Param('id') id: string,
         @Body() dto: UpdateContactDto,
@@ -399,27 +402,45 @@ export class ContactController {
         return new UpdatedResponse('contact.updated', result);
     }
 
-    /**
-     * Staff reply
-     */
     @Post('admin/contacts/:id/reply')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact.reply')
     @ApiBearerAuth('JWT-auth')
     @ApiOperation({
         summary: 'Nhân viên trả lời ticket',
-        description: 'Gửi email phản hồi cho khách hàng.'
+        description: 'Gửi phản hồi cho khách hàng hoặc tạo ghi chú nội bộ trong ticket. Yêu cầu quyền `contact.reply`.',
     })
-    @ApiParam({ name: 'id', description: 'ID ticket (UUID)' })
-    @ApiBody({ type: ReplyContactDto })
+    @ApiParam({ name: 'id', description: 'ID ticket', example: '550e8400-e29b-41d4-a716-446655440081' })
+    @ApiBody({
+        type: ReplyContactDto,
+        description: 'Nội dung phản hồi ticket',
+        examples: {
+            public_reply: {
+                summary: 'Phản hồi gửi ra ngoài',
+                value: {
+                    content: 'Chúng tôi đã tiếp nhận yêu cầu và sẽ phản hồi thêm trong hôm nay.',
+                    is_internal: false,
+                },
+            },
+            internal_note: {
+                summary: 'Ghi chú nội bộ',
+                value: {
+                    content: 'Khách hàng đã được gọi xác nhận thông tin bổ sung.',
+                    is_internal: true,
+                },
+            },
+        },
+    })
+    @ApiResponse({ status: 200, description: 'Phản hồi ticket thành công' })
+    @ApiResponse({ status: 404, description: 'Không tìm thấy ticket để phản hồi' })
     @ApiAuthResponses()
+    @ApiValidationErrorResponse()
     async reply(
         @Param('id') id: string,
         @Body() dto: ReplyContactDto,
         @CurrentUser() user: { userId: string; name?: string; email?: string },
         @I18nLang() lang: string,
     ) {
-        // Fetch real user name
         let staffName = user.name || 'Staff';
         const userDetails = await this.userRepository.findById(user.userId);
         if (userDetails) {
@@ -437,15 +458,18 @@ export class ContactController {
         return new OkResponse('contact.replied', null, result.message);
     }
 
-    /**
-     * Đóng ticket
-     */
     @Post('admin/contacts/:id/close')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact.update')
     @ApiBearerAuth('JWT-auth')
-    @ApiOperation({ summary: 'Đóng ticket (Hoàn tất)' })
-    @ApiParam({ name: 'id', description: 'ID ticket (UUID)' })
+    @ApiOperation({
+        summary: 'Đóng ticket (Hoàn tất)',
+        description: 'Đóng ticket khi quá trình hỗ trợ đã hoàn tất. Yêu cầu quyền `contact.update`.',
+    })
+    @ApiParam({ name: 'id', description: 'ID ticket', example: '550e8400-e29b-41d4-a716-446655440081' })
+    @ApiResponse({ status: 200, description: 'Đóng ticket thành công' })
+    @ApiResponse({ status: 404, description: 'Không tìm thấy ticket' })
+    @ApiResponse({ status: 409, description: 'Ticket không ở trạng thái có thể đóng' })
     @ApiAuthResponses()
     async close(
         @Param('id') id: string,
@@ -456,15 +480,18 @@ export class ContactController {
         return new OkResponse('contact.closed', null, result.message);
     }
 
-    /**
-     * Mở lại ticket
-     */
     @Post('admin/contacts/:id/reopen')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact.update')
     @ApiBearerAuth('JWT-auth')
-    @ApiOperation({ summary: 'Mở lại ticket đã đóng' })
-    @ApiParam({ name: 'id', description: 'ID ticket (UUID)' })
+    @ApiOperation({
+        summary: 'Mở lại ticket đã đóng',
+        description: 'Mở lại ticket đã đóng để tiếp tục xử lý. Yêu cầu quyền `contact.update`.',
+    })
+    @ApiParam({ name: 'id', description: 'ID ticket', example: '550e8400-e29b-41d4-a716-446655440081' })
+    @ApiResponse({ status: 200, description: 'Mở lại ticket thành công' })
+    @ApiResponse({ status: 404, description: 'Không tìm thấy ticket' })
+    @ApiResponse({ status: 409, description: 'Ticket không ở trạng thái có thể mở lại' })
     @ApiAuthResponses()
     async reopen(
         @Param('id') id: string,
@@ -475,15 +502,17 @@ export class ContactController {
         return new OkResponse('contact.reopened', null, result.message);
     }
 
-    /**
-     * Xóa ticket
-     */
     @Delete('admin/contacts/:id')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact.delete')
     @ApiBearerAuth('JWT-auth')
-    @ApiOperation({ summary: 'Xóa ticket (Soft delete)' })
-    @ApiParam({ name: 'id', description: 'ID ticket (UUID)' })
+    @ApiOperation({
+        summary: 'Xóa ticket (Soft delete)',
+        description: 'Xóa mềm một ticket theo ID. Yêu cầu quyền `contact.delete`.',
+    })
+    @ApiParam({ name: 'id', description: 'ID ticket', example: '550e8400-e29b-41d4-a716-446655440081' })
+    @ApiResponse({ status: 200, description: 'Xóa ticket thành công' })
+    @ApiResponse({ status: 404, description: 'Không tìm thấy ticket' })
     @ApiAuthResponses()
     async delete(
         @Param('id') id: string,
@@ -494,16 +523,34 @@ export class ContactController {
         return new DeletedResponse('contact.deleted');
     }
 
-    /**
-     * Xóa nhiều tickets
-     */
     @Delete('admin/contacts/delete/many')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('contact.delete')
     @ApiBearerAuth('JWT-auth')
-    @ApiOperation({ summary: 'Xóa nhiều tickets cùng lúc' })
-    @ApiBody({ schema: { type: 'object', properties: { ids: { type: 'array', items: { type: 'string' } } } } })
+    @ApiOperation({
+        summary: 'Xóa nhiều tickets cùng lúc',
+        description: 'Xóa mềm nhiều ticket theo danh sách ID. Yêu cầu quyền `contact.delete`.',
+    })
+    @ApiBody({
+        schema: {
+            type: 'object',
+            properties: {
+                ids: {
+                    type: 'array',
+                    items: { type: 'string', format: 'uuid' },
+                },
+            },
+            example: {
+                ids: [
+                    '550e8400-e29b-41d4-a716-446655440081',
+                    '550e8400-e29b-41d4-a716-446655440082',
+                ],
+            },
+        },
+    })
+    @ApiResponse({ status: 200, description: 'Xóa nhiều ticket thành công' })
     @ApiAuthResponses()
+    @ApiValidationErrorResponse()
     async deleteMany(
         @Body('ids') ids: string[],
         @CurrentUser() user: { userId: string },
