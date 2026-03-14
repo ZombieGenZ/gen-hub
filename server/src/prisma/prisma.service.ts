@@ -43,6 +43,7 @@ import {
   CoverImageSeeder,
   RankSeeder,
   PhoneCodeSeeder,
+  Warehouse3DSeeder,
 } from './seeders';
 
 @Injectable()
@@ -397,6 +398,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         new CoverImageSeeder(this),
         new RankSeeder(this),
         new PhoneCodeSeeder(this),
+        new Warehouse3DSeeder(this),
       ];
 
       // Set admin ID for data seeders

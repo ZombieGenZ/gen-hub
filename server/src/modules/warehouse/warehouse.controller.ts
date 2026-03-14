@@ -207,6 +207,64 @@ export class WarehouseController {
         return new GetResponse(ResponseCode.WAREHOUSE_LAYOUT_SUCCESS, data, 'Lấy layout kho thành công');
     }
 
+    @Get(':id/inventory-stock')
+    @RequirePermission('warehouse.view')
+    @ApiOperation({
+        summary: 'Lấy inventory stock của warehouse (cho 3D visualization)',
+        description: 'Trả về danh sách tất cả inventory items trong warehouse, bao gồm thông tin sản phẩm, batch, vị trí (row/rack/shelf/block). Dùng để render boxes trong 3D warehouse scene.',
+    })
+    @ApiAuthResponses()
+    @ApiParam({ name: 'orgId', description: 'ID tổ chức (UUID)' })
+    @ApiParam({ name: 'id', description: 'ID warehouse (UUID)' })
+    @ApiResponse({
+        status: 200,
+        description: 'Lấy inventory stock thành công',
+        schema: {
+            type: 'object',
+            properties: {
+                code: { type: 'string', example: 'warehouse.inventory_stock_success' },
+                message: { type: 'string', example: 'Lấy tồn kho thành công' },
+                success: { type: 'boolean', example: true },
+                data: {
+                    type: 'array',
+                    items: {
+                        type: 'object',
+                        properties: {
+                            id: { type: 'string', format: 'uuid' },
+                            product_id: { type: 'string', format: 'uuid' },
+                            product_name: { type: 'string' },
+                            sku: { type: 'string' },
+                            image_url: { type: 'string', nullable: true },
+                            batch_code: { type: 'string', nullable: true },
+                            expiry_date: { type: 'string', nullable: true },
+                            quantity: { type: 'number' },
+                            quantity_on_hand: { type: 'number' },
+                            quantity_allocated: { type: 'number' },
+                            quantity_available: { type: 'number' },
+                            warehouse_id: { type: 'string', format: 'uuid' },
+                            warehouse_name: { type: 'string' },
+                            block_id: { type: 'string', format: 'uuid' },
+                            location: { type: 'string' },
+                            row_code: { type: 'string' },
+                            rack_code: { type: 'string' },
+                            days_in_storage: { type: 'number' },
+                            created_at: { type: 'string', format: 'date-time' },
+                        },
+                    },
+                },
+            },
+        },
+    })
+    async getInventoryStock(
+        @Param('orgId', ParseUUIDPipe) orgId: string,
+        @Param('id', ParseUUIDPipe) id: string,
+        @CurrentActor() actorId: string,
+        @I18nLang() lang: string,
+    ) {
+        const data = await this.warehouseService.getInventoryStock(id, actorId, orgId, lang);
+        return new GetResponse(ResponseCode.WAREHOUSE_INVENTORY_STOCK_SUCCESS, data, 'Lấy tồn kho thành công');
+    }
+
     @Patch(':id')
     @RequirePermission('warehouse.update')
     @ApiOperation({ summary: 'Cập nhật warehouse' })

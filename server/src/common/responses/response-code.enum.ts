@@ -142,6 +142,7 @@ export enum ResponseCode {
     WAREHOUSE_RACK_UPDATE_SUCCESS = 'warehouse.rack_update_success',
     WAREHOUSE_BLOCK_UPDATE_SUCCESS = 'warehouse.block_update_success',
     WAREHOUSE_BLOCKS_SUCCESS = 'warehouse.blocks_success',
+    WAREHOUSE_INVENTORY_STOCK_SUCCESS = 'warehouse.inventory_stock_success',
 
     // Rental Contract
     RENTAL_CONTRACT_CREATE_SUCCESS = 'rental_contract.create_success',

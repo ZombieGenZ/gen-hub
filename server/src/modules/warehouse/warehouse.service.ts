@@ -841,4 +841,34 @@ export class WarehouseService {
 
     return updatedBlock;
   }
+
+  /**
+   * Lấy inventory stock của warehouse (cho 3D visualization)
+   */
+  async getInventoryStock(
+    warehouseId: string,
+    userId: string,
+    organizationId: string,
+    lang: string,
+  ) {
+    // Kiểm tra quyền
+    if (organizationId) {
+      await this.checkOrgPermission(
+        organizationId,
+        userId,
+        'warehouse.view',
+        lang,
+      );
+    }
+
+    // Kiểm tra warehouse tồn tại
+    const warehouse = await this.repository.findById(warehouseId);
+    if (!warehouse || (organizationId && warehouse.organization_id !== organizationId)) {
+      throw new NotFoundException(
+        this.i18n.t('warehouse.errors.not_found', { lang }),
+      );
+    }
+
+    return this.repository.getInventoryStock(warehouseId);
+  }
 }

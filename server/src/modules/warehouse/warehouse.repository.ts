@@ -524,5 +524,105 @@ export class WarehouseRepository {
             where: { id: shelfId, is_deleted: false },
         });
     }
+
+    /**
+     * Lấy danh sách inventory stock theo warehouse_id
+     * Dùng cho 3D warehouse visualization (render boxes)
+     */
+    async getInventoryStock(warehouseId: string) {
+        const items = await this.prisma.inventory.findMany({
+            where: {
+                warehouse_id: warehouseId,
+                is_deleted: false,
+                quantity_on_hand: { gt: 0 },
+            },
+            include: {
+                product: {
+                    select: {
+                        id: true,
+                        name: true,
+                        sku: true,
+                        image_url: true,
+                    },
+                },
+                batch: {
+                    select: {
+                        id: true,
+                        code: true,
+                        expiry_date: true,
+                    },
+                },
+                block: {
+                    select: {
+                        id: true,
+                        name: true,
+                        code: true,
+                        shelf: {
+                            select: {
+                                id: true,
+                                name: true,
+                                code: true,
+                                rack: {
+                                    select: {
+                                        id: true,
+                                        name: true,
+                                        code: true,
+                                        row: {
+                                            select: {
+                                                id: true,
+                                                name: true,
+                                                code: true,
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+                warehouse: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+            },
+            orderBy: { created_at: 'desc' },
+        });
+
+        return items.map((inv) => {
+            const rowCode = inv.block?.shelf?.rack?.row?.code || '';
+            const rackCode = inv.block?.shelf?.rack?.code || '';
+            const shelfCode = inv.block?.shelf?.code || '';
+            const blockCode = inv.block?.code || '';
+            const location = [rowCode, rackCode, shelfCode, blockCode].filter(Boolean).join('-');
+
+            const now = new Date();
+            const createdAt = new Date(inv.created_at);
+            const daysInStorage = Math.floor((now.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
+
+            return {
+                id: inv.id,
+                product_id: inv.product_id,
+                product_name: inv.product?.name || '',
+                sku: inv.product?.sku || '',
+                image_url: inv.product?.image_url || null,
+                batch_code: inv.batch?.code || null,
+                expiry_date: inv.batch?.expiry_date ? inv.batch.expiry_date.toISOString() : null,
+                quantity: Number(inv.quantity),
+                quantity_on_hand: Number(inv.quantity_on_hand),
+                quantity_allocated: Number(inv.quantity_allocated),
+                quantity_available: Number(inv.quantity_available),
+                warehouse_id: inv.warehouse_id,
+                warehouse_name: inv.warehouse?.name || '',
+                block_id: inv.block_id,
+                location,
+                row_code: rowCode,
+                rack_code: rackCode,
+                days_in_storage: daysInStorage,
+                created_at: inv.created_at.toISOString(),
+            };
+        });
+    }
 }
 

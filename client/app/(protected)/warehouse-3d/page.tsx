@@ -1,466 +1,132 @@
 'use client';
 
-import dynamic from 'next/dynamic';
-import { useCallback, useState, useEffect } from 'react';
-import { useWarehouse } from '@/hooks/useWarehouse';
-import { useRackKeyboardNav } from '@/hooks/useRackKeyboardNav';
-import { useInventory } from '@/hooks/useInventory';
-import { useAIVoiceCommands } from '@/hooks/useAIVoiceCommands';
-import { useRealtimePresence } from '@/hooks/useRealtimePresence';
-import { Toaster } from 'sonner';
-import RackModal from '@/components/warehouse/RackModal';
-import FeatureToolbar from '@/components/warehouse/FeatureToolbar';
-import FloatingToolbar from '@/components/warehouse/FloatingToolbar';
-import SearchPanel from '@/components/warehouse/SearchPanel';
-import AlertsPanel from '@/components/warehouse/AlertsPanel';
-import StatsDashboard from '@/components/warehouse/StatsDashboard';
-import TransactionPanel from '@/components/warehouse/TransactionPanel';
-import AISuggestionPanel from '@/components/warehouse/AISuggestionPanel';
-import BarcodeScannerPanel from '@/components/warehouse/BarcodeScannerPanel';
-import VoiceCommandIndicator from '@/components/warehouse/VoiceCommandIndicator';
-import OnlineUsersList from '@/components/warehouse/OnlineUsersList';
-import { RealtimeUsersList } from '@/components/warehouse/RealtimeCursors';
-import { BoxCategory } from '@/types/warehouse';
-import { SearchResult } from '@/types/inventory';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
+import { warehouseService } from '@/services/warehouse/warehouse.service';
+import { authStorage } from '@/services/auth/auth-storage.service';
+import { Toaster, toast } from 'sonner';
 
-// Dynamic import for 3D components to avoid SSR issues
-const WarehouseScene = dynamic(() => import('@/components/warehouse/WarehouseScene'), { 
-  ssr: false,
-  loading: () => (
-    <div className="flex-1 flex items-center justify-center bg-slate-900">
-      <div className="text-white text-lg">Đang tải 3D Scene...</div>
-    </div>
-  )
-});
+function getToken() {
+  return authStorage.getAccessToken() || '';
+}
 
-const ControlPanel = dynamic(() => import('@/components/warehouse/ControlPanel'), { 
-  ssr: false,
-  loading: () => (
-    <div className="w-72 bg-card border-r border-border animate-pulse" />
-  )
-});
+/**
+ * Trang chọn kho — hiển thị danh sách warehouses thật từ API.
+ * Sau khi chọn kho → navigate tới /warehouse-3d/[warehouseId] để xem 3D live.
+ */
+export default function WarehousePickerPage() {
+  const router = useRouter();
 
-export default function Warehouse3DPage() {
   const {
-    state,
-    stats,
-    createBackground,
-    removeBackground,
-    toggleAxes,
-    toggleGrid,
-    setViewMode,
-    createRack,
-    removeRack,
-    addBoxes,
-    removeAllBoxes,
-    removeSelectedBox,
-    moveBoxToRack,
-    duplicateBox,
-    clearSelection,
-    loadDemoData,
-    selectBox,
-    selectRack,
-    setSearchQuery,
-    setFilterCategory,
-    exportData,
-    importData,
-    toggleDragMode,
-    updateRackPosition,
-    rotateRack,
-    cloneRack,
-    openRackModal,
-    closeRackModal,
-    removeBoxById,
-    getRackStats,
-    showOnlyRack,
-    showAllRacks,
-    setFillRateFilter,
-    getVisibleRackIdsByFillRate,
-    getRackPosition,
-    focusOnBox,
-    clearBoxFocus,
-  } = useWarehouse();
-
-  // New feature states
-  const [showHumans, setShowHumans] = useState(true);
-  const [showRoof, setShowRoof] = useState(true);
-  const [performanceMode, setPerformanceMode] = useState(false);
-  const [showFPS, setShowFPS] = useState(false);
-
-  // Panel visibility states
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [alertsOpen, setAlertsOpen] = useState(false);
-  const [statsOpen, setStatsOpen] = useState(false);
-  const [transactionsOpen, setTransactionsOpen] = useState(false);
-  const [aiOpen, setAiOpen] = useState(false);
-  const [barcodeOpen, setBarcodeOpen] = useState(false);
-  const [realtimeEnabled, setRealtimeEnabled] = useState(false);
-
-  // Inventory management hook
-  const {
-    transactions,
-    alerts,
-    alertsBySeverity,
-    highlightedBoxId,
-    generateAlerts,
-    dismissAlert,
-    clearDismissedAlerts,
-    searchBoxes,
-    scanBarcode,
-    highlightBox,
-    categoryStats,
-    rackUtilization,
-    transactionSummary,
-  } = useInventory({ boxes: state.boxes, racks: state.racks });
-
-  // Realtime presence hook
-  const {
-    isConnected: realtimeConnected,
-    users: realtimeUsers,
-    onlineCount: realtimeOnlineCount,
-    currentUserId: realtimeCurrentUserId,
-    updatePosition: realtimeUpdatePosition,
-    updateSelection: realtimeUpdateSelection,
-    updateAction: realtimeUpdateAction,
-  } = useRealtimePresence({
-    enabled: realtimeEnabled,
-    selectedRackId: state.selectedRack,
-    selectedBoxId: state.selectedBox,
-  });
-
-  // AI Voice commands hook - với tất cả chức năng
-  const {
-    isListening: voiceListening,
-    isSupported: voiceSupported,
-    isProcessing: voiceProcessing,
-    transcript: voiceTranscript,
-    lastCommand: voiceLastCommand,
-    confidence: voiceConfidence,
-    toggleListening: toggleVoice,
-    availableCommands: voiceCommands,
-    executeTextCommand,
-  } = useAIVoiceCommands({
-    // Search & Navigation
-    onSearch: (query) => {
-      setSearchOpen(true);
-      setSearchQuery(query);
+    data: warehouses,
+    isLoading,
+    error,
+    refetch,
+  } = useQuery<{ id: string; name: string }[]>({
+    queryKey: ['warehouse-3d', 'list'],
+    queryFn: async () => {
+      const token = getToken();
+      if (!token) throw new Error('Chưa đăng nhập');
+      return warehouseService.listWarehouses(token);
     },
-    onHighlightRack: selectRack,
-    onClearSelection: clearSelection,
-    
-    // Rack management
-    onCreateRack: createRack,
-    onRemoveRack: removeRack,
-    onRotateRack: rotateRack,
-    onCloneRack: cloneRack,
-    onShowOnlyRack: showOnlyRack,
-    onShowAllRacks: showAllRacks,
-    onOpenRackModal: openRackModal,
-    
-    // Box management
-    onAddBoxes: addBoxes,
-    onRemoveAllBoxes: removeAllBoxes,
-    onRemoveSelectedBox: removeSelectedBox,
-    onDuplicateBox: duplicateBox,
-    
-    // View controls
-    onToggleAxes: toggleAxes,
-    onToggleGrid: toggleGrid,
-    onSetViewMode: setViewMode,
-    onFilterCategory: setFilterCategory,
-    
-    // Environment
-    onCreateBackground: createBackground,
-    onRemoveBackground: removeBackground,
-    onToggleHumans: () => setShowHumans(prev => !prev),
-    onToggleRoof: () => setShowRoof(prev => !prev),
-    onTogglePerformanceMode: () => setPerformanceMode(prev => !prev),
-    onToggleFPS: () => setShowFPS(prev => !prev),
-    
-    // Data
-    onLoadDemoData: loadDemoData,
-    onExportData: exportData,
-    onImportData: importData,
-    
-    // Panels
-    onToggleSearch: () => setSearchOpen(prev => !prev),
-    onToggleAlerts: () => setAlertsOpen(prev => !prev),
-    onToggleStats: () => setStatsOpen(prev => !prev),
-    onToggleTransactions: () => setTransactionsOpen(prev => !prev),
-    onToggleAI: () => setAiOpen(prev => !prev),
-    onToggleBarcode: () => setBarcodeOpen(prev => !prev),
-    onToggleRealtime: () => setRealtimeEnabled(prev => !prev),
-    
-    // Mode toggles
-    onToggleDragMode: toggleDragMode,
-    
-    // Data references
-    racks: state.racks,
-    boxes: state.boxes,
-    selectedRack: state.selectedRack,
-    selectedBox: state.selectedBox,
+    staleTime: 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 
-  // Keyboard shortcut: Ctrl+M to toggle voice commands
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Ctrl+M or Cmd+M (on Mac)
-      if ((e.ctrlKey || e.metaKey) && e.key === 'm') {
-        e.preventDefault();
-        toggleVoice();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [toggleVoice]);
-
-  // Handle search/barcode locate - now uses focusOnBox for camera animation
-  const handleLocateResult = useCallback((result: SearchResult) => {
-    focusOnBox(result.boxId);
-    setBarcodeOpen(false);
-    setSearchOpen(false);
-  }, [focusOnBox]);
-
-  // Keyboard navigation for rack movement
-  useRackKeyboardNav({
-    selectedRackId: state.selectedRack,
-    isDragMode: state.isDragMode,
-    onUpdatePosition: updateRackPosition,
-    getRackPosition,
-  });
-
-  const focusedRack = state.focusedRackId 
-    ? state.racks.find(r => r.id === state.focusedRackId) || null 
-    : null;
-
-  const getRackFillRate = useCallback((rackId: string) => {
-    const stats = getRackStats(rackId);
-    return stats?.fillRate ?? 0;
-  }, [getRackStats]);
-
-  const handleAddBoxFromModal = useCallback((count: number, category: BoxCategory) => {
-    if (state.focusedRackId) {
-      selectRack(state.focusedRackId);
-      setTimeout(() => addBoxes(count, category), 0);
-    }
-  }, [state.focusedRackId, selectRack, addBoxes]);
+  const handleSelectWarehouse = (id: string, name: string) => {
+    toast.success(`Đang mở kho: ${name}`);
+    router.push(`/warehouse-3d/${id}`);
+  };
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-background">
+    <div className="h-screen flex flex-col bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
       <Toaster position="top-right" richColors />
-      <div className="flex-1 flex overflow-hidden relative">
-        <ControlPanel
-          onCreateBackground={createBackground}
-          onRemoveBackground={removeBackground}
-          onCreateRack={createRack}
-          onRemoveRack={removeRack}
-          onAddBoxes={addBoxes}
-          onRemoveAllBoxes={removeAllBoxes}
-          onRemoveSelectedBox={removeSelectedBox}
-          onMoveBoxToRack={moveBoxToRack}
-          onDuplicateBox={duplicateBox}
-          onClearSelection={clearSelection}
-          onLoadDemoData={loadDemoData}
-          onExportData={exportData}
-          onImportData={importData}
-          onToggleAxes={toggleAxes}
-          onToggleGrid={toggleGrid}
-          onSetViewMode={setViewMode}
-          onSearch={setSearchQuery}
-          onFilterCategory={setFilterCategory}
-          onToggleDragMode={toggleDragMode}
-          onRotateRack={rotateRack}
-          onCloneRack={cloneRack}
-          onShowOnlyRack={showOnlyRack}
-          onShowAllRacks={showAllRacks}
-          // New feature toggles
-          onToggleHumans={() => setShowHumans(prev => !prev)}
-          onToggleRoof={() => setShowRoof(prev => !prev)}
-          onTogglePerformanceMode={() => setPerformanceMode(prev => !prev)}
-          onToggleFPS={() => setShowFPS(prev => !prev)}
-          showHumans={showHumans}
-          showRoof={showRoof}
-          performanceMode={performanceMode}
-          showFPS={showFPS}
-          hasBackground={state.showBackground}
-          hasRacks={state.racks.length > 0}
-          showAxes={state.showAxes}
-          showGrid={state.showGrid}
-          viewMode={state.viewMode}
-          stats={stats}
-          searchQuery={state.searchQuery}
-          filterCategory={state.filterCategory}
-          selectedRack={state.selectedRack}
-          selectedBox={state.selectedBox}
-          racks={state.racks}
-          boxes={state.boxes}
-          isDragMode={state.isDragMode}
-          collisionWarnings={state.collisionWarnings}
-          isFilteringRacks={state.visibleRackIds !== null}
-        />
-        <WarehouseScene
-          showBackground={state.showBackground}
-          showAxes={state.showAxes}
-          showGrid={state.showGrid}
-          racks={state.racks}
-          boxes={state.boxes}
-          selectedRack={state.selectedRack}
-          onSelectBox={selectBox}
-          onSelectRack={selectRack}
-          onUpdateRackPosition={updateRackPosition}
-          viewMode={state.viewMode}
-          searchQuery={state.searchQuery}
-          filterCategory={state.filterCategory}
-          stats={stats}
-          isDragMode={state.isDragMode}
-          onDoubleClickRack={openRackModal}
-          getRackFillRate={getRackFillRate}
-          visibleRackIds={state.visibleRackIds ?? getVisibleRackIdsByFillRate()}
-          fillRateFilter={state.fillRateFilter}
-          onSetFillRateFilter={setFillRateFilter}
-          // New features
-          showHumans={showHumans}
-          showRoof={showRoof}
-          performanceMode={performanceMode}
-          showFPS={showFPS}
-          // Modal integration
-          focusedRackId={state.focusedRackId}
-          isModalOpen={state.rackModalOpen}
-          // Barcode scanning - focus on box
-          focusedBoxId={state.focusedBoxId}
-          onClearBoxFocus={clearBoxFocus}
-          // Realtime multiplayer
-          realtimeUsers={realtimeUsers}
-        />
 
-        {/* Online Users List - Top Right */}
-        {realtimeEnabled && (
-          <OnlineUsersList
-            users={realtimeUsers}
-            currentUserId={realtimeCurrentUserId}
-            isConnected={realtimeConnected}
-            onlineCount={realtimeOnlineCount}
-          />
-        )}
-
-        {/* Feature Toolbar - Top Left */}
-        <FeatureToolbar
-          alertCount={alerts.length}
-          onToggleSearch={() => setSearchOpen(prev => !prev)}
-          onToggleAlerts={() => setAlertsOpen(prev => !prev)}
-          onToggleStats={() => setStatsOpen(prev => !prev)}
-          onToggleTransactions={() => setTransactionsOpen(prev => !prev)}
-          onRefreshAlerts={generateAlerts}
-          searchOpen={searchOpen}
-          alertsOpen={alertsOpen}
-          statsOpen={statsOpen}
-          transactionsOpen={transactionsOpen}
-        />
-
-        {/* Floating Toolbar - Bottom Right */}
-        <FloatingToolbar
-          onToggleAI={() => setAiOpen(prev => !prev)}
-          onToggleBarcode={() => setBarcodeOpen(prev => !prev)}
-          onToggleRealtime={() => setRealtimeEnabled(prev => !prev)}
-          aiOpen={aiOpen}
-          barcodeOpen={barcodeOpen}
-          realtimeConnected={realtimeConnected}
-          realtimeUserCount={realtimeUsers.length}
-        />
-
-        {/* Search Panel */}
-        <SearchPanel
-          isOpen={searchOpen}
-          onClose={() => setSearchOpen(false)}
-          onSearch={searchBoxes}
-          onLocate={handleLocateResult}
-          onHighlight={highlightBox}
-        />
-
-        {/* Alerts Panel */}
-        <AlertsPanel
-          isOpen={alertsOpen}
-          onClose={() => setAlertsOpen(false)}
-          alerts={alerts}
-          alertsBySeverity={alertsBySeverity}
-          onDismiss={dismissAlert}
-          onClearDismissed={clearDismissedAlerts}
-          onViewRack={selectRack}
-        />
-
-        {/* Stats Dashboard */}
-        <StatsDashboard
-          isOpen={statsOpen}
-          onClose={() => setStatsOpen(false)}
-          stats={stats}
-          categoryStats={categoryStats}
-          rackUtilization={rackUtilization}
-          transactionSummary={transactionSummary}
-          onViewRack={selectRack}
-        />
-
-        {/* Transaction Panel */}
-        <TransactionPanel
-          isOpen={transactionsOpen}
-          onClose={() => setTransactionsOpen(false)}
-          transactions={transactions}
-        />
-
-        {/* AI Suggestion Panel */}
-        <AISuggestionPanel
-          isOpen={aiOpen}
-          onClose={() => setAiOpen(false)}
-          racks={state.racks}
-          boxes={state.boxes}
-          onHighlightRack={selectRack}
-          onSelectRack={(rackId) => {
-            selectRack(rackId);
-            openRackModal(rackId);
-          }}
-        />
-
-        {/* Barcode Scanner Panel */}
-        <BarcodeScannerPanel
-          isOpen={barcodeOpen}
-          onClose={() => setBarcodeOpen(false)}
-          onSearch={searchBoxes}
-          onScanBarcode={scanBarcode}
-          onLocate={handleLocateResult}
-        />
-
-        {/* Voice Command Indicator - Enhanced */}
-        <VoiceCommandIndicator
-          isListening={voiceListening}
-          transcript={voiceTranscript}
-          isProcessing={voiceProcessing}
-          lastCommand={voiceLastCommand}
-          confidence={voiceConfidence}
-          availableCommands={voiceCommands}
-          onExecuteTextCommand={executeTextCommand}
-        />
-
-        {/* Realtime Users List */}
-        <RealtimeUsersList
-          users={realtimeUsers}
-          isConnected={realtimeConnected}
-        />
+      {/* Header */}
+      <div className="px-6 py-5 border-b border-slate-700/50">
+        <h1 className="text-2xl font-bold text-white">🏭 Kho 3D — Chọn Kho</h1>
+        <p className="text-slate-400 text-sm mt-1">
+          Chọn một kho để xem mô hình 3D với dữ liệu thực
+        </p>
       </div>
 
-      {/* Rack Management Modal */}
-      <RackModal
-        open={state.rackModalOpen}
-        onClose={closeRackModal}
-        rack={focusedRack}
-        boxes={state.boxes}
-        onAddBox={handleAddBoxFromModal}
-        onRemoveBox={removeBoxById}
-        onRemoveAllBoxes={removeAllBoxes}
-        onDuplicateBox={duplicateBox}
-        onRotateRack={rotateRack}
-        onCloneRack={cloneRack}
-        onDeleteRack={removeRack}
-      />
+      <div className="flex-1 overflow-auto p-6">
+        {/* Loading */}
+        {isLoading && (
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500 mx-auto mb-3" />
+              <p className="text-slate-400">Đang tải danh sách kho...</p>
+            </div>
+          </div>
+        )}
+
+        {/* Error */}
+        {error && (
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center max-w-md">
+              <div className="text-red-400 text-4xl mb-3">⚠</div>
+              <h2 className="text-white text-lg font-semibold mb-2">Không thể tải danh sách kho</h2>
+              <p className="text-slate-400 text-sm mb-4">
+                {error instanceof Error ? error.message : 'Lỗi không xác định'}
+              </p>
+              <button
+                onClick={() => refetch()}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Thử lại
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Empty state */}
+        {!isLoading && !error && warehouses?.length === 0 && (
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center max-w-md">
+              <div className="text-slate-500 text-5xl mb-3">📦</div>
+              <h2 className="text-white text-lg font-semibold mb-2">Chưa có kho nào</h2>
+              <p className="text-slate-400 text-sm">
+                Tổ chức của bạn chưa có kho nào được tạo. Vui lòng liên hệ quản trị viên.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Warehouse list */}
+        {!isLoading && !error && warehouses && warehouses.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {warehouses.map((wh, index) => (
+              <button
+                key={wh.id}
+                onClick={() => handleSelectWarehouse(wh.id, wh.name)}
+                className="group p-6 bg-slate-800/60 border border-slate-700/50 rounded-xl 
+                           hover:bg-slate-700/60 hover:border-blue-500/50 
+                           transition-all duration-200 text-left"
+              >
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 bg-blue-600/20 rounded-lg flex items-center justify-center 
+                                  group-hover:bg-blue-600/30 transition-colors">
+                    <span className="text-2xl">🏭</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-white font-semibold text-lg truncate group-hover:text-blue-400 transition-colors">
+                      {wh.name}
+                    </h3>
+                    <p className="text-slate-400 text-xs mt-1 font-mono truncate">
+                      ID: {wh.id.slice(0, 8)}...
+                    </p>
+                  </div>
+                  <div className="text-slate-600 group-hover:text-blue-400 transition-colors">
+                    →
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

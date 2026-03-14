@@ -34,16 +34,13 @@ export class WarehouseService {
         return result.data;
     }
 
-    // ==================== INVENTORY STOCK ====================
-
     /**
      * Lấy tồn kho theo warehouse (để render boxes trong 3D)
-     * GET /organizations/:orgId/inventory/stock?warehouse_id=...
+     * GET /organizations/:orgId/warehouses/:id/inventory-stock
      */
     async getInventoryStock(token: string, warehouseId: string): Promise<InventoryStockItem[]> {
         const orgId = await orgHelper.getOrgId(token);
-        const query = new URLSearchParams({ warehouse_id: warehouseId });
-        const response = await fetch(`${API}/organizations/${orgId}/inventory/stock?${query.toString()}`, {
+        const response = await fetch(`${API}/organizations/${orgId}/warehouses/${warehouseId}/inventory-stock`, {
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json',

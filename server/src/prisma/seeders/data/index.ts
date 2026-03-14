@@ -13,3 +13,4 @@ export * from './avatar-image.seeder';
 export * from './cover-image.seeder';
 export * from './rank.seeder';
 export * from './phone-code.seeder';
+export * from './warehouse-3d.seeder';
