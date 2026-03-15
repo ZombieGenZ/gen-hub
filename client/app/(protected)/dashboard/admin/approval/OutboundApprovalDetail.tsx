@@ -253,8 +253,7 @@ export default function OutboundApprovalDetail({
         } finally { setSubmitting(false); }
     };
 
-    // TODO: Implement split order API — tách phiếu xuất thành 2 phiếu riêng
-    // cho sản phẩm đủ hàng và thiếu hàng. Cần backend endpoint riêng.
+    // Split order chưa khả dụng do backend chưa cung cấp endpoint nghiệp vụ.
     const handleSplitOrder = () => {
         showToast("Tính năng tách phiếu đang được phát triển", "info");
     };

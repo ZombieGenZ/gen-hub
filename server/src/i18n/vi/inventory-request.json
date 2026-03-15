@@ -24,7 +24,7 @@
         "export_not_found": "Không tìm thấy phiếu xuất",
         "already_processed": "Yêu cầu đã được xử lý",
         "insufficient_storage": "Không đủ không gian lưu trữ",
-        "insufficient_stock": "Không đủ tồn kho",
+        "insufficient_stock": "Tồn kho không đủ để tạo phiếu xuất",
         "warehouse_not_found": "Không tìm thấy kho",
         "warehouse_not_rented": "Kho không thuộc quyền sở hữu của tổ chức",
         "product_not_found": "Không tìm thấy sản phẩm",
@@ -75,6 +75,8 @@
         "status_enum": "Trạng thái không hợp lệ",
         "manufacturing_date_date": "Ngày sản xuất không hợp lệ",
         "expiry_date_date": "Hạn sử dụng không hợp lệ",
+        "required_date_date": "Ngày cần lấy hàng không hợp lệ",
+        "vehicle_info_string": "Thông tin xe phải là chuỗi",
         "import_price_positive": "Giá nhập phải lớn hơn hoặc bằng 0"
     }
 }

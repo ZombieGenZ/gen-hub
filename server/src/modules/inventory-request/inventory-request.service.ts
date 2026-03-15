@@ -458,6 +458,10 @@ export class InventoryRequestService {
         }
 
         // Validate products và units
+        const requiredBySpecificBatch = new Map<string, number>();
+        const requiredByGeneralProduct = new Map<string, number>();
+        const requiredSpecificByProduct = new Map<string, number>();
+
         for (const detail of dto.details) {
             const productValid = await this.repository.productExistsInOrg(detail.product_id, orgId);
             if (!productValid) {
@@ -481,6 +485,75 @@ export class InventoryRequestService {
                         await this.i18n.translate('inventory-request.errors.batch_not_found', { lang }),
                     );
                 }
+            }
+
+            const productUnit = await this.prisma.productUnit.findFirst({
+                where: {
+                    product_id: detail.product_id,
+                    unit_id: detail.unit_id,
+                    is_deleted: false,
+                },
+                select: { conversion_rate: true },
+            });
+
+            const quantityInBaseUnit = detail.quantity * (productUnit?.conversion_rate?.toNumber() ?? 1);
+
+            if (detail.required_batch_id) {
+                const key = `${detail.product_id}:${detail.required_batch_id}`;
+                requiredBySpecificBatch.set(key, (requiredBySpecificBatch.get(key) ?? 0) + quantityInBaseUnit);
+                requiredSpecificByProduct.set(
+                    detail.product_id,
+                    (requiredSpecificByProduct.get(detail.product_id) ?? 0) + quantityInBaseUnit,
+                );
+            } else {
+                requiredByGeneralProduct.set(
+                    detail.product_id,
+                    (requiredByGeneralProduct.get(detail.product_id) ?? 0) + quantityInBaseUnit,
+                );
+            }
+        }
+
+        // Validate tồn kho: phần yêu cầu batch cụ thể + phần tổng quát theo product
+        for (const [key, requiredQty] of requiredBySpecificBatch.entries()) {
+            const [productId, batchId] = key.split(':');
+            const aggregate = await this.prisma.inventory.aggregate({
+                where: {
+                    organization_id: orgId,
+                    warehouse_id: dto.warehouse_id,
+                    product_id: productId,
+                    batch_id: batchId,
+                    is_deleted: false,
+                },
+                _sum: { quantity_available: true },
+            });
+
+            const availableQty = aggregate._sum.quantity_available?.toNumber() ?? 0;
+            if (availableQty < requiredQty) {
+                throw new BadRequestException(
+                    await this.i18n.translate('inventory-request.errors.insufficient_stock', { lang }),
+                );
+            }
+        }
+
+        for (const [productId, requiredQty] of requiredByGeneralProduct.entries()) {
+            const aggregate = await this.prisma.inventory.aggregate({
+                where: {
+                    organization_id: orgId,
+                    warehouse_id: dto.warehouse_id,
+                    product_id: productId,
+                    is_deleted: false,
+                },
+                _sum: { quantity_available: true },
+            });
+
+            const totalAvailable = aggregate._sum.quantity_available?.toNumber() ?? 0;
+            const reservedForSpecificBatch = requiredSpecificByProduct.get(productId) ?? 0;
+            const remainingAvailableForGeneral = totalAvailable - reservedForSpecificBatch;
+
+            if (remainingAvailableForGeneral < requiredQty) {
+                throw new BadRequestException(
+                    await this.i18n.translate('inventory-request.errors.insufficient_stock', { lang }),
+                );
             }
         }
 

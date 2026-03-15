@@ -24,7 +24,7 @@
         "export_not_found": "Export not found",
         "already_processed": "Request already processed",
         "insufficient_storage": "Insufficient storage capacity",
-        "insufficient_stock": "Insufficient stock",
+        "insufficient_stock": "Insufficient stock to create outbound request",
         "warehouse_not_found": "Warehouse not found",
         "warehouse_not_rented": "Warehouse is not owned by the organization",
         "product_not_found": "Product not found",
@@ -75,6 +75,8 @@
         "status_enum": "Invalid status",
         "manufacturing_date_date": "Invalid manufacturing date",
         "expiry_date_date": "Invalid expiry date",
+        "required_date_date": "Invalid required pickup date",
+        "vehicle_info_string": "Vehicle information must be a string",
         "import_price_positive": "Import price must be greater than or equal to 0"
     }
 }

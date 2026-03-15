@@ -96,14 +96,14 @@ export class CreateOutboundRequestDto {
         example: '2026-03-15',
     })
     @IsOptional()
-    @IsDateString()
+    @IsDateString({}, { message: i18nValidationMessage('inventory-request.validation.required_date_date') })
     required_date?: string;
 
     @ApiPropertyOptional({
         description: 'Thông tin xe đến nhận',
     })
     @IsOptional()
-    @IsString()
+    @IsString({ message: i18nValidationMessage('inventory-request.validation.vehicle_info_string') })
     vehicle_info?: string;
 
     @ApiPropertyOptional({

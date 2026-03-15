@@ -137,7 +137,7 @@ export class CreateInboundRequestDto {
         example: 'Xe tải 5 tấn - BKS 51A-12345',
     })
     @IsOptional()
-    @IsString()
+    @IsString({ message: i18nValidationMessage('inventory-request.validation.vehicle_info_string') })
     vehicle_info?: string;
 
     @ApiProperty({
