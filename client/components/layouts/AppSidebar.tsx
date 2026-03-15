@@ -73,7 +73,6 @@ export function AppSidebarContent({
     logoLink,
     walletHref = "/dashboard/customer/payment",
     isCollapsed = false,
-    onToggleCollapse, // Optional override
 }: AppSidebarProps & { isCollapsed?: boolean; onToggleCollapse?: () => void }) {
     const pathname = usePathname();
     const [showNotifications, setShowNotifications] = useState(false);
@@ -301,7 +300,7 @@ export function AppSidebarContent({
                                     <div className="flex items-center gap-2">
                                         <WalletIcon className="w-4 h-4 text-primary" />
                                         <span className="font-bold text-sm text-primary">
-                                            {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format((user as any)?.balance || 0)}
+                                            {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(Number((user as (UserData & { balance?: number }) | null)?.balance ?? 0))}
                                         </span>
                                     </div>
                                     <div
@@ -359,9 +358,6 @@ export function AppSidebarContent({
                                 "fixed top-5 bottom-5 z-50 w-112.5 bg-background border-l shadow-2xl transition-all duration-300 rounded-3xl overflow-hidden",
                                 isCollapsed ? "left-18" : "left-72"
                             )}
-                            style={{
-                                left: isCollapsed ? '72px' : '288px'
-                            }}
                         >
                             <NotificationList className="w-full h-full border-none shadow-none" />
                         </div>
@@ -375,28 +371,15 @@ export function AppSidebarContent({
 
 export function AppSidebar(props: AppSidebarProps) {
     const { isOpen, toggle } = useSidebar();
-    const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(null);
+    const [showTooltip, setShowTooltip] = useState(false);
 
     const isCollapsed = !isOpen;
 
     // Refs for hover tooltip
     const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const coordsRef = useRef<{ x: number; y: number } | null>(null);
-
-    const handleMouseMove = (e: React.MouseEvent) => {
-        const coords = { x: e.clientX, y: e.clientY };
-        coordsRef.current = coords;
-        if (mousePos) {
-            setMousePos(coords);
-        }
-    };
-
-    const handleMouseEnter = (e: React.MouseEvent) => {
-        coordsRef.current = { x: e.clientX, y: e.clientY };
+    const handleMouseEnter = () => {
         timeoutRef.current = setTimeout(() => {
-            if (coordsRef.current) {
-                setMousePos(coordsRef.current);
-            }
+            setShowTooltip(true);
         }, 550);
     };
 
@@ -404,8 +387,7 @@ export function AppSidebar(props: AppSidebarProps) {
         if (timeoutRef.current) {
             clearTimeout(timeoutRef.current);
         }
-        setMousePos(null);
-        coordsRef.current = null;
+        setShowTooltip(false);
     };
 
     return (
@@ -427,13 +409,12 @@ export function AppSidebar(props: AppSidebarProps) {
             </div>
 
             {/* Hover Tooltip for Sidebar Handle */}
-            {mousePos && createPortal(
+            {showTooltip && createPortal(
                 <div
-                    className="fixed z-9999 overflow-hidden rounded-md border bg-popover-foreground px-3 py-1.5 text-sm text-primary-foreground shadow-md animate-in fade-in-0 zoom-in-95 pointer-events-none"
-                    style={{
-                        left: isOpen ? 300 : 84,
-                        top: mousePos.y + 20,
-                    }}
+                    className={cn(
+                        "fixed z-9999 overflow-hidden rounded-md border bg-popover-foreground px-3 py-1.5 text-sm text-primary-foreground shadow-md animate-in fade-in-0 zoom-in-95 pointer-events-none",
+                        isOpen ? "left-75 top-1/2 -translate-y-1/2" : "left-21 top-1/2 -translate-y-1/2"
+                    )}
                 >
                     <p>{isOpen ? "Thu gọn sidebar" : "Mở rộng sidebar"}</p>
                 </div>,

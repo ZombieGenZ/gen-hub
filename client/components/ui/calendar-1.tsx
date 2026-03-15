@@ -189,7 +189,7 @@ const parseExactDate = (input: string) => {
     const dateFormats = ["d MMM yyyy", "d MMM", "yyyy-MM-dd"];
 
     for (const format of dateFormats) {
-        let date = parse(input.trim(), format, now, { locale: vi });
+        const date = parse(input.trim(), format, now, { locale: vi });
 
         if (isValid(date)) {
             if (format === "d MMM") {

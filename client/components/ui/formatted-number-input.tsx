@@ -26,7 +26,7 @@ export function FormattedNumberInput({ value, onChange, suffix, className, ...pr
     }, [value, isFocused]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        let val = e.target.value;
+        const val = e.target.value;
 
         // Allow only digits, dots, commas, minus
         if (!/^[-0-9.,]*$/.test(val)) return;

@@ -49,7 +49,8 @@ export const Input = ({
     ...rest
 }: InputProps) => {
     const [_value, set_value] = useState(value || "");
-    const _ref = ref ? ref : useRef<HTMLInputElement>(null);
+    const localRef = useRef<HTMLInputElement>(null);
+    const _ref = ref ?? localRef;
 
     const _onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         set_value(e.target.value);

@@ -10,7 +10,7 @@ interface AmenityPhonePreviewProps {
 }
 
 export function AmenityPhonePreview({ icon, name }: AmenityPhonePreviewProps) {
-    const IconComponent = icon ? getIconComponent(icon) : null;
+    const iconComponent = icon ? getIconComponent(icon) : null;
     const displayName = name || 'Tiện ích';
     const isTruncated = displayName.length > 16;
 
@@ -34,8 +34,8 @@ export function AmenityPhonePreview({ icon, name }: AmenityPhonePreviewProps) {
                         <div
                             className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center border border-primary/20"
                         >
-                            {IconComponent ? (
-                                <IconComponent className="w-8 h-8 text-primary stroke-2" />
+                            {iconComponent ? (
+                                React.createElement(iconComponent, { className: "w-8 h-8 text-primary stroke-2" })
                             ) : (
                                 <CubeIcon className="w-8 h-8 text-primary/50 stroke-2" />
                             )}

@@ -116,7 +116,7 @@ export default function Home() {
     }, [router, showToast]);
 
     useEffect(() => {
-        let isMounted = true;
+        const isMounted = true;
 
         const fetchNotifications = async () => {
             try {

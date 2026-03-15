@@ -30,21 +30,26 @@ export function DeleteOrganizationDialog({
 }: DeleteOrganizationDialogProps) {
     const [confirmName, setConfirmName] = useState("");
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        if (!open) setConfirmName("");
+        if (!open) {
+            setConfirmName("");
+            setError(null);
+        }
     }, [open]);
 
     const isValid = confirmName === organizationName;
 
     const handleDelete = async () => {
         if (!isValid) return;
+        setError(null);
         setLoading(true);
         try {
             await onConfirm();
             onOpenChange(false);
-        } catch (err) {
-            console.error("Failed to delete organization:", err);
+        } catch (err: any) {
+            setError(err?.message || "Không thể xóa tổ chức. Vui lòng thử lại.");
         } finally {
             setLoading(false);
         }
@@ -80,6 +85,9 @@ export function DeleteOrganizationDialog({
                             autoFocus
                         />
                     </div>
+                    {error && (
+                        <p className="text-sm text-destructive">{error}</p>
+                    )}
                 </DialogBody>
                 <DialogFooter>
                     <Button

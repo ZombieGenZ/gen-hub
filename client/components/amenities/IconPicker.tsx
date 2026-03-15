@@ -134,7 +134,7 @@ export function IconPicker({ value, onChange }: IconPickerProps) {
         );
     }, [search]);
 
-    const SelectedIcon = value ? getIconComponent(value) : null;
+    const selectedIcon = value ? getIconComponent(value) : null;
 
     return (
         <div className="relative">
@@ -146,10 +146,10 @@ export function IconPicker({ value, onChange }: IconPickerProps) {
                 className="w-full justify-start gap-3 h-12"
                 style={{ borderRadius: '12px' }}
             >
-                {SelectedIcon ? (
+                {selectedIcon ? (
                     <>
                         <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                            <SelectedIcon className="w-5 h-5 text-primary" />
+                            {React.createElement(selectedIcon, { className: "w-5 h-5 text-primary" })}
                         </div>
                         <span className="text-sm">{value?.replace('Icon', '')}</span>
                     </>

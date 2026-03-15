@@ -325,7 +325,7 @@ export default function PropertySearch({ initialLocationSlug }: PropertySearchPr
         const delta = 2;
         const range = [];
         const rangeWithDots = [];
-        let l;
+        let l: number | undefined;
 
         for (let i = 1; i <= totalPages; i++) {
             if (i === 1 || i === totalPages || (i >= currentPage - delta && i <= currentPage + delta)) {
@@ -333,7 +333,7 @@ export default function PropertySearch({ initialLocationSlug }: PropertySearchPr
             }
         }
 
-        for (let i of range) {
+        for (const i of range) {
             if (l) {
                 if (i - l === 2) {
                     rangeWithDots.push(l + 1);

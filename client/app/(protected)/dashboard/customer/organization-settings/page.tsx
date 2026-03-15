@@ -8,6 +8,7 @@ import { OrganizationRoleService } from "@/services/organization/organization_ro
 import { Organization } from "@/types/organization/organization.type";
 import { OrganizationMember } from "@/types/organization/organization_member.type";
 import { OrganizationRole, OrganizationPermission } from "@/types/organization/organization_role.type";
+import { OrganizationCreateRequest } from "@/types/organization/organization.type";
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { OrgProfileTab } from "@/components/organization/OrgProfileTab";
@@ -15,6 +16,7 @@ import { OrgMembersTab } from "@/components/organization/OrgMembersTab";
 import { OrgRolesTab } from "@/components/organization/OrgRolesTab";
 import { OrgDangerTab } from "@/components/organization/OrgDangerTab";
 import { Loader2, Building2 } from "lucide-react";
+import { useToast } from "@/contexts/ToastContext";
 
 const organizationService = new OrganizationService();
 const memberService = new OrganizationMemberService();
@@ -22,6 +24,7 @@ const roleService = new OrganizationRoleService();
 
 export default function CustomerOrganizationSettingsPage() {
     const router = useRouter();
+    const { showToast } = useToast();
     const [organization, setOrganization] = useState<Organization | null>(null);
     const [members, setMembers] = useState<OrganizationMember[]>([]);
     const [roles, setRoles] = useState<OrganizationRole[]>([]);
@@ -79,32 +82,58 @@ export default function CustomerOrganizationSettingsPage() {
         }
     }, []);
 
+    const fetchPermissions = useCallback(async (orgId: string) => {
+        const token = getToken();
+        if (!token) return;
+        try {
+            const data = await organizationService.getPermissions(token, orgId);
+            setPermissions(data || []);
+        } catch (err: any) {
+            console.error("Failed to fetch permissions:", err);
+            setPermissions([]);
+        }
+    }, []);
+
     useEffect(() => {
         const init = async () => {
             setLoading(true);
             const org = await fetchOrganization();
             if (org) {
-                await Promise.all([fetchMembers(org.id), fetchRoles(org.id)]);
+                await Promise.all([fetchMembers(org.id), fetchRoles(org.id), fetchPermissions(org.id)]);
             }
             setLoading(false);
         };
         init();
-    }, [fetchOrganization, fetchMembers, fetchRoles]);
+    }, [fetchOrganization, fetchMembers, fetchPermissions, fetchRoles]);
 
     // --- Organization Owner has FULL control ---
 
-    const handleUpdateOrg = async (data: Partial<Organization>) => {
+    const handleUpdateOrg = async (data: Partial<OrganizationCreateRequest>) => {
         if (!organization) return;
         const token = getToken();
         if (!token) return;
-        await organizationService.updateOrganization(token, organization.id, data as any);
-        await fetchOrganization();
+        try {
+            await organizationService.updateOrganization(token, organization.id, data);
+            await fetchOrganization();
+            showToast("Đã gửi yêu cầu cập nhật tổ chức", "success");
+        } catch (err: any) {
+            showToast(err?.message || "Cập nhật tổ chức thất bại", "error");
+            throw err;
+        }
     };
 
     const handleDeleteOrg = async () => {
         if (!organization) return;
-        console.log("Deleting organization:", organization.id);
-        router.push("/dashboard/customer");
+        const token = getToken();
+        if (!token) return;
+        try {
+            await organizationService.deleteOrganization(token, organization.id);
+            showToast("Đã xóa tổ chức thành công", "success");
+            router.push("/dashboard/customer");
+        } catch (err: any) {
+            showToast(err?.message || "Xóa tổ chức thất bại", "error");
+            throw err;
+        }
     };
 
     // --- Members (Owner can invite, remove, assign roles) ---
@@ -112,32 +141,56 @@ export default function CustomerOrganizationSettingsPage() {
         if (!organization) return;
         const token = getToken();
         if (!token) return;
-        await memberService.inviteMembers(token, organization.id, emails);
-        await fetchMembers(organization.id);
+        try {
+            await memberService.inviteMembers(token, organization.id, emails);
+            await fetchMembers(organization.id);
+            showToast("Đã gửi lời mời thành viên", "success");
+        } catch (err: any) {
+            showToast(err?.message || "Mời thành viên thất bại", "error");
+            throw err;
+        }
     };
 
     const handleRemoveMember = async (memberId: string) => {
         if (!organization) return;
         const token = getToken();
         if (!token) return;
-        await memberService.removeMember(token, organization.id, memberId);
-        await fetchMembers(organization.id);
+        try {
+            await memberService.removeMember(token, organization.id, memberId);
+            await fetchMembers(organization.id);
+            showToast("Đã xóa thành viên khỏi tổ chức", "success");
+        } catch (err: any) {
+            showToast(err?.message || "Xóa thành viên thất bại", "error");
+            throw err;
+        }
     };
 
     const handleAssignRoles = async (memberId: string, roleIds: string[]) => {
         if (!organization) return;
         const token = getToken();
         if (!token) return;
-        await memberService.assignRoles(token, organization.id, memberId, roleIds);
-        await fetchMembers(organization.id);
+        try {
+            await memberService.assignRoles(token, organization.id, memberId, roleIds);
+            await fetchMembers(organization.id);
+            showToast("Đã cập nhật vai trò thành viên", "success");
+        } catch (err: any) {
+            showToast(err?.message || "Cập nhật vai trò thất bại", "error");
+            throw err;
+        }
     };
 
     const handleCancelInvite = async (memberId: string) => {
         if (!organization) return;
         const token = getToken();
         if (!token) return;
-        await memberService.cancelInvite(token, organization.id, memberId);
-        await fetchMembers(organization.id);
+        try {
+            await memberService.cancelInvite(token, organization.id, memberId);
+            await fetchMembers(organization.id);
+            showToast("Đã hủy lời mời", "success");
+        } catch (err: any) {
+            showToast(err?.message || "Hủy lời mời thất bại", "error");
+            throw err;
+        }
     };
 
     // --- Roles (Owner can create, edit, delete custom roles) ---
@@ -145,24 +198,42 @@ export default function CustomerOrganizationSettingsPage() {
         if (!organization) return;
         const token = getToken();
         if (!token) return;
-        await roleService.createRole(token, organization.id, data);
-        await fetchRoles(organization.id);
+        try {
+            await roleService.createRole(token, organization.id, data);
+            await fetchRoles(organization.id);
+            showToast("Đã tạo vai trò mới", "success");
+        } catch (err: any) {
+            showToast(err?.message || "Tạo vai trò thất bại", "error");
+            throw err;
+        }
     };
 
     const handleUpdateRole = async (roleId: string, data: { name?: string; description?: string; permission_ids?: string[] }) => {
         if (!organization) return;
         const token = getToken();
         if (!token) return;
-        await roleService.updateRole(token, organization.id, roleId, data);
-        await fetchRoles(organization.id);
+        try {
+            await roleService.updateRole(token, organization.id, roleId, data);
+            await fetchRoles(organization.id);
+            showToast("Đã cập nhật vai trò", "success");
+        } catch (err: any) {
+            showToast(err?.message || "Cập nhật vai trò thất bại", "error");
+            throw err;
+        }
     };
 
     const handleDeleteRole = async (roleId: string) => {
         if (!organization) return;
         const token = getToken();
         if (!token) return;
-        await roleService.deleteRole(token, organization.id, roleId);
-        await fetchRoles(organization.id);
+        try {
+            await roleService.deleteRole(token, organization.id, roleId);
+            await fetchRoles(organization.id);
+            showToast("Đã xóa vai trò", "success");
+        } catch (err: any) {
+            showToast(err?.message || "Xóa vai trò thất bại", "error");
+            throw err;
+        }
     };
 
     if (loading) {

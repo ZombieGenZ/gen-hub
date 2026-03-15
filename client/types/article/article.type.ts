@@ -42,7 +42,7 @@ export interface CreateArticleDto {
     is_featured?: boolean;
 }
 
-export interface UpdateArticleDto extends Partial<CreateArticleDto> {}
+export type UpdateArticleDto = Partial<CreateArticleDto>;
 
 export interface QueryArticleDto {
     limit?: number;
