@@ -81,6 +81,8 @@ const routeGroups: RouteGroup[] = [
             { path: "/dashboard/admin/warehouse-visits", label: "[Coming Soon] Warehouse Visits", description: "Warehouse visit bookings" },
             { path: "/dashboard/admin/refund-requests", label: "[Coming Soon] Refund Requests", description: "Customer refund requests" },
             { path: "/dashboard/admin/warnings", label: "[Coming Soon] Warnings", description: "Customer warnings & penalties" },
+            { path: "/dashboard/admin/categories", label: "Categories", description: "CMS Article Categories" },
+            { path: "/dashboard/admin/articles", label: "Articles & News", description: "CMS Content Management" },
         ]
     },
     {
