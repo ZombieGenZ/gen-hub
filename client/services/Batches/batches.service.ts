@@ -6,6 +6,11 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 export class BatchesService {
     /**
      * Lấy danh sách lô hàng theo sản phẩm (có phân trang và tìm kiếm)
+     * @param accessToken Token truy cập
+     * @param organizationId ID của tổ chức
+     * @param productId ID của sản phẩm
+     * @param query Tham số truy vấn (từ khóa, giới hạn, vị trí bắt đầu)
+     * @returns Danh sách lô hàng
      */
     async getAll(accessToken: string, organizationId: string, productId: string, query?: BatchQuery) {
         try {
@@ -36,6 +41,10 @@ export class BatchesService {
 
     /**
      * Lấy chi tiết một lô hàng
+     * @param id ID của lô hàng
+     * @param accessToken Token truy cập
+     * @param organizationId ID của tổ chức
+     * @returns Chi tiết lô hàng
      */
     async getById(id: string, accessToken: string, organizationId: string): Promise<BatchItemDetail> {
         try {
@@ -62,6 +71,10 @@ export class BatchesService {
 
     /**
      * Tạo mới lô hàng
+     * @param accessToken Token truy cập
+     * @param organizationId ID của tổ chức
+     * @param data Dữ liệu tạo mới lô hàng
+     * @returns Kết quả tạo mới lô hàng
      */
     async create(accessToken: string, organizationId: string, data: CreateBatchDto) {
         // TODO: Implement create logic
@@ -88,6 +101,11 @@ export class BatchesService {
 
     /**
      * Cập nhật thông tin lô hàng
+     * @param accessToken Token truy cập
+     * @param organizationId ID của tổ chức
+     * @param id ID của lô hàng
+     * @param data Dữ liệu cập nhật lô hàng
+     * @returns Kết quả cập nhật lô hàng
      */
     async update(accessToken: string, organizationId: string, id: string, data: UpdateBatchDto) {
         // TODO: Implement update logic
@@ -114,6 +132,10 @@ export class BatchesService {
 
     /**
      * Xóa lô hàng
+     * @param accessToken Token truy cập
+     * @param organizationId ID của tổ chức
+     * @param id ID của lô hàng
+     * @returns Kết quả xóa lô hàng
      */
     async delete(accessToken: string, organizationId: string, id: string) {
         // TODO: Implement delete logic

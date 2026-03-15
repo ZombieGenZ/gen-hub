@@ -384,11 +384,11 @@ export default function CategoriesPage() {
                                                 )}
                                             </td>
                                             <td className="py-4 px-4 text-right">
-                                                <div className="flex justify-end gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-200">
+                                                <div className="flex justify-end gap-1 opacity-100 transition-all duration-200">
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
-                                                        className="h-8 w-8 rounded-full hover:bg-blue-50 text-gray-400 hover:text-blue-600 transition-all duration-200 active:scale-90"
+                                                        className="h-8 w-8 rounded-full hover:bg-blue-50 text-blue-600/70 hover:text-blue-600 transition-all duration-200 active:scale-90"
                                                         onClick={() => {
                                                             setTargetCategory(cat);
                                                             setIsEditOpen(true);
@@ -400,7 +400,7 @@ export default function CategoriesPage() {
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
-                                                        className="h-8 w-8 rounded-full hover:bg-red-50 text-gray-400 hover:text-red-600 transition-all duration-200 active:scale-90"
+                                                        className="h-8 w-8 rounded-full hover:bg-red-50 text-red-600/70 hover:text-red-600 transition-all duration-200 active:scale-90"
                                                         onClick={() => {
                                                             setTargetCategory(cat);
                                                             setIsDeleteOpen(true);
@@ -409,8 +409,7 @@ export default function CategoriesPage() {
                                                     >
                                                         <TrashIcon className="w-4 h-4" />
                                                     </Button>
-                                                </div>
-                                            </td>
+                                                </div>                                            </td>
                                         </tr>
                                     ))
                                 )}

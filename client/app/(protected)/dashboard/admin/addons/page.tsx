@@ -391,7 +391,6 @@ export default function AddonsPage() {
                                             </th>
                                             <th className="text-left py-3 px-4 font-semibold text-xs text-muted-foreground uppercase w-[30%]">Dịch vụ</th>
                                             <th className="text-left py-3 px-4 font-semibold text-xs text-muted-foreground uppercase">Đơn giá</th>
-                                            <th className="text-left py-3 px-4 font-semibold text-xs text-muted-foreground uppercase">Đơn vị</th>
                                             <th className="text-left py-3 px-4 font-semibold text-xs text-muted-foreground uppercase">Chu kỳ</th>
                                             <th className="text-center py-3 px-4 font-semibold text-xs text-muted-foreground uppercase">Trạng thái</th>
                                             <th className="text-right py-3 px-4 font-semibold text-xs text-muted-foreground uppercase">Thao tác</th>
@@ -407,7 +406,6 @@ export default function AddonsPage() {
                                                         <Skeleton className="h-4 w-48" />
                                                     </td>
                                                     <td className="py-4 px-4"><Skeleton className="h-6 w-24" /></td>
-                                                    <td className="py-4 px-4"><Skeleton className="h-5 w-16" /></td>
                                                     <td className="py-4 px-4"><Skeleton className="h-6 w-20 rounded-full" /></td>
                                                     <td className="py-4 px-4"><div className="flex justify-center"><Skeleton className="h-6 w-24 rounded-full" /></div></td>
                                                     <td className="py-4 px-4"><div className="flex justify-end gap-2"><Skeleton className="h-8 w-8 rounded-full" /><Skeleton className="h-8 w-8 rounded-full" /></div></td>
@@ -415,7 +413,7 @@ export default function AddonsPage() {
                                             ))
                                         ) : addons.length === 0 ? (
                                             <tr>
-                                                <td colSpan={7} className="py-16 text-center">
+                                                <td colSpan={6} className="py-16 text-center">
                                                     <div className="flex flex-col items-center gap-3">
                                                         <div className="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center">
                                                             <ListBulletIcon className="w-8 h-8 text-muted-foreground/50" />
@@ -461,11 +459,6 @@ export default function AddonsPage() {
                                                         </div>
                                                     </td>
                                                     <td className="py-4 px-4">
-                                                        {/* Unit is not standard in AddonResponse yet based on type def getting used, assume it might be missing or handle gracefully */}
-                                                        {/* @ts-ignore */}
-                                                        <span className="text-sm font-medium text-gray-600">{addon.unit ? `/ ${addon.unit}` : "-"}</span>
-                                                    </td>
-                                                    <td className="py-4 px-4">
                                                         <Badge variant="outline" className="rounded-md font-normal bg-white text-gray-600 border-gray-200">
                                                             {addon.is_monthly_payment ? "Hàng tháng" : "Một lần"}
                                                         </Badge>
@@ -482,11 +475,11 @@ export default function AddonsPage() {
                                                         )}
                                                     </td>
                                                     <td className="py-4 px-4 text-right">
-                                                        <div className="flex justify-end gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-200">
+                                                        <div className="flex justify-end gap-1 opacity-100 transition-all duration-200">
                                                             <Button
                                                                 variant="ghost"
                                                                 size="icon"
-                                                                className="h-8 w-8 rounded-full hover:bg-blue-50 text-gray-400 hover:text-blue-600 transition-all duration-200 active:scale-90"
+                                                                className="h-8 w-8 rounded-full hover:bg-blue-50 text-blue-600/70 hover:text-blue-600 transition-all duration-200 active:scale-90"
                                                                 onClick={() => {
                                                                     setTargetAddon(addon);
                                                                     setIsEditOpen(true);
@@ -498,7 +491,7 @@ export default function AddonsPage() {
                                                             <Button
                                                                 variant="ghost"
                                                                 size="icon"
-                                                                className="h-8 w-8 rounded-full hover:bg-red-50 text-gray-400 hover:text-red-600 transition-all duration-200 active:scale-90"
+                                                                className="h-8 w-8 rounded-full hover:bg-red-50 text-red-600/70 hover:text-red-600 transition-all duration-200 active:scale-90"
                                                                 onClick={() => {
                                                                     setTargetAddon(addon);
                                                                     setIsDeleteOpen(true);
@@ -659,7 +652,7 @@ export default function AddonsPage() {
                                                             <Button
                                                                 variant="ghost"
                                                                 size="icon"
-                                                                className="h-8 w-8 rounded-full hover:bg-blue-50 text-gray-400 hover:text-blue-600 transition-all duration-200 active:scale-90"
+                                                                className="h-8 w-8 rounded-full hover:bg-blue-50 text-blue-600/70 hover:text-blue-600 transition-all duration-200 active:scale-90"
                                                                 onClick={() => {
                                                                     setTargetType(type);
                                                                     setIsEditOpen(true);
@@ -671,7 +664,7 @@ export default function AddonsPage() {
                                                             <Button
                                                                 variant="ghost"
                                                                 size="icon"
-                                                                className="h-8 w-8 rounded-full hover:bg-red-50 text-gray-400 hover:text-red-600 transition-all duration-200 active:scale-90"
+                                                                className="h-8 w-8 rounded-full hover:bg-red-50 text-red-600/70 hover:text-red-600 transition-all duration-200 active:scale-90"
                                                                 onClick={() => {
                                                                     setTargetType(type);
                                                                     setIsDeleteOpen(true);

@@ -5,6 +5,9 @@ const API = process.env.NEXT_PUBLIC_API_URL;
 export class ArticleService {
     /**
      * Lấy danh sách bài viết (Admin)
+     * @param access_token Token truy cập
+     * @param params Tham số truy vấn (limit, offset, keywords, type, status, category_id)
+     * @returns Danh sách bài viết
      */
     async getAllArticles(access_token: string, params?: QueryArticleDto) {
         try {
@@ -37,6 +40,8 @@ export class ArticleService {
 
     /**
      * Lấy bài viết public
+     * @param params Tham số truy vấn (limit, offset, keywords, type, category_id)
+     * @returns Danh sách bài viết công khai
      */
     async getPublicArticles(params?: QueryArticleDto) {
         try {
@@ -67,6 +72,9 @@ export class ArticleService {
 
     /**
      * Lấy chi tiết bài viết (Admin)
+     * @param access_token Token truy cập
+     * @param id ID bài viết
+     * @returns Chi tiết bài viết
      */
     async getArticleById(access_token: string, id: string) {
         try {
@@ -89,6 +97,9 @@ export class ArticleService {
 
     /**
      * Tạo bài viết mới
+     * @param access_token Token truy cập
+     * @param data Dữ liệu bài viết mới
+     * @returns Kết quả tạo bài viết
      */
     async createArticle(access_token: string, data: CreateArticleDto) {
         try {
@@ -113,6 +124,10 @@ export class ArticleService {
 
     /**
      * Cập nhật bài viết
+     * @param access_token Token truy cập
+     * @param id ID bài viết
+     * @param data Dữ liệu bài viết cần cập nhật
+     * @returns Kết quả cập nhật bài viết
      */
     async updateArticle(access_token: string, id: string, data: UpdateArticleDto) {
         try {
@@ -137,6 +152,9 @@ export class ArticleService {
 
     /**
      * Xóa bài viết
+     * @param access_token Token truy cập
+     * @param id ID bài viết
+     * @returns Kết quả xóa bài viết
      */
     async deleteArticle(access_token: string, id: string) {
         try {
@@ -160,6 +178,9 @@ export class ArticleService {
 
     /**
      * Xóa nhiều bài viết
+     * @param access_token Token truy cập
+     * @param ids Danh sách ID bài viết cần xóa
+     * @returns Kết quả xóa nhiều bài viết
      */
     async deleteManyArticles(access_token: string, ids: string[]) {
         try {

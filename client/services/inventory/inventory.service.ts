@@ -245,6 +245,13 @@ export class InventoryService {
 
     // ==================== APPROVE / REJECT ====================
 
+    /**
+     * Duyệt phiếu nhập kho
+     * @param token Token xác thực
+     * @param id ID của phiếu nhập kho
+     * @param notes Ghi chú duyệt
+     * @returns Kết quả phản hồi từ API
+     */
     async approveInbound(token: string, id: string, notes?: string): Promise<ApiResponse<InboundRequest>> {
         const orgId = await orgHelper.getOrgId(token);
         const response = await fetch(`${API}/organizations/${orgId}/inventory/inbound/${id}/approve`, {
@@ -259,6 +266,13 @@ export class InventoryService {
         return response.json();
     }
 
+    /**
+     * Từ chối phiếu nhập kho
+     * @param token Token xác thực
+     * @param id ID của phiếu nhập kho
+     * @param reason Lý do từ chối
+     * @returns Kết quả phản hồi từ API
+     */
     async rejectInbound(token: string, id: string, reason?: string): Promise<ApiResponse<InboundRequest>> {
         const orgId = await orgHelper.getOrgId(token);
         const response = await fetch(`${API}/organizations/${orgId}/inventory/inbound/${id}/reject`, {
@@ -276,6 +290,10 @@ export class InventoryService {
     /**
      * Hủy phiếu nhập từ phía tổ chức tạo phiếu.
      * Hiện tại backend dùng cùng endpoint reject để chuyển trạng thái về CANCELLED.
+     * @param token Token xác thực
+     * @param id ID của phiếu nhập kho
+     * @param reason Lý do hủy
+     * @returns Kết quả phản hồi từ API
      */
     async cancelInbound(token: string, id: string, reason?: string): Promise<ApiResponse<InboundRequest>> {
         const cancelReason = reason?.trim() || 'Người tạo phiếu tự hủy';
@@ -284,6 +302,13 @@ export class InventoryService {
 
     // ==================== STOCK (TỒN KHO) ====================
 
+    /**
+     * Lấy danh sách tồn kho
+     * @param token Token xác thực
+     * @param warehouseId ID của kho (tùy chọn)
+     * @param keywords Từ khóa tìm kiếm (tùy chọn)
+     * @returns Danh sách tồn kho
+     */
     async listStock(token: string, warehouseId?: string, keywords?: string): Promise<ApiResponse<any[]>> {
         const orgId = await orgHelper.getOrgId(token);
         const params = new URLSearchParams();
@@ -301,6 +326,12 @@ export class InventoryService {
         return response.json();
     }
 
+    /**
+     * Bổ sung tồn kho sau khi nhập
+     * @param token Token xác thực
+     * @param id ID của phiếu nhập kho
+     * @returns Kết quả phản hồi từ API
+     */
     async refillInventory(token: string, id: string): Promise<ApiResponse<InboundRequest>> {
         const orgId = await orgHelper.getOrgId(token);
         const response = await fetch(`${API}/organizations/${orgId}/inventory/inbound/${id}/refill-inventory`, {
@@ -316,6 +347,14 @@ export class InventoryService {
 
     // ==================== APPROVE/REJECT ====================
 
+    /**
+     * Duyệt phiếu xuất kho
+     * @param token Token xác thực
+     * @param id ID của phiếu xuất kho
+     * @param notes Ghi chú duyệt
+     * @param picking_strategy Chiến lược lấy hàng
+     * @returns Kết quả phản hồi từ API
+     */
     async approveOutbound(token: string, id: string, notes?: string, picking_strategy?: string): Promise<ApiResponse<OutboundRequest>> {
         const orgId = await orgHelper.getOrgId(token);
         const response = await fetch(`${API}/organizations/${orgId}/inventory/outbound/${id}/approve`, {
@@ -330,6 +369,13 @@ export class InventoryService {
         return response.json();
     }
 
+    /**
+     * Từ chối phiếu xuất kho
+     * @param token Token xác thực
+     * @param id ID của phiếu xuất kho
+     * @param reason Lý do từ chối
+     * @returns Kết quả phản hồi từ API
+     */
     async rejectOutbound(token: string, id: string, reason?: string): Promise<ApiResponse<OutboundRequest>> {
         const orgId = await orgHelper.getOrgId(token);
         const response = await fetch(`${API}/organizations/${orgId}/inventory/outbound/${id}/reject`, {
@@ -347,6 +393,10 @@ export class InventoryService {
     /**
      * Hủy phiếu xuất từ phía tổ chức tạo phiếu.
      * Hiện tại backend dùng cùng endpoint reject để chuyển trạng thái về CANCELLED.
+     * @param token Token xác thực
+     * @param id ID của phiếu xuất kho
+     * @param reason Lý do hủy
+     * @returns Kết quả phản hồi từ API
      */
     async cancelOutbound(token: string, id: string, reason?: string): Promise<ApiResponse<OutboundRequest>> {
         const cancelReason = reason?.trim() || 'Người tạo phiếu tự hủy';
@@ -355,6 +405,13 @@ export class InventoryService {
 
     // ==================== INBOUND WORKFLOW STEPS ====================
 
+    /**
+     * Bắt đầu quá trình kiểm đếm hàng nhập
+     * @param token Token xác thực
+     * @param id ID của phiếu nhập kho
+     * @param data Dữ liệu bắt đầu (ID người kiểm đếm)
+     * @returns Kết quả phản hồi từ API
+     */
     async startReceiving(token: string, id: string, data?: { checker_id?: string }): Promise<ApiResponse<InboundRequest>> {
         const orgId = await orgHelper.getOrgId(token);
         const response = await fetch(`${API}/organizations/${orgId}/inventory/inbound/${id}/start-receiving`, {
@@ -369,6 +426,13 @@ export class InventoryService {
         return response.json();
     }
 
+    /**
+     * Xác nhận kết quả kiểm đếm hàng nhập
+     * @param token Token xác thực
+     * @param id ID của phiếu nhập kho
+     * @param data Dữ liệu xác nhận (chi tiết số lượng thực tế, ghi chú)
+     * @returns Kết quả phản hồi từ API
+     */
     async confirmReceiving(token: string, id: string, data: { details: { detail_id: string; actual_qty: number }[]; notes?: string }): Promise<ApiResponse<InboundRequest>> {
         const orgId = await orgHelper.getOrgId(token);
         const response = await fetch(`${API}/organizations/${orgId}/inventory/inbound/${id}/confirm-receiving`, {
@@ -383,6 +447,13 @@ export class InventoryService {
         return response.json();
     }
 
+    /**
+     * Xác nhận đã cất hàng vào kho
+     * @param token Token xác thực
+     * @param id ID của phiếu nhập kho
+     * @param data Dữ liệu cất hàng (ghi chú)
+     * @returns Kết quả phản hồi từ API
+     */
     async confirmPutaway(token: string, id: string, data?: { notes?: string }): Promise<ApiResponse<InboundRequest>> {
         const orgId = await orgHelper.getOrgId(token);
         const response = await fetch(`${API}/organizations/${orgId}/inventory/inbound/${id}/confirm-putaway`, {
@@ -399,6 +470,13 @@ export class InventoryService {
 
     // ==================== OUTBOUND WORKFLOW STEPS ====================
 
+    /**
+     * Xác nhận đã nhặt hàng từ vị trí lưu trữ
+     * @param token Token xác thực
+     * @param id ID của phiếu xuất kho
+     * @param data Dữ liệu xác nhận (chi tiết số lượng đã nhặt)
+     * @returns Kết quả phản hồi từ API
+     */
     async confirmPicking(token: string, id: string, data: { details: { pick_list_detail_id: string; picked_qty: number }[] }): Promise<ApiResponse<OutboundRequest>> {
         const orgId = await orgHelper.getOrgId(token);
         const response = await fetch(`${API}/organizations/${orgId}/inventory/outbound/${id}/confirm-picking`, {
@@ -413,6 +491,13 @@ export class InventoryService {
         return response.json();
     }
 
+    /**
+     * Xác nhận kiểm tra hàng trước khi xuất
+     * @param token Token xác thực
+     * @param id ID của phiếu xuất kho
+     * @param data Dữ liệu xác nhận (chi tiết số lượng đã kiểm tra, kết quả đạt/không đạt)
+     * @returns Kết quả phản hồi từ API
+     */
     async confirmChecking(token: string, id: string, data: { details: { export_detail_id: string; checked_qty: number; passed?: boolean }[] }): Promise<ApiResponse<OutboundRequest>> {
         const orgId = await orgHelper.getOrgId(token);
         const response = await fetch(`${API}/organizations/${orgId}/inventory/outbound/${id}/confirm-checking`, {
@@ -427,6 +512,13 @@ export class InventoryService {
         return response.json();
     }
 
+    /**
+     * Hoàn tất quá trình vận chuyển và xuất kho
+     * @param token Token xác thực
+     * @param id ID của phiếu xuất kho
+     * @param data Dữ liệu hoàn tất (ghi chú, mã vận đơn)
+     * @returns Kết quả phản hồi từ API
+     */
     async completeShipment(token: string, id: string, data?: { notes?: string; tracking_number?: string }): Promise<ApiResponse<OutboundRequest>> {
         const orgId = await orgHelper.getOrgId(token);
         const response = await fetch(`${API}/organizations/${orgId}/inventory/outbound/${id}/complete-shipment`, {

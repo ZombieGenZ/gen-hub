@@ -5,6 +5,9 @@ const API = process.env.NEXT_PUBLIC_API_URL;
 export class CategoryService {
     /**
      * Lấy tất cả danh mục
+     * @param access_token Token truy cập
+     * @param params Tham số truy vấn (limit, offset, keywords, is_active)
+     * @returns Danh sách danh mục
      */
     async getAllCategories(access_token: string, params?: QueryCategoryDto) {
         try {
@@ -35,6 +38,7 @@ export class CategoryService {
 
     /**
      * Lấy danh mục hoạt động (Dạng cây public)
+     * @returns Danh sách danh mục hoạt động
      */
     async getActiveCategories() {
         try {
@@ -56,6 +60,9 @@ export class CategoryService {
 
     /**
      * Lấy chi tiết một danh mục
+     * @param access_token Token truy cập
+     * @param id ID của danh mục
+     * @returns Chi tiết danh mục
      */
     async getCategoryById(access_token: string, id: string) {
         try {
@@ -78,6 +85,9 @@ export class CategoryService {
 
     /**
      * Tạo danh mục mới
+     * @param access_token Token truy cập
+     * @param data Dữ liệu tạo danh mục mới
+     * @returns Kết quả tạo danh mục
      */
     async createCategory(access_token: string, data: CreateCategoryDto) {
         try {
@@ -102,6 +112,10 @@ export class CategoryService {
 
     /**
      * Cập nhật danh mục
+     * @param access_token Token truy cập
+     * @param id ID của danh mục
+     * @param data Dữ liệu cập nhật danh mục
+     * @returns Kết quả cập nhật danh mục
      */
     async updateCategory(access_token: string, id: string, data: UpdateCategoryDto) {
         try {
@@ -126,6 +140,9 @@ export class CategoryService {
 
     /**
      * Xóa một danh mục
+     * @param access_token Token truy cập
+     * @param id ID của danh mục
+     * @returns Kết quả xóa danh mục
      */
     async deleteCategory(access_token: string, id: string) {
         try {
@@ -149,6 +166,9 @@ export class CategoryService {
 
     /**
      * Xóa nhiều danh mục
+     * @param access_token Token truy cập
+     * @param ids Danh sách ID của các danh mục cần xóa
+     * @returns Kết quả xóa nhiều danh mục
      */
     async deleteManyCategories(access_token: string, ids: string[]) {
         try {

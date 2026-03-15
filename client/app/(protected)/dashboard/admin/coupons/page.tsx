@@ -1003,7 +1003,7 @@ export default function CouponsPage() {
                                                             variant="ghost"
                                                             size="sm"
                                                             onClick={() => openEditDialog(coupon)}
-                                                            className="rounded-xl"
+                                                            className="rounded-xl text-blue-600/70 hover:text-blue-600 hover:bg-blue-50 transition-colors"
                                                         >
                                                             <PencilIcon className="w-4 h-4" />
                                                         </Button>
@@ -1011,7 +1011,7 @@ export default function CouponsPage() {
                                                             variant="ghost"
                                                             size="sm"
                                                             onClick={() => openDeleteDialog(coupon)}
-                                                            className="text-destructive rounded-xl"
+                                                            className="rounded-xl text-red-600/70 hover:text-red-600 hover:bg-red-50 transition-colors"
                                                         >
                                                             <TrashIcon className="w-4 h-4" />
                                                         </Button>

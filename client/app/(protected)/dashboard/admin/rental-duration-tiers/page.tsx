@@ -188,11 +188,11 @@ function TierCard({
                 </div>
 
                 {/* ── Actions ── */}
-                <div className="flex items-center gap-1 flex-shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-200">
+                <div className="flex items-center gap-1 flex-shrink-0 opacity-100 transition-all duration-200">
                     <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 rounded-full hover:bg-blue-50 text-gray-400 hover:text-blue-600 transition-all duration-200 active:scale-90"
+                        className="h-8 w-8 rounded-full hover:bg-blue-50 text-blue-600/70 hover:text-blue-600 transition-all duration-200 active:scale-90"
                         onClick={onEdit}
                         title="Chỉnh sửa"
                     >
@@ -201,7 +201,7 @@ function TierCard({
                     <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 rounded-full hover:bg-red-50 text-gray-400 hover:text-red-600 transition-all duration-200 active:scale-90"
+                        className="h-8 w-8 rounded-full hover:bg-red-50 text-red-600/70 hover:text-red-600 transition-all duration-200 active:scale-90"
                         onClick={onDelete}
                         title="Xóa"
                     >

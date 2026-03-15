@@ -9,10 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Check, ChevronDown } from "lucide-react";
 import { AddonResponse, AddonRequest } from "@/types/addon/addon.type";
-import { cn } from "@/lib/utils";
 
 const addonsService = new AddonsService();
 
@@ -31,15 +28,7 @@ export function AddonForm({ initialData, onSuccess, onCancel, isEdit = false }: 
         price: initialData?.price || 0,
         is_monthly_payment: initialData?.is_monthly_payment || false,
         is_active: initialData?.is_active !== undefined ? initialData.is_active : true,
-        unit: initialData?.unit || " s"
     });
-
-    const [openUnit, setOpenUnit] = useState(false);
-
-    // Suggestion options
-    const unitOptions = formData.is_monthly_payment
-        ? ["Cái", "Chiếc", "Bộ", "Người", "Tháng", "Vị trí"]
-        : ["Tấn", "Chuyến", "Giờ", "Lần", "Pallet", "Km", "Khối", "Ngày"];
 
     const handleSubmit = async () => {
         try {
@@ -53,7 +42,7 @@ export function AddonForm({ initialData, onSuccess, onCancel, isEdit = false }: 
                 await addonsService.createAddon(token, formData);
             }
             onSuccess();
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Failed to save addon", error);
             // In a real app, use toast here. For now, simple alert or let parent handle
         } finally {
@@ -108,87 +97,24 @@ export function AddonForm({ initialData, onSuccess, onCancel, isEdit = false }: 
                         </RadioGroup>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="price">Đơn giá (VNĐ)</Label>
-                            <div className="relative">
-                                <Input
-                                    id="price"
-                                    type="text"
-                                    value={formData.price > 0 ? new Intl.NumberFormat('vi-VN').format(formData.price) : ''}
-                                    onChange={(e) => {
-                                        const val = parseInt(e.target.value.replace(/\./g, '').replace(/\D/g, '')) || 0;
-                                        setFormData({ ...formData, price: val });
-                                    }}
-                                    style={{ borderRadius: "12px" }}
-                                    className="bg-muted/30 pr-12 font-medium"
-                                    placeholder="0"
-                                />
-                                <span className="pointer-events-none absolute inset-y-0 end-0 flex items-center justify-center pe-3 text-sm text-muted-foreground">
-                                    ₫
-                                </span>
-                            </div>
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="unit">Đơn vị tính</Label>
-                            <Popover open={openUnit} onOpenChange={setOpenUnit}>
-                                <div className="relative">
-                                    <Input
-                                        id="unit"
-                                        value={formData.unit || ""}
-                                        onChange={(e) => {
-                                            setFormData({ ...formData, unit: e.target.value });
-                                            setOpenUnit(true);
-                                        }}
-                                        onFocus={() => setOpenUnit(true)}
-                                        style={{ borderRadius: "12px" }}
-                                        className="bg-muted/30 pr-10"
-                                        placeholder={formData.is_monthly_payment ? "VD: Cái, Chiếc..." : "VD: Tấn, Giờ, Chuyến..."}
-                                        autoComplete="off"
-                                    />
-                                    <PopoverTrigger asChild>
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="absolute right-0 top-0 h-full w-10 text-muted-foreground hover:bg-transparent"
-                                            onClick={() => setOpenUnit(!openUnit)}
-                                        >
-                                            <ChevronDown className="h-4 w-4" />
-                                        </Button>
-                                    </PopoverTrigger>
-                                </div>
-                                <PopoverContent
-                                    className="p-1 w-[150px]"
-                                    align="end"
-                                    onOpenAutoFocus={(e) => e.preventDefault()}
-                                >
-                                    <div className="grid">
-                                        {unitOptions.filter(u => u.toLowerCase().includes((formData.unit || "").toLowerCase())).length > 0 ? (
-                                            unitOptions.filter(u => u.toLowerCase().includes((formData.unit || "").toLowerCase())).map((unit) => (
-                                                <div
-                                                    key={unit}
-                                                    className={cn(
-                                                        "flex items-center px-3 py-2 text-sm rounded-md cursor-pointer hover:bg-muted/50 transition-colors",
-                                                        formData.unit === unit ? "bg-primary/5 text-primary font-medium" : ""
-                                                    )}
-                                                    onClick={() => {
-                                                        setFormData({ ...formData, unit: unit });
-                                                        setOpenUnit(false);
-                                                    }}
-                                                >
-                                                    {formData.unit === unit && <Check className="mr-2 h-3 w-3" />}
-                                                    <span className={formData.unit === unit ? "" : "ml-5"}>{unit}</span>
-                                                </div>
-                                            ))
-                                        ) : (
-                                            <div className="p-2 text-sm text-muted-foreground text-center">
-                                                Nhập để tạo mới "{formData.unit}"
-                                            </div>
-                                        )}
-                                    </div>
-                                </PopoverContent>
-                            </Popover>
+                    <div className="space-y-2">
+                        <Label htmlFor="price">Đơn giá (VNĐ)</Label>
+                        <div className="relative">
+                            <Input
+                                id="price"
+                                type="text"
+                                value={formData.price > 0 ? new Intl.NumberFormat('vi-VN').format(formData.price) : ''}
+                                onChange={(e) => {
+                                    const val = parseInt(e.target.value.replace(/\./g, '').replace(/\D/g, '')) || 0;
+                                    setFormData({ ...formData, price: val });
+                                }}
+                                style={{ borderRadius: "12px" }}
+                                className="bg-muted/30 pr-12 font-medium"
+                                placeholder="0"
+                            />
+                            <span className="pointer-events-none absolute inset-y-0 end-0 flex items-center justify-center pe-3 text-sm text-muted-foreground">
+                                ₫
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -204,7 +130,7 @@ export function AddonForm({ initialData, onSuccess, onCancel, isEdit = false }: 
                             value={formData.description}
                             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                             placeholder="Mô tả phạm vi công việc, quy cách tính phí..."
-                            className="bg-muted/30 min-h-[80px]"
+                            className="bg-muted/30 min-h-20"
                             style={{ borderRadius: "12px" }}
                         />
                     </div>

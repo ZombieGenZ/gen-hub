@@ -10,6 +10,12 @@ const API = process.env.NEXT_PUBLIC_API_URL;
 export class WarehouseManagerInventoryService {
     // ─── INBOUND ───
 
+    /**
+     * Lấy danh sách phiếu nhập kho
+     * @param token Token xác thực
+     * @param query Tham số truy vấn (limit, offset, keywords, warehouse_id, status)
+     * @returns Danh sách phiếu nhập kho phân trang
+     */
     async listInbound(
         token: string,
         query?: QueryInboundParams,
@@ -39,6 +45,12 @@ export class WarehouseManagerInventoryService {
         return await response.json();
     }
 
+    /**
+     * Lấy chi tiết phiếu nhập kho theo ID
+     * @param token Token xác thực
+     * @param id ID của phiếu nhập kho
+     * @returns Chi tiết phiếu nhập kho
+     */
     async getInboundById(
         token: string,
         id: string,
@@ -60,6 +72,13 @@ export class WarehouseManagerInventoryService {
         return await response.json();
     }
 
+    /**
+     * Duyệt phiếu nhập kho
+     * @param token Token xác thực
+     * @param id ID của phiếu nhập kho
+     * @param data Dữ liệu duyệt (số lượng thực tế, ghi chú)
+     * @returns Kết quả phản hồi từ API
+     */
     async approveInbound(
         token: string,
         id: string,
@@ -86,6 +105,13 @@ export class WarehouseManagerInventoryService {
         return await response.json();
     }
 
+    /**
+     * Từ chối phiếu nhập kho
+     * @param token Token xác thực
+     * @param id ID của phiếu nhập kho
+     * @param reason Lý do từ chối
+     * @returns Kết quả phản hồi từ API
+     */
     async rejectInbound(
         token: string,
         id: string,
@@ -109,6 +135,13 @@ export class WarehouseManagerInventoryService {
         return await response.json();
     }
 
+    /**
+     * Bắt đầu quá trình kiểm đếm hàng nhập
+     * @param token Token xác thực
+     * @param id ID của phiếu nhập kho
+     * @param data Dữ liệu bắt đầu (ID người kiểm đếm)
+     * @returns Kết quả phản hồi từ API
+     */
     async startReceiving(
         token: string,
         id: string,
@@ -132,6 +165,13 @@ export class WarehouseManagerInventoryService {
         return await response.json();
     }
 
+    /**
+     * Xác nhận kết quả kiểm đếm hàng nhập
+     * @param token Token xác thực
+     * @param id ID của phiếu nhập kho
+     * @param data Dữ liệu xác nhận (chi tiết số lượng thực tế, ghi chú)
+     * @returns Kết quả phản hồi từ API
+     */
     async confirmReceiving(
         token: string,
         id: string,
@@ -158,6 +198,13 @@ export class WarehouseManagerInventoryService {
         return await response.json();
     }
 
+    /**
+     * Xác nhận đã cất hàng vào kho
+     * @param token Token xác thực
+     * @param id ID của phiếu nhập kho
+     * @param data Dữ liệu cất hàng (chi tiết vị trí cất hàng, số lượng thực tế, ghi chú)
+     * @returns Kết quả phản hồi từ API
+     */
     async confirmPutaway(
         token: string,
         id: string,
@@ -186,6 +233,12 @@ export class WarehouseManagerInventoryService {
 
     // ─── OUTBOUND ───
 
+    /**
+     * Lấy danh sách phiếu xuất kho
+     * @param token Token xác thực
+     * @param query Tham số truy vấn (limit, offset, keywords, warehouse_id, status)
+     * @returns Danh sách phiếu xuất kho phân trang
+     */
     async listOutbound(
         token: string,
         query?: QueryOutboundParams,
@@ -215,6 +268,12 @@ export class WarehouseManagerInventoryService {
         return await response.json();
     }
 
+    /**
+     * Lấy chi tiết phiếu xuất kho theo ID
+     * @param token Token xác thực
+     * @param id ID của phiếu xuất kho
+     * @returns Chi tiết phiếu xuất kho
+     */
     async getOutboundById(
         token: string,
         id: string,
@@ -236,6 +295,13 @@ export class WarehouseManagerInventoryService {
         return await response.json();
     }
 
+    /**
+     * Duyệt phiếu xuất kho
+     * @param token Token xác thực
+     * @param id ID của phiếu xuất kho
+     * @param data Dữ liệu duyệt (chiến lược lấy hàng, ghi chú)
+     * @returns Kết quả phản hồi từ API
+     */
     async approveOutbound(
         token: string,
         id: string,
@@ -262,6 +328,12 @@ export class WarehouseManagerInventoryService {
         return await response.json();
     }
 
+    /**
+     * Tách phiếu xuất kho
+     * @param token Token xác thực
+     * @param id ID của phiếu xuất kho
+     * @returns Kết quả phản hồi từ API
+     */
     async splitOutbound(
         token: string,
         id: string,
@@ -284,6 +356,13 @@ export class WarehouseManagerInventoryService {
         return await response.json();
     }
 
+    /**
+     * Từ chối phiếu xuất kho
+     * @param token Token xác thực
+     * @param id ID của phiếu xuất kho
+     * @param reason Lý do từ chối
+     * @returns Kết quả phản hồi từ API
+     */
     async rejectOutbound(
         token: string,
         id: string,
@@ -307,6 +386,13 @@ export class WarehouseManagerInventoryService {
         return await response.json();
     }
 
+    /**
+     * Xác nhận đã nhặt hàng từ vị trí lưu trữ
+     * @param token Token xác thực
+     * @param id ID của phiếu xuất kho
+     * @param data Dữ liệu xác nhận (chi tiết số lượng đã nhặt)
+     * @returns Kết quả phản hồi từ API
+     */
     async confirmPicking(
         token: string,
         id: string,
@@ -332,6 +418,13 @@ export class WarehouseManagerInventoryService {
         return await response.json();
     }
 
+    /**
+     * Xác nhận kiểm tra hàng trước khi xuất
+     * @param token Token xác thực
+     * @param id ID của phiếu xuất kho
+     * @param data Dữ liệu xác nhận (chi tiết số lượng đã kiểm tra, kết quả đạt/không đạt)
+     * @returns Kết quả phản hồi từ API
+     */
     async confirmChecking(
         token: string,
         id: string,
@@ -361,6 +454,13 @@ export class WarehouseManagerInventoryService {
         return await response.json();
     }
 
+    /**
+     * Hoàn tất quá trình vận chuyển và xuất kho
+     * @param token Token xác thực
+     * @param id ID của phiếu xuất kho
+     * @param data Dữ liệu hoàn tất (ghi chú, mã vận đơn)
+     * @returns Kết quả phản hồi từ API
+     */
     async completeShipment(
         token: string,
         id: string,

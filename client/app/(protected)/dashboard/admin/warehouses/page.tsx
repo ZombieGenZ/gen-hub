@@ -578,7 +578,7 @@ export default function WarehouseTemplatePage() {
 
                                             {/* Actions */}
                                             <td className="py-4 px-4 text-right" onClick={(e) => e.stopPropagation()}>
-                                                <div className="flex justify-end gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                                                <div className="flex justify-end gap-1 opacity-100 transition-opacity">
                                                     <DropdownMenu>
                                                         <DropdownMenuTrigger asChild>
                                                             <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
