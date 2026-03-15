@@ -57,6 +57,7 @@ export interface AppSidebarProps {
     logoCollapsedSrc?: string;
     logoExpandedSrc?: string;
     logoLink?: string;
+    walletHref?: string;
 }
 
 const userService = new UserService();
@@ -70,6 +71,7 @@ export function AppSidebarContent({
     logoCollapsedSrc = "/assets/icongenhub.svg",
     logoExpandedSrc = "/assets/Genhubv2.svg",
     logoLink,
+    walletHref = "/dashboard/customer/payment",
     isCollapsed = false,
     onToggleCollapse, // Optional override
 }: AppSidebarProps & { isCollapsed?: boolean; onToggleCollapse?: () => void }) {
@@ -292,7 +294,7 @@ export function AppSidebarContent({
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align={isCollapsed ? "start" : "end"} side="right" className="w-56 mb-2 p-2 bg-sidebar border-sidebar-border shadow-md rounded-lg">
                             <DropdownMenuItem className="group flex flex-col items-stretch gap-2 p-2 focus:bg-sidebar-accent focus:text-sidebar-accent-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus:shadow-none focus:outline-none focus:ring-0 my-1 border-none cursor-pointer" asChild>
-                                <Link href="/dashboard/customer/payment" className="flex flex-col items-stretch gap-2 w-full no-underline relative">
+                                <Link href={walletHref} className="flex flex-col items-stretch gap-2 w-full no-underline relative">
                                     <div className="flex items-center w-full">
                                         <p className="text-[10px] uppercase tracking-wider font-semibold text-sidebar-foreground/60 ml-0.5">Số dư khả dụng</p>
                                     </div>

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { UserService } from "@/services/user/user.service";
+import { OrganizationService } from "@/services/organization/organization.service";
 import { Loader2 } from "lucide-react";
 
 export default function DashboardEntry() {
@@ -27,10 +28,22 @@ export default function DashboardEntry() {
                 // Simplified Role Check
                 const roles = userData.roles.map(r => r.name);
 
-                if (roles.includes("ADMIN") || roles.includes("STAFF")) {
+                if (roles.includes("ADMIN")) {
                     router.push("/dashboard/admin");
+                } else if (roles.includes("STAFF")) {
+                    router.push("/dashboard/staff");
                 } else {
-                    router.push("/dashboard/customer");
+                    const organizationService = new OrganizationService();
+                    const organizations = await organizationService.getOrganizations(accessToken, { limit: 1 });
+                    const firstOrg = organizations?.items?.[0];
+
+                    if (firstOrg?.owner?.id && firstOrg.owner.id === userData.user.id) {
+                        router.push("/dashboard/owner");
+                    } else if (firstOrg?.id) {
+                        router.push("/dashboard/member");
+                    } else {
+                        router.push("/dashboard/customer");
+                    }
                 }
             } catch (error) {
                 console.error("Error identifying user role", error);

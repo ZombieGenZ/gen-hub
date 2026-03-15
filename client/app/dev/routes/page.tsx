@@ -111,6 +111,44 @@ const routeGroups: RouteGroup[] = [
         ]
     },
     {
+        title: "Staff Dashboard",
+        icon: <Briefcase className="w-5 h-5" />,
+        color: "text-amber-500",
+        routes: [
+            { path: "/dashboard/staff", label: "Overview", description: "Staff dashboard home" },
+            { path: "/dashboard/staff/warehouses", label: "Warehouses", description: "Warehouse operation workspace" },
+            { path: "/dashboard/staff/products", label: "Products", description: "Inventory product operations" },
+            { path: "/dashboard/staff/inbound", label: "Inbound Requests", description: "Inbound operational flow" },
+            { path: "/dashboard/staff/outbound", label: "Outbound Requests", description: "Outbound operational flow" },
+            { path: "/dashboard/staff/notifications", label: "Notifications", description: "Staff notifications" },
+            { path: "/dashboard/staff/payment", label: "Payment", description: "Staff billing view" },
+        ]
+    },
+    {
+        title: "Owner Dashboard",
+        icon: <ShieldCheck className="w-5 h-5" />,
+        color: "text-cyan-600",
+        routes: [
+            { path: "/dashboard/owner", label: "Overview", description: "Owner dashboard home" },
+            { path: "/dashboard/owner/organization-settings", label: "Organization Settings", description: "Owner-level organization controls" },
+            { path: "/dashboard/owner/roles", label: "Roles", description: "Internal warehouse role management" },
+            { path: "/dashboard/owner/payment", label: "Payment", description: "Owner billing view" },
+        ]
+    },
+    {
+        title: "Member Dashboard",
+        icon: <Users className="w-5 h-5" />,
+        color: "text-sky-500",
+        routes: [
+            { path: "/dashboard/member", label: "Overview", description: "Member dashboard home" },
+            { path: "/dashboard/member/roles", label: "Roles", description: "Member internal role page" },
+            { path: "/dashboard/member/products", label: "Products", description: "Member product operations" },
+            { path: "/dashboard/member/inbound", label: "Inbound Requests", description: "Member inbound operations" },
+            { path: "/dashboard/member/outbound", label: "Outbound Requests", description: "Member outbound operations" },
+            { path: "/dashboard/member/payment", label: "Payment", description: "Member billing view" },
+        ]
+    },
+    {
         title: "Public Pages",
         icon: <Home className="w-5 h-5" />,
         color: "text-emerald-500",
