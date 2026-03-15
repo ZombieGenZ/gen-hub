@@ -15,6 +15,7 @@
         "confirm_receiving": "Receiving confirmed successfully",
         "confirm_putaway": "Putaway confirmed successfully",
         "create_pick_list": "Pick list created successfully",
+        "split_outbound": "Outbound request split successfully",
         "confirm_picking": "Picking confirmed successfully",
         "confirm_checking": "Checking confirmed successfully",
         "complete_shipment": "Shipment completed successfully"
@@ -34,6 +35,8 @@
         "invalid_status": "Invalid status for this operation",
         "no_permission": "You do not have permission to perform this action",
         "invalid_status_transition": "Invalid status transition",
+        "split_not_required": "The request already has sufficient stock and does not need splitting",
+        "split_no_sufficient_detail": "No detail line has sufficient stock to keep in the original request",
         "receipt_not_approved": "Receipt has not been approved",
         "receiving_not_completed": "Receiving has not been completed",
         "picking_not_completed": "Picking has not been completed",

@@ -262,6 +262,28 @@ export class WarehouseManagerInventoryService {
         return await response.json();
     }
 
+    async splitOutbound(
+        token: string,
+        id: string,
+    ): Promise<ApiResponse<any>> {
+        const response = await fetch(
+            `${API}/warehouse-manager/inventory/outbound/${id}/split`,
+            {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({}),
+            },
+        );
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || "Không thể tách phiếu xuất");
+        }
+        return await response.json();
+    }
+
     async rejectOutbound(
         token: string,
         id: string,

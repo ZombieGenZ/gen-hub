@@ -197,6 +197,20 @@ export class WarehouseManagerInventoryController {
         return new UpdatedResponse('inventory-request.approve_outbound', result, lang === 'vi' ? 'Xác nhận xuất kho thành công' : 'Outbound approved successfully');
     }
 
+    @Post('outbound/:id/split')
+    @RequirePermission('warehouse-manager.inventory.outbound.approve')
+    @ApiOperation({ summary: 'Tách phiếu xuất kho thiếu hàng', description: 'Tách phiếu xuất `PENDING` thành 2 phiếu: phiếu hiện tại giữ lại các dòng đủ tồn kho, phiếu mới chứa các dòng thiếu tồn kho để xử lý sau. Yêu cầu quyền `warehouse-manager.inventory.outbound.approve`.' })
+    @ApiParam({ name: 'id', description: 'ID phiếu xuất cần tách', example: OUTBOUND_ID })
+    @ApiResponse({ status: 200, description: 'Tách phiếu xuất thành công' })
+    @ApiResponse({ status: 400, description: 'Không thể tách phiếu do trạng thái hoặc dữ liệu không phù hợp', schema: badRequest })
+    @ApiResponse({ status: 404, description: 'Không tìm thấy phiếu xuất', schema: notFound })
+    @ApiAuthResponses()
+    @ApiValidationErrorResponse()
+    async splitOutbound(@Param('id', ParseUUIDPipe) id: string, @Request() req: any, @CurrentUser('userId') userId: string, @I18nLang() lang: string) {
+        const result = await this.warehouseManagerInventoryService.splitOutbound(id, req.warehouseIds || [], userId, lang);
+        return new UpdatedResponse('inventory-request.split_outbound', result, lang === 'vi' ? 'Tách phiếu xuất thành công' : 'Outbound request split successfully');
+    }
+
     @Post('outbound/:id/confirm-picking')
     @RequirePermission('warehouse-manager.inventory.outbound.pick')
     @ApiOperation({ summary: 'Xác nhận nhặt hàng', description: 'Xác nhận hoàn tất picking cho phiếu xuất ở trạng thái `PICKING` và chuyển sang `CHECKING`. Yêu cầu quyền `warehouse-manager.inventory.outbound.pick`.' })

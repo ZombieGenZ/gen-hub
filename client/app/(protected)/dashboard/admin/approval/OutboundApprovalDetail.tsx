@@ -104,10 +104,19 @@ function formatDate(dateStr?: string | null) {
 // ════════════════════════════════════════════════
 interface OutboundApprovalDetailProps {
     ticketId: string;
+    onOpenSplitTicket?: (ticketId: string) => void | Promise<void>;
+}
+
+interface SplitResultInfo {
+    split_export_id?: string;
+    split_export_code?: string;
+    moved_detail_count?: number;
+    kept_detail_count?: number;
 }
 
 export default function OutboundApprovalDetail({
     ticketId,
+    onOpenSplitTicket,
 }: OutboundApprovalDetailProps) {
     const { showToast } = useToast();
 
@@ -123,6 +132,7 @@ export default function OutboundApprovalDetail({
 
     // CHECKING: per export_detail { checked_qty, passed }
     const [checkingData, setCheckingData] = useState<Record<string, { checked_qty: number; passed: boolean }>>({});
+    const [splitResult, setSplitResult] = useState<SplitResultInfo | null>(null);
 
     const [rejectOpen, setRejectOpen] = useState(false);
 
@@ -153,7 +163,10 @@ export default function OutboundApprovalDetail({
         }
     }, [ticketId, showToast]);
 
-    useEffect(() => { fetchData(); }, [fetchData]);
+    useEffect(() => {
+        setSplitResult(null);
+        fetchData();
+    }, [fetchData]);
 
     const getToken = () => {
         const t = authStorage.getAccessToken();
@@ -253,9 +266,31 @@ export default function OutboundApprovalDetail({
         } finally { setSubmitting(false); }
     };
 
-    // Split order chưa khả dụng do backend chưa cung cấp endpoint nghiệp vụ.
-    const handleSplitOrder = () => {
-        showToast("Tính năng tách phiếu đang được phát triển", "info");
+    const handleSplitOrder = async () => {
+        const token = getToken(); if (!token) return;
+        setSubmitting(true);
+        try {
+            const res = await wmInventoryService.splitOutbound(token, ticketId);
+            const splitData = (res as any)?.data;
+            setSplitResult(splitData || null);
+            if (splitData?.split_export_code) {
+                showToast(`Đã tách phiếu thành công: ${splitData.split_export_code}`, "success");
+            } else {
+                showToast("Đã tách phiếu xuất thành công", "success");
+            }
+            fetchData();
+        } catch (err: any) {
+            showToast(err.message || "Không thể tách phiếu xuất", "error");
+        } finally { setSubmitting(false); }
+    };
+
+    const handleOpenSplitTicket = async () => {
+        if (!splitResult?.split_export_id || !onOpenSplitTicket) return;
+        try {
+            await onOpenSplitTicket(splitResult.split_export_id);
+        } catch {
+            showToast("Không thể mở phiếu mới vừa tách", "error");
+        }
     };
 
     // ── Loading ──
@@ -300,6 +335,32 @@ export default function OutboundApprovalDetail({
                         <p className="text-sm text-muted-foreground mt-1">
                             {data.warehouse?.name || "—"} • {data.partner?.name || "—"} • {formatDate(data.created_at)}
                         </p>
+                        {splitResult?.split_export_code && (
+                            <div className="mt-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2">
+                                <p className="text-xs font-semibold text-emerald-700">
+                                    Đã tách phiếu thành công
+                                </p>
+                                <p className="text-xs text-emerald-700/90 mt-0.5">
+                                    Phiếu mới: <strong>{splitResult.split_export_code}</strong>
+                                    {typeof splitResult.moved_detail_count === "number" && (
+                                        <> • Đã tách {splitResult.moved_detail_count} dòng thiếu tồn</>
+                                    )}
+                                    {typeof splitResult.kept_detail_count === "number" && (
+                                        <> • Giữ lại {splitResult.kept_detail_count} dòng đủ tồn</>
+                                    )}
+                                </p>
+                                {!!splitResult.split_export_id && !!onOpenSplitTicket && (
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="mt-2 h-7 rounded-lg border-emerald-300 text-emerald-700 hover:bg-emerald-100"
+                                        onClick={handleOpenSplitTicket}
+                                    >
+                                        Mở phiếu mới
+                                    </Button>
+                                )}
+                            </div>
+                        )}
                     </div>
                     <Button variant="outline" size="sm" className="gap-2 rounded-xl">
                         <PrinterIcon className="w-4 h-4" />In phiếu

@@ -246,6 +246,25 @@ export class WarehouseManagerInventoryService {
             );
         }
 
+        for (const detail of exportRecord.details) {
+            const aggregate = await this.prisma.inventory.aggregate({
+                where: {
+                    organization_id: exportRecord.organization_id,
+                    warehouse_id: exportRecord.warehouse_id,
+                    product_id: detail.product_id,
+                    ...(detail.required_batch_id && { batch_id: detail.required_batch_id }),
+                    is_deleted: false,
+                },
+                _sum: { quantity_available: true },
+            });
+
+            const availableQty = aggregate._sum.quantity_available?.toNumber() ?? 0;
+            (detail as any).quantity_available = availableQty;
+            if ((detail as any).product) {
+                (detail as any).product.quantity_available = availableQty;
+            }
+        }
+
         return exportRecord as unknown as IOutboundRequest;
     }
 
@@ -585,6 +604,167 @@ export class WarehouseManagerInventoryService {
         });
 
         return result as unknown as IOutboundRequest;
+    }
+
+    /**
+     * Tách phiếu xuất PENDING thành 2 phiếu:
+     * - Phiếu hiện tại: giữ các dòng đủ tồn
+     * - Phiếu mới: chứa các dòng thiếu tồn
+     */
+    async splitOutbound(
+        exportId: string,
+        warehouseIds: string[],
+        actorId: string,
+        lang: string,
+    ): Promise<{
+        original_export_id: string;
+        split_export_id: string;
+        original_export_code: string;
+        split_export_code: string;
+        moved_detail_count: number;
+        kept_detail_count: number;
+    }> {
+        const exportRecord = await this.prisma.export.findFirst({
+            where: {
+                id: exportId,
+                warehouse_id: { in: warehouseIds },
+                is_deleted: false,
+            },
+            include: {
+                details: {
+                    where: { is_deleted: false },
+                },
+            },
+        });
+
+        if (!exportRecord) {
+            throw new NotFoundException(
+                await this.i18n.translate('inventory-request.errors.export_not_found', { lang }),
+            );
+        }
+
+        if (exportRecord.status !== ExportStatus.PENDING) {
+            throw new BadRequestException(
+                await this.i18n.translate('inventory-request.errors.invalid_status_transition', { lang }),
+            );
+        }
+
+        if (!exportRecord.details.length) {
+            throw new BadRequestException(
+                await this.i18n.translate('inventory-request.errors.invalid_status_transition', { lang }),
+            );
+        }
+
+        const sufficientDetailIds: string[] = [];
+        const insufficientDetails = [] as typeof exportRecord.details;
+
+        for (const detail of exportRecord.details) {
+            const requiredQty = detail.quantity.toNumber() * detail.conversion_rate.toNumber();
+
+            const aggregate = await this.prisma.inventory.aggregate({
+                where: {
+                    organization_id: exportRecord.organization_id,
+                    warehouse_id: exportRecord.warehouse_id,
+                    product_id: detail.product_id,
+                    ...(detail.required_batch_id && { batch_id: detail.required_batch_id }),
+                    is_deleted: false,
+                },
+                _sum: { quantity_available: true },
+            });
+
+            const availableQty = aggregate._sum.quantity_available?.toNumber() ?? 0;
+            if (availableQty >= requiredQty) {
+                sufficientDetailIds.push(detail.id);
+            } else {
+                insufficientDetails.push(detail);
+            }
+        }
+
+        if (insufficientDetails.length === 0) {
+            throw new BadRequestException(
+                await this.i18n.translate('inventory-request.errors.split_not_required', { lang }),
+            );
+        }
+
+        if (sufficientDetailIds.length === 0) {
+            throw new BadRequestException(
+                await this.i18n.translate('inventory-request.errors.split_no_sufficient_detail', { lang }),
+            );
+        }
+
+        const result = await this.prisma.$transaction(async (tx) => {
+            const splitCode = `${exportRecord.code}-S${Date.now().toString().slice(-6)}`;
+
+            const splitExport = await tx.export.create({
+                data: {
+                    organization_id: exportRecord.organization_id,
+                    warehouse_id: exportRecord.warehouse_id,
+                    partner_id: exportRecord.partner_id,
+                    code: splitCode,
+                    sales_order_code: exportRecord.sales_order_code,
+                    status: ExportStatus.PENDING,
+                    notes: exportRecord.notes,
+                    created_by: actorId,
+                },
+            });
+
+            await tx.exportDetail.createMany({
+                data: insufficientDetails.map((detail) => ({
+                    export_id: splitExport.id,
+                    product_id: detail.product_id,
+                    required_batch_id: detail.required_batch_id,
+                    quantity: detail.quantity,
+                    unit_id: detail.unit_id,
+                    conversion_rate: detail.conversion_rate,
+                    created_by: actorId,
+                })),
+            });
+
+            await tx.exportDetail.updateMany({
+                where: {
+                    export_id: exportRecord.id,
+                    id: { in: insufficientDetails.map((d) => d.id) },
+                    is_deleted: false,
+                },
+                data: {
+                    is_deleted: true,
+                    deleted_at: new Date(),
+                    deleted_by: actorId,
+                    updated_by: actorId,
+                },
+            });
+
+            await tx.export.update({
+                where: { id: exportRecord.id },
+                data: { updated_by: actorId },
+            });
+
+            return {
+                original_export_id: exportRecord.id,
+                split_export_id: splitExport.id,
+                original_export_code: exportRecord.code,
+                split_export_code: splitExport.code,
+                moved_detail_count: insufficientDetails.length,
+                kept_detail_count: sufficientDetailIds.length,
+            };
+        });
+
+        await Promise.all([
+            this.redisService.delByPattern(`${this.OUTBOUND_KEY_PREFIX}:*`),
+            this.redisService.del(`${this.OUTBOUND_KEY_PREFIX}:detail:${exportId}`),
+        ]);
+
+        this.websocketGateway.emitToOrganization(exportRecord.organization_id, 'outbound:split', {
+            exportId: exportRecord.id,
+            code: exportRecord.code,
+            splitExportId: result.split_export_id,
+            splitExportCode: result.split_export_code,
+            movedDetailCount: result.moved_detail_count,
+            performedBy: actorId,
+            timestamp: new Date().toISOString(),
+        });
+
+        return result;
     }
 
     /**

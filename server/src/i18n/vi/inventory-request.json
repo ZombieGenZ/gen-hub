@@ -15,6 +15,7 @@
         "confirm_receiving": "Xác nhận kiểm đếm thành công",
         "confirm_putaway": "Xác nhận cất hàng thành công",
         "create_pick_list": "Tạo phiếu nhặt hàng thành công",
+        "split_outbound": "Tách phiếu xuất thành công",
         "confirm_picking": "Xác nhận nhặt hàng thành công",
         "confirm_checking": "Xác nhận kiểm tra xuất thành công",
         "complete_shipment": "Hoàn tất xuất kho thành công"
@@ -34,6 +35,8 @@
         "invalid_status": "Trạng thái không hợp lệ để thực hiện thao tác này",
         "no_permission": "Bạn không có quyền thực hiện thao tác này",
         "invalid_status_transition": "Chuyển trạng thái không hợp lệ",
+        "split_not_required": "Phiếu hiện tại đã đủ tồn kho, không cần tách",
+        "split_no_sufficient_detail": "Không có dòng nào đủ tồn kho để giữ lại phiếu gốc",
         "receipt_not_approved": "Phiếu chưa được duyệt",
         "receiving_not_completed": "Kiểm đếm chưa hoàn tất",
         "picking_not_completed": "Nhặt hàng chưa hoàn tất",

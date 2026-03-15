@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useCallback, useMemo } from "react";
+import React, { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { WarehouseManagerInventoryService } from "@/services/inventory/warehouse-manager-inventory.service";
@@ -141,6 +141,7 @@ export default function ApprovalQueuePage() {
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const ticketCardRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
     // ── Drag state for Kanban ──
     const [draggedId, setDraggedId] = useState<string | null>(null);
@@ -234,6 +235,20 @@ export default function ApprovalQueuePage() {
 
     const pendingTickets = filteredTickets.filter((t) => t.status === "PENDING");
     const selectedTicket = allTickets.find((t) => t.id === selectedTicketId);
+
+    useEffect(() => {
+        if (viewMode !== "list" || !selectedTicketId) return;
+        const selectedCard = ticketCardRefs.current[selectedTicketId];
+        if (selectedCard) {
+            selectedCard.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        }
+    }, [selectedTicketId, viewMode, filteredTickets.length]);
+
+    const handleOpenSplitOutboundTicket = useCallback(async (ticketId: string) => {
+        await fetchData();
+        setViewMode("list");
+        setSelectedTicketId(ticketId);
+    }, [fetchData]);
 
     // ── Bulk selection ──
     const toggleSelect = (id: string) => {
@@ -423,6 +438,9 @@ export default function ApprovalQueuePage() {
                                 return (
                                     <div
                                         key={ticket.id}
+                                        ref={(el) => {
+                                            ticketCardRefs.current[ticket.id] = el;
+                                        }}
                                         className={`approval-card approval-card--${ticket.type} ${isSelected ? "approval-card--selected" : ""
                                             } ${slaStatus === "breach" && ticket.status === "PENDING"
                                                 ? "approval-card--sla-breach"
@@ -513,6 +531,7 @@ export default function ApprovalQueuePage() {
                                 <OutboundApprovalDetail
                                     key={selectedTicket.id}
                                     ticketId={selectedTicket.id}
+                                    onOpenSplitTicket={handleOpenSplitOutboundTicket}
                                 />
                             )
                         ) : (
