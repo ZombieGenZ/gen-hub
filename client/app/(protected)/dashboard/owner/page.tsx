@@ -1,12 +1,12 @@
 import Link from "next/link";
-import { Cog6Tooth, ShieldCheck, Users } from "lucide-react";
+import { Settings, ShieldCheck, Users } from "lucide-react";
 
 const quickActions = [
     {
         title: "Cài đặt tổ chức",
         description: "Quản lý hồ sơ tổ chức, thành viên và phân quyền.",
         href: "/dashboard/owner/organization-settings",
-        icon: Cog6Tooth,
+        icon: Settings,
     },
     {
         title: "Vai trò nội bộ kho",
