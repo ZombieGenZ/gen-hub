@@ -218,6 +218,12 @@ function CheckoutContent() {
             if (!session.duration_tier_id) throw new Error('Missing duration tier');
             if (!session.warehouse_template_id) throw new Error('Missing warehouse template');
 
+            // Ensure start date is not in the past
+            const providedDate = new Date(session.start_date || Date.now());
+            const validStartDate = providedDate.getTime() <= Date.now() 
+                ? new Date(Date.now() + 5 * 60 * 1000).toISOString() 
+                : providedDate.toISOString();
+
             const payload: CreateRentalContractRequest = {
                 organization_id: orgId,
                 duration_tier_id: session.duration_tier_id,
@@ -231,7 +237,7 @@ function CheckoutContent() {
                 insurance_ids: session.insurance_id ? [session.insurance_id] : undefined,
                 coupon_codes: session.coupon_code ? [session.coupon_code] : undefined,
                 payment_method: 'TRANSFER' as RentalContractPaymentMethod,
-                scheduled_start_at: session.start_date || new Date().toISOString(),
+                scheduled_start_at: validStartDate,
             };
 
             // 4. Submit Order using customer endpoint (multipart/form-data with optional signature)
