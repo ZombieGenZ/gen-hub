@@ -3,6 +3,7 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { InventoryService } from "@/services/inventory/inventory.service";
+import { WarehouseManagerInventoryService } from "@/services/inventory/warehouse-manager-inventory.service";
 import { useToast } from "@/contexts/ToastContext";
 import type { InboundRequest } from "@/services/inventory/inventory.types";
 
@@ -22,6 +23,7 @@ import {
 import RejectReasonDialog from "./RejectReasonDialog";
 
 const inventoryService = new InventoryService();
+const wmInventoryService = new WarehouseManagerInventoryService();
 
 // ─────────────────────────────────
 // Helpers
@@ -65,7 +67,7 @@ function StepBar({ status }: { status: string }) {
                 const active = idx === current;
                 return (
                     <React.Fragment key={step.key}>
-                        <div className="flex flex-col items-center min-w-[64px]">
+                        <div className="flex flex-col items-center min-w-16">
                             <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-colors
                                 ${ done ? "bg-[#0F766E] border-[#0F766E] text-white" :
                                   active ? "bg-white border-[#0F766E] text-[#0F766E]" :
@@ -77,7 +79,7 @@ function StepBar({ status }: { status: string }) {
                             </span>
                         </div>
                         {idx < INBOUND_STEPS.length - 1 && (
-                            <div className={`flex-1 h-0.5 mt-[-10px] ${idx < current ? "bg-[#0F766E]" : "bg-muted-foreground/20"}`} />
+                            <div className={`flex-1 h-0.5 -mt-2.5 ${idx < current ? "bg-[#0F766E]" : "bg-muted-foreground/20"}`} />
                         )}
                     </React.Fragment>
                 );
@@ -112,7 +114,7 @@ export default function InboundApprovalDetail({
             const token = authStorage.getAccessToken();
             if (!token) return;
             setLoading(true);
-            const res = await inventoryService.getInboundById(token, ticketId);
+            const res = await wmInventoryService.getInboundById(token, ticketId);
             const item = (res as any)?.data ?? res;
             setData(item);
             if (item?.details) {
@@ -139,7 +141,11 @@ export default function InboundApprovalDetail({
         const token = getToken(); if (!token) return;
         setSubmitting(true);
         try {
-            await inventoryService.approveInbound(token, ticketId);
+            const actual_quantities = data?.details?.map((d) => ({
+                detail_id: d.id,
+                actual_qty: actualQty[d.id] ?? d.expected_qty,
+            }));
+            await wmInventoryService.approveInbound(token, ticketId, { actual_quantities });
             showToast("Duyệt phiếu nhập thành công — chuyển sang Đã duyệt", "success");
             fetchData();
         } catch (err: any) {
@@ -151,7 +157,7 @@ export default function InboundApprovalDetail({
         const token = getToken(); if (!token) return;
         setSubmitting(true);
         try {
-            await inventoryService.rejectInbound(token, ticketId, reason);
+            await wmInventoryService.rejectInbound(token, ticketId, reason);
             showToast(`Đã từ chối phiếu — Lý do: ${reason}`, "success");
             setRejectOpen(false);
             fetchData();
@@ -164,7 +170,7 @@ export default function InboundApprovalDetail({
         const token = getToken(); if (!token) return;
         setSubmitting(true);
         try {
-            await inventoryService.startReceiving(token, ticketId, {});
+            await wmInventoryService.startReceiving(token, ticketId, {});
             showToast("Đã bắt đầu kiểm đếm — chuyển sang Đang kiểm đếm", "success");
             fetchData();
         } catch (err: any) {
@@ -181,7 +187,7 @@ export default function InboundApprovalDetail({
                 detail_id: d.id,
                 actual_qty: actualQty[d.id] ?? d.actual_qty ?? 0,
             }));
-            await inventoryService.confirmReceiving(token, ticketId, { details });
+            await wmInventoryService.confirmReceiving(token, ticketId, { details });
             showToast("Đã xác nhận kiểm đếm — chuyển sang Chờ cất hàng", "success");
             fetchData();
         } catch (err: any) {
@@ -193,7 +199,7 @@ export default function InboundApprovalDetail({
         const token = getToken(); if (!token) return;
         setSubmitting(true);
         try {
-            await inventoryService.confirmPutaway(token, ticketId, {});
+            await wmInventoryService.confirmPutaway(token, ticketId, {});
             showToast("Đã xác nhận cất hàng — phiếu nhập Hoàn tất!", "success");
             fetchData();
         } catch (err: any) {
@@ -309,7 +315,7 @@ export default function InboundApprovalDetail({
 
                 {/* ─── APPROVED ─── */}
                 {data.status === "APPROVED" && (
-                    <div className="p-6 flex flex-col items-center justify-center gap-4 text-center min-h-[200px]">
+                    <div className="p-6 flex flex-col items-center justify-center gap-4 text-center min-h-50">
                         <div className="w-14 h-14 rounded-full bg-blue-50 flex items-center justify-center">
                             <CheckCircleIcon className="w-7 h-7 text-blue-600" />
                         </div>
@@ -436,7 +442,7 @@ export default function InboundApprovalDetail({
 
                 {/* ─── COMPLETED ─── */}
                 {data.status === "COMPLETED" && (
-                    <div className="p-6 flex flex-col items-center gap-4 text-center min-h-[200px] justify-center">
+                    <div className="p-6 flex flex-col items-center gap-4 text-center min-h-50 justify-center">
                         <div className="w-16 h-16 rounded-full bg-green-50 flex items-center justify-center">
                             <CheckCircleIcon className="w-8 h-8 text-green-600" />
                         </div>
@@ -478,7 +484,7 @@ export default function InboundApprovalDetail({
 
                 {/* ─── CANCELLED ─── */}
                 {data.status === "CANCELLED" && (
-                    <div className="p-6 flex flex-col items-center gap-4 text-center min-h-[200px] justify-center">
+                    <div className="p-6 flex flex-col items-center gap-4 text-center min-h-50 justify-center">
                         <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center">
                             <ExclamationTriangleIcon className="w-8 h-8 text-red-500" />
                         </div>

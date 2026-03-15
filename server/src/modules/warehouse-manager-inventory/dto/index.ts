@@ -40,6 +40,15 @@ export class QueryPendingInboundDto {
     keywords?: string;
 
     @ApiPropertyOptional({
+        description: 'Lọc theo trạng thái phiếu nhập (bỏ trống để lấy tất cả)',
+        enum: ReceiptStatus,
+        example: ReceiptStatus.PENDING,
+    })
+    @IsOptional()
+    @IsEnum(ReceiptStatus)
+    status?: ReceiptStatus;
+
+    @ApiPropertyOptional({
         description: 'Số lượng bản ghi trên trang',
         default: 10,
         minimum: 1,
@@ -81,6 +90,15 @@ export class QueryPendingOutboundDto {
     @IsOptional()
     @IsString()
     keywords?: string;
+
+    @ApiPropertyOptional({
+        description: 'Lọc theo trạng thái phiếu xuất (bỏ trống để lấy tất cả)',
+        enum: ExportStatus,
+        example: ExportStatus.PENDING,
+    })
+    @IsOptional()
+    @IsEnum(ExportStatus)
+    status?: ExportStatus;
 
     @ApiPropertyOptional({
         description: 'Số lượng bản ghi trên trang',
@@ -173,7 +191,7 @@ export class ApproveOutboundDto {
         example: 'FEFO',
     })
     @IsOptional()
-    @IsEnum(PickingStrategy)
+    @IsEnum(PickingStrategy, { message: i18nValidationMessage('inventory-request.validation.picking_strategy_enum') })
     picking_strategy?: PickingStrategy;
 
     @ApiPropertyOptional({
@@ -181,7 +199,7 @@ export class ApproveOutboundDto {
         example: 'Đã chuẩn bị hàng và sẵn sàng xuất',
     })
     @IsOptional()
-    @IsString()
+    @IsString({ message: i18nValidationMessage('inventory-request.validation.notes_string') })
     notes?: string;
 }
 
@@ -204,7 +222,7 @@ export class RejectOutboundDto {
 export class StartReceivingDto {
     @ApiPropertyOptional({ description: 'ID checker thực hiện' })
     @IsOptional()
-    @IsUUID('4')
+    @IsUUID('4', { message: i18nValidationMessage('inventory-request.validation.checker_id_uuid') })
     checker_id?: string;
 }
 
@@ -222,15 +240,15 @@ export class ConfirmReceivingDetailDto {
 
 export class ConfirmReceivingDto {
     @ApiProperty({ type: [ConfirmReceivingDetailDto] })
-    @IsArray()
-    @ArrayMinSize(1)
+    @IsArray({ message: i18nValidationMessage('inventory-request.validation.details_array') })
+    @ArrayMinSize(1, { message: i18nValidationMessage('inventory-request.validation.details_min') })
     @ValidateNested({ each: true })
     @Type(() => ConfirmReceivingDetailDto)
     details: ConfirmReceivingDetailDto[];
 
     @ApiPropertyOptional({ description: 'Ghi chú kiểm đếm' })
     @IsOptional()
-    @IsString()
+    @IsString({ message: i18nValidationMessage('inventory-request.validation.notes_string') })
     notes?: string;
 }
 
@@ -251,14 +269,14 @@ export class ConfirmPutawayDetailDto {
 export class ConfirmPutawayDto {
     @ApiPropertyOptional({ type: [ConfirmPutawayDetailDto] })
     @IsOptional()
-    @IsArray()
+    @IsArray({ message: i18nValidationMessage('inventory-request.validation.details_array') })
     @ValidateNested({ each: true })
     @Type(() => ConfirmPutawayDetailDto)
     details?: ConfirmPutawayDetailDto[];
 
     @ApiPropertyOptional({ description: 'Ghi chú cất hàng' })
     @IsOptional()
-    @IsString()
+    @IsString({ message: i18nValidationMessage('inventory-request.validation.notes_string') })
     notes?: string;
 }
 
@@ -278,8 +296,8 @@ export class ConfirmPickingDetailDto {
 
 export class ConfirmPickingDto {
     @ApiProperty({ type: [ConfirmPickingDetailDto] })
-    @IsArray()
-    @ArrayMinSize(1)
+    @IsArray({ message: i18nValidationMessage('inventory-request.validation.details_array') })
+    @ArrayMinSize(1, { message: i18nValidationMessage('inventory-request.validation.details_min') })
     @ValidateNested({ each: true })
     @Type(() => ConfirmPickingDetailDto)
     details: ConfirmPickingDetailDto[];
@@ -306,8 +324,8 @@ export class ConfirmCheckingDetailDto {
 
 export class ConfirmCheckingDto {
     @ApiProperty({ type: [ConfirmCheckingDetailDto] })
-    @IsArray()
-    @ArrayMinSize(1)
+    @IsArray({ message: i18nValidationMessage('inventory-request.validation.details_array') })
+    @ArrayMinSize(1, { message: i18nValidationMessage('inventory-request.validation.details_min') })
     @ValidateNested({ each: true })
     @Type(() => ConfirmCheckingDetailDto)
     details: ConfirmCheckingDetailDto[];
@@ -334,11 +352,11 @@ export class CompleteShipmentDto {
 export class AssignWorkersDto {
     @ApiPropertyOptional({ description: 'ID checker' })
     @IsOptional()
-    @IsUUID('4')
+    @IsUUID('4', { message: i18nValidationMessage('inventory-request.validation.checker_id_uuid') })
     checker_id?: string;
 
     @ApiPropertyOptional({ description: 'ID worker cất hàng' })
     @IsOptional()
-    @IsUUID('4')
+    @IsUUID('4', { message: i18nValidationMessage('inventory-request.validation.worker_id_uuid') })
     worker_id?: string;
 }

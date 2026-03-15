@@ -63,6 +63,8 @@
         "reject_reason_max_length": "Rejection reason must not exceed 500 characters",
         "detail_id_required": "Detail ID is required",
         "detail_id_uuid": "Detail ID must be a valid UUID",
+        "checker_id_uuid": "Checker ID must be a valid UUID",
+        "worker_id_uuid": "Putaway worker ID must be a valid UUID",
         "quantity_min_zero": "Quantity must not be less than 0",
         "notes_max_length": "Notes must not exceed 1000 characters",
         "tracking_number_string": "Tracking number must be a string",

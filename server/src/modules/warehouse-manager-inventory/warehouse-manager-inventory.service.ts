@@ -50,7 +50,8 @@ export class WarehouseManagerInventoryService {
         query: QueryPendingInboundDto,
         lang: string,
     ): Promise<IPaginatedResponse<IInboundRequest>> {
-        const { warehouse_id, keywords, limit = 10, offset = 0 } = query;
+        void lang;
+        const { warehouse_id, keywords, status, limit = 10, offset = 0 } = query;
 
         // Lọc warehouseIds theo warehouse_id nếu có
         const targetWarehouseIds = warehouse_id
@@ -63,8 +64,8 @@ export class WarehouseManagerInventoryService {
 
         const where: Prisma.ReceiptWhereInput = {
             warehouse_id: { in: targetWarehouseIds },
-            status: ReceiptStatus.PENDING,
             is_deleted: false,
+            ...(status ? { status } : {}),
             ...(keywords && {
                 OR: [
                     { code: { contains: keywords, mode: 'insensitive' } },
@@ -105,7 +106,8 @@ export class WarehouseManagerInventoryService {
         query: QueryPendingOutboundDto,
         lang: string,
     ): Promise<IPaginatedResponse<IOutboundRequest>> {
-        const { warehouse_id, keywords, limit = 10, offset = 0 } = query;
+        void lang;
+        const { warehouse_id, keywords, status, limit = 10, offset = 0 } = query;
 
         const targetWarehouseIds = warehouse_id
             ? warehouseIds.filter(id => id === warehouse_id)
@@ -117,8 +119,8 @@ export class WarehouseManagerInventoryService {
 
         const where: Prisma.ExportWhereInput = {
             warehouse_id: { in: targetWarehouseIds },
-            status: ExportStatus.PENDING,
             is_deleted: false,
+            ...(status ? { status } : {}),
             ...(keywords && {
                 OR: [
                     { code: { contains: keywords, mode: 'insensitive' } },
@@ -149,6 +151,102 @@ export class WarehouseManagerInventoryService {
             offset,
             hasMore: offset + items.length < total,
         };
+    }
+
+    /**
+     * Lấy chi tiết phiếu nhập theo quyền kho của warehouse manager
+     */
+    async getInboundById(
+        receiptId: string,
+        warehouseIds: string[],
+        lang: string,
+    ): Promise<IInboundRequest> {
+        const receipt = await this.prisma.receipt.findFirst({
+            where: {
+                id: receiptId,
+                warehouse_id: { in: warehouseIds },
+                is_deleted: false,
+            },
+            include: {
+                warehouse: { select: { id: true, name: true } },
+                partner: { select: { id: true, name: true, code: true } },
+                details: {
+                    where: { is_deleted: false },
+                    include: {
+                        product: { select: { id: true, name: true, sku: true, image_url: true } },
+                        batch: { select: { id: true, code: true, expiry_date: true } },
+                        unit: { select: { id: true, name: true } },
+                    },
+                    orderBy: { created_at: 'asc' },
+                },
+            },
+        });
+
+        if (!receipt) {
+            throw new NotFoundException(
+                await this.i18n.translate('inventory-request.errors.receipt_not_found', { lang }),
+            );
+        }
+
+        return receipt as unknown as IInboundRequest;
+    }
+
+    /**
+     * Lấy chi tiết phiếu xuất theo quyền kho của warehouse manager
+     */
+    async getOutboundById(
+        exportId: string,
+        warehouseIds: string[],
+        lang: string,
+    ): Promise<IOutboundRequest> {
+        const exportRecord = await this.prisma.export.findFirst({
+            where: {
+                id: exportId,
+                warehouse_id: { in: warehouseIds },
+                is_deleted: false,
+            },
+            include: {
+                warehouse: { select: { id: true, name: true } },
+                partner: { select: { id: true, name: true, code: true } },
+                details: {
+                    where: { is_deleted: false },
+                    include: {
+                        product: {
+                            select: {
+                                id: true,
+                                name: true,
+                                sku: true,
+                                image_url: true,
+                            },
+                        },
+                        batch: { select: { id: true, code: true, expiry_date: true } },
+                        unit: { select: { id: true, name: true } },
+                    },
+                    orderBy: { created_at: 'asc' },
+                },
+                pick_lists: {
+                    where: { is_deleted: false },
+                    include: {
+                        details: {
+                            where: { is_deleted: false },
+                            include: {
+                                product: { select: { id: true, name: true, sku: true } },
+                            },
+                            orderBy: { created_at: 'asc' },
+                        },
+                    },
+                    orderBy: { created_at: 'desc' },
+                },
+            },
+        });
+
+        if (!exportRecord) {
+            throw new NotFoundException(
+                await this.i18n.translate('inventory-request.errors.export_not_found', { lang }),
+            );
+        }
+
+        return exportRecord as unknown as IOutboundRequest;
     }
 
     // ==================== APPROVE/REJECT INBOUND ====================

@@ -287,6 +287,15 @@
     color: #a16207;
 }
 
+.approval-kanban__column--approved .approval-kanban__header {
+    border-bottom-color: #0369a1;
+}
+
+.approval-kanban__column--approved .approval-kanban__count {
+    background: #e0f2fe;
+    color: #0369a1;
+}
+
 .approval-kanban__column--processing .approval-kanban__count {
     background: #dbeafe;
     color: #1d4ed8;

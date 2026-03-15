@@ -273,7 +273,7 @@ export default function OutboundListPage() {
         try {
             const token = authStorage.getAccessToken();
             if (!token) { router.push("/login"); return; }
-            await inventoryService.rejectOutbound(token, cancelTarget.id, "Người tạo phiếu tự hủy");
+            await inventoryService.cancelOutbound(token, cancelTarget.id, "Người tạo phiếu tự hủy");
             showToast(`Phiếu ${cancelTarget.code} đã được hủy`, "success");
             setCancelDialogOpen(false);
             setCancelTarget(null);

@@ -40,6 +40,7 @@ export class WarehouseManagerInventoryController {
     @ApiOperation({ summary: 'Danh sách yêu cầu nhập kho chờ xử lý', description: 'Lấy danh sách phiếu nhập đang chờ xử lý cho các kho mà Warehouse Manager quản lý. Yêu cầu quyền `warehouse-manager.inventory.inbound.list`.' })
     @ApiQuery({ name: 'warehouse_id', required: false, type: String, description: 'ID kho cần lọc', example: WAREHOUSE_ID })
     @ApiQuery({ name: 'keywords', required: false, type: String, description: 'Từ khóa tìm kiếm', example: 'PN-2026' })
+    @ApiQuery({ name: 'status', required: false, type: String, description: 'Lọc trạng thái phiếu nhập. Bỏ trống để lấy toàn bộ', example: 'PENDING' })
     @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Số bản ghi trên trang', example: 10 })
     @ApiQuery({ name: 'offset', required: false, type: Number, description: 'Vị trí bắt đầu', example: 0 })
     @ApiResponse({ status: 200, description: 'Lấy danh sách thành công', schema: { type: 'object', properties: { code: { type: 'string', example: 'inventory-request.list_pending_inbound' }, message: { type: 'string', example: 'Lấy danh sách yêu cầu nhập chờ xử lý thành công' }, success: { type: 'boolean', example: true }, data: { type: 'object', example: { items: [{ id: INBOUND_ID, code: 'PN-2026-0001', status: 'PENDING' }], total: 12, limit: 10, offset: 0, hasMore: true } } } } })
@@ -48,6 +49,19 @@ export class WarehouseManagerInventoryController {
     async findPendingInbound(@Query() query: QueryPendingInboundDto, @Request() req: any, @I18nLang() lang: string) {
         const result = await this.warehouseManagerInventoryService.findPendingInbound(req.warehouseIds || [], query, lang);
         return new GetResponse('inventory-request.list_pending_inbound', result, lang === 'vi' ? 'Lấy danh sách yêu cầu nhập chờ xử lý thành công' : 'Pending inbound requests fetched successfully');
+    }
+
+    @Get('inbound/:id')
+    @RequirePermission('warehouse-manager.inventory.inbound.list')
+    @ApiOperation({ summary: 'Chi tiết phiếu nhập kho', description: 'Lấy chi tiết phiếu nhập theo phạm vi kho mà Warehouse Manager được phân quyền.' })
+    @ApiParam({ name: 'id', description: 'ID phiếu nhập', example: INBOUND_ID })
+    @ApiResponse({ status: 200, description: 'Lấy chi tiết phiếu nhập thành công' })
+    @ApiResponse({ status: 404, description: 'Không tìm thấy phiếu nhập', schema: notFound })
+    @ApiAuthResponses()
+    @ApiValidationErrorResponse()
+    async findInboundById(@Param('id', ParseUUIDPipe) id: string, @Request() req: any, @I18nLang() lang: string) {
+        const result = await this.warehouseManagerInventoryService.getInboundById(id, req.warehouseIds || [], lang);
+        return new GetResponse('inventory-request.get_inbound', result, lang === 'vi' ? 'Lấy chi tiết phiếu nhập thành công' : 'Inbound detail fetched successfully');
     }
 
     @Post('inbound/:id/approve')
@@ -144,6 +158,7 @@ export class WarehouseManagerInventoryController {
     @ApiOperation({ summary: 'Danh sách yêu cầu xuất kho chờ xử lý', description: 'Lấy danh sách phiếu xuất kho `PENDING` cho các kho mà Warehouse Manager quản lý. Yêu cầu quyền `warehouse-manager.inventory.outbound.list`.' })
     @ApiQuery({ name: 'warehouse_id', required: false, type: String, description: 'ID kho cần lọc', example: WAREHOUSE_ID })
     @ApiQuery({ name: 'keywords', required: false, type: String, description: 'Từ khóa tìm kiếm', example: 'PX-2026' })
+    @ApiQuery({ name: 'status', required: false, type: String, description: 'Lọc trạng thái phiếu xuất. Bỏ trống để lấy toàn bộ', example: 'PENDING' })
     @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Số bản ghi trên trang', example: 10 })
     @ApiQuery({ name: 'offset', required: false, type: Number, description: 'Vị trí bắt đầu', example: 0 })
     @ApiResponse({ status: 200, description: 'Lấy danh sách thành công', schema: { type: 'object', properties: { code: { type: 'string', example: 'inventory-request.list_pending_outbound' }, message: { type: 'string', example: 'Lấy danh sách yêu cầu xuất chờ xử lý thành công' }, success: { type: 'boolean', example: true }, data: { type: 'object', example: { items: [{ id: OUTBOUND_ID, code: 'PX-2026-0001', status: 'PENDING' }], total: 6, limit: 10, offset: 0, hasMore: false } } } } })
@@ -152,6 +167,19 @@ export class WarehouseManagerInventoryController {
     async findPendingOutbound(@Query() query: QueryPendingOutboundDto, @Request() req: any, @I18nLang() lang: string) {
         const result = await this.warehouseManagerInventoryService.findPendingOutbound(req.warehouseIds || [], query, lang);
         return new GetResponse('inventory-request.list_pending_outbound', result, lang === 'vi' ? 'Lấy danh sách yêu cầu xuất chờ xử lý thành công' : 'Pending outbound requests fetched successfully');
+    }
+
+    @Get('outbound/:id')
+    @RequirePermission('warehouse-manager.inventory.outbound.list')
+    @ApiOperation({ summary: 'Chi tiết phiếu xuất kho', description: 'Lấy chi tiết phiếu xuất theo phạm vi kho mà Warehouse Manager được phân quyền.' })
+    @ApiParam({ name: 'id', description: 'ID phiếu xuất', example: OUTBOUND_ID })
+    @ApiResponse({ status: 200, description: 'Lấy chi tiết phiếu xuất thành công' })
+    @ApiResponse({ status: 404, description: 'Không tìm thấy phiếu xuất', schema: notFound })
+    @ApiAuthResponses()
+    @ApiValidationErrorResponse()
+    async findOutboundById(@Param('id', ParseUUIDPipe) id: string, @Request() req: any, @I18nLang() lang: string) {
+        const result = await this.warehouseManagerInventoryService.getOutboundById(id, req.warehouseIds || [], lang);
+        return new GetResponse('inventory-request.get_outbound', result, lang === 'vi' ? 'Lấy chi tiết phiếu xuất thành công' : 'Outbound detail fetched successfully');
     }
 
     @Post('outbound/:id/approve')

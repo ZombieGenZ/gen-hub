@@ -1,4 +1,5 @@
-import type { ApiResponse } from "@/services/common.types";
+import type { ApiResponse, PaginatedResponse } from "@/services/common.types";
+import type { ExportStatus, InboundRequest, OutboundRequest, QueryInboundParams, QueryOutboundParams, ReceiptStatus } from "./inventory.types";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 
@@ -8,6 +9,56 @@ const API = process.env.NEXT_PUBLIC_API_URL;
  */
 export class WarehouseManagerInventoryService {
     // ─── INBOUND ───
+
+    async listInbound(
+        token: string,
+        query?: QueryInboundParams,
+    ): Promise<PaginatedResponse<InboundRequest>> {
+        const params = new URLSearchParams();
+        if (query?.limit != null) params.append("limit", String(query.limit));
+        if (query?.offset != null) params.append("offset", String(query.offset));
+        if (query?.keywords) params.append("keywords", query.keywords);
+        if (query?.warehouse_id) params.append("warehouse_id", query.warehouse_id);
+        if (query?.status) params.append("status", query.status as ReceiptStatus);
+
+        const qs = params.toString();
+        const response = await fetch(
+            `${API}/warehouse-manager/inventory/inbound${qs ? `?${qs}` : ""}`,
+            {
+                method: "GET",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+            },
+        );
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || "Không thể lấy danh sách phiếu nhập");
+        }
+        return await response.json();
+    }
+
+    async getInboundById(
+        token: string,
+        id: string,
+    ): Promise<ApiResponse<InboundRequest>> {
+        const response = await fetch(
+            `${API}/warehouse-manager/inventory/inbound/${id}`,
+            {
+                method: "GET",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+            },
+        );
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || "Không thể lấy chi tiết phiếu nhập");
+        }
+        return await response.json();
+    }
 
     async approveInbound(
         token: string,
@@ -134,6 +185,56 @@ export class WarehouseManagerInventoryService {
     }
 
     // ─── OUTBOUND ───
+
+    async listOutbound(
+        token: string,
+        query?: QueryOutboundParams,
+    ): Promise<PaginatedResponse<OutboundRequest>> {
+        const params = new URLSearchParams();
+        if (query?.limit != null) params.append("limit", String(query.limit));
+        if (query?.offset != null) params.append("offset", String(query.offset));
+        if (query?.keywords) params.append("keywords", query.keywords);
+        if (query?.warehouse_id) params.append("warehouse_id", query.warehouse_id);
+        if (query?.status) params.append("status", query.status as ExportStatus);
+
+        const qs = params.toString();
+        const response = await fetch(
+            `${API}/warehouse-manager/inventory/outbound${qs ? `?${qs}` : ""}`,
+            {
+                method: "GET",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+            },
+        );
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || "Không thể lấy danh sách phiếu xuất");
+        }
+        return await response.json();
+    }
+
+    async getOutboundById(
+        token: string,
+        id: string,
+    ): Promise<ApiResponse<OutboundRequest>> {
+        const response = await fetch(
+            `${API}/warehouse-manager/inventory/outbound/${id}`,
+            {
+                method: "GET",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+            },
+        );
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || "Không thể lấy chi tiết phiếu xuất");
+        }
+        return await response.json();
+    }
 
     async approveOutbound(
         token: string,

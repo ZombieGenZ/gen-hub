@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback, useEffect } from "react";
 import { authStorage } from "@/services/auth/auth-storage.service";
-import { InventoryService } from "@/services/inventory/inventory.service";
+import { WarehouseManagerInventoryService } from "@/services/inventory/warehouse-manager-inventory.service";
 import { useToast } from "@/contexts/ToastContext";
 import type { OutboundRequest, PickingStrategy } from "@/services/inventory/inventory.types";
 
@@ -25,7 +25,7 @@ import {
 
 import RejectReasonDialog from "./RejectReasonDialog";
 
-const inventoryService = new InventoryService();
+const wmInventoryService = new WarehouseManagerInventoryService();
 
 // ────────────────────────────────────────────────
 // Strategy options (for PENDING step)
@@ -68,7 +68,7 @@ function StepBar({ status }: { status: string }) {
                 const active = idx === current;
                 return (
                     <React.Fragment key={step.key}>
-                        <div className="flex flex-col items-center min-w-[64px]">
+                        <div className="flex flex-col items-center min-w-16">
                             <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-colors
                                 ${done ? "bg-[#0F766E] border-[#0F766E] text-white" :
                                   active ? "bg-white border-[#0F766E] text-[#0F766E]" :
@@ -80,7 +80,7 @@ function StepBar({ status }: { status: string }) {
                             </span>
                         </div>
                         {idx < OUTBOUND_STEPS.length - 1 && (
-                            <div className={`flex-1 h-0.5 mt-[-10px] ${idx < current ? "bg-[#0F766E]" : "bg-muted-foreground/20"}`} />
+                            <div className={`flex-1 h-0.5 -mt-2.5 ${idx < current ? "bg-[#0F766E]" : "bg-muted-foreground/20"}`} />
                         )}
                     </React.Fragment>
                 );
@@ -131,7 +131,7 @@ export default function OutboundApprovalDetail({
             const token = authStorage.getAccessToken();
             if (!token) return;
             setLoading(true);
-            const res = await inventoryService.getOutboundById(token, ticketId);
+            const res = await wmInventoryService.getOutboundById(token, ticketId);
             const item = (res as any)?.data ?? res;
             setData(item);
             // Init picking data if available
@@ -181,7 +181,9 @@ export default function OutboundApprovalDetail({
         setSubmitting(true);
         try {
             const pickingStrategy = strategy === "NEAREST" ? "FEFO" : strategy;
-            await inventoryService.approveOutbound(token, ticketId, undefined, pickingStrategy);
+            await wmInventoryService.approveOutbound(token, ticketId, {
+                picking_strategy: pickingStrategy,
+            });
             showToast("Đã duyệt lệnh xuất — chuyển sang Đang nhặt hàng", "success");
             fetchData();
         } catch (err: any) {
@@ -194,7 +196,7 @@ export default function OutboundApprovalDetail({
         const token = getToken(); if (!token) return;
         setSubmitting(true);
         try {
-            await inventoryService.rejectOutbound(token, ticketId, reason);
+            await wmInventoryService.rejectOutbound(token, ticketId, reason);
             showToast(`Đã từ chối phiếu xuất — Lý do: ${reason}`, "success");
             setRejectOpen(false);
             fetchData();
@@ -212,7 +214,7 @@ export default function OutboundApprovalDetail({
                 pick_list_detail_id,
                 picked_qty: qty,
             }));
-            await inventoryService.confirmPicking(token, ticketId, { details });
+            await wmInventoryService.confirmPicking(token, ticketId, { details });
             showToast("Đã xác nhận nhặt hàng — chuyển sang Đang kiểm tra", "success");
             fetchData();
         } catch (err: any) {
@@ -230,7 +232,7 @@ export default function OutboundApprovalDetail({
                 checked_qty: d.checked_qty,
                 passed: d.passed,
             }));
-            await inventoryService.confirmChecking(token, ticketId, { details });
+            await wmInventoryService.confirmChecking(token, ticketId, { details });
             showToast("Đã xác nhận kiểm tra — chuyển sang Đóng gói", "success");
             fetchData();
         } catch (err: any) {
@@ -243,7 +245,7 @@ export default function OutboundApprovalDetail({
         const token = getToken(); if (!token) return;
         setSubmitting(true);
         try {
-            await inventoryService.completeShipment(token, ticketId, {});
+            await wmInventoryService.completeShipment(token, ticketId, {});
             showToast("Hoàn tất xuất kho! Hàng đã được giao cho vận chuyển.", "success");
             fetchData();
         } catch (err: any) {
@@ -387,7 +389,7 @@ export default function OutboundApprovalDetail({
                             {hasInsufficientStock && (
                                 <Card className="border border-amber-200 bg-amber-50/50 rounded-2xl mt-4">
                                     <CardContent className="p-4 flex items-start gap-3">
-                                        <BoltIcon className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                                        <BoltIcon className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                                         <div className="space-y-2">
                                             <p className="text-sm font-medium text-amber-800">Tồn kho không đủ</p>
                                             <p className="text-xs text-amber-700">Bạn có thể tách phiếu để chỉ xuất sản phẩm đủ tồn kho.</p>
@@ -488,7 +490,7 @@ export default function OutboundApprovalDetail({
 
                 {/* ─── PACKED ─── */}
                 {data.status === "PACKED" && (
-                    <div className="p-6 flex flex-col items-center gap-4 text-center min-h-[200px] justify-center">
+                    <div className="p-6 flex flex-col items-center gap-4 text-center min-h-50 justify-center">
                         <div className="w-14 h-14 rounded-full bg-orange-50 flex items-center justify-center">
                             <TruckIcon className="w-7 h-7 text-orange-600" />
                         </div>
@@ -521,7 +523,7 @@ export default function OutboundApprovalDetail({
 
                 {/* ─── SHIPPED ─── */}
                 {data.status === "SHIPPED" && (
-                    <div className="p-6 flex flex-col items-center gap-4 text-center min-h-[200px] justify-center">
+                    <div className="p-6 flex flex-col items-center gap-4 text-center min-h-50 justify-center">
                         <div className="w-16 h-16 rounded-full bg-green-50 flex items-center justify-center">
                             <CheckCircleIcon className="w-8 h-8 text-green-600" />
                         </div>
@@ -534,7 +536,7 @@ export default function OutboundApprovalDetail({
 
                 {/* ─── CANCELLED ─── */}
                 {data.status === "CANCELLED" && (
-                    <div className="p-6 flex flex-col items-center gap-4 text-center min-h-[200px] justify-center">
+                    <div className="p-6 flex flex-col items-center gap-4 text-center min-h-50 justify-center">
                         <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center">
                             <XCircleIcon className="w-8 h-8 text-red-500" />
                         </div>

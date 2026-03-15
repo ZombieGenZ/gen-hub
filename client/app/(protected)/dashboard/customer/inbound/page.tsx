@@ -468,7 +468,7 @@ export default function InboundListPage() {
         try {
             const token = authStorage.getAccessToken();
             if (!token) { router.push("/login"); return; }
-            await inventoryService.rejectInbound(token, cancelTarget.id, "Người tạo phiếu tự hủy");
+            await inventoryService.cancelInbound(token, cancelTarget.id, "Người tạo phiếu tự hủy");
             showToast(`Phiếu ${cancelTarget.code} đã được hủy`, "success");
             setCancelDialogOpen(false);
             setCancelTarget(null);

@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { authStorage } from "@/services/auth/auth-storage.service";
-import { InventoryService } from "@/services/inventory/inventory.service";
+import { WarehouseManagerInventoryService } from "@/services/inventory/warehouse-manager-inventory.service";
 import { useToast } from "@/contexts/ToastContext";
 import type { InboundRequest, OutboundRequest } from "@/services/inventory/inventory.types";
 
@@ -36,7 +36,7 @@ import OutboundApprovalDetail from "./OutboundApprovalDetail";
 
 import "./approval.css";
 
-const inventoryService = new InventoryService();
+const wmInventoryService = new WarehouseManagerInventoryService();
 
 // ────────────────────────────────────────────────
 // Unified ticket type
@@ -159,8 +159,8 @@ export default function ApprovalQueuePage() {
 
             console.log("[ApprovalQueuePage] Fetching inbound and outbound requests...");
             const [inboundRes, outboundRes] = await Promise.all([
-                inventoryService.listInbound(token, { limit: 50 }),
-                inventoryService.listOutbound(token, { limit: 50 }),
+                wmInventoryService.listInbound(token, { limit: 50 }),
+                wmInventoryService.listOutbound(token, { limit: 50 }),
             ]);
 
             const inData = inboundRes.data?.items ?? [];
@@ -257,9 +257,9 @@ export default function ApprovalQueuePage() {
             selectedTickets.map(async (ticket) => {
                 try {
                     if (ticket.type === "inbound") {
-                        await inventoryService.approveInbound(token, ticket.id);
+                        await wmInventoryService.approveInbound(token, ticket.id);
                     } else {
-                        await inventoryService.approveOutbound(token, ticket.id);
+                        await wmInventoryService.approveOutbound(token, ticket.id);
                     }
                     successCount++;
                 } catch {

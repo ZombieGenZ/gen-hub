@@ -273,6 +273,15 @@ export class InventoryService {
         return response.json();
     }
 
+    /**
+     * Hủy phiếu nhập từ phía tổ chức tạo phiếu.
+     * Hiện tại backend dùng cùng endpoint reject để chuyển trạng thái về CANCELLED.
+     */
+    async cancelInbound(token: string, id: string, reason?: string): Promise<ApiResponse<InboundRequest>> {
+        const cancelReason = reason?.trim() || 'Người tạo phiếu tự hủy';
+        return this.rejectInbound(token, id, cancelReason);
+    }
+
     // ==================== STOCK (TỒN KHO) ====================
 
     async listStock(token: string, warehouseId?: string, keywords?: string): Promise<ApiResponse<any[]>> {
@@ -333,6 +342,15 @@ export class InventoryService {
             throw new Error(errorData.message || 'Không thể từ chối phiếu xuất');
         }
         return response.json();
+    }
+
+    /**
+     * Hủy phiếu xuất từ phía tổ chức tạo phiếu.
+     * Hiện tại backend dùng cùng endpoint reject để chuyển trạng thái về CANCELLED.
+     */
+    async cancelOutbound(token: string, id: string, reason?: string): Promise<ApiResponse<OutboundRequest>> {
+        const cancelReason = reason?.trim() || 'Người tạo phiếu tự hủy';
+        return this.rejectOutbound(token, id, cancelReason);
     }
 
     // ==================== INBOUND WORKFLOW STEPS ====================

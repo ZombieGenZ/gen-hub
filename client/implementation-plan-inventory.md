@@ -4,6 +4,46 @@
 > **Ngày tạo**: 2026-03-04  
 > **Mục tiêu**: Bổ sung luồng nhập/xuất kho đầy đủ theo yêu cầu (Receiving → Putaway cho Inbound, Picking → Checking → Shipment cho Outbound)
 
+## Trạng Thái Triển Khai (Done vs In-progress)
+
+### Done
+
+- [x] Đã có flow UI theo role cho cả Inbound và Outbound.
+- [x] Đã có màn hình cho cả Admin và Customer để thao tác/quan sát luồng.
+- [x] Đã có implementation plan làm chuẩn triển khai tiếp.
+- [x] Đã kết nối Admin Approval với WM API thật (list, detail, approve/reject, workflow actions).
+- [x] Đã thay mock warehouse bằng API thật trong form tạo phiếu Inbound/Outbound của Customer.
+- [x] Đã cập nhật status/filter/Kanban cho các trạng thái mới (APPROVED, RECEIVING, PUTAWAY, CHECKING, PACKED).
+- [x] Đã chuẩn hóa client cancel handlers qua method cancel riêng (không gọi reject trực tiếp từ UI).
+- [x] Đã bổ sung i18n validation messages cho DTO workflow WM.
+
+### In-progress
+
+- [ ] Hoàn tất state machine nghiệp vụ Inbound/Outbound theo luồng đích, đảm bảo transition đúng và chặn sai trạng thái.
+- [ ] Hoàn tất toàn bộ API nghiệp vụ theo từng bước xử lý (receiving, putaway, picking, checking, shipment) và đồng bộ permission theo role.
+- [ ] Hoàn tất logic tồn kho cuối: reserve khi duyệt xuất, trừ tồn kho thật khi hoàn tất shipment, cập nhật nhất quán quantity/on_hand/allocated/available.
+- [ ] Hoàn tất kết nối UI Admin/Customer với API thật cho toàn bộ bước, loại bỏ xử lý tạm/mock còn sót.
+- [ ] Hoàn tất validation dữ liệu, thông báo lỗi i18n, logging/audit trail và realtime event cho các mốc nghiệp vụ quan trọng.
+- [ ] Hoàn tất migration/seeding liên quan enum, permission, và dữ liệu phụ trợ.
+- [ ] Hoàn tất kiểm thử unit/integration/E2E theo role và UAT trước khi xác nhận production-ready.
+
+### Cập Nhật Thực Tế (2026-03-15)
+
+- [x] D3: `InboundApprovalDetail.tsx` đã gọi API thật qua `WarehouseManagerInventoryService`.
+- [x] D4: `OutboundApprovalDetail.tsx` đã gọi API thật qua `WarehouseManagerInventoryService`.
+- [x] F2: `FILTER_TABS` cho inbound/outbound đã cập nhật đủ trạng thái mới.
+- [x] F3: Kanban đã có cột `APPROVED` + mapping status mới + CSS tương ứng.
+- [x] F5.1/F5.2: Action bar dynamic theo status đã hoạt động với API thật.
+- [x] F6.1: `handleRejectConfirm` đã gọi API thật.
+- [x] F6.4: `handleCancelConfirm` đã chuyển qua `cancelInbound/cancelOutbound`.
+- [x] F6.5: `handleBulkApprove` đã gọi WM API thật.
+- [ ] F6.2: `handleQuarantine` vẫn là TODO (chưa có API backend chính thức).
+- [ ] F6.3: `handleSplitOrder` vẫn là TODO (chưa có API backend chính thức).
+
+### Kết Luận Ngắn
+
+UI flow theo role đã có; business flow end-to-end đầy đủ cho inbound/outbound vẫn đang triển khai, chưa hoàn tất 100%.
+
 ---
 
 ## Mục Lục
@@ -1030,6 +1070,8 @@ export class WarehouseManagerInventoryService {
 
 ### D3. Sửa `InboundApprovalDetail.tsx` — Kết nối API thật
 
+**Trạng thái**: ĐÃ XONG
+
 Thêm import:
 
 ```typescript
@@ -1077,6 +1119,8 @@ const handleRejectConfirm = async (category: string, reason: string) => {
 ```
 
 ### D4. Sửa `OutboundApprovalDetail.tsx` — Kết nối API thật
+
+**Trạng thái**: ĐÃ XONG
 
 Thêm import giống D3, sửa `handleApproveOutbound`:
 
@@ -1183,6 +1227,8 @@ export interface CompleteShipmentPayload {
 
 ### F2. Cập nhật FILTER_TABS
 
+**Trạng thái**: ĐÃ XONG
+
 **File**: `client/app/(protected)/dashboard/customer/inbound/page.tsx` — Sửa `FILTER_TABS`:
 
 ```diff
@@ -1209,6 +1255,8 @@ export interface CompleteShipmentPayload {
 ```
 
 ### F3. Cập nhật Kanban Columns & Status Mapping
+
+**Trạng thái**: ĐÃ XONG
 
 **File**: `client/app/(protected)/dashboard/admin/approval/page.tsx`
 
@@ -1289,6 +1337,8 @@ Thêm CSS cho Kanban column mới vào `approval.css`:
 > ⚠️ Nếu API warehouse chưa sẵn sàng, có thể GIỮ mock tạm nhưng PHẢI comment rõ `// TODO: Replace with real API` và đảm bảo mock IDs khớp với DB seed.
 
 ### F5. Thêm UI Workflow Steps cho Admin Approval
+
+**Trạng thái**: ĐÃ XONG PHẦN CHÍNH (các bước chính đã gọi API thật theo status)
 
 > **Nguyên tắc**: Hiện `InboundApprovalDetail` và `OutboundApprovalDetail` chỉ hiện 1 bộ action (Duyệt/Từ chối). Sau workflow mới, **action bar phải thay đổi theo status hiện tại** của phiếu.
 
@@ -1516,6 +1566,8 @@ const handleCompleteShipment = async () => {
 ```
 
 ### F6. Fix Handlers CHƯA gọi API thật
+
+**Trạng thái**: ĐANG TRIỂN KHAI (đã xong phần lớn, còn `quarantine` và `split order`)
 
 Ngoài `handleApproveProcess` và `handleApproveOutbound` (đã fix ở D3/D4), còn các handler sau cũng chưa gọi API:
 
