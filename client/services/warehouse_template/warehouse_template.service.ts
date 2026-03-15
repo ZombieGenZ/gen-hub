@@ -86,7 +86,7 @@ export class WarehouseTemplateService {
      * @param data Dữ liệu tạo mới
      * @returns Kết quả tạo mới
      */
-    async createWarehouseTemplate(token: string, data: any) {
+    async createWarehouseTemplate(token: string, data: unknown) {
         const response = await fetch(`${API}/warehouse-templates`, {
             method: 'POST',
             headers: {
@@ -111,7 +111,7 @@ export class WarehouseTemplateService {
      * @param data Dữ liệu cập nhật
      * @returns Kết quả cập nhật
      */
-    async updateWarehouseTemplate(token: string, id: string, data: any) {
+    async updateWarehouseTemplate(token: string, id: string, data: unknown) {
         const response = await fetch(`${API}/warehouse-templates/${id}`, {
             method: 'PUT',
             headers: {
@@ -568,7 +568,7 @@ export class WarehouseTemplateService {
      * @param data Layout data (UpsertLayoutDto)
      * @returns Kết quả cập nhật
      */
-    async upsertLayout(token: string, id: string, data: { rows: any[] }) {
+    async upsertLayout(token: string, id: string, data: { rows: unknown[] }) {
         const response = await fetch(`${API}/warehouse-templates/${id}/layout`, {
             method: 'PUT',
             headers: {

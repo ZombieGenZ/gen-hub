@@ -63,7 +63,7 @@ export function StatusTimeline({ events, className }: StatusTimelineProps) {
                     <div key={event.id} className="relative flex gap-4 pb-6 last:pb-0">
                         {/* Vertical line */}
                         {!isLast && (
-                            <div className="absolute left-[17px] top-10 bottom-0 w-px bg-border" />
+                            <div className="absolute left-4.25 top-10 bottom-0 w-px bg-border" />
                         )}
 
                         {/* Icon circle */}

@@ -672,7 +672,7 @@ export function WarehouseLayoutTab({ warehouseId, data, onChange }: WarehouseLay
                         ))}
                     </div>
                 ) : rows.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-[200px] rounded-2xl bg-muted/30 border border-dashed border-muted-foreground/30 gap-3">
+                    <div className="flex flex-col items-center justify-center h-50 rounded-2xl bg-muted/30 border border-dashed border-muted-foreground/30 gap-3">
                         <p className="text-muted-foreground text-sm text-center px-4">Chưa có Row nào. Thêm Row để bắt đầu cấu hình layout.</p>
                         <Button
                             onClick={onAddRow}

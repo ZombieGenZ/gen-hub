@@ -38,7 +38,7 @@ export function ContractPreview({
     const isSigned = !!signatureData;
 
     return (
-        <div className="bg-white p-8 shadow-sm border border-slate-200 rounded-none mx-auto max-w-4xl min-h-[800px] text-slate-800 font-serif leading-relaxed relative">
+        <div className="bg-white p-8 shadow-sm border border-slate-200 rounded-none mx-auto max-w-4xl min-h-200 text-slate-800 font-serif leading-relaxed relative">
             {/* Signed Badge */}
             {isSigned && (
                 <div className="absolute top-4 right-4 flex items-center gap-2 bg-green-50 text-green-700 px-3 py-1.5 rounded-full border border-green-200">
@@ -56,7 +56,7 @@ export function ContractPreview({
                 <p className="text-sm italic">Số: {contractCode}</p>
             </div>
 
-            <ScrollArea className="h-[600px] pr-4">
+            <ScrollArea className="h-150 pr-4">
                 <div className="space-y-6 text-sm text-justify">
                     <p>
                         Hôm nay, ngày {format(currentDate, "dd", { locale: vi })} tháng {format(currentDate, "MM", { locale: vi })} năm {format(currentDate, "yyyy", { locale: vi })}, tại văn phòng Công ty TNHH GenHub Logistics, chúng tôi gồm:
@@ -317,7 +317,7 @@ export function ContractPreview({
                                     <p className="font-bold mb-1">Chữ ký điện tử hợp lệ</p>
                                     <p>Hợp đồng này đã được ký điện tử bằng phương thức xác thực OTP và có giá trị pháp lý tương đương chữ ký tay theo Luật Giao dịch điện tử 2023.</p>
                                     <p className="mt-1 text-green-600">
-                                        Mã xác thực: GH-SIG-{Date.now().toString(36).toUpperCase()}
+                                        Mã xác thực: GH-SIG-{signedAt ? signedAt.getTime().toString(36).toUpperCase() : 'N/A'}
                                     </p>
                                 </div>
                             </div>

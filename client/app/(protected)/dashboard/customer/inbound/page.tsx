@@ -168,7 +168,7 @@ function CreateItemRow({
             batchService
                 .listByProduct(token, item.product.id, { limit: 50 })
                 .then((res) => {
-                    const items = Array.isArray(res) ? res : res?.data?.items || [];
+                    const items = res?.data?.items || [];
                     setBatches(items);
                 })
                 .catch(() => setBatches([]));
@@ -410,9 +410,9 @@ export default function InboundListPage() {
                 status: activeTab === "ALL" ? undefined : activeTab,
             });
 
-            if (res) {
-                const data = Array.isArray(res) ? res : Array.isArray((res as any)?.data?.items) ? (res as any).data.items : Array.isArray((res as any)?.data) ? (res as any).data : [];
-                const total = (res as any)?.data?.total ?? (res as any)?.total ?? (res as any)?.meta?.total ?? data.length;
+            if (res && res.data) {
+                const data = res.data.items || [];
+                const total = res.data.total || data.length;
                 setItems(data);
                 setTotalItems(total);
             }
@@ -424,7 +424,7 @@ export default function InboundListPage() {
         } finally {
             setLoading(false);
         }
-    }, [debouncedKeywords, activeTab, currentPage, router]);
+    }, [debouncedKeywords, activeTab, currentPage, router, showToast]);
 
     useEffect(() => { fetchItems(); }, [fetchItems]);
 
@@ -443,23 +443,14 @@ export default function InboundListPage() {
                 }),
             ]);
 
-            setWarehouses(Array.isArray(warehouseList) ? warehouseList : []);
+            setWarehouses(warehouseList);
 
-            const pList = Array.isArray(partnerRes)
-                ? partnerRes
-                : Array.isArray((partnerRes as any)?.data?.items)
-                    ? (partnerRes as any).data.items
-                    : Array.isArray((partnerRes as any)?.data)
-                        ? (partnerRes as any).data
-                        : [];
+            // partnerRes is PaginatedResponse<Partner> based on its type definition
+            const pList = partnerRes?.data?.items || [];
             setPartners(pList);
-            const prList = Array.isArray(productRes)
-                ? productRes
-                : Array.isArray((productRes as any)?.data?.items)
-                    ? (productRes as any).data.items
-                    : Array.isArray((productRes as any)?.data)
-                        ? (productRes as any).data
-                        : [];
+
+            // productRes is PaginatedResponse<Product> based on its type definition
+            const prList = productRes?.data?.items || [];
             setProducts(prList);
         } catch {
             /* silent */
@@ -482,8 +473,9 @@ export default function InboundListPage() {
             setCancelDialogOpen(false);
             setCancelTarget(null);
             fetchItems();
-        } catch (err: any) {
-            showToast(err.message || "Hủy phiếu thất bại", "error");
+        } catch (err) {
+            const msg = err instanceof Error ? err.message : "Hủy phiếu thất bại";
+            showToast(msg, "error");
         } finally {
             setIsCancelling(false);
         }
@@ -621,7 +613,7 @@ export default function InboundListPage() {
                 <CardContent className="p-6">
                     <div className="flex flex-wrap items-center gap-4">
                         {/* Search */}
-                        <div className="relative flex-1 min-w-[250px]">
+                        <div className="relative flex-1 min-w-62.5">
                             <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                             <Input
                                 placeholder="Tìm kiếm theo mã phiếu, mã PO..."
@@ -855,7 +847,7 @@ export default function InboundListPage() {
                                             variant={currentPage === page ? "default" : "outline"}
                                             size="sm"
                                             onClick={() => setCurrentPage(page)}
-                                            className={`h-8 min-w-[32px] rounded-lg ${currentPage === page
+                                            className={`h-8 min-w-8 rounded-lg ${currentPage === page
                                                 ? "bg-[#0F766E] hover:bg-[#0F766E]/90"
                                                 : "text-gray-600"
                                                 }`}
@@ -1155,7 +1147,7 @@ export default function InboundListPage() {
                             <Button
                                 onClick={handleSubmit}
                                 disabled={isSubmitting}
-                                className="gap-2 bg-[#0F766E] hover:bg-[#0F766E]/90 text-white rounded-xl min-w-[140px]"
+                                className="gap-2 bg-[#0F766E] hover:bg-[#0F766E]/90 text-white rounded-xl min-w-35"
                             >
                                 {isSubmitting ? (
                                     <span className="flex items-center gap-2">
