@@ -22,6 +22,8 @@ import {
     CalendarDaysIcon,
     ArrowUturnLeftIcon,
     ExclamationTriangleIcon,
+    NewspaperIcon,
+    RectangleGroupIcon
 } from "@heroicons/react/24/outline";
 import { AppSidebar, AppSidebarContent, SidebarGroup } from "./AppSidebar";
 
@@ -52,6 +54,13 @@ const adminNavGroups: SidebarGroup[] = [
             { href: "/dashboard/admin/amenities", icon: SparklesIcon, label: "Tiện ích" },
             { href: "/dashboard/admin/addons", icon: PuzzlePieceIcon, label: "Dịch vụ thêm" },
             { href: "/dashboard/admin/insurances", icon: ShieldCheckIcon, label: "Bảo hiểm" },
+        ]
+    },
+    {
+        title: "Nội dung & CMS",
+        items: [
+            { href: "/dashboard/admin/categories", icon: RectangleGroupIcon, label: "Danh mục bài viết" },
+            { href: "/dashboard/admin/articles", icon: NewspaperIcon, label: "Bài viết & Tin tức" },
         ]
     },
     {

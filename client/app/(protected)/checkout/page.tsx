@@ -194,7 +194,7 @@ function CheckoutContent() {
                     ...companyData,
                     ...representativeData
                 });
-                orgId = newOrg.id;
+                orgId = newOrg.data?.id || newOrg.id;
                 setSession({ ...session, organization_id: orgId });
             }
 
