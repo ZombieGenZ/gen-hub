@@ -1,9 +1,15 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { MemberSidebar } from "@/components/layouts/MemberSidebar";
 import { MemberHeader } from "@/components/layouts/MemberHeader";
 import { SidebarProvider, useSidebar } from "@/components/providers/sidebar-provider";
 import { cn } from "@/lib/utils";
+import { Loader2 } from "lucide-react";
+import { authStorage } from "@/services/auth/auth-storage.service";
+import { UserService } from "@/services/user/user.service";
+import { OrganizationService } from "@/services/organization/organization.service";
 
 interface MemberLayoutProps {
     children: React.ReactNode;
@@ -24,6 +30,66 @@ function LayoutContent({ children }: MemberLayoutProps) {
 }
 
 export default function MemberDashboardLayout({ children }: MemberLayoutProps) {
+    const router = useRouter();
+    const [isAuthorized, setIsAuthorized] = useState(false);
+
+    useEffect(() => {
+        const guardMemberRoute = async () => {
+            try {
+                const accessToken = authStorage.getAccessToken();
+                const refreshToken = authStorage.getRefreshToken();
+
+                if (!accessToken || !refreshToken) {
+                    router.replace("/login?returnUrl=/dashboard/member");
+                    return;
+                }
+
+                const userService = new UserService();
+                const organizationService = new OrganizationService();
+                const userData = await userService.getUser(accessToken, refreshToken);
+                const roles = userData.roles.map((r) => r.name);
+
+                if (roles.includes("ADMIN")) {
+                    router.replace("/dashboard/admin");
+                    return;
+                }
+
+                if (roles.includes("STAFF")) {
+                    router.replace("/dashboard/staff");
+                    return;
+                }
+
+                const organizations = await organizationService.getOrganizations(accessToken, { limit: 1 });
+                const firstOrg = organizations?.items?.[0];
+
+                if (!firstOrg?.id) {
+                    router.replace("/dashboard/customer");
+                    return;
+                }
+
+                if (firstOrg.owner?.id === userData.user.id) {
+                    router.replace("/dashboard/owner");
+                    return;
+                }
+
+                setIsAuthorized(true);
+            } catch (error) {
+                console.error("Member route guard failed", error);
+                router.replace("/dashboard");
+            }
+        };
+
+        guardMemberRoute();
+    }, [router]);
+
+    if (!isAuthorized) {
+        return (
+            <div className="h-screen w-full flex items-center justify-center bg-background">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+        );
+    }
+
     return (
         <SidebarProvider>
             <LayoutContent>{children}</LayoutContent>
