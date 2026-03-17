@@ -679,7 +679,7 @@ export class ContactService implements OnModuleInit {
         const message = await this.repository.createMessage({
             conversation_id: id,
             sender_type: MessageSender.STAFF,
-            sender_id: options.fromDiscord ? undefined : validUserId, // Fix: sender_id MUST be UUID or undefined if from Discord
+            sender_id: options.fromDiscord ? undefined : validUserId,
             sender_name: staffName,
             sender_email: staffEmail,
             message_type: dto.is_internal ? MessageType.SYSTEM_NOTE : MessageType.EMAIL,
@@ -687,7 +687,7 @@ export class ContactService implements OnModuleInit {
             email_message_id: emailMessageId,
             email_in_reply_to: conversation.email_message_id || undefined,
             is_internal: dto.is_internal,
-            created_by: userId, // created_by is just String, can store Discord ID
+            created_by: userId,
         });
 
         // Cập nhật first_response_at nếu chưa có
@@ -1312,7 +1312,7 @@ export class ContactService implements OnModuleInit {
                             senderEmail,
                             senderName,
                             code,
-                            subject || 'Phản hồi yêu cầu hỗ trợ',
+                            dto.subject || 'Phản hồi yêu cầu hỗ trợ',
                             aiResult.content,
                             finalEmailMessageId,
                             [finalEmailMessageId],
