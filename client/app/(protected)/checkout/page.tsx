@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, Suspense, useCallback } from 'react';
+import React, { useState, useEffect, Suspense, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -25,6 +25,7 @@ import { Button } from '@/components/ui/button';
 import { useSearchParams } from 'next/navigation';
 import { publicWarehouseService } from '@/services/public-warehouse/public-warehouse.service';
 import { MOCK_ADDONS, MOCK_INSURANCES, MOCK_DURATION_TIERS } from '@/types/booking/booking.type';
+import { publicQuotationService, QuotationApiResponse } from '@/services/public-quotation/public-quotation.service';
 
 // Default empty session
 import { authStorage } from '@/services/auth/auth-storage.service';
@@ -86,6 +87,20 @@ const normalizeRepresentativeTitle = (rawTitle?: string) => {
     return REPRESENTATIVE_TITLE_LABELS[rawTitle] || rawTitle;
 };
 
+const mapApiQuotationToBreakdown = (quotation: QuotationApiResponse) => ({
+    basePrice: quotation.base_price_per_month,
+    durationMonths: quotation.duration_months,
+    durationDiscountPercent: quotation.duration_discount_percent,
+    durationDiscountAmount: quotation.duration_discount_amount ?? ((quotation.base_price_per_month * quotation.duration_months) * (quotation.duration_discount_percent / 100)),
+    addonsCost: quotation.addons_cost ?? 0,
+    insuranceCost: quotation.insurance_cost ?? 0,
+    managementFee: quotation.management_fee ?? 0,
+    subtotal: quotation.subtotal,
+    serviceFee: quotation.service_fee,
+    couponDiscount: quotation.coupon_discount,
+    grandTotal: quotation.grand_total,
+});
+
 function CheckoutContent() {
     const router = useRouter();
     const { session, setSession, currentStep, nextStep, setIsSubmitting } = useCheckout();
@@ -112,6 +127,48 @@ function CheckoutContent() {
     // Coupon state
     const [couponDrawerOpen, setCouponDrawerOpen] = useState(false);
     const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number } | null>(null);
+    const hasSyncedQuotationRef = useRef(false);
+
+    const recalculateQuotation = useCallback(async (couponCode?: string) => {
+        if (!session.warehouse_template_id || !session.duration_tier_id || !session.rental_type) {
+            return;
+        }
+
+        try {
+            const quotation = await publicQuotationService.calculateQuotation({
+                warehouse_template_id: session.warehouse_template_id,
+                rental_type: session.rental_type,
+                duration_tier_id: session.duration_tier_id,
+                row_template_ids: session.rental_type === 'row' ? session.row_template_ids : undefined,
+                addon_ids: session.addon_ids,
+                insurance_id: session.insurance_id,
+                coupon_code: couponCode || undefined,
+                start_date: session.start_date ? new Date(session.start_date).toISOString().split('T')[0] : undefined,
+            });
+
+            setSession({
+                coupon_code: couponCode || undefined,
+                quotation: mapApiQuotationToBreakdown(quotation),
+                deposit_amount: quotation.deposit_amount,
+            });
+
+            if (couponCode && quotation.coupon_discount > 0) {
+                setAppliedCoupon({ code: couponCode, discount: quotation.coupon_discount });
+            } else {
+                setAppliedCoupon(null);
+            }
+        } catch (error) {
+            console.error('Failed to recalculate quotation:', error);
+        }
+    }, [session.warehouse_template_id, session.duration_tier_id, session.rental_type, session.row_template_ids, session.addon_ids, session.insurance_id, session.start_date, setSession]);
+
+    useEffect(() => {
+        if (hasSyncedQuotationRef.current) return;
+        if (!session.warehouse_template_id || !session.duration_tier_id || !session.rental_type) return;
+
+        hasSyncedQuotationRef.current = true;
+        void recalculateQuotation(session.coupon_code);
+    }, [session.warehouse_template_id, session.duration_tier_id, session.rental_type, session.coupon_code, recalculateQuotation]);
 
     // Initial Data Fetch (Organization)
     useEffect(() => {
@@ -192,29 +249,7 @@ function CheckoutContent() {
 
     // Handle coupon applied
     const handleCouponApplied = (coupon: { code: string; discount: number } | null) => {
-        setAppliedCoupon(coupon);
-        if (coupon) {
-            // Update session with coupon info
-            setSession({
-                ...session,
-                coupon_code: coupon.code,
-                quotation: session.quotation ? {
-                    ...session.quotation,
-                    couponDiscount: coupon.discount,
-                    grandTotal: Math.max(0, session.quotation.grandTotal - coupon.discount + (session.quotation.couponDiscount || 0))
-                } : undefined
-            });
-        } else {
-            setSession({
-                ...session,
-                coupon_code: undefined,
-                quotation: session.quotation ? {
-                    ...session.quotation,
-                    couponDiscount: 0,
-                    grandTotal: session.quotation.grandTotal + (session.quotation.couponDiscount || 0)
-                } : undefined
-            });
-        }
+        void recalculateQuotation(coupon?.code);
     };
 
 

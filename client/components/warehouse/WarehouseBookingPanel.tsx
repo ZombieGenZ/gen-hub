@@ -322,10 +322,10 @@ export function WarehouseBookingPanel({
                 const result = await publicQuotationService.calculateQuotation({
                     warehouse_template_id: warehouseId,
                     rental_type: rentalType,
-                    duration_months: durationMonths,
+                    duration_tier_id: selectedDurationId,
                     start_date: date.toISOString().split('T')[0],
-                    row_ids: rentalType === 'row' ? selectedRowIds : undefined,
-                    selected_amenities: selectedAddons.length > 0 ? selectedAddons : undefined,
+                    row_template_ids: rentalType === 'row' ? selectedRowIds : undefined,
+                    addon_ids: selectedAddons.length > 0 ? selectedAddons : undefined,
                     insurance_id: selectedInsuranceId || undefined,
                     // coupon_code will be handled in checkout
                 });
