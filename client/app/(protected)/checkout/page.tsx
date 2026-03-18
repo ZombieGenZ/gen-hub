@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, Suspense, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -50,6 +50,41 @@ interface RepresentativeData {
     representative_phone: string;
     representative_email: string;
 }
+
+const isSameCompanyData = (a: CompanyData, b: CompanyData) => (
+    a.name === b.name &&
+    a.international_name === b.international_name &&
+    a.tax_code === b.tax_code &&
+    a.headquarters_address === b.headquarters_address &&
+    a.invoice_address === b.invoice_address
+);
+
+const isSameRepresentativeData = (a: RepresentativeData, b: RepresentativeData) => (
+    a.representative_name === b.representative_name &&
+    a.representative_title === b.representative_title &&
+    a.representative_phone === b.representative_phone &&
+    a.representative_email === b.representative_email
+);
+
+const REPRESENTATIVE_TITLE_LABELS: Record<string, string> = {
+    'giam-doc': 'Giám đốc',
+    'tong-giam-doc': 'Tổng Giám đốc',
+    'chu-tich-hdqt': 'Chủ tịch HĐQT',
+    'pho-giam-doc': 'Phó Giám đốc',
+    'giam-doc-tai-chinh': 'Giám đốc Tài chính (CFO)',
+    'giam-doc-dieu-hanh': 'Giám đốc Điều hành (COO)',
+    'truong-phong': 'Trưởng phòng',
+    'ke-toan-truong': 'Kế toán trưởng',
+    'nguoi-dai-dien-phap-luat': 'Người đại diện pháp luật',
+    'chu-doanh-nghiep': 'Chủ doanh nghiệp',
+};
+
+const normalizeRepresentativeTitle = (rawTitle?: string) => {
+    if (!rawTitle) {
+        return 'Người đại diện pháp luật';
+    }
+    return REPRESENTATIVE_TITLE_LABELS[rawTitle] || rawTitle;
+};
 
 function CheckoutContent() {
     const router = useRouter();
@@ -122,14 +157,18 @@ function CheckoutContent() {
     }, [setSession]);
 
     // Handle company info change
-    const handleCompanyChange = (data: CompanyData) => {
-        setCompanyData(data);
-    };
+    const handleCompanyChange = useCallback((data: CompanyData) => {
+        setCompanyData(prev => (isSameCompanyData(prev, data) ? prev : data));
+
+        if (session.company_address !== data.headquarters_address) {
+            setSession({ company_address: data.headquarters_address });
+        }
+    }, [session.company_address, setSession]);
 
     // Handle representative info change
-    const handleRepresentativeChange = (data: RepresentativeData) => {
-        setRepresentativeData(data);
-    };
+    const handleRepresentativeChange = useCallback((data: RepresentativeData) => {
+        setRepresentativeData(prev => (isSameRepresentativeData(prev, data) ? prev : data));
+    }, []);
 
     // Handle payment method change
     const handlePaymentMethodChange = (method: PaymentMethod) => {
@@ -192,7 +231,8 @@ function CheckoutContent() {
             if (!hasExistingOrg && !orgId) {
                 const newOrg = await organizationService.createOrganization(token, {
                     ...companyData,
-                    ...representativeData
+                    ...representativeData,
+                    representative_title: normalizeRepresentativeTitle(representativeData.representative_title),
                 });
                 orgId = newOrg.data?.id || newOrg.id;
                 setSession({ ...session, organization_id: orgId });
@@ -220,8 +260,8 @@ function CheckoutContent() {
 
             // Ensure start date is not in the past
             const providedDate = new Date(session.start_date || Date.now());
-            const validStartDate = providedDate.getTime() <= Date.now() 
-                ? new Date(Date.now() + 5 * 60 * 1000).toISOString() 
+            const validStartDate = providedDate.getTime() <= Date.now()
+                ? new Date(Date.now() + 5 * 60 * 1000).toISOString()
                 : providedDate.toISOString();
 
             const payload: CreateRentalContractRequest = {
@@ -342,7 +382,10 @@ function CheckoutContent() {
                             <CheckoutStepContainer step="signature">
                                 <ContractSignatureStep
                                     companyData={companyData}
-                                    representativeData={representativeData}
+                                    representativeData={{
+                                        ...representativeData,
+                                        representative_title: normalizeRepresentativeTitle(representativeData.representative_title),
+                                    }}
                                     onSignatureComplete={handleSignatureComplete}
                                 />
                             </CheckoutStepContainer>
@@ -355,7 +398,7 @@ function CheckoutContent() {
                                     companyData={companyData}
                                     representativeData={{
                                         name: representativeData.representative_name,
-                                        title: representativeData.representative_title,
+                                        title: normalizeRepresentativeTitle(representativeData.representative_title),
                                         phone: representativeData.representative_phone,
                                         email: representativeData.representative_email,
                                     }}
@@ -548,7 +591,15 @@ function CheckoutContainer() {
 
                 // 3. Calculate Quotation 
                 const basePrice = Number(property.price_per_month) || 0;
-                const durationMonths = durationTier?.duration_value || 1;
+                const durationUnit = durationTier?.duration_unit;
+                const durationValue = Number(durationTier?.duration_value || 1);
+                const durationMonths = durationUnit === 'YEAR'
+                    ? durationValue * 12
+                    : durationValue;
+
+                const durationTierLabel = durationUnit === 'YEAR'
+                    ? `${durationValue} năm`
+                    : `${durationValue} tháng`;
 
                 const durationDiscountPercent = durationTier?.discount_percent || 0;
 
@@ -633,7 +684,7 @@ function CheckoutContainer() {
                         name: getFriendlyName(id)
                     })),
                     duration_tier_id: durationId || '',
-                    duration_tier_name: durationTier?.name || `${durationMonths} Tháng`,
+                    duration_tier_name: durationTierLabel,
                     duration_months: durationMonths,
                     start_date: startDateStr,
                     addon_ids: addonIds,

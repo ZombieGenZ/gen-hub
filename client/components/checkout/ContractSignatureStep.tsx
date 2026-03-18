@@ -1,12 +1,11 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useCheckout } from './CheckoutWizard';
 import { Button } from '@/components/ui/button';
 import { DigitalSignatureModal } from '@/components/contract/DigitalSignatureModal';
 import { ContractPreview } from '@/components/contract/ContractPreview';
 import { PencilSquareIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
-import { convertCheckoutToContract } from '@/lib/contract.utils';
 
 interface ContractSignatureStepProps {
     companyData: {
@@ -34,8 +33,13 @@ export function ContractSignatureStep({
     const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
     const [isSigning, setIsSigning] = useState(false);
 
-    // Generate contract code
-    const contractCode = `HĐ-${new Date().getFullYear()}-${Math.floor(Math.random() * 100000).toString().padStart(5, '0')}`;
+    // Keep contract code stable across re-renders in the signing step.
+    const contractCode = useMemo(() => {
+        if (session.contract_code) {
+            return session.contract_code;
+        }
+        return `HĐ-${new Date().getFullYear()}-${Math.floor(Math.random() * 100000).toString().padStart(5, '0')}`;
+    }, [session.contract_code]);
 
     // Handle signature completion
     const handleSignContract = async (signatureData: string) => {
@@ -76,7 +80,10 @@ export function ContractSignatureStep({
                         session={session}
                         contractCode={contractCode}
                         companyName={companyData.name}
+                        companyTaxCode={companyData.tax_code}
+                        companyAddress={companyData.headquarters_address}
                         representativeName={representativeData.representative_name}
+                        representativeTitle={representativeData.representative_title}
                     />
                 </div>
             </div>
