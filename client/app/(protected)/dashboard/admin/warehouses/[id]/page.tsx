@@ -124,6 +124,42 @@ export default function WarehouseEditPage() {
             cleanData.ward_id = formData.ward_id;
         }
 
+        // Gifts & amenities fields
+        if (Array.isArray(formData.amenity_ids)) {
+            cleanData.amenity_ids = Array.from(new Set(formData.amenity_ids.filter((id: unknown) => typeof id === 'string' && id.trim())));
+        } else if (Array.isArray(formData.amenities)) {
+            const normalizedAmenityIds = formData.amenities
+                .map((item: any) => item?.amenity_id || item?.id)
+                .filter((id: unknown) => typeof id === 'string' && id.trim());
+            cleanData.amenity_ids = Array.from(new Set(normalizedAmenityIds));
+        }
+
+        if (Array.isArray(formData.addon_gifts)) {
+            cleanData.addon_gifts = formData.addon_gifts
+                .filter((gift: any) => typeof gift?.addon_id === 'string' && gift.addon_id.trim())
+                .map((gift: any) => ({
+                    id: gift.id,
+                    addon_id: gift.addon_id,
+                    is_until_service_end: !!gift.is_until_service_end,
+                    gift_duration_value: Number(gift.gift_duration_value) || 1,
+                    gift_duration_unit: gift.gift_duration_unit || 'MONTH',
+                    is_active: gift.is_active !== false,
+                }));
+        }
+
+        if (Array.isArray(formData.insurance_gifts)) {
+            cleanData.insurance_gifts = formData.insurance_gifts
+                .filter((gift: any) => typeof gift?.insurance_id === 'string' && gift.insurance_id.trim())
+                .map((gift: any) => ({
+                    id: gift.id,
+                    insurance_id: gift.insurance_id,
+                    is_until_service_end: !!gift.is_until_service_end,
+                    gift_duration_value: Number(gift.gift_duration_value) || 1,
+                    gift_duration_unit: gift.gift_duration_unit || 'MONTH',
+                    is_active: gift.is_active !== false,
+                }));
+        }
+
         // Validate required fields
         if (!cleanData.name) {
             toast.error("Tên kho không được để trống");

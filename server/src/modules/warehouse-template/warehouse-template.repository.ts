@@ -83,6 +83,13 @@ export class WarehouseTemplateRepository {
                 duration_tier: true,
             },
         },
+        amenities: {
+            where: { is_deleted: false },
+            orderBy: { created_at: 'asc' as const },
+            include: {
+                amenity: true,
+            },
+        },
         addon_gifts: {
             where: { is_deleted: false },
             orderBy: { created_at: 'asc' as const },
@@ -1072,6 +1079,79 @@ export class WarehouseTemplateRepository {
                         }),
                     ),
                 );
+            }
+        });
+    }
+
+    /**
+     * Upsert amenities cho warehouse template
+     * - Create mapping mới
+     * - Restore mapping đã soft delete
+     * - Soft delete mapping không còn trong request
+     */
+    async upsertAmenities(
+        templateId: string,
+        amenityIds: string[],
+        userId: string,
+    ): Promise<void> {
+        const now = new Date();
+        const uniqueAmenityIds = Array.from(new Set(amenityIds));
+
+        await this.prisma.$transaction(async (tx) => {
+            const existingMappings = await tx.amenityOnWarehouseTemplate.findMany({
+                where: { warehouse_template_id: templateId },
+                select: {
+                    id: true,
+                    amenity_id: true,
+                    is_deleted: true,
+                },
+            });
+
+            const existingByAmenityId = new Map(existingMappings.map((m) => [m.amenity_id, m]));
+
+            const mappingIdsToDelete = existingMappings
+                .filter((m) => !m.is_deleted && !uniqueAmenityIds.includes(m.amenity_id))
+                .map((m) => m.id);
+
+            const mappingIdsToRestore = uniqueAmenityIds
+                .map((amenityId) => existingByAmenityId.get(amenityId))
+                .filter((m): m is { id: string; amenity_id: string; is_deleted: boolean | null } => !!m && !!m.is_deleted)
+                .map((m) => m.id);
+
+            const amenityIdsToCreate = uniqueAmenityIds.filter((amenityId) => !existingByAmenityId.has(amenityId));
+
+            if (mappingIdsToDelete.length > 0) {
+                await tx.amenityOnWarehouseTemplate.updateMany({
+                    where: { id: { in: mappingIdsToDelete } },
+                    data: {
+                        is_deleted: true,
+                        deleted_at: now,
+                        deleted_by: userId,
+                    },
+                });
+            }
+
+            if (mappingIdsToRestore.length > 0) {
+                await tx.amenityOnWarehouseTemplate.updateMany({
+                    where: { id: { in: mappingIdsToRestore } },
+                    data: {
+                        is_deleted: false,
+                        deleted_at: null,
+                        deleted_by: null,
+                        is_active: true,
+                    },
+                });
+            }
+
+            if (amenityIdsToCreate.length > 0) {
+                await tx.amenityOnWarehouseTemplate.createMany({
+                    data: amenityIdsToCreate.map((amenityId) => ({
+                        warehouse_template_id: templateId,
+                        amenity_id: amenityId,
+                        is_active: true,
+                        created_by: userId,
+                    })),
+                });
             }
         });
     }

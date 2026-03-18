@@ -76,6 +76,12 @@ export class WarehouseTemplateService {
             insurance_gifts: this.prepareInsuranceGiftsCreate(dto.insurance_gifts, userId),
         });
 
+        if (dto.amenity_ids !== undefined) {
+            await this.repository.upsertAmenities(template.id, dto.amenity_ids, userId);
+        }
+
+        const templateWithRelations = await this.repository.findById(template.id);
+
         // Invalidate list cache
         await this.redisService.invalidateWarehouseTemplateListCache();
 
@@ -88,7 +94,7 @@ export class WarehouseTemplateService {
         // Emit WebSocket event
         this.websocketGateway.emitWarehouseTemplateCreated(template.id, template.name, userId);
 
-        return template;
+        return templateWithRelations || template;
     }
 
     /**
@@ -279,6 +285,10 @@ export class WarehouseTemplateService {
 
         if (dto.insurance_gifts !== undefined) {
             await this.upsertInsuranceGifts(id, dto.insurance_gifts, existing.insurance_gifts || [], userId);
+        }
+
+        if (dto.amenity_ids !== undefined) {
+            await this.repository.upsertAmenities(id, dto.amenity_ids, userId);
         }
 
         // Update template với các trường cơ bản
