@@ -229,9 +229,6 @@ export class WarehouseManagerInventoryService {
                     include: {
                         details: {
                             where: { is_deleted: false },
-                            include: {
-                                product: { select: { id: true, name: true, sku: true } },
-                            },
                             orderBy: { created_at: 'asc' },
                         },
                     },

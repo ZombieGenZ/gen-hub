@@ -1312,7 +1312,7 @@ export class ContactService implements OnModuleInit {
                             senderEmail,
                             senderName,
                             code,
-                            dto.subject || 'Phản hồi yêu cầu hỗ trợ',
+                            subject || 'Phản hồi yêu cầu hỗ trợ',
                             aiResult.content,
                             finalEmailMessageId,
                             [finalEmailMessageId],
