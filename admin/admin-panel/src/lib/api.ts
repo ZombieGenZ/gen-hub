@@ -220,18 +220,35 @@ export interface BatchChanges {
     deleted: string[];
 }
 
+const unwrapArrayResponse = <T>(payload: unknown): T[] => {
+    if (Array.isArray(payload)) {
+        return payload as T[];
+    }
+
+    if (
+        payload &&
+        typeof payload === 'object' &&
+        'data' in payload &&
+        Array.isArray((payload as { data?: unknown }).data)
+    ) {
+        return (payload as { data: T[] }).data;
+    }
+
+    return [];
+};
+
 // Admin API functions
 export const adminApi = {
     // Tables
     getTables: async () => {
         const { data } = await api.get('/admin/tables');
-        return data;
+        return unwrapArrayResponse(data);
     },
 
     // Statistics - Get all stats in one call
     getStatistics: async () => {
         const { data } = await api.get('/admin/statistics');
-        return data;
+        return unwrapArrayResponse(data);
     },
 
     getTableSchema: async (tableName: string) => {
