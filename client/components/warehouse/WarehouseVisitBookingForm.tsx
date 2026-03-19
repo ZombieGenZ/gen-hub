@@ -24,7 +24,7 @@ const generateTimeSlots = () => {
     return slots;
 };
 
-export default function WarehouseVisitBookingForm({ warehouseTemplateId, onSuccess, onCancel }: WarehouseVisitBookingFormProps) {
+export default React.memo(function WarehouseVisitBookingForm({ warehouseTemplateId, onSuccess, onCancel }: WarehouseVisitBookingFormProps) {
     const { showToast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
     
@@ -225,4 +225,4 @@ export default function WarehouseVisitBookingForm({ warehouseTemplateId, onSucce
             </div>
         </form>
     );
-}
+});

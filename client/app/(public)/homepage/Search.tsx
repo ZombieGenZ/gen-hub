@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { Snowflake, Truck, Package, RotateCcw, MapPin } from "lucide-react";
-import MapComponent from "./MapSearch/MapComponent";
+import dynamic from "next/dynamic";
+const MapComponent = dynamic(() => import("./MapSearch/MapComponent"), { ssr: false });
 import PropertyList from "./MapSearch/PropertyList";
 import { Property, mapWarehouseToProperty } from "@/data/mockProperties";
 import { publicWarehouseService } from "@/services/public-warehouse/public-warehouse.service";

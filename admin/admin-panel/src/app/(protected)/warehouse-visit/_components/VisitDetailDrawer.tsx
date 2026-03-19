@@ -43,7 +43,7 @@ const getErrorMessage = (error: unknown): string => {
   return 'Lỗi khi cập nhật trạng thái';
 };
 
-export default function VisitDetailDrawer({ visitId, onClose, onSuccess }: VisitDetailDrawerProps) {
+export default React.memo(function VisitDetailDrawer({ visitId, onClose, onSuccess }: VisitDetailDrawerProps) {
   const { data: visit, isLoading } = useSWR<WarehouseVisit>(visitId ? `/warehouse-visit/${visitId}` : null, fetcher);
   const { hasPermission } = useAuth();
   
@@ -329,4 +329,4 @@ export default function VisitDetailDrawer({ visitId, onClose, onSuccess }: Visit
       </div>
     </>
   );
-}
+});

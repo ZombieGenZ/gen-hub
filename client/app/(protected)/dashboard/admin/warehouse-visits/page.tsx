@@ -1,12 +1,14 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import dynamic from 'next/dynamic';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { warehouseVisitService } from '@/services/warehouse-visit/warehouse-visit.service';
 import { authStorage } from '@/services/auth/auth-storage.service';
-import CalendarView from './components/CalendarView';
 import PendingSidebar from './components/PendingSidebar';
-import VisitDetailDrawer from './components/VisitDetailDrawer';
+
+const CalendarView = dynamic(() => import('./components/CalendarView'), { ssr: false });
+const VisitDetailDrawer = dynamic(() => import('./components/VisitDetailDrawer'), { ssr: false });
 
 export default function WarehouseVisitsPage() {
     const queryClient = useQueryClient();

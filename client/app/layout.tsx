@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { REM, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -34,12 +35,15 @@ export default function RootLayout({
   return (
     <html lang="vi" suppressHydrationWarning className={`${rem.variable} ${jetbrainsMono.variable}`}>
       <head>
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
         <link rel="preload" href="/assets/Genhubv2.svg" as="image" />
       </head>
       <body
         className={`antialiased font-sans`}
       >
+        <Script 
+          src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" 
+          strategy="lazyOnload" 
+        />
         <ThemeProvider
           attribute="class"
           defaultTheme="light"

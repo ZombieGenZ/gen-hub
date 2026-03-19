@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
 import { motion } from "framer-motion";
 
 const WAREHOUSE_TYPES = ['Kho TMĐT', 'Kho Mát', 'Kho Ngoại Quan'] as const;
@@ -15,10 +16,13 @@ export function PrimeNestHero() {
 
                 {/* Background Image & Overlay */}
                 <div className="absolute inset-0 z-0">
-                    <img
-                        src="./assets/unnamed.jpg"
+                    <Image
+                        src="/assets/unnamed.jpg"
                         alt="GenHub"
-                        className="w-full h-full object-cover"
+                        fill
+                        priority
+                        sizes="100vw"
+                        className="object-cover"
                     />
                     {/* Dark Gradient Overlay */}
                     <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/25 to-black/20" />

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Image from "next/image";
 
 import { Square2StackIcon, HomeModernIcon, BuildingOfficeIcon, BoltIcon, MapPinIcon, TruckIcon } from "@heroicons/react/24/outline";
 
@@ -50,13 +51,13 @@ export function PrimeNestFeatured() {
                     {/* Images */}
                     <div className="grid grid-cols-2 gap-3">
                         <div className="col-span-2 h-48 md:h-64 rounded-2xl bg-slate-100 border border-slate-200 overflow-hidden relative">
-                            <img src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=2670&auto=format&fit=crop" className="w-full h-full object-cover" alt="Warehouse Main" />
+                            <Image src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=2670&auto=format&fit=crop" fill sizes="(max-width: 768px) 100vw, 50vw" className="object-cover" alt="Warehouse Main" />
                         </div>
                         <div className="h-28 md:h-36 rounded-2xl bg-slate-100 border border-slate-200 overflow-hidden relative">
-                            <img src="https://images.unsplash.com/photo-1553413077-190dd305871c?q=80&w=2535&auto=format&fit=crop" className="w-full h-full object-cover" alt="Warehouse Detail 1" />
+                            <Image src="https://images.unsplash.com/photo-1553413077-190dd305871c?q=80&w=2535&auto=format&fit=crop" fill sizes="(max-width: 768px) 50vw, 25vw" className="object-cover" alt="Warehouse Detail 1" />
                         </div>
                         <div className="h-28 md:h-36 rounded-2xl bg-slate-100 border border-slate-200 overflow-hidden relative">
-                            <img src="https://images.unsplash.com/photo-1565610222536-ef125c59da2e?q=80&w=2670&auto=format&fit=crop" className="w-full h-full object-cover" alt="Warehouse Detail 2" />
+                            <Image src="https://images.unsplash.com/photo-1565610222536-ef125c59da2e?q=80&w=2670&auto=format&fit=crop" fill sizes="(max-width: 768px) 50vw, 25vw" className="object-cover" alt="Warehouse Detail 2" />
                         </div>
                     </div>
 

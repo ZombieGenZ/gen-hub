@@ -7,6 +7,7 @@ import {
     UserGroupIcon,
     ArrowRightIcon
 } from "@heroicons/react/24/outline";
+import Image from "next/image";
 
 interface Feature {
     title: string;
@@ -40,10 +41,12 @@ export function PrimeNestAbout() {
                     {/* Image Section */}
                     <div className="relative">
                         <div className="relative rounded-3xl overflow-hidden bg-muted border border-border h-90 min-h-[500px]">
-                            <img
-                                src="./assets/unnamed.jpg"
+                            <Image
+                                src="/assets/unnamed.jpg"
                                 alt="About GenHub"
-                                className="w-full h-full object-cover"
+                                fill
+                                sizes="(max-width: 768px) 100vw, 50vw"
+                                className="object-cover"
                             />
                         </div>
                     </div>
