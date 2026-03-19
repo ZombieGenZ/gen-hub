@@ -6,6 +6,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { warehouseVisitService } from '@/services/warehouse-visit/warehouse-visit.service';
 import { authStorage } from '@/services/auth/auth-storage.service';
 import PendingSidebar from './components/PendingSidebar';
+import { useWarehouseVisitSocket } from '@/hooks/warehouse-visit/use-warehouse-visit-socket';
 
 const CalendarView = dynamic(() => import('./components/CalendarView'), { ssr: false });
 const VisitDetailDrawer = dynamic(() => import('./components/VisitDetailDrawer'), { ssr: false });
@@ -13,6 +14,8 @@ const VisitDetailDrawer = dynamic(() => import('./components/VisitDetailDrawer')
 export default function WarehouseVisitsPage() {
     const queryClient = useQueryClient();
     const token = authStorage.getAccessToken() || '';
+    
+    useWarehouseVisitSocket();
 
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedVisitId, setSelectedVisitId] = useState<string | null>(null);

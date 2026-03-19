@@ -206,7 +206,6 @@ function RentalRequestContent() {
                                                 <option value="Lưu trữ linh kiện điện tử">Lưu trữ linh kiện điện tử</option>
                                                 <option value="Lưu trữ hàng tiêu dùng">Lưu trữ hàng tiêu dùng</option>
                                                 <option value="Kho phân phối (Distribution Center)">Kho phân phối (Distribution Center)</option>
-                                                <option value="Kho lạnh/Kho mát">Kho lạnh/Kho mát</option>
                                                 <option value="Khác">Khác</option>
                                             </select>
                                             <div className="absolute right-3 top-2.5 pointer-events-none text-slate-400">

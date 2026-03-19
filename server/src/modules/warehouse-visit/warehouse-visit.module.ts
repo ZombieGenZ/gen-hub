@@ -1,13 +1,14 @@
-﻿import { Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { PrismaModule } from '../../prisma/prisma.module';
 import { RedisModule } from '../redis/redis.module';
 import { NotificationModule } from '../notification/notification.module';
+import { WebsocketModule } from '../websocket/websocket.module';
 import { WarehouseVisitService } from './warehouse-visit.service';
 import { WarehouseVisitController } from './warehouse-visit.controller';
 import { WarehouseVisitRepository } from './warehouse-visit.repository';
 
 @Module({
-    imports: [PrismaModule, RedisModule, NotificationModule],
+    imports: [PrismaModule, RedisModule, NotificationModule, WebsocketModule],
     controllers: [WarehouseVisitController],
     providers: [WarehouseVisitService, WarehouseVisitRepository],
     exports: [WarehouseVisitService],

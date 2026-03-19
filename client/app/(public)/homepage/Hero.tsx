@@ -4,7 +4,7 @@ import React from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
 
-const WAREHOUSE_TYPES = ['Kho TMĐT', 'Kho Mát', 'Kho Ngoại Quan'] as const;
+const WAREHOUSE_TYPES = ['Kho TMĐT', 'Kho Chung'] as const;
 
 const ANIMATION_DURATION = 0.5;
 

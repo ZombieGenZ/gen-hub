@@ -794,6 +794,32 @@ export class WebsocketGateway
   }
 
   /**
+   * Emit event khi cập nhật trạng thái hợp đồng thuê
+   */
+  emitRentalContractStatusUpdated(orgId: string, contractId: string, contractNumber: string, status: string, updatedBy: string) {
+    this.server.to(`organization:${orgId}`).emit('rentalContract:statusUpdated', {
+      organizationId: orgId,
+      contractId,
+      contractNumber,
+      status,
+      updatedBy,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  /**
+   * Emit event khi có lịch tham quan kho mới
+   */
+  emitWarehouseVisitCreated(bookingId: string, warehouseId: string, createdBy: string) {
+    this.server.emit('warehouseVisit:created', {
+      bookingId,
+      warehouseId,
+      createdBy,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  /**
    * Emit event khi cập nhật Rental Contract
    */
   emitRentalContractUpdated(orgId: string, contractId: string, contractNumber: string, updatedBy: string, status?: string) {

@@ -1,4 +1,4 @@
-﻿import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { RedisService } from '../redis/redis.service';
 import { WarehouseVisitRepository } from './warehouse-visit.repository';
@@ -9,6 +9,7 @@ import { WarehouseVisitBooking, Prisma } from '@prisma/client';
 import { IPaginatedResponse } from '../../common/interfaces/pagination.interface';
 import { I18nService } from 'nestjs-i18n';
 import { EmailService } from '../notification/email.service';
+import { WebsocketGateway } from '../websocket/websocket.gateway';
 
 @Injectable()
 export class WarehouseVisitService {
@@ -18,6 +19,7 @@ export class WarehouseVisitService {
         private readonly configService: ConfigService,
         private readonly redisService: RedisService,
         private readonly emailService: EmailService,
+        private readonly websocketGateway: WebsocketGateway,
     ) { }
 
     async createBooking(dto: CreateWarehouseVisitBookingDto, userId: string | null): Promise<WarehouseVisitBooking> {
@@ -38,6 +40,9 @@ export class WarehouseVisitService {
         // Invalidate list cache
         const listPrefix = this.configService.get<string>('REDIS_WAREHOUSE_VISIT_LIST_KEY_PREFIX', 'warehouse:visit:list');
         await this.redisService.delByPattern(`${listPrefix}:*`);
+
+        // Emit websocket event
+        this.websocketGateway.emitWarehouseVisitCreated(newBooking.id, newBooking.warehouse_template_id, userId || 'SYSTEM');
 
         return newBooking;
     }

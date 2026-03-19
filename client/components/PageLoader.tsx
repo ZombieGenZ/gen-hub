@@ -15,7 +15,6 @@ const LOADING_TIPS = [
     "GenHub quản lý hơn 500,000m² diện tích kho trên toàn quốc",
     "Fulfillment tự động giúp xử lý đơn hàng nhanh hơn 5 lần",
     "Hơn 1,000 doanh nghiệp đã tin tưởng sử dụng GenHub",
-    "Kho mát GenHub đạt chuẩn GDP cho ngành dược phẩm",
 ];
 
 export function PageLoader({ progress, isComplete, onSkip, showSkipAfter = 3000 }: PageLoaderProps) {

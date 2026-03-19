@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { useLiveChat } from "@/hooks/useLiveChat";
 import { LiveChatMessage } from "@/types/live-chat/live-chat.type";
+import { publicWarehouseService } from "@/services/public-warehouse/public-warehouse.service";
 
 interface QuickReply {
     id: string;
@@ -40,10 +41,16 @@ interface LeadForm {
 interface AppointmentForm {
     name: string;
     phone: string;
+    email: string;
     date: string;
     time: string;
-    warehouseType: string;
+    warehouseId: string;
     note: string;
+}
+
+interface WarehouseOption {
+    id: string;
+    name: string;
 }
 
 type ChatMode = 'bot' | 'appointment' | 'lead-form';
@@ -148,10 +155,14 @@ export function PrimeNestChatbot() {
     const [inputValue, setInputValue] = useState('');
     const [leadForm, setLeadForm] = useState<LeadForm>({ name: '', phone: '', email: '', note: '' });
     const [appointmentForm, setAppointmentForm] = useState<AppointmentForm>({
-        name: '', phone: '', date: '', time: '', warehouseType: '', note: ''
+        name: '', phone: '', email: '', date: '', time: '', warehouseId: '', note: ''
     });
     const [formSubmitted, setFormSubmitted] = useState(false);
     const [chatStarted, setChatStarted] = useState(false);
+    const [availableWarehouses, setAvailableWarehouses] = useState<WarehouseOption[]>([]);
+    const [isWarehouseLoading, setIsWarehouseLoading] = useState(false);
+    const [appointmentError, setAppointmentError] = useState<string | null>(null);
+    const [isAppointmentSubmitting, setIsAppointmentSubmitting] = useState(false);
 
     const {
         messages,
@@ -226,6 +237,62 @@ export function PrimeNestChatbot() {
             setIsOpen(true);
         }
     }, [isAutoStarted, sessionId]);
+
+    useEffect(() => {
+        if (mode !== 'appointment' || availableWarehouses.length > 0 || isWarehouseLoading) {
+            return;
+        }
+
+        const loadWarehouses = async () => {
+            setIsWarehouseLoading(true);
+            setAppointmentError(null);
+            try {
+                const result = await publicWarehouseService.getPublicWarehouses({ limit: 100 });
+                const items = Array.isArray(result)
+                    ? result
+                    : Array.isArray((result as { items?: unknown[] }).items)
+                        ? (result as { items: unknown[] }).items
+                        : [];
+
+                const normalized = items
+                    .map((item) => {
+                        const raw = item as { id?: unknown; name?: unknown };
+                        if (typeof raw.id !== 'string' || typeof raw.name !== 'string') {
+                            return null;
+                        }
+
+                        return {
+                            id: raw.id,
+                            name: raw.name,
+                        };
+                    })
+                    .filter((item): item is WarehouseOption => item !== null);
+
+                setAvailableWarehouses(normalized);
+            } catch (error) {
+                console.error('Failed to load warehouses:', error);
+                setAppointmentError('Không tải được danh sách kho. Vui lòng thử lại sau.');
+            } finally {
+                setIsWarehouseLoading(false);
+            }
+        };
+
+        loadWarehouses();
+    }, [mode, availableWarehouses.length, isWarehouseLoading]);
+
+    const buildVisitEndTime = (startTime: string) => {
+        const [hours, minutes] = startTime.split(':').map(Number);
+        if (Number.isNaN(hours) || Number.isNaN(minutes)) {
+            return startTime;
+        }
+
+        const endDate = new Date();
+        endDate.setHours(hours, minutes + 60, 0, 0);
+        return `${endDate.getHours().toString().padStart(2, '0')}:${endDate
+            .getMinutes()
+            .toString()
+            .padStart(2, '0')}`;
+    };
 
     const handleOpen = () => {
         setIsOpen(true);
@@ -310,15 +377,58 @@ export function PrimeNestChatbot() {
         }, 2000);
     };
 
-    const handleAppointmentSubmit = (e: React.FormEvent) => {
+    const handleAppointmentSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        console.log('Appointment submitted:', appointmentForm);
-        setFormSubmitted(true);
-        setTimeout(() => {
-            setFormSubmitted(false);
-            setMode('bot');
-            setAppointmentForm({ name: '', phone: '', date: '', time: '', warehouseType: '', note: '' });
-        }, 2000);
+
+        if (!appointmentForm.warehouseId) {
+            setAppointmentError('Vui lòng chọn kho quan tâm.');
+            return;
+        }
+
+        const fallbackEmail = `guest-${phoneDigits || Date.now()}@genhub.vn`;
+        const submitEmail = appointmentForm.email.trim() || fallbackEmail;
+
+        setAppointmentError(null);
+        setIsAppointmentSubmitting(true);
+
+        try {
+            const response = await fetch('/api/ai-plugin/visit-booking', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    warehouse_id: appointmentForm.warehouseId,
+                    visitor_name: appointmentForm.name.trim(),
+                    visitor_email: submitEmail,
+                    visitor_phone: appointmentForm.phone.trim(),
+                    visit_date: appointmentForm.date,
+                    visit_time_start: appointmentForm.time,
+                    visit_time_end: buildVisitEndTime(appointmentForm.time),
+                    purpose: 'RENTAL_INQUIRY',
+                    purpose_details: appointmentForm.note.trim() || undefined,
+                    number_of_visitors: 1,
+                }),
+            });
+
+            const data = await response.json().catch(() => null);
+
+            if (!response.ok) {
+                throw new Error(data?.message || 'Không thể đặt lịch lúc này.');
+            }
+
+            setFormSubmitted(true);
+            setTimeout(() => {
+                setFormSubmitted(false);
+                setMode('bot');
+                setAppointmentForm({ name: '', phone: '', email: '', date: '', time: '', warehouseId: '', note: '' });
+            }, 2200);
+        } catch (error) {
+            console.error('Failed to create visit booking:', error);
+            setAppointmentError(error instanceof Error ? error.message : 'Đặt lịch thất bại. Vui lòng thử lại.');
+        } finally {
+            setIsAppointmentSubmitting(false);
+        }
     };
 
     const goBackToBot = () => {
@@ -481,10 +591,20 @@ export function PrimeNestChatbot() {
                         onChange={e => setAppointmentForm(prev => ({ ...prev, phone: e.target.value }))}
                         className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                     />
+                    <input
+                        type="email"
+                        placeholder="Email (Bắt buộc) *"
+                        required
+                        value={appointmentForm.email}
+                        onChange={e => setAppointmentForm(prev => ({ ...prev, email: e.target.value }))}
+                        className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                    />
                     <div className="grid grid-cols-2 gap-2">
                         <input
                             type="date"
                             required
+                            title="Chọn ngày tham quan"
+                            aria-label="Ngày tham quan"
                             value={appointmentForm.date}
                             onChange={e => setAppointmentForm(prev => ({ ...prev, date: e.target.value }))}
                             min={new Date().toISOString().split('T')[0]}
@@ -492,6 +612,8 @@ export function PrimeNestChatbot() {
                         />
                         <select
                             required
+                            title="Chọn giờ tham quan"
+                            aria-label="Giờ tham quan"
                             value={appointmentForm.time}
                             onChange={e => setAppointmentForm(prev => ({ ...prev, time: e.target.value }))}
                             className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
@@ -506,15 +628,20 @@ export function PrimeNestChatbot() {
                         </select>
                     </div>
                     <select
-                        value={appointmentForm.warehouseType}
-                        onChange={e => setAppointmentForm(prev => ({ ...prev, warehouseType: e.target.value }))}
+                        required
+                        title="Chọn kho quan tâm"
+                        aria-label="Kho quan tâm"
+                        value={appointmentForm.warehouseId}
+                        onChange={e => setAppointmentForm(prev => ({ ...prev, warehouseId: e.target.value }))}
+                        disabled={isWarehouseLoading}
                         className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                     >
-                        <option value="">Loại kho quan tâm</option>
-                        <option value="kho-thuong">Kho thường</option>
-                        <option value="kho-mat">Kho mát</option>
-                        <option value="kho-lanh">Kho lạnh</option>
-                        <option value="kho-chuyen-dung">Kho chuyên dụng</option>
+                        <option value="">{isWarehouseLoading ? 'Đang tải danh sách kho...' : 'Chọn kho quan tâm'}</option>
+                        {availableWarehouses.map((warehouse) => (
+                            <option key={warehouse.id} value={warehouse.id}>
+                                {warehouse.name}
+                            </option>
+                        ))}
                     </select>
                     <textarea
                         placeholder="Ghi chú thêm..."
@@ -523,12 +650,20 @@ export function PrimeNestChatbot() {
                         className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none"
                         rows={2}
                     />
+                    {appointmentError && (
+                        <p className="text-xs text-red-500">{appointmentError}</p>
+                    )}
                     <button
                         type="submit"
-                        className="w-full bg-primary text-white py-2.5 rounded-lg font-medium hover:bg-primary-dark transition-colors flex items-center justify-center gap-2"
+                        disabled={isAppointmentSubmitting}
+                        className="w-full bg-primary text-white py-2.5 rounded-lg font-medium hover:bg-primary-dark transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                     >
-                        <Calendar className="w-4 h-4" />
-                        Đặt lịch hẹn
+                        {isAppointmentSubmitting ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                            <Calendar className="w-4 h-4" />
+                        )}
+                        {isAppointmentSubmitting ? 'Đang đặt lịch...' : 'Đặt lịch hẹn'}
                     </button>
                 </form>
             )}
@@ -728,6 +863,8 @@ export function PrimeNestChatbot() {
                     </div>
                     <button
                         onClick={() => setIsOpen(false)}
+                        aria-label="Đóng chatbot"
+                        title="Đóng chatbot"
                         className="w-8 h-8 hover:bg-white/20 rounded-full flex items-center justify-center transition-colors"
                     >
                         <X className="w-5 h-5" />

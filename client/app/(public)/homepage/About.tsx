@@ -18,7 +18,7 @@ interface Feature {
 const FEATURES: Feature[] = [
     {
         title: "Nguồn Kho Đa Dạng",
-        description: "Tiếp cận hệ thống kho phong phú, từ kho thường, kho mát đến kho ngoại quan.",
+        description: "Tiếp cận hệ thống kho phong phú, từ kho thường đến kho chung.",
         icon: ArchiveBoxIcon,
     },
     {
