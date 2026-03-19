@@ -55,7 +55,7 @@ export function PrimeNestFooter() {
                         {/* Logo */}
                         <Link href="/" className="flex items-center gap-2 mb-4">
                             <img
-                                src="/assets/GenHubv2.svg"
+                                src="/assets/Genhubv2.svg"
                                 alt="GenHub"
                                 className="h-8 w-auto"
                             />

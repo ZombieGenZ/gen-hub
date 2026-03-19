@@ -72,7 +72,7 @@ export default function SearchHeader({
             <div className="flex items-center justify-between gap-4 w-full max-w-[1920px] mx-auto">
                 {/* 1. LOGO */}
                 <Link href="/" className="flex-shrink-0 flex items-center gap-2 group">
-                    <img src="/assets/GenHubv2.svg" alt="GenHub" className="h-9 w-auto transition-transform duration-300 group-hover:scale-105" />
+                    <img src="/assets/Genhubv2.svg" alt="GenHub" className="h-9 w-auto transition-transform duration-300 group-hover:scale-105" />
                 </Link>
 
                 {/* 2. SEARCH BAR - Centered & Flexible */}

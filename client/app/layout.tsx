@@ -35,7 +35,7 @@ export default function RootLayout({
     <html lang="vi" suppressHydrationWarning className={`${rem.variable} ${jetbrainsMono.variable}`}>
       <head>
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-        <link rel="preload" href="/assets/GenHubv2.svg" as="image" />
+        <link rel="preload" href="/assets/Genhubv2.svg" as="image" />
       </head>
       <body
         className={`antialiased font-sans`}

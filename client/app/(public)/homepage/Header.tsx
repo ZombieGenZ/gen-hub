@@ -56,7 +56,7 @@ export function PrimeNestHeader({ isLogin, user, onLogout }: HeaderProps) {
             <div className="w-full max-w-[1440px] mx-auto px-4 lg:px-4 h-[80px] flex items-center justify-between">
                 {/* Logo */}
                 <Link href="/" className="flex items-center gap-3 relative z-50 shrink-0">
-                    <img src="./assets/GenHubv2.svg" alt="GenHub" className="h-9 w-auto" />
+                    <img src="/assets/Genhubv2.svg" alt="GenHub" className="h-9 w-auto" />
                 </Link>
 
                 {/* Navigation - Centered */}

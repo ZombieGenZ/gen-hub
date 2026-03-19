@@ -5,6 +5,20 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: process.cwd(),
   },
+  async redirects() {
+    return [
+      {
+        source: "/assets/GenHubv2.svg",
+        destination: "/assets/Genhubv2.svg",
+        permanent: false,
+      },
+      {
+        source: "/assets/genhubv2.svg",
+        destination: "/assets/Genhubv2.svg",
+        permanent: false,
+      },
+    ];
+  },
   images: {
     remotePatterns: [
       {

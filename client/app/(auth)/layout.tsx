@@ -24,7 +24,7 @@ function AuthLayoutContent({ children }: { children: React.ReactNode }) {
       <header className="relative z-10 px-6 pt-8">
         <Link href="/" className="inline-flex items-center gap-2 group">
           <img
-            src="/assets/GenHubv2.svg"
+            src="/assets/Genhubv2.svg"
             alt="GenHub"
             className={`h-12 w-auto transition-all duration-300 ${darkMode ? 'brightness-0 invert' : ''}`}
           />
