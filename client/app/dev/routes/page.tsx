@@ -78,7 +78,7 @@ const routeGroups: RouteGroup[] = [
             { path: "/dashboard/admin/notifications", label: "Notifications", description: "System notifications" },
             { path: "/dashboard/admin/contacts", label: "Support Contacts", description: "Customer support inquiries" },
             { path: "/dashboard/admin/settings", label: "Settings", description: "System configuration" },
-            { path: "/dashboard/admin/warehouse-visits", label: "[Coming Soon] Warehouse Visits", description: "Warehouse visit bookings" },
+            { path: "/dashboard/admin/warehouse-visits", label: "Warehouse Visits", description: "Warehouse visit bookings" },
             { path: "/dashboard/admin/refund-requests", label: "[Coming Soon] Refund Requests", description: "Customer refund requests" },
             { path: "/dashboard/admin/warnings", label: "[Coming Soon] Warnings", description: "Customer warnings & penalties" },
             { path: "/dashboard/admin/categories", label: "Categories", description: "CMS Article Categories" },

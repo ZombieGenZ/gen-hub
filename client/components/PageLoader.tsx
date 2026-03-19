@@ -57,10 +57,10 @@ export function PageLoader({ progress, isComplete, onSkip, showSkipAfter = 3000 
 
     const containerVariants = {
         initial: { scale: 1, opacity: 1 },
-        exit: prefersReducedMotion 
+        exit: prefersReducedMotion
             ? { opacity: 0 }
-            : { 
-                scale: 1.2, 
+            : {
+                scale: 1.2,
                 opacity: 0,
                 transition: {
                     duration: 0.8,
@@ -153,7 +153,7 @@ export function PageLoader({ progress, isComplete, onSkip, showSkipAfter = 3000 
                                     />
                                 ))}
                             </div>
-                            
+
                             <svg className="absolute inset-0 w-full h-full opacity-10">
                                 <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
                                     <path d="M 40 0 L 0 0 0 40" fill="none" stroke="currentColor" strokeWidth="0.5" className="text-primary" />
@@ -170,20 +170,20 @@ export function PageLoader({ progress, isComplete, onSkip, showSkipAfter = 3000 
                             animate="animate"
                             className="mb-8"
                         >
-                            <motion.div 
-                                variants={pulseVariants} 
+                            <motion.div
+                                variants={pulseVariants}
                                 animate="animate"
                                 className="relative"
                             >
                                 <div className="w-24 h-24 md:w-32 md:h-32 bg-white/10 backdrop-blur-sm rounded-2xl flex items-center justify-center border border-white/20 shadow-2xl">
-                                    <img 
-                                        src="/assets/Genhubv2.svg" 
-                                        alt="GenHub Logo" 
+                                    <img
+                                        src="/assets/Genhubv2.svg"
+                                        alt="GenHub Logo"
                                         className="w-16 h-16 md:w-24 md:h-24 object-contain"
                                         data-priority="true"
                                     />
                                 </div>
-                                
+
                                 {!prefersReducedMotion && (
                                     <motion.div
                                         className="absolute -inset-2 rounded-3xl border-2 border-primary/50"
@@ -201,7 +201,7 @@ export function PageLoader({ progress, isComplete, onSkip, showSkipAfter = 3000 
                             </motion.div>
                         </motion.div>
 
-                        <motion.h1 
+                        <motion.h1
                             className="text-2xl md:text-3xl font-bold text-white mb-2 text-center"
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -209,8 +209,8 @@ export function PageLoader({ progress, isComplete, onSkip, showSkipAfter = 3000 
                         >
                             GenHub
                         </motion.h1>
-                        
-                        <motion.p 
+
+                        <motion.p
                             className="text-sm md:text-base text-white/70 mb-8 text-center"
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -219,7 +219,7 @@ export function PageLoader({ progress, isComplete, onSkip, showSkipAfter = 3000 
                             Giải pháp kho bãi thông minh
                         </motion.p>
 
-                        <motion.div 
+                        <motion.div
                             className="w-full max-w-xs mb-4"
                             initial={{ opacity: 0, scale: 0.9 }}
                             animate={{ opacity: 1, scale: 1 }}
@@ -233,7 +233,7 @@ export function PageLoader({ progress, isComplete, onSkip, showSkipAfter = 3000 
                                     transition={{ duration: 0.3, ease: "easeOut" }}
                                 />
                             </div>
-                            
+
                             <div className="flex justify-between items-center mt-3">
                                 <span className="text-white/80 text-sm font-medium min-w-[80px]">
                                     {loadingText}

@@ -39,14 +39,14 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://images.unsplash.com" />
         <link rel="preconnect" href="https://api.mapbox.com" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://api.mapbox.com" />
-        <link rel="preload" href="/assets/Genhubv2.svg" as="image" />
+        <link rel="preload" href="/assets/GenHub.svg" as="image" />
       </head>
       <body
         className={`antialiased font-sans`}
       >
-        <Script 
-          src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" 
-          strategy="lazyOnload" 
+        <Script
+          src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"
+          strategy="lazyOnload"
         />
         <ThemeProvider
           attribute="class"

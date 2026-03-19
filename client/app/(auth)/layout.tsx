@@ -12,8 +12,8 @@ function AuthLayoutContent({ children }: { children: React.ReactNode }) {
       }`}>
       {/* Background effect */}
       <div className={`pointer-events-none absolute inset-0 transition-colors duration-300 ${darkMode
-          ? 'bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900'
-          : 'bg-gradient-to-br from-gray-50 via-gray-100 to-gray-50'
+        ? 'bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900'
+        : 'bg-gradient-to-br from-gray-50 via-gray-100 to-gray-50'
         }`} />
       <div className={`pointer-events-none absolute -top-32 -right-32 w-80 h-80 rounded-full blur-3xl transition-colors duration-300 ${darkMode ? 'bg-blue-500/20' : 'bg-blue-300/30'
         }`} />
