@@ -220,6 +220,19 @@ export interface BatchChanges {
     deleted: string[];
 }
 
+export interface AdminTableInfo {
+    name: string;
+    displayName: string;
+}
+
+export interface AdminTableStatistic {
+    tableName: string;
+    rowCount: number;
+    columnCount?: number;
+    sizeBytes?: number;
+    lastUpdated?: string;
+}
+
 const unwrapArrayResponse = <T>(payload: unknown): T[] => {
     if (Array.isArray(payload)) {
         return payload as T[];
@@ -240,15 +253,15 @@ const unwrapArrayResponse = <T>(payload: unknown): T[] => {
 // Admin API functions
 export const adminApi = {
     // Tables
-    getTables: async () => {
+    getTables: async (): Promise<AdminTableInfo[]> => {
         const { data } = await api.get('/admin/tables');
-        return unwrapArrayResponse(data);
+        return unwrapArrayResponse<AdminTableInfo>(data);
     },
 
     // Statistics - Get all stats in one call
-    getStatistics: async () => {
+    getStatistics: async (): Promise<AdminTableStatistic[]> => {
         const { data } = await api.get('/admin/statistics');
-        return unwrapArrayResponse(data);
+        return unwrapArrayResponse<AdminTableStatistic>(data);
     },
 
     getTableSchema: async (tableName: string) => {
