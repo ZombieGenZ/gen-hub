@@ -1,4 +1,4 @@
-﻿import { Controller, Get, Post, Body, Patch, Param, Delete, Query, Request, UseGuards, ParseUUIDPipe } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, Request, UseGuards, ParseUUIDPipe } from '@nestjs/common';
 import { WarehouseVisitService } from './warehouse-visit.service';
 import { CreateWarehouseVisitBookingDto } from './dto/create-warehouse-visit-booking.dto';
 import { UpdateWarehouseVisitBookingDto } from './dto/update-warehouse-visit-booking.dto';
@@ -130,6 +130,9 @@ export class WarehouseVisitController {
     @ApiQuery({ name: 'limit', required: false, type: Number, example: 10, description: 'Số lượng record mỗi trang' })
     @ApiQuery({ name: 'status', required: false, type: String, description: 'Lọc theo trạng thái', example: 'PENDING' })
     @ApiQuery({ name: 'date', required: false, type: String, description: 'Lọc theo ngày (YYYY-MM-DD)', example: '2024-02-15' })
+    @ApiQuery({ name: 'start_date', required: false, type: String, description: 'Từ ngày (YYYY-MM-DD)', example: '2024-02-01' })
+    @ApiQuery({ name: 'end_date', required: false, type: String, description: 'Đến ngày (YYYY-MM-DD)', example: '2024-02-28' })
+    @ApiQuery({ name: 'warehouse_template_id', required: false, type: String, description: 'Lọc theo kho mẫu' })
     @ApiResponse({
         status: 200,
         description: 'Lấy danh sách thành công',

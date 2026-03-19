@@ -42,7 +42,7 @@ const adminNavGroups: SidebarGroup[] = [
             { href: "/dashboard/admin/approval", icon: ClipboardDocumentCheckIcon, label: "Duyệt phiếu Nhập/Xuất" },
             { href: "/dashboard/admin/contracts", icon: DocumentTextIcon, label: "Hợp đồng" },
             { href: "/dashboard/admin/coupons", icon: TicketIcon, label: "Mã giảm giá" },
-            { href: "/dashboard/admin/warehouse-visits", icon: CalendarDaysIcon, label: "Lịch thăm kho", disabled: true, badge: "Sắp có" },
+            { href: "/dashboard/admin/warehouse-visits", icon: CalendarDaysIcon, label: "Lịch thăm kho" },
             { href: "/dashboard/admin/refund-requests", icon: ArrowUturnLeftIcon, label: "Yêu cầu hoàn tiền", disabled: true, badge: "Sắp có" },
             { href: "/dashboard/admin/warnings", icon: ExclamationTriangleIcon, label: "Cảnh cáo & Phạt", disabled: true, badge: "Sắp có" },
         ]

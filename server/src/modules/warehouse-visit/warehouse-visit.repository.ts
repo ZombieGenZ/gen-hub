@@ -18,7 +18,7 @@ export class WarehouseVisitRepository {
     }
 
     async findAllBookings(query: any): Promise<IPaginatedResponse<WarehouseVisitBooking>> {
-        const { page = 1, limit = 10, search, status, warehouse_template_id, organization_id, sort_by = 'created_at', sort_order = 'desc' } = query;
+        const { page = 1, limit = 10, search, status, warehouse_template_id, organization_id, sort_by = 'created_at', sort_order = 'desc', date, start_date, end_date } = query;
         const skip = (page - 1) * limit;
 
         const where: Prisma.WarehouseVisitBookingWhereInput = {
@@ -34,6 +34,18 @@ export class WarehouseVisitRepository {
             ...(warehouse_template_id && { warehouse_template_id }),
             ...(organization_id && { organization_id }),
         };
+
+        if (date) {
+            const startDate = new Date(date);
+            startDate.setUTCHours(0, 0, 0, 0);
+            const endDate = new Date(date);
+            endDate.setUTCHours(23, 59, 59, 999);
+            where.visit_date = { gte: startDate, lte: endDate };
+        } else if (start_date || end_date) {
+            where.visit_date = {};
+            if (start_date) where.visit_date.gte = new Date(start_date);
+            if (end_date) where.visit_date.lte = new Date(end_date);
+        }
 
         const [data, total] = await Promise.all([
             this.prisma.warehouseVisitBooking.findMany({
