@@ -35,6 +35,10 @@ export default function RootLayout({
   return (
     <html lang="vi" suppressHydrationWarning className={`${rem.variable} ${jetbrainsMono.variable}`}>
       <head>
+        <link rel="preconnect" href="https://images.unsplash.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://images.unsplash.com" />
+        <link rel="preconnect" href="https://api.mapbox.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://api.mapbox.com" />
         <link rel="preload" href="/assets/Genhubv2.svg" as="image" />
       </head>
       <body

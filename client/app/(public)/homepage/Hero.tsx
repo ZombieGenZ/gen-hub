@@ -18,7 +18,7 @@ export function PrimeNestHero() {
                 <div className="absolute inset-0 z-0">
                     <Image
                         src="/assets/unnamed.jpg"
-                        alt="GenHub"
+                        alt="Nền Tảng Thuê Kho & Fulfillment Toàn Diện GenHub"
                         fill
                         priority
                         sizes="100vw"
