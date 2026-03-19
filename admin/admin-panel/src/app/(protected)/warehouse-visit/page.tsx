@@ -6,9 +6,10 @@ import { api } from '@/lib/api';
 import CalendarView from './_components/CalendarView';
 import PendingSidebar from './_components/PendingSidebar';
 import VisitDetailDrawer from './_components/VisitDetailDrawer';
+import type { CalendarVisitEvent, WarehouseVisitListResponse } from './_components/types';
 import { Loader2 } from 'lucide-react';
 
-const fetcher = (url: string) => api.get(url).then(res => res.data?.data);
+const fetcher = <T,>(url: string) => api.get<{ data: T }>(url).then((res) => res.data?.data);
 
 export default function WarehouseVisitPage() {
     const [currentDate, setCurrentDate] = useState(new Date());
@@ -26,15 +27,15 @@ export default function WarehouseVisitPage() {
         end_date: endOfMonth,
     }).toString();
 
-    const { data: response, isLoading, mutate } = useSWR(`/warehouse-visit?${queryParams}`, fetcher);
+    const { data: response, isLoading, mutate } = useSWR<WarehouseVisitListResponse>(`/warehouse-visit?${queryParams}`, fetcher);
     
     // Lấy riêng list pending để làm Queue (hoặc filter từ chung nếu nó thuộc tháng này)
     // Queue cần lấy cả những cái chưa xử lý từ trước
-    const { data: pendingResponse, mutate: mutatePending } = useSWR(`/warehouse-visit?status=PENDING&limit=100`, fetcher);
+    const { data: pendingResponse, mutate: mutatePending } = useSWR<WarehouseVisitListResponse>(`/warehouse-visit?status=PENDING&limit=100`, fetcher);
 
     const events = useMemo(() => {
         if (!response?.items) return [];
-        return response.items.map((item: any) => {
+        return response.items.map((item): CalendarVisitEvent => {
             // Parser visit_date và time
             const dateStr = item.visit_date.split('T')[0];
             const start = new Date(`${dateStr}T${item.visit_time_start}:00`);
@@ -55,7 +56,7 @@ export default function WarehouseVisitPage() {
         return pendingResponse?.items || [];
     }, [pendingResponse?.items]);
 
-    const handleSelectEvent = (event: any) => {
+    const handleSelectEvent = (event: CalendarVisitEvent) => {
         setSelectedVisitId(event.id);
     };
 

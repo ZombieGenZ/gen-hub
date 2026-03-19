@@ -7,6 +7,7 @@ import parse from 'date-fns/parse';
 import startOfWeek from 'date-fns/startOfWeek';
 import getDay from 'date-fns/getDay';
 import vi from 'date-fns/locale/vi';
+import type { CalendarVisitEvent } from './types';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 
 const locales = {
@@ -22,15 +23,15 @@ const localizer = dateFnsLocalizer({
 });
 
 interface CalendarViewProps {
-  events: any[];
+  events: CalendarVisitEvent[];
   date: Date;
   onNavigate: (newDate: Date) => void;
-  onSelectEvent: (event: any) => void;
+  onSelectEvent: (event: CalendarVisitEvent) => void;
 }
 
 export default function CalendarView({ events, date, onNavigate, onSelectEvent }: CalendarViewProps) {
   
-  const getEventPropGetter = (event: any) => {
+  const getEventPropGetter = (event: CalendarVisitEvent) => {
     let backgroundColor = '#374151'; // default gray (COMPLETED/CANCELLED)
     
     if (event.status === 'PENDING') {

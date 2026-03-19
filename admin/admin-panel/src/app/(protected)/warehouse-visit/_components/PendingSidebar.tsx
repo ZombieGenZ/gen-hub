@@ -4,9 +4,10 @@ import React from 'react';
 import { Clock, MapPin, User, ChevronRight } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { vi } from 'date-fns/locale';
+import type { WarehouseVisit } from './types';
 
 interface PendingSidebarProps {
-  items: any[];
+  items: WarehouseVisit[];
   onSelectItem: (id: string) => void;
   selectedId: string | null;
 }
@@ -27,7 +28,7 @@ export default function PendingSidebar({ items, onSelectItem, selectedId }: Pend
         let visitDate = '';
         try {
            visitDate = format(parseISO(item.visit_date), "dd/MM/yyyy", { locale: vi });
-        } catch(e) { /* ignore */ }
+        } catch { /* ignore */ }
         
         const isSelected = selectedId === item.id;
 

@@ -13,7 +13,7 @@ const JWT_ACCESS_EXPIRATION = parseFloat(process.env.NEXT_PUBLIC_JWT_ACCESS_EXPI
 const JWT_REFRESH_EXPIRATION = parseFloat(process.env.NEXT_PUBLIC_JWT_REFRESH_EXPIRATION || '7');
 
 // Create axios instance
-const api: AxiosInstance = axios.create({
+export const api: AxiosInstance = axios.create({
     baseURL: API_URL,
     headers: {
         'Content-Type': 'application/json',

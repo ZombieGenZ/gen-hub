@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { format, parseISO } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { useAuth } from '@/contexts/AuthContext';
+import type { WarehouseVisit } from './types';
 
 interface VisitDetailDrawerProps {
   visitId: string | null;
@@ -15,10 +16,35 @@ interface VisitDetailDrawerProps {
   onSuccess: () => void;
 }
 
-const fetcher = (url: string) => api.get(url).then(res => res.data?.data);
+const fetcher = (url: string) => api.get<{ data: WarehouseVisit }>(url).then((res) => res.data?.data);
+
+type VisitStatusUpdatePayload = {
+  confirmation_notes?: string;
+  cancel_reason?: string;
+  visitor_feedback?: string;
+};
+
+const getErrorMessage = (error: unknown): string => {
+  if (
+    error &&
+    typeof error === 'object' &&
+    'response' in error &&
+    error.response &&
+    typeof error.response === 'object' &&
+    'data' in error.response &&
+    error.response.data &&
+    typeof error.response.data === 'object' &&
+    'message' in error.response.data &&
+    typeof error.response.data.message === 'string'
+  ) {
+    return error.response.data.message;
+  }
+
+  return 'Lỗi khi cập nhật trạng thái';
+};
 
 export default function VisitDetailDrawer({ visitId, onClose, onSuccess }: VisitDetailDrawerProps) {
-  const { data: visit, isLoading, mutate } = useSWR(visitId ? `/warehouse-visit/${visitId}` : null, fetcher);
+  const { data: visit, isLoading } = useSWR<WarehouseVisit>(visitId ? `/warehouse-visit/${visitId}` : null, fetcher);
   const { hasPermission } = useAuth();
   
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -39,7 +65,7 @@ export default function VisitDetailDrawer({ visitId, onClose, onSuccess }: Visit
 
   if (!visitId) return null;
 
-  const handleStatusChange = async (status: string, payload: any) => {
+  const handleStatusChange = async (status: 'CONFIRMED' | 'CANCELLED' | 'COMPLETED', payload: VisitStatusUpdatePayload) => {
     try {
       setIsSubmitting(true);
       if (status === 'CONFIRMED' || status === 'CANCELLED') {
@@ -59,8 +85,8 @@ export default function VisitDetailDrawer({ visitId, onClose, onSuccess }: Visit
       
       toast.success('Cập nhật trạng thái lịch hẹn thành công');
       onSuccess(); // Close drawer & refresh list
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Lỗi khi cập nhật trạng thái');
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error));
     } finally {
       setIsSubmitting(false);
     }
