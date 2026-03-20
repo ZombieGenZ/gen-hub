@@ -248,8 +248,8 @@ function CheckoutContent() {
     };
 
     // Handle coupon applied
-    const handleCouponApplied = (coupon: { code: string; discount: number } | null) => {
-        void recalculateQuotation(coupon?.code);
+    const handleCouponApplied = (coupon: { code: string; discount_amount: number }) => {
+        void recalculateQuotation(coupon.code || undefined);
     };
 
 
@@ -488,14 +488,13 @@ function CheckoutContent() {
                             <CouponDrawer
                                 open={couponDrawerOpen}
                                 onOpenChange={setCouponDrawerOpen}
-                                onCouponApplied={handleCouponApplied}
-                                appliedCoupon={appliedCoupon}
+                                onApply={handleCouponApplied}
+                                appliedCode={appliedCoupon?.code}
                                 warehouseId={session.warehouse_template_id}
-                                rentalType={session.rental_type}
                                 rowIds={session.row_template_ids}
                                 addonIds={session.addon_ids}
                                 durationTierId={session.duration_tier_id}
-                                orderAmount={session.quotation?.grandTotal || 0}
+                                orderAmount={(session.quotation?.subtotal || 0) + (session.quotation?.serviceFee || 0)}
                             />
                         </div>
                     </div>

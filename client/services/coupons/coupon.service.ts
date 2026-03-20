@@ -1,4 +1,4 @@
-import { CouponRequest } from "@/types/coupons/coupon.type"
+import { Coupon, CouponRequest, CouponUIItem, CouponValidationResult } from "@/types/coupons/coupon.type"
 
 const API = process.env.NEXT_PUBLIC_API_URL
 
@@ -159,6 +159,87 @@ export class CouponService {
     }
 
     /**
+     * Parse raw coupon data to UI format
+     * @param c Raw coupon data
+     * @param orderAmount Current order amount
+     * @param overrideIsApplicable Optional override for applicability
+     * @returns CouponUIItem
+     */
+    static parseCouponToUI(c: any, orderAmount: number, overrideIsApplicable?: boolean): CouponUIItem {
+        let isApplicable = c.is_applicable ?? true;
+        let reason = c.not_applicable_reason;
+        const endsAt = c.ends_at || c.valid_until;
+
+        // Local validation if not already set as false by server
+        if (isApplicable !== false) {
+            if (c.min_order_amount && orderAmount < c.min_order_amount) {
+                isApplicable = false;
+                reason = `Đơn tối thiểu ${c.min_order_amount.toLocaleString('vi-VN')}₫`;
+            }
+            
+            if (endsAt && new Date(endsAt).getTime() < Date.now()) {
+                isApplicable = false;
+                reason = 'Mã đã hết hạn';
+            }
+        }
+
+        if (overrideIsApplicable !== undefined) {
+            isApplicable = overrideIsApplicable;
+        }
+
+        return {
+            id: c.id,
+            code: c.code,
+            name: c.name,
+            description: c.description,
+            discount_type: c.discount_type,
+            discount_value: c.discount_value,
+            max_discount_amount: c.max_discount_amount,
+            min_order_amount: c.min_order_amount,
+            valid_from: c.starts_at,
+            valid_until: endsAt,
+            is_applicable: isApplicable,
+            not_applicable_reason: !isApplicable ? (reason || 'Không đủ điều kiện') : undefined,
+        };
+    }
+
+    /**
+     * Standard parser for validation results
+     */
+    private static parseValidationPayload(responseData: any): CouponValidationResult {
+        const payload = responseData?.data ?? responseData;
+
+        // If directly valid/invalid with minimal fields
+        if (typeof payload?.is_valid === 'boolean') {
+            return {
+                is_valid: payload.is_valid,
+                discount_amount: payload.discount_amount ?? 0,
+                message: payload.message || (payload.is_valid ? 'Coupon hợp lệ' : 'Mã giảm giá không hợp lệ'),
+                coupon: payload.coupon,
+                payload: payload
+            };
+        }
+
+        // Handle case where field is isValid (CamelCase)
+        if (typeof payload?.isValid === 'boolean') {
+            return {
+                is_valid: payload.isValid,
+                discount_amount: payload.discount_info?.estimated_discount ?? payload.discountAmount ?? 0,
+                message: payload.message || payload.error || responseData.message || (payload.isValid ? 'Coupon hợp lệ' : 'Mã giảm giá không hợp lệ'),
+                coupon: payload.coupon ?? payload.coupon_info,
+                payload: payload
+            };
+        }
+
+        return {
+            is_valid: false,
+            discount_amount: 0,
+            message: responseData.message || 'Không thể đọc dữ liệu coupon từ máy chủ',
+            payload: payload
+        };
+    }
+
+    /**
      * Kiểm tra coupon cho BookingWidget
      * @param code Mã giảm giá
      * @param orderDetails Thông tin đơn hàng
@@ -171,7 +252,7 @@ export class CouponService {
         addon_ids?: string[];
         rental_duration_tier_id: string;    
         type: 'NEW_CONTRACT' | 'RENEWAL';
-    }, access_token: string) {
+    }, access_token: string): Promise<CouponValidationResult> {
         try {
             const response = await fetch(`${API}/public/coupons/validate`, {
                 method: 'POST',
@@ -188,35 +269,19 @@ export class CouponService {
                     type: orderDetails.type,
                 })
             })
+            
+            const responseData = await response.json().catch(() => ({}));
+            
             if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
                 return {
                     is_valid: false,
                     discount_amount: 0,
-                    message: errorData.message || 'Mã giảm giá không hợp lệ'
-                };
-            }
-            const responseData = await response.json();
-            const payload = responseData?.data ?? responseData;
-
-            if (typeof payload?.is_valid === 'boolean') {
-                return payload;
-            }
-
-            if (typeof payload?.isValid === 'boolean') {
-                return {
-                    is_valid: payload.isValid,
-                    discount_amount: payload.discount_info?.estimated_discount ?? 0,
-                    message: payload.message || payload.error || responseData.message || (payload.isValid ? 'Coupon hợp lệ' : 'Mã giảm giá không hợp lệ'),
-                    ...payload,
+                    message: responseData.message || 'Mã giảm giá không hợp lệ',
+                    payload: responseData
                 };
             }
 
-            return {
-                is_valid: false,
-                discount_amount: 0,
-                message: 'Không thể đọc dữ liệu coupon từ máy chủ',
-            };
+            return CouponService.parseValidationPayload(responseData);
         } catch (err) {
             console.error("Failed to validate coupon", err);
             return {

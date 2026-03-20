@@ -7,7 +7,6 @@ import {
     SheetDescription,
     SheetHeader,
     SheetTitle,
-    SheetTrigger,
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,193 +15,128 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import {
-    TagIcon,
-    CheckCircleIcon,
     TicketIcon,
     ClockIcon,
     ExclamationTriangleIcon,
     MagnifyingGlassIcon,
     XMarkIcon,
 } from '@heroicons/react/24/outline';
-import { CheckIcon } from '@heroicons/react/24/solid';
+import { CheckIcon, CheckCircleIcon } from '@heroicons/react/24/solid';
 import { CouponService } from '@/services/coupons/coupon.service';
 import { authStorage } from '@/services/auth/auth-storage.service';
+import { CouponUIItem } from "@/types/coupons/coupon.type";
 
-// Types
-interface CouponItem {
-    id: string;
-    code: string;
-    name: string;
-    description?: string;
-    discount_type: 'PERCENT' | 'FIXED';
-    discount_value: number;
-    max_discount_amount?: number;
-    min_order_amount?: number;
-    valid_from?: string;
-    valid_until?: string;
-    is_applicable: boolean;
-    not_applicable_reason?: string;
-}
-
-const extractCouponArray = (payload: any): any[] => {
-    if (Array.isArray(payload)) return payload;
-    if (Array.isArray(payload?.items)) return payload.items;
-    if (Array.isArray(payload?.data)) return payload.data;
-    if (Array.isArray(payload?.data?.items)) return payload.data.items;
+const extractCouponArray = (data: any): any[] => {
+    if (Array.isArray(data)) return data;
+    if (data && typeof data === 'object' && Array.isArray(data.items)) return data.items;
     return [];
-};
-
-const toCouponItem = (c: any, orderAmount: number, overrideIsApplicable?: boolean): CouponItem => {
-    let isApplicable = c.is_applicable ?? true;
-    let reason = c.not_applicable_reason;
-    const endsAt = c.ends_at || c.valid_until;
-
-    // Local validation if not already set as false by server
-    if (isApplicable !== false) {
-        if (c.min_order_amount && orderAmount < c.min_order_amount) {
-            isApplicable = false;
-            reason = `Đơn tối thiểu ${c.min_order_amount.toLocaleString('vi-VN')}₫`;
-        }
-        
-        if (endsAt && new Date(endsAt).getTime() < Date.now()) {
-            isApplicable = false;
-            reason = 'Mã đã hết hạn';
-        }
-    }
-
-    if (overrideIsApplicable !== undefined) {
-        isApplicable = overrideIsApplicable;
-    }
-
-    return {
-        id: c.id,
-        code: c.code,
-        name: c.name,
-        description: c.description,
-        discount_type: c.discount_type,
-        discount_value: c.discount_value,
-        max_discount_amount: c.max_discount_amount,
-        min_order_amount: c.min_order_amount,
-        valid_from: c.starts_at,
-        valid_until: c.ends_at,
-        is_applicable: isApplicable,
-        not_applicable_reason: !isApplicable ? (reason || 'Không đủ điều kiện') : undefined,
-    };
 };
 
 interface CouponDrawerProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    onCouponApplied: (coupon: { code: string; discount: number } | null) => void;
-    appliedCoupon?: { code: string; discount: number } | null;
     warehouseId?: string;
-    rentalType?: 'whole' | 'row';
     rowIds?: string[];
     addonIds?: string[];
     durationTierId?: string;
-    orderAmount?: number;
+    orderAmount: number;
+    onApply: (coupon: { code: string; discount_amount: number }) => void;
+    appliedCode?: string;
 }
 
 export function CouponDrawer({
     open,
     onOpenChange,
-    onCouponApplied,
-    appliedCoupon,
     warehouseId,
-    rentalType,
     rowIds,
     addonIds,
     durationTierId,
-    orderAmount = 0,
+    orderAmount,
+    onApply,
+    appliedCode,
 }: CouponDrawerProps) {
-    const [coupons, setCoupons] = useState<CouponItem[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [manualCode, setManualCode] = useState('');
+    const [coupons, setCoupons] = useState<CouponUIItem[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [manualCode, setManualCode] = useState("");
     const [isApplying, setIsApplying] = useState(false);
-    const [applyError, setApplyError] = useState<string | null>(null);
+    const [applyError, setApplyError] = useState("");
 
-    // Fetch available coupons
-    useEffect(() => {
-        if (!open) return;
-
-        const fetchCoupons = async () => {
-            setIsLoading(true);
-            setError(null);
-
-            const token = authStorage.getAccessToken();
+    const fetchCoupons = useCallback(async () => {
+        setIsLoading(true);
+        try {
             const API = process.env.NEXT_PUBLIC_API_URL;
+            const token = authStorage.getAccessToken();
+            let couponList: CouponUIItem[] = [];
 
-            try {
-                let couponList: CouponItem[] = [];
+            let applicableFetched = false;
 
-                let applicableFetched = false;
+            if (token && durationTierId) {
+                // If user is logged in and has order context, fetch applicable coupons
+                const res = await fetch(`${API}/public/coupons/applicable`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        warehouse_template_ids: warehouseId ? [warehouseId] : undefined,
+                        row_template_ids: rowIds,
+                        addon_ids: addonIds,
+                        rental_duration_tier_id: durationTierId,
+                        type: 'NEW_CONTRACT',
+                    }),
+                });
 
-                if (token && durationTierId) {
-                    // If user is logged in and has order context, fetch applicable coupons
-                    const res = await fetch(`${API}/public/coupons/applicable`, {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            warehouse_template_ids: warehouseId ? [warehouseId] : undefined,
-                            row_template_ids: rowIds,
-                            addon_ids: addonIds,
-                            rental_duration_tier_id: durationTierId,
-                            type: 'NEW_CONTRACT',
-                        }),
-                    });
-
-                    if (res.ok) {
-                        const data = await res.json();
-                        const applicableCoupons = extractCouponArray(data?.data);
-                        couponList = applicableCoupons.map((c: any) => toCouponItem(c, orderAmount, true));
-                        applicableFetched = true;
-                    }
+                if (res.ok) {
+                    const data = await res.json();
+                    const applicableCoupons = extractCouponArray(data?.data);
+                    couponList = applicableCoupons.map((c: any) => CouponService.parseCouponToUI(c, orderAmount, true));
+                    applicableFetched = true;
                 }
-
-                // Also fetch public coupons (no auth required)
-                const publicRes = await fetch(`${API}/public/coupons?limit=20`);
-                if (publicRes.ok) {
-                    const publicData = await publicRes.json();
-                    const publicCoupons = extractCouponArray(publicData?.data);
-
-                    // Add public coupons that aren't already in the list
-                    const existingCodes = new Set(couponList.map(c => c.code));
-                    const newPublicCoupons = publicCoupons
-                        .filter((c: any) => !existingCodes.has(c.code))
-                        .map((c: any) => toCouponItem(c, orderAmount, applicableFetched ? false : undefined));
-
-                    couponList = [...couponList, ...newPublicCoupons];
-                }
-
-                if (couponList.length > 0) {
-                    // Sort: applicable first, then by discount value
-                    couponList.sort((a, b) => {
-                        if (a.is_applicable !== b.is_applicable) {
-                            return a.is_applicable ? -1 : 1;
-                        }
-                        return b.discount_value - a.discount_value;
-                    });
-                    setCoupons(couponList);
-                } else {
-                    // Fallback to mock if no coupons from API
-                    setCoupons(MOCK_COUPONS.map(c => toCouponItem(c, orderAmount)));
-                }
-            } catch (err) {
-                console.error('Error fetching coupons:', err);
-                setCoupons(MOCK_COUPONS.map(c => toCouponItem(c, orderAmount)));
-            } finally {
-                setIsLoading(false);
             }
-        };
 
-        fetchCoupons();
-    }, [open, orderAmount, warehouseId, rowIds, addonIds, durationTierId]);
+            // Also fetch public coupons (no auth required)
+            const publicRes = await fetch(`${API}/public/coupons?limit=20`);
+            if (publicRes.ok) {
+                const publicData = await publicRes.json();
+                const publicCoupons = extractCouponArray(publicData?.data);
 
+                // Add public coupons that aren't already in the list
+                const existingCodes = new Set(couponList.map(c => c.code));
+                const newPublicCoupons = publicCoupons
+                    .filter((c: any) => !existingCodes.has(c.code))
+                    .map((c: any) => CouponService.parseCouponToUI(c, orderAmount, applicableFetched ? false : undefined));
+
+                couponList = [...couponList, ...newPublicCoupons];
+            }
+
+            if (couponList.length > 0) {
+                // Sort: applicable first, then by discount value
+                couponList.sort((a, b) => {
+                    if (a.is_applicable !== b.is_applicable) {
+                        return a.is_applicable ? -1 : 1;
+                    }
+                    return b.discount_value - a.discount_value;
+                });
+                setCoupons(couponList);
+            } else {
+                // Fallback to mock if no coupons from API
+                setCoupons(MOCK_COUPONS.map(c => CouponService.parseCouponToUI(c, orderAmount)));
+            }
+        } catch (err) {
+            console.error('Error fetching coupons:', err);
+            setCoupons(MOCK_COUPONS.map(c => CouponService.parseCouponToUI(c, orderAmount)));
+        } finally {
+            setIsLoading(false);
+        }
+    }, [warehouseId, rowIds, addonIds, durationTierId, orderAmount]);
+
+    useEffect(() => {
+        if (open) {
+            fetchCoupons();
+        }
+    }, [open, fetchCoupons]);
 
     // Filter coupons by search
     const filteredCoupons = useMemo(() => {
@@ -216,11 +150,11 @@ export function CouponDrawer({
     }, [coupons, searchQuery]);
 
     // Apply a coupon from the list
-    const handleApplyCoupon = useCallback(async (coupon: CouponItem) => {
+    const handleApplyCoupon = useCallback(async (coupon: CouponUIItem) => {
         if (!coupon.is_applicable) return;
 
         setIsApplying(true);
-        setApplyError(null);
+        setApplyError("");
 
         const token = authStorage.getAccessToken();
         if (!token) {
@@ -244,7 +178,7 @@ export function CouponDrawer({
             );
 
             if (result.is_valid) {
-                onCouponApplied({ code: coupon.code, discount: result.discount_amount });
+                onApply({ code: coupon.code, discount_amount: result.discount_amount });
                 onOpenChange(false);
             } else {
                 setApplyError(result.message || 'Mã không áp dụng được');
@@ -255,14 +189,14 @@ export function CouponDrawer({
         } finally {
             setIsApplying(false);
         }
-    }, [warehouseId, rowIds, addonIds, durationTierId, onCouponApplied, onOpenChange]);
+    }, [warehouseId, rowIds, addonIds, durationTierId, onApply, onOpenChange]);
 
     // Apply manual coupon code
     const handleApplyManualCode = useCallback(async () => {
         if (!manualCode.trim()) return;
 
         setIsApplying(true);
-        setApplyError(null);
+        setApplyError("");
 
         const token = authStorage.getAccessToken();
         if (!token) {
@@ -286,7 +220,7 @@ export function CouponDrawer({
             );
 
             if (result.is_valid) {
-                onCouponApplied({ code: manualCode.toUpperCase(), discount: result.discount_amount });
+                onApply({ code: manualCode.toUpperCase(), discount_amount: result.discount_amount });
                 onOpenChange(false);
                 setManualCode('');
             } else {
@@ -298,15 +232,15 @@ export function CouponDrawer({
         } finally {
             setIsApplying(false);
         }
-    }, [manualCode, warehouseId, rowIds, addonIds, durationTierId, onCouponApplied, onOpenChange]);
+    }, [manualCode, warehouseId, rowIds, addonIds, durationTierId, onApply, onOpenChange]);
 
-    // Remove applied coupon
+    // Remove applied coupon (usually handled by parent, but keeping logic for consistency)
     const handleRemoveCoupon = useCallback(() => {
-        onCouponApplied(null);
-    }, [onCouponApplied]);
+        onApply({ code: "", discount_amount: 0 });
+    }, [onApply]);
 
     // Format discount display
-    const formatDiscount = (coupon: CouponItem) => {
+    const formatDiscount = (coupon: CouponUIItem) => {
         if (coupon.discount_type === 'PERCENT') {
             return `Giảm ${coupon.discount_value}%${coupon.max_discount_amount ? ` (tối đa ${coupon.max_discount_amount.toLocaleString('vi-VN')}₫)` : ''}`;
         }
@@ -314,13 +248,19 @@ export function CouponDrawer({
     };
 
     // Format validity  
-    const formatValidity = (coupon: CouponItem) => {
+    const formatValidity = (coupon: CouponUIItem) => {
         if (coupon.valid_until) {
             const date = new Date(coupon.valid_until);
             return `HSD: ${date.toLocaleDateString('vi-VN')}`;
         }
         return null;
     };
+
+    // Get applied coupon data
+    const appliedCouponData = useMemo(() => {
+        if (!appliedCode) return null;
+        return coupons.find(c => c.code === appliedCode);
+    }, [coupons, appliedCode]);
 
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
@@ -336,15 +276,17 @@ export function CouponDrawer({
                 </SheetHeader>
 
                 {/* Applied Coupon Banner */}
-                {appliedCoupon && (
+                {appliedCode && (
                     <div className="mx-6 mt-4 p-3 bg-teal-50 border border-teal-200 rounded-xl flex items-center justify-between">
                         <div className="flex items-center gap-2">
                             <CheckCircleIcon className="w-5 h-5 text-[#0F766E]" />
                             <div>
-                                <p className="font-semibold text-[#0F766E]">{appliedCoupon.code}</p>
-                                <p className="text-xs text-teal-600">
-                                    Giảm {appliedCoupon.discount.toLocaleString('vi-VN')}₫
-                                </p>
+                                <p className="font-semibold text-[#0F766E]">{appliedCode}</p>
+                                {appliedCouponData && (
+                                    <p className="text-xs text-teal-600">
+                                        Giảm {appliedCouponData.discount_value.toLocaleString('vi-VN')}₫
+                                    </p>
+                                )}
                             </div>
                         </div>
                         <Button
@@ -366,7 +308,7 @@ export function CouponDrawer({
                                 placeholder="Nhập mã giảm giá"
                                 value={manualCode}
                                 onChange={(e) => setManualCode(e.target.value.toUpperCase())}
-                                className="pr-10 h-12 rounded-xl uppercase"
+                                className="pr-10 h-12 rounded-xl uppercase border-slate-200 focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E]"
                                 onKeyDown={(e) => e.key === 'Enter' && handleApplyManualCode()}
                             />
                             {manualCode && (
@@ -381,7 +323,7 @@ export function CouponDrawer({
                         <Button
                             onClick={handleApplyManualCode}
                             disabled={!manualCode.trim() || isApplying}
-                            className="h-12 px-6 bg-[#0F766E] hover:bg-[#0D655D] rounded-xl"
+                            className="h-12 px-6 bg-[#0F766E] hover:bg-[#0D655D] rounded-xl text-white font-bold"
                         >
                             {isApplying ? '...' : 'Áp dụng'}
                         </Button>
@@ -411,7 +353,6 @@ export function CouponDrawer({
                 <ScrollArea className="flex-1 px-6">
                     <div className="py-4 space-y-3">
                         {isLoading ? (
-                            // Loading skeletons
                             Array.from({ length: 4 }).map((_, i) => (
                                 <div key={i} className="p-4 rounded-xl border border-slate-200">
                                     <div className="flex gap-3">
@@ -424,11 +365,6 @@ export function CouponDrawer({
                                     </div>
                                 </div>
                             ))
-                        ) : error ? (
-                            <div className="text-center py-8 text-slate-500">
-                                <ExclamationTriangleIcon className="w-8 h-8 mx-auto mb-2 text-amber-500" />
-                                <p>{error}</p>
-                            </div>
                         ) : filteredCoupons.length === 0 ? (
                             <div className="text-center py-8 text-slate-500">
                                 <TicketIcon className="w-8 h-8 mx-auto mb-2 text-slate-300" />
@@ -444,18 +380,16 @@ export function CouponDrawer({
                                         coupon.is_applicable
                                             ? "border-slate-200 hover:border-[#0F766E] hover:shadow-md cursor-pointer"
                                             : "border-slate-100 bg-slate-50 opacity-60 cursor-not-allowed",
-                                        appliedCoupon?.code === coupon.code && "border-[#0F766E] bg-teal-50/30"
+                                        appliedCode === coupon.code && "border-[#0F766E] bg-teal-50/30"
                                     )}
                                 >
-                                    {/* Applied check mark */}
-                                    {appliedCoupon?.code === coupon.code && (
+                                    {appliedCode === coupon.code && (
                                         <div className="absolute -top-2 -right-2 w-6 h-6 bg-[#0F766E] rounded-full flex items-center justify-center">
                                             <CheckIcon className="w-4 h-4 text-white" />
                                         </div>
                                     )}
 
                                     <div className="flex gap-3">
-                                        {/* Coupon Icon / Badge */}
                                         <div className={cn(
                                             "w-14 h-14 rounded-lg flex items-center justify-center shrink-0",
                                             coupon.discount_type === 'PERCENT'
@@ -470,7 +404,6 @@ export function CouponDrawer({
                                             </span>
                                         </div>
 
-                                        {/* Content */}
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-start justify-between gap-2">
                                                 <div>
@@ -515,6 +448,16 @@ export function CouponDrawer({
                         )}
                     </div>
                 </ScrollArea>
+                
+                <div className="p-4 border-t border-slate-100 bg-slate-50">
+                    <Button 
+                        variant="outline" 
+                        onClick={() => onOpenChange(false)}
+                        className="w-full h-11 rounded-xl text-slate-600 font-bold"
+                    >
+                        Đóng
+                    </Button>
+                </div>
             </SheetContent>
         </Sheet>
     );
@@ -522,13 +465,15 @@ export function CouponDrawer({
 
 // Trigger Button Component (for convenience)
 interface CouponTriggerButtonProps {
-    appliedCoupon?: { code: string; discount: number } | null;
+    appliedCode?: string;
+    discountAmount?: number;
     onClick: () => void;
     className?: string;
 }
 
 export function CouponTriggerButton({
-    appliedCoupon,
+    appliedCode,
+    discountAmount,
     onClick,
     className,
 }: CouponTriggerButtonProps) {
@@ -537,7 +482,7 @@ export function CouponTriggerButton({
             onClick={onClick}
             className={cn(
                 "w-full p-4 rounded-xl border-2 border-dashed transition-all flex items-center justify-between",
-                appliedCoupon
+                appliedCode
                     ? "border-[#0F766E] bg-teal-50/50"
                     : "border-slate-200 hover:border-[#0F766E] hover:bg-slate-50",
                 className
@@ -546,20 +491,22 @@ export function CouponTriggerButton({
             <div className="flex items-center gap-3">
                 <div className={cn(
                     "w-10 h-10 rounded-lg flex items-center justify-center",
-                    appliedCoupon ? "bg-[#0F766E]" : "bg-slate-100"
+                    appliedCode ? "bg-[#0F766E]" : "bg-slate-100"
                 )}>
                     <TicketIcon className={cn(
                         "w-5 h-5",
-                        appliedCoupon ? "text-white" : "text-slate-500"
+                        appliedCode ? "text-white" : "text-slate-500"
                     )} />
                 </div>
                 <div className="text-left">
-                    {appliedCoupon ? (
+                    {appliedCode ? (
                         <>
-                            <p className="font-semibold text-[#0F766E]">{appliedCoupon.code}</p>
-                            <p className="text-xs text-teal-600">
-                                Giảm {appliedCoupon.discount.toLocaleString('vi-VN')}₫
-                            </p>
+                            <p className="font-semibold text-[#0F766E]">{appliedCode}</p>
+                            {discountAmount !== undefined && (
+                                <p className="text-xs text-teal-600">
+                                    Giảm {discountAmount.toLocaleString('vi-VN')}₫
+                                </p>
+                            )}
                         </>
                     ) : (
                         <>
@@ -570,14 +517,14 @@ export function CouponTriggerButton({
                 </div>
             </div>
             <span className="text-[#0F766E] font-medium text-sm">
-                {appliedCoupon ? 'Thay đổi' : 'Chọn mã'}
+                {appliedCode ? 'Thay đổi' : 'Chọn mã'}
             </span>
         </button>
     );
 }
 
 // Mock Coupons for fallback
-const MOCK_COUPONS: CouponItem[] = [
+const MOCK_COUPONS = [
     {
         id: 'coupon-1',
         code: 'NEWUSER2024',

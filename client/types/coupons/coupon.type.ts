@@ -47,6 +47,28 @@ export interface Coupon {
     max_usage_per_user?: number
 }
 
+export interface CouponUIItem {
+    id: string;
+    code: string;
+    name: string;
+    description: string;
+    discount_type: 'PERCENT' | 'AMOUNT' | 'FIXED' | 'FREE_MONTHS';
+    discount_value: number;
+    max_discount_amount?: number;
+    min_order_amount?: number;
+    valid_from?: string;
+    valid_until?: string;
+    is_applicable: boolean;
+    not_applicable_reason?: string;
+}
+
+export interface CouponValidationResult {
+    is_valid: boolean;
+    discount_amount: number;
+    message: string;
+    coupon?: Coupon;
+    payload?: any;
+
 export interface CouponRequest {
     name: string,
     description: string,

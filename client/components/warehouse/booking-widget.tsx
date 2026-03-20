@@ -44,6 +44,7 @@ import { Insurance } from '@/types/insurance/Insurance.types';
 import { CouponService } from '@/services/coupons/coupon.service';
 import { authStorage } from '@/services/auth/auth-storage.service';
 import { publicQuotationService, QuotationApiResponse } from '@/services/public-quotation/public-quotation.service';
+import { CouponDrawer, CouponTriggerButton } from '@/components/checkout/CouponDrawer';
 
 interface BookingWidgetProps {
     warehouseId?: string;
@@ -83,6 +84,7 @@ export function BookingWidget({ warehouseId, price, unit = "tháng" }: BookingWi
     const [selectedInsuranceId, setSelectedInsuranceId] = useState<string>("");
 
     // Coupon State
+    const [couponDrawerOpen, setCouponDrawerOpen] = useState(false);
     const [couponCode, setCouponCode] = useState("");
     const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number } | null>(null);
     const [couponError, setCouponError] = useState("");
@@ -390,7 +392,15 @@ export function BookingWidget({ warehouseId, price, unit = "tháng" }: BookingWi
         } finally {
             setIsValidatingCoupon(false);
         }
-    }, [couponCode, warehouseId, rentalType, selectedRowIds, selectedAddons, selectedDurationId]);
+    }, [warehouseId, rentalType, selectedRowIds, selectedAddons, selectedDurationId]);
+
+    const handleCouponApplied = (coupon: { code: string; discount_amount: number }) => {
+        if (!coupon.code) {
+            setAppliedCoupon(null);
+            return;
+        }
+        setAppliedCoupon({ code: coupon.code, discount: coupon.discount_amount });
+    };
 
     // Handle addon toggle
     const toggleAddon = useCallback((addonId: string) => {
@@ -686,57 +696,25 @@ export function BookingWidget({ warehouseId, price, unit = "tháng" }: BookingWi
                     </div>
                 </div>
 
-                {/* Coupon Input */}
+                {/* Coupon Section */}
                 <div className="space-y-3 pt-2">
-                    <div className="flex gap-2">
-                        <input
-                            type="text"
-                            placeholder="Mã giảm giá (VD: TET2025)"
-                            className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#0F766E]"
-                            value={couponCode}
-                            onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                            disabled={!!appliedCoupon}
-                        />
-                        <Button
-                            variant="outline"
-                            className="text-[#0F766E] border-[#0F766E] hover:bg-teal-50"
-                            onClick={handleApplyCoupon}
-                            disabled={!couponCode || !!appliedCoupon || isValidatingCoupon}
-                        >
-                            {isValidatingCoupon ? "..." : appliedCoupon ? "Đã áp dụng" : "Áp dụng"}
-                        </Button>
-                    </div>
-                    {couponError && (
-                        couponError === "LOGIN_REQUIRED" ? (
-                            <div className="flex items-center gap-2 p-2 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-700">
-                                <ExclamationCircleIcon className="w-4 h-4 shrink-0" />
-                                <span>
-                                    Vui lòng{' '}
-                                    <Link
-                                        href="/login"
-                                        className="font-semibold text-[#0F766E] hover:underline"
-                                    >
-                                        đăng nhập
-                                    </Link>
-                                    {' '}để sử dụng mã giảm giá
-                                </span>
-                            </div>
-                        ) : (
-                            <p className="text-xs text-red-500">{couponError}</p>
-                        )
-                    )}
-                    {appliedCoupon && (
-                        <div className="flex justify-between items-center bg-teal-50 p-2 rounded text-xs text-[#0F766E]">
-                            <span>Mã {appliedCoupon.code}</span>
-                            <span className="font-bold">-{appliedCoupon.discount.toLocaleString()}₫</span>
-                            <button
-                                onClick={() => { setAppliedCoupon(null); setCouponCode(""); }}
-                                className="text-red-500 ml-2 hover:underline"
-                            >
-                                Xóa
-                            </button>
-                        </div>
-                    )}
+                    <CouponTriggerButton 
+                        appliedCode={appliedCoupon?.code}
+                        discountAmount={appliedCoupon?.discount}
+                        onClick={() => setCouponDrawerOpen(true)}
+                    />
+                    
+                    <CouponDrawer
+                        open={couponDrawerOpen}
+                        onOpenChange={setCouponDrawerOpen}
+                        onApply={handleCouponApplied}
+                        appliedCode={appliedCoupon?.code}
+                        warehouseId={warehouseId}
+                        rowIds={rentalType === 'row' ? selectedRowIds : undefined}
+                        addonIds={selectedAddons}
+                        durationTierId={selectedDurationId}
+                        orderAmount={quotation.grandTotal + (appliedCoupon?.discount || 0)}
+                    />
                 </div>
 
                 {/* Price Breakdown */}
