@@ -1,11 +1,4 @@
 import { orgHelper } from '@/lib/organization.utils';
-import type { ApiResponse, PaginatedResponse } from '@/services/common.types';
-import type {
-    Unit,
-    CreateUnitPayload,
-    UpdateUnitPayload,
-    QueryUnitParams,
-} from './unit.types';
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 
@@ -13,7 +6,7 @@ export class UnitService {
     /**
      * Tạo đơn vị tính mới
      */
-    async create(token: string, data: CreateUnitPayload): Promise<ApiResponse<Unit>> {
+    async create(token: string, data: any) {
         const orgId = await orgHelper.getOrgId(token);
         const response = await fetch(`${API}/organizations/${orgId}/units`, {
             method: 'POST',
@@ -29,13 +22,14 @@ export class UnitService {
             throw new Error(errorData.message || 'Không thể tạo đơn vị tính');
         }
 
-        return response.json();
+        const res = await response.json();
+        return res.data;
     }
 
     /**
      * Lấy danh sách đơn vị tính (phân trang)
      */
-    async list(token: string, query?: QueryUnitParams): Promise<PaginatedResponse<Unit>> {
+    async list(token: string, query?: any) {
         const orgId = await orgHelper.getOrgId(token);
 
         const params = new URLSearchParams();
@@ -60,13 +54,14 @@ export class UnitService {
             throw new Error(errorData.message || 'Không thể lấy danh sách đơn vị tính');
         }
 
-        return response.json();
+        const res = await response.json();
+        return res.data;
     }
 
     /**
      * Lấy chi tiết đơn vị tính
      */
-    async getById(token: string, id: string): Promise<ApiResponse<Unit>> {
+    async getById(token: string, id: string) {
         const orgId = await orgHelper.getOrgId(token);
         const response = await fetch(`${API}/organizations/${orgId}/units/${id}`, {
             method: 'GET',
@@ -81,13 +76,14 @@ export class UnitService {
             throw new Error(errorData.message || 'Không thể lấy thông tin đơn vị tính');
         }
 
-        return response.json();
+        const res = await response.json();
+        return res.data;
     }
 
     /**
      * Cập nhật đơn vị tính
      */
-    async update(token: string, id: string, data: UpdateUnitPayload): Promise<ApiResponse<Unit>> {
+    async update(token: string, id: string, data: any) {
         const orgId = await orgHelper.getOrgId(token);
         const response = await fetch(`${API}/organizations/${orgId}/units/${id}`, {
             method: 'PUT',
@@ -103,13 +99,14 @@ export class UnitService {
             throw new Error(errorData.message || 'Không thể cập nhật đơn vị tính');
         }
 
-        return response.json();
+        const res = await response.json();
+        return res.data;
     }
 
     /**
      * Xóa một đơn vị tính
      */
-    async delete(token: string, id: string): Promise<ApiResponse<null>> {
+    async delete(token: string, id: string) {
         const orgId = await orgHelper.getOrgId(token);
         const response = await fetch(`${API}/organizations/${orgId}/units/${id}`, {
             method: 'DELETE',
@@ -124,13 +121,14 @@ export class UnitService {
             throw new Error(errorData.message || 'Không thể xóa đơn vị tính');
         }
 
-        return response.json();
+        const res = await response.json();
+        return res.data;
     }
 
     /**
      * Xóa nhiều đơn vị tính cùng lúc
      */
-    async deleteMany(token: string, ids: string[]): Promise<ApiResponse<null>> {
+    async deleteMany(token: string, ids: string[]) {
         const orgId = await orgHelper.getOrgId(token);
         const response = await fetch(`${API}/organizations/${orgId}/units/delete/many`, {
             method: 'DELETE',
@@ -146,6 +144,9 @@ export class UnitService {
             throw new Error(errorData.message || 'Không thể xóa đơn vị tính');
         }
 
-        return response.json();
+        const res = await response.json();
+        return res.data;
     }
 }
+
+export const unitService = new UnitService();

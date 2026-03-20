@@ -18,7 +18,7 @@ export class WarehouseManagerService {
     /**
      * Gán người quản lý vào kho
      */
-    async assignManager(token: string, data: AssignWarehouseManagerPayload): Promise<ApiResponse<WarehouseManager>> {
+    async assignManager(token: string, data: AssignWarehouseManagerPayload): Promise<WarehouseManager> {
         const response = await fetch(`${API}/warehouse-managers`, {
             method: 'POST',
             headers: {
@@ -33,13 +33,14 @@ export class WarehouseManagerService {
             throw new Error(errorData.message || 'Không thể gán người quản lý kho');
         }
 
-        return await response.json();
+        const res = await response.json();
+        return res.data;
     }
 
     /**
      * Lấy danh sách quản lý kho của tổ chức
      */
-    async listManagers(token: string, params: { warehouse_id?: string; limit?: number; offset?: number } = {}): Promise<PaginatedResponse<WarehouseManager>> {
+    async listManagers(token: string, params: { warehouse_id?: string; limit?: number; offset?: number } = {}) {
         const query = new URLSearchParams();
         if (params.warehouse_id) query.append('warehouse_id', params.warehouse_id);
         if (params.limit) query.append('limit', String(params.limit));
@@ -50,7 +51,8 @@ export class WarehouseManagerService {
         });
 
         if (!response.ok) throw new Error('Không thể lấy danh sách người quản lý kho');
-        return await response.json();
+        const res = await response.json();
+        return res.data;
     }
 
     // ==================== PHÊ DUYỆT KHO (DÀNH CHO MANAGER) ====================
@@ -58,12 +60,13 @@ export class WarehouseManagerService {
     /**
      * Danh sách yêu cầu nhập kho chờ phê duyệt
      */
-    async getPendingInbounds(token: string): Promise<PaginatedResponse<WarehouseManagerInventoryRequest>> {
+    async getPendingInbounds(token: string) {
         const response = await fetch(`${API}/warehouse-manager/inventory/inbound`, {
             headers: { 'Authorization': `Bearer ${token}` },
         });
         if (!response.ok) throw new Error('Không thể lấy danh sách phiếu nhập chờ duyệt');
-        return await response.json();
+        const res = await response.json();
+        return res.data;
     }
 
     /**
@@ -79,20 +82,25 @@ export class WarehouseManagerService {
             body: JSON.stringify({ process_notes: notes }),
         });
         if (!response.ok) throw new Error('Không thể phê duyệt phiếu nhập');
-        return await response.json();
+        const res = await response.json();
+        return res.data;
     }
 
     // ==================== QUẢN LÝ VAI TRÒ (ROLES) ====================
 
-    async listRoles(token: string): Promise<ApiResponse<WarehouseManagerRole[]>> {
+    async listRoles(token: string) {
         const response = await fetch(`${API}/warehouse-manager-roles`, {
-            headers: { 'Authorization': `Bearer ${token}` },
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
         });
         if (!response.ok) throw new Error('Không thể lấy danh sách vai trò');
-        return await response.json();
+        const res = await response.json();
+        return res.data; // Trả về { items, total, limit, offset, hasMore }
     }
 
-    async createRole(token: string, data: CreateWarehouseManagerRolePayload): Promise<ApiResponse<WarehouseManagerRole>> {
+    async createRole(token: string, data: CreateWarehouseManagerRolePayload): Promise<WarehouseManagerRole> {
         const response = await fetch(`${API}/warehouse-manager-roles`, {
             method: 'POST',
             headers: {
@@ -101,11 +109,15 @@ export class WarehouseManagerService {
             },
             body: JSON.stringify(data),
         });
-        if (!response.ok) throw new Error('Không thể tạo vai trò mới');
-        return await response.json();
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Không thể tạo vai trò mới');
+        }
+        const res = await response.json();
+        return res.data;
     }
 
-    async updateRole(token: string, id: string, data: Partial<CreateWarehouseManagerRolePayload>): Promise<ApiResponse<WarehouseManagerRole>> {
+    async updateRole(token: string, id: string, data: Partial<CreateWarehouseManagerRolePayload>): Promise<WarehouseManagerRole> {
         const response = await fetch(`${API}/warehouse-manager-roles/${id}`, {
             method: 'PATCH',
             headers: {
@@ -114,25 +126,33 @@ export class WarehouseManagerService {
             },
             body: JSON.stringify(data),
         });
-        if (!response.ok) throw new Error('Không thể cập nhật vai trò');
-        return await response.json();
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Không thể cập nhật vai trò');
+        }
+        const res = await response.json();
+        return res.data;
     }
 
-    async deleteRole(token: string, id: string): Promise<ApiResponse<void>> {
+    async deleteRole(token: string, id: string): Promise<void> {
         const response = await fetch(`${API}/warehouse-manager-roles/${id}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` },
         });
-        if (!response.ok) throw new Error('Không thể xóa vai trò');
-        return await response.json();
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Không thể xóa vai trò');
+        }
+        return;
     }
 
-    async listPermissions(token: string): Promise<ApiResponse<WarehouseManagerPermission[]>> {
+    async listPermissions(token: string) {
         const response = await fetch(`${API}/warehouse-manager-roles/permissions`, {
             headers: { 'Authorization': `Bearer ${token}` },
         });
         if (!response.ok) throw new Error('Không thể lấy danh sách quyền');
-        return await response.json();
+        const res = await response.json();
+        return res.data; // Trả về WarehouseManagerPermission[]
     }
 }
 

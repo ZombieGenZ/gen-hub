@@ -234,18 +234,16 @@ export default function MyWarehousesPage() {
         setIsLoading(true);
         setError(null);
         try {
-            // Fetch all contracts for this user's org — use large limit to get all active ones
+            // Fetch all contracts for this user's org
             const data: any = await rentalContractService.getRentalContracts(token, {
                 limit: 50,
                 page: 1,
             });
-            if (data) {
-                const items: RentalContractListItem[] = Array.isArray(data)
-                    ? data
-                    : Array.isArray(data.items)
-                        ? data.items
-                        : [];
-                setContracts(items);
+            
+            if (data && data.items) {
+                setContracts(data.items);
+            } else if (Array.isArray(data)) {
+                setContracts(data);
             } else {
                 setContracts([]);
             }

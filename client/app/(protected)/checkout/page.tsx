@@ -315,8 +315,7 @@ function CheckoutContent() {
             };
 
             // 4. Submit Order using customer endpoint (multipart/form-data with optional signature)
-            const response = await rentalContractService.createOrgRentalContract(token, orgId, payload, signatureBlob);
-            const result = response?.data;
+            const result = await rentalContractService.createOrgRentalContract(token, orgId, payload, signatureBlob);
 
             console.log('Order created successfully:', result);
 

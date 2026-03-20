@@ -165,18 +165,12 @@ export default function WarehouseTemplatePage() {
 
             const data = await warehouseService.getWarehouseTemplates(token, apiParams);
 
-            if (data) {
-                let items: Warehouse[] = [];
-                let total = 0;
-                if (Array.isArray(data)) {
-                    items = data;
-                    total = data.length;
-                } else if (data.items) {
-                    items = data.items;
-                    total = data.total || 0;
-                }
-                setWarehouses(items);
-                setTotalItems(total);
+            if (data && data.items) {
+                setWarehouses(data.items);
+                setTotalItems(data.total || 0);
+            } else if (Array.isArray(data)) {
+                setWarehouses(data);
+                setTotalItems(data.length);
             }
         } catch (err) {
             const error = err instanceof Error ? err : new Error(String(err));

@@ -55,7 +55,7 @@ export class PermissionService {
 
             const response = await fetch(`${API}/permissions/by-ids?${queryParams.toString()}`, {
                 method: 'GET',
-                headers: {
+                headers: { 
                     'Authorization': `Bearer ${accessToken}`,
                     'Content-Type': 'application/json',
                 },
@@ -129,66 +129,6 @@ export class PermissionService {
             return data.data || data;
         } catch (error) {
             console.error('Lỗi khi tạo permission mới:', error);
-            throw error;
-        }
-    }
-
-    /**
-     * Cập nhật thông tin quyền hạn hiện có.
-     * 
-     * @param accessToken - Token xác thực.
-     * @param id - ID của permission cần cập nhật.
-     * @param updateData - Dữ liệu cần thay đổi.
-     */
-    async updatePermission(accessToken: string, id: string, updateData: Partial<PermissionType>): Promise<PermissionType> {
-        try {
-            const response = await fetch(`${API}/permissions/${id}`, {
-                method: 'PATCH', // Hoặc PUT tùy thiết kế backend
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(updateData),
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || 'Cập nhật quyền hạn thất bại');
-            }
-
-            const data = await response.json();
-            return data.data || data;
-        } catch (error) {
-            console.error(`Lỗi khi cập nhật permission ID ${id}:`, error);
-            throw error;
-        }
-    }
-
-    /**
-     * Xóa một quyền hạn khỏi hệ thống.
-     * Lưu ý: Thao tác này có thể ảnh hưởng đến các Role đang gán permission này.
-     * 
-     * @param accessToken - Token xác thực.
-     * @param id - ID của permission cần xóa.
-     */
-    async deletePermission(accessToken: string, id: string): Promise<boolean> {
-        try {
-            const response = await fetch(`${API}/permissions/${id}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`,
-                    'Content-Type': 'application/json',
-                },
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || 'Xóa quyền hạn thất bại');
-            }
-
-            return true;
-        } catch (error) {
-            console.error(`Lỗi khi xóa permission ID ${id}:`, error);
             throw error;
         }
     }

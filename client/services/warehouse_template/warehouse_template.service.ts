@@ -2,18 +2,13 @@ import { CreateBlockTemplateRequest, UpdateBlockTemplateRequest, DeleteBlockTemp
 import { CreateRackTemplateRequest, UpdateRackTemplateRequest, DeleteRackTemplateRequest, DeleteManyRackTemplateRequest } from '@/types/warehoue_template/rack_warehouse_template.type';
 import { CreateRowTemplateRequest, UpdateRowTemplateRequest, DeleteRowTemplateRequest, DeleteManyRowTemplateRequest } from '@/types/warehoue_template/row_warehouse_template.type';
 import { CreateShelfTemplateRequest, UpdateShelfTemplateRequest, DeleteShelfTemplateRequest, DeleteManyShelfTemplateRequest } from '@/types/warehoue_template/shelf_warehouse_template.type';
-import { de } from 'date-fns/locale';
 
 const API = process.env.NEXT_PUBLIC_API_URL
 
 export class WarehouseTemplateService {
 
-    // Lấy danh sách kho
     /**
      * Lấy danh sách kho
-     * @param token Token truy cập
-     * @param params Tham số lọc
-     * @returns Danh sách kho
      */
     async getWarehouseTemplates(token: string, params: {
         keywords?: string;
@@ -30,7 +25,6 @@ export class WarehouseTemplateService {
         if (params.rental_status) query.append('rental_status', params.rental_status);
         if (params.province_id) query.append('province_id', params.province_id);
 
-        // Pagination
         if (params.limit) query.append('limit', String(params.limit));
         if (params.page && params.page > 0) {
             const offset = (params.page - 1) * (params.limit || 10);
@@ -47,20 +41,15 @@ export class WarehouseTemplateService {
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.message || 'Failed to fetch warehouse templates');
+            throw new Error(errorData.message || 'Không thể lấy danh sách kho');
         }
         
-        const data = await response.json();
-        console.log(data)
-        return data.data;
+        const res = await response.json();
+        return res.data;
     }
 
-    // Lấy kho bằng ID
     /**
      * Lấy kho hàng bằng ID
-     * @param token Token truy cập
-     * @param id ID của kho hàng
-     * @returns Thông tin kho hàng
      */
     async getWarehouseTemplateById(token: string, id: string) {
         const response = await fetch(`${API}/warehouse-templates/${id}`, {
@@ -73,18 +62,15 @@ export class WarehouseTemplateService {
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.message || 'Failed to fetch warehouse template details');
+            throw new Error(errorData.message || 'Không thể lấy chi tiết kho');
         }
         
-        const data = await response.json();
-        return data.data;
+        const res = await response.json();
+        return res.data;
     }
 
     /**
      * Tạo mới template kho hàng
-     * @param token Token truy cập
-     * @param data Dữ liệu tạo mới
-     * @returns Kết quả tạo mới
      */
     async createWarehouseTemplate(token: string, data: unknown) {
         const response = await fetch(`${API}/warehouse-templates`, {
@@ -98,18 +84,15 @@ export class WarehouseTemplateService {
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.message || 'Failed to create warehouse template');
+            throw new Error(errorData.message || 'Không thể tạo kho mới');
         }
         
-        return await response.json();
+        const res = await response.json();
+        return res.data;
     }
 
     /**
      * Cập nhật template kho hàng
-     * @param token Token truy cập
-     * @param id ID của template
-     * @param data Dữ liệu cập nhật
-     * @returns Kết quả cập nhật
      */
     async updateWarehouseTemplate(token: string, id: string, data: unknown) {
         const response = await fetch(`${API}/warehouse-templates/${id}`, {
@@ -123,17 +106,15 @@ export class WarehouseTemplateService {
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.message || 'Failed to update warehouse template');
+            throw new Error(errorData.message || 'Không thể cập nhật thông tin kho');
         }
         
-        return await response.json();
+        const res = await response.json();
+        return res.data;
     }
 
     /**
      * Xóa template kho hàng
-     * @param token Token truy cập
-     * @param id ID của template
-     * @returns Kết quả xóa
      */
     async deleteWarehouseTemplate(token: string, id: string) {
         const response = await fetch(`${API}/warehouse-templates/${id}`, {
@@ -146,13 +127,16 @@ export class WarehouseTemplateService {
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.message || 'Failed to delete warehouse template');
+            throw new Error(errorData.message || 'Không thể xóa kho');
         }
         
-        return await response.json();
+        const res = await response.json();
+        return res.data;
     }
 
-    // Lấy ảnh từng kho
+    /**
+     * Lấy danh sách ảnh của kho
+     */
     async getWarehouseImage(access_token: string, warehouse_id: string) {
         const response = await fetch(`${API}/warehouse-templates/${warehouse_id}/images`, {
             headers: {
@@ -163,134 +147,83 @@ export class WarehouseTemplateService {
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.message || 'Failed to fetch warehouse template details');
+            throw new Error(errorData.message || 'Không thể lấy danh sách ảnh');
         }
 
-        const data = await response.json();
-        return data;
+        const res = await response.json();
+        return res.data;
     }
 
     // API Row warehouse
-    /**
-     * Lấy danh sách hàng trong kho
-     * @param warehouse_id ID của kho
-     * @param access_token Token truy cập
-     * @returns Danh sách hàng trong kho
-     */
     async getWarehouseRow(warehouse_id: string, access_token: string) {
-        try {
-            const response = await fetch(`${API}/warehouse-templates/${warehouse_id}/rows`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${access_token}`,
-                    'Content-Type': 'application/json',
-                },
-            })
-            if(!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || 'Failed to fetch warehouse template details');
-            }
-            const data = await response.json();
-            return data.data;
+        const response = await fetch(`${API}/warehouse-templates/${warehouse_id}/rows`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${access_token}`,
+                'Content-Type': 'application/json',
+            },
+        })
+        if(!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Không thể lấy danh sách dãy (rows)');
         }
-        catch (err) {
-            console.error("Failed to fetch warehouse row", err);
-        }
+        const res = await response.json();
+        return res.data;
     }
 
     // API Rack warehouse
-    /**
-     * Lấy danh sách cột trong hàng
-     * @param row_id ID của hàng
-     * @param warehouse_id ID của kho
-     * @param access_token Token truy cập
-     * @returns Danh sách cột trong hàng
-     */
     async getWarehouseRack(row_id: string, warehouse_id: string, access_token: string) {
-        try {
-            const response = await fetch(`${API}/warehouse-templates/${warehouse_id}/rows/${row_id}/racks`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${access_token}`,
-                    'Content-Type': 'application/json',
-                },
-            })
+        const response = await fetch(`${API}/warehouse-templates/${warehouse_id}/rows/${row_id}/racks`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${access_token}`,
+                'Content-Type': 'application/json',
+            },
+        })
 
-            if(!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || 'Failed to fetch warehouse template details');
-            }
-            const data = await response.json();
-            return data.data;
+        if(!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Không thể lấy danh sách kệ (racks)');
         }
-        catch (err) {
-            console.error("Failed to fetch warehouse rack", err);
-        }
+        const res = await response.json();
+        return res.data;
     }
 
-    /**
-     * Lấy danh sách hàng trong kho
-     * @param rack_id ID của rack
-     * @param row_id ID của hàng
-     * @param warehouse_id ID của kho
-     * @param access_token Token truy cập
-     * @returns Danh sách hàng trong kho
-     */
     // API Shelf warehouse
-
     async getWarehouseShelf(rack_id: string, row_id: string, warehouse_id: string, access_token: string) {
-        try {
-            const response = await fetch(`${API}/warehouse-templates/${warehouse_id}/rows/${row_id}/racks/${rack_id}/shelves`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${access_token}`,
-                    'Content-Type': 'application/json',
-                },
-            })
+        const response = await fetch(`${API}/warehouse-templates/${warehouse_id}/rows/${row_id}/racks/${rack_id}/shelves`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${access_token}`,
+                'Content-Type': 'application/json',
+            },
+        })
 
-            if(!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || 'Failed to fetch warehouse template details');
-            }
-            const data = await response.json();
-            return data.data;
+        if(!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Không thể lấy danh sách tầng (shelves)');
         }
-        catch (err) {
-            console.error("Failed to fetch warehouse shelf", err);
-        }
+        const res = await response.json();
+        return res.data;
     }
 
     // API Block warehouse
-    /**
-     * Lấy danh sách khối trong hàng
-     * @param shelves_id ID của hàng
-     * @param rack_id ID của rack
-     * @param row_id ID của hàng
-     * @param warehouse_id ID của kho
-     * @param access_token Token truy cập
-     * @returns Danh sách khối trong hàng
-     */
     async getWarehouseBlock(shelves_id: string, rack_id: string, row_id: string, warehouse_id: string, access_token: string) {
-        try {
-            const response = await fetch(`${API}/warehouse-templates/${warehouse_id}/rows/${row_id}/racks/${rack_id}/shelves/${shelves_id}/blocks`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${access_token}`,
-                    'Content-Type': 'application/json',
-                },
-            })
+        const response = await fetch(`${API}/warehouse-templates/${warehouse_id}/rows/${row_id}/racks/${rack_id}/shelves/${shelves_id}/blocks`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${access_token}`,
+                'Content-Type': 'application/json',
+            },
+        })
 
-            if(!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || 'Failed to fetch warehouse template details');
-            }
+        if(!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Không thể lấy danh sách ô (blocks)');
+        }
 
-            const data = await response.json();
-            return data.data;
-        }
-        catch (err) {
-            console.error("Failed to fetch warehouse block", err);
-        }
+        const res = await response.json();
+        return res.data;
     }
 
     // ── Row CRUD ──
@@ -309,8 +242,9 @@ export class WarehouseTemplateService {
             },
             body: JSON.stringify(payload),
         });
-        if (!response.ok) throw new Error('Failed to create row');
-        return await response.json();
+        if (!response.ok) throw new Error('Không thể tạo dãy mới');
+        const res = await response.json();
+        return res.data;
     }
 
     async updateRow(token: string, data: UpdateRowTemplateRequest) {
@@ -327,8 +261,9 @@ export class WarehouseTemplateService {
             },
             body: JSON.stringify(payload),
         });
-        if (!response.ok) throw new Error('Failed to update row');
-        return await response.json();
+        if (!response.ok) throw new Error('Không thể cập nhật thông tin dãy');
+        const res = await response.json();
+        return res.data;
     }
 
     async deleteRow(token: string, data: DeleteRowTemplateRequest) {
@@ -339,8 +274,9 @@ export class WarehouseTemplateService {
                 'Content-Type': 'application/json',
             },
         });
-        if (!response.ok) throw new Error('Failed to delete row');
-        return await response.json();
+        if (!response.ok) throw new Error('Không thể xóa dãy');
+        const res = await response.json();
+        return res.data;
     }
 
     async deleteManyRows(token: string, data: DeleteManyRowTemplateRequest) {
@@ -352,8 +288,9 @@ export class WarehouseTemplateService {
             },
             body: JSON.stringify({ ids: data.ids }),
         });
-        if (!response.ok) throw new Error('Failed to delete rows');
-        return await response.json();
+        if (!response.ok) throw new Error('Không thể xóa các dãy đã chọn');
+        const res = await response.json();
+        return res.data;
     }
 
     // ── Rack CRUD ──
@@ -371,8 +308,9 @@ export class WarehouseTemplateService {
             },
             body: JSON.stringify(payload),
         });
-        if (!response.ok) throw new Error('Failed to create rack');
-        return await response.json();
+        if (!response.ok) throw new Error('Không thể tạo kệ mới');
+        const res = await response.json();
+        return res.data;
     }
 
     async updateRack(token: string, data: UpdateRackTemplateRequest) {
@@ -388,8 +326,9 @@ export class WarehouseTemplateService {
             },
             body: JSON.stringify(payload),
         });
-        if (!response.ok) throw new Error('Failed to update rack');
-        return await response.json();
+        if (!response.ok) throw new Error('Không thể cập nhật thông tin kệ');
+        const res = await response.json();
+        return res.data;
     }
 
     async deleteRack(token: string, data: DeleteRackTemplateRequest) {
@@ -400,8 +339,9 @@ export class WarehouseTemplateService {
                 'Content-Type': 'application/json',
             },
         });
-        if (!response.ok) throw new Error('Failed to delete rack');
-        return await response.json();
+        if (!response.ok) throw new Error('Không thể xóa kệ');
+        const res = await response.json();
+        return res.data;
     }
 
     async deleteManyRacks(token: string, data: DeleteManyRackTemplateRequest) {
@@ -413,8 +353,9 @@ export class WarehouseTemplateService {
             },
             body: JSON.stringify({ ids: data.ids }),
         });
-        if (!response.ok) throw new Error('Failed to delete racks');
-        return await response.json();
+        if (!response.ok) throw new Error('Không thể xóa các kệ đã chọn');
+        const res = await response.json();
+        return res.data;
     }
 
     // ── Shelf CRUD ──
@@ -431,8 +372,9 @@ export class WarehouseTemplateService {
             },
             body: JSON.stringify(payload),
         });
-        if (!response.ok) throw new Error('Failed to create shelf');
-        return await response.json();
+        if (!response.ok) throw new Error('Không thể tạo tầng mới');
+        const res = await response.json();
+        return res.data;
     }
 
     async updateShelf(token: string, data: UpdateShelfTemplateRequest) {
@@ -448,8 +390,9 @@ export class WarehouseTemplateService {
             },
             body: JSON.stringify(payload),
         });
-        if (!response.ok) throw new Error('Failed to update shelf');
-        return await response.json();
+        if (!response.ok) throw new Error('Không thể cập nhật thông tin tầng');
+        const res = await response.json();
+        return res.data;
     }
 
     async deleteShelf(token: string, data: DeleteShelfTemplateRequest) {
@@ -460,8 +403,9 @@ export class WarehouseTemplateService {
                 'Content-Type': 'application/json',
             },
         });
-        if (!response.ok) throw new Error('Failed to delete shelf');
-        return await response.json();
+        if (!response.ok) throw new Error('Không thể xóa tầng');
+        const res = await response.json();
+        return res.data;
     }
 
     async deleteManyShelves(token: string, data: DeleteManyShelfTemplateRequest) {
@@ -473,8 +417,9 @@ export class WarehouseTemplateService {
             },
             body: JSON.stringify({ ids: data.ids }),
         });
-        if (!response.ok) throw new Error('Failed to delete shelves');
-        return await response.json();
+        if (!response.ok) throw new Error('Không thể xóa các tầng đã chọn');
+        const res = await response.json();
+        return res.data;
     }
 
     // ── Block CRUD ──
@@ -491,8 +436,9 @@ export class WarehouseTemplateService {
             },
             body: JSON.stringify(payload),
         });
-        if (!response.ok) throw new Error('Failed to create block');
-        return await response.json();
+        if (!response.ok) throw new Error('Không thể tạo ô mới');
+        const res = await response.json();
+        return res.data;
     }
 
     async updateBlock(token: string, data: UpdateBlockTemplateRequest) {
@@ -508,8 +454,9 @@ export class WarehouseTemplateService {
             },
             body: JSON.stringify(payload),
         });
-        if (!response.ok) throw new Error('Failed to update block');
-        return await response.json();
+        if (!response.ok) throw new Error('Không thể cập nhật thông tin ô');
+        const res = await response.json();
+        return res.data;
     }
 
     async deleteBlock(token: string, data: DeleteBlockTemplateRequest) {
@@ -520,8 +467,9 @@ export class WarehouseTemplateService {
                 'Content-Type': 'application/json',
             },
         });
-        if (!response.ok) throw new Error('Failed to delete block');
-        return await response.json();
+        if (!response.ok) throw new Error('Không thể xóa ô');
+        const res = await response.json();
+        return res.data;
     }
 
     async deleteManyBlocks(token: string, data: DeleteManyBlockTemplateRequest) {
@@ -533,15 +481,13 @@ export class WarehouseTemplateService {
             },
             body: JSON.stringify({ ids: data.ids }),
         });
-        if (!response.ok) throw new Error('Failed to delete blocks');
-        return await response.json();
+        if (!response.ok) throw new Error('Không thể xóa các ô đã chọn');
+        const res = await response.json();
+        return res.data;
     }
 
     /**
      * Xóa nhiều template cùng lúc
-     * @param token Token truy cập
-     * @param ids Danh sách ID template cần xóa
-     * @returns Kết quả xóa
      */
     async deleteManyWarehouseTemplates(token: string, ids: string[]) {
         const response = await fetch(`${API}/warehouse-templates/delete/many`, {
@@ -555,18 +501,15 @@ export class WarehouseTemplateService {
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.message || 'Failed to delete warehouse templates');
+            throw new Error(errorData.message || 'Không thể xóa các kho đã chọn');
         }
 
-        return await response.json();
+        const res = await response.json();
+        return res.data;
     }
 
     /**
      * Cập nhật toàn bộ layout (Rows -> Racks -> Shelves -> Blocks)
-     * @param token Token truy cập
-     * @param id ID template
-     * @param data Layout data (UpsertLayoutDto)
-     * @returns Kết quả cập nhật
      */
     async upsertLayout(token: string, id: string, data: { rows: unknown[] }) {
         const response = await fetch(`${API}/warehouse-templates/${id}/layout`, {
@@ -580,18 +523,15 @@ export class WarehouseTemplateService {
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.message || 'Failed to update warehouse layout');
+            throw new Error(errorData.message || 'Không thể cập nhật layout kho');
         }
 
-        return await response.json();
+        const res = await response.json();
+        return res.data;
     }
 
     /**
      * Upload nhiều ảnh cho template
-     * @param token Token truy cập
-     * @param id ID template
-     * @param files Danh sách file ảnh
-     * @returns Kết quả upload
      */
     async uploadImages(token: string, id: string, files: File[]) {
         const formData = new FormData();
@@ -609,18 +549,15 @@ export class WarehouseTemplateService {
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.message || 'Failed to upload images');
+            throw new Error(errorData.message || 'Không thể tải ảnh lên');
         }
 
-        return await response.json();
+        const res = await response.json();
+        return res.data;
     }
 
     /**
      * Xóa một ảnh
-     * @param token Token truy cập
-     * @param id ID template
-     * @param imageId ID ảnh cần xóa
-     * @returns Kết quả xóa
      */
     async deleteImage(token: string, id: string, imageId: string) {
         const response = await fetch(`${API}/warehouse-templates/${id}/images/${imageId}`, {
@@ -633,18 +570,15 @@ export class WarehouseTemplateService {
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.message || 'Failed to delete image');
+            throw new Error(errorData.message || 'Không thể xóa ảnh');
         }
 
-        return await response.json();
+        const res = await response.json();
+        return res.data;
     }
 
     /**
      * Xóa nhiều ảnh cùng lúc
-     * @param token Token truy cập
-     * @param id ID template
-     * @param imageIds Danh sách ID ảnh cần xóa
-     * @returns Kết quả xóa
      */
     async deleteManyImages(token: string, id: string, imageIds: string[]) {
         const response = await fetch(`${API}/warehouse-templates/${id}/images/delete/many`, {
@@ -658,18 +592,15 @@ export class WarehouseTemplateService {
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.message || 'Failed to delete images');
+            throw new Error(errorData.message || 'Không thể xóa các ảnh đã chọn');
         }
 
-        return await response.json();
+        const res = await response.json();
+        return res.data;
     }
 
     /**
      * Sắp xếp lại thứ tự ảnh
-     * @param token Token truy cập
-     * @param id ID template
-     * @param images Danh sách { id, order }
-     * @returns Kết quả sắp xếp
      */
     async reorderImages(token: string, id: string, images: { id: string; order: number }[]) {
         const response = await fetch(`${API}/warehouse-templates/${id}/images/reorder`, {
@@ -683,10 +614,11 @@ export class WarehouseTemplateService {
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.message || 'Failed to reorder images');
+            throw new Error(errorData.message || 'Không thể sắp xếp lại ảnh');
         }
 
-        return await response.json();
+        const res = await response.json();
+        return res.data;
     }
 }
 

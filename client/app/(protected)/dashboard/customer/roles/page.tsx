@@ -97,8 +97,15 @@ export default function RoleManagementPage() {
                 warehouseManagerService.listPermissions(token)
             ]);
 
-            if (rolesRes.success) setRoles(rolesRes.data);
-            if (permsRes.success) setPermissions(permsRes.data);
+            // rolesRes is now { items, total, ... }
+            if (rolesRes && rolesRes.items) {
+                setRoles(rolesRes.items);
+            }
+            
+            // permsRes is now WarehouseManagerPermission[]
+            if (Array.isArray(permsRes)) {
+                setPermissions(permsRes);
+            }
         } catch (error: unknown) {
             const message = error instanceof Error ? error.message : "Không thể tải dữ liệu";
             showToast(message, "error");

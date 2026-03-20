@@ -97,9 +97,9 @@ export default function UnitManagementPage() {
                 offset,
             });
 
-            if (result?.data) {
-                setUnits(result.data.items || []);
-                setTotalItems(result.data.total || 0);
+            if (result) {
+                setUnits(result.items || []);
+                setTotalItems(result.total || 0);
             }
         } catch (err) {
             const error = err instanceof Error ? err : new Error(String(err));

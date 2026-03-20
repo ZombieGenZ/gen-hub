@@ -83,8 +83,6 @@ export default function AmenitiesPage() {
 
             let items: AmenityResponse[] = [];
             if (data?.items) items = data.items;
-            else if (data?.data?.items) items = data.data.items;
-            else if (Array.isArray(data?.data)) items = data.data;
             else if (Array.isArray(data)) items = data;
 
             const active = items.filter((a) => a.is_active).length;
@@ -114,12 +112,6 @@ export default function AmenitiesPage() {
             if (data?.items) {
                 items = data.items;
                 total = data.total || 0;
-            } else if (data?.data?.items) {
-                items = data.data.items;
-                total = data.data.total || 0;
-            } else if (Array.isArray(data?.data)) {
-                items = data.data;
-                total = data.total || data.data.length;
             } else if (Array.isArray(data)) {
                 items = data;
                 total = data.length;
