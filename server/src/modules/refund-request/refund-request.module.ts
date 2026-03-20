@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { OrganizationBalanceModule } from '../organization-balance/organization-balance.module';
 import { RefundRequestController } from './refund-request.controller';
 import { RefundRequestService } from './refund-request.service';
 import { RefundRequestRepository } from './refund-request.repository';
@@ -17,6 +18,7 @@ import { ApiKeyVerificationModule } from '../api-key-verification/api-key-verifi
         SystemLogModule,
         OrganizationModule,
         ApiKeyVerificationModule,
+        OrganizationBalanceModule,
     ],
     controllers: [RefundRequestController],
     providers: [RefundRequestService, RefundRequestRepository],

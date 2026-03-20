@@ -25,6 +25,8 @@ import { WebsocketGateway } from '../websocket/websocket.gateway';
 import { SystemLogService } from '../system-log/system-log.service';
 import { OrganizationAuditLogService } from '../organization/organization-audit-log.service';
 import { OrganizationRepository } from '../organization/organization.repository';
+import { OrganizationBalanceService } from '../organization-balance/organization-balance.service';
+import { CreateRefundRequestDto } from '../org-refund-request/dto';
 
 /**
  * Service xử lý business logic cho RefundRequest
@@ -44,6 +46,7 @@ export class RefundRequestService {
         private readonly auditLogService: OrganizationAuditLogService,
         private readonly configService: ConfigService,
         private readonly i18n: I18nService,
+        private readonly balanceService: OrganizationBalanceService,
     ) {
         this.CACHE_TTL = this.configService.get<number>('REDIS_REFUND_REQUEST_CACHE_TTL') || 300;
         this.LIST_CACHE_TTL = this.configService.get<number>('REDIS_REFUND_REQUEST_LIST_CACHE_TTL') || 60;
@@ -173,6 +176,20 @@ export class RefundRequestService {
             RefundStatus.APPROVED,
             userId,
             dto.process_notes,
+            {
+                fee_percent: dto.fee_percent,
+                fee_amount: dto.fee_amount,
+                final_refund_amount: dto.final_refund_amount,
+            }
+        );
+
+        // Cộng tiền vào tài khoản
+        await this.balanceService.processRefund(
+            existing.organization_id,
+            Number(dto.final_refund_amount),
+            id,
+            `Hoàn tiền cho hợp đồng ${existing.rental_contract_id}`,
+            userId
         );
 
         // Invalidate cache
@@ -450,6 +467,53 @@ export class RefundRequestService {
         await this.checkOrgPermission(organizationId, userId, 'refund-request.read', lang);
 
         return refundRequest;
+    }
+
+    // --- TẠO MỚI TỪ ORGANIZATION ---
+
+    /**
+     * Khách hàng tạo yêu cầu hoàn tiền
+     */
+    async createByOrganization(
+        organizationId: string,
+        userId: string,
+        dto: CreateRefundRequestDto,
+        lang: string,
+    ): Promise<IRefundRequestWithRelations> {
+        await this.checkOrgPermission(organizationId, userId, 'refund-request.create', lang);
+
+        // Kiểm tra xem đã có request PENDING nào chưa thì tốt nhưng tạm thời tạo luôn
+        const result = await this.repository.create({
+            rental_contract_id: dto.rental_contract_id,
+            organization_id: organizationId,
+            original_amount: dto.original_amount,
+            fee_percent: dto.fee_percent,
+            fee_amount: dto.fee_amount,
+            final_refund_amount: dto.final_refund_amount,
+            reason: dto.reason,
+            created_by: userId,
+        });
+
+        await this.invalidateListCache();
+
+        // Ghi Audit log
+        this.auditLogService.logCreate(
+            organizationId,
+            'refund_request',
+            result.id,
+            { status: RefundStatus.PENDING, reason: dto.reason } as Record<string, unknown>,
+            { userId, description: `Created refund request for contract ${dto.rental_contract_id}` },
+        );
+
+        // Emit socket
+        this.websocketGateway.emitToOrganization(organizationId, 'refundRequest:created', {
+            id: result.id,
+            contractId: dto.rental_contract_id,
+            status: RefundStatus.PENDING,
+            timestamp: new Date().toISOString(),
+        });
+
+        return result;
     }
 
     // --- Cache Helper Methods ---

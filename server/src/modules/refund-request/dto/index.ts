@@ -42,6 +42,18 @@ export class QueryRefundRequestDto {
  * DTO duyệt yêu cầu hoàn tiền
  */
 export class AcceptRefundRequestDto {
+    @ApiProperty({ description: 'Phần trăm phí phạt/xử lý cuối cùng', example: 10 })
+    @IsNotEmpty()
+    fee_percent: number;
+
+    @ApiProperty({ description: 'Số tiền phí phạt/xử lý cuối cùng', example: 1000000 })
+    @IsNotEmpty()
+    fee_amount: number;
+
+    @ApiProperty({ description: 'Số tiền thực nhận cuối cùng', example: 9000000 })
+    @IsNotEmpty()
+    final_refund_amount: number;
+
     @ApiPropertyOptional({ description: 'Ghi chú xử lý', example: 'Đã duyệt và chuyển tiền về tài khoản' })
     @IsOptional()
     @IsString({ message: i18nValidationMessage('refund-request.validation.process_notes_string') })

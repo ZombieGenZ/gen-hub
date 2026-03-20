@@ -213,6 +213,55 @@ export class OrganizationBalanceService {
 
 
     /**
+     * Cộng tiền hoàn lại vào tài khoản
+     */
+    async processRefund(
+        organizationId: string,
+        amount: number,
+        referenceId: string,
+        description: string,
+        performedByUserId?: string,
+    ): Promise<{ balance: IOrganizationBalance; transaction: IOrganizationBalanceTransaction }> {
+        const result = await this.repository.updateBalance(
+            organizationId,
+            BalanceTransactionType.REFUND,
+            amount,
+            performedByUserId || null,
+            {
+                referenceType: BalanceReferenceType.REFUND,
+                referenceId,
+                description,
+            },
+        );
+
+        await this.invalidateOrganizationCache(organizationId);
+
+        this.websocketGateway.server.to(`organization:${organizationId}`).emit('organizationBalance:updated', {
+            organizationId,
+            balance: result.balance.balance,
+            type: 'REFUND',
+            amount: amount,
+            timestamp: new Date().toISOString(),
+        });
+
+        this.websocketGateway.server.to(`organization:${organizationId}`).emit('organizationBalanceTransaction:created', {
+            organizationId,
+            transaction: result.transaction,
+            timestamp: new Date().toISOString(),
+        });
+
+        await this.systemLogService.log({
+            level: 'INFO',
+            module: 'OrganizationBalance',
+            action: 'refund.success',
+            message: `Organization ${organizationId} được hoàn tiền ${amount} VND`,
+            metaData: { organizationId, amount, referenceId, newBalance: result.balance.balance },
+        });
+
+        return result;
+    }
+
+    /**
      * Invalidate cache của organization
      */
     async invalidateOrganizationCache(organizationId: string): Promise<void> {

@@ -18,7 +18,7 @@ import {
 import { I18nLang } from 'nestjs-i18n';
 
 import { RefundRequestService } from '../refund-request/refund-request.service';
-import { QueryRefundRequestDto } from './dto';
+import { QueryRefundRequestDto, CreateRefundRequestDto } from './dto';
 import { CombinedAuthGuard, OrgPermissionGuard } from '../../common/guards';
 import {
     CurrentActor,
@@ -26,7 +26,7 @@ import {
     ApiAuthResponses,
     ApiValidationErrorResponse,
 } from '../../common/decorators';
-import { GetResponse, ResponseCode } from '../../common/responses';
+import { GetResponse, CreatedResponse, ResponseCode } from '../../common/responses';
 import { buildErrorSchema, buildSuccessSchema } from '../../common/swagger/master-data-swagger.helper';
 
 @ApiTags('Organization Refund Requests')
@@ -40,6 +40,34 @@ import { buildErrorSchema, buildSuccessSchema } from '../../common/swagger/maste
 @UseGuards(CombinedAuthGuard, OrgPermissionGuard)
 export class OrgRefundRequestController {
     constructor(private readonly refundRequestService: RefundRequestService) { }
+
+    @Post()
+    @RequireOrgPermission('refund-request.create')
+    @ApiOperation({
+        summary: 'Tạo yêu cầu hoàn tiền',
+        description: 'Tạo mới một yêu cầu hoàn tiền cho hợp đồng của tổ chức. Yêu cầu quyền `refund-request.create`.',
+    })
+    @ApiParam({
+        name: 'orgId',
+        description: 'ID của tổ chức sở hữu hợp đồng.',
+        type: 'string',
+        format: 'uuid',
+    })
+    @ApiResponse({
+        status: 201,
+        description: 'Tạo yêu cầu hoàn tiền thành công.',
+    })
+    @ApiAuthResponses()
+    @ApiValidationErrorResponse()
+    async create(
+        @Param('orgId', ParseUUIDPipe) orgId: string,
+        @Body() dto: CreateRefundRequestDto,
+        @CurrentActor() userId: string,
+        @I18nLang() lang: string,
+    ) {
+        const data = await this.refundRequestService.createByOrganization(orgId, userId, dto, lang);
+        return new CreatedResponse(ResponseCode.REFUND_REQUEST_CREATE_SUCCESS || 'SUCCESS', data, 'Tạo yêu cầu hoàn tiền thành công');
+    }
 
     @Get()
     @RequireOrgPermission('refund-request.list')

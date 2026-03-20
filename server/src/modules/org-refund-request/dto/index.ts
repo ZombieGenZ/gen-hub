@@ -37,3 +37,35 @@ export class QueryRefundRequestDto {
     @IsUUID('4', { message: i18nValidationMessage('refund-request.validation.organization_id_uuid') })
     organization_id?: string;
 }
+
+/**
+ * DTO tạo yêu cầu hoàn tiền từ phía khách hàng
+ */
+export class CreateRefundRequestDto {
+    @ApiProperty({ description: 'ID của hợp đồng thuê', example: '550e8400-e29b-41d4-a716-xxxxxxxxxxxx' })
+    @IsNotEmpty({ message: i18nValidationMessage('refund-request.validation.rental_contract_id_required') })
+    @IsUUID('4', { message: i18nValidationMessage('refund-request.validation.rental_contract_id_uuid') })
+    rental_contract_id: string;
+
+    @ApiProperty({ description: 'Số tiền gốc của hợp đồng', example: 10000000 })
+    @IsNotEmpty()
+    original_amount: number;
+
+    @ApiProperty({ description: 'Phần trăm phí dự kiến', example: 10 })
+    @IsNotEmpty()
+    fee_percent: number;
+
+    @ApiProperty({ description: 'Số tiền phí dự kiến', example: 1000000 })
+    @IsNotEmpty()
+    fee_amount: number;
+
+    @ApiProperty({ description: 'Số tiền thực nhận dự kiến', example: 9000000 })
+    @IsNotEmpty()
+    final_refund_amount: number;
+
+    @ApiPropertyOptional({ description: 'Lý do yêu cầu hoàn tiền', example: 'Chuyển văn phòng nên không còn nhu cầu sử dụng' })
+    @IsOptional()
+    @IsString({ message: i18nValidationMessage('refund-request.validation.reason_string') })
+    @MaxLength(1000, { message: i18nValidationMessage('refund-request.validation.reason_max_length') })
+    reason?: string;
+}

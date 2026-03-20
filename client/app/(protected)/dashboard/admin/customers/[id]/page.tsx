@@ -313,8 +313,8 @@ export default function CustomerDetailPage() {
                             key={tab.key}
                             onClick={() => setActiveTab(tab.key as typeof activeTab)}
                             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === tab.key
-                                    ? "bg-white text-foreground shadow-sm border border-border/40"
-                                    : "text-muted-foreground hover:text-foreground"
+                                ? "bg-white text-foreground shadow-sm border border-border/40"
+                                : "text-muted-foreground hover:text-foreground"
                                 }`}
                         >
                             <tab.icon className="w-4 h-4" />
@@ -386,8 +386,8 @@ export default function CustomerDetailPage() {
                                                 key={t}
                                                 onClick={() => setSendFormData(s => ({ ...s, type: t }))}
                                                 className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium border transition-all ${sendFormData.type === t
-                                                        ? `${cfg.bgColor} ${cfg.textColor} ${cfg.borderColor} shadow-sm`
-                                                        : "bg-muted/40 text-muted-foreground border-border hover:border-border/80"
+                                                    ? `${cfg.bgColor} ${cfg.textColor} ${cfg.borderColor} shadow-sm`
+                                                    : "bg-muted/40 text-muted-foreground border-border hover:border-border/80"
                                                     }`}
                                             >
                                                 <Icon className="w-3.5 h-3.5" />
@@ -464,8 +464,8 @@ export default function CustomerDetailPage() {
 
                                                 {/* Card */}
                                                 <div className={`flex-1 rounded-2xl border p-4 transition-all ${isHighlight
-                                                        ? `${cfg.bgColor} ${cfg.borderColor} shadow-sm`
-                                                        : "bg-white border-border hover:border-border/80"
+                                                    ? `${cfg.bgColor} ${cfg.borderColor} shadow-sm`
+                                                    : "bg-white border-border hover:border-border/80"
                                                     }`}>
                                                     <div className="flex items-start justify-between gap-3">
                                                         <div className="flex-1 min-w-0">

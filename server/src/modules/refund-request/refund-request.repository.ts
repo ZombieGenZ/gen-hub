@@ -95,6 +95,28 @@ export class RefundRequestRepository {
     }
 
     /**
+     * Tạo mới RefundRequest
+     */
+    async create(data: Prisma.RefundRequestUncheckedCreateInput): Promise<IRefundRequestWithRelations> {
+        const result = await this.prisma.refundRequest.create({
+            data,
+            include: {
+                rental_contract: {
+                    select: {
+                        id: true,
+                        code: true,
+                        name: true,
+                        status: true,
+                        organization_id: true,
+                    },
+                },
+            },
+        });
+
+        return result as IRefundRequestWithRelations;
+    }
+
+    /**
      * Cập nhật trạng thái RefundRequest
      */
     async updateStatus(
@@ -102,16 +124,29 @@ export class RefundRequestRepository {
         status: RefundStatus,
         processedBy: string,
         processNotes?: string,
+        calculationData?: {
+            fee_percent: number;
+            fee_amount: number;
+            final_refund_amount: number;
+        }
     ): Promise<IRefundRequestWithRelations> {
+        const data: Prisma.RefundRequestUpdateInput = {
+            status,
+            processed_by: processedBy,
+            processed_at: new Date(),
+            process_notes: processNotes,
+            updated_at: new Date(),
+        };
+
+        if (calculationData) {
+            data.fee_percent = calculationData.fee_percent;
+            data.fee_amount = calculationData.fee_amount;
+            data.final_refund_amount = calculationData.final_refund_amount;
+        }
+
         const result = await this.prisma.refundRequest.update({
             where: { id },
-            data: {
-                status,
-                processed_by: processedBy,
-                processed_at: new Date(),
-                process_notes: processNotes,
-                updated_at: new Date(),
-            },
+            data,
             include: {
                 rental_contract: {
                     select: {

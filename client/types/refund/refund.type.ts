@@ -10,19 +10,26 @@ export enum RefundStatus {
 export interface RefundRequest {
     id: string;
     organization_id: string;
-    payment_id: string;
-    amount: number;
+    rental_contract_id: string;
+    original_amount: number;
+    fee_percent: number;
+    fee_amount: number;
+    final_refund_amount: number;
     reason: string;
     status: RefundStatus;
     process_notes?: string;
-    reject_reason?: string;
     created_at: string;
     updated_at: string;
+    processed_at?: string;
+    processed_by?: string;
 }
 
 export interface CreateRefundRequestPayload {
-    payment_id: string;
-    amount: number;
+    rental_contract_id: string;
+    original_amount: number;
+    fee_percent: number;
+    fee_amount: number;
+    final_refund_amount: number;
     reason: string;
 }
 
