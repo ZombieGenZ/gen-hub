@@ -146,11 +146,11 @@ function CheckoutContent() {
                 start_date: session.start_date ? new Date(session.start_date).toISOString().split('T')[0] : undefined,
             });
 
-            setSession({
-                coupon_code: couponCode || undefined,
-                quotation: mapApiQuotationToBreakdown(quotation),
-                deposit_amount: quotation.deposit_amount,
-            });
+                setSession({
+                    coupon_code: couponCode || undefined,
+                    quotation: mapApiQuotationToBreakdown(quotation),
+                    deposit_amount: 1000,
+                });
 
             if (couponCode && quotation.coupon_discount > 0) {
                 setAppliedCoupon({ code: couponCode, discount: quotation.coupon_discount });
@@ -664,7 +664,7 @@ function CheckoutContainer() {
                 const couponDiscount = 0;
                 const grandTotal = subtotal + serviceFee - couponDiscount;
 
-                const deposit_amount = Math.max(2000000, grandTotal * 0.1);
+                const deposit_amount = 1000;
 
                 // Friendly Names Mapping
                 const FRIENDLY_NAMES: Record<string, string> = {

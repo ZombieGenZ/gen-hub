@@ -44,12 +44,57 @@ interface CouponItem {
     not_applicable_reason?: string;
 }
 
+const extractCouponArray = (payload: any): any[] => {
+    if (Array.isArray(payload)) return payload;
+    if (Array.isArray(payload?.items)) return payload.items;
+    if (Array.isArray(payload?.data)) return payload.data;
+    if (Array.isArray(payload?.data?.items)) return payload.data.items;
+    return [];
+};
+
+const toCouponItem = (c: any, orderAmount: number, overrideIsApplicable?: boolean): CouponItem => {
+    let isApplicable = c.is_applicable ?? true;
+    let reason = c.not_applicable_reason;
+    const endsAt = c.ends_at || c.valid_until;
+
+    // Local validation if not already set as false by server
+    if (isApplicable !== false) {
+        if (c.min_order_amount && orderAmount < c.min_order_amount) {
+            isApplicable = false;
+            reason = `Đơn tối thiểu ${c.min_order_amount.toLocaleString('vi-VN')}₫`;
+        }
+        
+        if (endsAt && new Date(endsAt).getTime() < Date.now()) {
+            isApplicable = false;
+            reason = 'Mã đã hết hạn';
+        }
+    }
+
+    if (overrideIsApplicable !== undefined) {
+        isApplicable = overrideIsApplicable;
+    }
+
+    return {
+        id: c.id,
+        code: c.code,
+        name: c.name,
+        description: c.description,
+        discount_type: c.discount_type,
+        discount_value: c.discount_value,
+        max_discount_amount: c.max_discount_amount,
+        min_order_amount: c.min_order_amount,
+        valid_from: c.starts_at,
+        valid_until: c.ends_at,
+        is_applicable: isApplicable,
+        not_applicable_reason: !isApplicable ? (reason || 'Không đủ điều kiện') : undefined,
+    };
+};
+
 interface CouponDrawerProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onCouponApplied: (coupon: { code: string; discount: number } | null) => void;
     appliedCoupon?: { code: string; discount: number } | null;
-    // Context for filtering applicable coupons
     warehouseId?: string;
     rentalType?: 'whole' | 'row';
     rowIds?: string[];
@@ -92,6 +137,8 @@ export function CouponDrawer({
             try {
                 let couponList: CouponItem[] = [];
 
+                let applicableFetched = false;
+
                 if (token && durationTierId) {
                     // If user is logged in and has order context, fetch applicable coupons
                     const res = await fetch(`${API}/public/coupons/applicable`, {
@@ -111,21 +158,9 @@ export function CouponDrawer({
 
                     if (res.ok) {
                         const data = await res.json();
-                        const applicableCoupons = data.data || [];
-                        couponList = applicableCoupons.map((c: any) => ({
-                            id: c.id,
-                            code: c.code,
-                            name: c.name,
-                            description: c.description,
-                            discount_type: c.discount_type,
-                            discount_value: c.discount_value,
-                            max_discount_amount: c.max_discount_amount,
-                            min_order_amount: c.min_order_amount,
-                            valid_from: c.starts_at,
-                            valid_until: c.ends_at,
-                            is_applicable: c.is_applicable !== false,
-                            not_applicable_reason: c.is_applicable === false ? 'Không đủ điều kiện' : undefined,
-                        }));
+                        const applicableCoupons = extractCouponArray(data?.data);
+                        couponList = applicableCoupons.map((c: any) => toCouponItem(c, orderAmount, true));
+                        applicableFetched = true;
                     }
                 }
 
@@ -133,26 +168,13 @@ export function CouponDrawer({
                 const publicRes = await fetch(`${API}/public/coupons?limit=20`);
                 if (publicRes.ok) {
                     const publicData = await publicRes.json();
-                    const publicCoupons = publicData.data?.items || publicData.data || [];
+                    const publicCoupons = extractCouponArray(publicData?.data);
 
                     // Add public coupons that aren't already in the list
                     const existingCodes = new Set(couponList.map(c => c.code));
                     const newPublicCoupons = publicCoupons
                         .filter((c: any) => !existingCodes.has(c.code))
-                        .map((c: any) => ({
-                            id: c.id,
-                            code: c.code,
-                            name: c.name,
-                            description: c.description,
-                            discount_type: c.discount_type,
-                            discount_value: c.discount_value,
-                            max_discount_amount: c.max_discount_amount,
-                            min_order_amount: c.min_order_amount,
-                            valid_from: c.starts_at,
-                            valid_until: c.ends_at,
-                            is_applicable: true, // Will be validated when applied
-                            not_applicable_reason: undefined,
-                        }));
+                        .map((c: any) => toCouponItem(c, orderAmount, applicableFetched ? false : undefined));
 
                     couponList = [...couponList, ...newPublicCoupons];
                 }
@@ -168,11 +190,11 @@ export function CouponDrawer({
                     setCoupons(couponList);
                 } else {
                     // Fallback to mock if no coupons from API
-                    setCoupons(MOCK_COUPONS);
+                    setCoupons(MOCK_COUPONS.map(c => toCouponItem(c, orderAmount)));
                 }
             } catch (err) {
                 console.error('Error fetching coupons:', err);
-                setCoupons(MOCK_COUPONS);
+                setCoupons(MOCK_COUPONS.map(c => toCouponItem(c, orderAmount)));
             } finally {
                 setIsLoading(false);
             }
@@ -465,22 +487,23 @@ export function CouponDrawer({
                                                 {formatDiscount(coupon)}
                                             </p>
 
-                                            {coupon.min_order_amount && (
-                                                <p className="text-xs text-slate-500 mt-1">
-                                                    Đơn tối thiểu {coupon.min_order_amount.toLocaleString('vi-VN')}₫
-                                                </p>
-                                            )}
-
-                                            <div className="flex items-center gap-3 mt-2">
+                                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2">
                                                 {formatValidity(coupon) && (
-                                                    <span className="text-xs text-slate-400 flex items-center gap-1">
+                                                    <span className="text-[10px] text-slate-400 font-medium flex items-center gap-1">
                                                         <ClockIcon className="w-3 h-3" />
                                                         {formatValidity(coupon)}
                                                     </span>
                                                 )}
+                                                
+                                                {coupon.min_order_amount && (
+                                                    <span className="text-[10px] text-slate-400 font-medium flex items-center gap-1">
+                                                        <div className="w-1 h-1 rounded-full bg-slate-300" />
+                                                        Tối thiểu {coupon.min_order_amount.toLocaleString('vi-VN')}₫
+                                                    </span>
+                                                )}
 
                                                 {!coupon.is_applicable && coupon.not_applicable_reason && (
-                                                    <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-700">
+                                                    <Badge variant="secondary" className="text-[10px] h-5 bg-red-50 text-red-600 border-red-100 font-bold px-2">
                                                         {coupon.not_applicable_reason}
                                                     </Badge>
                                                 )}
@@ -564,7 +587,7 @@ const MOCK_COUPONS: CouponItem[] = [
         discount_value: 10,
         max_discount_amount: 5000000,
         min_order_amount: 10000000,
-        valid_until: '2024-12-31',
+        valid_until: '2026-12-31',
         is_applicable: true,
     },
     {
@@ -575,7 +598,7 @@ const MOCK_COUPONS: CouponItem[] = [
         discount_type: 'FIXED',
         discount_value: 500000,
         min_order_amount: 5000000,
-        valid_until: '2024-11-30',
+        valid_until: '2026-11-30',
         is_applicable: true,
     },
     {
@@ -587,7 +610,7 @@ const MOCK_COUPONS: CouponItem[] = [
         discount_value: 15,
         max_discount_amount: 10000000,
         min_order_amount: 50000000,
-        valid_until: '2024-12-31',
+        valid_until: '2026-12-31',
         is_applicable: false,
         not_applicable_reason: 'Đơn tối thiểu 50.000.000₫',
     },

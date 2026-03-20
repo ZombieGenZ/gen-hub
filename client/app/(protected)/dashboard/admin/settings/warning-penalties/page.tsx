@@ -883,7 +883,7 @@ export default function WarningPenaltiesPage() {
 
             {/* ─── UX B: Simulator Modal ─── */}
             <Dialog open={showSimulator} onOpenChange={setShowSimulator}>
-                <DialogContent className="rounded-3xl border-border bg-white shadow-xl sm:max-w-[450px]">
+                <DialogContent className="rounded-3xl border-border bg-white shadow-xl sm:max-w-[450px] p-4">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2"><PlayCircleIcon className="w-5 h-5 text-brand" /> Chạy thử nghiệm (Simulator)</DialogTitle>
                     </DialogHeader>

@@ -246,14 +246,14 @@ export function QuotationSummary({
                             <span className="text-xs text-teal-600">Thanh toán ngay để khóa kho</span>
                         </div>
                         <span className="text-xl font-bold text-[#0F766E]">
-                            {formatCurrency(Math.max(2000000, breakdown.grandTotal * 0.1))}
+                            {formatCurrency(1000)}
                         </span>
                     </div>
                     <Separator className="bg-teal-200" />
                     <div className="flex justify-between items-center opacity-75">
                         <span className="text-sm font-medium text-slate-600">Còn lại (Thanh toán sau)</span>
                         <span className="text-base font-semibold text-slate-700">
-                            {formatCurrency(breakdown.grandTotal - Math.max(2000000, breakdown.grandTotal * 0.1))}
+                            {formatCurrency(breakdown.grandTotal - 1000)}
                         </span>
                     </div>
                 </div>

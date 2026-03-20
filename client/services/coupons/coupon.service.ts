@@ -196,8 +196,27 @@ export class CouponService {
                     message: errorData.message || 'Mã giảm giá không hợp lệ'
                 };
             }
-            const data = await response.json()
-            return data
+            const responseData = await response.json();
+            const payload = responseData?.data ?? responseData;
+
+            if (typeof payload?.is_valid === 'boolean') {
+                return payload;
+            }
+
+            if (typeof payload?.isValid === 'boolean') {
+                return {
+                    is_valid: payload.isValid,
+                    discount_amount: payload.discount_info?.estimated_discount ?? 0,
+                    message: payload.message || payload.error || responseData.message || (payload.isValid ? 'Coupon hợp lệ' : 'Mã giảm giá không hợp lệ'),
+                    ...payload,
+                };
+            }
+
+            return {
+                is_valid: false,
+                discount_amount: 0,
+                message: 'Không thể đọc dữ liệu coupon từ máy chủ',
+            };
         } catch (err) {
             console.error("Failed to validate coupon", err);
             return {
