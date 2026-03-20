@@ -91,7 +91,7 @@ export default function AdminRefundRequestsPage() {
             }
         } catch (error) {
             console.error("Failed to fetch refund requests", error);
-            showToast("Lỗi", "Không thể tải danh sách hoàn tiền", "error");
+            showToast("Không thể tải danh sách hoàn tiền", "error");
         } finally {
             setLoading(false);
         }

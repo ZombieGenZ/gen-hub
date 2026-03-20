@@ -64,7 +64,7 @@ export function RequestRefundModal({
 
     const handleSubmit = async () => {
         if (!reasonSelect) {
-            showToast("Lỗi", "Vui lòng chọn lý do hoàn tiền.", "error");
+            showToast("Vui lòng chọn lý do hoàn tiền.", "error");
             return;
         }
 
@@ -76,7 +76,7 @@ export function RequestRefundModal({
                 : reasonSelect;
 
         if (!finalReason.trim()) {
-            showToast("Lỗi", "Vui lòng điền chi tiết lý do.", "error");
+            showToast("Vui lòng điền chi tiết lý do.", "error");
             return;
         }
 
@@ -95,11 +95,11 @@ export function RequestRefundModal({
                 reason: finalReason,
             });
 
-            showToast("Gửi yêu cầu thành công", "Hệ thống đã ghi nhận yêu cầu hoàn tiền / thanh lý hợp đồng của bạn.", "success");
+            showToast("Hệ thống đã ghi nhận yêu cầu hoàn tiền / thanh lý hợp đồng của bạn.", "success");
             onSuccess();
             onClose();
         } catch (err: any) {
-            showToast("Lỗi hệ thống", err?.message || "Không thể gửi dữ liệu.", "error");
+            showToast(err?.message || "Không thể gửi dữ liệu.", "error");
         } finally {
             setLoading(false);
         }

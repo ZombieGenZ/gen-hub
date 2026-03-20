@@ -77,7 +77,7 @@ export function ReconciliationDrawer({
         if (!request) return;
 
         if (action === "REJECT" && !processNotes.trim()) {
-            showToast("Lỗi", "Vui lòng nhập lý do từ chối vào phần Ghi chú xử lý.", "error");
+            showToast("Vui lòng nhập lý do từ chối vào phần Ghi chú xử lý.", "error");
             return;
         }
 
@@ -108,11 +108,11 @@ export function ReconciliationDrawer({
 
             await refundService.adminProcessRequest(token, request.id, payload);
 
-            showToast("Thành công", `Đã ${action === "ACCEPT" ? "duyệt" : "từ chối"} yêu cầu hoàn tiền.`, "success");
+            showToast(`Đã ${action === "ACCEPT" ? "duyệt" : "từ chối"} yêu cầu hoàn tiền.`, "success");
             onSuccess();
             onClose();
         } catch (err: any) {
-            showToast("Lỗi hệ thống", err?.message || "Không thể xử lý yêu cầu.", "error");
+            showToast(err?.message || "Không thể xử lý yêu cầu.", "error");
         } finally {
             setLoading(false);
         }
