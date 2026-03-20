@@ -29,6 +29,9 @@ import {
   InventoryPermissionsSeeder,
   InventoryWarehouseManagerPermissionsSeeder,
   RevenuePermissionsSeeder,
+  RefundRequestPermissionsSeeder,
+  WarehouseVisitPermissionsSeeder,
+  ConsultationRequestPermissionsSeeder,
   AdministrativeSeeder,
   WarningSeeder,
   AmenitySeeder,
@@ -356,7 +359,8 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
       await adminSeeder.run();
       this.seedAdminId = adminSeeder.getAdminId();
 
-      // Run permission seeders in batches
+      // Run permission seeders ALWAYS (idempotent - createIfNotExists)
+      // This ensures new permissions added during development are always populated
       const permissionSeeders = [
         new SystemPermissionsSeeder(this, this.seedAdminId),
         new ConfigPermissionsSeeder(this),
@@ -375,6 +379,9 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         new InventoryPermissionsSeeder(this),
         new InventoryWarehouseManagerPermissionsSeeder(this),
         new RevenuePermissionsSeeder(this),
+        new RefundRequestPermissionsSeeder(this),
+        new WarehouseVisitPermissionsSeeder(this),
+        new ConsultationRequestPermissionsSeeder(this),
       ];
 
       // Run permission seeders in batches of 3
