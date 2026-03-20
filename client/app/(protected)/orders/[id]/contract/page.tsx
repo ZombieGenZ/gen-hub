@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { ArrowLeftIcon, CheckCircleIcon, DocumentArrowDownIcon } from '@heroicons/react/24/outline';
@@ -8,37 +8,49 @@ import { ContractPreview } from '@/components/contract/ContractPreview';
 import { DigitalSignatureModal } from '@/components/contract/DigitalSignatureModal';
 import { CheckoutSession } from '@/types/checkout/checkout.type';
 
-// Mock session - reusing data structure for consistency
-// In real app, fetch this by order ID
-const MOCK_CONTRACT_SESSION: Partial<CheckoutSession> = {
-    warehouse_template_id: 'wh-001',
-    warehouse_name: 'Kho A1 - Khu công nghiệp Long Bình',
-    rental_type: 'whole',
-    duration_tier_id: '6',
-    duration_tier_name: '6 Tháng',
-    duration_months: 6,
-    start_date: new Date().toISOString(),
-    organization_id: '0102181549',
-    quotation: {
-        basePrice: 72050000,
-        durationMonths: 6,
-        durationDiscountPercent: 0,
-        durationDiscountAmount: 0,
-        addonsCost: 0,
-        insuranceCost: 0,
-        managementFee: 0,
-        subtotal: 432300000,
-        serviceFee: 43230000,
-        couponDiscount: 0,
-        grandTotal: 475530000,
-    },
-    deposit_amount: Math.max(2000000, 475530000 * 0.1)
-};
+import { OrderService } from '@/services/order/order.service';
+import { authStorage } from '@/services/auth/auth-storage.service';
 
 export default function ContractSigningPage() {
     const router = useRouter();
     const params = useParams();
     const orderId = params.id as string;
+
+    const [contractSession, setContractSession] = useState<Partial<CheckoutSession> | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchOrder = async () => {
+            try {
+                const token = authStorage.getAccessToken();
+                if (!token) return;
+                
+                const orderService = new OrderService();
+                const order = await orderService.getOrderById(token, orderId);
+                
+                const session: Partial<CheckoutSession> = {
+                    warehouse_template_id: order.warehouse_template_id,
+                    warehouse_name: order.warehouse_name,
+                    rental_type: order.rental_type,
+                    duration_tier_id: order.duration_tier_id,
+                    duration_months: order.duration_months,
+                    start_date: order.started_at,
+                    organization_id: order.organization_id,
+                    quotation: order.quotation,
+                    deposit_amount: order.payment_info?.amount || Math.max(2000000, (order.quotation?.grandTotal || 0) * 0.1)
+                };
+                setContractSession(session);
+            } catch (err) {
+                console.error("Failed to load order:", err);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        if (orderId) {
+            fetchOrder();
+        }
+    }, [orderId]);
 
     const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
     const [isSigning, setIsSigning] = useState(false);
@@ -73,6 +85,10 @@ export default function ContractSigningPage() {
         console.log("Downloading signed contract PDF...");
         alert("PDF sẽ được tải xuống trong giây lát...");
     };
+
+    if (isLoading || !contractSession) {
+        return <div className="min-h-screen bg-slate-50 flex items-center justify-center p-8">Đang tải hợp đồng...</div>;
+    }
 
     if (signatureSuccess) {
         return (
@@ -119,7 +135,7 @@ export default function ContractSigningPage() {
                 {/* Signed Contract Preview */}
                 <main className="max-w-5xl mx-auto py-8 px-4">
                     <ContractPreview
-                        session={MOCK_CONTRACT_SESSION}
+                        session={contractSession}
                         contractCode={`HĐ-2025/${orderId}`}
                         companyName={companyName}
                         representativeName={representativeName}
@@ -134,7 +150,7 @@ export default function ContractSigningPage() {
                             <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
                                 <p className="text-sm text-slate-500 mb-1">Thanh toán phần còn lại</p>
                                 <p className="font-bold text-slate-800">
-                                    {((MOCK_CONTRACT_SESSION.quotation?.grandTotal || 0) - (MOCK_CONTRACT_SESSION.deposit_amount || 0)).toLocaleString('vi-VN')}₫
+                                    {((contractSession.quotation?.grandTotal || 0) - (contractSession.deposit_amount || 0)).toLocaleString('vi-VN')}₫
                                 </p>
                                 <Button
                                     className="mt-3 w-full bg-[#0F766E] hover:bg-[#0D655D]"
@@ -204,7 +220,7 @@ export default function ContractSigningPage() {
 
                 {/* Contract Viewer */}
                 <ContractPreview
-                    session={MOCK_CONTRACT_SESSION}
+                    session={contractSession}
                     contractCode={`HĐ-2025/${orderId}`}
                     companyName={companyName}
                     representativeName={representativeName}

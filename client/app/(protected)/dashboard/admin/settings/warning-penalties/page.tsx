@@ -353,8 +353,6 @@ export default function WarningPenaltiesPage() {
     };
 
     const checkConflicts = () => {
-        // Simple conflict check: Any existing rule with exact same conditions length and first category id?
-        // (Just a mock logic for UX demonstration)
         if (!builderState.conditions[0]?.category_id) return null;
 
         const conflict = penalties.find(p =>

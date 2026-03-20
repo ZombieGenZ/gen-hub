@@ -19,18 +19,35 @@ import {
     MapPin,
     User
 } from "lucide-react";
-import { useState } from "react";
-
-// Mock Data
-const MOCK_STAFF = [
-    { id: "NV001", name: "Trần Văn Quản", email: "admin.sys@genhub.vn", role: "admin", warehouse: "Tất cả", status: "active" },
-    { id: "NV002", name: "Lê Thị Kho", email: "lethikho@genhub.vn", role: "manager", warehouse: "Kho Bình Dương A1", status: "active" },
-    { id: "NV003", name: "Phạm Giám Sát", email: "giam.sat@genhub.vn", role: "viewer", warehouse: "Kho Đồng Nai B2", status: "active" },
-    { id: "NV004", name: "Nguyễn Nhân Viên", email: "nv.moi@genhub.vn", role: "staff", warehouse: "Kho Long An C1", status: "inactive" },
-];
+import { useState, useEffect } from "react";
+import { UserService } from "@/services/user/user.service";
+import { authStorage } from "@/services/auth/auth-storage.service";
 
 export default function StaffPage() {
     const [searchTerm, setSearchTerm] = useState("");
+    const [staffList, setStaffList] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchStaff = async () => {
+            setIsLoading(true);
+            try {
+                const token = authStorage.getAccessToken();
+                if (!token) return;
+                const userService = new UserService();
+                const users = await userService.searchUsers(token, searchTerm);
+                setStaffList(users || []);
+            } catch (error) {
+                console.error("Failed to fetch staff", error);
+                setStaffList([]);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        const debounceTimer = setTimeout(fetchStaff, 300);
+        return () => clearTimeout(debounceTimer);
+    }, [searchTerm]);
 
     return (
         <div className="flex flex-col flex-1 h-full bg-slate-50/50">
@@ -70,7 +87,15 @@ export default function StaffPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {MOCK_STAFF.map((staff) => (
+                            {isLoading ? (
+                                <TableRow>
+                                    <TableCell colSpan={5} className="text-center py-8 text-slate-500">Đang tải dữ liệu...</TableCell>
+                                </TableRow>
+                            ) : staffList.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={5} className="text-center py-8 text-slate-500">Không tìm thấy nhân viên</TableCell>
+                                </TableRow>
+                            ) : staffList.map((staff) => (
                                 <TableRow key={staff.id} className="hover:bg-slate-50/50 transition-colors">
                                     <TableCell>
                                         <div className="flex items-center gap-3">
@@ -78,27 +103,27 @@ export default function StaffPage() {
                                                 <User className="w-5 h-5" />
                                             </div>
                                             <div>
-                                                <div className="font-medium text-slate-900">{staff.name}</div>
+                                                <div className="font-medium text-slate-900">{staff.name || 'N/A'}</div>
                                                 <div className="text-xs text-slate-500">{staff.email}</div>
                                             </div>
                                         </div>
                                     </TableCell>
                                     <TableCell>
                                         <div className="flex items-center gap-2">
-                                            {staff.role === 'admin' && <Badge className="bg-purple-50 text-purple-600 border-purple-100 hover:bg-purple-100">Quản trị viên</Badge>}
-                                            {staff.role === 'manager' && <Badge className="bg-blue-50 text-blue-600 border-blue-100 hover:bg-blue-100">Quản lý</Badge>}
-                                            {staff.role === 'staff' && <Badge className="bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200">Nhân viên</Badge>}
-                                            {staff.role === 'viewer' && <Badge className="bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100">Người xem</Badge>}
+                                            {(!staff.roles || staff.roles.length === 0) && <Badge className="bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200">Nhân viên</Badge>}
+                                            {staff.roles?.some((r: any) => r.name === 'admin' || r.name === 'ADMIN') && <Badge className="bg-purple-50 text-purple-600 border-purple-100 hover:bg-purple-100">Quản trị viên</Badge>}
+                                            {staff.roles?.some((r: any) => r.name === 'manager' || r.name === 'MANAGER') && <Badge className="bg-blue-50 text-blue-600 border-blue-100 hover:bg-blue-100">Quản lý</Badge>}
+                                            {staff.roles?.some((r: any) => r.name === 'viewer' || r.name === 'VIEWER') && <Badge className="bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100">Người xem</Badge>}
                                         </div>
                                     </TableCell>
                                     <TableCell>
                                         <div className="flex items-center gap-1.5 text-slate-600 text-sm">
                                             <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                                            {staff.warehouse}
+                                            {staff.warehouse || 'Hệ thống'}
                                         </div>
                                     </TableCell>
                                     <TableCell>
-                                        {staff.status === 'active' ? (
+                                        {staff.status === 'active' || staff.is_active || staff.email_confirmed ? (
                                             <span className="flex items-center gap-1.5 text-xs font-medium text-success">
                                                 <span className="w-1.5 h-1.5 rounded-full bg-success"></span>
                                                 Hoạt động
@@ -106,7 +131,7 @@ export default function StaffPage() {
                                         ) : (
                                             <span className="flex items-center gap-1.5 text-xs font-medium text-slate-400">
                                                 <span className="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
-                                                Nghỉ việc
+                                                Chưa xác thực
                                             </span>
                                         )}
                                     </TableCell>

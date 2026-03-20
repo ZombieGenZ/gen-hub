@@ -24,7 +24,6 @@ import { Button } from '@/components/ui/button';
 
 import { useSearchParams } from 'next/navigation';
 import { publicWarehouseService } from '@/services/public-warehouse/public-warehouse.service';
-import { MOCK_ADDONS, MOCK_INSURANCES, MOCK_DURATION_TIERS } from '@/types/booking/booking.type';
 import { publicQuotationService, QuotationApiResponse } from '@/services/public-quotation/public-quotation.service';
 
 // Default empty session
@@ -571,13 +570,7 @@ function CheckoutContainer() {
                             durationTier = allTiers.find((t: any) => String(t.id) === durationId);
                         }
                     } catch (e) {
-                        console.warn("Error fetching tier, falling back to mock", e);
-                    }
-
-                    if (!durationTier) {
-                        // Fallback to mock
-                        const mockTier = MOCK_DURATION_TIERS.find(t => t.id === durationId);
-                        if (mockTier) durationTier = mockTier;
+                        console.warn("Error fetching tier", e);
                     }
                 }
 
@@ -590,19 +583,10 @@ function CheckoutContainer() {
                         addons = allAddons.filter((a: AddonResponse) => addonIds.includes(String(a.id)));
                     }
                 } catch (e) {
-                    console.warn("Error fetching addons, falling back to mock", e);
+                    console.warn("Error fetching addons", e);
                 }
 
-                // If API returned nothing or failed, check mocks to fill missing details
-                if (addons.length < addonIds.length) {
-                    const mockAddons = MOCK_ADDONS.filter(a => addonIds.includes(a.id));
-                    // Combine found API addons with fallback mocks (avoid duplicates)
-                    const existingIds = addons.map(a => String(a.id));
-                    const newMocks = mockAddons.filter(m => !existingIds.includes(m.id));
-                    addons = [...addons, ...(newMocks as unknown as AddonResponse[])];
-                }
-
-                // Fetch Insurance (API with Mock Fallback)
+                // Fetch Insurance (API)
                 let insurance: any = null;
                 if (insuranceId) {
                     try {
@@ -613,13 +597,7 @@ function CheckoutContainer() {
                             insurance = insurances.find((i: any) => String(i.id) === insuranceId);
                         }
                     } catch (e) {
-                        console.warn("Error fetching insurance, falling back to mock", e);
-                    }
-
-                    // Fallback to mock if API failed
-                    if (!insurance) {
-                        const mockIns = MOCK_INSURANCES.find(i => i.id === insuranceId);
-                        if (mockIns) insurance = mockIns;
+                        console.warn("Error fetching insurance", e);
                     }
                 }
 

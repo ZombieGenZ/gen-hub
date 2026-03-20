@@ -32,11 +32,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import {
     QuotationBreakdown,
     RowTemplate,
-    CouponValidationResult,
-    MOCK_DURATION_TIERS,
-    MOCK_ADDONS,
-    MOCK_INSURANCES,
-    MOCK_ROWS
+    CouponValidationResult
 } from '@/types/booking/booking.type';
 import { RentalDurationTier, DurationUnit } from '@/types/rental-duration-tier/rental-duration-tier.type';
 import { AddonResponse } from '@/types/addon/addon.type';
@@ -127,10 +123,11 @@ export function BookingWidget({ warehouseId, price, unit = "tháng" }: BookingWi
                 const API = process.env.NEXT_PUBLIC_API_URL;
 
                 // Fetch all data in parallel with Promise.allSettled
-                const [tiersRes, addonsRes, insuranceRes] = await Promise.allSettled([
+                const [tiersRes, addonsRes, insuranceRes, rowsRes] = await Promise.allSettled([
                     fetch(`${API}/public/rental-duration-tiers/active`),
                     fetch(`${API}/public/addons/active`),
                     fetch(`${API}/public/insurances/active`),
+                    warehouseId ? fetch(`${API}/warehouse-templates/${warehouseId}/rows`) : Promise.resolve(new Response(JSON.stringify({ data: [] }))),
                 ]);
 
                 // Process duration tiers
@@ -139,8 +136,7 @@ export function BookingWidget({ warehouseId, price, unit = "tháng" }: BookingWi
                     const tiersArray = Array.isArray(tiersData.data) ? tiersData.data : (Array.isArray(tiersData) ? tiersData : []);
                     setDurationTiers(tiersArray as DurationTierWithDiscount[]);
                 } else {
-                    console.warn('Using mock duration tiers');
-                    setDurationTiers(MOCK_DURATION_TIERS as DurationTierWithDiscount[]);
+                    setDurationTiers([]);
                 }
 
                 // Process addons
@@ -149,8 +145,7 @@ export function BookingWidget({ warehouseId, price, unit = "tháng" }: BookingWi
                     const addonsArray = Array.isArray(addonsData.data) ? addonsData.data : (Array.isArray(addonsData) ? addonsData : []);
                     setAddons(addonsArray);
                 } else {
-                    console.warn('Using mock addons');
-                    setAddons(MOCK_ADDONS as AddonResponse[]);
+                    setAddons([]);
                 }
 
                 // Process insurances
@@ -159,21 +154,25 @@ export function BookingWidget({ warehouseId, price, unit = "tháng" }: BookingWi
                     const insuranceArray = Array.isArray(insuranceData.data) ? insuranceData.data : (Array.isArray(insuranceData) ? insuranceData : []);
                     setInsurances(insuranceArray);
                 } else {
-                    console.warn('Using mock insurances');
-                    setInsurances(MOCK_INSURANCES as unknown as Insurance[]);
+                    setInsurances([]);
                 }
 
-                // Set default row data (mock for now)
-                setRows(MOCK_ROWS);
+                // Process rows
+                if (rowsRes.status === 'fulfilled' && rowsRes.value.ok) {
+                    const rowsData = await rowsRes.value.json();
+                    const rowsArray = Array.isArray(rowsData.data) ? rowsData.data : (Array.isArray(rowsData) ? rowsData : []);
+                    setRows(rowsArray);
+                } else {
+                    setRows([]);
+                }
 
             } catch (error) {
                 console.error('Error fetching booking data:', error);
-                setDataError('Không thể tải dữ liệu. Sử dụng dữ liệu mẫu.');
-                // Use all mock data as fallback
-                setDurationTiers(MOCK_DURATION_TIERS as DurationTierWithDiscount[]);
-                setAddons(MOCK_ADDONS as AddonResponse[]);
-                setInsurances(MOCK_INSURANCES as unknown as Insurance[]);
-                setRows(MOCK_ROWS);
+                setDataError('Không thể tải dữ liệu.');
+                setDurationTiers([]);
+                setAddons([]);
+                setInsurances([]);
+                setRows([]);
             } finally {
                 setIsLoading(false);
             }

@@ -121,12 +121,11 @@ export function CouponDrawer({
                 });
                 setCoupons(couponList);
             } else {
-                // Fallback to mock if no coupons from API
-                setCoupons(MOCK_COUPONS.map(c => CouponService.parseCouponToUI(c, orderAmount)));
+                setCoupons([]);
             }
         } catch (err) {
             console.error('Error fetching coupons:', err);
-            setCoupons(MOCK_COUPONS.map(c => CouponService.parseCouponToUI(c, orderAmount)));
+            setCoupons([]);
         } finally {
             setIsLoading(false);
         }
@@ -523,42 +522,3 @@ export function CouponTriggerButton({
     );
 }
 
-// Mock Coupons for fallback
-const MOCK_COUPONS = [
-    {
-        id: 'coupon-1',
-        code: 'NEWUSER2024',
-        name: 'Ưu đãi khách hàng mới',
-        description: 'Giảm 10% cho đơn thuê đầu tiên',
-        discount_type: 'PERCENT',
-        discount_value: 10,
-        max_discount_amount: 5000000,
-        min_order_amount: 10000000,
-        valid_until: '2026-12-31',
-        is_applicable: true,
-    },
-    {
-        id: 'coupon-2',
-        code: 'GENHUB500K',
-        name: 'Mã giảm cố định',
-        description: 'Giảm trực tiếp 500.000₫',
-        discount_type: 'FIXED',
-        discount_value: 500000,
-        min_order_amount: 5000000,
-        valid_until: '2026-11-30',
-        is_applicable: true,
-    },
-    {
-        id: 'coupon-3',
-        code: 'LONGTERM15',
-        name: 'Ưu đãi thuê dài hạn',
-        description: 'Giảm 15% cho đơn thuê từ 12 tháng',
-        discount_type: 'PERCENT',
-        discount_value: 15,
-        max_discount_amount: 10000000,
-        min_order_amount: 50000000,
-        valid_until: '2026-12-31',
-        is_applicable: false,
-        not_applicable_reason: 'Đơn tối thiểu 50.000.000₫',
-    },
-];
