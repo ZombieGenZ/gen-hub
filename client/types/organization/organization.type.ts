@@ -71,6 +71,8 @@ export interface OrganizationCreateRequest {
     gmail_pubsub_topic?: string;
     gmail_pubsub_subscription?: string;
     gmail_webhook_secret?: string;
+    auto_delete_api_key_logs?: boolean;
+    auto_delete_org_audit_logs?: boolean;
 }
 
 export type OrganizationRequest = OrganizationCreateRequest;

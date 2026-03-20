@@ -27,6 +27,9 @@ interface GeneralSettingsForm {
     representative_email: string;
     representative_phone: string;
     headquarters_address: string;
+    is_using_google_email: boolean;
+    auto_delete_api_key_logs: boolean;
+    auto_delete_org_audit_logs: boolean;
 }
 
 export default function SettingsPage() {
@@ -40,6 +43,9 @@ export default function SettingsPage() {
         representative_email: "",
         representative_phone: "",
         headquarters_address: "",
+        is_using_google_email: false,
+        auto_delete_api_key_logs: false,
+        auto_delete_org_audit_logs: false,
     });
 
     const getToken = useCallback(() => {
@@ -71,6 +77,9 @@ export default function SettingsPage() {
                 representative_email: org.representative_email ?? "",
                 representative_phone: org.representative_phone ?? "",
                 headquarters_address: org.headquarters_address ?? "",
+                is_using_google_email: org.is_using_google_email ?? false,
+                auto_delete_api_key_logs: org.auto_delete_api_key_logs ?? false,
+                auto_delete_org_audit_logs: org.auto_delete_org_audit_logs ?? false,
             });
         } catch (error) {
             console.error(error);
@@ -97,6 +106,9 @@ export default function SettingsPage() {
                 representative_email: form.representative_email.trim(),
                 representative_phone: form.representative_phone.trim(),
                 headquarters_address: form.headquarters_address.trim(),
+                is_using_google_email: form.is_using_google_email,
+                auto_delete_api_key_logs: form.auto_delete_api_key_logs,
+                auto_delete_org_audit_logs: form.auto_delete_org_audit_logs,
             });
 
             showToast("Đã gửi yêu cầu cập nhật cài đặt", "success");
@@ -206,24 +218,39 @@ export default function SettingsPage() {
                         <div className="p-6 space-y-6">
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <h4 className="font-medium text-foreground">Email thông báo</h4>
-                                    <p className="text-sm text-muted-foreground">Nhận email khi có đơn hàng mới</p>
+                                    <h4 className="font-medium text-foreground">Gmail tích hợp</h4>
+                                    <p className="text-sm text-muted-foreground">Sử dụng Gmail để đồng bộ luồng thông báo tổ chức</p>
                                 </div>
-                                <Switch defaultChecked />
+                                <Switch
+                                    checked={form.is_using_google_email}
+                                    onCheckedChange={(checked) =>
+                                        setForm((prev) => ({ ...prev, is_using_google_email: Boolean(checked) }))
+                                    }
+                                />
                             </div>
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <h4 className="font-medium text-foreground">Thông báo đẩy</h4>
-                                    <p className="text-sm text-muted-foreground">Nhận thông báo trên trình duyệt</p>
+                                    <h4 className="font-medium text-foreground">Tự động dọn log API key</h4>
+                                    <p className="text-sm text-muted-foreground">Bật để tự động xóa log API key theo chính sách lưu trữ</p>
                                 </div>
-                                <Switch defaultChecked />
+                                <Switch
+                                    checked={form.auto_delete_api_key_logs}
+                                    onCheckedChange={(checked) =>
+                                        setForm((prev) => ({ ...prev, auto_delete_api_key_logs: Boolean(checked) }))
+                                    }
+                                />
                             </div>
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <h4 className="font-medium text-foreground">Báo cáo hàng tuần</h4>
-                                    <p className="text-sm text-muted-foreground">Gửi báo cáo tổng hợp vào thứ 2</p>
+                                    <h4 className="font-medium text-foreground">Tự động dọn audit log</h4>
+                                    <p className="text-sm text-muted-foreground">Bật để tự động xóa lịch sử audit theo chính sách</p>
                                 </div>
-                                <Switch />
+                                <Switch
+                                    checked={form.auto_delete_org_audit_logs}
+                                    onCheckedChange={(checked) =>
+                                        setForm((prev) => ({ ...prev, auto_delete_org_audit_logs: Boolean(checked) }))
+                                    }
+                                />
                             </div>
                         </div>
                     </div>
@@ -242,17 +269,27 @@ export default function SettingsPage() {
                         <div className="p-6 space-y-6">
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <h4 className="font-medium text-foreground">Xác thực 2 lớp (2FA)</h4>
-                                    <p className="text-sm text-muted-foreground">Tăng cường bảo mật cho tài khoản quản trị</p>
+                                    <h4 className="font-medium text-foreground">Trạng thái Gmail tích hợp</h4>
+                                    <p className="text-sm text-muted-foreground">Đồng bộ với cấu hình tích hợp Gmail của tổ chức</p>
                                 </div>
-                                <Switch />
+                                <Switch
+                                    checked={form.is_using_google_email}
+                                    onCheckedChange={(checked) =>
+                                        setForm((prev) => ({ ...prev, is_using_google_email: Boolean(checked) }))
+                                    }
+                                />
                             </div>
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <h4 className="font-medium text-foreground">Tự động đăng xuất</h4>
-                                    <p className="text-sm text-muted-foreground">Đăng xuất sau 30 phút không hoạt động</p>
+                                    <h4 className="font-medium text-foreground">Tự động dọn audit log</h4>
+                                    <p className="text-sm text-muted-foreground">Giúp giảm dữ liệu nhạy cảm lưu trữ dài hạn</p>
                                 </div>
-                                <Switch defaultChecked />
+                                <Switch
+                                    checked={form.auto_delete_org_audit_logs}
+                                    onCheckedChange={(checked) =>
+                                        setForm((prev) => ({ ...prev, auto_delete_org_audit_logs: Boolean(checked) }))
+                                    }
+                                />
                             </div>
                         </div>
                     </div>
