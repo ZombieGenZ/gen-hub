@@ -69,7 +69,7 @@ export function AppSidebarContent({
     defaultUserName,
     defaultUserEmail,
     logoCollapsedSrc = "/assets/icongenhub.svg",
-    logoExpandedSrc = "/assets/Genhubv2.svg",
+    logoExpandedSrc = "/assets/GenHub.svg",
     logoLink,
     walletHref = "/dashboard/customer/payment",
     isCollapsed = false,
@@ -328,7 +328,7 @@ export function AppSidebarContent({
                                 </Link>
                             </DropdownMenuItem>
                             <DropdownMenuSeparator className="my-1 bg-sidebar-border" />
-                            <DropdownMenuItem 
+                            <DropdownMenuItem
                                 className="cursor-pointer rounded-sm p-2 focus:bg-sidebar-foreground/10 hover:bg-sidebar-foreground/10 focus:text-sidebar-foreground hover:text-sidebar-foreground focus:shadow-none focus:outline-none focus:ring-0 my-1 border-none text-sidebar-foreground group"
                                 onClick={handleLogout}
                             >

@@ -963,7 +963,7 @@ export function ProfileDialog({ open = true, onOpenChange }: ProfileDialogProps 
               <div className="p-6">
                 <div className="flex items-center gap-3 text-xl font-bold text-brand">
                   <Image
-                    src="/assets/Genhubv2.svg"
+                    src="/assets/GenHub.svg"
                     alt="GenHub Logo"
                     width={100}
                     height={32}
@@ -1210,45 +1210,45 @@ export function ProfileDialog({ open = true, onOpenChange }: ProfileDialogProps 
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-2">
                                   <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Mã số thuế</label>
-                                  <Input 
-                                    value={editOrgData.tax_code} 
-                                    onChange={(e) => setEditOrgData({...editOrgData, tax_code: e.target.value})}
+                                  <Input
+                                    value={editOrgData.tax_code}
+                                    onChange={(e) => setEditOrgData({ ...editOrgData, tax_code: e.target.value })}
                                     className="h-11 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800"
                                     placeholder="Nhập mã số thuế"
                                   />
                                 </div>
                                 <div className="space-y-2">
                                   <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Tên người đại diện</label>
-                                  <Input 
-                                    value={editOrgData.representative_name} 
-                                    onChange={(e) => setEditOrgData({...editOrgData, representative_name: e.target.value})}
+                                  <Input
+                                    value={editOrgData.representative_name}
+                                    onChange={(e) => setEditOrgData({ ...editOrgData, representative_name: e.target.value })}
                                     className="h-11 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800"
                                     placeholder="Nhập tên người đại diện"
                                   />
                                 </div>
                                 <div className="space-y-2">
                                   <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Email người đại diện</label>
-                                  <Input 
-                                    value={editOrgData.representative_email} 
-                                    onChange={(e) => setEditOrgData({...editOrgData, representative_email: e.target.value})}
+                                  <Input
+                                    value={editOrgData.representative_email}
+                                    onChange={(e) => setEditOrgData({ ...editOrgData, representative_email: e.target.value })}
                                     className="h-11 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800"
                                     placeholder="Nhập email người đại diện"
                                   />
                                 </div>
                                 <div className="space-y-2">
                                   <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Số điện thoại người đại diện</label>
-                                  <Input 
-                                    value={editOrgData.representative_phone} 
-                                    onChange={(e) => setEditOrgData({...editOrgData, representative_phone: e.target.value})}
+                                  <Input
+                                    value={editOrgData.representative_phone}
+                                    onChange={(e) => setEditOrgData({ ...editOrgData, representative_phone: e.target.value })}
                                     className="h-11 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800"
                                     placeholder="Nhập số điện thoại"
                                   />
                                 </div>
                                 <div className="space-y-2 col-span-1 md:col-span-2">
                                   <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Chức vụ người đại diện</label>
-                                  <Input 
-                                    value={editOrgData.representative_title} 
-                                    onChange={(e) => setEditOrgData({...editOrgData, representative_title: e.target.value})}
+                                  <Input
+                                    value={editOrgData.representative_title}
+                                    onChange={(e) => setEditOrgData({ ...editOrgData, representative_title: e.target.value })}
                                     className="h-11 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800"
                                     placeholder="Nhập chức vụ (VD: Giám đốc)"
                                   />
@@ -1258,12 +1258,12 @@ export function ProfileDialog({ open = true, onOpenChange }: ProfileDialogProps 
                                 <Button type="button" variant="outline" onClick={() => setIsEditingOrg(false)} disabled={saving}>
                                   Hủy bỏ
                                 </Button>
-                                <Button 
+                                <Button
                                   type="submit"
-                                  disabled={saving} 
+                                  disabled={saving}
                                   className="bg-brand text-white min-w-35">
-                                    {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                    Lưu thay đổi
+                                  {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                  Lưu thay đổi
                                 </Button>
                               </div>
                             </form>
@@ -1272,7 +1272,7 @@ export function ProfileDialog({ open = true, onOpenChange }: ProfileDialogProps 
                               <div className="flex items-center justify-between mb-4">
                                 <h2 className="text-xl font-bold text-slate-900 dark:text-white uppercase">{organizationData.name}</h2>
                                 <Button variant="outline" size="sm" onClick={startEditing} className="gap-2 border-slate-200 dark:border-slate-700">
-                                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" /><path d="m15 5 4 4" /></svg>
                                   Chỉnh sửa
                                 </Button>
                               </div>

@@ -176,7 +176,7 @@ export function PageLoader({ progress, isComplete, onSkip, showSkipAfter = 3000 
                             >
                                 <div className="w-24 h-24 md:w-32 md:h-32 bg-white/10 backdrop-blur-sm rounded-2xl flex items-center justify-center border border-white/20 shadow-2xl">
                                     <img
-                                        src="/assets/Genhubv2.svg"
+                                        src="/assets/GenHub.svg"
                                         alt="GenHub Logo"
                                         className="w-16 h-16 md:w-24 md:h-24 object-contain"
                                         data-priority="true"

@@ -353,7 +353,7 @@ function CheckoutContent() {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex items-center h-16">
                         <Link href="/" className="flex items-center gap-2">
-                            <img src="/assets/Genhubv2.svg" alt="GenHub" className="h-8" />
+                            <img src="/assets/GenHub.svg" alt="GenHub" className="h-8" />
                         </Link>
                         <div className="ml-4 pl-4 border-l border-slate-200">
                             <h1 className="text-lg font-semibold text-slate-800">Thanh toán</h1>
