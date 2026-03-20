@@ -83,41 +83,6 @@ interface WarnPenaltyApi {
     description?: string | null;
 }
 
-// ─── Mock Data ────────────────────────────────────────────────────────
-const MOCK_CATEGORIES: WarningCategory[] = [
-    { id: "cat1", name: "Thanh toán chậm", description: "Vi phạm liên quan đến chậm thanh toán hóa đơn", color: "orange", count: 24 },
-    { id: "cat2", name: "Vi phạm nội quy kho", description: "Không tuân thủ quy tắc an toàn và vệ sinh kho bãi", color: "red", count: 11 },
-    { id: "cat3", name: "Hủy hợp đồng sai quy định", description: "Hủy hợp đồng không theo đúng thủ tục và thời hạn", color: "purple", count: 5 },
-    { id: "cat4", name: "Quá hạn sử dụng dịch vụ", description: "Sử dụng kho vượt thời gian hợp đồng không báo trước", color: "yellow", count: 8 },
-];
-
-const MOCK_PENALTIES: WarnPenalty[] = [
-    {
-        id: "p1",
-        name: "Phạt khóa tài khoản khi trễ hạn thanh toán nhiều lần",
-        priority: 1,
-        is_active: true,
-        logic_operator: "AND",
-        conditions: [
-            { id: "c1", target_type: "CUSTOMER", threshold: 3, category_id: "cat1", timeframe_days: 30 }
-        ],
-        action: "BAN_ACCOUNT", duration_days: 7, deduction_amount: null,
-        notify_user: true, notification_template: "Tài khoản của bạn đã bị khóa 7 ngày do vi phạm thanh toán chậm 3 lần trong 30 ngày qua."
-    },
-    {
-        id: "p2",
-        name: "Cảnh báo vi phạm nội quy kho",
-        priority: 2,
-        is_active: true,
-        logic_operator: "OR",
-        conditions: [
-            { id: "c2", target_type: "CUSTOMER", threshold: 2, category_id: "cat2", timeframe_days: null }
-        ],
-        action: "SUSPEND", duration_days: 3, deduction_amount: null,
-        notify_user: false, notification_template: ""
-    },
-];
-
 // ─── Color Map & Labels ──────────────────────────────────────────────
 const COLOR_MAP: Record<string, { bg: string; text: string; dot: string }> = {
     orange: { bg: "bg-orange-50 border-orange-100", text: "text-orange-600", dot: "bg-orange-400" },
@@ -176,14 +141,14 @@ export default function WarningPenaltiesPage() {
     const [loading, setLoading] = useState(true);
 
     // Category state
-    const [categories, setCategories] = useState<WarningCategory[]>(MOCK_CATEGORIES);
+    const [categories, setCategories] = useState<WarningCategory[]>([]);
     const [editingCat, setEditingCat] = useState<string | null>(null);
     const [newCatName, setNewCatName] = useState("");
     const [newCatDesc, setNewCatDesc] = useState("");
     const [showAddCat, setShowAddCat] = useState(false);
 
     // Penalty state
-    const [penalties, setPenalties] = useState<WarnPenalty[]>(MOCK_PENALTIES);
+    const [penalties, setPenalties] = useState<WarnPenalty[]>([]);
     const [showBuilder, setShowBuilder] = useState(false);
 
     // Builder State

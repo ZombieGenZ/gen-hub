@@ -241,6 +241,7 @@ export default function AdminOrganizationSettingsPage() {
                         <OrgProfileTab
                             organization={organization}
                             onUpdate={handleUpdateOrg}
+                            enableLegalApprovalFlow={false}
                         />
                     </TabsContent>
 

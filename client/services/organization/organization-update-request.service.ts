@@ -8,6 +8,9 @@ export interface OrgUpdateRequest {
         name: string;
         tax_code?: string;
         representative_name?: string;
+        representative_title?: string;
+        representative_phone?: string;
+        representative_email?: string;
     };
     tax_code?: string;
     headquarters_address?: string;

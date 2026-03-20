@@ -9,6 +9,7 @@ import { WebsocketGateway } from '../websocket/websocket.gateway';
 import { OrganizationService } from '../organization/organization.service';
 import { RedisService } from '../redis/redis.service';
 import { OrganizationUpdateRequestCacheKeys } from './constants/cache-keys.helper';
+import { UserNotificationService } from '../user-notification/user-notification.service';
 
 
 @Injectable()
@@ -22,6 +23,7 @@ export class OrganizationUpdateRequestService {
         private readonly organizationService: OrganizationService,
         private readonly redisService: RedisService,
         private readonly cacheKeys: OrganizationUpdateRequestCacheKeys,
+        private readonly userNotificationService: UserNotificationService,
     ) { }
 
 
@@ -166,7 +168,17 @@ export class OrganizationUpdateRequestService {
         // Also notify requester/org members
         this.websocketGateway.server.to(`org_${request.organization_id}`).emit('organization_update_request_approved', updatedRequest);
 
-        // Email notification would go here (mock)
+        // Notify requester directly so they can see the result immediately in notification center.
+        await this.userNotificationService.sendNotification(
+            {
+                user_id: request.requester_id,
+                title: 'Yêu cầu cập nhật đã được duyệt',
+                content: 'Yêu cầu cập nhật thông tin pháp lý của bạn đã được duyệt thành công.',
+                type: 'SUCCESS',
+            },
+            userId,
+            lang,
+        );
 
         // Invalidate cache
         await this.redisService.del(this.cacheKeys.item(id));
@@ -207,6 +219,17 @@ export class OrganizationUpdateRequestService {
 
         // Emit Socket
         this.websocketGateway.server.to(`org_${request.organization_id}`).emit('organization_update_request_rejected', updatedRequest);
+
+        await this.userNotificationService.sendNotification(
+            {
+                user_id: request.requester_id,
+                title: 'Yêu cầu cập nhật bị từ chối',
+                content: `Yêu cầu cập nhật thông tin pháp lý của bạn đã bị từ chối. Lý do: ${dto.reject_reason}`,
+                type: 'WARNING',
+            },
+            userId,
+            lang,
+        );
 
         // Invalidate cache
         await this.redisService.del(this.cacheKeys.item(id));

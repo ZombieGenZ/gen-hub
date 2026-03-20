@@ -5,9 +5,10 @@ import { OrganizationUpdateRequestRepository } from './organization-update-reque
 import { OrganizationUpdateRequestCacheKeys } from './constants/cache-keys.helper';
 
 import { OrganizationModule } from '../organization/organization.module';
+import { UserNotificationModule } from '../user-notification/user-notification.module';
 
 @Module({
-    imports: [forwardRef(() => OrganizationModule)],
+    imports: [forwardRef(() => OrganizationModule), UserNotificationModule],
     controllers: [OrganizationUpdateRequestController],
     providers: [OrganizationUpdateRequestService, OrganizationUpdateRequestRepository, OrganizationUpdateRequestCacheKeys],
     exports: [OrganizationUpdateRequestService, OrganizationUpdateRequestCacheKeys],

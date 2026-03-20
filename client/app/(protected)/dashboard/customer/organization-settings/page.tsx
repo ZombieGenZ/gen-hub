@@ -32,14 +32,19 @@ export default function CustomerOrganizationSettingsPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const getToken = () => {
+    const getErrorMessage = (err: unknown, fallback: string) => {
+        if (err instanceof Error && err.message) return err.message;
+        return fallback;
+    };
+
+    const getToken = useCallback(() => {
         const token = authStorage.getAccessToken();
         if (!token) {
             router.push("/login");
             return null;
         }
         return token;
-    };
+    }, [router]);
 
     const fetchOrganization = useCallback(async () => {
         const token = getToken();
@@ -52,11 +57,11 @@ export default function CustomerOrganizationSettingsPage() {
                 return response.items[0];
             }
             return null;
-        } catch (err: any) {
-            setError(err.message);
+        } catch (err: unknown) {
+            setError(getErrorMessage(err, "Không thể tải thông tin tổ chức"));
             return null;
         }
-    }, []);
+    }, [getToken]);
 
     const fetchMembers = useCallback(async (orgId: string) => {
         const token = getToken();
@@ -64,11 +69,11 @@ export default function CustomerOrganizationSettingsPage() {
         try {
             const data = await memberService.getMembers(token, orgId, { limit: 100 });
             setMembers(data.items || []);
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error("Failed to fetch members:", err);
             setMembers([]);
         }
-    }, []);
+    }, [getToken]);
 
     const fetchRoles = useCallback(async (orgId: string) => {
         const token = getToken();
@@ -76,11 +81,11 @@ export default function CustomerOrganizationSettingsPage() {
         try {
             const data = await roleService.getRoles(token, orgId, { limit: 100 });
             setRoles(data.items || []);
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error("Failed to fetch roles:", err);
             setRoles([]);
         }
-    }, []);
+    }, [getToken]);
 
     const fetchPermissions = useCallback(async (orgId: string) => {
         const token = getToken();
@@ -88,11 +93,11 @@ export default function CustomerOrganizationSettingsPage() {
         try {
             const data = await organizationService.getPermissions(token, orgId);
             setPermissions(data || []);
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error("Failed to fetch permissions:", err);
             setPermissions([]);
         }
-    }, []);
+    }, [getToken]);
 
     useEffect(() => {
         const init = async () => {
@@ -116,8 +121,8 @@ export default function CustomerOrganizationSettingsPage() {
             await organizationService.updateOrganization(token, organization.id, data);
             await fetchOrganization();
             showToast("Đã gửi yêu cầu cập nhật tổ chức", "success");
-        } catch (err: any) {
-            showToast(err?.message || "Cập nhật tổ chức thất bại", "error");
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err, "Cập nhật tổ chức thất bại"), "error");
             throw err;
         }
     };
@@ -130,8 +135,8 @@ export default function CustomerOrganizationSettingsPage() {
             await organizationService.deleteOrganization(token, organization.id);
             showToast("Đã xóa tổ chức thành công", "success");
             router.push("/dashboard/customer");
-        } catch (err: any) {
-            showToast(err?.message || "Xóa tổ chức thất bại", "error");
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err, "Xóa tổ chức thất bại"), "error");
             throw err;
         }
     };
@@ -145,8 +150,8 @@ export default function CustomerOrganizationSettingsPage() {
             await memberService.inviteMembers(token, organization.id, emails);
             await fetchMembers(organization.id);
             showToast("Đã gửi lời mời thành viên", "success");
-        } catch (err: any) {
-            showToast(err?.message || "Mời thành viên thất bại", "error");
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err, "Mời thành viên thất bại"), "error");
             throw err;
         }
     };
@@ -159,8 +164,8 @@ export default function CustomerOrganizationSettingsPage() {
             await memberService.removeMember(token, organization.id, memberId);
             await fetchMembers(organization.id);
             showToast("Đã xóa thành viên khỏi tổ chức", "success");
-        } catch (err: any) {
-            showToast(err?.message || "Xóa thành viên thất bại", "error");
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err, "Xóa thành viên thất bại"), "error");
             throw err;
         }
     };
@@ -173,8 +178,8 @@ export default function CustomerOrganizationSettingsPage() {
             await memberService.assignRoles(token, organization.id, memberId, roleIds);
             await fetchMembers(organization.id);
             showToast("Đã cập nhật vai trò thành viên", "success");
-        } catch (err: any) {
-            showToast(err?.message || "Cập nhật vai trò thất bại", "error");
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err, "Cập nhật vai trò thất bại"), "error");
             throw err;
         }
     };
@@ -187,8 +192,8 @@ export default function CustomerOrganizationSettingsPage() {
             await memberService.cancelInvite(token, organization.id, memberId);
             await fetchMembers(organization.id);
             showToast("Đã hủy lời mời", "success");
-        } catch (err: any) {
-            showToast(err?.message || "Hủy lời mời thất bại", "error");
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err, "Hủy lời mời thất bại"), "error");
             throw err;
         }
     };
@@ -202,8 +207,8 @@ export default function CustomerOrganizationSettingsPage() {
             await roleService.createRole(token, organization.id, data);
             await fetchRoles(organization.id);
             showToast("Đã tạo vai trò mới", "success");
-        } catch (err: any) {
-            showToast(err?.message || "Tạo vai trò thất bại", "error");
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err, "Tạo vai trò thất bại"), "error");
             throw err;
         }
     };
@@ -216,8 +221,8 @@ export default function CustomerOrganizationSettingsPage() {
             await roleService.updateRole(token, organization.id, roleId, data);
             await fetchRoles(organization.id);
             showToast("Đã cập nhật vai trò", "success");
-        } catch (err: any) {
-            showToast(err?.message || "Cập nhật vai trò thất bại", "error");
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err, "Cập nhật vai trò thất bại"), "error");
             throw err;
         }
     };
@@ -230,8 +235,8 @@ export default function CustomerOrganizationSettingsPage() {
             await roleService.deleteRole(token, organization.id, roleId);
             await fetchRoles(organization.id);
             showToast("Đã xóa vai trò", "success");
-        } catch (err: any) {
-            showToast(err?.message || "Xóa vai trò thất bại", "error");
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err, "Xóa vai trò thất bại"), "error");
             throw err;
         }
     };
@@ -311,6 +316,7 @@ export default function CustomerOrganizationSettingsPage() {
                         <OrgProfileTab
                             organization={organization}
                             onUpdate={handleUpdateOrg}
+                            enableLegalApprovalFlow={true}
                         />
                     </TabsContent>
 
