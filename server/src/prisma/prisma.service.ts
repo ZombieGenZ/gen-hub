@@ -28,6 +28,7 @@ import {
   AvatarCoverRankPermissionsSeeder,
   InventoryPermissionsSeeder,
   InventoryWarehouseManagerPermissionsSeeder,
+  RevenuePermissionsSeeder,
   AdministrativeSeeder,
   WarningSeeder,
   AmenitySeeder,
@@ -373,6 +374,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         new AvatarCoverRankPermissionsSeeder(this),
         new InventoryPermissionsSeeder(this),
         new InventoryWarehouseManagerPermissionsSeeder(this),
+        new RevenuePermissionsSeeder(this),
       ];
 
       // Run permission seeders in batches of 3

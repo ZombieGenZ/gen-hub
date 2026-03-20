@@ -1,6 +1,6 @@
 import { IsOptional, IsString, IsInt, Min, IsUUID, IsEnum, IsNotEmpty, MaxLength } from 'class-validator';
 import { Transform } from 'class-transformer';
-import { ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiPropertyOptional, ApiProperty } from '@nestjs/swagger';
 import { i18nValidationMessage } from 'nestjs-i18n';
 import { RefundStatus } from '@prisma/client';
 

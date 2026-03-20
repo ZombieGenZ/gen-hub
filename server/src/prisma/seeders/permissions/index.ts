@@ -14,3 +14,4 @@ export * from './app-download-permissions.seeder';
 export * from './avatar-cover-rank-permissions.seeder';
 export * from './inventory-permissions.seeder';
 export * from './inventory-wm-permissions.seeder';
+export * from './revenue-permissions.seeder';

@@ -229,6 +229,7 @@ export enum ResponseCode {
     PAYMENT_MANUAL_REJECT_SUCCESS = 'payment.manual.reject_success',
 
     // Refund Request
+    REFUND_REQUEST_CREATE_SUCCESS = 'refund_request.create_success',
     REFUND_REQUEST_LIST_SUCCESS = 'refund_request.list_success',
     REFUND_REQUEST_READ_SUCCESS = 'refund_request.read_success',
     REFUND_REQUEST_ACCEPT_SUCCESS = 'refund_request.accept_success',
