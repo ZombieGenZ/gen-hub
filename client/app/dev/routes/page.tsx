@@ -76,11 +76,14 @@ const routeGroups: RouteGroup[] = [
             { path: "/dashboard/admin/organization/balance", label: "Organization Balance", description: "Manage organization account balances" },
             { path: "/dashboard/admin/users", label: "Users", description: "Staff management" },
             { path: "/dashboard/admin/notifications", label: "Notifications", description: "System notifications" },
-            { path: "/dashboard/admin/contacts", label: "Support Contacts", description: "Customer support inquiries" },
+            { path: "/dashboard/admin/contacts", label: "Support Analytics", description: "Analytics & KPIs for support tickets" },
+            { path: "/dashboard/admin/contacts/inbox", label: "Support Inbox", description: "Manage customer support inquiries" },
+            { path: "/dashboard/admin/contacts/filtering", label: "Contact Filtering", description: "Rule-based ticket filtering & automation" },
+            { path: "/dashboard/admin/contacts/tags", label: "Ticket Tags", description: "Manage labels for support tickets" },
             { path: "/dashboard/admin/settings", label: "Settings", description: "System configuration" },
             { path: "/dashboard/admin/warehouse-visits", label: "Warehouse Visits", description: "Warehouse visit bookings" },
-            { path: "/dashboard/admin/refund-requests", label: "[Coming Soon] Refund Requests", description: "Customer refund requests" },
-            { path: "/dashboard/admin/warnings", label: "[Coming Soon] Warnings", description: "Customer warnings & penalties" },
+            { path: "/dashboard/admin/refund-requests", label: "Refund Requests", description: "Customer refund requests" },
+            { path: "/dashboard/admin/settings/warning-penalties", label: "Warnings & Penalties", description: "Customer warning rules & penalty configuration" },
             { path: "/dashboard/admin/categories", label: "Categories", description: "CMS Article Categories" },
             { path: "/dashboard/admin/articles", label: "Articles & News", description: "CMS Content Management" },
         ]
@@ -104,12 +107,12 @@ const routeGroups: RouteGroup[] = [
             { path: "/dashboard/customer/outbound", label: "Outbound Requests", description: "Outbound operations (Picking, Verification)" },
             { path: "/dashboard/customer/balance", label: "Account Balance", description: "Check account balance" },
             { path: "/dashboard/customer/organization-settings", label: "Organization Settings", description: "Organization settings & profile" },
-            { path: "/dashboard/customer/refund-requests", label: "[Coming Soon] Refund Requests", description: "Request refunds" },
+            { path: "/dashboard/customer/refund-requests", label: "Refund Requests", description: "Request refunds" },
             { path: "/dashboard/customer/notifications", label: "Notifications", description: "Account notifications" },
-            { path: "/dashboard/customer/warnings", label: "[Coming Soon] Warnings", description: "Account warnings & notices" },
             { path: "/user/profile", label: "Profile", description: "Personal account settings" },
         ]
     },
+
     {
         title: "Staff Dashboard",
         icon: <Briefcase className="w-5 h-5" />,
@@ -202,7 +205,7 @@ export default function DevRoutesPage() {
                                 Developer Tools
                             </span>
                             <span className="w-1.5 h-1.5 rounded-full bg-[var(--border)]" />
-                            <span className="text-[var(--muted-foreground)] text-xs font-medium">v1.2.0</span>
+                            <span className="text-[var(--muted-foreground)] text-xs font-medium">v1.3.0</span>
                         </motion.div>
 
                         <motion.h1
