@@ -13,37 +13,88 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-    Search,
-    Filter,
-    MoreVertical,
-    Eye,
-    Shield,
-    Lock
-} from "lucide-react";
-import { useState } from "react";
+    MagnifyingGlassIcon,
+    FunnelIcon,
+    EyeIcon,
+    LockClosedIcon,
+} from "@heroicons/react/24/outline";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { PartnerService } from "@/services/partner/partner.service";
+import { authStorage } from "@/services/auth/auth-storage.service";
+import type { Partner } from "@/services/partner/partner.types";
+import { useToast } from "@/contexts/ToastContext";
 
-// Mock Data
-const MOCK_CUSTOMERS = [
-    { id: "KH001", name: "Công ty TNHH ABC", email: "contact@abc.com", phone: "0901234567", contracts: 3, status: "active" },
-    { id: "KH002", name: "Tập đoàn XYZ", email: "info@xyz.corp", phone: "0912345678", contracts: 12, status: "active" },
-    { id: "KH003", name: "Nguyễn Văn An", email: "nvan@gmail.com", phone: "0987654321", contracts: 1, status: "blocked" },
-    { id: "KH004", name: "Logistics Global", email: "support@logistics.vn", phone: "0999888777", contracts: 5, status: "active" },
-    { id: "KH005", name: "Kho Vận Miền Nam", email: "admin@kvmn.com", phone: "0933221100", contracts: 0, status: "inactive" },
-];
+const partnerService = new PartnerService();
+
+type CustomerRow = {
+    id: string;
+    code: string;
+    name: string;
+    email: string;
+    phone: string;
+    contracts: number;
+    status: "active" | "inactive";
+};
 
 export default function CustomersPage() {
     const [searchTerm, setSearchTerm] = useState("");
+    const [loading, setLoading] = useState(true);
+    const [customers, setCustomers] = useState<CustomerRow[]>([]);
+    const router = useRouter();
+    const { showToast } = useToast();
 
-    const filteredCustomers = MOCK_CUSTOMERS.filter(c =>
-        c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.email.toLowerCase().includes(searchTerm.toLowerCase())
+    useEffect(() => {
+        const fetchCustomers = async () => {
+            const token = authStorage.getAccessToken();
+            if (!token) {
+                router.push("/login");
+                return;
+            }
+
+            setLoading(true);
+            try {
+                const result = await partnerService.list(token, {
+                    limit: 200,
+                    offset: 0,
+                    type: "CUSTOMER",
+                });
+
+                const rows: CustomerRow[] = (result.data.items || []).map((item: Partner) => ({
+                    id: item.id,
+                    code: item.code || item.id.slice(0, 8),
+                    name: item.name,
+                    email: item.email || "-",
+                    phone: item.phone || "-",
+                    contracts: 0,
+                    status: item.is_active ? "active" : "inactive",
+                }));
+
+                setCustomers(rows);
+            } catch (error) {
+                console.error(error);
+                showToast("Không thể tải danh sách khách hàng", "error");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchCustomers();
+    }, [router, showToast]);
+
+    const filteredCustomers = useMemo(
+        () => customers.filter((c) =>
+            c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            c.email.toLowerCase().includes(searchTerm.toLowerCase())
+        ),
+        [customers, searchTerm]
     );
 
     return (
         <div className="flex flex-col flex-1 h-full bg-slate-50/50">
             <main className="flex-1 p-4 md:p-8">
                 <div className="relative w-full max-w-xl hidden md:block mb-6">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                     <Input
                         placeholder="Tìm kiếm khách hàng..."
                         className="pl-9 h-9 bg-slate-50 border-slate-200 focus:bg-white focus:ring-brand/20 transition-all rounded-xl text-sm"
@@ -57,12 +108,15 @@ export default function CustomersPage() {
                         <p className="text-sm text-slate-500 mt-1">Quản lý thông tin khách hàng và đối tác</p>
                     </div>
                     <Button className="bg-brand hover:bg-brand-hover text-white gap-2 rounded-xl">
-                        <Filter className="w-4 h-4" />
+                        <FunnelIcon className="w-4 h-4" />
                         Bộ lọc
                     </Button>
                 </div>
 
                 <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    {loading && (
+                        <div className="px-4 py-3 text-sm text-slate-500 border-b border-slate-200">Đang tải dữ liệu khách hàng...</div>
+                    )}
                     <Table>
                         <TableHeader className="bg-slate-50">
                             <TableRow>
@@ -77,7 +131,7 @@ export default function CustomersPage() {
                         <TableBody>
                             {filteredCustomers.map((customer) => (
                                 <TableRow key={customer.id} className="hover:bg-slate-50/50 transition-colors">
-                                    <TableCell className="font-medium text-slate-600">{customer.id}</TableCell>
+                                    <TableCell className="font-medium text-slate-600">{customer.code}</TableCell>
                                     <TableCell>
                                         <div className="font-medium text-slate-900">{customer.name}</div>
                                     </TableCell>
@@ -94,21 +148,31 @@ export default function CustomersPage() {
                                     </TableCell>
                                     <TableCell>
                                         {customer.status === 'active' && <Badge className="bg-success/10 text-success hover:bg-success/20 border-success/20">Đang hoạt động</Badge>}
-                                        {customer.status === 'blocked' && <Badge className="bg-rose-50 text-rose-600 hover:bg-rose-100 border-rose-100">Đã khóa</Badge>}
                                         {customer.status === 'inactive' && <Badge className="bg-slate-100 text-slate-500 hover:bg-slate-200 border-slate-200">Không hoạt động</Badge>}
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex items-center justify-end gap-2">
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-brand hover:bg-brand/5 rounded-xl">
-                                                <Eye className="w-4 h-4" />
+                                            <Button
+                                                variant="ghost" size="icon"
+                                                className="h-8 w-8 text-slate-400 hover:text-brand hover:bg-brand/5 rounded-xl"
+                                                onClick={() => router.push(`/dashboard/admin/customers/${customer.id}`)}
+                                            >
+                                                <EyeIcon className="w-4 h-4" />
                                             </Button>
                                             <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl">
-                                                <Lock className="w-4 h-4" />
+                                                <LockClosedIcon className="w-4 h-4" />
                                             </Button>
                                         </div>
                                     </TableCell>
                                 </TableRow>
                             ))}
+                            {!loading && filteredCustomers.length === 0 && (
+                                <TableRow>
+                                    <TableCell colSpan={6} className="text-center text-slate-500 py-8">
+                                        Không có khách hàng phù hợp.
+                                    </TableCell>
+                                </TableRow>
+                            )}
                         </TableBody>
                     </Table>
                 </div>

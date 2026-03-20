@@ -22,6 +22,7 @@ import { getContractStatusBanner } from "@/components/contract/ContractStatusBad
 import { ContractInfoSidebar } from "@/components/contract/ContractInfoSidebar";
 import { PaymentHistory } from "@/components/contract/PaymentHistory";
 import { StatusTimeline, type TimelineEvent } from "@/components/contract/StatusTimeline";
+import { RequestRefundModal } from "@/components/contract/RequestRefundModal";
 import type { RentalContractDetail } from "@/types/rental-contracts/rental-contracts.type";
 
 export default function CustomerContractDetailPage() {
@@ -32,6 +33,7 @@ export default function CustomerContractDetailPage() {
     const [contract, setContract] = useState<RentalContractDetail | null>(null);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState("contract");
+    const [showRefundModal, setShowRefundModal] = useState(false);
 
     useEffect(() => {
         const fetchContract = async () => {
@@ -50,6 +52,17 @@ export default function CustomerContractDetailPage() {
         };
         fetchContract();
     }, [contractId, router]);
+
+    const refreshContract = async () => {
+        try {
+            const token = authStorage.getAccessToken();
+            if (!token) return;
+            const res = await rentalContractService.getRentalContractById(token, contractId);
+            setContract(res?.data ?? res);
+        } catch (err) {
+            console.error("Failed to refresh contract", err);
+        }
+    };
 
     // ---------- Loading ----------
     if (loading) {
@@ -98,10 +111,22 @@ export default function CustomerContractDetailPage() {
                         <p className="text-sm text-muted-foreground">{contract.name}</p>
                     </div>
                 </div>
-                <Button variant="outline" size="sm">
-                    <Download className="w-4 h-4 mr-1.5" />
-                    Tải PDF
-                </Button>
+                <div className="flex items-center gap-2">
+                    {(contract.status === "ACTIVE" || contract.status.startsWith("OVERDUE")) && (
+                        <Button 
+                            variant="destructive" 
+                            size="sm"
+                            onClick={() => setShowRefundModal(true)}
+                        >
+                            <AlertTriangle className="w-4 h-4 mr-1.5" />
+                            Yêu cầu hoàn tiền / Thanh lý
+                        </Button>
+                    )}
+                    <Button variant="outline" size="sm">
+                        <Download className="w-4 h-4 mr-1.5" />
+                        Tải PDF
+                    </Button>
+                </div>
             </div>
 
             {/* Status banner */}
@@ -240,6 +265,17 @@ export default function CustomerContractDetailPage() {
                     </Tabs>
                 </div>
             </div>
+
+            <RequestRefundModal
+                isOpen={showRefundModal}
+                onClose={() => setShowRefundModal(false)}
+                contractId={contract.id}
+                originalAmount={typeof contract.total_price === "string" ? parseFloat(contract.total_price) : contract.total_price}
+                onSuccess={() => {
+                    refreshContract();
+                    router.push("/dashboard/customer/refund-requests");
+                }}
+            />
         </div>
     );
 }
