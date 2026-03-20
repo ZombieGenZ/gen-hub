@@ -9,7 +9,6 @@ import { Separator } from "@/components/ui/separator";
 import {
     ArrowLeft,
     Download,
-    Loader2,
     FileText,
     CreditCard,
     History,
@@ -18,6 +17,7 @@ import {
 import { cn } from "@/lib/utils";
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { rentalContractService } from "@/services/rental-contract/rental-contract.service";
+import { orgHelper } from "@/lib/organization.utils";
 import { getContractStatusBanner } from "@/components/contract/ContractStatusBadge";
 import { ContractInfoSidebar } from "@/components/contract/ContractInfoSidebar";
 import { PaymentHistory } from "@/components/contract/PaymentHistory";
@@ -41,9 +41,25 @@ export default function CustomerContractDetailPage() {
                 const token = authStorage.getAccessToken();
                 if (!token) { router.push("/login"); return; }
                 setLoading(true);
+                
+                // Get current user's organization_id
+                let currentOrgId: string | undefined;
+                try {
+                    currentOrgId = await orgHelper.getOrgId(token);
+                } catch (err) {
+                    console.error("Failed to get organization ID", err);
+                }
+
                 const res = await rentalContractService.getRentalContractById(token, contractId);
-                const data = res?.data ?? res;
-                setContract(data);
+                const data: RentalContractDetail = res?.data ?? res;
+
+                // Security check: Ensure contract belongs to the user's organization
+                if (currentOrgId && data.organization?.id !== currentOrgId) {
+                    console.warn(`Access denied: Contract ${contractId} does not belong to organization ${currentOrgId}`);
+                    setContract(null);
+                } else {
+                    setContract(data);
+                }
             } catch (err) {
                 console.error("Failed to load contract", err);
             } finally {

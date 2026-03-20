@@ -261,7 +261,7 @@ export default function ArticlesPage() {
                 <CardContent className="p-6">
                     <div className="flex flex-wrap items-center gap-4">
                         {/* Search */}
-                        <div className="relative flex-1 min-w-[250px]">
+                        <div className="relative flex-1 min-w-62.5">
                             <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                             <Input
                                 placeholder="Tìm tiêu đề bài viết..."
@@ -274,7 +274,7 @@ export default function ArticlesPage() {
                         {/* Status Filters */}
                         <div className="flex flex-wrap items-center gap-3">
                              <Select value={typeFilter} onValueChange={(val: any) => setTypeFilter(val)}>
-                                <SelectTrigger className="w-[140px] rounded-xl h-10 border-gray-200">
+                                <SelectTrigger className="w-35 rounded-xl h-10 border-gray-200">
                                     <SelectValue placeholder="Loại bài viết" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -287,7 +287,7 @@ export default function ArticlesPage() {
                             </Select>
 
                              <Select value={statusFilter} onValueChange={(val: any) => setStatusFilter(val)}>
-                                <SelectTrigger className="w-[150px] rounded-xl h-10 border-gray-200">
+                                <SelectTrigger className="w-37.5 rounded-xl h-10 border-gray-200">
                                     <SelectValue placeholder="Trạng thái" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -300,7 +300,7 @@ export default function ArticlesPage() {
                             </Select>
 
                             <Select value={categoryFilter} onValueChange={(val) => setCategoryFilter(val)}>
-                                <SelectTrigger className="w-[180px] rounded-xl h-10 border-gray-200 bg-muted/20">
+                                <SelectTrigger className="w-45 rounded-xl h-10 border-gray-200 bg-muted/20">
                                     <SelectValue placeholder="Danh mục" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -333,8 +333,8 @@ export default function ArticlesPage() {
                                     <th className="text-left py-3 px-4 font-semibold text-xs text-muted-foreground uppercase w-[40%]">Bài viết</th>
                                     <th className="text-left py-3 px-4 font-semibold text-xs text-muted-foreground uppercase">Loại</th>
                                     <th className="text-left py-3 px-4 font-semibold text-xs text-muted-foreground uppercase">Lượt xem</th>
-                                    <th className="text-center py-3 px-4 font-semibold text-xs text-muted-foreground uppercase w-[120px]">Trạng thái</th>
-                                    <th className="text-right py-3 px-4 font-semibold text-xs text-muted-foreground uppercase w-[100px]">Thao tác</th>
+                                    <th className="text-center py-3 px-4 font-semibold text-xs text-muted-foreground uppercase w-30">Trạng thái</th>
+                                    <th className="text-right py-3 px-4 font-semibold text-xs text-muted-foreground uppercase w-25">Thao tác</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y relative">

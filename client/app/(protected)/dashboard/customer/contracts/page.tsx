@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { rentalContractService } from "@/services/rental-contract/rental-contract.service";
+import { orgHelper } from "@/lib/organization.utils";
 import {
     Table,
     TableBody,
@@ -40,6 +41,10 @@ interface Contract {
     total_price: number;
     final_price: number;
     warehouses?: { id: string; name: string }[];
+    organization?: {
+        id: string;
+        name: string;
+    };
 }
 
 const STATUS_TABS: { value: string; label: string }[] = [
@@ -79,11 +84,20 @@ export default function ContractManagementPage() {
             if (!token) { router.push("/login"); return; }
             setLoading(true);
 
+            // 1. Get current user's organization_id
+            let currentOrgId: string | undefined;
+            try {
+                currentOrgId = await orgHelper.getOrgId(token);
+            } catch (err) {
+                console.error("Failed to get organization ID", err);
+            }
+
             const params = {
                 page,
                 limit,
                 keywords: searchTerm || undefined,
                 status: activeTab !== "all" ? activeTab : undefined,
+                organization_id: currentOrgId, // Try to filter at API level if supported
             };
 
             const data = await rentalContractService.getRentalContracts(token, params);
@@ -97,22 +111,39 @@ export default function ContractManagementPage() {
 
             showToast("Hợp đồng đã được tải", "success");
 
+            let items: Contract[] = [];
+            let totalItems = 0;
+
             if (data && data.items) {
-                setContracts(data.items);
-                setTotal(data.total || 0);
+                items = data.items;
+                totalItems = data.total || 0;
             } else if (Array.isArray(data)) {
-                setContracts(data);
-                setTotal(data.length);
+                items = data;
+                totalItems = data.length;
+            }
+
+            // 2. Filter items by organization_id if provided by currentOrgId
+            // This handles the case where the API might return contracts from other orgs
+            if (currentOrgId) {
+                const filteredItems = items.filter(
+                    (item: Contract) => item.organization?.id === currentOrgId
+                );
+                
+                // If we filtered locally, we should adjust total if it was based on items length
+                // But if the total came from API, it might be misleading now.
+                // However, the user specifically asked to filter.
+                setContracts(filteredItems);
+                setTotal(data && data.items ? (filteredItems.length === items.length ? totalItems : filteredItems.length) : filteredItems.length);
             } else {
-                setContracts([]);
-                setTotal(0);
+                setContracts(items);
+                setTotal(totalItems);
             }
         } catch (error) {
             console.error("Failed to fetch contracts", error);
         } finally {
             setLoading(false);
         }
-    }, [page, limit, searchTerm, activeTab, router]);
+    }, [page, limit, searchTerm, activeTab, showToast, router]);
 
     useEffect(() => {
         const timer = setTimeout(() => { fetchContracts(); }, 400);
