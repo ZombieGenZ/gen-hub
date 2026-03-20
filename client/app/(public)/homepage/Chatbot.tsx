@@ -385,6 +385,7 @@ export function PrimeNestChatbot() {
             return;
         }
 
+        const phoneDigits = appointmentForm.phone.replace(/\D/g, '');
         const fallbackEmail = `guest-${phoneDigits || Date.now()}@genhub.vn`;
         const submitEmail = appointmentForm.email.trim() || fallbackEmail;
 
