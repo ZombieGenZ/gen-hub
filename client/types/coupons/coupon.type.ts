@@ -68,6 +68,7 @@ export interface CouponValidationResult {
     message: string;
     coupon?: Coupon;
     payload?: any;
+}
 
 export interface CouponRequest {
     name: string,
