@@ -100,6 +100,17 @@ export class AccountRepository {
     }
 
     /**
+     * Lấy organization_id đầu tiên mà user làm thành viên
+     */
+    async findPrimaryOrganizationId(userId: string) {
+        const membership = await this.prisma.organizationMember.findFirst({
+            where: { user_id: userId, is_deleted: false, is_accepted: true },
+            select: { organization_id: true },
+        });
+        return membership?.organization_id;
+    }
+
+    /**
      * Update profile
      * @returns Updated user với basic select fields
      */

@@ -151,6 +151,8 @@ export class AccountService {
       (p, index, self) => index === self.findIndex((t) => t.id === p.id),
     );
 
+    const organizationId = await this.accountRepository.findPrimaryOrganizationId(userId);
+
     const profileData: IAccountProfile = {
       user: {
         id: user.id,
@@ -168,6 +170,7 @@ export class AccountService {
       },
       roles,
       permissions: uniquePermissions,
+      organization_id: organizationId,
     };
 
     // 4. Set cache - TTL từ môi trường thông qua RedisService

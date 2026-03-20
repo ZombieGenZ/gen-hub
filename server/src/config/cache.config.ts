@@ -300,4 +300,16 @@ export default registerAs('cache', () => ({
             outbound: process.env.REDIS_OUTBOUND_KEY_PREFIX || 'inventory:outbound',
         },
     },
+    // Org Analytics Module
+    orgAnalytics: {
+        ttl: {
+            item: parseInt(process.env.REDIS_ORG_ANALYTICS_CACHE_TTL ?? '300', 10),
+            list: parseInt(process.env.REDIS_ORG_ANALYTICS_LIST_CACHE_TTL ?? '60', 10),
+        },
+        keys: {
+            item: process.env.REDIS_ORG_ANALYTICS_KEY_PREFIX || 'org-analytics',
+            list: process.env.REDIS_ORG_ANALYTICS_LIST_KEY_PREFIX || 'org-analytics:list',
+            overview: process.env.REDIS_ORG_ANALYTICS_OVERVIEW_KEY_PREFIX || 'org-analytics:overview',
+        },
+    },
 }));

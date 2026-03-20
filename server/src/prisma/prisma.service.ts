@@ -32,6 +32,7 @@ import {
   RefundRequestPermissionsSeeder,
   WarehouseVisitPermissionsSeeder,
   ConsultationRequestPermissionsSeeder,
+  OrgAnalyticsPermissionsSeeder,
   AdministrativeSeeder,
   WarningSeeder,
   AmenitySeeder,
@@ -382,6 +383,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         new RefundRequestPermissionsSeeder(this),
         new WarehouseVisitPermissionsSeeder(this),
         new ConsultationRequestPermissionsSeeder(this),
+        new OrgAnalyticsPermissionsSeeder(this),
       ];
 
       // Run permission seeders in batches of 3

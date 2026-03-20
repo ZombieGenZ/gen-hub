@@ -34,6 +34,7 @@ export interface IAccountProfile {
         source: 'role' | 'permission';
         roles: Array<{ id: string; name: string }>;
     }>;
+    organization_id?: string;
 }
 
 /**

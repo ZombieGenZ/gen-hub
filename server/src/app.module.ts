@@ -1,4 +1,4 @@
-﻿import { Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -85,6 +85,7 @@ import { AiPluginModule } from './modules/ai-plugin/ai-plugin.module';
 import { ConsultationRequestModule } from './modules/consultation-request/consultation-request.module';
 import { OrgChatModule } from './modules/org-chat/org-chat.module';
 import { BackblazeB2Module } from './modules/backblaze-b2/backblaze-b2.module';
+import { OrgAnalyticsModule } from './modules/org-analytics/org-analytics.module';
 import { DatabaseBackupModule } from './modules/database-backup/database-backup.module';
 import { WarningCategoryModule } from './modules/warning-category/warning-category.module';
 import { UserManagementModule } from './modules/user-management/user-management.module';
@@ -286,6 +287,7 @@ import { AppDownloadModule } from './modules/app-download/app-download.module';
 
     // Revenue Analytics (Admin)
     RevenueAnalyticsModule,
+    OrgAnalyticsModule,
 
     // Security - Brute Force Protection
     BruteForceModule,

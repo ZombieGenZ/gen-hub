@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { authStorage } from "@/services/auth/auth-storage.service";
+import { orgAnalyticsService } from "@/services/org-analytics/org-analytics.service";
 import { rentalContractService } from "@/services/rental-contract/rental-contract.service";
 import { accountBalanceService } from "@/services/account-balance/account-balance.service";
 import { ClockIcon } from "@heroicons/react/24/outline";
@@ -55,76 +56,65 @@ export default function CustomerDashboardOverview() {
     });
     const [stockFlow, setStockFlow] = useState<any[]>([]);
     const [shipments, setShipments] = useState<any[]>([]);
-    const [stockAlerts, setStockAlerts] = useState<any[]>([]);
+    const [stockAlerts, setStockAlerts] = useState<{ lowStock: any[], expired: any[] }>({ lowStock: [], expired: [] });
     const [topProducts, setTopProducts] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [chartPeriod, setChartPeriod] = useState("week");
 
     useEffect(() => {
         const fetchData = async () => {
+            setLoading(true);
             try {
                 const token = authStorage.getAccessToken();
                 const refreshToken = authStorage.getRefreshToken();
                 if (!token || !refreshToken) return;
 
                 const user = await userService.getUser(token, refreshToken);
-                const balanceRes = user?.organization_id
-                    ? await accountBalanceService.getOrganizationBalance(token, user.organization_id).catch(() => ({ balance: 0 }))
+                console.log("Customer Dashboard User:", user);
+                const currentOrgId = user?.organization_id;
+                console.log("Fetched orgId:", currentOrgId);
+                
+                const balanceRes = currentOrgId
+                    ? await accountBalanceService.getOrganizationBalance(token, currentOrgId).catch(() => ({ balance: 0 }))
                     : { balance: 0 };
 
-                // Mock Operational Data (since inventory services aren't connected yet)
-                setStats({
-                    totalStock: 84932,
-                    totalStockTrend: { value: "+4%", direction: "up", label: "so với tuần trước" },
-                    outboundOrders: 7214,
-                    outboundOrdersTrend: { value: "-3.2%", direction: "down", label: "so với tuần trước" },
-                    inboundShipments: 4286,
-                    inboundShipmentsTrend: { value: "+2.3%", direction: "up", label: "so với tuần trước" },
-                    efficiency: 84,
-                    balance: (balanceRes as any)?.balance || 0,
-                    unpaidInvoices: 2,
-                    totalDebt: 15000000,
-                    activeContracts: 12,
-                    expiringContracts: 2
-                });
-
-                // Mock Stock Flow (Last 7 days)
-                setStockFlow([
-                    { day: "T2", inbound: 950, outbound: 600 },
-                    { day: "T3", inbound: 480, outbound: 590 },
-                    { day: "T4", inbound: 760, outbound: 450 },
-                    { day: "T5", inbound: 1020, outbound: 600 },
-                    { day: "T6", inbound: 910, outbound: 590 },
-                    { day: "T7", inbound: 450, outbound: 530 },
-                    { day: "CN", inbound: 290, outbound: 740 },
+                const days = chartPeriod === 'day' ? 1 : chartPeriod === 'month' ? 30 : 7;
+                if (!currentOrgId) {
+                    setStats(prev => ({ ...prev, balance: (balanceRes as any)?.balance || 0 }));
+                    return;
+                }
+                const [overviewRes, flowRes, productsRes, alertsRes, shipmentsRes] = await Promise.all([
+                    orgAnalyticsService.getOverview(currentOrgId).catch(() => null),
+                    orgAnalyticsService.getStockFlow(currentOrgId, days).catch(() => []),
+                    orgAnalyticsService.getTopProducts(currentOrgId, 5).catch(() => []),
+                    orgAnalyticsService.getStockAlerts(currentOrgId).catch(() => ({ lowStock: [], expired: [] })),
+                    orgAnalyticsService.getRecentShipments(currentOrgId, 5).catch(() => [])
                 ]);
 
-                // Mock Shipments
-                setShipments([
-                    { id: "BOB-1-298", type: "Nhập", partner: "CV. Indika Perkasa", date: "25/01/2025 20:00", status: "Đang xử lý" },
-                    { id: "BOB-1-295", type: "Xuất", partner: "PT. Boga Makmur", date: "24/01/2025 13:25", status: "Hoàn tất" },
-                    { id: "BOB-1-274", type: "Nhập", partner: "Simmons Karl Global", date: "23/01/2025 13:25", status: "Đã hủy" },
-                    { id: "BOB-1-262", type: "Xuất", partner: "Wings Corp Group", date: "23/01/2025 10:00", status: "Delayed" },
-                    { id: "BOB-1-256", type: "Nhập", partner: "Maxim Global Ltd", date: "22/01/2025 20:00", status: "Hoàn tất" },
-                ]);
+                if (overviewRes) {
+                    setStats({
+                        totalStock: overviewRes.totalStock || 0,
+                        totalStockTrend: overviewRes.totalStockTrend || { value: "0%", direction: "up", label: "" },
+                        outboundOrders: overviewRes.outboundOrders || 0,
+                        outboundOrdersTrend: overviewRes.outboundOrdersTrend || { value: "0%", direction: "up", label: "" },
+                        inboundShipments: overviewRes.inboundShipments || 0,
+                        inboundShipmentsTrend: overviewRes.inboundShipmentsTrend || { value: "0%", direction: "up", label: "" },
+                        efficiency: overviewRes.efficiency || 0,
+                        balance: (balanceRes as any)?.balance || 0,
+                        unpaidInvoices: 2, 
+                        totalDebt: 15000000, 
+                        activeContracts: overviewRes.activeContracts || 0,
+                        expiringContracts: overviewRes.expiringContracts || 0
+                    });
+                } else {
+                    // Fallback to minimal data if API fails to prevent empty stats breaking UI
+                    setStats(prev => ({...prev, balance: (balanceRes as any)?.balance || 0}));
+                }
 
-                // Mock Stock Alerts
-                // Mock Stock Alerts
-                setStockAlerts([
-                    { name: "Trứng gà", unit: "kg", left: 24, total: 100 },
-                    { name: "Dầu ăn", unit: "lít", left: 24, total: 100 },
-                    { name: "Tỏi", unit: "kg", left: 12, total: 50 },
-                    { name: "Tiêu đen", unit: "gói", left: 32, total: 120 },
-                ]);
-
-                // Mock Top Products
-                setTopProducts([
-                    { name: "Củ sạc 20W", count: 500, unit: "cái", trend: "up", data: [30, 45, 60, 50, 70, 90] },
-                    { name: "Kính cường lực", count: 200, unit: "cái", trend: "up", data: [20, 35, 40, 50, 60, 80] },
-                    { name: "MacBook Air M2", count: 150, unit: "cái", trend: "down", data: [40, 50, 45, 60, 70, 85] },
-                    { name: "iPhone 15 Pro Max", count: 120, unit: "cái", trend: "up", data: [80, 65, 50, 45, 30, 25] },
-                    { name: "Ốp lưng Silicon", count: 85, unit: "cái", trend: "down", data: [70, 60, 55, 40, 35, 20] },
-                ]);
+                setStockFlow(flowRes);
+                setTopProducts(productsRes);
+                setStockAlerts(alertsRes);
+                setShipments(shipmentsRes);
 
             } catch (error) {
                 console.error("Failed to fetch dashboard stats", error);
@@ -134,23 +124,13 @@ export default function CustomerDashboardOverview() {
         };
 
         fetchData();
-    }, []);
+    }, [chartPeriod]);
 
     const formatCurrency = (val: number) =>
         new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val);
 
-    const lowStockItems = [
-        { name: "Trứng gà", left: 24, min: 100, unit: "kg", icon: Egg },
-        { name: "Dầu ăn", left: 24, min: 100, unit: "lit", icon: Droplet },
-        { name: "Tỏi", left: 12, min: 50, unit: "kg", icon: Package },
-        { name: "Tiêu đen", left: 32, min: 100, unit: "gói", icon: AlertCircle },
-    ];
-
-    const expiredItems = [
-        { name: "Bột mì", left: 0, unit: "kg", expiry: "25/01/2026", icon: Wheat },
-        { name: "Sữa tươi", left: 5, unit: "hộp", expiry: "20/01/2026", icon: Milk },
-        { name: "Nấm", left: 2, unit: "kg", expiry: "22/01/2026", icon: Package },
-    ];
+    const lowStockItems = stockAlerts.lowStock.map(item => ({ ...item, icon: Package }));
+    const expiredItems = stockAlerts.expired.map(item => ({ ...item, icon: AlertCircle }));
 
     return (
         <div className="space-y-2">
@@ -322,14 +302,14 @@ export default function CustomerDashboardOverview() {
                                                                 <div className="w-1.5 h-1.5 rounded-full bg-chart-1 shadow-[0_0_6px_var(--chart-1)]" />
                                                                 <span>Nhập</span>
                                                             </div>
-                                                            <span className="text-foreground font-mono font-medium">{item.inbound}</span>
+                                                            <span className="text-foreground font-mono font-medium">{loading ? "-" : item.inbound.toLocaleString()}</span>
                                                         </div>
                                                         <div className="flex items-center justify-between gap-3 text-muted-foreground">
                                                             <div className="flex items-center gap-1.5">
                                                                 <div className="w-1.5 h-1.5 rounded-full bg-chart-2 shadow-[0_0_6px_var(--chart-2)]" />
                                                                 <span>Xuất</span>
                                                             </div>
-                                                            <span className="text-foreground font-mono font-medium">{item.outbound}</span>
+                                                            <span className="text-foreground font-mono font-medium">{loading ? "-" : item.outbound.toLocaleString()}</span>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -380,7 +360,7 @@ export default function CustomerDashboardOverview() {
                                     {/* Center Label - Moved Top for z-index layering */}
                                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none z-0">
                                         <span className="text-xl font-bold text-foreground leading-none block">
-                                            {topProducts.reduce((acc, curr) => acc + curr.count, 0).toLocaleString()}
+                                            {topProducts.reduce((acc, curr) => acc + (curr.count || 0), 0).toLocaleString()}
                                         </span>
                                         <span className="text-[9px] text-muted-foreground font-medium uppercase tracking-wider">Tổng số</span>
                                     </div>
