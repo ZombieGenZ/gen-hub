@@ -426,7 +426,7 @@ function CheckoutContent() {
                             {/* Step 6: Confirmation */}
                             <CheckoutStepContainer step="confirmation">
                                 <OrderConfirmation
-                                    onViewOrder={() => router.push('/dashboard/orders')}
+                                    onViewOrder={() => router.push('/dashboard')}
                                     onDownloadInvoice={() => undefined}
                                     companyData={companyData}
                                     representativeData={{

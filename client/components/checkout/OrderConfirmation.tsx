@@ -300,7 +300,7 @@ export function OrderConfirmation({
                     onClick={() =>
                         session.contract_id
                             ? router.push(`/dashboard/organization/contracts/${session.contract_id}`)
-                            : undefined
+                            : router.push('/dashboard')
                     }
                     disabled={!session.contract_id}
                 >
@@ -327,9 +327,9 @@ export function OrderConfirmation({
                 </Button>
                 <Button
                     className="h-12 rounded-xl bg-[#0F766E] hover:bg-[#0D655D]"
-                    onClick={() => onViewOrder?.()}
+                    onClick={() => onViewOrder ? onViewOrder() : router.push('/dashboard')}
                 >
-                    Xem đơn hàng
+                    Về Dashboard
                 </Button>
             </div>
         </div>

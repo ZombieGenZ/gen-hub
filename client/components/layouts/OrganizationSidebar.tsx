@@ -64,14 +64,14 @@ const organizationNavGroups: SidebarGroup[] = [
         title: "Tài chính",
         items: [
             { href: "/dashboard/organization/payment", icon: CreditCardIcon, label: "Thanh toán" },
-            { href: "/dashboard/organization/refund-requests", icon: ArrowUturnLeftIcon, label: "Yêu cầu hoàn tiền", disabled: true, badge: "Sắp có" },
+            { href: "/dashboard/organization/refund-requests", icon: ArrowUturnLeftIcon, label: "Yêu cầu hoàn tiền" },
         ]
     },
     {
         title: "Khác",
         items: [
             { href: "/dashboard/organization/notifications", icon: BellIcon, label: "Thông báo" },
-            { href: "/dashboard/organization/warnings", icon: ExclamationTriangleIcon, label: "Cảnh cáo", disabled: true, badge: "Sắp có" },
+            { href: "/dashboard/organization/warnings", icon: ExclamationTriangleIcon, label: "Cảnh cáo" },
             { href: "/dashboard/organization/organization-settings", icon: Cog6ToothIcon, label: "Cài đặt tổ chức" },
         ]
     },

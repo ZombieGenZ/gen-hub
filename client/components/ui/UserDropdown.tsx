@@ -135,7 +135,7 @@ const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout, children })
         if (roles.some((role: any) => typeof role === 'string' ? role.toUpperCase() === 'ADMIN' || role.toUpperCase() === 'ADMINISTRATOR' : role.name.toUpperCase() === 'ADMIN' || role.name.toUpperCase() === 'ADMINISTRATOR')) {
           router.push("/dashboard/admin");
         } else {
-          router.push("/dashboard/organization");
+          router.push("/dashboard");
         }
       },
     },
