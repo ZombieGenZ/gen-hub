@@ -15,7 +15,3 @@ export * from './avatar-cover-rank-permissions.seeder';
 export * from './inventory-permissions.seeder';
 export * from './inventory-wm-permissions.seeder';
 export * from './revenue-permissions.seeder';
-export * from './refund-request-permissions.seeder';
-export * from './warehouse-visit-permissions.seeder';
-export * from './consultation-request-permissions.seeder';
-export * from './org-analytics-permissions.seeder';
