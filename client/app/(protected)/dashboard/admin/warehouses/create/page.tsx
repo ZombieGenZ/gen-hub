@@ -26,6 +26,8 @@ import { WarehousePricingTab } from "@/components/dashboard/warehouse-template/W
 import { WarehouseGiftsTab } from "@/components/dashboard/warehouse-template/WarehouseGiftsTab";
 
 const warehouseService = new WarehouseTemplateService();
+const WAREHOUSES_BASE_PATH = "/dashboard/admin/warehouses";
+type WarehouseFormData = Record<string, unknown>;
 
 export default function WarehouseCreatePage() {
     const router = useRouter();
@@ -35,7 +37,10 @@ export default function WarehouseCreatePage() {
     const [loading, setLoading] = useState(!!duplicateId);
     const [saving, setSaving] = useState(false);
     const [activeTab, setActiveTab] = useState("overview");
-    const [formData, setFormData] = useState<Record<string, any>>({
+    const goToWarehouses = useCallback(() => {
+        router.push(WAREHOUSES_BASE_PATH);
+    }, [router]);
+    const [formData, setFormData] = useState<WarehouseFormData>({
         name: "",
         description: "",
         length: 0,
@@ -82,7 +87,7 @@ export default function WarehouseCreatePage() {
         })();
     }, [duplicateId]);
 
-    const handleFormChange = useCallback((updates: Record<string, any>) => {
+    const handleFormChange = useCallback((updates: WarehouseFormData) => {
         setFormData(prev => ({ ...prev, ...updates }));
     }, []);
 
@@ -101,11 +106,11 @@ export default function WarehouseCreatePage() {
             toast.success("Đã tạo kho mới.");
             const newId = result?.data?.id;
             if (newId) {
-                router.push(`/dashboard/admin/warehouses/${newId}`);
+                router.push(`${WAREHOUSES_BASE_PATH}/${newId}`);
             } else {
-                router.push("/dashboard/admin/warehouses");
+                goToWarehouses();
             }
-        } catch (err) {
+        } catch {
             toast.error("Tạo kho thất bại. Vui lòng thử lại.");
         } finally {
             setSaving(false);
@@ -117,7 +122,7 @@ export default function WarehouseCreatePage() {
             <div className="space-y-6">
                 <Skeleton className="h-8 w-48" />
                 <Skeleton className="h-10 w-full max-w-md" />
-                <Skeleton className="h-[400px] w-full rounded-2xl" />
+                <Skeleton className="h-100 w-full rounded-2xl" />
             </div>
         );
     }
@@ -131,7 +136,7 @@ export default function WarehouseCreatePage() {
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8 rounded-full"
-                        onClick={() => router.push("/dashboard/admin/warehouses")}
+                        onClick={goToWarehouses}
                     >
                         <ArrowLeftIcon className="w-4 h-4" />
                     </Button>
@@ -139,7 +144,7 @@ export default function WarehouseCreatePage() {
                         <BreadcrumbList>
                             <BreadcrumbItem>
                                 <BreadcrumbLink
-                                    href="/dashboard/admin/warehouses"
+                                    href={WAREHOUSES_BASE_PATH}
                                     className="cursor-pointer"
                                 >
                                     Templates
@@ -155,7 +160,7 @@ export default function WarehouseCreatePage() {
                 <div className="flex items-center gap-2">
                     <Button
                         variant="ghost"
-                        onClick={() => router.push("/dashboard/admin/warehouses")}
+                        onClick={goToWarehouses}
                         style={{ borderRadius: "12px" }}
                     >
                         Hủy

@@ -758,7 +758,7 @@ export function PrimeNestChatbot() {
 
     const handleLeadFormSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        console.log("Lead form submitted:", leadForm);
+        // console.log("Lead form submitted:", leadForm);
         setFormSubmitted(true);
         setTimeout(() => {
             setFormSubmitted(false);

@@ -22,6 +22,7 @@ import { WarehousePricingTab } from "@/components/dashboard/warehouse-template/W
 import { WarehouseGiftsTab } from "@/components/dashboard/warehouse-template/WarehouseGiftsTab";
 
 const warehouseService = new WarehouseTemplateService();
+const WAREHOUSES_BASE_PATH = "/dashboard/admin/warehouses";
 
 export default function WarehouseEditPage() {
     const params = useParams();
@@ -34,6 +35,9 @@ export default function WarehouseEditPage() {
     const [activeTab, setActiveTab] = useState("overview");
     const [isDirty, setIsDirty] = useState(false);
     const [publishing, setPublishing] = useState(false);
+    const goToWarehouses = useCallback(() => {
+        router.push(WAREHOUSES_BASE_PATH);
+    }, [router]);
 
     // ── Form data  ──
     const [formData, setFormData] = useState<Record<string, any>>({});
@@ -54,11 +58,11 @@ export default function WarehouseEditPage() {
             setFormData(normalized);
         } catch (err) {
             toast.error("Không thể tải dữ liệu kho.");
-            router.push("/dashboard/admin/warehouses");
+            goToWarehouses();
         } finally {
             setLoading(false);
         }
-    }, [id, router]);
+    }, [id, goToWarehouses]);
 
     useEffect(() => {
         if (id) fetchWarehouse();
@@ -243,7 +247,7 @@ export default function WarehouseEditPage() {
             <div className="space-y-6">
                 <Skeleton className="h-8 w-48" />
                 <Skeleton className="h-10 w-full max-w-md" />
-                <Skeleton className="h-[400px] w-full rounded-2xl" />
+                <Skeleton className="h-100 w-full rounded-2xl" />
             </div>
         );
     }
@@ -257,7 +261,7 @@ export default function WarehouseEditPage() {
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8 rounded-full"
-                        onClick={() => router.push("/dashboard/admin/warehouses")}
+                        onClick={goToWarehouses}
                     >
                         <ArrowLeftIcon className="w-4 h-4" />
                     </Button>
@@ -271,7 +275,7 @@ export default function WarehouseEditPage() {
                 <div className="flex items-center gap-2">
                     <Button
                         variant="ghost"
-                        onClick={() => router.push("/dashboard/admin/warehouses")}
+                        onClick={goToWarehouses}
                         style={{ borderRadius: "12px" }}
                     >
                         Hủy

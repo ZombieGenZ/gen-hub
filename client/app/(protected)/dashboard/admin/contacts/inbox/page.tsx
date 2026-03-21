@@ -68,6 +68,35 @@ function getQuickFilterParams(quickFilter: QuickFilter): Partial<ContactQueryPar
     }
 }
 
+function getStatusDotClass(status: string): string {
+    switch (status) {
+        case "OPEN":
+            return "bg-emerald-500";
+        case "PENDING":
+            return "bg-amber-500";
+        case "RESOLVED":
+            return "bg-blue-500";
+        default:
+            return "bg-slate-300";
+    }
+}
+
+function TicketCellButton({
+    onClick,
+    className,
+    children,
+}: {
+    onClick: () => void;
+    className?: string;
+    children: React.ReactNode;
+}) {
+    return (
+        <button onClick={onClick} className={className}>
+            {children}
+        </button>
+    );
+}
+
 export default function ContactsInboxPage() {
     const router = useRouter();
     const currentUserId = authStorage.getUserID();
@@ -315,6 +344,7 @@ export default function ContactsInboxPage() {
                         ) : (
                             visibleContacts.map((ticket) => {
                                 const isSelected = selectedIds.includes(ticket.id);
+                                const openTicketDetail = () => router.push(`/dashboard/admin/contacts/inbox/${ticket.id}`);
 
                                 return (
                                     <div
@@ -329,53 +359,30 @@ export default function ContactsInboxPage() {
                                             />
                                         </div>
 
-                                        <button
-                                            onClick={() => router.push(`/dashboard/admin/contacts/inbox/${ticket.id}`)}
-                                            className="flex items-center"
-                                        >
+                                        <TicketCellButton onClick={openTicketDetail} className="flex items-center">
                                             <div
-                                                className={`h-2.5 w-2.5 rounded-full ${
-                                                    ticket.status === "OPEN"
-                                                        ? "bg-emerald-500"
-                                                        : ticket.status === "PENDING"
-                                                            ? "bg-amber-500"
-                                                            : ticket.status === "RESOLVED"
-                                                                ? "bg-blue-500"
-                                                                : "bg-slate-300"
-                                                }`}
+                                                className={`h-2.5 w-2.5 rounded-full ${getStatusDotClass(ticket.status)}`}
                                             />
-                                        </button>
+                                        </TicketCellButton>
 
-                                        <button
-                                            onClick={() => router.push(`/dashboard/admin/contacts/inbox/${ticket.id}`)}
-                                            className="flex items-center"
-                                        >
+                                        <TicketCellButton onClick={openTicketDetail} className="flex items-center">
                                             <TicketPriorityIcon priority={ticket.priority} showLabel />
-                                        </button>
+                                        </TicketCellButton>
 
-                                        <button
-                                            onClick={() => router.push(`/dashboard/admin/contacts/inbox/${ticket.id}`)}
-                                            className="flex items-center"
-                                        >
+                                        <TicketCellButton onClick={openTicketDetail} className="flex items-center">
                                             <ChannelIcon channel={ticket.channel} showLabel />
-                                        </button>
+                                        </TicketCellButton>
 
-                                        <button
-                                            onClick={() => router.push(`/dashboard/admin/contacts/inbox/${ticket.id}`)}
-                                            className="min-w-0 text-left"
-                                        >
+                                        <TicketCellButton onClick={openTicketDetail} className="min-w-0 text-left">
                                             <p className="truncate text-sm font-semibold text-slate-900 transition-colors hover:text-primary">
                                                 {ticket.subject}
                                             </p>
                                             <p className="mt-0.5 truncate text-xs text-slate-500">
                                                 {ticket.customer_name} • {ticket.customer_email}
                                             </p>
-                                        </button>
+                                        </TicketCellButton>
 
-                                        <button
-                                            onClick={() => router.push(`/dashboard/admin/contacts/inbox/${ticket.id}`)}
-                                            className="flex flex-wrap gap-1 text-left"
-                                        >
+                                        <TicketCellButton onClick={openTicketDetail} className="flex flex-wrap gap-1 text-left">
                                             {ticket.tags?.slice(0, 2).map((tag) => (
                                                 <span
                                                     key={tag.id}
@@ -388,21 +395,15 @@ export default function ContactsInboxPage() {
                                             {!!ticket.tags?.length && ticket.tags.length > 2 && (
                                                 <span className="text-[10px] text-slate-400">+{ticket.tags.length - 2}</span>
                                             )}
-                                        </button>
+                                        </TicketCellButton>
 
-                                        <button
-                                            onClick={() => router.push(`/dashboard/admin/contacts/inbox/${ticket.id}`)}
-                                            className="text-left text-xs text-slate-400"
-                                        >
+                                        <TicketCellButton onClick={openTicketDetail} className="text-left text-xs text-slate-400">
                                             {getRelativeTime(ticket.last_activity_at || ticket.created_at)}
-                                        </button>
+                                        </TicketCellButton>
 
-                                        <button
-                                            onClick={() => router.push(`/dashboard/admin/contacts/inbox/${ticket.id}`)}
-                                            className="flex items-center"
-                                        >
+                                        <TicketCellButton onClick={openTicketDetail} className="flex items-center">
                                             <TicketStatusBadge status={ticket.status} isSkipped={ticket.is_skipped} />
-                                        </button>
+                                        </TicketCellButton>
 
                                         <div className="flex items-center justify-end">
                                             <button
@@ -431,6 +432,8 @@ export default function ContactsInboxPage() {
                             <button
                                 onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
                                 disabled={currentPage === 1}
+                                aria-label="Trang trước"
+                                title="Trang trước"
                                 className="rounded-xl p-2 transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
                             >
                                 <ChevronLeftIcon className="h-4 w-4" />
@@ -456,6 +459,8 @@ export default function ContactsInboxPage() {
                             <button
                                 onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
                                 disabled={currentPage === totalPages}
+                                aria-label="Trang sau"
+                                title="Trang sau"
                                 className="rounded-xl p-2 transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
                             >
                                 <ChevronRightIcon className="h-4 w-4" />

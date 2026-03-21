@@ -50,6 +50,7 @@ import React from "react";
 
 const rentalContractService = new RentalContractService();
 const organizationService = new OrganizationService();
+const CONTRACTS_BASE_PATH = "/dashboard/admin/contracts";
 
 interface Contract {
     id: string;
@@ -107,6 +108,20 @@ const ContractsPage = () => {
 
     // Bulk selection
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const openContractDetail = useCallback((contractId: string) => {
+        router.push(`${CONTRACTS_BASE_PATH}/${contractId}`);
+    }, [router]);
+
+    const handleMainTabChange = (tabValue: string) => {
+        setActiveTab(tabValue);
+        setExtraFilter(null);
+        setPage(1);
+    };
+
+    const handleExtraFilterChange = (status: string) => {
+        setExtraFilter((prev) => (prev === status ? null : status));
+        setPage(1);
+    };
 
     const formatCurrency = (amount: number | string) => {
         if (!amount) return "0 ₫";
@@ -276,7 +291,7 @@ const ContractsPage = () => {
                             {MAIN_TABS.map((tab) => (
                                 <button
                                     key={tab.value}
-                                    onClick={() => { setActiveTab(tab.value); setExtraFilter(null); setPage(1); }}
+                                    onClick={() => handleMainTabChange(tab.value)}
                                     className={cn(
                                         "px-4 py-3 text-sm whitespace-nowrap transition-colors -mb-px border-b-2",
                                         activeTab === tab.value && !extraFilter
@@ -327,10 +342,7 @@ const ContractsPage = () => {
                                                 "cursor-pointer",
                                                 extraFilter === s.value && "text-primary font-medium bg-primary/5"
                                             )}
-                                            onClick={() => {
-                                                setExtraFilter(extraFilter === s.value ? null : s.value);
-                                                setPage(1);
-                                            }}
+                                            onClick={() => handleExtraFilterChange(s.value)}
                                         >
                                             <span className="inline-flex items-center gap-2 w-full">
                                                 <CheckIcon
@@ -405,10 +417,10 @@ const ContractsPage = () => {
                     <Table>
                         <TableHeader>
                             <TableRow className="bg-muted/50 hover:bg-muted/50">
-                                <TableHead className="w-[44px]">
+                                <TableHead className="w-11">
                                     <Checkbox checked={allSelected} onCheckedChange={toggleAll} aria-label="Chọn tất cả" />
                                 </TableHead>
-                                <TableHead className="w-[50px]">#</TableHead>
+                                <TableHead className="w-12.5">#</TableHead>
                                 <TableHead>Mã HĐ</TableHead>
                                 <TableHead>Tổ chức</TableHead>
                                 <TableHead>Thời hạn</TableHead>
@@ -446,7 +458,7 @@ const ContractsPage = () => {
                                                 "group hover:bg-muted/50 transition-colors cursor-pointer",
                                                 isSelected && "bg-brand-subtle/30"
                                             )}
-                                            onClick={() => router.push(`/dashboard/admin/contracts/${contract.id}`)}
+                                            onClick={() => openContractDetail(contract.id)}
                                         >
                                             <TableCell onClick={(e) => e.stopPropagation()}>
                                                 <Checkbox
@@ -461,7 +473,7 @@ const ContractsPage = () => {
                                             <TableCell>
                                                 <div className="flex flex-col">
                                                     <span className="font-semibold text-foreground">{contract.code}</span>
-                                                    <span className="text-xs text-muted-foreground truncate max-w-[160px]">{contract.name}</span>
+                                                    <span className="max-w-40 truncate text-xs text-muted-foreground">{contract.name}</span>
                                                 </div>
                                             </TableCell>
                                             <TableCell>
@@ -469,7 +481,7 @@ const ContractsPage = () => {
                                                     <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-[10px] shrink-0">
                                                         {contract.organization?.name?.charAt(0) || "O"}
                                                     </div>
-                                                    <span className="text-sm truncate max-w-[140px]">
+                                                    <span className="max-w-35 truncate text-sm">
                                                         {contract.organization?.name || "—"}
                                                     </span>
                                                 </div>
@@ -502,7 +514,7 @@ const ContractsPage = () => {
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent align="end">
                                                         <DropdownMenuLabel>Thao tác</DropdownMenuLabel>
-                                                        <DropdownMenuItem onClick={() => router.push(`/dashboard/admin/contracts/${contract.id}`)}>
+                                                        <DropdownMenuItem onClick={() => openContractDetail(contract.id)}>
                                                             <span className="inline-flex items-center gap-2">
                                                                 <EyeIcon className="w-4 h-4 shrink-0" />
                                                                 Xem chi tiết

@@ -66,7 +66,7 @@ export default function Home() {
                 if (!accessToken) {
                     try {
                         await authService.getNewToken(refreshToken);
-                        console.log("Token đã được cập nhật");
+                        // Token đã được cập nhật
                         accessToken = authStorage.getAccessToken();
                     } catch {
                         accessToken = null;

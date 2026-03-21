@@ -97,7 +97,7 @@ export default function AdminOrganizationSettingsPage() {
 
     const handleDeleteOrg = async () => {
         // System Admin can delete organizations
-        console.log("Admin deleting organization:", orgId);
+        // Deleting org
         router.push("/dashboard/admin/organization");
     };
 

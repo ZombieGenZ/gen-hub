@@ -158,7 +158,7 @@ export default function ApprovalQueuePage() {
             setLoading(true);
             setError(null);
 
-            console.log("[ApprovalQueuePage] Fetching inbound and outbound requests...");
+            // Fetching requests
             const [inboundRes, outboundRes] = await Promise.all([
                 wmInventoryService.listInbound(token, { limit: 50 }),
                 wmInventoryService.listOutbound(token, { limit: 50 }),

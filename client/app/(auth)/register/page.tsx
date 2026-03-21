@@ -48,7 +48,7 @@ export default function RegisterPage() {
         ...formData,
         turnstileToken
       })
-      console.log(response)
+      // logged
       if (response.success) {
         showToast('Đăng ký thành công!', 'success')
         router.push('/login')

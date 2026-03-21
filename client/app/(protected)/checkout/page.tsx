@@ -178,7 +178,7 @@ function CheckoutContent() {
 
                 const userID = await authStorage.getUserID();
                 const listOrganization = await organizationService.getOrganizations(token);
-                console.log(listOrganization.items);
+                // log listOrganization.items
 
                 const organization = listOrganization.items.find((o: Organization) => o.owner.id == userID);
                 if (organization) {
@@ -317,7 +317,7 @@ function CheckoutContent() {
             // 4. Submit Order using customer endpoint (multipart/form-data with optional signature)
             const result = await rentalContractService.createOrgRentalContract(token, orgId, payload, signatureBlob);
 
-            console.log('Order created successfully:', result);
+            // Order created successfully
 
             // 5. Save contract + payment info to session for confirmation page
             const contract = result?.contract;
@@ -427,7 +427,7 @@ function CheckoutContent() {
                             <CheckoutStepContainer step="confirmation">
                                 <OrderConfirmation
                                     onViewOrder={() => router.push('/dashboard/orders')}
-                                    onDownloadInvoice={() => console.log('Download invoice')}
+                                    onDownloadInvoice={() => undefined}
                                     companyData={companyData}
                                     representativeData={{
                                         name: representativeData.representative_name,

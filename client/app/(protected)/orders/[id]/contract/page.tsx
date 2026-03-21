@@ -82,7 +82,7 @@ export default function ContractSigningPage() {
 
     const handleDownloadPDF = () => {
         // TODO: Generate and download signed contract PDF
-        console.log("Downloading signed contract PDF...");
+        // Downloading logic
         alert("PDF sẽ được tải xuống trong giây lát...");
     };
 

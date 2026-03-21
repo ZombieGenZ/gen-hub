@@ -30,6 +30,8 @@ import { cn } from "@/lib/utils";
 import { ContactMessage } from "@/types/contact/contact.type";
 import { ContactListMatchType, ContactListType } from "@/types/contact/contact-list.type";
 
+const INBOX_BASE_PATH = "/dashboard/admin/contacts/inbox";
+
 function relativeTime(value: string) {
     const diff = Date.now() - new Date(value).getTime();
     const minutes = Math.floor(diff / 60000);
@@ -38,6 +40,21 @@ function relativeTime(value: string) {
     const hours = Math.floor(minutes / 60);
     if (hours < 24) return `${hours} giờ trước`;
     return `${Math.floor(hours / 24)} ngày trước`;
+}
+
+function getTicketDetailPath(ticketId: string): string {
+    return `${INBOX_BASE_PATH}/${ticketId}`;
+}
+
+function getSidebarStatusDotClass(status: string): string {
+    switch (status) {
+        case "OPEN":
+            return "bg-emerald-500";
+        case "PENDING":
+            return "bg-amber-500";
+        default:
+            return "bg-slate-300";
+    }
 }
 
 export default function TicketDetailPage() {
@@ -62,6 +79,7 @@ export default function TicketDetailPage() {
     const createBlacklist = useCreateContactListEntry();
     const deleteBlacklist = useDeleteContactListEntry();
     const isBlocked = !!blacklistEntry;
+    const openTicketFromSidebar = (id: string) => router.push(getTicketDetailPath(id));
 
     const groupedMessages = useMemo(() => {
         const groups: { date: string; messages: ContactMessage[] }[] = [];
@@ -84,7 +102,7 @@ export default function TicketDetailPage() {
         onMessageCreated: () => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }),
         onDeleted: (data) => {
             if (data.conversationId === ticketId) {
-                router.replace("/dashboard/admin/contacts/inbox");
+                router.replace(INBOX_BASE_PATH);
             }
         },
     });
@@ -112,7 +130,7 @@ export default function TicketDetailPage() {
             <div className="flex h-[60vh] flex-col items-center justify-center gap-4">
                 <XCircleIcon className="h-12 w-12 text-slate-300" />
                 <p className="text-slate-500">Không tìm thấy ticket</p>
-                <Link href="/dashboard/admin/contacts/inbox" className="text-sm text-primary hover:underline">Quay lại Inbox</Link>
+                <Link href={INBOX_BASE_PATH} className="text-sm text-primary hover:underline">Quay lại Inbox</Link>
             </div>
         );
     }
@@ -121,17 +139,17 @@ export default function TicketDetailPage() {
         <div className="grid h-[calc(100vh-64px)] w-[calc(100%+2rem)] grid-cols-[260px_1fr_320px] overflow-hidden -mx-4 -mb-4">
             <aside className="overflow-y-auto border-r border-slate-200 bg-slate-50/50">
                 <div className="flex items-center gap-2 border-b border-slate-200 p-4">
-                    <Link href="/dashboard/admin/contacts/inbox" className="rounded-lg p-1.5 hover:bg-slate-200"><ArrowLeftIcon className="h-4 w-4 text-slate-500" /></Link>
+                    <Link href={INBOX_BASE_PATH} className="rounded-lg p-1.5 hover:bg-slate-200"><ArrowLeftIcon className="h-4 w-4 text-slate-500" /></Link>
                     <h3 className="text-sm font-bold text-slate-700">Inbox</h3>
                 </div>
                 {allTickets.map((item) => (
                     <button
                         key={item.id}
-                        onClick={() => router.push(`/dashboard/admin/contacts/inbox/${item.id}`)}
+                        onClick={() => openTicketFromSidebar(item.id)}
                         className={cn("w-full border-b border-slate-100 px-4 py-3 text-left hover:bg-white", item.id === ticketId && "border-l-2 border-l-primary bg-white")}
                     >
                         <div className="mb-1 flex items-center gap-2">
-                            <div className={cn("h-1.5 w-1.5 rounded-full", item.status === "OPEN" ? "bg-emerald-500" : item.status === "PENDING" ? "bg-amber-500" : "bg-slate-300")} />
+                            <div className={cn("h-1.5 w-1.5 rounded-full", getSidebarStatusDotClass(item.status))} />
                             <p className="flex-1 truncate text-xs font-semibold text-slate-800">{item.customer_name}</p>
                             <span className="text-[10px] text-slate-400">{relativeTime(item.last_activity_at || item.created_at)}</span>
                         </div>
@@ -224,7 +242,7 @@ export default function TicketDetailPage() {
                             <button onClick={() => setIsEditTagsOpen(true)} className="inline-flex items-center gap-1 text-xs text-primary hover:underline"><PencilSquareIcon className="h-3 w-3" />Sửa</button>
                         </div>
                         <div className="flex flex-wrap gap-1.5">
-                            {ticket.tags?.length ? ticket.tags.map((tag) => <span key={tag.id} className="rounded-lg px-2 py-1 text-xs font-medium text-white" style={{ backgroundColor: tag.color || "#64748b" }}>#{tag.name}</span>) : <span className="text-xs text-slate-400">Chưa có tag</span>}
+                            {ticket.tags?.length ? ticket.tags.map((tag) => <span key={tag.id} className="rounded-lg bg-slate-600 px-2 py-1 text-xs font-medium text-white">#{tag.name}</span>) : <span className="text-xs text-slate-400">Chưa có tag</span>}
                         </div>
                     </div>
                     <div className="flex items-center gap-2 text-xs text-slate-400"><ClockIcon className="h-3.5 w-3.5" />{new Date(ticket.created_at).toLocaleString("vi-VN")}</div>
@@ -259,7 +277,7 @@ export default function TicketDetailPage() {
                             try {
                                 await deleteMutation.mutateAsync(ticket.id);
                                 showToast("Đã xóa ticket", "success");
-                                router.replace("/dashboard/admin/contacts/inbox");
+                                router.replace(INBOX_BASE_PATH);
                             } catch (err) {
                                 console.error("Failed to delete ticket", err);
                                 showToast("Không thể xóa ticket", "error");
