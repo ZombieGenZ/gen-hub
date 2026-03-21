@@ -63,6 +63,14 @@ export enum ResponseCode {
     WAREHOUSE_TEMPLATE_IMAGE_DELETE_SUCCESS = 'warehouse_template.image_delete_success',
     WAREHOUSE_TEMPLATE_IMAGE_REORDER_SUCCESS = 'warehouse_template.image_reorder_success',
 
+    // Warehouse Manager Role
+    WAREHOUSE_MANAGER_ROLE_CREATE_SUCCESS = 'warehouse_manager_role.create_success',
+    WAREHOUSE_MANAGER_ROLE_LIST_SUCCESS = 'warehouse_manager_role.list_success',
+    WAREHOUSE_MANAGER_ROLE_PERMISSIONS_LIST_SUCCESS = 'warehouse_manager_role.permissions.list_success',
+    WAREHOUSE_MANAGER_ROLE_GET_SUCCESS = 'warehouse_manager_role.get_success',
+    WAREHOUSE_MANAGER_ROLE_UPDATE_SUCCESS = 'warehouse_manager_role.update_success',
+    WAREHOUSE_MANAGER_ROLE_DELETE_SUCCESS = 'warehouse_manager_role.delete_success',
+
     // Organization
     ORGANIZATION_CREATE_SUCCESS = 'organization.create_success',
     ORGANIZATION_LIST_SUCCESS = 'organization.list_success',

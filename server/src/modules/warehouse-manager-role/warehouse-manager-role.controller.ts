@@ -174,5 +174,3 @@ export class WarehouseManagerRoleController {
         return new DeletedResponse(ResponseCode.WAREHOUSE_MANAGER_ROLE_DELETE_SUCCESS, null, 'Xóa vai trò thành công');
     }
 }
-
-}
