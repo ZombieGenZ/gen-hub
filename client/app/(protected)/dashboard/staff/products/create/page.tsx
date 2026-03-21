@@ -1,1 +1,1 @@
-export { default } from "../../../customer/products/create/page";
+export { default } from "../../../organization/products/create/page";

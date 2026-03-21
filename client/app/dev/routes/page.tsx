@@ -89,30 +89,38 @@ const routeGroups: RouteGroup[] = [
         ]
     },
     {
-        title: "Customer Dashboard",
+        title: "Organization Dashboard",
         icon: <LayoutDashboard className="w-5 h-5" />,
         color: "text-indigo-500",
         routes: [
-            { path: "/dashboard/customer", label: "Overview", description: "Customer dashboard home" },
+            { path: "/dashboard/organization", label: "Overview", description: "Organization dashboard home" },
             { path: "/kho-bai", label: "Find & Book", description: "Search and book warehouses" },
-            { path: "/dashboard/customer/bookings", label: "Bookings", description: "Booking requests status" },
-            { path: "/dashboard/customer/contracts", label: "Contracts", description: "My contracts" },
-            { path: "/dashboard/customer/payment", label: "Payment", description: "Billing and payments" },
-            { path: "/dashboard/customer/warehouses", label: "My Warehouses", description: "Manage rented warehouse spaces" },
-            { path: "/dashboard/customer/partners", label: "Partners", description: "Manage partner organizations" },
-            { path: "/dashboard/customer/roles", label: "Roles", description: "Manage user roles and permissions" },
-            { path: "/dashboard/customer/units", label: "Units", description: "Manage product units" },
-            { path: "/dashboard/customer/products", label: "Products", description: "Internal product management" },
-            { path: "/dashboard/customer/inbound", label: "Inbound Requests", description: "Inbound operations (ASN, Putaway)" },
-            { path: "/dashboard/customer/outbound", label: "Outbound Requests", description: "Outbound operations (Picking, Verification)" },
-            { path: "/dashboard/customer/balance", label: "Account Balance", description: "Check account balance" },
-            { path: "/dashboard/customer/organization-settings", label: "Organization Settings", description: "Organization settings & profile" },
-            { path: "/dashboard/customer/refund-requests", label: "Refund Requests", description: "Request refunds" },
-            { path: "/dashboard/customer/notifications", label: "Notifications", description: "Account notifications" },
+            { path: "/dashboard/organization/bookings", label: "Bookings", description: "Booking requests status" },
+            { path: "/dashboard/organization/contracts", label: "Contracts", description: "My contracts" },
+            { path: "/dashboard/organization/payment", label: "Payment", description: "Billing and payments" },
+            { path: "/dashboard/organization/warehouses", label: "My Warehouses", description: "Manage rented warehouse spaces" },
+            { path: "/dashboard/organization/partners", label: "Partners", description: "Manage partner organizations" },
+            { path: "/dashboard/organization/roles", label: "Roles", description: "Manage user roles and permissions" },
+            { path: "/dashboard/organization/units", label: "Units", description: "Manage product units" },
+            { path: "/dashboard/organization/products", label: "Products", description: "Internal product management" },
+            { path: "/dashboard/organization/inbound", label: "Inbound Requests", description: "Inbound operations (ASN, Putaway)" },
+            { path: "/dashboard/organization/outbound", label: "Outbound Requests", description: "Outbound operations (Picking, Verification)" },
+            { path: "/dashboard/organization/organization-settings", label: "Organization Settings", description: "Organization settings & profile" },
+            { path: "/dashboard/organization/refund-requests", label: "Refund Requests", description: "Request refunds" },
+            { path: "/dashboard/organization/notifications", label: "Notifications", description: "Account notifications" },
             { path: "/user/profile", label: "Profile", description: "Personal account settings" },
         ]
     },
-
+    {
+        title: "Customer (Guest) Dashboard",
+        icon: <User className="w-5 h-5" />,
+        color: "text-sky-500",
+        routes: [
+            { path: "/dashboard/customer", label: "Overview", description: "Minimal guest dashboard" },
+            { path: "/dashboard/customer/bookings", label: "My Bookings", description: "View personal bookings" },
+            { path: "/dashboard/customer/organization-settings", label: "Create Organization", description: "Register a new organization" },
+        ]
+    },
     {
         title: "Staff Dashboard",
         icon: <Briefcase className="w-5 h-5" />,
@@ -125,30 +133,6 @@ const routeGroups: RouteGroup[] = [
             { path: "/dashboard/staff/outbound", label: "Outbound Requests", description: "Outbound operational flow" },
             { path: "/dashboard/staff/notifications", label: "Notifications", description: "Staff notifications" },
             { path: "/dashboard/staff/payment", label: "Payment", description: "Staff billing view" },
-        ]
-    },
-    {
-        title: "Owner Dashboard",
-        icon: <ShieldCheck className="w-5 h-5" />,
-        color: "text-cyan-600",
-        routes: [
-            { path: "/dashboard/owner", label: "Overview", description: "Owner dashboard home" },
-            { path: "/dashboard/owner/organization-settings", label: "Organization Settings", description: "Owner-level organization controls" },
-            { path: "/dashboard/owner/roles", label: "Roles", description: "Internal warehouse role management" },
-            { path: "/dashboard/owner/payment", label: "Payment", description: "Owner billing view" },
-        ]
-    },
-    {
-        title: "Member Dashboard",
-        icon: <Users className="w-5 h-5" />,
-        color: "text-sky-500",
-        routes: [
-            { path: "/dashboard/member", label: "Overview", description: "Member dashboard home" },
-            { path: "/dashboard/member/roles", label: "Roles", description: "Member internal role page" },
-            { path: "/dashboard/member/products", label: "Products", description: "Member product operations" },
-            { path: "/dashboard/member/inbound", label: "Inbound Requests", description: "Member inbound operations" },
-            { path: "/dashboard/member/outbound", label: "Outbound Requests", description: "Member outbound operations" },
-            { path: "/dashboard/member/payment", label: "Payment", description: "Member billing view" },
         ]
     },
     {

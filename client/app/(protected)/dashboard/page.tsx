@@ -37,10 +37,8 @@ export default function DashboardEntry() {
                     const organizations = await organizationService.getOrganizations(accessToken, { limit: 1 });
                     const firstOrg = organizations?.items?.[0];
 
-                    if (firstOrg?.owner?.id && firstOrg.owner.id === userData.user.id) {
-                        router.push("/dashboard/owner");
-                    } else if (firstOrg?.id) {
-                        router.push("/dashboard/member");
+                    if (firstOrg?.id) {
+                        router.push("/dashboard/organization");
                     } else {
                         router.push("/dashboard/customer");
                     }
@@ -48,7 +46,7 @@ export default function DashboardEntry() {
             } catch (error) {
                 console.error("Error identifying user role", error);
                 // Fallback to customer or login if error
-                router.push("/dashboard/customer");
+                router.push("/dashboard/organization");
             } finally {
                 setLoading(false);
             }

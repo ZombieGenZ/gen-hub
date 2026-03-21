@@ -180,9 +180,9 @@ export function NotificationList({ className, isFullPage = false }: Notification
     }, [fetchNotifications]);
 
     // Determine link based on current path
-    const isCustomer = pathname?.includes("/dashboard/customer");
+    const isCustomer = pathname?.includes("/dashboard/organization");
     const notificationsLink = isCustomer
-        ? "/dashboard/customer/notifications"
+        ? "/dashboard/organization/notifications"
         : "/dashboard/admin/notifications";
 
     // Filter notifications based on selected tab

@@ -77,7 +77,7 @@ export default function ContractSigningPage() {
     };
 
     const handleBackToDashboard = () => {
-        router.push('/dashboard/customer');
+        router.push('/dashboard/organization');
     };
 
     const handleDownloadPDF = () => {
@@ -154,7 +154,7 @@ export default function ContractSigningPage() {
                                 </p>
                                 <Button
                                     className="mt-3 w-full bg-[#0F766E] hover:bg-[#0D655D]"
-                                    onClick={() => router.push('/dashboard/customer/payments')}
+                                    onClick={() => router.push('/dashboard/organization/payments')}
                                 >
                                     Thanh toán ngay
                                 </Button>

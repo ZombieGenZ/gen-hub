@@ -71,7 +71,7 @@ export function AppSidebarContent({
     logoCollapsedSrc = "/assets/icongenhub.svg",
     logoExpandedSrc = "/assets/GenHub.svg",
     logoLink,
-    walletHref = "/dashboard/customer/payment",
+    walletHref = "/dashboard/organization/payment",
     isCollapsed = false,
 }: AppSidebarProps & { isCollapsed?: boolean; onToggleCollapse?: () => void }) {
     const pathname = usePathname();

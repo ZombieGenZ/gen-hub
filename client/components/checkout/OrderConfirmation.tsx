@@ -299,7 +299,7 @@ export function OrderConfirmation({
                     className="h-12 rounded-xl"
                     onClick={() =>
                         session.contract_id
-                            ? router.push(`/dashboard/customer/contracts/${session.contract_id}`)
+                            ? router.push(`/dashboard/organization/contracts/${session.contract_id}`)
                             : undefined
                     }
                     disabled={!session.contract_id}

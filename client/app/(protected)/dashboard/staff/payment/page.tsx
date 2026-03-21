@@ -1,1 +1,1 @@
-export { default } from "../../customer/payment/page";
+export { default } from "../../organization/payment/page";
