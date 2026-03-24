@@ -12,10 +12,47 @@ export class ContentPermissionsSeeder extends BaseSeeder {
 
     async run(): Promise<void> {
         await this.seedFaqPermissions();
+        await this.seedCustomerReviewPermissions();
         await this.seedContactPermissions();
         await this.seedContactTagPermissions();
         await this.seedCategoryPermissions();
         await this.seedArticlePermissions();
+    }
+
+    private async seedCustomerReviewPermissions() {
+        try {
+            const customerReviewPermissions = [
+                { key: 'customer-review.create', name: 'Tạo đánh giá khách hàng', description: 'Quyền tạo đánh giá khách hàng mới' },
+                { key: 'customer-review.list', name: 'Xem danh sách đánh giá khách hàng (của mình)', description: 'Quyền xem danh sách đánh giá khách hàng do chính mình tạo' },
+                { key: 'customer-review.list.all', name: 'Xem tất cả đánh giá khách hàng', description: 'Quyền xem danh sách tất cả đánh giá khách hàng trên hệ thống' },
+                { key: 'customer-review.read', name: 'Xem chi tiết đánh giá khách hàng (của mình)', description: 'Quyền xem chi tiết đánh giá khách hàng do chính mình tạo' },
+                { key: 'customer-review.read.all', name: 'Xem chi tiết tất cả đánh giá khách hàng', description: 'Quyền xem chi tiết đánh giá khách hàng của bất kỳ ai' },
+                { key: 'customer-review.update', name: 'Cập nhật đánh giá khách hàng (của mình)', description: 'Quyền cập nhật đánh giá khách hàng do chính mình tạo' },
+                { key: 'customer-review.update.all', name: 'Cập nhật tất cả đánh giá khách hàng', description: 'Quyền cập nhật đánh giá khách hàng của bất kỳ ai' },
+                { key: 'customer-review.delete', name: 'Xóa đánh giá khách hàng (của mình)', description: 'Quyền xóa đánh giá khách hàng do chính mình tạo' },
+                { key: 'customer-review.delete.all', name: 'Xóa tất cả đánh giá khách hàng', description: 'Quyền xóa đánh giá khách hàng của bất kỳ ai' }
+            ];
+
+            for (const perm of customerReviewPermissions) {
+                await this.createPermissionIfNotExists(perm.key, perm.name, perm.description);
+            }
+
+            const adminRoles = await this.getAdminRoles();
+            const permissions = await this.prisma.permission.findMany({
+                where: { key: { in: customerReviewPermissions.map((p) => p.key) }, is_deleted: false },
+            });
+
+            for (const role of adminRoles) {
+                for (const permission of permissions) {
+                    await this.assignPermissionToRole(role.id, permission.id);
+                }
+            }
+
+            this.logger.log('✅ CustomerReview permissions seeded');
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            this.logger.error(`❌ Failed to seed customer-review permissions: ${errorMessage}`);
+        }
     }
 
     private async seedFaqPermissions() {

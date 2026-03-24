@@ -96,6 +96,7 @@ import { RoleModule } from './modules/role/role.module';
 import { InventoryRequestModule } from './modules/inventory-request/inventory-request.module';
 import { WarehouseManagerInventoryModule } from './modules/warehouse-manager-inventory/warehouse-manager-inventory.module';
 import { AppDownloadModule } from './modules/app-download/app-download.module';
+import { CustomerReviewModule } from './modules/customer-review/customer-review.module';
 
 
 
@@ -240,6 +241,9 @@ import { AppDownloadModule } from './modules/app-download/app-download.module';
 
     // FAQs
     FaqModule,
+
+    // Customer Reviews
+    CustomerReviewModule,
 
     // Refund Request Module
     RefundRequestModule,

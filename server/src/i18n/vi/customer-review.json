@@ -1,0 +1,38 @@
+{
+  "success": {
+    "created": "Đã tạo đánh giá khách hàng thành công",
+    "updated": "Đã cập nhật đánh giá khách hàng thành công",
+    "deleted": "Đã xóa đánh giá khách hàng thành công",
+    "fetched": "Lấy dữ liệu đánh giá khách hàng thành công"
+  },
+  "errors": {
+    "not_found": "Không tìm thấy đánh giá khách hàng",
+    "create_failed": "Không thể tạo đánh giá khách hàng",
+    "update_failed": "Không thể cập nhật đánh giá khách hàng",
+    "delete_failed": "Không thể xóa đánh giá khách hàng"
+  },
+  "validation": {
+    "customer_name_required": "Tên khách hàng không được để trống",
+    "customer_name_string": "Tên khách hàng phải là chuỗi",
+    "customer_email_invalid": "Email khách hàng không hợp lệ",
+    "customer_phone_invalid": "Số điện thoại khách hàng không hợp lệ",
+    "customer_company_string": "Tên công ty phải là chuỗi",
+    "customer_position_string": "Chức vụ phải là chuỗi",
+    "customer_avatar_string": "Ảnh đại diện phải là chuỗi",
+    "rating_integer": "Điểm đánh giá phải là số nguyên",
+    "rating_min": "Điểm đánh giá tối thiểu là 1",
+    "rating_max": "Điểm đánh giá tối đa là 5",
+    "title_string": "Tiêu đề phải là chuỗi",
+    "content_required": "Nội dung đánh giá không được để trống",
+    "content_string": "Nội dung đánh giá phải là chuỗi",
+    "reply_string": "Phản hồi phải là chuỗi",
+    "status_invalid": "Trạng thái đánh giá không hợp lệ",
+    "is_featured_boolean": "Trạng thái nổi bật phải là boolean",
+    "display_order_integer": "Thứ tự hiển thị phải là số nguyên",
+    "display_order_min": "Thứ tự hiển thị phải lớn hơn hoặc bằng 0",
+    "is_active_boolean": "Trạng thái hoạt động phải là boolean",
+    "limit_positive": "Limit phải là số dương",
+    "offset_min": "Offset phải lớn hơn hoặc bằng 0",
+    "keywords_string": "Từ khóa tìm kiếm phải là chuỗi"
+  }
+}
