@@ -499,7 +499,28 @@ export class RentalContractService {
     const details = await this.prisma.rentalContractDetail.findMany({
       where: { rental_contract_id: contractId, is_deleted: false },
       include: {
-        warehouse_template: true,
+        warehouse_template: {
+          include: {
+            rows: {
+              where: { is_deleted: false },
+              include: {
+                racks: {
+                  where: { is_deleted: false },
+                  include: {
+                    shelves: {
+                      where: { is_deleted: false },
+                      include: {
+                        blocks: {
+                          where: { is_deleted: false },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
       },
     });
 
@@ -509,40 +530,125 @@ export class RentalContractService {
       const template = detail.warehouse_template;
       if (!template) continue;
 
-      const warehouse = await this.prisma.warehouse.create({
-        data: {
-          name: detail.warehouse_name || template.name,
-          description: detail.warehouse_description || template.description || null,
-          organization_id: orgId,
-          length: template.length,
-          width: template.width,
-          block_length: template.block_length,
-          block_width: template.block_width,
-          ceiling_height: template.ceiling_height ?? null,
-          max_load_capacity: template.max_load_capacity ?? null,
-          total_weight_capacity: template.total_weight_capacity ?? null,
-          ward_id: template.ward_id ?? null,
-          address_detail: template.address_detail ?? null,
-          latitude: template.latitude ?? null,
-          longitude: template.longitude ?? null,
-          warehouse_template_id: template.id,
-          is_active: true,
-          is_deleted: false,
-          created_by: userId,
-        },
-      });
+      // Wrap the creation in a transaction to ensure data integrity
+      await this.prisma.$transaction(async (tx) => {
+        const warehouse = await tx.warehouse.create({
+          data: {
+            name: detail.warehouse_name || template.name,
+            description: detail.warehouse_description || template.description || null,
+            organization_id: orgId,
+            length: template.length,
+            width: template.width,
+            block_length: template.block_length,
+            block_width: template.block_width,
+            ceiling_height: template.ceiling_height ?? null,
+            max_load_capacity: template.max_load_capacity ?? null,
+            total_weight_capacity: template.total_weight_capacity ?? null,
+            ward_id: template.ward_id ?? null,
+            address_detail: template.address_detail ?? null,
+            latitude: template.latitude ?? null,
+            longitude: template.longitude ?? null,
+            warehouse_template_id: template.id,
+            is_active: true,
+            is_deleted: false,
+            created_by: userId,
+          },
+        });
 
-      await this.prisma.rentalContractDetail.update({
-        where: { id: detail.id },
-        data: { warehouse_id: warehouse.id },
-      });
+        // Deep clone rows, racks, shelves, and blocks
+        for (const rowTpl of template.rows) {
+          const row = await tx.row.create({
+            data: {
+              warehouse_id: warehouse.id,
+              name: rowTpl.name,
+              code: rowTpl.code,
+              description: rowTpl.description,
+              is_rented: rowTpl.is_rented,
+              position_x: rowTpl.position_x,
+              position_y: rowTpl.position_y,
+              position_rotation: rowTpl.position_rotation,
+              total_weight_capacity: rowTpl.total_weight_capacity,
+              row_template_id: rowTpl.id,
+              is_active: true,
+              is_deleted: false,
+              created_by: userId,
+            },
+          });
 
-      this.systemLogService.info(
-        'rental-contract',
-        'activate_warehouse',
-        `Created warehouse ${warehouse.id} for org ${orgId} from template ${template.id}`,
-        { userId, metaData: { contractId, warehouseId: warehouse.id } },
-      );
+          for (const rackTpl of rowTpl.racks) {
+            const rack = await tx.rack.create({
+              data: {
+                row_id: row.id,
+                name: rackTpl.name,
+                code: rackTpl.code,
+                description: rackTpl.description,
+                position_x: rackTpl.position_x,
+                position_y: rackTpl.position_y,
+                position_rotation: rackTpl.position_rotation,
+                dimensions_width: rackTpl.dimensions_width,
+                dimensions_depth: rackTpl.dimensions_depth,
+                dimensions_height: rackTpl.dimensions_height,
+                default_block_max_weight_capacity: rackTpl.default_block_max_weight_capacity,
+                total_weight_capacity: rackTpl.total_weight_capacity,
+                total_height: rackTpl.total_height,
+                overload_threshold_percent: rackTpl.overload_threshold_percent,
+                is_rented: false,
+                is_active: true,
+                is_deleted: false,
+                created_by: userId,
+              },
+            });
+
+            for (const shelfTpl of rackTpl.shelves) {
+              const shelf = await tx.shelf.create({
+                data: {
+                  rack_id: rack.id,
+                  name: shelfTpl.name,
+                  code: shelfTpl.code,
+                  description: shelfTpl.description,
+                  height: shelfTpl.height,
+                  total_weight_capacity: shelfTpl.total_weight_capacity,
+                  is_active: true,
+                  is_deleted: false,
+                  created_by: userId,
+                },
+              });
+
+              for (const blockTpl of shelfTpl.blocks) {
+                await tx.block.create({
+                  data: {
+                    shelf_id: shelf.id,
+                    name: blockTpl.name,
+                    code: blockTpl.code,
+                    description: blockTpl.description,
+                    position_x: blockTpl.position_x,
+                    position_y: blockTpl.position_y,
+                    dimensions_width: blockTpl.dimensions_width,
+                    dimensions_height: blockTpl.dimensions_height,
+                    max_weight_capacity: blockTpl.max_weight_capacity,
+                    height: blockTpl.height,
+                    is_active: true,
+                    is_deleted: false,
+                    created_by: userId,
+                  },
+                });
+              }
+            }
+          }
+        }
+
+        await tx.rentalContractDetail.update({
+          where: { id: detail.id },
+          data: { warehouse_id: warehouse.id },
+        });
+
+        this.systemLogService.info(
+          'rental-contract',
+          'activate_warehouse',
+          `Created warehouse ${warehouse.id} with layout for org ${orgId} from template ${template.id}`,
+          { userId, metaData: { contractId, warehouseId: warehouse.id } },
+        );
+      });
     }
   }
 

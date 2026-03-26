@@ -704,27 +704,34 @@ export class InventoryRequestService {
             );
         }
 
-        const updated = await this.prisma.receipt.update({
-            where: { id },
-            data: {
-                status: ReceiptStatus.APPROVED,
-                approved_by: actorId,
-                approved_at: new Date(),
-                updated_by: actorId,
-                ...(notes && { notes }),
-            },
-            include: {
-                warehouse: { select: { id: true, name: true } },
-                partner: { select: { id: true, name: true, code: true } },
-                details: {
-                    where: { is_deleted: false },
-                    include: {
-                        product: { select: { id: true, name: true, sku: true, image_url: true } },
-                        batch: { select: { id: true, code: true, expiry_date: true } },
-                        unit: { select: { id: true, name: true } },
+        const updated = await this.prisma.$transaction(async (tx) => {
+            const receiptUpd = await tx.receipt.update({
+                where: { id },
+                data: {
+                    status: ReceiptStatus.APPROVED,
+                    approved_by: actorId,
+                    approved_at: new Date(),
+                    updated_by: actorId,
+                    ...(notes && { notes }),
+                },
+                include: {
+                    warehouse: { select: { id: true, name: true } },
+                    partner: { select: { id: true, name: true, code: true } },
+                    details: {
+                        where: { is_deleted: false },
+                        include: {
+                            product: { select: { id: true, name: true, sku: true, image_url: true } },
+                            batch: { select: { id: true, code: true, expiry_date: true } },
+                            unit: { select: { id: true, name: true } },
+                        },
                     },
                 },
-            },
+            });
+
+            // Gọi hàm sinh dữ liệu 3D Warehouse Layout (auto-generation algorithm) nếu thiếu chỗ
+            await this.autoAllocateLayout(tx, id, receipt.warehouse_id, actorId);
+
+            return receiptUpd;
         });
 
         // Invalidate cache
@@ -1910,6 +1917,134 @@ export class InventoryRequestService {
                 `[fillInventory] Không đủ chỗ: còn ${remainingQty} đơn vị cho product ${productId} ` +
                 `trong warehouse ${warehouseId}. Đã xếp ${baseQuantity - remainingQty}/${baseQuantity}.`,
             );
+        }
+    }
+
+    private async autoAllocateLayout(tx: Prisma.TransactionClient, receiptId: string, warehouseId: string, actorId: string): Promise<void> {
+        const details = await tx.receiptDetail.findMany({
+            where: { receipt_id: receiptId, is_deleted: false },
+        });
+
+        if (details.length === 0) return;
+
+        let totalExpectedQty = 0;
+        for (const detail of details) {
+            totalExpectedQty += Number(detail.expected_qty);
+        }
+
+        const UNIT_PER_BLOCK = 1000;
+        const blocksNeeded = Math.ceil(totalExpectedQty / UNIT_PER_BLOCK);
+        if (blocksNeeded === 0) return;
+
+        const totalBlocksCount = await tx.block.count({
+            where: {
+                shelf: { rack: { row: { warehouse_id: warehouseId, is_deleted: false }, is_deleted: false }, is_deleted: false },
+                is_deleted: false,
+            }
+        });
+
+        const occupiedBlocksAggregation = await tx.inventory.groupBy({
+            by: ['block_id'],
+            where: {
+                warehouse_id: warehouseId,
+                is_deleted: false,
+                quantity_available: { gt: 0 }
+            }
+        });
+
+        const occupiedCount = occupiedBlocksAggregation.length;
+        const emptyBlocks = totalBlocksCount - occupiedCount;
+
+        if (emptyBlocks >= blocksNeeded) {
+            return; // Enough space, no need to generate new records
+        }
+
+        const blocksToGen = blocksNeeded - emptyBlocks;
+        const blocksPerShelf = 4;
+        const shelvesPerRack = 4;
+        const blocksPerRack = blocksPerShelf * shelvesPerRack;
+        const racksNeeded = Math.ceil(blocksToGen / blocksPerRack);
+
+        const lastRow = await tx.row.findFirst({
+            where: { warehouse_id: warehouseId, is_deleted: false },
+            orderBy: { position_y: 'desc' },
+        });
+
+        let nextPositionY = lastRow && lastRow.position_y ? Number(lastRow.position_y) + 3 : 2;
+
+        const row = await tx.row.create({
+            data: {
+                warehouse_id: warehouseId,
+                name: `Dãy nhập tự động (Rec: ${receiptId.slice(-4)})`,
+                code: `ROW-AUTO-${Date.now()}`,
+                description: 'Tự động sinh khi duyệt phiếu nhập',
+                is_rented: false,
+                position_x: 2,
+                position_y: nextPositionY,
+                position_rotation: 0,
+                total_weight_capacity: 10000 * racksNeeded,
+                is_active: true,
+                is_deleted: false,
+                created_by: actorId,
+            },
+        });
+
+        for (let r = 0; r < racksNeeded; r++) {
+            const rack = await tx.rack.create({
+                data: {
+                    row_id: row.id,
+                    name: `Kệ tự động ${r + 1}`,
+                    code: `RACK-AUTO-${Date.now()}-${r}`,
+                    position_x: 2 + (r * 4.5),
+                    position_y: nextPositionY,
+                    position_rotation: 0,
+                    dimensions_width: 4,
+                    dimensions_depth: 1,
+                    dimensions_height: 4,
+                    default_block_max_weight_capacity: 1000,
+                    total_weight_capacity: 16000,
+                    total_height: 4,
+                    overload_threshold_percent: 10,
+                    is_rented: false,
+                    is_active: true,
+                    is_deleted: false,
+                    created_by: actorId,
+                },
+            });
+
+            for (let s = 0; s < shelvesPerRack; s++) {
+                const shelf = await tx.shelf.create({
+                    data: {
+                        rack_id: rack.id,
+                        name: `Tầng ${s + 1}`,
+                        code: `SHELF-AUTO-${Date.now()}-${r}-${s}`,
+                        height: 1,
+                        total_weight_capacity: 4000,
+                        is_active: true,
+                        is_deleted: false,
+                        created_by: actorId,
+                    },
+                });
+
+                for (let b = 0; b < blocksPerShelf; b++) {
+                    await tx.block.create({
+                        data: {
+                            shelf_id: shelf.id,
+                            name: `Ô ${b + 1}`,
+                            code: `BLOCK-AUTO-${Date.now()}-${r}-${s}-${b}`,
+                            position_x: b * 1, // 4 ô xếp ngang trong kệ 4m
+                            position_y: 0,
+                            dimensions_width: 1,
+                            dimensions_height: 1,
+                            max_weight_capacity: 1000,
+                            height: 1,
+                            is_active: true,
+                            is_deleted: false,
+                            created_by: actorId,
+                        },
+                    });
+                }
+            }
         }
     }
 }
