@@ -97,7 +97,7 @@ export const WarehouseInstancedBins: React.FC<WarehouseInstancedBinsProps> = ({ 
   });
 
   // Ghi đè Shader Tùy biến (Custom Shader Chunk) để làm hiệu ứng nhấp nháy 
-  const handleBeforeCompile = (shader: THREE.Shader) => {
+  const handleBeforeCompile = (shader: any) => {
     shader.uniforms.time = uniforms.current.time;
     // Đọc attribute 'isGlowing' từ Geometry
     shader.vertexShader = `

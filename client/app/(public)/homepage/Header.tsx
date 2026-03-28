@@ -68,7 +68,6 @@ export function PrimeNestHeader({ isLogin, user, onLogout }: HeaderProps) {
                         />
                     </Link>
 
-                    {/* Navigation - Centered */}
                     <div className="hidden lg:flex items-center justify-center flex-1 mx-8">
                         <Menu setActive={setActive}>
                             <Link href="/" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors duration-200 relative group">
@@ -82,13 +81,12 @@ export function PrimeNestHeader({ isLogin, user, onLogout }: HeaderProps) {
                                     <HoveredLink href="/kho-bai?type=kho-chung">Kho Chung</HoveredLink>
                                 </div>
                             </MenuItem>
-
-                            <Link href="/dev/routes" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors duration-200 relative group">
-                                Routes
+                            <Link href="/about" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors duration-200 relative group">
+                                Về Chúng Tôi
                                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all duration-200 group-hover:w-full" />
                             </Link>
-                            <Link href="#about" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors duration-200 relative group">
-                                Về Chúng Tôi
+                            <Link href="/contact" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors duration-200 relative group">
+                                Liên hệ
                                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all duration-200 group-hover:w-full" />
                             </Link>
                         </Menu>
@@ -97,9 +95,8 @@ export function PrimeNestHeader({ isLogin, user, onLogout }: HeaderProps) {
                     {/* Right Actions */}
                     <div className="relative z-50 flex items-center gap-5 shrink-0  ">
                         {showUserSection ? (
-                            <div className="hidden md:flex items-center gap-4 ">
+                           
                                 <UserDropdown user={user} onLogout={onLogout} />
-                            </div>
                         ) : (
                             <div className="hidden md:flex items-center gap-5">
                                 <Link href="/login" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors duration-200">
@@ -176,12 +173,17 @@ export function PrimeNestHeader({ isLogin, user, onLogout }: HeaderProps) {
                                             <Link onClick={() => setIsMobileMenuOpen(false)} href="/kho-bai?type=kho-chung" className="text-sm text-muted-foreground hover:text-primary">Kho Chung</Link>
                                         </div>
                                     </div>
-                                    <Link onClick={() => setIsMobileMenuOpen(false)} href="/dev/routes" className="text-base font-medium text-foreground hover:text-primary py-2 border-b border-border/50">
-                                        Routes
-                                    </Link>
-                                    <Link onClick={() => setIsMobileMenuOpen(false)} href="#about" className="text-base font-medium text-foreground hover:text-primary py-2 border-b border-border/50">
+                                    <Link onClick={() => setIsMobileMenuOpen(false)} href="/about" className="text-base font-medium text-foreground hover:text-primary py-2 border-b border-border/50">
                                         Về Chúng Tôi
                                     </Link>
+                                    <Link onClick={() => setIsMobileMenuOpen(false)} href="/contact" className="text-base font-medium text-foreground hover:text-primary py-2 border-b border-border/50">
+                                        Liên hệ
+                                    </Link>
+                                    {showUserSection && (
+                                        <Link onClick={() => setIsMobileMenuOpen(false)} href="/dashboard" className="text-base font-medium text-primary hover:text-primary/80 py-2 border-b border-border/50">
+                                            Dashboard
+                                        </Link>
+                                    )}
                                 </div>
 
                                 {/* Mobile User/Auth Section */}

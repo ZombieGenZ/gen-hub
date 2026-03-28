@@ -82,27 +82,25 @@ export function AppSidebarContent({
     const { opendepositModal } = useProfileModal();
     const [expandedGroups, setExpandedGroups] = useState<Record<number, boolean>>({});
 
-    // Load persisted state
+    // Auto-expand groups that contain the active route; default all others to expanded
     useEffect(() => {
-        const stored = localStorage.getItem("sidebar:groups-state");
-        if (stored) {
-            try {
-                // setExpandedGroups(JSON.parse(stored));
-            } catch (e) {
-                console.error("Failed to parse sidebar groups state", e);
-            }
-        }
-    }, []);
+        const initial: Record<number, boolean> = {};
+        groups.forEach((group, index) => {
+            const hasActive = group.items.some(item =>
+                item.exactMatch ? pathname === item.href : pathname === item.href || pathname.startsWith(`${item.href}/`)
+            );
+            // Expand group if it has the active route, otherwise expand by default
+            initial[index] = hasActive ? true : true;
+        });
+        setExpandedGroups(initial);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [pathname]);
 
     const toggleGroup = (index: number) => {
-        setExpandedGroups(prev => {
-            const next = {
-                ...prev,
-                [index]: !prev[index]
-            };
-            localStorage.setItem("sidebar:groups-state", JSON.stringify(next));
-            return next;
-        });
+        setExpandedGroups(prev => ({
+            ...prev,
+            [index]: !prev[index],
+        }));
     };
 
     // Load User Data
@@ -190,8 +188,8 @@ export function AppSidebarContent({
                                     )} />
                                 </button>
                                 <div className={cn(
-                                    "space-y-1 transition-all duration-300 overflow-hidden",
-                                    !isCollapsed && !isGroupExpanded ? "max-h-0 opacity-0" : "max-h-125 opacity-100" // Simple collapse
+                                    "space-y-1 transition-all duration-200 overflow-hidden",
+                                    !isCollapsed && isGroupExpanded === false ? "max-h-0 opacity-0" : "max-h-[600px] opacity-100"
                                 )}>
                                     {group.items.map((item, itemIndex) => (
                                         <NavItem

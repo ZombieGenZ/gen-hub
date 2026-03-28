@@ -5,6 +5,7 @@ import {
     HomeModernIcon,
     ClockIcon,
     BellIcon,
+    Cog6ToothIcon,
 } from "@heroicons/react/24/outline";
 import { AppSidebar, AppSidebarContent, SidebarGroup } from "./AppSidebar";
 
@@ -19,18 +20,14 @@ const customerNavGroups: SidebarGroup[] = [
         title: "Kho bãi",
         items: [
             { href: "/kho-bai", icon: HomeModernIcon, label: "Tìm kiếm kho bãi" },
-        ]
-    },
-    {
-        title: "Quản lý",
-        items: [
             { href: "/dashboard/customer/bookings", icon: ClockIcon, label: "Yêu cầu thuê" },
         ]
     },
     {
-        title: "Khác",
+        title: "Hệ thống",
         items: [
             { href: "/dashboard/customer/notifications", icon: BellIcon, label: "Thông báo" },
+            { href: "/dashboard/customer/organization-settings", icon: Cog6ToothIcon, label: "Cài đặt" },
         ]
     },
 ];

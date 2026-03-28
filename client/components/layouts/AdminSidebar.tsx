@@ -5,7 +5,6 @@ import {
     HomeModernIcon,
     DocumentTextIcon,
     UsersIcon,
-    BuildingOffice2Icon,
     UserGroupIcon,
     UserCircleIcon,
     ChartBarIcon,
@@ -18,7 +17,6 @@ import {
     BellIcon,
     LifebuoyIcon,
     ClipboardDocumentCheckIcon,
-    BanknotesIcon,
     CalendarDaysIcon,
     ArrowUturnLeftIcon,
     ExclamationTriangleIcon,
@@ -43,8 +41,13 @@ const adminNavGroups: SidebarGroup[] = [
             { href: "/dashboard/admin/contracts", icon: DocumentTextIcon, label: "Hợp đồng" },
             { href: "/dashboard/admin/coupons", icon: TicketIcon, label: "Mã giảm giá" },
             { href: "/dashboard/admin/warehouse-visits", icon: CalendarDaysIcon, label: "Lịch thăm kho" },
+        ]
+    },
+    {
+        title: "Tài chính",
+        items: [
             { href: "/dashboard/admin/refund-requests", icon: ArrowUturnLeftIcon, label: "Yêu cầu hoàn tiền" },
-            { href: "/dashboard/admin/warnings", icon: ExclamationTriangleIcon, label: "Cảnh cáo & Phạt" },
+            { href: "/dashboard/admin/settings/warning-penalties", icon: ExclamationTriangleIcon, label: "Cảnh cáo & Phạt" },
         ]
     },
     {
@@ -67,9 +70,8 @@ const adminNavGroups: SidebarGroup[] = [
         title: "Người dùng",
         items: [
             { href: "/dashboard/admin/customers", icon: UsersIcon, label: "Khách hàng" },
-            { href: "/dashboard/admin/organization", icon: UserGroupIcon, label: "Tổ chức" },
+            { href: "/dashboard/admin/organization", icon: UserGroupIcon, label: "Tổ chức", exactMatch: true },
             { href: "/dashboard/admin/organization/update-requests", icon: ClipboardDocumentCheckIcon, label: "Yêu cầu cập nhật" },
-            { href: "/dashboard/admin/organization/balance", icon: BanknotesIcon, label: "Số dư tổ chức" },
             { href: "/dashboard/admin/users", icon: UserCircleIcon, label: "Nhân viên" },
         ]
     },
@@ -78,7 +80,7 @@ const adminNavGroups: SidebarGroup[] = [
         items: [
             { href: "/dashboard/admin/notifications", icon: BellIcon, label: "Thông báo" },
             { href: "/dashboard/admin/contacts", icon: LifebuoyIcon, label: "Liên hệ & Hỗ trợ" },
-            { href: "/dashboard/admin/settings", icon: Cog6ToothIcon, label: "Cài đặt" },
+            { href: "/dashboard/admin/settings", icon: Cog6ToothIcon, label: "Cài đặt", exactMatch: true },
         ]
     },
 ];

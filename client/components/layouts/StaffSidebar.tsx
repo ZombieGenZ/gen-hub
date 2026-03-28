@@ -7,6 +7,7 @@ import {
     ArrowDownTrayIcon,
     ArrowUpTrayIcon,
     BellIcon,
+    CreditCardIcon,
 } from "@heroicons/react/24/outline";
 import { AppSidebar, AppSidebarContent, SidebarGroup } from "./AppSidebar";
 
@@ -27,7 +28,13 @@ const staffNavGroups: SidebarGroup[] = [
         ],
     },
     {
-        title: "Khác",
+        title: "Tài chính",
+        items: [
+            { href: "/dashboard/staff/payment", icon: CreditCardIcon, label: "Thanh toán & Số dư" },
+        ],
+    },
+    {
+        title: "Hệ thống",
         items: [
             { href: "/dashboard/staff/notifications", icon: BellIcon, label: "Thông báo" },
         ],
