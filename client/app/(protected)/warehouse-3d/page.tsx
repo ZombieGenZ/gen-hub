@@ -1,6 +1,5 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { warehouseService } from '@/services/warehouse/warehouse.service';
@@ -97,7 +96,7 @@ export default function WarehousePickerPage() {
         {/* Warehouse list */}
         {!isLoading && !error && warehouses && warehouses.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {warehouses.map((wh, index) => (
+            {warehouses.map((wh) => (
               <button
                 key={wh.id}
                 onClick={() => handleSelectWarehouse(wh.id, wh.name)}
