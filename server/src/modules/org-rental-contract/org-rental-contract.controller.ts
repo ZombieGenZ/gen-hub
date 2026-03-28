@@ -434,6 +434,46 @@ export class OrgRentalContractController {
     }
 
     /**
+     * Gửi hợp đồng qua DocuSign để ký điện tử
+     */
+    @Post(':id/send-docusign')
+    @RequireOrgPermission('rental-contract.update')
+    @ApiOperation({
+        summary: 'Gửi hợp đồng qua DocuSign',
+        description: 'Tạo envelope DocuSign và trả về URL để ký hợp đồng trực tiếp. Yêu cầu quyền `rental-contract.update`.',
+    })
+    @ApiParam({ name: 'orgId', description: 'ID của tổ chức (UUID)', type: 'string', example: '550e8400-e29b-41d4-a716-446655440000' })
+    @ApiParam({ name: 'id', description: 'ID của hợp đồng (UUID)', type: 'string', example: '550e8400-e29b-41d4-a716-446655440010' })
+    @ApiBody({ type: SendDocusignDto })
+    @ApiResponse({
+        status: 201,
+        description: 'Tạo link ký DocuSign thành công',
+        schema: {
+            type: 'object',
+            properties: {
+                code: { type: 'string', example: 'rental-contract.docusign.success' },
+                data: {
+                    type: 'object',
+                    properties: {
+                        signingUrl: { type: 'string', example: 'https://demo.docusign.net/Signing/...' }
+                    }
+                }
+            }
+        }
+    })
+    @ApiAuthResponses()
+    async sendToDocusign(
+        @Param('orgId', ParseUUIDPipe) orgId: string,
+        @Param('id', ParseUUIDPipe) id: string,
+        @Body() dto: SendDocusignDto,
+        @CurrentUser('userId') userId: string,
+        @I18nLang() lang: string,
+    ) {
+        const data = await this.rentalContractService.sendToDocusign(id, dto, userId, orgId, lang);
+        return new CreatedResponse('rental-contract.docusign.success', data, 'Gửi DocuSign thành công');
+    }
+
+    /**
      * Lấy danh sách addons của hợp đồng
      */
     @Get(':id/addons')

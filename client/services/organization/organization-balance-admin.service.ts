@@ -35,7 +35,6 @@ export class OrganizationBalanceAdminService {
         offset?: number;
         keywords?: string;
     } = {}): Promise<OrgBalanceListResponse> {
-        console.log("[OrganizationBalanceAdminService] Fetching all balances with params:", params);
         const query = new URLSearchParams();
         if (params.limit !== undefined) query.append('limit', String(params.limit));
         if (params.offset !== undefined) query.append('offset', String(params.offset));
@@ -57,7 +56,6 @@ export class OrganizationBalanceAdminService {
     }
 
     async getByOrganizationId(token: string, organizationId: string): Promise<OrgBalance> {
-        console.log(`[OrganizationBalanceAdminService] Fetching balance for org: ${organizationId}`);
         const response = await fetch(`${API}/admin/organization-balances/${organizationId}`, {
             headers: { 
                 'Authorization': `Bearer ${token}`,
@@ -78,7 +76,6 @@ export class OrganizationBalanceAdminService {
         type: 'CREDIT' | 'DEBIT';
         description?: string;
     }): Promise<{ balance: OrgBalance; transaction: OrgBalanceTransaction }> {
-        console.log(`[OrganizationBalanceAdminService] Adjusting balance for org: ${organizationId}`, body);
         const response = await fetch(`${API}/admin/organization-balances/${organizationId}/adjust`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },

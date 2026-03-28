@@ -11,6 +11,9 @@ import { RentalContractRepository } from './rental-contract.repository';
 import { SignatureService } from './signature.service';
 import { SignatureCleanupScheduler } from './signature-cleanup.scheduler';
 import { RentalContractProcessor } from './rental-contract.processor';
+import { PdfService } from './pdf.service';
+import { DocusignService } from './docusign.service';
+import { DocusignWebhookController } from './docusign-webhook.controller';
 
 @Module({
     imports: [
@@ -24,16 +27,21 @@ import { RentalContractProcessor } from './rental-contract.processor';
         }),
         ScheduleModule.forRoot(),
     ],
+    controllers: [DocusignWebhookController],
     providers: [
         RentalContractRepository,
         SignatureService,
         SignatureCleanupScheduler,
         RentalContractProcessor,
+        PdfService,
+        DocusignService,
     ],
     exports: [
         RentalContractRepository,
         SignatureService,
         RentalContractProcessor,
+        PdfService,
+        DocusignService,
         BullModule,
     ],
 })

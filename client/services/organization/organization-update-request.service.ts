@@ -44,7 +44,6 @@ export class OrganizationUpdateRequestService {
         status?: 'PENDING' | 'APPROVED' | 'REJECTED';
         keyword?: string;
     } = {}): Promise<OrgUpdateRequestListResponse> {
-        console.log("[OrganizationUpdateRequestService] Fetching all update requests with params:", params);
         const query = new URLSearchParams();
         if (params.limit !== undefined) query.append('limit', String(params.limit));
         if (params.offset !== undefined) query.append('offset', String(params.offset));
@@ -67,7 +66,6 @@ export class OrganizationUpdateRequestService {
     }
 
     async getById(token: string, id: string): Promise<OrgUpdateRequest> {
-        console.log(`[OrganizationUpdateRequestService] Fetching update request by id: ${id}`);
         const response = await fetch(`${API}/organization-update-requests/${id}`, {
             headers: { 
                 'Authorization': `Bearer ${token}`,
@@ -84,7 +82,6 @@ export class OrganizationUpdateRequestService {
     }
 
     async approve(token: string, id: string): Promise<OrgUpdateRequest> {
-        console.log(`[OrganizationUpdateRequestService] Approving update request: ${id}`);
         const response = await fetch(`${API}/organization-update-requests/${id}/approve`, {
             method: 'PATCH',
             headers: { 
@@ -102,7 +99,6 @@ export class OrganizationUpdateRequestService {
     }
 
     async reject(token: string, id: string, reject_reason: string): Promise<OrgUpdateRequest> {
-        console.log(`[OrganizationUpdateRequestService] Rejecting update request: ${id} with reason: ${reject_reason}`);
         const response = await fetch(`${API}/organization-update-requests/${id}/reject`, {
             method: 'PATCH',
             headers: { 

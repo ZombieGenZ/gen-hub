@@ -238,7 +238,6 @@ class AuthStorageService {
       }
       
       const data = await response.json();
-      console.log('User profile data:', data);
       await this.setUserID(data.data.user.id); // Lưu ID người dùng vào cookie
       return data.data;
     } catch (error) {

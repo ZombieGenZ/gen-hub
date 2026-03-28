@@ -48,7 +48,6 @@ export class AccountBalanceService {
      * @returns Thông tin số dư tổ chức
      */
     async getOrganizationBalance(token: string, orgId: string): Promise<OrganizationBalance> {
-        console.log(`[AccountBalanceService] Fetching balance for org: ${orgId}`);
         const response = await fetch(`${API}/organizations/${orgId}/balance`, {
             method: 'GET',
             headers: {
@@ -109,7 +108,6 @@ export class AccountBalanceService {
 
         // 4. Construct final URL (Ensure NO 'page' parameter is sent)
         const finalUrl = `${API}/organizations/${orgId}/balance/transactions?${query.toString()}`;
-        console.log(`[AccountBalanceService] GET ${finalUrl}`);
 
         const response = await fetch(finalUrl, {
             method: 'GET',

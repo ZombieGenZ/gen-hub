@@ -411,3 +411,16 @@ export class RenewRentalContractWithFileDto extends RenewRentalContractDto {
     @ApiPropertyOptional({ type: 'string', format: 'binary', description: 'File hình ảnh chữ ký' })
     signature?: any;
 }
+
+/**
+ * DTO để gửi hợp đồng qua DocuSign
+ */
+export class SendDocusignDto {
+    @ApiProperty({
+        description: 'URL để quay lại sau khi ký xong trên DocuSign',
+        example: 'https://gen-hub.dev/docusign-callback'
+    })
+    @IsNotEmpty({ message: 'returnUrl là bắt buộc' })
+    @IsString({ message: 'returnUrl phải là chuỗi' })
+    returnUrl: string;
+}
