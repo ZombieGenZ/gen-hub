@@ -133,12 +133,12 @@ model User {
   contact_staff_assignments      ContactConversationStaff[] @relation("ContactStaff")
   assigned_consultation_requests ConsultationRequest[]      @relation("ConsultationAssignedStaff")
 
-  warnings UserWarning[]
+  warnings           UserWarning[]
   warehouse_managers WarehouseTemplateManager[]
-  phone_code_ref     PhoneCode?   @relation(fields: [phone_code_id], references: [id])
-  avatar_image       AvatarImage? @relation(fields: [avatar_image_id], references: [id])
-  cover_image        CoverImage?  @relation(fields: [cover_image_id], references: [id])
-  rank               Rank?        @relation(fields: [rank_id], references: [id])
+  phone_code_ref     PhoneCode?                 @relation(fields: [phone_code_id], references: [id])
+  avatar_image       AvatarImage?               @relation(fields: [avatar_image_id], references: [id])
+  cover_image        CoverImage?                @relation(fields: [cover_image_id], references: [id])
+  rank               Rank?                      @relation(fields: [rank_id], references: [id])
 
   @@map("users")
 }
@@ -554,8 +554,6 @@ model WarehouseTemplate {
   block_length Decimal @db.Decimal(10, 4)
   block_width  Decimal @db.Decimal(10, 4)
 
-
-
   ceiling_height    Decimal? @db.Decimal(10, 4)
   max_load_capacity Decimal? @db.Decimal(19, 4)
 
@@ -588,10 +586,10 @@ model WarehouseTemplate {
   coupon_targets          CouponTargetWarehouse[]
   coupon_schedule_targets CouponScheduleTargetWarehouse[]
 
-  managers          WarehouseTemplateManager[]
-  visit_bookings    WarehouseVisitBooking[]
+  managers              WarehouseTemplateManager[]
+  visit_bookings        WarehouseVisitBooking[]
   consultation_requests ConsultationRequest[]
-  generated_warehouses Warehouse[] @relation("GeneratedWarehouses")
+  generated_warehouses  Warehouse[]                @relation("GeneratedWarehouses")
 
   @@map("warehouse_templates")
 }
@@ -1233,8 +1231,8 @@ model RowTemplate {
   addon_gifts        RowAddonGift[]
   insurance_gifts    RowInsuranceGift[]
 
-  coupon_targets          CouponTargetRow[]
-  coupon_schedule_targets CouponScheduleTargetRow[]
+  coupon_targets              CouponTargetRow[]
+  coupon_schedule_targets     CouponScheduleTargetRow[]
   rental_contract_detail_rows RentalContractDetailRow[]
 
   generated_rows Row[] @relation("GeneratedRows")
@@ -1398,12 +1396,12 @@ model RentalContractDetail {
   id                 String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
   rental_contract_id String @db.Uuid
 
-  warehouse_template_id String   @db.Uuid
+  warehouse_template_id String  @db.Uuid
   warehouse_name        String
   warehouse_description String?
-  is_whole_warehouse    Boolean  @default(true)
-  warehouse_id          String?  @db.Uuid
-  row_id                String?  @db.Uuid
+  is_whole_warehouse    Boolean @default(true)
+  warehouse_id          String? @db.Uuid
+  row_id                String? @db.Uuid
 
   price_per_month Decimal @db.Decimal(19, 4)
   discount_rate   Decimal @default(0) @db.Decimal(5, 2)
@@ -1423,10 +1421,10 @@ model RentalContractDetail {
   updated_by String?
   deleted_by String?
 
-  rental_contract    RentalContract    @relation(fields: [rental_contract_id], references: [id], onDelete: Cascade)
-  warehouse_template WarehouseTemplate @relation(fields: [warehouse_template_id], references: [id])
-  warehouse          Warehouse?        @relation(fields: [warehouse_id], references: [id])
-  row                Row?              @relation(fields: [row_id], references: [id])
+  rental_contract    RentalContract            @relation(fields: [rental_contract_id], references: [id], onDelete: Cascade)
+  warehouse_template WarehouseTemplate         @relation(fields: [warehouse_template_id], references: [id])
+  warehouse          Warehouse?                @relation(fields: [warehouse_id], references: [id])
+  row                Row?                      @relation(fields: [row_id], references: [id])
   detail_rows        RentalContractDetailRow[]
 
   @@index([rental_contract_id])
@@ -2059,6 +2057,7 @@ model Warehouse {
   receipts    Receipt[]
   exports     Export[]
   stock_takes StockTake[]
+  bins        Bin[]
 
   inventory_transactions  InventoryTransaction[]
   inventories             Inventory[]
@@ -2305,6 +2304,7 @@ model Inventory {
   block_id        String  @db.Uuid
   product_id      String  @db.Uuid
   batch_id        String? @db.Uuid
+  bin_id          String? @db.Uuid
 
   quantity           Decimal @default(0) @db.Decimal(19, 4)
   quantity_on_hand   Decimal @default(0) @db.Decimal(19, 4)
@@ -2326,12 +2326,41 @@ model Inventory {
   block        Block        @relation(fields: [block_id], references: [id], onDelete: Cascade)
   product      Product      @relation(fields: [product_id], references: [id], onDelete: Cascade)
   batch        Batch?       @relation(fields: [batch_id], references: [id])
+  bin          Bin?         @relation(fields: [bin_id], references: [id], onDelete: Cascade)
 
   @@index([organization_id])
   @@index([warehouse_id])
   @@index([organization_id, warehouse_id])
   @@index([product_id])
+  @@index([bin_id])
   @@map("inventories")
+}
+
+model Bin {
+  id           String  @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  uid          String  @unique @db.VarChar(50)
+  warehouse_id String  @db.Uuid
+  zone_type    String  @db.VarChar(30)
+  position_xyz Json    @db.JsonB
+  dimensions   Json    @db.JsonB
+  status       String? @default("Available") @db.VarChar(20)
+
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean?  @default(false)
+  deleted_at DateTime?
+
+  created_by String?
+  updated_by String?
+  deleted_by String?
+
+  warehouse   Warehouse   @relation(fields: [warehouse_id], references: [id], onDelete: Cascade)
+  inventories Inventory[]
+
+  @@index([zone_type])
+  @@index([status])
+  @@index([warehouse_id])
+  @@map("bins")
 }
 
 enum TransactionType {
@@ -2384,35 +2413,35 @@ enum ReceiptStatus {
 }
 
 model Receipt {
-  id                  String        @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
-  organization_id     String        @db.Uuid
-  warehouse_id        String        @db.Uuid
-  partner_id          String?       @db.Uuid
-  code                String
-  purchase_order_code String?
-  status              ReceiptStatus @default(PENDING)
-  notes               String?
-  expected_arrival    DateTime?
-  vehicle_info        String?
-  approved_by         String?
-  approved_at         DateTime?
-  checker_id          String?
-  receiving_started_at  DateTime?
+  id                     String        @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  organization_id        String        @db.Uuid
+  warehouse_id           String        @db.Uuid
+  partner_id             String?       @db.Uuid
+  code                   String
+  purchase_order_code    String?
+  status                 ReceiptStatus @default(PENDING)
+  notes                  String?
+  expected_arrival       DateTime?
+  vehicle_info           String?
+  approved_by            String?
+  approved_at            DateTime?
+  checker_id             String?
+  receiving_started_at   DateTime?
   receiving_completed_at DateTime?
-  putaway_started_at  DateTime?
-  putaway_completed_at DateTime?
-  is_active           Boolean       @default(true)
-  created_at          DateTime      @default(now())
-  updated_at          DateTime      @updatedAt
-  is_deleted          Boolean?      @default(false)
-  deleted_at          DateTime?
+  putaway_started_at     DateTime?
+  putaway_completed_at   DateTime?
+  is_active              Boolean       @default(true)
+  created_at             DateTime      @default(now())
+  updated_at             DateTime      @updatedAt
+  is_deleted             Boolean?      @default(false)
+  deleted_at             DateTime?
 
   created_by String?
   updated_by String?
   deleted_by String?
 
-  warehouse Warehouse       @relation(fields: [warehouse_id], references: [id])
-  partner   Partner?        @relation(fields: [partner_id], references: [id])
+  warehouse Warehouse        @relation(fields: [warehouse_id], references: [id])
+  partner   Partner?         @relation(fields: [partner_id], references: [id])
   details   ReceiptDetail[]
   putaways  ReceiptPutaway[]
 
@@ -2476,7 +2505,7 @@ model ReceiptPutaway {
   updated_by String?
   deleted_by String?
 
-  receipt Receipt              @relation(fields: [receipt_id], references: [id], onDelete: Cascade)
+  receipt Receipt                @relation(fields: [receipt_id], references: [id], onDelete: Cascade)
   details ReceiptPutawayDetail[]
 
   @@index([receipt_id])
@@ -2523,29 +2552,29 @@ enum ExportStatus {
 }
 
 model Export {
-  id               String       @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
-  organization_id  String       @db.Uuid
-  warehouse_id     String       @db.Uuid
-  partner_id       String?      @db.Uuid
-  code             String
-  sales_order_code String?
-  status           ExportStatus @default(PENDING)
-  notes            String?
-  approved_by      String?
-  approved_at      DateTime?
-  picker_id        String?
-  checker_id       String?
-  picking_started_at   DateTime?
-  picking_completed_at DateTime?
-  checking_started_at  DateTime?
+  id                    String       @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  organization_id       String       @db.Uuid
+  warehouse_id          String       @db.Uuid
+  partner_id            String?      @db.Uuid
+  code                  String
+  sales_order_code      String?
+  status                ExportStatus @default(PENDING)
+  notes                 String?
+  approved_by           String?
+  approved_at           DateTime?
+  picker_id             String?
+  checker_id            String?
+  picking_started_at    DateTime?
+  picking_completed_at  DateTime?
+  checking_started_at   DateTime?
   checking_completed_at DateTime?
-  shipped_at       DateTime?
-  tracking_number  String?
-  is_active        Boolean      @default(true)
-  created_at       DateTime     @default(now())
-  updated_at       DateTime     @updatedAt
-  is_deleted       Boolean?     @default(false)
-  deleted_at       DateTime?
+  shipped_at            DateTime?
+  tracking_number       String?
+  is_active             Boolean      @default(true)
+  created_at            DateTime     @default(now())
+  updated_at            DateTime     @updatedAt
+  is_deleted            Boolean?     @default(false)
+  deleted_at            DateTime?
 
   created_by String?
   updated_by String?
@@ -3210,8 +3239,8 @@ enum ArticleCommentStatus {
 }
 
 model ArticleComment {
-  id         String @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  article_id String @db.Uuid
+  id         String  @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  article_id String  @db.Uuid
   parent_id  String? @db.Uuid
 
   user_id String? @db.Uuid
@@ -3223,11 +3252,11 @@ model ArticleComment {
 
   status ArticleCommentStatus @default(APPROVED)
 
-  is_active   Boolean   @default(true)
-  created_at  DateTime  @default(now())
-  updated_at  DateTime? @updatedAt
-  is_deleted  Boolean   @default(false)
-  deleted_at  DateTime?
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  is_deleted Boolean   @default(false)
+  deleted_at DateTime?
 
   deleted_by String?
 
@@ -3271,8 +3300,8 @@ model ArticleCommentEditHistory {
   comment_id String @db.Uuid
   edited_by  String @db.Uuid
 
-  old_content String @db.Text
-  new_content String @db.Text
+  old_content String  @db.Text
+  new_content String  @db.Text
   edit_reason String?
 
   created_at DateTime @default(now())
@@ -3437,7 +3466,7 @@ model ContactConversation {
 
   organization_id String? @db.Uuid
 
-  is_priority_customer Boolean @default(false)
+  is_priority_customer Boolean                 @default(false)
   priority_source      PriorityCustomerSource?
 
   enable_ai_reply Boolean?
@@ -3486,16 +3515,16 @@ model ContactConversation {
 
   discord_channel_id String?
 
-  is_skipped   Boolean @default(false)
-  skip_reason  String?
+  is_skipped  Boolean @default(false)
+  skip_reason String?
 
-  user_id        String?   @db.Uuid
-  guest_ip       String?
-  guest_country  String?
-  guest_region   String?
+  user_id       String? @db.Uuid
+  guest_ip      String?
+  guest_country String?
+  guest_region  String?
 
-  assigned_staff User? @relation("AssignedStaff", fields: [assigned_staff_id], references: [id])
-  organization  Organization? @relation("ContactConversations", fields: [organization_id], references: [id])
+  assigned_staff User?         @relation("AssignedStaff", fields: [assigned_staff_id], references: [id])
+  organization   Organization? @relation("ContactConversations", fields: [organization_id], references: [id])
 
   messages            ContactMessage[]
   tag_mappings        ContactTagOnConversation[]
@@ -3539,9 +3568,9 @@ model ContactMessage {
   read_at     DateTime?
   is_internal Boolean   @default(false)
 
-  is_ai_response Boolean  @default(false)
+  is_ai_response Boolean @default(false)
   ai_model       String?
-  ai_confidence  Float?   @db.DoublePrecision
+  ai_confidence  Float?  @db.DoublePrecision
 
   is_active  Boolean   @default(true)
   created_at DateTime  @default(now())
@@ -4051,7 +4080,7 @@ model WarehouseManagerRole {
   id          String  @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   name        String
   description String?
-  
+
   is_default Boolean @default(false)
 
   is_active  Boolean   @default(true)
@@ -4094,12 +4123,12 @@ model WarehouseManagerRolePermission {
 }
 
 model WarehouseTemplateManager {
-  id                    String  @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  warehouse_template_id String  @db.Uuid
-  user_id               String  @db.Uuid
-  
-  phone                 String?
-  notes                 String?
+  id                    String @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  warehouse_template_id String @db.Uuid
+  user_id               String @db.Uuid
+
+  phone String?
+  notes String?
 
   is_active  Boolean   @default(true)
   created_at DateTime  @default(now())
@@ -4111,8 +4140,8 @@ model WarehouseTemplateManager {
   updated_by String?
   deleted_by String?
 
-  warehouse_template WarehouseTemplate          @relation(fields: [warehouse_template_id], references: [id], onDelete: Cascade)
-  user               User                       @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  warehouse_template WarehouseTemplate              @relation(fields: [warehouse_template_id], references: [id], onDelete: Cascade)
+  user               User                           @relation(fields: [user_id], references: [id], onDelete: Cascade)
   roles              WarehouseTemplateManagerRole[]
 
   @@unique([warehouse_template_id, user_id])
@@ -4179,64 +4208,64 @@ model WarehouseVisitBooking {
   id                    String @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   code                  String @unique
   warehouse_template_id String @db.Uuid
-  
-  user_id               String? @db.Uuid
-  organization_id       String? @db.Uuid
-  
-  visitor_name          String
-  visitor_email         String
-  visitor_phone         String?
-  visitor_company       String?
-  visitor_position      String?
-  
-  visit_date            DateTime @db.Date
-  visit_time_start      String
-  visit_time_end        String?
-  
-  purpose               WarehouseVisitPurpose @default(RENTAL_INQUIRY)
-  purpose_details       String? @db.Text
-  number_of_visitors    Int @default(1)
-  
-  status                WarehouseVisitStatus @default(PENDING)
-  
-  confirmed_at          DateTime?
-  confirmed_by          String? @db.Uuid
-  confirmation_notes    String?
-  
-  cancelled_at          DateTime?
-  cancelled_by          String? @db.Uuid
-  cancel_reason         String?
-  
-  rescheduled_from_id   String? @db.Uuid
-  rescheduled_at        DateTime?
-  rescheduled_by        String? @db.Uuid
-  reschedule_reason     String?
-  
+
+  user_id         String? @db.Uuid
+  organization_id String? @db.Uuid
+
+  visitor_name     String
+  visitor_email    String
+  visitor_phone    String?
+  visitor_company  String?
+  visitor_position String?
+
+  visit_date       DateTime @db.Date
+  visit_time_start String
+  visit_time_end   String?
+
+  purpose            WarehouseVisitPurpose @default(RENTAL_INQUIRY)
+  purpose_details    String?               @db.Text
+  number_of_visitors Int                   @default(1)
+
+  status WarehouseVisitStatus @default(PENDING)
+
+  confirmed_at       DateTime?
+  confirmed_by       String?   @db.Uuid
+  confirmation_notes String?
+
+  cancelled_at  DateTime?
+  cancelled_by  String?   @db.Uuid
+  cancel_reason String?
+
+  rescheduled_from_id String?   @db.Uuid
+  rescheduled_at      DateTime?
+  rescheduled_by      String?   @db.Uuid
+  reschedule_reason   String?
+
   completed_at          DateTime?
-  completed_by          String? @db.Uuid
-  completion_notes      String? @db.Text
+  completed_by          String?   @db.Uuid
+  completion_notes      String?   @db.Text
   satisfaction_rating   Int?
-  satisfaction_feedback String? @db.Text
-  
-  internal_notes        String? @db.Text
-  
-  reminder_sent_at      DateTime?
-  
+  satisfaction_feedback String?   @db.Text
+
+  internal_notes String? @db.Text
+
+  reminder_sent_at DateTime?
+
   is_active  Boolean   @default(true)
   created_at DateTime  @default(now())
   updated_at DateTime? @updatedAt
   is_deleted Boolean   @default(false)
   deleted_at DateTime?
-  
+
   created_by String?
   updated_by String?
   deleted_by String?
-  
-  warehouse_template WarehouseTemplate        @relation(fields: [warehouse_template_id], references: [id], onDelete: Cascade)
-  organization       Organization?            @relation(fields: [organization_id], references: [id])
-  rescheduled_from   WarehouseVisitBooking?   @relation("RescheduledBookings", fields: [rescheduled_from_id], references: [id])
-  rescheduled_to     WarehouseVisitBooking[]  @relation("RescheduledBookings")
-  
+
+  warehouse_template WarehouseTemplate       @relation(fields: [warehouse_template_id], references: [id], onDelete: Cascade)
+  organization       Organization?           @relation(fields: [organization_id], references: [id])
+  rescheduled_from   WarehouseVisitBooking?  @relation("RescheduledBookings", fields: [rescheduled_from_id], references: [id])
+  rescheduled_to     WarehouseVisitBooking[] @relation("RescheduledBookings")
+
   @@index([warehouse_template_id])
   @@index([organization_id])
   @@index([user_id])
@@ -4247,21 +4276,21 @@ model WarehouseVisitBooking {
 }
 
 model ConsultationRequest {
-  id                    String @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  code                  String @unique
+  id                    String                    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  code                  String                    @unique
   name                  String
   email                 String
   phone                 String?
   company               String?
   position              String?
   subject               String
-  message               String @db.Text
-  warehouse_template_id String? @db.Uuid
+  message               String                    @db.Text
+  warehouse_template_id String?                   @db.Uuid
   source                ConsultationRequestSource @default(WEB_FORM)
   status                ConsultationRequestStatus @default(PENDING)
-  assigned_to           String? @db.Uuid
+  assigned_to           String?                   @db.Uuid
   assigned_at           DateTime?
-  staff_notes           String? @db.Text
+  staff_notes           String?                   @db.Text
   contacted_at          DateTime?
   completed_at          DateTime?
 
@@ -4377,12 +4406,12 @@ model ContactActionLog {
   action_type ContactActionType
   reason      String?           @db.Text
 
-  list_type    String?
-  match_type   String?
-  match_value  String?
-  priority     String?
-  old_status   String?
-  new_status   String?
+  list_type   String?
+  match_type  String?
+  match_value String?
+  priority    String?
+  old_status  String?
+  new_status  String?
 
   performed_by_id   String?                      @db.Uuid
   performed_by_name String?
@@ -4410,9 +4439,9 @@ enum ChatCallStatus {
 }
 
 model OrganizationChatMessage {
-  id              String   @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
-  organization_id String   @db.Uuid
-  content         String   @db.Text
+  id              String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  organization_id String @db.Uuid
+  content         String @db.Text
 
   agora_message_id String?
 
@@ -4424,7 +4453,7 @@ model OrganizationChatMessage {
   is_deleted Boolean   @default(false)
   deleted_at DateTime?
 
-  created_by String?  @db.Uuid
+  created_by String? @db.Uuid
   deleted_by String? @db.Uuid
 
   organization Organization          @relation(fields: [organization_id], references: [id], onDelete: Cascade)
@@ -4453,7 +4482,7 @@ model OrganizationChatCall {
   is_deleted Boolean   @default(false)
   deleted_at DateTime?
 
-  created_by String?  @db.Uuid
+  created_by String? @db.Uuid
   ended_by   String? @db.Uuid
 
   organization Organization                      @relation(fields: [organization_id], references: [id], onDelete: Cascade)
@@ -4534,10 +4563,10 @@ model WarningCategory {
 }
 
 model UserWarning {
-  id          String  @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
-  user_id     String  @db.Uuid
-  category_id String  @db.Uuid
-  reason      String  @db.Text
+  id          String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  user_id     String @db.Uuid
+  category_id String @db.Uuid
+  reason      String @db.Text
 
   is_permanent Boolean   @default(false)
   expires_at   DateTime?
@@ -4561,15 +4590,15 @@ model UserWarning {
 }
 
 model WarnPenalty {
-  id              String           @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
-  min_warn_count  Int
-  max_warn_count  Int?
-  
-  is_permanent_ban Boolean         @default(false)
+  id             String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
+  min_warn_count Int
+  max_warn_count Int?
+
+  is_permanent_ban Boolean          @default(false)
   duration_value   Int?
   duration_unit    BanDurationUnit?
-  
-  description     String?
+
+  description String?
 
   is_active  Boolean   @default(true)
   created_at DateTime  @default(now())
@@ -4591,18 +4620,18 @@ model AppDownloadShare {
   current_download Int       @default(0)
   is_permanent     Boolean   @default(false)
   expires_at       DateTime?
-  
+
   is_active  Boolean   @default(true)
   created_at DateTime  @default(now())
   updated_at DateTime? @updatedAt
   is_deleted Boolean   @default(false)
   deleted_at DateTime?
-  
+
   created_by String?
   deleted_by String?
-  
+
   invites AppDownloadInvite[]
-  
+
   @@map("app_download_shares")
 }
 
@@ -4610,23 +4639,22 @@ model AppDownloadInvite {
   id       String @id @default(dbgenerated("uuid_generate_v4()")) @map("id") @db.Uuid
   share_id String @db.Uuid
   email    String
-  
+
   email_sent_at    DateTime?
   email_sent_count Int       @default(0)
-  
+
   is_active  Boolean   @default(true)
   created_at DateTime  @default(now())
   updated_at DateTime? @updatedAt
   is_deleted Boolean   @default(false)
   deleted_at DateTime?
-  
+
   created_by String?
   deleted_by String?
-  
+
   share AppDownloadShare @relation(fields: [share_id], references: [id], onDelete: Cascade)
-  
+
   @@index([share_id])
   @@index([email])
   @@map("app_download_invites")
 }
-

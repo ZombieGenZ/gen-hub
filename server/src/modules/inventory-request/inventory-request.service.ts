@@ -26,6 +26,7 @@ import { WebsocketGateway } from '../websocket/websocket.gateway';
 import { OrganizationAuditLogService } from '../organization/organization-audit-log.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { InventoryRequestCacheKeys } from './constants/inventory-request-cache.helper';
+import { SmartSlottingService } from './smart-slotting.service';
 
 @Injectable()
 export class InventoryRequestService {
@@ -43,6 +44,7 @@ export class InventoryRequestService {
         private readonly auditLogService: OrganizationAuditLogService,
         private readonly i18n: I18nService,
         private readonly cacheKeys: InventoryRequestCacheKeys,
+        private readonly slottingService: SmartSlottingService,
     ) {
         this.INBOUND_LIST_TTL = this.configService.get<number>('REDIS_INBOUND_LIST_TTL') || 60;
         this.OUTBOUND_LIST_TTL = this.configService.get<number>('REDIS_OUTBOUND_LIST_TTL') || 60;
@@ -720,7 +722,7 @@ export class InventoryRequestService {
                     details: {
                         where: { is_deleted: false },
                         include: {
-                            product: { select: { id: true, name: true, sku: true, image_url: true } },
+                            product: { select: { id: true, name: true, sku: true, image_url: true, width: true, height: true, length: true } },
                             batch: { select: { id: true, code: true, expiry_date: true } },
                             unit: { select: { id: true, name: true } },
                         },
@@ -758,7 +760,37 @@ export class InventoryRequestService {
             { userId: actorId, description: `Approved inbound request: ${updated.code}` },
         );
 
-        return updated as unknown as IInboundRequest;
+        // KÍCH HOẠT AI SLOTTING TỰ ĐỘNG GÁN VỊ TRÍ KHO 3D
+        let slottingResults: any[] = [];
+        try {
+            const itemsToSlot = updated.details.map(d => {
+                const w = d.product.width ? Number(d.product.width) : 1;
+                const h = d.product.height ? Number(d.product.height) : 1;
+                const length = d.product.length ? Number(d.product.length) : 1;
+                const vol = (w * h * length) || 0.1; // Tính m3 hoặc mặc định 0.1 m3
+
+                // TODO: Trong tương lai có thể thêm trường priority_class ở bảng Product. 
+                // Tạm thời giả lập Product SKU bắt đầu bằng "VIP" hoặc "A" là Class A
+                const pClass = d.product.sku.startsWith('A') ? 'A' : (d.product.sku.startsWith('C') ? 'C' : 'B');
+
+                return {
+                    detail_id: d.id,
+                    sku_id: d.product.sku,
+                    quantity: Number(d.expected_qty),
+                    volume_per_unit: vol,
+                    priority_class: pClass as 'A' | 'B' | 'C'
+                };
+            });
+            slottingResults = await this.slottingService.autoAssignBins(receipt.warehouse_id, itemsToSlot);
+        } catch (error) {
+            console.error('[AI Slotting Failed]', error.message);
+            // Dù lỗi Slotting (hết chỗ), vẫn trả về Receipt đã Approve để không nghẽn luồng kinh doanh
+        }
+
+        return {
+            ...(updated as unknown as IInboundRequest),
+            slotting_results: slottingResults // Trả JSON kết quả Slotting xuống Frontend
+        } as any;
     }
 
     /**

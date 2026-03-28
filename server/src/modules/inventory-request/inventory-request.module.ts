@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { InventoryRequestController } from './inventory-request.controller';
 import { InventoryRequestService } from './inventory-request.service';
 import { InventoryRequestRepository } from './inventory-request.repository';
+import { SmartSlottingService } from './smart-slotting.service';
 import { SharedModule } from '../../common/shared.module';
 import { RedisModule } from '../redis/redis.module';
 import { WebsocketModule } from '../websocket/websocket.module';
@@ -18,7 +19,7 @@ import { InventoryRequestCacheKeys } from './constants/inventory-request-cache.h
         ApiKeyVerificationModule,
     ],
     controllers: [InventoryRequestController],
-    providers: [InventoryRequestService, InventoryRequestRepository, InventoryRequestCacheKeys],
-    exports: [InventoryRequestService, InventoryRequestRepository, InventoryRequestCacheKeys],
+    providers: [InventoryRequestService, InventoryRequestRepository, InventoryRequestCacheKeys, SmartSlottingService],
+    exports: [InventoryRequestService, InventoryRequestRepository, InventoryRequestCacheKeys, SmartSlottingService],
 })
 export class InventoryRequestModule { }
