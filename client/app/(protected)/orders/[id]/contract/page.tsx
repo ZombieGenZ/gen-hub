@@ -10,6 +10,7 @@ import { CheckoutSession } from '@/types/checkout/checkout.type';
 
 import { OrderService } from '@/services/order/order.service';
 import { authStorage } from '@/services/auth/auth-storage.service';
+import { RentalContractService } from '@/services/contract/rental-contract.service';
 
 export default function ContractSigningPage() {
     const router = useRouter();
@@ -37,9 +38,16 @@ export default function ContractSigningPage() {
                     start_date: order.started_at,
                     organization_id: order.organization_id,
                     quotation: order.quotation,
-                    deposit_amount: order.payment_info?.amount || Math.max(2000000, (order.quotation?.grandTotal || 0) * 0.1)
+                    deposit_amount: order.payment_info?.amount || Math.max(2000000, (order.quotation?.grandTotal || 0) * 0.1),
+                    contract_id: order.contract_id,
+                    status: order.status
                 };
                 setContractSession(session);
+
+                // Nếu đã ký rồi thì hiển thị trạng thái thành công luôn
+                if (order.status === 'contract_signed' || order.status === 'deposit_paid' || order.status === 'active') {
+                    setSignatureSuccess(true);
+                }
             } catch (err) {
                 console.error("Failed to load order:", err);
             } finally {
@@ -57,6 +65,7 @@ export default function ContractSigningPage() {
     const [signatureSuccess, setSignatureSuccess] = useState(false);
     const [signatureData, setSignatureData] = useState<string>('');
     const [signedAt, setSignedAt] = useState<Date | null>(null);
+    const [isDocusignLoading, setIsDocusignLoading] = useState(false);
 
     // Mock Representative Data (would come from order/org data)
     const representativeName = "Nguyễn Văn A";
@@ -74,6 +83,37 @@ export default function ContractSigningPage() {
             setSignedAt(new Date());
             setSignatureSuccess(true);
         }, 2000);
+    };
+
+    const handleSignWithDocusign = async () => {
+        if (!contractSession?.contract_id || !contractSession?.organization_id) {
+            alert("Không tìm thấy thông tin hợp đồng hoặc tổ chức để ký qua DocuSign");
+            return;
+        }
+
+        setIsDocusignLoading(true);
+        try {
+            const rentalContractService = new RentalContractService();
+            const baseUrl = window.location.origin;
+            const returnUrl = `${baseUrl}/orders/${orderId}/contract/callback`;
+            
+            const response = await rentalContractService.sendToDocusign(
+                contractSession.organization_id,
+                contractSession.contract_id,
+                returnUrl
+            );
+
+            if (response.signingUrl) {
+                window.location.href = response.signingUrl;
+            } else {
+                throw new Error("Không nhận được URL ký từ hệ thống");
+            }
+        } catch (err: any) {
+            console.error("DocuSign error:", err);
+            alert(err.message || "Lỗi khi khởi tạo DocuSign. Vui lòng thử lại sau.");
+        } finally {
+            setIsDocusignLoading(false);
+        }
     };
 
     const handleBackToDashboard = () => {
@@ -197,10 +237,18 @@ export default function ContractSigningPage() {
                             Tải bản nháp PDF
                         </Button>
                         <Button
+                            variant="outline"
+                            className="border-blue-200 text-blue-700 hover:bg-blue-50"
+                            onClick={handleSignWithDocusign}
+                            disabled={isDocusignLoading}
+                        >
+                            {isDocusignLoading ? "Đang kết nối..." : "Ký với DocuSign"}
+                        </Button>
+                        <Button
                             className="bg-[#0F766E] hover:bg-[#0D655D]"
                             onClick={() => setIsSignatureModalOpen(true)}
                         >
-                            Ký hợp đồng ngay
+                            Ký trực tiếp (PNG)
                         </Button>
                     </div>
                 </div>

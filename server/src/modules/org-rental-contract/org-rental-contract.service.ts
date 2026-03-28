@@ -39,6 +39,9 @@ import { OrganizationRepository } from '../organization/organization.repository'
 import { SepayService } from '../payment/sepay.service';
 import { PaymentSchedulerService } from '../payment/payment-scheduler.service';
 import { UserNotificationService } from '../user-notification/user-notification.service';
+import { PdfService } from '../rental-contract-shared/pdf.service';
+import { DocusignService } from '../rental-contract-shared/docusign.service';
+import { SendDocusignDto } from './dto';
 
 const Decimal = Prisma.Decimal;
 
@@ -68,6 +71,8 @@ export class OrgRentalContractService {
         private readonly paymentScheduler: PaymentSchedulerService,
         private readonly userNotificationService: UserNotificationService,
         private readonly signatureService: SignatureService,
+        private readonly pdfService: PdfService,
+        private readonly docusignService: DocusignService,
     ) {
         this.CONTRACT_CACHE_TTL = this.configService.get<number>('REDIS_RENTAL_CONTRACT_CACHE_TTL') || 300;
         this.CONTRACT_LIST_CACHE_TTL = this.configService.get<number>('REDIS_RENTAL_CONTRACT_LIST_CACHE_TTL') || 60;
@@ -628,6 +633,68 @@ export class OrgRentalContractService {
         this.paymentScheduler.schedulePaymentExpire(paymentResult.paymentId, paymentExpiredAt, userId);
 
         return { contract, payment: paymentResult };
+    }
+
+    /**
+     * Gửi hợp đồng qua DocuSign và lấy URL ký
+     */
+    async sendToDocusign(
+        id: string,
+        dto: SendDocusignDto,
+        userId: string,
+        organizationId: string,
+        lang: string,
+    ): Promise<{ signingUrl: string }> {
+        const contract = await this.checkAccess(id, userId, organizationId, 'rental-contract.update', lang);
+        
+        // Chỉ cho phép ký khi hợp đồng ở trạng thái PENDING hoặc ACTIVE (gia hạn)
+        if (contract.status !== ContractStatus.PENDING && contract.status !== ContractStatus.ACTIVE) {
+            throw new BadRequestException(
+                await this.i18n.translate('rental-contract.errors.invalid_status_for_signing', { lang })
+            );
+        }
+
+        const fullContract = await this.repository.findByIdWithFullDetails(id);
+        if (!fullContract) {
+            throw new NotFoundException(this.i18n.t('rental-contract.errors.not_found', { lang }));
+        }
+
+        // 1. Tạo PDF buffer
+        const pdfBuffer = await this.pdfService.generateContractPdf(fullContract as unknown as IRentalContractWithRelations);
+
+        // 2. Tạo DocuSign envelope
+        const signerName = (fullContract.organization as any)?.representative_name || fullContract.organization?.name || 'Customer';
+        const signerEmail = (fullContract.organization as any)?.owner?.email || 'customer@example.com';
+        
+        // Dùng userId làm clientUserId để DocuSign biết đây là embedded signing cho user này
+        const clientUserId = userId;
+
+        const envelopeId = await this.docusignService.createEnvelope(
+            pdfBuffer,
+            signerName,
+            signerEmail,
+            clientUserId,
+            fullContract.code
+        );
+
+        // 3. Tạo signing URL
+        const signingUrl = await this.docusignService.getRecipientViewUrl(
+            envelopeId,
+            signerName,
+            signerEmail,
+            clientUserId,
+            dto.returnUrl
+        );
+
+        // Lưu envelopeId vào contract để theo dõi (cần thêm field vào DB nếu muốn, hoặc lưu log)
+        this.systemLogService.info(
+            'rental-contract',
+            'docusign_sent',
+            `Contract ${fullContract.code} sent to DocuSign. EnvelopeId: ${envelopeId}`,
+            { userId, metaData: { contractId: id, envelopeId } }
+        );
+
+        return { signingUrl };
     }
 
     async getContractAddons(contractId: string, userId: string, organizationId: string, lang: string) {

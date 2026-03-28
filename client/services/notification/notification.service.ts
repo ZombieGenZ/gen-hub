@@ -41,7 +41,6 @@ export class NotificationService {
         params?: NotificationQueryParams
     ): Promise<NotificationResponse> {
         try {
-            console.log("[NotificationService] Fetching notifications with params:", params);
             const searchParams = new URLSearchParams();
             if (params?.limit) searchParams.append('limit', params.limit.toString());
             if (params?.offset) searchParams.append('offset', params.offset.toString());
@@ -85,7 +84,6 @@ export class NotificationService {
      */
     async getUnreadCount(access_token: string): Promise<number> {
         try {
-            console.log("[NotificationService] Fetching unread count...");
             const response = await fetch(`${API_URL}/user-notifications/unread-count`, {
                 headers: {
                     'Authorization': `Bearer ${access_token}`,

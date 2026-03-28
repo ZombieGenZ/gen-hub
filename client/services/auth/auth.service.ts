@@ -96,7 +96,6 @@ export class AuthService {
             await this.verify_password(data.authorization.access_token, "", auth_code, backup_code);
             return data;
         } catch (error) {
-            console.log(error);
             throw error;
         }
     }

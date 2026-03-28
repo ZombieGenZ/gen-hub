@@ -94,6 +94,9 @@ export interface CheckoutSession {
     
     // Báo giá
     quotation: QuotationBreakdown;
+    
+    // Trạng thái đơn hàng
+    status?: OrderStatus;
 }
 
 /**
