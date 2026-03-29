@@ -177,7 +177,7 @@ export class WarehouseTemplateService {
      * Lấy danh sách WarehouseTemplate
      */
     async findMany(
-        query: QueryWarehouseTemplateDto,
+        query: QueryWarehouseTemplateDto & { hidePrivateRented?: boolean },
     ): Promise<IPaginatedResponse<IWarehouseTemplateWithRelations>> {
         // Tạo cache key dựa trên query params
         const queryParams: Record<string, unknown> = {
@@ -187,6 +187,7 @@ export class WarehouseTemplateService {
             is_active: query.is_active,
             rental_status: query.rental_status,
             province_id: query.province_id,
+            hidePrivateRented: query.hidePrivateRented,
         };
         const cacheKey = this.redisService.getWarehouseTemplateListCacheKey(queryParams);
 
@@ -215,11 +216,13 @@ export class WarehouseTemplateService {
         // Kiểm tra cache
         const cached = await this.redisService.getWarehouseTemplateCache<IWarehouseTemplateWithRelations>(id);
         if (cached) {
-            // Nếu không có quyền list.all và template không active, trả về not found
-            if (!hasListAllPermission && !cached.is_active) {
-                throw new NotFoundException(
-                    this.i18n.t('warehouse-template.errors.not_found', { lang }),
-                );
+            // Nếu không có quyền list.all
+            if (!hasListAllPermission) {
+                if (!cached.is_active || (!cached.is_shared_warehouse && (cached.is_rented || cached.rental_status === 'RENTED'))) {
+                    throw new NotFoundException(
+                        this.i18n.t('warehouse-template.errors.not_found', { lang }),
+                    );
+                }
             }
             return cached;
         }
@@ -231,11 +234,13 @@ export class WarehouseTemplateService {
             );
         }
 
-        // Nếu không có quyền list.all và template không active, trả về not found
-        if (!hasListAllPermission && !template.is_active) {
-            throw new NotFoundException(
-                this.i18n.t('warehouse-template.errors.not_found', { lang }),
-            );
+        // Nếu không có quyền list.all
+        if (!hasListAllPermission) {
+            if (!template.is_active || (!template.is_shared_warehouse && (template.is_rented || template.rental_status === 'RENTED'))) {
+                throw new NotFoundException(
+                    this.i18n.t('warehouse-template.errors.not_found', { lang }),
+                );
+            }
         }
 
         // Cache kết quả

@@ -352,7 +352,7 @@ export default function LoginPage() {
 
       {/* Footer */}
       <div className={`p-4 text-center text-sm ${darkMode ? "text-slate-500" : "text-gray-500"}`}>
-        © 2025 SecureAuth Todo. All rights reserved.
+        © 2026 SecureAuth Todo. All rights reserved.
       </div>
 
       <style jsx>{`

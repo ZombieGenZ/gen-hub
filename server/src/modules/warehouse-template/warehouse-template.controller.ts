@@ -381,6 +381,7 @@ export class WarehouseTemplateController {
     // Nếu không có quyền list.all, buộc is_active = true
     if (!hasListAllPermission) {
       query.is_active = true;
+      (query as any).hidePrivateRented = true;
     }
 
     const result = await this.service.findMany(query);

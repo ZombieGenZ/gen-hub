@@ -205,12 +205,12 @@ export class WarehouseTemplateRepository {
      * Lấy danh sách với phân trang (bao gồm full rows hierarchy)
      */
     async findMany(
-        query: QueryWarehouseTemplateDto,
+        query: QueryWarehouseTemplateDto & { hidePrivateRented?: boolean },
         options?: { lightweightMode?: boolean },
     ): Promise<IPaginatedResponse<IWarehouseTemplateWithRelations>> {
         const limit = this.paginationConfig.getLimit(query.limit);
         const offset = this.paginationConfig.getOffset(query.offset);
-        const { keywords, is_active, rental_status, province_id } = query;
+        const { keywords, is_active, rental_status, province_id, hidePrivateRented } = query;
 
         const where: Prisma.WarehouseTemplateWhereInput = {
             is_deleted: false,
@@ -222,6 +222,15 @@ export class WarehouseTemplateRepository {
                     { name: { contains: keywords, mode: 'insensitive' } },
                     { description: { contains: keywords, mode: 'insensitive' } },
                 ],
+            }),
+            ...(hidePrivateRented && {
+                NOT: {
+                    is_shared_warehouse: false,
+                    OR: [
+                        { is_rented: true },
+                        { rental_status: 'RENTED' },
+                    ],
+                },
             }),
         };
 
