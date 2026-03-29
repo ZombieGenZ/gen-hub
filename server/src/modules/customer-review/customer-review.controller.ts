@@ -13,6 +13,7 @@ import {
 import {
     ApiBearerAuth,
     ApiBody,
+    ApiHeader,
     ApiOperation,
     ApiParam,
     ApiQuery,
@@ -84,6 +85,21 @@ const notFoundSchema = buildErrorResponseSchema({
     message: 'Không tìm thấy đánh giá khách hàng',
 });
 
+const createOrUpdateValidationSchema = buildErrorResponseSchema({
+    code: 'error.validation',
+    message: 'Dữ liệu đầu vào không hợp lệ',
+    errors: [
+        { field: 'customer_name', message: 'Tên khách hàng là bắt buộc' },
+        { field: 'rating', message: 'Điểm đánh giá phải nằm trong khoảng từ 1 đến 5' },
+    ],
+});
+
+const invalidDeleteManySchema = buildErrorResponseSchema({
+    code: 'error.validation',
+    message: 'Dữ liệu đầu vào không hợp lệ',
+    errors: [{ field: 'ids', message: 'Danh sách ID đánh giá không hợp lệ' }],
+});
+
 @ApiTags('Customer Reviews')
 @Controller('customer-reviews')
 export class CustomerReviewController {
@@ -127,12 +143,58 @@ export class CustomerReviewController {
     @Post()
     @ApiOperation({
         summary: 'Tạo đánh giá khách hàng',
-        description: 'Tạo mới một đánh giá khách hàng. Yêu cầu quyền `customer-review.create`.',
+        description: 'Tạo mới một đánh giá khách hàng trong hệ thống quản trị. API này yêu cầu quyền `customer-review.create` và cho phép khai báo sẵn trạng thái duyệt, phản hồi nội bộ, cờ nổi bật và thứ tự hiển thị.',
+    })
+    @ApiHeader({
+        name: 'Accept-Language',
+        description: 'Ngôn ngữ phản hồi (vi hoặc en)',
+        required: false,
+        example: 'vi',
     })
     @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequirePermission('customer-review.create')
-    @ApiBody({ type: CreateCustomerReviewDto, description: 'Dữ liệu đánh giá khách hàng cần tạo' })
+    @ApiBody({
+        type: CreateCustomerReviewDto,
+        description: 'Dữ liệu đánh giá khách hàng cần tạo',
+        examples: {
+            approved_featured: {
+                summary: 'Tạo đánh giá đã duyệt và nổi bật',
+                description: 'Phù hợp khi quản trị viên nhập dữ liệu đã được kiểm duyệt để hiển thị ngay trên website.',
+                value: {
+                    customer_name: 'Nguyễn Văn An',
+                    customer_email: 'an.nguyen@example.com',
+                    customer_phone: '+84901234567',
+                    customer_company: 'ABC Logistics',
+                    customer_position: 'Trưởng phòng vận hành',
+                    customer_avatar: 'https://cdn.example.com/avatar/customer-review-1.jpg',
+                    rating: 5,
+                    title: 'Dịch vụ rất chuyên nghiệp',
+                    content: 'GEN-HUB hỗ trợ rất nhanh và quy trình thuê kho rõ ràng, minh bạch.',
+                    reply: 'Cảm ơn anh đã tin tưởng và sử dụng dịch vụ của GEN-HUB.',
+                    status: ReviewStatus.APPROVED,
+                    is_featured: true,
+                    display_order: 1,
+                    is_active: true,
+                },
+            },
+            pending_review: {
+                summary: 'Tạo đánh giá chờ duyệt',
+                description: 'Phù hợp khi nhập đánh giá mới cần biên tập hoặc xác minh trước khi công khai.',
+                value: {
+                    customer_name: 'Trần Minh Quân',
+                    customer_company: 'Delta Supply Chain',
+                    rating: 4,
+                    title: 'Trải nghiệm tốt',
+                    content: 'Dịch vụ ổn định, đội ngũ hỗ trợ nhiệt tình và phản hồi nhanh.',
+                    status: ReviewStatus.PENDING,
+                    is_featured: false,
+                    display_order: 0,
+                    is_active: true,
+                },
+            },
+        },
+    })
     @ApiResponse({
         status: 201,
         description: 'Tạo đánh giá khách hàng thành công',
@@ -141,6 +203,11 @@ export class CustomerReviewController {
             message: 'Đã tạo đánh giá khách hàng thành công',
             dataSchema: customerReviewItemSchema,
         }),
+    })
+    @ApiResponse({
+        status: 422,
+        description: 'Dữ liệu tạo đánh giá không hợp lệ',
+        schema: createOrUpdateValidationSchema,
     })
     @ApiAuthResponses()
     @ApiValidationErrorResponse()
@@ -155,26 +222,72 @@ export class CustomerReviewController {
     @Get()
     @ApiOperation({
         summary: 'Lấy danh sách đánh giá khách hàng',
-        description: 'Lấy danh sách đánh giá khách hàng có phân trang và bộ lọc. Người có quyền `customer-review.list.all` xem toàn bộ hệ thống, còn `customer-review.list` chỉ xem dữ liệu do mình tạo.',
+        description: 'Lấy danh sách đánh giá khách hàng có phân trang và bộ lọc. Người có quyền `customer-review.list.all` xem toàn bộ hệ thống, còn `customer-review.list` chỉ xem dữ liệu do chính mình tạo.',
+    })
+    @ApiHeader({
+        name: 'Accept-Language',
+        description: 'Ngôn ngữ phản hồi (vi hoặc en)',
+        required: false,
+        example: 'vi',
     })
     @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequireAnyPermission('customer-review.list', 'customer-review.list.all')
-    @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Số lượng bản ghi trên mỗi trang', example: 10 })
-    @ApiQuery({ name: 'offset', required: false, type: Number, description: 'Vị trí bắt đầu để phân trang', example: 0 })
-    @ApiQuery({ name: 'keywords', required: false, type: String, description: 'Từ khóa tìm kiếm', example: 'ABC Logistics' })
-    @ApiQuery({ name: 'status', required: false, enum: ReviewStatus, description: 'Lọc theo trạng thái đánh giá' })
-    @ApiQuery({ name: 'rating', required: false, type: Number, description: 'Lọc theo số sao', example: 5 })
-    @ApiQuery({ name: 'is_featured', required: false, type: Boolean, description: 'Lọc theo trạng thái nổi bật', example: true })
-    @ApiQuery({ name: 'is_active', required: false, type: Boolean, description: 'Lọc theo trạng thái hoạt động', example: true })
+    @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Số lượng bản ghi trên mỗi trang.', example: 10 })
+    @ApiQuery({ name: 'offset', required: false, type: Number, description: 'Vị trí bắt đầu để phân trang, tính từ 0.', example: 0 })
+    @ApiQuery({ name: 'keywords', required: false, type: String, description: 'Từ khóa tìm kiếm theo tên, email, công ty, tiêu đề hoặc nội dung đánh giá.', example: 'ABC Logistics' })
+    @ApiQuery({ name: 'status', required: false, enum: ReviewStatus, description: 'Lọc theo trạng thái duyệt của đánh giá.', example: ReviewStatus.APPROVED })
+    @ApiQuery({ name: 'rating', required: false, type: Number, description: 'Lọc theo số sao của đánh giá.', example: 5 })
+    @ApiQuery({ name: 'is_featured', required: false, type: Boolean, description: 'Lọc các đánh giá đang được đánh dấu nổi bật.', example: true })
+    @ApiQuery({ name: 'is_active', required: false, type: Boolean, description: 'Lọc các đánh giá đang ở trạng thái hoạt động.', example: true })
     @ApiResponse({
         status: 200,
         description: 'Lấy danh sách đánh giá khách hàng thành công',
-        schema: buildSuccessResponseSchema({
-            code: 'customer-review.list',
-            message: 'Lấy danh sách đánh giá khách hàng thành công',
-            dataSchema: buildPaginationDataSchema(customerReviewItemSchema),
-        }),
+        content: {
+            'application/json': {
+                example: {
+                    code: 'customer-review.list',
+                    message: 'Lấy danh sách đánh giá khách hàng thành công',
+                    success: true,
+                    data: {
+                        items: [
+                            {
+                                id: CUSTOMER_REVIEW_ID,
+                                customer_name: 'Nguyễn Văn An',
+                                customer_email: 'an.nguyen@example.com',
+                                customer_phone: '+84901234567',
+                                customer_company: 'ABC Logistics',
+                                customer_position: 'Trưởng phòng vận hành',
+                                customer_avatar: 'https://cdn.example.com/avatar/customer-review-1.jpg',
+                                rating: 5,
+                                title: 'Dịch vụ rất chuyên nghiệp',
+                                content: 'Quy trình làm việc rõ ràng và đội ngũ hỗ trợ rất nhanh.',
+                                reply: 'Cảm ơn anh đã tin tưởng GEN-HUB.',
+                                replied_at: '2026-03-24T08:00:00.000Z',
+                                replied_by: '550e8400-e29b-41d4-a716-446655440001',
+                                status: ReviewStatus.APPROVED,
+                                is_featured: true,
+                                display_order: 1,
+                                is_active: true,
+                                created_at: '2026-03-24T07:00:00.000Z',
+                                updated_at: '2026-03-24T08:00:00.000Z',
+                                created_by: '550e8400-e29b-41d4-a716-446655440001',
+                                updated_by: '550e8400-e29b-41d4-a716-446655440001',
+                            },
+                        ],
+                        total: 1,
+                        limit: 10,
+                        offset: 0,
+                        hasMore: false,
+                    },
+                },
+                schema: buildSuccessResponseSchema({
+                    code: 'customer-review.list',
+                    message: 'Lấy danh sách đánh giá khách hàng thành công',
+                    dataSchema: buildPaginationDataSchema(customerReviewItemSchema),
+                }),
+            },
+        },
     })
     @ApiAuthResponses()
     @ApiValidationErrorResponse()
@@ -190,7 +303,13 @@ export class CustomerReviewController {
     @Get(':id')
     @ApiOperation({
         summary: 'Lấy chi tiết đánh giá khách hàng',
-        description: 'Lấy chi tiết một đánh giá khách hàng theo ID. Người có quyền `customer-review.read.all` xem được mọi bản ghi, còn `customer-review.read` chỉ xem dữ liệu do mình tạo.',
+        description: 'Lấy chi tiết một đánh giá khách hàng theo ID. Người có quyền `customer-review.read.all` xem được mọi bản ghi, còn `customer-review.read` chỉ xem dữ liệu do chính mình tạo.',
+    })
+    @ApiHeader({
+        name: 'Accept-Language',
+        description: 'Ngôn ngữ phản hồi (vi hoặc en)',
+        required: false,
+        example: 'vi',
     })
     @ApiParam({ name: 'id', description: 'ID đánh giá khách hàng', example: CUSTOMER_REVIEW_ID })
     @ApiBearerAuth('JWT-auth')
@@ -220,13 +339,42 @@ export class CustomerReviewController {
     @Put(':id')
     @ApiOperation({
         summary: 'Cập nhật đánh giá khách hàng',
-        description: 'Cập nhật một phần hoặc toàn bộ thông tin đánh giá khách hàng. Người có quyền `customer-review.update.all` cập nhật được mọi bản ghi, còn `customer-review.update` chỉ cập nhật dữ liệu do mình tạo.',
+        description: 'Cập nhật một phần hoặc toàn bộ thông tin đánh giá khách hàng. Người có quyền `customer-review.update.all` cập nhật được mọi bản ghi, còn `customer-review.update` chỉ cập nhật dữ liệu do chính mình tạo.',
+    })
+    @ApiHeader({
+        name: 'Accept-Language',
+        description: 'Ngôn ngữ phản hồi (vi hoặc en)',
+        required: false,
+        example: 'vi',
     })
     @ApiParam({ name: 'id', description: 'ID đánh giá khách hàng cần cập nhật', example: CUSTOMER_REVIEW_ID })
     @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequireAnyPermission('customer-review.update', 'customer-review.update.all')
-    @ApiBody({ type: UpdateCustomerReviewDto, description: 'Dữ liệu đánh giá khách hàng cần cập nhật' })
+    @ApiBody({
+        type: UpdateCustomerReviewDto,
+        description: 'Dữ liệu đánh giá khách hàng cần cập nhật',
+        examples: {
+            approve_and_reply: {
+                summary: 'Duyệt đánh giá và thêm phản hồi',
+                description: 'Phù hợp cho thao tác kiểm duyệt nội dung trước khi xuất bản.',
+                value: {
+                    status: ReviewStatus.APPROVED,
+                    reply: 'Cảm ơn anh đã phản hồi tích cực. GEN-HUB sẽ tiếp tục cải thiện dịch vụ.',
+                    is_featured: true,
+                    display_order: 1,
+                },
+            },
+            deactivate_review: {
+                summary: 'Ẩn tạm thời đánh giá',
+                description: 'Dùng khi cần ngừng hiển thị một đánh giá mà không xóa dữ liệu.',
+                value: {
+                    is_active: false,
+                    is_featured: false,
+                },
+            },
+        },
+    })
     @ApiResponse({
         status: 200,
         description: 'Cập nhật đánh giá khách hàng thành công',
@@ -253,10 +401,33 @@ export class CustomerReviewController {
     @Delete('delete/many')
     @ApiOperation({
         summary: 'Xóa nhiều đánh giá khách hàng',
-        description: 'Xóa mềm nhiều đánh giá khách hàng theo danh sách ID. Người có quyền `customer-review.delete.all` xóa được mọi bản ghi, còn `customer-review.delete` chỉ xóa dữ liệu do mình tạo.',
+        description: 'Xóa mềm nhiều đánh giá khách hàng theo danh sách ID. Người có quyền `customer-review.delete.all` xóa được mọi bản ghi, còn `customer-review.delete` chỉ xóa dữ liệu do chính mình tạo.',
+    })
+    @ApiHeader({
+        name: 'Accept-Language',
+        description: 'Ngôn ngữ phản hồi (vi hoặc en)',
+        required: false,
+        example: 'vi',
     })
     @ApiBody({
         description: 'Danh sách ID đánh giá khách hàng cần xóa',
+        examples: {
+            single: {
+                summary: 'Xóa một đánh giá',
+                value: {
+                    ids: [CUSTOMER_REVIEW_ID],
+                },
+            },
+            multiple: {
+                summary: 'Xóa nhiều đánh giá',
+                value: {
+                    ids: [
+                        CUSTOMER_REVIEW_ID,
+                        '550e8400-e29b-41d4-a716-446655440302',
+                    ],
+                },
+            },
+        },
         schema: {
             type: 'object',
             properties: {
@@ -264,6 +435,7 @@ export class CustomerReviewController {
                     type: 'array',
                     items: { type: 'string', format: 'uuid' },
                     example: [CUSTOMER_REVIEW_ID],
+                    minItems: 1,
                 },
             },
             required: ['ids'],
@@ -282,6 +454,11 @@ export class CustomerReviewController {
             dataExample: null,
         }),
     })
+    @ApiResponse({
+        status: 422,
+        description: 'Danh sách ID không hợp lệ',
+        schema: invalidDeleteManySchema,
+    })
     @ApiAuthResponses()
     @ApiValidationErrorResponse()
     async deleteMany(
@@ -297,7 +474,13 @@ export class CustomerReviewController {
     @Delete(':id')
     @ApiOperation({
         summary: 'Xóa đánh giá khách hàng',
-        description: 'Xóa mềm một đánh giá khách hàng theo ID. Người có quyền `customer-review.delete.all` xóa được mọi bản ghi, còn `customer-review.delete` chỉ xóa dữ liệu do mình tạo.',
+        description: 'Xóa mềm một đánh giá khách hàng theo ID. Người có quyền `customer-review.delete.all` xóa được mọi bản ghi, còn `customer-review.delete` chỉ xóa dữ liệu do chính mình tạo.',
+    })
+    @ApiHeader({
+        name: 'Accept-Language',
+        description: 'Ngôn ngữ phản hồi (vi hoặc en)',
+        required: false,
+        example: 'vi',
     })
     @ApiParam({ name: 'id', description: 'ID đánh giá khách hàng cần xóa', example: CUSTOMER_REVIEW_ID })
     @ApiBearerAuth('JWT-auth')
