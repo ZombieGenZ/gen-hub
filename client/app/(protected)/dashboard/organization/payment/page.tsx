@@ -43,7 +43,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Calendar, RangeValue } from "@/components/ui/calendar-1";
+import { DatePicker } from "@/components/ui/date-picker";
 import { cn } from "@/lib/utils";
 import { DepositModal } from "@/components/modals/deposit-modal";
 import { orgHelper } from "@/lib/organization.utils";
@@ -97,7 +97,7 @@ export default function FinancePage() {
     const [searchDescription, setSearchDescription] = useState("");
     const [filterType, setFilterType] = useState<FilterType>("all");
     const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
-    const [date, setDate] = useState<RangeValue | null>(null);
+    const [date, setDate] = useState<Date | undefined>(undefined);
 
     // Pagination
     const [page, setPage] = useState(1);
@@ -149,7 +149,7 @@ export default function FinancePage() {
         desc: string,
         type: FilterType,
         status: FilterStatus,
-        dateRange: RangeValue | null
+        dateRange: Date | undefined
     ) => {
         setTxLoading(true);
         try {
@@ -187,7 +187,7 @@ export default function FinancePage() {
                 if (!token) return;
                 await Promise.all([
                     fetchBalance(token, orgId),
-                    fetchTransactions(token, orgId, 1, "", "all", "all", null),
+                    fetchTransactions(token, orgId, 1, "", "all", "all", undefined),
                 ]);
             } catch {
                 // Individual fetchers handle their own errors
@@ -229,7 +229,7 @@ export default function FinancePage() {
         setSearchDescription("");
         setFilterType("all");
         setFilterStatus("all");
-        setDate(null);
+        setDate(undefined);
         setPage(1);
     };
 
@@ -363,15 +363,10 @@ export default function FinancePage() {
                     {/* Filters */}
                     <div className="flex flex-col lg:flex-row gap-4">
                         <div className="w-full lg:w-auto">
-                            <Calendar
-                                allowClear
-                                isDocsPage={true}
-                                onChange={setDate}
-                                value={date}
-                                horizontalLayout={true}
-                                showTimeInput={false}
-                                popoverAlignment="start"
-                                compact
+                            <DatePicker
+                                date={date}
+                                onDateChange={setDate}
+                                placeholder="Chọn ngày..."
                             />
                         </div>
                         <div className="w-full lg:w-45">
