@@ -106,6 +106,37 @@ export class WarehouseManagerInventoryService {
     }
 
     /**
+     * Phân công nhân viên cho phiếu nhập
+     * POST /warehouse-manager/inventory/inbound/:id/assign-workers
+     * @param token Token xác thực
+     * @param id ID của phiếu nhập kho
+     * @param data Thông tin phân công (checker_id, worker_id)
+     * @returns Kết quả phản hồi từ API
+     */
+    async assignWorkers(
+        token: string,
+        id: string,
+        data: { checker_id?: string; worker_id?: string },
+    ): Promise<ApiResponse<any>> {
+        const response = await fetch(
+            `${API}/warehouse-manager/inventory/inbound/${id}/assign-workers`,
+            {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(data),
+            },
+        );
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || "Không thể phân công nhân viên");
+        }
+        return await response.json();
+    }
+
+    /**
      * Từ chối phiếu nhập kho
      * @param token Token xác thực
      * @param id ID của phiếu nhập kho

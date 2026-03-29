@@ -43,6 +43,27 @@ export class RefundService {
         return await response.json();
     }
 
+    /**
+     * Lấy chi tiết yêu cầu hoàn tiền
+     * GET /organizations/:orgId/refund-requests/:id
+     */
+    async getRefundRequestById(token: string, id: string): Promise<ApiResponse<RefundRequest>> {
+        const orgId = await orgHelper.getOrgId(token);
+        const response = await fetch(`${API}/organizations/${orgId}/refund-requests/${id}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Không thể lấy chi tiết yêu cầu hoàn tiền');
+        }
+
+        return await response.json();
+    }
+
     // ==================== DÀNH CHO QUẢN TRỊ VIÊN (ADMIN) ====================
 
     /**

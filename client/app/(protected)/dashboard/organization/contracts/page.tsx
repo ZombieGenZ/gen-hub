@@ -84,23 +84,17 @@ export default function ContractManagementPage() {
             if (!token) { router.push("/login"); return; }
             setLoading(true);
 
-            // 1. Get current user's organization_id
-            let currentOrgId: string | undefined;
-            try {
-                currentOrgId = await orgHelper.getOrgId(token);
-            } catch (err) {
-                console.error("Failed to get organization ID", err);
-            }
+            // Get current user's organization_id
+            const currentOrgId = await orgHelper.getOrgId(token);
 
             const params = {
                 page,
                 limit,
                 keywords: searchTerm || undefined,
                 status: activeTab !== "all" ? activeTab : undefined,
-                organization_id: currentOrgId, // Try to filter at API level if supported
             };
 
-            const data = await rentalContractService.getRentalContracts(token, params);
+            const data = await rentalContractService.getOrgRentalContracts(token, currentOrgId, params);
             
             if(!data) {
                 showToast("Không thể tải hợp đồng", "error");
@@ -122,22 +116,8 @@ export default function ContractManagementPage() {
                 totalItems = data.length;
             }
 
-            // 2. Filter items by organization_id if provided by currentOrgId
-            // This handles the case where the API might return contracts from other orgs
-            if (currentOrgId) {
-                const filteredItems = items.filter(
-                    (item: Contract) => item.organization?.id === currentOrgId
-                );
-                
-                // If we filtered locally, we should adjust total if it was based on items length
-                // But if the total came from API, it might be misleading now.
-                // However, the user specifically asked to filter.
-                setContracts(filteredItems);
-                setTotal(data && data.items ? (filteredItems.length === items.length ? totalItems : filteredItems.length) : filteredItems.length);
-            } else {
-                setContracts(items);
-                setTotal(totalItems);
-            }
+            setContracts(items);
+            setTotal(totalItems);
         } catch (error) {
             console.error("Failed to fetch contracts", error);
         } finally {

@@ -42,24 +42,10 @@ export default function CustomerContractDetailPage() {
                 if (!token) { router.push("/login"); return; }
                 setLoading(true);
                 
-                // Get current user's organization_id
-                let currentOrgId: string | undefined;
-                try {
-                    currentOrgId = await orgHelper.getOrgId(token);
-                } catch (err) {
-                    console.error("Failed to get organization ID", err);
-                }
-
-                const res = await rentalContractService.getRentalContractById(token, contractId);
+                const currentOrgId = await orgHelper.getOrgId(token);
+                const res = await rentalContractService.getOrgRentalContractById(token, currentOrgId, contractId);
                 const data: RentalContractDetail = res?.data ?? res;
-
-                // Security check: Ensure contract belongs to the user's organization
-                if (currentOrgId && data.organization?.id !== currentOrgId) {
-                    console.warn(`Access denied: Contract ${contractId} does not belong to organization ${currentOrgId}`);
-                    setContract(null);
-                } else {
-                    setContract(data);
-                }
+                setContract(data);
             } catch (err) {
                 console.error("Failed to load contract", err);
             } finally {
@@ -73,7 +59,8 @@ export default function CustomerContractDetailPage() {
         try {
             const token = authStorage.getAccessToken();
             if (!token) return;
-            const res = await rentalContractService.getRentalContractById(token, contractId);
+            const currentOrgId = await orgHelper.getOrgId(token);
+            const res = await rentalContractService.getOrgRentalContractById(token, currentOrgId, contractId);
             setContract(res?.data ?? res);
         } catch (err) {
             console.error("Failed to refresh contract", err);

@@ -91,3 +91,92 @@ export interface InventoryStockItem {
     days_in_storage: number;
     created_at: string;
 }
+
+// ────────────────────────────────────────────────
+// Warehouse detail & list types
+// ────────────────────────────────────────────────
+
+export interface WarehouseListItem {
+    id: string;
+    name: string;
+    description: string | null;
+    address_detail: string | null;
+    width: number;
+    length: number;
+    is_active: boolean;
+    created_at: string;
+}
+
+export interface WarehouseDetail extends WarehouseListItem {
+    ward_id: string | null;
+    latitude: number | null;
+    longitude: number | null;
+    updated_at: string | null;
+}
+
+export interface WarehousePaginatedResponse {
+    items: WarehouseListItem[];
+    total: number;
+    limit: number;
+    offset: number;
+}
+
+// ────────────────────────────────────────────────
+// Update DTOs cho warehouse components
+// ────────────────────────────────────────────────
+
+export interface UpdateWarehouseDto {
+    name?: string;
+    description?: string;
+}
+
+export interface UpdateRowDto {
+    name?: string;
+    description?: string;
+}
+
+export interface UpdateRackDto {
+    name?: string;
+    description?: string;
+}
+
+export interface UpdateShelfDto {
+    name?: string;
+    description?: string;
+    assigned_product_id?: string | null;
+}
+
+export interface UpdateBlockDto {
+    name?: string;
+    description?: string;
+}
+
+export interface RowDetail {
+    id: string;
+    name: string;
+    code: string;
+    description: string | null;
+    position_x: number | null;
+    position_y: number | null;
+    position_rotation: number | null;
+    total_weight_capacity: number | null;
+    is_active: boolean;
+}
+
+export interface RackListItem {
+    id: string;
+    name: string;
+    code: string;
+    position_x: number | null;
+    position_y: number | null;
+    total_height: number | null;
+    is_active: boolean;
+}
+
+export interface QueryWarehouseParams {
+    limit?: number;
+    offset?: number;
+    keywords?: string;
+    is_active?: boolean;
+}
+
