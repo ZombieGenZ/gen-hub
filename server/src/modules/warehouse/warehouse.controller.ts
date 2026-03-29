@@ -14,8 +14,8 @@ import { I18nLang } from 'nestjs-i18n';
 
 import { WarehouseService } from './warehouse.service';
 import { UpdateWarehouseDto, QueryWarehouseDto, UpdateShelfDto, UpdateRowDto, UpdateRackDto, UpdateBlockDto } from './dto';
-import { CombinedAuthGuard, PermissionGuard } from '../../common/guards';
-import { RequirePermission, CurrentActor } from '../../common/decorators';
+import { CombinedAuthGuard, OrgPermissionGuard } from '../../common/guards';
+import { RequireOrgPermission, CurrentActor } from '../../common/decorators';
 import { GetResponse, UpdatedResponse, ResponseCode } from '../../common/responses';
 import { ApiAuthResponses, ApiValidationErrorResponse } from '../../common/decorators';
 
@@ -23,12 +23,12 @@ import { ApiAuthResponses, ApiValidationErrorResponse } from '../../common/decor
 @ApiBearerAuth('JWT-auth')
 @ApiHeader({ name: 'X-API-Key', description: 'API Key for authentication (alternative to JWT)', required: false })
 @Controller('organizations/:orgId/warehouses')
-@UseGuards(CombinedAuthGuard, PermissionGuard)
+@UseGuards(CombinedAuthGuard, OrgPermissionGuard)
 export class WarehouseController {
     constructor(private readonly warehouseService: WarehouseService) { }
 
     @Get()
-    @RequirePermission('warehouse.list')
+    @RequireOrgPermission('warehouse.list')
     @ApiOperation({ summary: 'Lấy danh sách warehouse của tổ chức' })
     @ApiAuthResponses()
     @ApiParam({ name: 'orgId', description: 'ID tổ chức (UUID)', example: '550e8400-e29b-41d4-a716-446655440000' })
@@ -83,7 +83,7 @@ export class WarehouseController {
     }
 
     @Get(':id')
-    @RequirePermission('warehouse.read')
+    @RequireOrgPermission('warehouse.read')
     @ApiOperation({ summary: 'Lấy chi tiết warehouse' })
     @ApiAuthResponses()
     @ApiParam({ name: 'orgId', description: 'ID tổ chức (UUID)' })
@@ -126,7 +126,7 @@ export class WarehouseController {
     }
 
     @Get(':id/layout')
-    @RequirePermission('warehouse.layout.view')
+    @RequireOrgPermission('warehouse.layout.view')
     @ApiOperation({ summary: 'Lấy layout warehouse' })
     @ApiAuthResponses()
     @ApiParam({ name: 'orgId', description: 'ID tổ chức (UUID)' })
@@ -208,7 +208,7 @@ export class WarehouseController {
     }
 
     @Get(':id/inventory-stock')
-    @RequirePermission('warehouse.view')
+    @RequireOrgPermission('warehouse.read')
     @ApiOperation({
         summary: 'Lấy inventory stock của warehouse (cho 3D visualization)',
         description: 'Trả về danh sách tất cả inventory items trong warehouse, bao gồm thông tin sản phẩm, batch, vị trí (row/rack/shelf/block). Dùng để render boxes trong 3D warehouse scene.',
@@ -266,7 +266,7 @@ export class WarehouseController {
     }
 
     @Patch(':id')
-    @RequirePermission('warehouse.update')
+    @RequireOrgPermission('warehouse.update')
     @ApiOperation({ summary: 'Cập nhật warehouse' })
     @ApiAuthResponses()
     @ApiValidationErrorResponse()
@@ -317,7 +317,7 @@ export class WarehouseController {
     }
 
     @Get(':id/racks')
-    @RequirePermission('warehouse.view')
+    @RequireOrgPermission('warehouse.read')
     @ApiOperation({ summary: 'Lấy danh sách racks của warehouse' })
     @ApiAuthResponses()
     @ApiParam({ name: 'orgId', description: 'ID tổ chức (UUID)' })
@@ -359,7 +359,7 @@ export class WarehouseController {
     }
 
     @Get(':id/racks/:rackId/shelves')
-    @RequirePermission('warehouse.view')
+    @RequireOrgPermission('warehouse.read')
     @ApiOperation({ summary: 'Lấy danh sách shelves của rack' })
     @ApiAuthResponses()
     @ApiParam({ name: 'orgId', description: 'ID tổ chức (UUID)' })
@@ -403,7 +403,7 @@ export class WarehouseController {
     }
 
     @Get(':id/racks/:rackId/shelves/:shelfId/blocks')
-    @RequirePermission('warehouse.view')
+    @RequireOrgPermission('warehouse.read')
     @ApiOperation({ summary: 'Lấy danh sách blocks của shelf' })
     @ApiAuthResponses()
     @ApiParam({ name: 'orgId', description: 'ID tổ chức (UUID)' })
@@ -450,7 +450,7 @@ export class WarehouseController {
     }
 
     @Get(':id/rows')
-    @RequirePermission('warehouse.view')
+    @RequireOrgPermission('warehouse.read')
     @ApiOperation({ summary: 'Lấy danh sách rows của warehouse' })
     @ApiAuthResponses()
     @ApiParam({ name: 'orgId', description: 'ID tổ chức (UUID)' })
@@ -493,7 +493,7 @@ export class WarehouseController {
     }
 
     @Get(':id/rows/:rowId')
-    @RequirePermission('warehouse.view')
+    @RequireOrgPermission('warehouse.read')
     @ApiOperation({ summary: 'Lấy chi tiết row' })
     @ApiAuthResponses()
     @ApiParam({ name: 'orgId', description: 'ID tổ chức (UUID)' })
@@ -537,7 +537,7 @@ export class WarehouseController {
     }
 
     @Get(':id/rows/:rowId/racks')
-    @RequirePermission('warehouse.view')
+    @RequireOrgPermission('warehouse.read')
     @ApiOperation({ summary: 'Lấy danh sách racks theo row' })
     @ApiAuthResponses()
     @ApiParam({ name: 'orgId', description: 'ID tổ chức (UUID)' })
@@ -582,7 +582,7 @@ export class WarehouseController {
     }
 
     @Patch(':id/shelves/:shelfId')
-    @RequirePermission('warehouse.shelf.update')
+    @RequireOrgPermission('warehouse.update')
     @ApiOperation({ summary: 'Cập nhật shelf (name, description, assigned_product_id)' })
     @ApiAuthResponses()
     @ApiValidationErrorResponse()
@@ -649,7 +649,7 @@ export class WarehouseController {
     }
 
     @Patch(':id/rows/:rowId')
-    @RequirePermission('warehouse.row.update')
+    @RequireOrgPermission('warehouse.update')
     @ApiOperation({ summary: 'Cập nhật row (name, description)' })
     @ApiAuthResponses()
     @ApiValidationErrorResponse()
@@ -703,7 +703,7 @@ export class WarehouseController {
     }
 
     @Patch(':id/racks/:rackId')
-    @RequirePermission('warehouse.rack.update')
+    @RequireOrgPermission('warehouse.update')
     @ApiOperation({ summary: 'Cập nhật rack (name, description)' })
     @ApiAuthResponses()
     @ApiValidationErrorResponse()
@@ -757,7 +757,7 @@ export class WarehouseController {
     }
 
     @Patch(':id/blocks/:blockId')
-    @RequirePermission('warehouse.block.update')
+    @RequireOrgPermission('warehouse.update')
     @ApiOperation({ summary: 'Cập nhật block (name, description)' })
     @ApiAuthResponses()
     @ApiValidationErrorResponse()
