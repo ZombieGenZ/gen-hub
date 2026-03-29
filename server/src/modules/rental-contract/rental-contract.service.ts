@@ -499,6 +499,7 @@ export class RentalContractService {
     const details = await this.prisma.rentalContractDetail.findMany({
       where: { rental_contract_id: contractId, is_deleted: false },
       include: {
+        detail_rows: true,
         warehouse_template: {
           include: {
             rows: {
@@ -525,13 +526,14 @@ export class RentalContractService {
     });
 
     for (const detail of details) {
-      if (!detail.is_whole_warehouse || detail.warehouse_id) continue;
+      if (detail.warehouse_id) continue;
 
       const template = detail.warehouse_template;
       if (!template) continue;
 
       // Wrap the creation in a transaction to ensure data integrity
-      await this.prisma.$transaction(async (tx) => {
+      try {
+        await this.prisma.$transaction(async (tx) => {
         const warehouse = await tx.warehouse.create({
           data: {
             name: detail.warehouse_name || template.name,
@@ -557,6 +559,14 @@ export class RentalContractService {
 
         // Deep clone rows, racks, shelves, and blocks
         for (const rowTpl of template.rows) {
+          // IF partial rental AND this rowTpl is NOT in the rented rows list, SKIP!
+          if (!detail.is_whole_warehouse && detail.detail_rows) {
+            const rentedRowIds = detail.detail_rows.map(dr => dr.row_template_id);
+            if (!rentedRowIds.includes(rowTpl.id)) {
+              continue;
+            }
+          }
+
           const row = await tx.row.create({
             data: {
               warehouse_id: warehouse.id,
@@ -645,10 +655,18 @@ export class RentalContractService {
         this.systemLogService.info(
           'rental-contract',
           'activate_warehouse',
-          `Created warehouse ${warehouse.id} with layout for org ${orgId} from template ${template.id}`,
+          `Created warehouse ${warehouse.id} with layout for org ${orgId} from template ${template.id} (is_whole: ${detail.is_whole_warehouse})`,
           { userId, metaData: { contractId, warehouseId: warehouse.id } },
         );
       });
+      } catch (error: any) {
+        this.systemLogService.error(
+          'rental-contract',
+          'activate_warehouse_error',
+          `Failed to create warehouse layout for contract detail ${detail.id}: ${error.message}`,
+          { userId, metaData: { contractId, detailId: detail.id, error } },
+        );
+      }
     }
   }
 

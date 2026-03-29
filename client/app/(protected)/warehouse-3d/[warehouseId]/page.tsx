@@ -17,8 +17,11 @@ import TransactionPanel from '@/components/warehouse/TransactionPanel';
 import AISuggestionPanel from '@/components/warehouse/AISuggestionPanel';
 import BarcodeScannerPanel from '@/components/warehouse/BarcodeScannerPanel';
 import VoiceCommandIndicator from '@/components/warehouse/VoiceCommandIndicator';
+import ControlPanel from '@/components/warehouse/ControlPanel';
 import OnlineUsersList from '@/components/warehouse/OnlineUsersList';
 import { RealtimeUsersList } from '@/components/warehouse/RealtimeCursors';
+import { useAIVoiceCommands } from '@/hooks/useAIVoiceCommands';
+import { toast } from 'sonner';
 import { BoxCategory } from '@/types/warehouse';
 import { SearchResult } from '@/types/inventory';
 
@@ -89,6 +92,59 @@ export default function Warehouse3DLivePage() {
   const [aiOpen, setAiOpen] = useState(false);
   const [barcodeOpen, setBarcodeOpen] = useState(false);
   const [realtimeEnabled, setRealtimeEnabled] = useState(false);
+  const [controlPanelOpen, setControlPanelOpen] = useState(true);
+
+  // ─── AI Voice Commands ──────────────────────────
+  const {
+    isListening,
+    transcript,
+    isProcessing: voiceProcessing,
+    lastCommand,
+    confidence,
+    toggleListening,
+    executeTextCommand,
+    availableCommands,
+  } = useAIVoiceCommands({
+    onSearch: setSearchQuery,
+    onHighlightRack: selectRack,
+    onClearSelection: clearSelection,
+    onToggleAxes: toggleAxes,
+    onToggleGrid: toggleGrid,
+    onSetViewMode: setViewMode,
+    onFilterCategory: setFilterCategory,
+    onCreateBackground: createBackground,
+    onRemoveBackground: removeBackground,
+    onToggleHumans: () => setShowHumans(prev => !prev),
+    onToggleRoof: () => setShowRoof(prev => !prev),
+    onTogglePerformanceMode: () => setPerformanceMode(prev => !prev),
+    onToggleFPS: () => setShowFPS(prev => !prev),
+    onToggleSearch: () => setSearchOpen(prev => !prev),
+    onToggleAlerts: () => setAlertsOpen(prev => !prev),
+    onToggleStats: () => setStatsOpen(prev => !prev),
+    onToggleTransactions: () => setTransactionsOpen(prev => !prev),
+    onToggleAI: () => setAiOpen(prev => !prev),
+    onToggleBarcode: () => setBarcodeOpen(prev => !prev),
+    onToggleRealtime: () => setRealtimeEnabled(prev => !prev),
+    onOpenRackModal: openRackModal,
+    onShowOnlyRack: showOnlyRack,
+    onShowAllRacks: showAllRacks,
+    racks: state.racks,
+    boxes: state.boxes,
+    selectedRack: state.selectedRack,
+    selectedBox: state.selectedBox,
+  });
+
+  // Handle Ctrl+M for voice
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.key.toLowerCase() === 'm') {
+        e.preventDefault();
+        toggleListening();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [toggleListening]);
 
   // Inventory management hook (operates on the transformed boxes/racks)
   const {
@@ -179,8 +235,15 @@ export default function Warehouse3DLivePage() {
 
       {/* Warehouse name header */}
       {warehouseInfo && (
-        <div className="px-4 py-2 bg-card border-b border-border flex items-center justify-between">
+        <div className="px-4 py-2 bg-card border-b border-border flex items-center justify-between z-20">
           <div className="flex items-center gap-3">
+            <button 
+              onClick={() => setControlPanelOpen(!controlPanelOpen)}
+              className="p-1 hover:bg-muted rounded transition-colors"
+              title="Toggle Sidebar"
+            >
+              <span className="text-xl">☰</span>
+            </button>
             <h1 className="text-lg font-semibold">{warehouseInfo.name}</h1>
             <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded">
               Live
@@ -196,6 +259,58 @@ export default function Warehouse3DLivePage() {
       )}
 
       <div className="flex-1 flex overflow-hidden relative">
+        {/* Left Control Panel */}
+        {controlPanelOpen && (
+          <ControlPanel
+            onCreateBackground={createBackground}
+            onRemoveBackground={removeBackground}
+            onCreateRack={() => toast.info('Chế độ xem trực tiếp không hỗ trợ chỉnh sửa layout')}
+            onRemoveRack={() => toast.info('Chế độ xem trực tiếp không hỗ trợ chỉnh sửa layout')}
+            onAddBoxes={() => toast.info('Vui lòng sử dụng tính năng Nhập kho để thêm hàng')}
+            onRemoveAllBoxes={() => toast.info('Chế độ xem trực tiếp không hỗ trợ xóa hàng')}
+            onRemoveSelectedBox={() => toast.info('Chế độ xem trực tiếp không hỗ trợ xóa hàng')}
+            onMoveBoxToRack={() => toast.info('Chế độ xem trực tiếp không hỗ trợ di chuyển')}
+            onDuplicateBox={() => {}}
+            onClearSelection={clearSelection}
+            onLoadDemoData={() => toast.info('Đang ở chế độ dữ liệu thực từ kho')}
+            onExportData={() => {}}
+            onImportData={() => {}}
+            onToggleAxes={toggleAxes}
+            onToggleGrid={toggleGrid}
+            onSetViewMode={setViewMode}
+            onSearch={setSearchQuery}
+            onFilterCategory={setFilterCategory}
+            onToggleDragMode={toggleDragMode}
+            onRotateRack={() => {}}
+            onCloneRack={() => {}}
+            onShowOnlyRack={showOnlyRack}
+            onShowAllRacks={showAllRacks}
+            onToggleHumans={() => setShowHumans(!showHumans)}
+            onToggleRoof={() => setShowRoof(!showRoof)}
+            onTogglePerformanceMode={() => setPerformanceMode(!performanceMode)}
+            onToggleFPS={() => setShowFPS(!showFPS)}
+            showHumans={showHumans}
+            showRoof={showRoof}
+            performanceMode={performanceMode}
+            showFPS={showFPS}
+            hasBackground={state.showBackground}
+            hasRacks={state.racks.length > 0}
+            showAxes={state.showAxes}
+            showGrid={state.showGrid}
+            viewMode={state.viewMode}
+            stats={stats}
+            searchQuery={state.searchQuery}
+            filterCategory={state.filterCategory}
+            selectedRack={state.selectedRack}
+            selectedBox={state.selectedBox}
+            racks={state.racks}
+            boxes={state.boxes}
+            isDragMode={state.isDragMode}
+            collisionWarnings={state.collisionWarnings}
+            isFilteringRacks={!!state.visibleRackIds}
+          />
+        )}
+
         <WarehouseScene
           showBackground={state.showBackground}
           showAxes={state.showAxes}
@@ -320,6 +435,17 @@ export default function Warehouse3DLivePage() {
         <RealtimeUsersList
           users={realtimeUsers}
           isConnected={realtimeConnected}
+        />
+
+        {/* AI Voice Command Overlay */}
+        <VoiceCommandIndicator
+          isListening={isListening}
+          transcript={transcript}
+          isProcessing={voiceProcessing}
+          lastCommand={lastCommand}
+          confidence={confidence}
+          availableCommands={availableCommands as any}
+          onExecuteTextCommand={executeTextCommand}
         />
       </div>
 

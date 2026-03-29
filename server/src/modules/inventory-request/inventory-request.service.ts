@@ -167,47 +167,165 @@ export class InventoryRequestService {
                 where: {
                     is_deleted: false,
                     warehouse_id: null,
-                    is_whole_warehouse: true,
                     rental_contract: {
                         organization_id: orgId,
                         is_deleted: false,
                         status: { in: activeStatuses as any },
                     },
                 },
-                include: { warehouse_template: true },
+                include: {
+                    detail_rows: true,
+                    warehouse_template: {
+                        include: {
+                            rows: {
+                                where: { is_deleted: false },
+                                include: {
+                                    racks: {
+                                        where: { is_deleted: false },
+                                        include: {
+                                            shelves: {
+                                                where: { is_deleted: false },
+                                                include: {
+                                                    blocks: {
+                                                        where: { is_deleted: false },
+                                                    },
+                                                },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
             });
 
             for (const detail of details) {
                 const template = detail.warehouse_template;
                 if (!template) continue;
 
-                const warehouse = await this.prisma.warehouse.create({
-                    data: {
-                        name: detail.warehouse_name || template.name,
-                        description: detail.warehouse_description || template.description || null,
-                        organization_id: orgId,
-                        length: template.length,
-                        width: template.width,
-                        block_length: template.block_length,
-                        block_width: template.block_width,
-                        ceiling_height: template.ceiling_height ?? null,
-                        max_load_capacity: template.max_load_capacity ?? null,
-                        total_weight_capacity: template.total_weight_capacity ?? null,
-                        ward_id: template.ward_id ?? null,
-                        address_detail: template.address_detail ?? null,
-                        latitude: template.latitude ?? null,
-                        longitude: template.longitude ?? null,
-                        warehouse_template_id: template.id,
-                        is_active: true,
-                        is_deleted: false,
-                        created_by: 'SYSTEM_BACKFILL',
-                    },
-                });
+                try {
+                    await this.prisma.$transaction(async (tx) => {
+                        const warehouse = await tx.warehouse.create({
+                            data: {
+                                name: detail.warehouse_name || template.name,
+                                description: detail.warehouse_description || template.description || null,
+                                organization_id: orgId,
+                                length: template.length,
+                                width: template.width,
+                                block_length: template.block_length,
+                                block_width: template.block_width,
+                                ceiling_height: template.ceiling_height ?? null,
+                                max_load_capacity: template.max_load_capacity ?? null,
+                                total_weight_capacity: template.total_weight_capacity ?? null,
+                                ward_id: template.ward_id ?? null,
+                                address_detail: template.address_detail ?? null,
+                                latitude: template.latitude ?? null,
+                                longitude: template.longitude ?? null,
+                                warehouse_template_id: template.id,
+                                is_active: true,
+                                is_deleted: false,
+                                created_by: 'SYSTEM_BACKFILL',
+                            },
+                        });
 
-                await this.prisma.rentalContractDetail.update({
-                    where: { id: detail.id },
-                    data: { warehouse_id: warehouse.id },
-                });
+                        // Deep clone rows, racks, shelves, and blocks
+                        for (const rowTpl of template.rows) {
+                            if (!detail.is_whole_warehouse && detail.detail_rows) {
+                                const rentedRowIds = detail.detail_rows.map(dr => dr.row_template_id);
+                                if (!rentedRowIds.includes(rowTpl.id)) {
+                                    continue; // Skip cloning this row!
+                                }
+                            }
+
+                            const row = await tx.row.create({
+                                data: {
+                                    warehouse_id: warehouse.id,
+                                    name: rowTpl.name,
+                                    code: rowTpl.code,
+                                    description: rowTpl.description,
+                                    is_rented: rowTpl.is_rented,
+                                    position_x: rowTpl.position_x,
+                                    position_y: rowTpl.position_y,
+                                    position_rotation: rowTpl.position_rotation,
+                                    total_weight_capacity: rowTpl.total_weight_capacity,
+                                    row_template_id: rowTpl.id,
+                                    is_active: true,
+                                    is_deleted: false,
+                                    created_by: 'SYSTEM_BACKFILL',
+                                },
+                            });
+
+                            for (const rackTpl of rowTpl.racks) {
+                                const rack = await tx.rack.create({
+                                    data: {
+                                        row_id: row.id,
+                                        name: rackTpl.name,
+                                        code: rackTpl.code,
+                                        description: rackTpl.description,
+                                        position_x: rackTpl.position_x,
+                                        position_y: rackTpl.position_y,
+                                        position_rotation: rackTpl.position_rotation,
+                                        dimensions_width: rackTpl.dimensions_width,
+                                        dimensions_depth: rackTpl.dimensions_depth,
+                                        dimensions_height: rackTpl.dimensions_height,
+                                        default_block_max_weight_capacity: rackTpl.default_block_max_weight_capacity,
+                                        total_weight_capacity: rackTpl.total_weight_capacity,
+                                        total_height: rackTpl.total_height,
+                                        overload_threshold_percent: rackTpl.overload_threshold_percent,
+                                        is_rented: false,
+                                        is_active: true,
+                                        is_deleted: false,
+                                        created_by: 'SYSTEM_BACKFILL',
+                                    },
+                                });
+
+                                for (const shelfTpl of rackTpl.shelves) {
+                                    const shelf = await tx.shelf.create({
+                                        data: {
+                                            rack_id: rack.id,
+                                            name: shelfTpl.name,
+                                            code: shelfTpl.code,
+                                            description: shelfTpl.description,
+                                            height: shelfTpl.height,
+                                            total_weight_capacity: shelfTpl.total_weight_capacity,
+                                            is_active: true,
+                                            is_deleted: false,
+                                            created_by: 'SYSTEM_BACKFILL',
+                                        },
+                                    });
+
+                                    for (const blockTpl of shelfTpl.blocks) {
+                                        await tx.block.create({
+                                            data: {
+                                                shelf_id: shelf.id,
+                                                name: blockTpl.name,
+                                                code: blockTpl.code,
+                                                description: blockTpl.description,
+                                                position_x: blockTpl.position_x,
+                                                position_y: blockTpl.position_y,
+                                                dimensions_width: blockTpl.dimensions_width,
+                                                dimensions_height: blockTpl.dimensions_height,
+                                                max_weight_capacity: blockTpl.max_weight_capacity,
+                                                height: blockTpl.height,
+                                                is_active: true,
+                                                is_deleted: false,
+                                                created_by: 'SYSTEM_BACKFILL',
+                                            },
+                                        });
+                                    }
+                                }
+                            }
+                        }
+
+                        await tx.rentalContractDetail.update({
+                            where: { id: detail.id },
+                            data: { warehouse_id: warehouse.id },
+                        });
+                    });
+                } catch (error: any) {
+                    console.error('[Lazy Backfill Error]', error.message);
+                }
             }
 
             if (details.length > 0) {
