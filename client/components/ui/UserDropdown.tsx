@@ -124,21 +124,57 @@ const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout, children })
     router.refresh();
   };
 
-  const menuItems = [
+  const roles = user?.roles || userDataFromToken?.roles || [];
+  const isAdmin = roles.some((r: any) => {
+    const roleName = typeof r === 'string' ? r.toUpperCase() : r.name?.toUpperCase();
+    return roleName === 'ADMIN' || roleName === 'ADMINISTRATOR' || roleName === 'SUPER ADMIN';
+  });
+  const isOrg = roles.some((r: any) => {
+    const roleName = typeof r === 'string' ? r.toUpperCase() : r.name?.toUpperCase();
+    return roleName === 'ORGANIZATION' || roleName === 'OWNER';
+  }) || (user as any)?.organization_id || userDataFromToken?.user?.organization_id;
+
+  type MenuItem = {
+    icon: any;
+    label: string;
+    onClick: () => void;
+    danger?: boolean;
+  };
+
+  const menuItems: MenuItem[] = [
     {
       icon: Squares2X2Icon,
-      label: "Dashboard",
+      label: "Bảng điều khiển",
       onClick: () => {
         setIsOpen(false);
-        const roles = user?.roles || userDataFromToken?.roles || [];
-        // Check for ADMIN role (case-insensitive)
-        if (roles.some((role: any) => typeof role === 'string' ? role.toUpperCase() === 'ADMIN' || role.toUpperCase() === 'ADMINISTRATOR' : role.name.toUpperCase() === 'ADMIN' || role.name.toUpperCase() === 'ADMINISTRATOR')) {
-          router.push("/dashboard/admin");
-        } else {
-          router.push("/dashboard");
-        }
+        router.push("/dashboard");
       },
     },
+  ];
+
+  if (isAdmin) {
+    menuItems.push({
+      icon: Cog6ToothIcon,
+      label: "Quản trị hệ thống",
+      onClick: () => {
+        setIsOpen(false);
+        router.push("/dashboard/admin");
+      },
+    });
+  }
+
+  if (isOrg) {
+    menuItems.push({
+      icon: Squares2X2Icon,
+      label: "Quản trị tổ chức",
+      onClick: () => {
+        setIsOpen(false);
+        router.push("/dashboard/organization");
+      },
+    });
+  }
+
+  menuItems.push(
     {
       icon: UserCircleIcon,
       label: "Profile",
@@ -154,8 +190,8 @@ const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout, children })
       label: "Đăng xuất",
       onClick: handleLogout,
       danger: true,
-    },
-  ];
+    }
+  );
 
   return (
     <>
