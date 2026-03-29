@@ -33,6 +33,11 @@ export class RentalContractRepository {
                     select: {
                         id: true,
                         name: true,
+                        images: {
+                            where: { is_deleted: false },
+                            select: { id: true, url: true, thumbnail_url: true, order: true },
+                            orderBy: { order: 'asc' as const },
+                        },
                     },
                 },
                 warehouse: {
@@ -85,6 +90,11 @@ export class RentalContractRepository {
                     select: {
                         id: true,
                         name: true,
+                        images: {
+                            where: { is_deleted: false },
+                            select: { id: true, url: true, thumbnail_url: true, order: true },
+                            orderBy: { order: 'asc' as const },
+                        },
                     },
                 },
                 warehouse: {
@@ -125,6 +135,23 @@ export class RentalContractRepository {
         _count: {
             select: {
                 details: { where: { is_deleted: false } },
+            },
+        },
+        details: {
+            where: { is_deleted: false },
+            include: {
+                warehouse_template: {
+                    select: {
+                        id: true,
+                        name: true,
+                        images: {
+                            where: { is_deleted: false },
+                            select: { id: true, url: true, thumbnail_url: true, order: true },
+                            orderBy: { order: 'asc' as const },
+                            take: 1,
+                        },
+                    },
+                },
             },
         },
     };

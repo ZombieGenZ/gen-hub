@@ -88,6 +88,19 @@ export interface RentalContractListItem {
         id: string;
         name: string;
     }[];
+    details?: {
+        id: string;
+        warehouse_template?: {
+            id: string;
+            name: string;
+            images?: {
+                id: string;
+                url: string;
+                thumbnail_url?: string;
+                order: number;
+            }[];
+        } | null;
+    }[];
 }
 
 export interface RentalContractDetail extends RentalContractListItem {
