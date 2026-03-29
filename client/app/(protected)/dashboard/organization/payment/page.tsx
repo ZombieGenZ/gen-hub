@@ -26,15 +26,15 @@ import {
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-    Wallet,
-    ArrowUpRight,
-    History,
-    CreditCard,
-    ChevronLeft,
-    ChevronRight,
-    RotateCcw,
-    X,
-} from "lucide-react";
+    WalletIcon,
+    ArrowUpRightIcon,
+    ClockIcon,
+    CreditCardIcon,
+    ChevronLeftIcon,
+    ChevronRightIcon,
+    ArrowPathIcon,
+    XMarkIcon,
+} from "@heroicons/react/24/outline";
 import { format } from "date-fns";
 import {
     Select,
@@ -251,9 +251,9 @@ export default function FinancePage() {
     // ── Empty org state ───────────────────────────────────────────────────────
     if (!loading && !orgId) {
         return (
-            <div className="flex flex-col items-center justify-center py-18 text-center gap-4">
-                <Wallet className="w-10 h-10 text-muted-foreground/40" />
-                <p className="text-muted-foreground">Bạn chưa thuộc về tổ chức nào.</p>
+            <div className="flex flex-col items-center justify-center py-[72px] text-center gap-4">
+                <WalletIcon className="w-10 h-10 text-muted-foreground/40" />
+                <p className="text-muted-foreground text-[16px] leading-[150%]">Bạn chưa thuộc về tổ chức nào.</p>
             </div>
         );
     }
@@ -262,18 +262,18 @@ export default function FinancePage() {
     return (
         <div className="space-y-6">
             <div>
-                <h1 className="text-2xl font-bold tracking-tight">Tài chính & Thanh toán</h1>
-                <p className="text-muted-foreground text-sm">Quản lý ví điện tử, số dư và lịch sử giao dịch.</p>
+                <h1 className="text-[32px] leading-[130%] font-bold tracking-tight">Tài chính & Thanh toán</h1>
+                <p className="text-muted-foreground text-[16px] leading-[150%]">Quản lý ví điện tử, số dư và lịch sử giao dịch.</p>
             </div>
 
             {/* Top row: balance card + stats */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 
                 {/* Balance Card */}
-                <Card className="md:col-span-1 border-border/60 shadow-sm">
+                <Card className="md:col-span-1 border-border/60 shadow-sm rounded-3xl">
                     <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                            <Wallet className="w-4 h-4" /> Số dư ví
+                        <CardTitle className="text-[20px] leading-[130%] font-medium text-muted-foreground flex items-center gap-2">
+                            <WalletIcon className="w-4 h-4" /> Số dư ví
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
@@ -287,7 +287,7 @@ export default function FinancePage() {
                             </div>
                         ) : (
                             <div>
-                                <div className="text-4xl font-bold tracking-tight tabular-nums">
+                                <div className="text-[32px] leading-[130%] font-bold tracking-tight tabular-nums">
                                     {formatCurrency(balance?.balance ?? 0)}
                                 </div>
                                 <div className="mt-6 flex gap-4">
@@ -299,13 +299,13 @@ export default function FinancePage() {
                                         currentBalance={balance?.balance ?? 0}
                                     />
                                     <Button
-                                        className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm"
+                                        className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm rounded-xl"
                                         onClick={() => setIsDepositOpen(true)}
                                     >
-                                        <ArrowUpRight className="w-4 h-4 mr-1.5" /> Nạp tiền
+                                        <ArrowUpRightIcon className="w-4 h-4 mr-1.5" /> Nạp tiền
                                     </Button>
-                                    <Button variant="outline" className="flex-1" disabled>
-                                        <CreditCard className="w-4 h-4 mr-1.5" /> Rút tiền
+                                    <Button variant="outline" className="flex-1 rounded-xl" disabled>
+                                        <CreditCardIcon className="w-4 h-4 mr-1.5" /> Rút tiền
                                     </Button>
                                 </div>
                             </div>
@@ -314,9 +314,9 @@ export default function FinancePage() {
                 </Card>
 
                 {/* Financial Overview */}
-                <Card className="md:col-span-2 border-border/60 shadow-sm">
+                <Card className="md:col-span-2 border-border/60 shadow-sm rounded-3xl">
                     <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">Tổng quan tài chính</CardTitle>
+                        <CardTitle className="text-[20px] leading-[130%] font-medium text-muted-foreground">Tổng quan tài chính</CardTitle>
                     </CardHeader>
                     <CardContent className="grid grid-cols-3 gap-4">
                         {loading ? (
@@ -352,10 +352,10 @@ export default function FinancePage() {
             </div>
 
             {/* Transaction History */}
-            <Card className="border-border/60 shadow-sm">
+            <Card className="border-border/60 shadow-sm rounded-3xl">
                 <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center gap-2 text-base">
-                        <History className="w-4 h-4" /> Lịch sử giao dịch
+                    <CardTitle className="flex items-center gap-2 text-[20px] leading-[130%] font-medium text-muted-foreground">
+                        <ClockIcon className="w-5 h-5" /> Lịch sử giao dịch
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -409,7 +409,7 @@ export default function FinancePage() {
                                     onClick={() => setSearchDescription("")}
                                     className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                                 >
-                                    <X className="w-3.5 h-3.5" />
+                                    <XMarkIcon className="w-3.5 h-3.5" />
                                 </button>
                             )}
                         </div>
@@ -418,9 +418,9 @@ export default function FinancePage() {
                             size="icon"
                             title="Đặt lại bộ lọc"
                             onClick={handleReset}
-                            className="shrink-0"
+                            className="shrink-0 rounded-xl"
                         >
-                            <RotateCcw className="w-4 h-4" />
+                            <ArrowPathIcon className="w-4 h-4" />
                         </Button>
                     </div>
 
@@ -433,9 +433,9 @@ export default function FinancePage() {
                         </div>
                     ) : transactions.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-12 gap-4 text-center">
-                            <History className="w-10 h-10 text-muted-foreground/30" />
-                            <p className="font-medium text-muted-foreground">Chưa có giao dịch nào</p>
-                            <p className="text-sm text-muted-foreground/70">Các giao dịch nạp tiền và thanh toán sẽ xuất hiện ở đây.</p>
+                            <ClockIcon className="w-10 h-10 text-muted-foreground/30" />
+                            <p className="font-medium text-[16px] leading-[150%] text-muted-foreground">Chưa có giao dịch nào</p>
+                            <p className="text-[12px] leading-[150%] text-muted-foreground/70">Các giao dịch nạp tiền và thanh toán sẽ xuất hiện ở đây.</p>
                         </div>
                     ) : (
                         <>
@@ -498,7 +498,7 @@ export default function FinancePage() {
 
                             {/* Pagination */}
                             <div className="flex items-center justify-between pt-2">
-                                <p className="text-sm text-muted-foreground">
+                                <p className="text-[12px] leading-[150%] text-muted-foreground">
                                     Trang {page} / {totalPages}
                                     {total > 0 && (
                                         <span className="ml-1 text-muted-foreground/60">
@@ -512,16 +512,18 @@ export default function FinancePage() {
                                         size="sm"
                                         onClick={() => setPage((p) => Math.max(1, p - 1))}
                                         disabled={page <= 1}
+                                        className="rounded-xl"
                                     >
-                                        <ChevronLeft className="w-4 h-4 mr-1" /> Trước
+                                        <ChevronLeftIcon className="w-4 h-4 mr-1" /> Trước
                                     </Button>
                                     <Button
                                         variant="outline"
                                         size="sm"
                                         onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                                         disabled={page >= totalPages}
+                                        className="rounded-xl"
                                     >
-                                        Tiếp <ChevronRight className="w-4 h-4 ml-1" />
+                                        Tiếp <ChevronRightIcon className="w-4 h-4 ml-1" />
                                     </Button>
                                 </div>
                             </div>
