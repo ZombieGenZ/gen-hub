@@ -39,6 +39,7 @@ import {
     RemoveAddonDto,
     ApplyCouponsDto,
     ValidateCouponsDto,
+    SendDocusignDto,
 } from './dto';
 import { JwtAuthGuard, OrgPermissionGuard } from '../../common/guards';
 import { RequireOrgPermission, CurrentUser, ApiAuthResponses, ApiValidationErrorResponse } from '../../common/decorators';

@@ -26,6 +26,10 @@ export class PdfService {
      */
     async generateContractPdf(contract: IRentalContractWithRelations): Promise<Buffer> {
         try {
+            if (!contract.started_at || !contract.expired_at) {
+                throw new Error(`Contract ${contract.id} is missing start or end date`);
+            }
+
             const templateBytes = await fs.readFile(this.templatePath);
             const pdfDoc = await PDFDocument.load(templateBytes);
             const form = pdfDoc.getForm();
