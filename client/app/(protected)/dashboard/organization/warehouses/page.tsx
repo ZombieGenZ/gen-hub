@@ -75,7 +75,11 @@ function getStatusCfg(status: string) {
 function WarehouseCard({ contract }: { contract: RentalContractListItem }) {
     const statusCfg = getStatusCfg(contract.status);
     const days = daysUntil(contract.expired_at);
-    const warehouseName = contract.warehouses?.[0]?.name ?? contract.name ?? "—";
+    
+    // Ưu tiên lấy tên từ template detail mới fetch thêm
+    const firstDetail = contract.details?.[0];
+    const warehouseName = firstDetail?.warehouse_template?.name ?? contract.warehouses?.[0]?.name ?? contract.name ?? "—";
+    const warehouseImage = firstDetail?.warehouse_template?.images?.[0]?.url;
 
     // final_price may be a string from API (Decimal)
     const finalPrice = typeof contract.final_price === "string"
@@ -87,9 +91,19 @@ function WarehouseCard({ contract }: { contract: RentalContractListItem }) {
     return (
         <Link href={`/dashboard/organization/warehouses/${contract.id}`} className="block">
             <Card className="overflow-hidden border border-border hover:shadow-lg hover:border-brand/30 transition-all duration-200 group cursor-pointer h-full">
-                {/* Header gradient banner */}
-                <div className="relative h-36 overflow-hidden bg-gradient-to-br from-brand/20 via-brand/10 to-transparent">
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                {/* Header banner/image */}
+                <div className="relative h-36 overflow-hidden bg-muted flex items-center justify-center">
+                    {warehouseImage ? (
+                        <img 
+                            src={warehouseImage} 
+                            alt={warehouseName}
+                            className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                    ) : (
+                        <div className="absolute inset-0 bg-gradient-to-br from-brand/20 via-brand/10 to-transparent" />
+                    )}
+                    
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
 
                     {/* Status badge */}
                     <div className="absolute top-2.5 left-2.5">
@@ -101,7 +115,7 @@ function WarehouseCard({ contract }: { contract: RentalContractListItem }) {
                     {/* Warehouse count badge */}
                     {contract.warehouses && contract.warehouses.length > 0 && (
                         <div className="absolute top-2.5 right-2.5">
-                            <Badge variant="secondary" className="text-xs flex items-center gap-1 backdrop-blur-sm">
+                            <Badge variant="secondary" className="text-xs flex items-center gap-1 backdrop-blur-sm bg-white/90 text-foreground border-none shadow-sm">
                                 <Warehouse className="w-3.5 h-3.5" />
                                 {contract.warehouses.length > 1
                                     ? `${contract.warehouses.length} kho`
@@ -110,10 +124,12 @@ function WarehouseCard({ contract }: { contract: RentalContractListItem }) {
                         </div>
                     )}
 
-                    {/* Warehouse icon center */}
-                    <div className="absolute inset-0 flex items-center justify-center">
-                        <Building2 className="w-14 h-14 text-brand/20 group-hover:text-brand/30 transition-colors" />
-                    </div>
+                    {/* Warehouse icon fallback (if no image) */}
+                    {!warehouseImage && (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                            <Building2 className="w-14 h-14 text-brand/20 group-hover:text-brand/30 transition-colors" />
+                        </div>
+                    )}
 
                     {/* Expiring warning */}
                     {isExpiringSoon && (
@@ -264,13 +280,17 @@ export default function MyWarehousesPage() {
 
     // ── Filter ─────────────────────────────────────────────────────────────── //
     const filtered = useMemo(() => {
-        return contracts.filter((c) => {
+        const list = contracts.filter((c) => {
             const q = search.trim().toLowerCase();
+            // Lấy tên từ cả details mới và warehouses cũ để search
+            const detailNames = (c.details ?? []).map(d => d.warehouse_template?.name?.toLowerCase() ?? "").join(" ");
             const warehouseNames = (c.warehouses ?? []).map(w => w.name.toLowerCase()).join(" ");
+            
             const matchSearch =
                 q === "" ||
                 (c.name ?? "").toLowerCase().includes(q) ||
                 c.code.toLowerCase().includes(q) ||
+                detailNames.includes(q) ||
                 warehouseNames.includes(q);
             const matchTab =
                 tab === "ALL" ||
@@ -278,6 +298,13 @@ export default function MyWarehousesPage() {
                 // Group OVERDUE_LEVEL_2 and OVERDUE_LEVEL_3 under the "Quá hạn" tab
                 (tab === "OVERDUE_LEVEL_1" && ["OVERDUE_LEVEL_1", "OVERDUE_LEVEL_2", "OVERDUE_LEVEL_3"].includes(c.status));
             return matchSearch && matchTab;
+        });
+
+        // Sắp xếp: ACTIVE lên đầu, sau đó theo ngày tạo mới nhất
+        return [...list].sort((a, b) => {
+            if (a.status === "ACTIVE" && b.status !== "ACTIVE") return -1;
+            if (a.status !== "ACTIVE" && b.status === "ACTIVE") return 1;
+            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
         });
     }, [contracts, search, tab]);
 

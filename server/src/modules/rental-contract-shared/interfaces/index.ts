@@ -28,6 +28,12 @@ export interface IRentalContractDetailWithRelations extends RentalContractDetail
     warehouse_template?: {
         id: string;
         name: string;
+        images?: {
+            id: string;
+            url: string;
+            thumbnail_url?: string | null;
+            order: number;
+        }[];
     } | null;
     warehouse?: {
         id: string;

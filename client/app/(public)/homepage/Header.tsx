@@ -180,9 +180,29 @@ export function PrimeNestHeader({ isLogin, user, onLogout }: HeaderProps) {
                                         Liên hệ
                                     </Link>
                                     {showUserSection && (
-                                        <Link onClick={() => setIsMobileMenuOpen(false)} href="/dashboard" className="text-base font-medium text-primary hover:text-primary/80 py-2 border-b border-border/50">
-                                            Dashboard
-                                        </Link>
+                                        <div className="flex flex-col gap-2 py-2 border-b border-border/50">
+                                            <Link onClick={() => setIsMobileMenuOpen(false)} href="/dashboard" className="text-base font-medium text-primary hover:text-primary/80">
+                                                Bảng điều khiển
+                                            </Link>
+                                            <div className="flex flex-col gap-3 pl-4 mt-1 border-l-2 border-primary/20">
+                                                {(user?.roles?.some(r => {
+                                                    const roleName = typeof r === 'string' ? r.toUpperCase() : (r as any).name?.toUpperCase();
+                                                    return roleName === 'ADMIN' || roleName === 'ADMINISTRATOR' || roleName === 'SUPER ADMIN';
+                                                })) && (
+                                                    <Link onClick={() => setIsMobileMenuOpen(false)} href="/dashboard/admin" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+                                                        Quản trị hệ thống
+                                                    </Link>
+                                                )}
+                                                {(user?.roles?.some(r => {
+                                                    const roleName = typeof r === 'string' ? r.toUpperCase() : (r as any).name?.toUpperCase();
+                                                    return roleName === 'ORGANIZATION' || roleName === 'OWNER';
+                                                }) || (user as any)?.organization_id) && (
+                                                    <Link onClick={() => setIsMobileMenuOpen(false)} href="/dashboard/organization" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+                                                        Quản trị tổ chức
+                                                    </Link>
+                                                )}
+                                            </div>
+                                        </div>
                                     )}
                                 </div>
 
