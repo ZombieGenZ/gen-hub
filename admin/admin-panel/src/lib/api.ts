@@ -389,7 +389,7 @@ export const adminApi = {
             created: Record<string, unknown>[];
             updated: Record<string, unknown>[];
             deleted: string[];
-            errors: { type: string; id?: string; error: string }[];
+            errors: { type: string; id?: string; index?: number; error: string }[];
         }>(data);
     },
 
