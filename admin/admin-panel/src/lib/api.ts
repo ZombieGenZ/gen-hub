@@ -262,6 +262,15 @@ interface AdminRecordsResponse<T = Record<string, unknown>> {
     meta: AdminRecordsMeta;
 }
 
+interface RawQueryResponse {
+    success: boolean;
+    data?: Record<string, unknown>[];
+    columns?: string[];
+    rowsAffected?: number;
+    executionTime?: number;
+    error?: string;
+}
+
 const unwrapArrayResponse = <T>(payload: unknown): T[] => {
     if (Array.isArray(payload)) {
         return payload as T[];
@@ -450,7 +459,7 @@ export const adminApi = {
     // Raw SQL Query Execution
     executeRawQuery: async (query: string) => {
         const { data } = await api.post('/admin/query/execute', { query });
-        return unwrapSuccessData(data);
+        return unwrapSuccessData<RawQueryResponse>(data);
     },
 };
 
