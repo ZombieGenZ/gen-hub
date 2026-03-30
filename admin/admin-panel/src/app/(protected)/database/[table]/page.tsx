@@ -91,6 +91,22 @@ const PAGE_SIZE_OPTIONS = [25, 50, 75, 100];
 const LOCALSTORAGE_PAGE_SIZE_KEY = 'database-panel-page-size';
 const LOCALSTORAGE_COLUMN_ORDER_KEY = 'database-panel-column-order';
 
+const buildSafeMeta = (meta: Partial<Meta> | undefined, fallbackLimit: number): Meta => {
+    const total = typeof meta?.total === 'number' ? meta.total : 0;
+    const page = typeof meta?.page === 'number' ? meta.page : 1;
+    const limit = typeof meta?.limit === 'number' && meta.limit > 0 ? meta.limit : fallbackLimit;
+    const totalPages = typeof meta?.totalPages === 'number'
+        ? meta.totalPages
+        : Math.max(1, Math.ceil(total / Math.max(limit, 1)));
+
+    return {
+        total,
+        page,
+        limit,
+        totalPages,
+    };
+};
+
 export default function TablePage() {
     const params = useParams();
     const tableName = params.table as string;
@@ -225,7 +241,7 @@ export default function TablePage() {
                 orderDirection: sortDirection || undefined,
             });
             setRecords(data.data);
-            setMeta(data.meta);
+            setMeta(buildSafeMeta(data.meta, meta.limit));
 
             // Extract columns from first record or from schema
             if (data.data.length > 0) {

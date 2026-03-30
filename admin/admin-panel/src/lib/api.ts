@@ -233,6 +233,35 @@ export interface AdminTableStatistic {
     lastUpdated?: string;
 }
 
+interface AdminTableSchema {
+    tableName: string;
+    displayName?: string;
+    sensitiveFields?: string[];
+    fields: Array<{
+        name: string;
+        type: string;
+        isRequired: boolean;
+        isList?: boolean;
+        isId: boolean;
+        isUnique?: boolean;
+        hasDefaultValue: boolean;
+        isRelation: boolean;
+        enumValues?: string[];
+    }>;
+}
+
+interface AdminRecordsMeta {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+}
+
+interface AdminRecordsResponse<T = Record<string, unknown>> {
+    data: T[];
+    meta: AdminRecordsMeta;
+}
+
 const unwrapArrayResponse = <T>(payload: unknown): T[] => {
     if (Array.isArray(payload)) {
         return payload as T[];
@@ -248,6 +277,46 @@ const unwrapArrayResponse = <T>(payload: unknown): T[] => {
     }
 
     return [];
+};
+
+const unwrapSuccessData = <T>(payload: unknown): T => {
+    if (
+        payload &&
+        typeof payload === 'object' &&
+        'data' in payload
+    ) {
+        return (payload as { data: T }).data;
+    }
+
+    return payload as T;
+};
+
+const normalizeAdminRecordsResponse = <T>(payload: unknown): AdminRecordsResponse<T> => {
+    const unwrapped = unwrapSuccessData<unknown>(payload);
+    const source = (unwrapped && typeof unwrapped === 'object')
+        ? unwrapped as Record<string, unknown>
+        : {};
+
+    const items = Array.isArray(source.data) ? source.data as T[] : [];
+    const rawMeta = (source.meta && typeof source.meta === 'object')
+        ? source.meta as Record<string, unknown>
+        : {};
+    const total = typeof rawMeta.total === 'number' ? rawMeta.total : items.length;
+    const page = typeof rawMeta.page === 'number' ? rawMeta.page : 1;
+    const limit = typeof rawMeta.limit === 'number' ? rawMeta.limit : Math.max(items.length, 1);
+    const totalPages = typeof rawMeta.totalPages === 'number'
+        ? rawMeta.totalPages
+        : Math.max(1, Math.ceil(total / Math.max(limit, 1)));
+
+    return {
+        data: items,
+        meta: {
+            total,
+            page,
+            limit,
+            totalPages,
+        },
+    };
 };
 
 // Admin API functions
@@ -266,7 +335,7 @@ export const adminApi = {
 
     getTableSchema: async (tableName: string) => {
         const { data } = await api.get(`/admin/tables/${tableName}/schema`);
-        return data;
+        return unwrapSuccessData<AdminTableSchema>(data);
     },
 
     // Records
@@ -290,38 +359,46 @@ export const adminApi = {
         }
 
         const { data } = await api.get(`/admin/tables/${tableName}?${params.toString()}`);
-        return data;
+        return normalizeAdminRecordsResponse(data);
     },
 
     getRecord: async (tableName: string, id: string) => {
         const { data } = await api.get(`/admin/tables/${tableName}/${id}`);
-        return data;
+        return unwrapSuccessData<Record<string, unknown>>(data);
     },
 
     createRecord: async (tableName: string, recordData: Record<string, unknown>) => {
         const { data } = await api.post(`/admin/tables/${tableName}`, recordData);
-        return data;
+        return unwrapSuccessData<Record<string, unknown>>(data);
     },
 
     updateRecord: async (tableName: string, id: string, recordData: Record<string, unknown>) => {
         const { data } = await api.put(`/admin/tables/${tableName}/${id}`, recordData);
-        return data;
+        return unwrapSuccessData<Record<string, unknown>>(data);
     },
 
     deleteRecord: async (tableName: string, id: string) => {
         const { data } = await api.delete(`/admin/tables/${tableName}/${id}`);
-        return data;
+        return unwrapSuccessData<{ success: boolean; message: string }>(data);
     },
 
     // Batch operations
     batchUpdate: async (tableName: string, changes: BatchChanges) => {
         const { data } = await api.post(`/admin/tables/${tableName}/batch`, changes);
-        return data;
+        return unwrapSuccessData<{
+            created: Record<string, unknown>[];
+            updated: Record<string, unknown>[];
+            deleted: string[];
+            errors: { type: string; id?: string; error: string }[];
+        }>(data);
     },
 
     bulkDelete: async (tableName: string, ids: string[]) => {
         const { data } = await api.delete(`/admin/tables/${tableName}/bulk`, { data: { ids } });
-        return data;
+        return unwrapSuccessData<{
+            deleted: string[];
+            errors: { id: string; error: string }[];
+        }>(data);
     },
 
     // Lấy tất cả records để xuất (không phân trang)
@@ -344,19 +421,19 @@ export const adminApi = {
         }
 
         const { data } = await api.get(`/admin/tables/${tableName}?${params.toString()}`);
-        return data;
+        return normalizeAdminRecordsResponse(data);
     },
 
     // Diagram API
     getDiagramSchema: async () => {
         const { data } = await api.get('/admin/diagram/schema');
-        return data;
+        return unwrapSuccessData(data);
     },
 
     getDiagramConfig: async (name?: string) => {
         const params = name ? `?name=${name}` : '';
         const { data } = await api.get(`/admin/diagram/config${params}`);
-        return data;
+        return unwrapSuccessData(data);
     },
 
     saveDiagramConfig: async (config: {
@@ -367,13 +444,13 @@ export const adminApi = {
         dark_mode?: boolean;
     }) => {
         const { data } = await api.put('/admin/diagram/config', config);
-        return data;
+        return unwrapSuccessData(data);
     },
 
     // Raw SQL Query Execution
     executeRawQuery: async (query: string) => {
         const { data } = await api.post('/admin/query/execute', { query });
-        return data;
+        return unwrapSuccessData(data);
     },
 };
 
