@@ -74,6 +74,18 @@ interface TableNodeData {
 
 type TableNode = Node<TableNodeData, 'tableNode'>;
 
+interface DiagramSchema {
+    tables: TableSchema[];
+    relations: Relation[];
+}
+
+interface DiagramConfig {
+    node_positions?: Record<string, { x: number; y: number }> | null;
+    table_colors?: Record<string, string> | null;
+    show_relations?: boolean;
+    dark_mode?: boolean;
+}
+
 // Default color for tables
 const DEFAULT_COLOR = '#14B8A6'; // teal
 
@@ -91,9 +103,106 @@ const AVAILABLE_COLORS = [
     '#3b82f6', // blue
 ];
 
+const normalizeFields = (fields: unknown): TableField[] => {
+    if (!Array.isArray(fields)) {
+        return [];
+    }
+
+    return fields.map((field, index) => {
+        const source = field && typeof field === 'object'
+            ? field as Partial<TableField> & Record<string, unknown>
+            : {};
+
+        return {
+            name: typeof source.name === 'string' && source.name.trim()
+                ? source.name
+                : `field_${index + 1}`,
+            type: typeof source.type === 'string' && source.type.trim()
+                ? source.type
+                : 'Unknown',
+            isId: Boolean(source.isId),
+            isRequired: Boolean(source.isRequired),
+            isUnique: Boolean(source.isUnique),
+            isList: Boolean(source.isList),
+            hasDefaultValue: Boolean(source.hasDefaultValue),
+        };
+    });
+};
+
+const normalizeSchema = (schema: unknown): DiagramSchema => {
+    const source = schema && typeof schema === 'object'
+        ? schema as Record<string, unknown>
+        : {};
+
+    const tables = Array.isArray(source.tables) ? source.tables : [];
+    const relations = Array.isArray(source.relations) ? source.relations : [];
+
+    return {
+        tables: tables.map((table, index) => {
+            const item = table && typeof table === 'object'
+                ? table as Partial<TableSchema> & Record<string, unknown>
+                : {};
+            const name = typeof item.name === 'string' && item.name.trim()
+                ? item.name
+                : `table_${index + 1}`;
+
+            return {
+                name,
+                displayName: typeof item.displayName === 'string' && item.displayName.trim()
+                    ? item.displayName
+                    : name,
+                fields: normalizeFields(item.fields),
+            };
+        }),
+        relations: relations
+            .map((relation, index) => {
+                const item = relation && typeof relation === 'object'
+                    ? relation as Partial<Relation> & Record<string, unknown>
+                    : {};
+                const sourceTable = typeof item.sourceTable === 'string' ? item.sourceTable : '';
+                const targetTable = typeof item.targetTable === 'string' ? item.targetTable : '';
+
+                if (!sourceTable || !targetTable) {
+                    return null;
+                }
+
+                return {
+                    id: typeof item.id === 'string' && item.id.trim()
+                        ? item.id
+                        : `relation_${index + 1}`,
+                    sourceTable,
+                    sourceField: typeof item.sourceField === 'string' ? item.sourceField : 'id',
+                    targetTable,
+                    targetField: typeof item.targetField === 'string' ? item.targetField : 'id',
+                    type: item.type === 'one-to-one' || item.type === 'one-to-many' || item.type === 'many-to-many'
+                        ? item.type
+                        : 'one-to-many',
+                };
+            })
+            .filter((relation): relation is Relation => relation !== null),
+    };
+};
+
+const normalizeConfig = (config: unknown): Required<Pick<DiagramConfig, 'node_positions' | 'table_colors' | 'show_relations'>> => {
+    const source = config && typeof config === 'object'
+        ? config as Record<string, unknown>
+        : {};
+
+    return {
+        node_positions: source.node_positions && typeof source.node_positions === 'object'
+            ? source.node_positions as Record<string, { x: number; y: number }>
+            : {},
+        table_colors: source.table_colors && typeof source.table_colors === 'object'
+            ? source.table_colors as Record<string, string>
+            : {},
+        show_relations: typeof source.show_relations === 'boolean' ? source.show_relations : true,
+    };
+};
+
 // Custom Table Node Component - Memoized for performance
 const TableNodeComponent = ({ data }: { data: { label: string; fields: TableField[]; color: string; tableName: string; onOpenColorModal: (tableName: string) => void } }) => {
     const { t } = useLanguage();
+    const fields = Array.isArray(data.fields) ? data.fields : [];
 
     return (
         <div
@@ -136,7 +245,7 @@ const TableNodeComponent = ({ data }: { data: { label: string; fields: TableFiel
 
             {/* Fields */}
             <div className="divide-y divide-[var(--border-primary)]">
-                {data.fields.map((field) => (
+                {fields.map((field) => (
                     <div
                         key={field.name}
                         className="px-3 py-1.5 text-xs flex items-center justify-between gap-2 hover:bg-[var(--background-tertiary)]"
@@ -195,10 +304,11 @@ const calculateAutoLayout = (
     tables: TableSchema[],
     savedPositions: Record<string, { x: number; y: number }> | null
 ): Record<string, { x: number; y: number }> => {
+    const safeTables = Array.isArray(tables) ? tables : [];
     const positions: Record<string, { x: number; y: number }> = {};
 
     // If we have saved positions for ALL tables, use them
-    if (savedPositions && Object.keys(savedPositions).length >= tables.length) {
+    if (savedPositions && Object.keys(savedPositions).length >= safeTables.length) {
         return savedPositions;
     }
 
@@ -208,10 +318,10 @@ const calculateAutoLayout = (
     const verticalGap = 80; // Increased spacing between rows
     const startX = 50;
     const startY = 50;
-    const maxColumns = Math.min(10, Math.max(4, Math.ceil(Math.sqrt(tables.length * 1.5))));
+    const maxColumns = Math.min(10, Math.max(4, Math.ceil(Math.sqrt(safeTables.length * 1.5))));
 
     // Sort tables by field count (larger tables first for better layout)
-    const sortedTables = [...tables].sort((a, b) => b.fields.length - a.fields.length);
+    const sortedTables = [...safeTables].sort((a, b) => (b.fields?.length ?? 0) - (a.fields?.length ?? 0));
 
     // Track column heights
     const columnHeights: number[] = new Array(maxColumns).fill(startY);
@@ -240,7 +350,7 @@ const calculateAutoLayout = (
         positions[table.name] = { x, y };
 
         // Update column height
-        const nodeHeight = calculateNodeHeight(table.fields.length);
+        const nodeHeight = calculateNodeHeight(table.fields?.length ?? 0);
         columnHeights[minColumnIndex] = y + nodeHeight + verticalGap;
     });
 
@@ -259,7 +369,7 @@ export default function DiagramPage() {
     const [showMiniMap, setShowMiniMap] = useState(true);
     const [hasChanges, setHasChanges] = useState(false);
     const [tableColors, setTableColors] = useState<Record<string, string>>({});
-    const [schema, setSchema] = useState<{ tables: TableSchema[]; relations: Relation[] } | null>(null);
+    const [schema, setSchema] = useState<DiagramSchema | null>(null);
     const [hoveredNode, setHoveredNode] = useState<string | null>(null);
 
     // Color picker modal state
@@ -276,25 +386,28 @@ export default function DiagramPage() {
     const loadDiagram = useCallback(async () => {
         setIsLoading(true);
         try {
-            const [schemaData, configData] = await Promise.all([
+            const [rawSchemaData, rawConfigData] = await Promise.all([
                 adminApi.getDiagramSchema(),
                 adminApi.getDiagramConfig(),
             ]);
 
+            const schemaData = normalizeSchema(rawSchemaData);
+            const configData = normalizeConfig(rawConfigData);
+
             setSchema(schemaData);
             setShowRelations(configData.show_relations ?? true);
-            setTableColors(configData.table_colors || {});
+            setTableColors(configData.table_colors);
 
             // Calculate positions using auto-layout algorithm
             const positions = calculateAutoLayout(
                 schemaData.tables,
-                configData.node_positions as Record<string, { x: number; y: number }> | null
+                configData.node_positions
             );
 
             // Create nodes from tables
             const newNodes: Node[] = schemaData.tables.map((table: TableSchema) => {
                 const position = positions[table.name] || { x: 50, y: 50 };
-                const color = configData.table_colors?.[table.name] || DEFAULT_COLOR;
+                const color = configData.table_colors[table.name] || DEFAULT_COLOR;
 
                 return {
                     id: table.name,
