@@ -4,6 +4,22 @@ import { authStorage } from "@/services/auth/auth-storage.service";
 const API = process.env.NEXT_PUBLIC_API_URL;
 
 /**
+ * Trích xuất userId từ JWT token payload
+ * @param token JWT access token
+ * @returns userId hoặc null nếu không giải mã được
+ */
+function extractUserIdFromToken(token: string): string | null {
+    try {
+        const parts = token.split('.');
+        if (parts.length !== 3) return null;
+        const payload = JSON.parse(atob(parts[1]));
+        return payload.userId ?? payload.sub ?? null;
+    } catch {
+        return null;
+    }
+}
+
+/**
  * Utility lấy organization_id của user hiện tại.
  *
  * Gọi GET /organizations?limit=1 (filter tự động theo userId từ backend),
@@ -26,7 +42,7 @@ export const orgHelper = {
 
         try {
             console.log("[orgHelper] Fetching organizations to get orgId...");
-            const response = await fetch(`${API}/organizations`, {
+            const response = await fetch(`${API}/organizations?member_only=true`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -46,11 +62,14 @@ export const orgHelper = {
 
             // API trả về paginated: { data: { items: [ { id, name, ... }, ... ], total, ... } }
             const items: Organization[] = json?.data?.items ?? [];
-            
-            // Tìm org mà user sở hữu hoặc lấy cái đầu tiên nếu backend đã filter
-            // Ưu tiên org mà user là owner, nếu không lấy cái đầu tiên
-            const userID = authStorage.getUserID();
-            const org = items.find((o) => o.owner.id === userID) || items[0];
+
+            // Lấy userId từ cookie trước, fallback giải mã từ JWT token
+            const userID = authStorage.getUserID() ?? extractUserIdFromToken(token);
+
+            // Ưu tiên org mà user là owner
+            // Nếu không tìm thấy (có thể do userID null hoặc user là member, không phải owner),
+            // fallback lấy org đầu tiên (backend đã filter theo userId)
+            const org = (userID ? items.find((o) => o.owner.id === userID) : null) ?? items[0];
             const orgId = org?.id;
 
             if (!orgId) {

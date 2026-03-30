@@ -241,10 +241,10 @@ export class OrganizationController {
     @Query() query: QueryOrganizationDto,
     @CurrentUser('userId') userId: string,
   ) {
-    const hasListAllPermission = await this.hasPermission(
-      userId,
-      'organization.list.all',
-    );
+    // Khi member_only=true, bỏ qua quyền list.all → chỉ trả về org mà user thuộc về
+    const hasListAllPermission = query.member_only
+      ? false
+      : await this.hasPermission(userId, 'organization.list.all');
     const result = await this.service.findMany(
       query,
       userId,

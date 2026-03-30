@@ -47,4 +47,18 @@ export class QueryOrganizationDto {
         message: i18nValidationMessage('organization.validation.is_active_boolean'),
     })
     is_active?: boolean;
+
+    @ApiPropertyOptional({
+        description: 'Chỉ lấy tổ chức mà user là owner hoặc member (bỏ qua quyền list.all)',
+        example: true,
+    })
+    @IsOptional()
+    @Transform(({ value }) => {
+        if (value === 'true') return true;
+        if (value === 'false') return false;
+        return value;
+    })
+    @IsBoolean()
+    member_only?: boolean;
 }
+
