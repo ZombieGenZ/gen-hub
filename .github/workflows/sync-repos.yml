@@ -9,9 +9,6 @@ on:
       - 'server/**'
       - 'status/**'
       - 'App/**'
-      - 'admin/database-panel/**'
-      - 'admin/feature-flag-panel/**'
-      - 'admin/resources-panel/**'
       - 'admin/admin-panel/**'
 
   workflow_dispatch:
@@ -26,9 +23,6 @@ jobs:
       server: ${{ steps.filter.outputs.server }}
       status: ${{ steps.filter.outputs.status }}
       app: ${{ steps.filter.outputs.app }}
-      database_panel: ${{ steps.filter.outputs.database_panel }}
-      feature_flag_panel: ${{ steps.filter.outputs.feature_flag_panel }}
-      resources_panel: ${{ steps.filter.outputs.resources_panel }}
       admin_panel: ${{ steps.filter.outputs.admin_panel }}
     steps:
       - name: Checkout Code
@@ -45,12 +39,6 @@ jobs:
               - 'status/**'
             app:
               - 'App/**'
-            database_panel:
-              - 'admin/database-panel/**'
-            feature_flag_panel:
-              - 'admin/feature-flag-panel/**'
-            resources_panel:
-              - 'admin/resources-panel/**'
             admin_panel:
               - 'admin/admin-panel/**'
 
@@ -219,105 +207,6 @@ jobs:
           user-email: ${{ secrets.GH_EMAIL }}
           target-branch: master
           commit-message: "Sync status: ${{ github.event.head_commit.message }}"
-
-  sync-database-panel:
-    needs: changes
-    if: ${{ needs.changes.outputs.database_panel == 'true' || github.event_name == 'workflow_dispatch' }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      - name: Install Dependencies and Build
-        run: |
-          cd admin/database-panel
-          npm install
-          npm run build
-      - name: Prepare database-panel sync directory
-        run: |
-          rm -rf .sync
-          mkdir -p .sync
-          git -c core.quotepath=false ls-files -z --cached --others --exclude-standard -- admin/database-panel | tar --null -T - -cf - | tar -xf - -C .sync
-      - name: Push database-panel folder
-        uses: cpina/github-action-push-to-another-repository@main
-        env:
-          API_TOKEN_GITHUB: ${{ secrets.API_TOKEN_GITHUB }}
-        with:
-          source-directory: '.sync/admin/database-panel'
-          destination-github-username: ${{ secrets.GH_USERNAME }}
-          destination-repository-name: ${{ secrets.REPO_DATABASE_PANEL }}
-          user-email: ${{ secrets.GH_EMAIL }}
-          target-branch: master
-          commit-message: "Sync database-panel: ${{ github.event.head_commit.message }}"
-
-  sync-feature-flag-panel:
-    needs: changes
-    if: ${{ needs.changes.outputs.feature_flag_panel == 'true' || github.event_name == 'workflow_dispatch' }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      - name: Install Dependencies and Build
-        run: |
-          cd admin/feature-flag-panel
-          npm install
-          npm run build
-      - name: Prepare feature-flag-panel sync directory
-        run: |
-          rm -rf .sync
-          mkdir -p .sync
-          git -c core.quotepath=false ls-files -z --cached --others --exclude-standard -- admin/feature-flag-panel | tar --null -T - -cf - | tar -xf - -C .sync
-      - name: Push feature-flag-panel folder
-        uses: cpina/github-action-push-to-another-repository@main
-        env:
-          API_TOKEN_GITHUB: ${{ secrets.API_TOKEN_GITHUB }}
-        with:
-          source-directory: '.sync/admin/feature-flag-panel'
-          destination-github-username: ${{ secrets.GH_USERNAME }}
-          destination-repository-name: ${{ secrets.REPO_FEATURE_FLAG_PANEL }}
-          user-email: ${{ secrets.GH_EMAIL }}
-          target-branch: master
-          commit-message: "Sync feature-flag-panel: ${{ github.event.head_commit.message }}"
-
-  sync-resources-panel:
-    needs: changes
-    if: ${{ needs.changes.outputs.resources_panel == 'true' || github.event_name == 'workflow_dispatch' }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      - name: Install Dependencies and Build
-        run: |
-          cd admin/resources-panel
-          npm install
-          npm run build
-      - name: Prepare resources-panel sync directory
-        run: |
-          rm -rf .sync
-          mkdir -p .sync
-          git -c core.quotepath=false ls-files -z --cached --others --exclude-standard -- admin/resources-panel | tar --null -T - -cf - | tar -xf - -C .sync
-      - name: Push resources-panel folder
-        uses: cpina/github-action-push-to-another-repository@main
-        env:
-          API_TOKEN_GITHUB: ${{ secrets.API_TOKEN_GITHUB }}
-        with:
-          source-directory: '.sync/admin/resources-panel'
-          destination-github-username: ${{ secrets.GH_USERNAME }}
-          destination-repository-name: ${{ secrets.REPO_RESOURCES_PANEL }}
-          user-email: ${{ secrets.GH_EMAIL }}
-          target-branch: master
-          commit-message: "Sync resources-panel: ${{ github.event.head_commit.message }}"
 
   sync-admin-panel:
     needs: changes
