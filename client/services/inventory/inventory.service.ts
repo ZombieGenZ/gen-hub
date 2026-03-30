@@ -110,6 +110,27 @@ export class InventoryService {
     }
 
     /**
+     * Xuất Excel danh sách phiếu nhập kho
+     * @param token Access token
+     * @param query Tham số lọc
+     * @returns Blob dữ liệu Excel
+     */
+    async exportInbound(token: string, query?: QueryInboundParams): Promise<Blob> {
+        const orgId = await orgHelper.getOrgId(token);
+        const params = new URLSearchParams();
+        if (query?.keywords) params.append('keywords', query.keywords);
+        if (query?.status) params.append('status', query.status);
+        if (query?.warehouse_id) params.append('warehouse_id', query.warehouse_id);
+
+        const response = await fetch(`${API}/organizations/${orgId}/inventory/inbound/export?${params.toString()}`, {
+            headers: { 'Authorization': `Bearer ${token}` },
+        });
+
+        if (!response.ok) throw new Error('Không thể xuất Excel phiếu nhập');
+        return response.blob();
+    }
+
+    /**
      * Lấy chi tiết phiếu nhập kho theo ID
      * @param token Access token
      * @param id ID phiếu nhập
@@ -211,6 +232,27 @@ export class InventoryService {
             console.error('Lỗi khi lấy danh sách phiếu xuất kho:', error);
             throw error;
         }
+    }
+
+    /**
+     * Xuất Excel danh sách phiếu xuất kho
+     * @param token Access token
+     * @param query Tham số lọc
+     * @returns Blob dữ liệu Excel
+     */
+    async exportOutbound(token: string, query?: QueryOutboundParams): Promise<Blob> {
+        const orgId = await orgHelper.getOrgId(token);
+        const params = new URLSearchParams();
+        if (query?.keywords) params.append('keywords', query.keywords);
+        if (query?.status) params.append('status', query.status);
+        if (query?.warehouse_id) params.append('warehouse_id', query.warehouse_id);
+
+        const response = await fetch(`${API}/organizations/${orgId}/inventory/outbound/export?${params.toString()}`, {
+            headers: { 'Authorization': `Bearer ${token}` },
+        });
+
+        if (!response.ok) throw new Error('Không thể xuất Excel phiếu xuất');
+        return response.blob();
     }
 
     /**
@@ -324,6 +366,27 @@ export class InventoryService {
             throw new Error(errorData.message || 'Không thể lấy danh sách tồn kho');
         }
         return response.json();
+    }
+
+    /**
+     * Xuất Excel báo cáo tồn kho
+     * @param token Access token
+     * @param warehouseId ID của kho (tùy chọn)
+     * @param keywords Từ khóa tìm kiếm (tùy chọn)
+     * @returns Blob dữ liệu Excel
+     */
+    async exportStock(token: string, warehouseId?: string, keywords?: string): Promise<Blob> {
+        const orgId = await orgHelper.getOrgId(token);
+        const params = new URLSearchParams();
+        if (warehouseId) params.append('warehouseId', warehouseId);
+        if (keywords) params.append('keywords', keywords);
+
+        const response = await fetch(`${API}/organizations/${orgId}/inventory/stock/export?${params.toString()}`, {
+            headers: { 'Authorization': `Bearer ${token}` },
+        });
+
+        if (!response.ok) throw new Error('Không thể xuất Excel báo cáo tồn kho');
+        return response.blob();
     }
 
     /**

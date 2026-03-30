@@ -34,6 +34,8 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { authStorage } from "@/services/auth/auth-storage.service";
+import { useToast } from "@/contexts/ToastContext";
+import { Download } from "lucide-react";
 import { InventoryService } from "@/services/inventory/inventory.service";
 
 const inventoryService = new InventoryService();
@@ -183,6 +185,8 @@ export function InventoryTab({ warehouseId }: { warehouseId: string }) {
     const [inventory, setInventory] = useState<StockItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [isExporting, setIsExporting] = useState(false);
+    const { showToast } = useToast();
 
     const fetchStock = useCallback(async () => {
         const token = authStorage.getAccessToken();
@@ -216,6 +220,30 @@ export function InventoryTab({ warehouseId }: { warehouseId: string }) {
     useEffect(() => {
         fetchStock();
     }, [fetchStock]);
+
+    const handleExportExcel = async () => {
+        try {
+            const token = authStorage.getAccessToken();
+            if (!token) return;
+
+            setIsExporting(true);
+            const blob = await inventoryService.exportStock(token, warehouseId || undefined, search || undefined);
+
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `stock-report-${new Date().toISOString().split('T')[0]}.xlsx`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            showToast("Xuất báo cáo tồn kho thành công", "success");
+        } catch (err) {
+            showToast("Không thể xuất Excel báo cáo tồn kho", "error");
+        } finally {
+            setIsExporting(false);
+        }
+    };
 
     const filtered = useMemo(() => {
         let items = [...inventory];
@@ -295,9 +323,19 @@ export function InventoryTab({ warehouseId }: { warehouseId: string }) {
 
     return (
         <div className="space-y-5">
-            {/* Refresh button */}
-            <div className="flex justify-end">
-                <Button variant="ghost" size="sm" onClick={fetchStock} className="text-xs">
+            {/* Refresh & Export buttons */}
+            <div className="flex justify-end gap-2">
+                <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleExportExcel} 
+                    className="text-xs gap-1.5 h-8"
+                    disabled={isExporting}
+                >
+                    <Download className={cn("w-3.5 h-3.5", isExporting && "animate-bounce")} />
+                    {isExporting ? "Đang xuất..." : "Xuất Excel"}
+                </Button>
+                <Button variant="ghost" size="sm" onClick={fetchStock} className="text-xs h-8">
                     <RefreshCw className="w-3.5 h-3.5 mr-1" /> Làm mới
                 </Button>
             </div>

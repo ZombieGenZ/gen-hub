@@ -1,12 +1,15 @@
 import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { I18nService } from 'nestjs-i18n';
+import * as ExcelJS from 'exceljs';
 import { ProductRepository } from './product.repository';
 import { CreateProductDto, UpdateProductDto, QueryProductDto } from './dto';
 import { IProduct, IPaginatedResponse } from './interfaces';
 import { RedisService } from '../redis/redis.service';
 import { WebsocketGateway } from '../websocket/websocket.gateway';
 import { OrganizationAuditLogService } from '../organization/organization-audit-log.service';
+import { ExcelService } from '../../common/services/excel.service';
+import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
 export class ProductService {
@@ -21,6 +24,8 @@ export class ProductService {
         private readonly configService: ConfigService,
         private readonly websocketGateway: WebsocketGateway,
         private readonly auditLogService: OrganizationAuditLogService,
+        private readonly excelService: ExcelService,
+        private readonly prisma: PrismaService,
         private readonly i18n: I18nService,
     ) {
         this.PRODUCT_LIST_TTL = this.configService.get<number>('REDIS_PRODUCT_LIST_TTL') || 300;
@@ -321,11 +326,132 @@ export class ProductService {
         products.forEach(p => {
             this.auditLogService.logDelete(
                 orgId,
-                'Product',
                 p.id,
+                'Product',
                 { name: p.name } as Record<string, unknown>,
                 { userId: actorId, description: `Deleted product: ${p.name}` },
             );
         });
+    }
+
+    async exportProducts(orgId: string, lang: string): Promise<Buffer> {
+        const result = await this.repository.findByOrgId(orgId, { limit: 10000, offset: 0 });
+        const products = result.items;
+
+        const columns = [
+            { header: 'Tên sản phẩm', key: 'name', width: 30 },
+            { header: 'SKU', key: 'sku', width: 15 },
+            { header: 'Mã vạch', key: 'barcode', width: 15 },
+            { header: 'Đơn vị cơ bản', key: 'base_unit', width: 15 },
+            { header: 'Giá vốn', key: 'cost_price', width: 15 },
+            { header: 'Khối lượng (kg)', key: 'weight', width: 15 },
+            { header: 'Dài (cm)', key: 'length', width: 10 },
+            { header: 'Rộng (cm)', key: 'width', width: 10 },
+            { header: 'Cao (cm)', key: 'height', width: 10 },
+            { header: 'Mô tả', key: 'description', width: 40 },
+            { header: 'Quy đổi (Đơn vị:Tỷ lệ:Barcode)', key: 'units', width: 50 },
+        ];
+
+        const data = products.map(p => ({
+            name: p.name,
+            sku: p.sku,
+            barcode: p.barcode || '',
+            base_unit: p.base_unit?.name || '',
+            cost_price: p.cost_price || 0,
+            weight: p.weight || 0,
+            length: p.length || 0,
+            width: p.width || 0,
+            height: p.height || 0,
+            description: p.description || '',
+            units: p.units?.map(u => `${u.unit?.name}:${u.conversion_rate}:${u.barcode || ''}`).join(', ') || '',
+        }));
+
+        return this.excelService.createExcelBuffer(columns, data, 'Products');
+    }
+
+    async importProducts(
+        orgId: string,
+        buffer: any,
+        actorId: string,
+        lang: string,
+    ): Promise<{ success: number; errors: string[] }> {
+        const workbook = new ExcelJS.Workbook();
+        await workbook.xlsx.load(buffer);
+        const worksheet = workbook.getWorksheet(1);
+        if (!worksheet) {
+            throw new BadRequestException('Invalid Excel file');
+        }
+
+        let successCount = 0;
+        const errors: string[] = [];
+
+        // Skip header
+        const rows = worksheet.getRows(2, worksheet.rowCount - 1) || [];
+        
+        // This is a simplified version, ideally we'd use a transaction or bulk create
+        // and handle async better. For now, let's just loop and call create.
+        
+        // First, fetch all units for the org to map names to IDs
+        const orgUnits = await this.prisma.unit.findMany({
+            where: { organization_id: orgId, is_deleted: false }
+        });
+
+        for (let i = 0; i < rows.length; i++) {
+            const row = rows[i];
+            const name = row.getCell(1).value?.toString();
+            const sku = row.getCell(2).value?.toString();
+            if (!name || !sku) continue;
+
+            try {
+                // Find base unit by name
+                const baseUnitName = row.getCell(4).value?.toString();
+                const baseUnit = orgUnits.find(u => u.name?.toLowerCase() === baseUnitName?.toLowerCase());
+                
+                if (!baseUnit) {
+                    errors.push(`Row ${i + 2}: Base unit "${baseUnitName}" not found`);
+                    continue;
+                }
+
+                const createDto: CreateProductDto = {
+                    name,
+                    sku,
+                    barcode: row.getCell(3).value?.toString(),
+                    base_unit_id: baseUnit.id,
+                    cost_price: Number(row.getCell(5).value) || 0,
+                    weight: Number(row.getCell(6).value) || 0,
+                    length: Number(row.getCell(7).value) || 0,
+                    width: Number(row.getCell(8).value) || 0,
+                    height: Number(row.getCell(9).value) || 0,
+                    description: row.getCell(10).value?.toString(),
+                    is_active: true,
+                };
+
+                // Handle units string: "Thùng:24:893456, Lốc:6:893457"
+                const unitsStr = row.getCell(11).value?.toString();
+                if (unitsStr) {
+                    const unitParts = unitsStr.split(',').map(s => s.trim());
+                    createDto.units = [];
+                    for (const part of unitParts) {
+                        const [uName, rate, uBarcode] = part.split(':');
+                        if (!uName) continue;
+                        const unit = orgUnits.find(u => u.name?.toLowerCase() === uName.toLowerCase());
+                        if (unit) {
+                            createDto.units.push({
+                                unit_id: unit.id,
+                                conversion_rate: Number(rate) || 1,
+                                barcode: uBarcode || undefined
+                            });
+                        }
+                    }
+                }
+
+                await this.create(orgId, createDto, actorId, lang);
+                successCount++;
+            } catch (err) {
+                errors.push(`Row ${i + 2}: ${err.message}`);
+            }
+        }
+
+        return { success: successCount, errors };
     }
 }

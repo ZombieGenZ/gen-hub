@@ -203,4 +203,62 @@ export class ProductService {
             throw error;
         }
     }
+
+    /**
+     * Xuất danh sách sản phẩm ra file Excel
+     * @param token Access token
+     * @returns Blob chứa dữ liệu file Excel
+     */
+    async exportExcel(token: string): Promise<Blob> {
+        try {
+            const orgId = await orgHelper.getOrgId(token);
+            const response = await fetch(`${API}/organizations/${orgId}/products/export`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error('Không thể xuất file Excel');
+            }
+
+            return await response.blob();
+        } catch (error) {
+            console.error('Lỗi khi xuất file Excel:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Nhập sản phẩm từ file Excel
+     * @param token Access token
+     * @param file File Excel được chọn
+     * @returns Kết quả nhập (số dòng thành công/lỗi)
+     */
+    async importExcel(token: string, file: File): Promise<ApiResponse<{ success: number; errors: string[] }>> {
+        try {
+            const orgId = await orgHelper.getOrgId(token);
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const response = await fetch(`${API}/organizations/${orgId}/products/import`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: formData,
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Không thể nhập file Excel');
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('Lỗi khi nhập file Excel:', error);
+            throw error;
+        }
+    }
 }

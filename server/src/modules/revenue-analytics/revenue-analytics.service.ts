@@ -8,7 +8,9 @@ import {
     ChartGranularity,
     QueryRevenueTableDto,
     RevenueTableTab,
+    ExportRevenueDto,
 } from './dto';
+import { ExcelService } from '../../common/services/excel.service';
 
 @Injectable()
 export class RevenueAnalyticsService {
@@ -21,6 +23,7 @@ export class RevenueAnalyticsService {
     constructor(
         private readonly repository: RevenueAnalyticsRepository,
         private readonly redisService: RedisService,
+        private readonly excelService: ExcelService,
     ) { }
 
     /**
@@ -186,5 +189,36 @@ export class RevenueAnalyticsService {
         result = { ...result, limit, offset, tab };
         await this.redisService.setJson(cacheKey, result, this.TABLE_CACHE_TTL);
         return result;
+    }
+
+    /**
+     * Xuất báo cáo doanh thu ra Excel
+     */
+    async exportReport(dto: ExportRevenueDto) {
+        const { from, to } = this.resolveDateRange(dto);
+        
+        // Mặc định xuất 1000 giao dịch gần đây nhất trong khoảng thời gian
+        const result = await this.repository.getRecentTransactions(from, to, 1000, 0);
+        const items = result.items;
+
+        const columns = [
+            { header: 'Mã hợp đồng', key: 'contract_code', width: 20 },
+            { header: 'Tổ chức', key: 'org_name', width: 30 },
+            { header: 'Số tiền', key: 'amount', width: 15 },
+            { header: 'Trạng thái', key: 'status', width: 15 },
+            { header: 'Ngày thanh toán', key: 'paid_at', width: 20 },
+            { header: 'Phương thức', key: 'payment_method', width: 20 },
+        ];
+
+        const data = items.map(item => ({
+            contract_code: item.contract?.code || 'N/A',
+            org_name: item.organization?.name || 'N/A',
+            amount: item.amount,
+            status: item.status,
+            paid_at: item.paid_at ? new Date(item.paid_at).toLocaleString() : 'N/A',
+            payment_method: item.payment_method,
+        }));
+
+        return this.excelService.createExcelBuffer(columns, data, 'Revenue Report');
     }
 }

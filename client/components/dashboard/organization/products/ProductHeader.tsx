@@ -7,6 +7,8 @@ import {
     PlusIcon,
     ExclamationTriangleIcon,
     ClockIcon,
+    ArrowDownTrayIcon,
+    ArrowUpTrayIcon,
 } from "@heroicons/react/24/outline";
 import { ScanLine } from "lucide-react";
 import type { ProductQuickFilter } from "@/types/product-inventory";
@@ -18,6 +20,8 @@ interface ProductHeaderProps {
     onQuickFilterChange: (value: ProductQuickFilter) => void;
     onScannerOpen: () => void;
     onCreateClick: () => void;
+    onImportOpen: () => void;
+    onExportClick: () => void;
 }
 
 export function ProductHeader({
@@ -27,6 +31,8 @@ export function ProductHeader({
     onQuickFilterChange,
     onScannerOpen,
     onCreateClick,
+    onImportOpen,
+    onExportClick,
 }: ProductHeaderProps) {
     return (
         <div className="space-y-6">
@@ -37,7 +43,23 @@ export function ProductHeader({
                         Danh sách tổng hợp tất cả hàng hóa trong hệ thống kho
                     </p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-wrap">
+                    <Button
+                        variant="outline"
+                        className="rounded-xl border-slate-200 text-slate-600 hover:bg-slate-50"
+                        onClick={onImportOpen}
+                    >
+                        <ArrowUpTrayIcon className="w-4 h-4 mr-2" />
+                        Nhập Excel
+                    </Button>
+                    <Button
+                        variant="outline"
+                        className="rounded-xl border-slate-200 text-slate-600 hover:bg-slate-50"
+                        onClick={onExportClick}
+                    >
+                        <ArrowDownTrayIcon className="w-4 h-4 mr-2" />
+                        Xuất Excel
+                    </Button>
                     <Button
                         variant="outline"
                         className="rounded-xl border-[#0F766E] text-[#0F766E] hover:bg-[#0F766E]/5"
@@ -46,7 +68,11 @@ export function ProductHeader({
                         <ScanLine className="w-4 h-4 mr-2" />
                         Quét để thêm
                     </Button>
-                    <Button variant="outline" className="rounded-xl" onClick={onCreateClick}>
+                    <Button
+                        variant="outline"
+                        className="rounded-xl"
+                        onClick={onCreateClick}
+                    >
                         <PlusIcon className="w-4 h-4 mr-2" />
                         Thêm sản phẩm
                     </Button>

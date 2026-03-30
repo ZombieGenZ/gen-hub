@@ -9,7 +9,12 @@ import {
     Query,
     UseGuards,
     ParseUUIDPipe,
+    UseInterceptors,
+    UploadedFile,
+    Res,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { Response } from 'express';
 import {
     ApiTags,
     ApiOperation,
@@ -19,6 +24,7 @@ import {
     ApiHeader,
     ApiBody,
     ApiQuery,
+    ApiConsumes,
 } from '@nestjs/swagger';
 import { I18nLang } from 'nestjs-i18n';
 
@@ -245,6 +251,64 @@ export class ProductController {
     ): Promise<CreatedResponse<IProduct>> {
         const result = await this.service.create(orgId, dto, actorId, lang);
         return new CreatedResponse(ResponseCode.PRODUCT_CREATE_SUCCESS, result);
+    }
+
+    @Get('export')
+    @RequireOrgPermission('product.export')
+    @ApiOperation({
+        summary: 'Xuất danh sách sản phẩm ra Excel',
+        description: 'Tải về file Excel chứa toàn bộ danh sách sản phẩm của tổ chức. Yêu cầu quyền `product.export`.',
+    })
+    @ApiParam({
+        name: 'orgId',
+        description: 'ID của tổ chức',
+        example: '550e8400-e29b-41d4-a716-446655440000',
+    })
+    async export(
+        @Param('orgId', ParseUUIDPipe) orgId: string,
+        @Res() res: Response,
+        @I18nLang() lang: string,
+    ) {
+        const buffer = await this.service.exportProducts(orgId, lang);
+        
+        res.setHeader(
+            'Content-Type',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        );
+        res.setHeader(
+            'Content-Disposition',
+            `attachment; filename=products-${orgId}.xlsx`,
+        );
+        res.send(buffer);
+    }
+
+    @Post('import')
+    @RequireOrgPermission('product.import')
+    @UseInterceptors(FileInterceptor('file'))
+    @ApiConsumes('multipart/form-data')
+    @ApiOperation({
+        summary: 'Nhập sản phẩm từ file Excel',
+        description: 'Tải lên file Excel để nhập hàng loạt sản phẩm. Yêu cầu quyền `product.import`.',
+    })
+    @ApiBody({
+        schema: {
+            type: 'object',
+            properties: {
+                file: {
+                    type: 'string',
+                    format: 'binary',
+                },
+            },
+        },
+    })
+    async import(
+        @Param('orgId', ParseUUIDPipe) orgId: string,
+        @UploadedFile() file: any,
+        @CurrentActor() actorId: string,
+        @I18nLang() lang: string,
+    ) {
+        const result = await this.service.importProducts(orgId, file.buffer, actorId, lang);
+        return new GetResponse(ResponseCode.PRODUCT_LIST_SUCCESS, result);
     }
 
     @Get()

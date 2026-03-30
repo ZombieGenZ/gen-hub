@@ -3,7 +3,9 @@ import {
     Get,
     Query,
     UseGuards,
+    Res,
 } from '@nestjs/common';
+import { Response } from 'express';
 import {
     ApiBearerAuth,
     ApiOperation,
@@ -21,6 +23,7 @@ import {
     QueryRevenueDto,
     QueryRevenueTableDto,
     RevenueTableTab,
+    ExportRevenueDto,
 } from './dto';
 import { JwtAuthGuard, PermissionGuard } from '../../common/guards';
 import {
@@ -440,5 +443,28 @@ export class RevenueAnalyticsController {
             data,
             lang === 'vi' ? 'Lấy dữ liệu bảng thành công' : 'Revenue table data retrieved successfully',
         );
+    }
+
+    @Get('export')
+    @RequirePermission('revenue.analytics.view')
+    @ApiOperation({
+        summary: 'Xuất báo cáo doanh thu ra Excel',
+        description: 'Tải về file Excel chứa báo cáo doanh thu theo bộ lọc. Yêu cầu quyền `revenue.analytics.view`.',
+    })
+    async export(
+        @Query() dto: ExportRevenueDto,
+        @Res() res: any,
+    ) {
+        const buffer = await this.service.exportReport(dto);
+        
+        res.setHeader(
+            'Content-Type',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        );
+        res.setHeader(
+            'Content-Disposition',
+            `attachment; filename=revenue-report-${Date.now()}.xlsx`,
+        );
+        res.send(buffer);
     }
 }

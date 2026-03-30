@@ -21,6 +21,8 @@ interface InboundHeaderProps {
     activeTab: ReceiptStatus | "ALL";
     onTabChange: (value: ReceiptStatus | "ALL") => void;
     onCreateClick: () => void;
+    onExportClick?: () => void;
+    isExporting?: boolean;
 }
 
 export function InboundHeader({
@@ -30,6 +32,8 @@ export function InboundHeader({
     activeTab,
     onTabChange,
     onCreateClick,
+    onExportClick,
+    isExporting = false,
 }: InboundHeaderProps) {
     return (
         <div className="space-y-6">
@@ -44,9 +48,16 @@ export function InboundHeader({
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <Button variant="outline" className="gap-2 rounded-xl">
-                        <ArrowDownTrayIcon className="w-4 h-4" />
-                        <span className="hidden sm:inline">Xuất Excel</span>
+                    <Button 
+                        variant="outline" 
+                        className="gap-2 rounded-xl"
+                        onClick={onExportClick}
+                        disabled={isExporting}
+                    >
+                        <ArrowDownTrayIcon className={`w-4 h-4 ${isExporting ? 'animate-bounce' : ''}`} />
+                        <span className="hidden sm:inline">
+                            {isExporting ? 'Đang xuất...' : 'Xuất Excel'}
+                        </span>
                     </Button>
                     <Button
                         onClick={onCreateClick}

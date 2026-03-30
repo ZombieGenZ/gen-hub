@@ -8,7 +8,9 @@ import {
     Query,
     ParseUUIDPipe,
     UseGuards,
+    Res,
 } from '@nestjs/common';
+import { Response } from 'express';
 import {
     ApiBearerAuth,
     ApiBody,

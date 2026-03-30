@@ -40,6 +40,7 @@ export default function OutboundListPage() {
 
     // ── Create dialog state ──
     const [createDialogOpen, setCreateDialogOpen] = useState(false);
+    const [isExporting, setIsExporting] = useState(false);
 
     // ── Fetch list ──
     const fetchItems = useCallback(async () => {
@@ -119,6 +120,33 @@ export default function OutboundListPage() {
         }
     };
 
+    const handleExportExcel = async () => {
+        try {
+            const token = authStorage.getAccessToken();
+            if (!token) return;
+
+            setIsExporting(true);
+            const blob = await inventoryService.exportOutbound(token, {
+                keywords: debouncedKeywords || undefined,
+                status: activeTab === "ALL" ? undefined : activeTab,
+            });
+
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `outbound-${new Date().toISOString().split('T')[0]}.xlsx`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            showToast("Xuất Excel thành công", "success");
+        } catch (err) {
+            showToast("Không thể xuất Excel phiếu xuất kho", "error");
+        } finally {
+            setIsExporting(false);
+        }
+    };
+
     return (
         <div className="space-y-6">
             <OutboundHeader
@@ -128,6 +156,8 @@ export default function OutboundListPage() {
                 activeTab={activeTab}
                 onTabChange={setActiveTab}
                 onCreateClick={() => setCreateDialogOpen(true)}
+                onExportClick={handleExportExcel}
+                isExporting={isExporting}
             />
 
             <OutboundTable

@@ -17,6 +17,7 @@ import { ProductTable, ITEMS_PER_PAGE } from "@/components/dashboard/organizatio
 import { ProductBulkActionBar } from "@/components/dashboard/organization/products/ProductBulkActionBar";
 import { ProductDeleteDialogs } from "@/components/dashboard/organization/products/ProductDeleteDialogs";
 import { BarcodeDialog } from "@/components/dashboard/organization/products/BarcodeDialog";
+import { ProductImportDialog } from "@/components/dashboard/organization/products/ProductImportDialog";
 
 const productService = new ProductService();
 const inventoryService = new InventoryService();
@@ -48,6 +49,10 @@ export default function ProductMasterListPage() {
 
     // ── Barcode scanner quick add ──
     const [scannerOpen, setScannerOpen] = useState(false);
+
+    // ── Import/Export ──
+    const [importOpen, setImportOpen] = useState(false);
+    const [isExporting, setIsExporting] = useState(false);
 
     // ── Filters & Pagination ──
     const [searchTerm, setSearchTerm] = useState("");
@@ -184,6 +189,29 @@ export default function ProductMasterListPage() {
         setBarcodeDialogOpen(true);
     };
 
+    const handleExportExcel = async () => {
+        if (isExporting) return;
+        setIsExporting(true);
+        try {
+            const token = authStorage.getAccessToken();
+            if (!token) return;
+            const blob = await productService.exportExcel(token);
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `products-${new Date().toISOString().split("T")[0]}.xlsx`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            showToast("Đã tải xuống file Excel thành công! 📁", "success");
+        } catch {
+            showToast("Xuất Excel thất bại, vui lòng thử lại", "error");
+        } finally {
+            setIsExporting(false);
+        }
+    };
+
     const filteredProducts = (() => {
         if (quickFilter === "low_stock") {
             return products.filter((p) => (stockMap[p.id] ?? 0) <= 10);
@@ -204,6 +232,8 @@ export default function ProductMasterListPage() {
                     onQuickFilterChange={setQuickFilter}
                     onScannerOpen={() => setScannerOpen(true)}
                     onCreateClick={() => router.push("/dashboard/organization/products/create")}
+                    onImportOpen={() => setImportOpen(true)}
+                    onExportClick={handleExportExcel}
                 />
 
                 <ProductTable
@@ -256,6 +286,12 @@ export default function ProductMasterListPage() {
                     open={scannerOpen}
                     onClose={() => setScannerOpen(false)}
                     onProductCreated={fetchProducts}
+                />
+
+                <ProductImportDialog
+                    open={importOpen}
+                    onOpenChange={setImportOpen}
+                    onSuccess={fetchProducts}
                 />
             </main>
         </div>

@@ -27,6 +27,7 @@ import { OrganizationAuditLogService } from '../organization/organization-audit-
 import { PrismaService } from '../../prisma/prisma.service';
 import { InventoryRequestCacheKeys } from './constants/inventory-request-cache.helper';
 import { SmartSlottingService } from './smart-slotting.service';
+import { ExcelService } from '../../common/services/excel.service';
 
 @Injectable()
 export class InventoryRequestService {
@@ -45,6 +46,7 @@ export class InventoryRequestService {
         private readonly i18n: I18nService,
         private readonly cacheKeys: InventoryRequestCacheKeys,
         private readonly slottingService: SmartSlottingService,
+        private readonly excelService: ExcelService,
     ) {
         this.INBOUND_LIST_TTL = this.configService.get<number>('REDIS_INBOUND_LIST_TTL') || 60;
         this.OUTBOUND_LIST_TTL = this.configService.get<number>('REDIS_OUTBOUND_LIST_TTL') || 60;
@@ -800,6 +802,97 @@ export class InventoryRequestService {
         await this.redisService.set(cacheKey, JSON.stringify(exportRecord), this.OUTBOUND_DETAIL_TTL);
 
         return exportRecord;
+    }
+
+    /**
+     * Xuất Excel danh sách phiếu nhập kho
+     */
+    async exportInbound(orgId: string, query: QueryInboundRequestDto) {
+        const { items } = await this.repository.findInboundByOrgId(orgId, { ...query, limit: 1000, offset: 0 });
+
+        const columns = [
+            { header: 'Mã phiếu', key: 'code', width: 20 },
+            { header: 'Trạng thái', key: 'status', width: 15 },
+            { header: 'Kho', key: 'warehouse_name', width: 25 },
+            { header: 'Mã đơn mua (PO)', key: 'purchase_order_code', width: 20 },
+            { header: 'Ngày dự kiến', key: 'expected_arrival', width: 20 },
+            { header: 'Số lượng SP', key: 'total_items', width: 15 },
+            { header: 'Ngày tạo', key: 'created_at', width: 20 },
+        ];
+
+        const data = items.map(item => ({
+            code: item.code,
+            status: item.status,
+            warehouse_name: (item as any).warehouse_name,
+            purchase_order_code: item.purchase_order_code || '-',
+            expected_arrival: (item as any).expected_arrival ? new Date((item as any).expected_arrival).toLocaleDateString('vi-VN') : '-',
+            total_items: (item as any).total_items || 0,
+            created_at: new Date(item.created_at).toLocaleString('vi-VN'),
+        }));
+
+        return this.excelService.createExcelBuffer(columns, data, 'Danh sách Phiếu Nhập');
+    }
+
+    /**
+     * Xuất Excel danh sách phiếu xuất kho
+     */
+    async exportOutbound(orgId: string, query: QueryOutboundRequestDto) {
+        const { items } = await this.repository.findOutboundByOrgId(orgId, { ...query, limit: 1000, offset: 0 });
+
+        const columns = [
+            { header: 'Mã phiếu', key: 'code', width: 20 },
+            { header: 'Trạng thái', key: 'status', width: 15 },
+            { header: 'Kho', key: 'warehouse_name', width: 25 },
+            { header: 'Mã đơn bán (SO)', key: 'sales_order_code', width: 20 },
+            { header: 'Ngày yêu cầu', key: 'required_date', width: 20 },
+            { header: 'Số lượng SP', key: 'total_items', width: 15 },
+            { header: 'Ngày tạo', key: 'created_at', width: 20 },
+        ];
+
+        const data = items.map(item => ({
+            code: item.code,
+            status: item.status,
+            warehouse_name: (item as any).warehouse_name,
+            sales_order_code: item.sales_order_code || '-',
+            required_date: (item as any).required_date ? new Date((item as any).required_date).toLocaleDateString('vi-VN') : '-',
+            total_items: (item as any).total_items || 0,
+            created_at: new Date(item.created_at).toLocaleString('vi-VN'),
+        }));
+
+        return this.excelService.createExcelBuffer(columns, data, 'Danh sách Phiếu Xuất');
+    }
+
+    /**
+     * Xuất Excel danh sách tồn kho
+     */
+    async exportStock(orgId: string, warehouseId?: string, keywords?: string) {
+        const items = await this.listInventoryStock(orgId, warehouseId, keywords);
+
+        const columns = [
+            { header: 'Sản phẩm', key: 'product_name', width: 30 },
+            { header: 'SKU', key: 'sku', width: 15 },
+            { header: 'Mã lô', key: 'batch_code', width: 20 },
+            { header: 'Hạn sử dụng', key: 'expiry_date', width: 15 },
+            { header: 'Kho', key: 'warehouse_name', width: 20 },
+            { header: 'Vị trí', key: 'location', width: 30 },
+            { header: 'Số lượng tổng', key: 'quantity', width: 15 },
+            { header: 'Dự trữ', key: 'quantity_allocated', width: 15 },
+            { header: 'Khả dụng', key: 'quantity_available', width: 15 },
+        ];
+
+        const data = items.map(item => ({
+            product_name: item.product_name,
+            sku: item.sku,
+            batch_code: item.batch_code || '-',
+            expiry_date: item.expiry_date ? new Date(item.expiry_date).toLocaleDateString('vi-VN') : '-',
+            warehouse_name: (item as any).warehouse_name,
+            location: item.location,
+            quantity: item.quantity,
+            quantity_allocated: item.quantity_allocated,
+            quantity_available: item.quantity_available,
+        }));
+
+        return this.excelService.createExcelBuffer(columns, data, 'Báo cáo Tồn kho');
     }
 
     /**
