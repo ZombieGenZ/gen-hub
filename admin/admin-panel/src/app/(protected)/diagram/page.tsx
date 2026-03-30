@@ -462,10 +462,11 @@ export default function DiagramPage() {
 
             const schemaData = normalizeSchema(rawSchemaData);
             const configData = normalizeConfig(rawConfigData);
+            const savedTableColors = configData.table_colors ?? {};
 
             setSchema(schemaData);
             setShowRelations(configData.show_relations ?? true);
-            setTableColors(configData.table_colors);
+            setTableColors(savedTableColors);
 
             // Calculate positions using auto-layout algorithm
             const positions = calculateAutoLayout(
@@ -476,7 +477,7 @@ export default function DiagramPage() {
             // Create nodes from tables
             const newNodes: Node[] = schemaData.tables.map((table: TableSchema) => {
                 const position = positions[table.name] || { x: 50, y: 50 };
-                const color = configData.table_colors[table.name] || DEFAULT_COLOR;
+                const color = savedTableColors[table.name] || DEFAULT_COLOR;
 
                 return {
                     id: table.name,
