@@ -173,11 +173,10 @@ export class OrganizationController {
   }
 
   @Get()
-  @RequirePermission('organization.list')
   @ApiOperation({
     summary: 'Lấy danh sách tổ chức',
     description:
-      'Lấy danh sách các tổ chức với phân trang và tìm kiếm. Yêu cầu quyền `organization.list`.',
+      'Lấy danh sách các tổ chức với phân trang và tìm kiếm. Hệ thống sẽ tự động lọc danh sách theo quyền của người dùng (Admin sẽ thấy tất cả, người dùng thường chỉ thấy tổ chức của mình).',
   })
   @ApiQuery({
     name: 'limit',

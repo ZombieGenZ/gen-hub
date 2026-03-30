@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { UserService } from "@/services/user/user.service";
-import { OrganizationService } from "@/services/organization/organization.service";
+
 import { Loader2 } from "lucide-react";
 
 export default function DashboardEntry() {
@@ -33,11 +33,7 @@ export default function DashboardEntry() {
                 } else if (roles.includes("STAFF")) {
                     router.push("/dashboard/staff");
                 } else {
-                    const organizationService = new OrganizationService();
-                    const organizations = await organizationService.getOrganizations(accessToken, { limit: 1 });
-                    const firstOrg = organizations?.items?.[0];
-
-                    if (firstOrg?.id) {
+                    if (userData.organization_id) {
                         router.push("/dashboard/organization");
                     } else {
                         router.push("/dashboard/customer");
