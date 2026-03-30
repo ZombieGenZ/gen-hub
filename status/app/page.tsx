@@ -134,40 +134,17 @@ export default function Home() {
 
         {loading && !data ? (
           <div className="space-y-6 animate-pulse">
-            {/* Skeleton for main services */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="h-40 rounded-2xl bg-neutral-200 dark:bg-neutral-900/50 border border-neutral-300 dark:border-neutral-800"></div>
               <div className="h-40 rounded-2xl bg-neutral-200 dark:bg-neutral-900/50 border border-neutral-300 dark:border-neutral-800"></div>
-            </div>
-            {/* Skeleton for panels */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="h-36 rounded-2xl bg-neutral-200 dark:bg-neutral-900/50 border border-neutral-300 dark:border-neutral-800"></div>
-              <div className="h-36 rounded-2xl bg-neutral-200 dark:bg-neutral-900/50 border border-neutral-300 dark:border-neutral-800"></div>
-              <div className="h-36 rounded-2xl bg-neutral-200 dark:bg-neutral-900/50 border border-neutral-300 dark:border-neutral-800"></div>
             </div>
           </div>
         ) : data && data.client && data.server ? (
           <div className="space-y-6">
-            {/* Main Services - 2 columns */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <StatusCard serviceKey="client" service={data.client} />
               <StatusCard serviceKey="server" service={data.server} />
             </div>
-
-            {/* Admin Panels - 3 columns */}
-            {(data.databasePanel || data.featureFlagPanel || data.resourcesPanel) && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {data.databasePanel && (
-                  <StatusCard serviceKey="databasePanel" service={data.databasePanel} />
-                )}
-                {data.featureFlagPanel && (
-                  <StatusCard serviceKey="featureFlagPanel" service={data.featureFlagPanel} />
-                )}
-                {data.resourcesPanel && (
-                  <StatusCard serviceKey="resourcesPanel" service={data.resourcesPanel} />
-                )}
-              </div>
-            )}
           </div>
         ) : (
           <div className="text-center text-red-500">
