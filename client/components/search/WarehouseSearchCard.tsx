@@ -11,7 +11,7 @@ import {
     CarouselNext,
     CarouselPrevious,
 } from "@/components/ui/carousel";
-import { cn } from "@/lib/utils";
+import { cn, calculateDistance, HCM_CENTER } from "@/lib/utils";
 
 interface WarehouseSearchCardProps {
     property: Property;
@@ -102,7 +102,11 @@ export default function WarehouseSearchCard({ property, onHover, isHighlighted }
                 </p>
                 {/* Tertiary: Distance */}
                 <p className="text-xs text-muted-foreground/80 line-clamp-1">
-                    Cách trung tâm {property.id + 2} km
+                    Cách trung tâm {
+                        property.lat && property.lng 
+                        ? calculateDistance(property.lat, property.lng, HCM_CENTER.lat, HCM_CENTER.lng).toFixed(1)
+                        : (typeof property.id === 'number' ? property.id + 2 : 5)
+                    } km
                 </p>
             </div>
 
