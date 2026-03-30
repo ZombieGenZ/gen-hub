@@ -160,6 +160,7 @@ export class PaymentController {
             },
         },
     })
+    @Public()
     async getPayment(@Param('paymentCode') paymentCode: string) {
         this.logger.log(`Getting payment: paymentCode=${paymentCode}`);
 
@@ -226,6 +227,7 @@ export class PaymentController {
         },
     })
     @ApiValidationErrorResponse()
+    // @Public()
     async handleSuccess(@Query() query: PaymentCallbackQueryDto) {
         this.logger.log(`Payment success callback: paymentCode=${query.paymentCode}`);
 
@@ -284,6 +286,7 @@ export class PaymentController {
         },
     })
     @ApiValidationErrorResponse()
+    // @Public()
     async handleCancel(@Query() query: PaymentCallbackQueryDto) {
         this.logger.log(`Payment cancelled: paymentCode=${query.paymentCode}`);
         return { success: false, message: 'Đã hủy thanh toán' };
