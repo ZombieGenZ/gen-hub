@@ -299,6 +299,36 @@ const calculateNodeHeight = (fieldCount: number): number => {
     return headerHeight + (fieldCount * fieldHeight) + padding;
 };
 
+interface LayoutRect {
+    left: number;
+    top: number;
+    right: number;
+    bottom: number;
+}
+
+const isValidPosition = (position: unknown): position is { x: number; y: number } => {
+    if (!position || typeof position !== 'object') {
+        return false;
+    }
+
+    const source = position as { x?: unknown; y?: unknown };
+    return Number.isFinite(source.x) && Number.isFinite(source.y);
+};
+
+const createLayoutRect = (x: number, y: number, width: number, height: number): LayoutRect => ({
+    left: x,
+    top: y,
+    right: x + width,
+    bottom: y + height,
+});
+
+const rectsOverlap = (a: LayoutRect, b: LayoutRect, horizontalPadding = 0, verticalPadding = 0): boolean => (
+    a.left < b.right + horizontalPadding &&
+    a.right + horizontalPadding > b.left &&
+    a.top < b.bottom + verticalPadding &&
+    a.bottom + verticalPadding > b.top
+);
+
 // Auto-layout algorithm - OUTSIDE component for performance
 const calculateAutoLayout = (
     tables: TableSchema[],
@@ -306,6 +336,7 @@ const calculateAutoLayout = (
 ): Record<string, { x: number; y: number }> => {
     const safeTables = Array.isArray(tables) ? tables : [];
     const positions: Record<string, { x: number; y: number }> = {};
+    const tableMap = new Map(safeTables.map((table) => [table.name, table]));
 
     // If we have saved positions for ALL tables, use them
     if (savedPositions && Object.keys(savedPositions).length >= safeTables.length) {
@@ -319,39 +350,77 @@ const calculateAutoLayout = (
     const startX = 50;
     const startY = 50;
     const maxColumns = Math.min(10, Math.max(4, Math.ceil(Math.sqrt(safeTables.length * 1.5))));
+    const collisionPadding = 24;
 
     // Sort tables by field count (larger tables first for better layout)
     const sortedTables = [...safeTables].sort((a, b) => (b.fields?.length ?? 0) - (a.fields?.length ?? 0));
 
     // Track column heights
     const columnHeights: number[] = new Array(maxColumns).fill(startY);
+    const occupiedRects: LayoutRect[] = [];
+
+    if (savedPositions) {
+        Object.entries(savedPositions).forEach(([tableName, position]) => {
+            const table = tableMap.get(tableName);
+            if (!table || !isValidPosition(position)) {
+                return;
+            }
+
+            positions[tableName] = position;
+            occupiedRects.push(
+                createLayoutRect(
+                    position.x,
+                    position.y,
+                    nodeWidth,
+                    calculateNodeHeight(table.fields?.length ?? 0)
+                )
+            );
+        });
+    }
 
     sortedTables.forEach((table) => {
         // Use saved position if available for this specific table
         if (savedPositions && savedPositions[table.name]) {
-            positions[table.name] = savedPositions[table.name];
             return;
         }
 
-        // Find the column with minimum height (greedy approach)
-        let minColumnIndex = 0;
-        let minHeight = columnHeights[0];
-        for (let i = 1; i < maxColumns; i++) {
-            if (columnHeights[i] < minHeight) {
-                minHeight = columnHeights[i];
-                minColumnIndex = i;
+        const nodeHeight = calculateNodeHeight(table.fields?.length ?? 0);
+        let bestPosition = { x: startX, y: startY };
+        let bestColumnIndex = 0;
+        let lowestY = Number.POSITIVE_INFINITY;
+
+        for (let columnIndex = 0; columnIndex < maxColumns; columnIndex++) {
+            const x = startX + columnIndex * (nodeWidth + horizontalGap);
+            let y = columnHeights[columnIndex];
+            let candidateRect = createLayoutRect(x, y, nodeWidth, nodeHeight);
+            let hasCollision = true;
+
+            while (hasCollision) {
+                const collidingRect = occupiedRects.find((occupiedRect) =>
+                    rectsOverlap(candidateRect, occupiedRect, collisionPadding, collisionPadding)
+                );
+
+                if (!collidingRect) {
+                    hasCollision = false;
+                    continue;
+                }
+
+                y = collidingRect.bottom + verticalGap;
+                candidateRect = createLayoutRect(x, y, nodeWidth, nodeHeight);
+            }
+
+            if (y < lowestY) {
+                lowestY = y;
+                bestPosition = { x, y };
+                bestColumnIndex = columnIndex;
             }
         }
 
-        // Calculate position
-        const x = startX + minColumnIndex * (nodeWidth + horizontalGap);
-        const y = columnHeights[minColumnIndex];
-
-        positions[table.name] = { x, y };
+        positions[table.name] = bestPosition;
+        occupiedRects.push(createLayoutRect(bestPosition.x, bestPosition.y, nodeWidth, nodeHeight));
 
         // Update column height
-        const nodeHeight = calculateNodeHeight(table.fields?.length ?? 0);
-        columnHeights[minColumnIndex] = y + nodeHeight + verticalGap;
+        columnHeights[bestColumnIndex] = bestPosition.y + nodeHeight + verticalGap;
     });
 
     return positions;
