@@ -180,7 +180,7 @@ export default function ApprovalQueuePage() {
         } finally {
             setLoading(false);
         }
-    }, [router, showToast]);
+    }, [router]);
 
     useEffect(() => {
         fetchData();

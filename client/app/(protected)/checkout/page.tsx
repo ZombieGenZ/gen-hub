@@ -148,7 +148,7 @@ function CheckoutContent() {
                 setSession({
                     coupon_code: couponCode || undefined,
                     quotation: mapApiQuotationToBreakdown(quotation),
-                    deposit_amount: 1000,
+                    amount: 1000,
                 });
 
             if (couponCode && quotation.coupon_discount > 0) {
@@ -640,7 +640,7 @@ function CheckoutContainer() {
                 const couponDiscount = 0;
                 const grandTotal = subtotal + serviceFee - couponDiscount;
 
-                const deposit_amount = 1000;
+                const amount = 1000;
 
                 // Friendly Names Mapping
                 const FRIENDLY_NAMES: Record<string, string> = {
@@ -716,7 +716,7 @@ function CheckoutContainer() {
                         couponDiscount,
                         grandTotal
                     },
-                    deposit_amount
+                    amount
                 };
 
                 setSession(newSession);

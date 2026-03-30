@@ -32,7 +32,7 @@ interface DigitalSignatureModalProps {
     representativePhone: string;
 }
 
-type SignatureStep = 'review' | 'signature' | 'otp' | 'success';
+type SignatureStep = 'review' | 'signature' | 'success';
 type SignatureMethod = 'draw' | 'type';
 
 export function DigitalSignatureModal({
@@ -57,15 +57,6 @@ export function DigitalSignatureModal({
     const isDrawingRef = useRef(false);
     const lastPosRef = useRef({ x: 0, y: 0 });
 
-    // OTP state
-    const [otp, setOtp] = useState(['', '', '', '', '', '']);
-    const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
-    const [otpCountdown, setOtpCountdown] = useState(300); // 5 minutes
-    const [canResendOtp, setCanResendOtp] = useState(false);
-
-    // Mask phone number: 0901234567 -> 090*****67
-    const maskedPhone = representativePhone.replace(/(\d{3})\d{5}(\d{2})/, '$1*****$2');
-
     // Reset state when modal opens
     useEffect(() => {
         if (isOpen) {
@@ -74,9 +65,6 @@ export function DigitalSignatureModal({
             setSignatureMethod('draw');
             setTypedSignature(representativeName);
             setSignatureDataUrl('');
-            setOtp(['', '', '', '', '', '']);
-            setOtpCountdown(300);
-            setCanResendOtp(false);
         }
     }, [isOpen, representativeName]);
 
@@ -106,22 +94,6 @@ export function DigitalSignatureModal({
             }
         }
     }, [step, signatureMethod]);
-
-    // OTP countdown timer
-    useEffect(() => {
-        if (step === 'otp' && otpCountdown > 0) {
-            const timer = setInterval(() => {
-                setOtpCountdown(prev => {
-                    if (prev <= 1) {
-                        setCanResendOtp(true);
-                        return 0;
-                    }
-                    return prev - 1;
-                });
-            }, 1000);
-            return () => clearInterval(timer);
-        }
-    }, [step, otpCountdown]);
 
     // Canvas drawing handlers
     const getCanvasCoords = useCallback((e: React.MouseEvent | React.TouchEvent) => {
@@ -219,7 +191,7 @@ export function DigitalSignatureModal({
         setStep('signature');
     };
 
-    const handleProceedToOtp = () => {
+    const handleProceedToSign = () => {
         const sigData = saveSignature();
         if (!sigData && signatureMethod === 'draw') {
             // Check if canvas has been drawn
@@ -241,47 +213,11 @@ export function DigitalSignatureModal({
                 }
             }
         }
-        setStep('otp');
-        setOtpCountdown(300);
-        setCanResendOtp(false);
-    };
-
-    const handleOtpChange = (index: number, value: string) => {
-        if (value.length > 1) value = value[0];
-        if (!/^\d*$/.test(value)) return;
-
-        const newOtp = [...otp];
-        newOtp[index] = value;
-        setOtp(newOtp);
-
-        // Auto move to next input
-        if (value && index < 5) {
-            otpInputRefs.current[index + 1]?.focus();
+        
+        // Skip OTP step and sign directly
+        if (sigData) {
+            onSign(sigData);
         }
-    };
-
-    const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === 'Backspace' && !otp[index] && index > 0) {
-            otpInputRefs.current[index - 1]?.focus();
-        }
-    };
-
-    const handleResendOtp = () => {
-        setOtp(['', '', '', '', '', '']);
-        setOtpCountdown(300);
-        setCanResendOtp(false);
-        // TODO: Call API to resend OTP
-    };
-
-    const handleVerifyAndSign = () => {
-        if (otp.join('').length !== 6) return;
-        onSign(signatureDataUrl);
-    };
-
-    const formatCountdown = (seconds: number) => {
-        const mins = Math.floor(seconds / 60);
-        const secs = seconds % 60;
-        return `${mins}:${secs.toString().padStart(2, '0')}`;
     };
 
     const isSignatureValid = signatureMethod === 'type'
@@ -292,7 +228,6 @@ export function DigitalSignatureModal({
         switch (step) {
             case 'review': return 'Xác nhận ký hợp đồng';
             case 'signature': return 'Tạo chữ ký điện tử';
-            case 'otp': return 'Xác thực ký số';
             case 'success': return 'Ký hợp đồng thành công';
         }
     };
@@ -301,7 +236,6 @@ export function DigitalSignatureModal({
         switch (step) {
             case 'review': return 'Vui lòng xác nhận bạn đã đọc và đồng ý với các điều khoản.';
             case 'signature': return 'Vẽ hoặc nhập chữ ký của bạn để xác nhận.';
-            case 'otp': return `Nhập mã OTP đã gửi đến số điện thoại ${maskedPhone}`;
             case 'success': return 'Hợp đồng đã được ký thành công!';
         }
     };
@@ -338,7 +272,7 @@ export function DigitalSignatureModal({
                             </div>
                             <div className="flex justify-between">
                                 <span>Phương thức:</span>
-                                <span className="font-bold text-[#0F766E]">GenHub SmartOTP</span>
+                                <span className="font-bold text-[#0F766E]">Ký điện tử GenHub</span>
                             </div>
                             <div className="flex justify-between">
                                 <span>Thời gian:</span>
@@ -425,67 +359,6 @@ export function DigitalSignatureModal({
                     </div>
                 )}
 
-                {/* Step 3: OTP Verification */}
-                {step === 'otp' && (
-                    <div className="space-y-6 pt-4">
-                        {/* Signature Preview */}
-                        {signatureDataUrl && (
-                            <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
-                                <p className="text-xs text-slate-500 mb-2 text-center">Chữ ký của bạn:</p>
-                                <img
-                                    src={signatureDataUrl}
-                                    alt="Signature"
-                                    className="h-12 mx-auto object-contain"
-                                />
-                            </div>
-                        )}
-
-                        {/* OTP Input */}
-                        <div className="flex justify-center gap-2">
-                            {otp.map((digit, idx) => (
-                                <Input
-                                    key={idx}
-                                    ref={el => { otpInputRefs.current[idx] = el }}
-                                    type="text"
-                                    inputMode="numeric"
-                                    maxLength={1}
-                                    value={digit}
-                                    onChange={e => handleOtpChange(idx, e.target.value)}
-                                    onKeyDown={e => handleOtpKeyDown(idx, e)}
-                                    className="w-12 h-14 text-center text-xl font-bold border-slate-300 focus:border-[#0F766E] focus:ring-[#0F766E] rounded-xl"
-                                />
-                            ))}
-                        </div>
-
-                        {/* Countdown & Resend */}
-                        <div className="text-center">
-                            {otpCountdown > 0 ? (
-                                <p className="text-sm text-slate-500">
-                                    Mã OTP có hiệu lực trong{' '}
-                                    <span className="font-bold text-[#0F766E]">
-                                        {formatCountdown(otpCountdown)}
-                                    </span>
-                                </p>
-                            ) : (
-                                <p className="text-sm text-red-500">Mã OTP đã hết hạn</p>
-                            )}
-                            <button
-                                onClick={handleResendOtp}
-                                disabled={!canResendOtp && otpCountdown > 0}
-                                className={cn(
-                                    "mt-2 text-sm font-medium transition-colors",
-                                    canResendOtp || otpCountdown === 0
-                                        ? "text-[#0F766E] hover:underline cursor-pointer"
-                                        : "text-slate-400 cursor-not-allowed"
-                                )}
-                            >
-                                <ArrowPathIcon className="w-4 h-4 inline mr-1" />
-                                Gửi lại mã OTP
-                            </button>
-                        </div>
-                    </div>
-                )}
-
                 <DialogFooter className="sm:justify-center pt-4">
                     {step === 'review' && (
                         <div className="flex gap-3 w-full">
@@ -509,31 +382,14 @@ export function DigitalSignatureModal({
                                 variant="outline"
                                 className="flex-1 h-12 rounded-xl"
                                 onClick={() => setStep('review')}
+                                disabled={isSigning}
                             >
                                 Quay lại
                             </Button>
                             <Button
                                 className="flex-1 h-12 rounded-xl bg-[#0F766E] hover:bg-[#0D655D] font-bold"
-                                onClick={handleProceedToOtp}
-                            >
-                                Xác nhận chữ ký
-                            </Button>
-                        </div>
-                    )}
-
-                    {step === 'otp' && (
-                        <div className="flex gap-3 w-full">
-                            <Button
-                                variant="outline"
-                                className="flex-1 h-12 rounded-xl"
-                                onClick={() => setStep('signature')}
-                            >
-                                Quay lại
-                            </Button>
-                            <Button
-                                className="flex-1 h-12 rounded-xl bg-[#0F766E] hover:bg-[#0D655D] font-bold"
-                                disabled={otp.join('').length !== 6 || isSigning}
-                                onClick={handleVerifyAndSign}
+                                onClick={handleProceedToSign}
+                                disabled={isSigning}
                             >
                                 {isSigning ? (
                                     <span className="flex items-center gap-2">
@@ -541,7 +397,7 @@ export function DigitalSignatureModal({
                                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                                         </svg>
-                                        Đang xác thực...
+                                        Đang xử lý...
                                     </span>
                                 ) : "Xác nhận & Ký số"}
                             </Button>

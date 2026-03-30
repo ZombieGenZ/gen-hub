@@ -49,7 +49,7 @@ export class UserService {
         const query = new URLSearchParams();
         if (search) query.append('search', search);
 
-        const response = await fetch(`${API}/users?${query.toString()}`, {
+        const response = await fetch(`${API}/admin/users?${query.toString()}`, {
             method: 'GET',
             headers: {
                 Authorization: `Bearer ${token}`,
@@ -63,7 +63,7 @@ export class UserService {
         }
 
         const res = await response.json();
-        return res.data;
+        return res.data.items;
     }
 
     async change_password(token: string, data: ChangePasswordRequest) {

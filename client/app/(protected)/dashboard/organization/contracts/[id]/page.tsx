@@ -203,7 +203,7 @@ export default function CustomerContractDetailPage() {
                                     <div>
                                         <span className="text-muted-foreground">Kho thuê:</span>
                                         <p className="font-medium mt-0.5">
-                                            {contract.warehouses?.map((w) => w.name).join(", ") || "—"}
+                                            {contract.details !== undefined ? contract.details[0].warehouse_template?.name : "—"}
                                         </p>
                                     </div>
                                     <div>

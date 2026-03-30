@@ -78,7 +78,7 @@ export interface CheckoutSession {
     
     // Thanh toán
     payment_method?: PaymentMethod;
-    deposit_amount?: number;
+    amount?: number;
     
     // Chữ ký hợp đồng
     signature_data?: string;
