@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { UserService } from "@/services/user/user.service";
+import { OrganizationService } from "@/services/organization/organization.service";
 
 import { Loader2 } from "lucide-react";
 
@@ -33,7 +34,23 @@ export default function DashboardEntry() {
                 } else if (roles.includes("STAFF")) {
                     router.push("/dashboard/staff");
                 } else {
-                    if (userData.organization_id) {
+                    // Check if user has an organization ID in their profile
+                    let orgId = userData.organization_id;
+
+                    // Fallback: If no organization_id in profile, check if they belong to any organizations
+                    if (!orgId) {
+                        try {
+                            const orgService = new OrganizationService();
+                            const orgsResponse = await orgService.getOrganizations(accessToken, { limit: 1 });
+                            if (orgsResponse.items && orgsResponse.items.length > 0) {
+                                orgId = orgsResponse.items[0].id;
+                            }
+                        } catch (err) {
+                            console.error("Failed to fetch organizations for redirect fallback", err);
+                        }
+                    }
+
+                    if (orgId) {
                         router.push("/dashboard/organization");
                     } else {
                         router.push("/dashboard/customer");
