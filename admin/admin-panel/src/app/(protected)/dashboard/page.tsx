@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { adminApi } from '@/lib/api';
 import { Database, Table, List, LayoutGrid, HardDrive, Activity, Loader2, BarChart3, RefreshCw } from 'lucide-react';
@@ -26,14 +26,25 @@ interface Statistics {
     tables: TableStats[];
 }
 
+type QuickAccessSort =
+    | 'name-asc'
+    | 'name-desc'
+    | 'columns-desc'
+    | 'columns-asc'
+    | 'rows-desc'
+    | 'rows-asc'
+    | 'avg-records-desc'
+    | 'avg-records-asc';
+
 export default function DashboardPage() {
-    const { t } = useLanguage();
+    const { t, language } = useLanguage();
     const { tables, isLoading, refreshTables } = useTables();
     const { hasPermission, isLoading: isAuthLoading } = useAuth();
     const router = useRouter();
     const [statistics, setStatistics] = useState<Statistics | null>(null);
     const [isLoadingStats, setIsLoadingStats] = useState(false);
     const [statsLoaded, setStatsLoaded] = useState(false);
+    const [quickAccessSort, setQuickAccessSort] = useState<QuickAccessSort>('name-asc');
 
     // Redirect based on permission priority: database.admin > backup > featureflag.admin > resources.admin
     useEffect(() => {
@@ -138,6 +149,64 @@ export default function DashboardPage() {
         return statistics?.tables?.find(t => t.name === tableName);
     };
 
+    const sortLabel = language === 'vi' ? 'Sắp xếp theo' : 'Sort by';
+    const sortOptions = {
+        nameAsc: 'A-Z',
+        nameDesc: 'Z-A',
+        columnsDesc: language === 'vi' ? 'Số cột nhiều nhất đến ít nhất' : 'Most columns to fewest',
+        columnsAsc: language === 'vi' ? 'Số cột ít nhất đến nhiều nhất' : 'Fewest columns to most',
+        rowsDesc: language === 'vi' ? 'Số dòng nhiều nhất đến ít nhất' : 'Most rows to fewest',
+        rowsAsc: language === 'vi' ? 'Số dòng ít nhất đến nhiều nhất' : 'Fewest rows to most',
+        avgRecordsDesc: language === 'vi' ? 'TB Records/Table cao nhất đến thấp nhất' : 'Highest avg records/table to lowest',
+        avgRecordsAsc: language === 'vi' ? 'TB Records/Table thấp nhất đến cao nhất' : 'Lowest avg records/table to highest',
+    };
+
+    const sortedTables = useMemo(() => {
+        const collator = new Intl.Collator(language, { sensitivity: 'base', numeric: true });
+
+        return [...tables].sort((a, b) => {
+            const aStats = getTableStats(a.name);
+            const bStats = getTableStats(b.name);
+            const nameCompare = collator.compare(a.displayName, b.displayName);
+
+            switch (quickAccessSort) {
+                case 'name-desc':
+                    return collator.compare(b.displayName, a.displayName);
+                case 'columns-desc': {
+                    const diff = (bStats?.columnCount ?? 0) - (aStats?.columnCount ?? 0);
+                    return diff !== 0 ? diff : nameCompare;
+                }
+                case 'columns-asc': {
+                    const diff = (aStats?.columnCount ?? 0) - (bStats?.columnCount ?? 0);
+                    return diff !== 0 ? diff : nameCompare;
+                }
+                case 'rows-desc': {
+                    const diff = (bStats?.recordCount ?? 0) - (aStats?.recordCount ?? 0);
+                    return diff !== 0 ? diff : nameCompare;
+                }
+                case 'rows-asc': {
+                    const diff = (aStats?.recordCount ?? 0) - (bStats?.recordCount ?? 0);
+                    return diff !== 0 ? diff : nameCompare;
+                }
+                case 'avg-records-desc': {
+                    const aAverage = (aStats?.columnCount ?? 0) > 0 ? (aStats?.recordCount ?? 0) / (aStats?.columnCount ?? 0) : 0;
+                    const bAverage = (bStats?.columnCount ?? 0) > 0 ? (bStats?.recordCount ?? 0) / (bStats?.columnCount ?? 0) : 0;
+                    const diff = bAverage - aAverage;
+                    return diff !== 0 ? diff : nameCompare;
+                }
+                case 'avg-records-asc': {
+                    const aAverage = (aStats?.columnCount ?? 0) > 0 ? (aStats?.recordCount ?? 0) / (aStats?.columnCount ?? 0) : 0;
+                    const bAverage = (bStats?.columnCount ?? 0) > 0 ? (bStats?.recordCount ?? 0) / (bStats?.columnCount ?? 0) : 0;
+                    const diff = aAverage - bAverage;
+                    return diff !== 0 ? diff : nameCompare;
+                }
+                case 'name-asc':
+                default:
+                    return nameCompare;
+            }
+        });
+    }, [tables, statistics, quickAccessSort, language]);
+
     return (
         <div className="animate-fadeIn">
             {/* Header */}
@@ -220,10 +289,31 @@ export default function DashboardPage() {
 
             {/* Quick Access */}
             <div className="card">
-                <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                    <Activity className="w-5 h-5 text-[var(--accent-primary)]" />
-                    {t('dashboard.quickAccess.title')} ({tables.length} {t('dashboard.quickAccess.tables')})
-                </h2>
+                <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+                        <Activity className="w-5 h-5 text-[var(--accent-primary)]" />
+                        {t('dashboard.quickAccess.title')} ({tables.length} {t('dashboard.quickAccess.tables')})
+                    </h2>
+
+                    <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
+                        <span className="text-sm text-[var(--text-secondary)]">{sortLabel}</span>
+                        <select
+                            value={quickAccessSort}
+                            onChange={(event) => setQuickAccessSort(event.target.value as QuickAccessSort)}
+                            className="h-10 min-w-[260px] rounded-lg border border-[var(--border-primary)] bg-[var(--background-tertiary)] px-3 text-sm text-white outline-none transition-colors hover:border-[var(--accent-primary)] focus:border-[var(--accent-primary)] disabled:cursor-not-allowed"
+                            aria-label={sortLabel}
+                        >
+                            <option value="name-asc">{sortOptions.nameAsc}</option>
+                            <option value="name-desc">{sortOptions.nameDesc}</option>
+                            <option value="columns-desc" disabled={!statsLoaded}>{sortOptions.columnsDesc}</option>
+                            <option value="columns-asc" disabled={!statsLoaded}>{sortOptions.columnsAsc}</option>
+                            <option value="rows-desc" disabled={!statsLoaded}>{sortOptions.rowsDesc}</option>
+                            <option value="rows-asc" disabled={!statsLoaded}>{sortOptions.rowsAsc}</option>
+                            <option value="avg-records-desc" disabled={!statsLoaded}>{sortOptions.avgRecordsDesc}</option>
+                            <option value="avg-records-asc" disabled={!statsLoaded}>{sortOptions.avgRecordsAsc}</option>
+                        </select>
+                    </div>
+                </div>
 
                 {isLoading ? (
                     <div className="text-center py-8 text-[var(--text-muted)] flex items-center justify-center gap-2">
@@ -232,7 +322,7 @@ export default function DashboardPage() {
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                        {tables.map((table) => {
+                        {sortedTables.map((table) => {
                             const tableStatsData = getTableStats(table.name);
                             return (
                                 <Link
