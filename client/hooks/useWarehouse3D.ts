@@ -118,8 +118,10 @@ export function transformLayoutTo3D(
                     const items = stockByBlock.get(block.id);
                     if (!items || items.length === 0) return;
 
-                    for (const inv of items) {
+                    items.forEach((inv, itemIndex) => {
                         const category = inferCategory(inv.product_name, inv.sku);
+                        const BOX_HEIGHT = 0.6;
+                        const STACK_GAP = 0.05;
                         const box: BoxItem = {
                             id: inv.id,
                             name: `${inv.sku || inv.product_name}${inv.batch_code ? ` #${inv.batch_code}` : ''}`,
@@ -129,7 +131,7 @@ export function transformLayoutTo3D(
                             level: shelfIdx,
                             position: {
                                 x: rackConfig.position.x + blockIdx * cellW + cellW / 2,
-                                y: shelfIdx * cellH + cellH / 2,
+                                y: shelfIdx * cellH + cellH / 2 + itemIndex * (BOX_HEIGHT + STACK_GAP),
                                 z: rackConfig.position.z + rackD / 2,
                             },
                             color: categoryColors[category],
@@ -139,7 +141,7 @@ export function transformLayoutTo3D(
                             createdAt: new Date(inv.created_at),
                         };
                         boxes.push(box);
-                    }
+                    });
                 });
             });
 

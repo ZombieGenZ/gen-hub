@@ -1896,53 +1896,92 @@ export class InventoryRequestService {
             });
         }
 
-        // 3. Nếu vẫn không có blocks, tạo cấu trúc mặc định (Row > Rack > Shelf > Block)
+        // 3. Nếu vẫn không có blocks, tạo cấu trúc kho hoàn chỉnh cho 3D
+        //    Layout: 2 Dãy × 2 Kệ × 3 Tầng × 3 Ô = 36 vị trí chứa hàng
         if (availableBlocks.length === 0) {
-            const defaultRow = await tx.row.create({
-                data: {
-                    warehouse_id: warehouseId,
-                    name: 'Dãy mặc định',
-                    code: 'R-DEFAULT',
-                    is_rented: true,
-                    is_active: true,
-                    created_by: actorId,
-                },
-            });
+            const ROWS_COUNT = 2;
+            const RACKS_PER_ROW = 2;
+            const SHELVES_PER_RACK = 3;
+            const BLOCKS_PER_SHELF = 3;
+            const generatedBlocks: any[] = [];
 
-            const defaultRack = await tx.rack.create({
-                data: {
-                    row_id: defaultRow.id,
-                    name: 'Kệ mặc định',
-                    code: 'RK-DEFAULT',
-                    is_active: true,
-                    created_by: actorId,
-                },
-            });
+            for (let ri = 0; ri < ROWS_COUNT; ri++) {
+                const row = await tx.row.create({
+                    data: {
+                        warehouse_id: warehouseId,
+                        name: `Dãy ${String.fromCharCode(65 + ri)}`,
+                        code: `ROW-${String.fromCharCode(65 + ri)}`,
+                        is_rented: true,
+                        is_active: true,
+                        position_x: 0,
+                        position_y: ri * 8,
+                        position_rotation: 0,
+                        total_weight_capacity: 20000,
+                        created_by: actorId,
+                    },
+                });
 
-            const defaultShelf = await tx.shelf.create({
-                data: {
-                    rack_id: defaultRack.id,
-                    name: 'Tầng mặc định',
-                    code: 'SH-DEFAULT',
-                    is_active: true,
-                    created_by: actorId,
-                },
-            });
+                for (let rki = 0; rki < RACKS_PER_ROW; rki++) {
+                    const rack = await tx.rack.create({
+                        data: {
+                            row_id: row.id,
+                            name: `Kệ ${String.fromCharCode(65 + ri)}${rki + 1}`,
+                            code: `RACK-${String.fromCharCode(65 + ri)}${rki + 1}`,
+                            position_x: rki * 5,
+                            position_y: ri * 8,
+                            position_rotation: 0,
+                            dimensions_width: 4,
+                            dimensions_depth: 1.2,
+                            dimensions_height: 3.6,
+                            default_block_max_weight_capacity: 500,
+                            total_weight_capacity: 5000,
+                            total_height: 3.6,
+                            overload_threshold_percent: 10,
+                            is_rented: false,
+                            is_active: true,
+                            created_by: actorId,
+                        },
+                    });
 
-            const defaultBlock = await tx.block.create({
-                data: {
-                    shelf_id: defaultShelf.id,
-                    name: 'Ô mặc định',
-                    code: 'BL-DEFAULT',
-                    is_active: true,
-                    created_by: actorId,
-                },
-                include: {
-                    shelf: { include: { rack: { include: { row: true } } } },
-                },
-            });
+                    for (let si = 0; si < SHELVES_PER_RACK; si++) {
+                        const shelf = await tx.shelf.create({
+                            data: {
+                                rack_id: rack.id,
+                                name: `Tầng ${si + 1}`,
+                                code: `SHELF-${String.fromCharCode(65 + ri)}${rki + 1}-T${si + 1}`,
+                                height: 1.2,
+                                total_weight_capacity: 1500,
+                                is_active: true,
+                                created_by: actorId,
+                            },
+                        });
 
-            availableBlocks = [defaultBlock];
+                        for (let bi = 0; bi < BLOCKS_PER_SHELF; bi++) {
+                            const block = await tx.block.create({
+                                data: {
+                                    shelf_id: shelf.id,
+                                    name: `Ô ${bi + 1}`,
+                                    code: `BLK-${String.fromCharCode(65 + ri)}${rki + 1}-T${si + 1}-O${bi + 1}`,
+                                    position_x: bi,
+                                    position_y: 0,
+                                    dimensions_width: 1.2,
+                                    dimensions_height: 1.0,
+                                    max_weight_capacity: 500,
+                                    height: 1.0,
+                                    is_active: true,
+                                    created_by: actorId,
+                                },
+                                include: {
+                                    shelf: { include: { rack: { include: { row: true } } } },
+                                },
+                            });
+                            generatedBlocks.push(block);
+                        }
+                    }
+                }
+            }
+
+            availableBlocks = generatedBlocks;
         }
 
         // Ưu tiên: (1) shelf đã assigned đúng product, (2) shelf chưa assigned

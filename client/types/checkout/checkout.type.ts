@@ -97,6 +97,9 @@ export interface CheckoutSession {
     
     // Trạng thái đơn hàng
     status?: OrderStatus;
+    
+    // Tiền cọc
+    deposit_amount?: number;
 }
 
 /**
