@@ -107,6 +107,22 @@ const buildSafeMeta = (meta: Partial<Meta> | undefined, fallbackLimit: number): 
     };
 };
 
+const isRecordData = (value: unknown): value is RecordData => {
+    if (!value || typeof value !== 'object') {
+        return false;
+    }
+
+    return typeof (value as { id?: unknown }).id === 'string';
+};
+
+const getSafeRecords = (value: unknown): RecordData[] => {
+    if (!Array.isArray(value)) {
+        return [];
+    }
+
+    return value.filter(isRecordData);
+};
+
 export default function TablePage() {
     const params = useParams();
     const tableName = params.table as string;
@@ -240,12 +256,13 @@ export default function TablePage() {
                 orderBy: sortColumn || undefined,
                 orderDirection: sortDirection || undefined,
             });
-            setRecords(data.data);
+            const safeRecords = getSafeRecords(data.data);
+            setRecords(safeRecords);
             setMeta(buildSafeMeta(data.meta, meta.limit));
 
             // Extract columns from first record or from schema
-            if (data.data.length > 0) {
-                const allColumns = Object.keys(data.data[0]);
+            if (safeRecords.length > 0) {
+                const allColumns = Object.keys(safeRecords[0]);
                 setColumns(allColumns);
                 setOriginalColumns(allColumns);
                 // Load saved column order from localStorage
@@ -367,14 +384,16 @@ export default function TablePage() {
                 filters: appliedFilters.length > 0 ? appliedFilters : undefined,
             });
 
-            if (!data.data || data.data.length === 0) {
+            const safeRecords = getSafeRecords(data.data);
+
+            if (safeRecords.length === 0) {
                 toast.error(t('table.noData'));
                 return;
             }
 
             // Use column order for export
             const orderedColumns = columnOrder.length > 0 ? columnOrder : columns;
-            const exportData = data.data.map((record: RecordData) => {
+            const exportData = safeRecords.map((record) => {
                 const row: Record<string, CellValue> = {};
                 orderedColumns.forEach(col => {
                     row[col] = record[col];
