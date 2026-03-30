@@ -244,7 +244,7 @@ export default function BarcodeScannerQuickAdd({
     };
 
     // ── Handle scanner-like rapid input ──
-    const handleBarcodeInput = (value: string) => {
+    const handleBarcodeInput = useCallback((value: string) => {
         setBarcodeValue(value);
 
         // Scanner detection: if input comes in rapidly, auto-submit
@@ -252,13 +252,79 @@ export default function BarcodeScannerQuickAdd({
         scanBufferRef.current = value;
 
         scanTimerRef.current = setTimeout(() => {
-            // If the buffer is long enough (barcode typically 8+ chars)
-            // and was entered rapidly, treat as scanner input
-            if (scanBufferRef.current.length >= 8) {
-                // Auto-trigger lookup (scanner detected)
+            // Auto-trigger lookup if it looks like a barcode and we're on the scan step
+            if (step === "scan" && scanBufferRef.current.length >= 8) {
+                handleProceedToReview();
             }
             scanBufferRef.current = "";
         }, 100);
+    }, [step]);
+
+    // ── Smart Scanner Listener for Review Step ──
+    useEffect(() => {
+        if (!open) return;
+
+        let buffer = "";
+        let lastTime = 0;
+
+        const handleGlobalKeyDown = (e: KeyboardEvent) => {
+            const currentTime = Date.now();
+            
+            // If it's a very fast input (scanner-like)
+            if (currentTime - lastTime < 50 || buffer === "") {
+                if (e.key === "Enter") {
+                    if (buffer.length >= 8) {
+                        e.preventDefault();
+                        handleNewBarcodeScanned(buffer);
+                        buffer = "";
+                    }
+                } else if (e.key.length === 1 && /[0-9]/.test(e.key)) {
+                    buffer += e.key;
+                }
+            } else {
+                // Too slow, probably manual typing, reset buffer
+                buffer = e.key.length === 1 && /[0-9]/.test(e.key) ? e.key : "";
+            }
+            lastTime = currentTime;
+        };
+
+        window.addEventListener("keydown", handleGlobalKeyDown);
+        return () => window.removeEventListener("keydown", handleGlobalKeyDown);
+    }, [open, step, barcodeValue, unitRows, baseUnitId]);
+
+    const handleNewBarcodeScanned = (scannedCode: string) => {
+        if (step === "scan") {
+            setBarcodeValue(scannedCode);
+            handleProceedToReview();
+            return;
+        }
+
+        if (step === "review") {
+            // If scanning the same as base barcode, ignore
+            if (scannedCode === barcodeValue) {
+                showToast("Mã vạch này trùng với mã vạch cơ bản", "warning");
+                return;
+            }
+
+            // Check if already in unitRows
+            const exists = unitRows.some(row => row.barcode === scannedCode);
+            if (exists) {
+                showToast("Mã vạch này đã được thêm vào danh sách quy đổi", "warning");
+                return;
+            }
+
+            // Add new row
+            const newRow: UnitConversionRow = { unit_id: "", conversion_rate: "", barcode: scannedCode };
+            setUnitRows(prev => [...prev, newRow]);
+            showToast("Đã tự động thêm đơn vị quy đổi mới từ mã vạch", "success");
+
+            // Auto-focus the new row's rate input after a tiny delay
+            setTimeout(() => {
+                const inputs = document.querySelectorAll('input[inputmode="decimal"]');
+                const lastInput = inputs[inputs.length - 1] as HTMLInputElement;
+                if (lastInput) lastInput.focus();
+            }, 100);
+        }
     };
 
     // ── Generate SKU from barcode ──

@@ -205,6 +205,74 @@ export default function CreateProductPage() {
     const availableConversionUnits = orgUnits.filter(
         (u) => u.id !== baseUnitId
     );
+    
+    // ── Handle new barcode scanned ──
+    const handleNewBarcodeScanned = useCallback((scannedCode: string) => {
+        // Case 1: No base barcode yet
+        if (!barcode.trim()) {
+            setBarcode(scannedCode);
+            setSku(`SP-${scannedCode.slice(-6)}`);
+            showToast("Đã tự động điền mã vạch cơ bản", "success");
+            return;
+        }
+
+        // Case 2: Same as base barcode
+        if (scannedCode === barcode.trim()) {
+            showToast("Mã vạch này trùng với mã vạch cơ bản", "warning");
+            return;
+        }
+
+        // Case 3: Check if already in unitRows
+        const exists = unitRows.some(row => row.barcode === scannedCode);
+        if (exists) {
+            showToast("Mã vạch này đã tồn tại trong quy đổi", "warning");
+            return;
+        }
+
+        // Case 4: Add new unit conversion row
+        const newRow: UnitConversionRow = { unit_id: "", conversion_rate: "", barcode: scannedCode };
+        setUnitRows(prev => [...prev, newRow]);
+        showToast("Đã tự động thêm quy đổi mới từ mã vạch quét được", "success");
+
+        // Focus the newest rate input
+        setTimeout(() => {
+            const inputs = document.querySelectorAll('input[inputmode="decimal"]');
+            const lastInput = inputs[inputs.length - 1] as HTMLInputElement;
+            if (lastInput) lastInput.focus();
+        }, 100);
+    }, [barcode, unitRows, showToast]);
+
+    // ── Smart Scanner Listener (Global) ──
+    useEffect(() => {
+        let buffer = "";
+        let lastTime = 0;
+
+        const handleKeyDown = (e: KeyboardEvent) => {
+            // Avoid capturing if user is typing in common text fields (except barcode specific ones)
+            const target = e.target as HTMLElement;
+            const isInput = target.tagName === "INPUT" || target.tagName === "TEXTAREA";
+            
+            // Still capture if it's rapid (scanner)
+            const currentTime = Date.now();
+            if (currentTime - lastTime < 50 || buffer === "") {
+                if (e.key === "Enter") {
+                    if (buffer.length >= 8) {
+                        e.preventDefault();
+                        handleNewBarcodeScanned(buffer);
+                        buffer = "";
+                    }
+                } else if (e.key.length === 1 && /[0-9]/.test(e.key)) {
+                    buffer += e.key;
+                }
+            } else {
+                buffer = e.key.length === 1 && /[0-9]/.test(e.key) ? e.key : "";
+            }
+            lastTime = currentTime;
+        };
+
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [handleNewBarcodeScanned]);
 
     return (
         <div className="flex-1 overflow-auto bg-slate-50/50">
