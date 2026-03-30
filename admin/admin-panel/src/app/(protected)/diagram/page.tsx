@@ -29,7 +29,7 @@ import {
     Key,
     Link as LinkIcon,
     Info,
-    Map,
+    Map as MapIcon,
     GripVertical,
 } from 'lucide-react';
 import { toPng } from 'html-to-image';
@@ -774,7 +774,7 @@ export default function DiagramPage() {
                         className={`btn ${showMiniMap ? 'btn-secondary' : 'btn-primary'} p-2 sm:p-2.5`}
                         title={showMiniMap ? 'Hide MiniMap' : 'Show MiniMap'}
                     >
-                        <Map className="w-4 h-4" />
+                        <MapIcon className="w-4 h-4" />
                     </button>
 
                     {/* Toggle Relations */}
