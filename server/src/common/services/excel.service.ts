@@ -33,7 +33,7 @@ export class ExcelService {
     this.styleCells(worksheet);
 
     const buffer = await workbook.xlsx.writeBuffer();
-    return buffer as Buffer;
+    return Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer);
   }
 
   /**

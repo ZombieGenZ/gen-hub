@@ -14,7 +14,7 @@ import {
     Res,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { Response } from 'express';
+import type { Response } from 'express';
 import {
     ApiTags,
     ApiOperation,
