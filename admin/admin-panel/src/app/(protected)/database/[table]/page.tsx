@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { adminApi, FilterCondition } from '@/lib/api';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
@@ -24,6 +24,8 @@ import {
     Download,
     ArrowUp,
     ArrowDown,
+    Search,
+    ExternalLink,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -52,6 +54,11 @@ interface SchemaField {
     hasDefaultValue: boolean;
     isRelation: boolean;
     enumValues?: string[];
+    relation?: {
+        relationName?: string | null;
+        targetTable: string;
+        targetField: string;
+    } | null;
 }
 
 interface TableSchema {
@@ -65,6 +72,14 @@ interface PendingChange {
     originalData?: RecordData;
     newData?: RecordData;
     modifiedColumns?: Set<string>;
+}
+
+interface LookupModalCell {
+    id: string;
+    column: string;
+    isNewRow: boolean;
+    currentValue: string | null;
+    relation: NonNullable<SchemaField['relation']>;
 }
 
 type SortDirection = 'asc' | 'desc' | null;
@@ -125,8 +140,10 @@ const getSafeRecords = (value: unknown): RecordData[] => {
 
 export default function TablePage() {
     const params = useParams();
+    const searchParams = useSearchParams();
     const tableName = params.table as string;
     const { t } = useLanguage();
+    const focusId = searchParams.get('focusId');
 
     // Load page size from localStorage
     const getInitialPageSize = (): number => {
@@ -174,6 +191,17 @@ export default function TablePage() {
     const [numberModalOpen, setNumberModalOpen] = useState(false);
     const [numberModalValue, setNumberModalValue] = useState('');
     const [numberModalCell, setNumberModalCell] = useState<{ id: string; column: string; isNewRow: boolean } | null>(null);
+
+    // UID lookup modal state
+    const [lookupModalCell, setLookupModalCell] = useState<LookupModalCell | null>(null);
+    const [lookupModalRecords, setLookupModalRecords] = useState<RecordData[]>([]);
+    const [lookupModalMeta, setLookupModalMeta] = useState<Meta>({ total: 0, page: 1, limit: 10, totalPages: 1 });
+    const [lookupModalSchema, setLookupModalSchema] = useState<TableSchema | null>(null);
+    const [lookupModalSearchInput, setLookupModalSearchInput] = useState('');
+    const [lookupModalSearch, setLookupModalSearch] = useState('');
+    const [lookupModalSelectedId, setLookupModalSelectedId] = useState<string | null>(null);
+    const [lookupModalLoading, setLookupModalLoading] = useState(false);
+    const [highlightedRecordId, setHighlightedRecordId] = useState<string | null>(focusId);
 
     // New row state
     const [newRows, setNewRows] = useState<RecordData[]>([]);
@@ -233,6 +261,17 @@ export default function TablePage() {
     const isColumnEnum = useCallback((columnName: string): boolean => {
         const field = getFieldInfo(columnName);
         return !!field?.enumValues && field.enumValues.length > 0;
+    }, [getFieldInfo]);
+
+    const getColumnRelation = useCallback((columnName: string) => {
+        const field = getFieldInfo(columnName);
+        return field?.relation ?? null;
+    }, [getFieldInfo]);
+
+    const isUidLookupColumn = useCallback((columnName: string): boolean => {
+        if (columnName === 'id') return false;
+        const field = getFieldInfo(columnName);
+        return Boolean(field?.relation && field.type === 'String');
     }, [getFieldInfo]);
 
     // fetchSchema is called inline in useEffect, keeping for potential future use
@@ -426,6 +465,10 @@ export default function TablePage() {
 
     // Get display columns (respects column order)
     const displayColumns = columnOrder.length > 0 ? columnOrder : columns;
+    const lookupDisplayColumns = lookupModalSchema?.fields
+        ?.filter((field) => !field.isRelation)
+        .map((field) => field.name)
+        .slice(0, 4) || ['id'];
 
     // Alt + scroll to scroll horizontally in the table
     useEffect(() => {
@@ -451,6 +494,30 @@ export default function TablePage() {
             fetchRecords(1);
         }
     }, [fetchRecords, tableName]);
+
+    useEffect(() => {
+        if (!focusId) {
+            setHighlightedRecordId(null);
+            return;
+        }
+
+        const focusFilters: FilterCondition[] = [{ column: 'id', operator: 'equals', value: focusId }];
+        setPendingFilters(focusFilters);
+        setAppliedFilters(focusFilters);
+        setHighlightedRecordId(focusId);
+    }, [focusId, tableName]);
+
+    useEffect(() => {
+        if (!lookupModalCell) {
+            return;
+        }
+
+        const timeout = window.setTimeout(() => {
+            setLookupModalSearch(lookupModalSearchInput.trim());
+        }, 300);
+
+        return () => window.clearTimeout(timeout);
+    }, [lookupModalCell, lookupModalSearchInput]);
 
     // Close export dropdown when clicking outside
     useEffect(() => {
@@ -759,6 +826,134 @@ export default function TablePage() {
         fetchRecords(meta.page);
     };
 
+    const applyExistingRecordValue = (id: string, column: string, parsedValue: CellValue) => {
+        const record = records.find((item) => item.id === id);
+        if (!record) {
+            return;
+        }
+
+        const existingChange = pendingChanges.get(id);
+        const originalRecord = existingChange?.originalData || record;
+        const originalValue = originalRecord[column];
+
+        const isUnchanged = parsedValue === originalValue ||
+            (parsedValue === null && originalValue === null) ||
+            (isColumnDateTime(column) && parsedValue && originalValue &&
+                new Date(parsedValue).getTime() === new Date(originalValue).getTime()) ||
+            (isColumnJson(column) && JSON.stringify(parsedValue) === JSON.stringify(originalValue));
+
+        if (isUnchanged) {
+            return;
+        }
+
+        setRecords(records.map((item) => (
+            item.id === id
+                ? { ...item, [column]: parsedValue }
+                : item
+        )));
+
+        if (existingChange && existingChange.newData) {
+            existingChange.newData = { ...existingChange.newData, [column]: parsedValue } as RecordData;
+            existingChange.modifiedColumns = existingChange.modifiedColumns || new Set();
+            existingChange.modifiedColumns.add(column);
+            setPendingChanges(new Map(pendingChanges));
+            return;
+        }
+
+        const newChange: PendingChange = {
+            type: 'update',
+            id,
+            originalData: originalRecord,
+            newData: { ...record, [column]: parsedValue },
+            modifiedColumns: new Set([column]),
+        };
+        setPendingChanges(new Map(pendingChanges.set(id, newChange)));
+    };
+
+    const closeLookupModal = () => {
+        setLookupModalCell(null);
+        setLookupModalRecords([]);
+        setLookupModalSchema(null);
+        setLookupModalSearch('');
+        setLookupModalSearchInput('');
+        setLookupModalSelectedId(null);
+        setLookupModalMeta({ total: 0, page: 1, limit: 10, totalPages: 1 });
+    };
+
+    const fetchLookupRecords = useCallback(async (
+        relation: NonNullable<SchemaField['relation']>,
+        page = 1,
+        search = '',
+    ) => {
+        setLookupModalLoading(true);
+        try {
+            const [schemaData, recordsData] = await Promise.all([
+                adminApi.getTableSchema(relation.targetTable),
+                adminApi.getRecords(relation.targetTable, {
+                    page,
+                    limit: 10,
+                    search: search || undefined,
+                    orderBy: relation.targetField,
+                    orderDirection: 'asc',
+                }),
+            ]);
+
+            setLookupModalSchema(schemaData);
+            setLookupModalRecords(getSafeRecords(recordsData.data));
+            setLookupModalMeta(buildSafeMeta(recordsData.meta, 10));
+        } catch (error) {
+            console.error('Failed to fetch lookup records:', error);
+            toast.error(t('common.error'));
+        } finally {
+            setLookupModalLoading(false);
+        }
+    }, [t]);
+
+    const openLookupModal = (record: RecordData, column: string, isNewRow: boolean) => {
+        const relation = getColumnRelation(column);
+        if (!relation) {
+            return;
+        }
+
+        const currentValue = typeof record[column] === 'string' ? record[column] : null;
+        setLookupModalCell({
+            id: record.id,
+            column,
+            isNewRow,
+            currentValue,
+            relation,
+        });
+        setLookupModalSelectedId(currentValue);
+        setLookupModalSearch('');
+        setLookupModalSearchInput('');
+    };
+
+    useEffect(() => {
+        if (!lookupModalCell) {
+            return;
+        }
+
+        fetchLookupRecords(lookupModalCell.relation, 1, lookupModalSearch);
+    }, [lookupModalCell, lookupModalSearch, fetchLookupRecords]);
+
+    const applyLookupSelection = (valueOverride?: string | null) => {
+        if (!lookupModalCell) {
+            return;
+        }
+
+        const { id, column, isNewRow } = lookupModalCell;
+        const nextValue = valueOverride !== undefined ? valueOverride : lookupModalSelectedId;
+        const parsedValue = nextValue || (isColumnNullable(column) ? null : '');
+
+        if (isNewRow) {
+            updateNewRow(id, column, parsedValue);
+        } else {
+            applyExistingRecordValue(id, column, parsedValue);
+        }
+
+        closeLookupModal();
+    };
+
     const formatTableName = (name: string) => {
         return name
             // Handle camelCase: add space before uppercase letters
@@ -784,6 +979,20 @@ export default function TablePage() {
         return String(value);
     };
 
+    const formatLookupValue = (value: CellValue): string => {
+        if (value === null || value === undefined || value === '') return '—';
+        if (typeof value === 'boolean') return value ? 'TRUE' : 'FALSE';
+        if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}T/)) {
+            try {
+                return format(new Date(value), 'dd/MM/yyyy HH:mm');
+            } catch {
+                return value;
+            }
+        }
+        if (typeof value === 'object') return JSON.stringify(value);
+        return String(value);
+    };
+
     const isRowDeleted = (id: string) => {
         return pendingChanges.get(id)?.type === 'delete';
     };
@@ -803,6 +1012,9 @@ export default function TablePage() {
             classes.push('row-deleted');
         } else if (isRowSelected(record.id)) {
             classes.push('row-selected-delete');
+        }
+        if (highlightedRecordId === record.id) {
+            classes.push('ring-1 ring-[var(--accent-primary)] bg-[var(--accent-primary)]/10');
         }
         return classes.join(' ');
     };
@@ -1078,6 +1290,30 @@ export default function TablePage() {
                 setEditValue(value);
             }
         };
+
+        if (isUidLookupColumn(column)) {
+            return (
+                <div className="flex items-center gap-1">
+                    <button
+                        type="button"
+                        onClick={() => openLookupModal(record, column, isNewRow)}
+                        className="flex-1 rounded border border-[var(--border-primary)] bg-[var(--background-tertiary)] px-2 py-1 text-left text-sm text-white hover:border-[var(--accent-primary)]"
+                    >
+                        {currentValue ? String(currentValue) : t('common.search')}
+                    </button>
+                    {nullable && currentValue && (
+                        <button
+                            type="button"
+                            onClick={() => updateNewRow(record.id, column, null)}
+                            className="text-xs text-[var(--text-muted)] hover:text-white px-1"
+                            title={t('table.edit.setNull')}
+                        >
+                            NULL
+                        </button>
+                    )}
+                </div>
+            );
+        }
 
         // Boolean column
         if (isColumnBoolean(column)) {
@@ -1608,6 +1844,11 @@ export default function TablePage() {
                                                 onClick={() => {
                                                     if (isRowDeleted(record.id) || READONLY_COLUMNS.includes(col)) return;
 
+                                                    if (isUidLookupColumn(col)) {
+                                                        openLookupModal(record, col, false);
+                                                        return;
+                                                    }
+
                                                     // DateTime columns - open date modal
                                                     if (isColumnDateTime(col)) {
                                                         openDateModal(record, col, false);
@@ -1726,6 +1967,176 @@ export default function TablePage() {
                     </div>
                 )}
             </div>
+
+            {/* UID Lookup Modal */}
+            {lookupModalCell && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 animate-fadeIn"
+                    onClick={(e) => {
+                        if (e.target === e.currentTarget) closeLookupModal();
+                    }}
+                >
+                    <div className="mx-4 flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-lg border border-[var(--border-primary)] bg-[var(--background-secondary)] shadow-2xl animate-slideIn">
+                        <div className="flex items-center justify-between gap-3 border-b border-[var(--border-primary)] px-4 py-3">
+                            <div>
+                                <h3 className="text-white font-medium">
+                                    {lookupModalCell.column} → {formatTableName(lookupModalCell.relation.targetTable)}
+                                </h3>
+                                <p className="text-xs text-[var(--text-muted)]">
+                                    {lookupModalCell.relation.targetField}
+                                </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                {lookupModalCell.currentValue && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            window.open(
+                                                `/database/${lookupModalCell.relation.targetTable}?focusId=${encodeURIComponent(lookupModalCell.currentValue as string)}`,
+                                                '_blank',
+                                                'noopener,noreferrer',
+                                            );
+                                        }}
+                                        className="btn btn-secondary text-sm py-1.5"
+                                    >
+                                        <ExternalLink className="w-4 h-4" />
+                                        <span className="hidden sm:inline">Open row</span>
+                                    </button>
+                                )}
+                                <button
+                                    onClick={closeLookupModal}
+                                    className="rounded p-1 text-[var(--text-muted)] hover:bg-[var(--background-tertiary)] hover:text-white"
+                                >
+                                    <X className="w-4 h-4" />
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="border-b border-[var(--border-primary)] p-4">
+                            <div className="flex flex-col gap-3 sm:flex-row">
+                                <div className="relative flex-1">
+                                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" />
+                                    <input
+                                        type="text"
+                                        value={lookupModalSearchInput}
+                                        onChange={(e) => setLookupModalSearchInput(e.target.value)}
+                                        placeholder={t('common.search')}
+                                        className="w-full rounded-lg border border-[var(--border-primary)] bg-[var(--background-tertiary)] py-2 pl-9 pr-3 text-sm text-white outline-none focus:border-[var(--accent-primary)]"
+                                    />
+                                </div>
+                                {isColumnNullable(lookupModalCell.column) && (
+                                    <button
+                                        type="button"
+                                        onClick={() => applyLookupSelection(null)}
+                                        className="btn btn-secondary text-sm"
+                                    >
+                                        {t('table.edit.setNull')}
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="min-h-0 flex-1 overflow-auto">
+                            <table className="data-table w-full min-w-[640px]">
+                                <thead className="sticky top-0 z-10">
+                                    <tr>
+                                        <th className="w-12 text-center">#</th>
+                                        {lookupDisplayColumns.map((column) => (
+                                            <th key={column}>
+                                                <span className="text-xs">{column}</span>
+                                            </th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {lookupModalLoading ? (
+                                        <tr>
+                                            <td colSpan={lookupDisplayColumns.length + 1} className="py-8 text-center">
+                                                <Loader2 className="mx-auto h-5 w-5 animate-spin text-[var(--accent-primary)]" />
+                                            </td>
+                                        </tr>
+                                    ) : lookupModalRecords.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={lookupDisplayColumns.length + 1} className="py-8 text-center text-[var(--text-muted)]">
+                                                {t('common.noResults')}
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        lookupModalRecords.map((record) => (
+                                            <tr
+                                                key={record.id}
+                                                className={lookupModalSelectedId === record.id ? 'bg-[var(--accent-primary)]/10' : ''}
+                                            >
+                                                <td className="text-center">
+                                                    <input
+                                                        type="radio"
+                                                        name="lookup-selected-row"
+                                                        checked={lookupModalSelectedId === record.id}
+                                                        onChange={() => setLookupModalSelectedId(record.id)}
+                                                    />
+                                                </td>
+                                                {lookupDisplayColumns.map((column) => (
+                                                    <td
+                                                        key={column}
+                                                        className="cursor-pointer"
+                                                        onClick={() => setLookupModalSelectedId(record.id)}
+                                                    >
+                                                        {formatLookupValue(record[column])}
+                                                    </td>
+                                                ))}
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div className="flex flex-col gap-3 border-t border-[var(--border-primary)] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                            <p className="text-xs text-[var(--text-secondary)]">
+                                {lookupModalMeta.total > 0
+                                    ? `${(lookupModalMeta.page - 1) * lookupModalMeta.limit + 1} - ${Math.min(lookupModalMeta.page * lookupModalMeta.limit, lookupModalMeta.total)} / ${lookupModalMeta.total}`
+                                    : '0'}
+                            </p>
+                            <div className="flex items-center justify-between gap-2 sm:justify-end">
+                                <button
+                                    type="button"
+                                    onClick={() => fetchLookupRecords(lookupModalCell.relation, lookupModalMeta.page - 1, lookupModalSearch)}
+                                    disabled={lookupModalLoading || lookupModalMeta.page <= 1}
+                                    className="btn btn-secondary px-2 py-1 disabled:opacity-50"
+                                >
+                                    <ChevronLeft className="w-4 h-4" />
+                                </button>
+                                <span className="px-2 text-xs text-white">
+                                    {lookupModalMeta.page} / {lookupModalMeta.totalPages}
+                                </span>
+                                <button
+                                    type="button"
+                                    onClick={() => fetchLookupRecords(lookupModalCell.relation, lookupModalMeta.page + 1, lookupModalSearch)}
+                                    disabled={lookupModalLoading || lookupModalMeta.page >= lookupModalMeta.totalPages}
+                                    className="btn btn-secondary px-2 py-1 disabled:opacity-50"
+                                >
+                                    <ChevronRight className="w-4 h-4" />
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={closeLookupModal}
+                                    className="btn btn-secondary text-sm"
+                                >
+                                    {t('table.actions.cancel')}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => applyLookupSelection()}
+                                    disabled={!lookupModalSelectedId}
+                                    className="btn btn-primary text-sm disabled:opacity-50"
+                                >
+                                    {t('table.actions.save')}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Text Edit Modal for Long Content */}
             {textModalOpen && textModalCell && (

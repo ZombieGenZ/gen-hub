@@ -316,16 +316,19 @@ export class DatabaseAdminService implements OnModuleInit {
             limit?: number;
             orderBy?: string;
             orderDirection?: 'asc' | 'desc';
+            search?: string;
             filters?: FilterCondition[];
         } = {},
     ) {
         this.validateTable(tableName);
 
-        const { page = 1, limit = 20, orderBy, orderDirection = 'desc', filters } = options;
+        const { page = 1, limit = 20, orderBy, orderDirection = 'desc', search, filters } = options;
         const skip = (page - 1) * limit;
 
         const prismaModel = this.getPrismaModel(tableName);
-        const whereClause = this.buildWhereClause(filters);
+        const filterWhere = this.buildWhereClause(filters);
+        const searchWhere = this.buildSearchClause(tableName, search);
+        const whereClause = this.combineWhereClauses(filterWhere, searchWhere);
 
         // Get available fields for this table from schema
         const schema = await this.getTableSchema(tableName);
@@ -712,6 +715,20 @@ export class DatabaseAdminService implements OnModuleInit {
             }
 
             const fields = model.fields.map((field) => {
+                const relationField = model.fields.find((candidate) => {
+                    const relationFromFields = (candidate as any).relationFromFields as string[] | undefined;
+                    return Array.isArray(relationFromFields) && relationFromFields.includes(field.name);
+                });
+                const targetModelName = relationField?.type;
+                const targetModel = targetModelName
+                    ? dmmf.datamodel.models.find((candidate) => candidate.name === targetModelName)
+                    : undefined;
+                const targetTable = targetModel
+                    ? ((targetModel as { dbName?: string }).dbName || targetModel.name.charAt(0).toLowerCase() + targetModel.name.slice(1))
+                    : undefined;
+                const relationToFields = relationField
+                    ? ((relationField as any).relationToFields as string[] | undefined)
+                    : undefined;
                 const fieldDef: any = {
                     name: field.name,
                     type: field.type,
@@ -722,6 +739,14 @@ export class DatabaseAdminService implements OnModuleInit {
                     hasDefaultValue: field.hasDefaultValue,
                     isRelation: !!field.relationName,
                 };
+
+                if (targetTable) {
+                    fieldDef.relation = {
+                        relationName: relationField?.relationName || field.relationName || null,
+                        targetTable,
+                        targetField: relationToFields?.[0] || 'id',
+                    };
+                }
 
                 // Prisma runtime may not expose user enums in dmmf.datamodel.enums.
                 // Fallback: read enum object exported by @prisma/client (e.g. LogLevel).
@@ -808,6 +833,51 @@ export class DatabaseAdminService implements OnModuleInit {
         }
 
         return cleaned;
+    }
+
+    private buildSearchClause(tableName: string, search?: string) {
+        const keyword = search?.trim();
+        if (!keyword) {
+            return {};
+        }
+
+        const dmmf = Prisma.dmmf;
+        const modelName = this.tableNameToDmmfName.get(tableName) || tableName;
+        const model = dmmf.datamodel.models.find((candidate) => candidate.name === modelName);
+
+        if (!model) {
+            return {};
+        }
+
+        const searchableFields = model.fields.filter(
+            (field) => !field.relationName && !field.isList && field.type === 'String',
+        );
+
+        if (searchableFields.length === 0) {
+            return {};
+        }
+
+        return {
+            OR: searchableFields.map((field) => ({
+                [field.name]: { contains: keyword, mode: 'insensitive' },
+            })),
+        };
+    }
+
+    private combineWhereClauses(...clauses: any[]) {
+        const validClauses = clauses.filter((clause) => clause && Object.keys(clause).length > 0);
+
+        if (validClauses.length === 0) {
+            return {};
+        }
+
+        if (validClauses.length === 1) {
+            return validClauses[0];
+        }
+
+        return {
+            AND: validClauses,
+        };
     }
 
     private formatTableName(tableName: string): string {

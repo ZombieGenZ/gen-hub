@@ -247,6 +247,11 @@ interface AdminTableSchema {
         hasDefaultValue: boolean;
         isRelation: boolean;
         enumValues?: string[];
+        relation?: {
+            relationName?: string | null;
+            targetTable: string;
+            targetField: string;
+        } | null;
     }>;
 }
 
@@ -355,6 +360,7 @@ export const adminApi = {
             limit?: number;
             orderBy?: string;
             orderDirection?: 'asc' | 'desc';
+            search?: string;
             filters?: FilterCondition[];
         }
     ) => {
@@ -363,6 +369,7 @@ export const adminApi = {
         if (options?.limit) params.append('limit', String(options.limit));
         if (options?.orderBy) params.append('orderBy', options.orderBy);
         if (options?.orderDirection) params.append('orderDirection', options.orderDirection);
+        if (options?.search) params.append('search', options.search);
         if (options?.filters && options.filters.length > 0) {
             params.append('filters', JSON.stringify(options.filters));
         }

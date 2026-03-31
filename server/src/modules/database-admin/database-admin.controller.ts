@@ -433,6 +433,7 @@ export class DatabaseAdminController {
         @Query('limit') limit?: string,
         @Query('orderBy') orderBy?: string,
         @Query('orderDirection') orderDirection?: 'asc' | 'desc',
+        @Query('search') search?: string,
         @Query('filters') filters?: string,
     ) {
         let parsedFilters: FilterCondition[] | undefined;
@@ -449,6 +450,7 @@ export class DatabaseAdminController {
             limit: limit ? parseInt(limit, 10) : undefined,
             orderBy,
             orderDirection,
+            search,
             filters: parsedFilters,
         });
 
