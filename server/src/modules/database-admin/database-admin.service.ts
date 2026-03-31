@@ -5,6 +5,8 @@ import { SystemLogService } from '../system-log/system-log.service';
 import { Prisma } from '@prisma/client';
 import * as PrismaClientEnums from '@prisma/client';
 import { FilterCondition, BatchChanges } from './database-admin.controller';
+import { existsSync, readFileSync } from 'fs';
+import { resolve } from 'path';
 
 // Các tables nhạy cảm cần ẩn một số fields
 const SENSITIVE_FIELDS: Record<string, string[]> = {
@@ -18,6 +20,12 @@ const SENSITIVE_FIELDS: Record<string, string[]> = {
 // Tables không nên cho phép xóa hoặc edit trực tiếp
 const PROTECTED_TABLES = ['_prisma_migrations'];
 
+interface ParsedRelationMetadata {
+    relationFieldName: string;
+    targetModelName: string;
+    targetField: string;
+}
+
 @Injectable()
 export class DatabaseAdminService implements OnModuleInit {
     private readonly logger = new Logger(DatabaseAdminService.name);
@@ -26,6 +34,7 @@ export class DatabaseAdminService implements OnModuleInit {
     private tableNameToModelName: Map<string, string> = new Map();
     // Mapping từ tên bảng DB (snake_case) sang tên model trong DMMF (PascalCase)
     private tableNameToDmmfName: Map<string, string> = new Map();
+    private relationFieldMetadata: Map<string, Map<string, ParsedRelationMetadata>> = new Map();
 
     constructor(
         private readonly prisma: PrismaService,
@@ -38,6 +47,7 @@ export class DatabaseAdminService implements OnModuleInit {
      */
     async onModuleInit() {
         await this.discoverTables();
+        this.loadRelationFieldMetadata();
     }
 
     /**
@@ -82,6 +92,65 @@ export class DatabaseAdminService implements OnModuleInit {
         `;
 
         return new Set(rows.map((row) => row.table_name));
+    }
+
+    private loadRelationFieldMetadata() {
+        const schemaPath = this.resolvePrismaSchemaPath();
+        if (!schemaPath) {
+            this.logger.warn('Could not resolve prisma/schema.prisma to build relation metadata');
+            this.relationFieldMetadata.clear();
+            return;
+        }
+
+        const schemaContent = readFileSync(schemaPath, 'utf8');
+        const relationFieldMetadata = new Map<string, Map<string, ParsedRelationMetadata>>();
+
+        for (const match of schemaContent.matchAll(/model\s+(\w+)\s*\{([\s\S]*?)\n\}/g)) {
+            const [, modelName, modelBody] = match;
+            const relationsForModel = new Map<string, ParsedRelationMetadata>();
+
+            for (const relationMatch of modelBody.matchAll(/^\s*(\w+)\s+([\w\[\]\?]+)\s+@relation\(([^)]*)\)/gm)) {
+                const [, relationFieldName, rawTargetType, relationArgs] = relationMatch;
+                const fieldsMatch = relationArgs.match(/fields:\s*\[([^\]]+)\]/);
+                if (!fieldsMatch) {
+                    continue;
+                }
+
+                const referencesMatch = relationArgs.match(/references:\s*\[([^\]]+)\]/);
+                const localFieldNames = fieldsMatch[1]
+                    .split(',')
+                    .map((field) => field.trim())
+                    .filter(Boolean);
+                const targetFieldNames = referencesMatch?.[1]
+                    ?.split(',')
+                    .map((field) => field.trim())
+                    .filter(Boolean) || ['id'];
+                const targetModelName = rawTargetType.replace(/[?[\]]/g, '');
+
+                localFieldNames.forEach((localFieldName, index) => {
+                    relationsForModel.set(localFieldName, {
+                        relationFieldName,
+                        targetModelName,
+                        targetField: targetFieldNames[index] || targetFieldNames[0] || 'id',
+                    });
+                });
+            }
+
+            if (relationsForModel.size > 0) {
+                relationFieldMetadata.set(modelName, relationsForModel);
+            }
+        }
+
+        this.relationFieldMetadata = relationFieldMetadata;
+    }
+
+    private resolvePrismaSchemaPath() {
+        const candidates = [
+            resolve(process.cwd(), 'prisma', 'schema.prisma'),
+            resolve(process.cwd(), 'server', 'prisma', 'schema.prisma'),
+        ];
+
+        return candidates.find((candidate) => existsSync(candidate));
     }
 
     /**
@@ -715,11 +784,13 @@ export class DatabaseAdminService implements OnModuleInit {
             }
 
             const fields = model.fields.map((field) => {
-                const relationField = model.fields.find((candidate) => {
-                    const relationFromFields = (candidate as any).relationFromFields as string[] | undefined;
-                    return Array.isArray(relationFromFields) && relationFromFields.includes(field.name);
-                });
-                const targetModelName = relationField?.type;
+                const parsedRelation = this.relationFieldMetadata.get(model.name)?.get(field.name);
+                const relationField = model.fields.find((candidate) => candidate.name === parsedRelation?.relationFieldName)
+                    || model.fields.find((candidate) => {
+                        const relationFromFields = (candidate as any).relationFromFields as string[] | undefined;
+                        return Array.isArray(relationFromFields) && relationFromFields.includes(field.name);
+                    });
+                const targetModelName = parsedRelation?.targetModelName || relationField?.type;
                 const targetModel = targetModelName
                     ? dmmf.datamodel.models.find((candidate) => candidate.name === targetModelName)
                     : undefined;
@@ -741,11 +812,13 @@ export class DatabaseAdminService implements OnModuleInit {
                 };
 
                 if (targetTable) {
-                    fieldDef.relation = {
+                    const relationMetadata = {
                         relationName: relationField?.relationName || field.relationName || null,
                         targetTable,
-                        targetField: relationToFields?.[0] || 'id',
+                        targetField: parsedRelation?.targetField || relationToFields?.[0] || 'id',
                     };
+                    fieldDef.relation = relationMetadata;
+                    fieldDef.ref = relationMetadata;
                 }
 
                 // Prisma runtime may not expose user enums in dmmf.datamodel.enums.
