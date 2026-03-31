@@ -177,7 +177,7 @@ export function Toolbar({
         <span className="rounded-full border border-[var(--accent-border)] bg-[var(--accent-soft)] px-3 py-1.5 text-[var(--accent)]">
           {selectedCount} đã chọn
         </span>
-        <span className="rounded-full border border-[var(--border)] bg-white px-3 py-1.5 text-[var(--muted)]">
+        <span className="rounded-full border border-[var(--border)] bg-[var(--surface-muted)] px-3 py-1.5 text-[var(--muted)]">
           {totalCount} endpoint hiển thị
         </span>
       </div>
