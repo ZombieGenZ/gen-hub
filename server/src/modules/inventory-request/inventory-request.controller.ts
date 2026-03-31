@@ -37,6 +37,7 @@ import {
     QueryOutboundRequestDto,
     RejectRequestDto,
     StartReceivingDto,
+    QueryTransactionDto,
 } from './dto';
 import { CombinedAuthGuard } from '../../common/guards/combined-auth.guard';
 import { OrgPermissionGuard } from '../../common/guards/org-permission.guard';
@@ -414,6 +415,27 @@ export class InventoryRequestController {
         );
     }
 
+    @Get('inbound/export')
+    @RequireOrgPermission('org.inventory.inbound.export')
+    @ApiOperation({
+        summary: 'Xuất Excel danh sách yêu cầu nhập kho',
+        description: 'Tạo và tải về file Excel danh sách các phiếu nhập kho dựa trên bộ lọc hiện tại. Yêu cầu quyền `org.inventory.inbound.export`.',
+    })
+    @ApiParam({ name: 'orgId', required: true, description: 'ID của tổ chức', example: ORG_ID, schema: { type: 'string', format: 'uuid' } })
+    async exportInbound(
+        @Param('orgId', ParseUUIDPipe) orgId: string,
+        @Query() query: QueryInboundRequestDto,
+        @Res() res: Response,
+    ) {
+        const result = await this.inventoryRequestService.exportInbound(orgId, query);
+        res.set({
+            'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition': `attachment; filename="${result.fileName}"`,
+            'Content-Length': result.buffer.length,
+        });
+        res.end(result.buffer);
+    }
+
     @Get('inbound/:id')
     @RequireOrgPermission('org.inventory.inbound.list')
     @ApiOperation({
@@ -555,6 +577,27 @@ export class InventoryRequestController {
             result,
             await this.i18n.translate('inventory-request.success.list_outbound', { lang }),
         );
+    }
+
+    @Get('outbound/export')
+    @RequireOrgPermission('org.inventory.outbound.export')
+    @ApiOperation({
+        summary: 'Xuất Excel danh sách yêu cầu xuất kho',
+        description: 'Tạo và tải về file Excel danh sách các phiếu xuất kho dựa trên bộ lọc hiện tại. Yêu cầu quyền `org.inventory.outbound.export`.',
+    })
+    @ApiParam({ name: 'orgId', required: true, description: 'ID của tổ chức', example: ORG_ID, schema: { type: 'string', format: 'uuid' } })
+    async exportOutbound(
+        @Param('orgId', ParseUUIDPipe) orgId: string,
+        @Query() query: QueryOutboundRequestDto,
+        @Res() res: Response,
+    ) {
+        const result = await this.inventoryRequestService.exportOutbound(orgId, query);
+        res.set({
+            'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition': `attachment; filename="${result.fileName}"`,
+            'Content-Length': result.buffer.length,
+        });
+        res.end(result.buffer);
     }
 
     @Get('outbound/:id')
@@ -915,5 +958,61 @@ export class InventoryRequestController {
     ) {
         const result = await this.inventoryRequestService.completeShipment(orgId, id, actorId, lang, dto);
         return new UpdatedResponse('inventory-request.complete_shipment', result, lang === 'vi' ? 'Hoàn tất xuất kho' : 'Shipment completed');
+    }
+
+    @Get('inventory-total/:warehouseId')
+    @RequireOrgPermission('org.inventory.stock.list')
+    @ApiOperation({
+        summary: 'Tổng hợp tồn kho của kho',
+        description: 'Lấy tổng số lượng tồn kho theo 3 loại: thực tế, khả dụng và đang dự trữ. Dùng cho các dashboard tóm tắt. Yêu cầu quyền `org.inventory.stock.list`.',
+    })
+    @ApiParam({ name: 'orgId', required: true, description: 'ID của tổ chức', example: ORG_ID, schema: { type: 'string', format: 'uuid' } })
+    @ApiParam({ name: 'warehouseId', required: true, description: 'ID của kho cần xem tổng hợp', example: WAREHOUSE_ID, schema: { type: 'string', format: 'uuid' } })
+    async getInventoryTotal(
+        @Param('orgId', ParseUUIDPipe) orgId: string,
+        @Param('warehouseId', ParseUUIDPipe) warehouseId: string,
+    ) {
+        return this.inventoryRequestService.getInventoryTotal(orgId, warehouseId);
+    }
+
+    @Get('stock/export')
+    @RequireOrgPermission('org.inventory.stock.export')
+    @ApiOperation({
+        summary: 'Xuất Excel tồn kho',
+        description: 'Tạo và tải về file Excel báo cáo tồn kho hiện tại. Yêu cầu quyền `org.inventory.stock.export`.',
+    })
+    @ApiParam({ name: 'orgId', required: true, description: 'ID của tổ chức', example: ORG_ID, schema: { type: 'string', format: 'uuid' } })
+    async exportStock(
+        @Param('orgId', ParseUUIDPipe) orgId: string,
+        @Query('warehouse_id') warehouseId: string,
+        @Res() res: Response,
+    ) {
+        const result = await this.inventoryRequestService.exportStock(orgId, warehouseId);
+        res.set({
+            'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition': `attachment; filename="${result.fileName}"`,
+            'Content-Length': result.buffer.length,
+        });
+        res.end(result.buffer);
+    }
+
+    @Get('transactions')
+    @RequireOrgPermission('org.inventory.transaction.list')
+    @ApiOperation({
+        summary: 'Lịch sử biến động kho (Giao dịch)',
+        description: 'Lấy danh sách lịch sử nhập, xuất, chuyển kho của tổ chức. Hỗ trợ lọc theo kho, sản phẩm và loại giao dịch. Yêu cầu quyền `org.inventory.transaction.list`.',
+    })
+    @ApiParam({ name: 'orgId', required: true, description: 'ID của tổ chức', example: ORG_ID, schema: { type: 'string', format: 'uuid' } })
+    async listOrgTransactions(
+        @Param('orgId', ParseUUIDPipe) orgId: string,
+        @Query() query: QueryTransactionDto,
+        @I18nLang() lang: string,
+    ) {
+        const result = await this.inventoryRequestService.listOrgTransactions(orgId, query);
+        return new GetResponse(
+            'inventory-request.list_transactions',
+            result,
+            await this.i18n.translate('inventory-request.success.list_transactions', { lang }),
+        );
     }
 }

@@ -14,6 +14,7 @@ import {
     ConfirmPickingDto,
     ConfirmCheckingDto,
     CompleteShipmentDto,
+    QueryTransactionDto,
 } from './dto';
 import {
     IInboundRequest,
@@ -830,7 +831,8 @@ export class InventoryRequestService {
             created_at: new Date(item.created_at).toLocaleString('vi-VN'),
         }));
 
-        return this.excelService.createExcelBuffer(columns, data, 'Danh sách Phiếu Nhập');
+        const buffer = await this.excelService.createExcelBuffer(columns, data, 'Danh sách Phiếu Nhập');
+        return { buffer, fileName: `PhieuNhap_${new Date().toISOString().split('T')[0]}.xlsx` };
     }
 
     /**
@@ -859,7 +861,8 @@ export class InventoryRequestService {
             created_at: new Date(item.created_at).toLocaleString('vi-VN'),
         }));
 
-        return this.excelService.createExcelBuffer(columns, data, 'Danh sách Phiếu Xuất');
+        const buffer = await this.excelService.createExcelBuffer(columns, data, 'Danh sách Phiếu Xuất');
+        return { buffer, fileName: `PhieuXuat_${new Date().toISOString().split('T')[0]}.xlsx` };
     }
 
     /**
@@ -892,7 +895,32 @@ export class InventoryRequestService {
             quantity_available: item.quantity_available,
         }));
 
-        return this.excelService.createExcelBuffer(columns, data, 'Báo cáo Tồn kho');
+        const buffer = await this.excelService.createExcelBuffer(columns, data, 'Báo cáo Tồn kho');
+        return { buffer, fileName: `TonKho_${new Date().toISOString().split('T')[0]}.xlsx` };
+    }
+
+    /**
+     * Lấy tổng hợp tồn kho (Summary) cho dashboard
+     */
+    async getInventoryTotal(orgId: string, warehouseId: string) {
+        const aggregate = await this.prisma.inventory.aggregate({
+            where: {
+                organization_id: orgId,
+                warehouse_id: warehouseId,
+                is_deleted: false,
+            },
+            _sum: {
+                quantity_on_hand: true,
+                quantity_available: true,
+                quantity_allocated: true,
+            },
+        });
+
+        return {
+            total_on_hand: aggregate._sum.quantity_on_hand?.toNumber() ?? 0,
+            total_available: aggregate._sum.quantity_available?.toNumber() ?? 0,
+            total_allocated: aggregate._sum.quantity_allocated?.toNumber() ?? 0,
+        };
     }
 
     /**
@@ -2328,5 +2356,59 @@ export class InventoryRequestService {
                 }
             }
         }
+    }
+
+    /**
+     * Lấy danh sách lịch sử biến động kho (Giao dịch) cho tổ chức/kho
+     */
+    async listOrgTransactions(orgId: string, query: QueryTransactionDto) {
+        const { warehouse_id, keywords, type, limit = 10, offset = 0 } = query;
+
+        const where: Prisma.InventoryTransactionWhereInput = {
+            organization_id: orgId,
+            is_deleted: false,
+        };
+
+        if (warehouse_id) {
+            where.warehouse_id = warehouse_id;
+        }
+
+        if (type) {
+            where.type = type;
+        }
+
+        if (keywords) {
+            where.OR = [
+                { reference_code: { contains: keywords, mode: 'insensitive' } },
+                { product: { name: { contains: keywords, mode: 'insensitive' } } },
+                { product: { sku: { contains: keywords, mode: 'insensitive' } } },
+            ];
+        }
+
+        const [items, total] = await Promise.all([
+            this.prisma.inventoryTransaction.findMany({
+                where,
+                include: {
+                    product: { select: { id: true, name: true, sku: true, image_url: true } },
+                    warehouse: { select: { id: true, name: true } },
+                    from_block: { select: { id: true, code: true } },
+                    to_block: { select: { id: true, code: true } },
+                    batch: { select: { id: true, code: true } },
+                },
+                orderBy: { created_at: 'desc' },
+                take: limit,
+                skip: offset,
+            }),
+            this.prisma.inventoryTransaction.count({ where }),
+        ]);
+
+        return {
+            items,
+            meta: {
+                total,
+                limit,
+                offset,
+            },
+        };
     }
 }
