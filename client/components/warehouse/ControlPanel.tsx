@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -42,6 +43,8 @@ interface ControlPanelProps {
   onCloneRack: (rackId: string) => void;
   onShowOnlyRack: (rackId: string) => void;
   onShowAllRacks: () => void;
+  onOpenInbound?: () => void;
+  onOpenOutbound?: () => void;
   // New feature toggles
   onToggleHumans?: () => void;
   onToggleRoof?: () => void;
@@ -115,7 +118,10 @@ const ControlPanel = ({
   isDragMode,
   collisionWarnings,
   isFilteringRacks,
+  onOpenInbound,
+  onOpenOutbound,
 }: ControlPanelProps) => {
+  const router = useRouter();
   const [rackRows, setRackRows] = React.useState(2);
   const [rackColumns, setRackColumns] = React.useState(3);
   const [rackLevels, setRackLevels] = React.useState(4);
@@ -507,174 +513,27 @@ const ControlPanel = ({
 
         <Separator />
         
-        {/* Rack Controls */}
-        <div className="space-y-3">
-          <h3 className="text-xs font-semibold uppercase text-muted-foreground">Kệ hàng</h3>
-          
-          <div className="space-y-2">
-            <div className="flex justify-between text-xs">
-              <Label>Số hàng: {rackRows}</Label>
-            </div>
-            <Slider
-              value={[rackRows]}
-              onValueChange={([v]) => setRackRows(v)}
-              min={1}
-              max={5}
-              step={1}
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <div className="flex justify-between text-xs">
-              <Label>Số cột: {rackColumns}</Label>
-            </div>
-            <Slider
-              value={[rackColumns]}
-              onValueChange={([v]) => setRackColumns(v)}
-              min={1}
-              max={8}
-              step={1}
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <div className="flex justify-between text-xs">
-              <Label>Số tầng: {rackLevels}</Label>
-            </div>
-            <Slider
-              value={[rackLevels]}
-              onValueChange={([v]) => setRackLevels(v)}
-              min={1}
-              max={8}
-              step={1}
-            />
-          </div>
-          
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex-1 text-xs"
-              onClick={() => onCreateRack({ rows: rackRows, columns: rackColumns, levels: rackLevels })}
-            >
-              <Grid3X3 className="w-3 h-3 mr-1" />
-              Thêm kệ
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex-1 text-xs"
-              onClick={onRemoveRack}
-              disabled={!hasRacks}
-            >
-              <Trash2 className="w-3 h-3 mr-1" />
-              Xóa
-            </Button>
-          </div>
-        </div>
-
-        <Separator />
-        
-        {/* Box Controls */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xs font-semibold uppercase text-muted-foreground">Thùng hàng</h3>
-            {selectedRackInfo && (
-              <Badge variant="outline" className="text-xs">
-                <ArrowRight className="w-3 h-3 mr-1" />
-                {selectedRackInfo.name}
-              </Badge>
-            )}
-          </div>
-          
-          <div className="space-y-2">
-            <div className="flex justify-between text-xs">
-              <Label>Số lượng: {boxCount}</Label>
-            </div>
-            <Slider
-              value={[boxCount]}
-              onValueChange={([v]) => setBoxCount(v)}
-              min={1}
-              max={100}
-              step={1}
-            />
-          </div>
-          
-          <Select value={boxCategory} onValueChange={(v) => setBoxCategory(v as BoxCategory)}>
-            <SelectTrigger className="h-9 text-sm">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.entries(categoryLabels).map(([key, label]) => (
-                <SelectItem key={key} value={key}>
-                  <div className="flex items-center gap-2">
-                    <div 
-                      className="w-3 h-3 rounded-full" 
-                      style={{ backgroundColor: categoryColors[key as BoxCategory] }}
-                    />
-                    {label}
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          
-          <div className="flex gap-2">
-            <Button
-              variant="default"
-              size="sm"
-              className="flex-1 text-xs"
-              onClick={() => onAddBoxes(boxCount, boxCategory)}
-              disabled={!hasRacks}
-            >
-              <Plus className="w-3 h-3 mr-1" />
-              Thêm
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex-1 text-xs"
-              onClick={onRemoveAllBoxes}
-              title={selectedRack ? `Xóa thùng trong ${selectedRackInfo?.name}` : 'Xóa tất cả'}
-            >
-              <Trash2 className="w-3 h-3 mr-1" />
-              {selectedRack ? 'Xóa kệ' : 'Xóa hết'}
-            </Button>
-          </div>
-        </div>
-
-        <Separator />
-        
-        {/* Data Controls */}
+        {/* Data & Management Links */}
         <div className="space-y-2">
-          <h3 className="text-xs font-semibold uppercase text-muted-foreground">Dữ liệu</h3>
-          <Button
-            variant="default"
-            size="sm"
-            className="w-full text-xs"
-            onClick={onLoadDemoData}
-          >
-            <Boxes className="w-3 h-3 mr-1" />
-            Tải demo
-          </Button>
+          <h3 className="text-xs font-semibold uppercase text-muted-foreground">Quản lý Kho hàng</h3>
           <div className="flex gap-2">
             <Button
               variant="outline"
               size="sm"
               className="flex-1 text-xs"
-              onClick={onExportData}
+              onClick={onOpenOutbound}
             >
               <Download className="w-3 h-3 mr-1" />
-              Xuất
+              Phiếu Xuất
             </Button>
             <Button
               variant="outline"
               size="sm"
               className="flex-1 text-xs"
-              onClick={onImportData}
+              onClick={onOpenInbound}
             >
               <Upload className="w-3 h-3 mr-1" />
-              Nhập
+              Phiếu Nhập
             </Button>
           </div>
         </div>

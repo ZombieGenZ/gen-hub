@@ -9,7 +9,6 @@ import { useRealtimePresence } from '@/hooks/useRealtimePresence';
 import { Toaster } from 'sonner';
 import RackModal from '@/components/warehouse/RackModal';
 import FeatureToolbar from '@/components/warehouse/FeatureToolbar';
-import FloatingToolbar from '@/components/warehouse/FloatingToolbar';
 import SearchPanel from '@/components/warehouse/SearchPanel';
 import AlertsPanel from '@/components/warehouse/AlertsPanel';
 import StatsDashboard from '@/components/warehouse/StatsDashboard';
@@ -18,6 +17,7 @@ import AISuggestionPanel from '@/components/warehouse/AISuggestionPanel';
 import BarcodeScannerPanel from '@/components/warehouse/BarcodeScannerPanel';
 import VoiceCommandIndicator from '@/components/warehouse/VoiceCommandIndicator';
 import ControlPanel from '@/components/warehouse/ControlPanel';
+import { WarehouseManagementSheet } from '@/components/warehouse/WarehouseManagementSheet';
 import OnlineUsersList from '@/components/warehouse/OnlineUsersList';
 import { RealtimeUsersList } from '@/components/warehouse/RealtimeCursors';
 import { useAIVoiceCommands } from '@/hooks/useAIVoiceCommands';
@@ -93,6 +93,8 @@ export default function Warehouse3DLivePage() {
   const [barcodeOpen, setBarcodeOpen] = useState(false);
   const [realtimeEnabled, setRealtimeEnabled] = useState(false);
   const [controlPanelOpen, setControlPanelOpen] = useState(true);
+  const [inboundOpen, setInboundOpen] = useState(false);
+  const [outboundOpen, setOutboundOpen] = useState(false);
 
   // ─── AI Voice Commands ──────────────────────────
   const {
@@ -308,6 +310,8 @@ export default function Warehouse3DLivePage() {
             isDragMode={state.isDragMode}
             collisionWarnings={state.collisionWarnings}
             isFilteringRacks={!!state.visibleRackIds}
+            onOpenInbound={() => setInboundOpen(true)}
+            onOpenOutbound={() => setOutboundOpen(true)}
           />
         )}
 
@@ -366,16 +370,6 @@ export default function Warehouse3DLivePage() {
           transactionsOpen={transactionsOpen}
         />
 
-        {/* Floating Toolbar */}
-        <FloatingToolbar
-          onToggleAI={() => setAiOpen(prev => !prev)}
-          onToggleBarcode={() => setBarcodeOpen(prev => !prev)}
-          onToggleRealtime={() => setRealtimeEnabled(prev => !prev)}
-          aiOpen={aiOpen}
-          barcodeOpen={barcodeOpen}
-          realtimeConnected={realtimeConnected}
-          realtimeUserCount={realtimeUsers.length}
-        />
 
         {/* Panels */}
         <SearchPanel
@@ -446,6 +440,18 @@ export default function Warehouse3DLivePage() {
           confidence={confidence}
           availableCommands={availableCommands as any}
           onExecuteTextCommand={executeTextCommand}
+        />
+
+        {/* Management Sheets */}
+        <WarehouseManagementSheet
+          type="inbound"
+          open={inboundOpen}
+          onOpenChange={setInboundOpen}
+        />
+        <WarehouseManagementSheet
+          type="outbound"
+          open={outboundOpen}
+          onOpenChange={setOutboundOpen}
         />
       </div>
 
