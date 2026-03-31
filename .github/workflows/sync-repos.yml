@@ -282,14 +282,15 @@ jobs:
         with:
           name: genhub-app-binary
           path: app-release-linux
-      - name: Push App to Release Repo
+      - name: Push App to Server Repo
         uses: cpina/github-action-push-to-another-repository@main
         env:
           API_TOKEN_GITHUB: ${{ secrets.API_TOKEN_GITHUB }}
         with:
           source-directory: 'app-release-linux'
           destination-github-username: ${{ secrets.GH_USERNAME }}
-          destination-repository-name: ${{ secrets.REPO_APP }}
+          destination-repository-name: ${{ secrets.REPO_SERVER }}
+          target-directory: app
           user-email: ${{ secrets.GH_EMAIL }}
           target-branch: master
           commit-message: "App Release: ${{ github.event.head_commit.message }}"
