@@ -964,33 +964,6 @@ export class InventoryRequestController {
         return new UpdatedResponse('inventory-request.complete_shipment', result, lang === 'vi' ? 'Hoàn tất xuất kho' : 'Shipment completed');
     }
 
-    @Get('inbound/export')
-    @RequireOrgPermission('org.inventory.inbound.list')
-    @ApiOperation({ summary: 'Xuất danh sách phiếu nhập kho ra Excel' })
-    async exportInbound(
-        @Param('orgId', ParseUUIDPipe) orgId: string,
-        @Query() query: QueryInboundRequestDto,
-        @Res() res: Response,
-    ) {
-        const buffer = await this.inventoryRequestService.exportInbound(orgId, query);
-        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        res.setHeader('Content-Disposition', `attachment; filename=inbound-${orgId}.xlsx`);
-        res.send(buffer);
-    }
-
-    @Get('outbound/export')
-    @RequireOrgPermission('org.inventory.outbound.list')
-    @ApiOperation({ summary: 'Xuất danh sách phiếu xuất kho ra Excel' })
-    async exportOutbound(
-        @Param('orgId', ParseUUIDPipe) orgId: string,
-        @Query() query: QueryOutboundRequestDto,
-        @Res() res: Response,
-    ) {
-        const buffer = await this.inventoryRequestService.exportOutbound(orgId, query);
-        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        res.setHeader('Content-Disposition', `attachment; filename=outbound-${orgId}.xlsx`);
-        res.send(buffer);
-    }
 
     @Get('stock/export')
     @RequireOrgPermission('org.inventory.inbound.list')
@@ -1001,10 +974,13 @@ export class InventoryRequestController {
         @Query('keywords') keywords: string | undefined,
         @Res() res: Response,
     ) {
-        const buffer = await this.inventoryRequestService.exportStock(orgId, warehouseId, keywords);
-        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        res.setHeader('Content-Disposition', `attachment; filename=stock-${orgId}.xlsx`);
-        res.send(buffer);
+        const result = await this.inventoryRequestService.exportStock(orgId, warehouseId, keywords);
+        res.set({
+            'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition': `attachment; filename="${result.fileName}"`,
+            'Content-Length': result.buffer.length,
+        });
+        res.end(result.buffer);
     }
 
     @Get('inbound/template')

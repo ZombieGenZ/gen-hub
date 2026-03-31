@@ -26,7 +26,9 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { MagnifyingGlassIcon, PlusIcon, TrashIcon, InboxIcon } from "@heroicons/react/24/outline";
+import { TrashIcon, InboxIcon, PhotoIcon } from "@heroicons/react/24/outline";
+import { ProductSelector } from "@/components/dashboard/organization/common/ProductSelector";
+import { ProductBrowseModal } from "@/components/dashboard/organization/common/ProductBrowseModal";
 import type { CreateInboundPayload, InboundDetailPayload } from "@/services/inventory/inventory.types";
 import type { Product } from "@/services/product/product.types";
 import type { Partner } from "@/services/partner/partner.types";
@@ -47,9 +49,28 @@ export interface DrawerItem {
     unit_id: string;
 }
 
+/** Ảnh nhỏ trong row */
+function RowProductImage({ src, alt }: { src: string | null; alt: string }) {
+    if (src) {
+        return (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+                src={src}
+                alt={alt}
+                className="w-9 h-9 rounded-xl object-cover shrink-0 border"
+            />
+        );
+    }
+    return (
+        <div className="w-9 h-9 rounded-xl shrink-0 bg-muted flex items-center justify-center border">
+            <PhotoIcon className="w-4 h-4 text-muted-foreground/40" />
+        </div>
+    );
+}
+
+/** Một dòng sản phẩm đã thêm vào phiếu — hiển thị theo Table layout */
 function CreateItemRow({
     item,
-    index,
     onRemove,
     onUpdate,
 }: {
@@ -69,10 +90,7 @@ function CreateItemRow({
         if (token && item.product.id) {
             batchService
                 .listByProduct(token, item.product.id, { limit: 50 })
-                .then((res) => {
-                    const items = res?.data?.items || [];
-                    setBatches(items);
-                })
+                .then((res) => setBatches(res?.data?.items || []))
                 .catch(() => setBatches([]));
         }
     }, [token, item.product.id]);
@@ -106,20 +124,33 @@ function CreateItemRow({
     const convertedQty = item.expected_qty * conversionRate;
 
     return (
-        <div className="inbound-drawer__product-row">
-            <div className="flex items-center gap-2 min-w-0">
-                <div className="min-w-0">
-                    <p className="text-sm font-medium truncate">{item.product.name}</p>
-                    <p className="text-xs text-muted-foreground">{item.product.sku}</p>
+        <tr className="group hover:bg-muted/30 transition-colors">
+            {/* Sản phẩm */}
+            <td className="px-4 py-3">
+                <div className="flex items-center gap-3">
+                    <RowProductImage
+                        src={item.product.image_url}
+                        alt={item.product.name}
+                    />
+                    <div className="min-w-0">
+                        <p className="text-sm font-medium truncate max-w-[180px]">
+                            {item.product.name}
+                        </p>
+                        <p className="text-xs text-muted-foreground">{item.product.sku}</p>
+                    </div>
                 </div>
-            </div>
-            <div>
+            </td>
+
+            {/* Số lượng */}
+            <td className="px-4 py-3 w-[120px]">
                 <Input
                     type="number"
                     min={1}
                     value={item.expected_qty}
-                    onChange={(e) => onUpdate({ expected_qty: parseInt(e.target.value) || 1 })}
-                    className="rounded-xl h-9 text-sm"
+                    onChange={(e) =>
+                        onUpdate({ expected_qty: parseInt(e.target.value) || 1 })
+                    }
+                    className="rounded-xl h-9 text-sm w-full"
                     placeholder="SL"
                 />
                 {conversionRate > 1 && (
@@ -127,10 +158,15 @@ function CreateItemRow({
                         = {convertedQty.toLocaleString("vi-VN")} {baseUnitName}
                     </p>
                 )}
-            </div>
-            <div>
-                <Select value={item.unit_id} onValueChange={(v) => onUpdate({ unit_id: v })}>
-                    <SelectTrigger className="rounded-xl h-9 text-xs">
+            </td>
+
+            {/* Đơn vị */}
+            <td className="px-4 py-3 w-[120px]">
+                <Select
+                    value={item.unit_id}
+                    onValueChange={(v) => onUpdate({ unit_id: v })}
+                >
+                    <SelectTrigger className="rounded-xl h-9 text-xs w-full">
                         <SelectValue placeholder="Đơn vị" />
                     </SelectTrigger>
                     <SelectContent>
@@ -138,40 +174,57 @@ function CreateItemRow({
                             <SelectItem key={u.id} value={u.id}>
                                 <span>{u.name}</span>
                                 {u.conversion_rate > 1 && (
-                                    <span className="text-muted-foreground ml-1">(×{u.conversion_rate})</span>
+                                    <span className="text-muted-foreground ml-1">
+                                        (×{u.conversion_rate})
+                                    </span>
                                 )}
                             </SelectItem>
                         ))}
                     </SelectContent>
                 </Select>
-            </div>
-            <div>
+            </td>
+
+            {/* Lô hàng */}
+            <td className="px-4 py-3 w-[160px]">
                 <Select
-                    value={item.batch_id || "__new__"}
+                    value={item.batch_id ?? (item.batch_code ? "__custom__" : "__new__")}
                     onValueChange={(v) => {
                         if (v === "__new__") {
-                            onUpdate({ batch_id: undefined });
+                            onUpdate({ batch_id: undefined, batch_code: undefined });
                             setShowNewBatch(true);
                         } else {
-                            onUpdate({ batch_id: v });
+                            onUpdate({ batch_id: v, batch_code: undefined });
                             setShowNewBatch(false);
                         }
                     }}
                 >
-                    <SelectTrigger className="rounded-xl h-9 text-xs">
+                    <SelectTrigger className="rounded-xl h-9 text-xs w-full">
                         <SelectValue placeholder="Chọn lô" />
                     </SelectTrigger>
                     <SelectContent>
                         {batches.map((b) => (
-                            <SelectItem key={b.id} value={b.id}>{b.code}</SelectItem>
+                            <SelectItem key={b.id} value={b.id}>
+                                {b.code}
+                            </SelectItem>
                         ))}
                         <SelectItem value="__new__">+ Tạo lô mới</SelectItem>
                     </SelectContent>
                 </Select>
+
+                {/* Lô đã nhập thủ công */}
+                {item.batch_code && (
+                    <p className="text-[11px] text-[#0F766E] font-medium mt-1 truncate">
+                        {item.batch_code}
+                    </p>
+                )}
+
+                {/* Popover tạo lô mới */}
                 {showNewBatch && (
                     <Popover open={showNewBatch} onOpenChange={setShowNewBatch}>
                         <PopoverTrigger asChild>
-                            <button className="text-xs text-[#0F766E] mt-1 underline">Nhập thông tin lô</button>
+                            <button className="text-xs text-[#0F766E] mt-1 underline">
+                                Nhập thông tin lô
+                            </button>
                         </PopoverTrigger>
                         <PopoverContent className="w-64 p-4 space-y-3" align="start">
                             <p className="text-sm font-medium">Tạo lô hàng mới</p>
@@ -220,19 +273,27 @@ function CreateItemRow({
                         </PopoverContent>
                     </Popover>
                 )}
-            </div>
-            <div className="text-xs text-muted-foreground truncate">
-                {item.batch_code ? <span className="text-[#0F766E] font-medium">{item.batch_code}</span> : null}
-            </div>
-            <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 rounded-full text-muted-foreground hover:text-destructive"
-                onClick={onRemove}
-            >
-                <TrashIcon className="w-4 h-4" />
-            </Button>
-        </div>
+            </td>
+
+            {/* Giá vốn */}
+            <td className="px-4 py-3 w-[110px] text-right text-sm text-muted-foreground tabular-nums">
+                {item.product.cost_price != null
+                    ? item.product.cost_price.toLocaleString("vi-VN") + "đ"
+                    : "—"}
+            </td>
+
+            {/* Xóa */}
+            <td className="px-4 py-3 w-[48px]">
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 rounded-full text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={onRemove}
+                >
+                    <TrashIcon className="w-4 h-4" />
+                </Button>
+            </td>
+        </tr>
     );
 }
 
@@ -242,9 +303,14 @@ interface CreateInboundDialogProps {
     onSuccess: () => void;
 }
 
-export function CreateInboundDialog({ open, onOpenChange, onSuccess }: CreateInboundDialogProps) {
+export function CreateInboundDialog({
+    open,
+    onOpenChange,
+    onSuccess,
+}: CreateInboundDialogProps) {
     const { showToast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [browseOpen, setBrowseOpen] = useState(false);
 
     // Form states
     const [formWarehouse, setFormWarehouse] = useState("");
@@ -301,21 +367,35 @@ export function CreateInboundDialog({ open, onOpenChange, onSuccess }: CreateInb
         }
     }, [isSubmitting, onOpenChange, resetForm]);
 
+    /** Thêm một sản phẩm (từ gợi ý hoặc barcode) */
     const addProduct = (product: Product, scannedBarcode?: string) => {
         if (formItems.find((i) => i.product.id === product.id)) return;
 
         let autoUnitId = product.base_unit_id || "";
         if (scannedBarcode && product.units) {
             const matchedUnit = product.units.find((pu) => pu.barcode === scannedBarcode);
-            if (matchedUnit) {
-                autoUnitId = matchedUnit.unit_id;
-            }
+            if (matchedUnit) autoUnitId = matchedUnit.unit_id;
         }
         setFormItems((prev) => [
             ...prev,
             { product, expected_qty: 1, unit_id: autoUnitId },
         ]);
         setProductSearch("");
+    };
+
+    /** Thêm nhiều sản phẩm từ ProductBrowseModal */
+    const addMultipleProducts = (selected: Product[]) => {
+        setFormItems((prev) => {
+            const existingIds = new Set(prev.map((i) => i.product.id));
+            const newItems: DrawerItem[] = selected
+                .filter((p) => !existingIds.has(p.id))
+                .map((p) => ({
+                    product: p,
+                    expected_qty: 1,
+                    unit_id: p.base_unit_id || "",
+                }));
+            return [...prev, ...newItems];
+        });
     };
 
     const handleSubmit = async () => {
@@ -356,7 +436,7 @@ export function CreateInboundDialog({ open, onOpenChange, onSuccess }: CreateInb
             };
             await inventoryService.createInbound(token, payload);
             showToast("Tạo phiếu nhập thành công! 🎉", "success");
-            onSuccess(); // Triggers list refetch
+            onSuccess();
             onOpenChange(false);
             resetForm();
         } catch (err) {
@@ -372,180 +452,237 @@ export function CreateInboundDialog({ open, onOpenChange, onSuccess }: CreateInb
         return products.filter((p) => !addedIds.has(p.id));
     }, [products, formItems]);
 
-    return (
-        <Dialog open={open} onOpenChange={handleClose}>
-            <DialogContent className="sm:max-w-4xl max-h-[85vh] overflow-y-auto rounded-3xl p-0">
-                <DialogHeader className="p-6 border-b">
-                    <DialogTitle className="text-[20px] leading-[130%]">Tạo phiếu nhập kho</DialogTitle>
-                    <DialogDescription>
-                        Nhập thông tin phiếu nhập và thêm sản phẩm cần nhập kho
-                    </DialogDescription>
-                </DialogHeader>
+    const addedIds = useMemo(
+        () => formItems.map((i) => i.product.id),
+        [formItems],
+    );
 
-                <div className="inbound-drawer__section">
-                    <h3 className="inbound-drawer__section-title">1. Thông tin chung</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="space-y-2">
-                            <Label>Kho nhập *</Label>
-                            <Select value={formWarehouse} onValueChange={setFormWarehouse}>
-                                <SelectTrigger className="rounded-xl">
-                                    <SelectValue placeholder="Chọn kho" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {warehouses.map((w) => (
-                                        <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+    return (
+        <>
+            <Dialog open={open} onOpenChange={handleClose}>
+                <DialogContent className="sm:max-w-4xl max-h-[88vh] overflow-y-auto rounded-3xl p-0">
+                    <DialogHeader className="p-6 border-b">
+                        <DialogTitle className="text-[20px] leading-[130%]">
+                            Tạo phiếu nhập kho
+                        </DialogTitle>
+                        <DialogDescription>
+                            Nhập thông tin phiếu nhập và thêm sản phẩm cần nhập kho
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    {/* Section 1 — Thông tin chung */}
+                    <div className="inbound-drawer__section">
+                        <h3 className="inbound-drawer__section-title">1. Thông tin chung</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="space-y-2">
+                                <Label>Kho nhập *</Label>
+                                <Select value={formWarehouse} onValueChange={setFormWarehouse}>
+                                    <SelectTrigger className="rounded-xl">
+                                        <SelectValue placeholder="Chọn kho" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {warehouses.map((w) => (
+                                            <SelectItem key={w.id} value={w.id}>
+                                                {w.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Nhà cung cấp</Label>
+                                <Select value={formPartner} onValueChange={setFormPartner}>
+                                    <SelectTrigger className="rounded-xl">
+                                        <SelectValue placeholder="Chọn NCC" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {partners.map((p) => (
+                                            <SelectItem key={p.id} value={p.id}>
+                                                {p.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Mã PO tham chiếu</Label>
+                                <Input
+                                    value={formPOCode}
+                                    onChange={(e) => setFormPOCode(e.target.value)}
+                                    placeholder="VD: PO-2024-001"
+                                    className="rounded-xl"
+                                />
+                            </div>
                         </div>
-                        <div className="space-y-2">
-                            <Label>Nhà cung cấp</Label>
-                            <Select value={formPartner} onValueChange={setFormPartner}>
-                                <SelectTrigger className="rounded-xl">
-                                    <SelectValue placeholder="Chọn NCC" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {partners.map((p) => (
-                                        <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Mã PO tham chiếu</Label>
+                        <div className="mt-4 space-y-2">
+                            <Label>Ghi chú</Label>
                             <Input
-                                value={formPOCode}
-                                onChange={(e) => setFormPOCode(e.target.value)}
-                                placeholder="VD: PO-2024-001"
+                                value={formNotes}
+                                onChange={(e) => setFormNotes(e.target.value)}
+                                placeholder="Ghi chú cho phiếu nhập..."
                                 className="rounded-xl"
                             />
                         </div>
                     </div>
-                    <div className="mt-4 space-y-2">
-                        <Label>Ghi chú</Label>
-                        <Input
-                            value={formNotes}
-                            onChange={(e) => setFormNotes(e.target.value)}
-                            placeholder="Ghi chú cho phiếu nhập..."
-                            className="rounded-xl"
-                        />
-                    </div>
-                </div>
 
-                <div className="inbound-drawer__section">
-                    <h3 className="inbound-drawer__section-title">2. Chi tiết hàng hóa</h3>
-                    <div className="relative mb-4">
-                        <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <Input
-                            placeholder="Tìm sản phẩm theo tên, SKU hoặc quét barcode..."
-                            className="pl-9 rounded-xl"
-                            value={productSearch}
-                            onChange={(e) => setProductSearch(e.target.value)}
-                            onKeyDown={(e) => {
-                                if (e.key === "Enter" && productSearch.trim()) {
-                                    const barcode = productSearch.trim();
-                                    const directMatch = products.find((p) => p.barcode === barcode);
-                                    if (directMatch) {
-                                        addProduct(directMatch, barcode);
-                                        return;
-                                    }
-                                    for (const p of products) {
-                                        if (p.units) {
-                                            const unitMatch = p.units.find((pu) => pu.barcode === barcode);
-                                            if (unitMatch) {
-                                                addProduct(p, barcode);
-                                                return;
+                    {/* Section 2 — Chi tiết hàng hóa */}
+                    <div className="inbound-drawer__section">
+                        <h3 className="inbound-drawer__section-title">2. Chi tiết hàng hóa</h3>
+
+                        {/* ProductSelector */}
+                        <div className="mb-4">
+                            <ProductSelector
+                                value={productSearch}
+                                onChange={setProductSearch}
+                                suggestions={filteredProducts}
+                                onSelect={addProduct}
+                                onBrowse={() => setBrowseOpen(true)}
+                                onKeyDown={(e) => {
+                                    if (e.key === "Enter" && productSearch.trim()) {
+                                        const barcode = productSearch.trim();
+                                        const directMatch = products.find(
+                                            (p) => p.barcode === barcode,
+                                        );
+                                        if (directMatch) {
+                                            addProduct(directMatch, barcode);
+                                            return;
+                                        }
+                                        for (const p of products) {
+                                            if (p.units) {
+                                                const unitMatch = p.units.find(
+                                                    (pu) => pu.barcode === barcode,
+                                                );
+                                                if (unitMatch) {
+                                                    addProduct(p, barcode);
+                                                    return;
+                                                }
                                             }
                                         }
+                                        if (filteredProducts.length === 1) {
+                                            addProduct(filteredProducts[0]);
+                                        }
                                     }
-                                    if (filteredProducts.length === 1) {
-                                        addProduct(filteredProducts[0]);
-                                    }
-                                }
-                            }}
-                        />
-                        {productSearch && filteredProducts.length > 0 && (
-                            <div className="absolute z-10 top-full mt-1 w-full bg-white border rounded-2xl shadow-lg max-h-48 overflow-y-auto">
-                                {filteredProducts.map((p) => (
-                                    <button
-                                        key={p.id}
-                                        className="w-full text-left px-4 py-2 hover:bg-muted/50 transition-colors text-sm flex items-center justify-between"
-                                        onClick={() => addProduct(p)}
-                                    >
-                                        <span>
-                                            <span className="font-medium">{p.name}</span>
-                                            <span className="text-muted-foreground ml-2 text-xs">{p.sku}</span>
-                                        </span>
-                                        <PlusIcon className="w-4 h-4 text-[#0F766E]" />
-                                    </button>
-                                ))}
+                                }}
+                            />
+                        </div>
+
+                        {/* Table sản phẩm đã thêm */}
+                        {formItems.length > 0 ? (
+                            <div className="border rounded-2xl overflow-hidden">
+                                <table className="w-full">
+                                    <thead>
+                                        <tr className="bg-muted/40 border-b">
+                                            <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                                                Sản phẩm
+                                            </th>
+                                            <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide w-[120px]">
+                                                Số lượng
+                                            </th>
+                                            <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide w-[120px]">
+                                                Đơn vị
+                                            </th>
+                                            <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide w-[160px]">
+                                                Lô hàng
+                                            </th>
+                                            <th className="px-4 py-2.5 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wide w-[110px]">
+                                                Giá vốn
+                                            </th>
+                                            <th className="px-4 py-2.5 w-[48px]" />
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y">
+                                        {formItems.map((item, idx) => (
+                                            <CreateItemRow
+                                                key={item.product.id}
+                                                item={item}
+                                                index={idx}
+                                                onRemove={() =>
+                                                    setFormItems((prev) =>
+                                                        prev.filter((_, i) => i !== idx),
+                                                    )
+                                                }
+                                                onUpdate={(updates) =>
+                                                    setFormItems((prev) =>
+                                                        prev.map((it, i) =>
+                                                            i === idx ? { ...it, ...updates } : it,
+                                                        ),
+                                                    )
+                                                }
+                                            />
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        ) : (
+                            <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-2xl">
+                                <InboxIcon className="w-10 h-10 mx-auto mb-2 opacity-30" />
+                                <p className="text-sm font-medium">Chưa có sản phẩm nào</p>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                    Tìm kiếm hoặc chọn từ danh sách để thêm sản phẩm vào phiếu nhập
+                                </p>
                             </div>
                         )}
                     </div>
 
-                    {formItems.length > 0 && (
-                        <>
-                            <div className="inbound-drawer__product-row text-xs font-semibold text-muted-foreground uppercase border-b pb-2">
-                                <span>Sản phẩm</span>
-                                <span>Số lượng</span>
-                                <span>Đơn vị</span>
-                                <span>Lô hàng</span>
-                                <span>Lô mới</span>
-                                <span></span>
-                            </div>
-                            {formItems.map((item, idx) => (
-                                <CreateItemRow
-                                    key={item.product.id}
-                                    item={item}
-                                    index={idx}
-                                    onRemove={() => setFormItems((prev) => prev.filter((_, i) => i !== idx))}
-                                    onUpdate={(updates) => setFormItems((prev) =>
-                                        prev.map((it, i) => (i === idx ? { ...it, ...updates } : it))
-                                    )}
-                                />
-                            ))}
-                        </>
-                    )}
-
-                    {formItems.length === 0 && (
-                        <div className="text-center py-12 text-muted-foreground">
-                            <InboxIcon className="w-10 h-10 mx-auto mb-2 opacity-40" />
-                            <p className="text-sm">Tìm kiếm và thêm sản phẩm vào phiếu nhập</p>
+                    {/* Footer sticky */}
+                    <div className="sticky bottom-0 bg-white border-t p-4 flex items-center justify-between">
+                        <p className="text-sm text-muted-foreground">
+                            <span className="font-semibold text-foreground">{formItems.length}</span>{" "}
+                            sản phẩm
+                        </p>
+                        <div className="flex gap-2">
+                            <Button
+                                variant="outline"
+                                onClick={handleClose}
+                                disabled={isSubmitting}
+                                className="rounded-xl"
+                            >
+                                Hủy
+                            </Button>
+                            <Button
+                                onClick={handleSubmit}
+                                disabled={isSubmitting}
+                                className="gap-2 bg-[#0F766E] hover:bg-[#0F766E]/90 text-white rounded-xl min-w-[140px]"
+                            >
+                                {isSubmitting ? (
+                                    <span className="flex items-center gap-2">
+                                        <svg
+                                            className="animate-spin h-4 w-4"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                        >
+                                            <circle
+                                                className="opacity-25"
+                                                cx="12"
+                                                cy="12"
+                                                r="10"
+                                                stroke="currentColor"
+                                                strokeWidth="4"
+                                            />
+                                            <path
+                                                className="opacity-75"
+                                                fill="currentColor"
+                                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                                            />
+                                        </svg>
+                                        Đang tạo...
+                                    </span>
+                                ) : (
+                                    "Tạo phiếu nhập"
+                                )}
+                            </Button>
                         </div>
-                    )}
-                </div>
-
-                <div className="sticky bottom-0 bg-white border-t p-4 flex items-center justify-between">
-                    <p className="text-sm text-muted-foreground">{formItems.length} sản phẩm</p>
-                    <div className="flex gap-2">
-                        <Button
-                            variant="outline"
-                            onClick={handleClose}
-                            disabled={isSubmitting}
-                            className="rounded-xl"
-                        >
-                            Hủy
-                        </Button>
-                        <Button
-                            onClick={handleSubmit}
-                            disabled={isSubmitting}
-                            className="gap-2 bg-[#0F766E] hover:bg-[#0F766E]/90 text-white rounded-xl min-w-35"
-                        >
-                            {isSubmitting ? (
-                                <span className="flex items-center gap-2">
-                                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                                    </svg>
-                                    Đang tạo...
-                                </span>
-                            ) : (
-                                "Tạo phiếu nhập"
-                            )}
-                        </Button>
                     </div>
-                </div>
-            </DialogContent>
-        </Dialog>
+                </DialogContent>
+            </Dialog>
+
+            {/* Modal chọn hàng loạt */}
+            <ProductBrowseModal
+                open={browseOpen}
+                onOpenChange={setBrowseOpen}
+                alreadyAddedIds={addedIds}
+                onConfirm={addMultipleProducts}
+            />
+        </>
     );
 }

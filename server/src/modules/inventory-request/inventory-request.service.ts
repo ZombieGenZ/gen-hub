@@ -808,7 +808,7 @@ export class InventoryRequestService {
     /**
      * Xuất Excel danh sách phiếu nhập kho
      */
-    async exportInbound(orgId: string, query: QueryInboundRequestDto): Promise<Buffer> {
+    async exportInbound(orgId: string, query: QueryInboundRequestDto): Promise<{ buffer: Buffer; fileName: string }> {
         const result = await this.repository.findInboundByOrgId(orgId, { ...query, limit: 10000, offset: 0 });
         const items = result.items;
 
@@ -845,13 +845,14 @@ export class InventoryRequestService {
             details: item.details?.map(d => `${d.product?.sku}:${d.expected_qty}:${d.unit?.name || ''}`).join(', ') || '',
         }));
 
-        return this.excelService.createExcelBuffer(columns, data, 'Danh sách Nhập kho');
+        const buffer = await this.excelService.createExcelBuffer(columns, data, 'Danh sách Nhập kho');
+        return { buffer, fileName: `NhapKho_${new Date().toISOString().split('T')[0]}.xlsx` };
     }
 
     /**
      * Xuất Excel danh sách phiếu xuất kho
      */
-    async exportOutbound(orgId: string, query: QueryOutboundRequestDto): Promise<Buffer> {
+    async exportOutbound(orgId: string, query: QueryOutboundRequestDto): Promise<{ buffer: Buffer; fileName: string }> {
         const result = await this.repository.findOutboundByOrgId(orgId, { ...query, limit: 10000, offset: 0 });
         const items = result.items;
 
@@ -891,13 +892,14 @@ export class InventoryRequestService {
             details: item.details?.map(d => `${d.product?.sku}:${d.quantity}:${d.unit?.name || ''}`).join(', ') || '',
         }));
 
-        return this.excelService.createExcelBuffer(columns, data, 'Danh sách Xuất kho');
+        const buffer = await this.excelService.createExcelBuffer(columns, data, 'Danh sách Xuất kho');
+        return { buffer, fileName: `XuatKho_${new Date().toISOString().split('T')[0]}.xlsx` };
     }
 
     /**
      * Xuất Excel danh sách tồn kho
      */
-    async exportStock(orgId: string, warehouseId?: string, keywords?: string): Promise<Buffer> {
+    async exportStock(orgId: string, warehouseId?: string, keywords?: string): Promise<{ buffer: Buffer; fileName: string }> {
         const stocks = await this.listInventoryStock(orgId, warehouseId, keywords);
 
         const columns = [
