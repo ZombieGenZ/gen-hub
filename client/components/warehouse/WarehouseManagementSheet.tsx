@@ -18,7 +18,11 @@ import { InboundHeader } from "@/components/dashboard/organization/inbound/Inbou
 import { InboundTable, ITEMS_PER_PAGE as INBOUND_PAGE } from "@/components/dashboard/organization/inbound/InboundTable";
 import { InboundCancelDialog } from "@/components/dashboard/organization/inbound/InboundCancelDialog";
 import { CreateInboundDialog } from "@/components/dashboard/organization/inbound/CreateInboundDialog";
-import type { InboundRequest, ReceiptStatus } from "@/services/inventory/inventory.types";
+import type { InboundRequest, ReceiptStatus, InventoryTransaction, InventorySummary, TransactionType } from "@/services/inventory/inventory.types";
+
+// History Components
+import { HistoryHeader } from "@/components/dashboard/organization/history/HistoryHeader";
+import { HistoryTable } from "@/components/dashboard/organization/history/HistoryTable";
 
 // Outbound Components
 import { OutboundHeader } from "@/components/dashboard/organization/outbound/OutboundHeader";
@@ -30,9 +34,10 @@ import type { OutboundRequest, ExportStatus } from "@/services/inventory/invento
 const inventoryService = new InventoryService();
 
 interface WarehouseManagementSheetProps {
-    type: "inbound" | "outbound";
+    type: "inbound" | "outbound" | "history";
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    warehouseId?: string;
 }
 
 export const WarehouseManagementSheet = ({
@@ -64,6 +69,10 @@ export const WarehouseManagementSheet = ({
     const [outboundCancelOpen, setOutboundCancelOpen] = useState(false);
     const [outboundCancelTarget, setOutboundCancelTarget] = useState<OutboundRequest | null>(null);
     const [outboundCreateOpen, setOutboundCreateOpen] = useState(false);
+
+    // ── History specific ──
+    const [historyItems, setHistoryItems] = useState<InventoryTransaction[]>([]);
+    const [historyType, setHistoryType] = useState<TransactionType | "ALL">("ALL");
 
     const [isProcessing, setIsProcessing] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
@@ -120,10 +129,38 @@ export const WarehouseManagementSheet = ({
         }
     }, [open, type, debouncedKeywords, outboundTab, currentPage]);
 
+    // ── Fetch History ──
+    const fetchHistory = useCallback(async () => {
+        if (!open || type !== "history") return;
+        try {
+            const token = authStorage.getAccessToken();
+            if (!token) return;
+
+            setLoading(true);
+            const res = await inventoryService.listTransactions(token, {
+                limit: 10,
+                offset: (currentPage - 1) * 10,
+                keywords: debouncedKeywords || undefined,
+                type: historyType === "ALL" ? undefined : historyType,
+                // Add warehouse_id if we have one (to scope it)
+            });
+
+            if (res?.data) {
+                setHistoryItems(res.data.items || []);
+                setTotalItems(res.data.total || (res.data.items?.length || 0));
+            }
+        } catch (err) {
+            setError("Lỗi khi tải lịch sử.");
+        } finally {
+            setLoading(false);
+        }
+    }, [open, type, debouncedKeywords, historyType, currentPage]);
+
     useEffect(() => {
         if (type === "inbound") fetchInbound();
-        else fetchOutbound();
-    }, [type, fetchInbound, fetchOutbound]);
+        else if (type === "outbound") fetchOutbound();
+        else fetchHistory();
+    }, [type, fetchInbound, fetchOutbound, fetchHistory]);
 
     // ── Handlers ──
     const handleInboundCancel = async () => {
@@ -160,6 +197,34 @@ export const WarehouseManagementSheet = ({
         }
     };
 
+    const handleExport = async () => {
+        try {
+            const token = authStorage.getAccessToken();
+            if (!token) return;
+
+            setIsExporting(true);
+            if (type === 'inbound') {
+                await inventoryService.exportInbound(token, {
+                    keywords: debouncedKeywords || undefined,
+                    status: inboundTab === "ALL" ? undefined : inboundTab,
+                });
+            } else if (type === 'outbound') {
+                await inventoryService.exportOutbound(token, {
+                    keywords: debouncedKeywords || undefined,
+                    status: outboundTab === "ALL" ? undefined : outboundTab,
+                });
+            } else if (type === 'history') {
+                // For history we export stock as a general report or something
+                await inventoryService.exportStock(token);
+            }
+            showToast("Báo cáo đang được tải về", "success");
+        } catch (err) {
+            showToast("Xuất báo cáo thất bại", "error");
+        } finally {
+            setIsExporting(false);
+        }
+    };
+
     return (
         <>
             <Sheet open={open} onOpenChange={onOpenChange}>
@@ -170,14 +235,16 @@ export const WarehouseManagementSheet = ({
                     <div className="h-full flex flex-col">
                         <SheetHeader className="p-6 border-b bg-muted/20">
                             <SheetTitle className="text-2xl font-bold flex items-center gap-3">
-                                <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${type === 'inbound' ? 'bg-[#0F766E]/10' : 'bg-[#C2410C]/10'}`}>
+                                <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${type === 'inbound' ? 'bg-[#0F766E]/10' : type === 'outbound' ? 'bg-[#C2410C]/10' : 'bg-slate-500/10'}`}>
                                     {type === 'inbound' ? (
                                         <div className="w-5 h-5 bg-[#0F766E] rounded-md" />
-                                    ) : (
+                                    ) : type === 'outbound' ? (
                                         <div className="w-5 h-5 bg-[#C2410C] rounded-md" />
+                                    ) : (
+                                        <div className="w-5 h-5 bg-slate-500 rounded-md" />
                                     )}
                                 </div>
-                                Quản lý {type === 'inbound' ? 'Phiếu Nhập Kho' : 'Phiếu Xuất Kho'}
+                                Quản lý {type === 'inbound' ? 'Phiếu Nhập Kho' : type === 'outbound' ? 'Phiếu Xuất Kho' : 'Lịch sử Biến động'}
                             </SheetTitle>
                         </SheetHeader>
 
@@ -191,8 +258,8 @@ export const WarehouseManagementSheet = ({
                                         activeTab={inboundTab}
                                         onTabChange={(t) => { setInboundTab(t); setCurrentPage(1); }}
                                         onCreateClick={() => setInboundCreateOpen(true)}
-                                        onExportClick={() => {}}
-                                        isExporting={false}
+                                        onExportClick={handleExport}
+                                        isExporting={isExporting}
                                     />
                                     <InboundTable
                                         items={inboundItems}
@@ -207,7 +274,7 @@ export const WarehouseManagementSheet = ({
                                         onPageChange={setCurrentPage}
                                     />
                                 </>
-                            ) : (
+                            ) : type === "outbound" ? (
                                 <>
                                     <OutboundHeader
                                         totalItems={totalItems}
@@ -216,8 +283,8 @@ export const WarehouseManagementSheet = ({
                                         activeTab={outboundTab}
                                         onTabChange={(t) => { setOutboundTab(t); setCurrentPage(1); }}
                                         onCreateClick={() => setOutboundCreateOpen(true)}
-                                        onExportClick={() => {}}
-                                        isExporting={false}
+                                        onExportClick={handleExport}
+                                        isExporting={isExporting}
                                     />
                                     <OutboundTable
                                         items={outboundItems}
@@ -230,6 +297,28 @@ export const WarehouseManagementSheet = ({
                                         onPageChange={setCurrentPage}
                                         onCreateClick={() => setOutboundCreateOpen(true)}
                                         onCancelClick={(item) => { setOutboundCancelTarget(item); setOutboundCancelOpen(true); }}
+                                    />
+                                </>
+                            ) : (
+                                <>
+                                    <HistoryHeader
+                                        totalItems={totalItems}
+                                        searchTerm={searchTerm}
+                                        onSearchChange={(v) => { setSearchTerm(v); setCurrentPage(1); }}
+                                        activeType={historyType}
+                                        onTypeChange={(t) => { setHistoryType(t); setCurrentPage(1); }}
+                                        onExportClick={handleExport}
+                                        isExporting={isExporting}
+                                    />
+                                    <HistoryTable
+                                        items={historyItems}
+                                        loading={loading}
+                                        error={error}
+                                        searchTerm={searchTerm}
+                                        currentPage={currentPage}
+                                        totalPages={Math.ceil(totalItems / 10)}
+                                        totalItems={totalItems}
+                                        onPageChange={setCurrentPage}
                                     />
                                 </>
                             )}

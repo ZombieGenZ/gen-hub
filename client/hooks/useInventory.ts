@@ -15,18 +15,25 @@ import {
   STOCK_THRESHOLDS
 } from '@/types/inventory';
 import { BoxItem, RackConfig, BoxCategory, categoryLabels, categoryColors, getFillRateStatus } from '@/types/warehouse';
+import { InventoryService } from '@/services/inventory/inventory.service';
+import { authStorage } from '@/services/auth/auth-storage.service';
+import { useEffect } from 'react';
+
+const inventoryService = new InventoryService();
 
 const generateId = () => Math.random().toString(36).substring(2, 9);
 
 interface UseInventoryProps {
   boxes: BoxItem[];
   racks: RackConfig[];
+  warehouseId?: string;
 }
 
-export const useInventory = ({ boxes, racks }: UseInventoryProps) => {
+export const useInventory = ({ boxes, racks, warehouseId }: UseInventoryProps) => {
   const [transactions, setTransactions] = useState<InventoryTransaction[]>([]);
   const [alerts, setAlerts] = useState<WarehouseAlert[]>([]);
   const [highlightedBoxId, setHighlightedBoxId] = useState<string | null>(null);
+  const [inventorySummary, setInventorySummary] = useState({ todayIn: 0, todayOut: 0, totalTransactions: 0 });
 
   // Add transaction
   const addTransaction = useCallback((
@@ -53,6 +60,50 @@ export const useInventory = ({ boxes, racks }: UseInventoryProps) => {
     
     setTransactions(prev => [transaction, ...prev]);
   }, []);
+
+  // Fetch real inventory summary and transactions
+  useEffect(() => {
+    if (!warehouseId) return;
+
+    const fetchData = async () => {
+      try {
+        const token = authStorage.getAccessToken();
+        if (!token) return;
+
+        // Fetch paginated transactions (last 50 for live feed)
+        const transRes = await inventoryService.listTransactions(token, {
+          warehouse_id: warehouseId,
+          limit: 50,
+        });
+        
+        if (transRes?.data?.items) {
+          const adapted = transRes.data.items.map(t => ({
+            id: t.id,
+            type: t.type === 'INBOUND' ? 'in' : 'out',
+            boxId: t.product_id,
+            boxName: t.product?.name || 'N/A',
+            rackId: t.to_block_id || t.from_block_id || '',
+            rackName: t.to_block?.code || t.from_block?.code || 'Kho',
+            category: 'default',
+            quantity: t.quantity,
+            timestamp: new Date(t.created_at),
+            operator: 'System'
+          }));
+          setTransactions(adapted as any);
+        }
+
+        // Fetch day summary
+        const summary = await inventoryService.getInventoryTotal(token, warehouseId);
+        // Note: Summary can be used to show totals if the dashboard needs them
+      } catch (error) {
+        console.error('Failed to fetch inventory data:', error);
+      }
+    };
+
+    fetchData();
+    const interval = setInterval(fetchData, 30000); // refresh every 30s
+    return () => clearInterval(interval);
+  }, [warehouseId]);
 
   // Generate alerts based on current state
   const generateAlerts = useCallback(() => {

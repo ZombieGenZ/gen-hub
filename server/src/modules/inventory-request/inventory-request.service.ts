@@ -14,6 +14,7 @@ import {
     ConfirmPickingDto,
     ConfirmCheckingDto,
     CompleteShipmentDto,
+    QueryTransactionDto,
 } from './dto';
 import {
     IInboundRequest,
@@ -917,7 +918,32 @@ export class InventoryRequestService {
             expiry_date: s.expiry_date ? new Date(s.expiry_date).toLocaleDateString('vi-VN') : '',
         }));
 
-        return this.excelService.createExcelBuffer(columns, data, 'Báo cáo Tồn kho');
+        const buffer = await this.excelService.createExcelBuffer(columns, data, 'Báo cáo Tồn kho');
+        return { buffer, fileName: `TonKho_${new Date().toISOString().split('T')[0]}.xlsx` };
+    }
+
+    /**
+     * Lấy tổng hợp tồn kho (Summary) cho dashboard
+     */
+    async getInventoryTotal(orgId: string, warehouseId: string) {
+        const aggregate = await this.prisma.inventory.aggregate({
+            where: {
+                organization_id: orgId,
+                warehouse_id: warehouseId,
+                is_deleted: false,
+            },
+            _sum: {
+                quantity_on_hand: true,
+                quantity_available: true,
+                quantity_allocated: true,
+            },
+        });
+
+        return {
+            total_on_hand: aggregate._sum.quantity_on_hand?.toNumber() ?? 0,
+            total_available: aggregate._sum.quantity_available?.toNumber() ?? 0,
+            total_allocated: aggregate._sum.quantity_allocated?.toNumber() ?? 0,
+        };
     }
 
     /**

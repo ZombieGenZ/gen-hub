@@ -396,12 +396,9 @@ async function bootstrap() {
   console.log(`🚀 Server đang chạy tại ${backendUrl}`);
   console.log(`📚 Scalar API Docs: ${backendUrl}/api-docs`);
   console.log(`📄 API JSON: ${backendUrl}/api-docs-json`);
-  console.log(`🔑 Scalar API Key Docs: ${backendUrl}/api-docs-apikey`);
-  console.log(`📄 API Key JSON: ${backendUrl}/api-docs-apikey-json`);
   console.log(`🌐 CORS origins: ${corsOrigins.length > 0 ? corsOrigins.join(', ') : '*'}`);
   console.log(`🔑 API Key enabled modules: ${enabledModuleNames.join(', ')}`);
   console.log(`📊 Main API: ${mainStats.total} endpoints (${Object.entries(mainStats.byMethod).map(([m, c]) => `${m}: ${c}`).join(', ')})`);
-  console.log(`📊 API Key API: ${apiKeyStats.total} endpoints (${Object.entries(apiKeyStats.byMethod).map(([m, c]) => `${m}: ${c}`).join(', ')})`);
 
   // Sync Feature Flags (run in background to not block server startup)
   setImmediate(async () => {

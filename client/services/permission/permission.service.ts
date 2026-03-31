@@ -37,6 +37,61 @@ export class PermissionService {
         }
     }
 
+/**
+     * Lấy danh sách modules (prefix) duy nhất từ permission keys
+     */
+    async getModules(accessToken: string): Promise<string[]> {
+        try {
+            const response = await fetch(`${API}/permissions/modules`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Không thể lấy danh sách modules');
+            }
+
+            const data = await response.json();
+            return data.data || data;
+        } catch (error) {
+            console.error('Lỗi khi lấy danh sách modules:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Lấy danh sách permission IDs theo role IDs (POST /permissions/by-roles)
+     */
+    async getPermissionIdsByRoleIds(accessToken: string, roleIds: string[]): Promise<string[]> {
+        if (!roleIds || roleIds.length === 0) return [];
+        
+        try {
+            const response = await fetch(`${API}/permissions/by-roles`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ role_ids: roleIds }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Không thể lấy permission IDs theo roles');
+            }
+
+            const data = await response.json();
+            return data.data || data;
+        } catch (error) {
+            console.error('Lỗi khi lấy permission IDs theo role IDs:', error);
+            throw error;
+        }
+    }
+
     /**
      * Lấy thông tin chi tiết của một danh sách các quyền hạn dựa trên mảng IDs.
      * 

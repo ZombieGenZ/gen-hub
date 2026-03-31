@@ -7,6 +7,9 @@ import type {
     CreateOutboundPayload,
     QueryInboundParams,
     QueryOutboundParams,
+    InventorySummary,
+    InventoryTransaction,
+    QueryTransactionParams,
 } from './inventory.types';
 
 const API = process.env.NEXT_PUBLIC_API_URL;
@@ -672,5 +675,101 @@ export class InventoryService {
             throw new Error(errorData.message || 'Không thể hoàn tất xuất kho');
         }
         return response.json();
+    }
+
+    // ==================== DASHBOARD & REPORTING ====================
+
+    /**
+     * Lấy tổng hợp tồn kho của kho (cho dashboard)
+     */
+    async getInventoryTotal(token: string, warehouseId: string): Promise<InventorySummary> {
+        try {
+            const orgId = await orgHelper.getOrgId(token);
+            const response = await fetch(`${API}/organizations/${orgId}/inventory/inventory-total/${warehouseId}`, {
+                headers: { 'Authorization': `Bearer ${token}` },
+            });
+            if (!response.ok) throw new Error('Không thể lấy tổng hợp tồn kho');
+            const result = await response.json();
+            return result?.data || { total_on_hand: 0, total_available: 0, total_allocated: 0 };
+        } catch (error) {
+            console.error('getInventoryTotal error:', error);
+            return { total_on_hand: 0, total_available: 0, total_allocated: 0 };
+        }
+    }
+
+    /**
+     * Lấy lịch sử biến động kho (Giao dịch)
+     */
+    async listTransactions(token: string, query?: QueryTransactionParams): Promise<PaginatedResponse<InventoryTransaction>> {
+        try {
+            const orgId = await orgHelper.getOrgId(token);
+            const params = new URLSearchParams();
+            if (query?.limit) params.append('limit', String(query.limit));
+            if (query?.offset) params.append('offset', String(query.offset));
+            if (query?.keywords) params.append('keywords', query.keywords);
+            if (query?.type) params.append('type', query.type);
+            if (query?.warehouse_id) params.append('warehouse_id', query.warehouse_id);
+
+            const response = await fetch(`${API}/organizations/${orgId}/inventory/transactions?${params.toString()}`, {
+                headers: { 'Authorization': `Bearer ${token}` },
+            });
+            if (!response.ok) throw new Error('Không thể lấy lịch sử giao dịch');
+            return response.json();
+        } catch (error) {
+            console.error('listTransactions error:', error);
+            return { data: { items: [], total: 0, limit: 10, offset: 0, hasMore: false }, status: 'error', message: 'Error' } as any;
+        }
+    }
+
+    /**
+     * Xuất Excel (Sử dụng window.open cho simple download hoặc fetch blobs)
+     */
+    async exportInbound(token: string, query?: QueryInboundParams): Promise<void> {
+        const orgId = await orgHelper.getOrgId(token);
+        const params = new URLSearchParams(query as any);
+        const url = `${API}/organizations/${orgId}/inventory/inbound/export?${params.toString()}`;
+        this.downloadFile(url, token);
+    }
+
+    async exportOutbound(token: string, query?: QueryOutboundParams): Promise<void> {
+        const orgId = await orgHelper.getOrgId(token);
+        const params = new URLSearchParams(query as any);
+        const url = `${API}/organizations/${orgId}/inventory/outbound/export?${params.toString()}`;
+        this.downloadFile(url, token);
+    }
+
+    async exportStock(token: string, warehouseId?: string): Promise<void> {
+        const orgId = await orgHelper.getOrgId(token);
+        const url = `${API}/organizations/${orgId}/inventory/stock/export${warehouseId ? `?warehouse_id=${warehouseId}` : ''}`;
+        this.downloadFile(url, token);
+    }
+
+    private async downloadFile(url: string, token: string) {
+        try {
+            const response = await fetch(url, {
+                headers: { 'Authorization': `Bearer ${token}` },
+            });
+            if (!response.ok) throw new Error('Download failed');
+            
+            const blob = await response.blob();
+            const downloadUrl = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = downloadUrl;
+            
+            // Extract filename from header if possible
+            const disposition = response.headers.get('Content-Disposition');
+            let filename = 'report.xlsx';
+            if (disposition && disposition.indexOf('filename=') !== -1) {
+                filename = disposition.split('filename=')[1].replace(/"/g, '');
+            }
+            
+            link.setAttribute('download', filename);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        } catch (error) {
+            console.error('File download error:', error);
+            alert('Có lỗi khi tải file báo cáo');
+        }
     }
 }

@@ -41,6 +41,7 @@ import {
     QueryOutboundRequestDto,
     RejectRequestDto,
     StartReceivingDto,
+    QueryTransactionDto,
 } from './dto';
 import { CombinedAuthGuard } from '../../common/guards/combined-auth.guard';
 import { OrgPermissionGuard } from '../../common/guards/org-permission.guard';
@@ -418,6 +419,27 @@ export class InventoryRequestController {
         );
     }
 
+    @Get('inbound/export')
+    @RequireOrgPermission('org.inventory.inbound.export')
+    @ApiOperation({
+        summary: 'Xuất Excel danh sách yêu cầu nhập kho',
+        description: 'Tạo và tải về file Excel danh sách các phiếu nhập kho dựa trên bộ lọc hiện tại. Yêu cầu quyền `org.inventory.inbound.export`.',
+    })
+    @ApiParam({ name: 'orgId', required: true, description: 'ID của tổ chức', example: ORG_ID, schema: { type: 'string', format: 'uuid' } })
+    async exportInbound(
+        @Param('orgId', ParseUUIDPipe) orgId: string,
+        @Query() query: QueryInboundRequestDto,
+        @Res() res: Response,
+    ) {
+        const result = await this.inventoryRequestService.exportInbound(orgId, query);
+        res.set({
+            'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition': `attachment; filename="${result.fileName}"`,
+            'Content-Length': result.buffer.length,
+        });
+        res.end(result.buffer);
+    }
+
     @Get('inbound/:id')
     @RequireOrgPermission('org.inventory.inbound.list')
     @ApiOperation({
@@ -559,6 +581,27 @@ export class InventoryRequestController {
             result,
             await this.i18n.translate('inventory-request.success.list_outbound', { lang }),
         );
+    }
+
+    @Get('outbound/export')
+    @RequireOrgPermission('org.inventory.outbound.export')
+    @ApiOperation({
+        summary: 'Xuất Excel danh sách yêu cầu xuất kho',
+        description: 'Tạo và tải về file Excel danh sách các phiếu xuất kho dựa trên bộ lọc hiện tại. Yêu cầu quyền `org.inventory.outbound.export`.',
+    })
+    @ApiParam({ name: 'orgId', required: true, description: 'ID của tổ chức', example: ORG_ID, schema: { type: 'string', format: 'uuid' } })
+    async exportOutbound(
+        @Param('orgId', ParseUUIDPipe) orgId: string,
+        @Query() query: QueryOutboundRequestDto,
+        @Res() res: Response,
+    ) {
+        const result = await this.inventoryRequestService.exportOutbound(orgId, query);
+        res.set({
+            'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition': `attachment; filename="${result.fileName}"`,
+            'Content-Length': result.buffer.length,
+        });
+        res.end(result.buffer);
     }
 
     @Get('outbound/:id')

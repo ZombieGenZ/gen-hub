@@ -2143,6 +2143,8 @@ model Product {
   export_details     ExportDetail[]
   stock_take_details StockTakeDetail[]
 
+  inventory_transactions InventoryTransaction[]
+
   assigned_shelves Shelf[]
 
   @@map("products")
@@ -2266,6 +2268,9 @@ model Block {
   inventories        Inventory[]
   stock_take_details StockTakeDetail[]
 
+  from_transactions InventoryTransaction[] @relation("FromBlock")
+  to_transactions   InventoryTransaction[] @relation("ToBlock")
+
   @@map("blocks")
 }
 
@@ -2293,6 +2298,8 @@ model Batch {
   input_details      ReceiptDetail[]
   output_details     ExportDetail[]
   stock_take_details StockTakeDetail[]
+
+  inventory_transactions InventoryTransaction[]
 
   @@map("batches")
 }
@@ -2398,6 +2405,10 @@ model InventoryTransaction {
 
   organization Organization @relation(fields: [organization_id], references: [id])
   warehouse    Warehouse    @relation(fields: [warehouse_id], references: [id])
+  product      Product      @relation(fields: [product_id], references: [id])
+  batch        Batch?       @relation(fields: [batch_id], references: [id])
+  from_block   Block?       @relation("FromBlock", fields: [from_block_id], references: [id])
+  to_block     Block?       @relation("ToBlock", fields: [to_block_id], references: [id])
 
   @@map("inventory_transactions")
 }

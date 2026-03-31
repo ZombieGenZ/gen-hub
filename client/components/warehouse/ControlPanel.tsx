@@ -33,6 +33,7 @@ interface ControlPanelProps {
   onLoadDemoData: () => void;
   onExportData: () => void;
   onImportData: () => void;
+  onOpenHistory?: () => void;
   onToggleAxes: () => void;
   onToggleGrid: () => void;
   onSetViewMode: (mode: 'default' | 'category' | 'heatmap') => void;
@@ -120,13 +121,9 @@ const ControlPanel = ({
   isFilteringRacks,
   onOpenInbound,
   onOpenOutbound,
+  onOpenHistory,
 }: ControlPanelProps) => {
   const router = useRouter();
-  const [rackRows, setRackRows] = React.useState(2);
-  const [rackColumns, setRackColumns] = React.useState(3);
-  const [rackLevels, setRackLevels] = React.useState(4);
-  const [boxCount, setBoxCount] = React.useState(10);
-  const [boxCategory, setBoxCategory] = React.useState<BoxCategory>('standard');
   const [moveTargetRack, setMoveTargetRack] = React.useState<string>('');
 
   const selectedRackInfo = selectedRack ? racks.find(r => r.id === selectedRack) : null;
@@ -516,24 +513,42 @@ const ControlPanel = ({
         {/* Data & Management Links */}
         <div className="space-y-2">
           <h3 className="text-xs font-semibold uppercase text-muted-foreground">Quản lý Kho hàng</h3>
-          <div className="flex gap-2">
+          <div className="grid grid-cols-2 gap-2">
             <Button
               variant="outline"
               size="sm"
-              className="flex-1 text-xs"
+              className="text-xs h-9 bg-emerald-50 hover:bg-emerald-100 border-emerald-200 text-emerald-700"
+              onClick={onOpenInbound}
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              Phiếu Nhập
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-xs h-9 bg-orange-50 hover:bg-orange-100 border-orange-200 text-orange-700"
               onClick={onOpenOutbound}
             >
-              <Download className="w-3 h-3 mr-1" />
+              <Download className="w-4 h-4 mr-2" />
               Phiếu Xuất
             </Button>
             <Button
               variant="outline"
               size="sm"
-              className="flex-1 text-xs"
-              onClick={onOpenInbound}
+              className="text-xs h-9 col-span-2"
+              onClick={onOpenHistory}
             >
-              <Upload className="w-3 h-3 mr-1" />
-              Phiếu Nhập
+              <Activity className="w-4 h-4 mr-2 text-primary" />
+              Lịch sử Biến động
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              className="text-xs h-9 col-span-2"
+              onClick={onExportData}
+            >
+              <Download className="w-4 h-4 mr-2 text-primary" />
+              Xuất Báo cáo Excel
             </Button>
           </div>
         </div>

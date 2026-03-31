@@ -95,6 +95,7 @@ export default function Warehouse3DLivePage() {
   const [controlPanelOpen, setControlPanelOpen] = useState(true);
   const [inboundOpen, setInboundOpen] = useState(false);
   const [outboundOpen, setOutboundOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   // ─── AI Voice Commands ──────────────────────────
   const {
@@ -163,7 +164,7 @@ export default function Warehouse3DLivePage() {
     categoryStats,
     rackUtilization,
     transactionSummary,
-  } = useInventory({ boxes: state.boxes, racks: state.racks });
+  } = useInventory({ boxes: state.boxes, racks: state.racks, warehouseId });
 
   // Realtime presence
   const {
@@ -312,6 +313,7 @@ export default function Warehouse3DLivePage() {
             isFilteringRacks={!!state.visibleRackIds}
             onOpenInbound={() => setInboundOpen(true)}
             onOpenOutbound={() => setOutboundOpen(true)}
+            onOpenHistory={() => setHistoryOpen(true)}
           />
         )}
 
@@ -452,6 +454,12 @@ export default function Warehouse3DLivePage() {
           type="outbound"
           open={outboundOpen}
           onOpenChange={setOutboundOpen}
+        />
+        <WarehouseManagementSheet
+          type="history"
+          open={historyOpen}
+          onOpenChange={setHistoryOpen}
+          warehouseId={warehouseId}
         />
       </div>
 

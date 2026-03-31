@@ -295,3 +295,44 @@ export interface CompleteShipmentPayload {
     notes?: string;
     tracking_number?: string;
 }
+
+// ── Transactions (Giao dịch biến động kho) ──
+
+export type TransactionType = 'INBOUND' | 'OUTBOUND' | 'TRANSFER' | 'ADJUSTMENT' | 'RETURN';
+
+export interface InventoryTransaction {
+    id: string;
+    type: TransactionType;
+    quantity: number;
+    reference_code: string;
+    product_id: string;
+    warehouse_id: string;
+    from_block_id?: string | null;
+    to_block_id?: string | null;
+    batch_id?: string | null;
+    created_at: string;
+    product?: {
+        id: string;
+        name: string;
+        sku: string;
+        image_url?: string | null;
+    };
+    warehouse?: { id: string; name: string };
+    from_block?: { id: string; code: string };
+    to_block?: { id: string; code: string };
+    batch?: { id: string; code: string };
+}
+
+export interface QueryTransactionParams {
+    warehouse_id?: string;
+    type?: TransactionType;
+    keywords?: string;
+    limit?: number;
+    offset?: number;
+}
+
+export interface InventorySummary {
+    total_on_hand: number;
+    total_available: number;
+    total_allocated: number;
+}
