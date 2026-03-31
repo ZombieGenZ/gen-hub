@@ -270,6 +270,33 @@ export class ArticleService {
             throw error;
         }
     }
+
+    /**
+     * Xóa nhiều bài viết
+     * @param access_token Token truy cập
+     * @param ids Danh sách ID bài viết
+     * @returns Kết quả xóa bài viết
+     */
+    async deleteManyArticles(access_token: string, ids: string[]) {
+        try {
+            const response = await fetch(`${API}/articles/delete/many`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${access_token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ ids })
+            });
+            if (!response.ok) {
+                throw new Error('Failed to delete many articles');
+            }
+            
+            return await response.json();
+        } catch (error) {
+            console.error('Error deleting many articles:', error);
+            throw error;
+        }
+    }
 }
 
 export const articleService = new ArticleService();
