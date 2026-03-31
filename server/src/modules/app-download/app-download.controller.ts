@@ -7,15 +7,13 @@ import {
     Param,
     UseGuards,
     Req,
-    Res,
-    HttpStatus
+    Res
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiBody } from '@nestjs/swagger';
 import { AppDownloadService } from './app-download.service';
 import { CreateShareInviteDto, AppDownloadShareResponseDto } from './dto';
 import { GetResponse, CreatedResponse } from '../../common/responses/success.response';
 import type { Response } from 'express';
-import { existsSync } from 'fs';
 import { JwtAuthGuard, PermissionGuard } from '../../common/guards';
 import { RequirePermission, Public, CurrentActor, ApiAuthResponses, ApiValidationErrorResponse } from '../../common/decorators';
 import { I18nLang, I18nService } from 'nestjs-i18n';
@@ -347,16 +345,10 @@ export class AppDownloadController {
     })
     async downloadApp(@Param('token') token: string, @Res() res: Response) {
         const share = await this.service.validateDownloadToken(token);
+        const { filePath, fileName } = await this.service.getReleaseFileOrThrow();
 
         await this.service.trackDownload(share.id);
 
-        const filePath = process.env.APP_RELEASE_PATH || 'uploads/GenHubApp.exe';
-
-        if (!existsSync(filePath)) {
-            return res.status(HttpStatus.NOT_FOUND).send('Installer file not found on server.');
-        }
-
-        // Set headers
-        res.download(filePath, 'GenHubApp.exe');
+        res.download(filePath, fileName);
     }
 }

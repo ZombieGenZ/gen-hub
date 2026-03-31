@@ -8,11 +8,14 @@ import { EmailService } from '../notification/email.service';
 import { RedisService } from '../redis/redis.service';
 import { AppDownloadCacheKeys } from './constants/app-download-cache.helper';
 import { InviteSchedulerService } from './invite-scheduler.service';
+import { existsSync } from 'fs';
+import * as path from 'path';
 
 @Injectable()
 export class AppDownloadService {
     private readonly SHARE_TTL: number;
     private readonly LIST_TTL: number;
+    private readonly DEFAULT_RELEASE_PATH = 'app/GenHubApp.exe';
 
     constructor(
         private readonly repository: AppDownloadRepository,
@@ -163,6 +166,20 @@ export class AppDownloadService {
         return share;
     }
 
+    async getReleaseFileOrThrow() {
+        const configuredPath = this.configService.get<string>('APP_RELEASE_PATH')?.trim() || this.DEFAULT_RELEASE_PATH;
+        const resolvedPath = this.resolveReleaseFilePath(configuredPath);
+
+        if (!existsSync(resolvedPath)) {
+            throw new NotFoundException('Không tìm thấy file ứng dụng trên server');
+        }
+
+        return {
+            filePath: resolvedPath,
+            fileName: path.basename(resolvedPath),
+        };
+    }
+
     async trackDownload(shareId: string) {
         const result = await this.repository.incrementDownloadCount(shareId);
 
@@ -175,5 +192,18 @@ export class AppDownloadService {
         await this.redisService.del(this.cacheKeys.list());
 
         return result;
+    }
+
+    private resolveReleaseFilePath(configuredPath: string): string {
+        if (path.isAbsolute(configuredPath)) {
+            return configuredPath;
+        }
+
+        const candidatePaths = [
+            path.resolve(process.cwd(), configuredPath),
+            path.resolve(process.cwd(), '..', configuredPath),
+        ];
+
+        return candidatePaths.find(candidatePath => existsSync(candidatePath)) || candidatePaths[0];
     }
 }
