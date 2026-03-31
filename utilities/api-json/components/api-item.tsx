@@ -26,22 +26,22 @@ export function ApiItem({
   onToggle,
 }: ApiItemProps) {
   return (
-    <label className="group flex cursor-pointer items-start gap-3 rounded-lg px-3 py-2 transition hover:bg-white/[0.04]">
+    <label className="group flex cursor-pointer items-start gap-3 rounded-xl border border-transparent px-3 py-3 transition hover:border-white/8 hover:bg-[var(--surface-muted)]">
       <input
         type="checkbox"
         checked={checked}
         onChange={() => onToggle(endpoint.id)}
-        className="mt-1 h-4 w-4 rounded border-white/15 bg-slate-950 text-teal-400 accent-teal-400"
+        className="mt-1 h-4 w-4 rounded border-white/15 bg-slate-950 text-[var(--accent)] accent-[var(--accent)]"
       />
 
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
           <span
-            className={`inline-flex min-w-16 justify-center px-0 py-0 text-[12px] font-bold uppercase tracking-[0.18em] ${METHOD_STYLES[endpoint.method]} bg-transparent`}
+            className={`inline-flex min-w-16 justify-center rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.18em] ${METHOD_STYLES[endpoint.method]}`}
           >
             {endpoint.method}
           </span>
-          <code className="truncate text-[15px] font-medium text-cyan-300">{endpoint.path}</code>
+          <code className="truncate text-[15px] font-medium text-slate-100">{endpoint.path}</code>
           {showMissingActualResponseAlert && endpoint.hasMissingActualResponseAlert ? (
             <span className="rounded-full border border-amber-400/30 bg-amber-500/10 px-2.5 py-1 text-[11px] font-medium text-amber-200">
               Thiếu response thực tế trong docs
@@ -50,7 +50,7 @@ export function ApiItem({
         </div>
 
         {endpoint.summary && endpoint.summary !== "Không có mô tả" ? (
-          <p className="mt-1 truncate text-xs text-slate-500">{endpoint.summary}</p>
+          <p className="mt-1 truncate text-xs text-slate-400">{endpoint.summary}</p>
         ) : null}
       </div>
     </label>

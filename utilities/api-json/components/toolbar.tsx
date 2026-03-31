@@ -35,10 +35,10 @@ function ToolbarButton({
 }) {
   const variantClass =
     variant === "primary"
-      ? "bg-teal-400 text-slate-950 shadow-[0_14px_34px_rgba(20,184,166,0.32)] hover:bg-teal-300"
+      ? "bg-[var(--accent)] text-slate-950 hover:bg-[var(--accent-hover)]"
       : variant === "danger"
-        ? "border border-rose-400/30 bg-rose-500/10 text-rose-200 hover:bg-rose-500/18"
-        : "border border-white/10 bg-white/[0.04] text-slate-100 hover:border-white/16 hover:bg-white/[0.08]";
+        ? "border border-rose-400/20 bg-rose-500/8 text-rose-200 hover:bg-rose-500/12"
+        : "border border-white/10 bg-[var(--surface-muted)] text-slate-100 hover:border-white/16 hover:bg-white/[0.08]";
 
   return (
     <button
@@ -67,7 +67,7 @@ function ToggleChip({
       <button
         type="button"
         onClick={() => onToggle(!checked)}
-        className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${checked ? "bg-teal-400" : "bg-white/[0.14]"}`}
+        className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${checked ? "bg-[var(--accent)]" : "bg-white/[0.14]"}`}
         aria-pressed={checked}
       >
         <span
@@ -97,8 +97,8 @@ export function Toolbar({
   onDisconnect,
 }: ToolbarProps) {
   return (
-    <div className="glass-card flex flex-col gap-4 rounded-[28px] border border-white/10 p-4 shadow-[0_18px_55px_rgba(2,6,23,0.28)] sm:p-5">
-      <div className="flex flex-col gap-3 rounded-[22px] border border-white/10 bg-[linear-gradient(180deg,rgba(15,23,42,0.62),rgba(15,23,42,0.3))] p-4">
+    <div className="glass-card flex flex-col gap-4 rounded-[28px] border border-white/8 p-4 shadow-[0_16px_36px_rgba(2,6,23,0.16)] sm:p-5">
+      <div className="flex flex-col gap-3 rounded-[22px] border border-white/10 bg-[var(--surface-muted)] p-4">
         <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
           <div className="min-w-0 space-y-1">
             <div className="text-xs uppercase tracking-[0.24em] text-slate-500">API Docs JSON</div>
@@ -107,7 +107,7 @@ export function Toolbar({
                 href={apiDocsUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="truncate text-sm text-cyan-300 hover:text-cyan-200"
+                className="truncate text-sm text-slate-200 hover:text-white"
                 title={apiDocsUrl}
               >
                 {apiDocsUrl}
@@ -149,7 +149,7 @@ export function Toolbar({
             value={searchQuery}
             onChange={(event) => onSearchChange(event.target.value)}
             placeholder="Tìm theo path, summary hoặc operation id..."
-            className="h-12 w-full rounded-full border border-white/10 bg-slate-950/70 pl-11 pr-4 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-teal-400/50"
+            className="h-12 w-full rounded-full border border-white/10 bg-[var(--input-bg)] pl-11 pr-4 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-[var(--accent-border)]"
           />
         </label>
 
@@ -172,7 +172,7 @@ export function Toolbar({
       </div>
 
       <div className="flex flex-wrap items-center gap-3 text-sm">
-        <span className="rounded-full border border-teal-400/20 bg-teal-400/10 px-3 py-1.5 text-teal-100">
+        <span className="rounded-full border border-[var(--accent-border)] bg-[var(--accent-soft)] px-3 py-1.5 text-slate-100">
           {selectedCount} đã chọn
         </span>
         <span className="rounded-full border border-white/10 px-3 py-1.5 text-slate-300">

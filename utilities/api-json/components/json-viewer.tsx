@@ -58,17 +58,17 @@ export function JsonViewer({ open, value, selectedCount, onClose }: JsonViewerPr
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/72 p-4"
       onClick={onClose}
     >
       <section
-        className="flex max-h-[88vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-white/15 bg-[#2d3f58]"
+        className="flex max-h-[88vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-white/10 bg-[var(--panel-strong)] shadow-[0_20px_44px_rgba(2,6,23,0.22)]"
         onClick={(event) => event.stopPropagation()}
       >
         <header className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 px-5 py-4">
           <div className="space-y-1">
             <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-base font-semibold text-teal-300">JSON kết quả</h2>
+              <h2 className="text-base font-semibold text-white">JSON kết quả</h2>
               <span className="rounded-md border border-white/10 px-2 py-1 text-xs text-slate-300">
                 {selectedCount} API
               </span>
@@ -81,7 +81,7 @@ export function JsonViewer({ open, value, selectedCount, onClose }: JsonViewerPr
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-slate-200 transition hover:border-white/18 hover:bg-white/[0.08]"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-[var(--surface-muted)] text-slate-200 transition hover:border-white/18 hover:bg-white/[0.08]"
               aria-label="Đóng modal JSON"
             >
               <X className="h-4 w-4" />
@@ -121,9 +121,9 @@ function CopyButton({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="inline-flex h-10 items-center justify-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 text-sm text-slate-200 transition hover:border-white/18 hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-45"
+      className="inline-flex h-10 items-center justify-center gap-2 rounded-full border border-white/10 bg-[var(--surface-muted)] px-4 text-sm text-slate-200 transition hover:border-white/18 hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-45"
     >
-      {copied ? <Check className="h-4 w-4 text-teal-300" /> : <Copy className="h-4 w-4" />}
+      {copied ? <Check className="h-4 w-4 text-slate-100" /> : <Copy className="h-4 w-4" />}
       {copied ? "Đã copy" : "Copy JSON"}
     </button>
   );

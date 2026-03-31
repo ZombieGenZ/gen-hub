@@ -1,15 +1,20 @@
 @import "tailwindcss";
 
 :root {
-  --background: #071118;
-  --background-elevated: rgba(12, 24, 34, 0.92);
+  --background: #0f172a;
+  --background-elevated: rgba(15, 23, 42, 0.96);
   --foreground: #f4f7fb;
-  --muted: #97a6ba;
-  --border: rgba(148, 163, 184, 0.18);
-  --panel: rgba(10, 19, 29, 0.78);
-  --panel-strong: rgba(10, 19, 29, 0.94);
-  --teal: #14b8a6;
-  --teal-soft: rgba(20, 184, 166, 0.15);
+  --muted: #94a3b8;
+  --border: rgba(148, 163, 184, 0.16);
+  --border-strong: rgba(148, 163, 184, 0.22);
+  --panel: rgba(15, 23, 42, 0.88);
+  --panel-strong: rgba(15, 23, 42, 0.96);
+  --surface-muted: rgba(255, 255, 255, 0.04);
+  --input-bg: rgba(2, 6, 23, 0.32);
+  --accent: #2dd4bf;
+  --accent-hover: #5eead4;
+  --accent-soft: rgba(45, 212, 191, 0.12);
+  --accent-border: rgba(45, 212, 191, 0.24);
   --amber-soft: rgba(245, 158, 11, 0.16);
   --rose-soft: rgba(244, 63, 94, 0.16);
   --violet-soft: rgba(139, 92, 246, 0.18);
@@ -25,7 +30,7 @@
   --json-boolean: #fcd34d;
   --json-null: #c4b5fd;
   --json-brace: #cbd5e1;
-  --shadow-panel: 0 26px 80px rgba(2, 6, 23, 0.45);
+  --shadow-panel: 0 18px 40px rgba(2, 6, 23, 0.18);
 }
 
 @theme inline {
@@ -49,10 +54,7 @@ body {
   margin: 0;
   color: var(--foreground);
   font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
-  background:
-    radial-gradient(circle at top left, rgba(20, 184, 166, 0.18), transparent 28%),
-    radial-gradient(circle at top right, rgba(59, 130, 246, 0.14), transparent 30%),
-    linear-gradient(180deg, #081019 0%, #050a11 100%);
+  background: linear-gradient(180deg, #0f172a 0%, #111827 100%);
 }
 
 a {
@@ -66,7 +68,7 @@ input {
 }
 
 ::selection {
-  background: rgba(20, 184, 166, 0.3);
+  background: rgba(45, 212, 191, 0.28);
 }
 
 ::-webkit-scrollbar {
@@ -89,21 +91,17 @@ input {
 
 .hero-panel {
   position: relative;
-  background:
-    linear-gradient(135deg, rgba(8, 15, 26, 0.94), rgba(7, 18, 29, 0.8)),
-    rgba(10, 19, 29, 0.84);
+  background: var(--panel-strong);
   box-shadow: var(--shadow-panel);
-  backdrop-filter: blur(24px);
 }
 
 .glass-card {
   border: 1px solid rgba(255, 255, 255, 0.08);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02));
-  backdrop-filter: blur(18px);
+  background: var(--panel);
 }
 
 .panel {
-  background: linear-gradient(180deg, rgba(10, 19, 29, 0.92), rgba(10, 19, 29, 0.72));
+  background: var(--panel);
   box-shadow: var(--shadow-panel);
 }
 

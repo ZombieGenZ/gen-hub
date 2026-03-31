@@ -257,7 +257,7 @@ export function ApiExplorer() {
   return (
     <div className="space-y-6">
       {!isInitialized ? (
-        <section className="glass-card rounded-[28px] border border-white/10 p-6 shadow-[0_18px_55px_rgba(2,6,23,0.28)]">
+        <section className="glass-card rounded-[28px] border border-white/8 p-6 shadow-[0_16px_36px_rgba(2,6,23,0.16)]">
           <div className="animate-pulse space-y-4">
             <div className="h-5 w-48 rounded-full bg-white/[0.08]" />
             <div className="h-12 rounded-2xl bg-white/[0.06]" />
@@ -373,18 +373,18 @@ function SetupPanel({
   onCancel?: () => void;
 }) {
   return (
-    <section className="glass-card overflow-hidden rounded-[30px] border border-white/10 shadow-[0_18px_55px_rgba(2,6,23,0.28)]">
-      <div className="border-b border-white/8 bg-[radial-gradient(circle_at_top_left,rgba(20,184,166,0.15),transparent_30%),linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.01))] px-5 py-5 sm:px-6">
+    <section className="glass-card overflow-hidden rounded-[30px] border border-white/8 shadow-[0_16px_36px_rgba(2,6,23,0.16)]">
+      <div className="border-b border-white/8 bg-[var(--surface-muted)] px-5 py-5 sm:px-6">
         <div className="space-y-2">
-          <span className="inline-flex rounded-full border border-teal-400/20 bg-teal-400/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-teal-200">
+          <span className="inline-flex rounded-full border border-[var(--border-strong)] bg-[var(--panel)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-300">
             Initial Setup
           </span>
           <h2 className="text-2xl font-semibold text-white">Nhập URL API Docs JSON</h2>
-          <p className="max-w-2xl text-sm leading-6 text-slate-400">
+          {/* <p className="max-w-2xl text-sm leading-6 text-slate-400">
             URL này sẽ được lưu trong local storage. Sau khi lưu xong, refresh trang sẽ vào
             thẳng danh sách API và không hiện lại màn hình nhập trừ khi anh bấm `Đổi URL`
             hoặc `Thoát`.
-          </p>
+          </p> */}
         </div>
       </div>
 
@@ -393,7 +393,7 @@ function SetupPanel({
           value={apiDocsUrl}
           onChange={(event) => onApiDocsUrlChange(event.target.value)}
           placeholder="https://api.gen-hub.dev/api-docs-json"
-          className="h-12 w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-teal-400/50"
+          className="h-12 w-full rounded-2xl border border-white/10 bg-[var(--input-bg)] px-4 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-[var(--accent-border)]"
         />
 
         {error ? <p className="text-sm text-rose-300">{error}</p> : null}
@@ -403,7 +403,7 @@ function SetupPanel({
             type="button"
             onClick={onSubmit}
             disabled={loading}
-            className="inline-flex h-11 items-center justify-center rounded-full bg-teal-400 px-5 text-sm font-medium text-slate-950 shadow-[0_14px_34px_rgba(20,184,166,0.32)] transition hover:bg-teal-300 disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex h-11 items-center justify-center rounded-full bg-[var(--accent)] px-5 text-sm font-medium text-slate-950 transition hover:bg-[var(--accent-hover)] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
             Lưu và tải dữ liệu
@@ -413,7 +413,7 @@ function SetupPanel({
             <button
               type="button"
               onClick={onCancel}
-              className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] px-5 text-sm font-medium text-slate-100 transition hover:border-white/16 hover:bg-white/[0.08]"
+              className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-[var(--surface-muted)] px-5 text-sm font-medium text-slate-100 transition hover:border-white/16 hover:bg-white/[0.08]"
             >
               Hủy
             </button>
@@ -436,8 +436,8 @@ function StatePanel({
   action?: ReactNode;
 }) {
   return (
-    <div className="panel flex min-h-[300px] flex-col items-center justify-center rounded-[32px] border border-white/10 px-6 py-10 text-center">
-      <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-white/[0.06] text-teal-200">
+    <div className="panel flex min-h-[300px] flex-col items-center justify-center rounded-[32px] border border-white/8 px-6 py-10 text-center">
+      <div className="flex h-16 w-16 items-center justify-center rounded-3xl border border-white/10 bg-[var(--surface-muted)] text-slate-200">
         {icon}
       </div>
       <h2 className="mt-5 text-xl font-semibold text-white">{title}</h2>
