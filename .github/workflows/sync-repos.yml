@@ -10,6 +10,7 @@ on:
       - 'status/**'
       - 'App/**'
       - 'admin/admin-panel/**'
+      - 'utilities/api-json/**'
 
   workflow_dispatch:
 
@@ -24,6 +25,7 @@ jobs:
       status: ${{ steps.filter.outputs.status }}
       app: ${{ steps.filter.outputs.app }}
       admin_panel: ${{ steps.filter.outputs.admin_panel }}
+      api_json: ${{ steps.filter.outputs.api_json }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -41,6 +43,8 @@ jobs:
               - 'App/**'
             admin_panel:
               - 'admin/admin-panel/**'
+            api_json:
+              - 'utilities/api-json/**'
 
   sync-client:
     needs: changes
@@ -240,6 +244,39 @@ jobs:
           user-email: ${{ secrets.GH_EMAIL }}
           target-branch: master
           commit-message: "Sync admin-panel: ${{ github.event.head_commit.message }}"
+
+  sync-api-json:
+    needs: changes
+    if: ${{ needs.changes.outputs.api_json == 'true' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install Dependencies and Build
+        run: |
+          cd utilities/api-json
+          npm install
+          npm run build
+      - name: Prepare api-json sync directory
+        run: |
+          rm -rf .sync
+          mkdir -p .sync
+          git -c core.quotepath=false ls-files -z --cached --others --exclude-standard -- utilities/api-json | tar --null -T - -cf - | tar -xf - -C .sync
+      - name: Push api-json folder
+        uses: cpina/github-action-push-to-another-repository@main
+        env:
+          API_TOKEN_GITHUB: ${{ secrets.API_TOKEN_GITHUB }}
+        with:
+          source-directory: '.sync/utilities/api-json'
+          destination-github-username: ${{ secrets.GH_USERNAME }}
+          destination-repository-name: ${{ secrets.REPO_API_JSON }}
+          user-email: ${{ secrets.GH_EMAIL }}
+          target-branch: master
+          commit-message: "Sync api-json: ${{ github.event.head_commit.message }}"
 
   build-app:
     needs: changes
