@@ -28,6 +28,80 @@ const okSchema = (code: string, message: string, id = INBOUND_ID, status = 'COMP
 const badRequest = { type: 'object', properties: { code: { type: 'string', example: 'inventory-request.invalid_status' }, message: { type: 'string', example: 'Phiếu hiện tại không hợp lệ để thực hiện thao tác này' }, success: { type: 'boolean', example: false } } };
 const notFound = { type: 'object', properties: { code: { type: 'string', example: 'inventory-request.not_found' }, message: { type: 'string', example: 'Không tìm thấy phiếu nhập/xuất kho' }, success: { type: 'boolean', example: false } } };
 
+const inboundDetailSchema = {
+    type: 'object',
+    properties: {
+        code: { type: 'string', example: 'inventory-request.get_inbound' },
+        message: { type: 'string', example: 'Lấy chi tiết phiếu nhập thành công' },
+        success: { type: 'boolean', example: true },
+        data: {
+            type: 'object',
+            example: {
+                id: INBOUND_ID,
+                code: 'PN-2026-0001',
+                status: 'PENDING',
+                warehouse_id: WAREHOUSE_ID,
+                partner_name: 'Công ty Vận tải Sao Bắc',
+                created_at: '2026-03-31T02:15:00.000Z',
+                details: [
+                    {
+                        detail_id: '550e8400-e29b-41d4-a716-446655440101',
+                        product_name: 'Thùng carton A1',
+                        expected_qty: 100,
+                        actual_qty: null,
+                    },
+                ],
+            },
+        },
+    },
+};
+const outboundDetailSchema = {
+    type: 'object',
+    properties: {
+        code: { type: 'string', example: 'inventory-request.get_outbound' },
+        message: { type: 'string', example: 'Lấy chi tiết phiếu xuất thành công' },
+        success: { type: 'boolean', example: true },
+        data: {
+            type: 'object',
+            example: {
+                id: OUTBOUND_ID,
+                code: 'PX-2026-0001',
+                status: 'PENDING',
+                warehouse_id: WAREHOUSE_ID,
+                partner_name: 'Công ty ABC Logistics',
+                created_at: '2026-03-31T03:30:00.000Z',
+                details: [
+                    {
+                        detail_id: '550e8400-e29b-41d4-a716-446655440201',
+                        product_name: 'Kệ thép 3 tầng',
+                        quantity: 20,
+                        allocated_qty: 18,
+                        shortage_qty: 2,
+                    },
+                ],
+            },
+        },
+    },
+};
+const splitOutboundSchema = {
+    type: 'object',
+    properties: {
+        code: { type: 'string', example: 'inventory-request.split_outbound' },
+        message: { type: 'string', example: 'Tách phiếu xuất thành công' },
+        success: { type: 'boolean', example: true },
+        data: {
+            type: 'object',
+            example: {
+                original_request_id: OUTBOUND_ID,
+                retained_request_id: OUTBOUND_ID,
+                split_request_id: '550e8400-e29b-41d4-a716-446655440021',
+                retained_items: 2,
+                split_items: 1,
+            },
+        },
+    },
+};
+
 @ApiTags('Warehouse Manager - Inventory (Collapsed)')
 @ApiBearerAuth('JWT-auth')
 @Controller('warehouse-manager/inventory')
@@ -52,6 +126,7 @@ export class WarehouseManagerInventoryController {
     }
 
     @Get('inbound/:id')
+    @ApiResponse({ status: 200, description: 'Lấy chi tiết phiếu nhập thành công', schema: inboundDetailSchema })
     @RequirePermission('warehouse-manager.inventory.inbound.list')
     @ApiOperation({ summary: 'Chi tiết phiếu nhập kho', description: 'Lấy chi tiết phiếu nhập theo phạm vi kho mà Warehouse Manager được phân quyền.' })
     @ApiParam({ name: 'id', description: 'ID phiếu nhập', example: INBOUND_ID })
@@ -170,6 +245,7 @@ export class WarehouseManagerInventoryController {
     }
 
     @Get('outbound/:id')
+    @ApiResponse({ status: 200, description: 'Lấy chi tiết phiếu xuất thành công', schema: outboundDetailSchema })
     @RequirePermission('warehouse-manager.inventory.outbound.list')
     @ApiOperation({ summary: 'Chi tiết phiếu xuất kho', description: 'Lấy chi tiết phiếu xuất theo phạm vi kho mà Warehouse Manager được phân quyền.' })
     @ApiParam({ name: 'id', description: 'ID phiếu xuất', example: OUTBOUND_ID })
@@ -198,6 +274,7 @@ export class WarehouseManagerInventoryController {
     }
 
     @Post('outbound/:id/split')
+    @ApiResponse({ status: 200, description: 'Tách phiếu xuất thành công', schema: splitOutboundSchema })
     @RequirePermission('warehouse-manager.inventory.outbound.approve')
     @ApiOperation({ summary: 'Tách phiếu xuất kho thiếu hàng', description: 'Tách phiếu xuất `PENDING` thành 2 phiếu: phiếu hiện tại giữ lại các dòng đủ tồn kho, phiếu mới chứa các dòng thiếu tồn kho để xử lý sau. Yêu cầu quyền `warehouse-manager.inventory.outbound.approve`.' })
     @ApiParam({ name: 'id', description: 'ID phiếu xuất cần tách', example: OUTBOUND_ID })

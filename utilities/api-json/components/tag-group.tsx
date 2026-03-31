@@ -28,26 +28,28 @@ export function TagGroup({
   const allChecked = checkedCount > 0 && checkedCount === endpointIds.length;
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-white/10 bg-[var(--panel)] shadow-[0_10px_24px_rgba(2,6,23,0.12)]">
+    <section className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--panel)] shadow-[var(--shadow-panel)]">
       <div className="flex flex-wrap items-center gap-3 px-4 py-4">
         <button
           type="button"
           onClick={() => onToggleOpen(group.tag)}
           className="flex min-w-0 flex-1 items-center gap-3 text-left"
         >
-          <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-white/10 bg-[var(--surface-muted)] text-slate-300">
+          <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface-muted)] text-[var(--muted)]">
             <ChevronDown
               className={`h-4 w-4 transition-transform duration-200 ${open ? "rotate-0" : "-rotate-90"}`}
             />
           </span>
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <h3 className="truncate text-2xl font-semibold text-white">{group.tag}</h3>
-              <span className="rounded-md border border-white/10 px-2 py-1 text-[11px] text-slate-300">
+              <h3 className="truncate text-2xl font-semibold text-[var(--foreground)]">
+                {group.tag}
+              </h3>
+              <span className="rounded-md border border-[var(--border)] bg-[var(--surface-muted)] px-2 py-1 text-[11px] text-[var(--muted)]">
                 {group.endpoints.length} API
               </span>
               {checkedCount > 0 ? (
-                <span className="rounded-md border border-[var(--accent-border)] bg-[var(--accent-soft)] px-2 py-1 text-[11px] text-slate-100">
+                <span className="rounded-md border border-[var(--accent-border)] bg-[var(--accent-soft)] px-2 py-1 text-[11px] text-[var(--accent)]">
                   {checkedCount} đã chọn
                 </span>
               ) : null}
@@ -55,12 +57,12 @@ export function TagGroup({
           </div>
         </button>
 
-        <label className="inline-flex items-center gap-2 rounded-md border border-white/10 bg-[var(--surface-muted)] px-3 py-2 text-xs text-slate-300">
+        <label className="inline-flex items-center gap-2 rounded-md border border-[var(--border)] bg-[var(--surface-muted)] px-3 py-2 text-xs text-[var(--muted)]">
           <input
             type="checkbox"
             checked={allChecked}
             onChange={(event) => onToggleGroup(group.tag, endpointIds, event.target.checked)}
-            className="h-4 w-4 rounded border-white/15 bg-slate-950 accent-[var(--accent)]"
+            className="h-4 w-4 rounded border-[var(--border-strong)] bg-white accent-[var(--accent)]"
           />
           Chọn tất cả nhóm
         </label>
@@ -70,7 +72,7 @@ export function TagGroup({
         className={`grid transition-[grid-template-rows] duration-300 ease-out ${open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}
       >
         <div className="overflow-hidden">
-          <div className="space-y-2 border-t border-white/8 px-4 py-4">
+          <div className="space-y-2 border-t border-[var(--border)] px-4 py-4">
             {group.endpoints.map((endpoint) => (
               <ApiItem
                 key={endpoint.id}

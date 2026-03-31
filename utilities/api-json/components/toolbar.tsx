@@ -35,10 +35,10 @@ function ToolbarButton({
 }) {
   const variantClass =
     variant === "primary"
-      ? "bg-[var(--accent)] text-slate-950 hover:bg-[var(--accent-hover)]"
+      ? "bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)]"
       : variant === "danger"
-        ? "border border-rose-400/20 bg-rose-500/8 text-rose-200 hover:bg-rose-500/12"
-        : "border border-white/10 bg-[var(--surface-muted)] text-slate-100 hover:border-white/16 hover:bg-white/[0.08]";
+        ? "border border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100"
+        : "border border-[var(--border)] bg-[var(--surface-muted)] text-[var(--foreground)] hover:border-[var(--accent-border)] hover:bg-[var(--accent-soft)]";
 
   return (
     <button
@@ -62,12 +62,12 @@ function ToggleChip({
   onToggle: (checked: boolean) => void;
 }) {
   return (
-    <label className="flex w-fit items-center gap-3 rounded-full border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-slate-200">
+    <label className="flex w-fit items-center gap-3 rounded-full border border-[var(--border)] bg-[var(--surface-muted)] px-3 py-2 text-sm text-[var(--foreground)]">
       <span>{label}</span>
       <button
         type="button"
         onClick={() => onToggle(!checked)}
-        className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${checked ? "bg-[var(--accent)]" : "bg-white/[0.14]"}`}
+        className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${checked ? "bg-[var(--accent)]" : "bg-[var(--border-strong)]"}`}
         aria-pressed={checked}
       >
         <span
@@ -97,22 +97,24 @@ export function Toolbar({
   onDisconnect,
 }: ToolbarProps) {
   return (
-    <div className="glass-card flex flex-col gap-4 rounded-[28px] border border-white/8 p-4 shadow-[0_16px_36px_rgba(2,6,23,0.16)] sm:p-5">
-      <div className="flex flex-col gap-3 rounded-[22px] border border-white/10 bg-[var(--surface-muted)] p-4">
+    <div className="glass-card flex flex-col gap-4 rounded-[28px] border border-[var(--border)] p-4 shadow-[var(--shadow-panel)] sm:p-5">
+      <div className="flex flex-col gap-3 rounded-[22px] border border-[var(--border)] bg-[var(--sidebar-bg)] p-4">
         <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
           <div className="min-w-0 space-y-1">
-            <div className="text-xs uppercase tracking-[0.24em] text-slate-500">API Docs JSON</div>
+            <div className="text-xs uppercase tracking-[0.24em] text-[var(--muted)]">
+              API Docs JSON
+            </div>
             <div className="flex items-center gap-2">
               <a
                 href={apiDocsUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="truncate text-sm text-slate-200 hover:text-white"
+                className="truncate text-sm text-[var(--foreground)] hover:text-[var(--accent)]"
                 title={apiDocsUrl}
               >
                 {apiDocsUrl}
               </a>
-              <ExternalLink className="h-4 w-4 shrink-0 text-slate-500" />
+              <ExternalLink className="h-4 w-4 shrink-0 text-[var(--muted)]" />
             </div>
           </div>
 
@@ -144,12 +146,12 @@ export function Toolbar({
 
       <div className="flex flex-col gap-4 xl:flex-row xl:items-center">
         <label className="relative flex-1">
-          <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+          <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted)]" />
           <input
             value={searchQuery}
             onChange={(event) => onSearchChange(event.target.value)}
             placeholder="Tìm theo path, summary hoặc operation id..."
-            className="h-12 w-full rounded-full border border-white/10 bg-[var(--input-bg)] pl-11 pr-4 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-[var(--accent-border)]"
+            className="h-12 w-full rounded-full border border-[var(--border)] bg-[var(--input-bg)] pl-11 pr-4 text-sm text-[var(--foreground)] outline-none transition placeholder:text-[var(--muted)] focus:border-[var(--accent)]"
           />
         </label>
 
@@ -172,10 +174,10 @@ export function Toolbar({
       </div>
 
       <div className="flex flex-wrap items-center gap-3 text-sm">
-        <span className="rounded-full border border-[var(--accent-border)] bg-[var(--accent-soft)] px-3 py-1.5 text-slate-100">
+        <span className="rounded-full border border-[var(--accent-border)] bg-[var(--accent-soft)] px-3 py-1.5 text-[var(--accent)]">
           {selectedCount} đã chọn
         </span>
-        <span className="rounded-full border border-white/10 px-3 py-1.5 text-slate-300">
+        <span className="rounded-full border border-[var(--border)] bg-white px-3 py-1.5 text-[var(--muted)]">
           {totalCount} endpoint hiển thị
         </span>
       </div>

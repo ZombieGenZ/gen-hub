@@ -1,36 +1,40 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0f172a;
-  --background-elevated: rgba(15, 23, 42, 0.96);
-  --foreground: #f4f7fb;
-  --muted: #94a3b8;
-  --border: rgba(148, 163, 184, 0.16);
-  --border-strong: rgba(148, 163, 184, 0.22);
-  --panel: rgba(15, 23, 42, 0.88);
-  --panel-strong: rgba(15, 23, 42, 0.96);
-  --surface-muted: rgba(255, 255, 255, 0.04);
-  --input-bg: rgba(2, 6, 23, 0.32);
-  --accent: #2dd4bf;
-  --accent-hover: #5eead4;
-  --accent-soft: rgba(45, 212, 191, 0.12);
-  --accent-border: rgba(45, 212, 191, 0.24);
-  --amber-soft: rgba(245, 158, 11, 0.16);
-  --rose-soft: rgba(244, 63, 94, 0.16);
-  --violet-soft: rgba(139, 92, 246, 0.18);
-  --emerald-soft: rgba(34, 197, 94, 0.18);
-  --get: #22c55e;
+  --background: #f8fafc;
+  --background-elevated: rgba(248, 250, 252, 0.96);
+  --foreground: #1e293b;
+  --muted: #64748b;
+  --border: #e2e8f0;
+  --border-strong: #cbd5e1;
+  --panel: #ffffff;
+  --panel-strong: #ffffff;
+  --surface-muted: #f1f5f9;
+  --input-bg: #ffffff;
+  --sidebar-bg: #f1f5f9;
+  --accent: #0f766e;
+  --accent-light: #14b8a6;
+  --accent-hover: #0d5a52;
+  --accent-soft: rgba(15, 118, 110, 0.08);
+  --accent-border: rgba(15, 118, 110, 0.18);
+  --amber-soft: rgba(245, 158, 11, 0.14);
+  --rose-soft: rgba(239, 68, 68, 0.12);
+  --violet-soft: rgba(14, 165, 233, 0.12);
+  --emerald-soft: rgba(16, 185, 129, 0.14);
+  --get: #10b981;
   --post: #f59e0b;
-  --put: #f97316;
+  --put: #0ea5e9;
   --delete: #ef4444;
-  --patch: #8b5cf6;
-  --json-key: #93c5fd;
-  --json-string: #86efac;
-  --json-number: #f9a8d4;
-  --json-boolean: #fcd34d;
-  --json-null: #c4b5fd;
-  --json-brace: #cbd5e1;
-  --shadow-panel: 0 18px 40px rgba(2, 6, 23, 0.18);
+  --patch: #0f766e;
+  --head: #334155;
+  --options: #14b8a6;
+  --json-key: #0f766e;
+  --json-string: #10b981;
+  --json-number: #0ea5e9;
+  --json-boolean: #f59e0b;
+  --json-null: #ef4444;
+  --json-brace: #334155;
+  --shadow-panel: 0 18px 40px rgba(0, 0, 0, 0.04);
 }
 
 @theme inline {
@@ -54,7 +58,9 @@ body {
   margin: 0;
   color: var(--foreground);
   font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
-  background: linear-gradient(180deg, #0f172a 0%, #111827 100%);
+  background:
+    radial-gradient(circle at top left, rgba(20, 184, 166, 0.14), transparent 30%),
+    linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
 }
 
 a {
@@ -68,7 +74,7 @@ input {
 }
 
 ::selection {
-  background: rgba(45, 212, 191, 0.28);
+  background: rgba(20, 184, 166, 0.22);
 }
 
 ::-webkit-scrollbar {
@@ -77,16 +83,16 @@ input {
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(15, 23, 42, 0.46);
+  background: #f1f5f9;
 }
 
 ::-webkit-scrollbar-thumb {
   border-radius: 999px;
-  background: rgba(148, 163, 184, 0.26);
+  background: rgba(100, 116, 139, 0.22);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 163, 184, 0.42);
+  background: rgba(100, 116, 139, 0.34);
 }
 
 .hero-panel {
@@ -96,7 +102,7 @@ input {
 }
 
 .glass-card {
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border);
   background: var(--panel);
 }
 
@@ -110,7 +116,7 @@ input {
 }
 
 .json-scroll {
-  scrollbar-color: rgba(148, 163, 184, 0.34) transparent;
+  scrollbar-color: rgba(100, 116, 139, 0.3) transparent;
 }
 
 .json-view code {
