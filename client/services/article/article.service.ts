@@ -177,29 +177,99 @@ export class ArticleService {
     }
 
     /**
-     * Xóa nhiều bài viết
-     * @param access_token Token truy cập
-     * @param ids Danh sách ID bài viết cần xóa
-     * @returns Kết quả xóa nhiều bài viết
+     * Tăng lượt xem bài viết
+     * @param id ID bài viết
+     * @returns Kết quả tăng lượt xem
      */
-    async deleteManyArticles(access_token: string, ids: string[]) {
+    async incrementView(id: string) {
         try {
-            const response = await fetch(`${API}/articles/delete/many`, {
-                method: 'DELETE',
+            const response = await fetch(`${API}/articles/${id}/view`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            if (!response.ok) {
+                throw new Error('Failed to increment view');
+            }
+            return await response.json();
+        } catch (error) {
+            console.error('Error incrementing view:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Tăng lượt chia sẻ bài viết
+     * @param id ID bài viết
+     * @returns Kết quả tăng lượt chia sẻ
+     */
+    async incrementShare(id: string) {
+        try {
+            const response = await fetch(`${API}/articles/${id}/share`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            if (!response.ok) {
+                throw new Error('Failed to increment share');
+            }
+            return await response.json();
+        } catch (error) {
+            console.error('Error incrementing share:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Lấy lịch sử chỉnh sửa bài viết
+     * @param access_token Token truy cập
+     * @param id ID bài viết
+     * @returns Lịch sử chỉnh sửa
+     */
+    async getEditHistory(access_token: string, id: string) {
+        try {
+            const response = await fetch(`${API}/articles/${id}/history`, {
                 headers: {
                     'Authorization': `Bearer ${access_token}`,
                     'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ ids })
+                }
             });
             if (!response.ok) {
-                throw new Error('Failed to delete many articles');
+                throw new Error('Failed to fetch edit history');
             }
-            
             return await response.json();
         } catch (error) {
-            console.error('Error deleting many articles:', error);
+            console.error('Error fetching edit history:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Tạo SEO tự động bằng AI
+     * @param access_token Token truy cập
+     * @param id ID bài viết
+     * @returns Kết quả tạo SEO
+     */
+    async generateSeo(access_token: string, id: string) {
+        try {
+            const response = await fetch(`${API}/articles/${id}/generate-seo`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${access_token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            if (!response.ok) {
+                throw new Error('Failed to generate SEO');
+            }
+            return await response.json();
+        } catch (error) {
+            console.error('Error generating SEO:', error);
             throw error;
         }
     }
 }
+
+export const articleService = new ArticleService();
