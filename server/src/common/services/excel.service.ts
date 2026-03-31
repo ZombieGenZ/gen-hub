@@ -33,7 +33,7 @@ export class ExcelService {
     this.styleCells(worksheet);
 
     const buffer = await workbook.xlsx.writeBuffer();
-    return Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer);
+    return Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer as any);
   }
 
   /**
@@ -74,6 +74,45 @@ export class ExcelService {
 
     await workbook.xlsx.write(res);
     res.end();
+  }
+
+  /**
+   * Đọc file Excel từ Buffer và trả về mảng object
+   */
+  async parseExcel<T>(buffer: Buffer): Promise<T[]> {
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(buffer as any);
+    const worksheet = workbook.getWorksheet(1);
+    if (!worksheet) return [];
+
+    const data: T[] = [];
+    const headers: Record<number, string> = {};
+
+    // Lấy header từ dòng đầu tiên
+    const headerRow = worksheet.getRow(1);
+    headerRow.eachCell((cell, colNumber) => {
+      headers[colNumber] = cell.text?.trim();
+    });
+
+    // Duyệt từ dòng thứ 2
+    worksheet.eachRow((row, rowNumber) => {
+      if (rowNumber === 1) return;
+
+      const rowData: any = {};
+      let hasData = false;
+      row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+        const header = headers[colNumber];
+        if (header) {
+          rowData[header] = cell.value;
+          if (cell.value !== null && cell.value !== undefined) hasData = true;
+        }
+      });
+      if (hasData) {
+        data.push(rowData as T);
+      }
+    });
+
+    return data;
   }
 
   private styleHeader(worksheet: ExcelJS.Worksheet) {

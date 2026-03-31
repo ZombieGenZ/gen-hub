@@ -9,8 +9,12 @@ import {
     ParseUUIDPipe,
     UseGuards,
     Res,
+    UseInterceptors,
+    UploadedFile,
+    BadRequestException,
 } from '@nestjs/common';
-import { Response } from 'express';
+import { FileInterceptor } from '@nestjs/platform-express';
+import type { Response } from 'express';
 import {
     ApiBearerAuth,
     ApiBody,
@@ -915,5 +919,101 @@ export class InventoryRequestController {
     ) {
         const result = await this.inventoryRequestService.completeShipment(orgId, id, actorId, lang, dto);
         return new UpdatedResponse('inventory-request.complete_shipment', result, lang === 'vi' ? 'Hoàn tất xuất kho' : 'Shipment completed');
+    }
+
+    @Get('inbound/export')
+    @RequireOrgPermission('org.inventory.inbound.list')
+    @ApiOperation({ summary: 'Xuất danh sách phiếu nhập kho ra Excel' })
+    async exportInbound(
+        @Param('orgId', ParseUUIDPipe) orgId: string,
+        @Query() query: QueryInboundRequestDto,
+        @Res() res: Response,
+    ) {
+        const buffer = await this.inventoryRequestService.exportInbound(orgId, query);
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename=inbound-${orgId}.xlsx`);
+        res.send(buffer);
+    }
+
+    @Get('outbound/export')
+    @RequireOrgPermission('org.inventory.outbound.list')
+    @ApiOperation({ summary: 'Xuất danh sách phiếu xuất kho ra Excel' })
+    async exportOutbound(
+        @Param('orgId', ParseUUIDPipe) orgId: string,
+        @Query() query: QueryOutboundRequestDto,
+        @Res() res: Response,
+    ) {
+        const buffer = await this.inventoryRequestService.exportOutbound(orgId, query);
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename=outbound-${orgId}.xlsx`);
+        res.send(buffer);
+    }
+
+    @Get('stock/export')
+    @RequireOrgPermission('org.inventory.inbound.list')
+    @ApiOperation({ summary: 'Xuất báo cáo tồn kho ra Excel' })
+    async exportStock(
+        @Param('orgId', ParseUUIDPipe) orgId: string,
+        @Query('warehouse_id') warehouseId: string | undefined,
+        @Query('keywords') keywords: string | undefined,
+        @Res() res: Response,
+    ) {
+        const buffer = await this.inventoryRequestService.exportStock(orgId, warehouseId, keywords);
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename=stock-${orgId}.xlsx`);
+        res.send(buffer);
+    }
+
+    @Get('inbound/template')
+    @RequireOrgPermission('org.inventory.inbound.create')
+    @ApiOperation({ summary: 'Tải file mẫu nhập kho' })
+    async getInboundTemplate(
+        @Res() res: Response,
+    ) {
+        const buffer = await this.inventoryRequestService.getInboundTemplate();
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', 'attachment; filename=inbound-import-template.xlsx');
+        res.send(buffer);
+    }
+
+    @Get('outbound/template')
+    @RequireOrgPermission('org.inventory.outbound.create')
+    @ApiOperation({ summary: 'Tải file mẫu xuất kho' })
+    async getOutboundTemplate(
+        @Res() res: Response,
+    ) {
+        const buffer = await this.inventoryRequestService.getOutboundTemplate();
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', 'attachment; filename=outbound-import-template.xlsx');
+        res.send(buffer);
+    }
+    @Post('inbound/import')
+    @RequireOrgPermission('org.inventory.inbound.create')
+    @ApiOperation({ summary: 'Nhập dữ liệu nhập kho từ file Excel' })
+    @UseInterceptors(FileInterceptor('file'))
+    async importInbound(
+        @Param('orgId', ParseUUIDPipe) orgId: string,
+        @UploadedFile() file: Express.Multer.File,
+        @CurrentActor() actorId: string,
+        @I18nLang() lang: string,
+    ) {
+        if (!file) throw new BadRequestException('File is required');
+        const result = await this.inventoryRequestService.importInbound(orgId, file.buffer, actorId, lang);
+        return new CreatedResponse('inventory-request.inbound-import', result, lang === 'vi' ? 'Nhập dữ liệu thành công' : 'Import successful');
+    }
+
+    @Post('outbound/import')
+    @RequireOrgPermission('org.inventory.outbound.create')
+    @ApiOperation({ summary: 'Nhập dữ liệu xuất kho từ file Excel' })
+    @UseInterceptors(FileInterceptor('file'))
+    async importOutbound(
+        @Param('orgId', ParseUUIDPipe) orgId: string,
+        @UploadedFile() file: Express.Multer.File,
+        @CurrentActor() actorId: string,
+        @I18nLang() lang: string,
+    ) {
+        if (!file) throw new BadRequestException('File is required');
+        const result = await this.inventoryRequestService.importOutbound(orgId, file.buffer, actorId, lang);
+        return new CreatedResponse('inventory-request.outbound-import', result, lang === 'vi' ? 'Nhập dữ liệu thành công' : 'Import successful');
     }
 }

@@ -454,4 +454,38 @@ export class ProductService {
 
         return { success: successCount, errors };
     }
+
+    async getImportTemplate(): Promise<Buffer> {
+        const columns = [
+            { header: 'Tên sản phẩm*', key: 'name', width: 30 },
+            { header: 'SKU*', key: 'sku', width: 15 },
+            { header: 'Mã vạch', key: 'barcode', width: 15 },
+            { header: 'Đơn vị cơ bản*', key: 'base_unit', width: 15 },
+            { header: 'Giá vốn', key: 'cost_price', width: 15 },
+            { header: 'Khối lượng (kg)', key: 'weight', width: 15 },
+            { header: 'Dài (cm)', key: 'length', width: 10 },
+            { header: 'Rộng (cm)', key: 'width', width: 10 },
+            { header: 'Cao (cm)', key: 'height', width: 10 },
+            { header: 'Mô tả', key: 'description', width: 40 },
+            { header: 'Quy đổi (Đơn vị:Tỷ lệ:Barcode)', key: 'units', width: 50 },
+        ];
+
+        const data = [
+            {
+                name: 'Sản phẩm mẫu 1',
+                sku: 'SKU001',
+                barcode: '123456789',
+                base_unit: 'Cái',
+                cost_price: 10000,
+                weight: 0.5,
+                length: 10,
+                width: 10,
+                height: 10,
+                description: 'Mô tả sản phẩm mẫu',
+                units: 'Thùng:24:987654321, Lốc:6:',
+            }
+        ];
+
+        return this.excelService.createExcelBuffer(columns, data, 'Template Nhập Sản Phẩm');
+    }
 }

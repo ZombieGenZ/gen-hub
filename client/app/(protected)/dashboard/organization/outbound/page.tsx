@@ -15,6 +15,7 @@ import { OutboundHeader } from "@/components/dashboard/organization/outbound/Out
 import { OutboundTable, ITEMS_PER_PAGE } from "@/components/dashboard/organization/outbound/OutboundTable";
 import { OutboundCancelDialog } from "@/components/dashboard/organization/outbound/OutboundCancelDialog";
 import { CreateOutboundDialog } from "@/components/dashboard/organization/outbound/CreateOutboundDialog";
+import { OutboundImportDialog } from "@/components/dashboard/organization/outbound/OutboundImportDialog";
 
 const inventoryService = new InventoryService();
 
@@ -40,6 +41,7 @@ export default function OutboundListPage() {
 
     // ── Create dialog state ──
     const [createDialogOpen, setCreateDialogOpen] = useState(false);
+    const [importDialogOpen, setImportDialogOpen] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
 
     // ── Fetch list ──
@@ -156,6 +158,7 @@ export default function OutboundListPage() {
                 activeTab={activeTab}
                 onTabChange={setActiveTab}
                 onCreateClick={() => setCreateDialogOpen(true)}
+                onImportClick={() => setImportDialogOpen(true)}
                 onExportClick={handleExportExcel}
                 isExporting={isExporting}
             />
@@ -187,6 +190,12 @@ export default function OutboundListPage() {
             <CreateOutboundDialog
                 open={createDialogOpen}
                 onOpenChange={setCreateDialogOpen}
+                onSuccess={fetchItems}
+            />
+
+            <OutboundImportDialog
+                open={importDialogOpen}
+                onOpenChange={setImportDialogOpen}
                 onSuccess={fetchItems}
             />
         </div>

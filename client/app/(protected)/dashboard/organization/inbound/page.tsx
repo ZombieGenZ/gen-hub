@@ -15,6 +15,7 @@ import { InboundHeader } from "@/components/dashboard/organization/inbound/Inbou
 import { InboundTable, ITEMS_PER_PAGE } from "@/components/dashboard/organization/inbound/InboundTable";
 import { InboundCancelDialog } from "@/components/dashboard/organization/inbound/InboundCancelDialog";
 import { CreateInboundDialog } from "@/components/dashboard/organization/inbound/CreateInboundDialog";
+import { InboundImportDialog } from "@/components/dashboard/organization/inbound/InboundImportDialog";
 
 const inventoryService = new InventoryService();
 
@@ -38,6 +39,7 @@ export default function InboundListPage() {
     const [cancelTarget, setCancelTarget] = useState<InboundRequest | null>(null);
     const [isCancelling, setIsCancelling] = useState(false);
     const [createDialogOpen, setCreateDialogOpen] = useState(false);
+    const [importDialogOpen, setImportDialogOpen] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
 
     // ── Fetch list ──
@@ -151,6 +153,7 @@ export default function InboundListPage() {
                     setCurrentPage(1);
                 }}
                 onCreateClick={() => setCreateDialogOpen(true)}
+                onImportClick={() => setImportDialogOpen(true)}
                 onExportClick={handleExportExcel}
                 isExporting={isExporting}
             />
@@ -183,6 +186,12 @@ export default function InboundListPage() {
                 open={createDialogOpen}
                 onOpenChange={setCreateDialogOpen}
                 onSuccess={handleCreateSuccess}
+            />
+
+            <InboundImportDialog
+                open={importDialogOpen}
+                onOpenChange={setImportDialogOpen}
+                onSuccess={fetchItems}
             />
         </div>
     );

@@ -261,4 +261,30 @@ export class ProductService {
             throw error;
         }
     }
+
+    /**
+     * Tải file mẫu nhập sản phẩm
+     * @param token Access token
+     * @returns Blob chứa dữ liệu file Excel mẫu
+     */
+    async getImportTemplate(token: string): Promise<Blob> {
+        try {
+            const orgId = await orgHelper.getOrgId(token);
+            const response = await fetch(`${API}/organizations/${orgId}/products/template`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error('Không thể tải file mẫu Excel');
+            }
+
+            return await response.blob();
+        } catch (error) {
+            console.error('Lỗi khi tải file mẫu Excel:', error);
+            throw error;
+        }
+    }
 }

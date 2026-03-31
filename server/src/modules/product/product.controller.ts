@@ -311,6 +311,34 @@ export class ProductController {
         return new GetResponse(ResponseCode.PRODUCT_LIST_SUCCESS, result);
     }
 
+    @Get('template')
+    @RequireOrgPermission('product.import')
+    @ApiOperation({
+        summary: 'Tải file mẫu nhập sản phẩm',
+        description: 'Tải về file Excel mẫu với các tiêu đề cột đúng định dạng để nhập hàng loạt sản phẩm. Yêu cầu quyền `product.import`.',
+    })
+    @ApiParam({
+        name: 'orgId',
+        description: 'ID của tổ chức',
+        example: '550e8400-e29b-41d4-a716-446655440000',
+    })
+    async getTemplate(
+        @Param('orgId', ParseUUIDPipe) orgId: string,
+        @Res() res: Response,
+    ) {
+        const buffer = await this.service.getImportTemplate();
+        
+        res.setHeader(
+            'Content-Type',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        );
+        res.setHeader(
+            'Content-Disposition',
+            'attachment; filename=product-import-template.xlsx',
+        );
+        res.send(buffer);
+    }
+
     @Get()
     @RequireOrgPermission('product.list')
     @ApiOperation({

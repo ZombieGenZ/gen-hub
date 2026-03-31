@@ -131,6 +131,45 @@ export class InventoryService {
     }
 
     /**
+     * Tải file mẫu nhập kho
+     * @param token Access token
+     * @returns Blob chứa dữ liệu file Excel mẫu
+     */
+    async getInboundTemplate(token: string): Promise<Blob> {
+        const orgId = await orgHelper.getOrgId(token);
+        const response = await fetch(`${API}/organizations/${orgId}/inventory/inbound/template`, {
+            headers: { 'Authorization': `Bearer ${token}` },
+        });
+
+        if (!response.ok) throw new Error('Không thể tải file mẫu nhập kho');
+        return response.blob();
+    }
+
+    /**
+     * Nhập dữ liệu nhập kho từ file Excel
+     * @param token Access token
+     * @param file File Excel cần nhập
+     * @returns Kết quả nhập (số lượng thành công, danh sách lỗi)
+     */
+    async importInbound(token: string, file: File): Promise<ApiResponse<{ successCount: number; errors: string[] }>> {
+        const orgId = await orgHelper.getOrgId(token);
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch(`${API}/organizations/${orgId}/inventory/inbound/import`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: formData,
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Không thể nhập dữ liệu nhập kho');
+        }
+        return response.json();
+    }
+
+    /**
      * Lấy chi tiết phiếu nhập kho theo ID
      * @param token Access token
      * @param id ID phiếu nhập
@@ -256,6 +295,45 @@ export class InventoryService {
     }
 
     /**
+     * Tải file mẫu xuất kho
+     * @param token Access token
+     * @returns Blob chứa dữ liệu file Excel mẫu
+     */
+    async getOutboundTemplate(token: string): Promise<Blob> {
+        const orgId = await orgHelper.getOrgId(token);
+        const response = await fetch(`${API}/organizations/${orgId}/inventory/outbound/template`, {
+            headers: { 'Authorization': `Bearer ${token}` },
+        });
+
+        if (!response.ok) throw new Error('Không thể tải file mẫu xuất kho');
+        return response.blob();
+    }
+
+    /**
+     * Nhập dữ liệu xuất kho từ file Excel
+     * @param token Access token
+     * @param file File Excel cần nhập
+     * @returns Kết quả nhập (số lượng thành công, danh sách lỗi)
+     */
+    async importOutbound(token: string, file: File): Promise<ApiResponse<{ successCount: number; errors: string[] }>> {
+        const orgId = await orgHelper.getOrgId(token);
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch(`${API}/organizations/${orgId}/inventory/outbound/import`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: formData,
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Không thể nhập dữ liệu xuất kho');
+        }
+        return response.json();
+    }
+
+    /**
      * Lấy chi tiết phiếu xuất kho theo ID
      * @param token Access token
      * @param id ID phiếu xuất
@@ -378,7 +456,7 @@ export class InventoryService {
     async exportStock(token: string, warehouseId?: string, keywords?: string): Promise<Blob> {
         const orgId = await orgHelper.getOrgId(token);
         const params = new URLSearchParams();
-        if (warehouseId) params.append('warehouseId', warehouseId);
+        if (warehouseId) params.append('warehouse_id', warehouseId);
         if (keywords) params.append('keywords', keywords);
 
         const response = await fetch(`${API}/organizations/${orgId}/inventory/stock/export?${params.toString()}`, {

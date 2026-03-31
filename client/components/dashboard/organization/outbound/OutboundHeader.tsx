@@ -2,7 +2,7 @@ import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowUpTrayIcon, PlusIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
+import { ArrowUpTrayIcon, PlusIcon, MagnifyingGlassIcon, CloudArrowUpIcon } from "@heroicons/react/24/outline";
 import type { ExportStatus } from "@/services/inventory/inventory.types";
 
 const FILTER_TABS: { label: string; value: ExportStatus | "ALL" }[] = [
@@ -20,6 +20,7 @@ interface OutboundHeaderProps {
     activeTab: ExportStatus | "ALL";
     onTabChange: (val: ExportStatus | "ALL") => void;
     onCreateClick: () => void;
+    onImportClick?: () => void;
     onExportClick?: () => void;
     isExporting?: boolean;
 }
@@ -31,6 +32,7 @@ export function OutboundHeader({
     activeTab,
     onTabChange,
     onCreateClick,
+    onImportClick,
     onExportClick,
     isExporting = false,
 }: OutboundHeaderProps) {
@@ -46,6 +48,14 @@ export function OutboundHeader({
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
+                    <Button 
+                        variant="outline" 
+                        className="gap-2 rounded-xl"
+                        onClick={onImportClick}
+                    >
+                        <CloudArrowUpIcon className="w-4 h-4" />
+                        <span className="hidden sm:inline">Nhập Excel</span>
+                    </Button>
                     <Button 
                         variant="outline" 
                         className="gap-2 rounded-xl"

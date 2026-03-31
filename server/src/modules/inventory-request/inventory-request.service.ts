@@ -807,92 +807,289 @@ export class InventoryRequestService {
     /**
      * Xuất Excel danh sách phiếu nhập kho
      */
-    async exportInbound(orgId: string, query: QueryInboundRequestDto) {
-        const { items } = await this.repository.findInboundByOrgId(orgId, { ...query, limit: 1000, offset: 0 });
+    async exportInbound(orgId: string, query: QueryInboundRequestDto): Promise<Buffer> {
+        const result = await this.repository.findInboundByOrgId(orgId, { ...query, limit: 10000, offset: 0 });
+        const items = result.items;
 
         const columns = [
             { header: 'Mã phiếu', key: 'code', width: 20 },
             { header: 'Trạng thái', key: 'status', width: 15 },
-            { header: 'Kho', key: 'warehouse_name', width: 25 },
-            { header: 'Mã đơn mua (PO)', key: 'purchase_order_code', width: 20 },
-            { header: 'Ngày dự kiến', key: 'expected_arrival', width: 20 },
-            { header: 'Số lượng SP', key: 'total_items', width: 15 },
+            { header: 'Kho', key: 'warehouse', width: 25 },
+            { header: 'Đối tác', key: 'partner', width: 25 },
+            { header: 'Mã PO', key: 'po_code', width: 20 },
             { header: 'Ngày tạo', key: 'created_at', width: 20 },
+            { header: 'Ghi chú', key: 'notes', width: 30 },
+            { header: 'Sản phẩm (SKU:SL:Đơn vị)', key: 'details', width: 50 },
         ];
+
+        const statusMap: Record<string, string> = {
+            'PENDING': 'Chờ duyệt',
+            'APPROVED': 'Đã duyệt',
+            'REJECTED': 'Từ chối',
+            'RECEIVING': 'Đang kiểm đếm',
+            'RECEIVED': 'Đã kiểm đếm',
+            'PUTAWAY': 'Đang cất hàng',
+            'COMPLETED': 'Hoàn tất',
+            'CANCELLED': 'Đã hủy',
+        };
 
         const data = items.map(item => ({
             code: item.code,
-            status: item.status,
-            warehouse_name: (item as any).warehouse_name,
-            purchase_order_code: item.purchase_order_code || '-',
-            expected_arrival: (item as any).expected_arrival ? new Date((item as any).expected_arrival).toLocaleDateString('vi-VN') : '-',
-            total_items: (item as any).total_items || 0,
-            created_at: new Date(item.created_at).toLocaleString('vi-VN'),
+            status: statusMap[item.status] || item.status,
+            warehouse: item.warehouse?.name || '',
+            partner: item.partner?.name || '',
+            po_code: item.purchase_order_code || '',
+            created_at: item.created_at.toLocaleString('vi-VN'),
+            notes: item.notes || '',
+            details: item.details?.map(d => `${d.product?.sku}:${d.expected_qty}:${d.unit?.name || ''}`).join(', ') || '',
         }));
 
-        return this.excelService.createExcelBuffer(columns, data, 'Danh sách Phiếu Nhập');
+        return this.excelService.createExcelBuffer(columns, data, 'Danh sách Nhập kho');
     }
 
     /**
      * Xuất Excel danh sách phiếu xuất kho
      */
-    async exportOutbound(orgId: string, query: QueryOutboundRequestDto) {
-        const { items } = await this.repository.findOutboundByOrgId(orgId, { ...query, limit: 1000, offset: 0 });
+    async exportOutbound(orgId: string, query: QueryOutboundRequestDto): Promise<Buffer> {
+        const result = await this.repository.findOutboundByOrgId(orgId, { ...query, limit: 10000, offset: 0 });
+        const items = result.items;
 
         const columns = [
             { header: 'Mã phiếu', key: 'code', width: 20 },
             { header: 'Trạng thái', key: 'status', width: 15 },
-            { header: 'Kho', key: 'warehouse_name', width: 25 },
-            { header: 'Mã đơn bán (SO)', key: 'sales_order_code', width: 20 },
-            { header: 'Ngày yêu cầu', key: 'required_date', width: 20 },
-            { header: 'Số lượng SP', key: 'total_items', width: 15 },
+            { header: 'Kho', key: 'warehouse', width: 25 },
+            { header: 'Đối tác', key: 'partner', width: 25 },
+            { header: 'Mã SO', key: 'so_code', width: 20 },
             { header: 'Ngày tạo', key: 'created_at', width: 20 },
+            { header: 'Ghi chú', key: 'notes', width: 30 },
+            { header: 'Sản phẩm (SKU:SL:Đơn vị)', key: 'details', width: 50 },
         ];
+
+        const statusMap: Record<string, string> = {
+            'PENDING': 'Chờ duyệt',
+            'APPROVED': 'Đã duyệt',
+            'REJECTED': 'Từ chối',
+            'PICKING': 'Đang nhặt hàng',
+            'PICKED': 'Đã nhặt hàng',
+            'CHECKING': 'Đang kiểm tra',
+            'CHECKED': 'Đã kiểm tra',
+            'PACKED': 'Đã đóng gói',
+            'SHIPPED': 'Đã xuất kho',
+            'COMPLETED': 'Hoàn tất',
+            'CANCELLED': 'Đã hủy',
+        };
 
         const data = items.map(item => ({
             code: item.code,
-            status: item.status,
-            warehouse_name: (item as any).warehouse_name,
-            sales_order_code: item.sales_order_code || '-',
-            required_date: (item as any).required_date ? new Date((item as any).required_date).toLocaleDateString('vi-VN') : '-',
-            total_items: (item as any).total_items || 0,
-            created_at: new Date(item.created_at).toLocaleString('vi-VN'),
+            status: statusMap[item.status] || item.status,
+            warehouse: item.warehouse?.name || '',
+            partner: item.partner?.name || '',
+            so_code: item.sales_order_code || '',
+            created_at: item.created_at.toLocaleString('vi-VN'),
+            notes: (item as any).notes || '',
+            details: item.details?.map(d => `${d.product?.sku}:${d.quantity}:${d.unit?.name || ''}`).join(', ') || '',
         }));
 
-        return this.excelService.createExcelBuffer(columns, data, 'Danh sách Phiếu Xuất');
+        return this.excelService.createExcelBuffer(columns, data, 'Danh sách Xuất kho');
     }
 
     /**
      * Xuất Excel danh sách tồn kho
      */
-    async exportStock(orgId: string, warehouseId?: string, keywords?: string) {
-        const items = await this.listInventoryStock(orgId, warehouseId, keywords);
+    async exportStock(orgId: string, warehouseId?: string, keywords?: string): Promise<Buffer> {
+        const stocks = await this.listInventoryStock(orgId, warehouseId, keywords);
 
         const columns = [
             { header: 'Sản phẩm', key: 'product_name', width: 30 },
             { header: 'SKU', key: 'sku', width: 15 },
-            { header: 'Mã lô', key: 'batch_code', width: 20 },
-            { header: 'Hạn sử dụng', key: 'expiry_date', width: 15 },
             { header: 'Kho', key: 'warehouse_name', width: 20 },
-            { header: 'Vị trí', key: 'location', width: 30 },
-            { header: 'Số lượng tổng', key: 'quantity', width: 15 },
-            { header: 'Dự trữ', key: 'quantity_allocated', width: 15 },
-            { header: 'Khả dụng', key: 'quantity_available', width: 15 },
+            { header: 'Vị trí', key: 'location', width: 40 },
+            { header: 'Mã lô', key: 'batch_code', width: 15 },
+            { header: 'Ngày hết hạn', key: 'expiry_date', width: 15 },
+            { header: 'Tổng tồn', key: 'quantity', width: 12 },
+            { header: 'Sẵn sàng', key: 'quantity_available', width: 12 },
+            { header: 'Đang giữ', key: 'quantity_allocated', width: 12 },
+            { header: 'Ngày lưu kho', key: 'days_in_storage', width: 15 },
         ];
 
-        const data = items.map(item => ({
-            product_name: item.product_name,
-            sku: item.sku,
-            batch_code: item.batch_code || '-',
-            expiry_date: item.expiry_date ? new Date(item.expiry_date).toLocaleDateString('vi-VN') : '-',
-            warehouse_name: (item as any).warehouse_name,
-            location: item.location,
-            quantity: item.quantity,
-            quantity_allocated: item.quantity_allocated,
-            quantity_available: item.quantity_available,
+        const data = stocks.map(s => ({
+            ...s,
+            expiry_date: s.expiry_date ? new Date(s.expiry_date).toLocaleDateString('vi-VN') : '',
         }));
 
         return this.excelService.createExcelBuffer(columns, data, 'Báo cáo Tồn kho');
+    }
+
+    /**
+     * Nhập Excel phiếu nhập kho
+     */
+    async importInbound(orgId: string, buffer: Buffer, actorId: string, lang: string) {
+        const rows = await this.excelService.parseExcel<any>(buffer);
+        if (!rows || rows.length === 0) {
+            throw new BadRequestException('File Excel không có dữ liệu');
+        }
+
+        const errors: string[] = [];
+        let successCount = 0;
+
+        // Group rows by po_code
+        const groupedRows = rows.reduce((acc, row) => {
+            const key = row['Mã PO*'] || row['po_code'] || 'DEFAULT';
+            if (!acc[key]) acc[key] = [];
+            acc[key].push(row);
+            return acc;
+        }, {} as Record<string, any[]>);
+
+        // Fetch common data for validation
+        const [warehouses, products, units] = await Promise.all([
+            this.prisma.warehouse.findMany({ where: { organization_id: orgId, is_deleted: false } }),
+            this.prisma.product.findMany({ where: { organization_id: orgId, is_deleted: false } }),
+            this.prisma.unit.findMany({ where: { organization_id: orgId, is_deleted: false } }),
+        ]);
+
+        for (const [poCode, orderRowsTyped] of Object.entries(groupedRows) as [string, any[]][]) {
+            try {
+                const firstRow = orderRowsTyped[0];
+                const warehouseName = firstRow['Kho nhận*'] || firstRow['warehouse_name'];
+                const warehouse = warehouses.find(w => w.name?.toLowerCase() === warehouseName?.toLowerCase());
+
+                if (!warehouse) {
+                    errors.push(`Mã PO ${poCode}: Không tìm thấy kho "${warehouseName}"`);
+                    continue;
+                }
+
+                const details: any[] = [];
+                for (const row of orderRowsTyped) {
+                    const sku = row['Mã sản phẩm (SKU)*'] || row['sku'];
+                    const product = products.find(p => p.sku?.toLowerCase() === sku?.toLowerCase());
+                    if (!product) {
+                        errors.push(`Mã PO ${poCode}: Không tìm thấy sản phẩm SKU "${sku}"`);
+                        continue;
+                    }
+
+                    const unitName = row['Đơn vị*'] || row['unit_name'];
+                    const unit = units.find(u => u.name?.toLowerCase() === unitName?.toLowerCase());
+                    if (!unit) {
+                        errors.push(`Mã PO ${poCode}, SKU ${sku}: Không tìm thấy đơn vị "${unitName}"`);
+                        continue;
+                    }
+
+                    const quantity = Number(row['Số lượng*'] || row['quantity']);
+                    if (isNaN(quantity) || quantity <= 0) {
+                        errors.push(`Mã PO ${poCode}, SKU ${sku}: Số lượng không hợp lệ`);
+                        continue;
+                    }
+
+                    details.push({
+                        product_id: product.id,
+                        unit_id: unit.id,
+                        expected_qty: quantity,
+                        batch_code: row['Mã lô'] || row['batch_code'],
+                        expiry_date: row['Ngày hết hạn (dd/mm/yyyy)'] || row['expiry_date'],
+                        notes: row['Ghi chú'] || row['note'],
+                    });
+                }
+
+                if (details.length > 0) {
+                    await this.createInbound(orgId, {
+                        warehouse_id: warehouse.id,
+                        purchase_order_code: poCode === 'DEFAULT' ? undefined : poCode,
+                        details,
+                        notes: 'Nhập từ file Excel',
+                    }, actorId, lang);
+                    successCount++;
+                }
+            } catch (error) {
+                errors.push(`Mã PO ${poCode}: Lỗi hệ thống - ${error.message}`);
+            }
+        }
+
+        return { successCount, errors };
+    }
+
+    /**
+     * Nhập Excel phiếu xuất kho
+     */
+    async importOutbound(orgId: string, buffer: Buffer, actorId: string, lang: string) {
+        const rows = await this.excelService.parseExcel<any>(buffer);
+        if (!rows || rows.length === 0) {
+            throw new BadRequestException('File Excel không có dữ liệu');
+        }
+
+        const errors: string[] = [];
+        let successCount = 0;
+
+        // Group rows by so_code
+        const groupedRows = rows.reduce((acc, row) => {
+            const key = row['Mã SO/Đơn hàng*'] || row['so_code'] || 'DEFAULT';
+            if (!acc[key]) acc[key] = [];
+            acc[key].push(row);
+            return acc;
+        }, {} as Record<string, any[]>);
+
+        // Fetch common data for validation
+        const [warehouses, products, units] = await Promise.all([
+            this.prisma.warehouse.findMany({ where: { organization_id: orgId, is_deleted: false } }),
+            this.prisma.product.findMany({ where: { organization_id: orgId, is_deleted: false } }),
+            this.prisma.unit.findMany({ where: { organization_id: orgId, is_deleted: false } }),
+        ]);
+
+        for (const [soCode, orderRowsTyped] of Object.entries(groupedRows) as [string, any[]][]) {
+            try {
+                const firstRow = orderRowsTyped[0];
+                const warehouseName = firstRow['Kho xuất*'] || firstRow['warehouse_name'];
+                const warehouse = warehouses.find(w => w.name?.toLowerCase() === warehouseName?.toLowerCase());
+
+                if (!warehouse) {
+                    errors.push(`Mã SO ${soCode}: Không tìm thấy kho "${warehouseName}"`);
+                    continue;
+                }
+
+                const details: any[] = [];
+                for (const row of orderRowsTyped) {
+                    const sku = row['Mã sản phẩm (SKU)*'] || row['sku'];
+                    const product = products.find(p => p.sku?.toLowerCase() === sku?.toLowerCase());
+                    if (!product) {
+                        errors.push(`Mã SO ${soCode}: Không tìm thấy sản phẩm SKU "${sku}"`);
+                        continue;
+                    }
+
+                    const unitName = row['Đơn vị*'] || row['unit_name'];
+                    const unit = units.find(u => u.name?.toLowerCase() === unitName?.toLowerCase());
+                    if (!unit) {
+                        errors.push(`Mã SO ${soCode}, SKU ${sku}: Không tìm thấy đơn vị "${unitName}"`);
+                        continue;
+                    }
+
+                    const quantity = Number(row['Số lượng*'] || row['quantity']);
+                    if (isNaN(quantity) || quantity <= 0) {
+                        errors.push(`Mã SO ${soCode}, SKU ${sku}: Số lượng không hợp lệ`);
+                        continue;
+                    }
+
+                    details.push({
+                        product_id: product.id,
+                        unit_id: unit.id,
+                        quantity: quantity,
+                        notes: row['Ghi chú'] || row['note'],
+                    });
+                }
+
+                if (details.length > 0) {
+                    await this.createOutbound(orgId, {
+                        warehouse_id: warehouse.id,
+                        sales_order_code: soCode === 'DEFAULT' ? undefined : soCode,
+                        details,
+                        notes: 'Xuất hàng từ file Excel',
+                    }, actorId, lang);
+                    successCount++;
+                }
+            } catch (error) {
+                errors.push(`Mã SO ${soCode}: Lỗi hệ thống - ${error.message}`);
+            }
+        }
+
+        return { successCount, errors };
     }
 
     /**
@@ -2328,5 +2525,61 @@ export class InventoryRequestService {
                 }
             }
         }
+    }
+
+    async getInboundTemplate(): Promise<Buffer> {
+        const columns = [
+            { header: 'Mã PO*', key: 'po_code', width: 20 },
+            { header: 'Kho nhận*', key: 'warehouse_name', width: 25 },
+            { header: 'Mã sản phẩm (SKU)*', key: 'sku', width: 20 },
+            { header: 'Số lượng*', key: 'quantity', width: 15 },
+            { header: 'Đơn vị*', key: 'unit_name', width: 15 },
+            { header: 'Mã lô', key: 'batch_code', width: 15 },
+            { header: 'Ngày hết hạn (dd/mm/yyyy)', key: 'expiry_date', width: 20 },
+            { header: 'Ghi chú', key: 'note', width: 30 },
+        ];
+
+        const data = [
+            {
+                po_code: 'PO-2026-001',
+                warehouse_name: 'Kho Tổng TP.HCM',
+                sku: 'AQUA-500ML',
+                quantity: 100,
+                unit_name: 'Thùng',
+                batch_code: 'L01',
+                expiry_date: '31/12/2026',
+                note: 'Nhập mẫu Aquafina',
+            }
+        ];
+
+        return this.excelService.createExcelBuffer(columns, data, 'Template Nhập Kho');
+    }
+
+    async getOutboundTemplate(): Promise<Buffer> {
+        const columns = [
+            { header: 'Mã SO/Đơn hàng*', key: 'so_code', width: 20 },
+            { header: 'Kho xuất*', key: 'warehouse_name', width: 25 },
+            { header: 'Mã sản phẩm (SKU)*', key: 'sku', width: 20 },
+            { header: 'Số lượng*', key: 'quantity', width: 15 },
+            { header: 'Đơn vị*', key: 'unit_name', width: 15 },
+            { header: 'Khách hàng', key: 'customer_name', width: 25 },
+            { header: 'Địa chỉ giao hàng', key: 'delivery_address', width: 40 },
+            { header: 'Ghi chú', key: 'note', width: 30 },
+        ];
+
+        const data = [
+            {
+                so_code: 'SO-2026-001',
+                warehouse_name: 'Kho Tổng TP.HCM',
+                sku: 'AQUA-500ML',
+                quantity: 50,
+                unit_name: 'Thùng',
+                customer_name: 'Nguyễn Văn A',
+                delivery_address: '123 Đường Lê Lợi, Quận 1, TP.HCM',
+                note: 'Xuất mẫu cho đại lý',
+            }
+        ];
+
+        return this.excelService.createExcelBuffer(columns, data, 'Template Xuất Kho');
     }
 }
