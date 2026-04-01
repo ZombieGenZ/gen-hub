@@ -6,6 +6,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
 import { WebsocketGateway } from '../websocket/websocket.gateway';
 import { OrganizationAuditLogService } from '../organization/organization-audit-log.service';
+import { InventoryRequestService } from '../inventory-request/inventory-request.service';
 import {
     QueryPendingInboundDto,
     QueryPendingOutboundDto,
@@ -35,6 +36,7 @@ export class WarehouseManagerInventoryService {
         private readonly websocketGateway: WebsocketGateway,
         private readonly auditLogService: OrganizationAuditLogService,
         private readonly i18n: I18nService,
+        private readonly inventoryRequestService: InventoryRequestService,
     ) {
         this.INBOUND_KEY_PREFIX = this.configService.get<string>('REDIS_INBOUND_KEY_PREFIX') || 'inventory:inbound';
         this.OUTBOUND_KEY_PREFIX = this.configService.get<string>('REDIS_OUTBOUND_KEY_PREFIX') || 'inventory:outbound';
@@ -988,16 +990,6 @@ export class WarehouseManagerInventoryService {
                 warehouse_id: { in: warehouseIds },
                 is_deleted: false,
             },
-            include: {
-                details: {
-                    where: { is_deleted: false },
-                    include: {
-                        product: { select: { id: true, name: true, weight: true } },
-                        batch: true,
-                    },
-                },
-                warehouse: true,
-            },
         });
 
         if (!receipt) {
@@ -1006,108 +998,13 @@ export class WarehouseManagerInventoryService {
             );
         }
 
-        if (receipt.status !== ReceiptStatus.PROCESSING) {
-            throw new BadRequestException(
-                await this.i18n.translate('inventory-request.errors.receiving_not_completed', { lang }),
-            );
-        }
-
-        const result = await this.prisma.$transaction(async (tx) => {
-            // Fill inventory cho từng detail
-            for (const detail of receipt.details) {
-                const actualQty = detail.actual_qty.toNumber() || detail.expected_qty.toNumber();
-
-                if (actualQty > 0) {
-                    await this.fillInventory(
-                        tx,
-                        receipt.organization_id,
-                        receipt.warehouse_id,
-                        detail.product_id,
-                        detail.batch_id,
-                        actualQty,
-                        detail.conversion_rate.toNumber(),
-                        receipt.code,
-                        actorId,
-                    );
-                }
-            }
-
-            // Tạo ReceiptPutaway record
-            const putawayCode = `PA-${receipt.code}`;
-            await tx.receiptPutaway.create({
-                data: {
-                    receipt_id: receiptId,
-                    organization_id: receipt.organization_id,
-                    warehouse_id: receipt.warehouse_id,
-                    code: putawayCode,
-                    status: 'COMPLETED',
-                    worker_id: actorId,
-                    started_at: receipt.putaway_started_at || new Date(),
-                    completed_at: new Date(),
-                    notes: dto.notes || null,
-                    created_by: actorId,
-                    details: {
-                        create: receipt.details.map(d => ({
-                            receipt_detail_id: d.id,
-                            product_id: d.product_id,
-                            batch_id: d.batch_id,
-                            block_id: receipt.warehouse_id, // Will be refined by fillInventory
-                            expected_qty: d.actual_qty.toNumber() || d.expected_qty.toNumber(),
-                            actual_qty: d.actual_qty.toNumber() || d.expected_qty.toNumber(),
-                            created_by: actorId,
-                        })),
-                    },
-                },
-            });
-
-            return tx.receipt.update({
-                where: { id: receiptId },
-                data: {
-                    status: ReceiptStatus.COMPLETED,
-                    putaway_completed_at: new Date(),
-                    updated_by: actorId,
-                },
-                include: {
-                    warehouse: { select: { id: true, name: true } },
-                    partner: { select: { id: true, name: true, code: true } },
-                    details: {
-                        where: { is_deleted: false },
-                        include: {
-                            product: { select: { id: true, name: true, sku: true, image_url: true } },
-                            batch: { select: { id: true, code: true, expiry_date: true } },
-                            unit: { select: { id: true, name: true } },
-                        },
-                    },
-                },
-            });
-        });
-
-        // Invalidate cache
-        await Promise.all([
-            this.redisService.delByPattern(`${this.INBOUND_KEY_PREFIX}:*`),
-            this.redisService.del(`${this.INBOUND_KEY_PREFIX}:detail:${receiptId}`),
-        ]);
-
-        // Emit realtime event
-        this.websocketGateway.emitToOrganization(receipt.organization_id, 'inbound:putaway-confirmed', {
-            receiptId: receipt.id,
-            code: receipt.code,
-            confirmedBy: actorId,
-            totalProducts: receipt.details.length,
-            timestamp: new Date().toISOString(),
-        });
-
-        // Audit log
-        this.auditLogService.logUpdate(
+        // Delegate to InventoryRequestService for standardized 3D-aware putaway logic
+        return this.inventoryRequestService.confirmPutaway(
             receipt.organization_id,
-            'Receipt',
-            receipt.id,
-            { status: ReceiptStatus.PROCESSING } as Record<string, unknown>,
-            { status: ReceiptStatus.COMPLETED } as Record<string, unknown>,
-            { userId: actorId, description: `Putaway confirmed: ${receipt.code}` },
+            receiptId,
+            actorId,
+            lang,
         );
-
-        return result as unknown as IInboundRequest;
     }
 
     /**
@@ -1472,226 +1369,4 @@ export class WarehouseManagerInventoryService {
         return result as unknown as IOutboundRequest;
     }
 
-    // ==================== FILL ALGORITHM ====================
-
-    /**
-     * Thuật toán fill hàng vào kho
-     * 
-     * Ưu tiên:
-     * 1. Shelves có assigned_product_id = product_id
-     * 2. Sắp xếp: Row.code ASC → Rack.code ASC → Shelf.code DESC → Block.code ASC
-     * 3. Chỉ fill vào blocks thuộc rows có is_rented = true
-     */
-    private async fillInventory(
-        tx: Prisma.TransactionClient,
-        orgId: string,
-        warehouseId: string,
-        productId: string,
-        batchId: string | null,
-        quantity: number,
-        conversionRate: number,
-        referenceCode: string,
-        actorId: string,
-    ): Promise<void> {
-        // Chuyển đổi về đơn vị cơ bản
-        const baseQuantity = quantity * conversionRate;
-
-        // Lấy tất cả blocks có thể fill (thuộc rows đã thuê)
-        const availableBlocks = await tx.block.findMany({
-            where: {
-                is_deleted: false,
-                is_active: true,
-                shelf: {
-                    is_deleted: false,
-                    is_active: true,
-                    rack: {
-                        is_deleted: false,
-                        is_active: true,
-                        row: {
-                            warehouse_id: warehouseId,
-                            is_deleted: false,
-                            is_active: true,
-                            is_rented: true,
-                        },
-                    },
-                },
-            },
-            include: {
-                shelf: {
-                    include: {
-                        rack: {
-                            include: {
-                                row: true,
-                            },
-                        },
-                    },
-                },
-            },
-            orderBy: [
-                { shelf: { rack: { row: { code: 'asc' } } } },
-                { shelf: { rack: { code: 'asc' } } },
-                { shelf: { code: 'desc' } },
-                { code: 'asc' },
-            ],
-        });
-
-        // Phân loại blocks
-        const assignedBlocks = availableBlocks.filter(
-            b => b.shelf.assigned_product_id === productId,
-        );
-        const unassignedBlocks = availableBlocks.filter(
-            b => !b.shelf.assigned_product_id,
-        );
-
-        // Ưu tiên fill vào assigned blocks trước
-        const sortedBlocks = [...assignedBlocks, ...unassignedBlocks];
-
-        let remainingQty = baseQuantity;
-
-        for (const block of sortedBlocks) {
-            if (remainingQty <= 0) break;
-
-            // Tìm hoặc tạo inventory record
-            const existingInventory = await tx.inventory.findFirst({
-                where: {
-                    organization_id: orgId,
-                    warehouse_id: warehouseId,
-                    block_id: block.id,
-                    product_id: productId,
-                    batch_id: batchId,
-                    is_deleted: false,
-                },
-            });
-
-            const fillQty = remainingQty; // Fill hết vào block này (có thể cải tiến với capacity check)
-
-            if (existingInventory) {
-                // Update inventory
-                await tx.inventory.update({
-                    where: { id: existingInventory.id },
-                    data: {
-                        quantity: { increment: fillQty },
-                        quantity_on_hand: { increment: fillQty },
-                        quantity_available: { increment: fillQty },
-                        updated_by: actorId,
-                    },
-                });
-            } else {
-                // Create new inventory
-                await tx.inventory.create({
-                    data: {
-                        organization_id: orgId,
-                        warehouse_id: warehouseId,
-                        block_id: block.id,
-                        product_id: productId,
-                        batch_id: batchId,
-                        quantity: fillQty,
-                        quantity_on_hand: fillQty,
-                        quantity_allocated: 0,
-                        quantity_available: fillQty,
-                        created_by: actorId,
-                    },
-                });
-            }
-
-            // Tạo transaction log
-            await tx.inventoryTransaction.create({
-                data: {
-                    organization_id: orgId,
-                    warehouse_id: warehouseId,
-                    product_id: productId,
-                    batch_id: batchId,
-                    to_block_id: block.id,
-                    type: TransactionType.INBOUND,
-                    quantity: fillQty,
-                    reference_code: referenceCode,
-                    created_by: actorId,
-                },
-            });
-
-            remainingQty = 0; // Simplified: fill all in first block
-        }
-    }
-
-    // ==================== PICK ALGORITHM ====================
-
-    /**
-     * Thuật toán pick hàng từ kho
-     * 
-     * FEFO: First Expired First Out - Hạn sử dụng gần nhất xuất trước
-     * FIFO: First In First Out - Nhập trước xuất trước
-     */
-    private async pickInventory(
-        tx: Prisma.TransactionClient,
-        orgId: string,
-        warehouseId: string,
-        productId: string,
-        requiredBatchId: string | null,
-        quantity: number,
-        strategy: PickingStrategy,
-        referenceCode: string,
-        actorId: string,
-        lang: string,
-    ): Promise<void> {
-        // Tìm inventory records theo strategy
-        const inventories = await tx.inventory.findMany({
-            where: {
-                organization_id: orgId,
-                warehouse_id: warehouseId,
-                product_id: productId,
-                ...(requiredBatchId && { batch_id: requiredBatchId }),
-                quantity_available: { gt: 0 },
-                is_deleted: false,
-            },
-            include: {
-                batch: true,
-            },
-            orderBy: strategy === PickingStrategy.FEFO
-                ? [{ batch: { expiry_date: 'asc' } }, { created_at: 'asc' }]
-                : [{ created_at: 'asc' }],
-        });
-
-        let remainingQty = quantity;
-
-        for (const inv of inventories) {
-            if (remainingQty <= 0) break;
-
-            const available = inv.quantity_available.toNumber();
-            const pickQty = Math.min(remainingQty, available);
-
-            // Update inventory
-            await tx.inventory.update({
-                where: { id: inv.id },
-                data: {
-                    quantity: { decrement: pickQty },
-                    quantity_on_hand: { decrement: pickQty },
-                    quantity_available: { decrement: pickQty },
-                    updated_by: actorId,
-                },
-            });
-
-            // Tạo transaction log
-            await tx.inventoryTransaction.create({
-                data: {
-                    organization_id: orgId,
-                    warehouse_id: warehouseId,
-                    product_id: productId,
-                    batch_id: inv.batch_id,
-                    from_block_id: inv.block_id,
-                    type: TransactionType.OUTBOUND,
-                    quantity: pickQty,
-                    reference_code: referenceCode,
-                    created_by: actorId,
-                },
-            });
-
-            remainingQty -= pickQty;
-        }
-
-        if (remainingQty > 0) {
-            throw new BadRequestException(
-                await this.i18n.translate('inventory-request.errors.insufficient_stock', { lang }),
-            );
-        }
-    }
 }

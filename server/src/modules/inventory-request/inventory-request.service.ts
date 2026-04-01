@@ -27,7 +27,7 @@ import { WebsocketGateway } from '../websocket/websocket.gateway';
 import { OrganizationAuditLogService } from '../organization/organization-audit-log.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { InventoryRequestCacheKeys } from './constants/inventory-request-cache.helper';
-import { SmartSlottingService } from './smart-slotting.service';
+
 import { ExcelService } from '../../common/services/excel.service';
 
 @Injectable()
@@ -46,7 +46,7 @@ export class InventoryRequestService {
         private readonly auditLogService: OrganizationAuditLogService,
         private readonly i18n: I18nService,
         private readonly cacheKeys: InventoryRequestCacheKeys,
-        private readonly slottingService: SmartSlottingService,
+
         private readonly excelService: ExcelService,
     ) {
         this.INBOUND_LIST_TTL = this.configService.get<number>('REDIS_INBOUND_LIST_TTL') || 60;
@@ -1221,37 +1221,7 @@ export class InventoryRequestService {
             { userId: actorId, description: `Approved inbound request: ${updated.code}` },
         );
 
-        // KÍCH HOẠT AI SLOTTING TỰ ĐỘNG GÁN VỊ TRÍ KHO 3D
-        let slottingResults: any[] = [];
-        try {
-            const itemsToSlot = updated.details.map(d => {
-                const w = d.product.width ? Number(d.product.width) : 1;
-                const h = d.product.height ? Number(d.product.height) : 1;
-                const length = d.product.length ? Number(d.product.length) : 1;
-                const vol = (w * h * length) || 0.1; // Tính m3 hoặc mặc định 0.1 m3
-
-                // TODO: Trong tương lai có thể thêm trường priority_class ở bảng Product. 
-                // Tạm thời giả lập Product SKU bắt đầu bằng "VIP" hoặc "A" là Class A
-                const pClass = d.product.sku.startsWith('A') ? 'A' : (d.product.sku.startsWith('C') ? 'C' : 'B');
-
-                return {
-                    detail_id: d.id,
-                    sku_id: d.product.sku,
-                    quantity: Number(d.expected_qty),
-                    volume_per_unit: vol,
-                    priority_class: pClass as 'A' | 'B' | 'C'
-                };
-            });
-            slottingResults = await this.slottingService.autoAssignBins(receipt.warehouse_id, itemsToSlot);
-        } catch (error) {
-            console.error('[AI Slotting Failed]', error.message);
-            // Dù lỗi Slotting (hết chỗ), vẫn trả về Receipt đã Approve để không nghẽn luồng kinh doanh
-        }
-
-        return {
-            ...(updated as unknown as IInboundRequest),
-            slotting_results: slottingResults // Trả JSON kết quả Slotting xuống Frontend
-        } as any;
+        return updated as unknown as IInboundRequest;
     }
 
     /**
@@ -1717,7 +1687,7 @@ export class InventoryRequestService {
                 details: {
                     where: { is_deleted: false },
                     include: {
-                        product: { select: { id: true, name: true, weight: true } },
+                        product: { select: { id: true, name: true, weight: true, sku: true } },
                         batch: true,
                     },
                 },
@@ -1747,6 +1717,7 @@ export class InventoryRequestService {
                         detail.product_id, detail.batch_id,
                         actualQty, detail.conversion_rate.toNumber(),
                         receipt.code, actorId,
+                        detail.product?.sku, // Pass SKU for priority slotting
                     );
                     allUsedBlocks.push({
                         product_id: detail.product_id,
@@ -2158,6 +2129,7 @@ export class InventoryRequestService {
                         detail.product_id, detail.batch_id,
                         actualQty, detail.conversion_rate.toNumber(),
                         receipt.code, actorId,
+                        detail.product?.sku, // Pass SKU for priority slotting
                     );
                 }
             }
@@ -2190,66 +2162,65 @@ export class InventoryRequestService {
         conversionRate: number,
         referenceCode: string,
         actorId: string,
+        productSku?: string,
     ): Promise<string[]> {
         const baseQuantity = quantity * conversionRate;
         const usedBlockIds: string[] = [];
         let remainingQty = baseQuantity;
 
-        // 1. Hàm helper để tìm và điền hàng vào các ô trống
-        const findAndFill = async (qty: number) => {
-            const blocks = await tx.block.findMany({
+        // Determine priority class based on SKU
+        let priorityClass: 'A' | 'B' | 'C' = 'B';
+        if (productSku) {
+            const sku = productSku.toUpperCase();
+            if (sku.startsWith('A') || sku.includes('VIP')) priorityClass = 'A';
+            else if (sku.startsWith('C') || sku.includes('BULK')) priorityClass = 'C';
+        }
+
+        // 1. Helper function to find and fill available bins
+        const findAndFill = async (qtyToFill: number) => {
+            // Optimization: Get all available bins for this warehouse
+            const availableBins = await tx.bin.findMany({
                 where: {
+                    warehouse_id: warehouseId,
+                    status: 'Available',
                     is_deleted: false,
-                    is_active: true,
-                    shelf: {
-                        is_deleted: false,
-                        is_active: true,
-                        rack: {
-                            is_deleted: false,
-                            is_active: true,
-                            row: {
-                                warehouse_id: warehouseId,
-                                is_deleted: false,
-                                is_active: true,
-                            },
-                        },
-                    },
-                    // QUY TẮC: Chỉ lấy ô thực sự chưa có hàng
-                    inventories: {
-                        none: { is_deleted: false }
-                    },
-                    from_transactions: {
-                         none: { type: TransactionType.INBOUND }
-                    }
                 },
-                include: {
-                    shelf: { include: { rack: { include: { row: true } } } },
-                },
-                orderBy: [
-                    { shelf: { rack: { row: { is_rented: 'desc' } } } }, // Ưu tiên hàng đã thuê
-                    { shelf: { rack: { row: { code: 'asc' } } } },
-                    { shelf: { rack: { code: 'asc' } } },
-                    { shelf: { code: 'asc' } },
-                    { code: 'asc' },
-                ],
+            });
+
+            // Sort bins based on priority class
+            // pos.z: depth (front-to-back), pos.y: height (floor-to-ceiling)
+            const sortedBins = availableBins.sort((a, b) => {
+                const posA = a.position_xyz as any;
+                const posB = b.position_xyz as any;
+                
+                if (priorityClass === 'A') {
+                    // Fast moving: Front (z ASC) and Low (y ASC)
+                    return (posA.z - posB.z) || (posA.y - posB.y) || (posA.x - posB.x);
+                } else if (priorityClass === 'C') {
+                    // Slow movingBin: Back (z DESC) and High (y DESC)
+                    return (posB.z - posA.z) || (posB.y - posA.y) || (posA.x - posB.x);
+                } else {
+                    // Standard: Front-to-back
+                    return (posA.z - posB.z) || (posA.y - posB.y) || (posA.x - posB.x);
+                }
             });
 
             let filled = 0;
-            for (const block of blocks) {
-                if (filled >= qty) break;
+            for (const bin of sortedBins) {
+                if (filled >= qtyToFill) break;
 
-                // Tìm Bin tương ứng (uid duy nhất theo format mới)
-                const bin = await tx.bin.findFirst({
-                    where: { 
-                        warehouse_id: warehouseId,
-                        uid: { contains: block.code },
-                        is_deleted: false 
-                    }
+                // Find corresponding block (Block.code contains Bin.uid)
+                const block = await tx.block.findFirst({
+                    where: {
+                        code: { contains: bin.uid },
+                        shelf: { rack: { row: { warehouse_id: warehouseId } } },
+                        is_deleted: false,
+                    },
                 });
 
-                if (!bin || bin.status !== 'Available') continue;
+                if (!block) continue;
 
-                // Điền 1 đơn vị
+                // Create Inventory record
                 await tx.inventory.create({
                     data: {
                         organization_id: orgId,
@@ -2266,11 +2237,13 @@ export class InventoryRequestService {
                     },
                 });
 
+                // Update Bin status
                 await tx.bin.update({
                     where: { id: bin.id },
-                    data: { status: 'Occupied' }
+                    data: { status: 'Occupied' },
                 });
 
+                // Create Transaction log
                 await tx.inventoryTransaction.create({
                     data: {
                         organization_id: orgId,
@@ -2291,29 +2264,26 @@ export class InventoryRequestService {
             return filled;
         };
 
-        // LẦN 1: Điền vào các ô hiện có
-        const totalFilled = await findAndFill(remainingQty);
-        remainingQty -= totalFilled;
+        // Execution Level 1: Fill using existing space
+        const initialFilled = await findAndFill(remainingQty);
+        remainingQty -= initialFilled;
 
-        // LẦN 2: Nếu vẫn còn hàng -> Tự động mở rộng kho và điền tiếp
+        // Execution Level 2: Auto-expand if still needed
         if (remainingQty > 0) {
-            console.log(`[fillInventory] Hết chỗ, tự động mở rộng để xếp thêm ${remainingQty} item cho product ${productId}`);
+            console.log(`[fillInventory] Auto-expanding warehouse ${warehouseId} for product ${productId}, remaining: ${remainingQty}`);
             
-            // Tìm Receipt ID tương ứng với referenceCode để dùng cho autoAllocateLayout
             const receipt = await tx.receipt.findFirst({ where: { code: referenceCode } });
             if (receipt) {
-                // Ta truyền "tổng số lượng cần thêm" vào autoAllocateLayout
-                // Lưu ý: ta đã cập nhật autoAllocateLayout để nhận diện đúng ô trống
                 await this.autoAllocateLayout(tx, receipt.id, warehouseId, actorId);
                 
-                // Sau khi mở rộng, thử điền nốt phần còn lại
+                // Try filling again after expansion
                 const finalFilled = await findAndFill(remainingQty);
                 remainingQty -= finalFilled;
             }
         }
 
         if (remainingQty > 0) {
-            console.warn(`[fillInventory] CẢNH BÁO: Vẫn không đủ chỗ sau khi mở rộng. Còn dư: ${remainingQty}`);
+            console.warn(`[fillInventory] Still insufficient space after expansion for product ${productId}. Remaining: ${remainingQty}`);
         }
 
         return usedBlockIds;
@@ -2527,7 +2497,8 @@ export class InventoryRequestService {
                     item.product_id, item.batch_id,
                     extraQty, 1, // Conversion rate = 1
                     `REB-${Date.now().toString().slice(-6)}`,
-                    actorId
+                    actorId,
+                    item.product.sku, // Pass SKU for priority slotting
                 );
 
                 totalMoved += movedBlocks.length;
