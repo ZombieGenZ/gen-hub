@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { Button } from "@/components/ui/button";
 
 export function PrimeNestContact() {
     return (
@@ -19,12 +20,12 @@ export function PrimeNestContact() {
                             </p>
 
                             <div className="flex flex-col sm:flex-row gap-4">
-                                <button className="px-8 py-3.5 bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-lg transition-colors">
+                                <Button type="button" className="px-8 py-3.5 bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-lg">
                                     Liên Hệ Ngay
-                                </button>
-                                <button className="px-8 py-3.5 bg-background border border-border hover:border-primary text-foreground font-bold rounded-lg transition-colors">
+                                </Button>
+                                <Button type="button" variant="outline" className="px-8 py-3.5 bg-background border-border hover:border-primary text-foreground font-bold rounded-lg">
                                     Xem Kho Bãi
-                                </button>
+                                </Button>
                             </div>
                         </div>
 

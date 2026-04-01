@@ -28,6 +28,7 @@ import {
     CreditCard,
     Briefcase
 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 interface RouteInfo {
     path: string;
@@ -297,12 +298,13 @@ export default function DevRoutesPage() {
                             <p className="text-[var(--muted-foreground)] max-w-sm">
                                 We couldn't find any routes matching "{search}". Try searching for something else or browse the categories.
                             </p>
-                            <button
+                            <Button
+                                type="button"
                                 onClick={() => setSearch('')}
-                                className="mt-8 px-6 py-3 bg-[var(--primary)] text-white rounded-2xl font-bold hover:opacity-90 transition-opacity shadow-lg shadow-[var(--primary)]/20"
+                                className="mt-8 px-6 py-3 bg-[var(--primary)] text-white rounded-2xl font-bold hover:opacity-90 shadow-lg shadow-[var(--primary)]/20"
                             >
                                 Clear Search
-                            </button>
+                            </Button>
                         </motion.div>
                     )}
                 </div>

@@ -358,7 +358,7 @@ export function CreateOutboundDialog({
                                         formStrategy === opt.value
                                             ? "outbound-strategy__option--active"
                                             : ""
-                                    }`}
+                                    } btn-raw`}
                                     onClick={() => setFormStrategy(opt.value)}
                                 >
                                     <div className="outbound-strategy__option-title">

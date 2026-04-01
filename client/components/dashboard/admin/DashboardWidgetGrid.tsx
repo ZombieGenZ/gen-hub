@@ -136,7 +136,7 @@ function SortableWidget({
                     <button
                         {...attributes}
                         {...listeners}
-                        className="cursor-grab active:cursor-grabbing p-1 rounded hover:bg-slate-100 transition-colors"
+                        className="btn-raw cursor-grab active:cursor-grabbing p-1 rounded hover:bg-slate-100"
                         title="Kéo để sắp xếp"
                     >
                         <Bars3Icon className="w-3.5 h-3.5 text-slate-400" />
@@ -145,7 +145,7 @@ function SortableWidget({
                     <button
                         onClick={() => onToggleVisibility(widget.id)}
                         className={cn(
-                            "p-1 rounded transition-colors",
+                            "btn-raw p-1 rounded",
                             widget.visible ? "hover:bg-red-50 text-slate-400 hover:text-red-500" : "hover:bg-green-50 text-red-400 hover:text-green-600"
                         )}
                         title={widget.visible ? "Ẩn" : "Hiện"}
@@ -165,7 +165,7 @@ function SortableWidget({
                     <span className="text-xs text-slate-400 font-medium">{widget.title}</span>
                     <button
                         onClick={() => onToggleVisibility(widget.id)}
-                        className="text-[11px] text-primary font-semibold hover:underline"
+                        className="btn-raw text-[11px] text-primary font-semibold hover:underline"
                     >
                         Hiện lại
                     </button>

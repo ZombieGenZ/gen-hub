@@ -50,7 +50,7 @@ export function NotificationWizardProgress({ className }: NotificationWizardProg
                                 onClick={() => isCompleted && goToStep(step.id)}
                                 disabled={index > stepIndex}
                                 className={cn(
-                                    "flex items-center gap-2 group",
+                                    "btn-raw flex items-center gap-2 group",
                                     isCompleted && "cursor-pointer",
                                     index > stepIndex && "cursor-not-allowed opacity-50"
                                 )}

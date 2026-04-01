@@ -53,7 +53,7 @@ export function ContractFilterBar({
                             key={tab.value}
                             onClick={() => handleMainTabChange(tab.value)}
                             className={cn(
-                                "px-4 py-3 text-sm whitespace-nowrap transition-colors -mb-px border-b-2",
+                                "btn-raw px-4 py-3 text-sm whitespace-nowrap -mb-px border-b-2",
                                 activeTab === tab.value && !extraFilter
                                     ? "border-primary text-primary font-semibold"
                                     : "border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground/30"

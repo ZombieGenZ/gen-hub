@@ -234,7 +234,7 @@ export function ProductTable({
                                                             product.name
                                                         )
                                                     }
-                                                    className="flex items-center gap-1.5 text-sm text-slate-600 hover:text-[#0F766E] transition-colors group"
+                                                    className="btn-raw flex items-center gap-1.5 text-sm text-slate-600 hover:text-[#0F766E] group"
                                                 >
                                                     <Barcode className="w-4 h-4 text-slate-400 group-hover:text-[#0F766E]" />
                                                     <span className="font-mono text-xs">

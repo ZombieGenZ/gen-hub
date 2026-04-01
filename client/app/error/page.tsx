@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { Home, AlertTriangle } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 export default function Error404Page() {
   return (
@@ -38,12 +39,14 @@ export default function Error404Page() {
               <span>Về trang chủ</span>
             </Link>
 
-            <button
+            <Button
+              type="button"
+              variant="outline"
               onClick={() => typeof window !== 'undefined' && window.history.back()}
-              className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg border border-slate-600 bg-slate-800/60 text-slate-200 text-sm font-medium hover:bg-slate-700 hover:border-slate-500 transition-all"
+              className="px-5 py-3 rounded-lg border-slate-600 bg-slate-800/60 text-slate-200 hover:bg-slate-700 hover:border-slate-500"
             >
               <span>Quay lại trang trước</span>
-            </button>
+            </Button>
           </div>
 
           <p className="text-xs text-slate-500 mt-2">

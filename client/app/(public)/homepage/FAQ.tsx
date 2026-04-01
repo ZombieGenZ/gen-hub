@@ -54,7 +54,7 @@ export function PrimeNestFAQ() {
                         >
                             <button
                                 onClick={() => toggleFAQ(index)}
-                                className="w-full px-6 py-5 flex items-center justify-between text-left focus:outline-none"
+                                className="btn-raw w-full px-6 py-5 flex items-center justify-between text-left"
                             >
                                 <span className={`font-semibold text-lg ${openIndex === index ? "text-primary" : "text-foreground"}`}>
                                     {faq.question}

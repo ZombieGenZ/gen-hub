@@ -180,7 +180,7 @@ export default React.memo(function WarehouseVisitBookingForm({ warehouseTemplate
                                 disabled={isBooked || !formData.visit_date}
                                 onClick={() => handleChange({ target: { name: 'visit_time_start', value: slot } } as any)}
                                 className={`
-                                    py-2 px-1 text-sm rounded-md border text-center transition-all
+                                                                        btn-raw py-2 px-1 text-sm rounded-md border text-center
                                     ${isBooked ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed opacity-50 relative overflow-hidden' : 
                                       formData.visit_time_start === slot ? 'bg-primary text-white border-primary shadow-md transform scale-[1.02]' : 
                                       'bg-white text-slate-700 hover:border-primary hover:text-primary'

@@ -168,13 +168,16 @@ export function ProductImportDialog({ open, onOpenChange, onSuccess }: ProductIm
                     )}
 
                     <div className="mt-4 flex items-center justify-between px-1">
-                        <button 
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
                             onClick={downloadTemplate}
-                            className="text-xs text-[#0F766E] hover:underline flex items-center gap-1 font-medium"
+                            className="h-auto px-0 text-xs text-[#0F766E] hover:underline hover:bg-transparent font-medium"
                         >
                             <DocumentTextIcon className="w-3.5 h-3.5" />
                             Tải file mẫu (.xlsx)
-                        </button>
+                        </Button>
                     </div>
                 </div>
 

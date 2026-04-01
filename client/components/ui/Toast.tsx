@@ -23,73 +23,6 @@ export interface ToastProps {
   total?: number;
 }
 
-// Animated Icons Components
-const SuccessIcon = () => (
-  <svg className="h-6 w-6 text-green-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-    <motion.path
-      initial={{ pathLength: 0 }}
-      animate={{ pathLength: 1 }}
-      transition={{ duration: 0.5, ease: "easeOut", delay: 0.2 }}
-      d="M20 6L9 17l-5-5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
-
-const ErrorIcon = () => (
-  <svg className="h-6 w-6 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-    <motion.path
-      initial={{ pathLength: 0 }}
-      animate={{ pathLength: 1 }}
-      transition={{ duration: 0.3, ease: "easeOut", delay: 0.2 }}
-      d="M18 6L6 18M6 6l12 12"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
-
-const WarningIcon = () => (
-  <svg className="h-6 w-6 text-yellow-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-    <motion.path
-      initial={{ pathLength: 0 }}
-      animate={{ pathLength: 1 }}
-      transition={{ duration: 0.4, ease: "easeOut", delay: 0.2 }}
-      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
-
-const InfoIcon = () => (
-  <svg className="h-6 w-6 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-    <motion.circle
-      initial={{ pathLength: 0 }}
-      animate={{ pathLength: 1 }}
-      transition={{ duration: 0.4, ease: "easeOut", delay: 0.2 }}
-      cx="12" cy="12" r="10"
-      strokeLinecap="round"
-    />
-    <motion.path
-      initial={{ pathLength: 0 }}
-      animate={{ pathLength: 1 }}
-      transition={{ duration: 0.3, ease: "easeOut", delay: 0.4 }}
-      d="M12 16v-4m0-4h.01"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
-
-const toastIcons = {
-  success: SuccessIcon,
-  error: ErrorIcon,
-  warning: WarningIcon,
-  info: InfoIcon,
-};
-
 const toastGradients = {
   success: "from-green-500/20 via-emerald-500/20 to-green-500/20 border-green-500/30",
   error: "from-red-500/20 via-rose-500/20 to-red-500/20 border-red-500/30",
@@ -97,11 +30,11 @@ const toastGradients = {
   info: "from-blue-500/20 via-cyan-500/20 to-blue-500/20 border-blue-500/30",
 };
 
-const progressColors = {
-  success: "stroke-green-500",
-  error: "stroke-red-500",
-  warning: "stroke-yellow-500",
-  info: "stroke-blue-500",
+const progressBarColors = {
+  success: "bg-green-500",
+  error: "bg-red-500",
+  warning: "bg-yellow-500",
+  info: "bg-blue-500",
 };
 
 export const Toast: React.FC<ToastProps> = ({
@@ -113,7 +46,6 @@ export const Toast: React.FC<ToastProps> = ({
   index = 0,
   total = 1,
 }) => {
-  const Icon = toastIcons[type];
   const [isPaused, setIsPaused] = useState(false);
   const [progress, setProgress] = useState(100);
   // eslint-disable-next-line react-hooks/purity
@@ -200,42 +132,13 @@ export const Toast: React.FC<ToastProps> = ({
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={handleMouseLeave}
       className={cn(
-        "pointer-events-auto relative flex w-full items-center gap-4 overflow-hidden rounded-2xl border bg-white/80 p-4 shadow-2xl backdrop-blur-xl dark:bg-slate-900/80",
+        "pointer-events-auto relative flex w-full items-center gap-3 overflow-hidden rounded-2xl border bg-white/80 p-4 shadow-2xl backdrop-blur-xl dark:bg-slate-900/80",
         toastGradients[type],
         !isFront && "pointer-events-none"
       )}
     >
       {/* Holographic Gradient Border Effect */}
       <div className="absolute inset-0 -z-10 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
-
-      {/* Circular Progress & Icon */}
-      <div className="relative flex h-12 w-12 shrink-0 items-center justify-center">
-        <svg className="absolute inset-0 h-full w-full -rotate-90 transform">
-          <circle
-            cx="24"
-            cy="24"
-            r="20"
-            stroke="currentColor"
-            strokeWidth="3"
-            fill="none"
-            className="text-slate-200 dark:text-slate-700"
-          />
-          <circle
-            cx="24"
-            cy="24"
-            r="20"
-            stroke="currentColor"
-            strokeWidth="3"
-            fill="none"
-            strokeDasharray={125.6}
-            strokeDashoffset={125.6 - (125.6 * progress) / 100}
-            className={cn("transition-all duration-100 ease-linear", progressColors[type])}
-          />
-        </svg>
-        <div className="relative z-10">
-          <Icon />
-        </div>
-      </div>
 
       {/* Content */}
       <div className="flex-1 min-w-0">
@@ -249,10 +152,20 @@ export const Toast: React.FC<ToastProps> = ({
           e.stopPropagation();
           onDismiss(id);
         }}
-        className="group relative shrink-0 rounded-full p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-white"
+        className="btn-raw-icon group relative shrink-0 text-slate-400 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-white"
+        aria-label="Dong thong bao"
+        title="Dong thong bao"
       >
         <X className="h-4 w-4" />
       </button>
+
+      {/* Linear timeout progress */}
+      <div className="pointer-events-none absolute bottom-0 left-0 h-1 w-full bg-slate-200/70 dark:bg-slate-700/70">
+        <div
+          className={cn("h-full transition-all duration-100 ease-linear", progressBarColors[type])}
+          style={{ width: `${progress}%` }}
+        />
+      </div>
 
       {/* Confetti / Flash Effects (Conditional) */}
       {type === 'success' && (

@@ -274,7 +274,12 @@ export function CouponHeader({
                                     <Badge variant="secondary" className="gap-1.5 px-3 py-1 cursor-pointer hover:bg-secondary/80 rounded-xl">
                                         <ClockIcon className="w-3.5 h-3.5" />
                                         {getStatusLabel(statusFilter)}
-                                        <button onClick={() => setStatusFilter("all")} className="ml-1 hover:text-destructive transition-colors">
+                                        <button
+                                            onClick={() => setStatusFilter("all")}
+                                            className="btn-raw ml-1 hover:text-destructive"
+                                            aria-label="Xoa loc trang thai"
+                                            title="Xoa loc trang thai"
+                                        >
                                             <XMarkIcon className="w-3.5 h-3.5" />
                                         </button>
                                     </Badge>
@@ -283,7 +288,12 @@ export function CouponHeader({
                                 {typeFilter !== "all" && (
                                     <Badge variant="secondary" className="gap-1.5 px-3 py-1 cursor-pointer hover:bg-secondary/80 rounded-xl">
                                         {getTypeLabel(typeFilter)}
-                                        <button onClick={() => setTypeFilter("all")} className="ml-1 hover:text-destructive transition-colors">
+                                        <button
+                                            onClick={() => setTypeFilter("all")}
+                                            className="btn-raw ml-1 hover:text-destructive"
+                                            aria-label="Xoa loc loai"
+                                            title="Xoa loc loai"
+                                        >
                                             <XMarkIcon className="w-3.5 h-3.5" />
                                         </button>
                                     </Badge>
@@ -293,7 +303,12 @@ export function CouponHeader({
                                     <Badge variant="secondary" className="gap-1.5 px-3 py-1 cursor-pointer hover:bg-secondary/80 rounded-xl">
                                         <PercentBadgeIcon className="w-3.5 h-3.5" />
                                         {getDiscountLabel(discountFilter)}
-                                        <button onClick={() => setDiscountFilter("all")} className="ml-1 hover:text-destructive transition-colors">
+                                        <button
+                                            onClick={() => setDiscountFilter("all")}
+                                            className="btn-raw ml-1 hover:text-destructive"
+                                            aria-label="Xoa loc muc giam"
+                                            title="Xoa loc muc giam"
+                                        >
                                             <XMarkIcon className="w-3.5 h-3.5" />
                                         </button>
                                     </Badge>
@@ -308,7 +323,9 @@ export function CouponHeader({
                                                 setStartDateFilter(undefined);
                                                 setEndDateFilter(undefined);
                                             }}
-                                            className="ml-1 hover:text-destructive transition-colors"
+                                            className="btn-raw ml-1 hover:text-destructive"
+                                            aria-label="Xoa loc ngay"
+                                            title="Xoa loc ngay"
                                         >
                                             <XMarkIcon className="w-3.5 h-3.5" />
                                         </button>

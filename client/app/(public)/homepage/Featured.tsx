@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
+import { Button } from "@/components/ui/button";
 
 import { Square2StackIcon, HomeModernIcon, BuildingOfficeIcon, BoltIcon, MapPinIcon, TruckIcon } from "@heroicons/react/24/outline";
 
@@ -32,16 +33,18 @@ export function PrimeNestFeatured() {
                     {/* Filter Tabs */}
                     <div className="flex items-center justify-center gap-3 mt-6">
                         {filters.map((filter) => (
-                            <button
+                            <Button
                                 key={filter}
+                                type="button"
+                                size="sm"
                                 onClick={() => setActiveFilter(filter)}
-                                className={`px-5 py-2 rounded-full text-sm font-medium transition-all border ${activeFilter === filter
+                                className={`px-5 py-2 rounded-full text-sm font-medium border ${activeFilter === filter
                                     ? "bg-primary text-primary-foreground border-primary"
                                     : "bg-background text-muted-foreground border-border hover:border-primary/50"
                                     }`}
                             >
                                 {filter}
-                            </button>
+                            </Button>
                         ))}
                     </div>
                 </div>
@@ -70,9 +73,9 @@ export function PrimeNestFeatured() {
                                     35.000.000 VND/tháng
                                 </p>
                             </div>
-                            <button className="px-4 py-2 border border-border rounded-full text-sm text-foreground hover:border-primary hover:text-primary transition-colors">
+                            <Button type="button" variant="outline" size="sm" className="px-4 py-2 border-border rounded-full text-sm text-foreground hover:border-primary hover:text-primary">
                                 Xem Tất Cả
-                            </button>
+                            </Button>
                         </div>
 
                         {/* Specs */}
@@ -90,12 +93,12 @@ export function PrimeNestFeatured() {
 
                         {/* CTA */}
                         <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:items-center">
-                            <button className="w-full sm:w-auto px-5 py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl transition-colors">
+                            <Button type="button" className="w-full sm:w-auto px-5 py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl">
                                 Xem Chi Tiết
-                            </button>
-                            <button className="w-full sm:w-auto px-5 py-3 border border-border text-foreground rounded-xl hover:border-primary hover:text-primary transition-colors">
+                            </Button>
+                            <Button type="button" variant="outline" className="w-full sm:w-auto px-5 py-3 border-border text-foreground rounded-xl hover:border-primary hover:text-primary">
                                 Tham Quan 3D
-                            </button>
+                            </Button>
                             <div className="flex items-center gap-2 text-muted-foreground w-full sm:w-auto justify-center sm:justify-start mt-2 sm:mt-0">
                                 <span className="w-2 h-2 bg-green-500 rounded-full" />
                                 <span className="text-sm">Đang Trống</span>

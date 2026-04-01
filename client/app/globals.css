@@ -302,6 +302,14 @@ html::-webkit-scrollbar-thumb:hover {
   border-radius: 3px;
 }
 
+.btn-raw {
+  @apply inline-flex items-center justify-center select-none transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70 focus-visible:ring-offset-2 focus-visible:ring-offset-background active:translate-y-px active:scale-[0.99] disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-55;
+}
+
+.btn-raw-icon {
+  @apply btn-raw p-2 rounded-md;
+}
+
 .notification-dropdown::-webkit-scrollbar-thumb {
   background: #cbd5e1;
   border-radius: 3px;

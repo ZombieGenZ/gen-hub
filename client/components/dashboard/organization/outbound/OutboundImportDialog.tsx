@@ -187,13 +187,16 @@ export function OutboundImportDialog({ open, onOpenChange, onSuccess }: Outbound
 
                     {!importResult && (
                         <div className="mt-4 flex justify-center">
-                            <button 
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
                                 onClick={handleDownloadTemplate}
                                 className="text-sm text-[#0F766E] hover:underline flex items-center gap-2 font-medium bg-[#0F766E]/5 px-4 py-2 rounded-full transition-colors hover:bg-[#0F766E]/10"
                             >
                                 <ArrowDownTrayIcon className="w-4 h-4" />
                                 Tải file mẫu xuất kho (.xlsx)
-                            </button>
+                            </Button>
                         </div>
                     )}
                 </div>

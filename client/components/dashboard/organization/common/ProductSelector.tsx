@@ -107,7 +107,7 @@ export function ProductSelector({
                                 <button
                                     key={product.id}
                                     type="button"
-                                    className="w-full text-left px-4 py-2.5 hover:bg-muted/50 transition-colors flex items-center gap-3"
+                                    className="btn-raw w-full text-left px-4 py-2.5 hover:bg-muted/50 flex items-center gap-3"
                                     onMouseDown={(e) => {
                                         // mouseDown thay vì click để tránh mất focus làm đóng dropdown trước
                                         e.preventDefault();

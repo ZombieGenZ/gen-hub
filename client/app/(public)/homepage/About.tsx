@@ -8,6 +8,7 @@ import {
     ArrowRightIcon
 } from "@heroicons/react/24/outline";
 import Image from "next/image";
+import { Button } from "@/components/ui/button";
 
 interface Feature {
     title: string;
@@ -86,10 +87,10 @@ export function PrimeNestAbout() {
                         </div>
 
                         {/* CTA Button */}
-                        <button className="px-6 py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-full transition-colors inline-flex items-center gap-2">
+                        <Button type="button" className="px-6 py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-full inline-flex items-center gap-2">
                             Tìm Hiểu Thêm
                             <ArrowRightIcon className="w-4 h-4" />
-                        </button>
+                        </Button>
                     </div>
                 </div>
             </div>

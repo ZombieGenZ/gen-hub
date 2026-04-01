@@ -289,7 +289,7 @@ export function PartnerFormDialog({
                                     <button
                                         type="button"
                                         onClick={() => setFormType("CUSTOMER")}
-                                        className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 transition-all text-sm font-medium ${formType === "CUSTOMER"
+                                        className={`btn-raw flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 text-sm font-medium ${formType === "CUSTOMER"
                                             ? "border-emerald-500 bg-emerald-50 text-emerald-700"
                                             : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
                                             }`}
@@ -299,7 +299,7 @@ export function PartnerFormDialog({
                                     <button
                                         type="button"
                                         onClick={() => setFormType("SUPPLIER")}
-                                        className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 transition-all text-sm font-medium ${formType === "SUPPLIER"
+                                        className={`btn-raw flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 text-sm font-medium ${formType === "SUPPLIER"
                                             ? "border-blue-500 bg-blue-50 text-blue-700"
                                             : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
                                             }`}

@@ -6,21 +6,21 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-    "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+    "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-sm font-medium select-none transition-all duration-200 ease-out will-change-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70 focus-visible:ring-offset-2 focus-visible:ring-offset-background active:translate-y-[1px] active:scale-[0.99] disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-55 disabled:saturate-50 data-[loading=true]:pointer-events-none data-[loading=true]:cursor-wait data-[loading=true]:opacity-75 data-[loading=true]:shadow-none motion-reduce:transform-none motion-reduce:transition-none [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
     {
         variants: {
             variant: {
                 default:
-                    "bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring shadow-sm/2",
+                    "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 hover:shadow-md",
                 destructive:
-                    "bg-destructive text-destructive-foreground hover:bg-destructive/90 focus-visible:ring-destructive shadow-sm/2",
+                    "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90 hover:shadow-md focus-visible:ring-destructive/70",
                 outline:
-                    "border  border-border text-foreground hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring shadow-sm",
+                    "border border-border bg-background text-foreground shadow-sm hover:bg-accent hover:text-accent-foreground hover:shadow-md",
                 secondary:
-                    "bg-secondary text-secondary-foreground hover:bg-secondary/80 focus-visible:ring-ring",
+                    "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80 hover:shadow-md",
                 ghost:
-                    "text-foreground hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring",
-                link: "text-secondary-foreground underline-offset-4 hover:underline focus-visible:ring-ring",
+                    "text-foreground hover:bg-accent hover:text-accent-foreground",
+                link: "text-secondary-foreground underline-offset-4 hover:underline active:translate-y-0 active:scale-100",
             },
             size: {
                 default: "h-9 px-4 py-2",
@@ -47,6 +47,7 @@ export interface ButtonProps
     VariantProps<typeof buttonVariants> {
     asChild?: boolean;
     loading?: boolean;
+    loadingText?: React.ReactNode;
     leftIcon?: React.ReactNode;
     rightIcon?: React.ReactNode;
 }
@@ -59,6 +60,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
             size,
             asChild = false,
             loading = false,
+            loadingText,
             leftIcon,
             rightIcon,
             children,
@@ -94,7 +96,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
                     </svg>
                 )}
                 {leftIcon && !loading && leftIcon}
-                {children}
+                {loading && loadingText ? loadingText : children}
                 {rightIcon && !loading && rightIcon}
             </>
         );
@@ -104,9 +106,11 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
                 className={cn(buttonVariants({ variant, size, className }))}
                 ref={ref}
                 disabled={disabled || loading}
+                data-loading={loading ? "true" : "false"}
+                aria-busy={loading || undefined}
                 {...props}
             >
-                {asChild ? children : content}
+                {content}
             </Comp>
         );
     }

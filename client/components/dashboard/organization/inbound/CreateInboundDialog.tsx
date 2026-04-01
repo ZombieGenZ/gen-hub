@@ -222,7 +222,7 @@ function CreateItemRow({
                 {showNewBatch && (
                     <Popover open={showNewBatch} onOpenChange={setShowNewBatch}>
                         <PopoverTrigger asChild>
-                            <button className="text-xs text-[#0F766E] mt-1 underline">
+                            <button className="btn-raw text-xs text-[#0F766E] mt-1 underline">
                                 Nhập thông tin lô
                             </button>
                         </PopoverTrigger>
