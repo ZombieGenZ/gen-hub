@@ -119,7 +119,7 @@ export default function InboundDetailPage() {
         } catch (err) {
             const error = err instanceof Error ? err : new Error(String(err));
             if (error.message === "Unauthorized") { router.push("/login"); return; }
-            setError("Không thể tải thông tin phiếu nhập.");
+            setError("Không thể tải thông tin phiếu PO.");
         } finally {
             setLoading(false);
         }
@@ -164,7 +164,7 @@ export default function InboundDetailPage() {
                 </Button>
                 <Card className="border-0 shadow-premium rounded-3xl">
                     <CardContent className="py-16 text-center text-muted-foreground">
-                        {error || "Không tìm thấy phiếu nhập"}
+                        {error || "Không tìm thấy phiếu PO"}
                     </CardContent>
                 </Card>
             </div>

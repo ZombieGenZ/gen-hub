@@ -330,7 +330,7 @@ export default function ApprovalQueuePage() {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h1 className="text-[32px] font-bold tracking-tight leading-[130%]">
-                        Duyệt phiếu Nhập / Xuất
+                        Duyệt phiếu PO / Xuất
                     </h1>
                     <p className="text-muted-foreground mt-1">
                         {pendingTickets.length} phiếu đang chờ duyệt •{" "}
@@ -697,3 +697,4 @@ export default function ApprovalQueuePage() {
         </div>
     );
 }
+

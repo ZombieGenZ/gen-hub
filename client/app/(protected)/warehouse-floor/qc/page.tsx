@@ -69,7 +69,7 @@ export default function QCPage() {
             if (!found) {
                 trigger('error');
                 triggerFlash('error');
-                setErrorMsg(`Không tìm thấy phiếu nhập cho mã: ${barcode}`);
+                setErrorMsg(`Không tìm thấy phiếu PO cho mã: ${barcode}`);
                 setState('error');
                 return;
             }
@@ -172,7 +172,7 @@ export default function QCPage() {
                     Quét Mã để Bắt đầu QC
                 </h2>
                 <p className="text-slate-500 text-center max-w-xs">
-                    Quét phiếu nhập đang kiểm đếm để bắt đầu quy trình QC
+                    Quét phiếu PO đang kiểm đếm để bắt đầu quy trình QC
                 </p>
                 <div className="flex items-center gap-3 text-slate-400">
                     <ScanBarcode className="w-8 h-8 animate-pulse" />
@@ -182,4 +182,5 @@ export default function QCPage() {
         </div>
     );
 }
+
 

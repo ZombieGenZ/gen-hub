@@ -521,7 +521,7 @@ const ControlPanel = ({
               onClick={onOpenInbound}
             >
               <Upload className="w-4 h-4 mr-2" />
-              Phiếu Nhập
+              Phiếu PO
             </Button>
             <Button
               variant="outline"
@@ -558,3 +558,4 @@ const ControlPanel = ({
 };
 
 export default ControlPanel;
+

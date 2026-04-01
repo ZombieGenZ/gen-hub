@@ -3,7 +3,7 @@
 // ────────────────────────────────────────────────
 
 /**
- * Trạng thái phiếu nhập kho
+ * Trạng thái phiếu PO
  */
 export type ReceiptStatus = 'PENDING' | 'APPROVED' | 'RECEIVING' | 'PROCESSING' | 'PUTAWAY' | 'COMPLETED' | 'CANCELLED';
 
@@ -20,7 +20,7 @@ export type PickingStrategy = 'FEFO' | 'FIFO';
 // ── Inbound (Nhập kho) ──
 
 /**
- * Chi tiết sản phẩm trong phiếu nhập kho (response)
+ * Chi tiết sản phẩm trong phiếu PO (response)
  */
 export interface InboundDetail {
     id: string;
@@ -86,7 +86,7 @@ export interface InboundRequest {
 }
 
 /**
- * Chi tiết sản phẩm khi tạo phiếu nhập kho
+ * Chi tiết sản phẩm khi tạo phiếu PO
  */
 export interface InboundDetailPayload {
     product_id: string;
@@ -112,7 +112,7 @@ export interface CreateInboundPayload {
 }
 
 /**
- * Tham số query danh sách phiếu nhập kho
+ * Tham số query danh sách phiếu PO
  */
 export interface QueryInboundParams {
     limit?: number;
@@ -336,3 +336,4 @@ export interface InventorySummary {
     total_available: number;
     total_allocated: number;
 }
+

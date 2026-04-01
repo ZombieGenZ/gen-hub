@@ -75,7 +75,7 @@ export function InboundTable({
                             <thead className="bg-muted/30 border-b">
                                 <tr>
                                     <th className="text-left py-3 px-4 font-semibold text-xs text-muted-foreground uppercase">
-                                        Mã phiếu nhập
+                                        Mã phiếu PO
                                     </th>
                                     <th className="text-left py-3 px-4 font-semibold text-xs text-muted-foreground uppercase">
                                         Mã PO
@@ -123,12 +123,12 @@ export function InboundTable({
                                                 </div>
                                                 <div>
                                                     <p className="text-muted-foreground font-medium">
-                                                        Không tìm thấy phiếu nhập nào
+                                                        Không tìm thấy phiếu PO nào
                                                     </p>
                                                     <p className="text-sm text-muted-foreground/70 mt-1">
                                                         {searchTerm
                                                             ? "Thử thay đổi từ khóa tìm kiếm"
-                                                            : "Bắt đầu bằng cách tạo phiếu nhập mới"}
+                                                            : "Bắt đầu bằng cách tạo phiếu PO mới"}
                                                     </p>
                                                 </div>
                                                 {!searchTerm && (
@@ -139,7 +139,7 @@ export function InboundTable({
                                                         className="gap-2 mt-2 rounded-xl"
                                                     >
                                                         <PlusIcon className="w-4 h-4" />
-                                                        Tạo phiếu nhập đầu tiên
+                                                        Tạo phiếu PO đầu tiên
                                                     </Button>
                                                 )}
                                             </div>
@@ -286,3 +286,4 @@ export function InboundTable({
         </div>
     );
 }
+

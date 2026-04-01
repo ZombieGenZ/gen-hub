@@ -64,13 +64,13 @@ export class WarehouseManagerService {
         const response = await fetch(`${API}/warehouse-manager/inventory/inbound`, {
             headers: { 'Authorization': `Bearer ${token}` },
         });
-        if (!response.ok) throw new Error('Không thể lấy danh sách phiếu nhập chờ duyệt');
+        if (!response.ok) throw new Error('Không thể lấy danh sách phiếu PO chờ duyệt');
         const res = await response.json();
         return res.data;
     }
 
     /**
-     * Phê duyệt phiếu nhập kho
+     * Phê duyệt phiếu PO
      */
     async approveInbound(token: string, id: string, notes?: string) {
         const response = await fetch(`${API}/warehouse-manager/inventory/inbound/${id}/approve`, {
@@ -81,7 +81,7 @@ export class WarehouseManagerService {
             },
             body: JSON.stringify({ process_notes: notes }),
         });
-        if (!response.ok) throw new Error('Không thể phê duyệt phiếu nhập');
+        if (!response.ok) throw new Error('Không thể phê duyệt phiếu PO');
         const res = await response.json();
         return res.data;
     }
@@ -157,3 +157,4 @@ export class WarehouseManagerService {
 }
 
 export const warehouseManagerService = new WarehouseManagerService();
+

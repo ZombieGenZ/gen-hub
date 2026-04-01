@@ -15,13 +15,13 @@ import type {
 const API = process.env.NEXT_PUBLIC_API_URL;
 
 export class InventoryService {
-    // ==================== INBOUND (PHIẾU NHẬP) ====================
+    // ==================== INBOUND (PHIẾU PO) ====================
 
     /**
      * Tạo yêu cầu nhập kho
      * @param token Access token
-     * @param data Dữ liệu phiếu nhập (kho, đối tác, danh sách sản phẩm)
-     * @returns Response chứa phiếu nhập vừa tạo
+     * @param data Dữ liệu phiếu PO (kho, đối tác, danh sách sản phẩm)
+     * @returns Response chứa phiếu PO vừa tạo
      */
     async createInbound(token: string, data: CreateInboundPayload): Promise<ApiResponse<InboundRequest>> {
         try {
@@ -72,10 +72,10 @@ export class InventoryService {
     }
 
     /**
-     * Lấy danh sách phiếu nhập kho (có phân trang)
+     * Lấy danh sách phiếu PO (có phân trang)
      * @param token Access token
      * @param query Tham số lọc & phân trang
-     * @returns Response phân trang chứa danh sách phiếu nhập
+     * @returns Response phân trang chứa danh sách phiếu PO
      */
     async listInbound(token: string, query?: QueryInboundParams): Promise<PaginatedResponse<InboundRequest>> {
         try {
@@ -101,19 +101,19 @@ export class InventoryService {
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || 'Không thể lấy danh sách phiếu nhập kho');
+                throw new Error(errorData.message || 'Không thể lấy danh sách phiếu PO');
             }
 
             const result = await response.json();
             return result;
         } catch (error) {
-            console.error('Lỗi khi lấy danh sách phiếu nhập kho:', error);
+            console.error('Lỗi khi lấy danh sách phiếu PO:', error);
             throw error;
         }
     }
 
     /**
-     * Xuất Excel danh sách phiếu nhập kho
+     * Xuất Excel danh sách phiếu PO
      * @param token Access token
      * @param query Tham số lọc
      * @returns Blob dữ liệu Excel
@@ -129,7 +129,7 @@ export class InventoryService {
             headers: { 'Authorization': `Bearer ${token}` },
         });
 
-        if (!response.ok) throw new Error('Không thể xuất Excel phiếu nhập');
+        if (!response.ok) throw new Error('Không thể xuất Excel phiếu PO');
         return response.blob();
     }
 
@@ -173,10 +173,10 @@ export class InventoryService {
     }
 
     /**
-     * Lấy chi tiết phiếu nhập kho theo ID
+     * Lấy chi tiết phiếu PO theo ID
      * @param token Access token
-     * @param id ID phiếu nhập
-     * @returns Response chứa thông tin phiếu nhập
+     * @param id ID phiếu PO
+     * @returns Response chứa thông tin phiếu PO
      */
     async getInboundById(token: string, id: string): Promise<ApiResponse<InboundRequest>> {
         try {
@@ -191,13 +191,13 @@ export class InventoryService {
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || 'Không thể lấy thông tin phiếu nhập kho');
+                throw new Error(errorData.message || 'Không thể lấy thông tin phiếu PO');
             }
 
             const result = await response.json();
             return result;
         } catch (error) {
-            console.error('Lỗi khi lấy thông tin phiếu nhập kho:', error);
+            console.error('Lỗi khi lấy thông tin phiếu PO:', error);
             throw error;
         }
     }
@@ -369,9 +369,9 @@ export class InventoryService {
     // ==================== APPROVE / REJECT ====================
 
     /**
-     * Duyệt phiếu nhập kho
+     * Duyệt phiếu PO
      * @param token Token xác thực
-     * @param id ID của phiếu nhập kho
+     * @param id ID của phiếu PO
      * @param notes Ghi chú duyệt
      * @returns Kết quả phản hồi từ API
      */
@@ -384,15 +384,15 @@ export class InventoryService {
         });
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.message || 'Không thể duyệt phiếu nhập');
+            throw new Error(errorData.message || 'Không thể duyệt phiếu PO');
         }
         return response.json();
     }
 
     /**
-     * Từ chối phiếu nhập kho
+     * Từ chối phiếu PO
      * @param token Token xác thực
-     * @param id ID của phiếu nhập kho
+     * @param id ID của phiếu PO
      * @param reason Lý do từ chối
      * @returns Kết quả phản hồi từ API
      */
@@ -405,16 +405,16 @@ export class InventoryService {
         });
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.message || 'Không thể từ chối phiếu nhập');
+            throw new Error(errorData.message || 'Không thể từ chối phiếu PO');
         }
         return response.json();
     }
 
     /**
-     * Hủy phiếu nhập từ phía tổ chức tạo phiếu.
+     * Hủy phiếu PO từ phía tổ chức tạo phiếu.
      * Hiện tại backend dùng cùng endpoint reject để chuyển trạng thái về CANCELLED.
      * @param token Token xác thực
-     * @param id ID của phiếu nhập kho
+     * @param id ID của phiếu PO
      * @param reason Lý do hủy
      * @returns Kết quả phản hồi từ API
      */
@@ -473,7 +473,7 @@ export class InventoryService {
     /**
      * Bổ sung tồn kho sau khi nhập
      * @param token Token xác thực
-     * @param id ID của phiếu nhập kho
+     * @param id ID của phiếu PO
      * @returns Kết quả phản hồi từ API
      */
     async refillInventory(token: string, id: string): Promise<ApiResponse<InboundRequest>> {
@@ -552,7 +552,7 @@ export class InventoryService {
     /**
      * Bắt đầu quá trình kiểm đếm hàng nhập
      * @param token Token xác thực
-     * @param id ID của phiếu nhập kho
+     * @param id ID của phiếu PO
      * @param data Dữ liệu bắt đầu (ID người kiểm đếm)
      * @returns Kết quả phản hồi từ API
      */
@@ -573,7 +573,7 @@ export class InventoryService {
     /**
      * Xác nhận kết quả kiểm đếm hàng nhập
      * @param token Token xác thực
-     * @param id ID của phiếu nhập kho
+     * @param id ID của phiếu PO
      * @param data Dữ liệu xác nhận (chi tiết số lượng thực tế, ghi chú)
      * @returns Kết quả phản hồi từ API
      */
@@ -594,7 +594,7 @@ export class InventoryService {
     /**
      * Xác nhận đã cất hàng vào kho
      * @param token Token xác thực
-     * @param id ID của phiếu nhập kho
+     * @param id ID của phiếu PO
      * @param data Dữ liệu cất hàng (ghi chú)
      * @returns Kết quả phản hồi từ API
      */
@@ -722,3 +722,4 @@ export class InventoryService {
     }
 
 }
+

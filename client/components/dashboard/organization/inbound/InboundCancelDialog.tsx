@@ -35,7 +35,7 @@ export function InboundCancelDialog({
         >
             <DialogContent className="sm:max-w-md rounded-2xl">
                 <DialogHeader>
-                    <DialogTitle>🚫 Hủy phiếu nhập</DialogTitle>
+                    <DialogTitle>🚫 Hủy phiếu PO</DialogTitle>
                     <DialogDescription>
                         Bạn có chắc chắn muốn hủy phiếu{" "}
                         <strong className="text-foreground">
@@ -97,3 +97,4 @@ export function InboundCancelDialog({
         </Dialog>
     );
 }
+

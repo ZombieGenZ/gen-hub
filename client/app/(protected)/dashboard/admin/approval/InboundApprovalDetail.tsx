@@ -123,7 +123,7 @@ export default function InboundApprovalDetail({
                 setActualQty(map);
             }
         } catch {
-            showToast("Không thể tải chi tiết phiếu nhập", "error");
+            showToast("Không thể tải chi tiết phiếu PO", "error");
         } finally {
             setLoading(false);
         }
@@ -146,7 +146,7 @@ export default function InboundApprovalDetail({
                 actual_qty: actualQty[d.id] ?? d.expected_qty,
             }));
             await wmInventoryService.approveInbound(token, ticketId, { actual_quantities });
-            showToast("Duyệt phiếu nhập thành công — chuyển sang Đã duyệt", "success");
+            showToast("Duyệt phiếu PO thành công — chuyển sang Đã duyệt", "success");
             fetchData();
         } catch (err: any) {
             showToast(err.message || "Không thể duyệt phiếu", "error");
@@ -200,7 +200,7 @@ export default function InboundApprovalDetail({
         setSubmitting(true);
         try {
             await wmInventoryService.confirmPutaway(token, ticketId, {});
-            showToast("Đã xác nhận cất hàng — phiếu nhập Hoàn tất!", "success");
+            showToast("Đã xác nhận cất hàng — phiếu PO Hoàn tất!", "success");
             fetchData();
         } catch (err: any) {
             showToast(err.message || "Không thể xác nhận cất hàng", "error");
@@ -236,7 +236,7 @@ export default function InboundApprovalDetail({
                 <div className="approval-empty__icon">
                     <ExclamationTriangleIcon className="w-8 h-8 text-muted-foreground/50" />
                 </div>
-                <p className="text-muted-foreground">Không tìm thấy phiếu nhập</p>
+                <p className="text-muted-foreground">Không tìm thấy phiếu PO</p>
             </div>
         );
     }
@@ -447,7 +447,7 @@ export default function InboundApprovalDetail({
                             <CheckCircleIcon className="w-8 h-8 text-green-600" />
                         </div>
                         <div>
-                            <p className="font-bold text-[16px] text-green-700">Phiếu nhập hoàn tất!</p>
+                            <p className="font-bold text-[16px] text-green-700">Phiếu PO hoàn tất!</p>
                             <p className="text-sm text-muted-foreground mt-1">Hàng đã được nhập kho và lưu vào hệ thống tồn kho.</p>
                         </div>
                         <Button

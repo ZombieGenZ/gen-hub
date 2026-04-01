@@ -435,12 +435,12 @@ export function CreateInboundDialog({
                 }),
             };
             await inventoryService.createInbound(token, payload);
-            showToast("Tạo phiếu nhập thành công! 🎉", "success");
+            showToast("Tạo phiếu PO thành công! 🎉", "success");
             onSuccess();
             onOpenChange(false);
             resetForm();
         } catch (err) {
-            const msg = err instanceof Error ? err.message : "Tạo phiếu nhập thất bại";
+            const msg = err instanceof Error ? err.message : "Tạo phiếu PO thất bại";
             showToast(msg, "error");
         } finally {
             setIsSubmitting(false);
@@ -463,10 +463,10 @@ export function CreateInboundDialog({
                 <DialogContent className="sm:max-w-4xl max-h-[88vh] overflow-y-auto rounded-3xl p-0">
                     <DialogHeader className="p-6 border-b">
                         <DialogTitle className="text-[20px] leading-[130%]">
-                            Tạo phiếu nhập kho
+                            Tạo phiếu PO
                         </DialogTitle>
                         <DialogDescription>
-                            Nhập thông tin phiếu nhập và thêm sản phẩm cần nhập kho
+                            Nhập thông tin phiếu PO và thêm sản phẩm cần nhập kho
                         </DialogDescription>
                     </DialogHeader>
 
@@ -519,7 +519,7 @@ export function CreateInboundDialog({
                             <Input
                                 value={formNotes}
                                 onChange={(e) => setFormNotes(e.target.value)}
-                                placeholder="Ghi chú cho phiếu nhập..."
+                                placeholder="Ghi chú cho phiếu PO..."
                                 className="rounded-xl"
                             />
                         </div>
@@ -618,7 +618,7 @@ export function CreateInboundDialog({
                                 <InboxIcon className="w-10 h-10 mx-auto mb-2 opacity-30" />
                                 <p className="text-sm font-medium">Chưa có sản phẩm nào</p>
                                 <p className="text-xs text-muted-foreground mt-1">
-                                    Tìm kiếm hoặc chọn từ danh sách để thêm sản phẩm vào phiếu nhập
+                                    Tìm kiếm hoặc chọn từ danh sách để thêm sản phẩm vào phiếu PO
                                 </p>
                             </div>
                         )}
@@ -668,7 +668,7 @@ export function CreateInboundDialog({
                                         Đang tạo...
                                     </span>
                                 ) : (
-                                    "Tạo phiếu nhập"
+                                    "Tạo phiếu PO"
                                 )}
                             </Button>
                         </div>
@@ -686,3 +686,4 @@ export function CreateInboundDialog({
         </>
     );
 }
+

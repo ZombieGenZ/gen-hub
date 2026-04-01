@@ -73,8 +73,8 @@ export default function InboundListPage() {
                 router.push("/login");
                 return;
             }
-            setError("Không thể tải danh sách phiếu nhập. Vui lòng thử lại sau.");
-            showToast("Lỗi khi tải danh sách phiếu nhập kho.", "error");
+            setError("Không thể tải danh sách phiếu PO. Vui lòng thử lại sau.");
+            showToast("Lỗi khi tải danh sách phiếu PO.", "error");
         } finally {
             setLoading(false);
         }
@@ -128,7 +128,7 @@ export default function InboundListPage() {
             document.body.removeChild(a);
             showToast("Xuất Excel thành công", "success");
         } catch (err) {
-            showToast("Không thể xuất Excel phiếu nhập kho", "error");
+            showToast("Không thể xuất Excel phiếu PO", "error");
         } finally {
             setIsExporting(false);
         }
@@ -196,3 +196,4 @@ export default function InboundListPage() {
         </div>
     );
 }
+

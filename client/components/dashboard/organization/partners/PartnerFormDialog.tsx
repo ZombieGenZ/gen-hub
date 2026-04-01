@@ -442,7 +442,7 @@ export function PartnerFormDialog({
                         <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
                             <div>
                                 <p className="text-sm font-medium text-slate-900">Đang giao dịch</p>
-                                <p className="text-xs text-slate-500 mt-0.5">Đối tác có thể xuất hiện khi tạo phiếu nhập/xuất</p>
+                                <p className="text-xs text-slate-500 mt-0.5">Đối tác có thể xuất hiện khi tạo phiếu PO/xuất</p>
                             </div>
                             <Switch checked={formActive} onCheckedChange={setFormActive} />
                         </div>
@@ -465,3 +465,4 @@ export function PartnerFormDialog({
         </Dialog>
     );
 }
+

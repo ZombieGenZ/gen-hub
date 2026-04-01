@@ -53,7 +53,7 @@ export function InboundImportDialog({ open, onOpenChange, onSuccess }: InboundIm
             if (res.success) {
                 setImportResult(res.data);
                 if (res.data.successCount > 0) {
-                    showToast(`Đã nhập thành công ${res.data.successCount} phiếu nhập kho!`, "success");
+                    showToast(`Đã nhập thành công ${res.data.successCount} phiếu PO!`, "success");
                     onSuccess();
                 } else {
                     showToast("Không có phiếu nào được nhập thành công. Vui lòng kiểm tra lại file.", "warning");
@@ -100,10 +100,10 @@ export function InboundImportDialog({ open, onOpenChange, onSuccess }: InboundIm
                 <DialogHeader>
                     <DialogTitle className="text-xl font-bold text-slate-900 flex items-center gap-2">
                         <CloudArrowUpIcon className="w-6 h-6 text-[#0F766E]" />
-                        Nhập phiếu nhập kho từ Excel
+                        Nhập phiếu PO từ Excel
                     </DialogTitle>
                     <DialogDescription className="text-slate-500 pt-2">
-                        Tải lên file Excel (.xlsx) chứa danh sách các phiếu nhập kho và chi tiết sản phẩm.
+                        Tải lên file Excel (.xlsx) chứa danh sách các phiếu PO và chi tiết sản phẩm.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -226,3 +226,4 @@ export function InboundImportDialog({ open, onOpenChange, onSuccess }: InboundIm
         </Dialog>
     );
 }
+

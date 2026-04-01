@@ -71,7 +71,7 @@ export default function CounterPage() {
             if (!found) {
                 trigger('error');
                 triggerFlash('error');
-                setErrorMsg(`Không tìm thấy phiếu nhập cho mã: ${barcode}`);
+                setErrorMsg(`Không tìm thấy phiếu PO cho mã: ${barcode}`);
                 setState('error');
                 return;
             }
@@ -96,7 +96,7 @@ export default function CounterPage() {
         } catch (err) {
             trigger('error');
             triggerFlash('error');
-            setErrorMsg(err instanceof Error ? err.message : 'Lỗi tải phiếu nhập');
+            setErrorMsg(err instanceof Error ? err.message : 'Lỗi tải phiếu PO');
             setState('error');
         }
     }, [trigger, triggerFlash]);
@@ -149,7 +149,7 @@ export default function CounterPage() {
             <div className="h-dvh flex flex-col items-center justify-center gap-4 bg-slate-50">
                 <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />
                 <p className="text-slate-600 font-medium">
-                    {state === 'loading' ? 'Đang tải phiếu nhập...' : 'Đang xác nhận...'}
+                    {state === 'loading' ? 'Đang tải phiếu PO...' : 'Đang xác nhận...'}
                 </p>
             </div>
         );
@@ -211,7 +211,7 @@ export default function CounterPage() {
                     <ClipboardCheck className="w-14 h-14 text-blue-400" />
                 </div>
                 <h2 className="text-2xl font-bold text-slate-800 text-center">
-                    Quét Mã Phiếu Nhập
+                    Quét Mã Phiếu PO
                 </h2>
                 <p className="text-slate-500 text-center max-w-xs">
                     Hướng súng quét vào mã vạch trên phiếu để bắt đầu kiểm đếm
@@ -224,4 +224,5 @@ export default function CounterPage() {
         </div>
     );
 }
+
 

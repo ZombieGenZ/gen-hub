@@ -11,10 +11,10 @@ export class WarehouseManagerInventoryService {
     // ─── INBOUND ───
 
     /**
-     * Lấy danh sách phiếu nhập kho
+     * Lấy danh sách phiếu PO
      * @param token Token xác thực
      * @param query Tham số truy vấn (limit, offset, keywords, warehouse_id, status)
-     * @returns Danh sách phiếu nhập kho phân trang
+     * @returns Danh sách phiếu PO phân trang
      */
     async listInbound(
         token: string,
@@ -40,16 +40,16 @@ export class WarehouseManagerInventoryService {
         );
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.message || "Không thể lấy danh sách phiếu nhập");
+            throw new Error(errorData.message || "Không thể lấy danh sách phiếu PO");
         }
         return await response.json();
     }
 
     /**
-     * Lấy chi tiết phiếu nhập kho theo ID
+     * Lấy chi tiết phiếu PO theo ID
      * @param token Token xác thực
-     * @param id ID của phiếu nhập kho
-     * @returns Chi tiết phiếu nhập kho
+     * @param id ID của phiếu PO
+     * @returns Chi tiết phiếu PO
      */
     async getInboundById(
         token: string,
@@ -67,15 +67,15 @@ export class WarehouseManagerInventoryService {
         );
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.message || "Không thể lấy chi tiết phiếu nhập");
+            throw new Error(errorData.message || "Không thể lấy chi tiết phiếu PO");
         }
         return await response.json();
     }
 
     /**
-     * Duyệt phiếu nhập kho
+     * Duyệt phiếu PO
      * @param token Token xác thực
-     * @param id ID của phiếu nhập kho
+     * @param id ID của phiếu PO
      * @param data Dữ liệu duyệt (số lượng thực tế, ghi chú)
      * @returns Kết quả phản hồi từ API
      */
@@ -100,16 +100,16 @@ export class WarehouseManagerInventoryService {
         );
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.message || "Không thể duyệt phiếu nhập");
+            throw new Error(errorData.message || "Không thể duyệt phiếu PO");
         }
         return await response.json();
     }
 
     /**
-     * Phân công nhân viên cho phiếu nhập
+     * Phân công nhân viên cho phiếu PO
      * POST /warehouse-manager/inventory/inbound/:id/assign-workers
      * @param token Token xác thực
-     * @param id ID của phiếu nhập kho
+     * @param id ID của phiếu PO
      * @param data Thông tin phân công (checker_id, worker_id)
      * @returns Kết quả phản hồi từ API
      */
@@ -137,9 +137,9 @@ export class WarehouseManagerInventoryService {
     }
 
     /**
-     * Từ chối phiếu nhập kho
+     * Từ chối phiếu PO
      * @param token Token xác thực
-     * @param id ID của phiếu nhập kho
+     * @param id ID của phiếu PO
      * @param reason Lý do từ chối
      * @returns Kết quả phản hồi từ API
      */
@@ -161,7 +161,7 @@ export class WarehouseManagerInventoryService {
         );
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.message || "Không thể từ chối phiếu nhập");
+            throw new Error(errorData.message || "Không thể từ chối phiếu PO");
         }
         return await response.json();
     }
@@ -169,7 +169,7 @@ export class WarehouseManagerInventoryService {
     /**
      * Bắt đầu quá trình kiểm đếm hàng nhập
      * @param token Token xác thực
-     * @param id ID của phiếu nhập kho
+     * @param id ID của phiếu PO
      * @param data Dữ liệu bắt đầu (ID người kiểm đếm)
      * @returns Kết quả phản hồi từ API
      */
@@ -199,7 +199,7 @@ export class WarehouseManagerInventoryService {
     /**
      * Xác nhận kết quả kiểm đếm hàng nhập
      * @param token Token xác thực
-     * @param id ID của phiếu nhập kho
+     * @param id ID của phiếu PO
      * @param data Dữ liệu xác nhận (chi tiết số lượng thực tế, ghi chú)
      * @returns Kết quả phản hồi từ API
      */
@@ -232,7 +232,7 @@ export class WarehouseManagerInventoryService {
     /**
      * Xác nhận đã cất hàng vào kho
      * @param token Token xác thực
-     * @param id ID của phiếu nhập kho
+     * @param id ID của phiếu PO
      * @param data Dữ liệu cất hàng (chi tiết vị trí cất hàng, số lượng thực tế, ghi chú)
      * @returns Kết quả phản hồi từ API
      */
@@ -518,3 +518,4 @@ export class WarehouseManagerInventoryService {
         return await response.json();
     }
 }
+

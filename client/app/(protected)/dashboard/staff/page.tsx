@@ -4,7 +4,7 @@ import { ClipboardList, PackageSearch, Truck, Warehouse } from "lucide-react";
 const quickActions = [
     {
         title: "Quản lý Nhập kho",
-        description: "Theo dõi phiếu nhập và cập nhật trạng thái xử lý.",
+        description: "Theo dõi phiếu PO và cập nhật trạng thái xử lý.",
         href: "/dashboard/staff/inbound",
         icon: Truck,
     },

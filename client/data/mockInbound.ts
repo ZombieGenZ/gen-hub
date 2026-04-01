@@ -1,5 +1,5 @@
 // ────────────────────────────────────────────────────────────────────────────
-// Mock data for "Phiếu nhập kho" (Inbound Receipts)
+// Mock data for "Phiếu PO" (Inbound Receipts)
 // ────────────────────────────────────────────────────────────────────────────
 
 import type {
@@ -321,3 +321,4 @@ export const MOCK_INBOUND_PRODUCTS = PRODUCTS.map((p) => ({
         },
     ],
 }));
+

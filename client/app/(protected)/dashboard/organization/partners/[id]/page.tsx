@@ -413,10 +413,10 @@ export default function PartnerDetailPage() {
                                         <div className="px-6 py-4 border-b border-slate-100">
                                             <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
                                                 <PackageCheck className="w-4 h-4 text-blue-500" />
-                                                Phiếu Nhập từ Nhà cung cấp
+                                                Phiếu PO từ Nhà cung cấp
                                             </h3>
                                             <p className="text-xs text-slate-500 mt-0.5">
-                                                Danh sách các phiếu nhập kho liên quan đến đối tác này
+                                                Danh sách các phiếu PO liên quan đến đối tác này
                                             </p>
                                         </div>
                                         <div className="overflow-x-auto">
@@ -446,7 +446,7 @@ export default function PartnerDetailPage() {
                                                             <TableCell colSpan={5}>
                                                                 <div className="flex flex-col items-center justify-center py-12 text-slate-400">
                                                                     <PackageCheck className="w-10 h-10 mb-2 opacity-30" />
-                                                                    <p className="text-sm">Chưa có phiếu nhập nào</p>
+                                                                    <p className="text-sm">Chưa có phiếu PO nào</p>
                                                                 </div>
                                                             </TableCell>
                                                         </TableRow>
@@ -597,3 +597,4 @@ export default function PartnerDetailPage() {
         </div>
     );
 }
+

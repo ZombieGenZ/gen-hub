@@ -158,7 +158,7 @@ export default function InventoryCounter({
                 </button>
                 <div className="text-center flex-1">
                     <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold">
-                        {receipt.type === 'inbound' ? 'Phiếu Nhập' : 'Phiếu Xuất'}
+                        {receipt.type === 'inbound' ? 'Phiếu PO' : 'Phiếu Xuất'}
                     </p>
                     <p className="text-lg font-bold text-slate-800">{receipt.code}</p>
                 </div>
@@ -310,3 +310,4 @@ export default function InventoryCounter({
         </div>
     );
 }
+

@@ -23,7 +23,7 @@ const staffNavGroups: SidebarGroup[] = [
         items: [
             { href: "/dashboard/staff/warehouses", icon: BuildingStorefrontIcon, label: "Kho" },
             { href: "/dashboard/staff/products", icon: CubeIcon, label: "Hàng hóa" },
-            { href: "/dashboard/staff/inbound", icon: ArrowDownTrayIcon, label: "Phiếu nhập" },
+            { href: "/dashboard/staff/inbound", icon: ArrowDownTrayIcon, label: "Phiếu PO" },
             { href: "/dashboard/staff/outbound", icon: ArrowUpTrayIcon, label: "Phiếu xuất" },
         ],
     },

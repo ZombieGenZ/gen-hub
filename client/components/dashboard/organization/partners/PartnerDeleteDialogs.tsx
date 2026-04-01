@@ -45,7 +45,7 @@ export function PartnerDeleteDialogs({
                         <DialogDescription className="space-y-2">
                             <span>Bạn có chắc chắn muốn xóa đối tác &quot;{deleteTarget?.name}&quot;?</span>
                             <span className="block text-amber-600 text-xs bg-amber-50 p-2 rounded-lg border border-amber-200 mt-2">
-                                Các phiếu nhập/xuất lịch sử liên quan vẫn sẽ được lưu trữ để đối soát.
+                                Các phiếu PO/xuất lịch sử liên quan vẫn sẽ được lưu trữ để đối soát.
                             </span>
                         </DialogDescription>
                     </DialogHeader>
@@ -76,7 +76,7 @@ export function PartnerDeleteDialogs({
                         <DialogDescription className="space-y-2">
                             <span>Bạn có chắc chắn muốn xóa {selectedIdsCount} đối tác đã chọn?</span>
                             <span className="block text-amber-600 text-xs bg-amber-50 p-2 rounded-lg border border-amber-200 mt-2">
-                                Các phiếu nhập/xuất lịch sử liên quan vẫn sẽ được lưu trữ để đối soát.
+                                Các phiếu PO/xuất lịch sử liên quan vẫn sẽ được lưu trữ để đối soát.
                             </span>
                         </DialogDescription>
                     </DialogHeader>
@@ -102,3 +102,4 @@ export function PartnerDeleteDialogs({
         </>
     );
 }
+

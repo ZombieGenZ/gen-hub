@@ -63,7 +63,7 @@ export default function PutawayPage() {
                 setErrorMsg(
                     allItems.length
                         ? `Phiếu ${barcode} chưa hoàn thành kiểm đếm (chưa ở trạng thái sẵn sàng cất hàng)`
-                        : `Không tìm thấy phiếu nhập cho mã: ${barcode}`,
+                        : `Không tìm thấy phiếu PO cho mã: ${barcode}`,
                 );
                 setState('error');
                 return;
@@ -181,7 +181,7 @@ export default function PutawayPage() {
                     <PackagePlus className="w-14 h-14 text-teal-400" />
                 </div>
                 <h2 className="text-2xl font-bold text-slate-800 text-center">
-                    Quét Mã Phiếu Nhập
+                    Quét Mã Phiếu PO
                 </h2>
                 <p className="text-slate-500 text-center max-w-xs">
                     Quét phiếu đã hoàn thành kiểm đếm để bắt đầu cất hàng vào kệ
@@ -194,4 +194,5 @@ export default function PutawayPage() {
         </div>
     );
 }
+
 

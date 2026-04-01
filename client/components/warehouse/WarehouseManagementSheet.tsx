@@ -97,7 +97,7 @@ export const WarehouseManagementSheet = ({
                 setTotalItems(res.data.total || (res.data.items?.length || 0));
             }
         } catch (err) {
-            setError("Lỗi khi tải phiếu nhập.");
+            setError("Lỗi khi tải phiếu PO.");
         } finally {
             setLoading(false);
         }
@@ -244,7 +244,7 @@ export const WarehouseManagementSheet = ({
                                         <div className="w-5 h-5 bg-slate-500 rounded-md" />
                                     )}
                                 </div>
-                                Quản lý {type === 'inbound' ? 'Phiếu Nhập Kho' : type === 'outbound' ? 'Phiếu Xuất Kho' : 'Lịch sử Biến động'}
+                                Quản lý {type === 'inbound' ? 'Phiếu PO Kho' : type === 'outbound' ? 'Phiếu Xuất Kho' : 'Lịch sử Biến động'}
                             </SheetTitle>
                         </SheetHeader>
 
@@ -365,3 +365,4 @@ export const WarehouseManagementSheet = ({
         </>
     );
 };
+

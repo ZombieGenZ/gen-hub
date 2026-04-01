@@ -43,10 +43,10 @@ export function InboundHeader({
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h1 className="text-[32px] font-bold tracking-tight leading-[130%]">
-                        Phiếu nhập kho
+                        Phiếu PO
                     </h1>
                     <p className="text-muted-foreground mt-1">
-                        Quản lý và theo dõi {totalItems} phiếu nhập kho
+                        Quản lý và theo dõi {totalItems} phiếu PO
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -74,7 +74,7 @@ export function InboundHeader({
                         className="gap-2 bg-[#0F766E] hover:bg-[#0F766E]/90 text-white rounded-xl"
                     >
                         <PlusIcon className="w-4 h-4" />
-                        Tạo phiếu nhập
+                        Tạo phiếu PO
                     </Button>
                 </div>
             </div>
@@ -114,3 +114,4 @@ export function InboundHeader({
         </div>
     );
 }
+

@@ -167,7 +167,7 @@ export function StockLocationsTab({ productId }: StockLocationsTabProps) {
                                             </p>
                                             <p className="text-sm text-slate-400 mt-1">
                                                 Sản phẩm chưa được nhập vào vị trí lưu kho nào.
-                                                Tạo phiếu nhập kho để bắt đầu.
+                                                Tạo phiếu PO để bắt đầu.
                                             </p>
                                         </TableCell>
                                     </TableRow>
@@ -263,3 +263,4 @@ export function StockLocationsTab({ productId }: StockLocationsTabProps) {
         </div>
     );
 }
+
