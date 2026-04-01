@@ -46,11 +46,14 @@ export const useWarehouse = () => {
       return acc;
     }, {} as Record<BoxCategory, number>);
     
+    const fillRate = totalCapacity > 0 ? (state.boxes.length / totalCapacity) * 100 : 0;
+    
     return {
       totalRacks: state.racks.length,
       totalBoxes: state.boxes.length,
       totalCapacity,
       usedCapacity: state.boxes.length,
+      fillRate,
       categoryBreakdown,
     };
   }, [state.racks, state.boxes]);
