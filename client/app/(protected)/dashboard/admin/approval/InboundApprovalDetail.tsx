@@ -39,21 +39,21 @@ function formatDate(dateStr?: string | null) {
 }
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
-    PENDING:    { label: "Chờ duyệt",       color: "bg-yellow-50 text-yellow-700 border-yellow-200" },
-    APPROVED:   { label: "Đã duyệt",         color: "bg-blue-50 text-blue-700 border-blue-200" },
-    RECEIVING:  { label: "Đang kiểm đếm",    color: "bg-indigo-50 text-indigo-700 border-indigo-200" },
-    PROCESSING: { label: "Chờ cất hàng",     color: "bg-purple-50 text-purple-700 border-purple-200" },
-    PUTAWAY:    { label: "Đang cất hàng",    color: "bg-orange-50 text-orange-700 border-orange-200" },
-    COMPLETED:  { label: "Hoàn tất",         color: "bg-green-50 text-green-700 border-green-200" },
-    CANCELLED:  { label: "Đã huỷ",           color: "bg-red-50 text-red-700 border-red-200" },
+    PENDING: { label: "Chờ duyệt", color: "bg-yellow-50 text-yellow-700 border-yellow-200" },
+    APPROVED: { label: "Đã duyệt", color: "bg-blue-50 text-blue-700 border-blue-200" },
+    RECEIVING: { label: "Đang kiểm đếm", color: "bg-indigo-50 text-indigo-700 border-indigo-200" },
+    PROCESSING: { label: "Chờ cất hàng", color: "bg-purple-50 text-purple-700 border-purple-200" },
+    PUTAWAY: { label: "Đang cất hàng", color: "bg-orange-50 text-orange-700 border-orange-200" },
+    COMPLETED: { label: "Hoàn tất", color: "bg-green-50 text-green-700 border-green-200" },
+    CANCELLED: { label: "Đã huỷ", color: "bg-red-50 text-red-700 border-red-200" },
 };
 
 const INBOUND_STEPS = [
-    { key: "PENDING",    label: "Chờ duyệt" },
-    { key: "APPROVED",   label: "Đã duyệt" },
-    { key: "RECEIVING",  label: "Kiểm đếm" },
+    { key: "PENDING", label: "Chờ duyệt" },
+    { key: "APPROVED", label: "Đã duyệt" },
+    { key: "RECEIVING", label: "Kiểm đếm" },
     { key: "PROCESSING", label: "Cất hàng" },
-    { key: "COMPLETED",  label: "Hoàn tất" },
+    { key: "COMPLETED", label: "Hoàn tất" },
 ];
 
 const STEP_ORDER = ["PENDING", "APPROVED", "RECEIVING", "PROCESSING", "COMPLETED"];
@@ -69,12 +69,12 @@ function StepBar({ status }: { status: string }) {
                     <React.Fragment key={step.key}>
                         <div className="flex flex-col items-center min-w-16">
                             <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-colors
-                                ${ done ? "bg-[#0F766E] border-[#0F766E] text-white" :
-                                  active ? "bg-white border-[#0F766E] text-[#0F766E]" :
-                                  "bg-white border-muted-foreground/30 text-muted-foreground/50"}` }>
+                                ${done ? "bg-[#0F766E] border-[#0F766E] text-white" :
+                                    active ? "bg-white border-[#0F766E] text-[#0F766E]" :
+                                        "bg-white border-muted-foreground/30 text-muted-foreground/50"}`}>
                                 {done ? <CheckCircleIcon className="w-4 h-4" /> : idx + 1}
                             </div>
-                            <span className={`text-[10px] mt-1 text-center ${ active ? "font-semibold text-[#0F766E]" : done ? "text-[#0F766E]" : "text-muted-foreground/50"}`}>
+                            <span className={`text-[10px] mt-1 text-center ${active ? "font-semibold text-[#0F766E]" : done ? "text-[#0F766E]" : "text-muted-foreground/50"}`}>
                                 {step.label}
                             </span>
                         </div>
@@ -355,8 +355,8 @@ export default function InboundApprovalDetail({
                                         const isMatch = qty === d.expected_qty;
                                         const rowClass = qty === 0 ? "" :
                                             isMatch ? "approval-reconciliation__row--match" :
-                                            qty < d.expected_qty ? "approval-reconciliation__row--shortage" :
-                                            "approval-reconciliation__row--critical";
+                                                qty < d.expected_qty ? "approval-reconciliation__row--shortage" :
+                                                    "approval-reconciliation__row--critical";
                                         return (
                                             <tr key={d.id} className={`transition-colors ${rowClass}`}>
                                                 <td className="py-3 px-4 text-sm font-medium">{d.product?.name || "—"}</td>
@@ -419,7 +419,7 @@ export default function InboundApprovalDetail({
                                 </thead>
                                 <tbody className="divide-y">
                                     {data.details?.map((d, i) => {
-                                        const locs = ["A1","A2","B1","B2","C1","C2"];
+                                        const locs = ["A1", "A2", "B1", "B2", "C1", "C2"];
                                         return (
                                             <tr key={d.id}>
                                                 <td className="py-3 px-4 text-sm font-medium">{d.product?.name || "—"}</td>
