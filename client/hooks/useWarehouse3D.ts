@@ -136,7 +136,7 @@ export function transformLayoutTo3D(
                             },
                             color: categoryColors[category],
                             category,
-                            weight: inv.quantity_on_hand,
+                            weight: (inv.product_weight || 0.1) * inv.quantity_on_hand,
                             quantity: inv.quantity_on_hand,
                             createdAt: new Date(inv.created_at),
                         };
@@ -242,6 +242,9 @@ export function useWarehouse3D({ warehouseId, realtime = true }: UseWarehouse3DO
             0,
         );
 
+        const occupiedBlocks = new Set(boxes.map(b => `${b.rackId}-${b.row}-${b.column}-${b.level}`)).size;
+        const fillRate = totalCapacity > 0 ? (occupiedBlocks / totalCapacity) * 100 : 0;
+
         const categoryBreakdown = boxes.reduce((acc, box) => {
             acc[box.category] = (acc[box.category] || 0) + 1;
             return acc;
@@ -251,7 +254,8 @@ export function useWarehouse3D({ warehouseId, realtime = true }: UseWarehouse3DO
             totalRacks: racks.length,
             totalBoxes: boxes.length,
             totalCapacity,
-            usedCapacity: boxes.length,
+            usedCapacity: occupiedBlocks,
+            fillRate,
             categoryBreakdown,
         };
     }, [racks, boxes]);
@@ -388,7 +392,8 @@ export function useWarehouse3D({ warehouseId, realtime = true }: UseWarehouse3DO
 
         const rackBoxes = boxes.filter(b => b.rackId === rackId);
         const capacity = rack.rows * rack.columns * rack.levels;
-        const fillRate = capacity > 0 ? rackBoxes.length / capacity : 0;
+        const occupiedBlocks = new Set(rackBoxes.map(b => `${b.row}-${b.column}-${b.level}`)).size;
+        const fillRate = capacity > 0 ? occupiedBlocks / capacity : 0;
 
         const categories: Partial<Record<BoxCategory, number>> = {};
         let totalWeight = 0;

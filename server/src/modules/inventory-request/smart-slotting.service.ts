@@ -87,16 +87,12 @@ export class SmartSlottingService {
 
           const targetBin = availableBins[0];
 
-          // Tính Thể tích thực sự m3 của Ô kệ và tối đa chứa được bao nhiêu Items
-          const w = parseFloat(targetBin.dimensions.w);
-          const h = parseFloat(targetBin.dimensions.h);
-          const d = parseFloat(targetBin.dimensions.d);
-          const binVolume = w * h * d;
+          // MỖI Ô CHỈ CHỨA DUY NHẤT 1 THÙNG (Theo yêu cầu: không chồng hàng)
+          const maxCapacityQty = 1;
           
-          const maxCapacityQty = Math.floor(binVolume / item.volume_per_unit);
-          
-          // Gán tối đa lượng hàng còn lại (Hoặc cho đầy Kệ này rồi lặp lại tìm Kệ khác)
+          // Gán 1 đơn vị hàng vào ô này
           const assignedQty = Math.min(remainingQty, maxCapacityQty);
+
 
           // 3. Mark the Bin is reserved (Chiếm Kệ ngay lập tức để không người nào ghi đè)
           await tx.$queryRaw`

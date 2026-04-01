@@ -8,9 +8,7 @@ interface StatsOverlayProps {
 }
 
 const StatsOverlay = ({ stats }: StatsOverlayProps) => {
-  const fillPercentage = stats.totalCapacity > 0 
-    ? Math.round((stats.usedCapacity / stats.totalCapacity) * 100) 
-    : 0;
+  const fillPercentage = Math.round(stats.fillRate);
 
   const getFillColor = (percentage: number) => {
     if (percentage < 30) return '#22c55e';

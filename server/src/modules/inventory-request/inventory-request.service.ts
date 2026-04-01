@@ -105,7 +105,7 @@ export class InventoryRequestService {
                 }),
             },
             include: {
-                product: { select: { id: true, name: true, sku: true, image_url: true } },
+                product: { select: { id: true, name: true, sku: true, image_url: true, weight: true, length: true, width: true, height: true } },
                 batch: { select: { id: true, code: true, expiry_date: true } },
                 block: {
                     select: {
@@ -134,6 +134,10 @@ export class InventoryRequestService {
             product_name: inv.product.name,
             sku: inv.product.sku,
             image_url: inv.product.image_url,
+            product_weight: inv.product.weight ? Number(inv.product.weight) : 0,
+            product_length: inv.product.length ? Number(inv.product.length) : 0,
+            product_width: inv.product.width ? Number(inv.product.width) : 0,
+            product_height: inv.product.height ? Number(inv.product.height) : 0,
             batch_code: inv.batch?.code || null,
             expiry_date: inv.batch?.expiry_date?.toISOString() || null,
             quantity: inv.quantity.toNumber(),
@@ -299,7 +303,7 @@ export class InventoryRequestService {
                                     });
 
                                     for (const blockTpl of shelfTpl.blocks) {
-                                        await tx.block.create({
+                                        const block = await tx.block.create({
                                             data: {
                                                 shelf_id: shelf.id,
                                                 name: blockTpl.name,
@@ -316,7 +320,28 @@ export class InventoryRequestService {
                                                 created_by: 'SYSTEM_BACKFILL',
                                             },
                                         });
+
+                                        // Tạo Bin tương ứng để phục vụ AI Slotting
+                                        await (tx as any).bin.create({
+                                            data: {
+                                                uid: `BIN-${warehouse.id.substring(0, 8)}-${block.code}`,
+                                                warehouse_id: warehouse.id,
+                                                zone_type: 'PICKING',
+                                                status: 'Available',
+                                                position_xyz: {
+                                                    x: Number(row.position_x || 0) + Number(rack.position_x || 0) + Number(block.position_x || 0),
+                                                    y: Number(shelf.height || 0), 
+                                                    z: Number(row.position_y || 0) + Number(rack.position_y || 0) + Number(block.position_y || 0),
+                                                },
+                                                dimensions: {
+                                                    w: Number(block.dimensions_width || 1),
+                                                    h: Number(block.dimensions_height || 1),
+                                                    d: Number(rack.dimensions_depth || 1),
+                                                },
+                                            },
+                                        });
                                     }
+
                                 }
                             }
                         }
@@ -2339,49 +2364,45 @@ export class InventoryRequestService {
         for (const block of sortedBlocks) {
             if (remainingQty <= 0) break;
 
-            const blockRemaining = blockCapacities.get(block.id) ?? 0;
-            if (blockRemaining <= 0) continue; // Block đã đầy, skip
+            // Tìm Bin tương ứng để kiểm tra trạng thái Available
+            const bin = await tx.bin.findFirst({
+                where: { 
+                    warehouse_id: warehouseId,
+                    uid: { contains: block.code }, // Khớp theo code block
+                    is_deleted: false 
+                }
+            });
 
-            // Chỉ fill tối đa bằng capacity còn lại của block
-            const fillQty = Math.min(remainingQty, blockRemaining);
+            // Nếu không có Bin hoặc Bin không sẵn sàng (đã có hàng) -> Bỏ qua
+            if (!bin || bin.status !== 'Available') {
+                continue;
+            }
 
-            const existingInventory = await tx.inventory.findFirst({
-                where: {
+            // QUY TẮC MỚI: Chỉ fill đúng 1 đơn vị vào mỗi ô
+            const fillQty = 1;
+
+            // Tạo bản ghi tồn kho với cả block_id và bin_id để hiển thị 3D chính xác
+            await tx.inventory.create({
+                data: {
                     organization_id: orgId,
                     warehouse_id: warehouseId,
                     block_id: block.id,
+                    bin_id: bin.id, // Gán bin_id để AI Slotting nhận diện
                     product_id: productId,
                     batch_id: batchId,
-                    is_deleted: false,
+                    quantity: fillQty,
+                    quantity_on_hand: fillQty,
+                    quantity_allocated: 0,
+                    quantity_available: fillQty,
+                    created_by: actorId,
                 },
             });
 
-            if (existingInventory) {
-                await tx.inventory.update({
-                    where: { id: existingInventory.id },
-                    data: {
-                        quantity: { increment: fillQty },
-                        quantity_on_hand: { increment: fillQty },
-                        quantity_available: { increment: fillQty },
-                        updated_by: actorId,
-                    },
-                });
-            } else {
-                await tx.inventory.create({
-                    data: {
-                        organization_id: orgId,
-                        warehouse_id: warehouseId,
-                        block_id: block.id,
-                        product_id: productId,
-                        batch_id: batchId,
-                        quantity: fillQty,
-                        quantity_on_hand: fillQty,
-                        quantity_allocated: 0,
-                        quantity_available: fillQty,
-                        created_by: actorId,
-                    },
-                });
-            }
+            // Cập nhật trạng thái Bin sang Occupied
+            await tx.bin.update({
+                where: { id: bin.id },
+                data: { status: 'Occupied' }
+            });
 
             await tx.inventoryTransaction.create({
                 data: {
@@ -2397,26 +2418,9 @@ export class InventoryRequestService {
                 },
             });
 
-            // Cập nhật is_overloaded nếu block đã đầy
-            const maxCapacity = block.max_weight_capacity ? Number(block.max_weight_capacity) : null;
-            if (maxCapacity !== null) {
-                const newRemaining = (blockCapacities.get(block.id) ?? 0) - fillQty;
-                const overloadThreshold = block.shelf?.rack?.overload_threshold_percent
-                    ? Number(block.shelf.rack.overload_threshold_percent)
-                    : 10;
-                const overloadLimit = maxCapacity * (1 + overloadThreshold / 100);
-                const newTotal = maxCapacity - newRemaining;
-
-                if (newTotal >= overloadLimit) {
-                    await tx.block.update({
-                        where: { id: block.id },
-                        data: { is_overloaded: true },
-                    });
-                }
-            }
-
             remainingQty -= fillQty;
         }
+
 
         // Nếu vẫn còn hàng chưa xếp hết → cảnh báo nhưng không throw (tránh rollback)
         if (remainingQty > 0) {
@@ -2439,10 +2443,12 @@ export class InventoryRequestService {
             totalExpectedQty += Number(detail.expected_qty);
         }
 
-        const UNIT_PER_BLOCK = 1000;
+        // QUY TẮC MỚI: 1 ô chứa đúng 1 thùng
+        const UNIT_PER_BLOCK = 1; 
         const blocksNeeded = Math.ceil(totalExpectedQty / UNIT_PER_BLOCK);
         if (blocksNeeded === 0) return;
 
+        // Đếm số ô còn trống thực tế (đã trừ các ô có hàng hoặc đã được gán)
         const totalBlocksCount = await tx.block.count({
             where: {
                 shelf: { rack: { row: { warehouse_id: warehouseId, is_deleted: false }, is_deleted: false }, is_deleted: false },
@@ -2450,46 +2456,46 @@ export class InventoryRequestService {
             }
         });
 
-        const occupiedBlocksAggregation = await tx.inventory.groupBy({
-            by: ['block_id'],
+        const occupiedBins = await tx.bin.count({
             where: {
                 warehouse_id: warehouseId,
-                is_deleted: false,
-                quantity_available: { gt: 0 }
+                status: { in: ['Reserved', 'Occupied'] },
+                is_deleted: false
             }
         });
 
-        const occupiedCount = occupiedBlocksAggregation.length;
-        const emptyBlocks = totalBlocksCount - occupiedCount;
+        const emptyBlocks = totalBlocksCount - occupiedBins;
 
         if (emptyBlocks >= blocksNeeded) {
-            return; // Enough space, no need to generate new records
+            return; // Đủ chỗ, không cần sinh thêm
         }
 
         const blocksToGen = blocksNeeded - emptyBlocks;
-        const blocksPerShelf = 4;
-        const shelvesPerRack = 4;
-        const blocksPerRack = blocksPerShelf * shelvesPerRack;
+        const blocksPerShelf = 12; // 12 ô mỗi tầng
+        const shelvesPerRack = 3;  // 3 tầng mỗi kệ
+        const blocksPerRack = blocksPerShelf * shelvesPerRack; // 36 ô/kệ
         const racksNeeded = Math.ceil(blocksToGen / blocksPerRack);
 
+        const warehouse = await tx.warehouse.findUnique({ where: { id: warehouseId } });
         const lastRow = await tx.row.findFirst({
             where: { warehouse_id: warehouseId, is_deleted: false },
             orderBy: { position_y: 'desc' },
         });
 
+        // Mỗi lần sinh 1 dãy mới cách dãy cũ 3m (Lối đi)
         let nextPositionY = lastRow && lastRow.position_y ? Number(lastRow.position_y) + 3 : 2;
 
         const row = await tx.row.create({
             data: {
                 warehouse_id: warehouseId,
-                name: `Dãy nhập tự động (Rec: ${receiptId.slice(-4)})`,
-                code: `ROW-AUTO-${Date.now()}`,
-                description: 'Tự động sinh khi duyệt phiếu nhập',
+                name: `Dãy bổ sung (Phiếu: ${receiptId.slice(-6)})`,
+                code: `ROW-EXT-${Date.now().toString().slice(-6)}`,
+                description: 'Tự động mở rộng khi nhập hàng',
                 is_rented: false,
                 position_x: 2,
                 position_y: nextPositionY,
                 position_rotation: 0,
-                total_weight_capacity: 10000 * racksNeeded,
+                total_weight_capacity: 50000,
                 is_active: true,
                 is_deleted: false,
                 created_by: actorId,
@@ -2500,17 +2506,17 @@ export class InventoryRequestService {
             const rack = await tx.rack.create({
                 data: {
                     row_id: row.id,
-                    name: `Kệ tự động ${r + 1}`,
-                    code: `RACK-AUTO-${Date.now()}-${r}`,
-                    position_x: 2 + (r * 4.5),
+                    name: `Rack-${(r + 1).toString().padStart(2, '0')}`,
+                    code: `RACK-${Date.now().toString().slice(-4)}-${r}`,
+                    position_x: 2 + (r * 6), // Khoảng cách giữa các kệ trong dãy
                     position_y: nextPositionY,
                     position_rotation: 0,
-                    dimensions_width: 4,
+                    dimensions_width: 12, // Kệ dài 12m cho 12 ô
                     dimensions_depth: 1,
-                    dimensions_height: 4,
+                    dimensions_height: 3,
                     default_block_max_weight_capacity: 1000,
-                    total_weight_capacity: 16000,
-                    total_height: 4,
+                    total_weight_capacity: 36000,
+                    total_height: 3,
                     overload_threshold_percent: 10,
                     is_rented: false,
                     is_active: true,
@@ -2523,10 +2529,10 @@ export class InventoryRequestService {
                 const shelf = await tx.shelf.create({
                     data: {
                         rack_id: rack.id,
-                        name: `Tầng ${s + 1}`,
-                        code: `SHELF-AUTO-${Date.now()}-${r}-${s}`,
-                        height: 1,
-                        total_weight_capacity: 4000,
+                        name: `Level ${s + 1}`,
+                        code: `LV-${rack.code}-${s + 1}`,
+                        height: s + 1, // Độ cao tầng
+                        total_weight_capacity: 12000,
                         is_active: true,
                         is_deleted: false,
                         created_by: actorId,
@@ -2534,12 +2540,12 @@ export class InventoryRequestService {
                 });
 
                 for (let b = 0; b < blocksPerShelf; b++) {
-                    await tx.block.create({
+                    const block = await tx.block.create({
                         data: {
                             shelf_id: shelf.id,
-                            name: `Ô ${b + 1}`,
-                            code: `BLOCK-AUTO-${Date.now()}-${r}-${s}-${b}`,
-                            position_x: b * 1, // 4 ô xếp ngang trong kệ 4m
+                            name: `Slot ${b + 1}`,
+                            code: `B-${shelf.code}-${b + 1}`,
+                            position_x: b * 1, // Xếp ngang 1m mỗi ô
                             position_y: 0,
                             dimensions_width: 1,
                             dimensions_height: 1,
@@ -2550,10 +2556,31 @@ export class InventoryRequestService {
                             created_by: actorId,
                         },
                     });
+
+                    // Quan trọng: Tạo BIN đồng bộ cho AI Slotting
+                    await (tx as any).bin.create({
+                        data: {
+                            uid: `BIN-${block.code}`,
+                            warehouse_id: warehouseId,
+                            zone_type: 'PICKING',
+                            status: 'Available',
+                            position_xyz: {
+                                x: Number(row.position_x || 0) + Number(rack.position_x || 0) + Number(block.position_x || 0),
+                                y: Number(shelf.height || 0),
+                                z: Number(row.position_y || 0) + Number(rack.position_y || 0),
+                            },
+                            dimensions: {
+                                w: 1,
+                                h: 1,
+                                d: 1,
+                            },
+                        },
+                    });
                 }
             }
         }
     }
+
 
     async getInboundTemplate(): Promise<Buffer> {
         const columns = [

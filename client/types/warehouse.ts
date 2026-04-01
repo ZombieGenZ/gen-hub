@@ -78,7 +78,8 @@ export interface WarehouseStats {
   totalRacks: number;
   totalBoxes: number;
   totalCapacity: number;
-  usedCapacity: number;
+  usedCapacity: number; // Đây sẽ là số lượng ô bị chiếm dụng
+  fillRate: number;      // Tỷ lệ lấp đầy (%)
   categoryBreakdown: Record<BoxCategory, number>;
 }
 

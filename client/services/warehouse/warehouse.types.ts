@@ -76,6 +76,10 @@ export interface InventoryStockItem {
     product_name: string;
     sku: string;
     image_url: string | null;
+    product_weight?: number;
+    product_length?: number;
+    product_width?: number;
+    product_height?: number;
     batch_code: string | null;
     expiry_date: string | null;
     quantity: number;
