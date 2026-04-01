@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { WarehouseManagerInventoryService } from "@/services/inventory/warehouse-manager-inventory.service";
 import { useToast } from "@/contexts/ToastContext";
 import type { OutboundRequest, PickingStrategy } from "@/services/inventory/inventory.types";
+import { useApprovalDetailRealtime } from "@/hooks/useApprovalDetailRealtime";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,24 @@ import {
 import RejectReasonDialog from "./RejectReasonDialog";
 
 const wmInventoryService = new WarehouseManagerInventoryService();
+
+const OUTBOUND_DETAIL_REALTIME_EVENTS = [
+    "outbound:approved",
+    "outbound:rejected",
+    "outbound:split",
+    "outbound:picking-confirmed",
+    "outbound:checking-confirmed",
+    "outbound:shipment-completed",
+];
+
+const OUTBOUND_REALTIME_TOAST_MESSAGES: Record<string, string> = {
+    "outbound:approved": "Phiếu xuất đã được duyệt",
+    "outbound:rejected": "Phiếu xuất đã bị từ chối",
+    "outbound:split": "Phiếu xuất đã được tách",
+    "outbound:picking-confirmed": "Đã xác nhận nhặt hàng",
+    "outbound:checking-confirmed": "Đã xác nhận kiểm tra",
+    "outbound:shipment-completed": "Phiếu xuất đã hoàn tất",
+};
 
 // ────────────────────────────────────────────────
 // Strategy options (for PENDING step)
@@ -135,6 +154,7 @@ export default function OutboundApprovalDetail({
     const [splitResult, setSplitResult] = useState<SplitResultInfo | null>(null);
 
     const [rejectOpen, setRejectOpen] = useState(false);
+    const lastRealtimeToastRef = useRef<{ eventName: string; at: number } | null>(null);
 
     const fetchData = useCallback(async () => {
         try {
@@ -167,6 +187,29 @@ export default function OutboundApprovalDetail({
         setSplitResult(null);
         fetchData();
     }, [fetchData]);
+
+    useApprovalDetailRealtime({
+        ticketId,
+        events: OUTBOUND_DETAIL_REALTIME_EVENTS,
+        onRefresh: fetchData,
+        getEventTicketId: (payload) => {
+            const data = payload as { exportId?: string; splitExportId?: string } | undefined;
+            return data?.splitExportId || data?.exportId;
+        },
+        onMatchedEvent: (eventName) => {
+            const now = Date.now();
+            const lastToast = lastRealtimeToastRef.current;
+            if (lastToast && lastToast.eventName === eventName && now - lastToast.at < 1500) {
+                return;
+            }
+
+            const message = OUTBOUND_REALTIME_TOAST_MESSAGES[eventName];
+            if (message) {
+                showToast(message, "success");
+                lastRealtimeToastRef.current = { eventName, at: now };
+            }
+        },
+    });
 
     const getToken = () => {
         const t = authStorage.getAccessToken();

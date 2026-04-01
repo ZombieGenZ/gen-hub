@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { InventoryService } from "@/services/inventory/inventory.service";
 import { WarehouseManagerInventoryService } from "@/services/inventory/warehouse-manager-inventory.service";
 import { useToast } from "@/contexts/ToastContext";
 import type { InboundRequest } from "@/services/inventory/inventory.types";
+import { useApprovalDetailRealtime } from "@/hooks/useApprovalDetailRealtime";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +25,22 @@ import RejectReasonDialog from "./RejectReasonDialog";
 
 const inventoryService = new InventoryService();
 const wmInventoryService = new WarehouseManagerInventoryService();
+
+const INBOUND_DETAIL_REALTIME_EVENTS = [
+    "inbound:approved",
+    "inbound:rejected",
+    "inbound:receiving-started",
+    "inbound:receiving-confirmed",
+    "inbound:putaway-confirmed",
+];
+
+const INBOUND_REALTIME_TOAST_MESSAGES: Record<string, string> = {
+    "inbound:approved": "Phiếu đã được duyệt",
+    "inbound:rejected": "Phiếu đã bị từ chối",
+    "inbound:receiving-started": "Đã bắt đầu kiểm đếm",
+    "inbound:receiving-confirmed": "Đã xác nhận kiểm đếm",
+    "inbound:putaway-confirmed": "Phiếu đã hoàn tất nhập kho",
+};
 
 // ─────────────────────────────────
 // Helpers
@@ -45,7 +62,7 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
     PROCESSING: { label: "Chờ cất hàng", color: "bg-purple-50 text-purple-700 border-purple-200" },
     PUTAWAY: { label: "Đang cất hàng", color: "bg-orange-50 text-orange-700 border-orange-200" },
     COMPLETED: { label: "Hoàn tất", color: "bg-green-50 text-green-700 border-green-200" },
-    CANCELLED: { label: "Đã huỷ", color: "bg-red-50 text-red-700 border-red-200" },
+    CANCELLED: { label: "Đã hủy", color: "bg-red-50 text-red-700 border-red-200" },
 };
 
 const INBOUND_STEPS = [
@@ -108,6 +125,7 @@ export default function InboundApprovalDetail({
     const [actualQty, setActualQty] = useState<Record<string, number>>({});
 
     const [rejectOpen, setRejectOpen] = useState(false);
+    const lastRealtimeToastRef = useRef<{ eventName: string; at: number } | null>(null);
 
     const fetchData = useCallback(async () => {
         try {
@@ -130,6 +148,29 @@ export default function InboundApprovalDetail({
     }, [ticketId, showToast]);
 
     useEffect(() => { fetchData(); }, [fetchData]);
+
+    useApprovalDetailRealtime({
+        ticketId,
+        events: INBOUND_DETAIL_REALTIME_EVENTS,
+        onRefresh: fetchData,
+        getEventTicketId: (payload) => {
+            const data = payload as { receiptId?: string } | undefined;
+            return data?.receiptId;
+        },
+        onMatchedEvent: (eventName) => {
+            const now = Date.now();
+            const lastToast = lastRealtimeToastRef.current;
+            if (lastToast && lastToast.eventName === eventName && now - lastToast.at < 1500) {
+                return;
+            }
+
+            const message = INBOUND_REALTIME_TOAST_MESSAGES[eventName];
+            if (message) {
+                showToast(message, "success");
+                lastRealtimeToastRef.current = { eventName, at: now };
+            }
+        },
+    });
 
     const getToken = () => {
         const t = authStorage.getAccessToken();
@@ -489,7 +530,7 @@ export default function InboundApprovalDetail({
                             <ExclamationTriangleIcon className="w-8 h-8 text-red-500" />
                         </div>
                         <div>
-                            <p className="font-bold text-[16px] text-red-600">Phiếu đã bị huỷ</p>
+                            <p className="font-bold text-[16px] text-red-600">Phiếu đã bị hủy</p>
                             {data.notes && <p className="text-sm text-muted-foreground mt-1">Lý do: {data.notes}</p>}
                         </div>
                     </div>
