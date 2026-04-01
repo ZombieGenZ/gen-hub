@@ -78,7 +78,7 @@ function getStatusCfg(status: string) {
 function WarehouseCard({ contract }: { contract: RentalContractListItem }) {
     const statusCfg = getStatusCfg(contract.status);
     const days = daysUntil(contract.expired_at);
-    
+
     // Ưu tiên lấy tên từ template detail mới fetch thêm
     const firstDetail = contract.details?.[0];
     const warehouseName = firstDetail?.warehouse_template?.name ?? contract.warehouses?.[0]?.name ?? contract.name ?? "—";
@@ -97,15 +97,15 @@ function WarehouseCard({ contract }: { contract: RentalContractListItem }) {
                 {/* Header banner/image */}
                 <div className="relative h-36 overflow-hidden bg-muted flex items-center justify-center">
                     {warehouseImage ? (
-                        <img 
-                            src={warehouseImage} 
+                        <img
+                            src={warehouseImage}
                             alt={warehouseName}
                             className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         />
                     ) : (
                         <div className="absolute inset-0 bg-gradient-to-br from-brand/20 via-brand/10 to-transparent" />
                     )}
-                    
+
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
 
                     {/* Status badge */}
@@ -272,7 +272,7 @@ export default function MyWarehousesPage() {
                 limit: 50,
                 page: 1,
             });
-            
+
             if (data && data.items) {
                 setContracts(data.items);
             } else if (Array.isArray(data)) {
@@ -346,7 +346,7 @@ export default function MyWarehousesPage() {
             // Lấy tên từ cả details mới và warehouses cũ để search
             const detailNames = (c.details ?? []).map(d => d.warehouse_template?.name?.toLowerCase() ?? "").join(" ");
             const warehouseNames = (c.warehouses ?? []).map(w => w.name.toLowerCase()).join(" ");
-            
+
             const matchSearch =
                 q === "" ||
                 (c.name ?? "").toLowerCase().includes(q) ||

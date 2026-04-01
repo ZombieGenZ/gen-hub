@@ -340,8 +340,8 @@ export const WarehouseManagementSheet = ({
     return (
         <>
             <Sheet open={open} onOpenChange={onOpenChange}>
-                <SheetContent 
-                    side="right" 
+                <SheetContent
+                    side="right"
                     className="w-full sm:max-w-[85vw] backdrop-blur-xl bg-background/90 border-l border-white/10 shadow-2xl p-0"
                 >
                     <div className="h-full flex flex-col">

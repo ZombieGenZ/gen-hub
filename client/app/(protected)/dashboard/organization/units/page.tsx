@@ -512,8 +512,8 @@ export default function UnitManagementPage() {
                                                 variant={currentPage === page ? "default" : "outline"}
                                                 size="icon"
                                                 className={`h-8 w-8 rounded-lg text-xs ${currentPage === page
-                                                        ? "bg-[#0F766E] hover:bg-[#0D6B63] text-white"
-                                                        : ""
+                                                    ? "bg-[#0F766E] hover:bg-[#0D6B63] text-white"
+                                                    : ""
                                                     }`}
                                                 onClick={() => setCurrentPage(page)}
                                             >

@@ -108,8 +108,8 @@ export default function ContractManagementPage() {
             };
 
             const data = await rentalContractService.getOrgRentalContracts(token, currentOrgId, params);
-            
-            if(!data) {
+
+            if (!data) {
                 showToast("Không thể tải hợp đồng", "error");
                 setContracts([]);
                 setTotal(0);

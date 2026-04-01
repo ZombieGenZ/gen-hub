@@ -68,7 +68,7 @@ export default function CustomerContractDetailPage() {
                 const token = authStorage.getAccessToken();
                 if (!token) { router.push("/login"); return; }
                 setLoading(true);
-                
+
                 const currentOrgId = await orgHelper.getOrgId(token);
                 setOrgId(currentOrgId);
                 const res = await rentalContractService.getOrgRentalContractById(token, currentOrgId, contractId);
@@ -156,8 +156,8 @@ export default function CustomerContractDetailPage() {
                 </div>
                 <div className="flex items-center gap-2">
                     {(contract.status === "ACTIVE" || contract.status.startsWith("OVERDUE")) && (
-                        <Button 
-                            variant="destructive" 
+                        <Button
+                            variant="destructive"
                             size="sm"
                             onClick={() => setShowRefundModal(true)}
                         >

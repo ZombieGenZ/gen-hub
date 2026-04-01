@@ -52,7 +52,7 @@ export default function CustomerDashboardOverview() {
                 // User info available
                 const currentOrgId = user?.organization_id;
                 // Found OrgID
-                
+
                 if (currentOrgId) {
                     setOrgId(currentOrgId);
                 }
@@ -120,12 +120,12 @@ export default function CustomerDashboardOverview() {
                 <div className="lg:col-span-2">
                     <CustomerStockFlow key={`stock-flow-${orgId}-${refreshTick}`} orgId={orgId} />
                 </div>
-                
+
                 {/* Top Products (1/3) */}
                 <div>
                     <CustomerTopProducts key={`top-products-${orgId}-${refreshTick}`} orgId={orgId} />
                 </div>
-                
+
                 {/* Stocks Alert (1/3) */}
                 <div>
                     <CustomerStockAlerts key={`stock-alerts-${orgId}-${refreshTick}`} orgId={orgId} />

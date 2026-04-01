@@ -59,10 +59,10 @@ export default function CustomerRefundRequestsPage() {
 
             // Fetch list
             const res = await refundService.listMyRequests(token);
-            
+
             // Depending on ApiResponse format
             const data = (res as any).data ?? res;
-            
+
             if (data && data.items) {
                 setRequests(data.items);
                 setTotal(data.total || 0);
@@ -124,7 +124,7 @@ export default function CustomerRefundRequestsPage() {
     });
 
     const getStatusBadge = (status: RefundStatus | string) => {
-        switch(status) {
+        switch (status) {
             case "PENDING": return <Badge variant="outline" className="text-yellow-600 border-yellow-300 bg-yellow-50">Chờ xử lý</Badge>;
             case "ACCEPTED":
             case "APPROVED": return <Badge variant="outline" className="text-green-600 border-green-300 bg-green-50">Đã duyệt</Badge>;
