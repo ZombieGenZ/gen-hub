@@ -337,12 +337,14 @@ export function OrganizationForm({
                     'name',
                     'Tên công ty',
                     <BuildingOffice2Icon className="w-4 h-4 text-slate-400" />,
+                    'Nhập tên công ty đầy đủ',
                     true
                 )}
                 {renderField(
                     'international_name',
                     'Tên quốc tế',
                     <BuildingOffice2Icon className="w-4 h-4 text-slate-400" />,
+                    'Nhập tên quốc tế (nếu có)',
                     false
                 )}
             </div>
@@ -402,12 +404,14 @@ export function OrganizationForm({
                         'representative_name',
                         'Họ và tên',
                         <UserIcon className="w-4 h-4 text-slate-400" />,
+                        'Họ và tên người đại diện',
                         true
                     )}
                     {renderField(
                         'representative_title',
                         'Chức danh',
                         <IdentificationIcon className="w-4 h-4 text-slate-400" />,
+                        'Chức danh (ví dụ: Giám đốc)',
                         false
                     )}
                 </div>
