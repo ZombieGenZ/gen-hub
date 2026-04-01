@@ -104,7 +104,7 @@ const routeGroups: RouteGroup[] = [
             { path: "/dashboard/organization/roles", label: "Roles", description: "Manage user roles and permissions" },
             { path: "/dashboard/organization/units", label: "Units", description: "Manage product units" },
             { path: "/dashboard/organization/products", label: "Products", description: "Internal product management" },
-            { path: "/dashboard/organization/inbound", label: "Inbound Requests", description: "Inbound operations (ASN, Putaway)" },
+            { path: "/dashboard/organization/purchase-order", label: "Inbound Requests", description: "Inbound operations (ASN, Putaway)" },
             { path: "/dashboard/organization/outbound", label: "Outbound Requests", description: "Outbound operations (Picking, Verification)" },
             { path: "/dashboard/organization/organization-settings", label: "Organization Settings", description: "Organization settings & profile" },
             { path: "/dashboard/organization/refund-requests", label: "Refund Requests", description: "Request refunds" },

@@ -1,1 +1,1 @@
-export { default } from "../../organization/inbound/page";
+export { default } from "../../organization/purchase-order/page";

@@ -150,7 +150,7 @@ export function InboundTable({
                                         <tr
                                             key={item.id}
                                             className="hover:bg-muted/50 transition-colors group cursor-pointer"
-                                            onClick={() => router.push(`/dashboard/organization/inbound/${item.id}`)}
+                                            onClick={() => router.push(`/dashboard/organization/purchase-order/${item.id}`)}
                                         >
                                             <td className="py-4 px-4">
                                                 <span className="font-semibold text-sm text-[#0F766E]">
@@ -190,7 +190,7 @@ export function InboundTable({
                                                         <DropdownMenuContent align="end">
                                                             <DropdownMenuItem
                                                                 onClick={() =>
-                                                                    router.push(`/dashboard/organization/inbound/${item.id}`)
+                                                                    router.push(`/dashboard/organization/purchase-order/${item.id}`)
                                                                 }
                                                             >
                                                                 <MagnifyingGlassIcon className="w-4 h-4 mr-2" />

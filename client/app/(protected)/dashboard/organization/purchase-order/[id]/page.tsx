@@ -24,7 +24,7 @@ import {
     MapPinIcon,
 } from "@heroicons/react/24/outline";
 
-import "../inbound.css";
+import "../purchase-order.css";
 
 const inventoryService = new InventoryService();
 
@@ -203,7 +203,7 @@ export default function InboundDetailPage() {
             <div className="space-y-6">
                 <Button
                     variant="ghost"
-                    onClick={() => router.push("/dashboard/organization/inbound")}
+                    onClick={() => router.push("/dashboard/organization/purchase-order")}
                     className="gap-2 rounded-xl"
                 >
                     <ArrowLeftIcon className="w-4 h-4" />
@@ -228,7 +228,7 @@ export default function InboundDetailPage() {
                     <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => router.push("/dashboard/organization/inbound")}
+                        onClick={() => router.push("/dashboard/organization/purchase-order")}
                         className="rounded-full h-10 w-10"
                     >
                         <ArrowLeftIcon className="w-5 h-5" />

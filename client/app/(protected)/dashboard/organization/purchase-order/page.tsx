@@ -8,7 +8,7 @@ import { useDebounce } from "@/hooks/use-debounce";
 import { useToast } from "@/contexts/ToastContext";
 import type { InboundRequest, ReceiptStatus } from "@/services/inventory/inventory.types";
 
-import "./inbound.css";
+import "./purchase-order.css";
 
 // Extracted Components
 import { InboundHeader } from "@/components/dashboard/organization/inbound/InboundHeader";
@@ -121,7 +121,7 @@ export default function InboundListPage() {
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `inbound-${new Date().toISOString().split('T')[0]}.xlsx`;
+            a.download = `purchase-order-${new Date().toISOString().split('T')[0]}.xlsx`;
             document.body.appendChild(a);
             a.click();
             window.URL.revokeObjectURL(url);

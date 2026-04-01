@@ -456,7 +456,7 @@ export default function PartnerDetailPage() {
                                                                 key={receipt.id}
                                                                 className="hover:bg-slate-50/50 cursor-pointer transition-colors"
                                                                 onClick={() =>
-                                                                    router.push(`/dashboard/organization/inbound/${receipt.id}`)
+                                                                    router.push(`/dashboard/organization/purchase-order/${receipt.id}`)
                                                                 }
                                                             >
                                                                 <TableCell>
