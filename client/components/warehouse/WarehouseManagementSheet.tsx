@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { io, type Socket } from "socket.io-client";
 import {
     Sheet,
     SheetContent,
@@ -12,13 +12,14 @@ import { authStorage } from "@/services/auth/auth-storage.service";
 import { InventoryService } from "@/services/inventory/inventory.service";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useToast } from "@/contexts/ToastContext";
+import { orgHelper } from "@/lib/organization.utils";
 
 // Inbound Components
 import { InboundHeader } from "@/components/dashboard/organization/inbound/InboundHeader";
 import { InboundTable, ITEMS_PER_PAGE as INBOUND_PAGE } from "@/components/dashboard/organization/inbound/InboundTable";
 import { InboundCancelDialog } from "@/components/dashboard/organization/inbound/InboundCancelDialog";
 import { CreateInboundDialog } from "@/components/dashboard/organization/inbound/CreateInboundDialog";
-import type { InboundRequest, ReceiptStatus, InventoryTransaction, InventorySummary, TransactionType } from "@/services/inventory/inventory.types";
+import type { InboundRequest, ReceiptStatus, InventoryTransaction, TransactionType } from "@/services/inventory/inventory.types";
 
 // History Components
 import { HistoryHeader } from "@/components/dashboard/organization/history/HistoryHeader";
@@ -45,7 +46,6 @@ export const WarehouseManagementSheet = ({
     open,
     onOpenChange,
 }: WarehouseManagementSheetProps) => {
-    const router = useRouter();
     const { showToast } = useToast();
 
     // ── Common state ──
@@ -76,6 +76,7 @@ export const WarehouseManagementSheet = ({
 
     const [isProcessing, setIsProcessing] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
+    const [socket, setSocket] = useState<Socket | null>(null);
 
     // ── Fetch Inbound ──
     const fetchInbound = useCallback(async () => {
@@ -96,7 +97,7 @@ export const WarehouseManagementSheet = ({
                 setInboundItems(res.data.items || []);
                 setTotalItems(res.data.total || (res.data.items?.length || 0));
             }
-        } catch (err) {
+        } catch {
             setError("Lỗi khi tải phiếu PO.");
         } finally {
             setLoading(false);
@@ -122,7 +123,7 @@ export const WarehouseManagementSheet = ({
                 setOutboundItems(res.data.items || []);
                 setTotalItems(res.data.total || (res.data.items?.length || 0));
             }
-        } catch (err) {
+        } catch {
             setError("Lỗi khi tải phiếu xuất.");
         } finally {
             setLoading(false);
@@ -149,7 +150,7 @@ export const WarehouseManagementSheet = ({
                 setHistoryItems(res.data.items || []);
                 setTotalItems(res.data.total || (res.data.items?.length || 0));
             }
-        } catch (err) {
+        } catch {
             setError("Lỗi khi tải lịch sử.");
         } finally {
             setLoading(false);
@@ -162,6 +163,117 @@ export const WarehouseManagementSheet = ({
         else fetchHistory();
     }, [type, fetchInbound, fetchOutbound, fetchHistory]);
 
+    useEffect(() => {
+        if (!open || (type !== "inbound" && type !== "outbound")) return;
+
+        const token = authStorage.getAccessToken();
+        if (!token) return;
+
+        const wsUrl = process.env.NEXT_PUBLIC_SOCKET_URL || process.env.NEXT_PUBLIC_API_URL;
+        if (!wsUrl) return;
+
+        let mounted = true;
+        let socketInstance: Socket | null = null;
+
+        const handleRealtimeUpdate = () => {
+            if (type === "inbound") {
+                fetchInbound();
+            } else {
+                fetchOutbound();
+            }
+        };
+
+        const getCodeFromPayload = (payload: unknown): string | undefined => {
+            if (!payload || typeof payload !== "object") return undefined;
+            const data = payload as { code?: unknown };
+            return typeof data.code === "string" && data.code.trim() ? data.code : undefined;
+        };
+
+        const handleRealtimeEvent = (eventName: string) => (payload: unknown) => {
+            handleRealtimeUpdate();
+
+            const code = getCodeFromPayload(payload);
+            const suffix = code ? ` ${code}` : "";
+
+            const messageMap: Record<string, string> = {
+                "inbound:created": `Phiếu PO mới đã được tạo${suffix}`,
+                "inbound:approved": `Phiếu PO đã được duyệt${suffix}`,
+                "inbound:rejected": `Phiếu PO đã bị từ chối${suffix}`,
+                "outbound:created": `Phiếu xuất mới đã được tạo${suffix}`,
+                "outbound:approved": `Phiếu xuất đã được duyệt${suffix}`,
+                "outbound:rejected": `Phiếu xuất đã bị từ chối${suffix}`,
+                "outbound:shipment-completed": `Phiếu xuất đã hoàn tất${suffix}`,
+            };
+
+            const message = messageMap[eventName];
+            if (message) {
+                showToast(message, "success");
+            }
+        };
+
+        const inboundEvents = [
+            "inbound:created",
+            "inbound:approved",
+            "inbound:rejected",
+            "inbound:receiving-started",
+            "inbound:receiving-confirmed",
+            "inbound:putaway-confirmed",
+        ];
+
+        const outboundEvents = [
+            "outbound:created",
+            "outbound:approved",
+            "outbound:rejected",
+            "outbound:picking-confirmed",
+            "outbound:checking-confirmed",
+            "outbound:shipment-completed",
+            "outbound:split",
+        ];
+
+        const initRealtime = async () => {
+            try {
+                const orgId = await orgHelper.getOrgId(token);
+                if (!orgId || !mounted) return;
+
+                socketInstance = io(wsUrl, {
+                    transports: ["websocket", "polling"],
+                    auth: { token: `Bearer ${token}` },
+                    autoConnect: true,
+                });
+
+                setSocket(socketInstance);
+
+                socketInstance.on("connect", () => {
+                    socketInstance?.emit("subscribe", {
+                        rooms: [`organization:${orgId}`],
+                    });
+                });
+
+                const events = type === "inbound" ? inboundEvents : outboundEvents;
+                events.forEach((eventName) => {
+                    socketInstance?.on(eventName, handleRealtimeEvent(eventName));
+                });
+            } catch {
+                // Ignore realtime bootstrap errors to avoid blocking normal API flow.
+            }
+        };
+
+        void initRealtime();
+
+        return () => {
+            mounted = false;
+            if (!socketInstance) return;
+
+            const events = type === "inbound" ? inboundEvents : outboundEvents;
+            events.forEach((eventName) => {
+                socketInstance?.off(eventName);
+            });
+
+            socketInstance.disconnect();
+            setSocket(null);
+        };
+    }, [open, type, fetchInbound, fetchOutbound, showToast]);
+
     // ── Handlers ──
     const handleInboundCancel = async () => {
         if (!inboundCancelTarget) return;
@@ -173,7 +285,7 @@ export const WarehouseManagementSheet = ({
             showToast(`Đã hủy phiếu ${inboundCancelTarget.code}`, "success");
             setInboundCancelOpen(false);
             fetchInbound();
-        } catch (err) {
+        } catch {
             showToast("Hủy thất bại", "error");
         } finally {
             setIsProcessing(false);
@@ -190,7 +302,7 @@ export const WarehouseManagementSheet = ({
             showToast(`Đã hủy phiếu ${outboundCancelTarget.code}`, "success");
             setOutboundCancelOpen(false);
             fetchOutbound();
-        } catch (err) {
+        } catch {
             showToast("Hủy thất bại", "error");
         } finally {
             setIsProcessing(false);
@@ -218,7 +330,7 @@ export const WarehouseManagementSheet = ({
                 await inventoryService.exportStock(token);
             }
             showToast("Báo cáo đang được tải về", "success");
-        } catch (err) {
+        } catch {
             showToast("Xuất báo cáo thất bại", "error");
         } finally {
             setIsExporting(false);
@@ -245,6 +357,12 @@ export const WarehouseManagementSheet = ({
                                     )}
                                 </div>
                                 Quản lý {type === 'inbound' ? 'Phiếu PO Kho' : type === 'outbound' ? 'Phiếu Xuất Kho' : 'Lịch sử Biến động'}
+                                {(type === 'inbound' || type === 'outbound') && socket?.connected && (
+                                    <span className="ml-2 inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700">
+                                        <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                                        Realtime
+                                    </span>
+                                )}
                             </SheetTitle>
                         </SheetHeader>
 

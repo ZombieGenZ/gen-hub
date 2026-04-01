@@ -46,6 +46,9 @@ import { authStorage } from "@/services/auth/auth-storage.service";
 import { RentalContractService } from "@/services/rental-contract/rental-contract.service";
 import { formatCurrency, occupancyColor, occupancyBarColor, daysUntil } from "@/data/mockMyWarehouses";
 import type { ContractStatus, RentalContractListItem } from "@/types/rental-contracts/rental-contracts.type";
+import { orgHelper } from "@/lib/organization.utils";
+import { useToast } from "@/contexts/ToastContext";
+import { useOrganizationRealtime } from "@/hooks/useOrganizationRealtime";
 
 // ── Service instance ─────────────────────────────────────────────────────────
 const rentalContractService = new RentalContractService();
@@ -231,14 +234,28 @@ const STATUS_TABS = [
     { value: "COMPLETED", label: "Hoàn thành" },
 ];
 
+const WAREHOUSE_REALTIME_EVENTS = [
+    "rentalContract:created",
+    "rentalContract:statusUpdated",
+    "rentalContract:updated",
+    "rentalContract:deleted",
+    "rentalContract:deletedMany",
+    "rentalContract:renewed",
+    "warehouse:updated",
+    "warehouse:deleted",
+    "warehouse:deletedMany",
+];
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 export default function MyWarehousesPage() {
     const router = useRouter();
+    const { showToast } = useToast();
     const [contracts, setContracts] = useState<RentalContractListItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [search, setSearch] = useState("");
     const [tab, setTab] = useState("ALL");
+    const [orgId, setOrgId] = useState<string | null>(null);
 
     // ── Fetch ──────────────────────────────────────────────────────────────── //
     const fetchContracts = useCallback(async () => {
@@ -277,6 +294,50 @@ export default function MyWarehousesPage() {
     useEffect(() => {
         fetchContracts();
     }, [fetchContracts]);
+
+    useEffect(() => {
+        const initOrg = async () => {
+            if (orgId) return;
+            const token = authStorage.getAccessToken();
+            if (!token) return;
+            try {
+                const resolvedOrgId = await orgHelper.getOrgId(token);
+                setOrgId(resolvedOrgId);
+            } catch {
+                // Skip realtime if org cannot be resolved.
+            }
+        };
+
+        void initOrg();
+    }, [orgId]);
+
+    useOrganizationRealtime({
+        orgId,
+        events: WAREHOUSE_REALTIME_EVENTS,
+        enabled: !!orgId,
+        onEvent: (eventName, payload) => {
+            void fetchContracts();
+
+            const data = payload as { code?: string } | undefined;
+            const suffix = data?.code ? ` ${data.code}` : "";
+            const messageMap: Record<string, string> = {
+                "rentalContract:created": `Hợp đồng mới đã được tạo${suffix}`,
+                "rentalContract:statusUpdated": `Trạng thái hợp đồng đã thay đổi${suffix}`,
+                "rentalContract:updated": `Hợp đồng đã được cập nhật${suffix}`,
+                "rentalContract:deleted": `Hợp đồng đã bị xóa${suffix}`,
+                "rentalContract:deletedMany": "Danh sách hợp đồng đã được cập nhật",
+                "rentalContract:renewed": `Hợp đồng đã được gia hạn${suffix}`,
+                "warehouse:updated": "Kho đã được cập nhật",
+                "warehouse:deleted": "Một kho đã bị xóa",
+                "warehouse:deletedMany": "Danh sách kho đã được cập nhật",
+            };
+
+            const message = messageMap[eventName];
+            if (message) {
+                showToast(message, "success");
+            }
+        },
+    });
 
     // ── Filter ─────────────────────────────────────────────────────────────── //
     const filtered = useMemo(() => {

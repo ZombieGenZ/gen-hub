@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { io, type Socket } from 'socket.io-client';
 import {
     CheckCircle,
     AlertTriangle,
@@ -69,6 +70,7 @@ export function NotificationList({ className }: NotificationListProps) {
     const [page, setPage] = useState(1);
     const [hasMore, setHasMore] = useState(true);
     const [currentUser, setCurrentUser] = useState<any>(null);
+    const [socket, setSocket] = useState<Socket | null>(null);
     const LIMIT = 10;
 
     // Fetch user for variable substitution
@@ -161,6 +163,60 @@ export function NotificationList({ className }: NotificationListProps) {
         }
     }, [page]);
 
+    useEffect(() => {
+        const token = authStorage.getAccessToken();
+        const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || process.env.NEXT_PUBLIC_API_URL;
+        if (!token || !socketUrl) return;
+
+        const socketInstance = io(socketUrl, {
+            auth: { token: `Bearer ${token}` },
+            transports: ["websocket", "polling"],
+        });
+
+        setSocket(socketInstance);
+
+        const refreshNotifications = () => {
+            void fetchNotifications(true);
+        };
+
+        const userEvents = [
+            "userNotification:received",
+            "userNotification:read",
+            "userNotification:allRead",
+        ];
+
+        const orgEvents = [
+            "orgNotification:created",
+            "orgNotification:updated",
+            "orgNotification:deleted",
+            "orgNotification:deletedMany",
+        ];
+
+        userEvents.forEach((eventName) => {
+            socketInstance.on(eventName, refreshNotifications);
+        });
+
+        orgEvents.forEach((eventName) => {
+            socketInstance.on(eventName, refreshNotifications);
+        });
+
+        socketInstance.on("userNotification:received", () => {
+            showToast("Bạn có thông báo mới", "success");
+        });
+
+        return () => {
+            userEvents.forEach((eventName) => {
+                socketInstance.off(eventName, refreshNotifications);
+            });
+            orgEvents.forEach((eventName) => {
+                socketInstance.off(eventName, refreshNotifications);
+            });
+            socketInstance.off("userNotification:received");
+            socketInstance.disconnect();
+            setSocket(null);
+        };
+    }, [fetchNotifications, showToast]);
+
 
     const markAsRead = async (id: string) => {
         const token = authStorage.getAccessToken();
@@ -202,17 +258,25 @@ export function NotificationList({ className }: NotificationListProps) {
             <div className="p-4 border-b border-slate-200 dark:border-slate-700 space-y-4">
                 <div className="flex items-center justify-between">
                     <h3 className="font-semibold text-lg">Thông báo</h3>
-                    {unreadCount > 0 && (
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={markAllAsRead}
-                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                        >
-                            <Check className="w-4 h-4 mr-1" />
-                            Đánh dấu tất cả đã đọc
-                        </Button>
-                    )}
+                    <div className="flex items-center gap-3">
+                        {socket?.connected && (
+                            <span className="inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700">
+                                <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                                Realtime
+                            </span>
+                        )}
+                        {unreadCount > 0 && (
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={markAllAsRead}
+                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                            >
+                                <Check className="w-4 h-4 mr-1" />
+                                Đánh dấu tất cả đã đọc
+                            </Button>
+                        )}
+                    </div>
                 </div>
 
                 <Tabs value={tab} onValueChange={setTab} className="w-full">

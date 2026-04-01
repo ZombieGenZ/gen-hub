@@ -84,6 +84,11 @@
     color: #94a3b8;
 }
 
+.outbound-timeline__dot--cancelled {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
 .outbound-timeline__label {
     font-size: 12px;
     font-weight: 500;
@@ -102,6 +107,11 @@
 
 .outbound-timeline__label--pending {
     color: #94a3b8;
+}
+
+.outbound-timeline__label--cancelled {
+    color: #b91c1c;
+    font-weight: 600;
 }
 
 .outbound-timeline__connector {

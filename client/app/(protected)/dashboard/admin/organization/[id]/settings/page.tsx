@@ -16,15 +16,33 @@ import { OrgMembersTab } from "@/components/organization/OrgMembersTab";
 import { OrgRolesTab } from "@/components/organization/OrgRolesTab";
 import { OrgDangerTab } from "@/components/organization/OrgDangerTab";
 import { ChevronRight, Loader2 } from "lucide-react";
+import { useToast } from "@/contexts/ToastContext";
+import { useOrganizationRealtime } from "@/hooks/useOrganizationRealtime";
 
 const organizationService = new OrganizationService();
 const memberService = new OrganizationMemberService();
 const roleService = new OrganizationRoleService();
 
+const ORG_SETTINGS_EVENTS = [
+    "organization:updated",
+    "organization:memberInvited",
+    "organization:memberRemoved",
+    "organization:memberAccepted",
+    "organization:memberRejected",
+    "organization:memberLeft",
+    "organization:memberRolesUpdated",
+    "organization:memberPermissionsUpdated",
+    "orgRole:created",
+    "orgRole:updated",
+    "orgRole:deleted",
+    "orgRole:deletedMany",
+];
+
 export default function AdminOrganizationSettingsPage() {
     const params = useParams();
     const router = useRouter();
     const orgId = params.id as string;
+    const { showToast } = useToast();
 
     const [organization, setOrganization] = useState<Organization | null>(null);
     const [members, setMembers] = useState<OrganizationMember[]>([]);
@@ -77,15 +95,50 @@ export default function AdminOrganizationSettingsPage() {
         }
     }, [orgId]);
 
+    const fetchPermissions = useCallback(async () => {
+        const token = getToken();
+        if (!token) return;
+        try {
+            const data = await organizationService.getPermissions(token, orgId);
+            setPermissions(data || []);
+        } catch (err: any) {
+            console.error("Failed to fetch permissions:", err);
+            setPermissions([]);
+        }
+    }, [orgId]);
+
     useEffect(() => {
         if (!orgId) return;
         const fetchAll = async () => {
             setLoading(true);
-            await Promise.all([fetchOrganization(), fetchMembers(), fetchRoles()]);
+            await Promise.all([fetchOrganization(), fetchMembers(), fetchRoles(), fetchPermissions()]);
             setLoading(false);
         };
         fetchAll();
-    }, [orgId, fetchOrganization, fetchMembers, fetchRoles]);
+    }, [orgId, fetchOrganization, fetchMembers, fetchRoles, fetchPermissions]);
+
+    useOrganizationRealtime({
+        orgId,
+        events: ORG_SETTINGS_EVENTS,
+        enabled: !!orgId,
+        onEvent: (eventName) => {
+            if (eventName.startsWith("orgRole:")) {
+                void fetchRoles();
+                showToast("Vai trò đã được cập nhật realtime", "success");
+                return;
+            }
+
+            if (eventName.startsWith("organization:member")) {
+                void fetchMembers();
+                showToast("Danh sách thành viên đã được cập nhật", "success");
+                return;
+            }
+
+            if (eventName === "organization:updated") {
+                void fetchOrganization();
+            }
+        },
+    });
 
     // --- Admin actions (System Admin has limited write access) ---
     const handleUpdateOrg = async (data: Partial<Organization>) => {

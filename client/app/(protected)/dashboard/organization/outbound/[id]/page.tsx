@@ -6,6 +6,8 @@ import { authStorage } from "@/services/auth/auth-storage.service";
 import { InventoryService } from "@/services/inventory/inventory.service";
 import { useToast } from "@/contexts/ToastContext";
 import type { OutboundRequest, ExportStatus } from "@/services/inventory/inventory.types";
+import { useOrganizationRealtime } from "@/hooks/useOrganizationRealtime";
+import { orgHelper } from "@/lib/organization.utils";
 
 // ── shadcn/ui ──
 import { Card, CardContent } from "@/components/ui/card";
@@ -30,6 +32,15 @@ import {
 import "../outbound.css";
 
 const inventoryService = new InventoryService();
+
+const OUTBOUND_DETAIL_EVENTS = [
+    "outbound:approved",
+    "outbound:rejected",
+    "outbound:picking-confirmed",
+    "outbound:checking-confirmed",
+    "outbound:shipment-completed",
+    "outbound:split",
+];
 
 // ────────────────────────────────────────────────
 // Status config
@@ -112,6 +123,7 @@ export default function OutboundDetailPage() {
     const [data, setData] = useState<OutboundRequest | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [orgId, setOrgId] = useState<string | null>(null);
 
     // Mock pick list (in real app, this comes from ExportPickListDetail API)
     const [pickList] = useState<PickListItem[]>([]);
@@ -129,6 +141,16 @@ export default function OutboundDetailPage() {
         try {
             const token = authStorage.getAccessToken();
             if (!token) { router.push("/login"); return; }
+
+            if (!orgId) {
+                try {
+                    const resolvedOrgId = await orgHelper.getOrgId(token);
+                    setOrgId(resolvedOrgId);
+                } catch {
+                    // Continue loading detail even if org resolve fails.
+                }
+            }
+
             setLoading(true);
             const res = await inventoryService.getOutboundById(token, id);
             const item = (res as any)?.data || res;
@@ -140,9 +162,37 @@ export default function OutboundDetailPage() {
         } finally {
             setLoading(false);
         }
-    }, [id, router]);
+    }, [id, router, orgId]);
 
     useEffect(() => { fetchData(); }, [fetchData]);
+
+    useOrganizationRealtime({
+        orgId,
+        events: OUTBOUND_DETAIL_EVENTS,
+        enabled: !!orgId,
+        onEvent: (eventName, payload) => {
+            const data = payload as { exportId?: string } | undefined;
+            if (!data?.exportId || data.exportId !== id) {
+                return;
+            }
+
+            void fetchData();
+
+            const messageMap: Record<string, string> = {
+                "outbound:approved": "Phiếu xuất đã được duyệt",
+                "outbound:rejected": "Phiếu xuất đã bị từ chối",
+                "outbound:picking-confirmed": "Đã xác nhận nhặt hàng phiếu xuất",
+                "outbound:checking-confirmed": "Đã xác nhận kiểm tra phiếu xuất",
+                "outbound:shipment-completed": "Phiếu xuất đã hoàn tất",
+                "outbound:split": "Phiếu xuất đã được tách",
+            };
+
+            const message = messageMap[eventName];
+            if (message) {
+                showToast(message, "success");
+            }
+        },
+    });
 
     // Group pick list by block
     const pickListByBlock = React.useMemo(() => {
@@ -262,8 +312,8 @@ export default function OutboundDetailPage() {
                             <>
                                 <div className="outbound-timeline__connector outbound-timeline__connector--pending" />
                                 <div className="outbound-timeline__step">
-                                    <div className="outbound-timeline__dot" style={{ background: "#fee2e2", color: "#b91c1c" }}>✕</div>
-                                    <span className="outbound-timeline__label" style={{ color: "#b91c1c", fontWeight: 600 }}>Đã hủy</span>
+                                    <div className="outbound-timeline__dot outbound-timeline__dot--cancelled">✕</div>
+                                    <span className="outbound-timeline__label outbound-timeline__label--cancelled">Đã hủy</span>
                                 </div>
                             </>
                         )}

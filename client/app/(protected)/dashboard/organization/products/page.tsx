@@ -9,6 +9,8 @@ import { authStorage } from "@/services/auth/auth-storage.service";
 import { useToast } from "@/contexts/ToastContext";
 import type { ProductQuickFilter } from "@/types/product-inventory";
 import { InventoryService } from "@/services/inventory/inventory.service";
+import { orgHelper } from "@/lib/organization.utils";
+import { useOrganizationRealtime } from "@/hooks/useOrganizationRealtime";
 import BarcodeScannerQuickAdd from "@/components/products/BarcodeScannerQuickAdd";
 
 // Components
@@ -22,6 +24,13 @@ import { ProductImportDialog } from "@/components/dashboard/organization/product
 const productService = new ProductService();
 const inventoryService = new InventoryService();
 const IMG_API = process.env.NEXT_PUBLIC_API_URL || "";
+
+const PRODUCT_EVENTS = [
+    "product:created",
+    "product:updated",
+    "product:deleted",
+    "product:deleted_many",
+];
 
 export default function ProductMasterListPage() {
     const router = useRouter();
@@ -59,6 +68,7 @@ export default function ProductMasterListPage() {
     const [quickFilter, setQuickFilter] = useState<ProductQuickFilter>("all");
     const [currentPage, setCurrentPage] = useState(1);
     const [totalItems, setTotalItems] = useState(0);
+    const [orgId, setOrgId] = useState<string | null>(null);
 
     const debouncedKeywords = useDebounce(searchTerm, 500);
     const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
@@ -124,6 +134,44 @@ export default function ProductMasterListPage() {
         fetchProducts();
         fetchStock();
     }, [fetchProducts, fetchStock]);
+
+    useEffect(() => {
+        const initOrg = async () => {
+            if (orgId) return;
+            const token = authStorage.getAccessToken();
+            if (!token) return;
+            try {
+                const resolvedOrgId = await orgHelper.getOrgId(token);
+                setOrgId(resolvedOrgId);
+            } catch {
+                // Keep normal list flow if org id resolve fails.
+            }
+        };
+
+        void initOrg();
+    }, [orgId]);
+
+    useOrganizationRealtime({
+        orgId,
+        events: PRODUCT_EVENTS,
+        enabled: !!orgId,
+        onEvent: (eventName) => {
+            void fetchProducts();
+            void fetchStock();
+
+            const messageMap: Record<string, string> = {
+                "product:created": "Sản phẩm mới đã được tạo",
+                "product:updated": "Sản phẩm đã được cập nhật",
+                "product:deleted": "Sản phẩm đã bị xóa",
+                "product:deleted_many": "Danh sách sản phẩm đã được cập nhật",
+            };
+
+            const message = messageMap[eventName];
+            if (message) {
+                showToast(message, "success");
+            }
+        },
+    });
 
     useEffect(() => {
         setCurrentPage(1);

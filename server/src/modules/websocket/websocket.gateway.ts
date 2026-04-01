@@ -136,6 +136,11 @@ export class WebsocketGateway
           // Join user room
           socket.join(`user:${userId}`);
 
+          const organizationIds = await this.userRepository.getUserOrganizations(userId);
+          organizationIds.forEach((orgId) => {
+            socket.join(`organization:${orgId}`);
+          });
+
           // Nếu đây là connection đầu tiên của user, set user online
           if (isFirstConnection) {
             await this.setUserOnlineStatus(userId, true);
@@ -1086,24 +1091,42 @@ export class WebsocketGateway
   }
 
   @SubscribeMessage('subscribe')
-  handleSubscribe(
+  async handleSubscribe(
     @ConnectedSocket() socket: Socket,
-    @MessageBody() payload: { rooms: string[] },
+    @MessageBody() payload: { rooms?: string[] },
   ) {
     const userId = this.socketUsers.get(socket.id);
+    const requestRooms = Array.isArray(payload?.rooms) ? payload.rooms : [];
 
     // Định nghĩa rooms
     const publicRooms = ['announcements', 'system-status'];
     const privateRooms = ['notifications'];
+    const userOrganizationIds = userId
+      ? await this.userRepository.getUserOrganizations(userId)
+      : [];
 
     const joinedRooms: string[] = [];
     const rejectedRooms: string[] = [];
 
-    payload.rooms.forEach((room) => {
+    requestRooms.forEach((room) => {
       if (publicRooms.includes(room)) {
         // Public rooms - ai cũng join được
         socket.join(room);
         joinedRooms.push(room);
+      } else if (room.startsWith('organization:')) {
+        // Organization rooms - chỉ user thuộc organization mới join được
+        if (!userId) {
+          rejectedRooms.push(room);
+          return;
+        }
+
+        const orgId = room.replace('organization:', '').trim();
+        if (orgId && userOrganizationIds.includes(orgId)) {
+          socket.join(room);
+          joinedRooms.push(room);
+        } else {
+          rejectedRooms.push(room);
+        }
       } else if (privateRooms.includes(room)) {
         // Private rooms - chỉ authenticated users
         if (userId) {
@@ -1112,6 +1135,8 @@ export class WebsocketGateway
         } else {
           rejectedRooms.push(room);
         }
+      } else {
+        rejectedRooms.push(room);
       }
     });
 

@@ -6,6 +6,8 @@ import { authStorage } from "@/services/auth/auth-storage.service";
 import { InventoryService } from "@/services/inventory/inventory.service";
 import { useToast } from "@/contexts/ToastContext";
 import type { InboundRequest, ReceiptStatus } from "@/services/inventory/inventory.types";
+import { useOrganizationRealtime } from "@/hooks/useOrganizationRealtime";
+import { orgHelper } from "@/lib/organization.utils";
 
 // ── shadcn/ui ──
 import { Card, CardContent } from "@/components/ui/card";
@@ -25,6 +27,14 @@ import {
 import "../inbound.css";
 
 const inventoryService = new InventoryService();
+
+const INBOUND_DETAIL_EVENTS = [
+    "inbound:approved",
+    "inbound:rejected",
+    "inbound:receiving-started",
+    "inbound:receiving-confirmed",
+    "inbound:putaway-confirmed",
+];
 
 // ────────────────────────────────────────────────
 // Status config
@@ -93,6 +103,7 @@ export default function InboundDetailPage() {
     const [data, setData] = useState<InboundRequest | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [orgId, setOrgId] = useState<string | null>(null);
 
     // ── Actual qty editing ──
     const [editingQty, setEditingQty] = useState<Record<string, number>>({});
@@ -102,6 +113,15 @@ export default function InboundDetailPage() {
         try {
             const token = authStorage.getAccessToken();
             if (!token) { router.push("/login"); return; }
+
+            if (!orgId) {
+                try {
+                    const resolvedOrgId = await orgHelper.getOrgId(token);
+                    setOrgId(resolvedOrgId);
+                } catch {
+                    // Continue loading detail even if org resolve fails.
+                }
+            }
 
             setLoading(true);
             const res = await inventoryService.getInboundById(token, id);
@@ -123,9 +143,36 @@ export default function InboundDetailPage() {
         } finally {
             setLoading(false);
         }
-    }, [id, router]);
+    }, [id, router, orgId]);
 
     useEffect(() => { fetchData(); }, [fetchData]);
+
+    useOrganizationRealtime({
+        orgId,
+        events: INBOUND_DETAIL_EVENTS,
+        enabled: !!orgId,
+        onEvent: (eventName, payload) => {
+            const data = payload as { receiptId?: string } | undefined;
+            if (!data?.receiptId || data.receiptId !== id) {
+                return;
+            }
+
+            void fetchData();
+
+            const messageMap: Record<string, string> = {
+                "inbound:approved": "Phiếu PO đã được duyệt",
+                "inbound:rejected": "Phiếu PO đã bị từ chối",
+                "inbound:receiving-started": "Đã bắt đầu kiểm đếm phiếu PO",
+                "inbound:receiving-confirmed": "Đã xác nhận kiểm đếm phiếu PO",
+                "inbound:putaway-confirmed": "Phiếu PO đã hoàn tất nhập kho",
+            };
+
+            const message = messageMap[eventName];
+            if (message) {
+                showToast(message, "success");
+            }
+        },
+    });
 
     const getRowClass = (detailId: string, expectedQty: number) => {
         const actual = editingQty[detailId] ?? 0;
@@ -248,10 +295,10 @@ export default function InboundDetailPage() {
                             <>
                                 <div className="inbound-timeline__connector inbound-timeline__connector--pending" />
                                 <div className="inbound-timeline__step">
-                                    <div className="inbound-timeline__dot" style={{ background: "#fee2e2", color: "#b91c1c" }}>
+                                    <div className="inbound-timeline__dot inbound-timeline__dot--cancelled">
                                         ✕
                                     </div>
-                                    <span className="inbound-timeline__label" style={{ color: "#b91c1c", fontWeight: 600 }}>
+                                    <span className="inbound-timeline__label inbound-timeline__label--cancelled">
                                         Đã hủy
                                     </span>
                                 </div>

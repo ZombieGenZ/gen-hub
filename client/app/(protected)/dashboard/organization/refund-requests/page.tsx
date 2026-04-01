@@ -19,6 +19,16 @@ import { format } from "date-fns";
 import { useToast } from "@/contexts/ToastContext";
 import type { RefundRequest, RefundStatus } from "@/types/refund/refund.type";
 import React from "react";
+import { orgHelper } from "@/lib/organization.utils";
+import { useOrganizationRealtime } from "@/hooks/useOrganizationRealtime";
+
+const REFUND_EVENTS = [
+    "refundRequest:created",
+    "refundRequest:accepted",
+    "refundRequest:rejected",
+    "refundRequest:statusChanged",
+    "refundRequest:deleted",
+];
 
 export default function CustomerRefundRequestsPage() {
     const router = useRouter();
@@ -28,6 +38,7 @@ export default function CustomerRefundRequestsPage() {
     const [page, setPage] = useState(1);
     const [limit] = useState(10);
     const [total, setTotal] = useState(0);
+    const [orgId, setOrgId] = useState<string | null>(null);
 
     const formatCurrency = (val: number | string) => {
         const num = typeof val === "string" ? parseFloat(val) : val;
@@ -73,6 +84,44 @@ export default function CustomerRefundRequestsPage() {
     useEffect(() => {
         fetchRequests();
     }, [fetchRequests]);
+
+    useEffect(() => {
+        const initOrg = async () => {
+            if (orgId) return;
+            const token = authStorage.getAccessToken();
+            if (!token) return;
+            try {
+                const resolvedOrgId = await orgHelper.getOrgId(token);
+                setOrgId(resolvedOrgId);
+            } catch {
+                // Keep normal list flow if org id resolve fails.
+            }
+        };
+
+        void initOrg();
+    }, [orgId]);
+
+    useOrganizationRealtime({
+        orgId,
+        events: REFUND_EVENTS,
+        enabled: !!orgId,
+        onEvent: (eventName) => {
+            void fetchRequests();
+
+            const messageMap: Record<string, string> = {
+                "refundRequest:created": "Yêu cầu hoàn tiền mới đã được tạo",
+                "refundRequest:accepted": "Yêu cầu hoàn tiền đã được duyệt",
+                "refundRequest:rejected": "Yêu cầu hoàn tiền đã bị từ chối",
+                "refundRequest:statusChanged": "Trạng thái yêu cầu hoàn tiền đã thay đổi",
+                "refundRequest:deleted": "Yêu cầu hoàn tiền đã bị xóa",
+            };
+
+            const message = messageMap[eventName];
+            if (message) {
+                showToast(message, "success");
+            }
+        },
+    });
 
     const getStatusBadge = (status: RefundStatus | string) => {
         switch(status) {

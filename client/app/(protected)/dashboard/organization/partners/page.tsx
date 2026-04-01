@@ -7,6 +7,8 @@ import { PartnerService } from "@/services/partner/partner.service";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useToast } from "@/contexts/ToastContext";
 import type { Partner } from "@/services/partner/partner.types";
+import { orgHelper } from "@/lib/organization.utils";
+import { useOrganizationRealtime } from "@/hooks/useOrganizationRealtime";
 
 // Extracted Components
 import { PartnerHeader } from "@/components/dashboard/organization/partners/PartnerHeader";
@@ -16,6 +18,13 @@ import { PartnerDeleteDialogs } from "@/components/dashboard/organization/partne
 import { PartnerBulkActionBar } from "@/components/dashboard/organization/partners/PartnerBulkActionBar";
 
 const partnerService = new PartnerService();
+
+const PARTNER_EVENTS = [
+    "partner:created",
+    "partner:updated",
+    "partner:deleted",
+    "partner:deletedMany",
+];
 
 export default function PartnerManagementPage() {
     const router = useRouter();
@@ -29,6 +38,7 @@ export default function PartnerManagementPage() {
     const [totalItems, setTotalItems] = useState(0);
     const [activeTab, setActiveTab] = useState<"ALL" | "CUSTOMER" | "SUPPLIER">("ALL");
     const [filterActive, setFilterActive] = useState<"all" | "active" | "inactive">("all");
+    const [orgId, setOrgId] = useState<string | null>(null);
     const debouncedKeywords = useDebounce(searchTerm, 500);
     const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
 
@@ -83,6 +93,43 @@ export default function PartnerManagementPage() {
     useEffect(() => {
         fetchPartners();
     }, [fetchPartners]);
+
+    useEffect(() => {
+        const initOrg = async () => {
+            if (orgId) return;
+            const token = authStorage.getAccessToken();
+            if (!token) return;
+            try {
+                const resolvedOrgId = await orgHelper.getOrgId(token);
+                setOrgId(resolvedOrgId);
+            } catch {
+                // Keep normal list flow if org id resolve fails.
+            }
+        };
+
+        void initOrg();
+    }, [orgId]);
+
+    useOrganizationRealtime({
+        orgId,
+        events: PARTNER_EVENTS,
+        enabled: !!orgId,
+        onEvent: (eventName) => {
+            void fetchPartners();
+
+            const messageMap: Record<string, string> = {
+                "partner:created": "Đối tác mới đã được tạo",
+                "partner:updated": "Đối tác đã được cập nhật",
+                "partner:deleted": "Đối tác đã bị xóa",
+                "partner:deletedMany": "Danh sách đối tác đã được cập nhật",
+            };
+
+            const message = messageMap[eventName];
+            if (message) {
+                showToast(message, "success");
+            }
+        },
+    });
 
     // Reset pagination when filters change
     useEffect(() => {

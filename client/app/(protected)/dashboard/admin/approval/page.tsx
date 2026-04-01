@@ -6,6 +6,7 @@ import { authStorage } from "@/services/auth/auth-storage.service";
 import { WarehouseManagerInventoryService } from "@/services/inventory/warehouse-manager-inventory.service";
 import { useToast } from "@/contexts/ToastContext";
 import type { InboundRequest, OutboundRequest } from "@/services/inventory/inventory.types";
+import { io, Socket } from "socket.io-client";
 
 // ── shadcn/ui ──
 import { Card, CardContent } from "@/components/ui/card";
@@ -37,6 +38,22 @@ import OutboundApprovalDetail from "./OutboundApprovalDetail";
 import "./approval.css";
 
 const wmInventoryService = new WarehouseManagerInventoryService();
+
+const APPROVAL_REALTIME_EVENTS = [
+    "inbound:created",
+    "inbound:approved",
+    "inbound:rejected",
+    "inbound:receiving-started",
+    "inbound:receiving-confirmed",
+    "inbound:putaway-confirmed",
+    "outbound:created",
+    "outbound:approved",
+    "outbound:rejected",
+    "outbound:split",
+    "outbound:picking-confirmed",
+    "outbound:checking-confirmed",
+    "outbound:shipment-completed",
+];
 
 // ────────────────────────────────────────────────
 // Unified ticket type
@@ -142,6 +159,8 @@ export default function ApprovalQueuePage() {
     const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const ticketCardRefs = useRef<Record<string, HTMLDivElement | null>>({});
+    const socketRef = useRef<Socket | null>(null);
+    const refreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // ── Drag state for Kanban ──
     const [draggedId, setDraggedId] = useState<string | null>(null);
@@ -184,6 +203,48 @@ export default function ApprovalQueuePage() {
 
     useEffect(() => {
         fetchData();
+    }, [fetchData]);
+
+    useEffect(() => {
+        const token = authStorage.getAccessToken();
+        const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || process.env.NEXT_PUBLIC_API_URL;
+
+        if (!token || !socketUrl) return;
+
+        const scheduleRefresh = () => {
+            if (refreshTimeoutRef.current) {
+                clearTimeout(refreshTimeoutRef.current);
+            }
+
+            refreshTimeoutRef.current = setTimeout(() => {
+                void fetchData();
+            }, 250);
+        };
+
+        const socket = io(socketUrl, {
+            auth: { token: `Bearer ${token}` },
+            transports: ["websocket", "polling"],
+        });
+
+        socketRef.current = socket;
+
+        APPROVAL_REALTIME_EVENTS.forEach((eventName) => {
+            socket.on(eventName, scheduleRefresh);
+        });
+
+        return () => {
+            APPROVAL_REALTIME_EVENTS.forEach((eventName) => {
+                socket.off(eventName, scheduleRefresh);
+            });
+
+            if (refreshTimeoutRef.current) {
+                clearTimeout(refreshTimeoutRef.current);
+                refreshTimeoutRef.current = null;
+            }
+
+            socket.disconnect();
+            socketRef.current = null;
+        };
     }, [fetchData]);
 
     // ── Build unified ticket list ──
@@ -524,12 +585,12 @@ export default function ApprovalQueuePage() {
                         {selectedTicket ? (
                             selectedTicket.type === "inbound" ? (
                                 <InboundApprovalDetail
-                                    key={selectedTicket.id}
+                                    key={`${selectedTicket.id}:${selectedTicket.status}`}
                                     ticketId={selectedTicket.id}
                                 />
                             ) : (
                                 <OutboundApprovalDetail
-                                    key={selectedTicket.id}
+                                    key={`${selectedTicket.id}:${selectedTicket.status}`}
                                     ticketId={selectedTicket.id}
                                     onOpenSplitTicket={handleOpenSplitOutboundTicket}
                                 />

@@ -17,10 +17,26 @@ import { OrgRolesTab } from "@/components/organization/OrgRolesTab";
 import { OrgDangerTab } from "@/components/organization/OrgDangerTab";
 import { Loader2, Building2 } from "lucide-react";
 import { useToast } from "@/contexts/ToastContext";
+import { useOrganizationRealtime } from "@/hooks/useOrganizationRealtime";
 
 const organizationService = new OrganizationService();
 const memberService = new OrganizationMemberService();
 const roleService = new OrganizationRoleService();
+
+const ORG_SETTINGS_EVENTS = [
+    "organization:updated",
+    "organization:memberInvited",
+    "organization:memberRemoved",
+    "organization:memberAccepted",
+    "organization:memberRejected",
+    "organization:memberLeft",
+    "organization:memberRolesUpdated",
+    "organization:memberPermissionsUpdated",
+    "orgRole:created",
+    "orgRole:updated",
+    "orgRole:deleted",
+    "orgRole:deletedMany",
+];
 
 export default function CustomerOrganizationSettingsPage() {
     const router = useRouter();
@@ -110,6 +126,31 @@ export default function CustomerOrganizationSettingsPage() {
         };
         init();
     }, [fetchOrganization, fetchMembers, fetchPermissions, fetchRoles]);
+
+    useOrganizationRealtime({
+        orgId: organization?.id,
+        events: ORG_SETTINGS_EVENTS,
+        enabled: !!organization?.id,
+        onEvent: (eventName) => {
+            if (!organization?.id) return;
+
+            if (eventName.startsWith("orgRole:")) {
+                void fetchRoles(organization.id);
+                showToast("Vai trò đã được cập nhật realtime", "success");
+                return;
+            }
+
+            if (eventName.startsWith("organization:member")) {
+                void fetchMembers(organization.id);
+                showToast("Danh sách thành viên đã được cập nhật", "success");
+                return;
+            }
+
+            if (eventName === "organization:updated") {
+                void fetchOrganization();
+            }
+        },
+    });
 
     // --- Organization Owner has FULL control ---
 

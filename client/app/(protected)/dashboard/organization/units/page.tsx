@@ -7,6 +7,8 @@ import { UnitService } from "@/services/unit/unit.service";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useToast } from "@/contexts/ToastContext";
 import type { Unit, CreateUnitPayload, UpdateUnitPayload } from "@/services/unit/unit.types";
+import { orgHelper } from "@/lib/organization.utils";
+import { useOrganizationRealtime } from "@/hooks/useOrganizationRealtime";
 
 // ── shadcn/ui ──
 import { Card, CardContent } from "@/components/ui/card";
@@ -48,6 +50,13 @@ import { Ruler } from "lucide-react";
 const unitService = new UnitService();
 const ITEMS_PER_PAGE = 15;
 
+const UNIT_EVENTS = [
+    "unit:created",
+    "unit:updated",
+    "unit:deleted",
+    "unit:deletedMany",
+];
+
 // ════════════════════════════════════════════════
 // MAIN PAGE: Unit Management
 // ════════════════════════════════════════════════
@@ -61,6 +70,7 @@ export default function UnitManagementPage() {
     const [searchTerm, setSearchTerm] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
     const [totalItems, setTotalItems] = useState(0);
+    const [orgId, setOrgId] = useState<string | null>(null);
     const debouncedKeywords = useDebounce(searchTerm, 500);
     const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
 
@@ -112,6 +122,43 @@ export default function UnitManagementPage() {
 
     useEffect(() => { fetchUnits(); }, [fetchUnits]);
     useEffect(() => { setCurrentPage(1); }, [debouncedKeywords]);
+
+    useEffect(() => {
+        const initOrg = async () => {
+            if (orgId) return;
+            const token = authStorage.getAccessToken();
+            if (!token) return;
+            try {
+                const resolvedOrgId = await orgHelper.getOrgId(token);
+                setOrgId(resolvedOrgId);
+            } catch {
+                // Keep normal list flow if org id resolve fails.
+            }
+        };
+
+        void initOrg();
+    }, [orgId]);
+
+    useOrganizationRealtime({
+        orgId,
+        events: UNIT_EVENTS,
+        enabled: !!orgId,
+        onEvent: (eventName) => {
+            void fetchUnits();
+
+            const messageMap: Record<string, string> = {
+                "unit:created": "Đơn vị tính mới đã được tạo",
+                "unit:updated": "Đơn vị tính đã được cập nhật",
+                "unit:deleted": "Đơn vị tính đã bị xóa",
+                "unit:deletedMany": "Danh sách đơn vị tính đã được cập nhật",
+            };
+
+            const message = messageMap[eventName];
+            if (message) {
+                showToast(message, "success");
+            }
+        },
+    });
 
     // ── Selection helpers ──
     const toggleSelection = (id: string) => {
@@ -307,6 +354,7 @@ export default function UnitManagementPage() {
                                         <TableHead className="w-12">
                                             <input
                                                 type="checkbox"
+                                                aria-label="Chọn tất cả đơn vị"
                                                 className="rounded border-gray-300"
                                                 checked={selectedIds.length === units.length && units.length > 0}
                                                 onChange={toggleSelectAll}
@@ -352,6 +400,7 @@ export default function UnitManagementPage() {
                                                 <TableCell>
                                                     <input
                                                         type="checkbox"
+                                                        aria-label={`Chọn đơn vị ${unit.name || unit.id}`}
                                                         className="rounded border-gray-300"
                                                         checked={selectedIds.includes(unit.id)}
                                                         onChange={() => toggleSelection(unit.id)}

@@ -284,6 +284,7 @@ export function useWarehouse3D({ warehouseId, realtime = true }: UseWarehouse3DO
 
         socket.on('inbound:putaway-confirmed', invalidateAll);
         socket.on('outbound:shipped', invalidateAll);
+        socket.on('outbound:shipment-completed', invalidateAll);
         socket.on('warehouse:updated', invalidateAll);
         socket.on(`warehouse:${warehouseId}:inventory-updated`, invalidateAll);
         socket.on('shelf:updated', invalidateAll);
@@ -293,6 +294,7 @@ export function useWarehouse3D({ warehouseId, realtime = true }: UseWarehouse3DO
         return () => {
             socket.off('inbound:putaway-confirmed', invalidateAll);
             socket.off('outbound:shipped', invalidateAll);
+            socket.off('outbound:shipment-completed', invalidateAll);
             socket.off('warehouse:updated', invalidateAll);
             socket.off(`warehouse:${warehouseId}:inventory-updated`, invalidateAll);
             socket.off('shelf:updated', invalidateAll);

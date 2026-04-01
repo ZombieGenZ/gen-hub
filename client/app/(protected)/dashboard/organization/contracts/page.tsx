@@ -30,6 +30,7 @@ import { useToast } from "@/contexts/ToastContext";
 import { ContractStatusBadge } from "@/components/contract/ContractStatusBadge";
 import type { ContractStatus } from "@/types/rental-contracts/rental-contracts.type";
 import React from "react";
+import { useOrganizationRealtime } from "@/hooks/useOrganizationRealtime";
 
 interface Contract {
     id: string;
@@ -56,6 +57,15 @@ const STATUS_TABS: { value: string; label: string }[] = [
     { value: "CANCELLED", label: "Đã hủy" },
 ];
 
+const CONTRACT_EVENTS = [
+    "rentalContract:created",
+    "rentalContract:statusUpdated",
+    "rentalContract:updated",
+    "rentalContract:deleted",
+    "rentalContract:deletedMany",
+    "rentalContract:renewed",
+];
+
 export default function ContractManagementPage() {
     const router = useRouter();
     const { showToast } = useToast();
@@ -66,6 +76,7 @@ export default function ContractManagementPage() {
     const [total, setTotal] = useState(0);
     const [searchTerm, setSearchTerm] = useState("");
     const [activeTab, setActiveTab] = useState("all");
+    const [orgId, setOrgId] = useState<string | null>(null);
 
     const formatCurrency = (val: number | string) => {
         const num = typeof val === "string" ? parseFloat(val) : val;
@@ -84,8 +95,10 @@ export default function ContractManagementPage() {
             if (!token) { router.push("/login"); return; }
             setLoading(true);
 
-            // Get current user's organization_id
-            const currentOrgId = await orgHelper.getOrgId(token);
+            const currentOrgId = orgId || await orgHelper.getOrgId(token);
+            if (!orgId) {
+                setOrgId(currentOrgId);
+            }
 
             const params = {
                 page,
@@ -102,8 +115,6 @@ export default function ContractManagementPage() {
                 setTotal(0);
                 return;
             }
-
-            showToast("Hợp đồng đã được tải", "success");
 
             let items: Contract[] = [];
             let totalItems = 0;
@@ -123,12 +134,53 @@ export default function ContractManagementPage() {
         } finally {
             setLoading(false);
         }
-    }, [page, limit, searchTerm, activeTab, showToast, router]);
+    }, [page, limit, searchTerm, activeTab, showToast, router, orgId]);
 
     useEffect(() => {
         const timer = setTimeout(() => { fetchContracts(); }, 400);
         return () => clearTimeout(timer);
     }, [fetchContracts]);
+
+    useEffect(() => {
+        const initOrg = async () => {
+            if (orgId) return;
+            const token = authStorage.getAccessToken();
+            if (!token) return;
+            try {
+                const resolvedOrgId = await orgHelper.getOrgId(token);
+                setOrgId(resolvedOrgId);
+            } catch {
+                // Keep normal API flow even if org resolution fails.
+            }
+        };
+
+        void initOrg();
+    }, [orgId]);
+
+    useOrganizationRealtime({
+        orgId,
+        events: CONTRACT_EVENTS,
+        enabled: !!orgId,
+        onEvent: (eventName, payload) => {
+            void fetchContracts();
+
+            const data = payload as { code?: string } | undefined;
+            const suffix = data?.code ? ` ${data.code}` : "";
+            const messageMap: Record<string, string> = {
+                "rentalContract:created": `Hợp đồng mới đã được tạo${suffix}`,
+                "rentalContract:statusUpdated": `Trạng thái hợp đồng đã thay đổi${suffix}`,
+                "rentalContract:updated": `Hợp đồng đã được cập nhật${suffix}`,
+                "rentalContract:deleted": `Hợp đồng đã bị xóa${suffix}`,
+                "rentalContract:deletedMany": "Danh sách hợp đồng đã được cập nhật",
+                "rentalContract:renewed": `Hợp đồng đã được gia hạn${suffix}`,
+            };
+
+            const message = messageMap[eventName];
+            if (message) {
+                showToast(message, "success");
+            }
+        },
+    });
 
     const totalPages = Math.max(1, Math.ceil(total / limit));
 

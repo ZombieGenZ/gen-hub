@@ -24,16 +24,43 @@ import { PaymentHistory } from "@/components/contract/PaymentHistory";
 import { StatusTimeline, type TimelineEvent } from "@/components/contract/StatusTimeline";
 import { RequestRefundModal } from "@/components/contract/RequestRefundModal";
 import type { RentalContractDetail } from "@/types/rental-contracts/rental-contracts.type";
+import { useOrganizationRealtime } from "@/hooks/useOrganizationRealtime";
+import { useToast } from "@/contexts/ToastContext";
+
+const CONTRACT_DETAIL_EVENTS = [
+    "rentalContract:updated",
+    "rentalContract:statusUpdated",
+    "rentalContract:renewed",
+    "rentalContract:deleted",
+    "rentalContract:deletedMany",
+];
 
 export default function CustomerContractDetailPage() {
     const params = useParams();
     const router = useRouter();
     const contractId = params.id as string;
+    const { showToast } = useToast();
 
     const [contract, setContract] = useState<RentalContractDetail | null>(null);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState("contract");
     const [showRefundModal, setShowRefundModal] = useState(false);
+    const [orgId, setOrgId] = useState<string | null>(null);
+
+    const refreshContract = async () => {
+        try {
+            const token = authStorage.getAccessToken();
+            if (!token) return;
+            const currentOrgId = orgId || await orgHelper.getOrgId(token);
+            if (!orgId) {
+                setOrgId(currentOrgId);
+            }
+            const res = await rentalContractService.getOrgRentalContractById(token, currentOrgId, contractId);
+            setContract(res?.data ?? res);
+        } catch (err) {
+            console.error("Failed to refresh contract", err);
+        }
+    };
 
     useEffect(() => {
         const fetchContract = async () => {
@@ -43,6 +70,7 @@ export default function CustomerContractDetailPage() {
                 setLoading(true);
                 
                 const currentOrgId = await orgHelper.getOrgId(token);
+                setOrgId(currentOrgId);
                 const res = await rentalContractService.getOrgRentalContractById(token, currentOrgId, contractId);
                 const data: RentalContractDetail = res?.data ?? res;
                 setContract(data);
@@ -55,17 +83,29 @@ export default function CustomerContractDetailPage() {
         fetchContract();
     }, [contractId, router]);
 
-    const refreshContract = async () => {
-        try {
-            const token = authStorage.getAccessToken();
-            if (!token) return;
-            const currentOrgId = await orgHelper.getOrgId(token);
-            const res = await rentalContractService.getOrgRentalContractById(token, currentOrgId, contractId);
-            setContract(res?.data ?? res);
-        } catch (err) {
-            console.error("Failed to refresh contract", err);
-        }
-    };
+    useOrganizationRealtime({
+        orgId,
+        events: CONTRACT_DETAIL_EVENTS,
+        enabled: !!orgId,
+        onEvent: (eventName, payload) => {
+            const data = payload as { contractId?: string; contractIds?: string[] } | undefined;
+            const isExactContract = data?.contractId === contractId;
+            const isDeletedManyContainCurrent = Array.isArray(data?.contractIds) && data.contractIds.includes(contractId);
+
+            if (!isExactContract && !isDeletedManyContainCurrent) {
+                return;
+            }
+
+            if (eventName === "rentalContract:deleted" || eventName === "rentalContract:deletedMany") {
+                showToast("Hợp đồng đã bị hủy từ màn khác", "success");
+                router.push("/dashboard/organization/contracts");
+                return;
+            }
+
+            void refreshContract();
+            showToast("Chi tiết hợp đồng đã được cập nhật realtime", "success");
+        },
+    });
 
     // ---------- Loading ----------
     if (loading) {

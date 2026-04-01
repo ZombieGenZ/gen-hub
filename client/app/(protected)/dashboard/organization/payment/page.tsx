@@ -49,10 +49,22 @@ import { DepositModal } from "@/components/modals/deposit-modal";
 import { orgHelper } from "@/lib/organization.utils";
 import { OrganizationService } from "@/services/organization/organization.service";
 import { useToast } from "@/contexts/ToastContext";
+import { useOrganizationRealtime } from "@/hooks/useOrganizationRealtime";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 import { useRouter } from "next/navigation";
 const LIMIT = 20;
+
+const PAYMENT_REALTIME_EVENTS = [
+    "refundRequest:created",
+    "refundRequest:accepted",
+    "refundRequest:rejected",
+    "refundRequest:statusChanged",
+    "refundRequest:deleted",
+    "rentalContract:statusUpdated",
+    "rentalContract:renewed",
+    "rentalContract:deletedMany",
+];
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -177,6 +189,39 @@ export default function FinancePage() {
             setTxLoading(false);
         }
     }, [showToast]);
+
+    const handleRealtimeRefresh = useCallback(() => {
+        const token = authStorage.getAccessToken();
+        if (!token || !orgId) return;
+
+        void fetchBalance(token, orgId);
+        void fetchTransactions(token, orgId, page, searchDescription, filterType, filterStatus, date);
+    }, [orgId, page, searchDescription, filterType, filterStatus, date, fetchBalance, fetchTransactions]);
+
+    useOrganizationRealtime({
+        orgId,
+        events: PAYMENT_REALTIME_EVENTS,
+        enabled: !!orgId,
+        onEvent: (eventName) => {
+            handleRealtimeRefresh();
+
+            const messageMap: Record<string, string> = {
+                "refundRequest:created": "Yêu cầu hoàn tiền mới đã được tạo",
+                "refundRequest:accepted": "Yêu cầu hoàn tiền đã được duyệt",
+                "refundRequest:rejected": "Yêu cầu hoàn tiền đã bị từ chối",
+                "refundRequest:statusChanged": "Trạng thái yêu cầu hoàn tiền đã thay đổi",
+                "refundRequest:deleted": "Yêu cầu hoàn tiền đã bị xóa",
+                "rentalContract:statusUpdated": "Trạng thái hợp đồng đã thay đổi",
+                "rentalContract:renewed": "Hợp đồng đã được gia hạn",
+                "rentalContract:deletedMany": "Danh sách hợp đồng đã được cập nhật",
+            };
+
+            const message = messageMap[eventName];
+            if (message) {
+                showToast(message, "success");
+            }
+        },
+    });
 
     // ── Initial load ──────────────────────────────────────────────────────────
     useEffect(() => {
@@ -407,6 +452,8 @@ export default function FinancePage() {
                             {searchDescription && (
                                 <button
                                     onClick={() => setSearchDescription("")}
+                                    title="Xóa nội dung tìm kiếm"
+                                    aria-label="Xóa nội dung tìm kiếm"
                                     className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                                 >
                                     <XMarkIcon className="w-3.5 h-3.5" />
