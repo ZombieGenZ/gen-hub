@@ -305,6 +305,24 @@ export class InventoryRequestController {
         );
     }
 
+    @Post('stock/rebalance')
+    @RequireOrgPermission('org.inventory.inbound.approve')
+    @ApiOperation({
+        summary: 'Tái cấu trúc sắp xếp kho (Rebalance)',
+        description: 'Quét các ô đang bị chứa nhiều thùng hàng (chồng lấp) và tự động phân bổ chúng ra các ô trống đơn lẻ. Nếu thiếu ô, hệ thống sẽ tự động mở rộng kho.',
+    })
+    @ApiParam({ name: 'orgId', required: true, description: 'ID tổ chức', example: ORG_ID })
+    @ApiQuery({ name: 'warehouse_id', required: true, description: 'ID kho cần xử lý', example: WAREHOUSE_ID })
+    async rebalance(
+        @Param('orgId', ParseUUIDPipe) orgId: string,
+        @Query('warehouse_id', ParseUUIDPipe) warehouseId: string,
+        @CurrentActor() actorId: string,
+        @I18nLang() lang: string,
+    ) {
+        const result = await this.inventoryRequestService.rebalanceWarehouse(orgId, warehouseId, actorId, lang);
+        return new UpdatedResponse('inventory-request.rebalance_success', result, result.message);
+    }
+
     @Post('inbound')
     @RequireOrgPermission('org.inventory.inbound.create')
     @ApiOperation({
