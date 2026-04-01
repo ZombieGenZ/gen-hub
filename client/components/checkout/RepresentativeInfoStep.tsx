@@ -190,7 +190,7 @@ export function RepresentativeInfoStep({ initialData, onChange }: Representative
                     'representative_name',
                     'Họ và tên',
                     <UserIcon className="w-4 h-4 text-slate-400" />,
-                    'VD: Nguyễn Văn A',
+                    'Nhập họ và tên',
                     true
                 )}
                 {/* Title Combobox */}

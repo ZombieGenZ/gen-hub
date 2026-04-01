@@ -331,7 +331,6 @@ export default function RoleManagementPage() {
                                 id="name"
                                 value={formData.name}
                                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                placeholder="VD: Thủ kho, Nhân viên kiểm kê..."
                             />
                         </div>
                         <div className="space-y-2">

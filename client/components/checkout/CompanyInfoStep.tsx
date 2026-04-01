@@ -293,14 +293,12 @@ export function CompanyInfoStep({ initialData, onChange, allowEdit = true }: Com
                     'name',
                     'Tên công ty',
                     <BuildingOffice2Icon className="w-4 h-4 text-slate-400" />,
-                    'VD: Công ty TNHH ABC',
                     true
                 )}
                 {renderField(
                     'international_name',
                     'Tên quốc tế',
                     <BuildingOffice2Icon className="w-4 h-4 text-slate-400" />,
-                    'VD: ABC Company Limited',
                     false
                 )}
             </div>

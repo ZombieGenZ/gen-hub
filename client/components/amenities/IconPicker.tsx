@@ -176,7 +176,7 @@ export function IconPicker({ value, onChange }: IconPickerProps) {
                             <Input
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                placeholder="Tìm icon (VD: wifi, lửa, điện...)"
+                                placeholder="Tìm icon"
                                 className="pl-9 h-9"
                                 style={{ borderRadius: '8px' }}
                                 autoFocus

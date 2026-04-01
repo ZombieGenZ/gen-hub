@@ -345,7 +345,6 @@ const BarcodeScannerPanel = ({
           </p>
           <div className="flex gap-2">
             <Input
-              placeholder="VD: ELE-ABC123, electronics..."
               value={manualInput}
               onChange={(e) => setManualInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleManualSearch()}

@@ -234,7 +234,7 @@ function CreateItemRow({
                                     value={newBatchCode}
                                     onChange={(e) => setNewBatchCode(e.target.value)}
                                     className="rounded-xl h-8 text-xs"
-                                    placeholder="VD: LOT-001"
+                                    placeholder="VD: Nhập mã lô"
                                 />
                             </div>
                             <div className="space-y-2">
@@ -509,7 +509,7 @@ export function CreateInboundDialog({
                                 <Input
                                     value={formPOCode}
                                     onChange={(e) => setFormPOCode(e.target.value)}
-                                    placeholder="VD: PO-2024-001"
+                                    placeholder="Nhập mã PO"
                                     className="rounded-xl"
                                 />
                             </div>

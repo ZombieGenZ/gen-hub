@@ -361,7 +361,7 @@ function BatchFormDialog({
                             onChange={(e) =>
                                 setFormData({ ...formData, code: e.target.value })
                             }
-                            placeholder="VD: 20260224-SKU001-01"
+                            placeholder="Nhập mã lô hàng"
                             className="bg-slate-50 border-slate-200 rounded-xl px-4 font-mono focus-visible:bg-white"
                         />
                         <p className="text-xs text-slate-400">

@@ -113,7 +113,7 @@ export function EditTagDialog({ open, onOpenChange, tag, onSuccess }: EditTagDia
                                 <FormItem>
                                     <FormLabel>Tên nhãn</FormLabel>
                                     <FormControl>
-                                        <Input placeholder="VD: Khách hàng VIP" {...field} />
+                                        <Input {...field} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>

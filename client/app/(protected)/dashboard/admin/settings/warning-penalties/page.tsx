@@ -576,7 +576,7 @@ export default function WarningPenaltiesPage() {
                         {showAddCat && (
                             <div className="bg-white rounded-2xl border border-brand/30 p-6 shadow-sm shadow-brand/10 space-y-4 mb-4">
                                 <h3 className="font-semibold text-sm flex items-center gap-2"><PlusIcon className="w-4 h-4 text-brand" /> Thêm danh mục mới</h3>
-                                <Input placeholder="Tên danh mục (VD: Thanh toán chậm)" value={newCatName} onChange={e => setNewCatName(e.target.value)} className="rounded-xl" />
+                                <Input placeholder="Tên danh mục" value={newCatName} onChange={e => setNewCatName(e.target.value)} className="rounded-xl" />
                                 <Input placeholder="Mô tả ngắn (tùy chọn)" value={newCatDesc} onChange={e => setNewCatDesc(e.target.value)} className="rounded-xl" />
                                 <div className="flex gap-2 justify-end">
                                     <Button variant="ghost" size="sm" className="rounded-xl" onClick={() => setShowAddCat(false)}>Hủy</Button>
@@ -639,7 +639,7 @@ export default function WarningPenaltiesPage() {
                                     <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
                                         <div className="md:col-span-8 space-y-2">
                                             <label className="text-xs font-medium text-muted-foreground">Tên quy tắc <span className="text-rose-500">*</span></label>
-                                            <Input placeholder="VD: Phạt khóa tài khoản khi trễ hạn thanh toán" className="rounded-2xl h-10" value={builderState.name} onChange={e => setBuilderState(s => ({ ...s, name: e.target.value }))} />
+                                            <Input placeholder="Nhập tên quy tắc" className="rounded-2xl h-10" value={builderState.name} onChange={e => setBuilderState(s => ({ ...s, name: e.target.value }))} />
                                         </div>
                                         <div className="md:col-span-2 space-y-2">
                                             <label className="text-xs font-medium text-muted-foreground">Ưu tiên (1=Cao nhất)</label>
@@ -741,7 +741,7 @@ export default function WarningPenaltiesPage() {
                                             {builderState.action === "DEDUCTION" && (
                                                 <>
                                                     <span className="text-sm font-medium text-rose-800">số tiền</span>
-                                                    <Input type="number" min={0} step={10000} className="w-40 h-9 rounded-xl bg-white font-bold" value={builderState.deduction_amount || ""} onChange={e => setBuilderState(s => ({ ...s, deduction_amount: Number(e.target.value) }))} placeholder="VD: 500000" />
+                                                    <Input type="number" min={0} step={10000} className="w-40 h-9 rounded-xl bg-white font-bold" value={builderState.deduction_amount || ""} onChange={e => setBuilderState(s => ({ ...s, deduction_amount: Number(e.target.value) }))} placeholder="Nhập số tiền" />
                                                     <span className="text-sm font-medium text-rose-800">VNĐ</span>
                                                 </>
                                             )}

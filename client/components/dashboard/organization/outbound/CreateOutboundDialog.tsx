@@ -328,7 +328,7 @@ export function CreateOutboundDialog({
                                 <Input
                                     value={formSOCode}
                                     onChange={(e) => setFormSOCode(e.target.value)}
-                                    placeholder="VD: SO-2024-001"
+                                    placeholder="Nhập mã SO"
                                     className="rounded-xl"
                                 />
                             </div>

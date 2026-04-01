@@ -171,7 +171,7 @@ export function EditRuleDialog({ open, onOpenChange, entry, onSuccess }: EditRul
                                 <FormItem>
                                     <FormLabel>Giá trị</FormLabel>
                                     <FormControl>
-                                        <Input placeholder="VD: spam@example.com hoặc @spam.com" {...field} />
+                                        <Input {...field} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -185,7 +185,7 @@ export function EditRuleDialog({ open, onOpenChange, entry, onSuccess }: EditRul
                                 <FormItem>
                                     <FormLabel>Lý do (Tùy chọn)</FormLabel>
                                     <FormControl>
-                                        <Input placeholder="VD: Spam quảng cáo" {...field} />
+                                        <Input placeholder="Nhập lý do" {...field} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>

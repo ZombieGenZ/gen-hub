@@ -100,7 +100,7 @@ export function CreateTagDialog({ open, onOpenChange, onSuccess }: CreateTagDial
                                 <FormItem>
                                     <FormLabel>Tên nhãn</FormLabel>
                                     <FormControl>
-                                        <Input placeholder="VD: Khách hàng VIP" {...field} />
+                                        <Input {...field} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>

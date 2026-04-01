@@ -58,7 +58,6 @@ export function TierForm({ initialData, onSubmit, onCancel, isEdit = false, load
                             id="tier-name"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
-                            placeholder="VD: Gói Doanh Nghiệp - 1 Năm"
                             style={{ borderRadius: "12px" }}
                             className="bg-muted/30"
                         />

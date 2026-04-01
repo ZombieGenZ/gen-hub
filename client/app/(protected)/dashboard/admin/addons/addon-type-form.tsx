@@ -56,7 +56,6 @@ export function AddonTypeForm({ initialData, onSuccess, onCancel, isEdit = false
                         value={formData.name}
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                         style={{ borderRadius: "12px" }}
-                        placeholder="VD: Dịch vụ Xe nâng"
                         className="bg-muted/30"
                     />
                 </div>

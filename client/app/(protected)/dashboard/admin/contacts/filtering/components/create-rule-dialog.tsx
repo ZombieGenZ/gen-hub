@@ -157,7 +157,7 @@ export function CreateRuleDialog({ open, onOpenChange, onSuccess }: CreateRuleDi
                                 <FormItem>
                                     <FormLabel>Giá trị</FormLabel>
                                     <FormControl>
-                                        <Input placeholder="VD: spam@example.com hoặc @spam.com" {...field} />
+                                        <Input placeholder="Nhập giá trị" {...field} />
                                     </FormControl>
                                     <FormDescription>
                                         Giá trị cần khớp chính xác hoặc theo mẫu.
@@ -174,7 +174,7 @@ export function CreateRuleDialog({ open, onOpenChange, onSuccess }: CreateRuleDi
                                 <FormItem>
                                     <FormLabel>Lý do (Tùy chọn)</FormLabel>
                                     <FormControl>
-                                        <Input placeholder="VD: Spam quảng cáo" {...field} />
+                                        <Input placeholder="Nhập lý do" {...field} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>

@@ -240,8 +240,8 @@ export function ContentComposerStep() {
                             <Input
                                 placeholder={
                                     data.actionType === "external_link"
-                                        ? "Nhập đường dẫn (VD: https://example.com)..."
-                                        : "Nhập đường dẫn nội bộ (VD: /contracts/123)..."
+                                        ? "Nhập đường dẫn"
+                                        : "Nhập đường dẫn nội bộ"
                                 }
                                 value={data.actionLink}
                                 onChange={(e) => setData({ actionLink: e.target.value })}

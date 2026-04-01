@@ -144,7 +144,7 @@ const AISuggestionPanel = ({
         <div className="space-y-2">
           <Label className="text-xs">Tên hàng hóa</Label>
           <Input
-            placeholder="VD: Laptop Dell XPS 15"
+            placeholder="Nhập tên hàng hóa"
             value={boxName}
             onChange={(e) => setBoxName(e.target.value)}
             className="h-9 text-sm"

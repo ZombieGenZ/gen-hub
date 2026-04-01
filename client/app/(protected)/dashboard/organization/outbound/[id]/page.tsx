@@ -427,7 +427,6 @@ export default function OutboundDetailPage() {
                                         <Input
                                             value={newPkgTracking}
                                             onChange={(e) => setNewPkgTracking(e.target.value)}
-                                            placeholder="VD: VN123456789"
                                             className="rounded-xl h-9 text-sm"
                                         />
                                     </div>
@@ -436,7 +435,6 @@ export default function OutboundDetailPage() {
                                         <Input
                                             value={newPkgCarrier}
                                             onChange={(e) => setNewPkgCarrier(e.target.value)}
-                                            placeholder="VD: GHTK, GHN, ..."
                                             className="rounded-xl h-9 text-sm"
                                         />
                                     </div>

@@ -1250,7 +1250,7 @@ export function ProfileDialog({ open = true, onOpenChange }: ProfileDialogProps 
                                     value={editOrgData.representative_title}
                                     onChange={(e) => setEditOrgData({ ...editOrgData, representative_title: e.target.value })}
                                     className="h-11 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800"
-                                    placeholder="Nhập chức vụ (VD: Giám đốc)"
+                                    placeholder="Nhập chức vụ "
                                   />
                                 </div>
                               </div>

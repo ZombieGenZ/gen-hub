@@ -112,7 +112,6 @@ export function CategoryForm({ initialData, onSuccess, onCancel, isEdit = false 
                                 value={formData.name}
                                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                 style={{ borderRadius: "12px" }}
-                                placeholder="VD: Tin tức, Khuyến mãi..."
                                 className="bg-muted/30"
                             />
                         </div>

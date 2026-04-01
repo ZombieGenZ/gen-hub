@@ -186,7 +186,6 @@ function RentalRequestContent() {
                                             type="number"
                                             id="area"
                                             name="area"
-                                            placeholder="VD: 500"
                                             value={formData.area}
                                             onChange={handleInputChange}
                                             className="bg-white text-slate-900 focus-visible:ring-primary"

@@ -205,7 +205,6 @@ export function CouponForm({ initialData, onSuccess, onCancel, isEdit = false }:
                                 value={formData.code}
                                 onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
                                 style={{ borderRadius: "12px" }}
-                                placeholder="VD: SUMMER2026"
                                 className="bg-muted/30"
                             />
                         </div>
@@ -216,7 +215,6 @@ export function CouponForm({ initialData, onSuccess, onCancel, isEdit = false }:
                                 value={formData.name}
                                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                 style={{ borderRadius: "12px" }}
-                                placeholder="VD: Khuyến mãi chào hè"
                                 className="bg-muted/30"
                             />
                         </div>
@@ -450,7 +448,6 @@ export function CouponForm({ initialData, onSuccess, onCancel, isEdit = false }:
                                                     value={formData.min_order_amount}
                                                     onChange={(e) => setFormData({ ...formData, min_order_amount: Math.max(0, parseFloat(e.target.value) || 0) })}
                                                     className="pl-8"
-                                                    placeholder="VD: 1000000"
                                                 />
                                             </div>
                                         </div>
@@ -474,7 +471,6 @@ export function CouponForm({ initialData, onSuccess, onCancel, isEdit = false }:
                                                 value={formData.min_warehouses}
                                                 onChange={(e) => setFormData({ ...formData, min_warehouses: Math.max(0, parseInt(e.target.value) || 0) })}
                                                 className="max-w-xs"
-                                                placeholder="VD: 2"
                                             />
                                         </div>
                                     )}
@@ -497,7 +493,6 @@ export function CouponForm({ initialData, onSuccess, onCancel, isEdit = false }:
                                                 value={formData.min_rental_duration_value}
                                                 onChange={(e) => setFormData({ ...formData, min_rental_duration_value: Math.max(0, parseInt(e.target.value) || 0) })}
                                                 className="max-w-[120px]"
-                                                placeholder="VD: 6"
                                             />
                                             <Select
                                                 value={formData.min_rental_duration_unit}
