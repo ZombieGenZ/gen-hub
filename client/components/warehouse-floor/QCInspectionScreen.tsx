@@ -337,7 +337,7 @@ export default function QCInspectionScreen({
                     <button
                         onClick={() => setScreenState('inspect')}
                         className="p-2 -ml-2 rounded-xl hover:bg-slate-100"
-                        title="Huỷ ghi nhận lỗi"
+                        title="Hủy ghi nhận lỗi"
                     >
                         <X className="w-6 h-6 text-slate-500" />
                     </button>

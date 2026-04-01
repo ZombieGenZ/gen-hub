@@ -65,7 +65,7 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
     CHECKING:  { label: "Đang kiểm",    color: "bg-purple-50 text-purple-700 border-purple-200" },
     PACKED:    { label: "Đã đóng gói",  color: "bg-orange-50 text-orange-700 border-orange-200" },
     SHIPPED:   { label: "Đã xuất kho",  color: "bg-green-50 text-green-700 border-green-200" },
-    CANCELLED: { label: "Đã huỷ",       color: "bg-red-50 text-red-700 border-red-200" },
+    CANCELLED: { label: "Đã hủy",       color: "bg-red-50 text-red-700 border-red-200" },
 };
 
 const OUTBOUND_STEPS = [
@@ -643,7 +643,7 @@ export default function OutboundApprovalDetail({
                         <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center">
                             <XCircleIcon className="w-8 h-8 text-red-500" />
                         </div>
-                        <p className="font-bold text-[16px] text-red-600">Phiếu xuất đã bị huỷ</p>
+                        <p className="font-bold text-[16px] text-red-600">Phiếu xuất đã bị hủy</p>
                     </div>
                 )}
             </div>
