@@ -52,10 +52,10 @@ const STRATEGY_OPTIONS: {
     title: string;
     desc: string;
 }[] = [
-    { value: "FEFO", title: "FEFO", desc: "Hết hạn trước, xuất trước" },
-    { value: "FIFO", title: "FIFO", desc: "Nhập trước, xuất trước" },
-    { value: "MANUAL", title: "Thủ công", desc: "Chọn lô thủ công" },
-];
+        { value: "FEFO", title: "FEFO", desc: "Hết hạn trước, xuất trước" },
+        { value: "FIFO", title: "FIFO", desc: "Nhập trước, xuất trước" },
+        { value: "MANUAL", title: "Thủ công", desc: "Chọn lô thủ công" },
+    ];
 
 /** Ảnh nhỏ trong row */
 function RowProductImage({ src, alt }: { src: string | null; alt: string }) {
@@ -124,17 +124,17 @@ export function CreateOutboundDialog({
             const pList = Array.isArray(partnerRes)
                 ? partnerRes
                 : Array.isArray((partnerRes as unknown as { data: { items: Partner[] } })?.data?.items)
-                  ? (partnerRes as unknown as { data: { items: Partner[] } }).data.items
-                  : [];
+                    ? (partnerRes as unknown as { data: { items: Partner[] } }).data.items
+                    : [];
             setPartners(pList);
 
             const prList = Array.isArray(productRes)
                 ? productRes
                 : Array.isArray(
-                        (productRes as unknown as { data: { items: Product[] } })?.data?.items,
-                    )
-                  ? (productRes as unknown as { data: { items: Product[] } }).data.items
-                  : [];
+                    (productRes as unknown as { data: { items: Product[] } })?.data?.items,
+                )
+                    ? (productRes as unknown as { data: { items: Product[] } }).data.items
+                    : [];
             setProducts(prList);
         } catch {
             // silent fail
@@ -354,11 +354,10 @@ export function CreateOutboundDialog({
                                 <button
                                     key={opt.value}
                                     type="button"
-                                    className={`outbound-strategy__option ${
-                                        formStrategy === opt.value
+                                    className={`outbound-strategy__option ${formStrategy === opt.value
                                             ? "outbound-strategy__option--active"
                                             : ""
-                                    } btn-raw`}
+                                        } btn-raw`}
                                     onClick={() => setFormStrategy(opt.value)}
                                 >
                                     <div className="outbound-strategy__option-title">
@@ -516,11 +515,10 @@ export function CreateOutboundDialog({
                                                                     parseInt(e.target.value) || 1,
                                                                 )
                                                             }
-                                                            className={`rounded-xl h-9 text-sm w-full ${
-                                                                item.stockError
+                                                            className={`rounded-xl h-9 text-sm w-full ${item.stockError
                                                                     ? "border-red-500 focus-visible:ring-red-500"
                                                                     : ""
-                                                            }`}
+                                                                }`}
                                                             placeholder="SL"
                                                         />
                                                         {conversionRate > 1 && (
@@ -572,17 +570,16 @@ export function CreateOutboundDialog({
                                                     {/* Tồn kho */}
                                                     <td className="px-4 py-3 w-[100px] text-right">
                                                         <span
-                                                            className={`text-sm font-medium tabular-nums ${
-                                                                qtyAvailable != null &&
-                                                                item.quantity > qtyAvailable
+                                                            className={`text-sm font-medium tabular-nums ${qtyAvailable != null &&
+                                                                    item.quantity > qtyAvailable
                                                                     ? "text-red-500"
                                                                     : "text-muted-foreground"
-                                                            }`}
+                                                                }`}
                                                         >
                                                             {qtyAvailable != null
                                                                 ? qtyAvailable.toLocaleString(
-                                                                      "vi-VN",
-                                                                  )
+                                                                    "vi-VN",
+                                                                )
                                                                 : "—"}
                                                         </span>
                                                     </td>
@@ -591,8 +588,8 @@ export function CreateOutboundDialog({
                                                     <td className="px-4 py-3 w-[110px] text-right text-sm text-muted-foreground tabular-nums">
                                                         {item.product.cost_price != null
                                                             ? item.product.cost_price.toLocaleString(
-                                                                  "vi-VN",
-                                                              ) + "đ"
+                                                                "vi-VN",
+                                                            ) + "đ"
                                                             : "—"}
                                                     </td>
 

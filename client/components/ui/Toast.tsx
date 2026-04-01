@@ -61,7 +61,7 @@ export const Toast: React.FC<ToastProps> = ({
   // Progress Timer
   useEffect(() => {
     let animationFrame: number;
-    
+
     const updateProgress = () => {
       if (isPaused) {
         startTimeRef.current = Date.now();
@@ -70,7 +70,7 @@ export const Toast: React.FC<ToastProps> = ({
 
       const elapsed = Date.now() - startTimeRef.current;
       const newProgress = Math.max(0, 100 - (elapsed / remainingTimeRef.current) * 100);
-      
+
       setProgress(newProgress);
 
       if (newProgress > 0) {
@@ -115,12 +115,12 @@ export const Toast: React.FC<ToastProps> = ({
     <motion.div
       layout
       initial={{ opacity: 0, y: 50, scale: 0.5, rotateX: 45 }}
-      animate={{ 
-        opacity: opacity, 
-        y: isFront ? 0 : yOffset, 
+      animate={{
+        opacity: opacity,
+        y: isFront ? 0 : yOffset,
         scale: scale,
         rotateX: 0,
-        zIndex: index 
+        zIndex: index
       }}
       exit={{ opacity: 0, scale: 0.5, transition: { duration: 0.2 } }}
       transition={{ type: "spring", stiffness: 400, damping: 25 }}

@@ -92,7 +92,7 @@ export function PartnerFormDialog({
                 setFormTaxCode(editTarget.tax_code || "");
                 setFormAddressDetail(editTarget.address_detail || "");
                 setFormActive(editTarget.is_active);
-                
+
                 if (editTarget.ward?.province?.id) {
                     setSelectedProvinceId(editTarget.ward.province.id);
                     setFormWardId(editTarget.ward_id || "");

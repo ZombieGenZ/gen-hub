@@ -91,7 +91,7 @@ export function ProductImportDialog({ open, onOpenChange, onSuccess }: ProductIm
 
                 <div className="py-6">
                     {!file && !importResult && (
-                        <div 
+                        <div
                             className="border-2 border-dashed border-slate-200 rounded-2xl p-10 flex flex-col items-center justify-center bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer relative group"
                         >
                             <input
@@ -119,9 +119,9 @@ export function ProductImportDialog({ open, onOpenChange, onSuccess }: ProductIm
                                     <p className="text-xs text-slate-500">{(file.size / 1024).toFixed(1)} KB</p>
                                 </div>
                             </div>
-                            <Button 
-                                variant="ghost" 
-                                size="icon" 
+                            <Button
+                                variant="ghost"
+                                size="icon"
                                 className="rounded-full hover:bg-white"
                                 onClick={() => setFile(null)}
                                 disabled={isImporting}
@@ -186,7 +186,7 @@ export function ProductImportDialog({ open, onOpenChange, onSuccess }: ProductIm
                         Hủy bỏ
                     </Button>
                     {!importResult ? (
-                        <Button 
+                        <Button
                             className="bg-[#0F766E] hover:bg-[#0D6B63] text-white rounded-xl flex-1 sm:flex-none"
                             onClick={handleImport}
                             disabled={!file || isImporting}
@@ -194,7 +194,7 @@ export function ProductImportDialog({ open, onOpenChange, onSuccess }: ProductIm
                             {isImporting ? "Đang xử lý..." : "Bắt đầu nhập"}
                         </Button>
                     ) : (
-                        <Button 
+                        <Button
                             className="bg-[#0F766E] hover:bg-[#0D6B63] text-white rounded-xl flex-1 sm:flex-none"
                             onClick={handleClose}
                         >

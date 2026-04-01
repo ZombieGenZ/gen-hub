@@ -99,11 +99,10 @@ export function ProductHeader({
                                 type="button"
                                 size="sm"
                                 onClick={() => onQuickFilterChange("all")}
-                                className={`rounded-lg border ${
-                                    quickFilter === "all"
+                                className={`rounded-lg border ${quickFilter === "all"
                                         ? "bg-[#0F766E] text-white border-[#0F766E] hover:bg-[#0F766E]/90"
                                         : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
-                                }`}
+                                    }`}
                             >
                                 Tất cả
                             </Button>
@@ -111,11 +110,10 @@ export function ProductHeader({
                                 type="button"
                                 size="sm"
                                 onClick={() => onQuickFilterChange("low_stock")}
-                                className={`rounded-lg border flex items-center gap-1.5 ${
-                                    quickFilter === "low_stock"
+                                className={`rounded-lg border flex items-center gap-1.5 ${quickFilter === "low_stock"
                                         ? "bg-amber-500 text-white border-amber-500 hover:bg-amber-500/90"
                                         : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
-                                }`}
+                                    }`}
                             >
                                 <ExclamationTriangleIcon className="w-3.5 h-3.5" />
                                 Sắp hết hàng
@@ -124,11 +122,10 @@ export function ProductHeader({
                                 type="button"
                                 size="sm"
                                 onClick={() => onQuickFilterChange("expiring_soon")}
-                                className={`rounded-lg border flex items-center gap-1.5 ${
-                                    quickFilter === "expiring_soon"
+                                className={`rounded-lg border flex items-center gap-1.5 ${quickFilter === "expiring_soon"
                                         ? "bg-red-500 text-white border-red-500 hover:bg-red-500/90"
                                         : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
-                                }`}
+                                    }`}
                             >
                                 <ClockIcon className="w-3.5 h-3.5" />
                                 Lô sắp hết hạn

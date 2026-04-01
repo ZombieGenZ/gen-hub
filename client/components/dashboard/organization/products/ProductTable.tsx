@@ -256,8 +256,8 @@ export function ProductTable({
                                             <span className="text-sm font-medium text-slate-900 tabular-nums">
                                                 {product.cost_price != null
                                                     ? new Intl.NumberFormat("vi-VN").format(
-                                                          product.cost_price
-                                                      ) + " ₫"
+                                                        product.cost_price
+                                                    ) + " ₫"
                                                     : "—"}
                                             </span>
                                         </TableCell>
@@ -266,8 +266,8 @@ export function ProductTable({
                                             <span className="text-sm font-semibold text-slate-900 tabular-nums">
                                                 {stockMap[product.id] != null
                                                     ? new Intl.NumberFormat("vi-VN").format(
-                                                          stockMap[product.id]
-                                                      )
+                                                        stockMap[product.id]
+                                                    )
                                                     : "0"}
                                             </span>
                                         </TableCell>
@@ -373,11 +373,10 @@ export function ProductTable({
                                         key={page}
                                         variant={page === currentPage ? "default" : "ghost"}
                                         size="icon"
-                                        className={`h-8 w-8 text-xs ${
-                                            page === currentPage
+                                        className={`h-8 w-8 text-xs ${page === currentPage
                                                 ? "bg-[#0F766E] hover:bg-[#0D6B63] text-white"
                                                 : ""
-                                        }`}
+                                            }`}
                                         onClick={() => setCurrentPage(page)}
                                     >
                                         {page}

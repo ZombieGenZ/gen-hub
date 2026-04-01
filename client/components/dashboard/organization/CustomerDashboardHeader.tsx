@@ -16,21 +16,21 @@ export function CustomerDashboardHeader({ dateFilter, setDateFilter }: CustomerD
             {/* Date Filter */}
             <div className="flex items-center bg-muted/50 p-1 rounded-lg border border-border/40">
                 {["today", "week", "month"].map((key) => (
-                        <Button
+                    <Button
                         key={key}
-                            type="button"
-                            size="sm"
-                            variant="ghost"
+                        type="button"
+                        size="sm"
+                        variant="ghost"
                         onClick={() => setDateFilter(key)}
                         className={cn(
-                                "h-auto px-3.5 py-1.5 text-xs font-medium rounded-md",
+                            "h-auto px-3.5 py-1.5 text-xs font-medium rounded-md",
                             dateFilter === key
                                 ? "bg-background text-foreground shadow-sm ring-1 ring-border/50"
                                 : "text-muted-foreground hover:text-foreground hover:bg-background/50"
                         )}
                     >
                         {key === "today" ? "Hôm nay" : key === "week" ? "Tuần này" : "Tháng này"}
-                        </Button>
+                    </Button>
                 ))}
             </div>
 
