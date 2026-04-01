@@ -23,6 +23,73 @@ export interface ToastProps {
   total?: number;
 }
 
+// Animated Icons Components (restored from original toast implementation)
+const SuccessIcon = () => (
+  <svg className="h-6 w-6 text-green-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+    <motion.path
+      initial={{ pathLength: 0 }}
+      animate={{ pathLength: 1 }}
+      transition={{ duration: 0.5, ease: "easeOut", delay: 0.2 }}
+      d="M20 6L9 17l-5-5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
+const ErrorIcon = () => (
+  <svg className="h-6 w-6 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+    <motion.path
+      initial={{ pathLength: 0 }}
+      animate={{ pathLength: 1 }}
+      transition={{ duration: 0.3, ease: "easeOut", delay: 0.2 }}
+      d="M18 6L6 18M6 6l12 12"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
+const WarningIcon = () => (
+  <svg className="h-6 w-6 text-yellow-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+    <motion.path
+      initial={{ pathLength: 0 }}
+      animate={{ pathLength: 1 }}
+      transition={{ duration: 0.4, ease: "easeOut", delay: 0.2 }}
+      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
+const InfoIcon = () => (
+  <svg className="h-6 w-6 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+    <motion.circle
+      initial={{ pathLength: 0 }}
+      animate={{ pathLength: 1 }}
+      transition={{ duration: 0.4, ease: "easeOut", delay: 0.2 }}
+      cx="12" cy="12" r="10"
+      strokeLinecap="round"
+    />
+    <motion.path
+      initial={{ pathLength: 0 }}
+      animate={{ pathLength: 1 }}
+      transition={{ duration: 0.3, ease: "easeOut", delay: 0.4 }}
+      d="M12 16v-4m0-4h.01"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
+const toastIcons = {
+  success: SuccessIcon,
+  error: ErrorIcon,
+  warning: WarningIcon,
+  info: InfoIcon,
+};
+
 const toastGradients = {
   success: "from-green-500/20 via-emerald-500/20 to-green-500/20 border-green-500/30",
   error: "from-red-500/20 via-rose-500/20 to-red-500/20 border-red-500/30",
@@ -46,6 +113,7 @@ export const Toast: React.FC<ToastProps> = ({
   index = 0,
   total = 1,
 }) => {
+  const Icon = toastIcons[type];
   const [isPaused, setIsPaused] = useState(false);
   const [progress, setProgress] = useState(100);
   // eslint-disable-next-line react-hooks/purity
@@ -139,6 +207,11 @@ export const Toast: React.FC<ToastProps> = ({
     >
       {/* Holographic Gradient Border Effect */}
       <div className="absolute inset-0 -z-10 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+
+      {/* Type Icon */}
+      <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/70 dark:bg-slate-800/70">
+        <Icon />
+      </div>
 
       {/* Content */}
       <div className="flex-1 min-w-0">
