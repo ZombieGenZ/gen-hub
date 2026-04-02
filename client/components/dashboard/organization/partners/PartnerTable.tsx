@@ -175,6 +175,7 @@ export function PartnerTable({
                                                     className="h-8 w-8 rounded-lg text-slate-500 hover:text-[#0F766E]"
                                                     onClick={() => router.push(`/dashboard/organization/partners/${partner.id}`)}
                                                     title="Xem chi tiết"
+                                                    aria-label={`Xem chi tiết ${partner.name}`}
                                                 >
                                                     <EyeIcon className="w-4 h-4" />
                                                 </Button>
@@ -184,6 +185,7 @@ export function PartnerTable({
                                                     className="h-8 w-8 rounded-lg text-slate-500 hover:text-[#0F766E]"
                                                     onClick={() => onEditClick(partner)}
                                                     title="Chỉnh sửa"
+                                                    aria-label={`Chỉnh sửa ${partner.name}`}
                                                 >
                                                     <PencilSquareIcon className="w-4 h-4" />
                                                 </Button>
@@ -193,6 +195,7 @@ export function PartnerTable({
                                                     className="h-8 w-8 rounded-lg text-slate-500 hover:text-red-600"
                                                     onClick={() => onDeleteClick(partner)}
                                                     title="Xóa"
+                                                    aria-label={`Xóa ${partner.name}`}
                                                 >
                                                     <TrashIcon className="w-4 h-4" />
                                                 </Button>

@@ -78,6 +78,7 @@ export function EditTicketTagsDialog({ open, onOpenChange, currentTags, onSave }
                             className="pl-9"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
+                            aria-label="Tìm kiếm nhãn"
                         />
                     </div>
 
@@ -93,6 +94,15 @@ export function EditTicketTagsDialog({ open, onOpenChange, currentTags, onSave }
                                     <div
                                         key={tag.id}
                                         onClick={() => toggleTag(tag.id)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' || e.key === ' ') {
+                                                e.preventDefault();
+                                                toggleTag(tag.id);
+                                            }
+                                        }}
+                                        role="checkbox"
+                                        aria-checked={isSelected}
+                                        tabIndex={0}
                                         className={cn(
                                             "flex items-center justify-between p-2 rounded-lg cursor-pointer border transition-all",
                                             isSelected

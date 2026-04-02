@@ -94,9 +94,9 @@ function DialogHeader({
         >
             {children}
             {!hideCloseButton && (
-                <DialogPrimitive.Close className="absolute top-4 right-4 rounded-full p-1 text-[#64748B] opacity-100 hover:bg-[#E2E8F0] hover:text-[#1E293B] transition-colors focus:outline-none disabled:pointer-events-none [&_svg]:size-4">
+                <DialogPrimitive.Close className="absolute top-4 right-4 rounded-full p-1 text-[#64748B] opacity-100 hover:bg-[#E2E8F0] hover:text-[#1E293B] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none [&_svg]:size-4">
                     <XIcon />
-                    <span className="sr-only">Close</span>
+                    <span className="sr-only">Đóng</span>
                 </DialogPrimitive.Close>
             )}
         </div>

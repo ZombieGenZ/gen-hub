@@ -40,7 +40,7 @@ export function NavItem({ href, icon: Icon, label, isActive, isCollapsed, badge,
     );
 
     const baseClass = cn(
-        "flex items-center gap-3 py-2.5 rounded-full transition-all group outline-none",
+        "flex items-center gap-3 py-2.5 rounded-full transition-all group outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
         isCollapsed ? "justify-center px-0 w-full" : "px-4",
         disabled
             ? "opacity-50 cursor-not-allowed pointer-events-none"
@@ -50,7 +50,7 @@ export function NavItem({ href, icon: Icon, label, isActive, isCollapsed, badge,
     );
 
     const linkContent = disabled ? (
-        <span className={baseClass}>{inner}</span>
+        <span className={baseClass} role="link" aria-disabled="true" tabIndex={-1}>{inner}</span>
     ) : (
         <Link href={href} className={baseClass}>{inner}</Link>
     );

@@ -165,6 +165,7 @@ export function WarehouseGiftsTab({ data, onChange }: WarehouseGiftsTabProps) {
                         size="icon"
                         className="h-7 w-7 rounded-full"
                         onClick={() => removeFn(idx)}
+                        aria-label={`Xóa ${label} #${idx + 1}`}
                     >
                         <TrashIcon className="w-4 h-4 text-destructive" />
                     </Button>

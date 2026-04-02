@@ -229,7 +229,7 @@ export function CreateContractModal({ open, onOpenChange, onSuccess, organizatio
                                 value={formData.organization_id} 
                                 onValueChange={(value) => setFormData({...formData, organization_id: value})}
                             >
-                                <SelectTrigger>
+                                <SelectTrigger aria-label="Chọn tổ chức">
                                     <SelectValue placeholder="Chọn tổ chức" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -248,7 +248,7 @@ export function CreateContractModal({ open, onOpenChange, onSuccess, organizatio
                                 value={selectedTemplateId} 
                                 onValueChange={handleTemplateChange}
                             >
-                                <SelectTrigger>
+                                <SelectTrigger aria-label="Chọn kho">
                                     <SelectValue placeholder="Chọn kho" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -270,7 +270,7 @@ export function CreateContractModal({ open, onOpenChange, onSuccess, organizatio
                                 value={formData.duration_tier_id} 
                                 onValueChange={(value) => setFormData({...formData, duration_tier_id: value})}
                             >
-                                <SelectTrigger>
+                                <SelectTrigger aria-label="Chọn thời hạn">
                                     <SelectValue placeholder="Chọn thời hạn" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -302,7 +302,7 @@ export function CreateContractModal({ open, onOpenChange, onSuccess, organizatio
                                 value={formData.payment_method} 
                                 onValueChange={(value: RentalContractPaymentMethod) => setFormData({...formData, payment_method: value})}
                             >
-                                <SelectTrigger>
+                                <SelectTrigger aria-label="Hình thức thanh toán">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -319,7 +319,7 @@ export function CreateContractModal({ open, onOpenChange, onSuccess, organizatio
                                 value={formData.type} 
                                 onValueChange={(value: RentalContractPaymentType) => setFormData({...formData, type: value})}
                             >
-                                <SelectTrigger>
+                                <SelectTrigger aria-label="Loại hợp đồng">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>

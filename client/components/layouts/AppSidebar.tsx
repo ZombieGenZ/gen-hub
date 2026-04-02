@@ -82,6 +82,16 @@ export function AppSidebarContent({
     const { opendepositModal } = useProfileModal();
     const [expandedGroups, setExpandedGroups] = useState<Record<number, boolean>>({});
 
+    // Close notification panel on Escape key
+    useEffect(() => {
+        if (!showNotifications) return;
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') setShowNotifications(false);
+        };
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, [showNotifications]);
+
     // Auto-expand groups that contain the active route; default all others to expanded
     useEffect(() => {
         const initial: Record<number, boolean> = {};
@@ -166,7 +176,9 @@ export function AppSidebarContent({
                 </div>
 
                 {/* Navigation Links */}
-                <nav className={cn(
+                <nav
+                    aria-label="Điều hướng chính"
+                    className={cn(
                     "flex-1 px-4 overflow-y-auto overflow-x-hidden py-4 transition-all duration-300 min-h-0 scrollbar-hide",
                     isCollapsed ? "space-y-2" : "space-y-6"
                 )}>
@@ -176,10 +188,13 @@ export function AppSidebarContent({
                             <div key={groupIndex}>
                                 <button
                                     onClick={() => !isCollapsed && toggleGroup(groupIndex)}
+                                    aria-expanded={!!isGroupExpanded}
+                                    aria-controls={`nav-group-${groupIndex}`}
                                     className={cn(
-                                        "w-full flex items-center justify-between text-xs font-semibold text-sidebar-foreground/50 uppercase tracking-wider px-2 whitespace-nowrap transition-all duration-300 hover:text-sidebar-foreground group outline-none",
+                                        "w-full flex items-center justify-between text-xs font-semibold text-sidebar-foreground/50 uppercase tracking-wider px-2 whitespace-nowrap transition-all duration-300 hover:text-sidebar-foreground group outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm",
                                         isCollapsed ? "opacity-0 w-0 h-0 overflow-hidden mb-0" : "opacity-100 mb-2 cursor-pointer"
                                     )}
+                                    tabIndex={isCollapsed ? -1 : 0}
                                 >
                                     <span>{group.title}</span>
                                     <ChevronRightIcon className={cn(
@@ -187,7 +202,11 @@ export function AppSidebarContent({
                                         isGroupExpanded ? "rotate-90" : ""
                                     )} />
                                 </button>
-                                <div className={cn(
+                                <div
+                                    id={`nav-group-${groupIndex}`}
+                                    role="region"
+                                    aria-label={group.title}
+                                    className={cn(
                                     "space-y-1 transition-all duration-200 overflow-hidden",
                                     !isCollapsed && isGroupExpanded === false ? "max-h-0 opacity-0" : "max-h-[600px] opacity-100"
                                 )}>
@@ -219,8 +238,10 @@ export function AppSidebarContent({
                         <div className="space-y-2">
                             <button
                                 onClick={() => setShowNotifications(!showNotifications)}
+                                aria-label={`Thông báo${unreadCount > 0 ? `, ${unreadCount} chưa đọc` : ''}`}
+                                aria-expanded={showNotifications}
                                 className={cn(
-                                    "w-full flex items-center gap-2 py-2 rounded-sm transition-all group outline-none cursor-pointer border-none text-left relative",
+                                    "w-full flex items-center gap-2 py-2 rounded-sm transition-all group outline-none cursor-pointer border-none text-left relative focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                                     isCollapsed ? "justify-center px-0" : "px-4",
                                     showNotifications
                                         ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium hover:bg-sidebar-border"
@@ -257,9 +278,13 @@ export function AppSidebarContent({
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <div className={cn(
-                                "flex items-center gap-2 p-2 rounded-2xl hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all cursor-pointer group outline-none ring-0 focus:ring-0",
+                                "flex items-center gap-2 p-2 rounded-2xl hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all cursor-pointer group outline-none ring-0 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                                 isCollapsed ? "justify-center px-0 py-2" : ""
-                            )}>
+                            )}
+                            role="button"
+                            tabIndex={0}
+                            aria-label="Menu tài khoản"
+                            >
                                 <div className="w-8 h-8 shrink-0 rounded-full bg-secondary flex items-center justify-center text-foreground text-xs font-semibold shadow-sm ring-2 ring-sidebar-ring group-hover:ring-sidebar-ring/80">
                                     {userInitials}
                                 </div>
@@ -304,7 +329,15 @@ export function AppSidebarContent({
                                     <div
                                         className="opacity-0 group-hover:opacity-100 transition-all duration-200 bg-primary/10 hover:bg-primary/20 text-primary rounded-full p-1 cursor-pointer absolute top-0 right-0"
                                         title="Nạp tiền"
+                                        role="button"
+                                        tabIndex={0}
+                                        aria-label="Nạp tiền"
                                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); opendepositModal(); }}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' || e.key === ' ') {
+                                                e.preventDefault(); e.stopPropagation(); opendepositModal();
+                                            }
+                                        }}
                                     >
                                         <PlusIcon className="w-3 h-3" />
                                     </div>
@@ -350,12 +383,20 @@ export function AppSidebarContent({
                         <div
                             className="fixed inset-0 z-49 bg-transparent"
                             onClick={() => setShowNotifications(false)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Escape') setShowNotifications(false);
+                            }}
+                            role="button"
+                            tabIndex={-1}
+                            aria-label="Đóng thông báo"
                         />
                         <div
                             className={cn(
                                 "fixed top-5 bottom-5 z-50 w-112.5 bg-background border-l shadow-2xl transition-all duration-300 rounded-3xl overflow-hidden",
                                 isCollapsed ? "left-18" : "left-72"
                             )}
+                            role="dialog"
+                            aria-label="Bảng thông báo"
                         >
                             <NotificationList className="w-full h-full border-none shadow-none" />
                         </div>
@@ -392,7 +433,9 @@ export function AppSidebar(props: AppSidebarProps) {
         <aside className={cn(
             "hidden lg:flex bg-sidebar border-r border-sidebar-border flex-col fixed h-full z-10 transition-all duration-300 ease-in-out shadow-sm",
             isOpen ? "w-72" : "w-18"
-        )}>
+        )}
+        aria-label="Thanh điều hướng chính"
+        >
 
             <AppSidebarContent {...props} isCollapsed={isCollapsed} />
 
@@ -400,8 +443,17 @@ export function AppSidebar(props: AppSidebarProps) {
             <div
                 className="absolute -right-3 top-0 z-20 h-full w-6 cursor-w-resize flex items-center justify-center group outline-none"
                 onClick={toggle}
+                onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        toggle();
+                    }
+                }}
                 onMouseEnter={handleMouseEnter}
                 onMouseLeave={handleMouseLeave}
+                role="button"
+                tabIndex={0}
+                aria-label={isOpen ? "Thu gọn sidebar" : "Mở rộng sidebar"}
             >
                 <div className="absolute inset-y-0 left-1/2 -translate-x-[0.5px] w-0.5 h-full bg-transparent group-hover:bg-sidebar-primary/18 transition-colors duration-200" />
             </div>

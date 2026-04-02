@@ -357,6 +357,7 @@ export function WarehouseOverviewTab({ data, onChange }: WarehouseOverviewTabPro
                                         variant="ghost" size="icon"
                                         className="h-6 w-6 rounded-full flex-shrink-0"
                                         onClick={handleClearWard}
+                                        aria-label="Xóa phường/xã đã chọn"
                                     >
                                         <XMarkIcon className="w-3.5 h-3.5 text-muted-foreground" />
                                     </Button>

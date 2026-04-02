@@ -698,12 +698,13 @@ export default function BarcodeScannerQuickAdd({
                                         {imageUrl}
                                     </p>
                                 </div>
-                                <Button
+                                    <Button
                                     type="button"
                                     variant="ghost"
                                     size="icon"
                                     className="h-7 w-7 text-slate-400 hover:text-red-500"
                                     onClick={() => setImageUrl("")}
+                                    aria-label="Xóa ảnh sản phẩm"
                                 >
                                     <XMarkIcon className="w-4 h-4" />
                                 </Button>
@@ -722,11 +723,13 @@ export default function BarcodeScannerQuickAdd({
                                     placeholder="Nhập tên sản phẩm"
                                     value={name}
                                     onChange={(e) => setName(e.target.value)}
+                                    aria-invalid={!!errors.name}
+                                    aria-describedby={errors.name ? "qa-name-error" : undefined}
                                     className={`bg-slate-50 border-slate-200 rounded-xl px-4 focus-visible:bg-white ${errors.name ? "border-red-400" : ""
                                         }`}
                                 />
                                 {errors.name && (
-                                    <p className="text-xs text-red-500">{errors.name}</p>
+                                    <p id="qa-name-error" role="alert" className="text-xs text-red-500">{errors.name}</p>
                                 )}
                             </div>
 
@@ -740,11 +743,13 @@ export default function BarcodeScannerQuickAdd({
                                     placeholder="SP-001"
                                     value={sku}
                                     onChange={(e) => setSku(e.target.value)}
+                                    aria-invalid={!!errors.sku}
+                                    aria-describedby={errors.sku ? "qa-sku-error" : undefined}
                                     className={`bg-slate-50 border-slate-200 rounded-xl px-4 font-mono focus-visible:bg-white ${errors.sku ? "border-red-400" : ""
                                         }`}
                                 />
                                 {errors.sku && (
-                                    <p className="text-xs text-red-500">{errors.sku}</p>
+                                    <p id="qa-sku-error" role="alert" className="text-xs text-red-500">{errors.sku}</p>
                                 )}
                             </div>
 
@@ -801,7 +806,7 @@ export default function BarcodeScannerQuickAdd({
                                     </Select>
                                 )}
                                 {errors.baseUnitId && (
-                                    <p className="text-xs text-red-500">
+                                    <p role="alert" className="text-xs text-red-500">
                                         {errors.baseUnitId}
                                     </p>
                                 )}
@@ -942,6 +947,7 @@ export default function BarcodeScannerQuickAdd({
                                             size="icon"
                                             className="h-9 w-9 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg"
                                             onClick={() => removeUnitRow(i)}
+                                            aria-label={`Xóa đơn vị quy đổi dòng ${i + 1}`}
                                         >
                                             <Trash2 className="w-3.5 h-3.5" />
                                         </Button>

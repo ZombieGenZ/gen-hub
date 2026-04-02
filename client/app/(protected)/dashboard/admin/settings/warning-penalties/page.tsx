@@ -600,8 +600,8 @@ export default function WarningPenaltiesPage() {
                                         </div>
                                         <div className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${colors.bg} ${colors.text}`}>{cat.count} vi phạm</div>
                                         <div className="flex gap-1 opacity-0 group-hover:opacity-100">
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl hover:text-brand" onClick={() => setEditingCat(editingCat === cat.id ? null : cat.id)}><PencilSquareIcon className="w-3.5 h-3.5" /></Button>
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl hover:text-rose-500" onClick={() => handleDeleteCategory(cat.id)}><TrashIcon className="w-3.5 h-3.5" /></Button>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl hover:text-brand" onClick={() => setEditingCat(editingCat === cat.id ? null : cat.id)} aria-label="Chỉnh sửa danh mục"><PencilSquareIcon className="w-3.5 h-3.5" /></Button>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl hover:text-rose-500" onClick={() => handleDeleteCategory(cat.id)} aria-label="Xóa danh mục"><TrashIcon className="w-3.5 h-3.5" /></Button>
                                         </div>
                                     </div>
                                 );
@@ -700,7 +700,7 @@ export default function WarningPenaltiesPage() {
                                                 </select>
 
                                                 {builderState.conditions.length > 1 && (
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 ml-auto text-muted-foreground hover:text-rose-500 rounded-xl" onClick={() => handleRemoveCondition(cond.id)}><XMarkIcon className="w-4 h-4" /></Button>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 ml-auto text-muted-foreground hover:text-rose-500 rounded-xl" onClick={() => handleRemoveCondition(cond.id)} aria-label="Xóa điều kiện"><XMarkIcon className="w-4 h-4" /></Button>
                                                 )}
                                             </div>
                                         ))}
@@ -814,7 +814,7 @@ export default function WarningPenaltiesPage() {
                                                         <Switch checked={penalty.is_active} onCheckedChange={() => handleTogglePenalty(penalty.id)} />
                                                     </div>
                                                     <div className="flex items-center gap-1">
-                                                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl hover:text-rose-500" onClick={() => handleDeletePenalty(penalty.id)}><TrashIcon className="w-4 h-4" /></Button>
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl hover:text-rose-500" onClick={() => handleDeletePenalty(penalty.id)} aria-label="Xóa hình phạt"><TrashIcon className="w-4 h-4" /></Button>
                                                     </div>
                                                 </div>
                                             </div>

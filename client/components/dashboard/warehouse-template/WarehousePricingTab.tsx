@@ -148,6 +148,7 @@ export function WarehousePricingTab({ data, onChange }: WarehousePricingTabProps
                                                     size="icon"
                                                     className="h-7 w-7 rounded-full"
                                                     onClick={() => removeDiscount(idx)}
+                                                    aria-label={`Xóa chiết khấu dòng ${idx + 1}`}
                                                 >
                                                     <TrashIcon className="w-4 h-4 text-destructive" />
                                                 </Button>

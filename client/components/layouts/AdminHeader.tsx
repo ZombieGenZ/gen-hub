@@ -37,7 +37,10 @@ export function AdminHeader({ children }: AdminHeaderProps) {
                         <div className="lg:hidden">
                     <Sheet>
                         <SheetTrigger asChild>
-                            <button className="p-2 -ml-2 text-muted-foreground hover:bg-secondary rounded-md outline-none">
+                            <button
+                                className="p-2 -ml-2 text-muted-foreground hover:bg-secondary rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                aria-label="Mở menu điều hướng"
+                            >
                                 <PanelLeft className="w-5 h-5" />
                             </button>
                         </SheetTrigger>
@@ -51,8 +54,8 @@ export function AdminHeader({ children }: AdminHeaderProps) {
                 <div className="hidden lg:flex items-center text-muted-foreground">
                     <button
                         onClick={toggle}
-                        className="p-2 -ml-2 hover:bg-secondary hover:text-foreground rounded-md outline-none cursor-pointer transition-colors"
-                        aria-label="Toggle Sidebar"
+                        className="p-2 -ml-2 hover:bg-secondary hover:text-foreground rounded-md outline-none cursor-pointer transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        aria-label="Thu gọn/mở rộng thanh điều hướng"
                     >
                         <PanelLeft className="w-5 h-5" />
                     </button>

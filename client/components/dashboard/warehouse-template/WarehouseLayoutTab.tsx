@@ -143,6 +143,7 @@ function ListItem({
                             e.stopPropagation();
                             onDelete(e);
                         }}
+                        aria-label={`Xóa ${name}`}
                     >
                         <TrashIcon className="w-4 h-4 text-destructive" />
                     </Button>

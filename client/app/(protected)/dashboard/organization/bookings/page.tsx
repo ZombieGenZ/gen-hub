@@ -113,7 +113,13 @@ export default function BookingManagementPage() {
                         </TableHeader>
                         <TableBody>
                             {bookings.map((booking) => (
-                                <TableRow key={booking.id} className="hover:bg-muted/40 cursor-pointer" onClick={() => {
+                                <TableRow key={booking.id} className="hover:bg-muted/40 cursor-pointer" tabIndex={0} onKeyDown={(e) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                        e.preventDefault();
+                                        // Navigate to detail booking if needed
+                                        // router.push(`/dashboard/organization/bookings/${booking.id}`)
+                                    }
+                                }} onClick={() => {
                                     // Navigate to detail booking if needed
                                     // router.push(`/dashboard/organization/bookings/${booking.id}`)
                                 }}>

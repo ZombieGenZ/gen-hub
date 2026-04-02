@@ -158,6 +158,7 @@ function DualRangeSlider({
                 value={localValues[0]}
                 onChange={handleMinChange}
                 className="filter-modal__range-input filter-modal__range-input--min"
+                aria-label="Giá tối thiểu"
             />
             <input
                 type="range"
@@ -167,6 +168,7 @@ function DualRangeSlider({
                 value={localValues[1]}
                 onChange={handleMaxChange}
                 className="filter-modal__range-input filter-modal__range-input--max"
+                aria-label="Giá tối đa"
             />
             <div className="filter-modal__range-labels">
                 <span className="filter-modal__range-label">{formatLabel(localValues[0])}</span>
@@ -221,6 +223,7 @@ function SingleSlider({
                 value={localValue}
                 onChange={handleChange}
                 className="filter-modal__single-input"
+                aria-label="Tải trọng sàn"
             />
             <div className="filter-modal__single-value">
                 {formatLabel(localValue)}
@@ -332,10 +335,12 @@ export default function FilterModal({
                         exit={{ opacity: 0, scale: 0.95, x: "-50%", y: "-40%" }}
                         transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
                         className="filter-modal"
+                        role="dialog"
+                        aria-label="Bộ lọc tìm kiếm"
                     >
                         {/* Header */}
                         <div className="filter-modal__header">
-                            <button className="filter-modal__close-btn" onClick={onClose}>
+                            <button className="filter-modal__close-btn" onClick={onClose} aria-label="Đóng bộ lọc">
                                 <XMarkIcon className="w-5 h-5" />
                             </button>
                             <h2 className="filter-modal__title">Bộ lọc</h2>
@@ -390,6 +395,7 @@ export default function FilterModal({
                                                             selectedAmenities.includes(item.id) && "filter-modal__amenity-btn--selected"
                                                         )}
                                                         onClick={() => toggleAmenity(item.id)}
+                                                        aria-pressed={selectedAmenities.includes(item.id)}
                                                     >
                                                         <item.icon className="filter-modal__amenity-icon" />
                                                         <span>{item.label}</span>

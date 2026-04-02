@@ -87,6 +87,7 @@ export function OutboundHeader({
                                 className="pl-9 rounded-xl"
                                 value={searchTerm}
                                 onChange={(e) => onSearchChange(e.target.value)}
+                                aria-label="Tìm kiếm phiếu xuất"
                             />
                         </div>
                         <div className="flex items-center gap-2">

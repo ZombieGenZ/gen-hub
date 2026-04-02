@@ -137,6 +137,7 @@ export function AddMemberDialog({
                                 size="icon"
                                 onClick={addEmail}
                                 disabled={!emailInput.trim()}
+                                aria-label="Thêm email"
                             >
                                 <Plus className="w-4 h-4" />
                             </Button>
@@ -159,6 +160,7 @@ export function AddMemberDialog({
                                     <button
                                         onClick={() => removeEmail(email)}
                                         className="ml-0.5 rounded-full hover:bg-muted-foreground/20 p-0.5 cursor-pointer"
+                                        aria-label={`Xóa ${email}`}
                                     >
                                         <X className="w-3 h-3" />
                                     </button>
@@ -169,7 +171,7 @@ export function AddMemberDialog({
 
                     {/* Error */}
                     {error && (
-                        <p className="text-sm text-destructive">{error}</p>
+                        <p className="text-sm text-destructive" role="alert">{error}</p>
                     )}
                 </DialogBody>
                 <DialogFooter>

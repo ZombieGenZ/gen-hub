@@ -82,6 +82,7 @@ export function PartnerHeader({
                                 value={searchTerm}
                                 onChange={(e) => onSearchChange(e.target.value)}
                                 className="pl-10 h-10 rounded-xl"
+                                aria-label="Tìm kiếm đối tác"
                             />
                         </div>
                         <Select

@@ -16,7 +16,9 @@ function LayoutContent({ children }: CustomerLayoutProps) {
         <div className="flex min-h-screen bg-background text-foreground font-sans">
             <OrganizationSidebar />
 
-            <main className={cn(
+            <main
+                id="main-content"
+                className={cn(
                 "flex-1 flex flex-col min-h-screen transition-all duration-300 ease-in-out ml-0",
                 isOpen ? "lg:ml-72" : "lg:ml-20"
             )}>

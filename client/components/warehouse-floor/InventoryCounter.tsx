@@ -136,7 +136,14 @@ export default function InventoryCounter({
 
             {/* ── Lock Screen (wrong scan) ── */}
             {lockError && (
-                <div className="floor-lockscreen" onClick={dismissLock}>
+                <div
+                    className="floor-lockscreen"
+                    onClick={dismissLock}
+                    onKeyDown={(e) => { if (e.key === 'Escape' || e.key === 'Enter') dismissLock(); }}
+                    role="alertdialog"
+                    aria-label="Lỗi quét"
+                    tabIndex={-1}
+                >
                     <AlertTriangle className="w-20 h-20 text-white animate-pulse" />
                     <p className="text-white text-xl font-bold text-center px-6 max-w-md">
                         {lockError}
@@ -153,7 +160,7 @@ export default function InventoryCounter({
 
             {/* ── Header ── */}
             <header className="flex items-center justify-between px-4 py-3 bg-white border-b border-slate-200 shrink-0">
-                <button onClick={onBack} className="p-2 -ml-2 rounded-xl hover:bg-slate-100" title="Quay lại">
+                <button onClick={onBack} className="p-2 -ml-2 rounded-xl hover:bg-slate-100" title="Quay lại" aria-label="Quay lại">
                     <ChevronDown className="w-6 h-6 text-slate-500 rotate-90" />
                 </button>
                 <div className="text-center flex-1">

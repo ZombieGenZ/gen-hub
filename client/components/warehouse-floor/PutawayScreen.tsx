@@ -168,7 +168,14 @@ export default function PutawayScreen({
 
             {/* ── Error overlay ── */}
             {error && (
-                <div className="floor-lockscreen" onClick={dismissError}>
+                <div
+                    className="floor-lockscreen"
+                    onClick={dismissError}
+                    onKeyDown={(e) => { if (e.key === 'Escape' || e.key === 'Enter') dismissError(); }}
+                    role="alertdialog"
+                    aria-label="Lỗi thao tác"
+                    tabIndex={-1}
+                >
                     <AlertTriangle className="w-20 h-20 text-white animate-pulse" />
                     <p className="text-white text-xl font-bold text-center px-6 max-w-md">{error}</p>
                     <button className="floor-btn mt-4 bg-white text-red-600 font-bold" onClick={dismissError}>
@@ -179,7 +186,7 @@ export default function PutawayScreen({
 
             {/* ── Header ── */}
             <header className="flex items-center justify-between px-4 py-3 bg-white border-b border-slate-200 shrink-0">
-                <button onClick={onBack} className="p-2 -ml-2 rounded-xl hover:bg-slate-100" title="Quay lại">
+                <button onClick={onBack} className="p-2 -ml-2 rounded-xl hover:bg-slate-100" title="Quay lại" aria-label="Quay lại">
                     <ChevronDown className="w-6 h-6 text-slate-500 rotate-90" />
                 </button>
                 <div className="text-center flex-1">

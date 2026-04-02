@@ -146,9 +146,9 @@ function WarehouseDetailPage({ id }: { id: string }) {
                         <div>
                             {/* Breadcrumbs */}
                             <div className="flex items-center gap-1 text-sm text-slate-500 mb-3">
-                                <span className="hover:text-[#0F766E] cursor-pointer" onClick={() => router.push('/')}>Trang chủ</span>
+                                <span className="hover:text-[#0F766E] cursor-pointer" role="link" tabIndex={0} onClick={() => router.push('/')} onKeyDown={(e) => { if (e.key === 'Enter') router.push('/'); }}>Trang chủ</span>
                                 <ChevronRightIcon className="w-4 h-4" />
-                                <span className="hover:text-[#0F766E] cursor-pointer" onClick={() => router.push('/kho-bai')}>Kho bãi</span>
+                                <span className="hover:text-[#0F766E] cursor-pointer" role="link" tabIndex={0} onClick={() => router.push('/kho-bai')} onKeyDown={(e) => { if (e.key === 'Enter') router.push('/kho-bai'); }}>Kho bãi</span>
                                 <ChevronRightIcon className="w-4 h-4" />
                                 <span className="font-medium text-slate-900 dark:text-white line-clamp-1">{property.title}</span>
                             </div>

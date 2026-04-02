@@ -83,10 +83,11 @@ export function DeleteOrganizationDialog({
                             value={confirmName}
                             onChange={(e) => setConfirmName(e.target.value)}
                             autoFocus
+                            aria-describedby="confirm-name-help"
                         />
                     </div>
                     {error && (
-                        <p className="text-sm text-destructive">{error}</p>
+                        <p className="text-sm text-destructive" role="alert">{error}</p>
                     )}
                 </DialogBody>
                 <DialogFooter>

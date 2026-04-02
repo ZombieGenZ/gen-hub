@@ -90,6 +90,7 @@ export function ProductHeader({
                                 value={searchTerm}
                                 onChange={(e) => onSearchChange(e.target.value)}
                                 className="pl-10 pr-10 h-10 rounded-xl"
+                                aria-label="Tìm kiếm sản phẩm"
                             />
                             <ScanLine className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                         </div>

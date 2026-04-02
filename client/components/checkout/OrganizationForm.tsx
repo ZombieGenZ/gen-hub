@@ -280,6 +280,8 @@ export function OrganizationForm({
                         onBlur={() => handleBlur(field)}
                         placeholder={placeholder}
                         disabled={readonly || isLoading}
+                        aria-invalid={!!error}
+                        aria-describedby={error ? `org-${field}-error` : undefined}
                         className={cn(
                             "h-12 rounded-xl border-slate-200",
                             error && "border-red-400 focus:border-red-500",
@@ -303,7 +305,7 @@ export function OrganizationForm({
                     )}
                 </div>
                 {error && (
-                    <p className="text-xs text-red-500 flex items-center gap-1">
+                    <p id={`org-${field}-error`} role="alert" className="text-xs text-red-500 flex items-center gap-1">
                         <ExclamationCircleIcon className="w-3 h-3" />
                         {error}
                     </p>

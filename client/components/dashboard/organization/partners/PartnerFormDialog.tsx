@@ -316,8 +316,10 @@ export function PartnerFormDialog({
                                     onChange={(e) => setFormName(e.target.value)}
                                     className={`rounded-xl ${formErrors.name ? "border-red-400 focus:ring-red-400" : ""}`}
                                     autoFocus
+                                    aria-invalid={!!formErrors.name}
+                                    aria-describedby={formErrors.name ? "partner-name-error" : undefined}
                                 />
-                                {formErrors.name && <p className="text-xs text-red-500">{formErrors.name}</p>}
+                                {formErrors.name && <p id="partner-name-error" className="text-xs text-red-500" role="alert">{formErrors.name}</p>}
                             </div>
                             <div className="space-y-1.5">
                                 <Label htmlFor="partner-code">Mã đối tác <span className="text-red-500">*</span></Label>
@@ -328,6 +330,8 @@ export function PartnerFormDialog({
                                             value={formCode}
                                             onChange={(e) => setFormCode(e.target.value.toUpperCase())}
                                             className={`rounded-xl ${formErrors.code ? "border-red-400 focus:ring-red-400" : ""}`}
+                                            aria-invalid={!!formErrors.code}
+                                            aria-describedby={formErrors.code ? "partner-code-error" : undefined}
                                         />
                                         {codeChecking && (
                                             <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center">
@@ -339,7 +343,7 @@ export function PartnerFormDialog({
                                         <Sparkles className="w-4 h-4 mr-1.5" /> Tự động
                                     </Button>
                                 </div>
-                                {formErrors.code && <p className="text-xs text-red-500">{formErrors.code}</p>}
+                                {formErrors.code && <p id="partner-code-error" className="text-xs text-red-500" role="alert">{formErrors.code}</p>}
                             </div>
                         </div>
 
@@ -357,8 +361,10 @@ export function PartnerFormDialog({
                                     value={formPhone}
                                     onChange={(e) => setFormPhone(e.target.value)}
                                     className={`rounded-xl ${formErrors.phone ? "border-red-400" : ""}`}
+                                    aria-invalid={!!formErrors.phone}
+                                    aria-describedby={formErrors.phone ? "partner-phone-error" : undefined}
                                 />
-                                {formErrors.phone && <p className="text-xs text-red-500">{formErrors.phone}</p>}
+                                {formErrors.phone && <p id="partner-phone-error" className="text-xs text-red-500" role="alert">{formErrors.phone}</p>}
                             </div>
                             <div className="space-y-1.5">
                                 <Label htmlFor="partner-email">Email</Label>
@@ -368,8 +374,10 @@ export function PartnerFormDialog({
                                     value={formEmail}
                                     onChange={(e) => setFormEmail(e.target.value)}
                                     className={`rounded-xl ${formErrors.email ? "border-red-400 focus:ring-red-400" : ""}`}
+                                    aria-invalid={!!formErrors.email}
+                                    aria-describedby={formErrors.email ? "partner-email-error" : undefined}
                                 />
-                                {formErrors.email && <p className="text-xs text-red-500">{formErrors.email}</p>}
+                                {formErrors.email && <p id="partner-email-error" className="text-xs text-red-500" role="alert">{formErrors.email}</p>}
                             </div>
                             <div className="space-y-1.5">
                                 <Label htmlFor="partner-tax">Mã số thuế</Label>
@@ -378,8 +386,10 @@ export function PartnerFormDialog({
                                     value={formTaxCode}
                                     onChange={(e) => setFormTaxCode(e.target.value)}
                                     className={`rounded-xl ${formErrors.tax_code ? "border-red-400" : ""}`}
+                                    aria-invalid={!!formErrors.tax_code}
+                                    aria-describedby={formErrors.tax_code ? "partner-tax-error" : undefined}
                                 />
-                                {formErrors.tax_code && <p className="text-xs text-red-500">{formErrors.tax_code}</p>}
+                                {formErrors.tax_code && <p id="partner-tax-error" className="text-xs text-red-500" role="alert">{formErrors.tax_code}</p>}
                             </div>
                         </div>
 

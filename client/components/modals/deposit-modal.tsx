@@ -156,6 +156,7 @@ export function DepositModal({ open, onOpenChange, onSuccess, orgId, currentBala
                                         placeholder="0"
                                         className="text-3xl font-bold h-16 text-center border-2 focus-visible:ring-0 focus-visible:border-primary pr-12 pl-12"
                                         autoFocus
+                                        aria-label="Số tiền cần nạp"
                                     />
                                     <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">
                                         VND

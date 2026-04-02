@@ -227,6 +227,8 @@ export function CompanyInfoStep({ initialData, onChange, allowEdit = true }: Com
                         onBlur={() => handleBlur(field)}
                         placeholder={placeholder}
                         disabled={!allowEdit}
+                        aria-invalid={!!error}
+                        aria-describedby={error ? `company-${field}-error` : undefined}
                         className={cn(
                             "h-12 rounded-xl border-slate-200",
                             error && "border-red-400 focus:border-red-500",
@@ -249,7 +251,7 @@ export function CompanyInfoStep({ initialData, onChange, allowEdit = true }: Com
                     )}
                 </div>
                 {error && (
-                    <p className="text-xs text-red-500 flex items-center gap-1">
+                    <p id={`company-${field}-error`} role="alert" className="text-xs text-red-500 flex items-center gap-1">
                         <ExclamationCircleIcon className="w-3 h-3" />
                         {error}
                     </p>

@@ -293,6 +293,7 @@ export function CouponDrawer({
                             size="sm"
                             onClick={handleRemoveCoupon}
                             className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                            aria-label="Gỡ mã giảm giá"
                         >
                             <XMarkIcon className="w-4 h-4" />
                         </Button>
@@ -309,11 +310,13 @@ export function CouponDrawer({
                                 onChange={(e) => setManualCode(e.target.value.toUpperCase())}
                                 className="pr-10 h-12 rounded-xl uppercase border-slate-200 focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E]"
                                 onKeyDown={(e) => e.key === 'Enter' && handleApplyManualCode()}
+                                aria-label="Nhập mã giảm giá"
                             />
                             {manualCode && (
                                 <button
                                     onClick={() => setManualCode('')}
                                     className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                                    aria-label="Xóa mã đã nhập"
                                 >
                                     <XMarkIcon className="w-4 h-4" />
                                 </button>
@@ -344,6 +347,7 @@ export function CouponDrawer({
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="pl-9 h-10 rounded-lg bg-slate-50 border-slate-200"
+                            aria-label="Tìm mã giảm giá"
                         />
                     </div>
                 </div>
@@ -374,6 +378,16 @@ export function CouponDrawer({
                                 <div
                                     key={coupon.id}
                                     onClick={() => coupon.is_applicable && handleApplyCoupon(coupon)}
+                                    onKeyDown={(e) => {
+                                        if ((e.key === 'Enter' || e.key === ' ') && coupon.is_applicable) {
+                                            e.preventDefault();
+                                            handleApplyCoupon(coupon);
+                                        }
+                                    }}
+                                    role="button"
+                                    tabIndex={coupon.is_applicable ? 0 : -1}
+                                    aria-label={`Áp dụng mã ${coupon.code}`}
+                                    aria-disabled={!coupon.is_applicable}
                                     className={cn(
                                         "relative p-4 rounded-xl border-2 transition-all",
                                         coupon.is_applicable

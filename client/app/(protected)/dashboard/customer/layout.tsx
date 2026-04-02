@@ -20,7 +20,9 @@ function LayoutContent({ children }: CustomerLayoutProps) {
     return (
         <div className="flex min-h-screen bg-background text-foreground font-sans">
             <CustomerSidebar />
-            <main className={cn("flex-1 flex flex-col min-h-screen transition-all duration-300 ease-in-out ml-0", isOpen ? "lg:ml-72" : "lg:ml-20")}>
+            <main
+                id="main-content"
+                className={cn("flex-1 flex flex-col min-h-screen transition-all duration-300 ease-in-out ml-0", isOpen ? "lg:ml-72" : "lg:ml-20")}>
                 {/* We reuse OrganizationHeader since it just has a User dropdown and notification bell */}
                 <OrganizationHeader />
                 <div className="pt-0 pb-4 px-4 max-w-full mx-auto w-full">{children}</div>

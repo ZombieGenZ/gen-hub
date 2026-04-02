@@ -66,6 +66,7 @@ export const HistoryHeader = ({
                         value={searchTerm}
                         onChange={(e) => onSearchChange(e.target.value)}
                         className="pl-9 h-10 w-full"
+                        aria-label="Tìm kiếm lịch sử"
                     />
                 </div>
 

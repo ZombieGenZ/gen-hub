@@ -254,6 +254,7 @@ export function WarehouseImagesTab({ warehouseId }: WarehouseImagesTabProps) {
                                     size="icon"
                                     className="absolute bottom-2 right-2 h-7 w-7 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                                     onClick={() => handleDeleteSingle(img.id)}
+                                    aria-label="Xóa ảnh"
                                 >
                                     <XMarkIcon className="w-4 h-4" />
                                 </Button>

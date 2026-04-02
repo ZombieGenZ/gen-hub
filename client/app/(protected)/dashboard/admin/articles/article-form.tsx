@@ -142,7 +142,7 @@ export function ArticleForm({ initialData, isEdit = false }: ArticleFormProps) {
             {/* Header Toolbar */}
             <div className="flex items-center justify-between sticky top-0 z-10 bg-background/80 backdrop-blur-md py-4 border-b">
                 <div className="flex items-center gap-4">
-                    <Button variant="ghost" size="icon" asChild className="rounded-full">
+                    <Button variant="ghost" size="icon" asChild className="rounded-full" aria-label="Quay lại danh sách bài viết">
                         <Link href="/dashboard/admin/articles">
                             <ArrowLeftIcon className="w-5 h-5" />
                         </Link>

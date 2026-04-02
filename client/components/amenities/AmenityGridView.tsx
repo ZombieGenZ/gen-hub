@@ -93,6 +93,7 @@ export function AmenityGridView({
                                 className="h-8 w-8"
                                 onClick={() => onEdit(amenity)}
                                 style={{ borderRadius: '8px' }}
+                                aria-label={`Chỉnh sửa ${amenity.name}`}
                             >
                                 <PencilIcon className="w-4 h-4" />
                             </Button>
@@ -102,6 +103,7 @@ export function AmenityGridView({
                                 className="h-8 w-8 text-destructive hover:text-destructive"
                                 onClick={() => onDelete(amenity)}
                                 style={{ borderRadius: '8px' }}
+                                aria-label={`Xóa ${amenity.name}`}
                             >
                                 <TrashIcon className="w-4 h-4" />
                             </Button>
