@@ -16,6 +16,7 @@ export class CouponService {
                     'Authorization': `Bearer ${access_token}`,
                     'Content-Type': 'application/json',
                 },
+                cache: 'no-store'
             })
 
             if (!response.ok) {
@@ -45,6 +46,7 @@ export class CouponService {
                     'Authorization': `Bearer ${access_token}`,
                     'Content-Type': 'application/json',
                 },
+                cache: 'no-store'
             })
             if (!response.ok) {
                 throw new Error('Failed to fetch coupon')

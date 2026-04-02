@@ -27,13 +27,8 @@ export const couponBasicSelect: Prisma.CouponSelect = {
     is_active: true,
     created_at: true,
     updated_at: true,
-};
-
-/**
- * Full coupon fields (for detail views)
- */
-export const couponFullSelect: Prisma.CouponSelect = {
-    ...couponBasicSelect,
+    
+    // UI required fields for Edit form
     require_min_warehouses: true,
     min_warehouses: true,
     require_min_rows: true,
@@ -53,6 +48,13 @@ export const couponFullSelect: Prisma.CouponSelect = {
     max_stack_count: true,
     has_gift_addons: true,
     has_gift_insurances: true,
+};
+
+/**
+ * Full coupon fields (for detail views)
+ */
+export const couponFullSelect: Prisma.CouponSelect = {
+    ...couponBasicSelect,
     created_by: true,
     updated_by: true,
     deleted_at: true,
