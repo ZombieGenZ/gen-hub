@@ -11,6 +11,7 @@ export class OrganizationService {
     async getOrganizations(token: string, params: {
         keywords?: string;
         is_active?: boolean;
+        member_only?: boolean;
         page?: number;
         limit?: number;
     } = {}) {
@@ -18,6 +19,7 @@ export class OrganizationService {
 
         if (params.keywords) query.append('keywords', params.keywords);
         if (params.is_active !== undefined) query.append('is_active', String(params.is_active));
+        if (params.member_only !== undefined) query.append('member_only', String(params.member_only));
         if (params.page) query.append('page', String(params.page));
         if (params.limit) query.append('limit', String(params.limit));
 

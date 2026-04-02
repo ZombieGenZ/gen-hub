@@ -23,7 +23,7 @@ interface CheckoutContextValue {
     session: Partial<CheckoutSession>;
     currentStep: CheckoutStep;
     stepIndex: number;
-    setSession: (data: Partial<CheckoutSession>) => void;
+    setSession: (data: Partial<CheckoutSession> | ((prev: Partial<CheckoutSession>) => Partial<CheckoutSession>)) => void;
     nextStep: () => void;
     prevStep: () => void;
     goToStep: (step: CheckoutStep) => void;
@@ -69,8 +69,13 @@ export function CheckoutProvider({ children, initialSession }: CheckoutProviderP
 
     const stepIndex = CHECKOUT_STEPS.findIndex(s => s.id === currentStep);
 
-    const setSession = useCallback((data: Partial<CheckoutSession>) => {
-        setSessionState(prev => ({ ...prev, ...data }));
+    const setSession = useCallback((data: Partial<CheckoutSession> | ((prev: Partial<CheckoutSession>) => Partial<CheckoutSession>)) => {
+        setSessionState(prev => {
+            if (typeof data === 'function') {
+                return data(prev);
+            }
+            return { ...prev, ...data };
+        });
     }, []);
 
     const nextStep = useCallback(() => {

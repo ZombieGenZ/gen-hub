@@ -100,6 +100,8 @@ const mapApiQuotationToBreakdown = (quotation: QuotationApiResponse) => ({
     grandTotal: quotation.grand_total,
 });
 
+const MEMBERSHIP_ERROR_KEYWORD = 'không phải thành viên của tổ chức này';
+
 function CheckoutContent() {
     const router = useRouter();
     const { session, setSession, currentStep, nextStep, setIsSubmitting } = useCheckout();
@@ -145,11 +147,12 @@ function CheckoutContent() {
                 start_date: session.start_date ? new Date(session.start_date).toISOString().split('T')[0] : undefined,
             });
 
-                setSession({
-                    coupon_code: couponCode || undefined,
-                    quotation: mapApiQuotationToBreakdown(quotation),
-                    amount: 1000,
-                });
+            setSession(prev => ({
+                ...prev,
+                coupon_code: couponCode || undefined,
+                quotation: mapApiQuotationToBreakdown(quotation),
+                amount: 1000,
+            }));
 
             if (couponCode && quotation.coupon_discount > 0) {
                 setAppliedCoupon({ code: couponCode, discount: quotation.coupon_discount });
@@ -177,10 +180,14 @@ function CheckoutContent() {
                 if (!token) return;
 
                 const userID = await authStorage.getUserID();
-                const listOrganization = await organizationService.getOrganizations(token);
-                // log listOrganization.items
+                const listOrganization = await organizationService.getOrganizations(token, { member_only: true });
 
-                const organization = listOrganization.items.find((o: Organization) => o.owner.id == userID);
+                // Ưu tiên tổ chức mình làm chủ, nếu không thì lấy tổ chức đầu tiên mình tham gia
+                let organization = listOrganization.items.find((o: Organization) => o.owner_id == userID || o.owner?.id == userID);
+                if (!organization && listOrganization.items.length > 0) {
+                    organization = listOrganization.items[0];
+                }
+
                 if (organization) {
                     const org = await organizationService.getOrganizationById(token, organization.id);
                     if (org) {
@@ -199,8 +206,11 @@ function CheckoutContent() {
                             representative_email: org.representative_email || ''
                         });
                         setHasExistingOrg(true);
-                        setSession({ organization_id: organization.id });
+                        setSession(prev => ({ ...prev, organization_id: organization.id }));
                     }
+                } else {
+                    setHasExistingOrg(false);
+                    setSession(prev => ({ ...prev, organization_id: undefined }));
                 }
             } catch (error) {
                 console.error("Failed to fetch organization info", error);
@@ -217,7 +227,7 @@ function CheckoutContent() {
         setCompanyData(prev => (isSameCompanyData(prev, data) ? prev : data));
 
         if (session.company_address !== data.headquarters_address) {
-            setSession({ company_address: data.headquarters_address });
+            setSession(prev => ({ ...prev, company_address: data.headquarters_address }));
         }
     }, [session.company_address, setSession]);
 
@@ -228,16 +238,16 @@ function CheckoutContent() {
 
     // Handle payment method change
     const handlePaymentMethodChange = (method: PaymentMethod) => {
-        setSession({ ...session, payment_method: method });
+        setSession(prev => ({ ...prev, payment_method: method }));
     };
 
     const handleSignatureComplete = async (signatureData: string) => {
         // Store signature in session
-        setSession({
-            ...session,
+        setSession(prev => ({
+            ...prev,
             signature_data: signatureData,
             signature_date: new Date().toISOString()
-        });
+        }));
 
         try {
             await handleSubmitOrder(signatureData);
@@ -255,24 +265,53 @@ function CheckoutContent() {
     // Handle order submission
     const handleSubmitOrder = async (signatureData?: string) => {
         setIsSubmitting(true);
+        console.log('[Checkout] Submitting order. Current session:', session);
         try {
             const token = authStorage.getAccessToken();
             if (!token) throw new Error("Authentication required");
+            const userID = await authStorage.getUserID();
 
             let orgId = session.organization_id;
+            console.log('[Checkout] orgId from session:', orgId);
+
+            // Fetch only organizations the user is an owner or member of
+            const listOrganization = await organizationService.getOrganizations(token, { member_only: true });
+            const organizations: Organization[] = Array.isArray(listOrganization?.items)
+                ? listOrganization.items
+                : [];
+            const ownerOrg = organizations.find((o: Organization) => o.owner_id === userID || o.owner?.id === userID);
+            const preferredOrg = ownerOrg || organizations[0];
+
+            if (orgId && !organizations.some((o: Organization) => o.id === orgId)) {
+                console.warn('[Checkout] session organization_id is not accessible. Resetting orgId.');
+                orgId = undefined;
+            }
+
+            if (!orgId && preferredOrg?.id) {
+                orgId = preferredOrg.id;
+                setHasExistingOrg(true);
+                setSession(prev => ({ ...prev, organization_id: orgId }));
+            }
 
             // 1. Create Organization if needed
-            if (!hasExistingOrg && !orgId) {
+            if (!orgId) {
+                console.log('[Checkout] No existing org, creating new one...');
                 const newOrg = await organizationService.createOrganization(token, {
                     ...companyData,
                     ...representativeData,
                     representative_title: normalizeRepresentativeTitle(representativeData.representative_title),
                 });
                 orgId = newOrg.data?.id || newOrg.id;
-                setSession({ ...session, organization_id: orgId });
+                console.log('[Checkout] Created new org. ID:', orgId);
+                setHasExistingOrg(true);
+                setSession(prev => ({ ...prev, organization_id: orgId }));
             }
 
             if (!orgId) throw new Error("Missing organization ID");
+
+            if (orgId === session.warehouse_template_id) {
+                console.warn('[Checkout] WARNING: orgId is identical to warehouse_template_id!');
+            }
 
             let signatureBlob: Blob | null = null;
             const rawSig = signatureData || session.signature_data;
@@ -315,21 +354,48 @@ function CheckoutContent() {
             };
 
             // 4. Submit Order using customer endpoint (multipart/form-data with optional signature)
-            const result = await rentalContractService.createOrgRentalContract(token, orgId, payload, signatureBlob);
+            let result;
+            try {
+                result = await rentalContractService.createOrgRentalContract(token, orgId, payload, signatureBlob);
+            } catch (error) {
+                const message = error instanceof Error ? error.message.toLowerCase() : '';
+                if (!message.includes(MEMBERSHIP_ERROR_KEYWORD)) {
+                    throw error;
+                }
+
+                // Org ID có thể stale/sai context phiên, thử đồng bộ lại 1 lần với org hiện tại user có quyền.
+                const refreshedOrganizations = await organizationService.getOrganizations(token, { member_only: true });
+                const orgItems: Organization[] = Array.isArray(refreshedOrganizations?.items)
+                    ? refreshedOrganizations.items
+                    : [];
+                const fallbackOwnerOrg = orgItems.find((o: Organization) => o.owner_id === userID || o.owner?.id === userID);
+                const fallbackOrg = fallbackOwnerOrg || orgItems[0];
+
+                if (!fallbackOrg?.id || fallbackOrg.id === orgId) {
+                    throw error;
+                }
+
+                orgId = fallbackOrg.id;
+                payload.organization_id = orgId;
+                setHasExistingOrg(true);
+                setSession(prev => ({ ...prev, organization_id: orgId }));
+                result = await rentalContractService.createOrgRentalContract(token, orgId, payload, signatureBlob);
+            }
 
             // Order created successfully
 
             // 5. Save contract + payment info to session for confirmation page
             const contract = result?.contract;
             const payment = result?.payment;
-            setSession({
+            setSession(prev => ({
+                ...prev,
                 contract_id: contract?.id,
                 contract_code: contract?.code || contract?.contract_number,
                 payment_id: payment?.paymentId,
                 payment_code: payment?.paymentCode,
                 payment_qr_url: payment?.qrCode,
                 payment_expired_at: payment?.expiredAt ? new Date(payment.expiredAt).toISOString() : undefined,
-            });
+            }));
 
         } catch (error) {
             console.error('Failed to create order:', error);
@@ -565,8 +631,10 @@ function CheckoutContainer() {
                         const res = await fetch(`${API}/public/rental-duration-tiers/active`);
                         if (res.ok) {
                             const data = await res.json();
-                            const allTiers = data.data || data;
-                            durationTier = allTiers.find((t: any) => String(t.id) === durationId);
+                            const allTiers = Array.isArray(data.data) ? data.data : (data.data?.items || data.items || data);
+                            if (Array.isArray(allTiers)) {
+                                durationTier = allTiers.find((t: any) => String(t.id) === durationId);
+                            }
                         }
                     } catch (e) {
                         console.warn("Error fetching tier", e);
@@ -578,8 +646,10 @@ function CheckoutContainer() {
                     const res = await fetch(`${API}/public/addons/active`);
                     if (res.ok) {
                         const data = await res.json();
-                        const allAddons = data.data || data;
-                        addons = allAddons.filter((a: AddonResponse) => addonIds.includes(String(a.id)));
+                        const allAddons = Array.isArray(data.data) ? data.data : (data.data?.items || data.items || data);
+                        if (Array.isArray(allAddons)) {
+                            addons = allAddons.filter((a: AddonResponse) => addonIds.includes(String(a.id)));
+                        }
                     }
                 } catch (e) {
                     console.warn("Error fetching addons", e);
@@ -592,8 +662,10 @@ function CheckoutContainer() {
                         const res = await fetch(`${API}/public/insurances/active`);
                         if (res.ok) {
                             const data = await res.json();
-                            const insurances = data.data || data;
-                            insurance = insurances.find((i: any) => String(i.id) === insuranceId);
+                            const insurances = Array.isArray(data.data) ? data.data : (data.data?.items || data.items || data);
+                            if (Array.isArray(insurances)) {
+                                insurance = insurances.find((i: any) => String(i.id) === insuranceId);
+                            }
                         }
                     } catch (e) {
                         console.warn("Error fetching insurance", e);
