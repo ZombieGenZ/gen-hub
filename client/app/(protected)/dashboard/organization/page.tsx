@@ -17,6 +17,7 @@ const DASHBOARD_REALTIME_EVENTS = [
     "inbound:created",
     "inbound:approved",
     "inbound:cancelled",
+    "inbound:receiving-started",
     "inbound:receiving-confirmed",
     "inbound:putaway-confirmed",
     "outbound:created",
