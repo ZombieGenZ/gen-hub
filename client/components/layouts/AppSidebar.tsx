@@ -179,9 +179,9 @@ export function AppSidebarContent({
                 <nav
                     aria-label="Điều hướng chính"
                     className={cn(
-                    "flex-1 px-4 overflow-y-auto overflow-x-hidden py-4 transition-all duration-300 min-h-0 scrollbar-hide",
-                    isCollapsed ? "space-y-2" : "space-y-6"
-                )}>
+                        "flex-1 px-4 overflow-y-auto overflow-x-hidden py-4 transition-all duration-300 min-h-0 scrollbar-hide",
+                        isCollapsed ? "space-y-2" : "space-y-6"
+                    )}>
                     {groups.map((group, groupIndex) => {
                         const isGroupExpanded = expandedGroups[groupIndex]; // Default is undefined (false/collapsed)
                         return (
@@ -207,9 +207,9 @@ export function AppSidebarContent({
                                     role="region"
                                     aria-label={group.title}
                                     className={cn(
-                                    "space-y-1 transition-all duration-200 overflow-hidden",
-                                    !isCollapsed && isGroupExpanded === false ? "max-h-0 opacity-0" : "max-h-[600px] opacity-100"
-                                )}>
+                                        "space-y-1 transition-all duration-200 overflow-hidden",
+                                        !isCollapsed && isGroupExpanded === false ? "max-h-0 opacity-0" : "max-h-[600px] opacity-100"
+                                    )}>
                                     {group.items.map((item, itemIndex) => (
                                         <NavItem
                                             key={itemIndex}
@@ -281,9 +281,9 @@ export function AppSidebarContent({
                                 "flex items-center gap-2 p-2 rounded-2xl hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all cursor-pointer group outline-none ring-0 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                                 isCollapsed ? "justify-center px-0 py-2" : ""
                             )}
-                            role="button"
-                            tabIndex={0}
-                            aria-label="Menu tài khoản"
+                                role="button"
+                                tabIndex={0}
+                                aria-label="Menu tài khoản"
                             >
                                 <div className="w-8 h-8 shrink-0 rounded-full bg-secondary flex items-center justify-center text-foreground text-xs font-semibold shadow-sm ring-2 ring-sidebar-ring group-hover:ring-sidebar-ring/80">
                                     {userInitials}
@@ -434,7 +434,7 @@ export function AppSidebar(props: AppSidebarProps) {
             "hidden lg:flex bg-sidebar border-r border-sidebar-border flex-col fixed h-full z-10 transition-all duration-300 ease-in-out shadow-sm",
             isOpen ? "w-72" : "w-18"
         )}
-        aria-label="Thanh điều hướng chính"
+            aria-label="Thanh điều hướng chính"
         >
 
             <AppSidebarContent {...props} isCollapsed={isCollapsed} />

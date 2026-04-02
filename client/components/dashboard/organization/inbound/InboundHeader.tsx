@@ -50,16 +50,16 @@ export function InboundHeader({
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <Button 
-                        variant="outline" 
+                    <Button
+                        variant="outline"
                         className="gap-2 rounded-xl"
                         onClick={onImportClick}
                     >
                         <CloudArrowUpIcon className="w-4 h-4" />
                         <span className="hidden sm:inline">Nhập Excel</span>
                     </Button>
-                    <Button 
-                        variant="outline" 
+                    <Button
+                        variant="outline"
                         className="gap-2 rounded-xl"
                         onClick={onExportClick}
                         disabled={isExporting}

@@ -121,9 +121,8 @@ function ListItem({
 }) {
     return (
         <div
-            className={`flex items-center justify-between p-3 rounded-xl border transition-colors group cursor-pointer ${
-                isActive ? "bg-white hover:bg-muted/50" : "bg-muted/20 opacity-60 hover:bg-muted/30"
-            }`}
+            className={`flex items-center justify-between p-3 rounded-xl border transition-colors group cursor-pointer ${isActive ? "bg-white hover:bg-muted/50" : "bg-muted/20 opacity-60 hover:bg-muted/30"
+                }`}
             onClick={onClick}
         >
             <div className="min-w-0 flex-1">

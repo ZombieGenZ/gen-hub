@@ -34,7 +34,7 @@ export function AdminHeader({ children }: AdminHeaderProps) {
         <header className="p-4 bg-background sticky top-0 z-20 h-16 flex items-center">
             <div className="flex items-center w-full py-0 px-4 gap-2">
                 {/* Mobile Menu Toggle */}
-                        <div className="lg:hidden">
+                <div className="lg:hidden">
                     <Sheet>
                         <SheetTrigger asChild>
                             <button

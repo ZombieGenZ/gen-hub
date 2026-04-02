@@ -223,12 +223,12 @@ export function WarehouseImagesTab({ warehouseId }: WarehouseImagesTabProps) {
                                 onDrop={(e) => handleDrop(e, idx)}
                                 onDragEnd={handleDragEnd}
                                 className={`relative group rounded-xl overflow-hidden border-2 transition-all cursor-grab active:cursor-grabbing ${dragIdx === idx
-                                        ? "opacity-40 scale-95"
-                                        : dragOverIdx === idx
-                                            ? "border-primary ring-2 ring-primary/30 scale-105"
-                                            : selectedIds.includes(img.id)
-                                                ? "border-primary ring-2 ring-primary/20"
-                                                : "border-transparent hover:border-muted-foreground/20"
+                                    ? "opacity-40 scale-95"
+                                    : dragOverIdx === idx
+                                        ? "border-primary ring-2 ring-primary/30 scale-105"
+                                        : selectedIds.includes(img.id)
+                                            ? "border-primary ring-2 ring-primary/20"
+                                            : "border-transparent hover:border-muted-foreground/20"
                                     }`}
                             >
                                 <img

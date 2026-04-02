@@ -60,7 +60,7 @@ interface CreateContractModalProps {
 export function CreateContractModal({ open, onOpenChange, onSuccess, organizations }: CreateContractModalProps) {
     const [loading, setLoading] = useState(false);
     const [submitting, setSubmitting] = useState(false);
-    
+
     // Data lists
     const [durationTiers, setDurationTiers] = useState<RentalDurationTier[]>([]);
     const [addons, setAddons] = useState<AddonResponse[]>([]);
@@ -187,11 +187,11 @@ export function CreateContractModal({ open, onOpenChange, onSuccess, organizatio
             };
 
             await rentalContractService.createRentalContract(token, payload);
-            
+
             toast.success("Tạo hợp đồng thành công");
             onSuccess();
             onOpenChange(false);
-            
+
             // Reset form
             setFormData({
                 type: 'TRANSFER',
@@ -225,9 +225,9 @@ export function CreateContractModal({ open, onOpenChange, onSuccess, organizatio
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label htmlFor="organization">Tổ chức thuê <span className="text-red-500">*</span></Label>
-                            <Select 
-                                value={formData.organization_id} 
-                                onValueChange={(value) => setFormData({...formData, organization_id: value})}
+                            <Select
+                                value={formData.organization_id}
+                                onValueChange={(value) => setFormData({ ...formData, organization_id: value })}
                             >
                                 <SelectTrigger aria-label="Chọn tổ chức">
                                     <SelectValue placeholder="Chọn tổ chức" />
@@ -244,8 +244,8 @@ export function CreateContractModal({ open, onOpenChange, onSuccess, organizatio
 
                         <div className="space-y-2">
                             <Label htmlFor="warehouse">Kho thuê <span className="text-red-500">*</span></Label>
-                            <Select 
-                                value={selectedTemplateId} 
+                            <Select
+                                value={selectedTemplateId}
                                 onValueChange={handleTemplateChange}
                             >
                                 <SelectTrigger aria-label="Chọn kho">
@@ -266,9 +266,9 @@ export function CreateContractModal({ open, onOpenChange, onSuccess, organizatio
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label htmlFor="duration">Gói thời gian <span className="text-red-500">*</span></Label>
-                            <Select 
-                                value={formData.duration_tier_id} 
-                                onValueChange={(value) => setFormData({...formData, duration_tier_id: value})}
+                            <Select
+                                value={formData.duration_tier_id}
+                                onValueChange={(value) => setFormData({ ...formData, duration_tier_id: value })}
                             >
                                 <SelectTrigger aria-label="Chọn thời hạn">
                                     <SelectValue placeholder="Chọn thời hạn" />
@@ -285,11 +285,11 @@ export function CreateContractModal({ open, onOpenChange, onSuccess, organizatio
 
                         <div className="space-y-2">
                             <Label htmlFor="start_date">Ngày bắt đầu</Label>
-                            <Input 
-                                type="date" 
+                            <Input
+                                type="date"
                                 id="start_date"
                                 value={formData.scheduled_start_at ? formData.scheduled_start_at.split('T')[0] : ''}
-                                onChange={(e) => setFormData({...formData, scheduled_start_at: new Date(e.target.value).toISOString()})}
+                                onChange={(e) => setFormData({ ...formData, scheduled_start_at: new Date(e.target.value).toISOString() })}
                             />
                         </div>
                     </div>
@@ -298,9 +298,9 @@ export function CreateContractModal({ open, onOpenChange, onSuccess, organizatio
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label>Hình thức thanh toán</Label>
-                            <Select 
-                                value={formData.payment_method} 
-                                onValueChange={(value: RentalContractPaymentMethod) => setFormData({...formData, payment_method: value})}
+                            <Select
+                                value={formData.payment_method}
+                                onValueChange={(value: RentalContractPaymentMethod) => setFormData({ ...formData, payment_method: value })}
                             >
                                 <SelectTrigger aria-label="Hình thức thanh toán">
                                     <SelectValue />
@@ -315,9 +315,9 @@ export function CreateContractModal({ open, onOpenChange, onSuccess, organizatio
 
                         <div className="space-y-2">
                             <Label>Loại hợp đồng</Label>
-                            <Select 
-                                value={formData.type} 
-                                onValueChange={(value: RentalContractPaymentType) => setFormData({...formData, type: value})}
+                            <Select
+                                value={formData.type}
+                                onValueChange={(value: RentalContractPaymentType) => setFormData({ ...formData, type: value })}
                             >
                                 <SelectTrigger aria-label="Loại hợp đồng">
                                     <SelectValue />
@@ -337,8 +337,8 @@ export function CreateContractModal({ open, onOpenChange, onSuccess, organizatio
                             <div className="grid grid-cols-2 gap-2 border p-3 rounded-md max-h-40 overflow-y-auto">
                                 {addons.map((addon) => (
                                     <div key={addon.id} className="flex items-center space-x-2">
-                                        <Checkbox 
-                                            id={`addon-${addon.id}`} 
+                                        <Checkbox
+                                            id={`addon-${addon.id}`}
                                             checked={formData.addon_ids?.includes(addon.id)}
                                             onCheckedChange={(checked) => handleCheckboxChange(addon.id, 'addon_ids', checked as boolean)}
                                         />
@@ -358,8 +358,8 @@ export function CreateContractModal({ open, onOpenChange, onSuccess, organizatio
                             <div className="grid grid-cols-2 gap-2 border p-3 rounded-md max-h-40 overflow-y-auto">
                                 {insurances.map((ins) => (
                                     <div key={ins.id} className="flex items-center space-x-2">
-                                        <Checkbox 
-                                            id={`ins-${ins.id}`} 
+                                        <Checkbox
+                                            id={`ins-${ins.id}`}
                                             checked={formData.insurance_ids?.includes(ins.id)}
                                             onCheckedChange={(checked) => handleCheckboxChange(ins.id, 'insurance_ids', checked as boolean)}
                                         />
@@ -375,11 +375,11 @@ export function CreateContractModal({ open, onOpenChange, onSuccess, organizatio
                     {/* Notes */}
                     <div className="space-y-2">
                         <Label htmlFor="notes">Ghi chú</Label>
-                        <Textarea 
-                            id="notes" 
+                        <Textarea
+                            id="notes"
                             placeholder="Ghi chú thêm về hợp đồng..."
                             value={formData.notes || ''}
-                            onChange={(e) => setFormData({...formData, notes: e.target.value})}
+                            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                         />
                     </div>
                 </div>

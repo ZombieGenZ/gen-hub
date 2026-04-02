@@ -32,7 +32,7 @@ export function ArticleForm({ initialData, isEdit = false }: ArticleFormProps) {
     const { showToast } = useToast();
     const [loading, setLoading] = useState(false);
     const [categories, setCategories] = useState<CategoryResponse[]>([]);
-    
+
     // Convert arrays back and forth
     const initialCategoryIds = initialData?.categories?.map(c => c.id) || [];
     const initialTags = initialData?.tags?.join(", ") || "";
@@ -57,7 +57,7 @@ export function ArticleForm({ initialData, isEdit = false }: ArticleFormProps) {
 
     useEffect(() => {
         const fetchCategories = async () => {
-             try {
+            try {
                 const token = authStorage.getAccessToken();
                 if (!token) return;
                 const data: any = await categoryService.getAllCategories(token, { limit: 1000 });
@@ -68,7 +68,7 @@ export function ArticleForm({ initialData, isEdit = false }: ArticleFormProps) {
                 else if (Array.isArray(data?.data)) items = data.data;
 
                 setCategories(items);
-            } catch(e) {
+            } catch (e) {
                 console.error(e);
             }
         };
@@ -77,11 +77,11 @@ export function ArticleForm({ initialData, isEdit = false }: ArticleFormProps) {
 
     const handleSubmit = async () => {
         try {
-            if(!formData.title.trim()) {
+            if (!formData.title.trim()) {
                 showToast("Vui lòng nhập tiêu đề bài viết", "error");
                 return;
             }
-            if(!formData.content.trim()) {
+            if (!formData.content.trim()) {
                 showToast("Vui lòng nhập nội dung bài viết", "error");
                 return;
             }
@@ -89,8 +89,8 @@ export function ArticleForm({ initialData, isEdit = false }: ArticleFormProps) {
             setLoading(true);
             const token = authStorage.getAccessToken();
             if (!token) {
-                 showToast("Lỗi xác thực, vui lòng đăng nhập lại", "error");
-                 return;
+                showToast("Lỗi xác thực, vui lòng đăng nhập lại", "error");
+                return;
             }
 
             // Prepare payload
@@ -115,10 +115,10 @@ export function ArticleForm({ initialData, isEdit = false }: ArticleFormProps) {
             if (formData.seo_keywords) {
                 submitData.seo_keywords = formData.seo_keywords.split(",").map((t: string) => t.trim()).filter((t: string) => t);
             }
-            
+
             // Process Category
             if (formData.category_ids && formData.category_ids !== "none") {
-                 submitData.category_ids = [formData.category_ids];
+                submitData.category_ids = [formData.category_ids];
             }
 
             if (isEdit && initialData?.id) {
@@ -130,8 +130,8 @@ export function ArticleForm({ initialData, isEdit = false }: ArticleFormProps) {
             }
             router.push("/dashboard/admin/articles");
         } catch (error: any) {
-             console.error("Failed to save article", error);
-             showToast(error.message || "Có lỗi xảy ra khi lưu bài viết", "error");
+            console.error("Failed to save article", error);
+            showToast(error.message || "Có lỗi xảy ra khi lưu bài viết", "error");
         } finally {
             setLoading(false);
         }
@@ -175,7 +175,7 @@ export function ArticleForm({ initialData, isEdit = false }: ArticleFormProps) {
                 <div className="lg:col-span-2 space-y-6">
                     <Card className="border-0 shadow-premium rounded-3xl overflow-hidden">
                         <CardContent className="p-8 space-y-6">
-                             <div className="space-y-2">
+                            <div className="space-y-2">
                                 <Label htmlFor="title" className="text-base font-semibold">Tiêu đề bài viết <span className="text-red-500">*</span></Label>
                                 <Input
                                     id="title"
@@ -202,9 +202,9 @@ export function ArticleForm({ initialData, isEdit = false }: ArticleFormProps) {
 
                     <Card className="border-0 shadow-premium rounded-3xl overflow-hidden">
                         <CardContent className="p-8 space-y-6">
-                             <h3 className="text-lg font-semibold border-b pb-2">Tóm tắt & Hiển thị</h3>
-                             
-                             <div className="space-y-2">
+                            <h3 className="text-lg font-semibold border-b pb-2">Tóm tắt & Hiển thị</h3>
+
+                            <div className="space-y-2">
                                 <Label htmlFor="excerpt">Đoạn trích (Mô tả ngắn gọn)</Label>
                                 <Textarea
                                     id="excerpt"
@@ -235,11 +235,11 @@ export function ArticleForm({ initialData, isEdit = false }: ArticleFormProps) {
                         </CardContent>
                     </Card>
 
-                     <Card className="border-0 shadow-premium rounded-3xl overflow-hidden">
+                    <Card className="border-0 shadow-premium rounded-3xl overflow-hidden">
                         <CardContent className="p-8 space-y-6">
-                             <h3 className="text-lg font-semibold border-b pb-2">Tối ưu máy tìm kiếm (SEO)</h3>
-                             
-                             <div className="space-y-2">
+                            <h3 className="text-lg font-semibold border-b pb-2">Tối ưu máy tìm kiếm (SEO)</h3>
+
+                            <div className="space-y-2">
                                 <Label htmlFor="seo_title">SEO Title</Label>
                                 <Input
                                     id="seo_title"
@@ -251,7 +251,7 @@ export function ArticleForm({ initialData, isEdit = false }: ArticleFormProps) {
                                 />
                             </div>
 
-                             <div className="space-y-2">
+                            <div className="space-y-2">
                                 <Label htmlFor="seo_description">SEO Description</Label>
                                 <Textarea
                                     id="seo_description"
@@ -263,7 +263,7 @@ export function ArticleForm({ initialData, isEdit = false }: ArticleFormProps) {
                                 />
                             </div>
 
-                             <div className="space-y-2">
+                            <div className="space-y-2">
                                 <Label htmlFor="seo_keywords">SEO Keywords</Label>
                                 <Input
                                     id="seo_keywords"
@@ -294,12 +294,12 @@ export function ArticleForm({ initialData, isEdit = false }: ArticleFormProps) {
                 <div className="space-y-6">
                     <Card className="border-0 shadow-premium rounded-3xl overflow-hidden sticky top-24">
                         <CardContent className="p-6 space-y-6">
-                             <h3 className="text-lg font-semibold border-b pb-2">Phân loại</h3>
-                             
-                             <div className="space-y-2">
+                            <h3 className="text-lg font-semibold border-b pb-2">Phân loại</h3>
+
+                            <div className="space-y-2">
                                 <Label htmlFor="status">Trạng thái</Label>
-                                <Select 
-                                    value={formData.status} 
+                                <Select
+                                    value={formData.status}
                                     onValueChange={(val) => setFormData({ ...formData, status: val })}
                                 >
                                     <SelectTrigger className="bg-muted/30 rounded-xl h-11">
@@ -316,8 +316,8 @@ export function ArticleForm({ initialData, isEdit = false }: ArticleFormProps) {
 
                             <div className="space-y-2">
                                 <Label htmlFor="type">Loại bài viết</Label>
-                                <Select 
-                                    value={formData.type} 
+                                <Select
+                                    value={formData.type}
                                     onValueChange={(val) => setFormData({ ...formData, type: val })}
                                 >
                                     <SelectTrigger className="bg-muted/30 rounded-xl h-11">
@@ -334,8 +334,8 @@ export function ArticleForm({ initialData, isEdit = false }: ArticleFormProps) {
 
                             <div className="space-y-2">
                                 <Label htmlFor="category">Danh mục</Label>
-                                <Select 
-                                    value={formData.category_ids} 
+                                <Select
+                                    value={formData.category_ids}
                                     onValueChange={(val) => setFormData({ ...formData, category_ids: val })}
                                 >
                                     <SelectTrigger className="bg-muted/30 rounded-xl h-11">
@@ -350,7 +350,7 @@ export function ArticleForm({ initialData, isEdit = false }: ArticleFormProps) {
                                 </Select>
                             </div>
 
-                             <div className="space-y-2">
+                            <div className="space-y-2">
                                 <Label htmlFor="tags">Thẻ (Tags)</Label>
                                 <Input
                                     id="tags"
@@ -364,7 +364,7 @@ export function ArticleForm({ initialData, isEdit = false }: ArticleFormProps) {
 
                             <div className="pt-6 mt-6 border-t space-y-4">
                                 <h3 className="font-semibold text-sm text-muted-foreground uppercase">Cài đặt khác</h3>
-                                
+
                                 <div className="flex justify-between items-center bg-muted/20 p-3 rounded-xl border">
                                     <Label htmlFor="is_featured" className="cursor-pointer font-medium mb-0">Bài viết nổi bật</Label>
                                     <Switch

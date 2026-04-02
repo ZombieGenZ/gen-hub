@@ -269,7 +269,7 @@ export default function BarcodeScannerQuickAdd({
 
         const handleGlobalKeyDown = (e: KeyboardEvent) => {
             const currentTime = Date.now();
-            
+
             // If it's a very fast input (scanner-like)
             if (currentTime - lastTime < 50 || buffer === "") {
                 if (e.key === "Enter") {
@@ -698,7 +698,7 @@ export default function BarcodeScannerQuickAdd({
                                         {imageUrl}
                                     </p>
                                 </div>
-                                    <Button
+                                <Button
                                     type="button"
                                     variant="ghost"
                                     size="icon"

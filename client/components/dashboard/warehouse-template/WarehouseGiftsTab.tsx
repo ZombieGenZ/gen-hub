@@ -299,8 +299,8 @@ export function WarehouseGiftsTab({ data, onChange }: WarehouseGiftsTabProps) {
                                             }`}
                                     >
                                         <div className={`flex items-center justify-center w-5 h-5 rounded border-2 transition-colors ${isSelected
-                                                ? "bg-primary border-primary text-primary-foreground"
-                                                : "border-muted-foreground/30"
+                                            ? "bg-primary border-primary text-primary-foreground"
+                                            : "border-muted-foreground/30"
                                             }`}>
                                             {isSelected && <CheckIcon className="w-3.5 h-3.5" />}
                                         </div>

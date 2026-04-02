@@ -440,7 +440,7 @@ export function CouponDrawer({
                                                         {formatValidity(coupon)}
                                                     </span>
                                                 )}
-                                                
+
                                                 {coupon.min_order_amount && (
                                                     <span className="text-[10px] text-slate-400 font-medium flex items-center gap-1">
                                                         <div className="w-1 h-1 rounded-full bg-slate-300" />
@@ -461,10 +461,10 @@ export function CouponDrawer({
                         )}
                     </div>
                 </ScrollArea>
-                
+
                 <div className="p-4 border-t border-slate-100 bg-slate-50">
-                    <Button 
-                        variant="outline" 
+                    <Button
+                        variant="outline"
                         onClick={() => onOpenChange(false)}
                         className="w-full h-11 rounded-xl text-slate-600 font-bold"
                     >
