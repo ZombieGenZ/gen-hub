@@ -7,7 +7,6 @@ import { InventoryService } from "@/services/inventory/inventory.service";
 import { useToast } from "@/contexts/ToastContext";
 import type { OutboundRequest, ExportStatus } from "@/services/inventory/inventory.types";
 import { useOrganizationRealtime } from "@/hooks/useOrganizationRealtime";
-import { orgHelper } from "@/lib/organization.utils";
 
 // ── shadcn/ui ──
 import { Card, CardContent } from "@/components/ui/card";
@@ -137,24 +136,18 @@ export default function OutboundDetailPage() {
     const [newPkgWidth, setNewPkgWidth] = useState(0);
     const [newPkgHeight, setNewPkgHeight] = useState(0);
 
-    const fetchData = useCallback(async () => {
+    const fetchData = useCallback(async (showLoading = true) => {
         try {
             const token = authStorage.getAccessToken();
             if (!token) { router.push("/login"); return; }
 
-            if (!orgId) {
-                try {
-                    const resolvedOrgId = await orgHelper.getOrgId(token);
-                    setOrgId(resolvedOrgId);
-                } catch {
-                    // Continue loading detail even if org resolve fails.
-                }
+            if (showLoading) {
+                setLoading(true);
             }
-
-            setLoading(true);
             const res = await inventoryService.getOutboundById(token, id);
             const item = (res as any)?.data || res;
             setData(item);
+            setOrgId(item?.organization_id ?? null);
         } catch (err) {
             const e = err instanceof Error ? err : new Error(String(err));
             if (e.message === "Unauthorized") { router.push("/login"); return; }
@@ -162,9 +155,9 @@ export default function OutboundDetailPage() {
         } finally {
             setLoading(false);
         }
-    }, [id, router, orgId]);
+    }, [id, router]);
 
-    useEffect(() => { fetchData(); }, [fetchData]);
+    useEffect(() => { void fetchData(); }, [fetchData]);
 
     useOrganizationRealtime({
         orgId,
@@ -176,7 +169,7 @@ export default function OutboundDetailPage() {
                 return;
             }
 
-            void fetchData();
+            void fetchData(false);
 
             const messageMap: Record<string, string> = {
                 "outbound:approved": "Phiếu xuất đã được duyệt",

@@ -426,11 +426,11 @@ export class WarehouseManagerInventoryService {
             this.redisService.del(`${this.INBOUND_KEY_PREFIX}:detail:${receiptId}`),
         ]);
 
-        // Emit realtime event
-        this.websocketGateway.emitToOrganization(receipt.organization_id, 'inbound:rejected', {
+        // Emit realtime event (new semantic event for cancelled state)
+        this.websocketGateway.emitToOrganization(receipt.organization_id, 'inbound:cancelled', {
             receiptId: receipt.id,
             code: receipt.code,
-            rejectedBy: actorId,
+            cancelledBy: actorId,
             reason: dto.reason,
             timestamp: new Date().toISOString(),
         });

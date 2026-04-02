@@ -1,11 +1,13 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { InventoryService } from "@/services/inventory/inventory.service";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useToast } from "@/contexts/ToastContext";
+import { useOrganizationRealtime } from "@/hooks/useOrganizationRealtime";
+import { orgHelper } from "@/lib/organization.utils";
 import type { InboundRequest, ReceiptStatus } from "@/services/inventory/inventory.types";
 
 import "./purchase-order.css";
@@ -18,6 +20,24 @@ import { CreateInboundDialog } from "@/components/dashboard/organization/inbound
 import { InboundImportDialog } from "@/components/dashboard/organization/inbound/InboundImportDialog";
 
 const inventoryService = new InventoryService();
+
+const INBOUND_LIST_REALTIME_EVENTS = [
+    "inbound:created",
+    "inbound:approved",
+    "inbound:cancelled",
+    "inbound:receiving-started",
+    "inbound:receiving-confirmed",
+    "inbound:putaway-confirmed",
+];
+
+const INBOUND_LIST_REALTIME_TOAST_MESSAGES: Record<string, string> = {
+    "inbound:created": "Có phiếu PO mới vừa được tạo",
+    "inbound:approved": "Một phiếu PO đã được duyệt",
+    "inbound:cancelled": "Một phiếu PO đã bị hủy",
+    "inbound:receiving-started": "Đã bắt đầu kiểm đếm một phiếu PO",
+    "inbound:receiving-confirmed": "Đã xác nhận kiểm đếm một phiếu PO",
+    "inbound:putaway-confirmed": "Một phiếu PO đã hoàn tất nhập kho",
+};
 
 export default function InboundListPage() {
     const router = useRouter();
@@ -41,6 +61,10 @@ export default function InboundListPage() {
     const [createDialogOpen, setCreateDialogOpen] = useState(false);
     const [importDialogOpen, setImportDialogOpen] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
+    const [orgId, setOrgId] = useState<string | null>(null);
+    const realtimeRefreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const lastRealtimeToastRef = useRef<{ key: string; at: number } | null>(null);
+    const lastManualCancelRef = useRef<{ receiptId: string; at: number } | null>(null);
 
     // ── Fetch list ──
     const fetchItems = useCallback(async () => {
@@ -82,7 +106,76 @@ export default function InboundListPage() {
 
     useEffect(() => {
         fetchItems();
-    }, [fetchItems]);
+    }, [fetchItems, showToast]);
+
+    useEffect(() => {
+        const resolveOrgId = async () => {
+            try {
+                const token = authStorage.getAccessToken();
+                if (!token) return;
+                const resolvedOrgId = await orgHelper.getOrgId(token);
+                setOrgId(resolvedOrgId);
+            } catch {
+                // Keep list working even when orgId cannot be resolved.
+            }
+        };
+
+        void resolveOrgId();
+    }, []);
+
+    useEffect(() => {
+        return () => {
+            if (realtimeRefreshTimeoutRef.current) {
+                clearTimeout(realtimeRefreshTimeoutRef.current);
+                realtimeRefreshTimeoutRef.current = null;
+            }
+        };
+    }, []);
+
+    const handleRealtimeEvent = useCallback((eventName: string, payload: unknown) => {
+        if (realtimeRefreshTimeoutRef.current) {
+            clearTimeout(realtimeRefreshTimeoutRef.current);
+        }
+
+        realtimeRefreshTimeoutRef.current = setTimeout(() => {
+            void fetchItems();
+        }, 250);
+
+        const data = payload as { receiptId?: string; code?: string } | undefined;
+        const receiptId = data?.receiptId;
+
+        // Avoid duplicate toast when user just cancelled this receipt locally.
+        if (eventName === "inbound:cancelled" && receiptId) {
+            const lastManualCancel = lastManualCancelRef.current;
+            if (
+                lastManualCancel &&
+                lastManualCancel.receiptId === receiptId &&
+                Date.now() - lastManualCancel.at < 2000
+            ) {
+                return;
+            }
+        }
+
+        const message = INBOUND_LIST_REALTIME_TOAST_MESSAGES[eventName];
+        if (!message) return;
+
+        const toastKey = `${eventName}:${receiptId ?? data?.code ?? "unknown"}`;
+        const lastToast = lastRealtimeToastRef.current;
+        if (lastToast && lastToast.key === toastKey && Date.now() - lastToast.at < 1500) {
+            return;
+        }
+
+        const messageWithCode = data?.code ? `${message} (${data.code})` : message;
+        showToast(messageWithCode, "success");
+        lastRealtimeToastRef.current = { key: toastKey, at: Date.now() };
+    }, [fetchItems, showToast]);
+
+    useOrganizationRealtime({
+        orgId,
+        events: INBOUND_LIST_REALTIME_EVENTS,
+        enabled: !!orgId,
+        onEvent: handleRealtimeEvent,
+    });
 
     // ── Handlers ──
     const handleCancelConfirm = async () => {
@@ -96,6 +189,7 @@ export default function InboundListPage() {
             }
             await inventoryService.cancelInbound(token, cancelTarget.id, "Người tạo phiếu tự hủy");
             showToast(`Phiếu ${cancelTarget.code} đã được hủy`, "success");
+            lastManualCancelRef.current = { receiptId: cancelTarget.id, at: Date.now() };
             setCancelDialogOpen(false);
             setCancelTarget(null);
             fetchItems();
@@ -127,7 +221,7 @@ export default function InboundListPage() {
             window.URL.revokeObjectURL(url);
             document.body.removeChild(a);
             showToast("Xuất Excel thành công", "success");
-        } catch (err) {
+        } catch {
             showToast("Không thể xuất Excel phiếu PO", "error");
         } finally {
             setIsExporting(false);

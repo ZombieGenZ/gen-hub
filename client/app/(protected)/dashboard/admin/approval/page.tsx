@@ -42,7 +42,7 @@ const wmInventoryService = new WarehouseManagerInventoryService();
 const APPROVAL_REALTIME_EVENTS = [
     "inbound:created",
     "inbound:approved",
-    "inbound:rejected",
+    "inbound:cancelled",
     "inbound:receiving-started",
     "inbound:receiving-confirmed",
     "inbound:putaway-confirmed",

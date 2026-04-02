@@ -28,7 +28,7 @@ const wmInventoryService = new WarehouseManagerInventoryService();
 
 const INBOUND_DETAIL_REALTIME_EVENTS = [
     "inbound:approved",
-    "inbound:rejected",
+    "inbound:cancelled",
     "inbound:receiving-started",
     "inbound:receiving-confirmed",
     "inbound:putaway-confirmed",
@@ -36,7 +36,7 @@ const INBOUND_DETAIL_REALTIME_EVENTS = [
 
 const INBOUND_REALTIME_TOAST_MESSAGES: Record<string, string> = {
     "inbound:approved": "Phiếu đã được duyệt",
-    "inbound:rejected": "Phiếu đã bị từ chối",
+    "inbound:cancelled": "Phiếu đã bị hủy",
     "inbound:receiving-started": "Đã bắt đầu kiểm đếm",
     "inbound:receiving-confirmed": "Đã xác nhận kiểm đếm",
     "inbound:putaway-confirmed": "Phiếu đã hoàn tất nhập kho",

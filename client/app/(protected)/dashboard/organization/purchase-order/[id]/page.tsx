@@ -1,13 +1,12 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { InventoryService } from "@/services/inventory/inventory.service";
 import { useToast } from "@/contexts/ToastContext";
 import type { InboundRequest, ReceiptStatus } from "@/services/inventory/inventory.types";
 import { useOrganizationRealtime } from "@/hooks/useOrganizationRealtime";
-import { orgHelper } from "@/lib/organization.utils";
 
 // ── shadcn/ui ──
 import { Card, CardContent } from "@/components/ui/card";
@@ -30,11 +29,19 @@ const inventoryService = new InventoryService();
 
 const INBOUND_DETAIL_EVENTS = [
     "inbound:approved",
-    "inbound:rejected",
+    "inbound:cancelled",
     "inbound:receiving-started",
     "inbound:receiving-confirmed",
     "inbound:putaway-confirmed",
 ];
+
+const INBOUND_DETAIL_REALTIME_TOAST_MESSAGES: Record<string, string> = {
+    "inbound:approved": "Phiếu PO đã được duyệt",
+    "inbound:cancelled": "Phiếu PO đã bị hủy",
+    "inbound:receiving-started": "Đã bắt đầu kiểm đếm phiếu PO",
+    "inbound:receiving-confirmed": "Đã xác nhận kiểm đếm phiếu PO",
+    "inbound:putaway-confirmed": "Phiếu PO đã hoàn tất nhập kho",
+};
 
 // ────────────────────────────────────────────────
 // Status config
@@ -104,34 +111,30 @@ export default function InboundDetailPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [orgId, setOrgId] = useState<string | null>(null);
+    const lastRealtimeToastRef = useRef<{ key: string; at: number } | null>(null);
+    const realtimeRefreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // ── Actual qty editing ──
     const [editingQty, setEditingQty] = useState<Record<string, number>>({});
     const [mismatchReasons, setMismatchReasons] = useState<Record<string, string>>({});
 
-    const fetchData = useCallback(async () => {
+    const fetchData = useCallback(async (showLoading = true) => {
         try {
             const token = authStorage.getAccessToken();
             if (!token) { router.push("/login"); return; }
 
-            if (!orgId) {
-                try {
-                    const resolvedOrgId = await orgHelper.getOrgId(token);
-                    setOrgId(resolvedOrgId);
-                } catch {
-                    // Continue loading detail even if org resolve fails.
-                }
+            if (showLoading) {
+                setLoading(true);
             }
-
-            setLoading(true);
             const res = await inventoryService.getInboundById(token, id);
-            const item = (res as any)?.data || res;
+            const item = res?.data ?? res;
             setData(item);
+            setOrgId(item?.organization_id ?? null);
 
             // Initialize editing qty from actual_qty
             if (item?.details) {
                 const qtyMap: Record<string, number> = {};
-                item.details.forEach((d: any) => {
+                item.details.forEach((d) => {
                     qtyMap[d.id] = d.actual_qty ?? 0;
                 });
                 setEditingQty(qtyMap);
@@ -143,35 +146,52 @@ export default function InboundDetailPage() {
         } finally {
             setLoading(false);
         }
-    }, [id, router, orgId]);
+    }, [id, router]);
 
-    useEffect(() => { fetchData(); }, [fetchData]);
+    useEffect(() => { void fetchData(); }, [fetchData]);
+
+    useEffect(() => {
+        return () => {
+            if (realtimeRefreshTimeoutRef.current) {
+                clearTimeout(realtimeRefreshTimeoutRef.current);
+                realtimeRefreshTimeoutRef.current = null;
+            }
+        };
+    }, []);
+
+    const handleRealtimeEvent = useCallback((eventName: string, payload: unknown) => {
+        const data = payload as { receiptId?: string; code?: string } | undefined;
+        if (!data?.receiptId || data.receiptId !== id) {
+            return;
+        }
+
+        if (realtimeRefreshTimeoutRef.current) {
+            clearTimeout(realtimeRefreshTimeoutRef.current);
+        }
+
+        realtimeRefreshTimeoutRef.current = setTimeout(() => {
+            void fetchData(false);
+        }, 250);
+
+        const message = INBOUND_DETAIL_REALTIME_TOAST_MESSAGES[eventName];
+        if (!message) return;
+
+        const toastKey = `${eventName}:${data.receiptId ?? data.code ?? "unknown"}`;
+        const lastToast = lastRealtimeToastRef.current;
+        if (lastToast && lastToast.key === toastKey && Date.now() - lastToast.at < 1500) {
+            return;
+        }
+
+        const messageWithCode = data.code ? `${message} (${data.code})` : message;
+        showToast(messageWithCode, "success");
+        lastRealtimeToastRef.current = { key: toastKey, at: Date.now() };
+    }, [fetchData, id, showToast]);
 
     useOrganizationRealtime({
         orgId,
         events: INBOUND_DETAIL_EVENTS,
         enabled: !!orgId,
-        onEvent: (eventName, payload) => {
-            const data = payload as { receiptId?: string } | undefined;
-            if (!data?.receiptId || data.receiptId !== id) {
-                return;
-            }
-
-            void fetchData();
-
-            const messageMap: Record<string, string> = {
-                "inbound:approved": "Phiếu PO đã được duyệt",
-                "inbound:rejected": "Phiếu PO đã bị từ chối",
-                "inbound:receiving-started": "Đã bắt đầu kiểm đếm phiếu PO",
-                "inbound:receiving-confirmed": "Đã xác nhận kiểm đếm phiếu PO",
-                "inbound:putaway-confirmed": "Phiếu PO đã hoàn tất nhập kho",
-            };
-
-            const message = messageMap[eventName];
-            if (message) {
-                showToast(message, "success");
-            }
-        },
+        onEvent: handleRealtimeEvent,
     });
 
     const getRowClass = (detailId: string, expectedQty: number) => {

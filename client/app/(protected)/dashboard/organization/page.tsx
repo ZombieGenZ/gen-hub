@@ -16,7 +16,7 @@ import { useToast } from "@/contexts/ToastContext";
 const DASHBOARD_REALTIME_EVENTS = [
     "inbound:created",
     "inbound:approved",
-    "inbound:rejected",
+    "inbound:cancelled",
     "inbound:receiving-confirmed",
     "inbound:putaway-confirmed",
     "outbound:created",

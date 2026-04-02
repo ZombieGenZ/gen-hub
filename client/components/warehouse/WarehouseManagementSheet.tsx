@@ -198,7 +198,7 @@ export const WarehouseManagementSheet = ({
             const messageMap: Record<string, string> = {
                 "inbound:created": `Phiếu PO mới đã được tạo${suffix}`,
                 "inbound:approved": `Phiếu PO đã được duyệt${suffix}`,
-                "inbound:rejected": `Phiếu PO đã bị từ chối${suffix}`,
+                "inbound:cancelled": `Phiếu PO đã bị hủy${suffix}`,
                 "outbound:created": `Phiếu xuất mới đã được tạo${suffix}`,
                 "outbound:approved": `Phiếu xuất đã được duyệt${suffix}`,
                 "outbound:rejected": `Phiếu xuất đã bị từ chối${suffix}`,
@@ -214,7 +214,7 @@ export const WarehouseManagementSheet = ({
         const inboundEvents = [
             "inbound:created",
             "inbound:approved",
-            "inbound:rejected",
+            "inbound:cancelled",
             "inbound:receiving-started",
             "inbound:receiving-confirmed",
             "inbound:putaway-confirmed",
