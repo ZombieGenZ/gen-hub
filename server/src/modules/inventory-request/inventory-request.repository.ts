@@ -8,6 +8,83 @@ import { IInboundRequest, IOutboundRequest, IPaginatedResponse } from './interfa
 export class InventoryRequestRepository {
     constructor(private readonly prisma: PrismaService) { }
 
+    private readonly inboundDetailSelect = {
+        id: true,
+        receipt_id: true,
+        product_id: true,
+        batch_id: true,
+        expected_qty: true,
+        actual_qty: true,
+        unit_id: true,
+        conversion_rate: true,
+        product: { select: { id: true, name: true, sku: true, image_url: true } },
+        batch: { select: { id: true, code: true, expiry_date: true } },
+        unit: { select: { id: true, name: true } },
+    } satisfies Prisma.ReceiptDetailSelect;
+
+    private readonly inboundBaseSelect = {
+        id: true,
+        organization_id: true,
+        warehouse_id: true,
+        partner_id: true,
+        code: true,
+        purchase_order_code: true,
+        status: true,
+        notes: true,
+        expected_arrival: true,
+        vehicle_info: true,
+        approved_by: true,
+        approved_at: true,
+        checker_id: true,
+        is_active: true,
+        created_at: true,
+        updated_at: true,
+        created_by: true,
+        updated_by: true,
+        warehouse: { select: { id: true, name: true } },
+        partner: { select: { id: true, name: true, code: true } },
+    } satisfies Prisma.ReceiptSelect;
+
+    private readonly outboundDetailSelect = {
+        id: true,
+        export_id: true,
+        product_id: true,
+        required_batch_id: true,
+        quantity: true,
+        checked_qty: true,
+        passed: true,
+        unit_id: true,
+        conversion_rate: true,
+        product: { select: { id: true, name: true, sku: true, image_url: true } },
+        batch: { select: { id: true, code: true, expiry_date: true } },
+        unit: { select: { id: true, name: true } },
+    } satisfies Prisma.ExportDetailSelect;
+
+    private readonly outboundBaseSelect = {
+        id: true,
+        organization_id: true,
+        warehouse_id: true,
+        partner_id: true,
+        code: true,
+        sales_order_code: true,
+        status: true,
+        notes: true,
+        required_date: true,
+        vehicle_info: true,
+        approved_by: true,
+        approved_at: true,
+        picker_id: true,
+        checker_id: true,
+        tracking_number: true,
+        is_active: true,
+        created_at: true,
+        updated_at: true,
+        created_by: true,
+        updated_by: true,
+        warehouse: { select: { id: true, name: true } },
+        partner: { select: { id: true, name: true, code: true } },
+    } satisfies Prisma.ExportSelect;
+
     /**
      * Tạo phiếu nhập kho
      */
@@ -38,16 +115,11 @@ export class InventoryRequestRepository {
                 organization_id: orgId,
                 is_deleted: false,
             },
-            include: {
-                warehouse: { select: { id: true, name: true } },
-                partner: { select: { id: true, name: true, code: true } },
+            select: {
+                ...this.inboundBaseSelect,
                 details: {
                     where: { is_deleted: false },
-                    include: {
-                        product: { select: { id: true, name: true, sku: true, image_url: true } },
-                        batch: { select: { id: true, code: true, expiry_date: true } },
-                        unit: { select: { id: true, name: true } },
-                    },
+                    select: this.inboundDetailSelect,
                 },
             },
         }) as unknown as IInboundRequest | null;
@@ -78,10 +150,13 @@ export class InventoryRequestRepository {
         const [items, total] = await Promise.all([
             this.prisma.receipt.findMany({
                 where,
-                include: {
-                    warehouse: { select: { id: true, name: true } },
-                    partner: { select: { id: true, name: true, code: true } },
-                    _count: { select: { details: true } },
+                select: {
+                    ...this.inboundBaseSelect,
+                    _count: {
+                        select: {
+                            details: { where: { is_deleted: false } },
+                        },
+                    },
                 },
                 orderBy: { created_at: 'desc' },
                 take: limit,
@@ -97,6 +172,46 @@ export class InventoryRequestRepository {
             offset,
             hasMore: offset + items.length < total,
         };
+    }
+
+    /**
+     * Danh sách phiếu nhập full detail cho export Excel
+     */
+    async findInboundForExport(
+        orgId: string,
+        query: QueryInboundRequestDto,
+    ): Promise<IInboundRequest[]> {
+        const { warehouse_id, keywords, status } = query;
+
+        const where: Prisma.ReceiptWhereInput = {
+            organization_id: orgId,
+            is_deleted: false,
+            ...(warehouse_id && { warehouse_id }),
+            ...(status && { status }),
+            ...(keywords && {
+                OR: [
+                    { code: { contains: keywords, mode: 'insensitive' } },
+                    { purchase_order_code: { contains: keywords, mode: 'insensitive' } },
+                ],
+            }),
+        };
+
+        return this.prisma.receipt.findMany({
+            where,
+            include: {
+                warehouse: { select: { id: true, name: true } },
+                partner: { select: { id: true, name: true, code: true } },
+                details: {
+                    where: { is_deleted: false },
+                    include: {
+                        product: { select: { id: true, name: true, sku: true, image_url: true } },
+                        batch: { select: { id: true, code: true, expiry_date: true } },
+                        unit: { select: { id: true, name: true } },
+                    },
+                },
+            },
+            orderBy: { created_at: 'desc' },
+        }) as unknown as IInboundRequest[];
     }
 
     /**
@@ -158,24 +273,33 @@ export class InventoryRequestRepository {
                 organization_id: orgId,
                 is_deleted: false,
             },
-            include: {
-                warehouse: { select: { id: true, name: true } },
-                partner: { select: { id: true, name: true, code: true } },
+            select: {
+                ...this.outboundBaseSelect,
                 details: {
                     where: { is_deleted: false },
-                    include: {
-                        product: { select: { id: true, name: true, sku: true, image_url: true } },
-                        batch: { select: { id: true, code: true, expiry_date: true } },
-                        unit: { select: { id: true, name: true } },
-                    },
+                    select: this.outboundDetailSelect,
                 },
                 pick_lists: {
                     where: { is_deleted: false },
-                    include: {
+                    select: {
+                        id: true,
+                        export_id: true,
+                        code: true,
+                        status: true,
+                        created_at: true,
                         details: {
                             where: { is_deleted: false },
-                            include: {
-                                pick_list: { select: { id: true, code: true, status: true } },
+                            select: {
+                                id: true,
+                                pick_list_id: true,
+                                export_detail_id: true,
+                                product_id: true,
+                                batch_id: true,
+                                block_id: true,
+                                required_qty: true,
+                                picked_qty: true,
+                                product: { select: { id: true, name: true, sku: true } },
+                                block: { select: { id: true, code: true } },
                             },
                         },
                     },
@@ -210,10 +334,13 @@ export class InventoryRequestRepository {
         const [items, total] = await Promise.all([
             this.prisma.export.findMany({
                 where,
-                include: {
-                    warehouse: { select: { id: true, name: true } },
-                    partner: { select: { id: true, name: true, code: true } },
-                    _count: { select: { details: true } },
+                select: {
+                    ...this.outboundBaseSelect,
+                    _count: {
+                        select: {
+                            details: { where: { is_deleted: false } },
+                        },
+                    },
                 },
                 orderBy: { created_at: 'desc' },
                 take: limit,
@@ -229,6 +356,46 @@ export class InventoryRequestRepository {
             offset,
             hasMore: offset + items.length < total,
         };
+    }
+
+    /**
+     * Danh sách phiếu xuất full detail cho export Excel
+     */
+    async findOutboundForExport(
+        orgId: string,
+        query: QueryOutboundRequestDto,
+    ): Promise<IOutboundRequest[]> {
+        const { warehouse_id, keywords, status } = query;
+
+        const where: Prisma.ExportWhereInput = {
+            organization_id: orgId,
+            is_deleted: false,
+            ...(warehouse_id && { warehouse_id }),
+            ...(status && { status }),
+            ...(keywords && {
+                OR: [
+                    { code: { contains: keywords, mode: 'insensitive' } },
+                    { sales_order_code: { contains: keywords, mode: 'insensitive' } },
+                ],
+            }),
+        };
+
+        return this.prisma.export.findMany({
+            where,
+            include: {
+                warehouse: { select: { id: true, name: true } },
+                partner: { select: { id: true, name: true, code: true } },
+                details: {
+                    where: { is_deleted: false },
+                    include: {
+                        product: { select: { id: true, name: true, sku: true, image_url: true } },
+                        batch: { select: { id: true, code: true, expiry_date: true } },
+                        unit: { select: { id: true, name: true } },
+                    },
+                },
+            },
+            orderBy: { created_at: 'desc' },
+        }) as unknown as IOutboundRequest[];
     }
 
     /**

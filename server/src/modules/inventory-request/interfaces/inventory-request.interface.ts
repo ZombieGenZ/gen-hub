@@ -99,6 +99,7 @@ export interface IOutboundRequest {
     partner_id?: string | null;
     code: string;
     sales_order_code?: string | null;
+    notes?: string | null;
     status: ExportStatus;
     is_active: boolean;
     created_at: Date;

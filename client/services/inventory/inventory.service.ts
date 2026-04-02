@@ -15,6 +15,19 @@ import type {
 const API = process.env.NEXT_PUBLIC_API_URL;
 
 export class InventoryService {
+    private readonly orgIdCache = new Map<string, string>();
+
+    private async getOrgId(token: string): Promise<string> {
+        const cachedOrgId = this.orgIdCache.get(token);
+        if (cachedOrgId) {
+            return cachedOrgId;
+        }
+
+        const orgId = await orgHelper.getOrgId(token);
+        this.orgIdCache.set(token, orgId);
+        return orgId;
+    }
+
     // ==================== INBOUND (PHIẾU PO) ====================
 
     /**
@@ -25,7 +38,7 @@ export class InventoryService {
      */
     async createInbound(token: string, data: CreateInboundPayload): Promise<ApiResponse<InboundRequest>> {
         try {
-            const orgId = await orgHelper.getOrgId(token);
+            const orgId = await this.getOrgId(token);
             const response = await fetch(`${API}/organizations/${orgId}/inventory/inbound`, {
                 method: 'POST',
                 headers: {
@@ -55,7 +68,7 @@ export class InventoryService {
      */
     async listWarehouses(token: string): Promise<{ id: string; name: string }[]> {
         try {
-            const orgId = await orgHelper.getOrgId(token);
+            const orgId = await this.getOrgId(token);
             const response = await fetch(`${API}/organizations/${orgId}/inventory/warehouses`, {
                 headers: { 'Authorization': `Bearer ${token}` },
             });
@@ -79,7 +92,7 @@ export class InventoryService {
      */
     async listInbound(token: string, query?: QueryInboundParams): Promise<PaginatedResponse<InboundRequest>> {
         try {
-            const orgId = await orgHelper.getOrgId(token);
+            const orgId = await this.getOrgId(token);
 
             const params = new URLSearchParams();
             if (query?.limit != null) params.append('limit', String(query.limit));
@@ -119,7 +132,7 @@ export class InventoryService {
      * @returns Blob dữ liệu Excel
      */
     async exportInbound(token: string, query?: QueryInboundParams): Promise<Blob> {
-        const orgId = await orgHelper.getOrgId(token);
+        const orgId = await this.getOrgId(token);
         const params = new URLSearchParams();
         if (query?.keywords) params.append('keywords', query.keywords);
         if (query?.status) params.append('status', query.status);
@@ -139,7 +152,7 @@ export class InventoryService {
      * @returns Blob chứa dữ liệu file Excel mẫu
      */
     async getInboundTemplate(token: string): Promise<Blob> {
-        const orgId = await orgHelper.getOrgId(token);
+        const orgId = await this.getOrgId(token);
         const response = await fetch(`${API}/organizations/${orgId}/inventory/inbound/template`, {
             headers: { 'Authorization': `Bearer ${token}` },
         });
@@ -155,7 +168,7 @@ export class InventoryService {
      * @returns Kết quả nhập (số lượng thành công, danh sách lỗi)
      */
     async importInbound(token: string, file: File): Promise<ApiResponse<{ successCount: number; errors: string[] }>> {
-        const orgId = await orgHelper.getOrgId(token);
+        const orgId = await this.getOrgId(token);
         const formData = new FormData();
         formData.append('file', file);
 
@@ -180,7 +193,7 @@ export class InventoryService {
      */
     async getInboundById(token: string, id: string): Promise<ApiResponse<InboundRequest>> {
         try {
-            const orgId = await orgHelper.getOrgId(token);
+            const orgId = await this.getOrgId(token);
             const response = await fetch(`${API}/organizations/${orgId}/inventory/inbound/${id}`, {
                 method: 'GET',
                 headers: {
@@ -212,7 +225,7 @@ export class InventoryService {
      */
     async createOutbound(token: string, data: CreateOutboundPayload): Promise<ApiResponse<OutboundRequest>> {
         try {
-            const orgId = await orgHelper.getOrgId(token);
+            const orgId = await this.getOrgId(token);
             const response = await fetch(`${API}/organizations/${orgId}/inventory/outbound`, {
                 method: 'POST',
                 headers: {
@@ -243,7 +256,7 @@ export class InventoryService {
      */
     async listOutbound(token: string, query?: QueryOutboundParams): Promise<PaginatedResponse<OutboundRequest>> {
         try {
-            const orgId = await orgHelper.getOrgId(token);
+            const orgId = await this.getOrgId(token);
 
             const params = new URLSearchParams();
             if (query?.limit != null) params.append('limit', String(query.limit));
@@ -283,7 +296,7 @@ export class InventoryService {
      * @returns Blob dữ liệu Excel
      */
     async exportOutbound(token: string, query?: QueryOutboundParams): Promise<Blob> {
-        const orgId = await orgHelper.getOrgId(token);
+        const orgId = await this.getOrgId(token);
         const params = new URLSearchParams();
         if (query?.keywords) params.append('keywords', query.keywords);
         if (query?.status) params.append('status', query.status);
@@ -303,7 +316,7 @@ export class InventoryService {
      * @returns Blob chứa dữ liệu file Excel mẫu
      */
     async getOutboundTemplate(token: string): Promise<Blob> {
-        const orgId = await orgHelper.getOrgId(token);
+        const orgId = await this.getOrgId(token);
         const response = await fetch(`${API}/organizations/${orgId}/inventory/outbound/template`, {
             headers: { 'Authorization': `Bearer ${token}` },
         });
@@ -319,7 +332,7 @@ export class InventoryService {
      * @returns Kết quả nhập (số lượng thành công, danh sách lỗi)
      */
     async importOutbound(token: string, file: File): Promise<ApiResponse<{ successCount: number; errors: string[] }>> {
-        const orgId = await orgHelper.getOrgId(token);
+        const orgId = await this.getOrgId(token);
         const formData = new FormData();
         formData.append('file', file);
 
@@ -344,7 +357,7 @@ export class InventoryService {
      */
     async getOutboundById(token: string, id: string): Promise<ApiResponse<OutboundRequest>> {
         try {
-            const orgId = await orgHelper.getOrgId(token);
+            const orgId = await this.getOrgId(token);
             const response = await fetch(`${API}/organizations/${orgId}/inventory/outbound/${id}`, {
                 method: 'GET',
                 headers: {
@@ -376,7 +389,7 @@ export class InventoryService {
      * @returns Kết quả phản hồi từ API
      */
     async approveInbound(token: string, id: string, notes?: string): Promise<ApiResponse<InboundRequest>> {
-        const orgId = await orgHelper.getOrgId(token);
+        const orgId = await this.getOrgId(token);
         const response = await fetch(`${API}/organizations/${orgId}/inventory/inbound/${id}/approve`, {
             method: 'PATCH',
             headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -397,7 +410,7 @@ export class InventoryService {
      * @returns Kết quả phản hồi từ API
      */
     async rejectInbound(token: string, id: string, reason?: string): Promise<ApiResponse<InboundRequest>> {
-        const orgId = await orgHelper.getOrgId(token);
+        const orgId = await this.getOrgId(token);
         const response = await fetch(`${API}/organizations/${orgId}/inventory/inbound/${id}/reject`, {
             method: 'PATCH',
             headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -432,8 +445,8 @@ export class InventoryService {
      * @param keywords Từ khóa tìm kiếm (tùy chọn)
      * @returns Danh sách tồn kho
      */
-    async listStock(token: string, warehouseId?: string, keywords?: string): Promise<ApiResponse<any[]>> {
-        const orgId = await orgHelper.getOrgId(token);
+    async listStock(token: string, warehouseId?: string, keywords?: string): Promise<ApiResponse<Record<string, unknown>[]>> {
+        const orgId = await this.getOrgId(token);
         const params = new URLSearchParams();
         if (warehouseId) params.append('warehouse_id', warehouseId);
         if (keywords) params.append('keywords', keywords);
@@ -457,7 +470,7 @@ export class InventoryService {
      * @returns Blob dữ liệu Excel
      */
     async exportStock(token: string, warehouseId?: string, keywords?: string): Promise<Blob> {
-        const orgId = await orgHelper.getOrgId(token);
+        const orgId = await this.getOrgId(token);
         const params = new URLSearchParams();
         if (warehouseId) params.append('warehouse_id', warehouseId);
         if (keywords) params.append('keywords', keywords);
@@ -477,7 +490,7 @@ export class InventoryService {
      * @returns Kết quả phản hồi từ API
      */
     async refillInventory(token: string, id: string): Promise<ApiResponse<InboundRequest>> {
-        const orgId = await orgHelper.getOrgId(token);
+        const orgId = await this.getOrgId(token);
         const response = await fetch(`${API}/organizations/${orgId}/inventory/inbound/${id}/refill-inventory`, {
             method: 'PATCH',
             headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -500,7 +513,7 @@ export class InventoryService {
      * @returns Kết quả phản hồi từ API
      */
     async approveOutbound(token: string, id: string, notes?: string, picking_strategy?: string): Promise<ApiResponse<OutboundRequest>> {
-        const orgId = await orgHelper.getOrgId(token);
+        const orgId = await this.getOrgId(token);
         const response = await fetch(`${API}/organizations/${orgId}/inventory/outbound/${id}/approve`, {
             method: 'PATCH',
             headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -521,7 +534,7 @@ export class InventoryService {
      * @returns Kết quả phản hồi từ API
      */
     async rejectOutbound(token: string, id: string, reason?: string): Promise<ApiResponse<OutboundRequest>> {
-        const orgId = await orgHelper.getOrgId(token);
+        const orgId = await this.getOrgId(token);
         const response = await fetch(`${API}/organizations/${orgId}/inventory/outbound/${id}/reject`, {
             method: 'PATCH',
             headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -557,7 +570,7 @@ export class InventoryService {
      * @returns Kết quả phản hồi từ API
      */
     async startReceiving(token: string, id: string, data?: { checker_id?: string }): Promise<ApiResponse<InboundRequest>> {
-        const orgId = await orgHelper.getOrgId(token);
+        const orgId = await this.getOrgId(token);
         const response = await fetch(`${API}/organizations/${orgId}/inventory/inbound/${id}/start-receiving`, {
             method: 'PATCH',
             headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -578,7 +591,7 @@ export class InventoryService {
      * @returns Kết quả phản hồi từ API
      */
     async confirmReceiving(token: string, id: string, data: { details: { detail_id: string; actual_qty: number }[]; notes?: string }): Promise<ApiResponse<InboundRequest>> {
-        const orgId = await orgHelper.getOrgId(token);
+        const orgId = await this.getOrgId(token);
         const response = await fetch(`${API}/organizations/${orgId}/inventory/inbound/${id}/confirm-receiving`, {
             method: 'PATCH',
             headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -599,7 +612,7 @@ export class InventoryService {
      * @returns Kết quả phản hồi từ API
      */
     async confirmPutaway(token: string, id: string, data?: { notes?: string }): Promise<ApiResponse<InboundRequest>> {
-        const orgId = await orgHelper.getOrgId(token);
+        const orgId = await this.getOrgId(token);
         const response = await fetch(`${API}/organizations/${orgId}/inventory/inbound/${id}/confirm-putaway`, {
             method: 'PATCH',
             headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -622,7 +635,7 @@ export class InventoryService {
      * @returns Kết quả phản hồi từ API
      */
     async confirmPicking(token: string, id: string, data: { details: { pick_list_detail_id: string; picked_qty: number }[] }): Promise<ApiResponse<OutboundRequest>> {
-        const orgId = await orgHelper.getOrgId(token);
+        const orgId = await this.getOrgId(token);
         const response = await fetch(`${API}/organizations/${orgId}/inventory/outbound/${id}/confirm-picking`, {
             method: 'PATCH',
             headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -643,7 +656,7 @@ export class InventoryService {
      * @returns Kết quả phản hồi từ API
      */
     async confirmChecking(token: string, id: string, data: { details: { export_detail_id: string; checked_qty: number; passed?: boolean }[] }): Promise<ApiResponse<OutboundRequest>> {
-        const orgId = await orgHelper.getOrgId(token);
+        const orgId = await this.getOrgId(token);
         const response = await fetch(`${API}/organizations/${orgId}/inventory/outbound/${id}/confirm-checking`, {
             method: 'PATCH',
             headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -664,7 +677,7 @@ export class InventoryService {
      * @returns Kết quả phản hồi từ API
      */
     async completeShipment(token: string, id: string, data?: { notes?: string; tracking_number?: string }): Promise<ApiResponse<OutboundRequest>> {
-        const orgId = await orgHelper.getOrgId(token);
+        const orgId = await this.getOrgId(token);
         const response = await fetch(`${API}/organizations/${orgId}/inventory/outbound/${id}/complete-shipment`, {
             method: 'PATCH',
             headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -684,7 +697,7 @@ export class InventoryService {
      */
     async getInventoryTotal(token: string, warehouseId: string): Promise<InventorySummary> {
         try {
-            const orgId = await orgHelper.getOrgId(token);
+            const orgId = await this.getOrgId(token);
             const response = await fetch(`${API}/organizations/${orgId}/inventory/inventory-total/${warehouseId}`, {
                 headers: { 'Authorization': `Bearer ${token}` },
             });
@@ -702,7 +715,7 @@ export class InventoryService {
      */
     async listTransactions(token: string, query?: QueryTransactionParams): Promise<PaginatedResponse<InventoryTransaction>> {
         try {
-            const orgId = await orgHelper.getOrgId(token);
+            const orgId = await this.getOrgId(token);
             const params = new URLSearchParams();
             if (query?.limit) params.append('limit', String(query.limit));
             if (query?.offset) params.append('offset', String(query.offset));
@@ -717,7 +730,12 @@ export class InventoryService {
             return response.json();
         } catch (error) {
             console.error('listTransactions error:', error);
-            return { data: { items: [], total: 0, limit: 10, offset: 0, hasMore: false }, status: 'error', message: 'Error' } as any;
+            return {
+                code: 'inventory-request.list_transactions_failed',
+                message: 'Error',
+                success: false,
+                data: { items: [], total: 0, limit: 10, offset: 0, hasMore: false },
+            };
         }
     }
 
