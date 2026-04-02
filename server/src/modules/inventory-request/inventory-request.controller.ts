@@ -305,6 +305,37 @@ export class InventoryRequestController {
         );
     }
 
+    @Get('inventory-total/:warehouseId')
+    @RequireOrgPermission('org.inventory.inbound.list')
+    @ApiOperation({
+        summary: 'Tổng hợp tồn kho của kho',
+        description: 'Lấy các chỉ số tổng hợp về tồn kho (thực tế, khả dụng, đã giữ hàng) cho dashboard.',
+    })
+    @ApiParam({ name: 'orgId', required: true, description: 'ID tổ chức', example: ORG_ID })
+    @ApiParam({ name: 'warehouseId', required: true, description: 'ID kho', example: WAREHOUSE_ID })
+    async getInventoryTotal(
+        @Param('orgId', ParseUUIDPipe) orgId: string,
+        @Param('warehouseId', ParseUUIDPipe) warehouseId: string,
+    ) {
+        const data = await this.inventoryRequestService.getInventoryTotal(orgId, warehouseId);
+        return new GetResponse('inventory-request.get_total', data);
+    }
+
+    @Get('transactions')
+    @RequireOrgPermission('org.inventory.inbound.list')
+    @ApiOperation({
+        summary: 'Lịch sử giao dịch kho',
+        description: 'Lấy danh sách các biến động kho (Nhập/Xuất/Điều chuyển).',
+    })
+    @ApiParam({ name: 'orgId', required: true, description: 'ID tổ chức', example: ORG_ID })
+    async listTransactions(
+        @Param('orgId', ParseUUIDPipe) orgId: string,
+        @Query() query: QueryTransactionDto,
+    ) {
+        const data = await this.inventoryRequestService.listTransactions(orgId, query);
+        return new GetResponse('inventory-request.list_transactions', data);
+    }
+
     @Post('stock/rebalance')
     @RequireOrgPermission('org.inventory.inbound.approve')
     @ApiOperation({

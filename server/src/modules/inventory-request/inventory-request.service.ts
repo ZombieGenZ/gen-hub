@@ -2508,6 +2508,20 @@ export class InventoryRequestService {
     }
 
 
+    /**
+     * Lấy tổng hợp tồn kho theo Warehouse (Dashboard)
+     */
+    async getInventoryTotal(orgId: string, warehouseId: string) {
+        return this.repository.getInventoryTotalByWarehouse(orgId, warehouseId);
+    }
+
+    /**
+     * Lấy lịch sử giao dịch kho
+     */
+    async listTransactions(orgId: string, query: QueryTransactionDto) {
+        return this.repository.findTransactions(orgId, query);
+    }
+
     async rebalanceWarehouse(
         orgId: string,
         warehouseId: string,

@@ -397,4 +397,66 @@ export class InventoryRequestRepository {
 
         return `${prefix}-${String(nextNumber).padStart(4, '0')}`;
     }
+
+    /**
+     * Lấy tổng hợp tồn kho theo Warehouse (Dashboard)
+     */
+    async getInventoryTotalByWarehouse(orgId: string, warehouseId: string) {
+        const stats = await this.prisma.inventory.aggregate({
+            where: {
+                organization_id: orgId,
+                warehouse_id: warehouseId,
+                is_deleted: false,
+            },
+            _sum: {
+                quantity: true,
+                quantity_available: true,
+                quantity_allocated: true,
+            },
+        });
+
+        return {
+            total_on_hand: Number(stats._sum.quantity || 0),
+            total_available: Number(stats._sum.quantity_available || 0),
+            total_allocated: Number(stats._sum.quantity_allocated || 0),
+        };
+    }
+
+    /**
+     * Lấy danh sách lịch sử giao dịch kho (InventoryTransaction)
+     */
+    async findTransactions(orgId: string, query: any) {
+        const { warehouse_id, keywords, type, limit = 10, offset = 0 } = query;
+
+        const where: Prisma.InventoryTransactionWhereInput = {
+            organization_id: orgId,
+            is_deleted: false,
+            ...(warehouse_id && { warehouse_id }),
+            ...(type && { type }),
+            ...(keywords && {
+                OR: [
+                    { product: { name: { contains: keywords, mode: 'insensitive' } } },
+                    { product: { sku: { contains: keywords, mode: 'insensitive' } } },
+                ],
+            }),
+        };
+
+        const [items, total] = await Promise.all([
+            this.prisma.inventoryTransaction.findMany({
+                where,
+                include: {
+                    product: { select: { id: true, name: true, sku: true } },
+                    from_block: { select: { id: true, code: true } },
+                    to_block: { select: { id: true, code: true } },
+                    warehouse: { select: { id: true, name: true } },
+                },
+                orderBy: { created_at: 'desc' },
+                take: limit,
+                skip: offset,
+            }),
+            this.prisma.inventoryTransaction.count({ where }),
+        ]);
+
+        return { items, total, limit, offset, hasMore: offset + items.length < total };
+    }
 }
