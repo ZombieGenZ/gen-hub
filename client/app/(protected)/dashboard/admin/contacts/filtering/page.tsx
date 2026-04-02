@@ -27,14 +27,6 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import {
-    Pagination,
-    PaginationContent,
-    PaginationItem,
-    PaginationLink,
-    PaginationNext,
-    PaginationPrevious,
-} from "@/components/ui/pagination";
-import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
@@ -60,6 +52,7 @@ import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 import { CreateRuleDialog } from "./components/create-rule-dialog";
 import { EditRuleDialog } from "./components/edit-rule-dialog";
+import { TablePagination } from "@/components/ui/table-pagination";
 
 const contactListService = new ContactListService();
 
@@ -341,36 +334,14 @@ export default function ContactFilteringPage() {
 
             {/* Pagination */}
             {totalPages > 1 && (
-                <div className="flex justify-end">
-                    <Pagination>
-                        <PaginationContent>
-                            <PaginationItem>
-                                <PaginationPrevious
-                                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                                    aria-disabled={page === 1}
-                                    className={page === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                                />
-                            </PaginationItem>
-                            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                                <PaginationItem key={p}>
-                                    <PaginationLink
-                                        isActive={page === p}
-                                        onClick={() => setPage(p)}
-                                        className="cursor-pointer"
-                                    >
-                                        {p}
-                                    </PaginationLink>
-                                </PaginationItem>
-                            ))}
-                            <PaginationItem>
-                                <PaginationNext
-                                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                                    aria-disabled={page === totalPages}
-                                    className={page === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                                />
-                            </PaginationItem>
-                        </PaginationContent>
-                    </Pagination>
+                <div>
+                    <TablePagination
+                        currentPage={page}
+                        totalPages={totalPages}
+                        totalItems={total}
+                        itemsPerPage={limit}
+                        onPageChange={setPage}
+                    />
                 </div>
             )}
 

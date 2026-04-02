@@ -15,14 +15,13 @@ import {
     MagnifyingGlassIcon,
     PrinterIcon,
     XCircleIcon,
-    ChevronLeftIcon,
-    ChevronRightIcon,
     InboxIcon,
     BoltIcon,
     PlusIcon,
 } from "@heroicons/react/24/outline";
 import type { OutboundRequest } from "@/services/inventory/inventory.types";
 import { OutboundStatusBadge } from "./OutboundStatusBadge";
+import { TablePagination } from "@/components/ui/table-pagination";
 
 export const ITEMS_PER_PAGE = 10;
 
@@ -220,52 +219,13 @@ export function OutboundTable({
 
             {/* ── Pagination ── */}
             {totalItems > ITEMS_PER_PAGE && (
-                <div className="flex items-center justify-between">
-                    <div className="text-sm text-muted-foreground">
-                        Hiển thị {(currentPage - 1) * ITEMS_PER_PAGE + 1} đến{" "}
-                        {Math.min(currentPage * ITEMS_PER_PAGE, totalItems)} trong tổng số{" "}
-                        {totalItems} kết quả
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => onPageChange(Math.max(currentPage - 1, 1))}
-                            disabled={currentPage === 1}
-                            className="h-8 w-8 p-0 rounded-lg"
-                        >
-                            <ChevronLeftIcon className="h-4 w-4" />
-                        </Button>
-                        <div className="flex items-center gap-1">
-                            {Array.from({ length: totalPages }, (_, i) => i + 1)
-                                .filter((page) => Math.abs(page - currentPage) <= 2 || page === 1 || page === totalPages)
-                                .map((page, index, array) => (
-                                    <React.Fragment key={page}>
-                                        {index > 0 && array[index - 1] !== page - 1 && (
-                                            <span className="text-gray-400">...</span>
-                                        )}
-                                        <Button
-                                            variant={currentPage === page ? "default" : "outline"}
-                                            size="sm"
-                                            onClick={() => onPageChange(page)}
-                                            className={`h-8 min-w-[32px] rounded-lg ${currentPage === page ? "bg-[#0F766E] hover:bg-[#0F766E]/90 text-white" : "text-gray-600"}`}
-                                        >
-                                            {page}
-                                        </Button>
-                                    </React.Fragment>
-                                ))}
-                        </div>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => onPageChange(Math.min(currentPage + 1, totalPages))}
-                            disabled={currentPage === totalPages}
-                            className="h-8 w-8 p-0 rounded-lg"
-                        >
-                            <ChevronRightIcon className="h-4 w-4" />
-                        </Button>
-                    </div>
-                </div>
+                <TablePagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    totalItems={totalItems}
+                    itemsPerPage={ITEMS_PER_PAGE}
+                    onPageChange={onPageChange}
+                />
             )}
         </div>
     );

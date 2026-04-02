@@ -19,10 +19,9 @@ import {
     EyeIcon,
     PhoneIcon,
     EnvelopeIcon,
-    ChevronLeftIcon,
-    ChevronRightIcon,
 } from "@heroicons/react/24/outline";
 import type { Partner } from "@/services/partner/partner.types";
+import { TablePagination } from "@/components/ui/table-pagination";
 
 export const ITEMS_PER_PAGE = 15;
 
@@ -207,67 +206,14 @@ export function PartnerTable({
                 </div>
 
                 {!loading && totalPages > 1 && (
-                    <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100">
-                        <p className="text-sm text-slate-500">
-                            Hiển thị{" "}
-                            <span className="font-medium text-slate-700">
-                                {(currentPage - 1) * ITEMS_PER_PAGE + 1}
-                            </span>
-                            -
-                            <span className="font-medium text-slate-700">
-                                {Math.min(currentPage * ITEMS_PER_PAGE, totalItems)}
-                            </span>{" "}
-                            trong{" "}
-                            <span className="font-medium text-slate-700">{totalItems}</span>{" "}
-                            đối tác
-                        </p>
-                        <div className="flex items-center gap-2">
-                            <Button
-                                variant="outline"
-                                size="icon"
-                                className="h-8 w-8 rounded-lg"
-                                disabled={currentPage === 1}
-                                onClick={() => onPageChange(currentPage - 1)}
-                            >
-                                <ChevronLeftIcon className="w-4 h-4" />
-                            </Button>
-                            {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-                                let page: number;
-                                if (totalPages <= 5) {
-                                    page = i + 1;
-                                } else if (currentPage <= 3) {
-                                    page = i + 1;
-                                } else if (currentPage >= totalPages - 2) {
-                                    page = totalPages - 4 + i;
-                                } else {
-                                    page = currentPage - 2 + i;
-                                }
-                                return (
-                                    <Button
-                                        key={page}
-                                        variant={currentPage === page ? "default" : "outline"}
-                                        size="icon"
-                                        className={`h-8 w-8 rounded-lg text-xs ${
-                                            currentPage === page
-                                                ? "bg-[#0F766E] hover:bg-[#0D6B63] text-white"
-                                                : ""
-                                        }`}
-                                        onClick={() => onPageChange(page)}
-                                    >
-                                        {page}
-                                    </Button>
-                                );
-                            })}
-                            <Button
-                                variant="outline"
-                                size="icon"
-                                className="h-8 w-8 rounded-lg"
-                                disabled={currentPage === totalPages}
-                                onClick={() => onPageChange(currentPage + 1)}
-                            >
-                                <ChevronRightIcon className="w-4 h-4" />
-                            </Button>
-                        </div>
+                    <div className="px-6 py-4 border-t border-slate-100">
+                        <TablePagination
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            totalItems={totalItems}
+                            itemsPerPage={ITEMS_PER_PAGE}
+                            onPageChange={onPageChange}
+                        />
                     </div>
                 )}
             </CardContent>

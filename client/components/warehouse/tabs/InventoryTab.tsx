@@ -37,8 +37,10 @@ import { authStorage } from "@/services/auth/auth-storage.service";
 import { useToast } from "@/contexts/ToastContext";
 import { Download } from "lucide-react";
 import { InventoryService } from "@/services/inventory/inventory.service";
+import { TablePagination } from "@/components/ui/table-pagination";
 
 const inventoryService = new InventoryService();
+const ITEMS_PER_PAGE = 10;
 
 // ── Stock item type (from API) ──
 interface StockItem {
@@ -186,6 +188,7 @@ export function InventoryTab({ warehouseId }: { warehouseId: string }) {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isExporting, setIsExporting] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
     const { showToast } = useToast();
 
     const fetchStock = useCallback(async () => {
@@ -268,17 +271,33 @@ export function InventoryTab({ warehouseId }: { warehouseId: string }) {
         return items;
     }, [inventory, search, filter]);
 
+    const totalFilteredItems = filtered.length;
+    const totalPages = Math.max(1, Math.ceil(totalFilteredItems / ITEMS_PER_PAGE));
+
+    const paginatedItems = useMemo(() => {
+        const start = (currentPage - 1) * ITEMS_PER_PAGE;
+        return filtered.slice(start, start + ITEMS_PER_PAGE);
+    }, [filtered, currentPage]);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [search, filter, groupBy]);
+
+    useEffect(() => {
+        setCurrentPage((prev) => Math.min(prev, totalPages));
+    }, [totalPages]);
+
     const grouped = useMemo(() => {
-        if (groupBy === "NONE") return { "": filtered };
+        if (groupBy === "NONE") return { "": paginatedItems };
         const key = groupBy === "ROW" ? "row_code" : "rack_code";
         const map: Record<string, StockItem[]> = {};
-        filtered.forEach((item) => {
+        paginatedItems.forEach((item) => {
             const k = item[key] || "Không xác định";
             if (!map[k]) map[k] = [];
             map[k].push(item);
         });
         return map;
-    }, [filtered, groupBy]);
+    }, [paginatedItems, groupBy]);
 
     // Summary
     const totalItems = inventory.length;
@@ -444,6 +463,14 @@ export function InventoryTab({ warehouseId }: { warehouseId: string }) {
                     </Card>
                 </div>
             ))}
+
+            <TablePagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={totalFilteredItems}
+                itemsPerPage={ITEMS_PER_PAGE}
+                onPageChange={setCurrentPage}
+            />
         </div>
     );
 }

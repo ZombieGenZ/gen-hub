@@ -15,8 +15,6 @@ import {
     EllipsisHorizontalIcon,
     EyeIcon,
     NoSymbolIcon,
-    ChevronLeftIcon,
-    ChevronRightIcon,
 } from "@heroicons/react/24/outline";
 import {
     DropdownMenu,
@@ -29,6 +27,7 @@ import {
 import { cn } from "@/lib/utils";
 import { ContractStatusBadge } from "@/components/contract/ContractStatusBadge";
 import type { ContractStatus } from "@/types/rental-contracts/rental-contracts.type";
+import { TablePagination } from "@/components/ui/table-pagination";
 
 interface Contract {
     id: string;
@@ -208,41 +207,13 @@ export function ContractTable({
 
             {/* Pagination */}
             <div className="flex items-center justify-between mt-4">
-                <div className="text-sm text-muted-foreground">
-                    Hiển thị {contracts.length > 0 ? (page - 1) * limit + 1 : 0}–{Math.min(page * limit, total)} / {total}
-                </div>
-                <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1 || isLoading}>
-                        <ChevronLeftIcon className="h-4 w-4 mr-1" />
-                        Trước
-                    </Button>
-                    <div className="flex items-center gap-1">
-                        {Array.from({ length: totalPages }, (_, i) => i + 1)
-                            .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 1)
-                            .map((p, i, arr) => (
-                                <React.Fragment key={p}>
-                                    {i > 0 && arr[i - 1] !== p - 1 && <span className="px-2">...</span>}
-                                    <Button
-                                        variant={page === p ? "default" : "outline"}
-                                        size="sm"
-                                        onClick={() => setPage(p)}
-                                        className={page === p ? "bg-brand hover:bg-brand-hover text-white" : ""}
-                                    >
-                                        {p}
-                                    </Button>
-                                </React.Fragment>
-                            ))}
-                    </div>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                        disabled={page >= totalPages || isLoading}
-                    >
-                        Tiếp
-                        <ChevronRightIcon className="h-4 w-4 ml-1" />
-                    </Button>
-                </div>
+                <TablePagination
+                    currentPage={page}
+                    totalPages={totalPages}
+                    totalItems={total}
+                    itemsPerPage={limit}
+                    onPageChange={setPage}
+                />
             </div>
         </div>
     );

@@ -4,12 +4,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import {
     BellAlertIcon,
-    ChevronLeftIcon,
-    ChevronRightIcon,
 } from "@heroicons/react/24/outline";
 import { cn } from "@/lib/utils";
 import { NotificationType, UserNotification } from "@/types/notification/notification.type";
 import { formatRelativeTime } from "@/lib/format-time";
+import { TablePagination } from "@/components/ui/table-pagination";
 
 interface SentNotification extends UserNotification {
     recipient_name: string;
@@ -173,16 +172,12 @@ export function NotificationTable({
 
             {/* Pagination */}
             {!isLoading && totalPages > 1 && (
-                <div className="flex items-center justify-between px-4 py-3 border-t bg-muted/30">
-                    <span className="text-sm text-muted-foreground">Trang {page} / {totalPages}</span>
-                    <div className="flex gap-2">
-                        <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage(p => Math.max(1, p - 1))} className="rounded-xl">
-                            <ChevronLeftIcon className="w-4 h-4 mr-1" /> Trước
-                        </Button>
-                        <Button variant="outline" size="sm" disabled={page === totalPages} onClick={() => setPage(p => Math.min(totalPages, p + 1))} className="rounded-xl">
-                            Sau <ChevronRightIcon className="w-4 h-4 ml-1" />
-                        </Button>
-                    </div>
+                <div className="px-4 py-3 border-t bg-muted/30">
+                    <TablePagination
+                        currentPage={page}
+                        totalPages={totalPages}
+                        onPageChange={setPage}
+                    />
                 </div>
             )}
         </div>

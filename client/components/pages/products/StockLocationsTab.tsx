@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { StockLocationService } from "@/services/inventory/stock-location.service";
 import type { StockLocation } from "@/types/product-inventory";
 import { authStorage } from "@/services/auth/auth-storage.service";
@@ -19,8 +19,10 @@ import {
 } from "@/components/ui/table";
 
 import { MapPin, Lock, Unlock } from "lucide-react";
+import { TablePagination } from "@/components/ui/table-pagination";
 
 const stockLocationService = new StockLocationService();
+const ITEMS_PER_PAGE = 10;
 
 // ════════════════════════════════════════════════
 // Tab 4: Stock Locations
@@ -33,6 +35,7 @@ export function StockLocationsTab({ productId }: StockLocationsTabProps) {
     const router = useRouter();
     const [locations, setLocations] = useState<StockLocation[]>([]);
     const [loading, setLoading] = useState(true);
+    const [currentPage, setCurrentPage] = useState(1);
 
     const fetchLocations = useCallback(async () => {
         try {
@@ -61,6 +64,21 @@ export function StockLocationsTab({ productId }: StockLocationsTabProps) {
     useEffect(() => {
         fetchLocations();
     }, [fetchLocations]);
+
+    const totalPages = Math.max(1, Math.ceil(locations.length / ITEMS_PER_PAGE));
+
+    const paginatedLocations = useMemo(() => {
+        const start = (currentPage - 1) * ITEMS_PER_PAGE;
+        return locations.slice(start, start + ITEMS_PER_PAGE);
+    }, [locations, currentPage]);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [productId]);
+
+    useEffect(() => {
+        setCurrentPage((prev) => Math.min(prev, totalPages));
+    }, [totalPages]);
 
     // ── Compute totals ──
     const totals = locations.reduce(
@@ -174,7 +192,7 @@ export function StockLocationsTab({ productId }: StockLocationsTabProps) {
                                 )}
 
                                 {!loading &&
-                                    locations.map((loc) => {
+                                    paginatedLocations.map((loc) => {
                                         const total =
                                             (loc.quantity_available || 0) +
                                             (loc.quantity_allocated || 0);
@@ -260,6 +278,14 @@ export function StockLocationsTab({ productId }: StockLocationsTabProps) {
                     </div>
                 </CardContent>
             </Card>
+
+            <TablePagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={locations.length}
+                itemsPerPage={ITEMS_PER_PAGE}
+                onPageChange={setCurrentPage}
+            />
         </div>
     );
 }

@@ -23,8 +23,6 @@ import {
     TrashIcon,
     CheckCircleIcon,
     XCircleIcon,
-    ChevronLeftIcon,
-    ChevronRightIcon,
     XMarkIcon,
     Squares2X2Icon,
     ListBulletIcon,
@@ -34,6 +32,7 @@ import { AmenityRequest, AmenityResponse } from "@/types/amenities/amenities.typ
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/contexts/ToastContext";
 import { AmenityDialog, AmenityGridView, getIconComponent } from "@/components/amenities";
+import { TablePagination } from "@/components/ui/table-pagination";
 
 const amenitiesService = new AmenitiesService();
 
@@ -553,52 +552,13 @@ export default function AmenitiesPage() {
 
             {/* Pagination Controls */}
             {totalItems > itemsPerPage && (
-                <div className="flex items-center justify-between">
-                    <div className="text-sm text-muted-foreground">
-                        Hiển thị {(currentPage - 1) * itemsPerPage + 1} đến{" "}
-                        {Math.min(currentPage * itemsPerPage, totalItems)} trong tổng số {totalItems} kết quả
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                            disabled={currentPage === 1}
-                            className="h-8 w-8 p-0 rounded-lg"
-                        >
-                            <ChevronLeftIcon className="h-4 w-4" />
-                        </Button>
-                        <div className="flex items-center gap-1">
-                            {Array.from({ length: totalPages }, (_, i) => i + 1)
-                                .filter((page) => Math.abs(page - currentPage) <= 2 || page === 1 || page === totalPages)
-                                .map((page, index, array) => (
-                                    <div key={page} className="flex items-center">
-                                        {index > 0 && array[index - 1] !== page - 1 && (
-                                            <span className="text-gray-400 px-1">...</span>
-                                        )}
-                                        <Button
-                                            variant={currentPage === page ? "default" : "outline"}
-                                            size="sm"
-                                            onClick={() => setCurrentPage(page)}
-                                            className={`h-8 min-w-[32px] rounded-lg ${currentPage === page ? "bg-[#0F766E] hover:bg-[#0F766E]/90" : "text-gray-600"
-                                                }`}
-                                        >
-                                            {page}
-                                        </Button>
-                                    </div>
-                                ))}
-                        </div>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-                            disabled={currentPage === totalPages}
-                            className="h-8 w-8 p-0 rounded-lg"
-                        >
-                            <ChevronRightIcon className="h-4 w-4" />
-                        </Button>
-                    </div>
-                </div>
+                <TablePagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    totalItems={totalItems}
+                    itemsPerPage={itemsPerPage}
+                    onPageChange={setCurrentPage}
+                />
             )}
 
             {/* Floating Action Bar for Selections */}

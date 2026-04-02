@@ -33,10 +33,9 @@ import {
     UserGroupIcon,
     PencilSquareIcon,
     DocumentTextIcon,
-    ChevronLeftIcon,
-    ChevronRightIcon,
 } from "@heroicons/react/24/outline";
 import { FileText, PackageCheck, Truck, Info } from "lucide-react";
+import { TablePagination } from "@/components/ui/table-pagination";
 
 // ── Services ──
 const partnerService = new PartnerService();
@@ -563,30 +562,14 @@ export default function PartnerDetailPage() {
 
                                 {/* ── Transaction Pagination ── */}
                                 {!txLoading && txTotalPages > 1 && (
-                                    <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100">
-                                        <p className="text-sm text-slate-500">
-                                            Trang {txPage} / {txTotalPages}
-                                        </p>
-                                        <div className="flex items-center gap-2">
-                                            <Button
-                                                variant="outline"
-                                                size="icon"
-                                                className="h-8 w-8 rounded-lg"
-                                                disabled={txPage === 1}
-                                                onClick={() => setTxPage((p) => p - 1)}
-                                            >
-                                                <ChevronLeftIcon className="w-4 h-4" />
-                                            </Button>
-                                            <Button
-                                                variant="outline"
-                                                size="icon"
-                                                className="h-8 w-8 rounded-lg"
-                                                disabled={txPage === txTotalPages}
-                                                onClick={() => setTxPage((p) => p + 1)}
-                                            >
-                                                <ChevronRightIcon className="w-4 h-4" />
-                                            </Button>
-                                        </div>
+                                    <div className="px-6 py-4 border-t border-slate-100">
+                                        <TablePagination
+                                            currentPage={txPage}
+                                            totalPages={txTotalPages}
+                                            totalItems={txTotal}
+                                            itemsPerPage={TX_PER_PAGE}
+                                            onPageChange={setTxPage}
+                                        />
                                     </div>
                                 )}
                             </CardContent>

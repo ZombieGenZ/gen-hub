@@ -10,10 +10,9 @@ import {
     XCircleIcon,
     PencilIcon,
     TrashIcon,
-    ChevronLeftIcon,
-    ChevronRightIcon,
 } from "@heroicons/react/24/outline";
 import { Coupon } from "@/types/coupons/coupon.type";
+import { TablePagination } from "@/components/ui/table-pagination";
 
 type CouponFilterStatus = 'all' | 'active' | 'scheduled' | 'expired' | 'depleted' | 'inactive';
 
@@ -226,34 +225,14 @@ export function CouponTable({
                             </table>
                         </div>
                         {filteredCoupons.length > 0 && (
-                            <div className="flex items-center justify-between mt-4 pt-4 border-t border-border">
-                                <div className="text-sm text-muted-foreground">
-                                    Hiển thị {(currentPage - 1) * itemsPerPage + 1}-
-                                    {Math.min(currentPage * itemsPerPage, filteredCoupons.length)} trên tổng {filteredCoupons.length}
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                                        disabled={currentPage === 1}
-                                        className="rounded-lg"
-                                    >
-                                        <ChevronLeftIcon className="w-4 h-4" />
-                                    </Button>
-                                    <div className="text-sm font-medium px-2">
-                                        Trang {currentPage} / {totalPages}
-                                    </div>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                                        disabled={currentPage === totalPages}
-                                        className="rounded-lg"
-                                    >
-                                        <ChevronRightIcon className="w-4 h-4" />
-                                    </Button>
-                                </div>
+                            <div className="mt-4 pt-4 border-t border-border">
+                                <TablePagination
+                                    currentPage={currentPage}
+                                    totalPages={totalPages}
+                                    totalItems={filteredCoupons.length}
+                                    itemsPerPage={itemsPerPage}
+                                    onPageChange={setCurrentPage}
+                                />
                             </div>
                         )}
                     </>

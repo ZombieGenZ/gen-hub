@@ -15,12 +15,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowPathIcon, DocumentTextIcon, ChevronLeftIcon, ChevronRightIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
+import { ArrowPathIcon, DocumentTextIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import { format, differenceInHours } from "date-fns";
 import { useToast } from "@/contexts/ToastContext";
 import { ReconciliationDrawer } from "@/components/contract/ReconciliationDrawer";
 import type { RefundRequest, RefundStatus } from "@/types/refund/refund.type";
 import React from "react";
+import { TablePagination } from "@/components/ui/table-pagination";
 
 const STATUS_TABS: { value: string; label: string }[] = [
     { value: "all", label: "Tất cả" },
@@ -227,37 +228,14 @@ export default function AdminRefundRequestsPage() {
 
             {/* Pagination */}
             {total > limit && (
-                <div className="flex items-center justify-between border-t pt-4">
-                    <div className="text-sm text-muted-foreground">
-                        Hiển thị {requests.length > 0 ? (page - 1) * limit + 1 : 0}–{Math.min(page * limit, total)} / {total}
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1 || loading}>
-                            <ChevronLeftIcon className="h-4 w-4" />
-                            Trước
-                        </Button>
-                        <div className="flex items-center gap-1">
-                            {Array.from({ length: totalPages }, (_, i) => i + 1)
-                                .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 1)
-                                .map((p, i, arr) => (
-                                    <React.Fragment key={p}>
-                                        {i > 0 && arr[i - 1] !== p - 1 && <span className="px-2">...</span>}
-                                        <Button
-                                            variant={page === p ? "default" : "outline"}
-                                            size="sm"
-                                            onClick={() => setPage(p)}
-                                            className={page === p ? "bg-brand hover:bg-brand-hover" : ""}
-                                        >
-                                            {p}
-                                        </Button>
-                                    </React.Fragment>
-                                ))}
-                        </div>
-                        <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages || loading}>
-                            Tiếp
-                            <ChevronRightIcon className="h-4 w-4" />
-                        </Button>
-                    </div>
+                <div className="border-t pt-4">
+                    <TablePagination
+                        currentPage={page}
+                        totalPages={totalPages}
+                        totalItems={total}
+                        itemsPerPage={limit}
+                        onPageChange={setPage}
+                    />
                 </div>
             )}
 

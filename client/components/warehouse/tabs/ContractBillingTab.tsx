@@ -37,6 +37,7 @@ import {
     type MockRentedWarehouse,
     type PaymentStatus,
 } from "@/data/mockMyWarehouses";
+import { TablePagination } from "@/components/ui/table-pagination";
 
 // ── Payment status badge ──
 
@@ -60,12 +61,28 @@ function PaymentStatusBadge({ status }: { status: PaymentStatus }) {
 // ── Main ──
 
 export function ContractBillingTab({ warehouse }: { warehouse: MockRentedWarehouse }) {
+    const ITEMS_PER_PAGE = 8;
+    const [paymentPage, setPaymentPage] = React.useState(1);
     const days = daysUntil(warehouse.expired_at);
     const occupancy = getOccupancyPct(warehouse);
     const paidPayments = warehouse.payments.filter((p) => p.status === "PAID");
     const pendingPayments = warehouse.payments.filter((p) => p.status === "PENDING");
     const totalPaid = paidPayments.reduce((s, p) => s + p.amount, 0);
     const totalPending = pendingPayments.reduce((s, p) => s + p.amount, 0);
+    const paymentTotalPages = Math.max(1, Math.ceil(warehouse.payments.length / ITEMS_PER_PAGE));
+
+    const paginatedPayments = React.useMemo(() => {
+        const start = (paymentPage - 1) * ITEMS_PER_PAGE;
+        return warehouse.payments.slice(start, start + ITEMS_PER_PAGE);
+    }, [warehouse.payments, paymentPage]);
+
+    React.useEffect(() => {
+        setPaymentPage(1);
+    }, [warehouse.id]);
+
+    React.useEffect(() => {
+        setPaymentPage((prev) => Math.min(prev, paymentTotalPages));
+    }, [paymentTotalPages]);
 
     return (
         <div className="space-y-6">
@@ -212,7 +229,7 @@ export function ContractBillingTab({ warehouse }: { warehouse: MockRentedWarehou
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {warehouse.payments.map((pay) => (
+                                        {paginatedPayments.map((pay) => (
                                             <TableRow key={pay.id}>
                                                 <TableCell className="text-xs font-medium">{pay.description}</TableCell>
                                                 <TableCell className="text-xs text-right font-medium">{formatCurrency(pay.amount)}</TableCell>
@@ -226,6 +243,16 @@ export function ContractBillingTab({ warehouse }: { warehouse: MockRentedWarehou
                                         ))}
                                     </TableBody>
                                 </Table>
+                            </div>
+
+                            <div className="mt-4">
+                                <TablePagination
+                                    currentPage={paymentPage}
+                                    totalPages={paymentTotalPages}
+                                    totalItems={warehouse.payments.length}
+                                    itemsPerPage={ITEMS_PER_PAGE}
+                                    onPageChange={setPaymentPage}
+                                />
                             </div>
                         </CardContent>
                     </Card>

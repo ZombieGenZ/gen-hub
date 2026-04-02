@@ -3,7 +3,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-    ChevronLeftIcon,
     ChevronRightIcon,
     Bars3Icon,
     ArrowsRightLeftIcon,
@@ -13,6 +12,9 @@ import {
     ArrowUturnLeftIcon,
 } from "@heroicons/react/24/outline";
 import type { InventoryTransaction, TransactionType } from "@/services/inventory/inventory.types";
+import { TablePagination } from "@/components/ui/table-pagination";
+
+const ITEMS_PER_PAGE = 10;
 
 interface HistoryTableProps {
     items: InventoryTransaction[];
@@ -170,51 +172,14 @@ export const HistoryTable = ({
 
             {/* Pagination */}
             {totalPages > 1 && (
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
-                    <p className="text-sm text-muted-foreground">
-                        Hiển thị {(currentPage - 1) * 10 + 1} - {Math.min(currentPage * 10, totalItems)} trong {totalItems} kết quả
-                    </p>
-                    <div className="flex items-center gap-2">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            disabled={currentPage === 1}
-                            onClick={() => onPageChange(currentPage - 1)}
-                        >
-                            <ChevronLeftIcon className="w-4 h-4 mr-1" />
-                            Trước
-                        </Button>
-                        <div className="flex items-center gap-1">
-                            {Array.from({ length: totalPages }).map((_, i) => {
-                                const pageNum = i + 1;
-                                // Simple logic to show current, first, and last pages if too many
-                                if (totalPages > 5 && pageNum !== 1 && pageNum !== totalPages && Math.abs(pageNum - currentPage) > 1) {
-                                    if (pageNum === currentPage - 2 || pageNum === currentPage + 2) return <span key={i}>...</span>;
-                                    return null;
-                                }
-                                return (
-                                    <Button
-                                        key={i}
-                                        variant={currentPage === pageNum ? "default" : "outline"}
-                                        size="sm"
-                                        className="w-8 h-8 p-0"
-                                        onClick={() => onPageChange(pageNum)}
-                                    >
-                                        {pageNum}
-                                    </Button>
-                                );
-                            })}
-                        </div>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            disabled={currentPage === totalPages}
-                            onClick={() => onPageChange(currentPage + 1)}
-                        >
-                            Sau
-                            <ChevronRightIcon className="w-4 h-4 ml-1" />
-                        </Button>
-                    </div>
+                <div className="pt-4">
+                    <TablePagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        totalItems={totalItems}
+                        itemsPerPage={ITEMS_PER_PAGE}
+                        onPageChange={onPageChange}
+                    />
                 </div>
             )}
         </div>

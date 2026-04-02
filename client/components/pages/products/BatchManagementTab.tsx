@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import type { Product } from "@/services/product/product.types";
 import type { Batch } from "@/services/batch/batch.types";
 import { BatchService } from "@/services/batch/batch.service";
@@ -69,8 +69,10 @@ import {
     XAxis,
     YAxis,
 } from "recharts";
+import { TablePagination } from "@/components/ui/table-pagination";
 
 const batchService = new BatchService();
+const ITEMS_PER_PAGE = 10;
 
 // ────────────────────────────────────────────────
 // Mini Sparkline — Biểu đồ biến động giá nhập
@@ -479,6 +481,7 @@ export function BatchManagementTab({
     const [expiryFilter, setExpiryFilter] = useState<ExpiryStatus | "all">(
         "all"
     );
+    const [currentPage, setCurrentPage] = useState(1);
 
     // ── Filtered batches ──
     const filteredBatches = useMemo(() => {
@@ -501,6 +504,21 @@ export function BatchManagementTab({
         });
         return result;
     }, [batches, expiryFilter]);
+
+    const totalPages = Math.max(1, Math.ceil(filteredBatches.length / ITEMS_PER_PAGE));
+
+    const paginatedBatches = useMemo(() => {
+        const start = (currentPage - 1) * ITEMS_PER_PAGE;
+        return filteredBatches.slice(start, start + ITEMS_PER_PAGE);
+    }, [filteredBatches, currentPage]);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [expiryFilter]);
+
+    useEffect(() => {
+        setCurrentPage((prev) => Math.min(prev, totalPages));
+    }, [totalPages]);
 
     // ── Delete handler ──
     const handleDelete = async () => {
@@ -665,7 +683,7 @@ export function BatchManagementTab({
                                 )}
 
                                 {!loading &&
-                                    filteredBatches.map((batch) => {
+                                    paginatedBatches.map((batch) => {
                                         const status = getExpiryStatus(
                                             batch.expiry_date
                                         );
@@ -807,6 +825,14 @@ export function BatchManagementTab({
                     </div>
                 </CardContent>
             </Card>
+
+            <TablePagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={filteredBatches.length}
+                itemsPerPage={ITEMS_PER_PAGE}
+                onPageChange={setCurrentPage}
+            />
 
             {/* Create/Edit dialog */}
             {createDialogOpen && (

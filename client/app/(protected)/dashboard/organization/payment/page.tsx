@@ -30,8 +30,6 @@ import {
     ArrowUpRightIcon,
     ClockIcon,
     CreditCardIcon,
-    ChevronLeftIcon,
-    ChevronRightIcon,
     ArrowPathIcon,
     XMarkIcon,
 } from "@heroicons/react/24/outline";
@@ -50,6 +48,7 @@ import { orgHelper } from "@/lib/organization.utils";
 import { OrganizationService } from "@/services/organization/organization.service";
 import { useToast } from "@/contexts/ToastContext";
 import { useOrganizationRealtime } from "@/hooks/useOrganizationRealtime";
+import { TablePagination } from "@/components/ui/table-pagination";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 import { useRouter } from "next/navigation";
@@ -544,35 +543,14 @@ export default function FinancePage() {
                             </div>
 
                             {/* Pagination */}
-                            <div className="flex items-center justify-between pt-2">
-                                <p className="text-[12px] leading-[150%] text-muted-foreground">
-                                    Trang {page} / {totalPages}
-                                    {total > 0 && (
-                                        <span className="ml-1 text-muted-foreground/60">
-                                            ({total} giao dịch)
-                                        </span>
-                                    )}
-                                </p>
-                                <div className="flex gap-2">
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => setPage((p) => Math.max(1, p - 1))}
-                                        disabled={page <= 1}
-                                        className="rounded-xl"
-                                    >
-                                        <ChevronLeftIcon className="w-4 h-4 mr-1" /> Trước
-                                    </Button>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                                        disabled={page >= totalPages}
-                                        className="rounded-xl"
-                                    >
-                                        Tiếp <ChevronRightIcon className="w-4 h-4 ml-1" />
-                                    </Button>
-                                </div>
+                            <div className="pt-2">
+                                <TablePagination
+                                    currentPage={page}
+                                    totalPages={totalPages}
+                                    totalItems={total}
+                                    itemsPerPage={LIMIT}
+                                    onPageChange={setPage}
+                                />
                             </div>
                         </>
                     )}

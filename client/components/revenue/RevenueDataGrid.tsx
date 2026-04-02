@@ -1,13 +1,12 @@
 "use client";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import { TopOrganizationsTab } from "./TopOrganizationsTab";
 import { TopWarehousesTab } from "./TopWarehousesTab";
 import { RecentTransactionsTab } from "./RecentTransactionsTab";
 import type { TableData } from "@/services/revenue-analytics/revenue-analytics.types";
 import React from "react";
+import { TablePagination } from "@/components/ui/table-pagination";
 
 interface RevenueDataGridProps {
     data: TableData | undefined;
@@ -35,16 +34,9 @@ export const RevenueDataGrid = React.forwardRef<HTMLDivElement, RevenueDataGridP
         const totalPages = Math.max(1, Math.ceil(total / page.limit));
         const hasMore = page.offset + page.limit < total;
 
-        const goNext = () => {
-            if (hasMore) {
-                onPageChange({ ...page, offset: page.offset + page.limit });
-            }
-        };
-
-        const goPrev = () => {
-            if (page.offset > 0) {
-                onPageChange({ ...page, offset: Math.max(0, page.offset - page.limit) });
-            }
+        const handlePageChange = (nextPage: number) => {
+            const clampedPage = Math.min(Math.max(nextPage, 1), totalPages);
+            onPageChange({ ...page, offset: (clampedPage - 1) * page.limit });
         };
 
         return (
@@ -87,31 +79,14 @@ export const RevenueDataGrid = React.forwardRef<HTMLDivElement, RevenueDataGridP
 
                     {/* Pagination */}
                     {!isLoading && total > 0 && (
-                        <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100">
-                            <p className="text-sm text-slate-500">
-                                Hiển thị {page.offset + 1}–{Math.min(page.offset + page.limit, total)} / {total} bản ghi
-                            </p>
-                            <div className="flex items-center gap-2">
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={goPrev}
-                                    disabled={page.offset === 0}
-                                >
-                                    <ChevronLeft className="w-4 h-4" />
-                                </Button>
-                                <span className="text-sm text-slate-600 px-2">
-                                    Trang {currentPage} / {totalPages}
-                                </span>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={goNext}
-                                    disabled={!hasMore}
-                                >
-                                    <ChevronRight className="w-4 h-4" />
-                                </Button>
-                            </div>
+                        <div className="px-6 py-4 border-t border-slate-100">
+                            <TablePagination
+                                currentPage={currentPage}
+                                totalPages={totalPages}
+                                totalItems={total}
+                                itemsPerPage={page.limit}
+                                onPageChange={handlePageChange}
+                            />
                         </div>
                     )}
                 </Tabs>

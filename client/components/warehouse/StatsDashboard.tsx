@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,7 @@ import {
 import { CategoryStats, RackUtilization } from '@/types/inventory';
 import { WarehouseStats } from '@/types/warehouse';
 import { fillRateColors, fillRateLabels, FillRateStatus } from '@/types/warehouse';
+import { TablePagination } from '@/components/ui/table-pagination';
 
 interface StatsDashboardProps {
   stats: WarehouseStats;
@@ -37,9 +38,11 @@ const StatsDashboard = ({
   onClose,
   onViewRack,
 }: StatsDashboardProps) => {
+  const ITEMS_PER_PAGE = 8;
   const fillPercentage = stats.totalCapacity > 0 
     ? Math.round((stats.usedCapacity / stats.totalCapacity) * 100) 
     : 0;
+  const [currentRackPage, setCurrentRackPage] = useState(1);
 
   const racksByStatus = useMemo(() => {
     const grouped: Record<FillRateStatus, RackUtilization[]> = {
@@ -52,6 +55,23 @@ const StatsDashboard = ({
     });
     return grouped;
   }, [rackUtilization]);
+
+  const rackTotalPages = Math.max(1, Math.ceil(rackUtilization.length / ITEMS_PER_PAGE));
+
+  const paginatedRacks = useMemo(() => {
+    const start = (currentRackPage - 1) * ITEMS_PER_PAGE;
+    return rackUtilization.slice(start, start + ITEMS_PER_PAGE);
+  }, [rackUtilization, currentRackPage]);
+
+  useEffect(() => {
+    if (isOpen) {
+      setCurrentRackPage(1);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    setCurrentRackPage((prev) => Math.min(prev, rackTotalPages));
+  }, [rackTotalPages]);
 
   if (!isOpen) return null;
 
@@ -235,7 +255,7 @@ const StatsDashboard = ({
                     </tr>
                   </thead>
                   <tbody>
-                    {rackUtilization.map((rack) => (
+                    {paginatedRacks.map((rack) => (
                       <tr key={rack.rackId} style={{ borderBottom: '1px solid #e0ede815' }} className="hover:bg-gray-50">
                       <td className="p-2 font-medium" style={{ color: '#1a2e25' }}>{rack.rackName}</td>
                         <td className="p-2 text-center" style={{ color: '#1a2e25' }}>{rack.used}</td>
@@ -272,6 +292,16 @@ const StatsDashboard = ({
                 </table>
               </div>
             )}
+
+            <div className="mt-3">
+              <TablePagination
+                currentPage={currentRackPage}
+                totalPages={rackTotalPages}
+                totalItems={rackUtilization.length}
+                itemsPerPage={ITEMS_PER_PAGE}
+                onPageChange={setCurrentRackPage}
+              />
+            </div>
           </div>
         </div>
       </ScrollArea>
