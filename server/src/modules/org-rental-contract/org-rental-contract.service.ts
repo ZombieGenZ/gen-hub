@@ -196,27 +196,27 @@ export class OrgRentalContractService {
             }
 
             // Check if template/rows are already rented
-            if (isWholeWarehouse) {
-                if (template.is_rented || template.rental_status === 'RENTED') {
-                    throw new ConflictException({
-                        code: 'rental-contract.warehouse_lock.conflict',
-                        message: this.i18n.t('rental-contract.warehouse_lock.conflict', { lang }),
-                        success: false,
-                    });
-                }
-                lockKeys.push(`rental:lock:template:${templateItem.template_id}`);
-            } else {
-                for (const rowId of templateItem.row_template_ids!) {
-                    const row = template.rows?.find((r: any) => r.id === rowId);
-                    if (row?.is_rented) {
-                        throw new ConflictException({
-                            code: 'rental-contract.warehouse_lock.conflict',
-                            message: this.i18n.t('rental-contract.warehouse_lock.conflict', { lang }),
-                            success: false,
-                        });
-                    }
-                    lockKeys.push(`rental:lock:row:${rowId}`);
-                }
+            // if (isWholeWarehouse) {
+            //     if (template.is_rented || template.rental_status === 'RENTED') {
+            //         throw new ConflictException({
+            //             code: 'rental-contract.warehouse_lock.conflict',
+            //             message: this.i18n.t('rental-contract.warehouse_lock.conflict', { lang }),
+            //             success: false,
+            //         });
+            //     }
+            //     lockKeys.push(`rental:lock:template:${templateItem.template_id}`);
+            // } else {
+            //     for (const rowId of templateItem.row_template_ids!) {
+            //         const row = template.rows?.find((r: any) => r.id === rowId);
+            //         if (row?.is_rented) {
+            //             throw new ConflictException({
+            //                 code: 'rental-contract.warehouse_lock.conflict',
+            //                 message: this.i18n.t('rental-contract.warehouse_lock.conflict', { lang }),
+            //                 success: false,
+            //             });
+            //         }
+            //         lockKeys.push(`rental:lock:row:${rowId}`);
+            //     }
             }
 
             const priceDetail = await this.calculateRentalPriceForTemplate(
