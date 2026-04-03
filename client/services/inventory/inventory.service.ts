@@ -497,7 +497,10 @@ export class InventoryService {
         });
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.message || 'Không thể bổ sung tồn kho');
+            const err: any = new Error(errorData.message || 'Không thể bổ sung tồn kho');
+            err.status = response.status;
+            err.code = errorData.code;
+            throw err;
         }
         return response.json();
     }

@@ -2610,6 +2610,9 @@ model ExportDetail {
   unit_id           String  @db.Uuid
   conversion_rate   Decimal @default(1) @db.Decimal(10, 4)
 
+  checked_qty Decimal? @db.Decimal(19, 4)
+  passed      Boolean?
+
   is_active  Boolean   @default(true)
   created_at DateTime  @default(now())
   updated_at DateTime? @updatedAt

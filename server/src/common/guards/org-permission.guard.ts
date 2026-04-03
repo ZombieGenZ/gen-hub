@@ -8,6 +8,7 @@ import { Reflector } from '@nestjs/core';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ORG_PERMISSIONS_KEY } from '../decorators/require-org-permission.decorator';
 import { IApiKeyInfo } from '../decorators/current-actor.decorator';
+import { ResponseCode } from '../responses';
 
 /**
  * Guard kiểm tra permission cấp tổ chức
@@ -82,6 +83,19 @@ export class OrgPermissionGuard implements CanActivate {
         }
 
         // Kiểm tra member permissions
+        const userRecord = await this.prisma.user.findUnique({
+            where: { id: userId },
+            select: { is_banned: true, banned_end: true },
+        });
+
+        if (userRecord?.is_banned && (!userRecord.banned_end || new Date(userRecord.banned_end) > new Date())) {
+            throw new ForbiddenException({
+                code: ResponseCode.ERROR_FORBIDDEN_ACCOUNT_BANNED,
+                message: 'Tài khoản đã bị khóa',
+                success: false,
+            });
+        }
+
         const member = await this.prisma.organizationMember.findFirst({
             where: {
                 user_id: userId,
@@ -148,7 +162,11 @@ export class OrgPermissionGuard implements CanActivate {
         );
 
         if (!hasAllPermissions) {
-            throw new ForbiddenException('Không có quyền thực hiện thao tác này');
+            throw new ForbiddenException({
+                code: ResponseCode.ERROR_FORBIDDEN_NO_PERMISSION,
+                message: 'Không có quyền thực hiện thao tác này',
+                success: false,
+            });
         }
 
         return true;

@@ -258,6 +258,8 @@ export default function OutboundApprovalDetail({
             fetchData();
         } catch (err: any) {
             showToast(err.message || "Không thể từ chối phiếu xuất", "error");
+            setRejectOpen(false);
+            fetchData();
         } finally { setSubmitting(false); }
     };
 
@@ -275,6 +277,12 @@ export default function OutboundApprovalDetail({
             fetchData();
         } catch (err: any) {
             showToast(err.message || "Không thể xác nhận nhặt hàng", "error");
+            if (err.status === 403) {
+                authStorage.clearTokens();
+                window.location.href = '/auth/login';
+                return;
+            }
+            fetchData();
         } finally { setSubmitting(false); }
     };
 
@@ -293,6 +301,12 @@ export default function OutboundApprovalDetail({
             fetchData();
         } catch (err: any) {
             showToast(err.message || "Không thể xác nhận kiểm tra", "error");
+            if (err.status === 403) {
+                authStorage.clearTokens();
+                window.location.href = '/auth/login';
+                return;
+            }
+            fetchData();
         } finally { setSubmitting(false); }
     };
 

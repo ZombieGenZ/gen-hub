@@ -120,10 +120,30 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         }
       }
 
+      const rawMessage = (response as { message?: unknown })?.message;
+
+      // ValidationPipe trả về message là mảng các lỗi
+      if (Array.isArray(rawMessage)) {
+        const errors = rawMessage.map((msg: string) => ({
+          field: 'unknown',
+          message: msg,
+        }));
+        return {
+          status,
+          code: this.getHttpErrorCode(status),
+          message: exception.message,
+          clientMessage: rawMessage[0] || exception.message,
+          errorType: 'HttpException',
+          stack: exception.stack,
+          errorResponse: response,
+          errors,
+        };
+      }
+
       const message =
         typeof response === 'string'
           ? response
-          : (response as { message?: string })?.message || exception.message;
+          : (rawMessage as string | undefined) || exception.message;
 
       return {
         status,

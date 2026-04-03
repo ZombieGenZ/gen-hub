@@ -51,7 +51,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     }
 
     if (user.is_banned) {
-      if (user.banned_end && new Date(user.banned_end) > new Date()) {
+      if (!user.banned_end || new Date(user.banned_end) > new Date()) {
         return null;
       }
     }

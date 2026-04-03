@@ -204,6 +204,8 @@ export default function InboundApprovalDetail({
             fetchData();
         } catch (err: any) {
             showToast(err.message || "Không thể từ chối phiếu", "error");
+            setRejectOpen(false);
+            fetchData();
         } finally { setSubmitting(false); }
     };
 
@@ -216,6 +218,12 @@ export default function InboundApprovalDetail({
             fetchData();
         } catch (err: any) {
             showToast(err.message || "Không thể bắt đầu kiểm đếm", "error");
+            if (err.status === 403) {
+                authStorage.clearTokens();
+                window.location.href = '/auth/login';
+                return;
+            }
+            fetchData();
         } finally { setSubmitting(false); }
     };
 
@@ -233,6 +241,12 @@ export default function InboundApprovalDetail({
             fetchData();
         } catch (err: any) {
             showToast(err.message || "Không thể xác nhận kiểm đếm", "error");
+            if (err.status === 403) {
+                authStorage.clearTokens();
+                window.location.href = '/auth/login';
+                return;
+            }
+            fetchData();
         } finally { setSubmitting(false); }
     };
 
@@ -245,6 +259,12 @@ export default function InboundApprovalDetail({
             fetchData();
         } catch (err: any) {
             showToast(err.message || "Không thể xác nhận cất hàng", "error");
+            if (err.status === 403) {
+                authStorage.clearTokens();
+                window.location.href = '/auth/login';
+                return;
+            }
+            fetchData();
         } finally { setSubmitting(false); }
     };
 
@@ -257,6 +277,12 @@ export default function InboundApprovalDetail({
             fetchData();
         } catch (err: any) {
             showToast(err.message || "Không thể bổ sung tồn kho", "error");
+            if (err.status === 403) {
+                authStorage.clearTokens();
+                window.location.href = '/auth/login';
+                return;
+            }
+            fetchData();
         } finally { setSubmitting(false); }
     };
 

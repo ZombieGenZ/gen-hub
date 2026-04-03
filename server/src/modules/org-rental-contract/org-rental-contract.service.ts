@@ -195,12 +195,28 @@ export class OrgRentalContractService {
                 throw new BadRequestException(this.i18n.t('warehouse.errors.not_shared_warehouse', { lang }));
             }
 
+            // Check if template/rows are already rented
             if (isWholeWarehouse) {
+                if (template.is_rented || template.rental_status === 'RENTED') {
+                    throw new ConflictException({
+                        code: 'rental-contract.warehouse_lock.conflict',
+                        message: this.i18n.t('rental-contract.warehouse_lock.conflict', { lang }),
+                        success: false,
+                    });
+                }
                 lockKeys.push(`rental:lock:template:${templateItem.template_id}`);
             } else {
-                templateItem.row_template_ids!.forEach((rowId) => {
+                for (const rowId of templateItem.row_template_ids!) {
+                    const row = template.rows?.find((r: any) => r.id === rowId);
+                    if (row?.is_rented) {
+                        throw new ConflictException({
+                            code: 'rental-contract.warehouse_lock.conflict',
+                            message: this.i18n.t('rental-contract.warehouse_lock.conflict', { lang }),
+                            success: false,
+                        });
+                    }
                     lockKeys.push(`rental:lock:row:${rowId}`);
-                });
+                }
             }
 
             const priceDetail = await this.calculateRentalPriceForTemplate(
@@ -220,7 +236,11 @@ export class OrgRentalContractService {
 
         const lockResult = await this.acquireLock(lockKeys);
         if (!lockResult.success) {
-            throw new ConflictException(this.i18n.t('warehouse.errors.template_locked', { lang }));
+            throw new ConflictException({
+                code: 'rental-contract.warehouse_lock.locked',
+                message: this.i18n.t('rental-contract.warehouse_lock.locked', { lang }),
+                success: false,
+            });
         }
 
         try {

@@ -191,7 +191,10 @@ export class WarehouseManagerInventoryService {
         );
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.message || "Không thể bắt đầu kiểm đếm");
+            const err: any = new Error(errorData.message || "Không thể bắt đầu kiểm đếm");
+            err.status = response.status;
+            err.code = errorData.code;
+            throw err;
         }
         return await response.json();
     }
@@ -224,7 +227,10 @@ export class WarehouseManagerInventoryService {
         );
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.message || "Không thể xác nhận kiểm đếm");
+            const err: any = new Error(errorData.message || "Không thể xác nhận kiểm đếm");
+            err.status = response.status;
+            err.code = errorData.code;
+            throw err;
         }
         return await response.json();
     }
@@ -444,7 +450,10 @@ export class WarehouseManagerInventoryService {
         );
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.message || "Không thể xác nhận nhặt hàng");
+            const err: any = new Error(errorData.message || "Không thể xác nhận nhặt hàng");
+            err.status = response.status;
+            err.code = errorData.code;
+            throw err;
         }
         return await response.json();
     }
@@ -480,7 +489,10 @@ export class WarehouseManagerInventoryService {
         );
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.message || "Không thể xác nhận kiểm tra");
+            const err: any = new Error(errorData.message || "Không thể xác nhận kiểm tra");
+            err.status = response.status;
+            err.code = errorData.code;
+            throw err;
         }
         return await response.json();
     }

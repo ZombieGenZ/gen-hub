@@ -12,6 +12,24 @@ export function ApiUnauthorizedResponses() {
             description: 'Unauthorized - Chưa xác thực hoặc token không hợp lệ',
             content: {
                 'application/json': {
+                    schema: {
+                        type: 'object',
+                        required: ['code', 'message', 'success'],
+                        properties: {
+                            code: {
+                                type: 'string',
+                                example: 'error.unauthorized.token_expired',
+                            },
+                            message: {
+                                type: 'string',
+                                example: 'Token đã hết hạn',
+                            },
+                            success: {
+                                type: 'boolean',
+                                example: false,
+                            },
+                        },
+                    },
                     examples: {
                         token_missing: {
                             summary: 'Không có token',
@@ -63,6 +81,24 @@ export function ApiForbiddenResponses() {
             description: 'Forbidden - Không có quyền truy cập',
             content: {
                 'application/json': {
+                    schema: {
+                        type: 'object',
+                        required: ['code', 'message', 'success'],
+                        properties: {
+                            code: {
+                                type: 'string',
+                                example: 'error.forbidden.account_not_found',
+                            },
+                            message: {
+                                type: 'string',
+                                example: 'Tài khoản không tồn tại',
+                            },
+                            success: {
+                                type: 'boolean',
+                                example: false,
+                            },
+                        },
+                    },
                     examples: {
                         no_permission: {
                             summary: 'Không có quyền thực hiện',

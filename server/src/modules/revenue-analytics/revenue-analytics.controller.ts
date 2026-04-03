@@ -238,38 +238,51 @@ export class RevenueAnalyticsController {
                 data: {
                     type: 'object',
                     properties: {
-                        cashflow: {
+                        timeSeries: {
                             type: 'array',
+                            description: 'Chuỗi thời gian doanh thu theo từng loại thanh toán',
                             items: {
                                 type: 'object',
                                 properties: {
-                                    label: { type: 'string', example: '2026-01' },
-                                    rentalRevenue: { type: 'number', example: 820000000 },
-                                    addonRevenue: { type: 'number', example: 120000000 },
-                                    insuranceRevenue: { type: 'number', example: 45000000 },
-                                    couponDiscount: { type: 'number', example: -15000000 },
+                                    period: { type: 'string', example: '2026-01-01' },
+                                    type: { type: 'string', example: 'RENTAL' },
+                                    total: { type: 'number', example: 820000000 },
+                                },
+                            },
+                        },
+                        addonSeries: {
+                            type: 'array',
+                            description: 'Chuỗi thời gian doanh thu addon và bảo hiểm',
+                            items: {
+                                type: 'object',
+                                properties: {
+                                    period: { type: 'string', example: '2026-01-01' },
+                                    addon_total: { type: 'number', example: 120000000 },
+                                    insurance_total: { type: 'number', example: 45000000 },
                                 },
                             },
                         },
                         paymentMethodBreakdown: {
                             type: 'array',
+                            description: 'Phân bổ doanh thu theo phương thức thanh toán',
                             items: {
                                 type: 'object',
                                 properties: {
-                                    method: { type: 'string', example: 'BANK_TRANSFER' },
-                                    amount: { type: 'number', example: 650000000 },
-                                    percentage: { type: 'number', example: 72.5 },
+                                    payment_method: { type: 'string', example: 'BANK_TRANSFER' },
+                                    contract_count: { type: 'number', example: 10 },
+                                    total_amount: { type: 'number', example: 650000000 },
                                 },
                             },
                         },
-                        addonInsuranceBreakdown: {
+                        couponDiscount: {
+                            nullable: true,
                             type: 'array',
+                            description: 'Chuỗi thời gian giảm giá coupon (null nếu include_coupon_discount=false)',
                             items: {
                                 type: 'object',
                                 properties: {
-                                    type: { type: 'string', example: 'ADDON' },
-                                    name: { type: 'string', example: 'Camera giám sát' },
-                                    amount: { type: 'number', example: 22000000 },
+                                    period: { type: 'string', example: '2026-01-01' },
+                                    total_discount: { type: 'number', example: 15000000 },
                                 },
                             },
                         },
@@ -281,23 +294,18 @@ export class RevenueAnalyticsController {
                 message: 'Lấy biểu đồ doanh thu thành công',
                 success: true,
                 data: {
-                    cashflow: [
-                        {
-                            label: '2026-01',
-                            rentalRevenue: 820000000,
-                            addonRevenue: 120000000,
-                            insuranceRevenue: 45000000,
-                            couponDiscount: -15000000,
-                        },
+                    timeSeries: [
+                        { period: '2026-01-01', type: 'RENTAL', total: 820000000 },
+                        { period: '2026-01-01', type: 'ADDON', total: 120000000 },
+                    ],
+                    addonSeries: [
+                        { period: '2026-01-01', addon_total: 120000000, insurance_total: 45000000 },
                     ],
                     paymentMethodBreakdown: [
-                        { method: 'BANK_TRANSFER', amount: 650000000, percentage: 72.5 },
-                        { method: 'BALANCE', amount: 247000000, percentage: 27.5 },
+                        { payment_method: 'BANK_TRANSFER', contract_count: 10, total_amount: 650000000 },
+                        { payment_method: 'BALANCE', contract_count: 4, total_amount: 247000000 },
                     ],
-                    addonInsuranceBreakdown: [
-                        { type: 'ADDON', name: 'Camera giám sát', amount: 22000000 },
-                        { type: 'INSURANCE', name: 'Bảo hiểm cháy nổ', amount: 18000000 },
-                    ],
+                    couponDiscount: null,
                 },
             },
         },
@@ -394,13 +402,17 @@ export class RevenueAnalyticsController {
                         tab: { type: 'string', example: 'TOP_ORGANIZATIONS' },
                         items: {
                             type: 'array',
+                            description: 'Danh sách item theo tab được chọn',
                             items: {
                                 type: 'object',
+                                description: 'TOP_ORGANIZATIONS: { id, name, tax_code, total_revenue, outstanding_debt, contract_count } | TOP_WAREHOUSES: { id, name, price_per_month, address_detail, total_revenue, contract_count } | RECENT_TRANSACTIONS: Payment object',
                                 properties: {
                                     id: { type: 'string', example: '550e8400-e29b-41d4-a716-446655440100' },
                                     name: { type: 'string', example: 'Công ty ABC Logistics' },
-                                    totalRevenue: { type: 'number', example: 980000000 },
-                                    totalContracts: { type: 'number', example: 18 },
+                                    tax_code: { type: 'string', nullable: true, example: '0123456789' },
+                                    total_revenue: { type: 'number', example: 980000000 },
+                                    outstanding_debt: { type: 'number', example: 50000000 },
+                                    contract_count: { type: 'number', example: 18 },
                                 },
                             },
                         },
@@ -420,8 +432,10 @@ export class RevenueAnalyticsController {
                         {
                             id: '550e8400-e29b-41d4-a716-446655440100',
                             name: 'Công ty ABC Logistics',
-                            totalRevenue: 980000000,
-                            totalContracts: 18,
+                            tax_code: '0123456789',
+                            total_revenue: 980000000,
+                            outstanding_debt: 50000000,
+                            contract_count: 18,
                         },
                     ],
                     total: 35,

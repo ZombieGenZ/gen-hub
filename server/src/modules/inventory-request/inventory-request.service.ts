@@ -2535,7 +2535,6 @@ export class InventoryRequestService {
     lang: string,
     dto: ConfirmCheckingDto,
   ): Promise<IOutboundRequest> {
-    void dto;
     const exportRecord = await this.prisma.export.findFirst({
       where: { id, organization_id: orgId, is_deleted: false },
     });
@@ -2554,27 +2553,50 @@ export class InventoryRequestService {
       );
     }
 
-    const updated = await this.prisma.export.update({
-      where: { id },
-      data: {
-        status: ExportStatus.PACKED,
-        checking_completed_at: new Date(),
-        updated_by: actorId,
-      },
-      include: {
-        warehouse: { select: { id: true, name: true } },
-        partner: { select: { id: true, name: true, code: true } },
-        details: {
-          where: { is_deleted: false },
-          include: {
-            product: {
-              select: { id: true, name: true, sku: true, image_url: true },
+    // Ngăn kiểm tra trùng lặp
+    if (exportRecord.checking_completed_at) {
+      throw new ConflictException(
+        lang === 'vi'
+          ? 'Phiếu xuất đã được kiểm tra trước đó'
+          : 'This export has already been checked',
+      );
+    }
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      // Lưu kết quả kiểm tra cho từng dòng phiếu xuất
+      for (const item of dto.details) {
+        await tx.exportDetail.update({
+          where: { id: item.export_detail_id },
+          data: {
+            checked_qty: item.checked_qty,
+            passed: item.passed ?? true,
+            updated_by: actorId,
+          },
+        });
+      }
+
+      return tx.export.update({
+        where: { id },
+        data: {
+          status: ExportStatus.PACKED,
+          checking_completed_at: new Date(),
+          updated_by: actorId,
+        },
+        include: {
+          warehouse: { select: { id: true, name: true } },
+          partner: { select: { id: true, name: true, code: true } },
+          details: {
+            where: { is_deleted: false },
+            include: {
+              product: {
+                select: { id: true, name: true, sku: true, image_url: true },
+              },
+              batch: { select: { id: true, code: true, expiry_date: true } },
+              unit: { select: { id: true, name: true } },
             },
-            batch: { select: { id: true, code: true, expiry_date: true } },
-            unit: { select: { id: true, name: true } },
           },
         },
-      },
+      });
     });
 
     await Promise.all([
@@ -2815,7 +2837,7 @@ export class InventoryRequestService {
         }
       }
 
-      return this.prisma.receipt.findFirst({
+      return tx.receipt.findFirst({
         where: { id },
         include: {
           warehouse: { select: { id: true, name: true } },

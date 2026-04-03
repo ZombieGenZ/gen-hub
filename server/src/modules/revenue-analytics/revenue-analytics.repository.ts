@@ -104,9 +104,9 @@ export class RevenueAnalyticsRepository {
         });
 
         return {
-            value: current._sum.amount ?? 0,
+            value: Number(current._sum.amount ?? 0),
             count: current._count.id,
-            previousValue: previous._sum.amount ?? 0,
+            previousValue: Number(previous._sum.amount ?? 0),
         };
     }
 
@@ -159,9 +159,9 @@ export class RevenueAnalyticsRepository {
         });
 
         return {
-            value: current._sum.amount ?? 0,
+            value: Number(current._sum.amount ?? 0),
             count: current._count.id,
-            previousValue: previous._sum.amount ?? 0,
+            previousValue: Number(previous._sum.amount ?? 0),
         };
     }
 

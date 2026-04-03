@@ -67,6 +67,14 @@ export class CombinedAuthGuard implements CanActivate {
                     });
                 }
 
+                if (user.is_banned && (!user.banned_end || new Date(user.banned_end) > new Date())) {
+                    throw new ForbiddenException({
+                        code: ResponseCode.ERROR_FORBIDDEN_ACCOUNT_BANNED,
+                        message: 'Tài khoản đã bị khóa',
+                        success: false,
+                    });
+                }
+
                 if (!user.is_verified) {
                     throw new ForbiddenException({
                         code: ResponseCode.ERROR_FORBIDDEN_ACCOUNT_NOT_VERIFIED,
@@ -117,6 +125,35 @@ export class CombinedAuthGuard implements CanActivate {
                     }
                 }
 
+                // Kiểm tra trạng thái tài khoản của chủ sở hữu API key
+                if (apiKeyInfo.created_by_user_id) {
+                    const ownerUser = await this.prisma.user.findUnique({
+                        where: { id: apiKeyInfo.created_by_user_id },
+                        select: { is_verified: true, is_banned: true, banned_end: true, is_deleted: true },
+                    });
+                    if (!ownerUser || ownerUser.is_deleted) {
+                        throw new ForbiddenException({
+                            code: ResponseCode.ERROR_FORBIDDEN_ACCOUNT_NOT_FOUND,
+                            message: 'Tài khoản không tồn tại',
+                            success: false,
+                        });
+                    }
+                    if (ownerUser.is_banned && (!ownerUser.banned_end || new Date(ownerUser.banned_end) > new Date())) {
+                        throw new ForbiddenException({
+                            code: ResponseCode.ERROR_FORBIDDEN_ACCOUNT_BANNED,
+                            message: 'Tài khoản đã bị khóa',
+                            success: false,
+                        });
+                    }
+                    if (!ownerUser.is_verified) {
+                        throw new ForbiddenException({
+                            code: ResponseCode.ERROR_FORBIDDEN_ACCOUNT_NOT_VERIFIED,
+                            message: 'Tài khoản chưa được xác minh. Vui lòng xác minh email để tiếp tục.',
+                            success: false,
+                        });
+                    }
+                }
+
                 // Gắn thông tin API key vào request
                 const apiKeyRequest: IApiKeyInfo = {
                     id: apiKeyInfo.id,
@@ -128,7 +165,10 @@ export class CombinedAuthGuard implements CanActivate {
 
                 request.apiKey = apiKeyRequest;
                 return true;
-            } catch {
+            } catch (apiKeyError) {
+                if (apiKeyError instanceof ForbiddenException) {
+                    throw apiKeyError;
+                }
                 // API key không hợp lệ
             }
         }
