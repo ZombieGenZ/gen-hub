@@ -1289,7 +1289,7 @@ export class WarehouseManagerInventoryService {
                         });
 
                         if (inv) {
-                            await tx.inventory.update({
+                            const updatedInv = await tx.inventory.update({
                                 where: { id: inv.id },
                                 data: {
                                     quantity: { decrement: pickedQty },
@@ -1298,6 +1298,14 @@ export class WarehouseManagerInventoryService {
                                     updated_by: actorId,
                                 },
                             });
+
+                            // Giải phóng bin nếu tồn kho về 0
+                            if (updatedInv.quantity.toNumber() <= 0 && updatedInv.bin_id) {
+                                await tx.bin.update({
+                                    where: { id: updatedInv.bin_id },
+                                    data: { status: 'Available' },
+                                });
+                            }
 
                             // Tạo transaction log
                             await tx.inventoryTransaction.create({

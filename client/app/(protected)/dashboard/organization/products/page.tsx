@@ -30,6 +30,8 @@ const PRODUCT_EVENTS = [
     "product:updated",
     "product:deleted",
     "product:deleted_many",
+    "inbound:putaway-completed",
+    "outbound:shipment-completed",
 ];
 
 export default function ProductMasterListPage() {

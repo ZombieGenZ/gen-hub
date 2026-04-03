@@ -2272,7 +2272,6 @@ export class InventoryRequestService {
     lang: string,
     dto?: ConfirmPutawayDto,
   ): Promise<IInboundRequest> {
-    void dto;
     const receipt = await this.prisma.receipt.findFirst({
       where: { id, organization_id: orgId, is_deleted: false },
       include: {
@@ -2302,6 +2301,31 @@ export class InventoryRequestService {
           lang,
         }),
       );
+    }
+
+    // Kiểm tra số lượng kiểm đếm thực tế
+    const mismatchDetails = receipt.details.filter((d) => {
+      const actualQty = (d.actual_qty as any as Prisma.Decimal).toNumber();
+      const expectedQty = (d.expected_qty as any as Prisma.Decimal).toNumber();
+      return actualQty === 0 || actualQty !== expectedQty;
+    });
+
+    if (mismatchDetails.length > 0 && !dto?.force) {
+      const mismatches = mismatchDetails.map((d) => ({
+        detail_id: d.id,
+        product_name: (d as any).product?.name || d.product_id,
+        expected_qty: (d.expected_qty as any as Prisma.Decimal).toNumber(),
+        actual_qty: (d.actual_qty as any as Prisma.Decimal).toNumber(),
+      }));
+      throw new BadRequestException({
+        code: 'inventory-request.errors.quantity_mismatch',
+        message: await this.i18n.translate(
+          'inventory-request.errors.quantity_mismatch',
+          { lang },
+        ),
+        mismatches,
+        require_force: true,
+      });
     }
 
     const updated = await this.prisma.$transaction(async (tx) => {
@@ -2970,6 +2994,7 @@ export class InventoryRequestService {
           organization_id: orgId,
           warehouse_id: warehouseId,
           block_id: blockId,
+          bin_id: bin.id,
           product_id: productId,
           batch_id: batchId,
           quantity: 1,
