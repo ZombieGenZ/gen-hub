@@ -41,6 +41,7 @@ import { PaymentSchedulerService } from '../payment/payment-scheduler.service';
 import { UserNotificationService } from '../user-notification/user-notification.service';
 import { PdfService } from '../rental-contract-shared/pdf.service';
 import { DocusignService } from '../rental-contract-shared/docusign.service';
+import { PublicCouponService } from '../public-coupon/public-coupon.service';
 import { SendDocusignDto } from './dto';
 
 const Decimal = Prisma.Decimal;
@@ -73,6 +74,7 @@ export class OrgRentalContractService {
         private readonly signatureService: SignatureService,
         private readonly pdfService: PdfService,
         private readonly docusignService: DocusignService,
+        private readonly publicCouponService: PublicCouponService,
     ) {
         this.CONTRACT_CACHE_TTL = this.configService.get<number>('REDIS_RENTAL_CONTRACT_CACHE_TTL') || 300;
         this.CONTRACT_LIST_CACHE_TTL = this.configService.get<number>('REDIS_RENTAL_CONTRACT_LIST_CACHE_TTL') || 60;
@@ -281,6 +283,67 @@ export class OrgRentalContractService {
             }));
 
             const contract = await this.repository.createWithDetails(contractData, detailsData);
+
+            // Áp dụng coupon nếu có
+            let totalCouponDiscount = 0;
+            if (dto.coupon_codes && dto.coupon_codes.length > 0) {
+                const allTemplateIds = dto.templates.map(t => t.template_id);
+                const allRowTemplateIds = dto.templates.flatMap(t => t.row_template_ids || []);
+
+                for (const couponCode of dto.coupon_codes) {
+                    try {
+                        const validation = await this.publicCouponService.validateCoupon(
+                            userId,
+                            {
+                                code: couponCode,
+                                type: 'NEW_CONTRACT',
+                                warehouse_template_ids: allTemplateIds,
+                                row_template_ids: allRowTemplateIds,
+                                addon_ids: dto.addon_ids,
+                                rental_duration_tier_id: dto.duration_tier_id,
+                                order_amount: totalPrice,
+                            },
+                            lang,
+                        );
+
+                        if (validation.is_valid && validation.id) {
+                            const alreadyApplied = await this.repository.isCouponAlreadyApplied(
+                                contract.id,
+                                validation.id,
+                            );
+                            if (alreadyApplied) continue;
+
+                            const discountAmount = validation.discount_amount || 0;
+                            await this.repository.addCoupon({
+                                rental_contract_id: contract.id,
+                                coupon_id: validation.id,
+                                discount_value: Number(validation.discount_value) || 0,
+                                discount_amount: discountAmount,
+                                created_by: userId,
+                            });
+                            totalCouponDiscount += discountAmount;
+
+                            // Tăng usage count
+                            await this.prisma.coupon.update({
+                                where: { id: validation.id },
+                                data: { current_usage: { increment: 1 } },
+                            });
+                        }
+                    } catch {
+                        // Coupon không hợp lệ → bỏ qua, tiếp tục coupon khác
+                    }
+                }
+
+                // Cập nhật final_price nếu có giảm giá
+                if (totalCouponDiscount > 0) {
+                    const newFinalPrice = Math.max(0, totalPrice - totalCouponDiscount);
+                    await this.prisma.rentalContract.update({
+                        where: { id: contract.id },
+                        data: { final_price: new Decimal(newFinalPrice) },
+                    });
+                    (contract as any).final_price = new Decimal(newFinalPrice);
+                }
+            }
 
             this.systemLogService.info(
                 'rental-contract',

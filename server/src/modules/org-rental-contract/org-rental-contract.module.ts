@@ -9,6 +9,7 @@ import { NotificationModule } from '../notification/notification.module';
 import { PaymentModule } from '../payment/payment.module';
 import { UserNotificationModule } from '../user-notification/user-notification.module';
 import { RentalContractSharedModule } from '../rental-contract-shared/rental-contract-shared.module';
+import { PublicCouponModule } from '../public-coupon/public-coupon.module';
 
 import { OrgRentalContractController } from './org-rental-contract.controller';
 import { OrgRentalContractService } from './org-rental-contract.service';
@@ -23,6 +24,7 @@ import { OrgRentalContractService } from './org-rental-contract.service';
         NotificationModule,
         UserNotificationModule,
         RentalContractSharedModule,
+        PublicCouponModule,
         forwardRef(() => PaymentModule),
         forwardRef(() => WarehouseTemplateModule),
     ],
