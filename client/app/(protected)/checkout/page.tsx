@@ -127,7 +127,12 @@ function CheckoutContent() {
 
     // Coupon state
     const [couponDrawerOpen, setCouponDrawerOpen] = useState(false);
-    const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number } | null>(null);
+    const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number } | null>(() => {
+        if (session.coupon_code && session.quotation?.couponDiscount && session.quotation.couponDiscount > 0) {
+            return { code: session.coupon_code, discount: session.quotation.couponDiscount };
+        }
+        return null;
+    });
     const hasSyncedQuotationRef = useRef(false);
 
     const recalculateQuotation = useCallback(async (couponCode?: string) => {
@@ -705,14 +710,35 @@ function CheckoutContainer() {
                 const totalBaseRental = basePrice * durationMonths;
                 const durationDiscountAmount = totalBaseRental * (durationDiscountPercent / 100);
 
-                // Subtotal
+                // Subtotal (client-side fallback)
                 const subtotal = totalBaseRental - durationDiscountAmount + addonsCost + insuranceCost + managementFee;
-
                 const serviceFee = subtotal * 0.1; // 10%
-                const couponDiscount = 0;
-                const grandTotal = subtotal + serviceFee - couponDiscount;
 
-                const amount = 1000;
+                // Attempt server-side quotation (authoritative, includes coupon discount)
+                let apiQuotationResult: QuotationApiResponse | null = null;
+                if (durationId) {
+                    try {
+                        apiQuotationResult = await publicQuotationService.calculateQuotation({
+                            warehouse_template_id: warehouseId || property.id.toString(),
+                            rental_type: rentalType,
+                            duration_tier_id: durationId,
+                            row_template_ids: rentalType === 'row' && rowIds.length > 0 ? rowIds : undefined,
+                            addon_ids: addonIds.length > 0 ? addonIds : undefined,
+                            insurance_id: insuranceId || undefined,
+                            coupon_code: couponCode || undefined,
+                            start_date: new Date(startDateStr).toISOString().split('T')[0],
+                        });
+                    } catch (e) {
+                        console.warn('API quotation failed, falling back to client-side calc:', e);
+                    }
+                }
+
+                const couponDiscount = apiQuotationResult ? apiQuotationResult.coupon_discount : 0;
+                const grandTotal = apiQuotationResult
+                    ? apiQuotationResult.grand_total
+                    : subtotal + serviceFee - couponDiscount;
+
+                const amount = apiQuotationResult ? apiQuotationResult.deposit_amount : 1000;
 
                 // Friendly Names Mapping
                 const FRIENDLY_NAMES: Record<string, string> = {
@@ -775,19 +801,21 @@ function CheckoutContainer() {
                     insurance_id: insuranceId || undefined,
                     insurance_details: finalInsuranceDetails,
                     coupon_code: couponCode || undefined,
-                    quotation: {
-                        basePrice,
-                        durationMonths,
-                        durationDiscountPercent,
-                        durationDiscountAmount,
-                        addonsCost,
-                        insuranceCost,
-                        managementFee,
-                        subtotal,
-                        serviceFee,
-                        couponDiscount,
-                        grandTotal
-                    },
+                    quotation: apiQuotationResult
+                        ? mapApiQuotationToBreakdown(apiQuotationResult)
+                        : {
+                            basePrice,
+                            durationMonths,
+                            durationDiscountPercent,
+                            durationDiscountAmount,
+                            addonsCost,
+                            insuranceCost,
+                            managementFee,
+                            subtotal,
+                            serviceFee,
+                            couponDiscount,
+                            grandTotal
+                        },
                     amount
                 };
 

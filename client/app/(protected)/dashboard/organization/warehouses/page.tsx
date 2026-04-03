@@ -258,7 +258,7 @@ export default function MyWarehousesPage() {
     const [orgId, setOrgId] = useState<string | null>(null);
 
     // ── Fetch ──────────────────────────────────────────────────────────────── //
-    const fetchContracts = useCallback(async () => {
+    const fetchContracts = useCallback(async (currentOrgId?: string | null) => {
         const token = authStorage.getAccessToken();
         if (!token) {
             router.push("/login");
@@ -267,8 +267,20 @@ export default function MyWarehousesPage() {
         setIsLoading(true);
         setError(null);
         try {
-            // Fetch all contracts for this user's org
-            const data: any = await rentalContractService.getRentalContracts(token, {
+            // Resolve orgId nếu chưa có
+            let resolvedOrgId = currentOrgId;
+            if (!resolvedOrgId) {
+                resolvedOrgId = await orgHelper.getOrgId(token);
+                setOrgId(resolvedOrgId);
+            }
+
+            if (!resolvedOrgId) {
+                setContracts([]);
+                return;
+            }
+
+            // Fetch contracts scoped theo org (tránh lấy dữ liệu toàn hệ thống)
+            const data: any = await rentalContractService.getOrgRentalContracts(token, resolvedOrgId, {
                 limit: 50,
                 page: 1,
             });
@@ -316,7 +328,7 @@ export default function MyWarehousesPage() {
         events: WAREHOUSE_REALTIME_EVENTS,
         enabled: !!orgId,
         onEvent: (eventName, payload) => {
-            void fetchContracts();
+            void fetchContracts(orgId);
 
             const data = payload as { code?: string } | undefined;
             const suffix = data?.code ? ` ${data.code}` : "";
@@ -400,7 +412,7 @@ export default function MyWarehousesPage() {
                         Quản lý toàn bộ không gian kho bãi theo hợp đồng. Click vào thẻ để xem chi tiết.
                     </p>
                 </div>
-                <Button variant="outline" size="sm" onClick={fetchContracts} disabled={isLoading} className="gap-2">
+                <Button variant="outline" size="sm" onClick={() => fetchContracts(orgId)} disabled={isLoading} className="gap-2">
                     <ArrowPathIcon className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
                     Làm mới
                 </Button>
@@ -423,7 +435,7 @@ export default function MyWarehousesPage() {
             {error && (
                 <div className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm bg-destructive/10 text-destructive border border-destructive/20">
                     <span>{error}</span>
-                    <Button variant="outline" size="sm" onClick={fetchContracts} className="ml-auto shrink-0 text-xs">
+                    <Button variant="outline" size="sm" onClick={() => fetchContracts(orgId)} className="ml-auto shrink-0 text-xs">
                         Thử lại
                     </Button>
                 </div>
