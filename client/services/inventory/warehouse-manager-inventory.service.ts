@@ -248,7 +248,6 @@ export class WarehouseManagerInventoryService {
         data?: {
             details?: { putaway_detail_id: string; actual_qty: number }[];
             notes?: string;
-            force?: boolean;
         },
     ): Promise<ApiResponse<any>> {
         const response = await fetch(
