@@ -107,7 +107,7 @@ export function CouponDrawer({
                 const existingCodes = new Set(couponList.map(c => c.code));
                 const newPublicCoupons = publicCoupons
                     .filter((c: any) => !existingCodes.has(c.code))
-                    .map((c: any) => CouponService.parseCouponToUI(c, orderAmount, applicableFetched ? false : undefined));
+                    .map((c: any) => CouponService.parseCouponToUI(c, orderAmount, undefined));
 
                 couponList = [...couponList, ...newPublicCoupons];
             }
