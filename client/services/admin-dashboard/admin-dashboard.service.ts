@@ -40,61 +40,8 @@ class AdminDashboardService {
     /* ── 1. Hero KPIs ──────────────────────────────────────── */
 
     async getHeroKpis(): Promise<HeroKpiData> {
-        const [revenueKpis, userStats, resourceOverview, overdueContracts] =
-            await Promise.all([
-                this.fetchJson<any>(`${API}/admin/revenue-analytics/kpis?preset=THIS_MONTH`),
-                this.fetchJson<any>(`${API}/admin/users/stats`),
-                this.fetchJson<any>(`${API}/admin/resources/overview`),
-                this.fetchJson<any>(`${API}/rental-contracts?status=ACTIVE&limit=100`),
-            ]);
-
-        // MRR from net revenue
-        const mrrValue = revenueKpis?.netRevenue?.value ?? 0;
-        const mrrPrev = revenueKpis?.netRevenue?.previousValue ?? 0;
-        const mrrTrend = mrrPrev > 0 ? ((mrrValue - mrrPrev) / mrrPrev) * 100 : 0;
-
-        // Organizations & users
-        const totalUsers = userStats?.total ?? 0;
-        const onlineUsers = userStats?.online ?? 0;
-
-        // Occupancy from resources disk usage as proxy
-        const cpuUsage = resourceOverview?.cpu ?? 0;
-        const diskUsage = resourceOverview?.disk ?? 0;
-
-        // Overdue contracts (filter ACTIVE contracts with payment issues if any, for now count ACTIVE as placeholder)
-        const overdueItems = (overdueContracts?.items ?? []).filter((c: any) => c.status === 'ACTIVE');
-        const overdueTotal = overdueItems.length;
-        const totalDebt = overdueItems.reduce(
-            (sum: number, c: any) => sum + (c.monthly_rent ?? c.total_amount ?? 0),
-            0,
-        );
-
-        return {
-            mrr: {
-                value: mrrValue,
-                trend: { value: Math.abs(Number(mrrTrend.toFixed(1))), isPositive: mrrTrend >= 0 },
-                label: 'so với tháng trước',
-            },
-            organizationAndUsers: {
-                orgs: totalUsers,
-                newUsersThisWeek: onlineUsers,
-                trend: { value: 0, isPositive: true },
-                label: 'đang online',
-            },
-            globalOccupancy: {
-                rate: Number(diskUsage.toFixed(1)),
-                trend: { value: Number(cpuUsage.toFixed(1)), isPositive: true },
-                label: 'CPU hiện tại',
-                totalSpace: '100%',
-                usedSpace: `${diskUsage.toFixed(1)}%`,
-            },
-            debtAlerts: {
-                totalAmount: totalDebt,
-                count: overdueTotal,
-                trend: { value: 0, isPositive: false },
-                label: 'hợp đồng quá hạn',
-            },
-        };
+        const data = await this.fetchJson<HeroKpiData>(`${API}/admin/dashboard/overview`);
+        return data;
     }
 
     /* ── 2. Actionable Inbox ───────────────────────────────── */

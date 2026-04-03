@@ -254,6 +254,7 @@ export class CouponService {
         addon_ids?: string[];
         rental_duration_tier_id: string;    
         type: 'NEW_CONTRACT' | 'RENEWAL';
+        order_amount?: number;
     }, access_token: string): Promise<CouponValidationResult> {
         try {
             const response = await fetch(`${API}/public/coupons/validate`, {

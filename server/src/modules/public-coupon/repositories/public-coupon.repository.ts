@@ -199,6 +199,7 @@ export class PublicCouponRepository {
                         {
                             OR: [
                                 { max_usage: 0 }, // Unlimited
+                                { max_usage: { gt: 0 } }, // Limited - service will check current_usage
                             ],
                         },
                     ],

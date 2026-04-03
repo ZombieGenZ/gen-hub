@@ -1,6 +1,7 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
 import Cookies from 'js-cookie';
 import { io, Socket } from 'socket.io-client';
+import { toast } from 'sonner';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
@@ -12,9 +13,13 @@ const REFRESH_TOKEN_KEY = process.env.NEXT_PUBLIC_REFRESH_TOKEN_KEY || 'refresh_
 const JWT_ACCESS_EXPIRATION = parseFloat(process.env.NEXT_PUBLIC_JWT_ACCESS_EXPIRATION || '0.0104'); // ~15 mins
 const JWT_REFRESH_EXPIRATION = parseFloat(process.env.NEXT_PUBLIC_JWT_REFRESH_EXPIRATION || '7');
 
+// Request timeout in ms (10 seconds)
+const REQUEST_TIMEOUT = 10_000;
+
 // Create axios instance
 export const api: AxiosInstance = axios.create({
     baseURL: API_URL,
+    timeout: REQUEST_TIMEOUT,
     headers: {
         'Content-Type': 'application/json',
     },
@@ -56,6 +61,12 @@ api.interceptors.response.use(
     (response) => response,
     async (error: AxiosError) => {
         const originalRequest = error.config as (typeof error.config) & { _retry?: boolean };
+
+        // Handle timeout
+        if (error.code === 'ECONNABORTED' || error.message?.toLowerCase().includes('timeout')) {
+            toast.error('Yêu cầu hết thời gian chờ. Vui lòng thử lại.');
+            return Promise.reject(error);
+        }
 
         // If 401 error and it's not a retry and not the refresh token call itself
         if (error.response?.status === 401 && originalRequest && !originalRequest._retry && !originalRequest.url?.includes('/auth/refresh')) {
@@ -107,6 +118,7 @@ api.interceptors.response.use(
                 if (typeof window !== 'undefined') {
                     Cookies.remove(ACCESS_TOKEN_KEY);
                     Cookies.remove(REFRESH_TOKEN_KEY);
+                    toast.error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
                     window.location.href = '/';
                 }
                 return Promise.reject(refreshError);

@@ -149,9 +149,34 @@ export class PublicCouponService {
             );
 
             if (validation.isValid) {
+                const giftAddons = (coupon as any).gift_addons?.filter((g: any) => g.is_active).map((g: any) => ({
+                    id: g.addon?.id,
+                    name: g.addon?.name,
+                    description: g.addon?.description,
+                })) ?? [];
+
+                const giftInsurances = (coupon as any).gift_insurances?.filter((g: any) => g.is_active).map((g: any) => ({
+                    id: g.insurance?.id,
+                    name: g.insurance?.name,
+                    description: g.insurance?.description,
+                })) ?? [];
+
                 applicableCoupons.push({
-                    ...coupon,
-                    discount_info: validation.discountInfo,
+                    id: coupon.id,
+                    name: coupon.name,
+                    description: coupon.description,
+                    code: coupon.code,
+                    discount_type: coupon.discount_type,
+                    discount_value: Number(coupon.discount_value),
+                    max_discount_amount: coupon.max_discount_amount ? Number(coupon.max_discount_amount) : null,
+                    is_unlimited_discount: coupon.is_unlimited_discount,
+                    starts_at: coupon.starts_at,
+                    ends_at: coupon.ends_at,
+                    min_order_amount: coupon.min_order_amount ? Number(coupon.min_order_amount) : null,
+                    estimated_discount: validation.discountInfo?.estimated_discount ?? 0,
+                    is_applicable: true,
+                    gift_addons: giftAddons,
+                    gift_insurances: giftInsurances,
                 });
             }
         }
@@ -175,7 +200,7 @@ export class PublicCouponService {
 
         if (!coupon) {
             return {
-                isValid: false,
+                is_valid: false,
                 error: this.i18n.t('coupon.errors.invalid_code', { lang }),
             };
         }
@@ -183,7 +208,7 @@ export class PublicCouponService {
         // Kiểm tra giới hạn sử dụng
         if (coupon.max_usage > 0 && coupon.current_usage >= coupon.max_usage) {
             return {
-                isValid: false,
+                is_valid: false,
                 error: this.i18n.t('coupon.errors.usage_limit_reached', { lang }),
             };
         }
@@ -197,20 +222,37 @@ export class PublicCouponService {
         );
 
         if (!validation.isValid) {
-            return validation;
+            return {
+                is_valid: false,
+                error: validation.error,
+            };
         }
 
+        const giftAddons = (coupon as any).gift_addons?.filter((g: any) => g.is_active).map((g: any) => ({
+            id: g.addon?.id,
+            name: g.addon?.name,
+            description: g.addon?.description,
+        })) ?? [];
+
+        const giftInsurances = (coupon as any).gift_insurances?.filter((g: any) => g.is_active).map((g: any) => ({
+            id: g.insurance?.id,
+            name: g.insurance?.name,
+            description: g.insurance?.description,
+        })) ?? [];
+
         return {
-            isValid: true,
-            coupon: {
-                id: coupon.id,
-                name: coupon.name,
-                code: coupon.code,
-                description: coupon.description,
-                discount_type: coupon.discount_type,
-                discount_value: coupon.discount_value,
-            },
-            discount_info: validation.discountInfo,
+            is_valid: true,
+            id: coupon.id,
+            name: coupon.name,
+            code: coupon.code,
+            description: coupon.description,
+            discount_type: coupon.discount_type,
+            discount_value: Number(coupon.discount_value),
+            max_discount_amount: coupon.max_discount_amount ? Number(coupon.max_discount_amount) : null,
+            estimated_discount: validation.discountInfo?.estimated_discount ?? 0,
+            discount_amount: validation.discountInfo?.estimated_discount ?? 0,
+            gift_addons: giftAddons,
+            gift_insurances: giftInsurances,
             message: this.i18n.t('coupon.success.coupon_valid', { lang }),
         };
     }
@@ -258,6 +300,16 @@ export class PublicCouponService {
                 return {
                     isValid: false,
                     error: this.i18n.t('coupon.errors.min_rows_not_met', { lang }),
+                };
+            }
+        }
+
+        // Kiểm tra giá trị đơn hàng tối thiểu
+        if (coupon.require_min_order_amount && coupon.min_order_amount && dto.order_amount !== undefined) {
+            if (dto.order_amount < Number(coupon.min_order_amount)) {
+                return {
+                    isValid: false,
+                    error: this.i18n.t('coupon.errors.min_order_amount_not_met', { lang }),
                 };
             }
         }
@@ -313,12 +365,29 @@ export class PublicCouponService {
             }
         }
 
+        // Tính giảm giá ước tính
+        let estimatedDiscount = 0;
+        if (dto.order_amount !== undefined && dto.order_amount > 0) {
+            const orderAmt = dto.order_amount;
+            if (coupon.discount_type === 'AMOUNT') {
+                estimatedDiscount = Math.min(Number(coupon.discount_value), orderAmt);
+            } else if (coupon.discount_type === 'PERCENT') {
+                const discountAmt = (orderAmt * Number(coupon.discount_value)) / 100;
+                if (!coupon.is_unlimited_discount && coupon.max_discount_amount) {
+                    estimatedDiscount = Math.min(discountAmt, Number(coupon.max_discount_amount));
+                } else {
+                    estimatedDiscount = discountAmt;
+                }
+            }
+        }
+
         return {
             isValid: true,
             discountInfo: {
                 discount_type: coupon.discount_type,
-                discount_value: coupon.discount_value,
-                max_discount_amount: coupon.is_unlimited_discount ? null : coupon.max_discount_amount,
+                discount_value: Number(coupon.discount_value),
+                max_discount_amount: coupon.is_unlimited_discount ? null : (coupon.max_discount_amount ? Number(coupon.max_discount_amount) : null),
+                estimated_discount: estimatedDiscount,
             },
         };
     }

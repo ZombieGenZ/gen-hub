@@ -5,6 +5,8 @@ import {
     IsArray,
     IsUUID,
     IsIn,
+    IsNumber,
+    Min,
 } from 'class-validator';
 import { i18nValidationMessage } from 'nestjs-i18n';
 
@@ -84,4 +86,13 @@ export class CheckApplicableCouponDto {
         message: i18nValidationMessage('coupon.validation.type_enum'),
     })
     type: CouponApplicableType;
+
+    @ApiPropertyOptional({
+        description: 'Tổng giá trị đơn hàng (VND) để tính giảm giá ước tính',
+        example: 1000000,
+    })
+    @IsOptional()
+    @IsNumber({}, { message: 'order_amount phải là số' })
+    @Min(0, { message: 'order_amount không được âm' })
+    order_amount?: number;
 }

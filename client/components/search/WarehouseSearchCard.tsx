@@ -50,6 +50,8 @@ export default function WarehouseSearchCard({ property, onHover, isHighlighted }
                                     src={img}
                                     alt={`Warehouse ${index + 1}`}
                                     className="w-full h-full object-cover"
+                                    loading={index === 0 ? "eager" : "lazy"}
+                                    decoding="async"
                                     onError={(e) => { (e.target as HTMLImageElement).src = PLACEHOLDER_IMAGE; }}
                                 />
                             </CarouselItem>

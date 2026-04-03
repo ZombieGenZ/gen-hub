@@ -114,7 +114,7 @@ export function PrimeNestHeader({ isLogin, user, onLogout }: HeaderProps) {
                         {/* Mobile Menu Button  */}
                         <button
                             onClick={() => setIsMobileMenuOpen(true)}
-                            className="lg:hidden text-muted-foreground p-2 hover:bg-accent hover:text-accent-foreground rounded-full transition-colors" aria-label="Open menu"
+                            className="lg:hidden text-muted-foreground p-2 hover:bg-accent hover:text-accent-foreground rounded-full transition-colors cursor-pointer" aria-label="Open menu"
                         >
                             <svg
                                 className="w-6 h-6"

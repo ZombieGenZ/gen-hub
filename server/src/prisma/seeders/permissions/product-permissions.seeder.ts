@@ -147,6 +147,15 @@ export class ProductPermissionsSeeder extends BaseSeeder {
                 { key: 'inventory.pick', name: 'Xuất kho', description: 'Quyền thực hiện xuất kho' },
                 { key: 'inventory.view', name: 'Xem tồn kho', description: 'Quyền xem thông tin tồn kho' },
                 { key: 'inventory.history', name: 'Xem lịch sử kho', description: 'Quyền xem lịch sử nhập/xuất kho' },
+                // Keys used by OrgPermissionGuard in inventory-request.controller.ts
+                { key: 'org.inventory.outbound.create', name: 'Tạo phiếu xuất kho', description: 'Quyền tạo phiếu xuất kho mới' },
+                { key: 'org.inventory.outbound.list', name: 'Xem danh sách phiếu xuất', description: 'Quyền xem danh sách phiếu xuất kho' },
+                { key: 'org.inventory.outbound.approve', name: 'Duyệt phiếu xuất kho', description: 'Quyền duyệt hoặc từ chối phiếu xuất kho' },
+                { key: 'org.inventory.outbound.export', name: 'Xuất Excel phiếu xuất', description: 'Quyền xuất file Excel danh sách phiếu xuất' },
+                { key: 'org.inventory.inbound.create', name: 'Tạo phiếu nhập kho', description: 'Quyền tạo phiếu nhập kho mới' },
+                { key: 'org.inventory.inbound.list', name: 'Xem danh sách phiếu nhập', description: 'Quyền xem danh sách phiếu nhập kho' },
+                { key: 'org.inventory.inbound.approve', name: 'Duyệt phiếu nhập kho', description: 'Quyền duyệt hoặc từ chối phiếu nhập kho' },
+                { key: 'org.inventory.inbound.export', name: 'Xuất Excel phiếu nhập', description: 'Quyền xuất file Excel danh sách phiếu nhập' },
             ];
 
             for (const perm of inventoryOrgPermissions) {

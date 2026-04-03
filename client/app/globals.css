@@ -303,7 +303,7 @@ html::-webkit-scrollbar-thumb:hover {
 }
 
 @utility btn-raw {
-  @apply inline-flex items-center justify-center select-none transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70 focus-visible:ring-offset-2 focus-visible:ring-offset-background active:translate-y-px active:scale-[0.99] disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-55;
+  @apply inline-flex items-center justify-center select-none cursor-pointer transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70 focus-visible:ring-offset-2 focus-visible:ring-offset-background active:translate-y-px active:scale-[0.99] disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-55;
 }
 
 @utility btn-raw-icon {

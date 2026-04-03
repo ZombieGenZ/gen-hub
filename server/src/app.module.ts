@@ -65,6 +65,7 @@ import { FeatureFlagModule } from './modules/feature-flag/feature-flag.module';
 import { ResourcesModule } from './modules/resources/resources.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { RevenueAnalyticsModule } from './modules/revenue-analytics/revenue-analytics.module';
+import { AdminDashboardModule } from './modules/admin-dashboard/admin-dashboard.module';
 import { BruteForceModule } from './modules/brute-force/brute-force.module';
 import { EmailInboundModule } from './modules/email-inbound/email-inbound.module';
 import { OrganizationBalanceModule } from './modules/organization-balance/organization-balance.module';
@@ -292,6 +293,9 @@ import { CustomerReviewModule } from './modules/customer-review/customer-review.
     // Revenue Analytics (Admin)
     RevenueAnalyticsModule,
     OrgAnalyticsModule,
+
+    // Admin Dashboard Overview
+    AdminDashboardModule,
 
     // Security - Brute Force Protection
     BruteForceModule,

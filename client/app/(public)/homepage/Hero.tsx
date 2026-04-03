@@ -75,7 +75,7 @@ export function PrimeNestHero() {
                         transition={{ duration: ANIMATION_DURATION, delay: 0.3 }}
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
-                        className="w-full sm:w-fit px-8 py-4 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-lg rounded-full shadow-lg transition-colors flex justify-center items-center gap-2"
+                        className="w-full sm:w-fit px-8 py-4 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-lg rounded-full shadow-lg transition-colors flex justify-center items-center gap-2 cursor-pointer"
                     >
                         Nhận Tư Vấn Ngay
                     </motion.button>

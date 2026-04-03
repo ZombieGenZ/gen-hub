@@ -8,14 +8,12 @@ import { useFloorFeedback } from '@/hooks/useFloorFeedback';
 import { FlashOverlay, useFlashOverlay } from '@/components/warehouse-floor/FlashOverlay';
 import PickingScreen from '@/components/warehouse-floor/PickingScreen';
 import { AuthService } from '@/services/auth/auth.service';
-import { InventoryService } from '@/services/inventory/inventory.service';
 import { WarehouseManagerInventoryService } from '@/services/inventory/warehouse-manager-inventory.service';
 import { WarehouseService } from '@/services/warehouse/warehouse.service';
 import type { OutboundRequest, OutboundDetail } from '@/services/inventory/inventory.types';
 import type { WarehouseLayout } from '@/services/warehouse/warehouse.types';
 
 const authService = new AuthService();
-const inventoryService = new InventoryService();
 const wmService = new WarehouseManagerInventoryService();
 const warehouseService = new WarehouseService();
 
@@ -85,7 +83,7 @@ export default function PickingPage() {
             const token = await authService.getValidAccessToken();
             if (!token) throw new Error('Chưa đăng nhập');
 
-            const res = await inventoryService.listOutbound(token, { keywords: barcode, limit: 5 });
+            const res = await wmService.listOutbound(token, { keywords: barcode, limit: 5 });
             const allItems = res?.data?.items ?? [];
             const found = allItems.find((r) => r.status === 'PICKING') ?? null;
 
@@ -102,11 +100,11 @@ export default function PickingPage() {
             }
 
             const [detailRes, layout] = await Promise.all([
-                inventoryService.getOutboundById(token, found.id),
-                warehouseService.getLayout(token, found.warehouse_id),
+                wmService.getOutboundById(token, found.id),
+                warehouseService.getLayout(token, found.warehouse_id).catch(() => null),
             ]);
             const fullExport = detailRes?.data ?? detailRes as unknown as OutboundRequest;
-            const blockMap = buildBlockMap(layout);
+            const blockMap = buildBlockMap(layout ?? { rows: [] } as unknown as WarehouseLayout);
             const detailMap = buildDetailMap(fullExport.details ?? []);
 
             const pickList = fullExport.pick_lists?.[0];

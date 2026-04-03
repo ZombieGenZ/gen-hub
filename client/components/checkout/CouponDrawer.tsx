@@ -85,6 +85,7 @@ export function CouponDrawer({
                         addon_ids: addonIds,
                         rental_duration_tier_id: durationTierId,
                         type: 'NEW_CONTRACT',
+                        order_amount: orderAmount,
                     }),
                 });
 
@@ -172,6 +173,7 @@ export function CouponDrawer({
                     addon_ids: addonIds,
                     rental_duration_tier_id: durationTierId || '',
                     type: 'NEW_CONTRACT',
+                    order_amount: orderAmount,
                 },
                 token
             );
@@ -214,6 +216,7 @@ export function CouponDrawer({
                     addon_ids: addonIds,
                     rental_duration_tier_id: durationTierId || '',
                     type: 'NEW_CONTRACT',
+                    order_amount: orderAmount,
                 },
                 token
             );

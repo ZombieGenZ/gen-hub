@@ -1,30 +1,11 @@
 // ─── Hero KPIs ────────────────────────────────────────────────
 
 export interface HeroKpiData {
-    mrr: {
-        value: number;
-        trend: { value: number; isPositive: boolean };
-        label: string;
-    };
-    organizationAndUsers: {
-        orgs: number;
-        newUsersThisWeek: number;
-        trend: { value: number; isPositive: boolean };
-        label: string;
-    };
-    globalOccupancy: {
-        rate: number;
-        trend: { value: number; isPositive: boolean };
-        label: string;
-        totalSpace: string;
-        usedSpace: string;
-    };
-    debtAlerts: {
-        totalAmount: number;
-        count: number;
-        trend: { value: number; isPositive: boolean };
-        label: string;
-    };
+    totalWarehouses: number;
+    pendingApprovals: number;
+    totalCustomers: number;
+    monthlyRevenue: number;
+    updatedAt: string;
 }
 
 // ─── Actionable Inbox ─────────────────────────────────────────

@@ -37,6 +37,8 @@ export const publicCouponWithTargetsSelect: Prisma.CouponSelect = {
     min_warehouses: true,
     require_min_rows: true,
     min_rows: true,
+    require_min_order_amount: true,
+    min_order_amount: true,
     apply_for_all_warehouses: true,
     apply_for_all_rows: true,
     apply_for_all_addons: true,
@@ -79,6 +81,36 @@ export const publicCouponWithTargetsSelect: Prisma.CouponSelect = {
             id: true,
             insurance_id: true,
             is_active: true,
+        },
+    },
+    gift_addons: {
+        where: { is_active: true },
+        select: {
+            id: true,
+            addon_id: true,
+            is_active: true,
+            addon: {
+                select: {
+                    id: true,
+                    name: true,
+                    description: true,
+                },
+            },
+        },
+    },
+    gift_insurances: {
+        where: { is_active: true },
+        select: {
+            id: true,
+            insurance_id: true,
+            is_active: true,
+            insurance: {
+                select: {
+                    id: true,
+                    name: true,
+                    description: true,
+                },
+            },
         },
     },
 };

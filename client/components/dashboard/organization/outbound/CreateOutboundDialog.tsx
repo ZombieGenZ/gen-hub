@@ -230,6 +230,10 @@ export function CreateOutboundDialog({
             showToast("Một số sản phẩm không đủ tồn kho", "error");
             return;
         }
+        if (formItems.some((i) => !i.unit_id)) {
+            showToast("Vui lòng chọn đơn vị tính cho tất cả sản phẩm", "error");
+            return;
+        }
 
         const token = authStorage.getAccessToken();
         if (!token) return;

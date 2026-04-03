@@ -60,7 +60,7 @@ export default function PropertySearch({ initialLocationSlug }: PropertySearchPr
         try {
             setIsLoading(true);
             const result = await publicWarehouseService.getPublicWarehouses({
-                limit: 100,
+                limit: 24,
             });
             const items = result?.items || result || [];
             const mapped = Array.isArray(items) ? items.map(mapWarehouseToProperty) : [];
@@ -397,6 +397,26 @@ export default function PropertySearch({ initialLocationSlug }: PropertySearchPr
 
                         {/* Property Grid */}
                         <div className="search-page__list-content">
+                            {isLoading ? (
+                                <div className={cn(
+                                    "grid gap-6",
+                                    !hasSearched
+                                        ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+                                        : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3"
+                                )}>
+                                    {Array.from({ length: 6 }).map((_, i) => (
+                                        <div key={i} className="flex flex-col gap-3 p-2 rounded-xl">
+                                            <div className="aspect-[4/3] rounded-xl bg-muted animate-pulse" />
+                                            <div className="flex flex-col gap-2 px-0.5">
+                                                <div className="h-4 w-3/4 rounded bg-muted animate-pulse" />
+                                                <div className="h-3 w-1/2 rounded bg-muted animate-pulse" />
+                                                <div className="h-3 w-2/5 rounded bg-muted animate-pulse" />
+                                            </div>
+                                            <div className="h-5 w-1/3 rounded bg-muted animate-pulse" />
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
                             <PropertyList
                                 properties={displayedProperties}
                                 onHover={(id) => setHighlightedPropertyId(id ? Number(id) : null)}
@@ -405,6 +425,7 @@ export default function PropertySearch({ initialLocationSlug }: PropertySearchPr
                                 // Adjust columns if map is hidden
                                 className={!hasSearched ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" : ""}
                             />
+                            )}
                         </div>
 
                         {/* Pagination */}

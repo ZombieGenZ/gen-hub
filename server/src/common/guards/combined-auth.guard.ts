@@ -3,8 +3,7 @@ import {
     CanActivate,
     ExecutionContext,
     UnauthorizedException,
-    Inject,
-    forwardRef,
+    ForbiddenException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
@@ -12,10 +11,13 @@ import { ConfigService } from '@nestjs/config';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 import { ApiKeyVerificationService } from '../../modules/api-key-verification/api-key-verification.service';
 import { IApiKeyInfo } from '../decorators/current-actor.decorator';
+import { PrismaService } from '../../prisma/prisma.service';
+import { ResponseCode } from '../responses';
 
 /**
  * Guard hỗ trợ cả JWT và API key authentication
  * Ưu tiên JWT nếu có, nếu không thì fallback sang API key
+ * Sau khi xác thực JWT thành công, kiểm tra tài khoản tồn tại và đã xác minh
  * Ít nhất một trong hai phải hợp lệ
  */
 @Injectable()
@@ -25,6 +27,7 @@ export class CombinedAuthGuard implements CanActivate {
         private readonly jwtService: JwtService,
         private readonly configService: ConfigService,
         private readonly apiKeyVerificationService: ApiKeyVerificationService,
+        private readonly prisma: PrismaService,
     ) { }
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -42,15 +45,45 @@ export class CombinedAuthGuard implements CanActivate {
 
         // Thử JWT authentication trước
         const jwtToken = this.extractJwtToken(request);
+        let jwtWasInvalid = false;
+
         if (jwtToken) {
             try {
                 const payload = await this.jwtService.verifyAsync(jwtToken, {
                     secret: this.configService.get<string>('JWT_ACCESS_SECRET'),
                 });
+
+                // Kiểm tra tài khoản tồn tại trong database
+                const user = await this.prisma.user.findUnique({
+                    where: { id: payload.userId },
+                    select: { id: true, is_verified: true, is_deleted: true, is_banned: true, banned_end: true },
+                });
+
+                if (!user || user.is_deleted) {
+                    throw new ForbiddenException({
+                        code: ResponseCode.ERROR_FORBIDDEN_ACCOUNT_NOT_FOUND,
+                        message: 'Tài khoản không tồn tại',
+                        success: false,
+                    });
+                }
+
+                if (!user.is_verified) {
+                    throw new ForbiddenException({
+                        code: ResponseCode.ERROR_FORBIDDEN_ACCOUNT_NOT_VERIFIED,
+                        message: 'Tài khoản chưa được xác minh. Vui lòng xác minh email để tiếp tục.',
+                        success: false,
+                    });
+                }
+
                 request.user = payload;
                 return true;
-            } catch {
-                // JWT không hợp lệ, thử API key
+            } catch (error) {
+                // Re-throw nếu là lỗi tài khoản (ForbiddenException đã có code)
+                if (error instanceof ForbiddenException) {
+                    throw error;
+                }
+                // JWT không hợp lệ (chữ ký sai, hết hạn, v.v.), thử API key
+                jwtWasInvalid = true;
             }
         }
 
@@ -101,7 +134,19 @@ export class CombinedAuthGuard implements CanActivate {
         }
 
         // Không có xác thực nào hợp lệ
-        throw new UnauthorizedException('Yêu cầu xác thực bằng JWT hoặc API key');
+        if (jwtWasInvalid) {
+            throw new UnauthorizedException({
+                code: ResponseCode.ERROR_UNAUTHORIZED_TOKEN_INVALID,
+                message: 'Token không hợp lệ',
+                success: false,
+            });
+        }
+
+        throw new UnauthorizedException({
+            code: ResponseCode.ERROR_UNAUTHORIZED,
+            message: 'Không có quyền truy cập',
+            success: false,
+        });
     }
 
     /**
