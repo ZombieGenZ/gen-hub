@@ -250,30 +250,15 @@ export default function InboundApprovalDetail({
         } finally { setSubmitting(false); }
     };
 
-    const handleConfirmPutaway = async (force = false) => {
+    const handleConfirmPutaway = async () => {
         const token = getToken(); if (!token) return;
         setSubmitting(true);
         try {
-            await wmInventoryService.confirmPutaway(token, ticketId, { force });
+            await wmInventoryService.confirmPutaway(token, ticketId);
             showToast("Đã xác nhận cất hàng — phiếu PO Hoàn tất!", "success");
             fetchData();
         } catch (err: any) {
-            // Kiểm tra nếu lỗi do lệch số lượng → hỏi xác nhận
-            if (err.response?.require_force) {
-                const mismatches = err.response.mismatches || [];
-                const mismatchInfo = mismatches.map((m: any) =>
-                    `${m.product_name}: dự kiến ${m.expected_qty}, thực tế ${m.actual_qty}`
-                ).join('\n');
-                const confirmed = window.confirm(
-                    `Số lượng kiểm đếm lệch:\n${mismatchInfo}\n\nBạn có muốn tiếp tục hoàn thành phiếu PO không?`
-                );
-                if (confirmed) {
-                    setSubmitting(false);
-                    return handleConfirmPutaway(true);
-                }
-            } else {
-                showToast(err.message || "Không thể xác nhận cất hàng", "error");
-            }
+            showToast(err.message || "Không thể xác nhận cất hàng", "error");
             if (err.status === 403) {
                 authStorage.clearTokens();
                 window.location.href = '/auth/login';
