@@ -8,12 +8,10 @@ import { useFloorFeedback } from '@/hooks/useFloorFeedback';
 import { FlashOverlay, useFlashOverlay } from '@/components/warehouse-floor/FlashOverlay';
 import PutawayScreen from '@/components/warehouse-floor/PutawayScreen';
 import { AuthService } from '@/services/auth/auth.service';
-import { InventoryService } from '@/services/inventory/inventory.service';
 import { WarehouseManagerInventoryService } from '@/services/inventory/warehouse-manager-inventory.service';
 import type { InboundRequest, InboundDetail } from '@/services/inventory/inventory.types';
 
 const authService = new AuthService();
-const inventoryService = new InventoryService();
 const wmService = new WarehouseManagerInventoryService();
 
 type PageState = 'waiting' | 'loading' | 'putaway' | 'submitting' | 'error';
@@ -53,7 +51,7 @@ export default function PutawayPage() {
             const token = await authService.getValidAccessToken();
             if (!token) throw new Error('Chưa đăng nhập');
 
-            const res = await inventoryService.listInbound(token, { keywords: barcode, limit: 5 });
+            const res = await wmService.listInbound(token, { keywords: barcode, limit: 5 });
             const allItems = res?.data?.items ?? [];
             const found = allItems.find((r) => r.status === 'PROCESSING') ?? null;
 
@@ -69,7 +67,7 @@ export default function PutawayPage() {
                 return;
             }
 
-            const detail = await inventoryService.getInboundById(token, found.id);
+            const detail = await wmService.getInboundById(token, found.id);
             const fullReceipt = detail?.data ?? detail as unknown as InboundRequest;
 
             setReceipt(fullReceipt);
