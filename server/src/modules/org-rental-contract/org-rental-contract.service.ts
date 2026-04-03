@@ -345,6 +345,35 @@ export class OrgRentalContractService {
                 }
             }
 
+            // Áp dụng addon nếu có
+            let totalAddonPrice = 0;
+            if (dto.addon_ids && dto.addon_ids.length > 0) {
+                const addons = await this.prisma.addon.findMany({
+                    where: { id: { in: dto.addon_ids }, is_deleted: false, is_active: true },
+                });
+
+                for (const addon of addons) {
+                    await this.repository.addAddon({
+                        rental_contract_id: contract.id,
+                        addon_id: addon.id,
+                        price_at_purchase: Number(addon.price),
+                        is_gift: false,
+                        created_by: userId,
+                    });
+                    totalAddonPrice += Number(addon.price);
+                }
+
+                if (totalAddonPrice > 0) {
+                    const currentFinal = parseFloat(contract.final_price.toString());
+                    const newFinalPrice = currentFinal + totalAddonPrice;
+                    await this.prisma.rentalContract.update({
+                        where: { id: contract.id },
+                        data: { final_price: new Decimal(newFinalPrice) },
+                    });
+                    (contract as any).final_price = new Decimal(newFinalPrice);
+                }
+            }
+
             this.systemLogService.info(
                 'rental-contract',
                 'create_org',
