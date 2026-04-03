@@ -476,7 +476,10 @@ enum PaymentMethod {
 enum ContractCancelType {
   CLIENT_REQUEST
   PROVIDER_REQUEST
+  ADMIN_REQUEST
   VIOLATION
+  NON_PAYMENT
+  SYSTEM
 }
 
 enum RefundStatus {
