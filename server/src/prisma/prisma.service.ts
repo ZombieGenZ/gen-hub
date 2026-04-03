@@ -250,6 +250,16 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
           );
           needsSchemaSync = true;
         }
+
+        if (!needsSchemaSync) {
+          const missingColumns = await this.getMissingColumnsFromPrismaSchema();
+          if (missingColumns.length > 0) {
+            this.logger.warn(
+              `Missing ${missingColumns.length} column(s) in current database, syncing schema: ${missingColumns.join(', ')}`,
+            );
+            needsSchemaSync = true;
+          }
+        }
       } catch {
         this.logger.warn('⚠️ Tables not found, syncing schema...');
         needsSchemaSync = true;
@@ -316,6 +326,31 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
 
   private toCamelCaseModelName(modelName: string): string {
     return modelName.charAt(0).toLowerCase() + modelName.slice(1);
+  }
+
+  private async getMissingColumnsFromPrismaSchema(): Promise<string[]> {
+    const rows = await this.$queryRaw<Array<{ table_name: string; column_name: string }>>`
+      SELECT table_name, column_name
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+    `;
+
+    const existingColumns = new Set(rows.map((row) => `${row.table_name}.${row.column_name}`));
+    const missing: string[] = [];
+
+    for (const model of Prisma.dmmf.datamodel.models) {
+      const tableName = (model as { dbName?: string }).dbName || this.toCamelCaseModelName(model.name);
+      for (const field of model.fields) {
+        if (field.relationName || field.isGenerated) continue;
+        const columnName = (field as { dbName?: string }).dbName || field.name;
+        const key = `${tableName}.${columnName}`;
+        if (!existingColumns.has(key)) {
+          missing.push(key);
+        }
+      }
+    }
+
+    return missing;
   }
 
   private async seedDefaultRoles() {
