@@ -42,11 +42,13 @@ import { ContractInfoSidebar } from "@/components/contract/ContractInfoSidebar";
 import { PaymentHistory } from "@/components/contract/PaymentHistory";
 import { StatusTimeline, type TimelineEvent } from "@/components/contract/StatusTimeline";
 import type { RentalContractDetail, ContractCancelType } from "@/types/rental-contracts/rental-contracts.type";
+import { useToast } from "@/contexts/ToastContext";
 
 export default function AdminContractDetailPage() {
     const params = useParams();
     const router = useRouter();
     const contractId = params.id as string;
+    const { showToast } = useToast();
 
     const [contract, setContract] = useState<RentalContractDetail | null>(null);
     const [loading, setLoading] = useState(true);
@@ -80,16 +82,18 @@ export default function AdminContractDetailPage() {
         try {
             setCancelling(true);
             const token = authStorage.getAccessToken();
-            if (!token) return;
+            if (!token) { router.push("/login"); return; }
             await rentalContractService.cancelRentalContract(token, contractId, {
                 cancel_type: cancelType,
                 cancel_reason: cancelReason,
             });
             setCancelOpen(false);
             setCancelReason("");
+            showToast("Đã hủy hợp đồng thành công", "success");
             fetchContract();
         } catch (err) {
             console.error("Cancel error", err);
+            showToast(err instanceof Error ? err.message : "Không thể hủy hợp đồng", "error");
         } finally {
             setCancelling(false);
         }
@@ -134,7 +138,7 @@ export default function AdminContractDetailPage() {
 
     return (
         <div className="flex flex-col flex-1 h-full bg-muted/40">
-            <main className="flex-1 p-4 md:p-8 w-full space-y-6 max-w-[1440px] mx-auto">
+            <main className="flex-1 p-4 md:p-8 w-full space-y-6 max-w-[1440px] mx-auto p-4">
                 {/* Top nav */}
                 <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
