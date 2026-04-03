@@ -23,6 +23,7 @@ import { ContractInfoSidebar } from "@/components/contract/ContractInfoSidebar";
 import { PaymentHistory } from "@/components/contract/PaymentHistory";
 import { StatusTimeline, type TimelineEvent } from "@/components/contract/StatusTimeline";
 import { RequestRefundModal } from "@/components/contract/RequestRefundModal";
+import { ManageAddonsModal } from "@/components/contract/ManageAddonsModal";
 import type { RentalContractDetail } from "@/types/rental-contracts/rental-contracts.type";
 import { useOrganizationRealtime } from "@/hooks/useOrganizationRealtime";
 import { useToast } from "@/contexts/ToastContext";
@@ -45,6 +46,7 @@ export default function CustomerContractDetailPage() {
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState("contract");
     const [showRefundModal, setShowRefundModal] = useState(false);
+    const [showAddonsModal, setShowAddonsModal] = useState(false);
     const [orgId, setOrgId] = useState<string | null>(null);
     const [retryingPaymentId, setRetryingPaymentId] = useState<string | null>(null);
 
@@ -100,8 +102,9 @@ export default function CustomerContractDetailPage() {
             setRetryingPaymentId(paymentId ?? contractId);
             const updated = await rentalContractService.retryPayment(token, currentOrgId, contractId);
 
-            if (updated?.payment_url) {
-                window.open(updated.payment_url, "_blank", "noopener,noreferrer");
+            const paymentUrl = updated?.payment?.payment_url || updated?.payment_url;
+            if (paymentUrl) {
+                window.open(paymentUrl, "_blank", "noopener,noreferrer");
             }
 
             await refreshContract();
@@ -113,6 +116,14 @@ export default function CustomerContractDetailPage() {
         } finally {
             setRetryingPaymentId(null);
         }
+    };
+
+    const handleSaveAddons = async (addonIds: string[]) => {
+        const token = authStorage.getAccessToken();
+        if (!token) throw new Error("Chưa đăng nhập");
+        await rentalContractService.updateRentalContract(token, contractId, { addon_ids: addonIds });
+        await refreshContract();
+        showToast("Cập nhật tiện ích thành công", "success");
     };
 
     useOrganizationRealtime({
@@ -227,6 +238,11 @@ export default function CustomerContractDetailPage() {
                 {/* Sidebar */}
                 <aside className="w-full lg:w-[320px] shrink-0">
                     <ContractInfoSidebar
+                        onManageAddons={
+                            contract.status === "ACTIVE" || contract.status === "PENDING"
+                                ? () => setShowAddonsModal(true)
+                                : undefined
+                        }
                         data={{
                             status: contract.status,
                             code: contract.code,
@@ -365,6 +381,13 @@ export default function CustomerContractDetailPage() {
                     refreshContract();
                     router.push("/dashboard/organization/refund-requests");
                 }}
+            />
+
+            <ManageAddonsModal
+                open={showAddonsModal}
+                onOpenChange={setShowAddonsModal}
+                currentAddonIds={contract.addons?.map((a) => a.id) ?? []}
+                onSave={handleSaveAddons}
             />
         </div>
     );
