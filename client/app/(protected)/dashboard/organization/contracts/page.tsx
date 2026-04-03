@@ -41,6 +41,7 @@ interface Contract {
     total_price: number;
     final_price: number;
     warehouses?: { id: string; name: string }[];
+    details?: { id: string; warehouse_template?: { id: string; name: string } | null }[];
     organization?: {
         id: string;
         name: string;
@@ -264,7 +265,13 @@ export default function ContractManagementPage() {
                                         </div>
                                     </TableCell>
                                     <TableCell className="text-sm">
-                                        {contract.warehouses?.map((w) => w.name).join(", ") || "—"}
+                                        {(() => {
+                                            const names = (
+                                                contract.warehouses?.map((w) => w.name) ??
+                                                contract.details?.map((d) => d.warehouse_template?.name).filter(Boolean)
+                                            );
+                                            return names && names.length > 0 ? names.join(", ") : "—";
+                                        })()}
                                     </TableCell>
                                     <TableCell>
                                         <div className="flex flex-col text-xs">
