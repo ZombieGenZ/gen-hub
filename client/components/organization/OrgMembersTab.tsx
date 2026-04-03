@@ -66,7 +66,7 @@ export function OrgMembersTab({
             const q = search.toLowerCase();
             filtered = filtered.filter(
                 (m) =>
-                    m.user.full_name.toLowerCase().includes(q) ||
+                    m.user.name.toLowerCase().includes(q) ||
                     m.user.email.toLowerCase().includes(q) ||
                     m.user.phone?.includes(q) ||
                     m.display_name?.toLowerCase().includes(q)
@@ -94,7 +94,7 @@ export function OrgMembersTab({
                     new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
                 return sortDir === "asc" ? diff : -diff;
             }
-            const diff = a.user.full_name.localeCompare(b.user.full_name);
+            const diff = a.user.name.localeCompare(b.user.name);
             return sortDir === "asc" ? diff : -diff;
         });
 
@@ -294,12 +294,12 @@ export function OrgMembersTab({
                                             <div className="flex items-center gap-3">
                                                 <Avatar className="h-9 w-9">
                                                     <AvatarFallback className="text-xs bg-primary/10 text-primary font-semibold">
-                                                        {getInitials(member.user.full_name)}
+                                                        {getInitials(member.user.name)}
                                                     </AvatarFallback>
                                                 </Avatar>
                                                 <div className="min-w-0">
                                                     <p className="text-sm font-medium text-foreground truncate">
-                                                        {member.display_name || member.user.full_name}
+                                                        {member.display_name || member.user.name}
                                                     </p>
                                                     <p className="text-xs text-muted-foreground truncate">
                                                         {member.user.email}

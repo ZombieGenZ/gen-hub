@@ -13,7 +13,7 @@ export interface OrganizationMember {
     user: {
         id: string;
         email: string;
-        full_name: string;
+        name: string;
         phone?: string;
         avatar_url?: string;
     };
