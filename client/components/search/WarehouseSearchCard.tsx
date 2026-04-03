@@ -112,9 +112,7 @@ export default function WarehouseSearchCard({ property, onHover, isHighlighted }
 
             <div className="mt-0 flex items-baseline gap-1">
                 <span className="font-semibold text-foreground text-[16px]">
-                    {property.price >= 1000000000
-                        ? `${(property.price / 1000000000).toFixed(1)} Tỷ`
-                        : `${(property.price / 1000000).toFixed(0)} Tr`}
+                    {new Intl.NumberFormat('vi-VN').format(property.price)} đ
                 </span>
                 <span className="text-foreground text-[16px]">/tháng</span>
             </div>
