@@ -11,6 +11,8 @@ export interface OrganizationRole {
    name: string;
    description: string | null;
    organization_id: string;
+   is_active: boolean;
+   is_default?: boolean;
    is_system: boolean;
    is_deleted: boolean;
    created_at: string;
@@ -55,5 +57,6 @@ export interface CreateOrganizationRoleDto {
 export interface UpdateOrganizationRoleDto {
    name?: string;
    description?: string;
+   is_active?: boolean;
    permission_ids?: string[];
 }

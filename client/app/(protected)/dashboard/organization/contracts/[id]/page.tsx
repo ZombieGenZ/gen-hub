@@ -46,6 +46,7 @@ export default function CustomerContractDetailPage() {
     const [activeTab, setActiveTab] = useState("contract");
     const [showRefundModal, setShowRefundModal] = useState(false);
     const [orgId, setOrgId] = useState<string | null>(null);
+    const [retryingPaymentId, setRetryingPaymentId] = useState<string | null>(null);
 
     const refreshContract = async () => {
         try {
@@ -55,7 +56,7 @@ export default function CustomerContractDetailPage() {
             if (!orgId) {
                 setOrgId(currentOrgId);
             }
-            const res = await rentalContractService.getOrgRentalContractById(token, currentOrgId, contractId);
+            const res = await rentalContractService.getOrgRentalContractFull(token, currentOrgId, contractId);
             setContract(res?.data ?? res);
         } catch (err) {
             console.error("Failed to refresh contract", err);
@@ -71,7 +72,7 @@ export default function CustomerContractDetailPage() {
 
                 const currentOrgId = await orgHelper.getOrgId(token);
                 setOrgId(currentOrgId);
-                const res = await rentalContractService.getOrgRentalContractById(token, currentOrgId, contractId);
+                const res = await rentalContractService.getOrgRentalContractFull(token, currentOrgId, contractId);
                 const data: RentalContractDetail = res?.data ?? res;
                 setContract(data);
             } catch (err) {
@@ -82,6 +83,37 @@ export default function CustomerContractDetailPage() {
         };
         fetchContract();
     }, [contractId, router]);
+
+    const handleRetryPayment = async (paymentId?: string) => {
+        try {
+            const token = authStorage.getAccessToken();
+            if (!token) {
+                router.push("/login");
+                return;
+            }
+
+            const currentOrgId = orgId || await orgHelper.getOrgId(token);
+            if (!orgId) {
+                setOrgId(currentOrgId);
+            }
+
+            setRetryingPaymentId(paymentId ?? contractId);
+            const updated = await rentalContractService.retryPayment(token, currentOrgId, contractId);
+
+            if (updated?.payment_url) {
+                window.open(updated.payment_url, "_blank", "noopener,noreferrer");
+            }
+
+            await refreshContract();
+            setActiveTab("payment");
+            showToast("Đã tạo lại liên kết thanh toán", "success");
+        } catch (err) {
+            console.error("Failed to retry payment", err);
+            showToast(err instanceof Error ? err.message : "Không thể tiếp tục thanh toán", "error");
+        } finally {
+            setRetryingPaymentId(null);
+        }
+    };
 
     useOrganizationRealtime({
         orgId,
@@ -155,6 +187,16 @@ export default function CustomerContractDetailPage() {
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
+                    {contract.status === "PENDING" && (
+                        <Button
+                            size="sm"
+                            onClick={() => handleRetryPayment()}
+                            disabled={retryingPaymentId !== null}
+                        >
+                            <CreditCard className="w-4 h-4 mr-1.5" />
+                            Tiếp tục thanh toán
+                        </Button>
+                    )}
                     {(contract.status === "ACTIVE" || contract.status.startsWith("OVERDUE")) && (
                         <Button
                             variant="destructive"
@@ -280,7 +322,12 @@ export default function CustomerContractDetailPage() {
                         {/* Payment tab */}
                         <TabsContent value="payment" className="mt-4">
                             <div className="bg-card rounded-xl border p-6">
-                                <PaymentHistory payments={contract.payments ?? []} showQrCode />
+                                <PaymentHistory
+                                    payments={contract.payments ?? []}
+                                    showQrCode
+                                    onRetryPayment={(payment) => handleRetryPayment(payment.id)}
+                                    retryingPaymentId={retryingPaymentId}
+                                />
                             </div>
                         </TabsContent>
 

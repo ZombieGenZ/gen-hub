@@ -1,18 +1,17 @@
 "use client";
 
-import React, { useEffect, useState, useCallback, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { authStorage } from "@/services/auth/auth-storage.service";
-import { warehouseManagerService } from "@/services/warehouse-manager/warehouse-manager.service";
+import { OrganizationRoleService } from "@/services/organization/organization_role.service";
+import { orgHelper } from "@/lib/organization.utils";
 import { useToast } from "@/contexts/ToastContext";
 import type {
-    WarehouseManagerRole,
-    WarehouseManagerPermission,
-    CreateWarehouseManagerRolePayload,
-} from "@/types/warehouse-manager/warehouse-manager.type";
-
-// ── shadcn/ui ──
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+    CreateOrganizationRoleDto,
+    OrganizationPermission,
+    OrganizationRole,
+    UpdateOrganizationRoleDto,
+} from "@/types/organization/organization_role.type";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -34,80 +33,50 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import {
-    ScrollArea,
-} from "@/components/ui/scroll-area";
-import {
-    Checkbox,
-} from "@/components/ui/checkbox";
-
-// ── Icons ──
-import {
-    PlusIcon,
-    PencilSquareIcon,
-    TrashIcon,
-    ShieldCheckIcon,
-    // CheckCircleIcon,
-    // XCircleIcon,
-    // InformationCircleIcon,
-} from "@heroicons/react/24/outline";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Checkbox } from "@/components/ui/checkbox";
+import { PlusIcon, PencilSquareIcon, ShieldCheckIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { Loader2 } from "lucide-react";
 
-// ════════════════════════════════════════════════
-// MAIN PAGE: Role Management
-// ════════════════════════════════════════════════
+const organizationRoleService = new OrganizationRoleService();
+
 export default function RoleManagementPage() {
     const { showToast } = useToast();
-
-    // ── Data state ──
-    const [roles, setRoles] = useState<WarehouseManagerRole[]>([]);
-    const [permissions, setPermissions] = useState<WarehouseManagerPermission[]>([]);
+    const [orgId, setOrgId] = useState<string | null>(null);
+    const [roles, setRoles] = useState<OrganizationRole[]>([]);
+    const [permissions, setPermissions] = useState<OrganizationPermission[]>([]);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
-
-    // ── Dialog state ──
     const [dialogOpen, setDialogOpen] = useState(false);
     const [dialogMode, setDialogMode] = useState<"create" | "edit">("create");
-    const [selectedRole, setSelectedRole] = useState<WarehouseManagerRole | null>(null);
-
-    // ── Form state ──
-    const [formData, setFormData] = useState<{
-        name: string;
-        description: string;
-        permission_ids: string[];
-    }>({
+    const [selectedRole, setSelectedRole] = useState<OrganizationRole | null>(null);
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [roleToDelete, setRoleToDelete] = useState<OrganizationRole | null>(null);
+    const [formData, setFormData] = useState<CreateOrganizationRoleDto & { is_active: boolean }>({
         name: "",
         description: "",
+        is_active: true,
         permission_ids: [],
     });
 
-    // ── Delete dialog state ──
-    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-    const [roleToDelete, setRoleToDelete] = useState<WarehouseManagerRole | null>(null);
-
-    // ── Fetch data ──
     const fetchData = useCallback(async () => {
         setLoading(true);
         try {
             const token = authStorage.getAccessToken();
             if (!token) return;
 
-            const [rolesRes, permsRes] = await Promise.all([
-                warehouseManagerService.listRoles(token),
-                warehouseManagerService.listPermissions(token)
+            const currentOrgId = await orgHelper.getOrgId(token);
+            setOrgId(currentOrgId);
+
+            const [roleList, permissionList] = await Promise.all([
+                organizationRoleService.getRoles(token, currentOrgId, { limit: 100 }),
+                organizationRoleService.getPermissions(token, currentOrgId),
             ]);
 
-            // rolesRes is now { items, total, ... }
-            if (rolesRes && rolesRes.items) {
-                setRoles(rolesRes.items);
-            }
-            
-            // permsRes is now WarehouseManagerPermission[]
-            if (Array.isArray(permsRes)) {
-                setPermissions(permsRes);
-            }
-        } catch (error: unknown) {
-            const message = error instanceof Error ? error.message : "Không thể tải dữ liệu";
+            setRoles(roleList.items || []);
+            setPermissions(permissionList || []);
+        } catch (error) {
+            const message = error instanceof Error ? error.message : "KhÃ´ng thá»ƒ táº£i dá»¯ liá»‡u vai trÃ²";
             showToast(message, "error");
         } finally {
             setLoading(false);
@@ -115,34 +84,52 @@ export default function RoleManagementPage() {
     }, [showToast]);
 
     useEffect(() => {
-        fetchData();
+        void fetchData();
     }, [fetchData]);
 
-    // ── Handlers ──
+    const groupedPermissions = useMemo(() => {
+        return permissions.reduce<Record<string, OrganizationPermission[]>>((acc, permission) => {
+            const key = permission.module || "Khác";
+            if (!acc[key]) acc[key] = [];
+            acc[key].push(permission);
+            return acc;
+        }, {});
+    }, [permissions]);
+
+    const resetForm = () => {
+        setSelectedRole(null);
+        setFormData({
+            name: "",
+            description: "",
+            is_active: true,
+            permission_ids: [],
+        });
+    };
+
     const handleOpenCreate = () => {
         setDialogMode("create");
-        setSelectedRole(null);
-        setFormData({ name: "", description: "", permission_ids: [] });
+        resetForm();
         setDialogOpen(true);
     };
 
-    const handleOpenEdit = (role: WarehouseManagerRole) => {
+    const handleOpenEdit = (role: OrganizationRole) => {
         setDialogMode("edit");
         setSelectedRole(role);
         setFormData({
             name: role.name,
             description: role.description || "",
-            permission_ids: role.permissions.map(p => p.permission_id),
+            is_active: role.is_active,
+            permission_ids: role.permissions.map((permission) => permission.id),
         });
         setDialogOpen(true);
     };
 
-    const handleTogglePermission = (permId: string) => {
-        setFormData(prev => ({
+    const handleTogglePermission = (permissionId: string) => {
+        setFormData((prev) => ({
             ...prev,
-            permission_ids: prev.permission_ids.includes(permId)
-                ? prev.permission_ids.filter(id => id !== permId)
-                : [...prev.permission_ids, permId]
+            permission_ids: prev.permission_ids.includes(permissionId)
+                ? prev.permission_ids.filter((id) => id !== permissionId)
+                : [...prev.permission_ids, permissionId],
         }));
     };
 
@@ -152,22 +139,29 @@ export default function RoleManagementPage() {
             return;
         }
 
+        const token = authStorage.getAccessToken();
+        if (!token || !orgId) return;
+
         setSubmitting(true);
         try {
-            const token = authStorage.getAccessToken();
-            if (!token) return;
-
             if (dialogMode === "create") {
-                await warehouseManagerService.createRole(token, formData);
+                await organizationRoleService.createRole(token, orgId, formData);
                 showToast("Tạo vai trò thành công", "success");
             } else if (selectedRole) {
-                await warehouseManagerService.updateRole(token, selectedRole.id, formData);
+                const payload: UpdateOrganizationRoleDto = {
+                    name: formData.name,
+                    description: formData.description,
+                    is_active: formData.is_active,
+                    permission_ids: formData.permission_ids,
+                };
+                await organizationRoleService.updateRole(token, orgId, selectedRole.id, payload);
                 showToast("Cập nhật vai trò thành công", "success");
             }
 
             setDialogOpen(false);
-            fetchData();
-        } catch (error: unknown) {
+            resetForm();
+            await fetchData();
+        } catch (error) {
             const message = error instanceof Error ? error.message : "Thao tác thất bại";
             showToast(message, "error");
         } finally {
@@ -175,18 +169,34 @@ export default function RoleManagementPage() {
         }
     };
 
+    const handleToggleActive = async (role: OrganizationRole, checked: boolean) => {
+        const token = authStorage.getAccessToken();
+        if (!token || !orgId) return;
+
+        try {
+            await organizationRoleService.updateRole(token, orgId, role.id, { is_active: checked });
+            showToast(checked ? "Đã mở khóa vai trò" : "Đã khóa vai trò", "success");
+            await fetchData();
+        } catch (error) {
+            const message = error instanceof Error ? error.message : "Không thể cập nhật trạng thái vai trò";
+            showToast(message, "error");
+        }
+    };
+
     const handleDelete = async () => {
-        if (!roleToDelete) return;
+        if (!roleToDelete || !orgId) return;
+
+        const token = authStorage.getAccessToken();
+        if (!token) return;
+
         setSubmitting(true);
         try {
-            const token = authStorage.getAccessToken();
-            if (!token) return;
-
-            await warehouseManagerService.deleteRole(token, roleToDelete.id);
+            await organizationRoleService.deleteRole(token, orgId, roleToDelete.id);
             showToast("Xóa vai trò thành công", "success");
             setDeleteDialogOpen(false);
-            fetchData();
-        } catch (error: unknown) {
+            setRoleToDelete(null);
+            await fetchData();
+        } catch (error) {
             const message = error instanceof Error ? error.message : "Không thể xóa vai trò";
             showToast(message, "error");
         } finally {
@@ -194,23 +204,13 @@ export default function RoleManagementPage() {
         }
     };
 
-    // Group permissions by category
-    const groupedPermissions = useMemo(() => {
-        const groups: Record<string, WarehouseManagerPermission[]> = {};
-        permissions.forEach(p => {
-            if (!groups[p.category]) groups[p.category] = [];
-            groups[p.category].push(p);
-        });
-        return groups;
-    }, [permissions]);
-
     return (
         <div className="p-6 space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight">Quản lý vai trò (Roles)</h1>
+                    <h1 className="text-2xl font-bold tracking-tight">Quản lý vai trò</h1>
                     <p className="text-muted-foreground">
-                        Quản lý các vai trò và quyền hạn cho nhân viên quản lý kho.
+                        Quản lý vai trò, quyền hạn và trạng thái khóa/mở khóa cho nhân sự trong tổ chức.
                     </p>
                 </div>
                 <Button onClick={handleOpenCreate} className="gap-2">
@@ -222,9 +222,7 @@ export default function RoleManagementPage() {
             <Card>
                 <CardHeader>
                     <CardTitle>Danh sách vai trò</CardTitle>
-                    <CardDescription>
-                        Các vai trò đã định nghĩa trong tổ chức của bạn.
-                    </CardDescription>
+                    <CardDescription>Các vai trò đang được sử dụng trong tổ chức của bạn.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     {loading ? (
@@ -237,8 +235,8 @@ export default function RoleManagementPage() {
                                 <TableRow>
                                     <TableHead>Tên vai trò</TableHead>
                                     <TableHead>Mô tả</TableHead>
-                                    <TableHead>Số lượng quyền</TableHead>
-                                    <TableHead>Mặc định</TableHead>
+                                    <TableHead>Số quyền</TableHead>
+                                    <TableHead>Trạng thái</TableHead>
                                     <TableHead className="text-right">Thao tác</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -256,48 +254,48 @@ export default function RoleManagementPage() {
                                                 <div className="flex items-center gap-2">
                                                     {role.name}
                                                     {role.is_default && (
-                                                        <Badge variant="secondary" className="text-[10px]">Mặc định</Badge>
+                                                        <Badge variant="secondary" className="text-[10px]">
+                                                            Mặc định
+                                                        </Badge>
                                                     )}
                                                 </div>
                                             </TableCell>
-                                            <TableCell className="max-w-75 truncate text-muted-foreground">
+                                            <TableCell className="max-w-80 truncate text-muted-foreground">
                                                 {role.description || "---"}
                                             </TableCell>
                                             <TableCell>
-                                                <Badge variant="outline">
-                                                    {role.permissions?.length || 0} quyền
-                                                </Badge>
+                                                <Badge variant="outline">{role.permissions?.length || 0} quyền</Badge>
                                             </TableCell>
                                             <TableCell>
-                                                {role.is_active ? (
-                                                    <Badge className="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-200">
-                                                        Đang hoạt động
-                                                    </Badge>
-                                                ) : (
-                                                    <Badge variant="destructive">Ngưng</Badge>
-                                                )}
+                                                <div className="flex items-center justify-between gap-3">
+                                                    {role.is_active ? (
+                                                        <Badge className="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-200">
+                                                            Đang hoạt động
+                                                        </Badge>
+                                                    ) : (
+                                                        <Badge variant="destructive">Đã khóa</Badge>
+                                                    )}
+                                                    <Switch
+                                                        checked={role.is_active}
+                                                        disabled={role.is_default}
+                                                        onCheckedChange={(checked) => void handleToggleActive(role, checked)}
+                                                    />
+                                                </div>
                                             </TableCell>
                                             <TableCell className="text-right">
                                                 <div className="flex justify-end gap-2">
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        onClick={() => handleOpenEdit(role)}
-                                                        disabled={role.is_default}
-                                                        title={role.is_default ? "Không thể sửa vai trò hệ thống" : "Sửa"}
-                                                    >
+                                                    <Button variant="ghost" size="icon" onClick={() => handleOpenEdit(role)}>
                                                         <PencilSquareIcon className="w-4 h-4" />
                                                     </Button>
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
                                                         className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                                        disabled={role.is_default}
                                                         onClick={() => {
                                                             setRoleToDelete(role);
                                                             setDeleteDialogOpen(true);
                                                         }}
-                                                        disabled={role.is_default}
-                                                        title={role.is_default ? "Không thể xóa vai trò hệ thống" : "Xóa"}
                                                     >
                                                         <TrashIcon className="w-4 h-4" />
                                                     </Button>
@@ -312,77 +310,72 @@ export default function RoleManagementPage() {
                 </CardContent>
             </Card>
 
-            {/* Create/Edit Dialog */}
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                <DialogContent className="sm:max-w-150 max-h-[90vh] flex flex-col">
+                <DialogContent className="sm:max-w-5xl max-h-[90vh] flex flex-col">
                     <DialogHeader>
-                        <DialogTitle>
-                            {dialogMode === "create" ? "Thêm vai trò mới" : "Chỉnh sửa vai trò"}
-                        </DialogTitle>
-                        <DialogDescription>
-                            Định nghĩa tên và gán các quyền hạn cho vai trò này.
-                        </DialogDescription>
+                        <DialogTitle>{dialogMode === "create" ? "Thêm vai trò mới" : "Chỉnh sửa vai trò"}</DialogTitle>
+                        <DialogDescription>Định nghĩa tên, trạng thái và các quyền được gán cho vai trò.</DialogDescription>
                     </DialogHeader>
 
                     <div className="space-y-4 py-4 overflow-hidden flex flex-col flex-1">
                         <div className="space-y-2">
-                            <Label htmlFor="name">Tên vai trò <span className="text-destructive">*</span></Label>
+                            <Label htmlFor="role-name">Tên vai trò</Label>
                             <Input
-                                id="name"
+                                id="role-name"
                                 value={formData.name}
-                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                onChange={(event) => setFormData((prev) => ({ ...prev, name: event.target.value }))}
                             />
                         </div>
+
                         <div className="space-y-2">
-                            <Label htmlFor="description">Mô tả</Label>
+                            <Label htmlFor="role-description">Mô tả</Label>
                             <Input
-                                id="description"
+                                id="role-description"
                                 value={formData.description}
-                                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                onChange={(event) => setFormData((prev) => ({ ...prev, description: event.target.value }))}
                                 placeholder="Mô tả ngắn gọn về vai trò này"
+                            />
+                        </div>
+
+                        <div className="flex items-center justify-between rounded-md border p-3">
+                            <div>
+                                <Label>Trạng thái vai trò</Label>
+                                <p className="text-sm text-muted-foreground">Cho phép khóa hoặc mở khóa vai trò ngay khi chỉnh sửa.</p>
+                            </div>
+                            <Switch
+                                checked={formData.is_active}
+                                onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, is_active: checked }))}
                             />
                         </div>
 
                         <div className="space-y-2 flex-1 flex flex-col overflow-hidden">
                             <Label>Quyền hạn</Label>
                             <ScrollArea className="flex-1 border rounded-md p-4">
-                                {Object.entries(groupedPermissions).map(([category, perms]) => (
-                                    <div key={category} className="mb-6 last:mb-0">
+                                {Object.entries(groupedPermissions).map(([moduleName, modulePermissions]) => (
+                                    <div key={moduleName} className="mb-6 last:mb-0">
                                         <h3 className="font-semibold text-sm mb-3 text-primary flex items-center gap-2">
                                             <ShieldCheckIcon className="w-4 h-4" />
-                                            {category}
+                                            {moduleName}
                                         </h3>
                                         <div className="grid grid-cols-1 gap-3 ml-2">
-                                            {perms.map((perm) => (
-                                                <div key={perm.id} className="flex items-start space-x-3">
+                                            {modulePermissions.map((permission) => (
+                                                <div key={permission.id} className="flex items-start space-x-3">
                                                     <Checkbox
-                                                        id={perm.id}
-                                                        checked={formData.permission_ids.includes(perm.id)}
-                                                        onCheckedChange={() => handleTogglePermission(perm.id)}
+                                                        id={permission.id}
+                                                        checked={formData.permission_ids.includes(permission.id)}
+                                                        onCheckedChange={() => handleTogglePermission(permission.id)}
                                                     />
                                                     <div className="grid gap-1.5 leading-none">
-                                                        <label
-                                                            htmlFor={perm.id}
-                                                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                                                        >
-                                                            {perm.name}
+                                                        <label htmlFor={permission.id} className="text-sm font-medium leading-none">
+                                                            {permission.name}
                                                         </label>
-                                                        {perm.description && (
-                                                            <p className="text-xs text-muted-foreground">
-                                                                {perm.description}
-                                                            </p>
-                                                        )}
+                                                        <p className="text-xs text-muted-foreground">{permission.key}</p>
                                                     </div>
                                                 </div>
                                             ))}
                                         </div>
                                     </div>
                                 ))}
-                                {permissions.length === 0 && (
-                                    <div className="text-center py-4 text-muted-foreground text-sm">
-                                        Không tìm thấy danh sách quyền hạn.
-                                    </div>
-                                )}
                             </ScrollArea>
                         </div>
                     </div>
@@ -391,34 +384,27 @@ export default function RoleManagementPage() {
                         <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={submitting}>
                             Hủy
                         </Button>
-                        <Button onClick={handleSubmit} disabled={submitting}>
-                            {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            {dialogMode === "create" ? "Tạo vai trò" : "Lưu thay đổi"}
+                        <Button onClick={() => void handleSubmit()} disabled={submitting}>
+                            {submitting ? "Đang lưu..." : dialogMode === "create" ? "Tạo vai trò" : "Lưu thay đổi"}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
 
-            {/* Delete Confirmation */}
             <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle className="text-destructive flex items-center gap-2">
-                            <TrashIcon className="w-5 h-5" />
-                            Xác nhận xóa
-                        </DialogTitle>
+                        <DialogTitle>Xóa vai trò</DialogTitle>
                         <DialogDescription>
-                            Bạn có chắc chắn muốn xóa vai trò <strong>{roleToDelete?.name}</strong>? 
-                            Hành động này không thể hoàn tác và có thể ảnh hưởng đến những người đang được gán vai trò này.
+                            {roleToDelete ? `Bạn có chắc muốn xóa vai trò "${roleToDelete.name}" không?` : "Bạn có chắc muốn xóa vai trò này không?"}
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setDeleteDialogOpen(false)} disabled={submitting}>
                             Hủy
                         </Button>
-                        <Button variant="destructive" onClick={handleDelete} disabled={submitting}>
-                            {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Xác nhận xóa
+                        <Button variant="destructive" onClick={() => void handleDelete()} disabled={submitting}>
+                            {submitting ? "Đang xóa..." : "Xóa vai trò"}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
