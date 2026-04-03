@@ -217,7 +217,7 @@ export class OrgRentalContractService {
             //         }
             //         lockKeys.push(`rental:lock:row:${rowId}`);
             //     }
-            }
+            // }
 
             const priceDetail = await this.calculateRentalPriceForTemplate(
                 template,
