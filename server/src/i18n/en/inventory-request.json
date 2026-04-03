@@ -41,7 +41,8 @@
         "receiving_not_completed": "Receiving has not been completed",
         "picking_not_completed": "Picking has not been completed",
         "checking_not_passed": "Checking has not passed",
-        "pick_list_not_found": "Pick list not found"
+        "pick_list_not_found": "Pick list not found",
+        "quantity_mismatch": "Actual counted quantity does not match expected quantity. Please confirm or set force=true to proceed"
     },
     "validation": {
         "warehouse_id_required": "Please select a warehouse",

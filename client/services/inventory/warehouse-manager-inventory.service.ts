@@ -248,6 +248,7 @@ export class WarehouseManagerInventoryService {
         data?: {
             details?: { putaway_detail_id: string; actual_qty: number }[];
             notes?: string;
+            force?: boolean;
         },
     ): Promise<ApiResponse<any>> {
         const response = await fetch(
@@ -263,7 +264,9 @@ export class WarehouseManagerInventoryService {
         );
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.message || "Không thể xác nhận cất hàng");
+            const err: any = new Error(errorData.message || "Không thể xác nhận cất hàng");
+            err.response = errorData;
+            throw err;
         }
         return await response.json();
     }

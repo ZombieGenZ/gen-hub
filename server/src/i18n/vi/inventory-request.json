@@ -41,7 +41,8 @@
         "receiving_not_completed": "Kiểm đếm chưa hoàn tất",
         "picking_not_completed": "Nhặt hàng chưa hoàn tất",
         "checking_not_passed": "Kiểm tra chưa đạt",
-        "pick_list_not_found": "Không tìm thấy phiếu nhặt hàng"
+        "pick_list_not_found": "Không tìm thấy phiếu nhặt hàng",
+        "quantity_mismatch": "Số lượng kiểm đếm thực tế lệch so với số lượng dự kiến. Vui lòng xác nhận lại hoặc bấm xác nhận với force=true để tiếp tục"
     },
     "validation": {
         "warehouse_id_required": "Vui lòng chọn kho",

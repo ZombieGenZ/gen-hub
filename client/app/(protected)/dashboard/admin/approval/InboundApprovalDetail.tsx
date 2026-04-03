@@ -250,15 +250,30 @@ export default function InboundApprovalDetail({
         } finally { setSubmitting(false); }
     };
 
-    const handleConfirmPutaway = async () => {
+    const handleConfirmPutaway = async (force = false) => {
         const token = getToken(); if (!token) return;
         setSubmitting(true);
         try {
-            await wmInventoryService.confirmPutaway(token, ticketId, {});
+            await wmInventoryService.confirmPutaway(token, ticketId, { force });
             showToast("Đã xác nhận cất hàng — phiếu PO Hoàn tất!", "success");
             fetchData();
         } catch (err: any) {
-            showToast(err.message || "Không thể xác nhận cất hàng", "error");
+            // Kiểm tra nếu lỗi do lệch số lượng → hỏi xác nhận
+            if (err.response?.require_force) {
+                const mismatches = err.response.mismatches || [];
+                const mismatchInfo = mismatches.map((m: any) =>
+                    `${m.product_name}: dự kiến ${m.expected_qty}, thực tế ${m.actual_qty}`
+                ).join('\n');
+                const confirmed = window.confirm(
+                    `Số lượng kiểm đếm lệch:\n${mismatchInfo}\n\nBạn có muốn tiếp tục hoàn thành phiếu PO không?`
+                );
+                if (confirmed) {
+                    setSubmitting(false);
+                    return handleConfirmPutaway(true);
+                }
+            } else {
+                showToast(err.message || "Không thể xác nhận cất hàng", "error");
+            }
             if (err.status === 403) {
                 authStorage.clearTokens();
                 window.location.href = '/auth/login';
@@ -600,7 +615,7 @@ export default function InboundApprovalDetail({
                     {data.status === "PROCESSING" && (
                         <Button disabled={submitting}
                             className="gap-2 rounded-xl bg-[#0F766E] hover:bg-[#0F766E]/90 text-white ml-auto"
-                            onClick={handleConfirmPutaway}>
+                            onClick={() => handleConfirmPutaway()}>
                             <CheckCircleIcon className="w-4 h-4" />
                             {submitting ? "Đang cất hàng..." : "Xác nhận cất hàng vào kho"}
                         </Button>

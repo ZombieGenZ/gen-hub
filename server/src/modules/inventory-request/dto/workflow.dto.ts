@@ -59,6 +59,11 @@ export class ConfirmPutawayDto {
     @IsOptional()
     @IsString({ message: i18nValidationMessage('inventory-request.validation.notes_string') })
     notes?: string;
+
+    @ApiPropertyOptional({ description: 'Xác nhận hoàn thành dù số lượng kiểm đếm lệch', default: false })
+    @IsOptional()
+    @IsBoolean()
+    force?: boolean;
 }
 
 // ── Confirm Picking ──
