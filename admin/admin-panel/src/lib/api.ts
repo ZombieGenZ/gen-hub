@@ -1209,6 +1209,7 @@ export interface Role {
     id: string;
     name: string;
     description: string | null;
+    is_system: boolean;
     is_active: boolean | null;
     is_default: boolean;
     created_at: string;

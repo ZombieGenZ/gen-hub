@@ -14,8 +14,10 @@ import {
     Sparkles,
     StickyNote,
     Timer,
+    PlusCircle,
 } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
+import { Button } from "@/components/ui/button";
 
 interface WarehouseInfo {
     id: string;
@@ -55,6 +57,7 @@ export interface ContractInfoData {
 interface ContractInfoSidebarProps {
     data: ContractInfoData;
     className?: string;
+    onManageAddons?: () => void;
 }
 
 const formatCurrency = (val: number | string) => {
@@ -71,7 +74,7 @@ const formatDate = (str: string) => {
     }
 };
 
-export function ContractInfoSidebar({ data, className }: ContractInfoSidebarProps) {
+export function ContractInfoSidebar({ data, className, onManageAddons }: ContractInfoSidebarProps) {
     const daysRemaining = data.expired_at
         ? differenceInDays(new Date(data.expired_at), new Date())
         : null;
@@ -190,26 +193,39 @@ export function ContractInfoSidebar({ data, className }: ContractInfoSidebarProp
             </Card>
 
             {/* Addons */}
-            {data.addons && data.addons.length > 0 && (
-                <Card>
-                    <CardHeader className="pb-2 pt-4 px-4">
-                        <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                            <Sparkles className="w-3.5 h-3.5" />
-                            Tiện ích ({data.addons.length})
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="px-4 pb-4 space-y-1">
-                        {data.addons.map((addon) => (
+            <Card>
+                <CardHeader className="pb-2 pt-4 px-4">
+                    <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5" />
+                        Tiện ích ({data.addons?.length ?? 0})
+                        {onManageAddons && (
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="ml-auto h-6 w-6"
+                                onClick={onManageAddons}
+                                title="Quản lý tiện ích"
+                            >
+                                <PlusCircle className="w-3.5 h-3.5" />
+                            </Button>
+                        )}
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="px-4 pb-4 space-y-1">
+                    {data.addons && data.addons.length > 0 ? (
+                        data.addons.map((addon) => (
                             <div key={addon.id} className="flex items-center justify-between text-sm">
                                 <span>{addon.name}</span>
                                 {addon.price && (
                                     <span className="text-xs text-muted-foreground">{formatCurrency(addon.price)}</span>
                                 )}
                             </div>
-                        ))}
-                    </CardContent>
-                </Card>
-            )}
+                        ))
+                    ) : (
+                        <p className="text-xs text-muted-foreground">Chưa có tiện ích</p>
+                    )}
+                </CardContent>
+            </Card>
 
             {/* Insurance */}
             {data.insurances && data.insurances.length > 0 && (

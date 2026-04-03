@@ -213,6 +213,33 @@ export class WarehouseVisitService {
             throw new Error(errorData.message || 'Failed to delete visit booking');
         }
     }
+
+    /**
+     * Approve or reject a visit booking
+     * PATCH /warehouse-visit/:id/approve
+     */
+    async approveBooking(token: string, id: string, request: {
+        action: 'APPROVE' | 'REJECT';
+        confirmation_notes?: string;
+        rejection_reason?: string;
+    }): Promise<WarehouseVisitBooking> {
+        const response = await fetch(`${API}/warehouse-visit/${id}/approve`, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(request),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Không thể xử lý lịch hẹn tham quan');
+        }
+
+        const result = await response.json();
+        return result.data;
+    }
 }
 
 export const warehouseVisitService = new WarehouseVisitService();

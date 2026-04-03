@@ -139,7 +139,7 @@ export class PublicQuotationService {
         if (dto.coupon_code) {
             const coupon = await this.repository.findValidCoupon(dto.coupon_code);
 
-            if (coupon && coupon.current_usage < coupon.max_usage) {
+            if (coupon && (coupon.max_usage === 0 || coupon.current_usage < coupon.max_usage)) {
                 if (coupon.discount_type === 'PERCENT') {
                     couponDiscount = subtotal * (Number(coupon.discount_value) / 100);
                     if (!coupon.is_unlimited_discount && coupon.max_discount_amount) {
