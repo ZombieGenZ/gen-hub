@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { authStorage } from "@/services/auth/auth-storage.service";
-import { UserService } from "@/services/user/user.service";
+import { orgHelper } from "@/lib/organization.utils";
 import { CustomerKPIs } from "@/components/dashboard/organization/CustomerKPIs";
 import { CustomerStockFlow } from "@/components/dashboard/organization/CustomerStockFlow";
 import { CustomerTopProducts } from "@/components/dashboard/organization/CustomerTopProducts";
@@ -34,7 +34,6 @@ const DASHBOARD_REALTIME_EVENTS = [
 ];
 
 export default function CustomerDashboardOverview() {
-    const userService = new UserService();
     const { showToast } = useToast();
     const [dateFilter, setDateFilter] = useState("week");
     const [orgId, setOrgId] = useState<string | null>(null);
@@ -46,16 +45,11 @@ export default function CustomerDashboardOverview() {
             setLoading(true);
             try {
                 const token = authStorage.getAccessToken();
-                const refreshToken = authStorage.getRefreshToken();
-                if (!token || !refreshToken) return;
+                if (!token) return;
 
-                const user = await userService.getUser(token, refreshToken);
-                // User info available
-                const currentOrgId = user?.organization_id;
-                // Found OrgID
-
-                if (currentOrgId) {
-                    setOrgId(currentOrgId);
+                const id = await orgHelper.getOrgId(token);
+                if (id) {
+                    setOrgId(id);
                 }
             } catch (error) {
                 console.error("Failed to fetch user org", error);
