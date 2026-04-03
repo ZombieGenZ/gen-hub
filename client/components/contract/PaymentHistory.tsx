@@ -1,9 +1,8 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import {
     CreditCard,
@@ -12,7 +11,6 @@ import {
     CheckCircle2,
     Clock,
     XCircle,
-    AlertTriangle,
     ArrowUpRight,
     Receipt,
     ChevronDown,
@@ -33,18 +31,23 @@ export interface Payment {
     paid_at?: string;
     created_at: string;
     description?: string;
+    payment_url?: string;
+    qr_code?: string;
     qr_code_url?: string;
+    expired_at?: string;
 }
 
 interface PaymentHistoryProps {
     payments: Payment[];
     className?: string;
     showQrCode?: boolean;
+    onRetryPayment?: (payment: Payment) => void | Promise<void>;
+    retryingPaymentId?: string | null;
 }
 
 const formatCurrency = (val: number | string) => {
     const num = typeof val === "string" ? parseFloat(val) : val;
-    if (!num && num !== 0) return "0 ₫";
+    if (!num && num !== 0) return "0 VND";
     return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(num);
 };
 
@@ -91,16 +94,27 @@ const METHOD_CONFIG: Record<PaymentMethod, { label: string; icon: React.Componen
     WALLET: { label: "Ví điện tử", icon: CreditCard },
 };
 
-function PaymentCard({ payment, showQrCode }: { payment: Payment; showQrCode?: boolean }) {
+function PaymentCard({
+    payment,
+    showQrCode,
+    onRetryPayment,
+    retryingPaymentId,
+}: {
+    payment: Payment;
+    showQrCode?: boolean;
+    onRetryPayment?: (payment: Payment) => void | Promise<void>;
+    retryingPaymentId?: string | null;
+}) {
     const [expanded, setExpanded] = useState(false);
     const statusCfg = STATUS_CONFIG[payment.status];
     const methodCfg = METHOD_CONFIG[payment.method];
     const StatusIcon = statusCfg.icon;
     const MethodIcon = methodCfg.icon;
+    const qrSource = payment.qr_code_url || payment.qr_code;
+    const isRetrying = retryingPaymentId === payment.id;
 
     return (
         <div className="border rounded-lg overflow-hidden">
-            {/* Header row */}
             <button
                 onClick={() => setExpanded(!expanded)}
                 className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors text-left"
@@ -119,9 +133,7 @@ function PaymentCard({ payment, showQrCode }: { payment: Payment; showQrCode?: b
                                 {methodCfg.label}
                             </Badge>
                         </div>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                            {formatDate(payment.created_at)}
-                        </p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{formatDate(payment.created_at)}</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0 ml-2">
@@ -134,14 +146,13 @@ function PaymentCard({ payment, showQrCode }: { payment: Payment; showQrCode?: b
                 </div>
             </button>
 
-            {/* Expanded detail */}
             {expanded && (
                 <div className="px-4 pb-3 pt-0 border-t bg-muted/20">
                     <div className="grid grid-cols-2 gap-2 text-sm pt-3">
                         <div>
                             <span className="text-xs text-muted-foreground">Trạng thái</span>
                             <div className="flex items-center gap-1.5 mt-0.5">
-                                <StatusIcon className={cn("w-3.5 h-3.5", statusCfg.className.split(" ").find(c => c.startsWith("text-")))} />
+                                <StatusIcon className="w-3.5 h-3.5" />
                                 <span className="font-medium">{statusCfg.label}</span>
                             </div>
                         </div>
@@ -163,15 +174,29 @@ function PaymentCard({ payment, showQrCode }: { payment: Payment; showQrCode?: b
                         )}
                     </div>
 
-                    {/* QR Code for pending TRANSFER payments */}
-                    {showQrCode && payment.status === "PENDING" && payment.method === "TRANSFER" && payment.qr_code_url && (
+                    {showQrCode && payment.status === "PENDING" && payment.method === "TRANSFER" && qrSource && (
                         <div className="mt-3 pt-3 border-t flex flex-col items-center gap-2">
                             <p className="text-xs text-muted-foreground">Quét mã QR để thanh toán</p>
-                            <img
-                                src={payment.qr_code_url}
-                                alt="QR Code thanh toán"
-                                className="w-40 h-40 rounded-md border"
-                            />
+                            <img src={qrSource} alt="QR Code thanh toán" className="w-40 h-40 rounded-md border" />
+                        </div>
+                    )}
+
+                    {payment.status === "PENDING" && onRetryPayment && (
+                        <div className="mt-3 pt-3 border-t flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="text-xs text-muted-foreground">
+                                {payment.expired_at
+                                    ? `Hết hạn lúc ${formatDate(payment.expired_at)}`
+                                    : "Có thể tạo lại giao dịch nếu lần thanh toán cũ đã hết hạn."}
+                            </div>
+                            <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                disabled={isRetrying}
+                                onClick={() => void onRetryPayment(payment)}
+                            >
+                                {isRetrying ? "Đang tạo..." : "Tiếp tục thanh toán"}
+                            </Button>
                         </div>
                     )}
                 </div>
@@ -180,13 +205,19 @@ function PaymentCard({ payment, showQrCode }: { payment: Payment; showQrCode?: b
     );
 }
 
-export function PaymentHistory({ payments, className, showQrCode = true }: PaymentHistoryProps) {
+export function PaymentHistory({
+    payments,
+    className,
+    showQrCode = true,
+    onRetryPayment,
+    retryingPaymentId,
+}: PaymentHistoryProps) {
     const totalPaid = payments
-        .filter((p) => p.status === "PAID")
-        .reduce((sum, p) => sum + (typeof p.amount === "string" ? parseFloat(p.amount) : p.amount), 0);
+        .filter((payment) => payment.status === "PAID")
+        .reduce((sum, payment) => sum + (typeof payment.amount === "string" ? parseFloat(payment.amount) : payment.amount), 0);
     const totalPending = payments
-        .filter((p) => p.status === "PENDING")
-        .reduce((sum, p) => sum + (typeof p.amount === "string" ? parseFloat(p.amount) : p.amount), 0);
+        .filter((payment) => payment.status === "PENDING")
+        .reduce((sum, payment) => sum + (typeof payment.amount === "string" ? parseFloat(payment.amount) : payment.amount), 0);
 
     if (payments.length === 0) {
         return (
@@ -199,30 +230,30 @@ export function PaymentHistory({ payments, className, showQrCode = true }: Payme
 
     return (
         <div className={cn("space-y-4", className)}>
-            {/* Summary cards */}
             <div className="grid grid-cols-2 gap-3">
                 <Card className="bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200/50">
                     <CardContent className="pt-3 pb-3 px-4">
                         <p className="text-xs text-muted-foreground">Đã thanh toán</p>
-                        <p className="text-lg font-bold text-emerald-700 dark:text-emerald-400">
-                            {formatCurrency(totalPaid)}
-                        </p>
+                        <p className="text-lg font-bold text-emerald-700 dark:text-emerald-400">{formatCurrency(totalPaid)}</p>
                     </CardContent>
                 </Card>
                 <Card className="bg-amber-50/50 dark:bg-amber-950/20 border-amber-200/50">
                     <CardContent className="pt-3 pb-3 px-4">
                         <p className="text-xs text-muted-foreground">Chờ thanh toán</p>
-                        <p className="text-lg font-bold text-amber-700 dark:text-amber-400">
-                            {formatCurrency(totalPending)}
-                        </p>
+                        <p className="text-lg font-bold text-amber-700 dark:text-amber-400">{formatCurrency(totalPending)}</p>
                     </CardContent>
                 </Card>
             </div>
 
-            {/* Payment list */}
             <div className="space-y-2">
                 {payments.map((payment) => (
-                    <PaymentCard key={payment.id} payment={payment} showQrCode={showQrCode} />
+                    <PaymentCard
+                        key={payment.id}
+                        payment={payment}
+                        showQrCode={showQrCode}
+                        onRetryPayment={onRetryPayment}
+                        retryingPaymentId={retryingPaymentId}
+                    />
                 ))}
             </div>
         </div>

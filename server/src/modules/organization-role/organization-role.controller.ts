@@ -158,6 +158,45 @@ export class OrganizationRoleController {
     return new GetResponse(ResponseCode.ORGANIZATION_ROLE_LIST_SUCCESS, result);
   }
 
+  @Get('permissions')
+  @RequirePermission('organization.list')
+  @ApiOperation({
+    summary: 'Lấy danh sách quyền có thể gán cho vai trò',
+    description:
+      'Trả về toàn bộ permissions dùng để cấu hình vai trò trong tổ chức.',
+  })
+  @ApiParam({ name: 'orgId', description: 'ID tổ chức (UUID)', type: 'string' })
+  @ApiResponse({
+    status: 200,
+    description: 'Lấy danh sách quyền thành công',
+    schema: {
+      example: {
+        code: 'ORGANIZATION_ROLE_LIST_SUCCESS',
+        message: 'Lấy danh sách quyền thành công',
+        success: true,
+        data: [
+          {
+            id: 'perm-uuid-1',
+            key: 'organization.role.list',
+            name: 'Xem danh sách vai trò',
+            description: 'Quyền xem danh sách vai trò trong tổ chức',
+            module: 'organization-role',
+            is_active: true,
+          },
+        ],
+      },
+    },
+  })
+  @ApiAuthResponses()
+  async findPermissions(
+    @Param('orgId', ParseUUIDPipe) orgId: string,
+    @CurrentUser('userId') userId: string,
+    @I18nLang() lang: string,
+  ) {
+    const result = await this.service.getPermissions(orgId, userId, lang);
+    return new GetResponse(ResponseCode.ORGANIZATION_ROLE_LIST_SUCCESS, result);
+  }
+
   @Get(':roleId')
   @RequirePermission('organization.list')
   @ApiOperation({

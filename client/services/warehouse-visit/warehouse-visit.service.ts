@@ -85,6 +85,7 @@ export class WarehouseVisitService {
         limit?: number;
         status?: VisitStatus;
         date?: string;
+        warehouse_template_id?: string;
     } = {}): Promise<{ data: WarehouseVisitBooking[]; total: number }> {
         const query = new URLSearchParams();
 
@@ -92,6 +93,7 @@ export class WarehouseVisitService {
         if (params.limit) query.append('limit', String(params.limit));
         if (params.status) query.append('status', params.status);
         if (params.date) query.append('date', params.date);
+        if (params.warehouse_template_id) query.append('warehouse_template_id', params.warehouse_template_id);
 
         const response = await fetch(`${API}/warehouse-visit?${query.toString()}`, {
             method: 'GET',
@@ -107,7 +109,13 @@ export class WarehouseVisitService {
         }
 
         const result = await response.json();
-        return result;
+        const items = Array.isArray(result?.data?.items) ? result.data.items : [];
+        const total = Number(result?.data?.meta?.total ?? items.length);
+
+        return {
+            data: items,
+            total,
+        };
     }
 
     /**

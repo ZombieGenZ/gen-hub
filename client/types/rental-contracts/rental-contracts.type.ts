@@ -126,7 +126,10 @@ export interface RentalContractDetail extends RentalContractListItem {
         paid_at?: string;
         created_at: string;
         description?: string;
+        payment_url?: string;
+        qr_code?: string;
         qr_code_url?: string;
+        expired_at?: string;
     }[];
     history?: {
         id: string;

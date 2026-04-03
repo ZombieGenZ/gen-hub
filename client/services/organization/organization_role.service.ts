@@ -1,5 +1,4 @@
 import {
-   OrganizationRoleData,
    OrganizationRole,
    OrganizationRolesResponse,
    OrganizationPermission,
@@ -10,6 +9,24 @@ import {
 const API = process.env.NEXT_PUBLIC_API_URL
 
 export class OrganizationRoleService {
+   private normalizeRoleList(data: unknown): OrganizationRolesResponse {
+      if (Array.isArray(data)) {
+         return {
+            items: data as OrganizationRole[],
+            total: data.length,
+            limit: data.length,
+            offset: 0,
+         };
+      }
+
+      const payload = (data || {}) as Partial<OrganizationRolesResponse>;
+      return {
+         items: Array.isArray(payload.items) ? payload.items : [],
+         total: payload.total ?? (Array.isArray(payload.items) ? payload.items.length : 0),
+         limit: payload.limit ?? (Array.isArray(payload.items) ? payload.items.length : 0),
+         offset: payload.offset ?? 0,
+      };
+   }
    
    /**
     * Lấy thông tin vai trò của tổ chức (legacy)
@@ -27,9 +44,30 @@ export class OrganizationRoleService {
          const errorData = await response.json().catch(() => ({}));
          throw new Error(errorData.message || 'Failed to get organization role');
       }
-      
+
       const data = await response.json();
-      return data.data;
+      return this.normalizeRoleList(data.data);
+   }
+
+   async getPermissions(
+      token: string,
+      orgId: string
+   ): Promise<OrganizationPermission[]> {
+      const response = await fetch(`${API}/organizations/${orgId}/roles/permissions`, {
+         method: 'GET',
+         headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+         },
+      });
+
+      if (!response.ok) {
+         const errorData = await response.json().catch(() => ({}));
+         throw new Error(errorData.message || 'KhĂ´ng thá»ƒ láº¥y danh sĂ¡ch quyá»n');
+      }
+
+      const data = await response.json();
+      return Array.isArray(data.data) ? data.data : [];
    }
 
    /**
@@ -59,7 +97,7 @@ export class OrganizationRoleService {
       }
 
       const data = await response.json();
-      return data.data;
+      return this.normalizeRoleList(data.data);
    }
 
    /**
