@@ -664,6 +664,7 @@ export class UserManagementService {
         await this.invalidateUserRolesPermissionsCache(userId);
         await this.redisService.invalidateUserCache(userId);
         await this.redisService.invalidateUserPermissionsCache(userId);
+        await this.redisService.invalidateAccountProfileCache(userId);
 
         // Log
         this.systemLogService.logAsync({

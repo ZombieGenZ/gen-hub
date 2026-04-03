@@ -22,6 +22,9 @@ export class UserPermissionsSeeder extends BaseSeeder {
             const userManagementPermissions = [
                 { key: 'user-management.list', name: 'Xem danh sách người dùng', description: 'Quyền xem danh sách tất cả người dùng' },
                 { key: 'user-management.read', name: 'Xem chi tiết người dùng', description: 'Quyền xem thông tin chi tiết của người dùng' },
+                { key: 'user-management.update', name: 'Cập nhật roles/permissions người dùng', description: 'Quyền cập nhật roles và permissions của người dùng' },
+                { key: 'user-management.delete', name: 'Xóa người dùng', description: 'Quyền xóa người dùng' },
+                { key: 'user-management.download', name: 'Xuất dữ liệu người dùng', description: 'Quyền xuất (export) dữ liệu người dùng' },
                 { key: 'user-management.ban', name: 'Cấm người dùng', description: 'Quyền cấm (ban) người dùng' },
                 { key: 'user-management.unban', name: 'Gỡ cấm người dùng', description: 'Quyền gỡ lệnh cấm (unban) người dùng' },
                 { key: 'user-management.warn', name: 'Cảnh báo người dùng', description: 'Quyền cảnh báo (warn) người dùng' },
