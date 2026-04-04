@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { authStorage } from "@/services/auth/auth-storage.service";
-import { WarehouseManagerInventoryService } from "@/services/inventory/warehouse-manager-inventory.service";
+import { InventoryService } from "@/services/inventory/inventory.service";
 import { useToast } from "@/contexts/ToastContext";
 import type { InboundRequest, OutboundRequest } from "@/services/inventory/inventory.types";
 import { io, Socket } from "socket.io-client";
@@ -37,7 +37,7 @@ import OutboundApprovalDetail from "./OutboundApprovalDetail";
 
 import "./approval.css";
 
-const wmInventoryService = new WarehouseManagerInventoryService();
+const inventoryService = new InventoryService();
 
 const APPROVAL_REALTIME_EVENTS = [
     "inbound:created",
@@ -179,8 +179,8 @@ export default function ApprovalQueuePage() {
 
             // Fetching requests
             const [inboundRes, outboundRes] = await Promise.all([
-                wmInventoryService.listInbound(token, { limit: 50 }),
-                wmInventoryService.listOutbound(token, { limit: 50 }),
+                inventoryService.listInbound(token, { limit: 50 }),
+                inventoryService.listOutbound(token, { limit: 50 }),
             ]);
 
             const inData = inboundRes.data?.items ?? [];
@@ -333,9 +333,9 @@ export default function ApprovalQueuePage() {
             selectedTickets.map(async (ticket) => {
                 try {
                     if (ticket.type === "inbound") {
-                        await wmInventoryService.approveInbound(token, ticket.id);
+                        await inventoryService.approveInbound(token, ticket.id);
                     } else {
-                        await wmInventoryService.approveOutbound(token, ticket.id);
+                        await inventoryService.approveOutbound(token, ticket.id);
                     }
                     successCount++;
                 } catch {

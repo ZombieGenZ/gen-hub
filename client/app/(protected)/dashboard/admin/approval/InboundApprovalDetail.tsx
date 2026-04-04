@@ -132,7 +132,7 @@ export default function InboundApprovalDetail({
             const token = authStorage.getAccessToken();
             if (!token) return;
             setLoading(true);
-            const res = await wmInventoryService.getInboundById(token, ticketId);
+            const res = await inventoryService.getInboundById(token, ticketId);
             const item = (res as any)?.data ?? res;
             setData(item);
             if (item?.details) {
@@ -182,11 +182,7 @@ export default function InboundApprovalDetail({
         const token = getToken(); if (!token) return;
         setSubmitting(true);
         try {
-            const actual_quantities = data?.details?.map((d) => ({
-                detail_id: d.id,
-                actual_qty: actualQty[d.id] ?? d.expected_qty,
-            }));
-            await wmInventoryService.approveInbound(token, ticketId, { actual_quantities });
+            await inventoryService.approveInbound(token, ticketId);
             showToast("Duyệt phiếu PO thành công — chuyển sang Đã duyệt", "success");
             fetchData();
         } catch (err: any) {
@@ -198,7 +194,7 @@ export default function InboundApprovalDetail({
         const token = getToken(); if (!token) return;
         setSubmitting(true);
         try {
-            await wmInventoryService.rejectInbound(token, ticketId, reason);
+            await inventoryService.rejectInbound(token, ticketId, reason);
             showToast(`Đã từ chối phiếu — Lý do: ${reason}`, "success");
             setRejectOpen(false);
             fetchData();
