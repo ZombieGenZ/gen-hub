@@ -5,33 +5,19 @@ import {
   CallHandler,
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
-import { tap } from 'rxjs/operators';
 import { Request, Response } from 'express';
 import { SystemLogService } from '../../modules/system-log/system-log.service';
+import {
+  extractIpAddress,
+  sanitizeHeaders,
+  sanitizeHttpValue,
+} from '../utils/http-log.util';
 
-/**
- * Request interface với user info
- */
 interface RequestWithUser extends Request {
   user?: { userId?: string };
+  apiKey?: Record<string, unknown>;
 }
 
-/**
- * Helper để trích xuất IP từ request
- */
-function extractIpAddress(request: Request): string {
-  const forwarded = request.headers['x-forwarded-for'];
-  if (typeof forwarded === 'string') {
-    return forwarded.split(',')[0].trim();
-  }
-  return request.socket?.remoteAddress || request.ip || 'unknown';
-}
-
-/**
- * HTTP Logging Interceptor
- * Ghi log tất cả HTTP requests với response time
- * Sử dụng fire-and-forget pattern để không ảnh hưởng response time
- */
 @Injectable()
 export class HttpLoggingInterceptor implements NestInterceptor {
   constructor(private readonly systemLogService: SystemLogService) {}
@@ -41,36 +27,60 @@ export class HttpLoggingInterceptor implements NestInterceptor {
     const request = ctx.getRequest<RequestWithUser>();
     const response = ctx.getResponse<Response>();
 
-    // Bỏ qua các request không cần log (health check, static files)
     if (this.shouldSkipLogging(request)) {
       return next.handle();
     }
 
     const startTime = Date.now();
+    let responseBody: unknown;
+    const restoreResponse = this.captureResponseBody(response, (body) => {
+      responseBody = body;
+    });
 
-    return next.handle().pipe(
-      tap({
-        next: () => {
-          // Log successful response (fire-and-forget)
-          const duration = Date.now() - startTime;
-          this.logRequest(request, response.statusCode, duration);
-        },
-        error: () => {
-          // Errors đã được log bởi GlobalExceptionFilter
-          // Chỉ ghi thời gian response ở đây nếu cần
-        },
-      }),
-    );
+    response.once('finish', () => {
+      restoreResponse();
+      const duration = Date.now() - startTime;
+      this.logRequest(request, response, responseBody, duration);
+    });
+
+    response.once('close', () => {
+      restoreResponse();
+    });
+
+    return next.handle();
   }
 
-  /**
-   * Ghi log HTTP request async (fire-and-forget)
-   */
+  private captureResponseBody(
+    response: Response,
+    onBody: (body: unknown) => void,
+  ): () => void {
+    const originalJson = response.json.bind(response);
+    const originalSend = response.send.bind(response);
+
+    response.json = ((body: unknown) => {
+      onBody(body);
+      return originalJson(body);
+    }) as Response['json'];
+
+    response.send = ((body: unknown) => {
+      onBody(body);
+      return originalSend(body);
+    }) as Response['send'];
+
+    return () => {
+      response.json = originalJson;
+      response.send = originalSend;
+    };
+  }
+
   private logRequest(
     request: RequestWithUser,
-    statusCode: number,
+    response: Response,
+    responseBody: unknown,
     duration: number,
   ): void {
+    const statusCode = response.statusCode;
+
     this.systemLogService.logAsync({
       level: 'INFO',
       module: 'http',
@@ -80,23 +90,32 @@ export class HttpLoggingInterceptor implements NestInterceptor {
       ipAddress: extractIpAddress(request),
       userAgent: request.headers['user-agent'],
       metaData: {
-        statusCode,
-        method: request.method,
-        url: request.url,
-        path: request.path,
-        duration: duration,
-        query:
-          Object.keys(request.query || {}).length > 0
-            ? request.query
-            : undefined,
+        request: {
+          method: request.method,
+          url: request.url,
+          path: request.path,
+          params: sanitizeHttpValue(request.params),
+          query: sanitizeHttpValue(request.query),
+          body: sanitizeHttpValue(request.body),
+          headers: sanitizeHeaders(
+            request.headers as Record<string, unknown>,
+          ),
+          user: sanitizeHttpValue(request.user),
+          apiKey: sanitizeHttpValue(request.apiKey),
+        },
+        response: {
+          statusCode,
+          headers: sanitizeHeaders(
+            response.getHeaders() as Record<string, unknown>,
+          ),
+          body: sanitizeHttpValue(responseBody),
+        },
+        duration,
         timestamp: new Date().toISOString(),
       },
     });
   }
 
-  /**
-   * Kiểm tra xem request có nên bỏ qua logging không
-   */
   private shouldSkipLogging(request: Request): boolean {
     const skipPaths = ['/health', '/metrics', '/favicon.ico'];
     const skipExtensions = [
@@ -110,12 +129,10 @@ export class HttpLoggingInterceptor implements NestInterceptor {
       '.svg',
     ];
 
-    // Bỏ qua health check và static files
     if (skipPaths.some((path) => request.path === path)) {
       return true;
     }
 
-    // Bỏ qua static files
     if (skipExtensions.some((ext) => request.path.endsWith(ext))) {
       return true;
     }
