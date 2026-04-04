@@ -2,15 +2,15 @@
 
 import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { 
-    BarChart, 
-    Bar, 
-    XAxis, 
-    YAxis, 
-    CartesianGrid, 
-    Tooltip, 
-    Legend, 
-    ResponsiveContainer 
+import {
+    BarChart,
+    Bar,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    Legend,
+    ResponsiveContainer
 } from "recharts";
 import { adminDashboardService } from "@/services/admin-dashboard/admin-dashboard.service";
 import type { RevenueMonthlyItem } from "@/services/admin-dashboard/admin-dashboard.types";
@@ -98,36 +98,36 @@ export function AdminRevenueChart() {
                                 barSize={32}
                             >
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                <XAxis 
-                                    dataKey="month" 
-                                    axisLine={false} 
-                                    tickLine={false} 
+                                <XAxis
+                                    dataKey="month"
+                                    axisLine={false}
+                                    tickLine={false}
                                     tick={{ fill: '#64748b', fontSize: 12, fontWeight: 500 }}
                                     dy={10}
                                 />
-                                <YAxis 
-                                    tickFormatter={formatYAxis} 
-                                    axisLine={false} 
-                                    tickLine={false} 
+                                <YAxis
+                                    tickFormatter={formatYAxis}
+                                    axisLine={false}
+                                    tickLine={false}
                                     tick={{ fill: '#94a3b8', fontSize: 11 }}
                                 />
                                 <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f8fafc' }} />
-                                <Legend 
-                                    iconType="circle" 
+                                <Legend
+                                    iconType="circle"
                                     wrapperStyle={{ fontSize: '12px', paddingTop: '20px' }}
                                 />
-                                <Bar 
-                                    dataKey="expected" 
-                                    name="Doanh thu dự kiến (từ Hợp đồng)" 
-                                    fill="var(--chart-3)" 
+                                <Bar
+                                    dataKey="expected"
+                                    name="Doanh thu dự kiến (từ Hợp đồng)"
+                                    fill="var(--chart-3)"
                                     radius={[4, 4, 0, 0]}
                                     opacity={0.6}
                                 />
-                                <Bar 
-                                    dataKey="actual" 
-                                    name="Dòng tiền thực thu (Đã PAID)" 
-                                    fill="var(--chart-1)" 
-                                    radius={[4, 4, 0, 0]} 
+                                <Bar
+                                    dataKey="actual"
+                                    name="Dòng tiền thực thu (Đã PAID)"
+                                    fill="var(--chart-1)"
+                                    radius={[4, 4, 0, 0]}
                                 />
                             </BarChart>
                         </ResponsiveContainer>

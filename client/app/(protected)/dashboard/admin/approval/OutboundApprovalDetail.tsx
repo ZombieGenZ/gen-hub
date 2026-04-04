@@ -62,20 +62,20 @@ const STRATEGY_OPTIONS: {
     ];
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
-    PENDING:   { label: "Chờ duyệt",    color: "bg-yellow-50 text-yellow-700 border-yellow-200" },
-    PICKING:   { label: "Đang nhặt",    color: "bg-indigo-50 text-indigo-700 border-indigo-200" },
-    CHECKING:  { label: "Đang kiểm",    color: "bg-purple-50 text-purple-700 border-purple-200" },
-    PACKED:    { label: "Đã đóng gói",  color: "bg-orange-50 text-orange-700 border-orange-200" },
-    SHIPPED:   { label: "Đã xuất kho",  color: "bg-green-50 text-green-700 border-green-200" },
-    CANCELLED: { label: "Đã hủy",       color: "bg-red-50 text-red-700 border-red-200" },
+    PENDING: { label: "Chờ duyệt", color: "bg-yellow-50 text-yellow-700 border-yellow-200" },
+    PICKING: { label: "Đang nhặt", color: "bg-indigo-50 text-indigo-700 border-indigo-200" },
+    CHECKING: { label: "Đang kiểm", color: "bg-purple-50 text-purple-700 border-purple-200" },
+    PACKED: { label: "Đã đóng gói", color: "bg-orange-50 text-orange-700 border-orange-200" },
+    SHIPPED: { label: "Đã xuất kho", color: "bg-green-50 text-green-700 border-green-200" },
+    CANCELLED: { label: "Đã hủy", color: "bg-red-50 text-red-700 border-red-200" },
 };
 
 const OUTBOUND_STEPS = [
-    { key: "PENDING",  label: "Chờ duyệt" },
-    { key: "PICKING",  label: "Nhặt hàng" },
+    { key: "PENDING", label: "Chờ duyệt" },
+    { key: "PICKING", label: "Nhặt hàng" },
     { key: "CHECKING", label: "Kiểm tra" },
-    { key: "PACKED",   label: "Đóng gói" },
-    { key: "SHIPPED",  label: "Xuất kho" },
+    { key: "PACKED", label: "Đóng gói" },
+    { key: "SHIPPED", label: "Xuất kho" },
 ];
 
 const STEP_ORDER = ["PENDING", "PICKING", "CHECKING", "PACKED", "SHIPPED"];
@@ -92,8 +92,8 @@ function StepBar({ status }: { status: string }) {
                         <div className="flex flex-col items-center min-w-16">
                             <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-colors
                                 ${done ? "bg-[#0F766E] border-[#0F766E] text-white" :
-                                  active ? "bg-white border-[#0F766E] text-[#0F766E]" :
-                                  "bg-white border-muted-foreground/30 text-muted-foreground/50"}`}>
+                                    active ? "bg-white border-[#0F766E] text-[#0F766E]" :
+                                        "bg-white border-muted-foreground/30 text-muted-foreground/50"}`}>
                                 {done ? <CheckCircleIcon className="w-4 h-4" /> : idx + 1}
                             </div>
                             <span className={`text-[10px] mt-1 text-center ${active ? "font-semibold text-[#0F766E]" : done ? "text-[#0F766E]" : "text-muted-foreground/50"}`}>

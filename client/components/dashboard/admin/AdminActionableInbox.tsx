@@ -157,11 +157,10 @@ export function AdminActionableInbox() {
                                                 <div className="mb-1.5 flex items-center gap-2">
                                                     <Badge
                                                         variant="outline"
-                                                        className={`rounded border px-1.5 py-0 text-[10px] font-semibold ${
-                                                            t.priority === "URGENT"
+                                                        className={`rounded border px-1.5 py-0 text-[10px] font-semibold ${t.priority === "URGENT"
                                                                 ? "border-chart-2/50 bg-chart-2/5 text-chart-2"
                                                                 : "border-chart-3/50 bg-chart-3/5 text-chart-3"
-                                                        }`}
+                                                            }`}
                                                     >
                                                         {t.priority}
                                                     </Badge>
