@@ -55,8 +55,8 @@ export function AdminActionableInbox() {
     if (loading || !data) {
         return (
             <Card className="border-0 shadow-premium">
-                <CardHeader className="pb-4">
-                    <CardTitle className="flex items-center gap-2 text-lg font-bold text-slate-900">
+                <CardHeader className="pb-2">
+                    <CardTitle className="flex items-center gap-2 text-base font-bold text-slate-900">
                         <span className="inline-block h-6 w-2 rounded-full bg-chart-1"></span>
                         Cần xử lý ngay
                     </CardTitle>
@@ -75,8 +75,8 @@ export function AdminActionableInbox() {
 
     return (
         <Card className="border-0 shadow-premium">
-            <CardHeader className="pb-4">
-                <CardTitle className="flex items-center gap-2 text-lg font-bold text-slate-900">
+            <CardHeader className="pb-2">
+                <CardTitle className="flex items-center gap-2 text-base font-bold text-slate-900">
                     <span className="inline-block h-6 w-2 rounded-full bg-chart-1"></span>
                     Cần xử lý ngay
                 </CardTitle>
@@ -90,7 +90,7 @@ export function AdminActionableInbox() {
                         <TabsList className="grid h-auto w-full grid-cols-2 gap-1 rounded-xl bg-slate-100 p-1 md:grid-cols-4">
                             <TabsTrigger
                                 value="tickets"
-                                className="flex items-center gap-2 rounded-lg py-2.5 text-xs font-semibold data-[state=active]:bg-white data-[state=active]:text-chart-2 data-[state=active]:shadow-sm"
+                                className="flex items-center gap-2 rounded-lg py-1.5 text-xs font-semibold data-[state=active]:bg-white data-[state=active]:text-chart-2 data-[state=active]:shadow-sm"
                             >
                                 <ExclamationCircleIcon className="h-4 w-4" />
                                 <span className="hidden sm:inline">Hỗ trợ (Tickets)</span>
@@ -102,7 +102,7 @@ export function AdminActionableInbox() {
                             </TabsTrigger>
                             <TabsTrigger
                                 value="orgUpdates"
-                                className="flex items-center gap-2 rounded-lg py-2.5 text-xs font-semibold data-[state=active]:bg-white data-[state=active]:text-chart-3 data-[state=active]:shadow-sm"
+                                className="flex items-center gap-2 rounded-lg py-1.5 text-xs font-semibold data-[state=active]:bg-white data-[state=active]:text-chart-3 data-[state=active]:shadow-sm"
                             >
                                 <BuildingOffice2Icon className="h-4 w-4" />
                                 <span className="hidden sm:inline">Cập nhật Tổ chức</span>
@@ -114,7 +114,7 @@ export function AdminActionableInbox() {
                             </TabsTrigger>
                             <TabsTrigger
                                 value="refunds"
-                                className="flex items-center gap-2 rounded-lg py-2.5 text-xs font-semibold data-[state=active]:bg-white data-[state=active]:text-chart-4 data-[state=active]:shadow-sm"
+                                className="flex items-center gap-2 rounded-lg py-1.5 text-xs font-semibold data-[state=active]:bg-white data-[state=active]:text-chart-4 data-[state=active]:shadow-sm"
                             >
                                 <CurrencyDollarIcon className="h-4 w-4" />
                                 <span className="hidden sm:inline">Hoàn tiền</span>
@@ -126,7 +126,7 @@ export function AdminActionableInbox() {
                             </TabsTrigger>
                             <TabsTrigger
                                 value="visitBookings"
-                                className="flex items-center gap-2 rounded-lg py-2.5 text-xs font-semibold data-[state=active]:bg-white data-[state=active]:text-chart-1 data-[state=active]:shadow-sm"
+                                className="flex items-center gap-2 rounded-lg py-1.5 text-xs font-semibold data-[state=active]:bg-white data-[state=active]:text-chart-1 data-[state=active]:shadow-sm"
                             >
                                 <CalendarDaysIcon className="h-4 w-4" />
                                 <span className="hidden sm:inline">Lịch hẹn kho</span>
@@ -139,7 +139,7 @@ export function AdminActionableInbox() {
                         </TabsList>
                     </div>
 
-                    <div className="p-6">
+                    <div className="p-4">
                         <TabsContent value="tickets" className="mt-0 outline-none">
                             {data.tickets.length === 0 ? (
                                 <EmptyState message="Không có ticket (hỗ trợ) nào đang mở." />

@@ -83,7 +83,7 @@ const STEP_ORDER = ["PENDING", "PICKING", "CHECKING", "PACKED", "SHIPPED"];
 function StepBar({ status }: { status: string }) {
     const current = STEP_ORDER.indexOf(status);
     return (
-        <div className="flex items-center gap-1 px-6 py-4 border-b bg-muted/20 overflow-x-auto">
+        <div className="flex items-center gap-1 px-4 py-2.5 border-b bg-muted/20 overflow-x-auto">
             {OUTBOUND_STEPS.map((step, idx) => {
                 const done = idx < current;
                 const active = idx === current;
@@ -377,8 +377,8 @@ export default function OutboundApprovalDetail({
     return (
         <div className="flex flex-col h-full">
             {/* ── Header ── */}
-            <div className="p-6 border-b">
-                <div className="flex items-center justify-between gap-4">
+            <div className="px-4 py-3 border-b">
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                     <div>
                         <div className="flex items-center gap-3 flex-wrap">
                             <h2 className="text-[20px] font-bold leading-[130%]">{data.code}</h2>
@@ -419,7 +419,7 @@ export default function OutboundApprovalDetail({
                             </div>
                         )}
                     </div>
-                    <Button variant="outline" size="sm" className="gap-2 rounded-xl">
+                    <Button variant="outline" size="sm" className="gap-2 rounded-xl shrink-0 self-start">
                         <PrinterIcon className="w-4 h-4" />In phiếu
                     </Button>
                 </div>
@@ -438,8 +438,8 @@ export default function OutboundApprovalDetail({
                 {data.status === "PENDING" && (
                     <div className="flex flex-col gap-0">
                         {/* Strategy selector */}
-                        <div className="px-6 pt-6">
-                            <h3 className="text-[15px] font-semibold mb-3">Chiến lược xuất hàng</h3>
+                        <div className="px-4 pt-4">
+                            <h3 className="text-[15px] font-semibold mb-2">Chiến lược xuất hàng</h3>
                             <div className="approval-strategy">
                                 {STRATEGY_OPTIONS.map(opt => (
                                     <button key={opt.value}
@@ -453,8 +453,8 @@ export default function OutboundApprovalDetail({
                         </div>
 
                         {/* Stock check table */}
-                        <div className="p-6">
-                            <div className="flex items-center justify-between mb-4">
+                        <div className="p-4">
+                            <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
                                 <h3 className="text-[15px] font-semibold">Kiểm tra tồn kho</h3>
                                 {hasInsufficientStock && (
                                     <Badge className="bg-red-50 text-red-700 border-red-200 rounded-full shadow-none font-normal text-xs gap-1">
@@ -463,14 +463,14 @@ export default function OutboundApprovalDetail({
                                 )}
                             </div>
                             <div className="overflow-x-auto">
-                                <table className="w-full">
+                                <table className="w-full min-w-[480px]">
                                     <thead className="bg-muted/30 border-b">
                                         <tr>
-                                            <th className="text-left py-3 px-4 text-xs font-semibold text-muted-foreground uppercase">Sản phẩm</th>
-                                            <th className="text-left py-3 px-4 text-xs font-semibold text-muted-foreground uppercase">SKU</th>
-                                            <th className="text-center py-3 px-4 text-xs font-semibold text-muted-foreground uppercase">Yêu cầu</th>
-                                            <th className="text-center py-3 px-4 text-xs font-semibold text-muted-foreground uppercase">Khả dụng</th>
-                                            <th className="text-left py-3 px-4 text-xs font-semibold text-muted-foreground uppercase">Trạng thái</th>
+                                            <th className="text-left py-2 px-3 text-xs font-semibold text-muted-foreground uppercase">Sản phẩm</th>
+                                            <th className="text-left py-2 px-3 text-xs font-semibold text-muted-foreground uppercase">SKU</th>
+                                            <th className="text-center py-2 px-3 text-xs font-semibold text-muted-foreground uppercase">Yêu cầu</th>
+                                            <th className="text-center py-2 px-3 text-xs font-semibold text-muted-foreground uppercase">Khả dụng</th>
+                                            <th className="text-left py-2 px-3 text-xs font-semibold text-muted-foreground uppercase">Trạng thái</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y">
@@ -478,13 +478,13 @@ export default function OutboundApprovalDetail({
                                             const stock = getStockInfo(detail);
                                             return (
                                                 <tr key={detail.id} className={`transition-colors ${!stock.sufficient ? "approval-reconciliation__row--insufficient" : ""}`}>
-                                                    <td className="py-3 px-4 text-sm font-medium">{detail.product?.name || "—"}</td>
-                                                    <td className="py-3 px-4 text-sm text-muted-foreground">{detail.product?.sku || "—"}</td>
-                                                    <td className="py-3 px-4 text-center font-semibold text-sm">{stock.requested}</td>
-                                                    <td className="py-3 px-4 text-center text-sm">
+                                                    <td className="py-2 px-3 text-sm font-medium">{detail.product?.name || "—"}</td>
+                                                    <td className="py-2 px-3 text-sm text-muted-foreground">{detail.product?.sku || "—"}</td>
+                                                    <td className="py-2 px-3 text-center font-semibold text-sm">{stock.requested}</td>
+                                                    <td className="py-2 px-3 text-center text-sm">
                                                         <span className={stock.sufficient ? "text-green-600 font-medium" : "text-red-600 font-semibold"}>{stock.available}</span>
                                                     </td>
-                                                    <td className="py-3 px-4">
+                                                    <td className="py-2 px-3">
                                                         {stock.sufficient ? (
                                                             <Badge className="bg-green-50 text-green-700 border-green-200 gap-1 rounded-full shadow-none font-normal text-xs">
                                                                 <CheckCircleIcon className="w-3 h-3" />Đủ hàng
@@ -525,26 +525,26 @@ export default function OutboundApprovalDetail({
 
                 {/* ─── PICKING ─── */}
                 {data.status === "PICKING" && (
-                    <div className="p-6">
-                        <h3 className="text-[15px] font-semibold mb-1">Nhặt hàng theo phiếu</h3>
-                        <p className="text-xs text-muted-foreground mb-4">Nhập số lượng thực tế nhặt được cho từng dòng hàng.</p>
+                    <div className="p-4">
+                        <h3 className="text-[15px] font-semibold mb-0.5">Nhặt hàng theo phiếu</h3>
+                        <p className="text-xs text-muted-foreground mb-3">Nhập số lượng thực tế nhặt được cho từng dòng hàng.</p>
                         <div className="overflow-x-auto">
-                            <table className="w-full">
+                            <table className="w-full min-w-[380px]">
                                 <thead className="bg-muted/30 border-b">
                                     <tr>
-                                        <th className="text-left py-3 px-4 text-xs font-semibold text-muted-foreground uppercase">Sản phẩm</th>
-                                        <th className="text-left py-3 px-4 text-xs font-semibold text-muted-foreground uppercase">Vị trí</th>
-                                        <th className="text-center py-3 px-4 text-xs font-semibold text-muted-foreground uppercase">SL yêu cầu</th>
-                                        <th className="text-center py-3 px-4 text-xs font-semibold text-muted-foreground uppercase">SL nhặt</th>
+                                        <th className="text-left py-2 px-3 text-xs font-semibold text-muted-foreground uppercase">Sản phẩm</th>
+                                        <th className="text-left py-2 px-3 text-xs font-semibold text-muted-foreground uppercase">Vị trí</th>
+                                        <th className="text-center py-2 px-3 text-xs font-semibold text-muted-foreground uppercase">SL yêu cầu</th>
+                                        <th className="text-center py-2 px-3 text-xs font-semibold text-muted-foreground uppercase">SL nhặt</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y">
                                     {(data as any).pick_lists?.[0]?.details?.length ? (data as any).pick_lists[0].details.map((d: any) => (
                                         <tr key={d.id}>
-                                            <td className="py-3 px-4 text-sm font-medium">{d.product?.name || d.export_detail?.product?.name || "—"}</td>
-                                            <td className="py-3 px-4 text-sm text-muted-foreground">{d.location?.code || "—"}</td>
-                                            <td className="py-3 px-4 text-center text-sm font-semibold">{d.quantity || d.required_qty || 0}</td>
-                                            <td className="py-3 px-4 text-center">
+                                            <td className="py-2 px-3 text-sm font-medium">{d.product?.name || d.export_detail?.product?.name || "—"}</td>
+                                            <td className="py-2 px-3 text-sm text-muted-foreground">{d.location?.code || "—"}</td>
+                                            <td className="py-2 px-3 text-center text-sm font-semibold">{d.quantity || d.required_qty || 0}</td>
+                                            <td className="py-2 px-3 text-center">
                                                 <Input type="number" min={0}
                                                     value={pickedQty[d.id] ?? 0}
                                                     onChange={e => setPickedQty(p => ({ ...p, [d.id]: parseInt(e.target.value) || 0 }))}
@@ -562,17 +562,17 @@ export default function OutboundApprovalDetail({
 
                 {/* ─── CHECKING ─── */}
                 {data.status === "CHECKING" && (
-                    <div className="p-6">
-                        <h3 className="text-[15px] font-semibold mb-1">Kiểm tra chất lượng</h3>
-                        <p className="text-xs text-muted-foreground mb-4">Kiểm tra từng sản phẩm và đánh dấu đạt/không đạt.</p>
+                    <div className="p-4">
+                        <h3 className="text-[15px] font-semibold mb-0.5">Kiểm tra chất lượng</h3>
+                        <p className="text-xs text-muted-foreground mb-3">Kiểm tra từng sản phẩm và đánh dấu đạt/không đạt.</p>
                         <div className="overflow-x-auto">
-                            <table className="w-full">
+                            <table className="w-full min-w-[360px]">
                                 <thead className="bg-muted/30 border-b">
                                     <tr>
-                                        <th className="text-left py-3 px-4 text-xs font-semibold text-muted-foreground uppercase">Sản phẩm</th>
-                                        <th className="text-center py-3 px-4 text-xs font-semibold text-muted-foreground uppercase">SL đặt</th>
-                                        <th className="text-center py-3 px-4 text-xs font-semibold text-muted-foreground uppercase">SL kiểm</th>
-                                        <th className="text-center py-3 px-4 text-xs font-semibold text-muted-foreground uppercase">Đạt</th>
+                                        <th className="text-left py-2 px-3 text-xs font-semibold text-muted-foreground uppercase">Sản phẩm</th>
+                                        <th className="text-center py-2 px-3 text-xs font-semibold text-muted-foreground uppercase">SL đặt</th>
+                                        <th className="text-center py-2 px-3 text-xs font-semibold text-muted-foreground uppercase">SL kiểm</th>
+                                        <th className="text-center py-2 px-3 text-xs font-semibold text-muted-foreground uppercase">Đạt</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y">
@@ -580,15 +580,15 @@ export default function OutboundApprovalDetail({
                                         const cd = checkingData[d.id] ?? { checked_qty: d.quantity || 0, passed: true };
                                         return (
                                             <tr key={d.id} className={`transition-colors ${!cd.passed ? "approval-reconciliation__row--shortage" : ""}`}>
-                                                <td className="py-3 px-4 text-sm font-medium">{d.product?.name || "—"}</td>
-                                                <td className="py-3 px-4 text-center text-sm font-semibold">{d.quantity}</td>
-                                                <td className="py-3 px-4 text-center">
+                                                <td className="py-2 px-3 text-sm font-medium">{d.product?.name || "—"}</td>
+                                                <td className="py-2 px-3 text-center text-sm font-semibold">{d.quantity}</td>
+                                                <td className="py-2 px-3 text-center">
                                                     <Input type="number" min={0}
                                                         value={cd.checked_qty}
                                                         onChange={e => setCheckingData(p => ({ ...p, [d.id]: { ...cd, checked_qty: parseInt(e.target.value) || 0 } }))}
                                                         className="w-20 h-8 rounded-xl text-center text-sm mx-auto" />
                                                 </td>
-                                                <td className="py-3 px-4 text-center">
+                                                <td className="py-2 px-3 text-center">
                                                     <Checkbox
                                                         checked={cd.passed}
                                                         onCheckedChange={v => setCheckingData(p => ({ ...p, [d.id]: { ...cd, passed: !!v } }))}
@@ -607,7 +607,7 @@ export default function OutboundApprovalDetail({
 
                 {/* ─── PACKED ─── */}
                 {data.status === "PACKED" && (
-                    <div className="p-6 flex flex-col items-center gap-4 text-center min-h-50 justify-center">
+                    <div className="p-4 flex flex-col items-center gap-3 text-center min-h-40 justify-center">
                         <div className="w-14 h-14 rounded-full bg-orange-50 flex items-center justify-center">
                             <TruckIcon className="w-7 h-7 text-orange-600" />
                         </div>
@@ -618,7 +618,7 @@ export default function OutboundApprovalDetail({
                             </p>
                         </div>
                         <div className="overflow-x-auto w-full mt-2">
-                            <table className="w-full">
+                            <table className="w-full min-w-[260px]">
                                 <thead className="bg-muted/30 border-b">
                                     <tr>
                                         <th className="text-left py-2 px-4 text-xs font-semibold text-muted-foreground uppercase">Sản phẩm</th>
@@ -640,7 +640,7 @@ export default function OutboundApprovalDetail({
 
                 {/* ─── SHIPPED ─── */}
                 {data.status === "SHIPPED" && (
-                    <div className="p-6 flex flex-col items-center gap-4 text-center min-h-50 justify-center">
+                    <div className="p-4 flex flex-col items-center gap-3 text-center min-h-40 justify-center">
                         <div className="w-16 h-16 rounded-full bg-green-50 flex items-center justify-center">
                             <CheckCircleIcon className="w-8 h-8 text-green-600" />
                         </div>
@@ -653,7 +653,7 @@ export default function OutboundApprovalDetail({
 
                 {/* ─── CANCELLED ─── */}
                 {data.status === "CANCELLED" && (
-                    <div className="p-6 flex flex-col items-center gap-4 text-center min-h-50 justify-center">
+                    <div className="p-4 flex flex-col items-center gap-3 text-center min-h-40 justify-center">
                         <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center">
                             <XCircleIcon className="w-8 h-8 text-red-500" />
                         </div>

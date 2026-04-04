@@ -78,8 +78,8 @@ export function AdminRevenueChart() {
                     </Select>
                 </div>
             </CardHeader>
-            <CardContent>
-                <div className="h-[300px] w-full mt-4">
+            <CardContent className="pt-0">
+                <div className="h-[260px] w-full mt-2">
                     {loading ? (
                         <div className="animate-pulse flex items-end gap-4 h-full p-4">
                             {[...Array(6)].map((_, i) => (
