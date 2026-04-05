@@ -8,6 +8,7 @@
  */
 export enum ResponseCode {
     AUTH_REGISTER_SUCCESS = 'auth.register_success',
+    AUTH_SEND_REGISTRATION_OTP_SUCCESS = 'auth.send_registration_otp_success',
     AUTH_LOGIN_SUCCESS = 'auth.login_success',
     AUTH_LOGIN_2FA_REQUIRED = 'auth.login_2fa_required',
     AUTH_LOGOUT_SUCCESS = 'auth.logout_success',
