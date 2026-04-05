@@ -4,6 +4,15 @@ export interface RegisterInput {
     password: string;
     language?: string;
     turnstileToken?: string;
+    otp?: string;
+}
+
+export interface SendOtpInput {
+    name: string;
+    email: string;
+    password: string;
+    language?: string;
+    turnstileToken?: string;
 }
 
 export interface LoginInput {

@@ -1,4 +1,4 @@
-import type { RegisterInput, LoginInput, ChangePass, ForgotPasswordInput } from '@/types/auth/auth.type';
+import type { RegisterInput, LoginInput, ChangePass, ForgotPasswordInput, SendOtpInput } from '@/types/auth/auth.type';
 import { authStorage } from './auth-storage.service';
 
 const API = process.env.NEXT_PUBLIC_API_URL
@@ -21,6 +21,26 @@ export class AuthService {
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
             throw new Error(errorData.message || 'Registration failed');
+        }
+
+        return response.json();
+    }
+
+    /**
+     * Gửi OTP xác minh email trước khi đăng ký
+     */
+    async sendRegistrationOtp(input: SendOtpInput) {
+        const response = await fetch(`${API}/auth/send-registration-otp`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(input)
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Failed to send OTP');
         }
 
         return response.json();
