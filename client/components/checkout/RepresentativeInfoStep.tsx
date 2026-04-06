@@ -223,14 +223,14 @@ export function RepresentativeInfoStep({ initialData, onChange }: Representative
                     'representative_phone',
                     'Số điện thoại',
                     <PhoneIcon className="w-4 h-4 text-slate-400" />,
-                    '0901234567',
+                    'Nhập số điện thoại',
                     true
                 )}
                 {renderField(
                     'representative_email',
                     'Email',
                     <EnvelopeIcon className="w-4 h-4 text-slate-400" />,
-                    'email@company.com',
+                    'Nhập email',
                     true,
                     'email'
                 )}

@@ -108,7 +108,10 @@ export class RentalContractService {
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
             const detail = errorData.errors?.map((e: { field: string; message: string }) => `${e.field}: ${e.message}`).join('; ');
-            throw new Error(detail ? `${errorData.message} (${detail})` : errorData.message || 'Không thể tạo hợp đồng');
+            const baseMessage = detail ? `${errorData.message} (${detail})` : errorData.message || 'Không thể tạo hợp đồng';
+            // Gắn code vào message để caller có thể detect loại lỗi chính xác
+            const errorCode = errorData.code ? `[${errorData.code}] ` : '';
+            throw new Error(`${errorCode}${baseMessage}`);
         }
 
         const res = await response.json();
