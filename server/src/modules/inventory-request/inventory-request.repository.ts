@@ -294,6 +294,25 @@ export class InventoryRequestRepository {
                                 block_id: true,
                                 required_qty: true,
                                 picked_qty: true,
+                                block: {
+                                    select: {
+                                        id: true,
+                                        code: true,
+                                        name: true,
+                                    },
+                                },
+                                export_detail: {
+                                    select: {
+                                        id: true,
+                                        product: {
+                                            select: {
+                                                id: true,
+                                                name: true,
+                                                sku: true,
+                                            },
+                                        },
+                                    },
+                                },
 
                             },
                         },

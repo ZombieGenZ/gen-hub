@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import { authStorage } from "@/services/auth/auth-storage.service";
@@ -523,13 +523,13 @@ export default function OutboundApprovalDetail({
                     </div>
                 )}
 
-                {/* ─── PICKING ─── */}
+                                {/* ─── PICKING ─── */}
                 {data.status === "PICKING" && (
                     <div className="p-4">
                         <h3 className="text-[15px] font-semibold mb-0.5">Nhặt hàng theo phiếu</h3>
                         <p className="text-xs text-muted-foreground mb-3">Nhập số lượng thực tế nhặt được cho từng dòng hàng.</p>
                         <div className="overflow-x-auto">
-                            <table className="w-full min-w-[380px]">
+                            <table className="w-full min-w-[480px]">
                                 <thead className="bg-muted/30 border-b">
                                     <tr>
                                         <th className="text-left py-2 px-3 text-xs font-semibold text-muted-foreground uppercase">Sản phẩm</th>
@@ -539,28 +539,38 @@ export default function OutboundApprovalDetail({
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y">
-                                    {(data as any).pick_lists?.[0]?.details?.length ? (data as any).pick_lists[0].details.map((d: any) => (
-                                        <tr key={d.id}>
-                                            <td className="py-2 px-3 text-sm font-medium">{d.product?.name || d.export_detail?.product?.name || "—"}</td>
-                                            <td className="py-2 px-3 text-sm text-muted-foreground">{d.location?.code || "—"}</td>
-                                            <td className="py-2 px-3 text-center text-sm font-semibold">{d.quantity || d.required_qty || 0}</td>
-                                            <td className="py-2 px-3 text-center">
-                                                <Input type="number" min={0}
-                                                    value={pickedQty[d.id] ?? 0}
-                                                    onChange={e => setPickedQty(p => ({ ...p, [d.id]: parseInt(e.target.value) || 0 }))}
-                                                    className="w-20 h-8 rounded-xl text-center text-sm mx-auto" />
-                                            </td>
-                                        </tr>
-                                    )) : (
-                                        <tr><td colSpan={4} className="py-10 text-center text-muted-foreground text-sm">Chưa có danh sách nhặt hàng</td></tr>
-                                    )}
+                                    {(() => {
+                                        const pickDetails = data.pick_lists?.[0]?.details ?? [];
+                                        if (!pickDetails.length) {
+                                            return <tr><td colSpan={4} className="py-10 text-center text-muted-foreground text-sm">Chưa có danh sách nhặt hàng</td></tr>;
+                                        }
+                                        return pickDetails.map((d) => {
+                                            const productName =
+                                                d.export_detail?.product?.name
+                                                ?? "—";
+                                            const position = d.block?.code ?? "—";
+                                            return (
+                                                <tr key={d.id}>
+                                                    <td className="py-2 px-3 text-sm font-medium">{productName}</td>
+                                                    <td className="py-2 px-3 text-sm text-muted-foreground">{position}</td>
+                                                    <td className="py-2 px-3 text-center text-sm font-semibold">{d.required_qty}</td>
+                                                    <td className="py-2 px-3 text-center">
+                                                        <Input
+                                                            type="number" min={0}
+                                                            value={pickedQty[d.id] ?? 0}
+                                                            onChange={e => setPickedQty(p => ({ ...p, [d.id]: parseInt(e.target.value) || 0 }))}
+                                                            className="w-20 h-8 rounded-xl text-center text-sm mx-auto"
+                                                        />
+                                                    </td>
+                                                </tr>
+                                            );
+                                        });
+                                    })()}
                                 </tbody>
                             </table>
                         </div>
                     </div>
                 )}
-
-                {/* ─── CHECKING ─── */}
                 {data.status === "CHECKING" && (
                     <div className="p-4">
                         <h3 className="text-[15px] font-semibold mb-0.5">Kiểm tra chất lượng</h3>
@@ -607,17 +617,19 @@ export default function OutboundApprovalDetail({
 
                 {/* ─── PACKED ─── */}
                 {data.status === "PACKED" && (
-                    <div className="p-4 flex flex-col items-center gap-3 text-center min-h-40 justify-center">
-                        <div className="w-14 h-14 rounded-full bg-orange-50 flex items-center justify-center">
-                            <TruckIcon className="w-7 h-7 text-orange-600" />
+                    <div className="p-4">
+                        <div className="flex flex-col items-center gap-3 text-center mb-4">
+                            <div className="w-14 h-14 rounded-full bg-orange-50 flex items-center justify-center">
+                                <TruckIcon className="w-7 h-7 text-orange-600" />
+                            </div>
+                            <div>
+                                <p className="font-semibold text-[15px]">Hàng đã đóng gói xong</p>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                    Nhấn bên dưới để hoàn tất xuất kho và bàn giao cho vận chuyển.
+                                </p>
+                            </div>
                         </div>
-                        <div>
-                            <p className="font-semibold text-[15px]">Hàng đã đóng gói xong</p>
-                            <p className="text-sm text-muted-foreground mt-1">
-                                Nhấn bên dưới để hoàn tất xuất kho và bàn giao cho vận chuyển.
-                            </p>
-                        </div>
-                        <div className="overflow-x-auto w-full mt-2">
+                        <div className="overflow-x-auto">
                             <table className="w-full min-w-[260px]">
                                 <thead className="bg-muted/30 border-b">
                                     <tr>
@@ -628,7 +640,7 @@ export default function OutboundApprovalDetail({
                                 <tbody className="divide-y">
                                     {data.details?.map(d => (
                                         <tr key={d.id}>
-                                            <td className="py-2 px-4 text-sm">{d.product?.name || "—"}</td>
+                                            <td className="py-2 px-4 text-sm text-left">{d.product?.name || "—"}</td>
                                             <td className="py-2 px-4 text-center font-semibold text-sm text-[#0F766E]">{d.quantity}</td>
                                         </tr>
                                     ))}
