@@ -56,6 +56,7 @@ export class ProductService {
             if (query?.offset != null) params.append('offset', String(query.offset));
             if (query?.keywords) params.append('keywords', query.keywords);
             if (query?.is_active != null) params.append('is_active', String(query.is_active));
+            if (query?.warehouse_id) params.append('warehouse_id', query.warehouse_id);
 
             const qs = params.toString();
             const url = `${API}/organizations/${orgId}/products${qs ? `?${qs}` : ''}`;

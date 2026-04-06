@@ -39,6 +39,8 @@ export interface IProduct {
     is_deleted: boolean | null;
     created_by: string;
     updated_by: string | null;
+    /** Chỉ có khi query kèm warehouse_id */
+    quantity_available?: number;
 }
 
 // Re-export IPaginatedResponse từ common
