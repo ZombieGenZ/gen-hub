@@ -593,7 +593,11 @@ export class InventoryService {
      * @param data Dữ liệu xác nhận (chi tiết số lượng thực tế, ghi chú)
      * @returns Kết quả phản hồi từ API
      */
-    async confirmReceiving(token: string, id: string, data: { details: { detail_id: string; actual_qty: number }[]; notes?: string }): Promise<ApiResponse<InboundRequest>> {
+    async confirmReceiving(token: string, id: string, data: {
+        details: { detail_id: string; actual_qty: number }[];
+        notes?: string;
+        is_customer_agreed?: boolean;
+    }): Promise<ApiResponse<InboundRequest>> {
         const orgId = await this.getOrgId(token);
         const response = await fetch(`${API}/organizations/${orgId}/inventory/inbound/${id}/confirm-receiving`, {
             method: 'PATCH',
@@ -602,7 +606,12 @@ export class InventoryService {
         });
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.message || 'Không thể xác nhận kiểm đếm');
+            const err: any = new Error(errorData.message || 'Không thể xác nhận kiểm đếm');
+            err.status = response.status;
+            err.code = errorData.code;
+            err.mismatches = errorData.mismatches;
+            err.require_customer_agreement = errorData.require_customer_agreement;
+            throw err;
         }
         return response.json();
     }
