@@ -42,7 +42,9 @@
         "picking_not_completed": "Picking has not been completed",
         "checking_not_passed": "Checking has not passed",
         "pick_list_not_found": "Pick list not found",
-        "quantity_mismatch": "Actual counted quantity does not match expected quantity. Please confirm or set force=true to proceed"
+        "quantity_mismatch": "Actual counted quantity does not match expected quantity. Please confirm or set force=true to proceed",
+        "mismatch_confirm_required": "Actual quantity differs from the quantity on the receipt. Please consult the customer and resubmit with is_customer_agreed (true = accept actual quantities, false = cancel the inbound receipt).",
+        "inbound_cancelled_customer_rejected": "Customer rejected the quantity discrepancy — inbound receipt has been cancelled"
     },
     "validation": {
         "warehouse_id_required": "Please select a warehouse",
