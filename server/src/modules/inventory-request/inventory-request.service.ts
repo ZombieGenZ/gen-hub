@@ -2196,6 +2196,8 @@ export class InventoryRequestService {
           status: finalStatus,
           receiving_completed_at: new Date(),
           notes: isCancelled ? cancelReason : (dto.notes ?? receipt.notes),
+          // ✅ Lưu flag: khách hàng đã đồng ý với mismatch
+          is_customer_mismatch_agreed: hasMismatch && dto.is_customer_agreed === true ? true : false,
           updated_by: actorId,
         },
         include: {
@@ -2295,7 +2297,10 @@ export class InventoryRequestService {
       return actualQty === 0 || actualQty !== expectedQty;
     });
 
-    if (mismatchDetails.length > 0 && !dto?.force) {
+    // ✅ Nếu khách hàng đã đồng ý mismatch ở receiving → cho phép cất hàng ngay (không yêu cầu force)
+    const hasCustomerApprovedMismatch = (receipt as any).is_customer_mismatch_agreed === true;
+
+    if (mismatchDetails.length > 0 && !dto?.force && !hasCustomerApprovedMismatch) {
       const mismatches = mismatchDetails.map((d) => ({
         detail_id: d.id,
         product_name: (d as any).product?.name || d.product_id,

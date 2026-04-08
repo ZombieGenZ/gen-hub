@@ -2444,6 +2444,7 @@ model Receipt {
   receiving_completed_at DateTime?
   putaway_started_at     DateTime?
   putaway_completed_at   DateTime?
+  is_customer_mismatch_agreed Boolean?   @default(false) @map("is_customer_mismatch_agreed")
   is_active              Boolean       @default(true)
   created_at             DateTime      @default(now())
   updated_at             DateTime      @updatedAt

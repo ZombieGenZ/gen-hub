@@ -66,8 +66,7 @@ export class UserRepository {
         language: data.language || 'vi',
         email_verify_token: data.email_verify_token,
         email_verify_expired: data.email_verify_expired,
-        email_confirmed: data.email_confirmed ?? false,
-        system_roles: {
+        email_confirmed: data.email_confirmed ?? false,        is_verified: data.email_confirmed ?? false,        system_roles: {
           create: defaultRoles.map((role) => ({
             role_id: role.id,
           })),

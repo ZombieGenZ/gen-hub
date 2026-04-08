@@ -102,7 +102,7 @@ const mapApiQuotationToBreakdown = (quotation: QuotationApiResponse) => ({
 });
 
 const MEMBERSHIP_ERROR_KEYWORD = 'không phải thành viên của tổ chức này';
-const ACCOUNT_NOT_VERIFIED_CODE = 'error.forbidden.account_not_verified';
+const EMAIL_NOT_VERIFIED_CODE = 'error.forbidden.email_not_confirmed';
 
 function CheckoutContent() {
     const router = useRouter();
@@ -185,7 +185,7 @@ function CheckoutContent() {
         const checkEmailVerification = async () => {
             try {
                 const userData = await authStorage.getUser();
-                const verified = userData?.user?.is_verified ?? false;
+                const verified = userData?.user?.email_confirmed ?? false;
                 setIsEmailVerified(verified);
             } catch {
                 setIsEmailVerified(false);
@@ -423,16 +423,17 @@ function CheckoutContent() {
             console.error('Failed to create order:', error);
             const rawMessage = error instanceof Error ? error.message : '';
 
-            // Kiểm tra lỗi tài khoản chưa xác minh
-            const isNotVerified =
-                rawMessage.includes(ACCOUNT_NOT_VERIFIED_CODE) ||
-                rawMessage.toLowerCase().includes('chưa được xác minh') ||
-                rawMessage.toLowerCase().includes('account_not_verified');
+            // Kiểm tra lỗi email chưa được xác minh
+            const isEmailNotVerified =
+                rawMessage.includes(EMAIL_NOT_VERIFIED_CODE) ||
+                rawMessage.toLowerCase().includes('email_not_confirmed') ||
+                rawMessage.toLowerCase().includes('email chưa được xác minh') ||
+                rawMessage.toLowerCase().includes('xác minh email');
 
-            if (isNotVerified) {
+            if (isEmailNotVerified) {
                 setIsEmailVerified(false);
-                toast.error('Tài khoản chưa được xác minh', {
-                    description: 'Vui lòng xác minh email để tiếp tục thuê kho.',
+                toast.error('Email chưa được xác minh', {
+                    description: 'Vui lòng xác minh địa chỉ email của bạn để tiếp tục tạo đơn hàng.',
                     duration: 6000,
                     action: {
                         label: 'Xác minh ngay',
