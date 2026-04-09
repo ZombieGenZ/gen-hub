@@ -364,7 +364,7 @@ export default function InboundApprovalDetail({
                             <table className="w-full text-sm">
                                 <thead>
                                     <tr className="border-b">
-                                        <th className="text-left pb-2 text-xs font-semibold text-muted-foreground uppercase">Sản phẩm</th>
+                                        <th className="text-center pb-2 text-xs font-semibold text-muted-foreground uppercase">Sản phẩm</th>
                                         <th className="text-center pb-2 text-xs font-semibold text-muted-foreground uppercase">Dự kiến</th>
                                         <th className="text-center pb-2 text-xs font-semibold text-muted-foreground uppercase">Thực tế</th>
                                         <th className="text-center pb-2 text-xs font-semibold text-muted-foreground uppercase">Chênh lệch</th>
@@ -385,9 +385,8 @@ export default function InboundApprovalDetail({
                                                 <td className="py-2.5 text-center text-slate-600">{m.expected_qty}</td>
                                                 <td className="py-2.5 text-center font-semibold text-slate-800">{m.actual_qty}</td>
                                                 <td className="py-2.5 text-center">
-                                                    <span className={`inline-flex items-center gap-0.5 text-xs font-bold ${
-                                                        isOver ? "text-blue-600" : "text-red-500"
-                                                    }`}>
+                                                    <span className={`inline-flex items-center gap-0.5 text-xs font-bold ${isOver ? "text-blue-600" : "text-red-500"
+                                                        }`}>
                                                         {isOver
                                                             ? <ArrowTrendingUpIcon className="w-3.5 h-3.5" />
                                                             : <ArrowTrendingDownIcon className="w-3.5 h-3.5" />
@@ -654,9 +653,9 @@ export default function InboundApprovalDetail({
                                 <tbody className="divide-y">
                                     {data.details?.map(d => (
                                         <tr key={d.id}>
-                                            <td className="py-2 px-4 text-sm">{d.product?.name || "—"}</td>
+                                            <td className="py-2 px-4 text-left text-sm">{d.product?.name || "—"}</td>
                                             <td className="py-2 px-4 text-center font-semibold text-sm text-[#0F766E]">{d.actual_qty ?? d.expected_qty}</td>
-                                            <td className="py-2 px-4 text-sm text-muted-foreground">{d.batch?.code || "—"}</td>
+                                            <td className="py-2 px-4 text-left text-sm text-muted-foreground">{d.batch?.code || "—"}</td>
                                         </tr>
                                     ))}
                                 </tbody>
