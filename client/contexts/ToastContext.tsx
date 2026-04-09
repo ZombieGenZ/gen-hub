@@ -55,7 +55,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({
     <ToastContext.Provider value={{ showToast, dismissToast }}>
       {children}
       {/* Toast Container - Bottom Center with Perspective */}
-      <div className="pointer-events-none fixed bottom-8 left-1/2 z-[100] flex w-full max-w-[420px] -translate-x-1/2 flex-col items-center gap-2 p-4" style={{ perspective: "1000px" }}>
+      <div className="pointer-events-none fixed bottom-8 left-1/2 z-[9999] flex w-full max-w-[420px] -translate-x-1/2 flex-col items-center gap-2 p-4" style={{ perspective: "1000px" }}>
         <AnimatePresence mode="popLayout">
           {toasts.map((toast, index) => (
             <Toast

@@ -807,7 +807,10 @@ export function ProfileDialog({ open = true, onOpenChange }: ProfileDialogProps 
       setSubmitting(true);
       try {
         const token = authStorage.getAccessToken();
-        if (!token) return;
+        if (!token) {
+          showToast('Vui lòng đăng nhập lại', 'error');
+          return;
+        }
 
         // Kiểm tra xác minh email
         const isVerified = authStorage.getEmailVerified();
