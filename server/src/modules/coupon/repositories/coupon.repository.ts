@@ -266,4 +266,70 @@ export class CouponRepository {
             select: couponWithRelationsSelect,
         });
     }
+
+    /**
+     * Lấy danh sách user đã sử dụng coupon (thông qua rental contract)
+     */
+    async getCouponUsages(couponId: string, skip = 0, take = 20) {
+        const [items, total] = await Promise.all([
+            this.prisma.rentalContractCoupon.findMany({
+                where: { coupon_id: couponId },
+                skip,
+                take,
+                orderBy: { created_at: 'desc' },
+                select: {
+                    id: true,
+                    discount_value: true,
+                    discount_amount: true,
+                    created_at: true,
+                    rental_contract: {
+                        select: {
+                            id: true,
+                            code: true,
+                            organization: {
+                                select: {
+                                    id: true,
+                                    name: true,
+                                    owner: {
+                                        select: {
+                                            id: true,
+                                            name: true,
+                                            email: true,
+                                            avatar_url: true,
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            }),
+            this.prisma.rentalContractCoupon.count({ where: { coupon_id: couponId } }),
+        ]);
+
+        return {
+            items: items.map((item) => ({
+                id: item.id,
+                contract_id: item.rental_contract.id,
+                contract_code: item.rental_contract.code,
+                discount_value: Number(item.discount_value),
+                discount_amount: Number(item.discount_amount),
+                used_at: item.created_at,
+                organization: {
+                    id: item.rental_contract.organization.id,
+                    name: item.rental_contract.organization.name,
+                },
+                user: {
+                    id: item.rental_contract.organization.owner.id,
+                    name: item.rental_contract.organization.owner.name,
+                    email: item.rental_contract.organization.owner.email,
+                    avatar_url: item.rental_contract.organization.owner.avatar_url,
+                },
+            })),
+            total,
+            skip,
+            take,
+            hasMore: skip + items.length < total,
+        };
+    }
 }

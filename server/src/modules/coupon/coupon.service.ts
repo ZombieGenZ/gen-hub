@@ -501,4 +501,28 @@ export class CouponService {
         const listPrefix = this.cacheKeys.list();
         await this.redisService.delByPattern(`${listPrefix}*`);
     }
+
+    async getCouponUsages(
+        couponId: string,
+        userId: string,
+        hasReadAll: boolean,
+        lang: string,
+        skip = 0,
+        take = 20,
+    ) {
+        const coupon = await this.repository.findById(couponId);
+        if (!coupon) {
+            throw new NotFoundException(
+                this.i18n.t('coupon.errors.not_found', { lang }),
+            );
+        }
+
+        if (!hasReadAll && coupon.created_by !== userId) {
+            throw new ForbiddenException(
+                this.i18n.t('coupon.errors.forbidden', { lang }),
+            );
+        }
+
+        return this.repository.getCouponUsages(couponId, skip, take);
+    }
 }

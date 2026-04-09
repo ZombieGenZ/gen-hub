@@ -403,4 +403,49 @@ export class CouponService {
             console.error("Failed to delete many coupons", err);
         }
     }
+
+    /**
+     * Lấy danh sách user đã sử dụng coupon
+     * @param access_token Token truy cập
+     * @param id ID của coupon
+     * @param skip Bỏ qua N bản ghi
+     * @param take Số bản ghi trả về
+     */
+    async getCouponUsages(access_token: string, id: string, skip = 0, take = 20) {
+        const response = await fetch(`${API}/coupons/${id}/usages?skip=${skip}&take=${take}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${access_token}`,
+                'Content-Type': 'application/json',
+            },
+            cache: 'no-store',
+        });
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Không thể lấy danh sách người dùng');
+        }
+        return response.json();
+    }
+
+    /**
+     * Bật/tắt coupon
+     * @param access_token Token truy cập
+     * @param id ID của coupon
+     * @param is_active Trạng thái hoạt động
+     */
+    async toggleCouponStatus(access_token: string, id: string, is_active: boolean) {
+        const response = await fetch(`${API}/coupons/${id}`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${access_token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ is_active }),
+        });
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Không thể cập nhật trạng thái coupon');
+        }
+        return response.json();
+    }
 }

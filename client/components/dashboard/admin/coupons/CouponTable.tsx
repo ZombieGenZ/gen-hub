@@ -10,6 +10,7 @@ import {
     XCircleIcon,
     PencilIcon,
     TrashIcon,
+    UsersIcon,
 } from "@heroicons/react/24/outline";
 import { Coupon } from "@/types/coupons/coupon.type";
 import { TablePagination } from "@/components/ui/table-pagination";
@@ -31,6 +32,8 @@ interface CouponTableProps {
     getCouponComputedStatus: (coupon: Coupon) => CouponFilterStatus;
     openEditDialog: (coupon: Coupon) => void;
     openDeleteDialog: (coupon: Coupon) => void;
+    openUsersDialog: (coupon: Coupon) => void;
+    onToggleStatus: (coupon: Coupon) => void;
     currentPage: number;
     setCurrentPage: React.Dispatch<React.SetStateAction<number>>;
     itemsPerPage: number;
@@ -52,6 +55,8 @@ export function CouponTable({
     getCouponComputedStatus,
     openEditDialog,
     openDeleteDialog,
+    openUsersDialog,
+    onToggleStatus,
     currentPage,
     setCurrentPage,
     itemsPerPage,
@@ -131,7 +136,9 @@ export function CouponTable({
                                             </td>
                                             <td className="py-3 px-4 font-medium text-base">
                                                 {coupon.discount_type === 'PERCENT' ? (
-                                                    <span>{coupon.discount_value}%</span>
+                                                    <span className="text-blue-600">{coupon.discount_value}%</span>
+                                                ) : coupon.discount_type === 'FREE_MONTHS' ? (
+                                                    <span className="text-purple-600">{coupon.discount_value} tháng</span>
                                                 ) : (
                                                     <span>{formatCurrency(coupon.discount_value)}</span>
                                                 )}
@@ -200,7 +207,32 @@ export function CouponTable({
                                                 })()}
                                             </td>
                                             <td className="py-3 px-4 text-right">
-                                                <div className="flex justify-end gap-2">
+                                                <div className="flex justify-end gap-1">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => openUsersDialog(coupon)}
+                                                        title="Xem user đã dùng"
+                                                        className="rounded-xl text-violet-600/70 hover:text-violet-600 hover:bg-violet-50 transition-colors"
+                                                    >
+                                                        <UsersIcon className="w-4 h-4" />
+                                                    </Button>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => onToggleStatus(coupon)}
+                                                        title={coupon.is_active ? 'Tắt mã' : 'Bật mã'}
+                                                        className={`rounded-xl transition-colors ${coupon.is_active
+                                                            ? 'text-green-600/70 hover:text-green-700 hover:bg-green-50'
+                                                            : 'text-gray-400/70 hover:text-gray-600 hover:bg-gray-100'
+                                                        }`}
+                                                    >
+                                                        {coupon.is_active ? (
+                                                            <CheckCircleIcon className="w-4 h-4" />
+                                                        ) : (
+                                                            <XCircleIcon className="w-4 h-4" />
+                                                        )}
+                                                    </Button>
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"

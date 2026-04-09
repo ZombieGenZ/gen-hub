@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
     Dialog,
@@ -8,9 +8,14 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import { TrashIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
+import { TrashIcon, CheckCircleIcon, UsersIcon } from "@heroicons/react/24/outline";
 import { CouponForm } from "@/app/(protected)/dashboard/admin/coupons/coupon-form";
 import { Coupon } from "@/types/coupons/coupon.type";
+import { CouponService } from "@/services/coupons/coupon.service";
+import { authStorage } from "@/services/auth/auth-storage.service";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+
+const couponService = new CouponService();
 
 interface CouponFormDialogsProps {
     isCreateDialogOpen: boolean;
@@ -191,5 +196,154 @@ export function CouponActionDialogs({
                 </DialogContent>
             </Dialog>
         </>
+    );
+}
+
+interface CouponUsage {
+    id: string;
+    contract_id: string;
+    contract_code: string;
+    discount_value: number;
+    discount_amount: number;
+    used_at: string;
+    organization: { id: string; name: string };
+    user: { id: string; name: string; email: string; avatar_url?: string };
+}
+
+interface CouponUsersDialogProps {
+    open: boolean;
+    onClose: () => void;
+    coupon: Coupon | null;
+    formatCurrency: (amount: number) => string;
+}
+
+export function CouponUsersDialog({ open, onClose, coupon, formatCurrency }: CouponUsersDialogProps) {
+    const [usages, setUsages] = useState<CouponUsage[]>([]);
+    const [total, setTotal] = useState(0);
+    const [loading, setLoading] = useState(false);
+    const [skip, setSkip] = useState(0);
+    const take = 15;
+
+    const formatDate = (d: string) => {
+        try { return new Date(d).toLocaleString('vi-VN'); } catch { return d; }
+    };
+
+    useEffect(() => {
+        if (!open || !coupon) return;
+        setSkip(0);
+        setUsages([]);
+        loadUsages(0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [open, coupon]);
+
+    const loadUsages = async (newSkip: number) => {
+        if (!coupon) return;
+        setLoading(true);
+        try {
+            const token = authStorage.getAccessToken();
+            if (!token) return;
+            const res = await couponService.getCouponUsages(token, coupon.id, newSkip, take);
+            const data = res?.data;
+            if (data) {
+                if (newSkip === 0) {
+                    setUsages(data.items);
+                } else {
+                    setUsages((prev) => [...prev, ...data.items]);
+                }
+                setTotal(data.total);
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleLoadMore = () => {
+        const newSkip = skip + take;
+        setSkip(newSkip);
+        loadUsages(newSkip);
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
+            <DialogContent className="sm:max-w-2xl rounded-2xl max-h-[80dvh] flex flex-col p-0 gap-0 overflow-hidden">
+                <DialogHeader className="p-5 pb-3 border-b shrink-0">
+                    <DialogTitle className="flex items-center gap-2">
+                        <UsersIcon className="w-5 h-5 text-violet-500" />
+                        User đã sử dụng mã
+                        {coupon && (
+                            <code className="ml-1 text-sm bg-violet-50 text-violet-700 px-2 py-0.5 rounded-lg font-mono">
+                                {coupon.code}
+                            </code>
+                        )}
+                    </DialogTitle>
+                    <DialogDescription>
+                        Tổng cộng <strong>{total}</strong> lượt sử dụng
+                    </DialogDescription>
+                </DialogHeader>
+
+                <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                    {loading && usages.length === 0 ? (
+                        <div className="flex items-center justify-center py-12">
+                            <div className="w-8 h-8 border-4 border-violet-200 border-t-violet-500 rounded-full animate-spin" />
+                        </div>
+                    ) : usages.length === 0 ? (
+                        <div className="text-center py-12 text-muted-foreground">
+                            <UsersIcon className="w-10 h-10 mx-auto mb-3 text-muted-foreground/40" />
+                            <p className="font-medium">Chưa có ai sử dụng mã này</p>
+                        </div>
+                    ) : (
+                        <>
+                            {usages.map((usage) => (
+                                <div key={usage.id} className="flex items-center gap-3 p-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors">
+                                    <Avatar className="w-9 h-9 shrink-0">
+                                        <AvatarImage src={usage.user.avatar_url} alt={usage.user.name} />
+                                        <AvatarFallback className="text-xs bg-violet-100 text-violet-700">
+                                            {usage.user.name?.slice(0, 2).toUpperCase()}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            <span className="font-medium text-sm truncate">{usage.user.name}</span>
+                                            <span className="text-xs text-muted-foreground truncate">{usage.user.email}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                                            <span className="text-xs text-muted-foreground">{usage.organization.name}</span>
+                                            <span className="text-xs text-muted-foreground">·</span>
+                                            <code className="text-xs text-primary/80 bg-primary/5 px-1.5 py-0.5 rounded">{usage.contract_code}</code>
+                                            <span className="text-xs text-muted-foreground">· {formatDate(usage.used_at)}</span>
+                                        </div>
+                                    </div>
+                                    <div className="text-right shrink-0">
+                                        <p className="text-sm font-semibold text-green-600">
+                                            -{formatCurrency(usage.discount_amount)}
+                                        </p>
+                                    </div>
+                                </div>
+                            ))}
+
+                            {usages.length < total && (
+                                <div className="pt-2 flex justify-center">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={handleLoadMore}
+                                        disabled={loading}
+                                        className="rounded-xl"
+                                    >
+                                        {loading ? 'Đang tải...' : `Xem thêm (còn ${total - usages.length})`}
+                                    </Button>
+                                </div>
+                            )}
+                        </>
+                    )}
+                </div>
+
+                <div className="p-4 border-t shrink-0 flex justify-end">
+                    <Button variant="outline" onClick={onClose} className="rounded-xl">Đóng</Button>
+                </div>
+            </DialogContent>
+        </Dialog>
     );
 }

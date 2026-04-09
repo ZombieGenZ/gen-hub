@@ -1142,6 +1142,38 @@ export class CouponController {
   }
 
   @ApiOperation({
+    summary: 'Lấy danh sách user đã sử dụng coupon',
+    description: 'Lấy danh sách các user đã dùng coupon thông qua hợp đồng thuê kho. Yêu cầu quyền `coupon.read` hoặc `coupon.read.all`.',
+  })
+  @ApiParam({ name: 'id', description: 'ID coupon', type: 'string', format: 'uuid' })
+  @ApiQuery({ name: 'skip', required: false, type: 'number', description: 'Bỏ qua N bản ghi đầu', example: 0 })
+  @ApiQuery({ name: 'take', required: false, type: 'number', description: 'Số bản ghi trả về', example: 20 })
+  @ApiResponse({ status: 200, description: 'Lấy danh sách user đã sử dụng coupon thành công' })
+  @ApiAuthResponses()
+  @ApiBearerAuth('JWT-auth')
+  @UseGuards(JwtAuthGuard, PermissionGuard)
+  @RequireAnyPermission('coupon.read', 'coupon.read.all')
+  @Get(':id/usages')
+  async getCouponUsages(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query('skip') skip = 0,
+    @Query('take') take = 20,
+    @CurrentUser('userId') userId: string,
+    @I18nLang() lang: string,
+  ): Promise<GetResponse<any>> {
+    const hasReadAll = await this.hasPermission(userId, 'coupon.read.all');
+    const result = await this.couponService.getCouponUsages(
+      id,
+      userId,
+      hasReadAll,
+      lang,
+      Number(skip),
+      Number(take),
+    );
+    return new GetResponse('coupon.read.success', result, 'Lấy danh sách user đã sử dụng coupon thành công');
+  }
+
+  @ApiOperation({
     summary: 'Xóa nhiều coupon',
     description:
       'Xóa nhiều coupon cùng lúc theo danh sách ID. Coupon đã được sử dụng sẽ được soft delete. Yêu cầu quyền `coupon.delete` (xóa coupon do mình tạo) hoặc `coupon.delete.all` (xóa bất kỳ coupon nào).',

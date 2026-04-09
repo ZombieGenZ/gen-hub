@@ -9,7 +9,7 @@ import { Coupon, CouponRequest } from "@/types/coupons/coupon.type";
 // Components
 import { CouponHeader } from "@/components/dashboard/admin/coupons/CouponHeader";
 import { CouponTable } from "@/components/dashboard/admin/coupons/CouponTable";
-import { CouponFormDialogs, CouponActionDialogs } from "@/components/dashboard/admin/coupons/CouponDialogs";
+import { CouponFormDialogs, CouponActionDialogs, CouponUsersDialog } from "@/components/dashboard/admin/coupons/CouponDialogs";
 import { CouponFloatingActionBar } from "@/components/dashboard/admin/coupons/CouponFloatingActionBar";
 
 type CouponStatus = 'active' | 'scheduled' | 'expired' | 'depleted' | 'inactive';
@@ -34,6 +34,10 @@ export default function CouponsPage() {
     const [isDeleteLoading, setIsDeleteLoading] = useState(false);
     const [selectedCoupon, setSelectedCoupon] = useState<Coupon | null>(null);
     const [selectedCouponIds, setSelectedCouponIds] = useState<string[]>([]);
+
+    // Users dialog
+    const [isUsersDialogOpen, setIsUsersDialogOpen] = useState(false);
+    const [usersDialogCoupon, setUsersDialogCoupon] = useState<Coupon | null>(null);
 
     // Bulk action states
     const [isBulkActionDialogOpen, setIsBulkActionDialogOpen] = useState(false);
@@ -304,6 +308,27 @@ export default function CouponsPage() {
         setIsDeleteDialogOpen(true);
     };
 
+    const openUsersDialog = (coupon: Coupon) => {
+        setUsersDialogCoupon(coupon);
+        setIsUsersDialogOpen(true);
+    };
+
+    const handleToggleStatus = async (coupon: Coupon) => {
+        try {
+            const token = authStorage.getAccessToken();
+            if (!token) return;
+            const newStatus = !coupon.is_active;
+            await couponService.toggleCouponStatus(token, coupon.id, newStatus);
+            showToast(
+                newStatus ? `Đã bật mã "${coupon.name}"` : `Đã tắt mã "${coupon.name}"`,
+                'success'
+            );
+            fetchCoupons();
+        } catch (error: any) {
+            showToast(error.message || 'Không thể cập nhật trạng thái', 'error');
+        }
+    };
+
     const formatCurrency = (amount: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
     const formatDate = (dateString: string) => { try { return new Date(dateString).toLocaleDateString('vi-VN'); } catch { return dateString; } };
 
@@ -347,6 +372,8 @@ export default function CouponsPage() {
                 getCouponComputedStatus={getCouponComputedStatus}
                 openEditDialog={openEditDialog}
                 openDeleteDialog={openDeleteDialog}
+                openUsersDialog={openUsersDialog}
+                onToggleStatus={handleToggleStatus}
                 currentPage={currentPage}
                 setCurrentPage={setCurrentPage}
                 itemsPerPage={itemsPerPage}
@@ -385,6 +412,13 @@ export default function CouponsPage() {
                 selectedCouponIds={selectedCouponIds}
                 setSelectedCouponIds={setSelectedCouponIds}
                 openBulkActionDialog={openBulkActionDialog}
+            />
+
+            <CouponUsersDialog
+                open={isUsersDialogOpen}
+                onClose={() => setIsUsersDialogOpen(false)}
+                coupon={usersDialogCoupon}
+                formatCurrency={formatCurrency}
             />
         </div>
     );
