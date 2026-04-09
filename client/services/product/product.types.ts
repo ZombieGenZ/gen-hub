@@ -47,6 +47,8 @@ export interface Product {
     created_at: string;
     updated_at: string | null;
     is_deleted: boolean | null;
+    /** Tồn kho khả dụng (chỉ có khi query có warehouse_id) */
+    quantity_available?: number;
 }
 
 // ── Payloads ──

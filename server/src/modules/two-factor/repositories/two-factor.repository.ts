@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { twoFactorUserSelect } from '../selects/two-factor-user.select';
 import { ITwoFactorUser } from '../types';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { PrismaService } from '../../../prisma/prisma.service';
 
 /**
  * Two-Factor Repository

@@ -20,7 +20,7 @@ import {
 import { Type } from 'class-transformer';
 import { i18nValidationMessage } from 'nestjs-i18n';
 import { CouponDiscountType, DurationUnit, CouponType } from '@prisma/client';
-import { IsBeforeConstraint } from 'src/common/validators/is-before.validator';
+import { IsBeforeConstraint } from '../../../common/validators/is-before.validator';
 
 /**
  * DTO tạo mới Coupon

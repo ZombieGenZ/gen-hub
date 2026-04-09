@@ -206,9 +206,7 @@ export function CreateOutboundDialog({
         setFormItems((prev) =>
             prev.map((item, i) => {
                 if (i !== idx) return item;
-                const available =
-                    (item.product as unknown as { quantity_available?: number })
-                        .quantity_available ?? Infinity;
+                const available = item.product.quantity_available ?? Infinity;
                 const stockError =
                     qty > available
                         ? `Tồn kho không đủ (còn ${available})`
@@ -479,11 +477,7 @@ export function CreateOutboundDialog({
                                             const baseUnitName =
                                                 item.product.base_unit?.name || "đv";
                                             const convertedQty = item.quantity * conversionRate;
-                                            const qtyAvailable = (
-                                                item.product as unknown as {
-                                                    quantity_available?: number;
-                                                }
-                                            ).quantity_available;
+                                            const qtyAvailable = item.product.quantity_available;
 
                                             return (
                                                 <tr
@@ -686,6 +680,7 @@ export function CreateOutboundDialog({
                 onOpenChange={setBrowseOpen}
                 alreadyAddedIds={addedIds}
                 onConfirm={addMultipleProducts}
+                warehouseId={formWarehouse || undefined}
             />
         </>
     );

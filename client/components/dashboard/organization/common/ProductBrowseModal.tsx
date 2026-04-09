@@ -18,6 +18,7 @@ import {
     MagnifyingGlassIcon,
     PhotoIcon,
     CheckCircleIcon,
+    ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
 import type { Product } from "@/services/product/product.types";
 
@@ -41,6 +42,8 @@ interface ProductBrowseModalProps {
     alreadyAddedIds: string[];
     /** Callback khi user bấm Xác nhận */
     onConfirm: (products: Product[]) => void;
+    /** ID kho đang chọn — dùng để lấy quantity_available */
+    warehouseId?: string;
 }
 
 /**
@@ -52,6 +55,7 @@ export function ProductBrowseModal({
     onOpenChange,
     alreadyAddedIds,
     onConfirm,
+    warehouseId,
 }: ProductBrowseModalProps) {
     const [products, setProducts] = useState<Product[]>([]);
     const [search, setSearch] = useState("");
@@ -74,6 +78,7 @@ export function ProductBrowseModal({
                     offset: (pageNum - 1) * PAGE_SIZE,
                     keywords: keyword || undefined,
                     is_active: true,
+                    warehouse_id: warehouseId || undefined,
                 });
                 const items: Product[] = res?.data?.items ?? [];
                 const total: number = res?.data?.total ?? 0;
@@ -88,14 +93,14 @@ export function ProductBrowseModal({
         [],
     );
 
-    // Reset và tải lại khi mở modal hoặc keyword thay đổi
+    // Reset và tải lại khi mở modal, keyword hoặc warehouse thay đổi
     useEffect(() => {
         if (open) {
             setPage(1);
             setSelectedIds(new Set());
             loadProducts(1, debouncedSearch, true);
         }
-    }, [open, debouncedSearch, loadProducts]);
+    }, [open, debouncedSearch, warehouseId, loadProducts]);
 
     const handleLoadMore = () => {
         const nextPage = page + 1;
@@ -119,7 +124,14 @@ export function ProductBrowseModal({
 
     const handleSelectAll = () => {
         const availableIds = products
-            .filter((p) => !alreadyAddedSet.has(p.id))
+            .filter((p) => {
+                if (alreadyAddedSet.has(p.id)) return false;
+                if (warehouseId) {
+                    const qty = p.quantity_available ?? null;
+                    if (qty !== null && qty <= 0) return false;
+                }
+                return true;
+            })
             .map((p) => p.id);
 
         const allSelected = availableIds.every((id) => selectedIds.has(id));
@@ -136,13 +148,25 @@ export function ProductBrowseModal({
         onOpenChange(false);
     };
 
-    const availableCount = products.filter(
-        (p) => !alreadyAddedSet.has(p.id),
-    ).length;
+    const availableCount = products.filter((p) => {
+        if (alreadyAddedSet.has(p.id)) return false;
+        if (warehouseId) {
+            const qty = p.quantity_available ?? null;
+            if (qty !== null && qty <= 0) return false;
+        }
+        return true;
+    }).length;
     const allAvailableSelected =
         availableCount > 0 &&
         products
-            .filter((p) => !alreadyAddedSet.has(p.id))
+            .filter((p) => {
+                if (alreadyAddedSet.has(p.id)) return false;
+                if (warehouseId) {
+                    const qty = p.quantity_available ?? null;
+                    if (qty !== null && qty <= 0) return false;
+                }
+                return true;
+            })
             .every((p) => selectedIds.has(p.id));
 
     return (
@@ -171,7 +195,7 @@ export function ProductBrowseModal({
 
                 {/* Table Header - Select All */}
                 <div className="px-6 py-2 border-b bg-muted/30 shrink-0">
-                    <div className="grid grid-cols-[auto_1fr_100px_80px_100px] gap-4 items-center">
+                    <div className={`grid ${warehouseId ? 'grid-cols-[auto_1fr_90px_80px_110px]' : 'grid-cols-[auto_1fr_90px_80px_100px]'} gap-4 items-center`}>
                         <Checkbox
                             checked={allAvailableSelected ? true : (selectedIds.size > 0 ? "indeterminate" : false)}
                             onCheckedChange={handleSelectAll}
@@ -187,7 +211,7 @@ export function ProductBrowseModal({
                             Giá vốn
                         </span>
                         <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-right">
-                            Trạng thái
+                            {warehouseId ? 'Tồn khả dụng' : 'Trạng thái'}
                         </span>
                     </div>
                 </div>
@@ -225,13 +249,16 @@ export function ProductBrowseModal({
                         <div className="divide-y">
                             {products.map((product) => {
                                 const isAdded = alreadyAddedSet.has(product.id);
+                                const qtyAvailable = product.quantity_available ?? null;
+                                const outOfStock = warehouseId && qtyAvailable !== null && qtyAvailable <= 0;
+                                const isDisabled = isAdded || !!outOfStock;
                                 const isSelected = selectedIds.has(product.id);
 
                                 return (
                                     <label
                                         key={product.id}
-                                        className={`grid grid-cols-[auto_1fr_100px_80px_100px] gap-4 items-center px-6 py-3 cursor-pointer transition-colors ${
-                                            isAdded
+                                        className={`grid ${warehouseId ? 'grid-cols-[auto_1fr_90px_80px_110px]' : 'grid-cols-[auto_1fr_90px_80px_100px]'} gap-4 items-center px-6 py-3 cursor-pointer transition-colors ${
+                                            isDisabled
                                                 ? "opacity-40 cursor-not-allowed bg-muted/20"
                                                 : isSelected
                                                   ? "bg-[#0F766E]/5"
@@ -240,9 +267,9 @@ export function ProductBrowseModal({
                                     >
                                         <Checkbox
                                             checked={isSelected}
-                                            disabled={isAdded}
+                                            disabled={isDisabled}
                                             onCheckedChange={() =>
-                                                !isAdded && toggleSelect(product.id)
+                                                !isDisabled && toggleSelect(product.id)
                                             }
                                             aria-label={`Chọn ${product.name}`}
                                         />
@@ -281,9 +308,24 @@ export function ProductBrowseModal({
                                                 : "—"}
                                         </span>
 
-                                        {/* Trạng thái đã thêm */}
-                                        <div className="flex justify-end">
-                                            {isAdded ? (
+                                        {/* Cột phải: tồn kho (khi có warehouse) hoặc trạng thái */}
+                                        <div className="flex flex-col items-end gap-0.5">
+                                            {warehouseId && qtyAvailable !== null ? (
+                                                outOfStock ? (
+                                                    <span className="inline-flex items-center gap-1 text-xs text-red-500 font-medium">
+                                                        <ExclamationTriangleIcon className="w-3.5 h-3.5" />
+                                                        Hết hàng
+                                                    </span>
+                                                ) : (
+                                                    <span className={`text-sm font-semibold tabular-nums ${
+                                                        qtyAvailable < 10 ? 'text-amber-600' : 'text-[#0F766E]'
+                                                    }`}>
+                                                        {qtyAvailable.toLocaleString('vi-VN')}
+                                                    </span>
+                                                )
+                                            ) : warehouseId && qtyAvailable === null ? (
+                                                <span className="text-xs text-muted-foreground">—</span>
+                                            ) : isAdded ? (
                                                 <span className="inline-flex items-center gap-1 text-xs text-[#0F766E] font-medium">
                                                     <CheckCircleIcon className="w-3.5 h-3.5" />
                                                     Đã thêm
@@ -293,6 +335,16 @@ export function ProductBrowseModal({
                                                     Đã chọn
                                                 </span>
                                             ) : null}
+                                            {/* Nhãn phụ: đã thêm / đã chọn khi hiển thị tồn kho */}
+                                            {warehouseId && isAdded && (
+                                                <span className="inline-flex items-center gap-1 text-[10px] text-[#0F766E]">
+                                                    <CheckCircleIcon className="w-3 h-3" />
+                                                    Đã thêm
+                                                </span>
+                                            )}
+                                            {warehouseId && !isAdded && isSelected && !outOfStock && (
+                                                <span className="text-[10px] text-[#0F766E]">Đã chọn</span>
+                                            )}
                                         </div>
                                     </label>
                                 );
@@ -318,13 +370,21 @@ export function ProductBrowseModal({
 
                 {/* Footer */}
                 <div className="px-6 py-4 border-t bg-white shrink-0 flex items-center justify-between gap-4">
-                    <p className="text-sm text-muted-foreground">
-                        Đã chọn{" "}
-                        <span className="font-semibold text-foreground">
-                            {selectedIds.size}
-                        </span>{" "}
-                        sản phẩm
-                    </p>
+                    <div className="flex flex-col gap-0.5">
+                        <p className="text-sm text-muted-foreground">
+                            Đã chọn{" "}
+                            <span className="font-semibold text-foreground">
+                                {selectedIds.size}
+                            </span>{" "}
+                            sản phẩm
+                        </p>
+                        {!warehouseId && (
+                            <p className="text-xs text-amber-600 flex items-center gap-1">
+                                <ExclamationTriangleIcon className="w-3 h-3" />
+                                Chọn kho trước để xem tồn kho khả dụng
+                            </p>
+                        )}
+                    </div>
                     <div className="flex gap-2">
                         <Button
                             variant="outline"
