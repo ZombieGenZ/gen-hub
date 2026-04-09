@@ -90,7 +90,7 @@ export function ProductBrowseModal({
                 setIsLoading(false);
             }
         },
-        [],
+        [warehouseId],
     );
 
     // Reset và tải lại khi mở modal, keyword hoặc warehouse thay đổi
