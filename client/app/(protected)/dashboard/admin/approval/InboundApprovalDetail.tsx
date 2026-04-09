@@ -132,7 +132,7 @@ export default function InboundApprovalDetail({
             const token = authStorage.getAccessToken();
             if (!token) return;
             setLoading(true);
-            const res = await wmInventoryService.getInboundById(token, ticketId);
+            const res = await inventoryService.getInboundById(token, ticketId);
             const item = (res as any)?.data ?? res;
             setData(item);
             if (item?.details) {

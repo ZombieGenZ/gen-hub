@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import { authStorage } from "@/services/auth/auth-storage.service";
+import { InventoryService } from "@/services/inventory/inventory.service";
 import { WarehouseManagerInventoryService } from "@/services/inventory/warehouse-manager-inventory.service";
 import { useToast } from "@/contexts/ToastContext";
 import type { OutboundRequest, PickingStrategy } from "@/services/inventory/inventory.types";
@@ -26,6 +27,7 @@ import {
 
 import RejectReasonDialog from "./RejectReasonDialog";
 
+const inventoryService = new InventoryService();
 const wmInventoryService = new WarehouseManagerInventoryService();
 
 const OUTBOUND_DETAIL_REALTIME_EVENTS = [
@@ -161,7 +163,7 @@ export default function OutboundApprovalDetail({
             const token = authStorage.getAccessToken();
             if (!token) return;
             setLoading(true);
-            const res = await wmInventoryService.getOutboundById(token, ticketId);
+            const res = await inventoryService.getOutboundById(token, ticketId);
             const item = (res as any)?.data ?? res;
             setData(item);
             // Init picking data if available
