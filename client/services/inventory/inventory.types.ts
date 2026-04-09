@@ -201,6 +201,19 @@ export interface PickListDetail {
     block_id: string;
     required_qty: number;
     picked_qty: number;
+    block?: {
+        id: string;
+        code: string;
+        name?: string | null;
+    } | null;
+    export_detail?: {
+        id: string;
+        product?: {
+            id: string;
+            name: string;
+            sku: string;
+        } | null;
+    } | null;
     pick_list?: {
         id: string;
         code: string;

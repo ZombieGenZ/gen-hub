@@ -42,7 +42,9 @@
         "picking_not_completed": "Nhặt hàng chưa hoàn tất",
         "checking_not_passed": "Kiểm tra chưa đạt",
         "pick_list_not_found": "Không tìm thấy phiếu nhặt hàng",
-        "quantity_mismatch": "Số lượng kiểm đếm thực tế lệch so với số lượng dự kiến. Vui lòng xác nhận lại hoặc bấm xác nhận với force=true để tiếp tục"
+        "quantity_mismatch": "Số lượng kiểm đếm thực tế lệch so với số lượng dự kiến. Vui lòng xác nhận lại hoặc bấm xác nhận với force=true để tiếp tục",
+        "mismatch_confirm_required": "Số lượng thực tế khác số lượng trên phiếu. Vui lòng hỏi khách hàng và gửi lại với trường is_customer_agreed (true = đồng ý nhập theo số thực tế, false = huỷ phiếu nhập).",
+        "inbound_cancelled_customer_rejected": "Khách hàng không đồng ý sai lệch số lượng — phiếu nhập đã bị huỷ"
     },
     "validation": {
         "warehouse_id_required": "Vui lòng chọn kho",

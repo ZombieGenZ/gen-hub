@@ -33,6 +33,7 @@ export class UserRepository {
     });
   }
 
+
   /**
    * Tạo user mới
    * Tự động gán các Role có is_default = true cho user mới
@@ -46,6 +47,7 @@ export class UserRepository {
     language?: string;
     email_verify_token?: string;
     email_verify_expired?: Date;
+    email_confirmed?: boolean;
   }): Promise<User> {
     const defaultRoles = await this.prisma.role.findMany({
       where: {
@@ -64,7 +66,7 @@ export class UserRepository {
         language: data.language || 'vi',
         email_verify_token: data.email_verify_token,
         email_verify_expired: data.email_verify_expired,
-        system_roles: {
+        email_confirmed: data.email_confirmed ?? false,        is_verified: data.email_confirmed ?? false,        system_roles: {
           create: defaultRoles.map((role) => ({
             role_id: role.id,
           })),

@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { apiReference } from '@scalar/nestjs-api-reference';
+import { ConfigService } from '@nestjs/config';
 import { I18nValidationPipe, I18nService } from 'nestjs-i18n';
 import { join } from 'path';
 import { Response } from 'express';
@@ -35,11 +36,23 @@ process.env.TZ = process.env.TZ || 'Asia/Ho_Chi_Minh';
 
 const serverStartTime = new Date();
 
+function parseBooleanEnv(
+  value: string | undefined,
+  defaultValue: boolean,
+): boolean {
+  if (value === undefined) {
+    return defaultValue;
+  }
+
+  return ['true', '1', 'yes', 'on'].includes(value.trim().toLowerCase());
+}
+
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   // Serve static assets from public directory
   app.useStaticAssets(join(__dirname, '..', 'public'));
+  const configService = app.get(ConfigService);
   const systemLogService = app.get(SystemLogService);
   const i18nService = app.get<I18nService<Record<string, unknown>>>(I18nService);
 
@@ -59,7 +72,14 @@ async function bootstrap() {
     new CustomValidationExceptionFilter(i18nService),
   );
 
-  app.useGlobalInterceptors(new HttpLoggingInterceptor(systemLogService));
+  const enableHttpRequestLogging = parseBooleanEnv(
+    configService.get<string>('ENABLE_HTTP_REQUEST_LOGGING'),
+    true,
+  );
+
+  if (enableHttpRequestLogging) {
+    app.useGlobalInterceptors(new HttpLoggingInterceptor(systemLogService));
+  }
 
   // Build CORS origins array from CORS_ORIGINS environment variable
   // Example: CORS_ORIGINS=https://gen-hub.dev,http://localhost:3000

@@ -81,7 +81,7 @@ export class ProductRepository {
     }
 
     async findByOrgId(orgId: string, query: QueryProductDto): Promise<IPaginatedResponse<IProduct>> {
-        const { limit = 20, offset = 0, keywords, is_active } = query;
+        const { limit = 20, offset = 0, keywords, is_active, warehouse_id } = query;
 
         const where: Prisma.ProductWhereInput = {
             organization_id: orgId,
@@ -117,8 +117,37 @@ export class ProductRepository {
             this.prisma.product.count({ where }),
         ]);
 
+        // Nếu có warehouse_id, aggregate quantity_available từ Inventory
+        let qtyMap: Map<string, number> | null = null;
+        if (warehouse_id && items.length > 0) {
+            const productIds = items.map(p => p.id);
+            const inventories = await this.prisma.inventory.groupBy({
+                by: ['product_id'],
+                where: {
+                    organization_id: orgId,
+                    warehouse_id,
+                    product_id: { in: productIds },
+                    is_deleted: false,
+                },
+                _sum: { quantity_available: true },
+            });
+            qtyMap = new Map(
+                inventories.map(r => [
+                    r.product_id,
+                    Number(r._sum.quantity_available ?? 0),
+                ]),
+            );
+        }
+
+        const enriched = items.map(p => ({
+            ...p,
+            ...(qtyMap !== null
+                ? { quantity_available: qtyMap.get(p.id) ?? 0 }
+                : {}),
+        }));
+
         return {
-            items: items as unknown as IProduct[],
+            items: enriched as unknown as IProduct[],
             total,
             limit,
             offset,

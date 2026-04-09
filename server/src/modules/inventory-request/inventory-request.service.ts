@@ -1566,84 +1566,17 @@ export class InventoryRequestService {
     }
 
     const updated = await this.prisma.$transaction(async (tx) => {
-      // 1. Tự động mở rộng mặt bằng nếu thiếu chỗ (layout physical)
+      // 1. Tự động mở rộng mặt bằng nếu thiếu chỗ (layout physical) – chỉ chuẩn bị vị trí
       await this.autoAllocateLayout(tx, id, receipt.warehouse_id, actorId);
 
-      // 2. Điền hàng vào kho (sinh Inventory records)
-      const allUsedBlocks: {
-        product_id: string;
-        batch_id: string | null;
-        block_ids: string[];
-      }[] = [];
-      for (const detail of receipt.details || []) {
-        const actualQty = detail.expected_qty; // Đã là kiểu number theo interface IInboundDetail
-        if (actualQty > 0) {
-          const blockIds = await this.fillInventory(
-            tx,
-            orgId,
-            receipt.warehouse_id,
-            detail.product_id,
-            detail.batch_id ?? null,
-            actualQty,
-            detail.conversion_rate,
-            receipt.code,
-            actorId,
-            detail.product?.sku, // Pass SKU for priority slotting
-          );
-          allUsedBlocks.push({
-            product_id: detail.product_id,
-            batch_id: detail.batch_id ?? null,
-            block_ids: blockIds,
-          });
-        }
-      }
-
-      // 3. Tạo bản ghi ReceiptPutaway (Lịch sử cất hàng)
-      const putaway = await tx.receiptPutaway.create({
-        data: {
-          receipt_id: receipt.id,
-          organization_id: orgId,
-          warehouse_id: receipt.warehouse_id,
-          code: `PA-${receipt.code.split('-').pop()}`,
-          status: PutawayStatus.COMPLETED,
-          worker_id: actorId,
-          completed_at: new Date(),
-          created_by: actorId,
-        },
-      });
-
-      // 4. Tạo chi tiết Putaway chi tiết để mapping 1-1
-      for (const usedItem of allUsedBlocks) {
-        const receiptDetail = (receipt.details || []).find(
-          (d) => d.product_id === usedItem.product_id,
-        );
-        if (!receiptDetail) continue;
-
-        for (const blockId of usedItem.block_ids) {
-          await tx.receiptPutawayDetail.create({
-            data: {
-              putaway_id: putaway.id,
-              receipt_detail_id: receiptDetail.id,
-              product_id: usedItem.product_id,
-              batch_id: usedItem.batch_id,
-              block_id: blockId,
-              expected_qty: 1, // 1 block chứa 1 thùng
-              actual_qty: 1,
-              created_by: actorId,
-            },
-          });
-        }
-      }
-
-      // 5. Cập nhật phiếu nhập sang COMPLETED
+      // 2. Chỉ chuyển trạng thái PENDING → APPROVED
+      //    fillInventory và putaway sẽ được thực hiện ở bước confirmPutaway
       return tx.receipt.update({
         where: { id },
         data: {
-          status: ReceiptStatus.COMPLETED,
+          status: ReceiptStatus.APPROVED,
           approved_by: actorId,
           approved_at: new Date(),
-          putaway_completed_at: new Date(),
-          receiving_completed_at: new Date(), // Giả định hàng đã nhận
           updated_by: actorId,
           ...(notes && { notes }),
         },
@@ -1678,15 +1611,14 @@ export class InventoryRequestService {
       this.redisService.delByPattern(this.cacheKeys.inboundList(orgId, '*')),
     ]);
 
-    // Emit realtime event: inbound:putaway-confirmed (đồng bộ với frontend 3D)
+    // Emit realtime event: inbound:approved
     this.websocketGateway.emitToOrganization(
       orgId,
-      'inbound:putaway-confirmed',
+      'inbound:approved',
       {
         receiptId: id,
         code: updated.code,
-        confirmedBy: actorId,
-        totalProducts: (receipt.details ?? []).length,
+        approvedBy: actorId,
         timestamp: new Date().toISOString(),
       },
     );
@@ -1697,10 +1629,10 @@ export class InventoryRequestService {
       'Receipt',
       id,
       { status: ReceiptStatus.PENDING },
-      { status: ReceiptStatus.COMPLETED },
+      { status: ReceiptStatus.APPROVED },
       {
         userId: actorId,
-        description: `Approved & Auto-Putaway inbound request: ${updated.code}`,
+        description: `Approved inbound request: ${updated.code}`,
       },
     );
 
@@ -2211,6 +2143,46 @@ export class InventoryRequestService {
       );
     }
 
+    // Tính danh sách dòng lệch số lượng
+    const mismatchDetails = dto.details
+      .map((item) => {
+        const existing = receipt.details.find((d) => d.id === item.detail_id);
+        if (!existing) return null;
+        const expectedQty = Number(existing.expected_qty);
+        if (expectedQty === item.actual_qty) return null;
+        return {
+          detail_id: item.detail_id,
+          product_id: existing.product_id,
+          expected_qty: expectedQty,
+          actual_qty: item.actual_qty,
+          diff: item.actual_qty - expectedQty,
+        };
+      })
+      .filter(Boolean);
+
+    const hasMismatch = mismatchDetails.length > 0;
+
+    // Phát hiện lệch số lượng → yêu cầu xác nhận của khách hàng
+    if (hasMismatch && dto.is_customer_agreed === undefined) {
+      throw new BadRequestException({
+        code: 'inventory-request.errors.mismatch_confirm_required',
+        message: await this.i18n.translate(
+          'inventory-request.errors.mismatch_confirm_required',
+          { lang },
+        ),
+        mismatches: mismatchDetails,
+        require_customer_agreement: true,
+      });
+    }
+
+    // Khách hàng không đồng ý → huỷ phiếu nhập, không để treo đơn
+    const isCancelled = hasMismatch && dto.is_customer_agreed === false;
+    const finalStatus = isCancelled ? ReceiptStatus.CANCELLED : ReceiptStatus.PROCESSING;
+    const cancelReason = await this.i18n.translate(
+      'inventory-request.errors.inbound_cancelled_customer_rejected',
+      { lang },
+    );
+
     const updated = await this.prisma.$transaction(async (tx) => {
       for (const item of dto.details) {
         await tx.receiptDetail.update({
@@ -2221,9 +2193,11 @@ export class InventoryRequestService {
       return tx.receipt.update({
         where: { id },
         data: {
-          status: ReceiptStatus.PROCESSING,
+          status: finalStatus,
           receiving_completed_at: new Date(),
-          notes: dto.notes || receipt.notes,
+          notes: isCancelled ? cancelReason : (dto.notes ?? receipt.notes),
+          // ✅ Lưu flag: khách hàng đã đồng ý với mismatch
+          is_customer_mismatch_agreed: hasMismatch && dto.is_customer_agreed === true ? true : false,
           updated_by: actorId,
         },
         include: {
@@ -2248,16 +2222,29 @@ export class InventoryRequestService {
       this.redisService.delByPattern(this.cacheKeys.inboundList(orgId, '*')),
     ]);
 
-    this.websocketGateway.emitToOrganization(
-      orgId,
-      'inbound:receiving-confirmed',
-      {
+    if (isCancelled) {
+      this.websocketGateway.emitToOrganization(orgId, 'inbound:cancelled', {
         receiptId: id,
         code: updated.code,
-        confirmedBy: actorId,
+        reason: 'customer_rejected_mismatch',
+        cancelledBy: actorId,
+        mismatches: mismatchDetails,
         timestamp: new Date().toISOString(),
-      },
-    );
+      });
+    } else {
+      this.websocketGateway.emitToOrganization(
+        orgId,
+        'inbound:receiving-confirmed',
+        {
+          receiptId: id,
+          code: updated.code,
+          hasMismatch,
+          customerAgreed: dto.is_customer_agreed ?? null,
+          confirmedBy: actorId,
+          timestamp: new Date().toISOString(),
+        },
+      );
+    }
 
     return updated as unknown as IInboundRequest;
   }
@@ -2310,7 +2297,10 @@ export class InventoryRequestService {
       return actualQty === 0 || actualQty !== expectedQty;
     });
 
-    if (mismatchDetails.length > 0 && !dto?.force) {
+    // ✅ Nếu khách hàng đã đồng ý mismatch ở receiving → cho phép cất hàng ngay (không yêu cầu force)
+    const hasCustomerApprovedMismatch = (receipt as any).is_customer_mismatch_agreed === true;
+
+    if (mismatchDetails.length > 0 && !dto?.force && !hasCustomerApprovedMismatch) {
       const mismatches = mismatchDetails.map((d) => ({
         detail_id: d.id,
         product_name: (d as any).product?.name || d.product_id,

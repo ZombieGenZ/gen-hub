@@ -3,7 +3,6 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import { authStorage } from "@/services/auth/auth-storage.service";
 import { InventoryService } from "@/services/inventory/inventory.service";
-import { WarehouseManagerInventoryService } from "@/services/inventory/warehouse-manager-inventory.service";
 import { useToast } from "@/contexts/ToastContext";
 import type { InboundRequest } from "@/services/inventory/inventory.types";
 import { useApprovalDetailRealtime } from "@/hooks/useApprovalDetailRealtime";
@@ -19,12 +18,14 @@ import {
     ExclamationTriangleIcon,
     ArrowRightIcon,
     ShieldExclamationIcon,
+    ArrowTrendingUpIcon,
+    ArrowTrendingDownIcon,
+    XMarkIcon,
 } from "@heroicons/react/24/outline";
 
 import RejectReasonDialog from "./RejectReasonDialog";
 
 const inventoryService = new InventoryService();
-const wmInventoryService = new WarehouseManagerInventoryService();
 
 const INBOUND_DETAIL_REALTIME_EVENTS = [
     "inbound:approved",
@@ -125,6 +126,20 @@ export default function InboundApprovalDetail({
     const [actualQty, setActualQty] = useState<Record<string, number>>({});
 
     const [rejectOpen, setRejectOpen] = useState(false);
+
+    // Mismatch modal state
+    interface MismatchItem {
+        detail_id: string;
+        product_id: string;
+        expected_qty: number;
+        actual_qty: number;
+        diff: number;
+    }
+    const [mismatchModal, setMismatchModal] = useState<{
+        open: boolean;
+        mismatches: MismatchItem[];
+        pendingDetails: { detail_id: string; actual_qty: number }[];
+    }>({ open: false, mismatches: [], pendingDetails: [] });
     const lastRealtimeToastRef = useRef<{ eventName: string; at: number } | null>(null);
 
     const fetchData = useCallback(async () => {
@@ -182,11 +197,7 @@ export default function InboundApprovalDetail({
         const token = getToken(); if (!token) return;
         setSubmitting(true);
         try {
-            const actual_quantities = data?.details?.map((d) => ({
-                detail_id: d.id,
-                actual_qty: actualQty[d.id] ?? d.expected_qty,
-            }));
-            await wmInventoryService.approveInbound(token, ticketId, { actual_quantities });
+            await inventoryService.approveInbound(token, ticketId);
             showToast("Duyệt phiếu PO thành công — chuyển sang Đã duyệt", "success");
             fetchData();
         } catch (err: any) {
@@ -198,7 +209,7 @@ export default function InboundApprovalDetail({
         const token = getToken(); if (!token) return;
         setSubmitting(true);
         try {
-            await wmInventoryService.rejectInbound(token, ticketId, reason);
+            await inventoryService.rejectInbound(token, ticketId, reason);
             showToast(`Đã từ chối phiếu — Lý do: ${reason}`, "success");
             setRejectOpen(false);
             fetchData();
@@ -213,21 +224,16 @@ export default function InboundApprovalDetail({
         const token = getToken(); if (!token) return;
         setSubmitting(true);
         try {
-            await wmInventoryService.startReceiving(token, ticketId, {});
+            await inventoryService.startReceiving(token, ticketId, {});
             showToast("Đã bắt đầu kiểm đếm — chuyển sang Đang kiểm đếm", "success");
             fetchData();
         } catch (err: any) {
             showToast(err.message || "Không thể bắt đầu kiểm đếm", "error");
-            if (err.status === 403) {
-                authStorage.clearTokens();
-                window.location.href = '/auth/login';
-                return;
-            }
             fetchData();
         } finally { setSubmitting(false); }
     };
 
-    const handleConfirmReceiving = async () => {
+    const handleConfirmReceiving = async (is_customer_agreed?: boolean) => {
         const token = getToken(); if (!token) return;
         if (!data?.details?.length) return;
         setSubmitting(true);
@@ -236,15 +242,26 @@ export default function InboundApprovalDetail({
                 detail_id: d.id,
                 actual_qty: actualQty[d.id] ?? d.actual_qty ?? 0,
             }));
-            await wmInventoryService.confirmReceiving(token, ticketId, { details });
-            showToast("Đã xác nhận kiểm đếm — chuyển sang Chờ cất hàng", "success");
+            const payload: { details: typeof details; is_customer_agreed?: boolean } = { details };
+            if (is_customer_agreed !== undefined) payload.is_customer_agreed = is_customer_agreed;
+            await inventoryService.confirmReceiving(token, ticketId, payload);
+            setMismatchModal({ open: false, mismatches: [], pendingDetails: [] });
+            if (is_customer_agreed === false) {
+                showToast("Khách không đồng ý — Phiếu nhập đã bị hủy", "error");
+            } else {
+                showToast("Đã xác nhận kiểm đếm — chuyển sang Chờ cất hàng", "success");
+            }
             fetchData();
         } catch (err: any) {
-            showToast(err.message || "Không thể xác nhận kiểm đếm", "error");
-            if (err.status === 403) {
-                authStorage.clearTokens();
-                window.location.href = '/auth/login';
-                return;
+            if (err.require_customer_agreement && err.mismatches?.length) {
+                // Server yêu cầu xác nhận KH — mở modal
+                const details = data.details.map(d => ({
+                    detail_id: d.id,
+                    actual_qty: actualQty[d.id] ?? d.actual_qty ?? 0,
+                }));
+                setMismatchModal({ open: true, mismatches: err.mismatches, pendingDetails: details });
+            } else {
+                showToast(err.message || "Không thể xác nhận kiểm đếm", "error");
             }
             fetchData();
         } finally { setSubmitting(false); }
@@ -254,16 +271,11 @@ export default function InboundApprovalDetail({
         const token = getToken(); if (!token) return;
         setSubmitting(true);
         try {
-            await wmInventoryService.confirmPutaway(token, ticketId);
+            await inventoryService.confirmPutaway(token, ticketId);
             showToast("Đã xác nhận cất hàng — phiếu PO Hoàn tất!", "success");
             fetchData();
         } catch (err: any) {
             showToast(err.message || "Không thể xác nhận cất hàng", "error");
-            if (err.status === 403) {
-                authStorage.clearTokens();
-                window.location.href = '/auth/login';
-                return;
-            }
             fetchData();
         } finally { setSubmitting(false); }
     };
@@ -312,6 +324,106 @@ export default function InboundApprovalDetail({
 
     return (
         <div className="flex flex-col h-full">
+            {/* ── Mismatch Confirmation Modal ── */}
+            {mismatchModal.open && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="mismatch-title"
+                >
+                    <div className="w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+                        {/* Header */}
+                        <div className="flex items-start gap-3 px-6 pt-6 pb-4 border-b">
+                            <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center shrink-0">
+                                <ExclamationTriangleIcon className="w-6 h-6 text-amber-500" />
+                            </div>
+                            <div className="flex-1">
+                                <h3 id="mismatch-title" className="text-base font-bold text-slate-800">
+                                    Số lượng thực tế khác phiếu
+                                </h3>
+                                <p className="text-sm text-muted-foreground mt-0.5">
+                                    {mismatchModal.mismatches.length} sản phẩm lệch số lượng. Cần xác nhận với khách hàng trước khi tiếp tục.
+                                </p>
+                            </div>
+                            <button
+                                className="p-1 rounded-lg hover:bg-slate-100 text-slate-400"
+                                onClick={() => setMismatchModal(s => ({ ...s, open: false }))}
+                                aria-label="Đóng"
+                            >
+                                <XMarkIcon className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* Mismatch table */}
+                        <div className="px-6 py-4 max-h-64 overflow-y-auto">
+                            <table className="w-full text-sm">
+                                <thead>
+                                    <tr className="border-b">
+                                        <th className="text-left pb-2 text-xs font-semibold text-muted-foreground uppercase">Sản phẩm</th>
+                                        <th className="text-center pb-2 text-xs font-semibold text-muted-foreground uppercase">Dự kiến</th>
+                                        <th className="text-center pb-2 text-xs font-semibold text-muted-foreground uppercase">Thực tế</th>
+                                        <th className="text-center pb-2 text-xs font-semibold text-muted-foreground uppercase">Chênh lệch</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y">
+                                    {mismatchModal.mismatches.map((m) => {
+                                        const detail = data?.details?.find(d => d.id === m.detail_id);
+                                        const isOver = m.diff > 0;
+                                        return (
+                                            <tr key={m.detail_id} className={isOver ? "bg-blue-50/30" : "bg-red-50/30"}>
+                                                <td className="py-2.5 font-medium text-slate-700">
+                                                    {detail?.product?.name ?? "—"}
+                                                    {detail?.product?.sku && (
+                                                        <span className="ml-1.5 text-xs text-muted-foreground font-normal">{detail.product.sku}</span>
+                                                    )}
+                                                </td>
+                                                <td className="py-2.5 text-center text-slate-600">{m.expected_qty}</td>
+                                                <td className="py-2.5 text-center font-semibold text-slate-800">{m.actual_qty}</td>
+                                                <td className="py-2.5 text-center">
+                                                    <span className={`inline-flex items-center gap-0.5 text-xs font-bold ${
+                                                        isOver ? "text-blue-600" : "text-red-500"
+                                                    }`}>
+                                                        {isOver
+                                                            ? <ArrowTrendingUpIcon className="w-3.5 h-3.5" />
+                                                            : <ArrowTrendingDownIcon className="w-3.5 h-3.5" />
+                                                        }
+                                                        {isOver ? "+" : ""}{m.diff}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="px-6 pb-6 pt-4 bg-slate-50 border-t flex flex-col gap-2">
+                            <p className="text-xs text-muted-foreground text-center mb-1">
+                                Xác nhận với khách hàng và chọn hành động phù hợp:
+                            </p>
+                            <button
+                                disabled={submitting}
+                                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#0F766E] hover:bg-[#0F766E]/90 text-white text-sm font-semibold transition-colors disabled:opacity-50"
+                                onClick={() => handleConfirmReceiving(true)}
+                            >
+                                <CheckCircleIcon className="w-4 h-4" />
+                                Khách đồng ý — Nhập theo số lượng thực tế
+                            </button>
+                            <button
+                                disabled={submitting}
+                                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-sm font-semibold transition-colors disabled:opacity-50"
+                                onClick={() => handleConfirmReceiving(false)}
+                            >
+                                <XMarkIcon className="w-4 h-4" />
+                                Khách không đồng ý — Hủy phiếu nhập
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* ── Header ── */}
             <div className="p-6 border-b">
                 <div className="flex items-center justify-between gap-4">
@@ -592,7 +704,7 @@ export default function InboundApprovalDetail({
                     {data.status === "RECEIVING" && (
                         <Button disabled={submitting}
                             className="gap-2 rounded-xl bg-[#0F766E] hover:bg-[#0F766E]/90 text-white ml-auto"
-                            onClick={handleConfirmReceiving}>
+                            onClick={() => handleConfirmReceiving()}>
                             <CheckCircleIcon className="w-4 h-4" />
                             {submitting ? "Đang xử lý..." : "Xác nhận kiểm đếm"}
                         </Button>

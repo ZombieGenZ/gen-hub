@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { User, Lock, Eye, EyeOff, Moon, Sun, Key } from "lucide-react"
+import { User, Mail, Lock, Eye, EyeOff, Moon, Sun, Key } from "lucide-react"
 import Link from "next/link"
 import { AuthService } from '@/services/auth/auth.service'
 import { useRouter } from "next/navigation"
@@ -120,11 +120,11 @@ export default function LoginPage() {
             {/* Email/Username */}
             <div className="group">
               <label className={`block text-sm font-medium mb-2 transition-colors ${darkMode ? "text-slate-300" : "text-gray-700"}`}>
-                Email hoặc Username <span className="text-red-500">*</span>
+                Email <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <User
+                  <Mail
                     className={`h-5 w-5 transition-all duration-300 ${emailFocused ? "text-teal-500 scale-110" : darkMode ? "text-slate-500" : "text-gray-400"
                       }`}
                     style={{
@@ -139,7 +139,7 @@ export default function LoginPage() {
                   onKeyDown={(e) => e.key === "Enter" && handleLogin()}
                   onFocus={() => setEmailFocused(true)}
                   onBlur={() => setEmailFocused(false)}
-                  placeholder="Nhập email hoặc username"
+                  placeholder="Nhập email"
                   className={`w-full pl-10 pr-4 py-3 rounded-lg transition-all focus:outline-none focus:ring-2 ${darkMode
                     ? "bg-slate-700/50 border border-slate-600 text-white placeholder-slate-400 focus:border-teal-600 focus:ring-teal-600/20"
                     : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-500 focus:border-teal-600 focus:ring-teal-600/20"

@@ -91,15 +91,87 @@ export class AuthService {
   ) { }
 
   /**
-   * Đăng ký tài khoản mới bằng email
+   * Prefix key Redis cho OTP đăng ký
    */
-  async register(dto: RegisterDto, deviceInfo?: IDeviceInfo, lang = 'vi') {
-    // Verify captcha token
+  private registrationOtpKey(email: string): string {
+    return `auth:registration_otp:${email}`;
+  }
+
+  /**
+   * Gửi OTP xác minh email trước khi đăng ký tài khoản.
+   * Lưu OTP + thông tin form vào Redis (TTL 5 phút).
+   */
+  async sendRegistrationOtp(dto: RegisterDto, deviceInfo?: IDeviceInfo, lang = 'vi') {
+    // Verify captcha
     await this.turnstileService.verifyToken(dto.turnstileToken, deviceInfo?.ip, lang);
 
     // Verify email with Hunter.io
     await this.hunterService.verifyEmail(dto.email, lang);
 
+    // Kiểm tra email đã tồn tại
+    const existing = await this.userRepository.findByEmail(dto.email);
+    if (existing) {
+      throw new ConflictException(
+        await this.i18n.t('auth.register.email_exists', { lang }),
+      );
+    }
+
+    // Tạo OTP 6 số
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const key = this.registrationOtpKey(dto.email);
+    const payload = JSON.stringify({ otp, name: dto.name, password: dto.password, language: dto.language });
+
+    // Lưu vào Redis với TTL 5 phút
+    await this.redisService.set(key, payload, 300);
+
+    this.emailService.sendRegistrationOtpEmail(dto.email, otp, dto.name, lang).catch((err) => {
+      this.systemLogService.error('auth', 'send_otp_failed', `Failed to send registration OTP: ${dto.email}`, {
+        metaData: { email: dto.email, error: err.message },
+      });
+    });
+
+    return { message: await this.i18n.t('auth.register.otp_sent', { lang }) };
+  }
+
+  /**
+   * Đăng ký tài khoản mới bằng email
+   */
+  async register(dto: RegisterDto, deviceInfo?: IDeviceInfo, lang = 'vi') {
+    // ── Xác minh OTP trước khi tạo tài khoản ──
+    if (!dto.otp) {
+      throw new BadRequestException(
+        await this.i18n.t('auth.register.otp_required', { lang }),
+      );
+    }
+
+    const key = this.registrationOtpKey(dto.email);
+    const cached = await this.redisService.get(key);
+    if (!cached) {
+      throw new BadRequestException(
+        await this.i18n.t('auth.register.otp_expired', { lang }),
+      );
+    }
+
+    let parsed: { otp: string; name: string; password: string; language?: string };
+    try {
+      parsed = JSON.parse(cached);
+    } catch {
+      await this.redisService.del(key);
+      throw new BadRequestException(
+        await this.i18n.t('auth.register.otp_expired', { lang }),
+      );
+    }
+
+    if (parsed.otp !== dto.otp) {
+      throw new BadRequestException(
+        await this.i18n.t('auth.register.otp_invalid', { lang }),
+      );
+    }
+
+    // OTP hợp lệ → xóa khỏi Redis ngay
+    await this.redisService.del(key);
+
+    // ── Kiểm tra email đã tồn tại (double-check) ──
     const existingEmail = await this.userRepository.findByEmail(dto.email);
     if (existingEmail) {
       throw new ConflictException(
@@ -107,45 +179,29 @@ export class AuthService {
       );
     }
 
-    const hashedPassword = await argon2.hash(dto.password, {
+    const hashedPassword = await argon2.hash(parsed.password, {
       memoryCost: this.ARGON2_MEMORY_COST,
       timeCost: this.ARGON2_TIME_COST,
       parallelism: this.ARGON2_PARALLELISM,
     });
 
-    const emailVerifyToken = this.generateToken();
-    const emailVerifyExpired = new Date(
-      Date.now() + this.EMAIL_VERIFY_EXPIRATION,
-    );
-
-    // Normalize language: sử dụng dto.language, nếu không có dùng lang từ header
-    const normalizedLanguage = normalizeLanguage(dto.language || lang);
+    // Email đã xác minh qua OTP → đánh dấu email_confirmed = true ngay
+    const normalizedLanguage = normalizeLanguage(parsed.language || lang);
 
     const user = await this.userRepository.create({
-      name: dto.name,
+      name: parsed.name,
       email: dto.email,
       password: hashedPassword,
       language: normalizedLanguage,
-      email_verify_token: emailVerifyToken,
-      email_verify_expired: emailVerifyExpired,
+      email_confirmed: true,
     });
 
-    Promise.all([
-      this.emailService.sendVerificationEmail(
-        dto.email,
-        emailVerifyToken,
-        dto.name,
-        lang,
-      ),
-      this.emailService.sendWelcomeEmail(dto.email, dto.name, lang),
-    ]).catch((error) => {
+    this.emailService.sendWelcomeEmail(dto.email, parsed.name, lang).catch((error) => {
       this.systemLogService.error(
         'auth',
         'send_email_failed',
-        `Failed to send registration emails: ${dto.email}`,
-        {
-          metaData: { email: dto.email, error: error.message },
-        },
+        `Failed to send welcome email: ${dto.email}`,
+        { metaData: { email: dto.email, error: error.message } },
       );
     });
 

@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useMemo } from 'react';
 import Image from 'next/image';
-import { Package, ScanBarcode, Check, AlertTriangle, X, ChevronDown } from 'lucide-react';
+import { Package, ScanBarcode, Check, AlertTriangle, X, ChevronDown, TrendingUp, TrendingDown, ClipboardList } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useBarcodeScan } from '@/hooks/useBarcodeScan';
 import { useFloorFeedback } from '@/hooks/useFloorFeedback';
@@ -52,6 +52,7 @@ export default function InventoryCounter({
 }: InventoryCounterProps) {
     const [items, setItems] = useState(initialItems);
     const [lockError, setLockError] = useState<string | null>(null);
+    const [showDiscrepancyModal, setShowDiscrepancyModal] = useState(false);
     const { trigger } = useFloorFeedback();
     const { flash, triggerFlash } = useFlashOverlay();
 
@@ -74,6 +75,25 @@ export default function InventoryCounter({
     const allDone = useMemo(() => {
         return items.every((i) => i.actual_qty >= i.expected_qty);
     }, [items]);
+
+    // Discrepancies: under-count OR over-count
+    const discrepancies = useMemo(() => {
+        return items.filter((i) => i.actual_qty !== i.expected_qty);
+    }, [items]);
+
+    // Handle complete request – show modal if discrepancies exist
+    const handleRequestComplete = useCallback(() => {
+        if (discrepancies.length > 0) {
+            setShowDiscrepancyModal(true);
+        } else {
+            onComplete();
+        }
+    }, [discrepancies, onComplete]);
+
+    const confirmComplete = useCallback(() => {
+        setShowDiscrepancyModal(false);
+        onComplete();
+    }, [onComplete]);
 
     // ── Barcode scan handler ──
     const handleScan = useCallback(
@@ -133,6 +153,101 @@ export default function InventoryCounter({
     return (
         <div className="h-dvh flex flex-col bg-slate-50 relative overflow-hidden select-none">
             <FlashOverlay flash={flash} />
+
+            {/* ── Discrepancy Confirmation Modal ── */}
+            {showDiscrepancyModal && (
+                <div
+                    className="absolute inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm"
+                    onClick={(e) => { if (e.target === e.currentTarget) setShowDiscrepancyModal(false); }}
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="discrepancy-title"
+                >
+                    <div className="w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl flex flex-col">
+                        {/* Header */}
+                        <div className="flex items-center gap-3 px-6 pt-6 pb-4">
+                            <div className="w-12 h-12 rounded-2xl bg-amber-100 flex items-center justify-center shrink-0">
+                                <AlertTriangle className="w-7 h-7 text-amber-500" />
+                            </div>
+                            <div>
+                                <h3 id="discrepancy-title" className="text-lg font-bold text-slate-800">
+                                    Phát hiện sai số
+                                </h3>
+                                <p className="text-sm text-slate-500">
+                                    {discrepancies.length} sản phẩm có số lượng không khớp
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Discrepancy list */}
+                        <div className="px-4 pb-2 max-h-56 overflow-y-auto">
+                            <div className="space-y-2">
+                                {discrepancies.map((item) => {
+                                    const diff = item.actual_qty - item.expected_qty;
+                                    const isOver = diff > 0;
+                                    return (
+                                        <div
+                                            key={item.id}
+                                            className={cn(
+                                                'flex items-center gap-3 px-4 py-3 rounded-2xl border',
+                                                isOver
+                                                    ? 'bg-blue-50 border-blue-100'
+                                                    : 'bg-red-50 border-red-100',
+                                            )}
+                                        >
+                                            <ClipboardList className={cn('w-5 h-5 shrink-0', isOver ? 'text-blue-400' : 'text-red-400')} />
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-semibold text-slate-700 truncate">
+                                                    {item.product_name}
+                                                </p>
+                                                <p className="text-xs text-slate-400">SKU: {item.sku}</p>
+                                            </div>
+                                            <div className="text-right shrink-0">
+                                                <p className="text-sm font-bold text-slate-600">
+                                                    {item.actual_qty}
+                                                    <span className="text-slate-300 mx-1">/</span>
+                                                    {item.expected_qty}
+                                                </p>
+                                                <span
+                                                    className={cn(
+                                                        'inline-flex items-center gap-0.5 text-xs font-bold',
+                                                        isOver ? 'text-blue-500' : 'text-red-500',
+                                                    )}
+                                                >
+                                                    {isOver ? (
+                                                        <TrendingUp className="w-3 h-3" />
+                                                    ) : (
+                                                        <TrendingDown className="w-3 h-3" />
+                                                    )}
+                                                    {isOver ? '+' : ''}{diff}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex flex-col gap-2 px-4 py-4 bg-slate-50 border-t border-slate-100">
+                            <button
+                                className="floor-btn bg-amber-500 text-white font-bold w-full"
+                                onClick={confirmComplete}
+                            >
+                                <Check className="w-5 h-5" />
+                                Xác nhận sai số & Hoàn tất
+                            </button>
+                            <button
+                                className="floor-btn bg-white text-slate-700 border border-slate-200 font-semibold w-full"
+                                onClick={() => setShowDiscrepancyModal(false)}
+                            >
+                                <X className="w-5 h-5" />
+                                Quay lại kiểm tra
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* ── Lock Screen (wrong scan) ── */}
             {lockError && (
@@ -307,7 +422,7 @@ export default function InventoryCounter({
                     </p>
                     <button
                         className="floor-btn floor-btn-giant bg-teal-600 text-white w-full max-w-sm"
-                        onClick={onComplete}
+                        onClick={handleRequestComplete}
                     >
                         <Check className="w-7 h-7" />
                         XÁC NHẬN HOÀN TẤT

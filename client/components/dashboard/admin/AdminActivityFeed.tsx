@@ -60,10 +60,10 @@ export function AdminActivityFeed() {
                         Lịch sử hoạt động
                     </CardTitle>
                 </CardHeader>
-                <CardContent className="p-5 pt-6">
-                    <div className="animate-pulse space-y-6">
+                <CardContent className="p-4 pt-5">
+                    <div className="animate-pulse space-y-4">
                         {[...Array(5)].map((_, i) => (
-                            <div key={i} className="flex items-center gap-4">
+                            <div key={i} className="flex items-center gap-3">
                                 <div className="w-8 h-8 bg-slate-200 rounded-full shrink-0" />
                                 <div className="flex-1 space-y-2">
                                     <div className="h-3 bg-slate-200 rounded w-1/4" />
@@ -87,8 +87,8 @@ export function AdminActivityFeed() {
                     </div>
                 </CardTitle>
             </CardHeader>
-            <CardContent className="p-5 pt-6">
-                <div className="space-y-6 relative before:absolute before:inset-0 before:ml-4 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-[2px] before:bg-gradient-to-b before:from-transparent before:via-slate-200 before:to-transparent">
+            <CardContent className="p-4 pt-4">
+                <div className="space-y-4 relative before:absolute before:inset-0 before:ml-4 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-[2px] before:bg-gradient-to-b before:from-transparent before:via-slate-200 before:to-transparent">
                     {data.map((item) => (
                         <div key={item.id} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
                             {/* Marker */}
@@ -114,7 +114,7 @@ export function AdminActivityFeed() {
                         </div>
                     ))}
                 </div>
-                <div className="mt-8 text-center relative z-10">
+                <div className="mt-4 text-center relative z-10">
                     <Button variant="outline" size="sm" className="bg-white text-xs font-semibold text-slate-500 hover:text-slate-900 rounded-full h-8 px-6 border-slate-200 hover:border-slate-300 transition-colors shadow-sm">
                         Xem thêm hoạt động
                     </Button>

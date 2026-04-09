@@ -93,4 +93,5 @@ export interface QueryProductParams {
     offset?: number;
     keywords?: string;
     is_active?: boolean;
+    warehouse_id?: string;
 }

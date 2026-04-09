@@ -173,6 +173,47 @@ export class AuthController {
   }
 
   @ApiOperation({
+    summary: 'Gửi OTP xác minh email trước khi đăng ký',
+    description: 'Kiểm tra thông tin đăng ký, gửi mã OTP 6 chữ số về email. OTP có hiệu lực trong 5 phút.',
+  })
+  @ApiHeader({
+    name: 'Accept-Language',
+    description: 'Ngôn ngữ phản hồi (vi hoặc en)',
+    required: false,
+    example: 'vi',
+  })
+  @ApiBody({
+    type: RegisterDto,
+    description: 'Thông tin đăng ký (không cần trường otp)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Gửi OTP thành công',
+    schema: {
+      type: 'object',
+      properties: {
+        code: { type: 'string', example: 'auth.send_registration_otp_success' },
+        message: { type: 'string', example: 'Mã OTP đã được gửi đến email của bạn' },
+        success: { type: 'boolean', example: true },
+      },
+    },
+  })
+  @ApiValidationErrorResponse()
+  @Public()
+  @Post('send-registration-otp')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  async sendRegistrationOtp(
+    @Body() dto: RegisterDto,
+    @Req() req: Request,
+    @Headers('accept-language') lang?: string,
+  ) {
+    const deviceInfo = getDeviceInfo(req);
+    const result = await this.authService.sendRegistrationOtp(dto, deviceInfo, lang || 'vi');
+    return new OkResponse(ResponseCode.AUTH_SEND_REGISTRATION_OTP_SUCCESS, null, result.message);
+  }
+
+  @ApiOperation({
     summary: 'Đăng nhập',
     description: 'Đăng nhập bằng email và mật khẩu. Nếu tài khoản đã bật 2FA, sẽ trả về temp_token để tiếp tục xác thực 2FA. Nếu không, trả về access token và refresh token.',
   })

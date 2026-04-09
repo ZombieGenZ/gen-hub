@@ -28,4 +28,9 @@ export class QueryProductDto {
     @Transform(({ value }) => value === 'true' || value === true)
     @IsBoolean({ message: i18nValidationMessage('product.validation.is_active_boolean') })
     is_active?: boolean;
+
+    @ApiPropertyOptional({ description: 'ID kho — khi có sẽ trả thêm quantity_available theo kho này' })
+    @IsOptional()
+    @IsString()
+    warehouse_id?: string;
 }

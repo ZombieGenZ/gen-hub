@@ -117,6 +117,7 @@ export function CreateOutboundDialog({
                 productService.list(token, {
                     limit: 20,
                     keywords: debouncedProductSearch || undefined,
+                    warehouse_id: formWarehouse || undefined,
                 }),
             ]);
             setWarehouses(Array.isArray(warehouseRes) ? warehouseRes : []);
@@ -139,7 +140,7 @@ export function CreateOutboundDialog({
         } catch {
             // silent fail
         }
-    }, [debouncedProductSearch]);
+    }, [debouncedProductSearch, formWarehouse]);
 
     useEffect(() => {
         if (open) loadFormData();

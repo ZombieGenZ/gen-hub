@@ -2144,6 +2144,7 @@ model Product {
   inventories        Inventory[]
   receipt_details    ReceiptDetail[]
   export_details     ExportDetail[]
+  export_pick_list_details ExportPickListDetail[]
   stock_take_details StockTakeDetail[]
 
   inventory_transactions InventoryTransaction[]
@@ -2269,6 +2270,7 @@ model Block {
 
   shelf              Shelf             @relation(fields: [shelf_id], references: [id], onDelete: Cascade)
   inventories        Inventory[]
+  export_pick_list_details ExportPickListDetail[]
   stock_take_details StockTakeDetail[]
 
   from_transactions InventoryTransaction[] @relation("FromBlock")
@@ -2300,6 +2302,7 @@ model Batch {
   inventories        Inventory[]
   input_details      ReceiptDetail[]
   output_details     ExportDetail[]
+  export_pick_list_details ExportPickListDetail[]
   stock_take_details StockTakeDetail[]
 
   inventory_transactions InventoryTransaction[]
@@ -2444,6 +2447,7 @@ model Receipt {
   receiving_completed_at DateTime?
   putaway_started_at     DateTime?
   putaway_completed_at   DateTime?
+  is_customer_mismatch_agreed Boolean?   @default(false) @map("is_customer_mismatch_agreed")
   is_active              Boolean       @default(true)
   created_at             DateTime      @default(now())
   updated_at             DateTime      @updatedAt
@@ -2630,6 +2634,7 @@ model ExportDetail {
   product Product @relation(fields: [product_id], references: [id])
   batch   Batch?  @relation(fields: [required_batch_id], references: [id])
   unit    Unit    @relation(fields: [unit_id], references: [id])
+  pick_list_details ExportPickListDetail[]
 
   @@map("export_details")
 }
@@ -2693,7 +2698,11 @@ model ExportPickListDetail {
   updated_by String?
   deleted_by String?
 
-  pick_list ExportPickList @relation(fields: [pick_list_id], references: [id], onDelete: Cascade)
+  pick_list     ExportPickList @relation(fields: [pick_list_id], references: [id], onDelete: Cascade)
+  export_detail ExportDetail   @relation(fields: [export_detail_id], references: [id], onDelete: Cascade)
+  product       Product        @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  batch         Batch?         @relation(fields: [batch_id], references: [id])
+  block         Block          @relation(fields: [block_id], references: [id], onDelete: Cascade)
 
   @@index([pick_list_id])
   @@index([export_detail_id])

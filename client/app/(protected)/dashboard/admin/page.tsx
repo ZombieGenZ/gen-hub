@@ -37,24 +37,24 @@ const GROUPS: WidgetGroup[] = [
 export default function DashboardPage() {
     return (
         <div className="flex-1 overflow-auto bg-slate-50/50">
-            <main className="p-4">
+            <main className="p-3">
                 <DashboardWidgetGrid
                     widgets={WIDGETS}
                     groups={GROUPS}
                     renderLayout={(groups) => (
-                        <div className="space-y-6">
+                        <div className="space-y-4">
                             {/* ZONE 1: Full-width KPIs */}
                             <section>{groups["top"]}</section>
 
                             {/* ZONE 2-4: Two-column layout */}
-                            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                            <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
                                 {/* Main content — 2/3 */}
-                                <div className="xl:col-span-2 space-y-6">
+                                <div className="xl:col-span-2 space-y-4">
                                     {groups["main-left"]}
                                 </div>
 
                                 {/* Sidebar — 1/3 */}
-                                <div className="space-y-6">
+                                <div className="space-y-4">
                                     {groups["sidebar"]}
                                 </div>
                             </div>

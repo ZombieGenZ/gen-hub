@@ -1627,6 +1627,76 @@ export class EmailService {
       html: await this.createEmailTemplate(content, appName, lang),
     });
   }
+
+  /**
+   * Gửi email OTP xác minh trước khi đăng ký tài khoản
+   * @param to - Email người nhận
+   * @param otp - Mã OTP 6 số
+   * @param name - Tên người dùng
+   * @param lang - Ngôn ngữ
+   */
+  async sendRegistrationOtpEmail(
+    to: string,
+    otp: string,
+    name: string,
+    lang: string = 'vi',
+  ): Promise<boolean> {
+    const appName = this.appConfigService.get('brandName');
+    const colors = this.appConfigService.get('colors');
+
+    const title = lang === 'vi' ? 'Xác minh Email Đăng ký' : 'Registration Email Verification';
+    const greeting = lang === 'vi'
+      ? `Xin chào <strong style="color:${colors.primaryDark};">${name}</strong>,`
+      : `Hello <strong style="color:${colors.primaryDark};">${name}</strong>,`;
+    const message = lang === 'vi'
+      ? `Nhập mã OTP bên dưới để hoàn tất đăng ký tài khoản <strong>${appName}</strong>. Mã có hiệu lực trong <strong style="color:${colors.warning};">5 phút</strong>.`
+      : `Enter the OTP below to complete your <strong>${appName}</strong> registration. The code is valid for <strong style="color:${colors.warning};">5 minutes</strong>.`;
+    const warningText = lang === 'vi'
+      ? 'Nếu bạn không thực hiện yêu cầu này, hãy bỏ qua email này.'
+      : 'If you did not make this request, please ignore this email.';
+    const subject = lang === 'vi'
+      ? `Mã xác minh đăng ký - ${appName}`
+      : `Registration verification code - ${appName}`;
+
+    const content = `
+      <h2 style="margin:0 0 20px;font-size:24px;font-weight:600;color:${colors.gray900};text-align:center;">
+        ${title}
+      </h2>
+      <p style="margin:0 0 8px;font-size:15px;color:${colors.gray700};line-height:1.7;text-align:center;">
+        ${greeting}
+      </p>
+      <p style="margin:0 0 30px;font-size:15px;color:${colors.gray700};line-height:1.7;text-align:center;">
+        ${message}
+      </p>
+
+      <!-- OTP Box -->
+      <div style="text-align:center;margin:0 0 30px;">
+        <div style="display:inline-block;background:linear-gradient(135deg,${colors.primaryDark} 0%,${colors.primary} 100%);border-radius:16px;padding:24px 48px;">
+          <span style="font-size:40px;font-weight:800;letter-spacing:14px;color:#ffffff;font-family:'Courier New',monospace;">
+            ${otp}
+          </span>
+        </div>
+      </div>
+
+      <!-- Cảnh báo -->
+      <div style="background:linear-gradient(135deg,${colors.gray100} 0%,${colors.background} 100%);border-left:4px solid ${colors.warning};border-radius:8px;padding:16px 20px;margin:0 0 20px;">
+        <p style="margin:0;font-size:13px;color:${colors.warning};font-weight:600;">⏱ Mã hết hạn sau 5 phút</p>
+        <p style="margin:6px 0 0;font-size:13px;color:${colors.gray700};">Không chia sẻ mã này với bất kỳ ai.</p>
+      </div>
+
+      <div style="border-top:1px solid ${colors.border};padding-top:20px;margin-top:20px;">
+        <p style="margin:0;font-size:13px;color:${colors.gray500};text-align:center;line-height:1.6;">
+          ${warningText}
+        </p>
+      </div>
+    `;
+
+    return this.sendEmail({
+      to,
+      subject,
+      html: await this.createEmailTemplate(content, appName, lang),
+    });
+  }
 }
 
 

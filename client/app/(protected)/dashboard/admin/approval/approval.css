@@ -379,7 +379,7 @@
     align-items: center;
     justify-content: flex-end;
     gap: 8px;
-    padding: 16px 24px;
+    padding: 10px 16px;
     border-top: 1px solid #e2e8f0;
     background: white;
     position: sticky;
@@ -415,7 +415,7 @@
 
 .approval-strategy__option {
     flex: 1;
-    padding: 12px 16px;
+    padding: 8px 12px;
     border: 2px solid #e2e8f0;
     border-radius: 16px;
     cursor: pointer;
@@ -507,5 +507,26 @@
 
     .approval-kanban {
         grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 640px) {
+    .approval-strategy {
+        flex-direction: column;
+    }
+
+    .approval-strategy__option {
+        text-align: left;
+        padding: 10px 14px;
+    }
+
+    .approval-actions {
+        flex-wrap: wrap;
+        justify-content: stretch;
+        gap: 8px;
+    }
+
+    .approval-actions > * {
+        flex: 1 1 140px;
     }
 }

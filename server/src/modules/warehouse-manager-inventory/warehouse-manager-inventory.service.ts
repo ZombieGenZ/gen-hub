@@ -927,6 +927,28 @@ export class WarehouseManagerInventoryService {
             );
         }
 
+        let hasMismatch = false;
+        for (const item of dto.details) {
+            const existingDetail = receipt.details.find((d) => d.id === item.detail_id);
+            if (existingDetail && Number(existingDetail.expected_qty) !== item.actual_qty) {
+                hasMismatch = true;
+                break;
+            }
+        }
+
+        if (hasMismatch && dto.is_customer_agreed === undefined) {
+            throw new BadRequestException(
+                lang === 'vi' 
+                ? 'Số lượng thực tế khác với dự kiến. Vui lòng xác nhận khách hàng có đồng ý hay không (is_customer_agreed).'
+                : 'Actual quantity differs from expected. Please confirm customer agreement (is_customer_agreed).'
+            );
+        }
+
+        const finalStatus = (hasMismatch && dto.is_customer_agreed === false) 
+            ? 'CANCELLED' 
+            : 'PROCESSING';
+        const failReason = lang === 'vi' ? 'Báo nhập kho thất bại: Khách hàng không đồng ý sai lệch số lượng' : 'Inbound failed: Customer rejected quantity discrepancy';
+
         const result = await this.prisma.$transaction(async (tx) => {
             // Cập nhật actual_qty cho từng detail
             for (const item of dto.details) {
@@ -939,9 +961,9 @@ export class WarehouseManagerInventoryService {
             return tx.receipt.update({
                 where: { id: receiptId },
                 data: {
-                    status: ReceiptStatus.PROCESSING,
-                    receiving_completed_at: new Date(),
-                    notes: dto.notes || receipt.notes,
+                    status: finalStatus as ReceiptStatus,
+                    receiving_completed_at: finalStatus === 'PROCESSING' ? new Date() : undefined,
+                    notes: finalStatus === 'CANCELLED' ? failReason : (dto.notes || receipt.notes),
                     updated_by: actorId,
                 },
                 include: {

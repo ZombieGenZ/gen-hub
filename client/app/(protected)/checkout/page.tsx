@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, Suspense, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import Link from 'next/link';
 import {
     CheckoutProvider,
@@ -19,7 +20,7 @@ import { ContractSignatureStep } from '@/components/checkout/ContractSignatureSt
 import { QuotationSummary } from '@/components/warehouse/QuotationSummary';
 import { CouponDrawer } from '@/components/checkout/CouponDrawer';
 import { CheckoutSession, PaymentMethod } from '@/types/checkout/checkout.type';
-import { ArrowLeftIcon } from '@heroicons/react/24/outline';
+import { ArrowLeftIcon, ExclamationTriangleIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
 import { Button } from '@/components/ui/button';
 
 import { useSearchParams } from 'next/navigation';
@@ -101,6 +102,7 @@ const mapApiQuotationToBreakdown = (quotation: QuotationApiResponse) => ({
 });
 
 const MEMBERSHIP_ERROR_KEYWORD = 'không phải thành viên của tổ chức này';
+const EMAIL_NOT_VERIFIED_CODE = 'error.forbidden.email_not_confirmed';
 
 function CheckoutContent() {
     const router = useRouter();
@@ -124,6 +126,7 @@ function CheckoutContent() {
 
     const [hasExistingOrg, setHasExistingOrg] = useState(false);
     const [initializing, setInitializing] = useState(true);
+    const [isEmailVerified, setIsEmailVerified] = useState<boolean | null>(null);
 
     // Coupon state
     const [couponDrawerOpen, setCouponDrawerOpen] = useState(false);
@@ -176,6 +179,20 @@ function CheckoutContent() {
         hasSyncedQuotationRef.current = true;
         void recalculateQuotation(session.coupon_code);
     }, [session.warehouse_template_id, session.duration_tier_id, session.rental_type, session.coupon_code, recalculateQuotation]);
+
+    // Kiểm tra trạng thái xác minh email
+    useEffect(() => {
+        const checkEmailVerification = async () => {
+            try {
+                const userData = await authStorage.getUser();
+                const verified = userData?.user?.email_confirmed ?? false;
+                setIsEmailVerified(verified);
+            } catch {
+                setIsEmailVerified(false);
+            }
+        };
+        checkEmailVerification();
+    }, []);
 
     // Initial Data Fetch (Organization)
     useEffect(() => {
@@ -404,7 +421,31 @@ function CheckoutContent() {
 
         } catch (error) {
             console.error('Failed to create order:', error);
-            alert("Lỗi khi tạo đơn hàng. Vui lòng thử lại.");
+            const rawMessage = error instanceof Error ? error.message : '';
+
+            // Kiểm tra lỗi email chưa được xác minh
+            const isEmailNotVerified =
+                rawMessage.includes(EMAIL_NOT_VERIFIED_CODE) ||
+                rawMessage.toLowerCase().includes('email_not_confirmed') ||
+                rawMessage.toLowerCase().includes('email chưa được xác minh') ||
+                rawMessage.toLowerCase().includes('xác minh email');
+
+            if (isEmailNotVerified) {
+                setIsEmailVerified(false);
+                toast.error('Email chưa được xác minh', {
+                    description: 'Vui lòng xác minh địa chỉ email của bạn để tiếp tục tạo đơn hàng.',
+                    duration: 6000,
+                    action: {
+                        label: 'Xác minh ngay',
+                        onClick: () => router.push('/verify-email'),
+                    },
+                });
+            } else {
+                toast.error('Không thể tạo đơn hàng', {
+                    description: 'Đã xảy ra lỗi khi xử lý yêu cầu. Vui lòng thử lại.',
+                    duration: 5000,
+                });
+            }
             throw error; // Re-throw so signature step doesn't advance
         } finally {
             setIsSubmitting(false);
@@ -414,6 +455,34 @@ function CheckoutContent() {
     if (initializing) {
         return <div className="p-12 text-center text-slate-500">Đang tải thông tin...</div>;
     }
+
+    // Banner cảnh báo tài khoản chưa xác minh
+    const renderVerificationBanner = () => {
+        if (isEmailVerified !== false) return null;
+        return (
+            <div className="mx-4 sm:mx-6 lg:mx-8 mb-4 bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-3">
+                <div className="flex-shrink-0 mt-0.5">
+                    <ExclamationTriangleIcon className="w-5 h-5 text-amber-500" />
+                </div>
+                <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-amber-800">
+                        Tài khoản chưa được xác minh
+                    </p>
+                    <p className="text-sm text-amber-700 mt-0.5">
+                        Vui lòng xác minh email để hoàn tất quá trình thuê kho. Nếu chưa nhận được email, hãy kiểm tra hộp thư spam.
+                    </p>
+                    <button
+                        type="button"
+                        onClick={() => router.push('/verify-email')}
+                        className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-amber-800 hover:text-amber-900 underline underline-offset-2 transition-colors"
+                    >
+                        <EnvelopeIcon className="w-4 h-4" />
+                        Xác minh email ngay
+                    </button>
+                </div>
+            </div>
+        );
+    };
 
     return (
         <div className="min-h-screen bg-slate-50">
@@ -446,6 +515,9 @@ function CheckoutContent() {
 
                 {/* Progress Bar */}
                 <CheckoutProgress className="mb-8" />
+
+                {/* Email Verification Warning Banner */}
+                {renderVerificationBanner()}
 
                 {/* Two Column Layout */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

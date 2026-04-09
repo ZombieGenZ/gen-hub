@@ -4,6 +4,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  Length,
   Matches,
   MinLength,
 } from 'class-validator';
@@ -85,5 +86,14 @@ export class RegisterDto {
   @IsOptional()
   @IsString()
   turnstileToken?: string;
+
+  @ApiPropertyOptional({
+    description: 'Mã OTP 6 chữ số gửi về email (dùng khi tạo tài khoản)',
+    example: '482910',
+  })
+  @IsOptional()
+  @IsString()
+  @Length(6, 6, { message: 'OTP phải là 6 chữ số' })
+  otp?: string;
 }
 

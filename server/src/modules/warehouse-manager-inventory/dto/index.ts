@@ -250,6 +250,11 @@ export class ConfirmReceivingDto {
     @IsOptional()
     @IsString({ message: i18nValidationMessage('inventory-request.validation.notes_string') })
     notes?: string;
+
+    @ApiPropertyOptional({ description: 'Xác nhận của khách hàng khi số lượng thực tế khác dự kiến' })
+    @IsOptional()
+    @IsBoolean()
+    is_customer_agreed?: boolean;
 }
 
 // ── Putaway (Cất hàng) ──

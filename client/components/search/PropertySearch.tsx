@@ -233,7 +233,7 @@ export default function PropertySearch({ initialLocationSlug }: PropertySearchPr
 
                 case 'kho-thuong': case 'standard': setSelectedTypes(['standard']); break;
                 case 'kho-ngoai-quan': case 'bonded': setSelectedTypes(['bonded']); break;
-                case 'shared': setSelectedTypes(['shared']); break;
+                case 'kho-chung': case 'shared': setSelectedTypes(['shared']); break;
                 case 'fulfillment': setSelectedTypes(['fulfillment']); break;
                 default: setSelectedTypes([]); break;
             }
@@ -281,7 +281,7 @@ export default function PropertySearch({ initialLocationSlug }: PropertySearchPr
             result = result.filter(p => {
                 const isShared = selectedTypes.includes('shared') && p.is_shared_warehouse;
                 const isBonded = selectedTypes.includes('bonded') && p.type === 'Kho Ngoại Quan';
-                const isStandard = selectedTypes.includes('standard') && p.type === 'Kho Thường';
+                const isStandard = selectedTypes.includes('standard') && p.type === 'Kho Thường' && !p.is_shared_warehouse;
                 return isShared || isStandard || isBonded;
             });
         }

@@ -72,6 +72,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       code: errorInfo.code,
       message: errorInfo.clientMessage,
       success: false,
+      ...errorInfo.extraFields,
     };
 
     // Thêm errors array nếu có
@@ -96,6 +97,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     prismaCode?: string;
     prismaMeta?: Record<string, unknown>;
     errors?: Array<{ field: string; message: string }>;
+    extraFields?: Record<string, unknown>;
   } {
     // HttpException (từ NestJS)
     if (exception instanceof HttpException) {
@@ -104,10 +106,12 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
       // Check if response is custom format with code and message
       if (typeof response === 'object' && response !== null) {
-        const customResponse = response as { code?: string; message?: string; success?: boolean; data?: unknown };
+        const customResponse = response as { code?: string; message?: string; success?: boolean; data?: unknown; [key: string]: unknown };
 
         // Nếu response có custom code (từ BruteForceGuard hoặc các guard khác)
         if (customResponse.code && customResponse.message) {
+          // Extract extra fields (e.g. mismatches, require_customer_agreement)
+          const { code: _c, message: _m, success: _s, data: _d, ...extraFields } = customResponse;
           return {
             status,
             code: customResponse.code,
@@ -116,6 +120,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
             errorType: 'HttpException',
             stack: exception.stack,
             errorResponse: response,
+            extraFields: Object.keys(extraFields).length > 0 ? extraFields : undefined,
           };
         }
       }
