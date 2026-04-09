@@ -20,26 +20,47 @@ import {
   Phone,
   Mail,
   CreditCard,
-  Plus
+  Plus,
+  Loader2,
+  XCircle,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { authStorage } from '@/services/auth/auth-storage.service';
 import { rentalContractService } from '@/services/rental-contract/rental-contract.service';
+import { orgHelper } from '@/lib/organization.utils';
+import { useToast } from '@/contexts/ToastContext';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 export default function BookingDetailPage() {
   const params = useParams();
+  const router = useRouter();
+  const { showToast } = useToast();
   const id = params.id as string;
   const [booking, setBooking] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [orgId, setOrgId] = useState<string | null>(null);
+  const [retryingPayment, setRetryingPayment] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
 
   useEffect(() => {
     const fetchBooking = async () => {
       try {
         const token = authStorage.getAccessToken();
-        if (!token) return;
+        if (!token) { router.push("/login"); return; }
 
-        const data: any = await rentalContractService.getRentalContractById(token, id);
+        const currentOrgId = await orgHelper.getOrgId(token);
+        setOrgId(currentOrgId);
+
+        const data: any = await rentalContractService.getOrgRentalContractById(token, currentOrgId, id);
 
         if (data) {
           const createdDate = new Date(data.created_at || Date.now());
@@ -145,7 +166,44 @@ export default function BookingDetailPage() {
     };
 
     fetchBooking();
-  }, [id]);
+  }, [id, router]);
+
+  const handleRetryPayment = async () => {
+    try {
+      const token = authStorage.getAccessToken();
+      if (!token) { router.push("/login"); return; }
+      const currentOrgId = orgId || await orgHelper.getOrgId(token);
+      setRetryingPayment(true);
+      const result = await rentalContractService.retryPayment(token, currentOrgId, id);
+      const paymentUrl = result?.payment?.payment_url || result?.payment_url;
+      if (paymentUrl) {
+        window.open(paymentUrl, "_blank", "noopener,noreferrer");
+      } else {
+        showToast("Không tìm thấy link thanh toán", "error");
+      }
+    } catch (err: any) {
+      showToast(err?.message || "Không thể tạo lại link thanh toán", "error");
+    } finally {
+      setRetryingPayment(false);
+    }
+  };
+
+  const handleCancel = async () => {
+    try {
+      const token = authStorage.getAccessToken();
+      if (!token) { router.push("/login"); return; }
+      const currentOrgId = orgId || await orgHelper.getOrgId(token);
+      setCancelling(true);
+      await rentalContractService.cancelOrgRentalContract(token, currentOrgId, id, "Khách hàng hủy yêu cầu");
+      showToast("Đã hủy yêu cầu thuê kho thành công", "success");
+      router.push("/dashboard/organization/bookings");
+    } catch (err: any) {
+      showToast(err?.message || "Không thể hủy yêu cầu", "error");
+    } finally {
+      setCancelling(false);
+      setShowCancelDialog(false);
+    }
+  };
 
   if (loading) {
     return <div className="p-12 text-center text-slate-500">Đang tải thông tin hợp đồng...</div>;
@@ -193,9 +251,32 @@ export default function BookingDetailPage() {
           <Button variant="outline" size="sm" className="gap-2">
             <Share2 className="h-4 w-4" /> Chia sẻ
           </Button>
-          <Button className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2">
-            <Download className="h-4 w-4" /> Tải hợp đồng
-          </Button>
+          {booking.status === 'PENDING' || booking.status === 'pending' ? (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                onClick={() => setShowCancelDialog(true)}
+                disabled={cancelling}
+              >
+                {cancelling ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />}
+                Hủy yêu cầu
+              </Button>
+              <Button
+                className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2"
+                onClick={handleRetryPayment}
+                disabled={retryingPayment}
+              >
+                {retryingPayment ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
+                Tiếp tục thanh toán
+              </Button>
+            </>
+          ) : (
+            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2">
+              <Download className="h-4 w-4" /> Tải hợp đồng
+            </Button>
+          )}
         </div>
       </div>
 
@@ -364,12 +445,12 @@ export default function BookingDetailPage() {
                 {booking.history.map((item: any, index: number) => (
                   <div key={index} className="relative">
                     <div className={`absolute -left-[31px] top-1 h-4 w-4 rounded-full border-2 border-white ring-2 ${item.status === 'completed' ? 'bg-emerald-500 ring-emerald-100' :
-                        item.status === 'current' ? 'bg-blue-500 ring-blue-100 animate-pulse' :
-                          'bg-slate-200 ring-slate-100'
+                      item.status === 'current' ? 'bg-blue-500 ring-blue-100 animate-pulse' :
+                        'bg-slate-200 ring-slate-100'
                       }`} />
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                       <span className={`text-base font-medium ${item.status === 'current' ? 'text-blue-600' :
-                          item.status === 'completed' ? 'text-emerald-700' : 'text-slate-500'
+                        item.status === 'completed' ? 'text-emerald-700' : 'text-slate-500'
                         }`}>
                         {item.action}
                       </span>
@@ -428,9 +509,16 @@ export default function BookingDetailPage() {
                     </p>
                   </div>
                 </div>
-                <Button className="w-full mt-3 bg-emerald-600 hover:bg-emerald-700 text-white h-8 text-xs">
-                  Thanh toán ngay
-                </Button>
+                {(booking.status === 'PENDING' || booking.status === 'pending') && (
+                  <Button
+                    className="w-full mt-3 bg-emerald-600 hover:bg-emerald-700 text-white h-8 text-xs"
+                    onClick={handleRetryPayment}
+                    disabled={retryingPayment}
+                  >
+                    {retryingPayment ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
+                    Thanh toán ngay
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -481,6 +569,31 @@ export default function BookingDetailPage() {
           </Card>
         </div>
       </div>
+
+      {/* Dialog xác nhận hủy yêu cầu */}
+      <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Xác nhận hủy yêu cầu thuê kho</DialogTitle>
+            <DialogDescription>
+              Bạn có chắc chắn muốn hủy yêu cầu thuê kho này không? Hành động này không thể hoàn tác.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCancelDialog(false)} disabled={cancelling}>
+              Quay lại
+            </Button>
+            <Button
+              className="bg-red-600 hover:bg-red-700 text-white"
+              onClick={handleCancel}
+              disabled={cancelling}
+            >
+              {cancelling ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Xác nhận hủy
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

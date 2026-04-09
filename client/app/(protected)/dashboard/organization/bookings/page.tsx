@@ -116,12 +116,10 @@ export default function BookingManagementPage() {
                                 <TableRow key={booking.id} className="hover:bg-muted/40 cursor-pointer" tabIndex={0} onKeyDown={(e) => {
                                     if (e.key === 'Enter' || e.key === ' ') {
                                         e.preventDefault();
-                                        // Navigate to detail booking if needed
-                                        // router.push(`/dashboard/organization/bookings/${booking.id}`)
+                                        router.push(`/dashboard/organization/bookings/${booking.id}`);
                                     }
                                 }} onClick={() => {
-                                    // Navigate to detail booking if needed
-                                    // router.push(`/dashboard/organization/bookings/${booking.id}`)
+                                    router.push(`/dashboard/organization/bookings/${booking.id}`);
                                 }}>
                                     <TableCell className="font-medium">{booking.code}</TableCell>
                                     <TableCell>
@@ -136,7 +134,10 @@ export default function BookingManagementPage() {
                                     <TableCell>{formatCurrency(booking.total_price)}</TableCell>
                                     <TableCell>{getStatusBadge(booking.status)}</TableCell>
                                     <TableCell className="text-right">
-                                        <Button variant="ghost" size="sm" className="gap-1">
+                                        <Button variant="ghost" size="sm" className="gap-1" onClick={(e) => {
+                                            e.stopPropagation();
+                                            router.push(`/dashboard/organization/bookings/${booking.id}`);
+                                        }}>
                                             Chi tiết <ArrowRight className="w-3 h-3" />
                                         </Button>
                                     </TableCell>
