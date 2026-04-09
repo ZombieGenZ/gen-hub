@@ -238,10 +238,14 @@ export default function InboundApprovalDetail({
         if (!data?.details?.length) return;
         setSubmitting(true);
         try {
-            const details = data.details.map(d => ({
-                detail_id: d.id,
-                actual_qty: actualQty[d.id] ?? d.actual_qty ?? 0,
-            }));
+            // Khi gọi từ mismatch modal (is_customer_agreed xác định), dùng pendingDetails đã
+            // được capture trước khi fetchData() reset actualQty state.
+            const details = (is_customer_agreed !== undefined && mismatchModal.pendingDetails.length > 0)
+                ? mismatchModal.pendingDetails
+                : data.details.map(d => ({
+                    detail_id: d.id,
+                    actual_qty: actualQty[d.id] ?? d.actual_qty ?? 0,
+                }));
             const payload: { details: typeof details; is_customer_agreed?: boolean } = { details };
             if (is_customer_agreed !== undefined) payload.is_customer_agreed = is_customer_agreed;
             await inventoryService.confirmReceiving(token, ticketId, payload);
@@ -254,7 +258,7 @@ export default function InboundApprovalDetail({
             fetchData();
         } catch (err: any) {
             if (err.require_customer_agreement && err.mismatches?.length) {
-                // Server yêu cầu xác nhận KH — mở modal
+                // Server yêu cầu xác nhận KH — capture details trước khi fetchData() reset state
                 const details = data.details.map(d => ({
                     detail_id: d.id,
                     actual_qty: actualQty[d.id] ?? d.actual_qty ?? 0,
