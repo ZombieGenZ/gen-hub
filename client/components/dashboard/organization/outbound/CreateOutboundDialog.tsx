@@ -137,6 +137,17 @@ export function CreateOutboundDialog({
                     ? (productRes as unknown as { data: { items: Product[] } }).data.items
                     : [];
             setProducts(prList);
+
+            // Sync quantity_available vào các items đã thêm
+            setFormItems((prev) =>
+                prev.map((item) => {
+                    const updatedProduct = prList.find((p) => p.id === item.product.id);
+                    if (updatedProduct && updatedProduct.quantity_available !== undefined) {
+                        return { ...item, product: { ...item.product, quantity_available: updatedProduct.quantity_available } };
+                    }
+                    return item;
+                }),
+            );
         } catch {
             // silent fail
         }
