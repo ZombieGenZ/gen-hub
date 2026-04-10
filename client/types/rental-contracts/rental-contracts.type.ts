@@ -90,6 +90,7 @@ export interface RentalContractListItem {
     }[];
     details?: {
         id: string;
+        warehouse_name?: string | null;
         warehouse_template?: {
             id: string;
             name: string;
@@ -99,6 +100,10 @@ export interface RentalContractListItem {
                 thumbnail_url?: string;
                 order: number;
             }[];
+        } | null;
+        warehouse?: {
+            id: string;
+            name: string;
         } | null;
     }[];
 }

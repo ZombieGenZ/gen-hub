@@ -252,7 +252,10 @@ export default function CustomerContractDetailPage() {
                             total_price: typeof contract.total_price === "string" ? parseFloat(contract.total_price) : contract.total_price,
                             discount_rate: contract.discount_rate,
                             final_price: typeof contract.final_price === "string" ? parseFloat(contract.final_price) : contract.final_price,
-                            warehouses: contract.warehouses,
+                            warehouses: contract.warehouses?.length ? contract.warehouses : contract.details?.map(d => ({
+                                id: d.warehouse?.id || d.warehouse_template?.id || d.id,
+                                name: d.warehouse?.name || d.warehouse_name || d.warehouse_template?.name || "—",
+                            })) || [],
                             addons: contract.addons,
                             insurances: contract.insurances,
                             notes: contract.notes,
@@ -301,7 +304,9 @@ export default function CustomerContractDetailPage() {
                                     <div>
                                         <span className="text-muted-foreground">Kho thuê:</span>
                                         <p className="font-medium mt-0.5">
-                                            {contract.details !== undefined ? contract.details[0].warehouse_template?.name : "—"}
+                                            {contract.warehouses?.length
+                                                ? contract.warehouses.map((w) => w.name).join(", ")
+                                                : contract.details?.map((d) => d.warehouse?.name || d.warehouse_name || d.warehouse_template?.name).filter(Boolean).join(", ") || "—"}
                                         </p>
                                     </div>
                                     <div>
