@@ -360,18 +360,50 @@ export class OrgRentalContractService {
                         is_gift: false,
                         created_by: userId,
                     });
-                    totalAddonPrice += Number(addon.price);
+                    const addonCostDetail = addon.is_monthly_payment ? Number(addon.price) * rentalMonths : Number(addon.price);
+                    totalAddonPrice += addonCostDetail;
                 }
+            }
 
-                if (totalAddonPrice > 0) {
-                    const currentFinal = parseFloat(contract.final_price.toString());
-                    const newFinalPrice = currentFinal + totalAddonPrice;
-                    await this.prisma.rentalContract.update({
-                        where: { id: contract.id },
-                        data: { final_price: new Decimal(newFinalPrice) },
+            // Áp dụng bảo hiểm nếu có
+            let totalInsurancePrice = 0;
+            if (dto.insurance_ids && dto.insurance_ids.length > 0) {
+                const insurances = await this.prisma.insurance.findMany({
+                    where: { id: { in: dto.insurance_ids }, is_deleted: false, is_active: true }
+                });
+
+                for (const insurance of insurances) {
+                    await this.repository.addInsurance({
+                        rental_contract_id: contract.id,
+                        insurance_id: insurance.id,
+                        price_at_purchase: Number(insurance.price),
+                        management_fee_type: insurance.management_fee_type as any || undefined,
+                        management_fee_value: insurance.management_fee_value ? Number(insurance.management_fee_value) : undefined,
+                        created_by: userId,
                     });
-                    (contract as any).final_price = new Decimal(newFinalPrice);
+
+                    const insuranceBasePrice = Number(insurance.price) * rentalMonths;
+                    let managementFee = 0;
+                    if (insurance.use_management_fee && insurance.management_fee_value) {
+                        if (insurance.management_fee_type === 'PERCENT') {
+                            const totalBaseRental = allPriceDetails.reduce((sum, d) => sum + (d.pricePerMonth * (d.rentalDays / 30)), 0);
+                            managementFee = totalBaseRental * (Number(insurance.management_fee_value) / 100);
+                        } else {
+                            managementFee = Number(insurance.management_fee_value) * rentalMonths;
+                        }
+                    }
+                    totalInsurancePrice += insuranceBasePrice + managementFee;
                 }
+            }
+
+            if (totalAddonPrice > 0 || totalInsurancePrice > 0) {
+                const currentFinal = parseFloat(contract.final_price.toString());
+                const newFinalPrice = currentFinal + totalAddonPrice + totalInsurancePrice;
+                await this.prisma.rentalContract.update({
+                    where: { id: contract.id },
+                    data: { final_price: new Decimal(newFinalPrice) },
+                });
+                (contract as any).final_price = new Decimal(newFinalPrice);
             }
 
             this.systemLogService.info(

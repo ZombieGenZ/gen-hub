@@ -333,18 +333,24 @@ export function CreateContractModal({ open, onOpenChange, onSuccess, organizatio
                     {/* Addons */}
                     {addons.length > 0 && (
                         <div className="space-y-2">
-                            <Label>Dịch vụ đi kèm</Label>
-                            <div className="grid grid-cols-2 gap-2 border p-3 rounded-md max-h-40 overflow-y-auto">
+                            <Label className="text-slate-700 font-semibold">Dịch vụ đi kèm</Label>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-3 bg-slate-50/80 border border-slate-100 rounded-lg max-h-48 overflow-y-auto">
                                 {addons.map((addon) => (
-                                    <div key={addon.id} className="flex items-center space-x-2">
+                                    <div key={addon.id} className="flex items-start space-x-3 bg-white p-2.5 rounded-md border border-slate-100 shadow-sm hover:border-[#0F766E]/30 transition-colors">
                                         <Checkbox
                                             id={`addon-${addon.id}`}
                                             checked={formData.addon_ids?.includes(addon.id)}
                                             onCheckedChange={(checked) => handleCheckboxChange(addon.id, 'addon_ids', checked as boolean)}
+                                            className="mt-0.5 data-[state=checked]:bg-[#0F766E] data-[state=checked]:border-[#0F766E]"
                                         />
-                                        <label htmlFor={`addon-${addon.id}`} className="text-sm cursor-pointer">
-                                            {addon.name} ({addon.price?.toLocaleString()}đ)
-                                        </label>
+                                        <div className="grid gap-1">
+                                            <label htmlFor={`addon-${addon.id}`} className="text-sm font-medium text-slate-800 cursor-pointer">
+                                                {addon.name}
+                                            </label>
+                                            <span className="text-xs font-semibold text-[#0F766E]">
+                                                +{addon.price?.toLocaleString('vi-VN')}đ<span className="text-[10px] text-slate-500 font-normal">/{addon.is_monthly_payment ? 'tháng' : 'lần'}</span>
+                                            </span>
+                                        </div>
                                     </div>
                                 ))}
                             </div>
@@ -354,18 +360,24 @@ export function CreateContractModal({ open, onOpenChange, onSuccess, organizatio
                     {/* Insurance */}
                     {insurances.length > 0 && (
                         <div className="space-y-2">
-                            <Label>Bảo hiểm</Label>
-                            <div className="grid grid-cols-2 gap-2 border p-3 rounded-md max-h-40 overflow-y-auto">
+                            <Label className="text-slate-700 font-semibold">Gói bảo hiểm</Label>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-3 bg-indigo-50/50 border border-indigo-100/50 rounded-lg max-h-48 overflow-y-auto">
                                 {insurances.map((ins) => (
-                                    <div key={ins.id} className="flex items-center space-x-2">
+                                    <div key={ins.id} className="flex items-start space-x-3 bg-white p-2.5 rounded-md border border-slate-100 shadow-sm hover:border-indigo-300 transition-colors">
                                         <Checkbox
                                             id={`ins-${ins.id}`}
                                             checked={formData.insurance_ids?.includes(ins.id)}
                                             onCheckedChange={(checked) => handleCheckboxChange(ins.id, 'insurance_ids', checked as boolean)}
+                                            className="mt-0.5 data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600"
                                         />
-                                        <label htmlFor={`ins-${ins.id}`} className="text-sm cursor-pointer">
-                                            {ins.name}
-                                        </label>
+                                        <div className="grid gap-1">
+                                            <label htmlFor={`ins-${ins.id}`} className="text-sm font-medium text-slate-800 cursor-pointer">
+                                                {ins.name}
+                                            </label>
+                                            <span className="text-xs font-semibold text-indigo-600">
+                                                {parseFloat(ins.price || '0') > 0 ? `+${parseFloat(ins.price || '0').toLocaleString('vi-VN')}đ/tháng` : 'Miễn phí'}
+                                            </span>
+                                        </div>
                                     </div>
                                 ))}
                             </div>

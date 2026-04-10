@@ -159,7 +159,9 @@ export function WarehouseBookingPanel({
                 if (addonsRes.status === 'fulfilled' && addonsRes.value.ok) {
                     const addonsData = await addonsRes.value.json();
                     console.log('[WarehouseBookingPanel] Addons from API:', addonsData);
-                    const addonsArray = Array.isArray(addonsData.data) ? addonsData.data : (Array.isArray(addonsData) ? addonsData : []);
+                    const addonsArray = Array.isArray(addonsData.data?.items) ? addonsData.data.items 
+                        : (Array.isArray(addonsData.data) ? addonsData.data 
+                        : (Array.isArray(addonsData) ? addonsData : []));
                     setAddons(addonsArray);
                 } else {
                     console.warn('[WarehouseBookingPanel] Addons API failed:',
@@ -171,7 +173,9 @@ export function WarehouseBookingPanel({
                 if (insuranceRes.status === 'fulfilled' && insuranceRes.value.ok) {
                     const insuranceData = await insuranceRes.value.json();
                     console.log('[WarehouseBookingPanel] Insurances from API:', insuranceData);
-                    const insuranceArray = Array.isArray(insuranceData.data) ? insuranceData.data : (Array.isArray(insuranceData) ? insuranceData : []);
+                    const insuranceArray = Array.isArray(insuranceData.data?.items) ? insuranceData.data.items 
+                        : (Array.isArray(insuranceData.data) ? insuranceData.data 
+                        : (Array.isArray(insuranceData) ? insuranceData : []));
                     setInsurances(insuranceArray);
                 } else {
                     console.warn('[WarehouseBookingPanel] Insurances API failed:',
@@ -572,9 +576,16 @@ export function WarehouseBookingPanel({
 
                     {/* Insurance Selection */}
                     {insurances.length > 0 && (
-                        <div className="space-y-4 pt-4 border-t border-slate-100">
-                            <Label className="text-slate-600 font-medium text-xs uppercase tracking-wide">Gói Bảo Hiểm</Label>
-                            <RadioGroup value={selectedInsuranceId} onValueChange={setSelectedInsuranceId} className="grid grid-cols-1 gap-2">
+                        <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                            <div className="flex items-center gap-2 mb-2">
+                                <div className="p-1.5 rounded-md bg-teal-50 dark:bg-teal-900/30">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-[#0F766E]">
+                                      <path fillRule="evenodd" d="M12.516 2.17a.75.75 0 00-1.032 0 11.209 11.209 0 01-7.877 3.08.75.75 0 00-.722.515A12.74 12.74 0 002.25 9.75c0 5.942 4.064 10.933 9.563 12.348a.749.749 0 00.374 0c5.499-1.415 9.563-6.406 9.563-12.348 0-1.39-.223-2.73-.635-3.985a.75.75 0 00-.722-.516l-.143.001c-2.996 0-5.717-1.17-7.734-3.08zm3.094 8.016a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clipRule="evenodd" />
+                                    </svg>
+                                </div>
+                                <Label className="text-slate-900 dark:text-white font-bold text-sm tracking-wide">Gói Bảo Hiểm Toàn Diện</Label>
+                            </div>
+                            <RadioGroup value={selectedInsuranceId} onValueChange={setSelectedInsuranceId} className="grid grid-cols-1 gap-3">
                                 {insurances.map((ins) => {
                                     const insPrice = parseFloat(ins.price);
                                     const isSelected = selectedInsuranceId === ins.id;
@@ -583,25 +594,34 @@ export function WarehouseBookingPanel({
                                         <div
                                             key={ins.id}
                                             className={cn(
-                                                "flex items-start space-x-3 p-3 rounded-lg border transition-all cursor-pointer",
-                                                isSelected ? "border-[#0F766E] bg-teal-50/30" : "border-slate-100 hover:bg-slate-50"
+                                                "relative flex items-start space-x-3 p-4 rounded-xl border-2 transition-all duration-200 cursor-pointer overflow-hidden group",
+                                                isSelected 
+                                                    ? "border-[#0F766E] bg-gradient-to-br from-teal-50/50 to-white dark:from-teal-900/20 dark:to-slate-900 shadow-md shadow-teal-500/10" 
+                                                    : "border-slate-100 dark:border-slate-800 hover:border-teal-200 dark:hover:border-teal-800 bg-white dark:bg-slate-900 hover:shadow-sm"
                                             )}
                                             onClick={() => setSelectedInsuranceId(ins.id)}
                                         >
                                             <RadioGroupItem value={ins.id} id={`ins-${ins.id}`} className="mt-1" />
-                                            <div className="grid gap-0.5 leading-none flex-1">
-                                                <Label htmlFor={`ins-${ins.id}`} className="font-semibold text-slate-700 cursor-pointer">
+                                            <div className="grid gap-1.5 leading-none flex-1">
+                                                <Label htmlFor={`ins-${ins.id}`} className={cn("font-bold cursor-pointer text-base", isSelected ? "text-[#0F766E]" : "text-slate-800 dark:text-slate-200")}>
                                                     {ins.name}
                                                 </Label>
-                                                <div className="flex justify-between items-center w-full gap-4">
-                                                    <p className="text-xs text-slate-500">{ins.description}</p>
-                                                    {insPrice > 0 && (
-                                                        <span className="text-xs font-bold text-[#0F766E] shrink-0">
-                                                            +{insPrice.toLocaleString('vi-VN')}đ/tháng
+                                                <div className="flex justify-between items-center w-full gap-4 mt-1">
+                                                    <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed pr-2">{ins.description}</p>
+                                                    {insPrice > 0 ? (
+                                                        <span className="text-sm font-black text-[#0F766E] shrink-0 bg-teal-50 dark:bg-teal-900/40 px-2.5 py-1 rounded-md">
+                                                            +{insPrice.toLocaleString('vi-VN')}đ<span className="text-[10px] font-medium text-slate-500">/tháng</span>
                                                         </span>
+                                                    ) : (
+                                                        <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md shrink-0 uppercase">Miễn phí</span>
                                                     )}
                                                 </div>
                                             </div>
+                                            {isSelected && (
+                                                <div className="absolute top-0 right-0 w-16 h-16 pointer-events-none">
+                                                    <div className="absolute top-[-24px] right-[-24px] w-12 h-12 bg-teal-100 dark:bg-teal-800/30 rounded-full blur-xl opacity-60"></div>
+                                                </div>
+                                            )}
                                         </div>
                                     );
                                 })}
@@ -613,9 +633,16 @@ export function WarehouseBookingPanel({
 
                     {/* Addons Section */}
                     {addons.length > 0 && (
-                        <div className="space-y-3 pt-2">
-                            <Label className="text-slate-600 font-medium text-xs uppercase tracking-wide">Dịch vụ cộng thêm</Label>
-                            <div className="grid grid-cols-1 gap-2">
+                        <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                            <div className="flex items-center gap-2 mb-2">
+                                <div className="p-1.5 rounded-md bg-amber-50 dark:bg-amber-900/30">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-amber-600">
+                                      <path fillRule="evenodd" d="M9 4.5a.75.75 0 01.721.544l.813 2.846a3.75 3.75 0 002.576 2.576l2.846.813a.75.75 0 010 1.442l-2.846.813a3.75 3.75 0 00-2.576 2.576l-.813 2.846a.75.75 0 01-1.442 0l-.813-2.846a3.75 3.75 0 00-2.576-2.576l-2.846-.813a.75.75 0 010-1.442l2.846-.813A3.75 3.75 0 007.466 7.89l.813-2.846A.75.75 0 019 4.5zM18 1.5a.75.75 0 01.728.568l.258 1.036c.236.94.97 1.674 1.91 1.91l1.036.258a.75.75 0 010 1.456l-1.036.258c-.94.236-1.674.97-1.91 1.91l-.258 1.036a.75.75 0 01-1.456 0l-.258-1.036a2.625 2.625 0 00-1.91-1.91l-1.036-.258a.75.75 0 010-1.456l1.036-.258a2.625 2.625 0 001.91-1.91l.258-1.036A.75.75 0 0118 1.5z" clipRule="evenodd" />
+                                    </svg>
+                                </div>
+                                <Label className="text-slate-900 dark:text-white font-bold text-sm tracking-wide">Dịch Vụ Thêm</Label>
+                            </div>
+                            <div className="grid grid-cols-1 gap-3">
                                 {addons.map((addon) => {
                                     const isSelected = selectedAddons.includes(addon.id);
 
@@ -623,8 +650,10 @@ export function WarehouseBookingPanel({
                                         <div
                                             key={addon.id}
                                             className={cn(
-                                                "flex items-start space-x-3 p-3 rounded-lg border transition-colors cursor-pointer",
-                                                isSelected ? "border-[#0F766E] bg-teal-50/30" : "border-slate-100 hover:bg-slate-50"
+                                                "relative flex items-center space-x-3 p-3.5 rounded-xl border transition-all duration-200 cursor-pointer overflow-hidden group",
+                                                isSelected 
+                                                    ? "border-amber-400/60 bg-gradient-to-r from-amber-50/40 to-white dark:from-amber-900/10 dark:to-slate-900 shadow-sm" 
+                                                    : "border-slate-100 dark:border-slate-800 hover:border-amber-200/50 bg-white dark:bg-slate-900"
                                             )}
                                             onClick={() => toggleAddon(addon.id)}
                                         >
@@ -632,14 +661,14 @@ export function WarehouseBookingPanel({
                                                 id={`addon-${addon.id}`}
                                                 checked={isSelected}
                                                 onCheckedChange={() => toggleAddon(addon.id)}
-                                                className="data-[state=checked]:bg-[#0F766E] data-[state=checked]:border-[#0F766E]"
+                                                className="data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500"
                                             />
-                                            <div className="grid gap-1.5 leading-none flex-1">
-                                                <Label htmlFor={`addon-${addon.id}`} className="font-semibold text-slate-700 cursor-pointer">
+                                            <div className="flex-1 flex justify-between items-center gap-2">
+                                                <Label htmlFor={`addon-${addon.id}`} className={cn("font-medium cursor-pointer", isSelected ? "text-amber-900 dark:text-amber-100" : "text-slate-700 dark:text-slate-300")}>
                                                     {addon.name}
                                                 </Label>
-                                                <p className="text-xs text-slate-500">
-                                                    +{addon.price.toLocaleString('vi-VN')}đ/{addon.is_monthly_payment ? 'tháng' : 'lần'}
+                                                <p className="text-sm font-bold text-amber-600 dark:text-amber-500 bg-amber-50 dark:bg-amber-900/20 px-2 py-0.5 rounded">
+                                                    +{addon.price.toLocaleString('vi-VN')}đ<span className="text-[10px] font-medium opacity-80 text-amber-700 dark:text-amber-400">/{addon.is_monthly_payment ? 'tháng' : 'lần'}</span>
                                                 </p>
                                             </div>
                                         </div>

@@ -511,6 +511,32 @@ export class RentalContractRepository {
     }
 
     /**
+     * Thêm bảo hiểm vào hợp đồng
+     */
+    async addInsurance(data: {
+        rental_contract_id: string;
+        insurance_id: string;
+        price_at_purchase: number;
+        management_fee_type?: 'PERCENT' | 'AMOUNT';
+        management_fee_value?: number;
+        created_by: string;
+    }) {
+        return this.prisma.rentalContractInsurance.create({
+            data: {
+                rental_contract_id: data.rental_contract_id,
+                insurance_id: data.insurance_id,
+                price_at_purchase: data.price_at_purchase,
+                management_fee_type: data.management_fee_type,
+                management_fee_value: data.management_fee_value,
+                created_by: data.created_by,
+            },
+            include: {
+                insurance: true,
+            },
+        });
+    }
+
+    /**
      * Lấy danh sách addons của hợp đồng
      */
     async findContractAddons(contractId: string) {
