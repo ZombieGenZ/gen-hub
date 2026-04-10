@@ -13,13 +13,19 @@ export interface Permission {
 export interface User {
   id: string;
   name: string;
+  firstName?: string;
+  lastName?: string;
   email: string;
   email_confirmed: boolean;
   is_verified: boolean;
   two_factor_enabled: boolean;
+  twoFactorEnabled?: boolean;
   language: string;
   created_at: string; // hoặc Date nếu bạn parse
   avatar?: string;
+  image?: string;
+  phone?: string;
+  bio?: string;
 }
 export interface UserData {
   user: User;
@@ -33,8 +39,12 @@ export interface UserResponse {
 }
 
 export interface UpdateUserRequest {
+  firstName?: string;
+  lastName?: string;
   name?: string;
   email?: string;
+  phone?: string;
+  bio?: string;
 }
 
 export interface ChangePasswordRequest {

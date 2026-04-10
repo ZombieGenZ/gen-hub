@@ -138,6 +138,27 @@ export class UserService {
 
         return response.json();
     }
+
+    async uploadAvatar(token: string, file: File): Promise<{ url: string }> {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch(`${API}/account/avatar`, {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+            body: formData,
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Không thể tải ảnh đại diện');
+        }
+
+        const result = await response.json();
+        return { url: result.data?.url || result.url };
+    }
 }
 
 export const userService = new UserService();

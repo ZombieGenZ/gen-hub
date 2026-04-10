@@ -6,6 +6,7 @@ import {
     ClockIcon,
     BellIcon,
     Cog6ToothIcon,
+    UserCircleIcon,
 } from "@heroicons/react/24/outline";
 import { AppSidebar, AppSidebarContent, SidebarGroup } from "./AppSidebar";
 
@@ -24,10 +25,16 @@ const customerNavGroups: SidebarGroup[] = [
         ]
     },
     {
+        title: "Tài khoản",
+        items: [
+            { href: "/dashboard/customer/settings", icon: UserCircleIcon, label: "Cài đặt tài khoản" },
+        ]
+    },
+    {
         title: "Hệ thống",
         items: [
             { href: "/dashboard/customer/notifications", icon: BellIcon, label: "Thông báo" },
-            { href: "/dashboard/customer/organization-settings", icon: Cog6ToothIcon, label: "Cài đặt" },
+            { href: "/dashboard/customer/organization-settings", icon: Cog6ToothIcon, label: "Cài đặt tổ chức" },
         ]
     },
 ];

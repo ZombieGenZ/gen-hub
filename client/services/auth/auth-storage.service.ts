@@ -1,7 +1,7 @@
 import { getCookie, removeCookie, setCookie } from '@/lib/cookies';
 import { UserData } from '@/types/user/user.type';
 
-class AuthStorageService {
+export class AuthStorageService {
   private static instance: AuthStorageService;
   
   // Token keys
