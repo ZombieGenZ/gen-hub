@@ -118,12 +118,12 @@ export default function CustomerContractDetailPage() {
         }
     };
 
-    const handleSaveAddons = async (addonIds: string[]) => {
+    const handleSaveAddons = async (addonIds: string[], amenityIds: string[]) => {
         const token = authStorage.getAccessToken();
         if (!token) throw new Error("Chưa đăng nhập");
         await rentalContractService.updateRentalContract(token, contractId, { addon_ids: addonIds });
         await refreshContract();
-        showToast("Cập nhật tiện ích thành công", "success");
+        showToast("Cập nhật dịch vụ thành công", "success");
     };
 
     useOrganizationRealtime({
@@ -391,7 +391,18 @@ export default function CustomerContractDetailPage() {
             <ManageAddonsModal
                 open={showAddonsModal}
                 onOpenChange={setShowAddonsModal}
-                currentAddonIds={contract.addons?.map((a) => a.id) ?? []}
+                currentAddonIds={(contract as any).addons?.filter((a: any) => !a.is_cancelled).map((a: any) => a.addon_id || a.id) ?? []}
+                currentAmenityIds={(() => {
+                    const details = (contract as any).details || [];
+                    const ids: string[] = [];
+                    for (const d of details) {
+                        for (const wa of (d.warehouse_template?.amenities || [])) {
+                            if (wa.amenity?.id && !ids.includes(wa.amenity.id)) ids.push(wa.amenity.id);
+                        }
+                    }
+                    return ids;
+                })()}
+                lockedAddonIds={(contract as any).addons?.filter((a: any) => !a.is_cancelled && !a.is_gift && (new Date().getTime() - new Date(a.created_at).getTime() > 2 * 24 * 60 * 60 * 1000)).map((a: any) => a.addon_id || a.id) ?? []}
                 onSave={handleSaveAddons}
             />
         </div>

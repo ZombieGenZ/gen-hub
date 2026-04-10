@@ -33,10 +33,19 @@ export class RentalContractRepository {
                     select: {
                         id: true,
                         name: true,
+                        address_detail: true,
                         images: {
                             where: { is_deleted: false },
                             select: { id: true, url: true, thumbnail_url: true, order: true },
                             orderBy: { order: 'asc' as const },
+                        },
+                        amenities: {
+                            where: { is_deleted: false },
+                            include: {
+                                amenity: {
+                                    select: { id: true, name: true, description: true, icon: true },
+                                },
+                            },
                         },
                     },
                 },
@@ -144,6 +153,7 @@ export class RentalContractRepository {
                     select: {
                         id: true,
                         name: true,
+                        address_detail: true,
                         images: {
                             where: { is_deleted: false },
                             select: { id: true, url: true, thumbnail_url: true, order: true },
@@ -715,6 +725,12 @@ export class RentalContractRepository {
                 addons: {
                     where: { is_deleted: false },
                     include: { addon: true },
+                    orderBy: { created_at: 'asc' as const },
+                },
+                insurances: {
+                    where: { is_deleted: false },
+                    include: { insurance: true },
+                    orderBy: { created_at: 'asc' as const },
                 },
                 coupons: {
                     include: { coupon: true },

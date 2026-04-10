@@ -453,7 +453,99 @@ export class RentalContractService {
       updateData.expired_at = newExpiredAt;
     }
 
-    const contract = await this.repository.update(id, updateData);
+    let contract = await this.repository.update(id, updateData);
+
+    // ─── Sync Addons ───
+    if (dto.addon_ids !== undefined) {
+      const currentAddons = await this.repository.findContractAddons(id);
+      const activeAddons = currentAddons.filter(a => !a.is_cancelled);
+      const currentAddonIds = new Set(activeAddons.map(a => a.addon_id));
+      const desiredAddonIds = new Set(dto.addon_ids);
+
+      // Add new addons
+      const toAdd = dto.addon_ids.filter(aid => !currentAddonIds.has(aid));
+      if (toAdd.length > 0) {
+        const addons = await this.prisma.addon.findMany({
+          where: { id: { in: toAdd }, is_deleted: false, is_active: true },
+        });
+        for (const addon of addons) {
+          await this.repository.addAddon({
+            rental_contract_id: id,
+            addon_id: addon.id,
+            price_at_purchase: Number(addon.price),
+            is_gift: false,
+            created_by: userId,
+          });
+          await this.repository.createLog({
+            rental_contract_id: id,
+            action: 'ADDON_ADDED',
+            description: `Đã thêm dịch vụ: ${addon.name}`,
+            metadata: { addon_id: addon.id, addon_name: addon.name, price: Number(addon.price) },
+            created_by: userId,
+          });
+        }
+      }
+
+      // Cancel removed addons (only if within 2 days)
+      for (const existingAddon of activeAddons) {
+        if (!desiredAddonIds.has(existingAddon.addon_id)) {
+          const createdAt = new Date(existingAddon.created_at);
+          const now = new Date();
+          const twoDaysMs = 2 * 24 * 60 * 60 * 1000;
+          if (now.getTime() - createdAt.getTime() <= twoDaysMs) {
+            await this.repository.cancelAddon(
+              existingAddon.id,
+              'Người dùng hủy từ trang quản lý dịch vụ',
+              userId,
+            );
+            await this.repository.createLog({
+              rental_contract_id: id,
+              action: 'ADDON_CANCELLED',
+              description: `Đã hủy dịch vụ: ${existingAddon.addon?.name || existingAddon.addon_id}`,
+              metadata: { addon_id: existingAddon.addon_id },
+              created_by: userId,
+            });
+          }
+        }
+      }
+
+      // Refresh contract after addon changes
+      contract = await this.repository.update(id, { updated_by: userId });
+    }
+
+    // ─── Sync Insurances ───
+    if (dto.insurance_ids !== undefined) {
+      const currentInsurances = await this.repository.findContractInsurances(id);
+      const currentInsuranceIds = new Set(currentInsurances.map(i => i.insurance_id));
+      const desiredInsuranceIds = new Set(dto.insurance_ids);
+
+      // Add new insurances
+      const toAddIns = dto.insurance_ids.filter(iid => !currentInsuranceIds.has(iid));
+      if (toAddIns.length > 0) {
+        const insurances = await this.prisma.insurance.findMany({
+          where: { id: { in: toAddIns }, is_deleted: false, is_active: true },
+        });
+        for (const insurance of insurances) {
+          await this.repository.addInsurance({
+            rental_contract_id: id,
+            insurance_id: insurance.id,
+            price_at_purchase: Number(insurance.price),
+            management_fee_type: insurance.management_fee_type as any || undefined,
+            management_fee_value: insurance.management_fee_value ? Number(insurance.management_fee_value) : undefined,
+            created_by: userId,
+          });
+          await this.repository.createLog({
+            rental_contract_id: id,
+            action: 'ADDON_ADDED',
+            description: `Đã thêm bảo hiểm: ${insurance.name}`,
+            metadata: { insurance_id: insurance.id, insurance_name: insurance.name, price: Number(insurance.price) },
+            created_by: userId,
+          });
+        }
+      }
+
+      contract = await this.repository.update(id, { updated_by: userId });
+    }
 
     await Promise.all([this.invalidateContractCache(id), this.invalidateContractListCache()]);
 

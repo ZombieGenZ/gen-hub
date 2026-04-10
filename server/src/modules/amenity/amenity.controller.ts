@@ -25,7 +25,7 @@ import { AmenityService } from './amenity.service';
 import { CreateAmenityDto, UpdateAmenityDto, QueryAmenityDto } from './dto';
 import { DeleteManyDto } from '../../common/dto';
 import { JwtAuthGuard, PermissionGuard } from '../../common/guards';
-import { RequirePermission, RequireAnyPermission, CurrentUser } from '../../common/decorators';
+import { RequirePermission, RequireAnyPermission, CurrentUser, Public } from '../../common/decorators';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
   ApiAuthResponses,
@@ -370,6 +370,7 @@ export class AmenityController {
       },
     },
   })
+  @Public()
   @Get('active')
   async findAllActive(
     @Query() query: QueryAmenityDto,

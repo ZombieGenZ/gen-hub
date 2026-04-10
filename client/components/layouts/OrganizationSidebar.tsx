@@ -19,6 +19,7 @@ import {
     ClipboardDocumentCheckIcon,
     MapIcon,
     CalendarDaysIcon,
+    SparklesIcon,
 } from "@heroicons/react/24/outline";
 import { AppSidebar, AppSidebarContent, SidebarGroup } from "./AppSidebar";
 
@@ -35,6 +36,7 @@ const organizationNavGroups: SidebarGroup[] = [
             { href: "/kho-bai", icon: HomeModernIcon, label: "Tìm kiếm kho bãi" },
             { href: "/dashboard/organization/bookings", icon: ClockIcon, label: "Yêu cầu thuê" },
             { href: "/dashboard/organization/contracts", icon: DocumentTextIcon, label: "Hợp đồng" },
+            { href: "/dashboard/organization/addons", icon: SparklesIcon, label: "Dịch vụ & Tiện ích" },
             { href: "/dashboard/organization/warehouse-visits", icon: CalendarDaysIcon, label: "Lịch tham quan" },
         ]
     },
