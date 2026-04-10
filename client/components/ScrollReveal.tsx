@@ -1,15 +1,16 @@
 "use client";
 
-import React, { useEffect, useRef, useState, ReactNode } from "react";
+import React, { ReactNode } from "react";
+import { motion, type Variant } from "framer-motion";
 
-export type RevealAnimation = 
-    | "fade-up" 
-    | "fade-down" 
-    | "fade-left" 
-    | "fade-right" 
-    | "zoom-in" 
-    | "zoom-out" 
-    | "flip-up" 
+export type RevealAnimation =
+    | "fade-up"
+    | "fade-down"
+    | "fade-left"
+    | "fade-right"
+    | "zoom-in"
+    | "zoom-out"
+    | "flip-up"
     | "flip-down"
     | "slide-up"
     | "slide-down"
@@ -29,71 +30,38 @@ interface ScrollRevealProps {
     style?: React.CSSProperties;
 }
 
-const getAnimationStyles = (animation: RevealAnimation, isVisible: boolean) => {
-    const baseTransition = {
-        opacity: isVisible ? 1 : 0,
-    };
+const hiddenVariants: Record<RevealAnimation, Variant> = {
+    "fade-up": { opacity: 0, y: 40 },
+    "fade-down": { opacity: 0, y: -40 },
+    "fade-left": { opacity: 0, x: 40 },
+    "fade-right": { opacity: 0, x: -40 },
+    "zoom-in": { opacity: 0, scale: 0.9 },
+    "zoom-out": { opacity: 0, scale: 1.1 },
+    "flip-up": { opacity: 0, rotateX: 45 },
+    "flip-down": { opacity: 0, rotateX: -45 },
+    "slide-up": { opacity: 0, y: 60 },
+    "slide-down": { opacity: 0, y: -60 },
+    "slide-left": { opacity: 0, x: 60 },
+    "slide-right": { opacity: 0, x: -60 },
+    "rotate-in": { opacity: 0, rotate: -8, scale: 0.95 },
+    "bounce-in": { opacity: 0, scale: 0.6, y: 30 },
+};
 
-    const animations: Record<RevealAnimation, React.CSSProperties> = {
-        "fade-up": {
-            ...baseTransition,
-            transform: isVisible ? "translateY(0)" : "translateY(60px)",
-        },
-        "fade-down": {
-            ...baseTransition,
-            transform: isVisible ? "translateY(0)" : "translateY(-60px)",
-        },
-        "fade-left": {
-            ...baseTransition,
-            transform: isVisible ? "translateX(0)" : "translateX(60px)",
-        },
-        "fade-right": {
-            ...baseTransition,
-            transform: isVisible ? "translateX(0)" : "translateX(-60px)",
-        },
-        "zoom-in": {
-            ...baseTransition,
-            transform: isVisible ? "scale(1)" : "scale(0.8)",
-        },
-        "zoom-out": {
-            ...baseTransition,
-            transform: isVisible ? "scale(1)" : "scale(1.2)",
-        },
-        "flip-up": {
-            ...baseTransition,
-            transform: isVisible ? "rotateX(0deg)" : "rotateX(90deg)",
-        },
-        "flip-down": {
-            ...baseTransition,
-            transform: isVisible ? "rotateX(0deg)" : "rotateX(-90deg)",
-        },
-        "slide-up": {
-            ...baseTransition,
-            transform: isVisible ? "translateY(0)" : "translateY(100px)",
-        },
-        "slide-down": {
-            ...baseTransition,
-            transform: isVisible ? "translateY(0)" : "translateY(-100px)",
-        },
-        "slide-left": {
-            ...baseTransition,
-            transform: isVisible ? "translateX(0)" : "translateX(100px)",
-        },
-        "slide-right": {
-            ...baseTransition,
-            transform: isVisible ? "translateX(0)" : "translateX(-100px)",
-        },
-        "rotate-in": {
-            ...baseTransition,
-            transform: isVisible ? "rotate(0deg) scale(1)" : "rotate(-10deg) scale(0.9)",
-        },
-        "bounce-in": {
-            ...baseTransition,
-            transform: isVisible ? "scale(1) translateY(0)" : "scale(0.5) translateY(40px)",
-        },
-    };
-
-    return animations[animation];
+const visibleVariants: Record<RevealAnimation, Variant> = {
+    "fade-up": { opacity: 1, y: 0 },
+    "fade-down": { opacity: 1, y: 0 },
+    "fade-left": { opacity: 1, x: 0 },
+    "fade-right": { opacity: 1, x: 0 },
+    "zoom-in": { opacity: 1, scale: 1 },
+    "zoom-out": { opacity: 1, scale: 1 },
+    "flip-up": { opacity: 1, rotateX: 0 },
+    "flip-down": { opacity: 1, rotateX: 0 },
+    "slide-up": { opacity: 1, y: 0 },
+    "slide-down": { opacity: 1, y: 0 },
+    "slide-left": { opacity: 1, x: 0 },
+    "slide-right": { opacity: 1, x: 0 },
+    "rotate-in": { opacity: 1, rotate: 0, scale: 1 },
+    "bounce-in": { opacity: 1, scale: 1, y: 0 },
 };
 
 export function ScrollReveal({
@@ -101,57 +69,35 @@ export function ScrollReveal({
     animation = "fade-up",
     delay = 0,
     duration = 600,
-    threshold = 0.1,
+    threshold = 0.15,
     once = true,
     className = "",
     style = {},
 }: ScrollRevealProps) {
-    const ref = useRef<HTMLDivElement>(null);
-    const [isVisible, setIsVisible] = useState(false);
-
-    useEffect(() => {
-        const element = ref.current;
-        if (!element) return;
-
-        const observer = new IntersectionObserver(
-            ([entry]) => {
-                if (entry.isIntersecting) {
-                    setIsVisible(true);
-                    if (once) {
-                        observer.unobserve(element);
-                    }
-                } else if (!once) {
-                    setIsVisible(false);
-                }
-            },
-            {
-                threshold,
-                rootMargin: "0px 0px -50px 0px",
-            }
-        );
-
-        observer.observe(element);
-
-        return () => {
-            observer.unobserve(element);
-        };
-    }, [threshold, once]);
-
-    const animationStyles = getAnimationStyles(animation, isVisible);
+    const durationInSeconds = duration / 1000;
+    const delayInSeconds = delay / 1000;
 
     return (
-        <div
-            ref={ref}
+        <motion.div
             className={className}
-            style={{
-                ...animationStyles,
-                transition: `all ${duration}ms cubic-bezier(0.25, 0.46, 0.45, 0.94) ${delay}ms`,
-                willChange: "opacity, transform",
-                ...style,
+            style={{ willChange: "opacity, transform", ...style }}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once, amount: threshold }}
+            variants={{
+                hidden: hiddenVariants[animation],
+                visible: {
+                    ...visibleVariants[animation],
+                    transition: {
+                        duration: durationInSeconds,
+                        delay: delayInSeconds,
+                        ease: [0.25, 0.1, 0.25, 1],
+                    },
+                },
             }}
         >
             {children}
-        </div>
+        </motion.div>
     );
 }
 
@@ -195,38 +141,5 @@ export function ScrollRevealGroup({
     );
 }
 
-// Hook for custom scroll reveal logic
-export function useScrollReveal(threshold = 0.1, once = true) {
-    const ref = useRef<HTMLDivElement>(null);
-    const [isVisible, setIsVisible] = useState(false);
-
-    useEffect(() => {
-        const element = ref.current;
-        if (!element) return;
-
-        const observer = new IntersectionObserver(
-            ([entry]) => {
-                if (entry.isIntersecting) {
-                    setIsVisible(true);
-                    if (once) {
-                        observer.unobserve(element);
-                    }
-                } else if (!once) {
-                    setIsVisible(false);
-                }
-            },
-            {
-                threshold,
-                rootMargin: "0px 0px -50px 0px",
-            }
-        );
-
-        observer.observe(element);
-
-        return () => {
-            observer.unobserve(element);
-        };
-    }, [threshold, once]);
-
-    return { ref, isVisible };
-}
+// Hook for custom scroll reveal logic - using Framer Motion's useInView
+export { useInView as useScrollInView } from "framer-motion";

@@ -40,10 +40,6 @@ export default function Home() {
     const hasShownNotificationRef = useRef(false);
     const isFetchingRef = useRef(false);
 
-    // Scroll Tracking State
-    const [scrollProgress, setScrollProgress] = useState(0);
-    const [isScrolled, setIsScrolled] = useState(false);
-
     useEffect(() => {
         let isMounted = true;
 
@@ -151,21 +147,6 @@ export default function Home() {
         }
     }, [isLogin, showToast]);
 
-    useEffect(() => {
-        const handleScroll = () => {
-            const scrollTop = window.scrollY;
-            const docHeight = document.documentElement.scrollHeight - window.innerHeight;
-            const progress = docHeight > 0 ? scrollTop / docHeight : 0;
-            setScrollProgress(progress);
-            setIsScrolled(scrollTop > 100);
-        };
-
-        window.addEventListener("scroll", handleScroll);
-        return () => {
-            window.removeEventListener("scroll", handleScroll);
-        };
-    }, []);
-
     const handleLogout = () => {
         setIsLogin(false);
         setUser(undefined);
@@ -173,17 +154,10 @@ export default function Home() {
 
     return (
         <div className="relative min-h-screen bg-slate-50 text-slate-900 overflow-x-hidden">
-            <div
-                className={`fixed top-0 left-0 right-0 z-40 transition-all duration-500 ${isScrolled
-                    ? "bg-white/95 backdrop-blur-md shadow-lg"
-                    : "bg-transparent"
-                    }`}
-            >
-                <PrimeNestHeader isLogin={isLogin} user={user} onLogout={handleLogout} />
-            </div>
+            <PrimeNestHeader isLogin={isLogin} user={user} onLogout={handleLogout} />
 
             <main className="z-10 h-full w-full">
-                <section className="mt-20 flex items-center justify-center">
+                <section className="flex items-center justify-center">
                     <ScrollReveal animation="fade-up" duration={800}>
                         <PrimeNestHero />
                     </ScrollReveal>
