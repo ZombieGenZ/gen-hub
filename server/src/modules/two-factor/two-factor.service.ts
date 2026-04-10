@@ -137,10 +137,7 @@ export class TwoFactorService {
 
     // 3. Nếu valid, cập nhật DB (Transaction-like via Promise.all if possible, but sequential dependence here)
     // Cập nhật secret và enable 2FA
-    await Promise.all([
-      this.twoFactorRepository.updateTwoFactorSecret(userId, userSecret),
-      this.twoFactorRepository.enableTwoFactor(userId)
-    ]);
+    await this.twoFactorRepository.confirmTwoFactorSetup(userId, userSecret);
 
     // 4. Generate backup codes
     const backupCodes = await this.backupCodeService.generateAndSaveBackupCodes(userId);

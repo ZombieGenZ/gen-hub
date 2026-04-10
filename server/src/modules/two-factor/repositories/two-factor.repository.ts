@@ -40,6 +40,20 @@ export class TwoFactorRepository {
     }
 
     /**
+     * Cập nhật 2FA secret và bật 2FA (Chạy chung 1 lần để tránh lock DB)
+     */
+    async confirmTwoFactorSetup(userId: string, secret: string) {
+        return this.prisma.user.update({
+            where: { id: userId },
+            data: {
+                two_factor_token: secret,
+                two_factor_enabled: true,
+            },
+            select: twoFactorUserSelect,
+        });
+    }
+
+    /**
      * Kích hoạt 2FA
      */
     async enableTwoFactor(userId: string) {
