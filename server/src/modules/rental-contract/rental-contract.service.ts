@@ -252,16 +252,6 @@ export class RentalContractService {
         });
 
         for (const insurance of insurances) {
-          await this.repository.addInsurance({
-            rental_contract_id: contract.id,
-            insurance_id: insurance.id,
-            price_at_purchase: Number(insurance.price),
-            management_fee_type: insurance.management_fee_type as any || undefined,
-            management_fee_value: insurance.management_fee_value ? Number(insurance.management_fee_value) : undefined,
-            created_by: userId,
-          });
-
-          const insuranceBasePrice = Number(insurance.price) * rentalMonths;
           let managementFee = 0;
           if (insurance.use_management_fee && insurance.management_fee_value) {
             if (insurance.management_fee_type === 'PERCENT') {
@@ -271,6 +261,16 @@ export class RentalContractService {
               managementFee = Number(insurance.management_fee_value) * rentalMonths;
             }
           }
+
+          await this.repository.addInsurance({
+            rental_contract_id: contract.id,
+            insurance_id: insurance.id,
+            price_at_purchase: Number(insurance.price),
+            management_fee: managementFee || undefined,
+            created_by: userId,
+          });
+
+          const insuranceBasePrice = Number(insurance.price) * rentalMonths;
           totalInsurancePrice += insuranceBasePrice + managementFee;
         }
       }
@@ -526,12 +526,25 @@ export class RentalContractService {
           where: { id: { in: toAddIns }, is_deleted: false, is_active: true },
         });
         for (const insurance of insurances) {
+          let managementFee = 0;
+          if (insurance.use_management_fee && insurance.management_fee_value) {
+            if (insurance.management_fee_type === 'PERCENT') {
+              const totalBaseRental = (contract.details ?? []).reduce((sum, detail) => {
+                const pricePerMonth = Number(detail.final_price ?? detail.price ?? 0);
+                const rentalDays = Number(detail.rental_days ?? 0);
+                return sum + (pricePerMonth * (rentalDays / 30));
+              }, 0);
+              managementFee = totalBaseRental * (Number(insurance.management_fee_value) / 100);
+            } else {
+              managementFee = Number(insurance.management_fee_value) * Number(contract.rental_duration_months ?? 0);
+            }
+          }
+
           await this.repository.addInsurance({
             rental_contract_id: id,
             insurance_id: insurance.id,
             price_at_purchase: Number(insurance.price),
-            management_fee_type: insurance.management_fee_type as any || undefined,
-            management_fee_value: insurance.management_fee_value ? Number(insurance.management_fee_value) : undefined,
+            management_fee: managementFee || undefined,
             created_by: userId,
           });
           await this.repository.createLog({

@@ -373,16 +373,6 @@ export class OrgRentalContractService {
                 });
 
                 for (const insurance of insurances) {
-                    await this.repository.addInsurance({
-                        rental_contract_id: contract.id,
-                        insurance_id: insurance.id,
-                        price_at_purchase: Number(insurance.price),
-                        management_fee_type: insurance.management_fee_type as any || undefined,
-                        management_fee_value: insurance.management_fee_value ? Number(insurance.management_fee_value) : undefined,
-                        created_by: userId,
-                    });
-
-                    const insuranceBasePrice = Number(insurance.price) * rentalMonths;
                     let managementFee = 0;
                     if (insurance.use_management_fee && insurance.management_fee_value) {
                         if (insurance.management_fee_type === 'PERCENT') {
@@ -392,6 +382,16 @@ export class OrgRentalContractService {
                             managementFee = Number(insurance.management_fee_value) * rentalMonths;
                         }
                     }
+
+                    await this.repository.addInsurance({
+                        rental_contract_id: contract.id,
+                        insurance_id: insurance.id,
+                        price_at_purchase: Number(insurance.price),
+                        management_fee: managementFee || undefined,
+                        created_by: userId,
+                    });
+
+                    const insuranceBasePrice = Number(insurance.price) * rentalMonths;
                     totalInsurancePrice += insuranceBasePrice + managementFee;
                 }
             }
