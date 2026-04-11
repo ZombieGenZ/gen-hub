@@ -23,7 +23,7 @@ type Notification = UserNotification | GlobalNotification;
 import { organizationService } from "@/services/organization/organization.service";
 import { CheckoutProvider } from '@/components/checkout/CheckoutWizard';
 import { CompanyInfoStep } from '@/components/checkout/CompanyInfoStep';
-import { RepresentativeInfoStep } from '@/components/checkout/RepresentativeInfoStep';
+import { RepresentativeInfoStep, REPRESENTATIVE_TITLES } from '@/components/checkout/RepresentativeInfoStep';
 import { Organization, OrganizationCreateRequest } from '@/types/organization/organization.type';
 
 import {
@@ -32,8 +32,20 @@ import {
   ModalTitle,
   ModalDescription,
 } from "@/components/ui/modal"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
-// Type definitions
+const getTitleLabel = (value: string | undefined | null) => {
+  if (!value) return "Chưa cập nhật";
+  const title = REPRESENTATIVE_TITLES.find(t => t.value === value);
+  return title ? title.label : value;
+};
+
 interface SecurityTabProps {
   userData: UserData | null;
   enabling2FA: boolean;
@@ -1249,12 +1261,21 @@ export function ProfileDialog({ open = true, onOpenChange }: ProfileDialogProps 
                                 </div>
                                 <div className="space-y-2 col-span-1 md:col-span-2">
                                   <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Chức vụ người đại diện</label>
-                                  <Input
+                                  <Select
                                     value={editOrgData.representative_title}
-                                    onChange={(e) => setEditOrgData({ ...editOrgData, representative_title: e.target.value })}
-                                    className="h-11 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800"
-                                    placeholder="Nhập chức vụ "
-                                  />
+                                    onValueChange={(value) => setEditOrgData({ ...editOrgData, representative_title: value })}
+                                  >
+                                    <SelectTrigger className="h-11 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800">
+                                      <SelectValue placeholder="Chọn chức vụ" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {REPRESENTATIVE_TITLES.map((title) => (
+                                        <SelectItem key={title.value} value={title.value}>
+                                          {title.label}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
                                 </div>
                               </div>
                               <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
@@ -1302,7 +1323,7 @@ export function ProfileDialog({ open = true, onOpenChange }: ProfileDialogProps 
                                 <div className="space-y-1">
                                   <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Chức vụ</label>
                                   <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-800 font-medium text-slate-900 dark:text-white">
-                                    {organizationData.representative_title || "Chưa cập nhật"}
+                                    {getTitleLabel(organizationData.representative_title)}
                                   </div>
                                 </div>
                                 <div className="space-y-1">
