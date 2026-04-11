@@ -179,8 +179,15 @@ export class RentalContractProcessor {
             }
 
             // Kiểm tra payment hiện tại
-            const currentPayment = contract.payments.find(p => p.status === PaymentStatus.PENDING);
-            if (currentPayment && currentPayment.expired_at && new Date() < currentPayment.expired_at) {
+            let currentPayment = contract.payments.find(p => p.status === PaymentStatus.PENDING);
+            const now = new Date();
+
+            if (currentPayment?.expired_at && now >= currentPayment.expired_at) {
+                await this.paymentScheduler.expirePayment(currentPayment.id);
+                currentPayment = undefined;
+            }
+
+            if (currentPayment && currentPayment.expired_at && now < currentPayment.expired_at) {
                 throw new BadRequestException(
                     await this.i18n.t('rental-contract.errors.payment_still_active', { lang }),
                 );

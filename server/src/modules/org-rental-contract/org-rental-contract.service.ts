@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { I18nService } from 'nestjs-i18n';
 import { ConfigService } from '@nestjs/config';
-import { ContractStatus, Prisma, ContractCancelType } from '@prisma/client';
+import { ContractStatus, Prisma, ContractCancelType, PaymentStatus } from '@prisma/client';
 import { RentalContractRepository } from '../rental-contract-shared/rental-contract.repository';
 import { SignatureService } from '../rental-contract-shared/signature.service';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -733,8 +733,15 @@ export class OrgRentalContractService {
         }
 
         const existingPayments = await this.repository.findPaymentsByContract(contractId);
-        const currentPayment = existingPayments.find(p => p.status === 'PENDING');
-        if (currentPayment?.expired_at && new Date() < currentPayment.expired_at) {
+        let currentPayment = existingPayments.find(p => p.status === PaymentStatus.PENDING);
+        const now = new Date();
+
+        if (currentPayment?.expired_at && now >= currentPayment.expired_at) {
+            await this.paymentScheduler.expirePayment(currentPayment.id);
+            currentPayment = undefined;
+        }
+
+        if (currentPayment?.expired_at && now < currentPayment.expired_at) {
             throw new BadRequestException(this.i18n.t('rental-contract.errors.payment_still_active', { lang }));
         }
 
