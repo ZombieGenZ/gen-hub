@@ -11,41 +11,47 @@ import { Request, Response } from 'express';
 import { SystemLogService } from '../../modules/system-log/system-log.service';
 import { ResponseCode } from '../responses';
 
-/**
- * Request interface với user info
- */
 interface RequestWithUser extends Request {
   user?: { userId?: string };
 }
 
-/**
- * Prisma Error interface
- */
 interface PrismaError extends Error {
   code?: string;
   meta?: Record<string, unknown>;
   clientVersion?: string;
 }
 
-/**
- * Helper để trích xuất IP từ request
- */
+interface ParsedException {
+  status: number;
+  code: string;
+  message: string;
+  clientMessage: string;
+  errorType: string;
+  stack?: string;
+  errorResponse?: unknown;
+  prismaCode?: string;
+  prismaMeta?: Record<string, unknown>;
+  errors?: Array<{ field: string; message: string }>;
+  extraFields?: Record<string, unknown>;
+}
+
+interface ParsedPrismaError {
+  status: number;
+  code: string;
+  clientMessage: string;
+  detailMessage: string;
+  errors?: Array<{ field: string; message: string }>;
+}
+
 function extractIpAddress(request: Request): string {
   const forwarded = request.headers['x-forwarded-for'];
   if (typeof forwarded === 'string') {
     return forwarded.split(',')[0].trim();
   }
+
   return request.socket?.remoteAddress || request.ip || 'unknown';
 }
 
-/**
- * Global Exception Filter
- * Bắt TẤT CẢ exceptions và ghi log vào database + console
- * - Log to console for development debugging
- * - Log to database for production monitoring
- * - Handle Prisma errors specifically
- * - Capture full request context
- */
 @Catch()
 @Injectable()
 export class GlobalExceptionFilter implements ExceptionFilter {
@@ -58,16 +64,11 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<RequestWithUser>();
 
-    // Parse the error
     const errorInfo = this.parseException(exception);
 
-    // Always log to console for visibility
     this.logToConsole(errorInfo, request);
-
-    // Log to database async (fire-and-forget)
     this.logToDatabase(errorInfo, request);
 
-    // Return response to client
     const responseBody: Record<string, unknown> = {
       code: errorInfo.code,
       message: errorInfo.clientMessage,
@@ -75,7 +76,6 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       ...errorInfo.extraFields,
     };
 
-    // Thêm errors array nếu có
     if (errorInfo.errors && errorInfo.errors.length > 0) {
       responseBody.errors = errorInfo.errors;
     }
@@ -83,35 +83,39 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     response.status(errorInfo.status).json(responseBody);
   }
 
-  /**
-   * Error item trong response
-   */
-  private parseException(exception: unknown): {
-    status: number;
-    code: string;
-    message: string;
-    clientMessage: string;
-    errorType: string;
-    stack?: string;
-    errorResponse?: unknown;
-    prismaCode?: string;
-    prismaMeta?: Record<string, unknown>;
-    errors?: Array<{ field: string; message: string }>;
-    extraFields?: Record<string, unknown>;
-  } {
-    // HttpException (từ NestJS)
+  private shouldExposeDatabaseErrorDetail(): boolean {
+    const value = process.env.EXPOSE_DATABASE_ERROR_DETAIL;
+
+    if (value === undefined) {
+      return false;
+    }
+
+    return ['true', '1', 'yes', 'on'].includes(value.trim().toLowerCase());
+  }
+
+  private parseException(exception: unknown): ParsedException {
     if (exception instanceof HttpException) {
       const status = exception.getStatus();
       const response = exception.getResponse();
 
-      // Check if response is custom format with code and message
       if (typeof response === 'object' && response !== null) {
-        const customResponse = response as { code?: string; message?: string; success?: boolean; data?: unknown; [key: string]: unknown };
+        const customResponse = response as {
+          code?: string;
+          message?: string;
+          success?: boolean;
+          data?: unknown;
+          [key: string]: unknown;
+        };
 
-        // Nếu response có custom code (từ BruteForceGuard hoặc các guard khác)
         if (customResponse.code && customResponse.message) {
-          // Extract extra fields (e.g. mismatches, require_customer_agreement)
-          const { code: _c, message: _m, success: _s, data: _d, ...extraFields } = customResponse;
+          const {
+            code: _code,
+            message: _message,
+            success: _success,
+            data: _data,
+            ...extraFields
+          } = customResponse;
+
           return {
             status,
             code: customResponse.code,
@@ -120,19 +124,20 @@ export class GlobalExceptionFilter implements ExceptionFilter {
             errorType: 'HttpException',
             stack: exception.stack,
             errorResponse: response,
-            extraFields: Object.keys(extraFields).length > 0 ? extraFields : undefined,
+            extraFields:
+              Object.keys(extraFields).length > 0 ? extraFields : undefined,
           };
         }
       }
 
       const rawMessage = (response as { message?: unknown })?.message;
 
-      // ValidationPipe trả về message là mảng các lỗi
       if (Array.isArray(rawMessage)) {
         const errors = rawMessage.map((msg: string) => ({
           field: 'unknown',
           message: msg,
         }));
+
         return {
           status,
           code: this.getHttpErrorCode(status),
@@ -161,10 +166,10 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       };
     }
 
-    // Prisma Errors
     if (this.isPrismaError(exception)) {
       const prismaError = exception as PrismaError;
       const parsed = this.parsePrismaError(prismaError);
+
       return {
         status: parsed.status,
         code: parsed.code,
@@ -175,10 +180,12 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         prismaCode: prismaError.code,
         prismaMeta: prismaError.meta,
         errors: parsed.errors,
+        extraFields: this.shouldExposeDatabaseErrorDetail()
+          ? { detail: parsed.detailMessage || prismaError.message }
+          : undefined,
       };
     }
 
-    // Generic Error
     if (exception instanceof Error) {
       return {
         status: HttpStatus.INTERNAL_SERVER_ERROR,
@@ -190,7 +197,6 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       };
     }
 
-    // Unknown error
     return {
       status: HttpStatus.INTERNAL_SERVER_ERROR,
       code: ResponseCode.ERROR_UNKNOWN,
@@ -200,9 +206,6 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     };
   }
 
-  /**
-   * Get error code from HTTP status
-   */
   private getHttpErrorCode(status: number): ResponseCode | string {
     const codeMap: Record<number, ResponseCode> = {
       400: ResponseCode.ERROR_BAD_REQUEST,
@@ -214,14 +217,15 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       500: ResponseCode.ERROR_INTERNAL,
       503: ResponseCode.ERROR_SERVICE_UNAVAILABLE,
     };
+
     return codeMap[status] || `error.http_${status}`;
   }
 
-  /**
-   * Check if error is a Prisma error
-   */
   private isPrismaError(error: unknown): boolean {
-    if (!(error instanceof Error)) return false;
+    if (!(error instanceof Error)) {
+      return false;
+    }
+
     const name = error.constructor?.name || '';
     return (
       name.includes('Prisma') ||
@@ -230,36 +234,36 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     );
   }
 
-  /**
-   * Parse Prisma error để tạo user-friendly message
-   */
-  private parsePrismaError(error: PrismaError): {
-    status: number;
-    code: string;
-    clientMessage: string;
-    errors?: Array<{ field: string; message: string }>;
-  } {
-    // Lấy tên entity từ meta nếu có
+  private parsePrismaError(error: PrismaError): ParsedPrismaError {
     const entityName = this.extractEntityName(error.meta);
 
     switch (error.code) {
-      case 'P2002': { // Unique constraint violation
+      case 'P2002': {
         const target = error.meta?.target;
         const fieldName = Array.isArray(target) ? target[0] : target;
-        const message = fieldName
-          ? `Giá trị ${fieldName} đã tồn tại`
-          : 'Dữ liệu đã tồn tại trong hệ thống';
+        const fieldLabel = typeof fieldName === 'string' ? fieldName : 'unknown';
+        const message =
+          fieldLabel !== 'unknown'
+            ? `Giá trị ${fieldLabel} đã tồn tại`
+            : 'Dữ liệu đã tồn tại trong hệ thống';
+
         return {
           status: HttpStatus.CONFLICT,
           code: ResponseCode.ERROR_DUPLICATE,
           clientMessage: 'Dữ liệu đầu vào không hợp lệ',
-          errors: [{
-            field: fieldName as string || 'unknown',
-            message,
-          }],
+          detailMessage:
+            fieldLabel !== 'unknown'
+              ? `Vi phạm ràng buộc duy nhất tại trường ${fieldLabel}`
+              : 'Bản ghi đang vi phạm ràng buộc duy nhất trong cơ sở dữ liệu',
+          errors: [
+            {
+              field: fieldLabel,
+              message,
+            },
+          ],
         };
       }
-      case 'P2003': { // Foreign key constraint violation
+      case 'P2003': {
         const fieldName = error.meta?.field_name as string | undefined;
         const cleanFieldName = fieldName
           ? fieldName.replace('_id', '').replace(/_/g, ' ')
@@ -267,59 +271,71 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         const message = fieldName
           ? `ID ${cleanFieldName} không hợp lệ`
           : 'Dữ liệu liên quan không tồn tại';
+
         return {
           status: HttpStatus.UNPROCESSABLE_ENTITY,
           code: ResponseCode.ERROR_VALIDATION,
           clientMessage: 'Dữ liệu đầu vào không hợp lệ',
-          errors: [{
-            field: fieldName || 'unknown',
-            message,
-          }],
+          detailMessage: fieldName
+            ? `Khóa ngoại tại trường ${fieldName} không hợp lệ hoặc bản ghi liên quan không tồn tại`
+            : 'Bản ghi liên quan không tồn tại hoặc khóa ngoại không hợp lệ',
+          errors: [
+            {
+              field: fieldName || 'unknown',
+              message,
+            },
+          ],
         };
       }
-      case 'P2025': { // Record not found
+      case 'P2025': {
         const fieldName = this.extractFieldName(error.meta) || 'id';
         const message = entityName
           ? `${entityName} không tồn tại`
           : 'Dữ liệu không tồn tại';
+
         return {
           status: HttpStatus.UNPROCESSABLE_ENTITY,
           code: ResponseCode.ERROR_VALIDATION,
           clientMessage: 'Dữ liệu đầu vào không hợp lệ',
-          errors: [{
-            field: fieldName,
-            message,
-          }],
+          detailMessage: entityName
+            ? `Không tìm thấy ${entityName} hoặc bản ghi liên quan để hoàn thành thao tác`
+            : 'Không tìm thấy bản ghi cần thiết để hoàn thành thao tác',
+          errors: [
+            {
+              field: fieldName,
+              message,
+            },
+          ],
         };
       }
-      case 'P2024': // Connection timeout
+      case 'P2024':
         return {
           status: HttpStatus.SERVICE_UNAVAILABLE,
           code: ResponseCode.ERROR_DATABASE_CONNECTION,
           clientMessage: 'Lỗi kết nối cơ sở dữ liệu',
+          detailMessage: 'Kết nối tới cơ sở dữ liệu bị timeout',
         };
       default:
         return {
           status: HttpStatus.INTERNAL_SERVER_ERROR,
           code: ResponseCode.ERROR_DATABASE,
           clientMessage: 'Lỗi cơ sở dữ liệu',
+          detailMessage:
+            error.message ||
+            'Đã xảy ra lỗi không xác định khi thao tác với cơ sở dữ liệu',
         };
     }
   }
 
-  /**
-   * Trích xuất field name từ Prisma error meta
-   */
   private extractFieldName(meta?: Record<string, unknown>): string | null {
-    if (!meta) return null;
+    if (!meta) {
+      return null;
+    }
 
-    // Thử lấy từ cause - ví dụ: "...on 'WarehouseTemplate' record(s)) was found for a nested connect on one-to-many relation 'WardToWarehouseTemplate'"
     const cause = meta.cause as string | undefined;
     if (cause && typeof cause === 'string') {
-      // Tìm relation name và extract field từ đó
       const relationMatch = cause.match(/relation '(\w+)To(\w+)'/i);
       if (relationMatch) {
-        // Chuyển PascalCase thành snake_case + _id
         const entityName = relationMatch[1];
         return this.toSnakeCase(entityName) + '_id';
       }
@@ -328,31 +344,23 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     return null;
   }
 
-  /**
-   * Chuyển PascalCase thành snake_case
-   */
   private toSnakeCase(str: string): string {
     return str.replace(/([A-Z])/g, '_$1').toLowerCase().replace(/^_/, '');
   }
 
-  /**
-   * Trích xuất tên entity từ Prisma error meta
-   * Ưu tiên lấy từ cause (entity thực sự bị lỗi) trước modelName (entity đang thao tác)
-   */
   private extractEntityName(meta?: Record<string, unknown>): string | null {
-    if (!meta) return null;
+    if (!meta) {
+      return null;
+    }
 
-    // Ưu tiên lấy từ cause trước - đây là entity thực sự bị thiếu
     const cause = meta.cause as string | undefined;
     if (cause && typeof cause === 'string') {
-      // Extract model name from messages like "No 'Ward' record..."
       const match = cause.match(/No '(\w+)' record/i);
       if (match) {
         return this.formatModelName(match[1]);
       }
     }
 
-    // Fallback: lấy từ modelName nếu không tìm thấy trong cause
     const modelName = meta.modelName as string | undefined;
     if (modelName) {
       return this.formatModelName(modelName);
@@ -361,33 +369,25 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     return null;
   }
 
-  /**
-   * Format model name thành dạng hiển thị
-   */
   private formatModelName(modelName: string): string {
     const modelNameMap: Record<string, string> = {
-      'User': 'Người dùng',
-      'Product': 'Sản phẩm',
-      'Category': 'Danh mục',
-      'Order': 'Đơn hàng',
-      'Warehouse': 'Kho hàng',
-      'WarehouseTemplate': 'Template kho',
-      'Ward': 'Phường/Xã',
-      'District': 'Quận/Huyện',
-      'Province': 'Tỉnh/Thành phố',
-      'RefreshToken': 'Phiên đăng nhập',
-      'BackupCode': 'Mã backup',
-      'SystemLog': 'Log hệ thống',
+      User: 'Người dùng',
+      Product: 'Sản phẩm',
+      Category: 'Danh mục',
+      Order: 'Đơn hàng',
+      Warehouse: 'Kho hàng',
+      WarehouseTemplate: 'Template kho',
+      Ward: 'Phường/Xã',
+      District: 'Quận/Huyện',
+      Province: 'Tỉnh/Thành phố',
+      RefreshToken: 'Phiên đăng nhập',
+      BackupCode: 'Mã backup',
+      SystemLog: 'Log hệ thống',
     };
 
     return modelNameMap[modelName] || modelName;
   }
 
-  /**
-   * Log to console with colors for development
-   * Chỉ log chi tiết cho server errors (5xx) và Prisma errors
-   * Bỏ qua client errors (4xx) để tránh spam console
-   */
   private logToConsole(
     errorInfo: {
       status: number;
@@ -401,13 +401,10 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     const isServerError = errorInfo.status >= 500;
     const isPrismaError = !!errorInfo.prismaCode;
 
-    // Chỉ log chi tiết cho server errors và Prisma errors
-    // Bỏ qua client errors (4xx) để không spam console
     if (!isServerError && !isPrismaError) {
       return;
     }
 
-    // Create a structured log message
     const logMessage = [
       '',
       '═══════════════════════════════════════════════════════════',
@@ -425,15 +422,11 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
     this.logger.error(logMessage);
 
-    // Also log stack trace for server errors
     if (isServerError && errorInfo.stack) {
       this.logger.error('Stack Trace:\n' + errorInfo.stack);
     }
   }
 
-  /**
-   * Log to database async (fire-and-forget)
-   */
   private logToDatabase(
     errorInfo: {
       status: number;
@@ -458,7 +451,6 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       ipAddress: extractIpAddress(request),
       userAgent: request.headers['user-agent'],
       metaData: {
-        // Error info
         statusCode: errorInfo.status,
         errorType: errorInfo.errorType,
         errorMessage: errorInfo.message,
@@ -469,8 +461,6 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         stack: errorInfo.stack,
         prismaCode: errorInfo.prismaCode,
         prismaMeta: errorInfo.prismaMeta,
-
-        // Request info
         method: request.method,
         url: request.url,
         path: request.path,
@@ -478,19 +468,12 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         params: request.params,
         body: this.sanitizeBody(request.body),
         headers: this.sanitizeHeaders(request.headers),
-
-        // Timestamp
         timestamp: new Date().toISOString(),
       },
     });
   }
 
-  /**
-   * Loại bỏ các trường nhạy cảm từ request body
-   */
-  private sanitizeBody(
-    body: Record<string, unknown>,
-  ): Record<string, unknown> {
+  private sanitizeBody(body: Record<string, unknown>): Record<string, unknown> {
     if (!body || typeof body !== 'object') {
       return {};
     }
@@ -518,9 +501,6 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     return sanitized;
   }
 
-  /**
-   * Loại bỏ các headers nhạy cảm
-   */
   private sanitizeHeaders(
     headers: Record<string, unknown>,
   ): Record<string, unknown> {
