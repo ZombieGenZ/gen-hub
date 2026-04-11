@@ -525,18 +525,27 @@ export class RentalContractService {
         const insurances = await this.prisma.insurance.findMany({
           where: { id: { in: toAddIns }, is_deleted: false, is_active: true },
         });
+        const rentalMonthsForInsurance = contract.expired_at
+          ? Math.max(
+              0,
+              Math.round(
+                (new Date(contract.expired_at).getTime() - new Date(contract.started_at).getTime())
+                  / (1000 * 60 * 60 * 24 * 30),
+              ),
+            )
+          : Math.max(0, Math.round(Number(contract.details?.[0]?.rental_days ?? 0) / 30));
         for (const insurance of insurances) {
           let managementFee = 0;
           if (insurance.use_management_fee && insurance.management_fee_value) {
             if (insurance.management_fee_type === 'PERCENT') {
               const totalBaseRental = (contract.details ?? []).reduce((sum, detail) => {
-                const pricePerMonth = Number(detail.final_price ?? detail.price ?? 0);
+                const pricePerMonth = Number(detail.price_per_month ?? 0);
                 const rentalDays = Number(detail.rental_days ?? 0);
                 return sum + (pricePerMonth * (rentalDays / 30));
               }, 0);
               managementFee = totalBaseRental * (Number(insurance.management_fee_value) / 100);
             } else {
-              managementFee = Number(insurance.management_fee_value) * Number(contract.rental_duration_months ?? 0);
+              managementFee = Number(insurance.management_fee_value) * rentalMonthsForInsurance;
             }
           }
 
