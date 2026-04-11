@@ -177,6 +177,7 @@ export function AppSidebarContent({
 
                 {/* Navigation Links */}
                 <nav
+                    data-lenis-prevent="true"
                     aria-label="Điều hướng chính"
                     className={cn(
                         "flex-1 px-4 overflow-y-auto overflow-x-hidden py-4 transition-all duration-300 min-h-0 scrollbar-hide",
