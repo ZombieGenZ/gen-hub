@@ -44,6 +44,8 @@ export function QuotationSummary({
     className,
     showHeader = true,
 }: QuotationSummaryProps) {
+    const depositAmount = breakdown?.depositAmount || Math.round((breakdown?.grandTotal || 0) * 0.1);
+    
     return (
         <div className={cn(
             "rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden",
@@ -240,14 +242,14 @@ export function QuotationSummary({
                             <span className="text-xs text-teal-600">Thanh toán ngay để khóa kho</span>
                         </div>
                         <span className="text-xl font-bold text-[#0F766E]">
-                            {formatCurrencyFull(1000)}
+                            {formatCurrencyFull(depositAmount)}
                         </span>
                     </div>
                     <Separator className="bg-teal-200" />
                     <div className="flex justify-between items-center opacity-75">
                         <span className="text-sm font-medium text-slate-600">Còn lại (Thanh toán sau)</span>
                         <span className="text-base font-semibold text-slate-700">
-                            {formatCurrencyFull(breakdown.grandTotal - 1000)}
+                            {formatCurrencyFull((breakdown?.grandTotal || 0) - depositAmount)}
                         </span>
                     </div>
                 </div>

@@ -278,7 +278,7 @@ export function RentalInfoStep() {
                             <div className="flex justify-between items-center text-teal-50">
                                 <span className="font-medium">Cọc giữ chỗ (10%)</span>
                                 <span className="font-bold text-lg text-white">
-                                    {formatCurrencyFull(session.deposit_amount || 0)}
+                                    {formatCurrencyFull(session.quotation?.depositAmount || session.deposit_amount || Math.round(session.quotation?.grandTotal * 0.1) || 0)}
                                 </span>
                             </div>
                         </div>

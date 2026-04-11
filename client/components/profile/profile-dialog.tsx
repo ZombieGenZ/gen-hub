@@ -972,9 +972,9 @@ export function ProfileDialog({ open = true, onOpenChange }: ProfileDialogProps 
             }} className="bg-red-700 hover:bg-red-800 text-white font-medium px-8 py-3 rounded-lg transition-all shadow-lg shadow-red-700/20 hover:shadow-red-700/40 flex items-center gap-2 justify-center active:scale-[0.98]">Đăng nhập</button>
           </div>
         ) : userData ? (
-          <div className="flex flex-col md:flex-row h-full w-full bg-background text-slate-950">
+          <div className="flex flex-col md:flex-row h-full max-h-[90vh] md:max-h-screen w-full bg-background text-slate-950 overflow-hidden">
             {/* Sidebar Column */}
-            <div className="w-full md:w-[280px] shrink-0 border-b md:border-b-0 md:border-r border-slate-200 bg-slate-50 flex flex-col">
+            <div className="w-full md:w-[280px] shrink-0 border-b md:border-b-0 md:border-r border-slate-200 bg-slate-50 flex flex-col overflow-y-auto">
               <div className="p-6">
                 <div className="flex items-center gap-3 text-xl font-bold text-brand">
                   <Image
@@ -998,7 +998,7 @@ export function ProfileDialog({ open = true, onOpenChange }: ProfileDialogProps 
             </div>
 
             {/* Main Content Column */}
-            <div className="flex-1 flex flex-col min-w-0 bg-background dark:bg-slate-950">
+            <div className="flex-1 flex flex-col min-w-0 bg-background dark:bg-slate-950 overflow-hidden">
               <div className="flex-1 overflow-y-auto custom-scrollbar">
                 <div className="p-6 md:p-10 max-w-4xl mx-auto w-full">
                   <div className="mb-8">
