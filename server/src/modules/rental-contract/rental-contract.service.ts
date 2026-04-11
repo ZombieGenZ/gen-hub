@@ -405,7 +405,15 @@ export class RentalContractService {
       throw new NotFoundException(this.i18n.t('rental-contract.errors.not_found', { lang }));
     }
     // Admin có thể view mọi contract (giả sử permission đã check ở controller level hoặc contract guard)
-    return contract;
+    const contractObj = JSON.parse(JSON.stringify(contract));
+    return {
+      ...contractObj,
+      payments: contractObj.payments?.map((p: any) => ({
+        ...p,
+        method: contract.payment_method, // Back-fill method from contract
+        transaction_code: p.payment_code, // Map payment_code to transaction_code
+      })),
+    } as unknown as IRentalContractWithRelations;
   }
 
   /**

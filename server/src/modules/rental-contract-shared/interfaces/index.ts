@@ -102,6 +102,7 @@ export interface IPaymentInfo {
     paymentCode: string;      // Mã thanh toán (thay orderCode)
     amount: number;
     qrCode: string;           // URL QR từ qr.sepay.vn
+    payment_url?: string;     // Alias cho qrCode hoặc link thanh toán
     status: string;
     expiredAt: Date;
 }

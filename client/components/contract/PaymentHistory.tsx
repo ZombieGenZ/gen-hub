@@ -46,12 +46,20 @@ interface PaymentHistoryProps {
 }
 
 const formatCurrency = (val: number | string) => {
-    const num = typeof val === "string" ? parseFloat(val) : val;
-    if (!num && num !== 0) return "0 VND";
-    return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(num);
+    try {
+        const num = typeof val === "string" ? parseFloat(val) : val;
+        if (isNaN(num)) return "0 ₫";
+        return new Intl.NumberFormat("vi-VN", {
+            style: "currency",
+            currency: "VND",
+        }).format(num);
+    } catch {
+        return "0 ₫";
+    }
 };
 
 const formatDate = (str: string) => {
+    if (!str) return "—";
     try {
         return format(new Date(str), "dd/MM/yyyy HH:mm");
     } catch {
@@ -106,8 +114,8 @@ function PaymentCard({
     retryingPaymentId?: string | null;
 }) {
     const [expanded, setExpanded] = useState(false);
-    const statusCfg = STATUS_CONFIG[payment.status];
-    const methodCfg = METHOD_CONFIG[payment.method];
+    const statusCfg = STATUS_CONFIG[payment.status] || STATUS_CONFIG.PENDING;
+    const methodCfg = METHOD_CONFIG[payment.method] || METHOD_CONFIG.TRANSFER;
     const StatusIcon = statusCfg.icon;
     const MethodIcon = methodCfg.icon;
     const qrSource = payment.qr_code_url || payment.qr_code;

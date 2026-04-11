@@ -538,7 +538,17 @@ export class OrgRentalContractService {
         }
 
         await this.checkOrgPermission(organizationId, userId, 'rental-contract.read', lang);
-        return contract;
+
+        // Map payments to match frontend interface
+        const contractObj = JSON.parse(JSON.stringify(contract));
+        return {
+            ...contractObj,
+            payments: contractObj.payments?.map((p: any) => ({
+                ...p,
+                method: contract.payment_method, // Back-fill method from contract
+                transaction_code: p.payment_code, // Map payment_code to transaction_code
+            })),
+        };
     }
 
     async renew(
@@ -742,7 +752,25 @@ export class OrgRentalContractService {
         }
 
         if (currentPayment?.expired_at && now < currentPayment.expired_at) {
-            throw new BadRequestException(this.i18n.t('rental-contract.errors.payment_still_active', { lang }));
+            return {
+                contract: {
+                    ...contract,
+                    payments: existingPayments.map(p => ({
+                        ...p,
+                        method: contract.payment_method,
+                        transaction_code: p.payment_code,
+                    })),
+                } as any,
+                payment: {
+                    paymentId: currentPayment.id,
+                    paymentCode: currentPayment.payment_code,
+                    amount: Number(currentPayment.amount),
+                    qrCode: currentPayment.qr_code,
+                    payment_url: currentPayment.qr_code, // Thêm để frontend redirect
+                    status: currentPayment.status.toString(),
+                    expiredAt: currentPayment.expired_at,
+                },
+            };
         }
 
         const lockKeys: string[] = [];
@@ -783,7 +811,18 @@ export class OrgRentalContractService {
         paymentExpiredAt.setSeconds(paymentExpiredAt.getSeconds() + this.LOCK_DURATION_SECONDS);
         this.paymentScheduler.schedulePaymentExpire(paymentResult.paymentId, paymentExpiredAt, userId);
 
-        return { contract, payment: paymentResult };
+        return { 
+            contract: contract as any, 
+            payment: {
+                paymentId: paymentResult.paymentId,
+                paymentCode: paymentResult.paymentCode,
+                amount: paymentResult.amount,
+                qrCode: paymentResult.qrCode,
+                payment_url: paymentResult.qrCode, // Thêm để frontend redirect
+                status: paymentResult.status,
+                expiredAt: paymentResult.expiredAt,
+            }
+        };
     }
 
     /**
