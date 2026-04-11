@@ -6,7 +6,11 @@
  * - Tooltip luôn hiển thị số chính xác
  */
 export function formatCurrencyCompact(value: number): { display: string; exact: string } {
-    const exact = new Intl.NumberFormat('vi-VN').format(Math.round(value)) + ' VND';
+    const exact = new Intl.NumberFormat('vi-VN', {
+        style: 'currency',
+        currency: 'VND',
+        maximumFractionDigits: 0,
+    }).format(Math.round(value));
 
     if (Math.abs(value) >= 1_000_000_000) {
         const billions = value / 1_000_000_000;
@@ -23,14 +27,21 @@ export function formatCurrencyCompact(value: number): { display: string; exact: 
         const thousands = Math.round(value / 1_000);
         return { display: `${thousands}K`, exact };
     }
-    return { display: new Intl.NumberFormat('vi-VN').format(Math.round(value)), exact };
+    return { display: new Intl.NumberFormat('vi-VN').format(Math.round(value)) + ' ₫', exact };
 }
 
 /**
  * Format số tiền VND đầy đủ (có dấu phẩy ngăn cách)
  */
 export function formatCurrencyFull(value: number): string {
-    return new Intl.NumberFormat('vi-VN').format(Math.round(value)) + ' đ';
+    if (Math.abs(value) >= 1_000_000_000) {
+        return `${(value / 1_000_000_000).toFixed(2).replace('.', ',')} Tỷ ₫`;
+    }
+    return new Intl.NumberFormat('vi-VN', {
+        style: 'currency',
+        currency: 'VND',
+        maximumFractionDigits: 0,
+    }).format(Math.round(value));
 }
 
 /**

@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { CheckBadgeIcon } from '@heroicons/react/24/solid';
+import { formatCurrencyFull } from '@/lib/format-currency';
 
 interface ContractPreviewProps {
     session: Partial<CheckoutSession>;
@@ -37,10 +38,6 @@ export function ContractPreview({
     if (session.duration_months) {
         endDate.setMonth(endDate.getMonth() + session.duration_months);
     }
-
-    const formatCurrency = (amount: number) => {
-        return `${Math.round(amount).toLocaleString('vi-VN')}₫`;
-    };
 
     const isSigned = !!signatureData;
 
@@ -164,13 +161,13 @@ export function ContractPreview({
                             </div>
                             <div>
                                 <h5 className="font-bold italic">2.2. Giá trị Hợp đồng và Nguyên tắc tính phí</h5>
-                                <p>Tổng giá trị hợp đồng tạm tính là: <strong className="text-lg">{formatCurrency(session.quotation?.grandTotal || 0)}</strong> (Đã bao gồm VAT).</p>
+                                <p>Tổng giá trị hợp đồng tạm tính là: <strong className="text-lg">{formatCurrencyFull(session.quotation?.grandTotal || 0)}</strong> (Đã bao gồm VAT).</p>
                                 <p className="text-sm mt-1 italic">Chi tiết giá và các hạng mục được quy định cụ thể tại Phụ lục 01.</p>
                             </div>
                             <div>
                                 <h5 className="font-bold italic">2.3. Phương thức và Thời hạn thanh toán</h5>
-                                <p>● Thanh toán 100% giá trị gói dịch vụ đã đăng ký. Đặt cọc: {formatCurrency(session.deposit_amount || 0)}.</p>
-                                <p>● Thanh toán còn lại: {formatCurrency((session.quotation?.grandTotal || 0) - (session.deposit_amount || 0))} trong vòng 05 ngày kể từ ngày ký.</p>
+                                <p>● Thanh toán 100% giá trị gói dịch vụ đã đăng ký. Đặt cọc: {formatCurrencyFull(session.deposit_amount || 0)}.</p>
+                                <p>● Thanh toán còn lại: {formatCurrencyFull((session.quotation?.grandTotal || 0) - (session.deposit_amount || 0))} trong vòng 05 ngày kể từ ngày ký.</p>
                                 <p>● Hình thức: Chuyển khoản vào tài khoản ngân hàng của Bên A.</p>
                             </div>
                             <div>
@@ -322,13 +319,13 @@ export function ContractPreview({
                                                 {session.rental_type === 'whole' ? 'Nguyên Kho' : 'Vị trí/Kệ'}
                                             </td>
                                             <td className="border border-slate-300 p-2 text-right font-mono">
-                                                {formatCurrency((session.quotation?.basePrice || 0) / (session.duration_months || 1))}
+                                                {formatCurrencyFull((session.quotation?.basePrice || 0) / (session.duration_months || 1))}
                                             </td>
                                             <td className="border border-slate-300 p-2 text-right">
                                                 {session.duration_months} tháng
                                             </td>
                                             <td className="border border-slate-300 p-2 text-right font-bold">
-                                                {formatCurrency(session.quotation?.basePrice || 0)}
+                                                {formatCurrencyFull(session.quotation?.basePrice || 0)}
                                             </td>
                                         </tr>
                                         {/* Row for Discount if exists */}
@@ -338,7 +335,7 @@ export function ContractPreview({
                                                     Ưu đãi ký hạn đặc biệt ({session.quotation.durationDiscountPercent}%)
                                                 </td>
                                                 <td className="border border-slate-300 p-2 text-right font-bold">
-                                                    -{formatCurrency(session.quotation.durationDiscountAmount)}
+                                                    -{formatCurrencyFull(session.quotation.durationDiscountAmount)}
                                                 </td>
                                             </tr>
                                         )}
@@ -370,7 +367,7 @@ export function ContractPreview({
                                                     <td className="border border-slate-300 p-2 text-right">
                                                         {addon.is_monthly_payment ? `${session.duration_months} tháng` : "1 gói"}
                                                     </td>
-                                                    <td className="border border-slate-300 p-2 text-right font-mono">{formatCurrency(addon.price)}</td>
+                                                    <td className="border border-slate-300 p-2 text-right font-mono">{formatCurrencyFull(addon.price)}</td>
                                                 </tr>
                                             ))
                                         ) : (
@@ -386,7 +383,7 @@ export function ContractPreview({
                                                 <td className="border border-slate-300 p-2">Bảo hiểm hàng hóa: {session.insurance_details.name}</td>
                                                 <td className="border border-slate-300 p-2 text-center">Gói</td>
                                                 <td className="border border-slate-300 p-2 text-right">1</td>
-                                                <td className="border border-slate-300 p-2 text-right font-mono">{formatCurrency(session.insurance_details.price)}</td>
+                                                <td className="border border-slate-300 p-2 text-right font-mono">{formatCurrencyFull(session.insurance_details.price)}</td>
                                             </tr>
                                         )}
                                     </tbody>
@@ -399,15 +396,15 @@ export function ContractPreview({
                                 <div className="space-y-2">
                                     <div className="flex justify-between items-center text-sm">
                                         <span className="text-slate-400">Tạm tính trước thuế:</span>
-                                        <span className="font-mono">{formatCurrency((session.quotation?.grandTotal || 0) / 1.1)}</span>
+                                        <span className="font-mono">{formatCurrencyFull((session.quotation?.grandTotal || 0) / 1.1)}</span>
                                     </div>
                                     <div className="flex justify-between items-center text-sm">
                                         <span className="text-slate-400">Thuế GTGT (10%):</span>
-                                        <span className="font-mono">{formatCurrency((session.quotation?.grandTotal || 0) - ((session.quotation?.grandTotal || 0) / 1.1))}</span>
+                                        <span className="font-mono">{formatCurrencyFull((session.quotation?.grandTotal || 0) - ((session.quotation?.grandTotal || 0) / 1.1))}</span>
                                     </div>
                                     <div className="flex justify-between items-center pt-3 border-t border-slate-700 mt-2">
                                         <span className="font-bold text-lg">TỔNG CỘNG THANH TOÁN (A + B):</span>
-                                        <span className="font-bold text-2xl text-teal-400">{formatCurrency(session.quotation?.grandTotal || 0)}</span>
+                                        <span className="font-bold text-2xl text-teal-400">{formatCurrencyFull(session.quotation?.grandTotal || 0)}</span>
                                     </div>
                                 </div>
                             </div>

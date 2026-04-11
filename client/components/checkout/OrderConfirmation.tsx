@@ -21,6 +21,7 @@ import { cn } from '@/lib/utils';
 import { contractTemplateService } from '@/services/contract/contract-template.service';
 import { convertCheckoutToContract } from '@/lib/contract.utils';
 import { paymentService } from '@/services/payment/payment.service';
+import { formatCurrencyFull } from '@/lib/format-currency';
 
 interface OrderConfirmationProps {
     orderResponse?: CreateOrderResponse;
@@ -149,9 +150,6 @@ export function OrderConfirmation({
         }
     };
 
-    const formatCurrency = (amount: number) =>
-        `${Math.round(amount).toLocaleString('vi-VN')}₫`;
-
     return (
         <div className="space-y-6">
             {/* Success Header */}
@@ -248,7 +246,7 @@ export function OrderConfirmation({
                             Mở app ngân hàng hoặc ví điện tử và quét mã QR
                         </p>
                         <p className="text-xl font-bold text-[#0F766E] mt-2">
-                            {formatCurrency(depositAmount)}
+                            {formatCurrencyFull(depositAmount)}
                         </p>
 
                         {/* Payment code copy */}
