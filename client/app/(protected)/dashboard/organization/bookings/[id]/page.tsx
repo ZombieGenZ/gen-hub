@@ -60,7 +60,7 @@ export default function BookingDetailPage() {
         const token = authStorage.getAccessToken();
         if (!token) { router.push("/login"); return; }
         const currentOrgId = orgId || await orgHelper.getOrgId(token);
-        const result = await rentalContractService.getOrgRentalContractById(token, currentOrgId, id);
+        const result = await rentalContractService.getOrgRentalContractFull(token, currentOrgId, id);
         setBooking(result);
 
         // Fetch organization details if company info is available
@@ -127,6 +127,39 @@ export default function BookingDetailPage() {
     return <div className="p-12 text-center text-slate-500">Không tìm thấy hợp đồng hoặc có lỗi xảy ra.</div>;
   }
 
+  // ── Computed helpers từ API data thực tế ──────────────────────────────────
+  const STATUS_MAP: Record<string, { label: string; color: string }> = {
+    PENDING:        { label: "Chờ thanh toán",    color: "bg-yellow-50 text-yellow-700 border-yellow-200" },
+    ACTIVE:         { label: "Đang hoạt động",    color: "bg-green-50 text-green-700 border-green-200" },
+    OVERDUE_LEVEL_1:{ label: "Quá hạn",           color: "bg-red-50 text-red-700 border-red-200" },
+    OVERDUE_LEVEL_2:{ label: "Quá hạn cấp 2",     color: "bg-red-100 text-red-800 border-red-300" },
+    OVERDUE_LEVEL_3:{ label: "Quá hạn cấp 3",     color: "bg-red-200 text-red-900 border-red-400" },
+    SEALED:         { label: "Đã phong tỏa",      color: "bg-gray-50 text-gray-700 border-gray-200" },
+    LIQUIDATED:     { label: "Đã thanh lý",       color: "bg-purple-50 text-purple-700 border-purple-200" },
+    CANCELLED:      { label: "Đã hủy",            color: "bg-red-50 text-red-700 border-red-200" },
+    COMPLETED:      { label: "Đã hoàn thành",     color: "bg-blue-50 text-blue-700 border-blue-200" },
+  };
+  const fmtDate = (d?: string) => d ? new Date(d).toLocaleDateString('vi-VN') : 'N/A';
+  const fmtCurrency = (v?: number | string) => {
+    if (v === undefined || v === null) return 'N/A';
+    const n = typeof v === 'string' ? parseFloat(v) : v;
+    return isNaN(n) ? 'N/A' : n.toLocaleString('vi-VN') + '₫';
+  };
+
+  const statusInfo = STATUS_MAP[booking.status] ?? { label: booking.status || '—', color: '' };
+  const firstDetail = booking.details?.[0];
+  const warehouseName   = firstDetail?.warehouse_template?.name || firstDetail?.warehouse_name || firstDetail?.warehouse?.name || '—';
+  const warehouseAddress = firstDetail?.warehouse_template?.address_detail || '—';
+  const contractType    = firstDetail ? (firstDetail.is_whole_warehouse ? 'Thuê Nguyên Kho' : 'Thuê Một Phần') : 'N/A';
+  const rentalDays      = firstDetail?.rental_days;
+  const totalPriceNum   = typeof booking.total_price === 'string' ? parseFloat(booking.total_price) : (booking.total_price ?? 0);
+  const finalPriceNum   = typeof booking.final_price === 'string' ? parseFloat(booking.final_price) : (booking.final_price ?? 0);
+  const vatAmountNum    = typeof booking.vat_amount  === 'string' ? parseFloat(booking.vat_amount)  : (booking.vat_amount  ?? 0);
+  const pendingPayment  = booking.payments?.find((p: any) => p.status === 'PENDING');
+  const addonsList      = booking.addons?.map((a: any) => a.addon ?? a) ?? [];
+  const logsList        = (booking.logs ?? []) as any[];
+  // ─────────────────────────────────────────────────────────────────────────
+
   return (
     <div className="space-y-6 p-6 max-w-7xl mx-auto">
       {/* Header Navigation */}
@@ -149,12 +182,12 @@ export default function BookingDetailPage() {
           <div>
             <h1 className="text-2xl font-bold tracking-tight flex items-center gap-3">
               Mã Hợp đồng: {booking?.id?.length > 20 ? booking?.id?.substring(0, 8) + '...' : booking?.id}
-              <Badge variant="outline" className={`${booking?.statusColor} font-normal border`}>
-                {booking?.statusLabel}
+              <Badge variant="outline" className={`${statusInfo.color} font-normal border`}>
+                {statusInfo.label}
               </Badge>
             </h1>
             <p className="text-muted-foreground text-sm mt-1">
-              Ngày tạo: {booking?.createdDate} • Cập nhật lần cuối: Hôm nay
+              Ngày tạo: {fmtDate(booking?.created_at)} • Cập nhật lần cuối: Hôm nay
             </p>
           </div>
         </div>
@@ -246,26 +279,26 @@ export default function BookingDetailPage() {
                 </div>
                 <div className="flex-1 space-y-4">
                   <div>
-                    <h3 className="font-bold text-lg">{booking.warehouse?.name}</h3>
+                    <h3 className="font-bold text-lg">{warehouseName}</h3>
                     <div className="flex items-start gap-2 text-muted-foreground mt-1">
                       <MapPin className="h-4 w-4 mt-0.5 shrink-0" />
-                      <span className="text-sm">{booking.warehouse?.address}</span>
+                      <span className="text-sm">{warehouseAddress}</span>
                     </div>
                   </div>
                   <Separator />
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                     <div>
                       <span className="text-muted-foreground block mb-1">Quản lý kho:</span>
-                      <span className="font-medium">{booking.warehouse?.manager}</span>
+                      <span className="font-medium">—</span>
                     </div>
                     <div>
                       <span className="text-muted-foreground block mb-1">Liên hệ:</span>
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
-                          <Phone className="h-3 w-3" /> {booking.warehouse?.phone}
+                          <Phone className="h-3 w-3" /> —
                         </div>
                         <div className="flex items-center gap-2">
-                          <Mail className="h-3 w-3" /> {booking.warehouse?.email}
+                          <Mail className="h-3 w-3" /> —
                         </div>
                       </div>
                     </div>
@@ -289,31 +322,31 @@ export default function BookingDetailPage() {
                   <span className="text-sm text-muted-foreground">Ngày bắt đầu</span>
                   <div className="font-medium flex items-center gap-2">
                     <Calendar className="h-4 w-4 text-muted-foreground" />
-                    {booking.contract?.startDate}
+                    {fmtDate(booking.started_at)}
                   </div>
                 </div>
                 <div className="space-y-1">
                   <span className="text-sm text-muted-foreground">Ngày kết thúc</span>
                   <div className="font-medium flex items-center gap-2">
                     <Calendar className="h-4 w-4 text-muted-foreground" />
-                    {booking.contract?.endDate}
+                    {fmtDate(booking.expired_at)}
                   </div>
                 </div>
                 <div className="space-y-1">
                   <span className="text-sm text-muted-foreground">Thời hạn</span>
-                  <div className="font-medium">{booking.contract?.duration ?? 'N/A'}</div>
+                  <div className="font-medium">{rentalDays ? rentalDays + ' ngày' : 'N/A'}</div>
                 </div>
                 <div className="space-y-1">
-                  <span className="text-sm text-muted-foreground">Diện tích thuê</span>
-                  <div className="font-medium text-emerald-600">{booking.contract?.area ?? 'N/A'}</div>
+                  <span className="text-sm text-muted-foreground">Giá thuê</span>
+                  <div className="font-medium text-emerald-600">{firstDetail?.price_per_month ? fmtCurrency(firstDetail.price_per_month) + '/tháng' : 'N/A'}</div>
                 </div>
                 <div className="space-y-1">
                   <span className="text-sm text-muted-foreground">Loại kho</span>
-                  <div className="font-medium">{booking.contract?.type ?? 'N/A'}</div>
+                  <div className="font-medium">{contractType}</div>
                 </div>
                 <div className="space-y-1">
                   <span className="text-sm text-muted-foreground">Chu kỳ thanh toán</span>
-                  <div className="font-medium">{booking.contract?.paymentCycle ?? 'N/A'}</div>
+                  <div className="font-medium">{booking.payment_method === 'TRANSFER' ? 'Chuyển khoản' : booking.payment_method === 'BALANCE' ? 'Số dư' : booking.payment_method || 'N/A'}</div>
                 </div>
                 <div className="space-y-1">
                   <span className="text-sm text-muted-foreground">Địa chỉ</span>
@@ -325,19 +358,15 @@ export default function BookingDetailPage() {
 
               <h4 className="font-medium mb-4">Dịch vụ đi kèm</h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {booking.services?.map((service: any, index: number) => (
+                {addonsList?.map((service: any, index: number) => (
                   <div key={index} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border">
                     <div className="flex items-center gap-2">
-                      {service.included ? (
-                        <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                      ) : (
-                        <div className="h-4 w-4 rounded-full border-2 border-muted-foreground/30" />
-                      )}
+                      <CheckCircle2 className="h-4 w-4 text-emerald-600" />
                       <span className="text-sm font-medium">{service.name}</span>
                     </div>
-                    {!service.included && (
+                    {service.price != null && (
                       <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
-                        {service.price}
+                        {fmtCurrency(service.price)}
                       </span>
                     )}
                   </div>
@@ -356,21 +385,16 @@ export default function BookingDetailPage() {
             </CardHeader>
             <CardContent>
               <div className="relative pl-6 border-l-2 border-muted space-y-8">
-                {booking.history?.map((item: any, index: number) => (
+                {logsList?.map((item: any, index: number) => (
                   <div key={index} className="relative">
-                    <div className={`absolute -left-[31px] top-1 h-4 w-4 rounded-full border-2 border-white ring-2 ${item.status === 'completed' ? 'bg-emerald-500 ring-emerald-100' :
-                      item.status === 'current' ? 'bg-blue-500 ring-blue-100 animate-pulse' :
-                        'bg-slate-200 ring-slate-100'
-                      }`} />
+                    <div className={`absolute -left-[31px] top-1 h-4 w-4 rounded-full border-2 border-white ring-2 bg-emerald-500 ring-emerald-100`} />
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                      <span className={`text-base font-medium ${item.status === 'current' ? 'text-blue-600' :
-                        item.status === 'completed' ? 'text-emerald-700' : 'text-slate-500'
-                        }`}>
-                        {item.action}
+                      <span className="text-base font-medium text-slate-700">
+                        {item.description || item.action || item.type || '—'}
                       </span>
-                      <span className="text-xs text-muted-foreground">{item.date}</span>
+                      <span className="text-xs text-muted-foreground">{fmtDate(item.created_at || item.date)}</span>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">Người xử lý: {item.user}</p>
+                    <p className="text-xs text-muted-foreground mt-1">Người xử lý: {item.actor?.name || item.user || '—'}</p>
                   </div>
                 ))}
               </div>
@@ -392,24 +416,24 @@ export default function BookingDetailPage() {
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Đơn giá / m²</span>
-                  <span>{booking.financial?.pricePerSqm ?? 'N/A'}</span>
+                  <span>N/A</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Tiền thuê hàng tháng</span>
-                  <span>{booking.financial?.monthlyRent ?? 'N/A'}</span>
+                  <span>{fmtCurrency(totalPriceNum)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Phí dịch vụ</span>
-                  <span>{booking.financial?.serviceFee ?? 'N/A'}</span>
+                  <span>N/A</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">VAT (10%)</span>
-                  <span>{booking.financial?.vat ?? 'N/A'}</span>
+                  <span>{fmtCurrency(vatAmountNum)}</span>
                 </div>
                 <Separator className="bg-emerald-200/50" />
                 <div className="flex justify-between font-bold text-lg text-emerald-700">
                   <span>Tổng cộng</span>
-                  <span>{booking.financial?.totalMonthly ?? 'N/A'}</span>
+                  <span>{fmtCurrency(finalPriceNum)}</span>
                 </div>
               </div>
 
@@ -419,7 +443,7 @@ export default function BookingDetailPage() {
                   <div>
                     <p className="text-sm font-medium text-amber-800">Kỳ thanh toán tiếp theo</p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Hạn thanh toán: <span className="font-medium text-foreground">{booking.financial?.nextPaymentDate ?? 'N/A'}</span>
+                      Hạn thanh toán: <span className="font-medium text-foreground">{pendingPayment ? fmtDate(pendingPayment.expired_at) : 'N/A'}</span>
                     </p>
                   </div>
                 </div>
@@ -446,8 +470,8 @@ export default function BookingDetailPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {booking.documents?.length === 0 && <span className="text-sm text-muted-foreground">Chưa có tài liệu nào.</span>}
-              {booking.documents?.map((doc: any, index: number) => (
+              {<span className="text-sm text-muted-foreground">Chưa có tài liệu nào.</span>}
+              {([] as any[]).map((doc: any, index: number) => (
                 <div key={index} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer group">
                   <div className="flex items-center gap-3 overflow-hidden">
                     <div className="h-8 w-8 rounded bg-red-100 text-red-600 flex items-center justify-center shrink-0">
