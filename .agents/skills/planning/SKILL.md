@@ -351,3 +351,106 @@ Trước khi trình bày plan cho user, kiểm tra:
 - [ ] Sơ đồ minh họa nếu task phức tạp
 - [ ] Câu hỏi cho user (nếu có điểm chưa rõ)
 - [ ] Tham chiếu đúng skill Backend/Frontend khi cần
+
+---
+
+## 🔗 VII. THAM CHIẾU SKILL LIÊN QUAN
+
+Khi lập kế hoạch, luôn tham khảo các skill liên quan để đảm bảo plan toàn diện:
+
+| Skill | Tham khảo khi nào |
+|-------|-------------------|
+| **nestjs-backend** | Khi plan liên quan đến backend NestJS, module structure, caching, i18n |
+| **uiux-frontend** | Khi plan liên quan đến frontend Next.js, components, UI/UX |
+| **database-prisma** | Khi plan có thay đổi database schema, migration, seeder, query optimization |
+| **security** | Khi plan có authentication, authorization, input validation, encryption, rate limiting |
+| **testing** | Khi plan cần viết tests, test coverage, CI/CD integration |
+| **api-documentation** | Khi plan có Swagger documentation, markdown API docs, Postman collections |
+
+### Quy trình lập kế hoạch theo loại task
+
+#### 1. Feature mới (Full-stack)
+```
+1. planning (tạo plan tổng thể)
+   ├── Phase 1: Backend
+   │   ├── database-prisma (schema design)
+   │   ├── nestjs-backend (module implementation)
+   │   ├── security (auth, validation)
+   │   └── api-documentation (Swagger, markdown docs)
+   └── Phase 2: Frontend
+       ├── uiux-frontend (components, pages)
+       └── testing (E2E tests)
+```
+
+#### 2. Bug Fix
+```
+1. planning (phân tích bug)
+   ├── testing (reproduce bug)
+   ├── [skill liên quan: backend/frontend/database]
+   └── testing (verify fix)
+```
+
+#### 3. Performance Optimization
+```
+1. planning (identify bottlenecks)
+   ├── database-prisma (query optimization, indexing)
+   ├── nestjs-backend (caching, N+1 prevention)
+   └── testing (benchmark before/after)
+```
+
+#### 4. Refactoring
+```
+1. planning (analysis & scope)
+   ├── [skill liên quan]
+   └── testing (ensure no regression)
+```
+
+### Template checklist theo loại task
+
+#### Feature mới - Backend Checklist
+Trong plan phải đề cập:
+- [ ] Permission 2 cấp (personal/system-wide)
+- [ ] Redis caching pattern (nếu cần)
+- [ ] i18n cho messages
+- [ ] Swagger decorators đầy đủ
+- [ ] Markdown API documentation
+- [ ] Environment variables mới
+- [ ] Database migration (nếu có schema change)
+- [ ] Seeder data (nếu cần)
+
+#### Feature mới - Frontend Checklist
+Trong plan phải đề cập:
+- [ ] Swagger API reading trước khi code
+- [ ] Service layer pattern
+- [ ] React Query hooks
+- [ ] Zod validation
+- [ ] Responsive design
+- [ ] Dark mode support
+- [ ] Loading/empty/error states
+- [ ] Permission-based UI rendering
+
+#### Security Task Checklist
+Trong plan phải đề cập:
+- [ ] JWT/API Key authentication
+- [ ] Permission guards
+- [ ] Rate limiting
+- [ ] Input validation & sanitization
+- [ ] XSS prevention
+- [ ] SQL injection prevention
+- [ ] Sensitive data encryption
+
+---
+
+## 🔄 VIII. VERSION CONTROL TRONG PLAN
+
+Khi lập kế hoạch, luôn đề cập đến:
+
+### Git Strategy
+- **Branch naming:** `feat/ten-tinh-nang`, `fix/sua-loi`, `refactor/cau-truc`
+- **Commit convention:** `type(scope): mo-ta-ngan-gon`
+- **PR strategy:** Mỗi PR = 1 tính năng, có checklist review
+
+### Deployment Plan
+- Migration chạy trước hay sau code deploy?
+- Có cần maintenance mode không?
+- Rollback plan nếu có vấn đề?

@@ -410,3 +410,90 @@ function ActionButtons() {
 - [ ] Framer Motion transitions/animations
 - [ ] Accessibility (ARIA labels, keyboard nav)
 - [ ] API integration hoạt động đúng
+
+---
+
+## 🔗 X. THAM CHIẾU SKILL LIÊN QUAN
+
+Khi làm việc, luôn tham khảo các skill liên quan để đảm bảo tính nhất quán:
+
+| Skill | Khi nào tham khảo |
+|-------|-------------------|
+| **nestjs-backend** | Khi cần hiểu API response format, permission keys, caching behavior |
+| **api-documentation** | Khi đọc Swagger spec, API endpoints, request/response schemas |
+| **security** | Khi implement authentication, token management, XSS prevention, CSRF protection |
+| **testing** | Khi viết component tests, form tests, React Query mock tests |
+| **planning** | Khi cần lập kế hoạch triển khai feature frontend phức tạp |
+| **database-prisma** | Khi cần hiểu database schema để design frontend forms |
+
+### Quy trình làm việc với các skill
+
+#### 1. Feature mới (Backend có sẵn)
+```
+1. api-documentation (đọc Swagger spec)
+2. uiux-frontend (implement UI)
+3. testing (viết component tests)
+```
+
+#### 2. Feature mới (Full-stack)
+```
+1. planning (tạo plan tổng thể)
+2. nestjs-backend (implement backend trước)
+3. api-documentation (Swagger docs)
+4. uiux-frontend (implement frontend sau khi API sẵn sàng)
+5. testing (E2E tests)
+```
+
+#### 3. Bug Fix UI
+```
+1. testing (reproduce bug)
+2. uiux-frontend (fix UI)
+3. testing (verify fix)
+```
+
+### Frontend Security Best Practices
+
+Luôn áp dụng khi làm việc với:
+- **Authentication:** Token management, 401 handling, CSRF protection
+- **XSS Prevention:** sanitize HTML, không dùng `dangerouslySetInnerHTML` tanpa sanitization
+- **Input Validation:** Zod schemas cho tất cả forms
+- **Permission UI:** Hide/show elements dựa trên user permissions
+- **Error Messages:** Không lộ thông tin nhạy cảm trong error toasts
+
+---
+
+## 🔄 XI. VERSION CONTROL CONVENTIONS
+
+### Git Commit Messages
+```
+feat(ui): add users table component
+fix(ui): resolve responsive issue on mobile
+refactor(ui): extract form logic to hook
+perf(ui): optimize re-renders with useMemo
+style(ui): update button colors per design system
+```
+
+### Branch Naming
+```
+feat/add-users-table
+fix/mobile-responsive-issue
+refactor/extract-form-hook
+perf/optimize-renders
+```
+
+### Component Documentation
+Khi tạo component mới, thêm JSDoc:
+```tsx
+/**
+ * UserTable - Bảng hiển thị danh sách người dùng
+ * 
+ * Features:
+ * - Phân trang với React Query
+ * - Tìm kiếm với debounce
+ * - Lọc theo trạng thái
+ * - Realtime updates qua Socket.io
+ * 
+ * Permissions required: users.list hoặc users.list.all
+ */
+export function UserTable() { ... }
+```

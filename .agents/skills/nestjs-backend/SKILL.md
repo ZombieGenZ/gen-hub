@@ -630,3 +630,53 @@ server/
 │   ├── environment/<env-var>.md
 │   └── realtime-document.md
 ```
+
+---
+
+## 🔗 XI. THAM CHIẾU SKILL LIÊN QUAN
+
+Khi làm việc, luôn tham khảo các skill liên quan để đảm bảo tính nhất quán:
+
+| Skill | Khi nào tham khảo |
+|-------|-------------------|
+| **database-prisma** | Khi tạo/sửa schema Prisma, migration, seeder, query optimization |
+| **security** | Khi implement authentication, authorization, rate limiting, input validation, encryption |
+| **testing** | Khi viết unit tests, integration tests, E2E tests cho services, guards, pipes |
+| **api-documentation** | Khi viết Swagger decorators, markdown API docs, Postman collections |
+| **planning** | Khi cần lập kế hoạch triển khai module mới hoặc refactor |
+| **uiux-frontend** | Khi cần hiểu API response format mà frontend yêu cầu |
+
+### Quy trình làm việc với các skill
+
+1. **Module mới:** `planning` → `database-prisma` → `nestjs-backend` → `security` → `testing` → `api-documentation`
+2. **Bug fix:** `testing` → `nestjs-backend` → `testing` (verify)
+3. **Performance:** `database-prisma` → `nestjs-backend` (caching) → `testing`
+4. **Feature update:** `planning` → `nestjs-backend` → `api-documentation` → `uiux-frontend`
+
+---
+
+## 🔄 XII. VERSION CONTROL CONVENTIONS
+
+### Git Commit Messages
+```
+feat(backend): add users module with CRUD
+fix(backend): resolve N+1 query in posts listing
+refactor(backend): extract cache logic to helper
+perf(backend): optimize prisma select in getAll
+docs(backend): update swagger for auth endpoints
+test(backend): add unit tests for users service
+```
+
+### Branch Naming
+```
+feat/add-users-module
+fix/n-plus-one-posts
+refactor/cache-logic
+perf/optimize-queries
+```
+
+### Pull Request Guidelines
+- Mỗi PR = một tính năng/sửa lỗi duy nhất
+- Luôn có checklist trong PR description
+- Attach Swagger screenshots nếu thay đổi API
+- Đảm bảo tests pass trước khi merge
