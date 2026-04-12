@@ -892,6 +892,68 @@ export class OrgRentalContractService {
         return this.repository.findContractAddons(contractId);
     }
 
+    /**
+     * Cập nhật danh sách addons cho hợp đồng (Org-level)
+     * Logic upsert: addon mới sẽ được thêm, addon không có trong list sẽ bị hủy
+     */
+    async updateContractAddons(
+        contractId: string,
+        addonIds: string[],
+        userId: string,
+        organizationId: string,
+        lang: string,
+    ) {
+        const contract = await this.checkAccess(contractId, userId, organizationId, 'rental-contract.update', lang);
+
+        if (contract.status !== ContractStatus.ACTIVE && contract.status !== ContractStatus.PENDING) {
+            throw new BadRequestException(
+                this.i18n.t('rental-contract.errors.invalid_status_for_update', { lang }),
+            );
+        }
+
+        const currentAddons = await this.repository.findContractAddons(contractId);
+        const activeAddons = currentAddons.filter(a => !a.is_cancelled);
+        const currentAddonIds = new Set(activeAddons.map(a => a.addon_id));
+        const desiredAddonIds = new Set(addonIds);
+
+        // Add new addons
+        const toAdd = addonIds.filter(aid => !currentAddonIds.has(aid));
+        if (toAdd.length > 0) {
+            const addons = await this.prisma.addon.findMany({
+                where: { id: { in: toAdd }, is_deleted: false, is_active: true },
+            });
+            for (const addon of addons) {
+                await this.repository.addAddon({
+                    rental_contract_id: contractId,
+                    addon_id: addon.id,
+                    price_at_purchase: Number(addon.price),
+                    is_gift: false,
+                    created_by: userId,
+                });
+            }
+        }
+
+        // Cancel removed addons (only those registered within 2 days)
+        const TWO_DAYS_MS = 2 * 24 * 60 * 60 * 1000;
+        const toRemove = activeAddons.filter(a => !desiredAddonIds.has(a.addon_id));
+        for (const addon of toRemove) {
+            const createdAt = new Date(addon.created_at).getTime();
+            if (Date.now() - createdAt <= TWO_DAYS_MS) {
+                await this.prisma.rentalContractAddon.update({
+                    where: { id: addon.id },
+                    data: { is_cancelled: true },
+                });
+            }
+        }
+
+        // Emit update event
+        this.websocketGateway.emitToOrganization(organizationId, 'rentalContract:updated', {
+            contractId,
+        });
+
+        return this.repository.findContractAddons(contractId);
+    }
+
     async getContractInsurances(contractId: string, userId: string, organizationId: string, lang: string) {
         const contract = await this.checkAccess(contractId, userId, organizationId, 'rental-contract.read', lang);
         return this.repository.findContractInsurances(contractId);

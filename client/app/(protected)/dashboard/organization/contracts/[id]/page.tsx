@@ -111,8 +111,26 @@ export default function CustomerContractDetailPage() {
             setActiveTab("payment");
             showToast("Đã tạo lại liên kết thanh toán", "success");
         } catch (err) {
-            console.error("Failed to retry payment", err);
-            showToast(err instanceof Error ? err.message : "Không thể tiếp tục thanh toán", "error");
+            const errMsg = err instanceof Error ? err.message : "";
+            // If payment is still active, try to find the existing QR URL from contract payments
+            if (errMsg.includes("payment_still_active")) {
+                const pendingPayment = contract?.payments?.find(
+                    (p) => p.status === "PENDING"
+                );
+                const existingUrl = pendingPayment?.payment_url || pendingPayment?.qr_code || pendingPayment?.qr_code_url;
+                if (existingUrl) {
+                    window.open(existingUrl, "_blank", "noopener,noreferrer");
+                    setActiveTab("payment");
+                    showToast("Đang mở trang thanh toán hiện tại", "success");
+                } else {
+                    await refreshContract();
+                    setActiveTab("payment");
+                    showToast("Giao dịch thanh toán vẫn đang hoạt động. Vui lòng kiểm tra ở tab Thanh toán.", "info");
+                }
+            } else {
+                console.error("Failed to retry payment", err);
+                showToast(errMsg || "Không thể tiếp tục thanh toán", "error");
+            }
         } finally {
             setRetryingPaymentId(null);
         }
@@ -121,7 +139,9 @@ export default function CustomerContractDetailPage() {
     const handleSaveAddons = async (addonIds: string[], amenityIds: string[]) => {
         const token = authStorage.getAccessToken();
         if (!token) throw new Error("Chưa đăng nhập");
-        await rentalContractService.updateRentalContract(token, contractId, { addon_ids: addonIds });
+        const currentOrgId = orgId || await orgHelper.getOrgId(token);
+        if (!orgId) setOrgId(currentOrgId);
+        await rentalContractService.updateOrgContractAddons(token, currentOrgId, contractId, addonIds);
         await refreshContract();
         showToast("Cập nhật dịch vụ thành công", "success");
     };

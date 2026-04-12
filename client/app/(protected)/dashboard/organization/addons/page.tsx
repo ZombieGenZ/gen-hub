@@ -178,9 +178,9 @@ export default function OrganizationAddonsPage() {
         try {
             const token = authStorage.getAccessToken();
             if (!token) return;
-            await rentalContractService.updateRentalContract(token, selectedContract.id, {
-                addon_ids: addonIds,
-            });
+            const currentOrgId = orgId || await orgHelper.getOrgId(token);
+            if (!orgId) setOrgId(currentOrgId);
+            await rentalContractService.updateOrgContractAddons(token, currentOrgId, selectedContract.id, addonIds);
             showToast("Cập nhật dịch vụ thành công", "success");
             fetchContracts();
         } catch (err: any) {
@@ -193,12 +193,12 @@ export default function OrganizationAddonsPage() {
         try {
             const token = authStorage.getAccessToken();
             if (!token) return;
+            const currentOrgId = orgId || await orgHelper.getOrgId(token);
+            if (!orgId) setOrgId(currentOrgId);
             const remainingAddonIds = contract.addons
                 .filter(a => a.addon_id !== addonId)
                 .map(a => a.addon_id);
-            await rentalContractService.updateRentalContract(token, contract.id, {
-                addon_ids: remainingAddonIds,
-            });
+            await rentalContractService.updateOrgContractAddons(token, currentOrgId, contract.id, remainingAddonIds);
             showToast("Đã hủy dịch vụ thành công", "success");
             fetchContracts();
         } catch (err: any) {

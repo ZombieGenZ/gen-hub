@@ -399,6 +399,29 @@ export class RentalContractService {
     }
 
     /**
+     * Cập nhật addons cho hợp đồng (Org endpoint)
+     * PUT /organizations/:orgId/rental-contracts/:id/addons
+     */
+    async updateOrgContractAddons(token: string, orgId: string, id: string, addonIds: string[]) {
+        const response = await fetch(`${API}/organizations/${orgId}/rental-contracts/${id}/addons`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ addon_ids: addonIds }),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Không thể cập nhật addon');
+        }
+
+        const res = await response.json();
+        return res.data;
+    }
+
+    /**
      * Lấy danh sách insurances của hợp đồng
      * GET /organizations/:orgId/rental-contracts/:id/insurances
      */

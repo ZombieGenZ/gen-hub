@@ -475,6 +475,42 @@ export class OrgRentalContractController {
     }
 
     /**
+     * Cập nhật addons của hợp đồng (Org-level)
+     */
+    @Put(':id/addons')
+    @RequireOrgPermission('rental-contract.update')
+    @ApiOperation({
+        summary: 'Cập nhật addons của hợp đồng',
+        description: 'Thêm/xóa addon cho hợp đồng. Addon đăng ký quá 2 ngày không thể hủy bỏ. Yêu cầu quyền `rental-contract.update`.',
+    })
+    @ApiParam({ name: 'orgId', description: 'ID của tổ chức (UUID)', type: 'string', example: '550e8400-e29b-41d4-a716-446655440000' })
+    @ApiParam({ name: 'id', description: 'ID của hợp đồng (UUID)', type: 'string', example: CONTRACT_ID_EXAMPLE })
+    @ApiBody({
+        description: 'Danh sách addon IDs muốn giữ/thêm. Addon không có trong list sẽ bị hủy (nếu trong 2 ngày).',
+        schema: {
+            type: 'object',
+            properties: {
+                addon_ids: { type: 'array', items: { type: 'string' }, example: ['addon-uuid-1', 'addon-uuid-2'] },
+            },
+            required: ['addon_ids'],
+        },
+    })
+    @ApiResponse({ status: 200, description: 'Cập nhật addon thành công' })
+    @ApiResponse({ status: 400, description: 'Hợp đồng không ở trạng thái phù hợp' })
+    @ApiResponse({ status: 404, description: 'Không tìm thấy hợp đồng' })
+    @ApiAuthResponses()
+    async updateAddons(
+        @Param('orgId', ParseUUIDPipe) orgId: string,
+        @Param('id', ParseUUIDPipe) id: string,
+        @Body() body: { addon_ids: string[] },
+        @CurrentUser('userId') userId: string,
+        @I18nLang() lang: string,
+    ) {
+        const data = await this.rentalContractService.updateContractAddons(id, body.addon_ids || [], userId, orgId, lang);
+        return new UpdatedResponse('rental-contract.addons.update.success', data, 'Cập nhật addon thành công');
+    }
+
+    /**
      * Lấy danh sách addons của hợp đồng
      */
     @Get(':id/addons')
