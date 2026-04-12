@@ -191,6 +191,7 @@ describe('SepayService', () => {
       const result = await service.createContractPayment({
         rentalContractId: 'contract-1',
         amount: 30000000,
+        vat_amount: 3000000,
         description: 'GENHUB-ABC',
         type: 'NEW_CONTRACT',
         userId: 'user-1',
@@ -200,6 +201,7 @@ describe('SepayService', () => {
       expect(result.paymentId).toBeDefined();
       expect(result.bankInfo).toBeDefined();
       expect(result.bankInfo.accountNumber).toBe('123456789');
+      expect(result.vat_amount).toBe(3000000);
       expect(prisma.payment.create).toHaveBeenCalled();
     });
 
@@ -207,6 +209,7 @@ describe('SepayService', () => {
       await service.createContractPayment({
         rentalContractId: 'contract-1',
         amount: 30000000,
+        vat_amount: 3000000,
         description: 'Test',
         type: 'NEW_CONTRACT',
         userId: 'user-1',

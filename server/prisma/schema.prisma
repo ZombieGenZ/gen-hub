@@ -1362,6 +1362,8 @@ model RentalContract {
 
   total_price             Decimal  @db.Decimal(19, 4)
   discount_rate           Decimal  @default(0) @db.Decimal(5, 2)
+  vat_rate                Decimal  @default(0) @db.Decimal(5, 2)
+  vat_amount              Decimal  @default(0) @db.Decimal(19, 4)
   final_price             Decimal  @db.Decimal(19, 4)
   overdue_penalty         Decimal? @default(0) @db.Decimal(19, 4)
   overdue_penalty_percent Decimal? @default(0) @db.Decimal(5, 2)
@@ -1626,6 +1628,7 @@ model Payment {
   payment_code         String         @unique
   sepay_transaction_id BigInt?        @unique
   amount               Int
+  vat_amount           Int            @default(0)
   description          String
   type                 PaymentType
   purpose              PaymentPurpose @default(RENTAL_CONTRACT_NEW)

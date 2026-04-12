@@ -113,9 +113,11 @@ export class RentalContractProcessor {
             }
 
             // Tạo payment cho gia hạn
+            const vatAmount = Math.round(parseFloat(contract.vat_amount?.toString() || '0'));
             const paymentResult = await this.sepayService.createContractPayment({
                 rentalContractId: contractId,
-                amount: Math.round(renewalPrice),
+                amount: Math.round(renewalPrice + vatAmount),
+                vat_amount: vatAmount,
                 description: `Gia hạn ${contract.code}`,
                 type: 'RENEWAL',
                 userId,
@@ -206,9 +208,11 @@ export class RentalContractProcessor {
             }
 
             // Tạo payment mới
+            const vatAmount = Math.round(parseFloat(contract.vat_amount?.toString() || '0'));
             const paymentResult = await this.sepayService.createContractPayment({
                 rentalContractId: contractId,
                 amount: Math.round(parseFloat(contract.final_price.toString())),
+                vat_amount: vatAmount,
                 description: contract.code,
                 type: 'NEW_CONTRACT',
                 userId,

@@ -252,6 +252,10 @@ export class OrgRentalContractService {
             const startedAt = contractStartDate;
             const expiredAt = new Date(startedAt.getTime() + rentalDays * 24 * 60 * 60 * 1000);
 
+            // Tính thuế VAT ban đầu (chưa có coupon/addon/insurance)
+            const vatRate = dto.vat_rate ?? 0;
+            const initialVatAmount = Math.round(totalPrice * (vatRate / 100));
+
             const contractData: Prisma.RentalContractCreateInput = {
                 code,
                 name: `Hợp đồng thuê ${dto.templates.length} kho`,
@@ -260,7 +264,9 @@ export class OrgRentalContractService {
                 expired_at: expiredAt,
                 total_price: new Decimal(totalPrice),
                 discount_rate: new Decimal(overallDiscountRate),
-                final_price: new Decimal(totalPrice),
+                vat_rate: new Decimal(vatRate),
+                vat_amount: new Decimal(initialVatAmount),
+                final_price: new Decimal(totalPrice + initialVatAmount),
                 notes: dto.notes,
                 payment_method: dto.payment_method,
                 auto_renew: dto.auto_renew ?? false,
@@ -334,14 +340,20 @@ export class OrgRentalContractService {
                     }
                 }
 
-                // Cập nhật final_price nếu có giảm giá
+                // Cập nhật final_price và vat_amount nếu có giảm giá
                 if (totalCouponDiscount > 0) {
-                    const newFinalPrice = Math.max(0, totalPrice - totalCouponDiscount);
+                    const priceAfterCoupon = Math.max(0, totalPrice - totalCouponDiscount);
+                    const recalculatedVat = Math.round(priceAfterCoupon * (vatRate / 100));
+                    const newFinalPrice = priceAfterCoupon + recalculatedVat;
                     await this.prisma.rentalContract.update({
                         where: { id: contract.id },
-                        data: { final_price: new Decimal(newFinalPrice) },
+                        data: { 
+                            final_price: new Decimal(newFinalPrice),
+                            vat_amount: new Decimal(recalculatedVat),
+                        },
                     });
                     (contract as any).final_price = new Decimal(newFinalPrice);
+                    (contract as any).vat_amount = new Decimal(recalculatedVat);
                 }
             }
 
@@ -398,12 +410,19 @@ export class OrgRentalContractService {
 
             if (totalAddonPrice > 0 || totalInsurancePrice > 0) {
                 const currentFinal = parseFloat(contract.final_price.toString());
-                const newFinalPrice = currentFinal + totalAddonPrice + totalInsurancePrice;
+                const currentVat = parseFloat(contract.vat_amount?.toString() || '0');
+                const newBasePrice = currentFinal - currentVat + totalAddonPrice + totalInsurancePrice;
+                const recalculatedVat = Math.round(newBasePrice * (vatRate / 100));
+                const newFinalPrice = newBasePrice + recalculatedVat;
                 await this.prisma.rentalContract.update({
                     where: { id: contract.id },
-                    data: { final_price: new Decimal(newFinalPrice) },
+                    data: { 
+                        final_price: new Decimal(newFinalPrice),
+                        vat_amount: new Decimal(recalculatedVat),
+                    },
                 });
                 (contract as any).final_price = new Decimal(newFinalPrice);
+                (contract as any).vat_amount = new Decimal(recalculatedVat);
             }
 
             this.systemLogService.info(
@@ -427,6 +446,7 @@ export class OrgRentalContractService {
             const paymentResult = await this.sepayService.createContractPayment({
                 rentalContractId: contract.id,
                 amount: Math.round(parseFloat(contract.final_price.toString())),
+                vat_amount: Math.round(parseFloat(contract.vat_amount?.toString() || '0')),
                 description: `${code}`,
                 type: 'NEW_CONTRACT',
                 userId,
@@ -765,8 +785,8 @@ export class OrgRentalContractService {
                     paymentId: currentPayment.id,
                     paymentCode: currentPayment.payment_code,
                     amount: Number(currentPayment.amount),
-                    qrCode: currentPayment.qr_code,
-                    payment_url: currentPayment.qr_code, // Thêm để frontend redirect
+                    qrCode: currentPayment.qr_code || '',
+                    payment_url: currentPayment.qr_code || undefined, // Thêm để frontend redirect
                     status: currentPayment.status.toString(),
                     expiredAt: currentPayment.expired_at,
                 },
@@ -802,6 +822,7 @@ export class OrgRentalContractService {
         const paymentResult = await this.sepayService.createContractPayment({
             rentalContractId: contractId,
             amount: Math.round(parseFloat(contract.final_price.toString())),
+            vat_amount: Math.round(parseFloat(contract.vat_amount?.toString() || '0')),
             description: contract.code,
             type: 'NEW_CONTRACT',
             userId,

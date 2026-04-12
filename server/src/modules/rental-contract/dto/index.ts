@@ -57,6 +57,15 @@ export class CreateRentalContractDto {
     auto_renew?: boolean;
 
     @ApiPropertyOptional({
+        description: 'Thuế VAT (%) - mặc định 0%',
+        example: 10
+    })
+    @IsOptional()
+    @IsInt()
+    @Min(0)
+    vat_rate?: number;
+
+    @ApiPropertyOptional({
         description: 'Danh sách ID addon cần đăng ký cùng hợp đồng',
         type: [String],
         example: ['addon-uuid-1', 'addon-uuid-2']

@@ -23,6 +23,7 @@ export interface IPaymentResult {
     paymentId: string;
     paymentCode: string;
     amount: number;
+    vat_amount: number;
     qrCode: string;            // URL QR từ qr.sepay.vn
     status: string;
     expiredAt: Date;
@@ -39,6 +40,7 @@ export interface IPaymentResult {
 export interface ICreatePaymentOptions {
     rentalContractId: string;
     amount: number;
+    vat_amount: number;
     description: string;
     type: 'NEW_CONTRACT' | 'RENEWAL';
     userId: string;

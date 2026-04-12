@@ -113,6 +113,7 @@ export class SepayService {
                 rental_contract_id: options.rentalContractId,
                 payment_code: paymentCode,
                 amount: options.amount,
+                vat_amount: options.vat_amount,
                 description: options.description,
                 type: options.type as PaymentType,
                 purpose: 'RENTAL_CONTRACT_NEW',
@@ -142,6 +143,7 @@ export class SepayService {
             paymentId: payment.id,
             paymentCode,
             amount: options.amount,
+            vat_amount: options.vat_amount,
             qrCode,
             status: 'PENDING',
             expiredAt,
@@ -206,6 +208,7 @@ export class SepayService {
             paymentId: payment.id,
             paymentCode,
             amount: options.amount,
+            vat_amount: 0, // Deposit không có VAT
             qrCode,
             status: 'PENDING',
             expiredAt,

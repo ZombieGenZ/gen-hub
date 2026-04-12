@@ -110,7 +110,7 @@ export class PaymentController {
     @ApiOperation({
         summary: 'Lấy thông tin payment theo mã thanh toán',
         description:
-            'Tra cứu thông tin payment bằng `paymentCode`, bao gồm số tiền, trạng thái thanh toán, QR code và liên kết hợp đồng nếu có.',
+            'Tra cứu thông tin payment bằng `paymentCode`, bao gồm số tiền, trạng thái thanh toán, QR code, thuế VAT và liên kết hợp đồng nếu có.',
     })
     @ApiParam({
         name: 'paymentCode',
@@ -129,6 +129,7 @@ export class PaymentController {
                     properties: {
                         paymentCode: { type: 'string', example: 'GENHUB1702612345678' },
                         amount: { type: 'number', example: 5000000 },
+                        vatAmount: { type: 'number', example: 500000, description: 'Thuế VAT' },
                         status: { type: 'string', example: 'PENDING' },
                         qrCode: { type: 'string', example: 'https://qr.sepay.vn/img?...' },
                         expiredAt: { type: 'string', format: 'date-time', example: '2026-03-13T09:00:00.000Z' },
@@ -141,6 +142,7 @@ export class PaymentController {
                 data: {
                     paymentCode: 'GENHUB1702612345678',
                     amount: 5000000,
+                    vatAmount: 500000,
                     status: 'PENDING',
                     qrCode: 'https://qr.sepay.vn/img?...',
                     expiredAt: '2026-03-13T09:00:00.000Z',
@@ -177,6 +179,7 @@ export class PaymentController {
             data: {
                 paymentCode: payment.payment_code,
                 amount: payment.amount,
+                vatAmount: payment.vat_amount,
                 status: payment.status,
                 qrCode: payment.qr_code,
                 expiredAt: payment.expired_at,
