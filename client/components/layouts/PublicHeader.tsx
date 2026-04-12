@@ -21,7 +21,7 @@ interface HeaderProps {
     onLogout?: () => void;
 }
 
-export function PrimeNestHeader({ isLogin, user, onLogout }: HeaderProps) {
+export function PublicHeader({ isLogin, user, onLogout }: HeaderProps) {
     const [active, setActive] = useState<string | null>(null);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [mounted, setMounted] = useState(false);
@@ -30,7 +30,6 @@ export function PrimeNestHeader({ isLogin, user, onLogout }: HeaderProps) {
         setMounted(true);
     }, []);
 
-    // Dùng isLogin từ parent làm nguồn chính; fallback token khi vừa đăng nhập xong (parent chưa kịp set state)
     const [token, setToken] = useState<string | null>(null);
 
     useEffect(() => {
@@ -39,7 +38,6 @@ export function PrimeNestHeader({ isLogin, user, onLogout }: HeaderProps) {
 
     const showUserSection = isLogin || !!token;
 
-    // Ngăn cuộn trang web khi mở menu mobile
     useEffect(() => {
         if (isMobileMenuOpen) {
             document.body.style.overflow = 'hidden';
@@ -53,8 +51,8 @@ export function PrimeNestHeader({ isLogin, user, onLogout }: HeaderProps) {
 
     return (
         <>
-            <header className="sticky top-0 w-full z-[100] bg-background border-b border-border shadow-sm">
-                <div className="w-full max-w-[1440px] mx-auto px-4 lg:px-4 h-[80px] flex items-center justify-between">
+            <header className="sticky top-0 w-full z-[100] bg-background/80 backdrop-blur-md border-b border-border shadow-sm">
+                <div className="w-full max-w-[1440px] mx-auto px-4 lg:px-6 h-[80px] flex items-center justify-between">
                     {/* Logo */}
                     <Link href="/" className="flex items-center gap-3 relative z-50 shrink-0">
                         <Image
@@ -64,11 +62,12 @@ export function PrimeNestHeader({ isLogin, user, onLogout }: HeaderProps) {
                             height={36}
                             priority
                             unoptimized
-                            className="h-8 w-auto"
+                            className="h-8 w-auto hover:opacity-80 transition-opacity"
                         />
                     </Link>
 
-                    <div className="hidden lg:flex items-center justify-center flex-1 mx-8">
+                    {/* Desktop Navigation */}
+                    <div className="hidden lg:flex items-center justify-center flex-1 mx-8 text-neutral-800">
                         <Menu setActive={setActive}>
                             <Link href="/" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors duration-200 relative group">
                                 Trang Chủ
@@ -85,7 +84,7 @@ export function PrimeNestHeader({ isLogin, user, onLogout }: HeaderProps) {
                                 Về Chúng Tôi
                                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all duration-200 group-hover:w-full" />
                             </Link>
-                            <Link href="/contact" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors duration-200 relative group">
+                            <Link href="/" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors duration-200 relative group">
                                 Liên hệ
                                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all duration-200 group-hover:w-full" />
                             </Link>
@@ -93,10 +92,11 @@ export function PrimeNestHeader({ isLogin, user, onLogout }: HeaderProps) {
                     </div>
 
                     {/* Right Actions */}
-                    <div className="relative z-50 flex items-center gap-5 shrink-0  ">
+                    <div className="relative z-50 flex items-center gap-4 shrink-0">
                         {showUserSection ? (
-                           
+                            <div className="flex items-center gap-4">
                                 <UserDropdown user={user} onLogout={onLogout} />
+                            </div>
                         ) : (
                             <div className="hidden md:flex items-center gap-5">
                                 <Link href="/login" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors duration-200">
@@ -104,24 +104,20 @@ export function PrimeNestHeader({ isLogin, user, onLogout }: HeaderProps) {
                                 </Link>
                                 <Link
                                     href="/register"
-                                    className="px-6 py-3 text-sm font-semibold text-primary-foreground bg-primary rounded-3xl hover:bg-primary/90 transition-all duration-200 shadow-sm hover:shadow-md"
+                                    className="px-6 py-3 text-sm font-semibold text-primary-foreground bg-primary rounded-3xl hover:bg-primary/90 transition-all duration-200 shadow-lg shadow-primary/20 hover:scale-105 active:scale-95"
                                 >
                                     Đăng Ký
                                 </Link>
                             </div>
                         )}
 
-                        {/* Mobile Menu Button  */}
+                        {/* Mobile Menu Button */}
                         <button
                             onClick={() => setIsMobileMenuOpen(true)}
-                            className="lg:hidden text-muted-foreground p-2 hover:bg-accent hover:text-accent-foreground rounded-full transition-colors cursor-pointer" aria-label="Open menu"
+                            className="lg:hidden text-muted-foreground p-2 hover:bg-accent hover:text-accent-foreground rounded-full transition-colors cursor-pointer" 
+                            aria-label="Open menu"
                         >
-                            <svg
-                                className="w-6 h-6"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                            >
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 12h16M4 18h16" />
                             </svg>
                         </button>
@@ -134,25 +130,23 @@ export function PrimeNestHeader({ isLogin, user, onLogout }: HeaderProps) {
                 <AnimatePresence>
                     {isMobileMenuOpen && (
                         <>
-                            {/* Backdrop */}
                             <motion.div
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 exit={{ opacity: 0 }}
                                 onClick={() => setIsMobileMenuOpen(false)}
-                                className="fixed inset-0 bg-black/50 z-[100] lg:hidden"
+                                className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[110] lg:hidden"
                             />
 
-                            {/* Drawer */}
                             <motion.div
                                 initial={{ x: "100%" }}
                                 animate={{ x: 0 }}
                                 exit={{ x: "100%" }}
-                                transition={{ type: "tween", duration: 0.3 }}
-                                className="fixed right-0 top-0 bottom-0 w-[80vw] max-w-[320px] bg-background z-[101] shadow-2xl flex flex-col lg:hidden border-l border-border"
+                                transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                                className="fixed right-0 top-0 bottom-0 w-[85vw] max-w-[360px] bg-background z-[120] shadow-2xl flex flex-col lg:hidden border-l border-border"
                             >
-                                <div className="flex items-center justify-between p-4 border-b border-border">
-                                    <span className="font-semibold text-foreground text-lg">Menu</span>
+                                <div className="flex items-center justify-between p-5 border-b border-border">
+                                    <span className="font-bold text-foreground text-xl">Menu</span>
                                     <button
                                         onClick={() => setIsMobileMenuOpen(false)}
                                         className="p-2 text-muted-foreground hover:bg-accent rounded-full transition-colors"
@@ -161,67 +155,55 @@ export function PrimeNestHeader({ isLogin, user, onLogout }: HeaderProps) {
                                     </button>
                                 </div>
 
-                                <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
-                                    <Link onClick={() => setIsMobileMenuOpen(false)} href="/" className="text-base font-medium text-foreground hover:text-primary py-2 border-b border-border/50">
-                                        Trang Chủ
-                                    </Link>
-                                    <div className="flex flex-col gap-2 py-2 border-b border-border/50">
-                                        <span className="text-base font-medium text-foreground">Kho Bãi</span>
-                                        <div className="flex flex-col gap-3 pl-4 mt-2">
-                                            <Link onClick={() => setIsMobileMenuOpen(false)} href="/kho-bai" className="text-sm text-muted-foreground hover:text-primary">Tất Cả Kho</Link>
-                                            <Link onClick={() => setIsMobileMenuOpen(false)} href="/kho-bai?type=kho-thuong" className="text-sm text-muted-foreground hover:text-primary">Kho Thường</Link>
-                                            <Link onClick={() => setIsMobileMenuOpen(false)} href="/kho-bai?type=kho-chung" className="text-sm text-muted-foreground hover:text-primary">Kho Chung</Link>
-                                        </div>
-                                    </div>
-                                    <Link onClick={() => setIsMobileMenuOpen(false)} href="/about" className="text-base font-medium text-foreground hover:text-primary py-2 border-b border-border/50">
-                                        Về Chúng Tôi
-                                    </Link>
-                                    <Link onClick={() => setIsMobileMenuOpen(false)} href="/contact" className="text-base font-medium text-foreground hover:text-primary py-2 border-b border-border/50">
-                                        Liên hệ
-                                    </Link>
-                                    {showUserSection && (
-                                        <div className="flex flex-col gap-2 py-2 border-b border-border/50">
-                                            <Link onClick={() => setIsMobileMenuOpen(false)} href="/dashboard" className="text-base font-medium text-primary hover:text-primary/80">
-                                                Bảng điều khiển
-                                            </Link>
-                                            <div className="flex flex-col gap-3 pl-4 mt-1 border-l-2 border-primary/20">
-                                                {(user?.roles?.some(r => {
-                                                    const roleName = typeof r === 'string' ? r.toUpperCase() : (r as any).name?.toUpperCase();
-                                                    return roleName === 'ADMIN' || roleName === 'ADMINISTRATOR' || roleName === 'SUPER ADMIN';
-                                                })) && (
-                                                    <Link onClick={() => setIsMobileMenuOpen(false)} href="/dashboard/admin" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
-                                                        Quản trị hệ thống
-                                                    </Link>
-                                                )}
-                                                {(user?.roles?.some(r => {
-                                                    const roleName = typeof r === 'string' ? r.toUpperCase() : (r as any).name?.toUpperCase();
-                                                    return roleName === 'ORGANIZATION' || roleName === 'OWNER';
-                                                }) || (user as any)?.organization_id) && (
-                                                    <Link onClick={() => setIsMobileMenuOpen(false)} href="/dashboard/organization" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
-                                                        Quản trị tổ chức
-                                                    </Link>
-                                                )}
+                                <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6">
+                                    <div className="flex flex-col gap-1">
+                                        <Link onClick={() => setIsMobileMenuOpen(false)} href="/" className="text-lg font-medium py-3 border-b border-border/30 hover:text-primary transition-colors">
+                                            Trang Chủ
+                                        </Link>
+                                        <div className="py-3 border-b border-border/30">
+                                            <span className="text-lg font-medium block mb-4">Kho Bãi</span>
+                                            <div className="flex flex-col gap-4 pl-4 border-l-2 border-primary/20">
+                                                <Link onClick={() => setIsMobileMenuOpen(false)} href="/kho-bai" className="text-base text-muted-foreground hover:text-primary">Tất Cả Kho</Link>
+                                                <Link onClick={() => setIsMobileMenuOpen(false)} href="/kho-bai?type=kho-thuong" className="text-base text-muted-foreground hover:text-primary">Kho Thường</Link>
+                                                <Link onClick={() => setIsMobileMenuOpen(false)} href="/kho-bai?type=kho-chung" className="text-base text-muted-foreground hover:text-primary">Kho Chung</Link>
                                             </div>
+                                        </div>
+                                        <Link onClick={() => setIsMobileMenuOpen(false)} href="/about" className="text-lg font-medium py-3 border-b border-border/30 hover:text-primary transition-colors">
+                                            Về Chúng Tôi
+                                        </Link>
+                                        <Link onClick={() => setIsMobileMenuOpen(false)} href="/" className="text-lg font-medium py-3 border-b border-border/30 hover:text-primary transition-colors">
+                                            Liên hệ
+                                        </Link>
+                                    </div>
+                                    
+                                    {showUserSection && (
+                                        <div className="mt-2">
+                                            <Link onClick={() => setIsMobileMenuOpen(false)} href="/dashboard" className="flex items-center justify-between w-full p-4 rounded-xl bg-primary text-primary-foreground font-semibold shadow-lg shadow-primary/20">
+                                                <span>Bảng điều khiển</span>
+                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                                </svg>
+                                            </Link>
                                         </div>
                                     )}
                                 </div>
 
                                 {/* Mobile User/Auth Section */}
-                                <div className="p-4 border-t border-border mt-auto bg-muted/30">
+                                <div className="p-6 border-t border-border mt-auto bg-muted/30">
                                     {showUserSection ? (
                                         <div className="flex flex-row items-center justify-between w-full">
                                             <div className="flex flex-col">
-                                                <span className="text-sm font-semibold">{user?.name || "Người dùng"}</span>
-                                                <span className="text-xs text-muted-foreground">{user?.email || ""}</span>
+                                                <span className="text-base font-bold text-foreground">{user?.name || "Người dùng"}</span>
+                                                <span className="text-sm text-muted-foreground truncate max-w-[180px]">{user?.email || ""}</span>
                                             </div>
                                             <UserDropdown user={user} onLogout={onLogout} />
                                         </div>
                                     ) : (
                                         <div className="flex flex-col gap-3">
-                                            <Link onClick={() => setIsMobileMenuOpen(false)} href="/login" className="w-full py-3 text-center text-sm font-medium text-foreground bg-background border border-border rounded-xl hover:bg-accent transition-colors">
+                                            <Link onClick={() => setIsMobileMenuOpen(false)} href="/login" className="w-full py-3.5 text-center font-semibold text-foreground bg-background border border-border rounded-xl hover:bg-accent transition-colors shadow-sm">
                                                 Đăng Nhập
                                             </Link>
-                                            <Link onClick={() => setIsMobileMenuOpen(false)} href="/register" className="w-full py-3 text-center text-sm font-medium text-primary-foreground bg-primary rounded-xl hover:bg-primary/90 transition-all shadow-sm">
+                                            <Link onClick={() => setIsMobileMenuOpen(false)} href="/register" className="w-full py-3.5 text-center font-semibold text-primary-foreground bg-primary rounded-xl hover:bg-primary/90 transition-all shadow-lg shadow-primary/20">
                                                 Đăng Ký
                                             </Link>
                                         </div>

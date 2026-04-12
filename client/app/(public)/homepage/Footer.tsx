@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 
 const footerLinks = {
     Sản_Phẩm: ["Tính Năng", "Giải Pháp", "Bảng Giá", "Hướng Dẫn", "Cập Nhật"],
@@ -54,10 +55,12 @@ export function PrimeNestFooter() {
                     <div className="col-span-2">
                         {/* Logo */}
                         <Link href="/" className="flex items-center gap-2 mb-4">
-                            <img
+                            <Image
                                 src="/assets/GenHub.svg"
                                 alt="GenHub"
-                                className="h-8 w-auto"
+                                width={120}
+                                height={32}
+                                className="h-8 w-auto hover:opacity-80 transition-opacity"
                             />
                         </Link>
 
@@ -87,12 +90,12 @@ export function PrimeNestFooter() {
                             <ul className="space-y-3">
                                 {links.map((link) => (
                                     <li key={link}>
-                                        <a
-                                            href="#"
+                                        <Link
+                                            href={link === "Bảng Giá" ? "/pricing" : link === "Giới Thiệu" ? "/about" : (link === "Tất Cả Kho" || link === "Liên Hệ") ? "/" : "#"}
                                             className="text-muted-foreground text-sm hover:text-primary transition-colors"
                                         >
                                             {link}
-                                        </a>
+                                        </Link>
                                     </li>
                                 ))}
                             </ul>

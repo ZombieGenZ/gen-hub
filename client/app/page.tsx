@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { PrimeNestHeader } from "@/app/(public)/homepage/Header";
+import { PublicHeader } from "@/components/layouts/PublicHeader";
 import { PrimeNestHero } from "@/app/(public)/homepage/Hero";
 import { PrimeNestSearch } from "@/app/(public)/homepage/Search";
 import { PrimeNestAbout } from "@/app/(public)/homepage/About";
@@ -94,8 +94,8 @@ export default function Home() {
                 setUser({
                     name: userData.user.name,
                     email: userData.user.email,
-                    avatar: undefined,
-                    roles: userData.roles.map((r) => r.name),
+                    avatar: userData.user.avatar,
+                    roles: userData.roles.map((r: any) => typeof r === 'string' ? r : r.name),
                 });
             } catch (error) {
                 console.error("Failed to fetch user data:", error);
@@ -154,7 +154,7 @@ export default function Home() {
 
     return (
         <div className="relative min-h-screen bg-slate-50 text-slate-900 overflow-x-hidden">
-            <PrimeNestHeader isLogin={isLogin} user={user} onLogout={handleLogout} />
+            <PublicHeader isLogin={isLogin} user={user} onLogout={handleLogout} />
 
             <main className="z-10 h-full w-full">
                 <section className="flex items-center justify-center">
