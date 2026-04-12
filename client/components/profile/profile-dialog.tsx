@@ -120,8 +120,31 @@ export function ProfileDialog({ open = true, onOpenChange }: ProfileDialogProps 
     confirmPassword: ''
   })
 
+  const resetState = () => {
+    setUserData(null)
+    setName('')
+    setNotifications([])
+    setOrganizationData(null)
+    setAvatarPreview(null)
+    setActiveTab('profile')
+    setEnabling2FA(false)
+    setEnable2FAData(null)
+    setShowChangePassword(false)
+    setChangePasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' })
+    setPasswordErrors({ currentPassword: '', newPassword: '', confirmPassword: '' })
+    setBackupCodes([])
+    setShowBackupCodes(false)
+    setIsCreatingOrg(false)
+    setIsEditingOrg(false)
+    setTwoFactorCode('')
+    setError(null)
+  }
+
   useEffect(() => {
-    if (!open) return
+    if (!open) {
+      resetState()
+      return
+    }
 
     const fetchUser = async () => {
       try {
@@ -389,14 +412,24 @@ export function ProfileDialog({ open = true, onOpenChange }: ProfileDialogProps 
     const token = authStorage.getAccessToken();
     const refresh_token = authStorage.getRefreshToken();
     if (token && refresh_token) {
-      const response = await authService.logout(token, refresh_token);
-      if (response) {
-        authStorage.clearTokens()
-        showToast(response.message, 'success');
-        router.push('/');
-      } else {
-        showToast("Đăng xuất thất bại", 'error');
+      try {
+        const response = await authService.logout(token, refresh_token);
+        authStorage.clearTokens();
+        resetState();
+        onOpenChange?.(false);
+        if (response) {
+          showToast(response.message, 'success');
+        } else {
+          showToast('Đăng xuất thành công', 'success');
+        }
+      } catch {
+        authStorage.clearTokens();
+        resetState();
+        onOpenChange?.(false);
+        showToast('Đăng xuất thành công', 'info');
       }
+      router.push('/');
+      router.refresh();
     } else {
       showToast('Vui lòng đăng nhập lại', 'error');
       router.push('/login');

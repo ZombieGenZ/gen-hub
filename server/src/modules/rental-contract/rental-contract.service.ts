@@ -421,7 +421,12 @@ export class RentalContractService {
       throw new NotFoundException(this.i18n.t('rental-contract.errors.not_found', { lang }));
     }
     // Admin có thể view mọi contract (giả sử permission đã check ở controller level hoặc contract guard)
-    const contractObj = JSON.parse(JSON.stringify(contract));
+    // Serialize safely: BigInt fields (e.g. sepay_transaction_id) cannot be JSON.stringify-ed natively
+    const contractObj = JSON.parse(
+      JSON.stringify(contract, (_key, value) =>
+        typeof value === 'bigint' ? value.toString() : value,
+      ),
+    );
     return {
       ...contractObj,
       payments: contractObj.payments?.map((p: any) => ({

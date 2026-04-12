@@ -561,8 +561,12 @@ export class OrgRentalContractService {
 
         await this.checkOrgPermission(organizationId, userId, 'rental-contract.read', lang);
 
-        // Map payments to match frontend interface
-        const contractObj = JSON.parse(JSON.stringify(contract));
+        // Serialize safely: BigInt fields (e.g. sepay_transaction_id) cannot be JSON.stringify-ed natively
+        const contractObj = JSON.parse(
+            JSON.stringify(contract, (_key, value) =>
+                typeof value === 'bigint' ? value.toString() : value,
+            ),
+        );
         return {
             ...contractObj,
             payments: contractObj.payments?.map((p: any) => ({

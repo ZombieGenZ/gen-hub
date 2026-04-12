@@ -26,7 +26,9 @@ import { RequestRefundModal } from "@/components/contract/RequestRefundModal";
 import { ManageAddonsModal } from "@/components/contract/ManageAddonsModal";
 import type { RentalContractDetail } from "@/types/rental-contracts/rental-contracts.type";
 import { useOrganizationRealtime } from "@/hooks/useOrganizationRealtime";
+import { useUserRealtime } from "@/hooks/useUserRealtime";
 import { useToast } from "@/contexts/ToastContext";
+import { authService } from "@/services/auth/auth.service";
 
 const CONTRACT_DETAIL_EVENTS = [
     "rentalContract:updated",
@@ -48,18 +50,19 @@ export default function CustomerContractDetailPage() {
     const [showRefundModal, setShowRefundModal] = useState(false);
     const [showAddonsModal, setShowAddonsModal] = useState(false);
     const [orgId, setOrgId] = useState<string | null>(null);
+    const [userId, setUserId] = useState<string | null>(null);
     const [retryingPaymentId, setRetryingPaymentId] = useState<string | null>(null);
+    const [fetchError, setFetchError] = useState<string | null>(null);
 
     const refreshContract = async () => {
         try {
-            const token = authStorage.getAccessToken();
+            const token = await authService.getValidAccessToken();
             if (!token) return;
             const currentOrgId = orgId || await orgHelper.getOrgId(token);
-            if (!orgId) {
-                setOrgId(currentOrgId);
-            }
+            if (!orgId) setOrgId(currentOrgId);
             const res = await rentalContractService.getOrgRentalContractFull(token, currentOrgId, contractId);
             setContract(res?.data ?? res);
+            setFetchError(null);
         } catch (err) {
             console.error("Failed to refresh contract", err);
         }
@@ -68,9 +71,14 @@ export default function CustomerContractDetailPage() {
     useEffect(() => {
         const fetchContract = async () => {
             try {
-                const token = authStorage.getAccessToken();
-                if (!token) { router.push("/login"); return; }
                 setLoading(true);
+                setFetchError(null);
+
+                const token = await authService.getValidAccessToken();
+                if (!token) { router.push("/login"); return; }
+
+                const currentUserId = authStorage.getUserID();
+                setUserId(currentUserId);
 
                 const currentOrgId = await orgHelper.getOrgId(token);
                 setOrgId(currentOrgId);
@@ -79,6 +87,7 @@ export default function CustomerContractDetailPage() {
                 setContract(data);
             } catch (err) {
                 console.error("Failed to load contract", err);
+                setFetchError(err instanceof Error ? err.message : "Không thể tải chi tiết hợp đồng");
             } finally {
                 setLoading(false);
             }
@@ -88,7 +97,7 @@ export default function CustomerContractDetailPage() {
 
     const handleRetryPayment = async (paymentId?: string) => {
         try {
-            const token = authStorage.getAccessToken();
+            const token = await authService.getValidAccessToken();
             if (!token) {
                 router.push("/login");
                 return;
@@ -137,7 +146,7 @@ export default function CustomerContractDetailPage() {
     };
 
     const handleSaveAddons = async (addonIds: string[], amenityIds: string[]) => {
-        const token = authStorage.getAccessToken();
+        const token = await authService.getValidAccessToken();
         if (!token) throw new Error("Chưa đăng nhập");
         const currentOrgId = orgId || await orgHelper.getOrgId(token);
         if (!orgId) setOrgId(currentOrgId);
@@ -170,6 +179,28 @@ export default function CustomerContractDetailPage() {
         },
     });
 
+    // Lắng nghe payment events từ user room
+    useUserRealtime({
+        userId,
+        events: ["payment:paid", "contract:activated", "payment:expired", "payment:cancelled"],
+        enabled: !!userId,
+        onEvent: (eventName) => {
+            if (eventName === "payment:paid" || eventName === "contract:activated") {
+                void refreshContract();
+                setActiveTab("payment");
+                showToast(
+                    eventName === "payment:paid"
+                        ? "Đã nhận được thanh toán thành công!"
+                        : "Hợp đồng đã được kích hoạt",
+                    "success"
+                );
+            } else if (eventName === "payment:expired" || eventName === "payment:cancelled") {
+                void refreshContract();
+                showToast("Giao dịch thanh toán đã hết hạn hoặc bị hủy", "info");
+            }
+        },
+    });
+
     // ---------- Loading ----------
     if (loading) {
         return (
@@ -193,11 +224,20 @@ export default function CustomerContractDetailPage() {
         return (
             <div className="flex flex-col items-center justify-center flex-1 h-full gap-4 text-muted-foreground p-8">
                 <AlertTriangle className="w-12 h-12 opacity-40" />
-                <p className="text-lg font-medium">Không tìm thấy hợp đồng</p>
-                <Button variant="outline" onClick={() => router.back()}>
-                    <ArrowLeft className="w-4 h-4 mr-2" />
-                    Quay lại
-                </Button>
+                <p className="text-lg font-medium">
+                    {fetchError || "Không tìm thấy hợp đồng"}
+                </p>
+                <div className="flex gap-2">
+                    <Button variant="outline" onClick={() => router.back()}>
+                        <ArrowLeft className="w-4 h-4 mr-2" />
+                        Quầy lại
+                    </Button>
+                    {fetchError && (
+                        <Button onClick={() => window.location.reload()}>
+                            Thử lại
+                        </Button>
+                    )}
+                </div>
             </div>
         );
     }
